@@ -5,16 +5,16 @@ import Link from 'next/link'
 import Image from 'next/image'
 
 const modulos = [
-  { nome: 'Painel', href: '/dashboard', icon: '🏠' },
-  { nome: 'Turmas', href: '/dashboard/turmas', icon: '📚' },
-  { nome: 'Tarefas', href: '/dashboard/tarefas', icon: '✅' },
-  { nome: 'Financeiro', href: '/dashboard/financeiro', icon: '💰' },
-  { nome: 'Leads', href: '/dashboard/leads', icon: '🎯' },
-  { nome: 'Alunos', href: '/dashboard/alunos', icon: '👥' },
-  { nome: 'Professores', href: '/dashboard/professores', icon: '👤' },
-  { nome: 'Salas', href: '/dashboard/salas', icon: '🏛' },
-  { nome: 'Cidades', href: '/dashboard/cidades', icon: '📍' },
-  { nome: 'Usuarios', href: '/dashboard/usuarios', icon: '🔑' },
+  { nome: 'Painel', href: '/dashboard' },
+  { nome: 'Turmas', href: '/dashboard/turmas' },
+  { nome: 'Tarefas', href: '/dashboard/tarefas' },
+  { nome: 'Financeiro', href: '/dashboard/financeiro' },
+  { nome: 'Leads', href: '/dashboard/leads' },
+  { nome: 'Alunos', href: '/dashboard/alunos' },
+  { nome: 'Professores', href: '/dashboard/professores' },
+  { nome: 'Salas', href: '/dashboard/salas' },
+  { nome: 'Cidades', href: '/dashboard/cidades' },
+  { nome: 'Usuarios', href: '/dashboard/usuarios' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -22,9 +22,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
-      <div style={{ flexShrink: 0, width: '224px' }}>
+      <div style={{ flexShrink: 0, width: '220px' }}>
         <div style={{
-          width: '224px',
+          width: '220px',
           backgroundColor: '#2c2c2e',
           borderRight: '1px solid #3a3a3c',
           height: '100vh',
@@ -45,13 +45,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
               const ativo = pathname === m.href || (m.href !== '/dashboard' && pathname.startsWith(m.href))
               return (
                 <Link key={m.href} href={m.href} style={{
-                  display: 'flex', alignItems: 'center', gap: '10px',
-                  padding: '9px 12px', borderRadius: '8px',
-                  fontSize: '13px', fontWeight: '500', textDecoration: 'none',
+                  display: 'block',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  fontSize: '14px',
+                  fontWeight: ativo ? '600' : '400',
+                  textDecoration: 'none',
                   backgroundColor: ativo ? '#7c3aed' : 'transparent',
                   color: ativo ? '#ffffff' : '#9ca3af',
                 }}>
-                  <span>{m.icon}</span>
                   {m.nome}
                 </Link>
               )
