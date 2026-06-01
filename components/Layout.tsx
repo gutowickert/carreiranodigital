@@ -15,6 +15,8 @@ const modulos = [
   { nome: 'Salas', href: '/dashboard/salas' },
   { nome: 'Cidades', href: '/dashboard/cidades' },
   { nome: 'Usuarios', href: '/dashboard/usuarios' },
+  { nome: 'Minha Agenda', href: '/dashboard/agenda' },
+  { nome: 'Agenda de Aulas', href: '/dashboard/agenda/aulas' },
 ]
 
 export default function Layout({ children }: { children: React.ReactNode }) {
