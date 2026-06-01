@@ -1,92 +1,37 @@
 'use client'
 
-import { useState } from 'react'
-import { supabase } from '@/lib/supabase'
-import { useRouter } from 'next/navigation'
-import Image from 'next/image'
+import Link from 'next/link'
 
-export default function Login() {
-  const [email, setEmail] = useState('')
-  const [senha, setSenha] = useState('')
-  const [erro, setErro] = useState('')
-  const [carregando, setCarregando] = useState(false)
-  const router = useRouter()
+const modulos = [
+  { nome: 'Turmas', desc: 'Abrir e gerenciar turmas', href: '/dashboard/turmas', icon: '🎓' },
+  { nome: 'Tarefas', desc: 'Agenda de tarefas por setor', href: '/dashboard/tarefas', icon: '✅' },
+  { nome: 'Financeiro', desc: 'Custos, receita e DRE', href: '/dashboard/financeiro', icon: '💰' },
+  { nome: 'Leads', desc: 'Pipeline comercial e CRM', href: '/dashboard/leads', icon: '🎯' },
+  { nome: 'Alunos', desc: 'CRM de alunos e pós-venda', href: '/dashboard/alunos', icon: '👥' },
+  { nome: 'Professores', desc: 'Cadastrar professores', href: '/dashboard/professores', icon: '👤' },
+  { nome: 'Salas', desc: 'Cadastrar salas', href: '/dashboard/salas', icon: '🏛' },
+  { nome: 'Cidades', desc: 'Cadastrar cidades', href: '/dashboard/cidades', icon: '📍' },
+]
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault()
-    setCarregando(true)
-    setErro('')
-
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password: senha,
-    })
-
-    if (error) {
-      setErro('E-mail ou senha incorretos')
-      setCarregando(false)
-      return
-    }
-
-    router.push('/dashboard')
-  }
-
+export default function Dashboard() {
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
-        
-        {/* Logo */}
-        <div className="flex justify-center mb-8">
-          <Image src="/logo.png" alt="CarreiraNoDigital" width={220} height={66} className="object-contain" />
-        </div>
-
-        {/* Card de login */}
-        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8">
-          <h2 className="text-lg font-semibold text-white mb-1">Acesso ao sistema</h2>
-          <p className="text-sm text-gray-500 mb-6">Entre com suas credenciais</p>
-
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">E-mail</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                placeholder="seu@email.com"
-                required
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1.5">Senha</label>
-              <input
-                type="password"
-                value={senha}
-                onChange={(e) => setSenha(e.target.value)}
-                className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-                placeholder="••••••••"
-                required
-              />
-            </div>
-
-            {erro && (
-              <p className="text-red-400 text-sm">{erro}</p>
-            )}
-
-            <button
-              type="submit"
-              disabled={carregando}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white rounded-lg py-2.5 text-sm font-medium transition-colors disabled:opacity-50 mt-2"
-            >
-              {carregando ? 'Entrando...' : 'Entrar'}
-            </button>
-          </form>
-        </div>
-
-        <p className="text-center text-xs text-gray-700 mt-6">
-          Sistema interno CarreiraNoDigital
-        </p>
+    <div style={{ padding: '32px', minHeight: '100vh' }}>
+      <div style={{ marginBottom: '32px' }}>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Painel principal</h1>
+        <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>Selecione um módulo para começar</p>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px' }}>
+        {modulos.map((m) => (
+          <Link key={m.href} href={m.href} style={{
+            backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c',
+            borderRadius: '12px', padding: '20px', textDecoration: 'none',
+            display: 'block',
+          }}>
+            <div style={{ fontSize: '24px', marginBottom: '12px' }}>{m.icon}</div>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>{m.nome}</div>
+            <div style={{ fontSize: '12px', color: '#6b7280' }}>{m.desc}</div>
+          </Link>
+        ))}
       </div>
     </div>
   )
