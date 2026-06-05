@@ -15,15 +15,8 @@ type Lancamento = {
   data_pagamento: string
   status: string
   turma_id: string | null
-}
-
-type CustoFixo = {
-  id: string
-  nome: string
-  categoria: string
-  unidade: string
-  valor_padrao: number
-  ativo: boolean
+  recorrente: boolean
+  grupo_recorrencia: string | null
 }
 
 type FinanceiroTurma = {
@@ -57,16 +50,28 @@ const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', border
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
+function addMonths(yyyymm: string, months: number) {
+  const [y, m] = yyyymm.split('-').map(Number)
+  const d = new Date(y, m - 1 + months, 1)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function gerarUuid() {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+    const r = Math.random() * 16 | 0
+    const v = c === 'x' ? r : (r & 0x3 | 0x8)
+    return v.toString(16)
+  })
+}
+
 export default function Financeiro() {
-  const [aba, setAba] = useState<'visao_geral' | 'turmas' | 'custos_fixos' | 'lancamentos' | 'dre'>('visao_geral')
+  const [aba, setAba] = useState<'visao_geral' | 'turmas' | 'lancamentos' | 'dre'>('visao_geral')
   const [financeiros, setFinanceiros] = useState<FinanceiroTurma[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
-  const [custosFixos, setCustosFixos] = useState<CustoFixo[]>([])
   const [selecionado, setSelecionado] = useState<FinanceiroTurma | null>(null)
   const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
   const [novoLanc, setNovoLanc] = useState(false)
-  const [novoCustoFixo, setNovoCustoFixo] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
 
@@ -77,10 +82,8 @@ export default function Financeiro() {
   const [lancUnidade, setLancUnidade] = useState('geral')
   const [lancVencimento, setLancVencimento] = useState('')
   const [lancStatus, setLancStatus] = useState('previsto')
-  const [cfNome, setCfNome] = useState('')
-  const [cfCategoria, setCfCategoria] = useState('estrutura')
-  const [cfUnidade, setCfUnidade] = useState('geral')
-  const [cfValor, setCfValor] = useState('')
+  const [lancRecorrente, setLancRecorrente] = useState(false)
+  const [lancMeses, setLancMeses] = useState('12')
 
   const mesRef = mesSelecionado + '-01'
 
@@ -88,7 +91,7 @@ export default function Financeiro() {
 
   async function carregarTudo() {
     setCarregando(true)
-    await Promise.all([carregarFinanceiros(), carregarLancamentos(), carregarCustosFixos()])
+    await Promise.all([carregarFinanceiros(), carregarLancamentos()])
     setCarregando(false)
   }
 
@@ -104,28 +107,50 @@ export default function Financeiro() {
     if (data) setLancamentos(data)
   }
 
-  async function carregarCustosFixos() {
-    const { data } = await supabase.from('custos_fixos').select('*').eq('ativo', true).order('categoria')
-    if (data) setCustosFixos(data)
-  }
-
   async function salvarLancamento(e: React.FormEvent) {
-    e.preventDefault(); setSalvando(true)
-    const { error } = await supabase.from('lancamentos_empresa').insert({
-      tipo: lancTipo, categoria: lancCategoria, descricao: lancDescricao,
-      valor: parseFloat(lancValor), unidade: lancUnidade, mes_referencia: mesRef,
-      data_vencimento: lancVencimento, status: lancStatus,
-    })
-    if (!error) { setLancDescricao(''); setLancValor(''); setLancVencimento(''); setNovoLanc(false); carregarLancamentos() }
-    setSalvando(false)
-  }
+    e.preventDefault(); setSalvando(true); setMensagem('')
 
-  async function salvarCustoFixo(e: React.FormEvent) {
-    e.preventDefault(); setSalvando(true)
-    const { error } = await supabase.from('custos_fixos').insert({
-      nome: cfNome, categoria: cfCategoria, unidade: cfUnidade, valor_padrao: parseFloat(cfValor),
-    })
-    if (!error) { setCfNome(''); setCfValor(''); setNovoCustoFixo(false); carregarCustosFixos() }
+    if (lancRecorrente) {
+      const meses = parseInt(lancMeses) || 1
+      const grupoId = gerarUuid()
+      const vencDate = new Date(lancVencimento + 'T12:00:00')
+      const dia = vencDate.getDate()
+
+      const lancamentosParaInserir = []
+      for (let i = 0; i < meses; i++) {
+        const mesAlvo = addMonths(mesSelecionado, i)
+        const [y, m] = mesAlvo.split('-').map(Number)
+        const ultimoDia = new Date(y, m, 0).getDate()
+        const diaFinal = Math.min(dia, ultimoDia)
+        const dataVencimento = `${mesAlvo}-${String(diaFinal).padStart(2, '0')}`
+
+        lancamentosParaInserir.push({
+          tipo: lancTipo, categoria: lancCategoria, descricao: lancDescricao,
+          valor: parseFloat(lancValor), unidade: lancUnidade,
+          mes_referencia: mesAlvo + '-01',
+          data_vencimento: dataVencimento,
+          status: i === 0 ? lancStatus : 'previsto',
+          recorrente: true, grupo_recorrencia: grupoId,
+        })
+      }
+
+      const { error } = await supabase.from('lancamentos_empresa').insert(lancamentosParaInserir)
+      if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+      setMensagem(`${meses} lançamentos recorrentes criados!`)
+    } else {
+      const { error } = await supabase.from('lancamentos_empresa').insert({
+        tipo: lancTipo, categoria: lancCategoria, descricao: lancDescricao,
+        valor: parseFloat(lancValor), unidade: lancUnidade,
+        mes_referencia: mesRef, data_vencimento: lancVencimento,
+        status: lancStatus, recorrente: false,
+      })
+      if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+      setMensagem('Lançamento criado!')
+    }
+
+    setLancDescricao(''); setLancValor(''); setLancVencimento('')
+    setLancRecorrente(false); setLancMeses('12'); setNovoLanc(false)
+    carregarLancamentos()
     setSalvando(false)
   }
 
@@ -136,39 +161,45 @@ export default function Financeiro() {
     carregarLancamentos()
   }
 
-  async function gerarCustosFixosMes() {
-    if (!custosFixos.length) return
-    await supabase.from('lancamentos_empresa').insert(custosFixos.map(cf => ({
-      tipo: 'custo', categoria: cf.categoria, descricao: cf.nome,
-      valor: cf.valor_padrao, unidade: cf.unidade, mes_referencia: mesRef,
-      data_vencimento: mesSelecionado + '-10', status: 'previsto',
-    })))
-    setMensagem('Custos fixos gerados!'); carregarLancamentos()
+  async function excluirLancamento(l: Lancamento) {
+    if (l.recorrente && l.grupo_recorrencia) {
+      const confirma = confirm('Este é um lançamento recorrente. Excluir todos os meses futuros desse grupo?')
+      if (!confirma) return
+      await supabase.from('lancamentos_empresa').delete()
+        .eq('grupo_recorrencia', l.grupo_recorrencia)
+        .gte('data_vencimento', l.data_vencimento)
+    } else {
+      if (!confirm('Excluir este lançamento?')) return
+      await supabase.from('lancamentos_empresa').delete().eq('id', l.id)
+    }
+    carregarLancamentos()
   }
 
   function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 
-  // ===== CÁLCULOS PREVISTO VS REALIZADO =====
+  // ===== Cálculos =====
   const receitasPrev = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const receitasReal = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custosPrev = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const custosReal = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
-  const custosFixosMes = custosFixos.reduce((s, c) => s + (c.valor_padrao || 0), 0)
+  const custosFixosMes = lancamentos.filter(l => l.tipo === 'custo' && l.recorrente).reduce((s, l) => s + l.valor, 0)
   const margemPrev = receitasPrev - custosPrev
   const margemReal = receitasReal - custosReal
-  const resultadoPrev = receitasPrev - custosPrev - custosFixosMes
-  const resultadoReal = receitasReal - custosReal - custosFixosMes
+  const resultadoPrev = receitasPrev - custosPrev
+  const resultadoReal = receitasReal - custosReal
 
-  // Por categoria de custo (para o DRE)
   function totalPorCategoria(cat: string, status: string) {
     return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
+  }
+
+  function totalPorCategoriaRecorrente(cat: string) {
+    return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
   }
 
   const abas = [
     { id: 'visao_geral', label: 'Visão geral' },
     { id: 'turmas', label: 'Por turma' },
     { id: 'lancamentos', label: 'Lançamentos' },
-    { id: 'custos_fixos', label: 'Custos fixos' },
     { id: 'dre', label: 'DRE' },
   ]
 
@@ -195,7 +226,6 @@ export default function Financeiro() {
       {/* VISÃO GERAL */}
       {aba === 'visao_geral' && (
         <div>
-          {/* KPIs principais com previsto vs realizado */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita</div>
@@ -222,9 +252,9 @@ export default function Financeiro() {
             </div>
 
             <div style={card}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos</div>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos (recorrentes)</div>
               <div style={{ fontSize: '20px', fontWeight: '700', color: '#f87171' }}>{fmt(custosFixosMes)}</div>
-              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{custosFixos.length} itens cadastrados</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{lancamentos.filter(l => l.tipo === 'custo' && l.recorrente).length} lançamentos no mês</div>
             </div>
 
             <div style={card}>
@@ -240,23 +270,24 @@ export default function Financeiro() {
             </div>
           </div>
 
-          {/* Resumo por unidade */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {['lajeado', 'porto_alegre'].map(unidade => {
-              const custosU = custosFixos.filter(c => c.unidade === unidade || c.unidade === 'ambas').reduce((s, c) => s + c.valor_padrao, 0)
-              const lancU = lancamentos.filter(l => (l.unidade === unidade || l.unidade === 'ambas') && l.tipo === 'custo').reduce((s, l) => s + l.valor, 0)
+              const custosU = lancamentos.filter(l => l.tipo === 'custo' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
+              const receitaU = lancamentos.filter(l => l.tipo === 'receita' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
               return (
                 <div key={unidade} style={card}>
                   <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>{unidadeNome[unidade]}</div>
-                  {[['Custos fixos', custosU], ['Lançamentos do mês', lancU]].map(([label, val]) => (
-                    <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                      <span style={{ color: '#9ca3af' }}>{label}</span>
-                      <span style={{ color: '#f87171' }}>{fmt(val as number)}</span>
-                    </div>
-                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                    <span style={{ color: '#9ca3af' }}>Receita do mês</span>
+                    <span style={{ color: '#34d399' }}>{fmt(receitaU)}</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
+                    <span style={{ color: '#9ca3af' }}>Custos do mês</span>
+                    <span style={{ color: '#f87171' }}>{fmt(custosU)}</span>
+                  </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '600', paddingTop: '12px', borderTop: '1px solid #3a3a3c', marginTop: '8px' }}>
-                    <span style={{ color: '#ffffff' }}>Total</span>
-                    <span style={{ color: '#f87171' }}>{fmt(custosU + lancU)}</span>
+                    <span style={{ color: '#ffffff' }}>Resultado</span>
+                    <span style={{ color: (receitaU - custosU) >= 0 ? '#34d399' : '#f87171' }}>{fmt(receitaU - custosU)}</span>
                   </div>
                 </div>
               )
@@ -350,7 +381,7 @@ export default function Financeiro() {
       {aba === 'lancamentos' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''}</span>
+            <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''} em {mesSelecionado.split('-').reverse().join('/')}</span>
             <button onClick={() => setNovoLanc(!novoLanc)} style={btnPrimary}>+ Novo lançamento</button>
           </div>
 
@@ -378,19 +409,38 @@ export default function Financeiro() {
                     <option value="ambas">Ambas</option>
                   </select>
                 </div>
-                <input value={lancDescricao} onChange={e => setLancDescricao(e.target.value)} placeholder="Descrição" required style={{ ...input, marginBottom: '12px' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+                <input value={lancDescricao} onChange={e => setLancDescricao(e.target.value)} placeholder="Descrição (ex: Aluguel Lajeado)" required style={{ ...input, marginBottom: '12px' }} />
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                   <input value={lancValor} onChange={e => setLancValor(e.target.value)} placeholder="Valor R$" type="number" required style={input} />
-                  <input value={lancVencimento} onChange={e => setLancVencimento(e.target.value)} type="date" style={input} />
+                  <input value={lancVencimento} onChange={e => setLancVencimento(e.target.value)} type="date" required style={input} />
                   <select value={lancStatus} onChange={e => setLancStatus(e.target.value)} style={select}>
                     <option value="previsto">Previsto</option>
                     <option value="realizado">Realizado</option>
                   </select>
                 </div>
+
+                {/* Toggle recorrência */}
+                <div style={{ backgroundColor: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={lancRecorrente} onChange={e => setLancRecorrente(e.target.checked)}
+                      style={{ width: '16px', height: '16px', accentColor: '#7c3aed', cursor: 'pointer' }} />
+                    <span style={{ fontSize: '13px', color: '#d1d1d1', fontWeight: '500' }}>Lançamento recorrente</span>
+                  </label>
+                  {lancRecorrente && (
+                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Repetir por</span>
+                      <input value={lancMeses} onChange={e => setLancMeses(e.target.value)} type="number" min="1" max="60"
+                        style={{ ...input, width: '80px' }} />
+                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>meses, sempre no mesmo dia</span>
+                    </div>
+                  )}
+                </div>
+
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
                   <button type="button" onClick={() => setNovoLanc(false)} style={btnSecondary}>Cancelar</button>
                   <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Salvar'}</button>
                 </div>
+                {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
               </form>
             </div>
           )}
@@ -403,29 +453,35 @@ export default function Financeiro() {
                 <thead>
                   <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
                     {['Descrição', 'Categoria', 'Unidade', 'Vencimento', 'Valor', 'Status', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {lancamentos.map(l => (
                     <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#ffffff' }}>{l.descricao}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#9ca3af' }}>{categoriaNome[l.categoria]}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#9ca3af' }}>{unidadeNome[l.unidade]}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#9ca3af' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
-                      <td style={{ padding: '14px 20px' }}>
-                        <span style={{ fontSize: '12px', padding: '3px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? '#052e16' : '#1c1917', color: l.status === 'realizado' ? '#34d399' : '#9ca3af' }}>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#ffffff' }}>
+                        {l.descricao}
+                        {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻ recorrente</span>}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{categoriaNome[l.categoria]}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{unidadeNome[l.unidade]}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? '#052e16' : '#1c1917', color: l.status === 'realizado' ? '#34d399' : '#9ca3af' }}>
                           {l.status}
                         </span>
                       </td>
-                      <td style={{ padding: '14px 20px' }}>
+                      <td style={{ padding: '12px 16px', display: 'flex', gap: '10px' }}>
                         {l.status === 'previsto' && (
                           <button onClick={() => confirmarPagamento(l.id)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>
                             {l.tipo === 'receita' ? 'Recebido ✓' : 'Pago ✓'}
                           </button>
                         )}
+                        <button onClick={() => excluirLancamento(l)} style={{ fontSize: '12px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>
+                          Excluir
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -436,80 +492,7 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* CUSTOS FIXOS */}
-      {aba === 'custos_fixos' && (
-        <div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '14px', color: '#9ca3af' }}>{custosFixos.length} custo{custosFixos.length !== 1 ? 's' : ''} fixo{custosFixos.length !== 1 ? 's' : ''}</span>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={gerarCustosFixosMes} style={btnSecondary}>Gerar para {mesSelecionado.split('-').reverse().join('/')}</button>
-              <button onClick={() => setNovoCustoFixo(!novoCustoFixo)} style={btnPrimary}>+ Cadastrar</button>
-            </div>
-          </div>
-
-          {novoCustoFixo && (
-            <div style={{ ...card, marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>Novo custo fixo</div>
-              <form onSubmit={salvarCustoFixo}>
-                <input value={cfNome} onChange={e => setCfNome(e.target.value)} placeholder="Nome (ex: Aluguel Lajeado)" required style={{ ...input, marginBottom: '12px' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 140px', gap: '12px', marginBottom: '16px' }}>
-                  <select value={cfCategoria} onChange={e => setCfCategoria(e.target.value)} style={select}>
-                    <option value="estrutura">Estrutura</option>
-                    <option value="pessoal">Pessoal</option>
-                    <option value="sistemas">Sistemas</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="outro">Outro</option>
-                  </select>
-                  <select value={cfUnidade} onChange={e => setCfUnidade(e.target.value)} style={select}>
-                    <option value="lajeado">Lajeado</option>
-                    <option value="porto_alegre">Porto Alegre</option>
-                    <option value="ambas">Ambas</option>
-                    <option value="geral">Geral</option>
-                  </select>
-                  <input value={cfValor} onChange={e => setCfValor(e.target.value)} placeholder="Valor R$" type="number" required style={input} />
-                </div>
-                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button type="button" onClick={() => setNovoCustoFixo(false)} style={btnSecondary}>Cancelar</button>
-                  <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Salvar'}</button>
-                </div>
-              </form>
-            </div>
-          )}
-
-          <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            {custosFixos.length === 0 ? (
-              <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum custo fixo cadastrado. Adicione aluguel, salários, sistemas...</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    {['Nome', 'Categoria', 'Unidade', 'Valor mensal'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {custosFixos.map(c => (
-                    <tr key={c.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#ffffff' }}>{c.nome}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#9ca3af' }}>{categoriaNome[c.categoria]}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', color: '#9ca3af' }}>{unidadeNome[c.unidade]}</td>
-                      <td style={{ padding: '14px 20px', fontSize: '14px', fontWeight: '600', color: '#f87171' }}>{fmt(c.valor_padrao)}</td>
-                    </tr>
-                  ))}
-                  <tr style={{ backgroundColor: '#2c2c2e' }}>
-                    <td colSpan={3} style={{ padding: '14px 20px', fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>Total mensal</td>
-                    <td style={{ padding: '14px 20px', fontSize: '16px', fontWeight: '700', color: '#f87171' }}>{fmt(custosFixosMes)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            )}
-          </div>
-          {mensagem && <p style={{ marginTop: '12px', fontSize: '14px', color: '#34d399' }}>{mensagem}</p>}
-        </div>
-      )}
-
-      {/* DRE com 2 colunas */}
+      {/* DRE */}
       {aba === 'dre' && (
         <div style={{ maxWidth: '720px' }}>
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
@@ -560,15 +543,15 @@ export default function Financeiro() {
 
                   <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
                   <tr>
-                    <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos fixos</td>
+                    <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos fixos (recorrentes)</td>
                   </tr>
                   {['estrutura', 'pessoal', 'sistemas', 'marketing', 'outro'].map(cat => {
-                    const total = custosFixos.filter(c => c.categoria === cat).reduce((s, c) => s + c.valor_padrao, 0)
-                    if (!total) return null
+                    const totalRec = totalPorCategoriaRecorrente(cat)
+                    if (!totalRec) return null
                     return (
                       <tr key={cat}>
                         <td style={{ fontSize: '13px', color: '#9ca3af', padding: '4px 0' }}>(-) {categoriaNome[cat]}</td>
-                        <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 16px' }}>{fmt(total)}</td>
+                        <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 16px' }}>{fmt(totalRec)}</td>
                         <td style={{ fontSize: '13px', textAlign: 'right', color: '#6b7280', padding: '4px 0' }}>—</td>
                       </tr>
                     )
