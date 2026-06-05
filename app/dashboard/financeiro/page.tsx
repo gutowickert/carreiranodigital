@@ -3,27 +3,6 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-type FinanceiroTurma = {
-  id: string
-  turma_id: string
-  receita_prevista: number
-  receita_realizada: number
-  custo_professores: number
-  custo_sala: number
-  custo_deslocamento: number
-  custo_trafego_previsto: number
-  imposto_previsto: number
-  margem_prevista: number
-  break_even_matriculas: number
-  turmas: {
-    data_inicio: string
-    preco_venda: number
-    meta_matriculas: number
-    produtos: { nome: string }
-    cidades: { nome: string }
-  }
-}
-
 type Lancamento = {
   id: string
   tipo: string
@@ -35,6 +14,7 @@ type Lancamento = {
   data_vencimento: string
   data_pagamento: string
   status: string
+  turma_id: string | null
 }
 
 type CustoFixo = {
@@ -44,6 +24,27 @@ type CustoFixo = {
   unidade: string
   valor_padrao: number
   ativo: boolean
+}
+
+type FinanceiroTurma = {
+  id: string
+  turma_id: string
+  receita_prevista: number
+  receita_realizada: number
+  custo_professores: number
+  custo_trafego_previsto: number
+  imposto_previsto: number
+  custo_deslocamento: number
+  margem_prevista: number
+  margem_realizada: number
+  break_even_matriculas: number
+  turmas: {
+    data_inicio: string
+    preco_venda: number
+    meta_matriculas: number
+    produtos: { nome: string }
+    cidades: { nome: string }
+  }
 }
 
 const unidadeNome: Record<string, string> = { lajeado: 'Lajeado', porto_alegre: 'Porto Alegre', ambas: 'Ambas', geral: 'Geral' }
@@ -97,7 +98,9 @@ export default function Financeiro() {
   }
 
   async function carregarLancamentos() {
-    const { data } = await supabase.from('lancamentos_empresa').select('*').gte('mes_referencia', mesSelecionado + '-01').lte('mes_referencia', mesSelecionado + '-31').order('data_vencimento', { ascending: true })
+    const { data } = await supabase.from('lancamentos_empresa').select('*')
+      .gte('data_vencimento', mesSelecionado + '-01').lte('data_vencimento', mesSelecionado + '-31')
+      .order('data_vencimento', { ascending: true })
     if (data) setLancamentos(data)
   }
 
@@ -108,38 +111,58 @@ export default function Financeiro() {
 
   async function salvarLancamento(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true)
-    const { error } = await supabase.from('lancamentos_empresa').insert({ tipo: lancTipo, categoria: lancCategoria, descricao: lancDescricao, valor: parseFloat(lancValor), unidade: lancUnidade, mes_referencia: mesRef, data_vencimento: lancVencimento, status: lancStatus })
+    const { error } = await supabase.from('lancamentos_empresa').insert({
+      tipo: lancTipo, categoria: lancCategoria, descricao: lancDescricao,
+      valor: parseFloat(lancValor), unidade: lancUnidade, mes_referencia: mesRef,
+      data_vencimento: lancVencimento, status: lancStatus,
+    })
     if (!error) { setLancDescricao(''); setLancValor(''); setLancVencimento(''); setNovoLanc(false); carregarLancamentos() }
     setSalvando(false)
   }
 
   async function salvarCustoFixo(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true)
-    const { error } = await supabase.from('custos_fixos').insert({ nome: cfNome, categoria: cfCategoria, unidade: cfUnidade, valor_padrao: parseFloat(cfValor) })
+    const { error } = await supabase.from('custos_fixos').insert({
+      nome: cfNome, categoria: cfCategoria, unidade: cfUnidade, valor_padrao: parseFloat(cfValor),
+    })
     if (!error) { setCfNome(''); setCfValor(''); setNovoCustoFixo(false); carregarCustosFixos() }
     setSalvando(false)
   }
 
   async function confirmarPagamento(id: string) {
-    await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: new Date().toISOString().split('T')[0] }).eq('id', id)
+    await supabase.from('lancamentos_empresa').update({
+      status: 'realizado', data_pagamento: new Date().toISOString().split('T')[0],
+    }).eq('id', id)
     carregarLancamentos()
   }
 
   async function gerarCustosFixosMes() {
     if (!custosFixos.length) return
-    await supabase.from('lancamentos_empresa').insert(custosFixos.map(cf => ({ tipo: 'custo', categoria: cf.categoria, descricao: cf.nome, valor: cf.valor_padrao, unidade: cf.unidade, mes_referencia: mesRef, data_vencimento: mesSelecionado + '-10', status: 'previsto' })))
+    await supabase.from('lancamentos_empresa').insert(custosFixos.map(cf => ({
+      tipo: 'custo', categoria: cf.categoria, descricao: cf.nome,
+      valor: cf.valor_padrao, unidade: cf.unidade, mes_referencia: mesRef,
+      data_vencimento: mesSelecionado + '-10', status: 'previsto',
+    })))
     setMensagem('Custos fixos gerados!'); carregarLancamentos()
   }
 
   function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 
-  const receitaTurmas = financeiros.reduce((s, f) => s + (f.receita_prevista || 0), 0)
-  const custosTurmas = financeiros.reduce((s, f) => s + (f.custo_professores || 0) + (f.custo_sala || 0) + (f.custo_deslocamento || 0) + (f.custo_trafego_previsto || 0) + (f.imposto_previsto || 0), 0)
+  // ===== CÁLCULOS PREVISTO VS REALIZADO =====
+  const receitasPrev = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
+  const receitasReal = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
+  const custosPrev = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
+  const custosReal = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custosFixosMes = custosFixos.reduce((s, c) => s + (c.valor_padrao || 0), 0)
-  const lancReceitaMes = lancamentos.filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0)
-  const lancCustoMes = lancamentos.filter(l => l.tipo === 'custo').reduce((s, l) => s + l.valor, 0)
-  const margemBruta = receitaTurmas - custosTurmas
-  const resultadoLiquido = margemBruta + lancReceitaMes - lancCustoMes - custosFixosMes
+  const margemPrev = receitasPrev - custosPrev
+  const margemReal = receitasReal - custosReal
+  const resultadoPrev = receitasPrev - custosPrev - custosFixosMes
+  const resultadoReal = receitasReal - custosReal - custosFixosMes
+
+  // Por categoria de custo (para o DRE)
+  function totalPorCategoria(cat: string, status: string) {
+    return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
+  }
 
   const abas = [
     { id: 'visao_geral', label: 'Visão geral' },
@@ -151,15 +174,12 @@ export default function Financeiro() {
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
-      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Financeiro</h1>
-        <input type="month" value={mesSelecionado} onChange={e => setMesSelecionado(e.target.value)}
-          style={{ ...select, width: 'auto' }} />
+        <input type="month" value={mesSelecionado} onChange={e => setMesSelecionado(e.target.value)} style={{ ...select, width: 'auto' }} />
       </div>
 
-      {/* Abas */}
-      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #3a3a3c', paddingBottom: '0' }}>
+      <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #3a3a3c' }}>
         {abas.map(a => (
           <button key={a.id} onClick={() => setAba(a.id as any)} style={{
             padding: '10px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer',
@@ -175,21 +195,52 @@ export default function Financeiro() {
       {/* VISÃO GERAL */}
       {aba === 'visao_geral' && (
         <div>
+          {/* KPIs principais com previsto vs realizado */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            {[
-              { label: 'Receita prevista', valor: fmt(receitaTurmas), sub: `${financeiros.length} turmas`, cor: '#34d399' },
-              { label: 'Custos de turmas', valor: fmt(custosTurmas), sub: 'Professores, tráfego, imposto', cor: '#f87171' },
-              { label: 'Custos fixos/mês', valor: fmt(custosFixosMes), sub: `${custosFixos.length} itens cadastrados`, cor: '#f87171' },
-              { label: 'Resultado estimado', valor: fmt(resultadoLiquido), sub: 'Receita - todos os custos', cor: resultadoLiquido >= 0 ? '#34d399' : '#f87171' },
-            ].map(item => (
-              <div key={item.label} style={{ ...card }}>
-                <div style={{ fontSize: '12px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>{item.label}</div>
-                <div style={{ fontSize: '22px', fontWeight: '700', color: item.cor }}>{item.valor}</div>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{item.sub}</div>
+            <div style={card}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Realizada</span>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: '#34d399' }}>{fmt(receitasReal)}</span>
               </div>
-            ))}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Prevista</span>
+                <span style={{ fontSize: '13px', color: '#9ca3af' }}>{fmt(receitasPrev)}</span>
+              </div>
+            </div>
+
+            <div style={card}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos variáveis</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Realizado</span>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: '#f87171' }}>{fmt(custosReal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Previsto</span>
+                <span style={{ fontSize: '13px', color: '#9ca3af' }}>{fmt(custosPrev)}</span>
+              </div>
+            </div>
+
+            <div style={card}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos</div>
+              <div style={{ fontSize: '20px', fontWeight: '700', color: '#f87171' }}>{fmt(custosFixosMes)}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{custosFixos.length} itens cadastrados</div>
+            </div>
+
+            <div style={card}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Resultado</div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Realizado</span>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: resultadoReal >= 0 ? '#34d399' : '#f87171' }}>{fmt(resultadoReal)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                <span style={{ fontSize: '11px', color: '#6b7280' }}>Previsto</span>
+                <span style={{ fontSize: '13px', color: resultadoPrev >= 0 ? '#9ca3af' : '#f87171' }}>{fmt(resultadoPrev)}</span>
+              </div>
+            </div>
           </div>
 
+          {/* Resumo por unidade */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {['lajeado', 'porto_alegre'].map(unidade => {
               const custosU = custosFixos.filter(c => c.unidade === unidade || c.unidade === 'ambas').reduce((s, c) => s + c.valor_padrao, 0)
@@ -219,16 +270,20 @@ export default function Financeiro() {
         <div style={{ display: 'flex', gap: '24px' }}>
           <div style={{ flex: 1 }}>
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-              <div style={{ ...cardHeader }}>
+              <div style={cardHeader}>
                 <span style={{ fontSize: '14px', fontWeight: '500', color: '#d1d1d1' }}>Financeiro por turma</span>
               </div>
-              {financeiros.map(f => (
+              {financeiros.length === 0 ? (
+                <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhuma turma com financeiro registrado.</p>
+              ) : financeiros.map(f => (
                 <div key={f.id} onClick={() => setSelecionado(f)}
                   style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c', cursor: 'pointer', backgroundColor: selecionado?.id === f.id ? '#3a2f5e' : 'transparent' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div>
                       <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{f.turmas?.produtos?.nome}</div>
-                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{f.turmas?.cidades?.nome} · {f.turmas?.data_inicio ? new Date(f.turmas.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''}</div>
+                      <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>
+                        {f.turmas?.cidades?.nome} · {f.turmas?.data_inicio ? new Date(f.turmas.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''}
+                      </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div style={{ fontSize: '14px', fontWeight: '600', color: (f.margem_prevista || 0) >= 0 ? '#34d399' : '#f87171' }}>{fmt(f.margem_prevista)}</div>
@@ -241,31 +296,49 @@ export default function Financeiro() {
           </div>
 
           {selecionado && (
-            <div style={{ width: '320px', flexShrink: 0 }}>
+            <div style={{ width: '340px', flexShrink: 0 }}>
               <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-                <div style={{ ...cardHeader }}>
+                <div style={cardHeader}>
                   <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{selecionado.turmas?.produtos?.nome}</div>
                   <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px' }}>{selecionado.turmas?.cidades?.nome}</div>
                 </div>
                 <div style={{ padding: '20px' }}>
-                  {[
-                    ['Receita prevista', fmt(selecionado.receita_prevista), '#34d399'],
-                    ['Receita realizada', fmt(selecionado.receita_realizada), '#34d399'],
-                    ['(-) Professores', fmt(selecionado.custo_professores), '#f87171'],
-                    ['(-) Tráfego', fmt(selecionado.custo_trafego_previsto), '#f87171'],
-                    ['(-) Imposto', fmt(selecionado.imposto_previsto), '#f87171'],
-                    ['(-) Deslocamento', fmt(selecionado.custo_deslocamento), '#f87171'],
-                  ].map(([label, val, cor]) => (
-                    <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '10px' }}>
-                      <span style={{ color: '#9ca3af' }}>{label}</span>
-                      <span style={{ color: cor as string, fontWeight: '500' }}>{val}</span>
-                    </div>
-                  ))}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '700', paddingTop: '12px', borderTop: '1px solid #3a3a3c', marginTop: '8px' }}>
-                    <span style={{ color: '#ffffff' }}>Margem prevista</span>
-                    <span style={{ color: (selecionado.margem_prevista || 0) >= 0 ? '#34d399' : '#f87171' }}>{fmt(selecionado.margem_prevista)}</span>
-                  </div>
-                  <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '8px' }}>Break-even: {selecionado.break_even_matriculas} matrículas</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr>
+                        <th></th>
+                        <th style={{ textAlign: 'right', fontSize: '10px', color: '#6b7280', fontWeight: '500', padding: '0 0 8px 0' }}>Previsto</th>
+                        <th style={{ textAlign: 'right', fontSize: '10px', color: '#6b7280', fontWeight: '500', padding: '0 0 8px 8px' }}>Realizado</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr>
+                        <td style={{ fontSize: '12px', color: '#9ca3af', padding: '4px 0' }}>Receita</td>
+                        <td style={{ fontSize: '12px', textAlign: 'right', color: '#9ca3af' }}>{fmt(selecionado.receita_prevista)}</td>
+                        <td style={{ fontSize: '12px', textAlign: 'right', color: '#34d399', fontWeight: '600', paddingLeft: '8px' }}>{fmt(selecionado.receita_realizada)}</td>
+                      </tr>
+                      <tr><td colSpan={3} style={{ paddingTop: '8px', borderTop: '1px solid #3a3a3c' }}></td></tr>
+                      {[
+                        ['Professores', selecionado.custo_professores],
+                        ['Tráfego', selecionado.custo_trafego_previsto],
+                        ['Imposto', selecionado.imposto_previsto],
+                        ['Deslocamento', selecionado.custo_deslocamento],
+                      ].map(([label, val]) => (
+                        <tr key={label as string}>
+                          <td style={{ fontSize: '12px', color: '#9ca3af', padding: '3px 0' }}>(-) {label}</td>
+                          <td style={{ fontSize: '12px', textAlign: 'right', color: '#f87171' }}>{fmt(val as number)}</td>
+                          <td style={{ fontSize: '12px', textAlign: 'right', color: '#6b7280', paddingLeft: '8px' }}>—</td>
+                        </tr>
+                      ))}
+                      <tr><td colSpan={3} style={{ paddingTop: '8px', borderTop: '1px solid #3a3a3c' }}></td></tr>
+                      <tr>
+                        <td style={{ fontSize: '13px', fontWeight: '700', color: '#ffffff', padding: '6px 0' }}>Margem</td>
+                        <td style={{ fontSize: '13px', textAlign: 'right', fontWeight: '700', color: (selecionado.margem_prevista || 0) >= 0 ? '#34d399' : '#f87171' }}>{fmt(selecionado.margem_prevista)}</td>
+                        <td style={{ fontSize: '13px', textAlign: 'right', fontWeight: '700', color: (selecionado.margem_realizada || 0) >= 0 ? '#34d399' : '#f87171', paddingLeft: '8px' }}>{fmt(selecionado.margem_realizada || 0)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                  <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '12px' }}>Break-even: {selecionado.break_even_matriculas} matrículas</div>
                 </div>
               </div>
             </div>
@@ -349,7 +422,9 @@ export default function Financeiro() {
                       </td>
                       <td style={{ padding: '14px 20px' }}>
                         {l.status === 'previsto' && (
-                          <button onClick={() => confirmarPagamento(l.id)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Pago ✓</button>
+                          <button onClick={() => confirmarPagamento(l.id)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>
+                            {l.tipo === 'receita' ? 'Recebido ✓' : 'Pago ✓'}
+                          </button>
                         )}
                       </td>
                     </tr>
@@ -434,65 +509,79 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* DRE */}
+      {/* DRE com 2 colunas */}
       {aba === 'dre' && (
-        <div style={{ maxWidth: '600px' }}>
+        <div style={{ maxWidth: '720px' }}>
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            <div style={{ ...cardHeader }}>
+            <div style={cardHeader}>
               <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
                 DRE — {new Date(mesRef + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </span>
             </div>
             <div style={{ padding: '24px' }}>
-              {[
-                ['Receita bruta prevista (turmas)', receitaTurmas, '#34d399'],
-                ['Outras receitas', lancReceitaMes, '#34d399'],
-              ].map(([label, val, cor]) => (
-                <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '10px' }}>
-                  <span style={{ color: '#9ca3af' }}>{label}</span>
-                  <span style={{ color: cor as string, fontWeight: '500' }}>{fmt(val as number)}</span>
-                </div>
-              ))}
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th style={{ textAlign: 'right', fontSize: '11px', color: '#6b7280', fontWeight: '500', padding: '0 16px 12px' }}>Previsto</th>
+                    <th style={{ textAlign: 'right', fontSize: '11px', color: '#6b7280', fontWeight: '500', padding: '0 0 12px 0' }}>Realizado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style={{ fontSize: '13px', color: '#9ca3af', padding: '6px 0' }}>Receita</td>
+                    <td style={{ fontSize: '13px', textAlign: 'right', color: '#34d399', padding: '6px 16px' }}>{fmt(receitasPrev)}</td>
+                    <td style={{ fontSize: '13px', textAlign: 'right', color: '#34d399', fontWeight: '600', padding: '6px 0' }}>{fmt(receitasReal)}</td>
+                  </tr>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', padding: '12px 0', borderTop: '1px solid #3a3a3c', borderBottom: '1px solid #3a3a3c', margin: '8px 0 16px' }}>
-                <span style={{ color: '#ffffff' }}>= Receita total</span>
-                <span style={{ color: '#34d399' }}>{fmt(receitaTurmas + lancReceitaMes)}</span>
-              </div>
+                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
+                  <tr>
+                    <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos variáveis</td>
+                  </tr>
+                  {[
+                    ['Pessoal (professores)', 'pessoal'],
+                    ['Marketing (tráfego)', 'marketing'],
+                    ['Imposto', 'imposto'],
+                    ['Outros (deslocamento etc.)', 'outro'],
+                  ].map(([label, cat]) => (
+                    <tr key={cat}>
+                      <td style={{ fontSize: '13px', color: '#9ca3af', padding: '4px 0' }}>(-) {label}</td>
+                      <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 16px' }}>{fmt(totalPorCategoria(cat, 'previsto'))}</td>
+                      <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 0' }}>{fmt(totalPorCategoria(cat, 'realizado'))}</td>
+                    </tr>
+                  ))}
 
-              <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Custos variáveis (turmas)</div>
-              {[
-                ['(-) Professores', financeiros.reduce((s, f) => s + (f.custo_professores || 0), 0)],
-                ['(-) Tráfego pago', financeiros.reduce((s, f) => s + (f.custo_trafego_previsto || 0), 0)],
-                ['(-) Impostos', financeiros.reduce((s, f) => s + (f.imposto_previsto || 0), 0)],
-                ['(-) Deslocamentos', financeiros.reduce((s, f) => s + (f.custo_deslocamento || 0), 0)],
-              ].map(([label, val]) => (
-                <div key={label as string} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                  <span style={{ color: '#9ca3af' }}>{label}</span>
-                  <span style={{ color: '#f87171' }}>{fmt(val as number)}</span>
-                </div>
-              ))}
+                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
+                  <tr>
+                    <td style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', padding: '8px 0' }}>= Margem bruta</td>
+                    <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemPrev >= 0 ? '#34d399' : '#f87171', padding: '8px 16px' }}>{fmt(margemPrev)}</td>
+                    <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemReal >= 0 ? '#34d399' : '#f87171', padding: '8px 0' }}>{fmt(margemReal)}</td>
+                  </tr>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '15px', fontWeight: '700', padding: '12px 0', borderTop: '1px solid #3a3a3c', margin: '8px 0 16px' }}>
-                <span style={{ color: '#ffffff' }}>= Margem bruta</span>
-                <span style={{ color: margemBruta >= 0 ? '#34d399' : '#f87171' }}>{fmt(margemBruta)}</span>
-              </div>
+                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
+                  <tr>
+                    <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos fixos</td>
+                  </tr>
+                  {['estrutura', 'pessoal', 'sistemas', 'marketing', 'outro'].map(cat => {
+                    const total = custosFixos.filter(c => c.categoria === cat).reduce((s, c) => s + c.valor_padrao, 0)
+                    if (!total) return null
+                    return (
+                      <tr key={cat}>
+                        <td style={{ fontSize: '13px', color: '#9ca3af', padding: '4px 0' }}>(-) {categoriaNome[cat]}</td>
+                        <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 16px' }}>{fmt(total)}</td>
+                        <td style={{ fontSize: '13px', textAlign: 'right', color: '#6b7280', padding: '4px 0' }}>—</td>
+                      </tr>
+                    )
+                  })}
 
-              <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '10px' }}>Custos fixos</div>
-              {['estrutura', 'pessoal', 'sistemas', 'marketing', 'outro'].map(cat => {
-                const total = custosFixos.filter(c => c.categoria === cat).reduce((s, c) => s + c.valor_padrao, 0)
-                if (!total) return null
-                return (
-                  <div key={cat} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                    <span style={{ color: '#9ca3af' }}>(-) {categoriaNome[cat]}</span>
-                    <span style={{ color: '#f87171' }}>{fmt(total)}</span>
-                  </div>
-                )
-              })}
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '18px', fontWeight: '800', padding: '16px 0', borderTop: '2px solid #3a3a3c', marginTop: '12px' }}>
-                <span style={{ color: '#ffffff' }}>= Resultado líquido</span>
-                <span style={{ color: resultadoLiquido >= 0 ? '#34d399' : '#f87171' }}>{fmt(resultadoLiquido)}</span>
-              </div>
+                  <tr><td colSpan={3} style={{ paddingTop: '16px', borderTop: '2px solid #3a3a3c' }}></td></tr>
+                  <tr>
+                    <td style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', padding: '12px 0' }}>= Resultado líquido</td>
+                    <td style={{ fontSize: '16px', fontWeight: '800', textAlign: 'right', color: resultadoPrev >= 0 ? '#34d399' : '#f87171', padding: '12px 16px' }}>{fmt(resultadoPrev)}</td>
+                    <td style={{ fontSize: '16px', fontWeight: '800', textAlign: 'right', color: resultadoReal >= 0 ? '#34d399' : '#f87171', padding: '12px 0' }}>{fmt(resultadoReal)}</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
