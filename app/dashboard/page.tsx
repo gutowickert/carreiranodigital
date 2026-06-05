@@ -2,236 +2,359 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-
-type UsuarioPerfil = {
-  id: string
-  nome: string
-  email: string
-  setor: string
-  ativo: boolean
-  criado_em: string
-}
+import Link from 'next/link'
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
-const setores = [
-  { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: '#2e1065', color: '#a78bfa' },
-  { value: 'operacoes', label: 'Operações', desc: 'Turmas, professores, salas', bg: '#422006', color: '#fbbf24' },
-  { value: 'comercial', label: 'Comercial', desc: 'Leads, CRM e vendas', bg: '#172554', color: '#60a5fa' },
-  { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatórios', bg: '#042f2e', color: '#34d399' },
-  { value: 'marketing', label: 'Marketing', desc: 'Tráfego e criativos', bg: '#450a0a', color: '#f87171' },
-  { value: 'pos_venda', label: 'Pós-venda', desc: 'Alunos e suporte', bg: '#052e16', color: '#4ade80' },
-]
+export default function Dashboard() {
+  const [carregando, setCarregando] = useState(true)
+  const [stats, setStats] = useState({
+    receitaPrevistaMes: 0, receitaRealizadaMes: 0,
+    margemPrevistaMes: 0, margemRealizadaMes: 0,
+    turmasAtivas: 0, totalMatriculas: 0,
+    tarefasAtrasadas: 0, tarefasUrgentes: 0,
+    trafegoHoje: 0, alunosTotal: 0, leadsTotal: 0,
+  })
+  const [turmasAndamento, setTurmasAndamento] = useState<any[]>([])
+  const [proximasAulas, setProximasAulas] = useState<any[]>([])
+  const [tarefasUrgentes, setTarefasUrgentes] = useState<any[]>([])
+  const [funilLeads, setFunilLeads] = useState<any[]>([])
+  const [topAlunos, setTopAlunos] = useState<any[]>([])
+  const [matriculasUltimos30, setMatriculasUltimos30] = useState<{ data: string; count: number }[]>([])
 
-export default function Usuarios() {
-  const [usuarios, setUsuarios] = useState<UsuarioPerfil[]>([])
-  const [novoUsuario, setNovoUsuario] = useState(false)
-  const [salvando, setSalvando] = useState(false)
-  const [mensagem, setMensagem] = useState('')
-  const [erro, setErro] = useState('')
-  const [editando, setEditando] = useState<string | null>(null)
-  const [setorEdit, setSetorEdit] = useState('')
+  useEffect(() => { carregar() }, [])
 
-  const [uEmail, setUEmail] = useState('')
-  const [uSenha, setUSenha] = useState('')
-  const [uNome, setUNome] = useState('')
-  const [uSetor, setUSetor] = useState('operacoes')
+  async function carregar() {
+    setCarregando(true)
+    const hoje = new Date()
+    const hojeStr = hoje.toISOString().split('T')[0]
+    const inicioMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
+    const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-31`
+    const data30Atras = new Date(hoje); data30Atras.setDate(data30Atras.getDate() - 30)
+    const data30Str = data30Atras.toISOString().split('T')[0]
+    const data7Frente = new Date(hoje); data7Frente.setDate(data7Frente.getDate() + 7)
+    const data7Str = data7Frente.toISOString().split('T')[0]
 
-  useEffect(() => { carregarUsuarios() }, [])
+    const [
+      lancMes, turmasResp, turmasProgressoResp, aulasResp,
+      tarefasResp, leadsResp, alunosResp, lancTrafegoHoje,
+      matriculasResp,
+    ] = await Promise.all([
+      // Lançamentos do mês corrente
+      supabase.from('lancamentos_empresa').select('*')
+        .gte('data_vencimento', inicioMes).lte('data_vencimento', fimMes),
+      // Turmas ativas
+      supabase.from('turmas').select('id, status').in('status', ['planejada', 'em_vendas', 'confirmada']),
+      // Turmas em andamento com produtos/cidades
+      supabase.from('turmas').select('id, data_inicio, data_fim, meta_matriculas, vagas, status, produtos(nome), cidades(nome)')
+        .in('status', ['em_vendas', 'confirmada', 'planejada']).order('data_inicio', { ascending: true }).limit(5),
+      // Próximas aulas (7 dias)
+      supabase.from('agenda_aulas').select('id, titulo, inicio, fim, turmas(produtos(nome)), professores(nome), salas(nome)')
+        .gte('inicio', hojeStr).lte('inicio', data7Str).order('inicio').limit(8),
+      // Tarefas urgentes/atrasadas
+      supabase.from('tarefas').select('id, titulo, setor, data_prazo, prioridade, status, turmas(produtos(nome))')
+        .neq('status', 'concluida').order('data_prazo', { ascending: true }).limit(50),
+      // Leads do funil
+      supabase.from('leads').select('id, etapa'),
+      // Top alunos por LTV
+      supabase.from('alunos').select('id, nome, ltv').order('ltv', { ascending: false }).limit(5),
+      // Tráfego de hoje
+      supabase.from('lancamentos_empresa').select('valor').eq('categoria', 'marketing').eq('data_vencimento', hojeStr).eq('status', 'previsto'),
+      // Matrículas últimos 30 dias
+      supabase.from('matriculas').select('data_compra, valor_pago').gte('data_compra', data30Str),
+    ])
 
-  async function carregarUsuarios() {
-    const { data } = await supabase.from('usuarios_perfil').select('*').order('criado_em', { ascending: false })
-    if (data) setUsuarios(data)
-  }
+    const lanc = lancMes.data || []
+    const receitaPrev = lanc.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + (l.valor || 0), 0)
+    const receitaReal = lanc.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + (l.valor || 0), 0)
+    const custoPrev = lanc.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + (l.valor || 0), 0)
+    const custoReal = lanc.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + (l.valor || 0), 0)
 
-  async function criarUsuario(e: React.FormEvent) {
-    e.preventDefault()
-    setSalvando(true); setErro(''); setMensagem('')
+    const tarefas = tarefasResp.data || []
+    const atrasadas = tarefas.filter(t => new Date(t.data_prazo + 'T23:59:59') < new Date()).length
+    const urgentes = tarefas.filter(t => t.prioridade === 'urgente' && t.status !== 'concluida').length
 
-    // 1. Cria no Supabase Auth
-    const { data, error } = await supabase.auth.signUp({
-      email: uEmail,
-      password: uSenha,
-      options: { data: { nome: uNome, setor: uSetor } }
+    const matriculas = matriculasResp.data || []
+    const trafegoTotal = (lancTrafegoHoje.data || []).reduce((s, l) => s + (l.valor || 0), 0)
+
+    // Agrupa matrículas por dia
+    const porDia: Record<string, number> = {}
+    matriculas.forEach((m: any) => {
+      const d = m.data_compra?.substring(0, 10)
+      if (d) porDia[d] = (porDia[d] || 0) + 1
     })
+    const matriculasGrafico = Object.entries(porDia)
+      .map(([data, count]) => ({ data, count }))
+      .sort((a, b) => a.data.localeCompare(b.data))
 
-    if (error) { setErro('Erro ao criar usuário: ' + error.message); setSalvando(false); return }
+    // Funil de leads
+    const leadsData = leadsResp.data || []
+    const etapas = ['novo', 'sdr', 'closer', 'ganho', 'perdido']
+    const funil = etapas.map(e => ({ etapa: e, count: leadsData.filter((l: any) => l.etapa === e).length }))
 
-    // 2. Cria o perfil na tabela usuarios_perfil
-    if (data.user?.id) {
-      const { error: errPerfil } = await supabase.from('usuarios_perfil').insert({
-        id: data.user.id, nome: uNome, email: uEmail, setor: uSetor, ativo: true,
-      })
-      if (errPerfil) {
-        setErro('Usuário criado no Auth, mas erro ao salvar perfil: ' + errPerfil.message)
-        setSalvando(false); return
-      }
-    }
-
-    setMensagem(`Usuário ${uEmail} criado com sucesso!`)
-    setUEmail(''); setUSenha(''); setUNome(''); setUSetor('operacoes')
-    setNovoUsuario(false)
-    carregarUsuarios()
-    setSalvando(false)
+    setStats({
+      receitaPrevistaMes: receitaPrev, receitaRealizadaMes: receitaReal,
+      margemPrevistaMes: receitaPrev - custoPrev, margemRealizadaMes: receitaReal - custoReal,
+      turmasAtivas: turmasResp.data?.length || 0,
+      totalMatriculas: matriculas.length,
+      tarefasAtrasadas: atrasadas, tarefasUrgentes: urgentes,
+      trafegoHoje: trafegoTotal,
+      alunosTotal: 0, leadsTotal: leadsData.length,
+    })
+    setTurmasAndamento(turmasProgressoResp.data || [])
+    setProximasAulas(aulasResp.data || [])
+    setTarefasUrgentes(tarefas.filter((t: any) => new Date(t.data_prazo + 'T23:59:59') < new Date() || t.prioridade === 'urgente').slice(0, 5))
+    setFunilLeads(funil)
+    setTopAlunos(alunosResp.data || [])
+    setMatriculasUltimos30(matriculasGrafico)
+    setCarregando(false)
   }
 
-  async function trocarSetor(usuarioId: string) {
-    if (!setorEdit) { setEditando(null); return }
-    await supabase.from('usuarios_perfil').update({ setor: setorEdit }).eq('id', usuarioId)
-    setEditando(null); setSetorEdit('')
-    carregarUsuarios()
+  function fmt(v: number) {
+    return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   }
 
-  async function alternarAtivo(usuarioId: string, ativo: boolean) {
-    await supabase.from('usuarios_perfil').update({ ativo: !ativo }).eq('id', usuarioId)
-    carregarUsuarios()
+  function diaSemana(d: string) {
+    return new Date(d).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
   }
 
-  const setorInfo = (value: string) => setores.find(s => s.value === value) || setores[1]
+  const setorCor: Record<string, string> = {
+    operacoes: '#fbbf24', marketing: '#f87171', comercial: '#60a5fa',
+    financeiro: '#34d399', pos_venda: '#4ade80',
+  }
 
-  // Conta usuários por setor (para mostrar quais setores ainda não têm responsável)
-  const setoresPreenchidos = new Set(usuarios.filter(u => u.ativo).map(u => u.setor))
-  const setoresSemUsuario = setores.filter(s => !setoresPreenchidos.has(s.value))
+  const etapaLabel: Record<string, string> = {
+    novo: 'Novos', sdr: 'SDR', closer: 'Closer', ganho: 'Ganhos', perdido: 'Perdidos',
+  }
+  const etapaCor: Record<string, string> = {
+    novo: '#9ca3af', sdr: '#60a5fa', closer: '#a78bfa', ganho: '#4ade80', perdido: '#f87171',
+  }
+
+  const maxMatricula = Math.max(...matriculasUltimos30.map(m => m.count), 1)
+
+  if (carregando) return (
+    <div style={{ minHeight: '100vh', backgroundColor: '#1c1c1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ color: '#6b7280', fontSize: '14px' }}>Carregando dashboard...</p>
+    </div>
+  )
 
   return (
-    <div style={{ padding: '24px', minHeight: '100vh' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Usuários do sistema</h1>
-        <button onClick={() => setNovoUsuario(!novoUsuario)} style={btnPrimary}>+ Criar usuário</button>
-      </div>
-      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
-        Cada setor precisa de pelo menos um usuário ativo para receber tarefas automáticas na agenda.
-      </p>
-
-      {/* Setores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
-        {setores.map(s => {
-          const responsavel = usuarios.find(u => u.setor === s.value && u.ativo)
-          return (
-            <div key={s.value} style={{ backgroundColor: s.bg, border: `1px solid ${s.color}33`, borderRadius: '10px', padding: '14px' }}>
-              <div style={{ fontSize: '13px', fontWeight: '600', color: s.color }}>{s.label}</div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{s.desc}</div>
-              <div style={{ fontSize: '11px', color: responsavel ? '#d1d1d1' : '#f87171', marginTop: '8px', fontWeight: '500' }}>
-                {responsavel ? responsavel.nome : '⚠ sem responsável'}
-              </div>
-            </div>
-          )
-        })}
+    <div style={{ padding: '32px 40px', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
+      <div style={{ marginBottom: '28px' }}>
+        <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Painel</h1>
+        <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>
+          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
+        </p>
       </div>
 
-      {/* Aviso de setores sem usuário */}
-      {setoresSemUsuario.length > 0 && (
-        <div style={{ backgroundColor: '#3a1a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#ef4444', marginBottom: '4px' }}>
-            ⚠ Setores sem usuário responsável: {setoresSemUsuario.map(s => s.label).join(', ')}
-          </div>
-          <div style={{ fontSize: '12px', color: '#fca5a5' }}>
-            Tarefas automáticas desses setores não chegarão em nenhuma agenda até que um usuário seja cadastrado.
-          </div>
+      {/* KPIs principais */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+        <div style={{ ...card, padding: '20px' }}>
+          <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita do mês</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: '#4ade80' }}>{fmt(stats.receitaRealizadaMes)}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.receitaPrevistaMes)}</div>
         </div>
-      )}
-
-      {/* Form novo usuário */}
-      {novoUsuario && (
-        <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>Criar novo usuário</div>
-          <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
-            O usuário recebe um e-mail para confirmar o acesso e fica vinculado ao setor escolhido.
-          </p>
-          <form onSubmit={criarUsuario}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Nome completo</label>
-                <input value={uNome} onChange={e => setUNome(e.target.value)} placeholder="Ex: Ana Silva" required style={input} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Setor</label>
-                <select value={uSetor} onChange={e => setUSetor(e.target.value)} style={select}>
-                  {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-            </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>E-mail</label>
-                <input value={uEmail} onChange={e => setUEmail(e.target.value)} placeholder="email@exemplo.com" type="email" required style={input} />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Senha inicial</label>
-                <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Mínimo 6 caracteres" type="password" required minLength={6} style={input} />
-              </div>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button type="button" onClick={() => setNovoUsuario(false)} style={btnSecondary}>Cancelar</button>
-              <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Criando...' : 'Criar usuário'}</button>
-            </div>
-            {erro && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{erro}</p>}
-            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#34d399' }}>{mensagem}</p>}
-          </form>
+        <div style={{ ...card, padding: '20px' }}>
+          <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Margem do mês</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: stats.margemRealizadaMes >= 0 ? '#4ade80' : '#f87171' }}>{fmt(stats.margemRealizadaMes)}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.margemPrevistaMes)}</div>
         </div>
-      )}
-
-      {/* Lista de usuários */}
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{usuarios.length} usuário{usuarios.length !== 1 ? 's' : ''} cadastrado{usuarios.length !== 1 ? 's' : ''}</span>
+        <div style={{ ...card, padding: '20px' }}>
+          <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Turmas ativas</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff' }}>{stats.turmasAtivas}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{stats.totalMatriculas} matrículas em 30 dias</div>
         </div>
+        <div style={{ ...card, padding: '20px', backgroundColor: stats.tarefasAtrasadas > 0 ? '#3a1a1a' : '#2c2c2e', borderColor: stats.tarefasAtrasadas > 0 ? '#ef4444' : '#3a3a3c' }}>
+          <div style={{ fontSize: '11px', color: stats.tarefasAtrasadas > 0 ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Tarefas atrasadas</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: stats.tarefasAtrasadas > 0 ? '#f87171' : '#ffffff' }}>{stats.tarefasAtrasadas}</div>
+          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{stats.tarefasUrgentes} marcadas como urgentes</div>
+        </div>
+      </div>
 
-        {usuarios.length === 0 ? (
-          <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>
-            Nenhum usuário cadastrado ainda. Crie ao menos um usuário por setor para o sistema de tarefas funcionar.
-          </p>
-        ) : (
+      {/* Tráfego de hoje */}
+      {stats.trafegoHoje > 0 && (
+        <div style={{ backgroundColor: '#1e3a5f', border: '1px solid #2563eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            {usuarios.map(u => {
-              const info = setorInfo(u.setor)
-              return (
-                <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid #3a3a3c', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: u.ativo ? 1 : 0.5 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{u.nome || '—'}</div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{u.email}</div>
-                  </div>
+            <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: '600' }}>📊 Investimento de tráfego previsto para hoje</div>
+            <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>Soma de todas as turmas com tráfego rodando</div>
+          </div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff' }}>{fmt(stats.trafegoHoje)}</div>
+        </div>
+      )}
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {editando === u.id ? (
-                      <>
-                        <select value={setorEdit} onChange={e => setSetorEdit(e.target.value)} style={{ ...select, width: 'auto' }}>
-                          {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                        </select>
-                        <button onClick={() => trocarSetor(u.id)} style={{ ...btnPrimary, fontSize: '12px', padding: '6px 12px' }}>Salvar</button>
-                        <button onClick={() => { setEditando(null); setSetorEdit('') }} style={{ ...btnSecondary, fontSize: '12px', padding: '6px 12px' }}>×</button>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '20px', backgroundColor: info.bg, color: info.color, fontWeight: '500' }}>
-                          {info.label}
-                        </span>
-                        <button onClick={() => { setEditando(u.id); setSetorEdit(u.setor) }}
-                          style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '12px', cursor: 'pointer' }}>
-                          Trocar setor
-                        </button>
-                        <button onClick={() => alternarAtivo(u.id, u.ativo)}
-                          style={{ background: 'none', border: 'none', color: u.ativo ? '#9ca3af' : '#4ade80', fontSize: '12px', cursor: 'pointer' }}>
-                          {u.ativo ? 'Desativar' : 'Ativar'}
-                        </button>
-                      </>
-                    )}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Turmas em andamento */}
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Turmas em andamento</span>
+            <Link href="/dashboard/turmas" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>Ver todas →</Link>
+          </div>
+          {turmasAndamento.length === 0 ? (
+            <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Nenhuma turma em andamento.</p>
+          ) : (
+            turmasAndamento.map((t: any) => (
+              <Link key={t.id} href={`/dashboard/turmas/${t.id}`} style={{ display: 'block', padding: '14px 20px', borderBottom: '1px solid #3a3a3c', textDecoration: 'none', color: 'inherit' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '600', color: '#ffffff' }}>{t.produtos?.nome}</div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                      {t.cidades?.nome} · {new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', backgroundColor: '#2e1065', color: '#a78bfa' }}>
+                      {t.status.replace('_', ' ')}
+                    </span>
+                    <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{t.vagas} vagas</div>
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+
+        {/* Próximas aulas */}
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Próximas aulas (7 dias)</span>
+            <Link href="/dashboard/agenda/aulas" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>Ver agenda →</Link>
+          </div>
+          {proximasAulas.length === 0 ? (
+            <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Nenhuma aula nos próximos 7 dias.</p>
+          ) : (
+            proximasAulas.map((a: any) => (
+              <div key={a.id} style={{ padding: '12px 20px', borderBottom: '1px solid #3a3a3c' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: '13px', fontWeight: '500', color: '#ffffff' }}>{a.titulo}</div>
+                    <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                      {a.professores?.nome || '—'} · {a.salas?.nome || '—'}
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '12px', color: '#a78bfa', fontWeight: '500' }}>{diaSemana(a.inicio)}</div>
+                    <div style={{ fontSize: '11px', color: '#6b7280' }}>
+                      {new Date(a.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
+        {/* Tarefas urgentes */}
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Tarefas que precisam atenção</span>
+            <Link href="/dashboard/tarefas" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>Ver todas →</Link>
+          </div>
+          {tarefasUrgentes.length === 0 ? (
+            <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Tudo em dia! Nenhuma tarefa urgente ou atrasada.</p>
+          ) : (
+            tarefasUrgentes.map((t: any) => {
+              const atrasada = new Date(t.data_prazo + 'T23:59:59') < new Date()
+              return (
+                <div key={t.id} style={{ padding: '12px 20px', borderBottom: '1px solid #3a3a3c', backgroundColor: atrasada ? '#1a0a0a' : 'transparent' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '13px', fontWeight: '500', color: '#ffffff' }}>{t.titulo}</div>
+                      <div style={{ fontSize: '11px', color: '#9ca3af', marginTop: '2px' }}>
+                        {t.turmas?.produtos?.nome || 'Avulsa'}
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', backgroundColor: '#1c1c1e', color: setorCor[t.setor] || '#9ca3af' }}>
+                        {t.setor}
+                      </span>
+                      <span style={{ fontSize: '11px', color: atrasada ? '#f87171' : '#6b7280', fontWeight: atrasada ? '600' : '400' }}>
+                        {new Date(t.data_prazo + 'T12:00:00').toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )
-            })}
+            })
+          )}
+        </div>
+
+        {/* Funil de leads */}
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Funil de leads ({stats.leadsTotal})</span>
+            <Link href="/dashboard/leads" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>Ver CRM →</Link>
           </div>
-        )}
+          <div style={{ padding: '20px' }}>
+            {funilLeads.every(f => f.count === 0) ? (
+              <p style={{ fontSize: '13px', color: '#6b7280' }}>Nenhum lead cadastrado ainda.</p>
+            ) : (
+              funilLeads.map(f => {
+                const max = Math.max(...funilLeads.map(x => x.count), 1)
+                const pct = (f.count / max) * 100
+                return (
+                  <div key={f.etapa} style={{ marginBottom: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '12px', color: etapaCor[f.etapa] }}>{etapaLabel[f.etapa]}</span>
+                      <span style={{ fontSize: '12px', color: '#d1d1d1', fontWeight: '600' }}>{f.count}</span>
+                    </div>
+                    <div style={{ backgroundColor: '#3a3a3c', borderRadius: '20px', height: '6px', overflow: 'hidden' }}>
+                      <div style={{ height: '6px', borderRadius: '20px', backgroundColor: etapaCor[f.etapa], width: `${pct}%` }} />
+                    </div>
+                  </div>
+                )
+              })
+            )}
+          </div>
+        </div>
       </div>
 
-      <div style={{ backgroundColor: '#1e1b4b', border: '1px solid #3730a3', borderRadius: '12px', padding: '16px 20px', marginTop: '24px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '600', color: '#a5b4fc', marginBottom: '6px' }}>💡 Como funciona</div>
-        <div style={{ fontSize: '12px', color: '#818cf8', lineHeight: '1.6' }}>
-          Cada usuário pertence a um setor. Quando uma turma é aberta, as tarefas automáticas (confirmar professor, tráfego, criativos) chegam automaticamente na agenda do primeiro usuário ativo daquele setor. Se nenhum usuário do setor estiver ativo, a tarefa fica sem responsável.
+      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
+        {/* Gráfico de matrículas */}
+        <div style={{ ...card, padding: '20px' }}>
+          <div style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1', marginBottom: '16px' }}>
+            Matrículas nos últimos 30 dias
+          </div>
+          {matriculasUltimos30.length === 0 ? (
+            <p style={{ fontSize: '13px', color: '#6b7280' }}>Nenhuma matrícula nos últimos 30 dias.</p>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '120px' }}>
+              {matriculasUltimos30.map(m => (
+                <div key={m.data} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                  <div style={{
+                    width: '100%', backgroundColor: '#7c3aed', borderRadius: '4px 4px 0 0',
+                    height: `${(m.count / maxMatricula) * 100}%`, minHeight: '4px',
+                  }} title={`${m.count} matrículas em ${new Date(m.data + 'T12:00:00').toLocaleDateString('pt-BR')}`} />
+                </div>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: '#6b7280', marginTop: '8px' }}>
+            <span>30 dias atrás</span>
+            <span>hoje</span>
+          </div>
+        </div>
+
+        {/* Top alunos por LTV */}
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Top alunos por LTV</span>
+            <Link href="/dashboard/alunos" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>→</Link>
+          </div>
+          {topAlunos.length === 0 ? (
+            <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Nenhum aluno ainda.</p>
+          ) : (
+            topAlunos.map((a: any, i) => (
+              <div key={a.id} style={{ padding: '12px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
+                  <span style={{ fontSize: '11px', color: '#6b7280', width: '16px' }}>#{i + 1}</span>
+                  <span style={{ fontSize: '13px', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.nome}</span>
+                </div>
+                <span style={{ fontSize: '12px', fontWeight: '600', color: '#4ade80' }}>{fmt(a.ltv)}</span>
+              </div>
+            ))
+          )}
         </div>
       </div>
     </div>
