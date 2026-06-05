@@ -3,7 +3,14 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-type Sala = { id: string; nome: string; capacidade: number; diaria_reais: number; ativo: boolean; cidades: { nome: string } }
+type Sala = {
+  id: string
+  nome: string
+  capacidade_maxima: number
+  diaria_reais: number
+  ativo: boolean
+  cidades: { nome: string }
+}
 type Cidade = { id: string; nome: string }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
@@ -40,7 +47,7 @@ export default function Salas() {
     e.preventDefault(); setSalvando(true); setMensagem('')
     const { error } = await supabase.from('salas').insert({
       nome, cidade_id: cidadeId, tipo,
-      capacidade: capacidade ? parseInt(capacidade) : null,
+      capacidade_maxima: capacidade ? parseInt(capacidade) : null,
       diaria_reais: parseFloat(diaria) || 0,
       ativo: true,
     })
@@ -104,7 +111,7 @@ export default function Salas() {
                 <tr key={s.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{s.nome}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.cidades?.nome}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.capacidade ? s.capacidade + ' pessoas' : '-'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.capacidade_maxima ? s.capacidade_maxima + ' pessoas' : '-'}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: s.diaria_reais > 0 ? '#f87171' : '#4ade80' }}>
                     {s.diaria_reais > 0 ? 'R$ ' + s.diaria_reais : 'Propria'}
                   </td>
