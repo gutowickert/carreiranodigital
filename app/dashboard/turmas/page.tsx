@@ -4,17 +4,10 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 type Turma = {
-  id: string
-  data_inicio: string
-  data_fim: string
-  status: string
-  preco_venda: number
-  vagas: number
-  codigo: string
-  produtos: { nome: string }
-  cidades: { nome: string }
+  id: string; data_inicio: string; data_fim: string; status: string
+  preco_venda: number; vagas: number; codigo: string
+  produtos: { nome: string }; cidades: { nome: string }
 }
-
 type Produto = { id: string; nome: string; duracao_dias: number; preco_venda: number; vagas_padrao: number; meta_matriculas: number }
 type Cidade = { id: string; nome: string; tipo: string }
 type Sala = { id: string; nome: string; cidade_id: string }
@@ -34,6 +27,32 @@ const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRa
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
 const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 
+const TAREFAS_AUTO = [
+  { titulo: 'Confirmar professor', setor: 'operacoes', dias_relativo: 3 },
+  { titulo: 'Colocar tráfego no ar', setor: 'marketing', dias_relativo: 5 },
+  { titulo: 'Entregar criativos prontos', setor: 'marketing', dias_relativo: 4 },
+]
+
+const PCT_TRAFEGO = 0.12
+const PCT_IMPOSTO = 0.08
+const PCT_RECEITA_VAGAS = 0.80
+const VALOR_DESLOC_DIARIO = 300
+const DIAS_INICIO_TRAFEGO = 5
+const DIAS_PAGTO_PROFESSOR = 2
+
+function turnoDe(horaInicio: string): 'manha' | 'tarde' | 'noite' {
+  const h = parseInt(horaInicio.split(':')[0])
+  if (h < 12) return 'manha'
+  if (h < 18) return 'tarde'
+  return 'noite'
+}
+
+function addDays(date: string, days: number) {
+  const d = new Date(date + 'T12:00:00')
+  d.setDate(d.getDate() + days)
+  return d.toISOString().split('T')[0]
+}
+
 export default function Turmas() {
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [produtos, setProdutos] = useState<Produto[]>([])
@@ -41,6 +60,7 @@ export default function Turmas() {
   const [salas, setSalas] = useState<Sala[]>([])
   const [professores, setProfessores] = useState<Professor[]>([])
   const [modulos, setModulos] = useState<Modulo[]>([])
+  const [usuariosPorSetor, setUsuariosPorSetor] = useState<Record<string, string>>({})
   const [salasFiltradas, setSalasFiltradas] = useState<Sala[]>([])
   const [abrirForm, setAbrirForm] = useState(false)
   const [diasAula, setDiasAula] = useState<DiaAula[]>([])
@@ -57,9 +77,11 @@ export default function Turmas() {
   const [deslocEquipe, setDeslocEquipe] = useState('0')
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
+  const [conflitos, setConflitos] = useState<string[]>([])
 
   useEffect(() => {
-    carregarTurmas(); carregarProdutos(); carregarCidades(); carregarSalas(); carregarProfessores()
+    carregarTurmas(); carregarProdutos(); carregarCidades(); carregarSalas()
+    carregarProfessores(); carregarUsuariosPorSetor()
   }, [])
 
   useEffect(() => {
@@ -69,7 +91,10 @@ export default function Turmas() {
   useEffect(() => {
     if (produtoId) {
       const p = produtos.find(p => p.id === produtoId)
-      if (p) { setPreco(p.preco_venda.toString()); setVagas(p.vagas_padrao.toString()); setMeta(p.meta_matriculas.toString()); setProfessorId(''); setProfPorModulo({}); carregarModulos(p.id, p.duracao_dias) }
+      if (p) {
+        setPreco(p.preco_venda.toString()); setVagas(p.vagas_padrao.toString()); setMeta(p.meta_matriculas.toString())
+        setProfessorId(''); setProfPorModulo({}); carregarModulos(p.id, p.duracao_dias)
+      }
     }
   }, [produtoId])
 
@@ -93,6 +118,14 @@ export default function Turmas() {
     const { data } = await supabase.from('professores').select('*').eq('ativo', true).order('nome')
     if (data) setProfessores(data)
   }
+  async function carregarUsuariosPorSetor() {
+    const { data } = await supabase.from('usuarios_perfil').select('id, setor').eq('ativo', true)
+    if (data) {
+      const map: Record<string, string> = {}
+      data.forEach((u: any) => { if (u.setor && !map[u.setor]) map[u.setor] = u.id })
+      setUsuariosPorSetor(map)
+    }
+  }
 
   async function carregarModulos(pid: string, duracaoTotal: number) {
     const { data } = await supabase.from('produto_modulos').select('*').eq('produto_id', pid).order('ordem')
@@ -111,11 +144,57 @@ export default function Turmas() {
     const novosDias = [...diasAula]; novosDias[index] = { ...novosDias[index], [campo]: valor }; setDiasAula(novosDias)
   }
 
+  async function verificarConflitos(): Promise<string[]> {
+    const erros: string[] = []
+    const datasValidas = diasAula.filter(d => d.data)
+    if (!salaId || datasValidas.length === 0) return erros
+
+    for (const dia of datasValidas) {
+      const { data } = await supabase
+        .from('agenda_aulas')
+        .select('id')
+        .eq('sala_id', salaId)
+        .lt('inicio', `${dia.data}T${dia.horario_fim}:00`)
+        .gt('fim', `${dia.data}T${dia.horario_inicio}:00`)
+      if (data && data.length > 0) {
+        erros.push(`Sala já ocupada em ${new Date(dia.data + 'T12:00:00').toLocaleDateString('pt-BR')} no turno ${turnoDe(dia.horario_inicio)}`)
+      }
+    }
+
+    const profIds = modulos.length > 0
+      ? Object.values(profPorModulo).filter(Boolean)
+      : (professorId ? [professorId] : [])
+
+    for (const pid of profIds) {
+      const diasDoProf = modulos.length > 0
+        ? datasValidas.filter(d => profPorModulo[d.modulo_id || ''] === pid)
+        : datasValidas
+      for (const dia of diasDoProf) {
+        const { data } = await supabase
+          .from('agenda_aulas')
+          .select('id')
+          .eq('professor_id', pid)
+          .lt('inicio', `${dia.data}T${dia.horario_fim}:00`)
+          .gt('fim', `${dia.data}T${dia.horario_inicio}:00`)
+        if (data && data.length > 0) {
+          const prof = professores.find(p => p.id === pid)
+          erros.push(`Professor ${prof?.nome} já tem aula em ${new Date(dia.data + 'T12:00:00').toLocaleDateString('pt-BR')}`)
+        }
+      }
+    }
+    return erros
+  }
+
   async function handleSalvar(e: React.FormEvent) {
-    e.preventDefault(); setSalvando(true); setMensagem('')
+    e.preventDefault(); setSalvando(true); setMensagem(''); setConflitos([])
     const produto = produtos.find(p => p.id === produtoId)
     const cidade = cidades.find(c => c.id === cidadeId)
-    if (!produto || !cidade) return
+    const sala = salas.find(s => s.id === salaId)
+    if (!produto || !cidade) { setSalvando(false); return }
+
+    const erros = await verificarConflitos()
+    if (erros.length > 0) { setConflitos(erros); setSalvando(false); return }
+
     const datasValidas = diasAula.filter(d => d.data)
     const datasOrdenadas = [...datasValidas].sort((a, b) => a.data.localeCompare(b.data))
     const dataInicio = datasOrdenadas[0]?.data
@@ -133,7 +212,10 @@ export default function Turmas() {
     if (error || !turma) { setMensagem('Erro: ' + error?.message); setSalvando(false); return }
 
     if (diasAula.length > 0) {
-      await supabase.from('turma_datas').insert(diasAula.map((d, i) => ({ turma_id: turma.id, modulo_id: d.modulo_id || null, data: d.data, horario_inicio: d.horario_inicio, horario_fim: d.horario_fim, ordem: i + 1 })))
+      await supabase.from('turma_datas').insert(diasAula.map((d, i) => ({
+        turma_id: turma.id, modulo_id: d.modulo_id || null, data: d.data,
+        horario_inicio: d.horario_inicio, horario_fim: d.horario_fim, ordem: i + 1
+      })))
     }
 
     let custoProfessores = 0
@@ -145,6 +227,19 @@ export default function Turmas() {
           const val = prof ? prof.diaria_reais * mod.duracao_dias : 0
           custoProfessores += val
           await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: profId, modulo_id: mod.id, valor_calculado: val })
+
+          const diasDoMod = datasOrdenadas.filter(d => d.modulo_id === mod.id)
+          const ultimoDia = diasDoMod[diasDoMod.length - 1]?.data
+          if (ultimoDia) {
+            await supabase.from('lancamentos_empresa').insert({
+              tipo: 'custo', categoria: 'pessoal',
+              descricao: `Professor ${prof?.nome} — ${mod.nome}`,
+              valor: val, unidade: 'geral',
+              mes_referencia: ultimoDia.substring(0, 7) + '-01',
+              data_vencimento: addDays(ultimoDia, DIAS_PAGTO_PROFESSOR),
+              status: 'previsto', turma_id: turma.id,
+            })
+          }
         }
       }
     } else if (professorId) {
@@ -152,29 +247,145 @@ export default function Turmas() {
       const val = prof ? prof.diaria_reais * produto.duracao_dias : 0
       custoProfessores = val
       await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: professorId, valor_calculado: val })
+      if (dataFim) {
+        await supabase.from('lancamentos_empresa').insert({
+          tipo: 'custo', categoria: 'pessoal',
+          descricao: `Professor ${prof?.nome}`,
+          valor: val, unidade: 'geral',
+          mes_referencia: dataFim.substring(0, 7) + '-01',
+          data_vencimento: addDays(dataFim, DIAS_PAGTO_PROFESSOR),
+          status: 'previsto', turma_id: turma.id,
+        })
+      }
     }
 
-    const { data: templates } = await supabase.from('produto_tarefas_template').select('*').eq('produto_id', produtoId).order('ordem')
-    if (templates && templates.length > 0 && dataInicio) {
-      const inicio = new Date(dataInicio + 'T12:00:00')
-      await supabase.from('tarefas').insert(templates.map(t => {
-        const dp = new Date(inicio); dp.setDate(dp.getDate() + t.dias_relativo)
-        return { turma_id: turma.id, titulo: t.titulo, setor: t.setor, tipo_entrega: t.tipo_entrega, tipo: 'prevista', data_prazo: dp.toISOString().split('T')[0], status: 'pendente', prioridade: 'normal' }
-      }))
+    const receitaPrevista = parseFloat(preco) * Math.floor(parseInt(vagas) * PCT_RECEITA_VAGAS)
+    const totalTrafego = receitaPrevista * PCT_TRAFEGO
+    const imposto = receitaPrevista * PCT_IMPOSTO
+
+    // Receita prevista: lançamento no primeiro dia da turma
+    if (dataInicio) {
+      await supabase.from('lancamentos_empresa').insert({
+        tipo: 'receita', categoria: 'outro',
+        descricao: `Receita prevista — ${produto.nome}`,
+        valor: receitaPrevista, unidade: 'geral',
+        mes_referencia: dataInicio.substring(0, 7) + '-01',
+        data_vencimento: dataInicio, status: 'previsto', turma_id: turma.id,
+      })
     }
 
-    const receitaPrevista = parseFloat(preco) * parseInt(meta)
-    const custoTrafego = receitaPrevista * 0.10
-    const imposto = receitaPrevista * 0.08
-    const custoDeslocamento = parseFloat(deslocProf) + parseFloat(deslocEquipe)
+    // Tráfego: dia 5 após hoje até 1 dia antes do início da turma
+    if (dataInicio) {
+      const hoje = new Date().toISOString().split('T')[0]
+      const dataInicioTrafego = addDays(hoje, DIAS_INICIO_TRAFEGO)
+      const dataFimTrafego = addDays(dataInicio, -1)
+      const inicioTrafDate = new Date(dataInicioTrafego + 'T12:00:00')
+      const fimTrafDate = new Date(dataFimTrafego + 'T12:00:00')
+      const diasTrafego = Math.max(1, Math.ceil((fimTrafDate.getTime() - inicioTrafDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
+      const valorDiarioTrafego = totalTrafego / diasTrafego
+
+      const lancamentosTrafego = []
+      for (let i = 0; i < diasTrafego; i++) {
+        const data = addDays(dataInicioTrafego, i)
+        lancamentosTrafego.push({
+          tipo: 'custo', categoria: 'marketing',
+          descricao: `Tráfego diário — ${produto.nome}`,
+          valor: valorDiarioTrafego, unidade: 'geral',
+          mes_referencia: data.substring(0, 7) + '-01',
+          data_vencimento: data, status: 'previsto', turma_id: turma.id,
+        })
+      }
+      if (lancamentosTrafego.length > 0) {
+        await supabase.from('lancamentos_empresa').insert(lancamentosTrafego)
+      }
+    }
+
+    // Imposto: dia 20 do mês seguinte ao início da turma
+    if (dataInicio) {
+      const dataIni = new Date(dataInicio + 'T12:00:00')
+      const mesSeguinte = new Date(dataIni.getFullYear(), dataIni.getMonth() + 1, 20)
+      await supabase.from('lancamentos_empresa').insert({
+        tipo: 'custo', categoria: 'imposto',
+        descricao: `Imposto — ${produto.nome}`,
+        valor: imposto, unidade: 'geral',
+        mes_referencia: mesSeguinte.toISOString().substring(0, 7) + '-01',
+        data_vencimento: mesSeguinte.toISOString().split('T')[0],
+        status: 'previsto', turma_id: turma.id,
+      })
+    }
+
+    // Deslocamento: R$ 300 por dia de aula
+    const lancamentosDesloc = datasValidas.map(d => ({
+      tipo: 'custo', categoria: 'outro',
+      descricao: `Deslocamento — ${produto.nome}`,
+      valor: VALOR_DESLOC_DIARIO, unidade: 'geral',
+      mes_referencia: d.data.substring(0, 7) + '-01',
+      data_vencimento: d.data, status: 'previsto', turma_id: turma.id,
+    }))
+    if (lancamentosDesloc.length > 0) {
+      await supabase.from('lancamentos_empresa').insert(lancamentosDesloc)
+    }
+
+    const custoDeslocamento = VALOR_DESLOC_DIARIO * datasValidas.length
+
     await supabase.from('financeiro_turma').insert({
       turma_id: turma.id, receita_prevista: receitaPrevista, custo_professores: custoProfessores,
-      custo_trafego_previsto: custoTrafego, imposto_previsto: imposto, custo_deslocamento: custoDeslocamento,
-      margem_prevista: receitaPrevista - custoProfessores - custoTrafego - imposto - custoDeslocamento,
+      custo_trafego_previsto: totalTrafego, imposto_previsto: imposto, custo_deslocamento: custoDeslocamento,
+      margem_prevista: receitaPrevista - custoProfessores - totalTrafego - imposto - custoDeslocamento,
       break_even_matriculas: parseInt(meta),
     })
 
-    setMensagem('Turma aberta!')
+    // Tarefas automáticas
+    const hoje = new Date().toISOString().split('T')[0]
+    const tarefasParaInserir = TAREFAS_AUTO.map(t => ({
+      turma_id: turma.id, titulo: `${t.titulo} — ${produto.nome}`, setor: t.setor,
+      tipo: 'prevista', data_prazo: addDays(hoje, t.dias_relativo),
+      status: 'pendente', prioridade: 'normal',
+      usuario_id: usuariosPorSetor[t.setor] || null,
+    }))
+
+    if (sala?.nome === 'A Definir') {
+      tarefasParaInserir.push({
+        turma_id: turma.id, titulo: `Definir sala — ${produto.nome}`,
+        setor: 'operacoes', tipo: 'prevista', data_prazo: addDays(hoje, 2),
+        status: 'pendente', prioridade: 'urgente',
+        usuario_id: usuariosPorSetor['operacoes'] || null,
+      })
+    }
+
+    const { data: tarefasInseridas } = await supabase.from('tarefas').insert(tarefasParaInserir).select()
+
+    if (tarefasInseridas) {
+      const eventosAgenda = tarefasInseridas
+        .filter((t: any) => t.usuario_id && t.setor !== 'financeiro')
+        .map((t: any) => ({
+          usuario_id: t.usuario_id, titulo: t.titulo, tipo: 'tarefa',
+          inicio: `${t.data_prazo}T09:00:00`, fim: `${t.data_prazo}T10:00:00`,
+          descricao: `Tarefa automática da turma ${produto.nome}`,
+        }))
+      if (eventosAgenda.length > 0) {
+        await supabase.from('agenda_eventos').insert(eventosAgenda)
+      }
+    }
+
+    // Provisionar aulas na agenda_aulas
+    const aulasParaAgenda = datasValidas.map(d => {
+      const profDoDia = modulos.length > 0
+        ? (d.modulo_id ? profPorModulo[d.modulo_id] : null)
+        : professorId || null
+      return {
+        turma_id: turma.id, professor_id: profDoDia || null, sala_id: salaId,
+        titulo: `${produto.nome}${d.modulo_nome ? ' — ' + d.modulo_nome : ''}`,
+        inicio: `${d.data}T${d.horario_inicio}:00`,
+        fim: `${d.data}T${d.horario_fim}:00`,
+        recorrente: false,
+      }
+    })
+    if (aulasParaAgenda.length > 0) {
+      await supabase.from('agenda_aulas').insert(aulasParaAgenda)
+    }
+
+    setMensagem('Turma aberta com sucesso!')
     setAbrirForm(false); setProdutoId(''); setCidadeId(''); setSalaId(''); setProfessorId('')
     setProfPorModulo({}); setDiasAula([]); setModulos([]); setDeslocProf('0'); setDeslocEquipe('0'); setCodigoTurma('')
     carregarTurmas(); setSalvando(false)
@@ -305,6 +516,13 @@ export default function Turmas() {
               </div>
             )}
 
+            {conflitos.length > 0 && (
+              <div style={{ backgroundColor: '#3a1a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: '#ef4444', marginBottom: '6px' }}>⚠ Conflitos detectados:</div>
+                {conflitos.map((c, i) => <div key={i} style={{ fontSize: '12px', color: '#fca5a5', marginTop: '4px' }}>• {c}</div>)}
+              </div>
+            )}
+
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button type="button" onClick={() => setAbrirForm(false)}
                 style={{ backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', cursor: 'pointer' }}>
@@ -320,7 +538,6 @@ export default function Turmas() {
         </div>
       )}
 
-      {/* Lista de turmas */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {turmas.length === 0 ? (
           <div style={{ ...card, padding: '40px', textAlign: 'center' }}>
