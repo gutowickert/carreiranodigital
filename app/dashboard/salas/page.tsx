@@ -17,8 +17,10 @@ export default function Salas() {
   const [cidades, setCidades] = useState<Cidade[]>([])
   const [novo, setNovo] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [mensagem, setMensagem] = useState('')
   const [nome, setNome] = useState('')
   const [cidadeId, setCidadeId] = useState('')
+  const [tipo, setTipo] = useState('sede_propria')
   const [capacidade, setCapacidade] = useState('')
   const [diaria, setDiaria] = useState('')
 
@@ -35,9 +37,15 @@ export default function Salas() {
   }
 
   async function salvar(e: React.FormEvent) {
-    e.preventDefault(); setSalvando(true)
-    await supabase.from('salas').insert({ nome, cidade_id: cidadeId, capacidade: parseInt(capacidade), diaria_reais: parseFloat(diaria) || 0, ativo: true })
-    setNome(''); setCidadeId(''); setCapacidade(''); setDiaria('')
+    e.preventDefault(); setSalvando(true); setMensagem('')
+    const { error } = await supabase.from('salas').insert({
+      nome, cidade_id: cidadeId, tipo,
+      capacidade: capacidade ? parseInt(capacidade) : null,
+      diaria_reais: parseFloat(diaria) || 0,
+      ativo: true,
+    })
+    if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+    setNome(''); setCidadeId(''); setTipo('sede_propria'); setCapacidade(''); setDiaria('')
     setNovo(false); carregar(); setSalvando(false)
   }
 
@@ -59,21 +67,26 @@ export default function Salas() {
                 {cidades.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
               </select>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <input value={capacidade} onChange={e => setCapacidade(e.target.value)} placeholder="Capacidade (pessoas)" type="number" style={input} />
-              <input value={diaria} onChange={e => setDiaria(e.target.value)} placeholder="Diária R$ (0 se própria)" type="number" style={input} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <select value={tipo} onChange={e => setTipo(e.target.value)} style={select}>
+                <option value="sede_propria">Sede propria</option>
+                <option value="sala_externa">Sala externa</option>
+              </select>
+              <input value={capacidade} onChange={e => setCapacidade(e.target.value)} placeholder="Capacidade" type="number" style={input} />
+              <input value={diaria} onChange={e => setDiaria(e.target.value)} placeholder="Diaria R$" type="number" style={input} />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button type="button" onClick={() => setNovo(false)} style={btnSecondary}>Cancelar</button>
               <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Cadastrar'}</button>
             </div>
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{mensagem}</p>}
           </form>
         </div>
       )}
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{salas.length} sala{salas.length !== 1 ? 's' : ''}</span>
+          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{salas.length} sala(s)</span>
         </div>
         {salas.length === 0 ? (
           <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhuma sala cadastrada.</p>
@@ -81,7 +94,7 @@ export default function Salas() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                {['Nome', 'Cidade', 'Capacidade', 'Diária'].map(h => (
+                {['Nome', 'Cidade', 'Capacidade', 'Diaria'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
@@ -91,9 +104,9 @@ export default function Salas() {
                 <tr key={s.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{s.nome}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.cidades?.nome}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.capacidade ? `${s.capacidade} pessoas` : '—'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.capacidade ? s.capacidade + ' pessoas' : '-'}</td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', color: s.diaria_reais > 0 ? '#f87171' : '#4ade80' }}>
-                    {s.diaria_reais > 0 ? `R$ ${s.diaria_reais}` : 'Própria'}
+                    {s.diaria_reais > 0 ? 'R$ ' + s.diaria_reais : 'Propria'}
                   </td>
                 </tr>
               ))}

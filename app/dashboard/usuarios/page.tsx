@@ -20,11 +20,11 @@ const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'no
 
 const setores = [
   { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: '#2e1065', color: '#a78bfa' },
-  { value: 'operacoes', label: 'Operações', desc: 'Turmas, professores, salas', bg: '#422006', color: '#fbbf24' },
+  { value: 'operacoes', label: 'Operacoes', desc: 'Turmas, professores, salas', bg: '#422006', color: '#fbbf24' },
   { value: 'comercial', label: 'Comercial', desc: 'Leads, CRM e vendas', bg: '#172554', color: '#60a5fa' },
-  { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatórios', bg: '#042f2e', color: '#34d399' },
-  { value: 'marketing', label: 'Marketing', desc: 'Tráfego e criativos', bg: '#450a0a', color: '#f87171' },
-  { value: 'pos_venda', label: 'Pós-venda', desc: 'Alunos e suporte', bg: '#052e16', color: '#4ade80' },
+  { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatorios', bg: '#042f2e', color: '#34d399' },
+  { value: 'marketing', label: 'Marketing', desc: 'Trafego e criativos', bg: '#450a0a', color: '#f87171' },
+  { value: 'pos_venda', label: 'Pos-venda', desc: 'Alunos e suporte', bg: '#052e16', color: '#4ade80' },
 ]
 
 export default function Usuarios() {
@@ -58,19 +58,19 @@ export default function Usuarios() {
       options: { data: { nome: uNome, setor: uSetor } }
     })
 
-    if (error) { setErro('Erro ao criar usuário: ' + error.message); setSalvando(false); return }
+    if (error) { setErro('Erro ao criar usuario: ' + error.message); setSalvando(false); return }
 
     if (data.user?.id) {
       const { error: errPerfil } = await supabase.from('usuarios_perfil').insert({
         id: data.user.id, nome: uNome, email: uEmail, setor: uSetor, ativo: true,
       })
       if (errPerfil) {
-        setErro('Usuário criado no Auth, mas erro ao salvar perfil: ' + errPerfil.message)
+        setErro('Usuario criado no Auth, mas erro ao salvar perfil: ' + errPerfil.message)
         setSalvando(false); return
       }
     }
 
-    setMensagem(`Usuário ${uEmail} criado com sucesso!`)
+    setMensagem('Usuario ' + uEmail + ' criado com sucesso!')
     setUEmail(''); setUSenha(''); setUNome(''); setUSetor('operacoes')
     setNovoUsuario(false)
     carregarUsuarios()
@@ -97,22 +97,22 @@ export default function Usuarios() {
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Usuários do sistema</h1>
-        <button onClick={() => setNovoUsuario(!novoUsuario)} style={btnPrimary}>+ Criar usuário</button>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Usuarios do sistema</h1>
+        <button onClick={() => setNovoUsuario(!novoUsuario)} style={btnPrimary}>+ Criar usuario</button>
       </div>
       <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
-        Cada setor precisa de pelo menos um usuário ativo para receber tarefas automáticas na agenda.
+        Cada setor precisa de pelo menos um usuario ativo para receber tarefas automaticas na agenda.
       </p>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
         {setores.map(s => {
           const responsavel = usuarios.find(u => u.setor === s.value && u.ativo)
           return (
-            <div key={s.value} style={{ backgroundColor: s.bg, border: `1px solid ${s.color}33`, borderRadius: '10px', padding: '14px' }}>
+            <div key={s.value} style={{ backgroundColor: s.bg, border: '1px solid ' + s.color + '33', borderRadius: '10px', padding: '14px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: s.color }}>{s.label}</div>
               <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{s.desc}</div>
               <div style={{ fontSize: '11px', color: responsavel ? '#d1d1d1' : '#f87171', marginTop: '8px', fontWeight: '500' }}>
-                {responsavel ? responsavel.nome : '⚠ sem responsável'}
+                {responsavel ? responsavel.nome : 'sem responsavel'}
               </div>
             </div>
           )
@@ -122,19 +122,19 @@ export default function Usuarios() {
       {setoresSemUsuario.length > 0 && (
         <div style={{ backgroundColor: '#3a1a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px' }}>
           <div style={{ fontSize: '13px', fontWeight: '600', color: '#ef4444', marginBottom: '4px' }}>
-            ⚠ Setores sem usuário responsável: {setoresSemUsuario.map(s => s.label).join(', ')}
+            Setores sem responsavel: {setoresSemUsuario.map(s => s.label).join(', ')}
           </div>
           <div style={{ fontSize: '12px', color: '#fca5a5' }}>
-            Tarefas automáticas desses setores não chegarão em nenhuma agenda até que um usuário seja cadastrado.
+            Tarefas automaticas desses setores nao chegarao em nenhuma agenda ate que um usuario seja cadastrado.
           </div>
         </div>
       )}
 
       {novoUsuario && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>Criar novo usuário</div>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>Criar novo usuario</div>
           <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
-            O usuário recebe um e-mail para confirmar o acesso e fica vinculado ao setor escolhido.
+            O usuario recebe um email para confirmar o acesso e fica vinculado ao setor escolhido.
           </p>
           <form onSubmit={criarUsuario}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
@@ -151,17 +151,17 @@ export default function Usuarios() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>E-mail</label>
+                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Email</label>
                 <input value={uEmail} onChange={e => setUEmail(e.target.value)} placeholder="email@exemplo.com" type="email" required style={input} />
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Senha inicial</label>
-                <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Mínimo 6 caracteres" type="password" required minLength={6} style={input} />
+                <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Minimo 6 caracteres" type="password" required minLength={6} style={input} />
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button type="button" onClick={() => setNovoUsuario(false)} style={btnSecondary}>Cancelar</button>
-              <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Criando...' : 'Criar usuário'}</button>
+              <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Criando...' : 'Criar usuario'}</button>
             </div>
             {erro && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{erro}</p>}
             {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#34d399' }}>{mensagem}</p>}
@@ -171,12 +171,12 @@ export default function Usuarios() {
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{usuarios.length} usuário{usuarios.length !== 1 ? 's' : ''} cadastrado{usuarios.length !== 1 ? 's' : ''}</span>
+          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{usuarios.length} usuario(s) cadastrado(s)</span>
         </div>
 
         {usuarios.length === 0 ? (
           <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>
-            Nenhum usuário cadastrado ainda. Crie ao menos um usuário por setor para o sistema de tarefas funcionar.
+            Nenhum usuario cadastrado ainda. Crie ao menos um por setor.
           </p>
         ) : (
           <div>
@@ -185,7 +185,7 @@ export default function Usuarios() {
               return (
                 <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid #3a3a3c', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: u.ativo ? 1 : 0.5 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{u.nome || '—'}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{u.nome || '-'}</div>
                     <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{u.email}</div>
                   </div>
 
@@ -196,7 +196,7 @@ export default function Usuarios() {
                           {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                         </select>
                         <button onClick={() => trocarSetor(u.id)} style={{ ...btnPrimary, fontSize: '12px', padding: '6px 12px' }}>Salvar</button>
-                        <button onClick={() => { setEditando(null); setSetorEdit('') }} style={{ ...btnSecondary, fontSize: '12px', padding: '6px 12px' }}>×</button>
+                        <button onClick={() => { setEditando(null); setSetorEdit('') }} style={{ ...btnSecondary, fontSize: '12px', padding: '6px 12px' }}>x</button>
                       </>
                     ) : (
                       <>
@@ -221,4 +221,12 @@ export default function Usuarios() {
         )}
       </div>
 
-      <div style={{ backgroundColor: '#1e1b4b', border: '1px solid #3730a3', borderRadius: '12px', padding: '
+      <div style={{ backgroundColor: '#1e1b4b', border: '1px solid #3730a3', borderRadius: '12px', padding: '16px 20px', marginTop: '24px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '600', color: '#a5b4fc', marginBottom: '6px' }}>Como funciona</div>
+        <div style={{ fontSize: '12px', color: '#818cf8', lineHeight: '1.6' }}>
+          Cada usuario pertence a um setor. Quando uma turma e aberta, as tarefas automaticas chegam na agenda do primeiro usuario ativo daquele setor.
+        </div>
+      </div>
+    </div>
+  )
+}
