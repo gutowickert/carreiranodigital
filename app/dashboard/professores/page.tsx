@@ -3,10 +3,22 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-type Professor = { id: string; nome: string; email: string; whatsapp: string; especialidade: string; diaria_reais: number; ativo: boolean }
+type Professor = {
+  id: string
+  nome: string
+  email: string
+  whatsapp: string
+  diaria_reais: number
+  pix_chave: string
+  pix_tipo: string
+  banco: string
+  observacoes: string
+  ativo: boolean
+}
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
 const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
@@ -14,11 +26,15 @@ export default function Professores() {
   const [professores, setProfessores] = useState<Professor[]>([])
   const [novo, setNovo] = useState(false)
   const [salvando, setSalvando] = useState(false)
+  const [mensagem, setMensagem] = useState('')
   const [nome, setNome] = useState('')
   const [email, setEmail] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
-  const [especialidade, setEspecialidade] = useState('')
   const [diaria, setDiaria] = useState('')
+  const [pixChave, setPixChave] = useState('')
+  const [pixTipo, setPixTipo] = useState('cpf')
+  const [banco, setBanco] = useState('')
+  const [observacoes, setObservacoes] = useState('')
 
   useEffect(() => { carregar() }, [])
 
@@ -28,9 +44,19 @@ export default function Professores() {
   }
 
   async function salvar(e: React.FormEvent) {
-    e.preventDefault(); setSalvando(true)
-    await supabase.from('professores').insert({ nome, email, whatsapp, especialidade, diaria_reais: parseFloat(diaria), ativo: true })
-    setNome(''); setEmail(''); setWhatsapp(''); setEspecialidade(''); setDiaria('')
+    e.preventDefault(); setSalvando(true); setMensagem('')
+    const { error } = await supabase.from('professores').insert({
+      nome, email, whatsapp,
+      diaria_reais: parseFloat(diaria),
+      pix_chave: pixChave || null,
+      pix_tipo: pixChave ? pixTipo : null,
+      banco: banco || null,
+      observacoes: observacoes || null,
+      ativo: true,
+    })
+    if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+    setNome(''); setEmail(''); setWhatsapp(''); setDiaria('')
+    setPixChave(''); setPixTipo('cpf'); setBanco(''); setObservacoes('')
     setNovo(false); carregar(); setSalvando(false)
   }
 
@@ -50,26 +76,39 @@ export default function Professores() {
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
           <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>Novo professor</div>
           <form onSubmit={salvar}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo *" required style={input} />
-              <input value={especialidade} onChange={e => setEspecialidade(e.target.value)} placeholder="Especialidade" style={input} />
+              <input value={diaria} onChange={e => setDiaria(e.target.value)} placeholder="Diaria R$ *" type="number" required style={input} />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
-              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="E-mail" type="email" style={input} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+              <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={input} />
               <input value={whatsapp} onChange={e => setWhatsapp(e.target.value)} placeholder="WhatsApp" style={input} />
-              <input value={diaria} onChange={e => setDiaria(e.target.value)} placeholder="Diária R$" type="number" required style={input} />
             </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr 2fr', gap: '12px', marginBottom: '12px' }}>
+              <select value={pixTipo} onChange={e => setPixTipo(e.target.value)} style={select}>
+                <option value="cpf">CPF</option>
+                <option value="cnpj">CNPJ</option>
+                <option value="email">Email</option>
+                <option value="telefone">Telefone</option>
+                <option value="aleatoria">Aleatoria</option>
+              </select>
+              <input value={pixChave} onChange={e => setPixChave(e.target.value)} placeholder="Chave PIX" style={input} />
+              <input value={banco} onChange={e => setBanco(e.target.value)} placeholder="Banco" style={input} />
+            </div>
+            <textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} placeholder="Observacoes (opcional)" rows={2}
+              style={{ ...input, resize: 'none', marginBottom: '16px' } as React.CSSProperties} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
               <button type="button" onClick={() => setNovo(false)} style={btnSecondary}>Cancelar</button>
               <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Cadastrar'}</button>
             </div>
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{mensagem}</p>}
           </form>
         </div>
       )}
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{professores.length} professor{professores.length !== 1 ? 'es' : ''}</span>
+          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{professores.length} professor(es)</span>
         </div>
         {professores.length === 0 ? (
           <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum professor cadastrado.</p>
@@ -77,7 +116,7 @@ export default function Professores() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                {['Nome', 'Especialidade', 'WhatsApp', 'Diária', 'Status'].map(h => (
+                {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status'].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
@@ -89,8 +128,15 @@ export default function Professores() {
                     <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{p.nome}</div>
                     {p.email && <div style={{ fontSize: '12px', color: '#6b7280' }}>{p.email}</div>}
                   </td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{p.especialidade || '—'}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{p.whatsapp || '—'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{p.whatsapp || '-'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '13px', color: '#9ca3af' }}>
+                    {p.pix_chave ? (
+                      <div>
+                        <div>{p.pix_chave}</div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase' }}>{p.pix_tipo}</div>
+                      </div>
+                    ) : '-'}
+                  </td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '600', color: '#34d399' }}>
                     R$ {(p.diaria_reais || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </td>
