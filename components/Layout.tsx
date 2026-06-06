@@ -57,7 +57,7 @@ const grupos: Grupo[] = [
 export default function Layout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const [abertos, setAbertos] = useState<Record<string, boolean>>(
-    grupos.reduce((acc, g) => ({ ...acc, [g.titulo]: true }), {})
+    grupos.reduce((acc, g) => ({ ...acc, [g.titulo]: false }), {})
   )
 
   function toggle(titulo: string) {
