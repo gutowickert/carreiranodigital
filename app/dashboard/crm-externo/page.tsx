@@ -19,6 +19,7 @@ type Prospeccao = {
   data_ganho: string
   data_perda: string
   observacoes: string
+  matricula_id: string
   criado_em: string
   usuarios_perfil?: { id: string; nome: string }
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
@@ -27,6 +28,7 @@ type Prospeccao = {
 type Vendedor = { id: string; nome: string }
 type Turma = { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
 type MotivoPerda = { id: string; nome: string }
+type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
 const ETAPAS = [
   { id: 'tentativa_contato', label: 'Tentativa contato', cor: '#6b7280', bg: '#1f2937' },
@@ -91,7 +93,7 @@ export default function CRMExterno() {
 
   async function moverEtapa(p: Prospeccao, novaEtapa: string, motivoId?: string) {
     if (novaEtapa === 'ganho') {
-      alert('Para marcar como ganho, abra a prospecção e use o botão "Ganho" (precisa registrar matrícula).')
+      alert('Para marcar como ganho, abra a prospecção e use o botão "✓ Ganho".')
       return
     }
     const payload: any = { etapa: novaEtapa, atualizado_em: new Date().toISOString() }
@@ -166,7 +168,7 @@ export default function CRMExterno() {
           <div style={{ background: '#431407', border: '1px solid #fb923c40', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
             <div style={{ fontSize: 13, color: '#fb923c', fontWeight: 600 }}>⚠ Nenhum vendedor externo cadastrado</div>
             <div style={{ fontSize: 12, color: '#fdba74', marginTop: 4 }}>
-              Cadastre usuários com setor "comercial_externo" em /dashboard/usuarios para começar a usar.
+              Cadastre usuários com setor "comercial_externo" em /dashboard/usuarios.
             </div>
           </div>
         )}
@@ -349,6 +351,7 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
   if (!aberto) return null
 
   const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+  const turmaSelecionada = turmas.find(t => t.id === form.turma_id)
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -433,14 +436,7 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
               </div>
 
               {mostrarGanho && (
-                <div style={{ marginTop: 12, padding: 12, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-                  <p style={{ fontSize: 12, color: '#4ade80', marginBottom: 8 }}>
-                    Para marcar como ganho, vá em <strong>Turmas → [turma] → Nova venda</strong>, crie a matrícula e o vendedor externo será comissionado.
-                  </p>
-                  <p style={{ fontSize: 11, color: '#9ca3af' }}>
-                    Esta funcionalidade será automatizada em breve.
-                  </p>
-                </div>
+                <ModalGanhoVincularExterno prospeccao={prospeccao} turma={turmaSelecionada} onFechar={() => { setMostrarGanho(false); onFechar() }} />
               )}
 
               {mostrarPerda && (
@@ -497,6 +493,154 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ============ VINCULAR MATRÍCULA NO CRM EXTERNO ============
+
+interface ModalGanhoVincularExternoProps {
+  prospeccao: Prospeccao
+  turma: Turma | undefined
+  onFechar: () => void
+}
+
+function ModalGanhoVincularExterno({ prospeccao, turma, onFechar }: ModalGanhoVincularExternoProps) {
+  const [matriculas, setMatriculas] = useState<MatriculaDisponivel[]>([])
+  const [matriculaSelecionada, setMatriculaSelecionada] = useState<string>('')
+  const [salvando, setSalvando] = useState(false)
+  const [mensagem, setMensagem] = useState('')
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (turma) carregarMatriculas()
+    else setCarregando(false)
+  }, [turma])
+
+  async function carregarMatriculas() {
+    if (!turma) return
+    setCarregando(true)
+    
+    const { data } = await supabase.from('matriculas')
+      .select('id, aluno_id, valor_pago, data_compra, alunos(nome, cpf)')
+      .eq('turma_id', turma.id)
+      .order('data_compra', { ascending: false })
+    
+    if (data) {
+      setMatriculas(data.map((m: any) => ({
+        id: m.id, aluno_id: m.aluno_id, valor_pago: m.valor_pago,
+        data_compra: m.data_compra, aluno_nome: m.alunos?.nome, aluno_cpf: m.alunos?.cpf,
+      })))
+    }
+    setCarregando(false)
+  }
+
+  async function confirmar() {
+    if (!matriculaSelecionada || !turma) return
+    setSalvando(true); setMensagem('')
+
+    const mat = matriculas.find(m => m.id === matriculaSelecionada)
+    if (!mat) { setSalvando(false); return }
+
+    // Vincula matrícula ao vendedor externo (e atualiza vendedor_id se ainda não tem)
+    const { data: matAtual } = await supabase.from('matriculas')
+      .select('vendedor_id').eq('id', matriculaSelecionada).single()
+    
+    const updatePayload: any = {}
+    if (!matAtual?.vendedor_id) {
+      updatePayload.vendedor_id = prospeccao.vendedor_id
+    }
+
+    if (Object.keys(updatePayload).length > 0) {
+      await supabase.from('matriculas').update(updatePayload).eq('id', matriculaSelecionada)
+    }
+
+    // Atualiza prospecção para ganho
+    await supabase.from('prospeccoes_externas').update({
+      etapa: 'ganho',
+      data_ganho: new Date().toISOString(),
+      valor_venda: mat.valor_pago,
+      matricula_id: matriculaSelecionada,
+      atualizado_em: new Date().toISOString(),
+    }).eq('id', prospeccao.id)
+
+    await supabase.from('prospeccao_andamentos').insert({
+      prospeccao_id: prospeccao.id, vendedor_id: prospeccao.vendedor_id,
+      tipo: 'outro',
+      etapa_anterior: prospeccao.etapa, etapa_nova: 'ganho',
+      observacao: `Vinculado à matrícula de ${mat.aluno_nome} (R$ ${mat.valor_pago.toFixed(2)})`,
+    })
+
+    setMensagem('Prospecção marcada como ganho!')
+    setTimeout(onFechar, 800)
+  }
+
+  return (
+    <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
+        Vincular matrícula existente
+      </div>
+
+      {!turma && (
+        <p style={{ fontSize: 12, color: '#f87171' }}>
+          Esta prospecção não tem turma vinculada. Vincule uma turma primeiro.
+        </p>
+      )}
+
+      {turma && carregando && (
+        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
+      )}
+
+      {turma && !carregando && matriculas.length === 0 && (
+        <div>
+          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
+            Nenhuma matrícula disponível para esta turma ainda.
+          </p>
+          <p style={{ fontSize: 11, color: '#9ca3af' }}>
+            Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
+          </p>
+        </div>
+      )}
+
+      {turma && matriculas.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+            Selecione a matrícula desta prospecção:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+            {matriculas.map(m => (
+              <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
+                style={{
+                  padding: 10, borderRadius: 6, cursor: 'pointer',
+                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
+                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
+                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                      {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
+                      {new Date(m.data_compra).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
+                    R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {mensagem && (
+            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+          )}
+
+          <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
+            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+            {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
+          </button>
+        </>
+      )}
     </div>
   )
 }
