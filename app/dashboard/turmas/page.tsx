@@ -128,7 +128,8 @@ export default function Turmas() {
   }
 
   async function carregarModulos(pid: string, duracaoTotal: number) {
-    const { data } = await supabase.from('produto_modulos').select('*').eq('produto_id', pid).order('ordem')
+    const { data, error } = await supabase.from('produto_modulos').select('*').eq('produto_id', pid).order('ordem')
+    console.log('DEBUG MODULOS:', { pid, data, error, length: data?.length })
     if (data && data.length > 0) {
       setModulos(data)
       const dias: DiaAula[] = []
@@ -263,7 +264,6 @@ export default function Turmas() {
     const totalTrafego = receitaPrevista * PCT_TRAFEGO
     const imposto = receitaPrevista * PCT_IMPOSTO
 
-    // Receita prevista: lançamento no primeiro dia da turma
     if (dataInicio) {
       await supabase.from('lancamentos_empresa').insert({
         tipo: 'receita', categoria: 'outro',
@@ -274,7 +274,6 @@ export default function Turmas() {
       })
     }
 
-    // Tráfego: dia 5 após hoje até 1 dia antes do início da turma
     if (dataInicio) {
       const hoje = new Date().toISOString().split('T')[0]
       const dataInicioTrafego = addDays(hoje, DIAS_INICIO_TRAFEGO)
@@ -300,7 +299,6 @@ export default function Turmas() {
       }
     }
 
-    // Imposto: dia 20 do mês seguinte ao início da turma
     if (dataInicio) {
       const dataIni = new Date(dataInicio + 'T12:00:00')
       const mesSeguinte = new Date(dataIni.getFullYear(), dataIni.getMonth() + 1, 20)
@@ -314,7 +312,6 @@ export default function Turmas() {
       })
     }
 
-    // Deslocamento: R$ 300 por dia de aula
     const lancamentosDesloc = datasValidas.map(d => ({
       tipo: 'custo', categoria: 'outro',
       descricao: `Deslocamento — ${produto.nome}`,
@@ -335,7 +332,6 @@ export default function Turmas() {
       break_even_matriculas: parseInt(meta),
     })
 
-    // Tarefas automáticas
     const hoje = new Date().toISOString().split('T')[0]
     const tarefasParaInserir = TAREFAS_AUTO.map(t => ({
       turma_id: turma.id, titulo: `${t.titulo} — ${produto.nome}`, setor: t.setor,
@@ -368,7 +364,6 @@ export default function Turmas() {
       }
     }
 
-    // Provisionar aulas na agenda_aulas
     const aulasParaAgenda = datasValidas.map(d => {
       const profDoDia = modulos.length > 0
         ? (d.modulo_id ? profPorModulo[d.modulo_id] : null)
