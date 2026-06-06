@@ -16,8 +16,18 @@ interface Filtros {
   sala_id: string
 }
 
+function parseLocal(iso: string): Date {
+  if (!iso) return new Date()
+  const clean = iso.replace('Z', '').split('+')[0].split('-00:00')[0]
+  const [datePart, timePart] = clean.split('T')
+  const [y, m, d] = datePart.split('-').map(Number)
+  const [h, mi, s] = (timePart || '00:00:00').split(':').map(Number)
+  return new Date(y, m - 1, d, h, mi || 0, s || 0)
+}
+
 export default function AgendaAulas() {
   const [eventos, setEventos] = useState<EventoCalendario[]>([])
+  const [aulasRaw, setAulasRaw] = useState<any[]>([])
   const [professores, setProfessores] = useState<any[]>([])
   const [turmas, setTurmas] = useState<any[]>([])
   const [salas, setSalas] = useState<any[]>([])
@@ -26,15 +36,20 @@ export default function AgendaAulas() {
   const [inicioSugerido, setInicioSugerido] = useState<Date>()
   const [fimSugerido, setFimSugerido] = useState<Date>()
   const [aulaEditando, setAulaEditando] = useState<any>(null)
+  const [visao, setVisao] = useState<'calendario' | 'grade'>('calendario')
+  const [mesGrade, setMesGrade] = useState(new Date().toISOString().slice(0, 7))
 
   async function carregarFiltros() {
     const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
       supabase.from('professores').select('id, nome').order('nome'),
-      supabase.from('turmas').select('id, codigo, produtos(nome)').order('data_inicio', { ascending: false }),
+      supabase.from('turmas').select('id, codigo, produtos(nome), cidades(nome)').order('data_inicio', { ascending: false }),
       supabase.from('salas').select('id, nome').order('nome'),
     ])
     setProfessores(p || [])
-    setTurmas((t || []).map((x: any) => ({ id: x.id, nome: x.produtos?.nome ? `${x.produtos.nome}${x.codigo ? ' (' + x.codigo + ')' : ''}` : (x.codigo || 'Turma') })))
+    setTurmas((t || []).map((x: any) => ({
+      id: x.id,
+      nome: `${x.produtos?.nome || 'Turma'}${x.cidades?.nome ? ' - ' + x.cidades.nome : ''}${x.codigo ? ' (' + x.codigo + ')' : ''}`,
+    })))
     setSalas(s || [])
   }
 
@@ -43,7 +58,7 @@ export default function AgendaAulas() {
       .from('agenda_aulas')
       .select(`
         *,
-        turmas(id, codigo, produtos(nome)),
+        turmas(id, codigo, produtos(nome), cidades(nome)),
         professores(id, nome),
         salas(id, nome)
       `)
@@ -54,13 +69,10 @@ export default function AgendaAulas() {
     if (filtros.sala_id) query = query.eq('sala_id', filtros.sala_id)
 
     const { data, error } = await query
-
-    if (error) {
-      console.error('Erro ao carregar aulas:', error)
-      return
-    }
+    if (error) { console.error('Erro:', error); return }
 
     if (data) {
+      setAulasRaw(data)
       const turmaIndex: Record<string, number> = {}
       let colorIdx = 0
       setEventos(data.map((a: any) => {
@@ -70,11 +82,13 @@ export default function AgendaAulas() {
         const cor = a.turma_id ? CORES_TURMA[turmaIndex[a.turma_id]] : '#7c3aed'
         const professor = a.professores?.nome || ''
         const sala = a.salas?.nome || ''
+        const cidade = a.turmas?.cidades?.nome || ''
+        const partes = [a.titulo, cidade, professor, sala].filter(Boolean)
         return {
           id: a.id,
-          title: `${a.titulo}${professor ? ' · ' + professor : ''}${sala ? ' · ' + sala : ''}`,
-          start: new Date(a.inicio),
-          end: new Date(a.fim),
+          title: partes.join(' · '),
+          start: parseLocal(a.inicio),
+          end: parseLocal(a.fim),
           color: cor,
           resource: a,
         }
@@ -86,52 +100,62 @@ export default function AgendaAulas() {
   useEffect(() => { carregar() }, [filtros])
 
   async function salvar(form: any) {
+    const inicioStr = form.inicio.length === 16 ? form.inicio + ':00' : form.inicio
+    const fimStr = form.fim.length === 16 ? form.fim + ':00' : form.fim
+
     if (form.id) {
       await supabase.from('agenda_aulas').update({
-        titulo: form.titulo,
-        turma_id: form.turma_id || null,
-        professor_id: form.professor_id || null,
-        sala_id: form.sala_id || null,
-        inicio: form.inicio,
-        fim: form.fim,
+        titulo: form.titulo, turma_id: form.turma_id || null,
+        professor_id: form.professor_id || null, sala_id: form.sala_id || null,
+        inicio: inicioStr, fim: fimStr,
         recorrente: form.recorrente,
         regra_recorrencia: form.regra_recorrencia || null,
         descricao: form.descricao,
       }).eq('id', form.id)
     } else {
       await supabase.from('agenda_aulas').insert({
-        titulo: form.titulo,
-        turma_id: form.turma_id || null,
-        professor_id: form.professor_id || null,
-        sala_id: form.sala_id || null,
-        inicio: form.inicio,
-        fim: form.fim,
+        titulo: form.titulo, turma_id: form.turma_id || null,
+        professor_id: form.professor_id || null, sala_id: form.sala_id || null,
+        inicio: inicioStr, fim: fimStr,
         recorrente: form.recorrente,
         regra_recorrencia: form.regra_recorrencia || null,
         descricao: form.descricao,
       })
     }
-    setModalAberto(false)
-    setAulaEditando(null)
-    carregar()
+    setModalAberto(false); setAulaEditando(null); carregar()
   }
 
   async function excluir(id: string) {
     await supabase.from('agenda_aulas').delete().eq('id', id)
-    setModalAberto(false)
-    setAulaEditando(null)
-    carregar()
+    setModalAberto(false); setAulaEditando(null); carregar()
   }
 
-  const selectStyle = {
-    background: '#2c2c2e',
-    border: '1px solid #3a3a3c',
-    borderRadius: 8,
-    padding: '8px 12px',
-    color: '#f4f4f5',
-    fontSize: 13,
-    cursor: 'pointer',
-    outline: 'none',
+  const selectStyle = { background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, padding: '8px 12px', color: '#f4f4f5', fontSize: 13, cursor: 'pointer', outline: 'none' }
+
+  // Aulas filtradas pelo mês (grade)
+  const aulasMes = aulasRaw.filter((a: any) => {
+    const d = parseLocal(a.inicio)
+    const mesAula = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    return mesAula === mesGrade
+  }).sort((a: any, b: any) => a.inicio.localeCompare(b.inicio))
+
+  function abrirEdicao(r: any) {
+    function fmt(d: Date) {
+      const pad = (n: number) => String(n).padStart(2, '0')
+      return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
+    }
+    setAulaEditando({
+      id: r.id, titulo: r.titulo,
+      turma_id: r.turma_id || '', professor_id: r.professor_id || '', sala_id: r.sala_id || '',
+      inicio: fmt(parseLocal(r.inicio)), fim: fmt(parseLocal(r.fim)),
+      recorrente: r.recorrente || false, regra_recorrencia: r.regra_recorrencia || '',
+      descricao: r.descricao || '',
+    })
+    setModalAberto(true)
+  }
+
+  function fmtHora(d: Date) {
+    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
   }
 
   return (
@@ -140,13 +164,25 @@ export default function AgendaAulas() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f4f4f5' }}>Agenda de Aulas</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Clique em um horário para agendar uma aula</p>
+            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Clique em um horario para agendar uma aula</p>
           </div>
-          <button
-            onClick={() => { setAulaEditando(null); setInicioSugerido(new Date()); setFimSugerido(new Date()); setModalAberto(true) }}
-            style={{ padding: '10px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
-            + Nova aula
-          </button>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
+            <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
+              <button onClick={() => setVisao('calendario')}
+                style={{ padding: '8px 16px', background: visao === 'calendario' ? '#7c3aed' : 'transparent', color: visao === 'calendario' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                Calendário
+              </button>
+              <button onClick={() => setVisao('grade')}
+                style={{ padding: '8px 16px', background: visao === 'grade' ? '#7c3aed' : 'transparent', color: visao === 'grade' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                Grade
+              </button>
+            </div>
+            <button
+              onClick={() => { setAulaEditando(null); setInicioSugerido(new Date()); setFimSugerido(new Date()); setModalAberto(true) }}
+              style={{ padding: '10px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              + Nova aula
+            </button>
+          </div>
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -162,6 +198,9 @@ export default function AgendaAulas() {
             <option value="">Todas as salas</option>
             {salas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
           </select>
+          {visao === 'grade' && (
+            <input type="month" value={mesGrade} onChange={e => setMesGrade(e.target.value)} style={selectStyle} />
+          )}
           {(filtros.professor_id || filtros.turma_id || filtros.sala_id) && (
             <button onClick={() => setFiltros({ professor_id: '', turma_id: '', sala_id: '' })}
               style={{ ...selectStyle, background: 'transparent', color: '#9ca3af', border: '1px solid #3a3a3c' }}>
@@ -170,39 +209,68 @@ export default function AgendaAulas() {
           )}
         </div>
 
-        <CalendarioBase
-          eventos={eventos}
-          onSlotSelect={(inicio, fim) => { setAulaEditando(null); setInicioSugerido(inicio); setFimSugerido(fim); setModalAberto(true) }}
-          onEventClick={(evento) => {
-            const r = evento.resource
-            function fmt(d: Date) {
-              const pad = (n: number) => String(n).padStart(2, '0')
-              return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-            }
-            setAulaEditando({
-              id: r.id, titulo: r.titulo,
-              turma_id: r.turma_id || '', professor_id: r.professor_id || '', sala_id: r.sala_id || '',
-              inicio: fmt(new Date(r.inicio)), fim: fmt(new Date(r.fim)),
-              recorrente: r.recorrente || false, regra_recorrencia: r.regra_recorrencia || '',
-              descricao: r.descricao || '',
-            })
-            setModalAberto(true)
-          }}
-        />
+        {visao === 'calendario' ? (
+          <CalendarioBase
+            eventos={eventos}
+            onSlotSelect={(inicio, fim) => { setAulaEditando(null); setInicioSugerido(inicio); setFimSugerido(fim); setModalAberto(true) }}
+            onEventClick={(evento) => abrirEdicao(evento.resource)}
+          />
+        ) : (
+          <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>
+                {aulasMes.length} aula(s) em {new Date(mesGrade + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+              </span>
+            </div>
+            {aulasMes.length === 0 ? (
+              <p style={{ padding: 24, fontSize: 13, color: '#6b7280' }}>Nenhuma aula neste mês.</p>
+            ) : (
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
+                    {['Dia', 'Horário', 'Produto', 'Cidade', 'Sala', 'Professor'].map(h => (
+                      <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {aulasMes.map((a: any) => {
+                    const inicio = parseLocal(a.inicio)
+                    const fim = parseLocal(a.fim)
+                    return (
+                      <tr key={a.id} onClick={() => abrirEdicao(a)}
+                        style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#f4f4f5', fontWeight: 500 }}>
+                          {inicio.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#a78bfa', fontFamily: 'monospace' }}>
+                          {fmtHora(inicio)} - {fmtHora(fim)}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#f4f4f5' }}>
+                          {a.turmas?.produtos?.nome || a.titulo}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                          {a.turmas?.cidades?.nome || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                          {a.salas?.nome || '-'}
+                        </td>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                          {a.professores?.nome || '-'}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
 
         {modalAberto && (
-          <ModalAula
-            aberto={modalAberto}
-            aula={aulaEditando}
-            inicioSugerido={inicioSugerido}
-            fimSugerido={fimSugerido}
-            professores={professores}
-            turmas={turmas}
-            salas={salas}
-            onSalvar={salvar}
-            onExcluir={excluir}
-            onFechar={() => { setModalAberto(false); setAulaEditando(null) }}
-          />
+          <ModalAula aberto={modalAberto} aula={aulaEditando} inicioSugerido={inicioSugerido} fimSugerido={fimSugerido}
+            professores={professores} turmas={turmas} salas={salas}
+            onSalvar={salvar} onExcluir={excluir} onFechar={() => { setModalAberto(false); setAulaEditando(null) }} />
         )}
       </div>
     </Layout>
@@ -210,16 +278,9 @@ export default function AgendaAulas() {
 }
 
 interface ModalAulaProps {
-  aberto: boolean
-  aula?: any
-  inicioSugerido?: Date
-  fimSugerido?: Date
-  professores: any[]
-  turmas: any[]
-  salas: any[]
-  onSalvar: (form: any) => void
-  onExcluir?: (id: string) => void
-  onFechar: () => void
+  aberto: boolean; aula?: any; inicioSugerido?: Date; fimSugerido?: Date
+  professores: any[]; turmas: any[]; salas: any[]
+  onSalvar: (form: any) => void; onExcluir?: (id: string) => void; onFechar: () => void
 }
 
 function toInputDatetime(date: Date) {
@@ -248,8 +309,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
 
   async function verificarConflito() {
     let query = supabase.from('agenda_aulas').select('id')
-      .eq('sala_id', form.sala_id)
-      .lt('inicio', form.fim).gt('fim', form.inicio)
+      .eq('sala_id', form.sala_id).lt('inicio', form.fim).gt('fim', form.inicio)
     if (form.id) query = query.neq('id', form.id)
     const { data } = await query
     setConflito((data?.length || 0) > 0)
