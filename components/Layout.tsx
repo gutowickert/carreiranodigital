@@ -8,6 +8,7 @@ const modulos = [
   { nome: 'Painel', href: '/dashboard' },
   { nome: 'Turmas', href: '/dashboard/turmas' },
   { nome: 'CRM', href: '/dashboard/crm' },
+  { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
   { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
   { nome: 'Tarefas', href: '/dashboard/tarefas' },
   { nome: 'Financeiro', href: '/dashboard/financeiro' },
@@ -45,7 +46,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
           <nav style={{ flex: 1, padding: '12px', display: 'flex', flexDirection: 'column', gap: '2px' }}>
             {modulos.map((m) => {
-              const ativo = pathname === m.href || (m.href !== '/dashboard' && pathname.startsWith(m.href))
+              const ativo = pathname === m.href || (m.href !== '/dashboard' && pathname.startsWith(m.href) && !(m.href === '/dashboard/crm' && pathname.startsWith('/dashboard/crm/resultados')))
               return (
                 <Link key={m.href} href={m.href} style={{
                   display: 'block',
