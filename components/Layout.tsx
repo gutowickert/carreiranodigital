@@ -11,6 +11,7 @@ const modulos = [
   { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
   { nome: 'Config CRM', href: '/dashboard/crm/config' },
   { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
+  { nome: 'Resultados Externo', href: '/dashboard/crm-externo/resultados' },
   { nome: 'Tarefas', href: '/dashboard/tarefas' },
   { nome: 'Financeiro', href: '/dashboard/financeiro' },
   { nome: 'Alunos', href: '/dashboard/alunos' },
