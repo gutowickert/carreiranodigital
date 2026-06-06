@@ -27,12 +27,16 @@ type Matricula = {
   valor_pago: number
   data_compra: string
   forma_pagamento: string
-  alunos: { id: string; nome: string; whatsapp: string; email: string }
+  parcelas: number
+  lead_id: string | null
+  alunos: { id: string; nome: string; whatsapp: string; email: string; cpf: string }
 }
 
-type Aluno = { id: string; nome: string; whatsapp: string; email: string }
+type Aluno = { id: string; nome: string; whatsapp: string; email: string; cpf: string }
 type Professor = { id: string; nome: string; diaria_reais: number }
 type TurmaProfessor = { id: string; professor_id: string; modulo_id: string | null; valor_calculado: number; professores: { nome: string; diaria_reais: number }; produto_modulos: { nome: string; duracao_dias: number } | null }
+type Lead = { id: string; nome: string; whatsapp: string; vendedor_id: string }
+type Vendedor = { id: string; nome: string }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
 const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
@@ -48,6 +52,12 @@ const statusCor: Record<string, { bg: string; color: string }> = {
   cancelada: { bg: '#450a0a', color: '#f87171' },
 }
 
+function addMonths(date: Date, months: number) {
+  const d = new Date(date)
+  d.setMonth(d.getMonth() + months)
+  return d
+}
+
 export default function DetalheTurma() {
   const params = useParams()
   const id = params.id as string
@@ -59,6 +69,8 @@ export default function DetalheTurma() {
   const [lancamentos, setLancamentos] = useState<any[]>([])
   const [turmaProfessores, setTurmaProfessores] = useState<TurmaProfessor[]>([])
   const [professores, setProfessores] = useState<Professor[]>([])
+  const [leadsDisponiveis, setLeadsDisponiveis] = useState<Lead[]>([])
+  const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [carregando, setCarregando] = useState(true)
   const [novaVenda, setNovaVenda] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -72,12 +84,16 @@ export default function DetalheTurma() {
   const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null)
   const [resultadosBusca, setResultadosBusca] = useState<Aluno[]>([])
   const [novoNome, setNovoNome] = useState('')
+  const [novoCpf, setNovoCpf] = useState('')
   const [novoWhatsapp, setNovoWhatsapp] = useState('')
   const [novoEmail, setNovoEmail] = useState('')
   const [modoAluno, setModoAluno] = useState<'buscar' | 'novo'>('buscar')
   const [valor, setValor] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState('pix')
+  const [formaPagamento, setFormaPagamento] = useState<'pix' | 'boleto' | 'cartao'>('pix')
+  const [parcelas, setParcelas] = useState('1')
   const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0])
+  const [leadVinculado, setLeadVinculado] = useState('')
+  const [vendedorId, setVendedorId] = useState('')
 
   useEffect(() => { if (id) carregarTudo() }, [id])
   useEffect(() => { if (turma) setValor(turma.preco_venda.toString()) }, [turma])
@@ -90,7 +106,8 @@ export default function DetalheTurma() {
     setCarregando(true)
     await Promise.all([
       carregarTurma(), carregarMatriculas(), carregarFinanceiro(),
-      carregarDatas(), carregarLancamentos(), carregarTurmaProfessores(), carregarProfessores()
+      carregarDatas(), carregarLancamentos(), carregarTurmaProfessores(),
+      carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores()
     ])
     setCarregando(false)
   }
@@ -100,7 +117,7 @@ export default function DetalheTurma() {
     if (data) setTurma(data)
   }
   async function carregarMatriculas() {
-    const { data } = await supabase.from('matriculas').select('*, alunos(id, nome, whatsapp, email)').eq('turma_id', id).order('data_compra', { ascending: false })
+    const { data } = await supabase.from('matriculas').select('*, alunos(id, nome, whatsapp, email, cpf)').eq('turma_id', id).order('data_compra', { ascending: false })
     if (data) setMatriculas(data)
   }
   async function carregarFinanceiro() {
@@ -123,30 +140,71 @@ export default function DetalheTurma() {
     const { data } = await supabase.from('professores').select('*').eq('ativo', true).order('nome')
     if (data) setProfessores(data)
   }
+  async function carregarLeadsDisponiveis() {
+    const { data } = await supabase.from('leads')
+      .select('id, nome, whatsapp, vendedor_id')
+      .eq('turma_id', id)
+      .not('etapa', 'in', '(ganho,perdido)')
+      .order('criado_em', { ascending: false })
+    if (data) setLeadsDisponiveis(data)
+  }
+  async function carregarVendedores() {
+    const { data } = await supabase.from('usuarios_perfil')
+      .select('id, nome').eq('setor', 'comercial').eq('ativo', true).order('nome')
+    if (data) setVendedores(data)
+  }
 
   async function buscarAlunos() {
-    const { data } = await supabase.from('alunos').select('id, nome, whatsapp, email').ilike('nome', `%${buscaAluno}%`).limit(5)
+    const { data } = await supabase.from('alunos')
+      .select('id, nome, whatsapp, email, cpf')
+      .or(`nome.ilike.%${buscaAluno}%,cpf.ilike.%${buscaAluno}%,whatsapp.ilike.%${buscaAluno}%`)
+      .limit(5)
     if (data) setResultadosBusca(data)
+  }
+
+  function limparForm() {
+    setNovaVenda(false); setAlunoSelecionado(null); setBuscaAluno('')
+    setNovoNome(''); setNovoCpf(''); setNovoWhatsapp(''); setNovoEmail('')
+    setModoAluno('buscar'); setFormaPagamento('pix'); setParcelas('1')
+    setLeadVinculado(''); setVendedorId(''); setMensagem('')
   }
 
   async function salvarVenda(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
     let alunoId = alunoSelecionado?.id
+    let nomeAluno = alunoSelecionado?.nome
 
     if (modoAluno === 'novo') {
-      const { data: novoAluno, error } = await supabase.from('alunos').insert({ nome: novoNome, whatsapp: novoWhatsapp, email: novoEmail }).select().single()
+      if (!novoNome || !novoCpf) { setMensagem('Nome e CPF são obrigatórios.'); setSalvando(false); return }
+      const { data: novoAluno, error } = await supabase.from('alunos').insert({
+        nome: novoNome, cpf: novoCpf,
+        whatsapp: novoWhatsapp || null,
+        email: novoEmail || `${novoCpf}@semEmail.com`,
+      }).select().single()
       if (error || !novoAluno) { setMensagem('Erro ao criar aluno: ' + error?.message); setSalvando(false); return }
       alunoId = novoAluno.id
+      nomeAluno = novoNome
     }
 
     if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(false); return }
 
     const valorVenda = parseFloat(valor)
+    const numParcelas = formaPagamento === 'cartao' ? 1 : parseInt(parcelas)
 
-    const { error: errMat } = await supabase.from('matriculas').insert({
+    // Se vinculou lead, pega vendedor do lead (a menos que tenha selecionado outro)
+    let vendedorFinal = vendedorId || null
+    if (leadVinculado && !vendedorId) {
+      const lead = leadsDisponiveis.find(l => l.id === leadVinculado)
+      if (lead?.vendedor_id) vendedorFinal = lead.vendedor_id
+    }
+
+    const { data: matricula, error: errMat } = await supabase.from('matriculas').insert({
       aluno_id: alunoId, turma_id: id, valor_pago: valorVenda,
-      data_compra: dataVenda, forma_pagamento: formaPagamento, status: 'ativa',
-    })
+      data_compra: dataVenda, forma_pagamento: formaPagamento,
+      parcelas: numParcelas, status: 'ativa',
+      lead_id: leadVinculado || null,
+      vendedor_id: vendedorFinal,
+    }).select().single()
     if (errMat) { setMensagem('Erro ao registrar venda: ' + errMat.message); setSalvando(false); return }
 
     // LTV do aluno
@@ -163,17 +221,27 @@ export default function DetalheTurma() {
       }).eq('turma_id', id)
     }
 
-    // Lançamento de receita REALIZADA
-    await supabase.from('lancamentos_empresa').insert({
-      tipo: 'receita', categoria: 'outro',
-      descricao: `Matrícula — ${alunoSelecionado?.nome || novoNome} (${formaPagamento})`,
-      valor: valorVenda, unidade: 'geral',
-      mes_referencia: dataVenda.substring(0, 7) + '-01',
-      data_vencimento: dataVenda, data_pagamento: dataVenda,
-      status: 'realizado', turma_id: id,
-    })
+    // Cria N lançamentos (parcelas)
+    const valorParcela = valorVenda / numParcelas
+    const dataBase = new Date(dataVenda + 'T12:00:00')
+    const lancamentosParcelas = []
+    for (let i = 0; i < numParcelas; i++) {
+      const dataVencimento = addMonths(dataBase, i)
+      const dataStr = dataVencimento.toISOString().split('T')[0]
+      lancamentosParcelas.push({
+        tipo: 'receita', categoria: 'outro',
+        descricao: `Matrícula ${nomeAluno} (${formaPagamento})${numParcelas > 1 ? ` ${i+1}/${numParcelas}` : ''}`,
+        valor: valorParcela, unidade: 'geral',
+        mes_referencia: dataStr.substring(0, 7) + '-01',
+        data_vencimento: dataStr,
+        data_pagamento: i === 0 ? dataStr : null,
+        status: i === 0 ? 'realizado' : 'previsto',
+        turma_id: id,
+      })
+    }
+    await supabase.from('lancamentos_empresa').insert(lancamentosParcelas)
 
-    // Subtrair do lançamento de receita PREVISTA
+    // Subtrair do lançamento de receita PREVISTA da turma
     const { data: prevista } = await supabase.from('lancamentos_empresa')
       .select('id, valor')
       .eq('turma_id', id)
@@ -191,9 +259,25 @@ export default function DetalheTurma() {
       }
     }
 
+    // Se vinculou um lead, marca como ganho
+    if (leadVinculado) {
+      await supabase.from('leads').update({
+        etapa: 'ganho',
+        data_ganho: new Date().toISOString(),
+        valor_venda: valorVenda,
+        matricula_id: matricula.id,
+        atualizado_em: new Date().toISOString(),
+      }).eq('id', leadVinculado)
+
+      await supabase.from('lead_andamentos').insert({
+        lead_id: leadVinculado, vendedor_id: vendedorFinal,
+        etapa_anterior: 'em_atendimento', etapa_nova: 'ganho',
+        observacao: `Matrícula criada — ${formaPagamento} ${numParcelas}x R$ ${valorParcela.toFixed(2)}`,
+      })
+    }
+
     setMensagem('Venda registrada com sucesso!')
-    setNovaVenda(false); setAlunoSelecionado(null); setBuscaAluno('')
-    setNovoNome(''); setNovoWhatsapp(''); setNovoEmail(''); setModoAluno('buscar')
+    limparForm()
     carregarTudo(); setSalvando(false)
   }
 
@@ -202,7 +286,6 @@ export default function DetalheTurma() {
     carregarTurma()
   }
 
-  // ----- Trocar professor de um módulo -----
   async function trocarProfessor(turmaProfId: string) {
     if (!novoProfId) { setEditandoProf(null); return }
     const tp = turmaProfessores.find(x => x.id === turmaProfId)
@@ -216,7 +299,6 @@ export default function DetalheTurma() {
       professor_id: novoProfId, valor_calculado: novoValor,
     }).eq('id', turmaProfId)
 
-    // Atualizar lançamento de custo do professor (se existir)
     const descAntiga = `Professor ${tp.professores.nome}`
     const { data: lancAntigo } = await supabase.from('lancamentos_empresa')
       .select('id')
@@ -233,7 +315,6 @@ export default function DetalheTurma() {
       }).eq('id', lancAntigo.id)
     }
 
-    // Recalcular custo_professores no financeiro_turma
     const novoCustoProfs = turmaProfessores.reduce((s, x) => s + (x.id === turmaProfId ? novoValor : x.valor_calculado), 0)
     if (financeiro) {
       const novaMargemPrev = (financeiro.receita_prevista || 0) - novoCustoProfs - (financeiro.custo_trafego_previsto || 0) - (financeiro.imposto_previsto || 0) - (financeiro.custo_deslocamento || 0)
@@ -243,7 +324,6 @@ export default function DetalheTurma() {
       }).eq('turma_id', id)
     }
 
-    // Atualizar professor_id na agenda_aulas
     await supabase.from('agenda_aulas')
       .update({ professor_id: novoProfId })
       .eq('turma_id', id)
@@ -260,7 +340,6 @@ export default function DetalheTurma() {
   const progresso = turma ? Math.min((matriculas.length / turma.meta_matriculas) * 100, 100) : 0
   const breakEvenAtingido = turma ? matriculas.length >= turma.meta_matriculas : false
 
-  // Calcular custos realizados (a partir dos lançamentos)
   const custoRealizadoProf = lancamentos.filter(l => l.categoria === 'pessoal' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custoRealizadoTrafego = lancamentos.filter(l => l.categoria === 'marketing' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custoRealizadoImposto = lancamentos.filter(l => l.categoria === 'imposto' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
@@ -268,7 +347,6 @@ export default function DetalheTurma() {
   const totalCustosRealizados = custoRealizadoProf + custoRealizadoTrafego + custoRealizadoImposto + custoRealizadoDesloc
   const margemRealizada = (financeiro?.receita_realizada || 0) - totalCustosRealizados
 
-  // Investimento diário sugerido de tráfego
   const trafegoPendente = lancamentos.filter(l => l.categoria === 'marketing' && l.status === 'previsto' && l.descricao?.startsWith('Tráfego'))
   const trafegoPorDia = trafegoPendente.length > 0 ? trafegoPendente[0].valor : 0
 
@@ -313,7 +391,6 @@ export default function DetalheTurma() {
       </header>
 
       <main style={{ padding: '24px 32px' }}>
-        {/* Cards resumo */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
           <div style={{ ...card, padding: '16px' }}>
             <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff' }}>{matriculas.length}</div>
@@ -342,7 +419,6 @@ export default function DetalheTurma() {
           </div>
         </div>
 
-        {/* Abas */}
         <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #3a3a3c', marginBottom: '0' }}>
           {[
             { id: 'matriculas', label: `Matrículas (${matriculas.length})` },
@@ -367,7 +443,9 @@ export default function DetalheTurma() {
             <div>
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '13px', color: '#9ca3af' }}>{matriculas.length} aluno{matriculas.length !== 1 ? 's' : ''} matriculado{matriculas.length !== 1 ? 's' : ''}</span>
-                <button onClick={() => setNovaVenda(!novaVenda)} style={btnPrimary}>+ Nova venda</button>
+                <button onClick={() => novaVenda ? limparForm() : setNovaVenda(true)} style={btnPrimary}>
+                  {novaVenda ? 'Cancelar' : '+ Nova venda'}
+                </button>
               </div>
 
               {novaVenda && (
@@ -387,14 +465,15 @@ export default function DetalheTurma() {
 
                     {modoAluno === 'buscar' ? (
                       <div style={{ position: 'relative' }}>
-                        <input value={buscaAluno} onChange={e => setBuscaAluno(e.target.value)} placeholder="Buscar aluno pelo nome..." style={input} />
+                        <input value={buscaAluno} onChange={e => setBuscaAluno(e.target.value)} placeholder="Buscar por nome, CPF ou WhatsApp..." style={input} />
                         {resultadosBusca.length > 0 && !alunoSelecionado && (
                           <div style={{ position: 'absolute', zIndex: 10, width: '100%', backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '8px', marginTop: '4px' }}>
                             {resultadosBusca.map(a => (
                               <div key={a.id} onClick={() => { setAlunoSelecionado(a); setBuscaAluno(a.nome); setResultadosBusca([]) }}
                                 style={{ padding: '8px 14px', fontSize: '13px', cursor: 'pointer', color: '#d1d1d1', borderBottom: '1px solid #3a3a3c' }}>
                                 <span style={{ fontWeight: '500' }}>{a.nome}</span>
-                                {a.whatsapp && <span style={{ color: '#6b7280', marginLeft: '10px' }}>{a.whatsapp}</span>}
+                                {a.cpf && <span style={{ color: '#6b7280', marginLeft: '10px', fontSize: '11px' }}>CPF: {a.cpf}</span>}
+                                {a.whatsapp && <span style={{ color: '#6b7280', marginLeft: '10px', fontSize: '11px' }}>{a.whatsapp}</span>}
                               </div>
                             ))}
                           </div>
@@ -402,6 +481,7 @@ export default function DetalheTurma() {
                         {alunoSelecionado && (
                           <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: '#052e16', border: '1px solid #166534', borderRadius: '8px', padding: '10px 14px' }}>
                             <span style={{ fontSize: '13px', color: '#4ade80', fontWeight: '500' }}>{alunoSelecionado.nome}</span>
+                            {alunoSelecionado.cpf && <span style={{ fontSize: '11px', color: '#9ca3af' }}>CPF: {alunoSelecionado.cpf}</span>}
                             <button type="button" onClick={() => { setAlunoSelecionado(null); setBuscaAluno('') }}
                               style={{ marginLeft: 'auto', fontSize: '11px', color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>× trocar</button>
                           </div>
@@ -409,7 +489,10 @@ export default function DetalheTurma() {
                       </div>
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                        <input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Nome completo *" required style={input} />
+                        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '8px' }}>
+                          <input value={novoNome} onChange={e => setNovoNome(e.target.value)} placeholder="Nome completo *" required style={input} />
+                          <input value={novoCpf} onChange={e => setNovoCpf(e.target.value)} placeholder="CPF *" required style={input} />
+                        </div>
                         <div style={{ display: 'flex', gap: '8px' }}>
                           <input value={novoWhatsapp} onChange={e => setNovoWhatsapp(e.target.value)} placeholder="WhatsApp" style={input} />
                           <input value={novoEmail} onChange={e => setNovoEmail(e.target.value)} placeholder="E-mail" type="email" style={input} />
@@ -417,20 +500,65 @@ export default function DetalheTurma() {
                       </div>
                     )}
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '140px 1fr 1fr', gap: '12px' }}>
+                    {/* Vincular lead opcional */}
+                    {leadsDisponiveis.length > 0 && (
+                      <div style={{ backgroundColor: '#2e1065', border: '1px solid #5b21b6', borderRadius: '8px', padding: '12px 14px' }}>
+                        <label style={{ display: 'block', fontSize: '11px', color: '#a78bfa', fontWeight: '600', marginBottom: '6px' }}>
+                          Vincular lead (opcional) — {leadsDisponiveis.length} lead(s) desta turma
+                        </label>
+                        <select value={leadVinculado} onChange={e => setLeadVinculado(e.target.value)} style={{ ...select, width: '100%' }}>
+                          <option value="">Sem vínculo</option>
+                          {leadsDisponiveis.map(l => (
+                            <option key={l.id} value={l.id}>{l.nome} {l.whatsapp ? `· ${l.whatsapp}` : ''}</option>
+                          ))}
+                        </select>
+                        {leadVinculado && (
+                          <p style={{ fontSize: '10px', color: '#c4b5fd', marginTop: '6px' }}>
+                            ✓ Lead será marcado como ganho automaticamente
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Vendedor */}
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
+                        Vendedor (opcional)
+                        {leadVinculado && !vendedorId && (() => {
+                          const lead = leadsDisponiveis.find(l => l.id === leadVinculado)
+                          if (lead?.vendedor_id) {
+                            const v = vendedores.find(vd => vd.id === lead.vendedor_id)
+                            return <span style={{ color: '#a78bfa', marginLeft: 8 }}>· auto: {v?.nome}</span>
+                          }
+                          return null
+                        })()}
+                      </label>
+                      <select value={vendedorId} onChange={e => setVendedorId(e.target.value)} style={{ ...select, width: '100%' }}>
+                        <option value="">— sem vendedor</option>
+                        {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                      </select>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px' }}>
                       <div>
                         <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Valor R$</label>
-                        <input value={valor} onChange={e => setValor(e.target.value)} type="number" required style={input} />
+                        <input value={valor} onChange={e => setValor(e.target.value)} type="number" step="0.01" required style={input} />
                       </div>
                       <div>
-                        <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Forma de pagamento</label>
-                        <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value)} style={{ ...select, width: '100%' }}>
+                        <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Forma</label>
+                        <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value as any)} style={{ ...select, width: '100%' }}>
                           <option value="pix">PIX</option>
-                          <option value="cartao">Cartão</option>
                           <option value="boleto">Boleto</option>
-                          <option value="transferencia">Transferência</option>
-                          <option value="dinheiro">Dinheiro</option>
+                          <option value="cartao">Cartão (à vista)</option>
                         </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
+                          Parcelas {formaPagamento === 'cartao' && <span style={{ color: '#6b7280' }}>(à vista)</span>}
+                        </label>
+                        <input value={formaPagamento === 'cartao' ? '1' : parcelas} onChange={e => setParcelas(e.target.value)}
+                          type="number" min="1" max="12" disabled={formaPagamento === 'cartao'}
+                          style={{ ...input, opacity: formaPagamento === 'cartao' ? 0.5 : 1 }} />
                       </div>
                       <div>
                         <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Data da venda</label>
@@ -438,8 +566,14 @@ export default function DetalheTurma() {
                       </div>
                     </div>
 
+                    {formaPagamento !== 'cartao' && parseInt(parcelas) > 1 && valor && (
+                      <div style={{ fontSize: 11, color: '#a78bfa', padding: '8px 12px', background: '#1c1c1e', borderRadius: 6 }}>
+                        {parcelas}x de R$ {(parseFloat(valor) / parseInt(parcelas)).toFixed(2)} (primeira no dia da venda, demais com 1 mês de intervalo)
+                      </div>
+                    )}
+
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                      <button type="button" onClick={() => setNovaVenda(false)} style={btnSecondary}>Cancelar</button>
+                      <button type="button" onClick={limparForm} style={btnSecondary}>Cancelar</button>
                       <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Registrando...' : 'Registrar venda'}</button>
                     </div>
                     {mensagem && <p style={{ fontSize: '13px', color: mensagem.includes('Erro') ? '#f87171' : '#4ade80' }}>{mensagem}</p>}
@@ -453,7 +587,7 @@ export default function DetalheTurma() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      {['Aluno', 'Contato', 'Data', 'Valor', 'Pagamento', 'Status'].map(h => (
+                      {['Aluno', 'CPF', 'Contato', 'Data', 'Valor', 'Pagamento', 'Status'].map(h => (
                         <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                       ))}
                     </tr>
@@ -462,6 +596,7 @@ export default function DetalheTurma() {
                     {matriculas.map(m => (
                       <tr key={m.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
                         <td style={{ padding: '12px 20px', fontSize: '13px', color: '#ffffff' }}>{m.alunos?.nome}</td>
+                        <td style={{ padding: '12px 20px', fontSize: '12px', color: '#9ca3af', fontFamily: 'monospace' }}>{m.alunos?.cpf || '-'}</td>
                         <td style={{ padding: '12px 20px', fontSize: '12px', color: '#9ca3af' }}>
                           {m.alunos?.whatsapp && (
                             <a href={`https://wa.me/55${m.alunos.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer" style={{ color: '#4ade80', textDecoration: 'none' }}>
@@ -470,7 +605,10 @@ export default function DetalheTurma() {
                           )}
                         </td>
                         <td style={{ padding: '12px 20px', fontSize: '12px', color: '#9ca3af' }}>{new Date(m.data_compra).toLocaleDateString('pt-BR')}</td>
-                        <td style={{ padding: '12px 20px', fontSize: '13px', fontWeight: '600', color: '#4ade80' }}>{fmt(m.valor_pago)}</td>
+                        <td style={{ padding: '12px 20px', fontSize: '13px', fontWeight: '600', color: '#4ade80' }}>
+                          {fmt(m.valor_pago)}
+                          {m.parcelas > 1 && <span style={{ fontSize: '10px', color: '#6b7280', marginLeft: '6px' }}>{m.parcelas}x</span>}
+                        </td>
                         <td style={{ padding: '12px 20px', fontSize: '12px', color: '#9ca3af', textTransform: 'capitalize' }}>{m.forma_pagamento}</td>
                         <td style={{ padding: '12px 20px' }}>
                           <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '20px', backgroundColor: '#052e16', color: '#4ade80' }}>{m.status}</span>
@@ -546,7 +684,6 @@ export default function DetalheTurma() {
                 Break-even: {financeiro.break_even_matriculas} matrículas — {matriculas.length} realizadas
               </div>
 
-              {/* Lançamentos da turma */}
               {lancamentos.length > 0 && (
                 <div style={{ marginTop: '32px' }}>
                   <h3 style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1', marginBottom: '12px' }}>Lançamentos da turma ({lancamentos.length})</h3>
