@@ -19,6 +19,7 @@ type LeadResultado = {
   motivo_perda_id: string
   observacoes: string
   criado_em: string
+  atualizado_em: string
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
   usuarios_perfil?: { id: string; nome: string }
   motivos_perda?: { id: string; nome: string }
@@ -36,12 +37,7 @@ export default function Resultados() {
   useEffect(() => { carregar() }, [mesFiltro])
 
   async function carregar() {
-    const [y, m] = mesFiltro.split('-').map(Number)
-    const ultimoDia = new Date(y, m, 0).getDate()
-    const dataInicio = mesFiltro + '-01'
-    const dataFim = `${mesFiltro}-${String(ultimoDia).padStart(2, '0')}`
-
-    const { data } = await supabase.from('leads')
+    const { data, error } = await supabase.from('leads')
       .select(`
         *,
         turmas(id, codigo, produtos(nome), cidades(nome)),
@@ -49,10 +45,18 @@ export default function Resultados() {
         motivos_perda(id, nome)
       `)
       .in('etapa', ['ganho', 'perdido'])
-      .or(`and(data_ganho.gte.${dataInicio},data_ganho.lte.${dataFim}T23:59:59),and(data_perda.gte.${dataInicio},data_perda.lte.${dataFim}T23:59:59)`)
       .order('atualizado_em', { ascending: false })
 
-    if (data) setLeads(data as any)
+    if (error) { console.error('Erro:', error); return }
+    if (data) {
+      // Filtra por mês no JS (data_ganho ou data_perda dentro do mês selecionado)
+      const filtradosMes = (data as any[]).filter((l: any) => {
+        const ref = l.data_ganho || l.data_perda
+        if (!ref) return false
+        return ref.startsWith(mesFiltro)
+      })
+      setLeads(filtradosMes)
+    }
   }
 
   const filtrados = leads.filter(l => filtro === 'todos' || l.etapa === filtro)
