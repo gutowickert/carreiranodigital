@@ -72,8 +72,10 @@ export default function Financeiro() {
   const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
   const [novoLanc, setNovoLanc] = useState(false)
+  const [editando, setEditando] = useState<Lancamento | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
+  const [agrupamento, setAgrupamento] = useState<'mes' | 'dia'>('mes')
 
   const [lancTipo, setLancTipo] = useState('custo')
   const [lancCategoria, setLancCategoria] = useState('outro')
@@ -107,9 +109,62 @@ export default function Financeiro() {
     if (data) setLancamentos(data)
   }
 
+  function limparForm() {
+    setLancTipo('custo'); setLancCategoria('outro'); setLancDescricao('')
+    setLancValor(''); setLancUnidade('geral'); setLancVencimento('')
+    setLancStatus('previsto'); setLancRecorrente(false); setLancMeses('12')
+    setEditando(null); setMensagem('')
+  }
+
+  function abrirEdicao(l: Lancamento) {
+    setEditando(l)
+    setLancTipo(l.tipo); setLancCategoria(l.categoria); setLancDescricao(l.descricao)
+    setLancValor(l.valor.toString()); setLancUnidade(l.unidade)
+    setLancVencimento(l.data_vencimento); setLancStatus(l.status)
+    setLancRecorrente(false); setNovoLanc(true)
+  }
+
   async function salvarLancamento(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
 
+    if (editando) {
+      const payload: any = {
+        descricao: lancDescricao,
+        valor: parseFloat(lancValor),
+        data_vencimento: lancVencimento,
+        status: lancStatus,
+      }
+      if (lancStatus === 'realizado' && !editando.data_pagamento) {
+        payload.data_pagamento = new Date().toISOString().split('T')[0]
+      }
+
+      if (editando.recorrente && editando.grupo_recorrencia) {
+        const confirma = confirm('Este lançamento é recorrente. Aplicar a alteração também nos meses futuros do mesmo grupo?')
+        if (confirma) {
+          const { error } = await supabase.from('lancamentos_empresa').update({
+            descricao: lancDescricao, valor: parseFloat(lancValor), status: lancStatus,
+          }).eq('grupo_recorrencia', editando.grupo_recorrencia)
+            .gte('data_vencimento', editando.data_vencimento)
+          if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+          // Aplica também alteração de data no atual
+          await supabase.from('lancamentos_empresa').update({ data_vencimento: lancVencimento }).eq('id', editando.id)
+          setMensagem('Lançamentos atualizados!')
+        } else {
+          const { error } = await supabase.from('lancamentos_empresa').update(payload).eq('id', editando.id)
+          if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+          setMensagem('Lançamento atualizado!')
+        }
+      } else {
+        const { error } = await supabase.from('lancamentos_empresa').update(payload).eq('id', editando.id)
+        if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+        setMensagem('Lançamento atualizado!')
+      }
+
+      limparForm(); setNovoLanc(false); carregarLancamentos()
+      setSalvando(false); return
+    }
+
+    // Novo lançamento
     if (lancRecorrente) {
       const meses = parseInt(lancMeses) || 1
       const grupoId = gerarUuid()
@@ -133,7 +188,6 @@ export default function Financeiro() {
           recorrente: true, grupo_recorrencia: grupoId,
         })
       }
-
       const { error } = await supabase.from('lancamentos_empresa').insert(lancamentosParaInserir)
       if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
       setMensagem(`${meses} lançamentos recorrentes criados!`)
@@ -148,9 +202,7 @@ export default function Financeiro() {
       setMensagem('Lançamento criado!')
     }
 
-    setLancDescricao(''); setLancValor(''); setLancVencimento('')
-    setLancRecorrente(false); setLancMeses('12'); setNovoLanc(false)
-    carregarLancamentos()
+    limparForm(); setNovoLanc(false); carregarLancamentos()
     setSalvando(false)
   }
 
@@ -163,7 +215,7 @@ export default function Financeiro() {
 
   async function excluirLancamento(l: Lancamento) {
     if (l.recorrente && l.grupo_recorrencia) {
-      const confirma = confirm('Este é um lançamento recorrente. Excluir todos os meses futuros desse grupo?')
+      const confirma = confirm('Lançamento recorrente. Excluir todos os meses futuros desse grupo?')
       if (!confirma) return
       await supabase.from('lancamentos_empresa').delete()
         .eq('grupo_recorrencia', l.grupo_recorrencia)
@@ -177,7 +229,6 @@ export default function Financeiro() {
 
   function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 
-  // ===== Cálculos =====
   const receitasPrev = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const receitasReal = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custosPrev = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
@@ -191,9 +242,23 @@ export default function Financeiro() {
   function totalPorCategoria(cat: string, status: string) {
     return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
   }
-
   function totalPorCategoriaRecorrente(cat: string) {
     return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
+  }
+
+  // Agrupa lançamentos por dia
+  function agruparPorDia() {
+    const grupos: Record<string, Lancamento[]> = {}
+    lancamentos.forEach(l => {
+      const dia = l.data_vencimento
+      if (!grupos[dia]) grupos[dia] = []
+      grupos[dia].push(l)
+    })
+    return Object.keys(grupos).sort().map(dia => ({
+      dia, lancamentos: grupos[dia],
+      totalReceitas: grupos[dia].filter(l => l.tipo === 'receita').reduce((s, l) => s + l.valor, 0),
+      totalCustos: grupos[dia].filter(l => l.tipo === 'custo').reduce((s, l) => s + l.valor, 0),
+    }))
   }
 
   const abas = [
@@ -217,9 +282,7 @@ export default function Financeiro() {
             border: 'none', borderBottom: aba === a.id ? '2px solid #7c3aed' : '2px solid transparent',
             backgroundColor: 'transparent', color: aba === a.id ? '#a78bfa' : '#9ca3af',
             marginBottom: '-1px',
-          }}>
-            {a.label}
-          </button>
+          }}>{a.label}</button>
         ))}
       </div>
 
@@ -238,7 +301,6 @@ export default function Financeiro() {
                 <span style={{ fontSize: '13px', color: '#9ca3af' }}>{fmt(receitasPrev)}</span>
               </div>
             </div>
-
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos variáveis</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
@@ -250,13 +312,11 @@ export default function Financeiro() {
                 <span style={{ fontSize: '13px', color: '#9ca3af' }}>{fmt(custosPrev)}</span>
               </div>
             </div>
-
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos (recorrentes)</div>
               <div style={{ fontSize: '20px', fontWeight: '700', color: '#f87171' }}>{fmt(custosFixosMes)}</div>
               <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{lancamentos.filter(l => l.tipo === 'custo' && l.recorrente).length} lançamentos no mês</div>
             </div>
-
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Resultado</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
@@ -381,20 +441,36 @@ export default function Financeiro() {
       {aba === 'lancamentos' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentos.length} lançamento{lancamentos.length !== 1 ? 's' : ''} em {mesSelecionado.split('-').reverse().join('/')}</span>
-            <button onClick={() => setNovoLanc(!novoLanc)} style={btnPrimary}>+ Novo lançamento</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentos.length} lançamento(s) em {mesSelecionado.split('-').reverse().join('/')}</span>
+              <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
+                <button onClick={() => setAgrupamento('mes')}
+                  style={{ padding: '6px 14px', background: agrupamento === 'mes' ? '#7c3aed' : 'transparent', color: agrupamento === 'mes' ? '#fff' : '#9ca3af', border: 'none', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                  Por mês
+                </button>
+                <button onClick={() => setAgrupamento('dia')}
+                  style={{ padding: '6px 14px', background: agrupamento === 'dia' ? '#7c3aed' : 'transparent', color: agrupamento === 'dia' ? '#fff' : '#9ca3af', border: 'none', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
+                  Por dia
+                </button>
+              </div>
+            </div>
+            <button onClick={() => { if (novoLanc) { limparForm(); setNovoLanc(false) } else { limparForm(); setNovoLanc(true) } }} style={btnPrimary}>
+              {novoLanc ? 'Fechar' : '+ Novo lançamento'}
+            </button>
           </div>
 
           {novoLanc && (
             <div style={{ ...card, marginBottom: '16px' }}>
-              <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>Novo lançamento</div>
+              <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>
+                {editando ? 'Editar lançamento' : 'Novo lançamento'}
+              </div>
               <form onSubmit={salvarLancamento}>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                  <select value={lancTipo} onChange={e => setLancTipo(e.target.value)} style={select}>
+                  <select value={lancTipo} onChange={e => setLancTipo(e.target.value)} style={select} disabled={!!editando}>
                     <option value="custo">Custo</option>
                     <option value="receita">Receita</option>
                   </select>
-                  <select value={lancCategoria} onChange={e => setLancCategoria(e.target.value)} style={select}>
+                  <select value={lancCategoria} onChange={e => setLancCategoria(e.target.value)} style={select} disabled={!!editando}>
                     <option value="pessoal">Pessoal</option>
                     <option value="estrutura">Estrutura</option>
                     <option value="sistemas">Sistemas</option>
@@ -402,16 +478,16 @@ export default function Financeiro() {
                     <option value="imposto">Imposto</option>
                     <option value="outro">Outro</option>
                   </select>
-                  <select value={lancUnidade} onChange={e => setLancUnidade(e.target.value)} style={select}>
+                  <select value={lancUnidade} onChange={e => setLancUnidade(e.target.value)} style={select} disabled={!!editando}>
                     <option value="geral">Geral</option>
                     <option value="lajeado">Lajeado</option>
                     <option value="porto_alegre">Porto Alegre</option>
                     <option value="ambas">Ambas</option>
                   </select>
                 </div>
-                <input value={lancDescricao} onChange={e => setLancDescricao(e.target.value)} placeholder="Descrição (ex: Aluguel Lajeado)" required style={{ ...input, marginBottom: '12px' }} />
+                <input value={lancDescricao} onChange={e => setLancDescricao(e.target.value)} placeholder="Descrição" required style={{ ...input, marginBottom: '12px' }} />
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                  <input value={lancValor} onChange={e => setLancValor(e.target.value)} placeholder="Valor R$" type="number" required style={input} />
+                  <input value={lancValor} onChange={e => setLancValor(e.target.value)} placeholder="Valor R$" type="number" step="0.01" required style={input} />
                   <input value={lancVencimento} onChange={e => setLancVencimento(e.target.value)} type="date" required style={input} />
                   <select value={lancStatus} onChange={e => setLancStatus(e.target.value)} style={select}>
                     <option value="previsto">Previsto</option>
@@ -419,76 +495,131 @@ export default function Financeiro() {
                   </select>
                 </div>
 
-                {/* Toggle recorrência */}
-                <div style={{ backgroundColor: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
-                    <input type="checkbox" checked={lancRecorrente} onChange={e => setLancRecorrente(e.target.checked)}
-                      style={{ width: '16px', height: '16px', accentColor: '#7c3aed', cursor: 'pointer' }} />
-                    <span style={{ fontSize: '13px', color: '#d1d1d1', fontWeight: '500' }}>Lançamento recorrente</span>
-                  </label>
-                  {lancRecorrente && (
-                    <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>Repetir por</span>
-                      <input value={lancMeses} onChange={e => setLancMeses(e.target.value)} type="number" min="1" max="60"
-                        style={{ ...input, width: '80px' }} />
-                      <span style={{ fontSize: '12px', color: '#9ca3af' }}>meses, sempre no mesmo dia</span>
-                    </div>
-                  )}
-                </div>
+                {!editando && (
+                  <div style={{ backgroundColor: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: '8px', padding: '14px', marginBottom: '16px' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer' }}>
+                      <input type="checkbox" checked={lancRecorrente} onChange={e => setLancRecorrente(e.target.checked)}
+                        style={{ width: '16px', height: '16px', accentColor: '#7c3aed', cursor: 'pointer' }} />
+                      <span style={{ fontSize: '13px', color: '#d1d1d1', fontWeight: '500' }}>Lançamento recorrente</span>
+                    </label>
+                    {lancRecorrente && (
+                      <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>Repetir por</span>
+                        <input value={lancMeses} onChange={e => setLancMeses(e.target.value)} type="number" min="1" max="60"
+                          style={{ ...input, width: '80px' }} />
+                        <span style={{ fontSize: '12px', color: '#9ca3af' }}>meses, sempre no mesmo dia</span>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-                  <button type="button" onClick={() => setNovoLanc(false)} style={btnSecondary}>Cancelar</button>
-                  <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Salvar'}</button>
+                  <button type="button" onClick={() => { setNovoLanc(false); limparForm() }} style={btnSecondary}>Cancelar</button>
+                  <button type="submit" disabled={salvando} style={btnPrimary}>
+                    {salvando ? 'Salvando...' : (editando ? 'Atualizar' : 'Salvar')}
+                  </button>
                 </div>
                 {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
               </form>
             </div>
           )}
 
-          <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            {lancamentos.length === 0 ? (
-              <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum lançamento neste mês.</p>
-            ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    {['Descrição', 'Categoria', 'Unidade', 'Vencimento', 'Valor', 'Status', ''].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {lancamentos.map(l => (
-                    <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#ffffff' }}>
-                        {l.descricao}
-                        {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻ recorrente</span>}
-                      </td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{categoriaNome[l.categoria]}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{unidadeNome[l.unidade]}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
-                      <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
-                      <td style={{ padding: '12px 16px' }}>
-                        <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? '#052e16' : '#1c1917', color: l.status === 'realizado' ? '#34d399' : '#9ca3af' }}>
-                          {l.status}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 16px', display: 'flex', gap: '10px' }}>
-                        {l.status === 'previsto' && (
-                          <button onClick={() => confirmarPagamento(l.id)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>
-                            {l.tipo === 'receita' ? 'Recebido ✓' : 'Pago ✓'}
-                          </button>
-                        )}
-                        <button onClick={() => excluirLancamento(l)} style={{ fontSize: '12px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>
-                          Excluir
-                        </button>
-                      </td>
+          {/* AGRUPAMENTO POR MÊS (tabela) */}
+          {agrupamento === 'mes' && (
+            <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+              {lancamentos.length === 0 ? (
+                <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum lançamento neste mês.</p>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+                      {['Descrição', 'Categoria', 'Vencimento', 'Valor', 'Status', ''].map(h => (
+                        <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                      ))}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
+                  </thead>
+                  <tbody>
+                    {lancamentos.map(l => (
+                      <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#ffffff' }}>
+                          {l.descricao}
+                          {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻ recorrente</span>}
+                        </td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{categoriaNome[l.categoria]}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
+                        <td style={{ padding: '12px 16px' }}>
+                          <span style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? '#052e16' : '#1c1917', color: l.status === 'realizado' ? '#34d399' : '#9ca3af' }}>
+                            {l.status}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 16px', display: 'flex', gap: '10px' }}>
+                          <button onClick={() => abrirEdicao(l)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                          {l.status === 'previsto' && (
+                            <button onClick={() => confirmarPagamento(l.id)} style={{ fontSize: '12px', color: '#34d399', background: 'none', border: 'none', cursor: 'pointer' }}>
+                              {l.tipo === 'receita' ? 'Recebido ✓' : 'Pago ✓'}
+                            </button>
+                          )}
+                          <button onClick={() => excluirLancamento(l)} style={{ fontSize: '12px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>Excluir</button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+
+          {/* AGRUPAMENTO POR DIA */}
+          {agrupamento === 'dia' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              {lancamentos.length === 0 ? (
+                <div style={{ ...card, padding: '24px' }}>
+                  <p style={{ fontSize: '14px', color: '#6b7280' }}>Nenhum lançamento neste mês.</p>
+                </div>
+              ) : agruparPorDia().map(({ dia, lancamentos: lancsDia, totalReceitas, totalCustos }) => {
+                const saldoDia = totalReceitas - totalCustos
+                return (
+                  <div key={dia} style={{ ...card, padding: 0, overflow: 'hidden' }}>
+                    <div style={{ padding: '12px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#1c1c1e' }}>
+                      <div>
+                        <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff' }}>
+                          {new Date(dia + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{lancsDia.length} lançamento(s)</div>
+                      </div>
+                      <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                        {totalReceitas > 0 && <span style={{ fontSize: '13px', color: '#34d399', fontWeight: '600' }}>+{fmt(totalReceitas)}</span>}
+                        {totalCustos > 0 && <span style={{ fontSize: '13px', color: '#f87171', fontWeight: '600' }}>-{fmt(totalCustos)}</span>}
+                        <span style={{ fontSize: '14px', fontWeight: '700', color: saldoDia >= 0 ? '#34d399' : '#f87171' }}>{fmt(saldoDia)}</span>
+                      </div>
+                    </div>
+                    {lancsDia.map(l => (
+                      <div key={l.id} style={{ padding: '10px 20px', borderBottom: '1px solid #2c2c2e', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontSize: '13px', color: '#d1d1d1' }}>
+                            {l.descricao}
+                            {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻</span>}
+                          </div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{categoriaNome[l.categoria]} · {unidadeNome[l.unidade]}</div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>
+                            {l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}
+                          </span>
+                          <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? '#052e16' : '#1c1917', color: l.status === 'realizado' ? '#34d399' : '#9ca3af' }}>
+                            {l.status}
+                          </span>
+                          <button onClick={() => abrirEdicao(l)} style={{ fontSize: '11px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                          <button onClick={() => excluirLancamento(l)} style={{ fontSize: '11px', color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>×</button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
 
@@ -516,7 +647,6 @@ export default function Financeiro() {
                     <td style={{ fontSize: '13px', textAlign: 'right', color: '#34d399', padding: '6px 16px' }}>{fmt(receitasPrev)}</td>
                     <td style={{ fontSize: '13px', textAlign: 'right', color: '#34d399', fontWeight: '600', padding: '6px 0' }}>{fmt(receitasReal)}</td>
                   </tr>
-
                   <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
                   <tr>
                     <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos variáveis</td>
@@ -533,14 +663,12 @@ export default function Financeiro() {
                       <td style={{ fontSize: '13px', textAlign: 'right', color: '#f87171', padding: '4px 0' }}>{fmt(totalPorCategoria(cat, 'realizado'))}</td>
                     </tr>
                   ))}
-
                   <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
                   <tr>
                     <td style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff', padding: '8px 0' }}>= Margem bruta</td>
                     <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemPrev >= 0 ? '#34d399' : '#f87171', padding: '8px 16px' }}>{fmt(margemPrev)}</td>
                     <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemReal >= 0 ? '#34d399' : '#f87171', padding: '8px 0' }}>{fmt(margemReal)}</td>
                   </tr>
-
                   <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
                   <tr>
                     <td colSpan={3} style={{ fontSize: '10px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos fixos (recorrentes)</td>
@@ -556,7 +684,6 @@ export default function Financeiro() {
                       </tr>
                     )
                   })}
-
                   <tr><td colSpan={3} style={{ paddingTop: '16px', borderTop: '2px solid #3a3a3c' }}></td></tr>
                   <tr>
                     <td style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', padding: '12px 0' }}>= Resultado líquido</td>
