@@ -7,9 +7,10 @@ import Image from 'next/image'
 const modulos = [
   { nome: 'Painel', href: '/dashboard' },
   { nome: 'Turmas', href: '/dashboard/turmas' },
+  { nome: 'CRM', href: '/dashboard/crm' },
+  { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
   { nome: 'Tarefas', href: '/dashboard/tarefas' },
   { nome: 'Financeiro', href: '/dashboard/financeiro' },
-  { nome: 'Leads', href: '/dashboard/leads' },
   { nome: 'Alunos', href: '/dashboard/alunos' },
   { nome: 'Professores', href: '/dashboard/professores' },
   { nome: 'Salas', href: '/dashboard/salas' },
