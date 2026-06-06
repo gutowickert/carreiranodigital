@@ -21,7 +21,8 @@ const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'no
 const setores = [
   { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: '#2e1065', color: '#a78bfa' },
   { value: 'operacoes', label: 'Operacoes', desc: 'Turmas, professores, salas', bg: '#422006', color: '#fbbf24' },
-  { value: 'comercial', label: 'Comercial', desc: 'Leads, CRM e vendas', bg: '#172554', color: '#60a5fa' },
+  { value: 'comercial', label: 'Comercial', desc: 'CRM digital e leads', bg: '#172554', color: '#60a5fa' },
+  { value: 'comercial_externo', label: 'Comercial Externo', desc: 'Prospeccoes e visitas', bg: '#431407', color: '#fb923c' },
   { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatorios', bg: '#042f2e', color: '#34d399' },
   { value: 'marketing', label: 'Marketing', desc: 'Trafego e criativos', bg: '#450a0a', color: '#f87171' },
   { value: 'pos_venda', label: 'Pos-venda', desc: 'Alunos e suporte', bg: '#052e16', color: '#4ade80' },
@@ -104,7 +105,7 @@ export default function Usuarios() {
         Cada setor precisa de pelo menos um usuario ativo para receber tarefas automaticas na agenda.
       </p>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '12px', marginBottom: '24px' }}>
         {setores.map(s => {
           const responsavel = usuarios.find(u => u.setor === s.value && u.ativo)
           return (
