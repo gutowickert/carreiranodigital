@@ -128,8 +128,7 @@ export default function Turmas() {
   }
 
   async function carregarModulos(pid: string, duracaoTotal: number) {
-    const { data, error } = await supabase.from('produto_modulos').select('*').eq('produto_id', pid).order('ordem')
-    console.log('DEBUG MODULOS:', { pid, data, error, length: data?.length })
+    const { data } = await supabase.from('produto_modulos').select('*').eq('produto_id', pid).order('ordem')
     if (data && data.length > 0) {
       setModulos(data)
       const dias: DiaAula[] = []
