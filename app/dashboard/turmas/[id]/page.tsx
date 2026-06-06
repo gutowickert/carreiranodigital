@@ -36,7 +36,7 @@ type Aluno = { id: string; nome: string; whatsapp: string; email: string; cpf: s
 type Professor = { id: string; nome: string; diaria_reais: number }
 type TurmaProfessor = { id: string; professor_id: string; modulo_id: string | null; valor_calculado: number; professores: { nome: string; diaria_reais: number }; produto_modulos: { nome: string; duracao_dias: number } | null }
 type Lead = { id: string; nome: string; whatsapp: string; vendedor_id: string }
-type Vendedor = { id: string; nome: string }
+type Vendedor = { id: string; nome: string; setor?: string }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
 const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
@@ -150,8 +150,12 @@ export default function DetalheTurma() {
   }
   async function carregarVendedores() {
     const { data } = await supabase.from('usuarios_perfil')
-      .select('id, nome').eq('setor', 'comercial').eq('ativo', true).order('nome')
-    if (data) setVendedores(data)
+      .select('id, nome, setor')
+      .in('setor', ['comercial', 'comercial_externo'])
+      .eq('ativo', true)
+      .order('setor')
+      .order('nome')
+    if (data) setVendedores(data as any)
   }
 
   async function buscarAlunos() {
@@ -438,7 +442,6 @@ export default function DetalheTurma() {
         </div>
 
         <div style={{ ...card, borderTopLeftRadius: 0, borderTopRightRadius: 0, marginTop: 0 }}>
-          {/* MATRÍCULAS */}
           {aba === 'matriculas' && (
             <div>
               <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -500,7 +503,6 @@ export default function DetalheTurma() {
                       </div>
                     )}
 
-                    {/* Vincular lead opcional */}
                     {leadsDisponiveis.length > 0 && (
                       <div style={{ backgroundColor: '#2e1065', border: '1px solid #5b21b6', borderRadius: '8px', padding: '12px 14px' }}>
                         <label style={{ display: 'block', fontSize: '11px', color: '#a78bfa', fontWeight: '600', marginBottom: '6px' }}>
@@ -520,7 +522,6 @@ export default function DetalheTurma() {
                       </div>
                     )}
 
-                    {/* Vendedor */}
                     <div>
                       <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>
                         Vendedor (opcional)
@@ -535,7 +536,11 @@ export default function DetalheTurma() {
                       </label>
                       <select value={vendedorId} onChange={e => setVendedorId(e.target.value)} style={{ ...select, width: '100%' }}>
                         <option value="">— sem vendedor</option>
-                        {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+                        {vendedores.map(v => (
+                          <option key={v.id} value={v.id}>
+                            {v.nome} {v.setor === 'comercial_externo' ? '(Externo)' : '(Interno)'}
+                          </option>
+                        ))}
                       </select>
                     </div>
 
@@ -621,7 +626,6 @@ export default function DetalheTurma() {
             </div>
           )}
 
-          {/* FINANCEIRO */}
           {aba === 'financeiro' && financeiro && (
             <div style={{ padding: '24px' }}>
               {trafegoPorDia > 0 && (
@@ -719,7 +723,6 @@ export default function DetalheTurma() {
             </div>
           )}
 
-          {/* PROFESSORES */}
           {aba === 'professores' && (
             <div style={{ padding: '24px' }}>
               {turmaProfessores.length === 0 ? (
@@ -759,7 +762,6 @@ export default function DetalheTurma() {
             </div>
           )}
 
-          {/* DATAS */}
           {aba === 'datas' && (
             <div style={{ padding: '24px' }}>
               {datas.length === 0 ? (
