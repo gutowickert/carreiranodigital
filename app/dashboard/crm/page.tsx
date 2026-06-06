@@ -25,7 +25,7 @@ type Lead = {
 type Turma = { id: string; codigo: string; data_inicio: string; preco_venda: number; produtos: { nome: string }; cidades: { nome: string } }
 type Vendedor = { id: string; nome: string }
 type MotivoPerda = { id: string; nome: string }
-type Aluno = { id: string; nome: string; cpf: string; whatsapp: string; email: string }
+type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
 const ETAPAS = [
   { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#6b7280', bg: '#1f2937' },
@@ -46,12 +46,6 @@ const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRad
 const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-
-function addMonths(date: Date, months: number) {
-  const d = new Date(date)
-  d.setMonth(d.getMonth() + months)
-  return d
-}
 
 export default function CRM() {
   const [leads, setLeads] = useState<Lead[]>([])
@@ -142,8 +136,7 @@ export default function CRM() {
 
   async function moverEtapa(lead: Lead, novaEtapa: string, motivoId?: string) {
     if (novaEtapa === 'ganho') {
-      // Ganho deve passar pelo modal de matrícula
-      alert('Para marcar como ganho, use o botão "✓ Ganho" no modal do lead. É necessário criar a matrícula.')
+      alert('Para marcar como ganho, use o botão "✓ Ganho" no modal do lead.')
       return
     }
     const payload: any = { etapa: novaEtapa, atualizado_em: new Date().toISOString() }
@@ -351,7 +344,6 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       const ratrado = await aplicarRateio(form.turma_id)
       if (ratrado) vendedorIdFinal = ratrado
     }
-
     const codigoTurma = turmas.find(t => t.id === form.turma_id)?.codigo || null
 
     if (lead) {
@@ -469,7 +461,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                 ))}
                 <button onClick={() => setMostrarGanho(!mostrarGanho)}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                  ✓ Ganho (matrícula)
+                  ✓ Ganho
                 </button>
                 <button onClick={() => setMostrarPerda(!mostrarPerda)}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
@@ -478,7 +470,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               </div>
 
               {mostrarGanho && (
-                <ModalGanho lead={lead} turma={turmaSelecionada} onFechar={() => { setMostrarGanho(false); onFechar() }} />
+                <ModalGanhoVincular lead={lead} turma={turmaSelecionada} onFechar={() => { setMostrarGanho(false); onFechar() }} />
               )}
 
               {mostrarPerda && (
@@ -529,221 +521,142 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   )
 }
 
-// ============ MODAL DE GANHO (MATRÍCULA) ============
+// ============ VINCULAR MATRÍCULA EXISTENTE ============
 
-interface ModalGanhoProps {
+interface ModalGanhoVincularProps {
   lead: Lead
   turma: Turma | undefined
   onFechar: () => void
 }
 
-function ModalGanho({ lead, turma, onFechar }: ModalGanhoProps) {
-  const [modo, setModo] = useState<'buscar' | 'novo'>('buscar')
-  const [busca, setBusca] = useState('')
-  const [alunosEncontrados, setAlunosEncontrados] = useState<Aluno[]>([])
-  const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null)
-  
-  // Novo aluno
-  const [novoNome, setNovoNome] = useState(lead.nome)
-  const [novoCpf, setNovoCpf] = useState('')
-  const [novoEmail, setNovoEmail] = useState(lead.email || '')
-  const [novoWhatsapp, setNovoWhatsapp] = useState(lead.whatsapp || '')
-  
-  // Matrícula
-  const [valorVenda, setValorVenda] = useState(turma ? turma.preco_venda.toString() : '')
-  const [formaPagamento, setFormaPagamento] = useState<'pix' | 'boleto' | 'cartao'>('pix')
-  const [parcelas, setParcelas] = useState('1')
+function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) {
+  const [matriculas, setMatriculas] = useState<MatriculaDisponivel[]>([])
+  const [matriculaSelecionada, setMatriculaSelecionada] = useState<string>('')
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
+  const [carregando, setCarregando] = useState(true)
 
   useEffect(() => {
-    if (busca.length >= 3) buscarAlunos()
-    else setAlunosEncontrados([])
-  }, [busca])
+    if (turma) carregarMatriculas()
+  }, [turma])
 
-  async function buscarAlunos() {
-    const { data } = await supabase.from('alunos')
-      .select('id, nome, cpf, whatsapp, email')
-      .or(`nome.ilike.%${busca}%,cpf.ilike.%${busca}%,whatsapp.ilike.%${busca}%`)
-      .limit(8)
-    if (data) setAlunosEncontrados(data)
+  async function carregarMatriculas() {
+    if (!turma) return
+    setCarregando(true)
+    
+    // Busca matrículas dessa turma que ainda não estão vinculadas a outro lead
+    const { data } = await supabase.from('matriculas')
+      .select('id, aluno_id, valor_pago, data_compra, lead_id, alunos(nome, cpf)')
+      .eq('turma_id', turma.id)
+      .order('data_compra', { ascending: false })
+    
+    if (data) {
+      const disponiveis = data
+        .filter((m: any) => !m.lead_id || m.lead_id === lead.id)
+        .map((m: any) => ({
+          id: m.id, aluno_id: m.aluno_id, valor_pago: m.valor_pago,
+          data_compra: m.data_compra, aluno_nome: m.alunos?.nome, aluno_cpf: m.alunos?.cpf,
+        }))
+      setMatriculas(disponiveis)
+    }
+    setCarregando(false)
   }
 
   async function confirmar() {
-    if (!turma) { setMensagem('Lead precisa estar vinculado a uma turma.'); return }
-    if (!valorVenda) { setMensagem('Informe o valor da venda.'); return }
-    
-    let alunoId: string | null = null
-
+    if (!matriculaSelecionada || !turma) return
     setSalvando(true); setMensagem('')
 
-    // Cria ou usa aluno existente
-    if (modo === 'novo') {
-      if (!novoNome || !novoCpf) { setMensagem('Nome e CPF são obrigatórios.'); setSalvando(false); return }
-      const { data: aluno, error } = await supabase.from('alunos').insert({
-        nome: novoNome, cpf: novoCpf,
-        email: novoEmail || `${novoCpf}@semEmail.com`,
-        whatsapp: novoWhatsapp || null,
-      }).select().single()
-      if (error) { setMensagem('Erro ao criar aluno: ' + error.message); setSalvando(false); return }
-      alunoId = aluno.id
-    } else {
-      if (!alunoSelecionado) { setMensagem('Selecione um aluno.'); setSalvando(false); return }
-      alunoId = alunoSelecionado.id
-    }
+    const mat = matriculas.find(m => m.id === matriculaSelecionada)
+    if (!mat) { setSalvando(false); return }
 
-    // Cria matrícula
-    const numParcelas = formaPagamento === 'cartao' ? 1 : parseInt(parcelas)
-    const valorTotal = parseFloat(valorVenda)
-    
-    const { data: matricula, error: errMat } = await supabase.from('matriculas').insert({
-      aluno_id: alunoId, turma_id: turma.id,
-      vendedor_id: lead.vendedor_id || null,
-      valor_pago: valorTotal,
-      forma_pagamento: formaPagamento,
-      parcelas: numParcelas,
-      lead_id: lead.id,
-      status: 'ativa',
-      data_compra: new Date().toISOString(),
-    }).select().single()
-
-    if (errMat) { setMensagem('Erro ao criar matrícula: ' + errMat.message); setSalvando(false); return }
-
-    // Cria lançamentos no financeiro (parcelas)
-    const valorParcela = valorTotal / numParcelas
-    const hoje = new Date()
-    const lancamentos = []
-    for (let i = 0; i < numParcelas; i++) {
-      const dataVencimento = addMonths(hoje, i)
-      lancamentos.push({
-        tipo: 'receita', categoria: 'outro',
-        descricao: `Matrícula ${novoNome || alunoSelecionado?.nome} — ${turma.produtos?.nome}${numParcelas > 1 ? ` (${i+1}/${numParcelas})` : ''}`,
-        valor: valorParcela, unidade: 'geral',
-        mes_referencia: dataVencimento.toISOString().substring(0, 7) + '-01',
-        data_vencimento: dataVencimento.toISOString().split('T')[0],
-        status: i === 0 ? 'realizado' : 'previsto',
-        data_pagamento: i === 0 ? new Date().toISOString().split('T')[0] : null,
-        turma_id: turma.id,
-      })
-    }
-    await supabase.from('lancamentos_empresa').insert(lancamentos)
-
-    // Atualiza financeiro_turma (receita_realizada += valorTotal)
-    const { data: fin } = await supabase.from('financeiro_turma').select('receita_realizada').eq('turma_id', turma.id).single()
-    if (fin) {
-      await supabase.from('financeiro_turma').update({
-        receita_realizada: (fin.receita_realizada || 0) + valorTotal,
-      }).eq('turma_id', turma.id)
-    }
+    // Vincula matrícula ao lead
+    await supabase.from('matriculas').update({ lead_id: lead.id }).eq('id', matriculaSelecionada)
 
     // Atualiza lead para ganho
     await supabase.from('leads').update({
-      etapa: 'ganho', data_ganho: new Date().toISOString(),
-      valor_venda: valorTotal, matricula_id: matricula.id,
+      etapa: 'ganho',
+      data_ganho: new Date().toISOString(),
+      valor_venda: mat.valor_pago,
+      matricula_id: matriculaSelecionada,
       atualizado_em: new Date().toISOString(),
     }).eq('id', lead.id)
 
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id,
       etapa_anterior: lead.etapa, etapa_nova: 'ganho',
-      observacao: `Matrícula criada — ${formaPagamento} ${numParcelas}x R$ ${valorParcela.toFixed(2)}`,
+      observacao: `Vinculado a matrícula de ${mat.aluno_nome} (R$ ${mat.valor_pago.toFixed(2)})`,
     })
 
-    setMensagem('Matrícula criada com sucesso!')
-    setTimeout(onFechar, 1000)
+    setMensagem('Lead marcado como ganho!')
+    setTimeout(onFechar, 800)
   }
-
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
 
   return (
     <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>Registrar matrícula (Ganho)</div>
-
-      <div style={{ display: 'flex', gap: 4, marginBottom: 12, background: '#1c1c1e', padding: 4, borderRadius: 6 }}>
-        <button onClick={() => setModo('buscar')}
-          style={{ flex: 1, padding: '6px 12px', borderRadius: 4, border: 'none', background: modo === 'buscar' ? '#7c3aed' : 'transparent', color: modo === 'buscar' ? '#fff' : '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
-          Buscar aluno existente
-        </button>
-        <button onClick={() => setModo('novo')}
-          style={{ flex: 1, padding: '6px 12px', borderRadius: 4, border: 'none', background: modo === 'novo' ? '#7c3aed' : 'transparent', color: modo === 'novo' ? '#fff' : '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
-          Cadastrar novo aluno
-        </button>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
+        Vincular matrícula existente
       </div>
 
-      {modo === 'buscar' && (
-        <div style={{ marginBottom: 12 }}>
-          <input style={inp} placeholder="Buscar por nome, CPF ou WhatsApp..." value={busca} onChange={e => setBusca(e.target.value)} />
-          {alunosEncontrados.length > 0 && (
-            <div style={{ marginTop: 8, maxHeight: 160, overflowY: 'auto', background: '#1c1c1e', borderRadius: 6 }}>
-              {alunosEncontrados.map(a => (
-                <div key={a.id} onClick={() => setAlunoSelecionado(a)}
-                  style={{ padding: 10, borderBottom: '1px solid #3a3a3c', cursor: 'pointer', background: alunoSelecionado?.id === a.id ? '#2e1065' : 'transparent' }}>
-                  <div style={{ fontSize: 13, color: '#fff' }}>{a.nome}</div>
-                  <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>
-                    {a.cpf && `CPF: ${a.cpf}`} {a.whatsapp && `· ${a.whatsapp}`}
+      {!turma && (
+        <p style={{ fontSize: 12, color: '#f87171' }}>
+          Este lead não está vinculado a uma turma. Vincule uma turma primeiro.
+        </p>
+      )}
+
+      {turma && carregando && (
+        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
+      )}
+
+      {turma && !carregando && matriculas.length === 0 && (
+        <div>
+          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
+            Nenhuma matrícula disponível para esta turma ainda.
+          </p>
+          <p style={{ fontSize: 11, color: '#9ca3af' }}>
+            Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
+          </p>
+        </div>
+      )}
+
+      {turma && matriculas.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+            Selecione a matrícula deste lead:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+            {matriculas.map(m => (
+              <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
+                style={{
+                  padding: 10, borderRadius: 6, cursor: 'pointer',
+                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
+                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
+                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                      {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
+                      {new Date(m.data_compra).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
+                    R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
-          {alunoSelecionado && (
-            <div style={{ marginTop: 8, padding: 10, background: '#2e1065', borderRadius: 6, fontSize: 12, color: '#a78bfa' }}>
-              ✓ Aluno selecionado: {alunoSelecionado.nome}
-            </div>
-          )}
-        </div>
-      )}
-
-      {modo === 'novo' && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 8 }}>
-            <input style={inp} placeholder="Nome completo *" value={novoNome} onChange={e => setNovoNome(e.target.value)} />
-            <input style={inp} placeholder="CPF *" value={novoCpf} onChange={e => setNovoCpf(e.target.value)} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-            <input style={inp} placeholder="Email" value={novoEmail} onChange={e => setNovoEmail(e.target.value)} />
-            <input style={inp} placeholder="WhatsApp" value={novoWhatsapp} onChange={e => setNovoWhatsapp(e.target.value)} />
-          </div>
-        </div>
-      )}
-
-      <div style={{ borderTop: '1px solid #4ade8040', paddingTop: 12 }}>
-        <div style={{ fontSize: 12, color: '#9ca3af', marginBottom: 8 }}>Pagamento</div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 8 }}>
-          <div>
-            <label style={labelStyle}>Valor R$</label>
-            <input type="number" step="0.01" style={inp} value={valorVenda} onChange={e => setValorVenda(e.target.value)} />
-          </div>
-          <div>
-            <label style={labelStyle}>Forma</label>
-            <select style={{ ...inp, cursor: 'pointer' }} value={formaPagamento} onChange={e => setFormaPagamento(e.target.value as any)}>
-              <option value="pix">PIX</option>
-              <option value="boleto">Boleto</option>
-              <option value="cartao">Cartão (à vista)</option>
-            </select>
-          </div>
-        </div>
-        {formaPagamento !== 'cartao' && (
-          <div>
-            <label style={labelStyle}>Parcelas</label>
-            <input type="number" min="1" max="12" style={inp} value={parcelas} onChange={e => setParcelas(e.target.value)} />
-            {parseInt(parcelas) > 1 && valorVenda && (
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
-                {parcelas}x R$ {(parseFloat(valorVenda) / parseInt(parcelas)).toFixed(2)}
               </div>
-            )}
+            ))}
           </div>
-        )}
-      </div>
 
-      {mensagem && (
-        <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+          {mensagem && (
+            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+          )}
+
+          <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
+            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+            {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
+          </button>
+        </>
       )}
-
-      <button onClick={confirmar} disabled={salvando}
-        style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: salvando ? 0.5 : 1 }}>
-        {salvando ? 'Criando matrícula...' : 'Confirmar matrícula'}
-      </button>
     </div>
   )
 }
