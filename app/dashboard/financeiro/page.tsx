@@ -64,6 +64,11 @@ function gerarUuid() {
   })
 }
 
+function ultimoDiaDoMes(yyyymm: string) {
+  const [y, m] = yyyymm.split('-').map(Number)
+  return new Date(y, m, 0).getDate()
+}
+
 export default function Financeiro() {
   const [aba, setAba] = useState<'visao_geral' | 'turmas' | 'lancamentos' | 'dre'>('visao_geral')
   const [financeiros, setFinanceiros] = useState<FinanceiroTurma[]>([])
@@ -103,9 +108,12 @@ export default function Financeiro() {
   }
 
   async function carregarLancamentos() {
-    const { data } = await supabase.from('lancamentos_empresa').select('*')
-      .gte('data_vencimento', mesSelecionado + '-01').lte('data_vencimento', mesSelecionado + '-31')
+    const ultimoDia = ultimoDiaDoMes(mesSelecionado)
+    const dataFim = `${mesSelecionado}-${String(ultimoDia).padStart(2, '0')}`
+    const { data, error } = await supabase.from('lancamentos_empresa').select('*')
+      .gte('data_vencimento', mesSelecionado + '-01').lte('data_vencimento', dataFim)
       .order('data_vencimento', { ascending: true })
+    if (error) console.error('Erro lancamentos:', error)
     if (data) setLancamentos(data)
   }
 
@@ -146,7 +154,6 @@ export default function Financeiro() {
           }).eq('grupo_recorrencia', editando.grupo_recorrencia)
             .gte('data_vencimento', editando.data_vencimento)
           if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
-          // Aplica também alteração de data no atual
           await supabase.from('lancamentos_empresa').update({ data_vencimento: lancVencimento }).eq('id', editando.id)
           setMensagem('Lançamentos atualizados!')
         } else {
@@ -164,7 +171,6 @@ export default function Financeiro() {
       setSalvando(false); return
     }
 
-    // Novo lançamento
     if (lancRecorrente) {
       const meses = parseInt(lancMeses) || 1
       const grupoId = gerarUuid()
@@ -246,7 +252,6 @@ export default function Financeiro() {
     return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
   }
 
-  // Agrupa lançamentos por dia
   function agruparPorDia() {
     const grupos: Record<string, Lancamento[]> = {}
     lancamentos.forEach(l => {
@@ -286,7 +291,6 @@ export default function Financeiro() {
         ))}
       </div>
 
-      {/* VISÃO GERAL */}
       {aba === 'visao_geral' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
@@ -356,7 +360,6 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* POR TURMA */}
       {aba === 'turmas' && (
         <div style={{ display: 'flex', gap: '24px' }}>
           <div style={{ flex: 1 }}>
@@ -437,7 +440,6 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* LANÇAMENTOS */}
       {aba === 'lancamentos' && (
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
@@ -524,7 +526,6 @@ export default function Financeiro() {
             </div>
           )}
 
-          {/* AGRUPAMENTO POR MÊS (tabela) */}
           {agrupamento === 'mes' && (
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
               {lancamentos.length === 0 ? (
@@ -570,7 +571,6 @@ export default function Financeiro() {
             </div>
           )}
 
-          {/* AGRUPAMENTO POR DIA */}
           {agrupamento === 'dia' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               {lancamentos.length === 0 ? (
@@ -623,7 +623,6 @@ export default function Financeiro() {
         </div>
       )}
 
-      {/* DRE */}
       {aba === 'dre' && (
         <div style={{ maxWidth: '720px' }}>
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
