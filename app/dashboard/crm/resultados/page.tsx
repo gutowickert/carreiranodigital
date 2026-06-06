@@ -5,52 +5,38 @@ import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-type LeadResultado = {
-  id: string
-  nome: string
-  whatsapp: string
-  email: string
-  turma_id: string
-  vendedor_id: string
-  etapa: string
-  valor_venda: number
-  data_ganho: string
-  data_perda: string
-  motivo_perda_id: string
-  observacoes: string
-  criado_em: string
-  atualizado_em: string
-  turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
-  usuarios_perfil?: { id: string; nome: string }
-  motivos_perda?: { id: string; nome: string }
-}
-
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 export default function Resultados() {
-  const [leads, setLeads] = useState<LeadResultado[]>([])
+  const [leads, setLeads] = useState<any[]>([])
+  const [turmas, setTurmas] = useState<any[]>([])
+  const [vendedores, setVendedores] = useState<any[]>([])
+  const [motivos, setMotivos] = useState<any[]>([])
   const [filtro, setFiltro] = useState<'todos' | 'ganho' | 'perdido'>('todos')
   const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
 
   useEffect(() => { carregar() }, [mesFiltro])
 
   async function carregar() {
-    const { data, error } = await supabase.from('leads')
-      .select(`
-        *,
-        turmas(id, codigo, produtos(nome), cidades(nome)),
-        usuarios_perfil!leads_vendedor_id_fkey(id, nome),
-        motivos_perda(id, nome)
-      `)
+    const { data: leadsData, error } = await supabase.from('leads')
+      .select('*')
       .in('etapa', ['ganho', 'perdido'])
       .order('atualizado_em', { ascending: false })
 
     if (error) { console.error('Erro:', error); return }
-    if (data) {
-      // Filtra por mês no JS (data_ganho ou data_perda dentro do mês selecionado)
-      const filtradosMes = (data as any[]).filter((l: any) => {
+
+    const { data: turmasData } = await supabase.from('turmas').select('id, codigo, produtos(nome), cidades(nome)')
+    const { data: vendedoresData } = await supabase.from('usuarios_perfil').select('id, nome')
+    const { data: motivosData } = await supabase.from('motivos_perda').select('id, nome')
+
+    setTurmas(turmasData || [])
+    setVendedores(vendedoresData || [])
+    setMotivos(motivosData || [])
+
+    if (leadsData) {
+      const filtradosMes = leadsData.filter((l: any) => {
         const ref = l.data_ganho || l.data_perda
         if (!ref) return false
         return ref.startsWith(mesFiltro)
@@ -58,6 +44,10 @@ export default function Resultados() {
       setLeads(filtradosMes)
     }
   }
+
+  function buscarTurma(id: string) { return turmas.find(t => t.id === id) }
+  function buscarVendedor(id: string) { return vendedores.find(v => v.id === id) }
+  function buscarMotivo(id: string) { return motivos.find(m => m.id === id) }
 
   const filtrados = leads.filter(l => filtro === 'todos' || l.etapa === filtro)
   const ganhos = leads.filter(l => l.etapa === 'ganho')
@@ -126,37 +116,42 @@ export default function Resultados() {
                 </tr>
               </thead>
               <tbody>
-                {filtrados.map(l => (
-                  <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    <td style={{ padding: '12px 16px' }}>
-                      <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{l.nome}</div>
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{l.whatsapp || l.email || '-'}</div>
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#9ca3af' }}>
-                      {l.turmas?.produtos?.nome || '-'}
-                      {l.turmas?.codigo && <div style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{l.turmas.codigo}</div>}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{l.usuarios_perfil?.nome || '-'}</td>
-                    <td style={{ padding: '12px 16px' }}>
-                      {l.etapa === 'ganho' ? (
-                        <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#052e16', color: '#34d399', fontWeight: 600 }}>✓ Ganho</span>
-                      ) : (
-                        <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#450a0a', color: '#f87171', fontWeight: 600 }}>✗ Perdido</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 13 }}>
-                      {l.etapa === 'ganho' ? (
-                        <span style={{ color: '#34d399', fontWeight: 600 }}>{fmt(l.valor_venda)}</span>
-                      ) : (
-                        <span style={{ color: '#9ca3af' }}>{l.motivos_perda?.nome || '-'}</span>
-                      )}
-                    </td>
-                    <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>
-                      {l.etapa === 'ganho' && l.data_ganho ? new Date(l.data_ganho).toLocaleDateString('pt-BR') : ''}
-                      {l.etapa === 'perdido' && l.data_perda ? new Date(l.data_perda).toLocaleDateString('pt-BR') : ''}
-                    </td>
-                  </tr>
-                ))}
+                {filtrados.map(l => {
+                  const turma = buscarTurma(l.turma_id)
+                  const vendedor = buscarVendedor(l.vendedor_id)
+                  const motivo = buscarMotivo(l.motivo_perda_id)
+                  return (
+                    <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
+                      <td style={{ padding: '12px 16px' }}>
+                        <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{l.nome}</div>
+                        <div style={{ fontSize: 11, color: '#6b7280', marginTop: 2 }}>{l.whatsapp || l.email || '-'}</div>
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#9ca3af' }}>
+                        {turma?.produtos?.nome || '-'}
+                        {turma?.codigo && <div style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{turma.codigo}</div>}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{vendedor?.nome || '-'}</td>
+                      <td style={{ padding: '12px 16px' }}>
+                        {l.etapa === 'ganho' ? (
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#052e16', color: '#34d399', fontWeight: 600 }}>✓ Ganho</span>
+                        ) : (
+                          <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: '#450a0a', color: '#f87171', fontWeight: 600 }}>✗ Perdido</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 13 }}>
+                        {l.etapa === 'ganho' ? (
+                          <span style={{ color: '#34d399', fontWeight: 600 }}>{fmt(l.valor_venda)}</span>
+                        ) : (
+                          <span style={{ color: '#9ca3af' }}>{motivo?.nome || '-'}</span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>
+                        {l.etapa === 'ganho' && l.data_ganho ? new Date(l.data_ganho).toLocaleDateString('pt-BR') : ''}
+                        {l.etapa === 'perdido' && l.data_perda ? new Date(l.data_perda).toLocaleDateString('pt-BR') : ''}
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
