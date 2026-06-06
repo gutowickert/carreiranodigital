@@ -46,7 +46,9 @@ export default function Professores() {
   async function salvar(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
     const { error } = await supabase.from('professores').insert({
-      nome, email, whatsapp,
+      nome,
+      email: email || null,
+      whatsapp: whatsapp || null,
       diaria_reais: parseFloat(diaria),
       pix_chave: pixChave || null,
       pix_tipo: pixChave ? pixTipo : null,
