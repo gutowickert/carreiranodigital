@@ -24,7 +24,8 @@ const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'no
 
 export default function Professores() {
   const [professores, setProfessores] = useState<Professor[]>([])
-  const [novo, setNovo] = useState(false)
+  const [aberto, setAberto] = useState(false)
+  const [editandoId, setEditandoId] = useState<string | null>(null)
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [nome, setNome] = useState('')
@@ -43,9 +44,34 @@ export default function Professores() {
     if (data) setProfessores(data)
   }
 
+  function limparForm() {
+    setNome(''); setEmail(''); setWhatsapp(''); setDiaria('')
+    setPixChave(''); setPixTipo('cpf'); setBanco(''); setObservacoes('')
+    setMensagem(''); setEditandoId(null)
+  }
+
+  function abrirNovo() {
+    limparForm()
+    setAberto(true)
+  }
+
+  function abrirEdicao(p: Professor) {
+    setEditandoId(p.id)
+    setNome(p.nome || '')
+    setEmail(p.email || '')
+    setWhatsapp(p.whatsapp || '')
+    setDiaria(p.diaria_reais ? p.diaria_reais.toString() : '')
+    setPixChave(p.pix_chave || '')
+    setPixTipo(p.pix_tipo || 'cpf')
+    setBanco(p.banco || '')
+    setObservacoes(p.observacoes || '')
+    setMensagem('')
+    setAberto(true)
+  }
+
   async function salvar(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
-    const { error } = await supabase.from('professores').insert({
+    const payload = {
       nome,
       email: email || null,
       whatsapp: whatsapp || null,
@@ -54,12 +80,17 @@ export default function Professores() {
       pix_tipo: pixChave ? pixTipo : null,
       banco: banco || null,
       observacoes: observacoes || null,
-      ativo: true,
-    })
-    if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
-    setNome(''); setEmail(''); setWhatsapp(''); setDiaria('')
-    setPixChave(''); setPixTipo('cpf'); setBanco(''); setObservacoes('')
-    setNovo(false); carregar(); setSalvando(false)
+    }
+
+    if (editandoId) {
+      const { error } = await supabase.from('professores').update(payload).eq('id', editandoId)
+      if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+    } else {
+      const { error } = await supabase.from('professores').insert({ ...payload, ativo: true })
+      if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
+    }
+
+    limparForm(); setAberto(false); carregar(); setSalvando(false)
   }
 
   async function toggleAtivo(id: string, ativo: boolean) {
@@ -71,12 +102,16 @@ export default function Professores() {
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Professores</h1>
-        <button onClick={() => setNovo(!novo)} style={btnPrimary}>+ Cadastrar professor</button>
+        <button onClick={() => aberto ? (setAberto(false), limparForm()) : abrirNovo()} style={btnPrimary}>
+          {aberto ? 'Fechar' : '+ Cadastrar professor'}
+        </button>
       </div>
 
-      {novo && (
+      {aberto && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>Novo professor</div>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>
+            {editandoId ? 'Editar professor' : 'Novo professor'}
+          </div>
           <form onSubmit={salvar}>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo *" required style={input} />
@@ -100,8 +135,10 @@ export default function Professores() {
             <textarea value={observacoes} onChange={e => setObservacoes(e.target.value)} placeholder="Observacoes (opcional)" rows={2}
               style={{ ...input, resize: 'none', marginBottom: '16px' } as React.CSSProperties} />
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>
-              <button type="button" onClick={() => setNovo(false)} style={btnSecondary}>Cancelar</button>
-              <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Cadastrar'}</button>
+              <button type="button" onClick={() => { setAberto(false); limparForm() }} style={btnSecondary}>Cancelar</button>
+              <button type="submit" disabled={salvando} style={btnPrimary}>
+                {salvando ? 'Salvando...' : (editandoId ? 'Atualizar' : 'Cadastrar')}
+              </button>
             </div>
             {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{mensagem}</p>}
           </form>
@@ -118,7 +155,7 @@ export default function Professores() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status'].map(h => (
+                {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
@@ -145,6 +182,12 @@ export default function Professores() {
                   <td style={{ padding: '14px 24px' }}>
                     <button onClick={() => toggleAtivo(p.id, p.ativo)} style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: p.ativo ? '#052e16' : '#3a3a3c', color: p.ativo ? '#4ade80' : '#9ca3af' }}>
                       {p.ativo ? 'Ativo' : 'Inativo'}
+                    </button>
+                  </td>
+                  <td style={{ padding: '14px 24px' }}>
+                    <button onClick={() => abrirEdicao(p)}
+                      style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: '12px', cursor: 'pointer' }}>
+                      Editar
                     </button>
                   </td>
                 </tr>
