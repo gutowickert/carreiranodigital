@@ -30,11 +30,11 @@ export default function AgendaAulas() {
   async function carregarFiltros() {
     const [{ data: p }, { data: t }, { data: s }] = await Promise.all([
       supabase.from('professores').select('id, nome').order('nome'),
-      supabase.from('turmas').select('id, nome').order('nome'),
+      supabase.from('turmas').select('id, codigo, produtos(nome)').order('data_inicio', { ascending: false }),
       supabase.from('salas').select('id, nome').order('nome'),
     ])
     setProfessores(p || [])
-    setTurmas(t || [])
+    setTurmas((t || []).map((x: any) => ({ id: x.id, nome: x.produtos?.nome ? `${x.produtos.nome}${x.codigo ? ' (' + x.codigo + ')' : ''}` : (x.codigo || 'Turma') })))
     setSalas(s || [])
   }
 
@@ -43,7 +43,7 @@ export default function AgendaAulas() {
       .from('agenda_aulas')
       .select(`
         *,
-        turmas(id, nome),
+        turmas(id, codigo, produtos(nome)),
         professores(id, nome),
         salas(id, nome)
       `)
@@ -53,12 +53,17 @@ export default function AgendaAulas() {
     if (filtros.turma_id) query = query.eq('turma_id', filtros.turma_id)
     if (filtros.sala_id) query = query.eq('sala_id', filtros.sala_id)
 
-    const { data } = await query
+    const { data, error } = await query
+
+    if (error) {
+      console.error('Erro ao carregar aulas:', error)
+      return
+    }
 
     if (data) {
       const turmaIndex: Record<string, number> = {}
       let colorIdx = 0
-      setEventos(data.map(a => {
+      setEventos(data.map((a: any) => {
         if (a.turma_id && !(a.turma_id in turmaIndex)) {
           turmaIndex[a.turma_id] = colorIdx++ % CORES_TURMA.length
         }
@@ -144,7 +149,6 @@ export default function AgendaAulas() {
           </button>
         </div>
 
-        {/* Filtros */}
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <select style={selectStyle} value={filtros.professor_id} onChange={e => setFiltros(f => ({ ...f, professor_id: e.target.value }))}>
             <option value="">Todos os professores</option>
@@ -186,7 +190,6 @@ export default function AgendaAulas() {
           }}
         />
 
-        {/* Modal de Aula */}
         {modalAberto && (
           <ModalAula
             aberto={modalAberto}
@@ -205,8 +208,6 @@ export default function AgendaAulas() {
     </Layout>
   )
 }
-
-// ---- Modal de Aula (inline para simplicidade) ----
 
 interface ModalAulaProps {
   aberto: boolean
@@ -231,16 +232,13 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
   const [conflito, setConflito] = useState(false)
 
   useEffect(() => {
-    if (aula) {
-      setForm(aula)
-    } else {
-      setForm({
-        titulo: '', turma_id: '', professor_id: '', sala_id: '',
-        inicio: inicioSugerido ? toInputDatetime(inicioSugerido) : '',
-        fim: fimSugerido ? toInputDatetime(fimSugerido) : '',
-        recorrente: false, regra_recorrencia: '', descricao: '',
-      })
-    }
+    if (aula) setForm(aula)
+    else setForm({
+      titulo: '', turma_id: '', professor_id: '', sala_id: '',
+      inicio: inicioSugerido ? toInputDatetime(inicioSugerido) : '',
+      fim: fimSugerido ? toInputDatetime(fimSugerido) : '',
+      recorrente: false, regra_recorrencia: '', descricao: '',
+    })
     setConflito(false)
   }, [aula, inicioSugerido, fimSugerido, aberto])
 
@@ -249,15 +247,10 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
   }, [form.sala_id, form.inicio, form.fim])
 
   async function verificarConflito() {
-    let query = supabase
-      .from('agenda_aulas')
-      .select('id')
+    let query = supabase.from('agenda_aulas').select('id')
       .eq('sala_id', form.sala_id)
-      .lt('inicio', form.fim)
-      .gt('fim', form.inicio)
-
+      .lt('inicio', form.fim).gt('fim', form.inicio)
     if (form.id) query = query.neq('id', form.id)
-
     const { data } = await query
     setConflito((data?.length || 0) > 0)
   }
@@ -270,7 +263,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
   const diasSemana = [
     { value: 'mon', label: 'Seg' }, { value: 'tue', label: 'Ter' },
     { value: 'wed', label: 'Qua' }, { value: 'thu', label: 'Qui' },
-    { value: 'fri', label: 'Sex' }, { value: 'sat', label: 'Sáb' },
+    { value: 'fri', label: 'Sex' }, { value: 'sat', label: 'Sab' },
   ]
 
   return (
@@ -278,11 +271,11 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
       <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 480, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h2 style={{ fontSize: 16, fontWeight: 600, color: '#f4f4f5' }}>{aula?.id ? 'Editar aula' : 'Nova aula'}</h2>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 20, cursor: 'pointer' }}>×</button>
+          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 20, cursor: 'pointer' }}>x</button>
         </div>
 
         <div>
-          <label style={labelStyle}>Título</label>
+          <label style={labelStyle}>Titulo</label>
           <input style={inputStyle} value={form.titulo} onChange={e => setForm((f: any) => ({ ...f, titulo: e.target.value }))} />
         </div>
 
@@ -312,13 +305,13 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
 
         {conflito && (
           <div style={{ background: '#3a1a1a', border: '1px solid #ef4444', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#ef4444' }}>
-            ⚠ Sala ocupada neste horário — escolha outro horário ou outra sala.
+            Sala ocupada neste horario - escolha outro horario ou outra sala.
           </div>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
           <div>
-            <label style={labelStyle}>Início</label>
+            <label style={labelStyle}>Inicio</label>
             <input type="datetime-local" style={inputStyle} value={form.inicio} onChange={e => setForm((f: any) => ({ ...f, inicio: e.target.value }))} />
           </div>
           <div>
@@ -345,7 +338,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
                       const novos = selecionado ? dias.filter((x: string) => x !== d.value) : [...dias, d.value]
                       setForm((f: any) => ({ ...f, regra_recorrencia: novos.join(',') }))
                     }}
-                    style={{ padding: '6px 10px', borderRadius: 6, border: `1px solid ${selecionado ? '#7c3aed' : '#3a3a3c'}`, background: selecionado ? '#2d1f4a' : 'transparent', color: selecionado ? '#a78bfa' : '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid ' + (selecionado ? '#7c3aed' : '#3a3a3c'), background: selecionado ? '#2d1f4a' : 'transparent', color: selecionado ? '#a78bfa' : '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
                     {d.label}
                   </button>
                 )
@@ -355,7 +348,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
         )}
 
         <div>
-          <label style={labelStyle}>Descrição (opcional)</label>
+          <label style={labelStyle}>Descricao (opcional)</label>
           <input style={inputStyle} value={form.descricao} onChange={e => setForm((f: any) => ({ ...f, descricao: e.target.value }))} />
         </div>
 
