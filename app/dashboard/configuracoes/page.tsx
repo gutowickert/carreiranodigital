@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { invalidarCache } from '@/lib/configuracoes'
 
 type Config = {
   chave: string
@@ -77,13 +78,14 @@ export default function ConfiguracoesPage() {
     setMensagem('')
   }
 
-  async function salvarEdicao(chave: string) {
+async function salvarEdicao(chave: string) {
     if (!valorEdit) { setMensagem('Valor não pode ser vazio.'); return }
     setMensagem('')
     const { error } = await supabase.from('configuracoes')
       .update({ valor: valorEdit, atualizado_em: new Date().toISOString() })
       .eq('chave', chave)
     if (error) { setMensagem('Erro: ' + error.message); return }
+    invalidarCache()
     setEditando(null)
     setMensagem('✓ Atualizado!')
     carregar()
