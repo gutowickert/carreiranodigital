@@ -1,8 +1,35 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Adaptações mobile */
+@media (max-width: 768px) {
+  /* Tabelas com scroll horizontal */
+  table {
+    display: block;
+    overflow-x: auto;
+    white-space: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
 
-body {
-  background-color: #13141a;
-  color: #f9fafb;
+  /* Grids viram coluna única */
+  [style*="grid-template-columns: repeat(4"],
+  [style*="grid-template-columns: repeat(3"],
+  [style*="grid-template-columns: repeat(2"],
+  [style*="grid-template-columns: 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 2fr 1fr"],
+  [style*="grid-template-columns: 2fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Padding menor nas telas */
+  [style*="padding: '32px 40px'"],
+  [style*="padding: '24px 32px'"],
+  [style*="padding: '40px'"] {
+    padding: 16px !important;
+  }
+
+  /* Headers que viram coluna */
+  [style*="justifyContent: 'space-between'"][style*="alignItems: 'center'"] {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
 }
