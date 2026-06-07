@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { getConfigNumero } from '@/lib/configuracoes'
 
 type VendedorStats = {
   id: string
@@ -25,11 +26,7 @@ const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRa
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 
-function calcularPctInterno(total: number): number {
-  if (total <= 40000) return 8
-  if (total <= 60000) return 9
-  return 10
-}
+
 
 const ETAPA_LABELS: Record<string, string> = {
   atendimento_inicial: 'Atendimento', em_atendimento: 'Em atendimento', agendado: 'Agendado',
@@ -50,6 +47,13 @@ export default function DashboardVendedores() {
 
   async function carregar() {
     setCarregando(true)
+
+    const faixa1Limite = await getConfigNumero('comissao.faixa1_limite', 40000)
+    const faixa1Pct = await getConfigNumero('comissao.faixa1_percentual', 8)
+    const faixa2Limite = await getConfigNumero('comissao.faixa2_limite', 60000)
+    const faixa2Pct = await getConfigNumero('comissao.faixa2_percentual', 9)
+    const faixa3Pct = await getConfigNumero('comissao.faixa3_percentual', 10)
+    const pctExterno = await getConfigNumero('comissao.percentual_externo', 10)
 
     let queryUsuarios = supabase.from('usuarios_perfil')
       .select('id, nome, setor')
@@ -121,7 +125,12 @@ export default function DashboardVendedores() {
       }
 
       const ticketMedio = matriculasCount > 0 ? totalVendido / matriculasCount : 0
-      const pct = u.setor === 'comercial_externo' ? 10 : calcularPctInterno(totalVendido)
+      let pct = pctExterno
+      if (u.setor !== 'comercial_externo') {
+        if (totalVendido <= faixa1Limite) pct = faixa1Pct
+        else if (totalVendido <= faixa2Limite) pct = faixa2Pct
+        else pct = faixa3Pct
+      }
       const comissao = (totalVendido * pct) / 100
 
       const dadosCrm: any[] = u.setor === 'comercial_externo' ? (prospeccoesData || []) : (leadsData || [])
