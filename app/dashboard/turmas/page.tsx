@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { getConfigNumero } from '@/lib/configuracoes'
 
 type Turma = {
   id: string; data_inicio: string; data_fim: string; status: string
@@ -33,12 +34,7 @@ const TAREFAS_AUTO = [
   { titulo: 'Entregar criativos prontos', setor: 'marketing', dias_relativo: 4 },
 ]
 
-const PCT_TRAFEGO = 0.12
-const PCT_IMPOSTO = 0.08
-const PCT_RECEITA_VAGAS = 0.80
-const VALOR_DESLOC_DIARIO = 300
-const DIAS_INICIO_TRAFEGO = 5
-const DIAS_PAGTO_PROFESSOR = 2
+
 
 function turnoDe(horaInicio: string): 'manha' | 'tarde' | 'noite' {
   const h = parseInt(horaInicio.split(':')[0])
@@ -187,6 +183,15 @@ export default function Turmas() {
 
   async function handleSalvar(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem(''); setConflitos([])
+
+    const PCT_TRAFEGO = (await getConfigNumero('financeiro.percentual_trafego', 12)) / 100
+    const PCT_IMPOSTO = (await getConfigNumero('financeiro.percentual_imposto', 8)) / 100
+    const PCT_RECEITA_VAGAS = (await getConfigNumero('financeiro.percentual_receita_prevista', 80)) / 100
+    const VALOR_DESLOC_DIARIO = await getConfigNumero('financeiro.valor_deslocamento_dia', 300)
+    const DIAS_INICIO_TRAFEGO = await getConfigNumero('financeiro.dias_antes_trafego', 5)
+    const DIAS_PAGTO_PROFESSOR = await getConfigNumero('financeiro.dias_pagamento_professor', 2)
+    const DIA_VENCIMENTO_IMPOSTO = await getConfigNumero('financeiro.dia_vencimento_imposto', 20)
+
     const produto = produtos.find(p => p.id === produtoId)
     const cidade = cidades.find(c => c.id === cidadeId)
     const sala = salas.find(s => s.id === salaId)
@@ -300,7 +305,7 @@ export default function Turmas() {
 
     if (dataInicio) {
       const dataIni = new Date(dataInicio + 'T12:00:00')
-      const mesSeguinte = new Date(dataIni.getFullYear(), dataIni.getMonth() + 1, 20)
+      const mesSeguinte = new Date(dataIni.getFullYear(), dataIni.getMonth() + 1, DIA_VENCIMENTO_IMPOSTO)
       await supabase.from('lancamentos_empresa').insert({
         tipo: 'custo', categoria: 'imposto',
         descricao: `Imposto — ${produto.nome}`,
