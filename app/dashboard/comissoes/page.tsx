@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { getConfigNumero } from '@/lib/configuracoes'
 
 type VendedorComissao = {
   id: string
@@ -28,13 +29,7 @@ const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRa
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
-function calcularComissaoInterno(total: number): { pct: number; valor: number } {
-  let pct = 0
-  if (total <= 40000) pct = 8
-  else if (total <= 60000) pct = 9
-  else pct = 10
-  return { pct, valor: (total * pct) / 100 }
-}
+
 
 export default function Comissoes() {
   const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
@@ -47,6 +42,13 @@ export default function Comissoes() {
 
   async function carregar() {
     setCarregando(true)
+
+    const faixa1Limite = await getConfigNumero('comissao.faixa1_limite', 40000)
+    const faixa1Pct = await getConfigNumero('comissao.faixa1_percentual', 8)
+    const faixa2Limite = await getConfigNumero('comissao.faixa2_limite', 60000)
+    const faixa2Pct = await getConfigNumero('comissao.faixa2_percentual', 9)
+    const faixa3Pct = await getConfigNumero('comissao.faixa3_percentual', 10)
+    const pctExterno = await getConfigNumero('comissao.percentual_externo', 10)
     
     const { data: usuarios } = await supabase.from('usuarios_perfil')
       .select('id, nome, setor')
@@ -127,12 +129,13 @@ export default function Comissoes() {
       let pct = 0; let comissao = 0
       
       if (u.setor === 'comercial_externo') {
-        pct = 10
-        comissao = (total * 10) / 100
+        pct = pctExterno
+        comissao = (total * pctExterno) / 100
       } else {
-        const calc = calcularComissaoInterno(total)
-        pct = calc.pct
-        comissao = calc.valor
+        if (total <= faixa1Limite) pct = faixa1Pct
+        else if (total <= faixa2Limite) pct = faixa2Pct
+        else pct = faixa3Pct
+        comissao = (total * pct) / 100
       }
 
       const lancamento = comissoesLancadas?.find(l => l.descricao?.includes(u.nome))
@@ -158,7 +161,8 @@ export default function Comissoes() {
     setMensagem('')
 
     const [ano, mes] = mesFiltro.split('-').map(Number)
-    const dataVencimento = new Date(ano, mes, 5)
+    const diaVencComissao = await getConfigNumero('financeiro.dia_vencimento_comissao', 5)
+    const dataVencimento = new Date(ano, mes, diaVencComissao)
     const dataVencStr = dataVencimento.toISOString().split('T')[0]
 
     const { error } = await supabase.from('lancamentos_empresa').insert({
@@ -199,7 +203,7 @@ export default function Comissoes() {
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Comissões</h1>
             <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
-              Interno: 8% até 40k · 9% até 60k · 10% acima · Externo: 10% fixo
+              Faixas e percentuais configurados em Cadastros → Configurações
             </p>
           </div>
           <input type="month" value={mesFiltro} onChange={e => setMesFiltro(e.target.value)} style={inp} />
