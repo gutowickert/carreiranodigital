@@ -37,6 +37,7 @@ type Professor = { id: string; nome: string; diaria_reais: number }
 type TurmaProfessor = { id: string; professor_id: string; modulo_id: string | null; valor_calculado: number; professores: { nome: string; diaria_reais: number }; produto_modulos: { nome: string; duracao_dias: number } | null }
 type Lead = { id: string; nome: string; whatsapp: string; vendedor_id: string }
 type Vendedor = { id: string; nome: string; setor?: string }
+type Conta = { id: string; nome: string }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
 const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
@@ -71,6 +72,7 @@ export default function DetalheTurma() {
   const [professores, setProfessores] = useState<Professor[]>([])
   const [leadsDisponiveis, setLeadsDisponiveis] = useState<Lead[]>([])
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
+  const [contas, setContas] = useState<Conta[]>([])
   const [carregando, setCarregando] = useState(true)
   const [novaVenda, setNovaVenda] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -94,6 +96,7 @@ export default function DetalheTurma() {
   const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0])
   const [leadVinculado, setLeadVinculado] = useState('')
   const [vendedorId, setVendedorId] = useState('')
+  const [contaId, setContaId] = useState('')
 
   useEffect(() => { if (id) carregarTudo() }, [id])
   useEffect(() => { if (turma) setValor(turma.preco_venda.toString()) }, [turma])
@@ -107,7 +110,8 @@ export default function DetalheTurma() {
     await Promise.all([
       carregarTurma(), carregarMatriculas(), carregarFinanceiro(),
       carregarDatas(), carregarLancamentos(), carregarTurmaProfessores(),
-      carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores()
+      carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores(),
+      carregarContas()
     ])
     setCarregando(false)
   }
@@ -148,6 +152,11 @@ export default function DetalheTurma() {
       .order('criado_em', { ascending: false })
     if (data) setLeadsDisponiveis(data)
   }
+async function carregarContas() {
+    const { data } = await supabase.from('contas_financeiras')
+      .select('id, nome').eq('ativo', true).order('nome')
+    if (data) setContas(data)
+  }
   async function carregarVendedores() {
     const { data } = await supabase.from('usuarios_perfil')
       .select('id, nome, setor')
@@ -170,8 +179,7 @@ export default function DetalheTurma() {
     setNovaVenda(false); setAlunoSelecionado(null); setBuscaAluno('')
     setNovoNome(''); setNovoCpf(''); setNovoWhatsapp(''); setNovoEmail('')
     setModoAluno('buscar'); setFormaPagamento('pix'); setParcelas('1')
-    setLeadVinculado(''); setVendedorId(''); setMensagem('')
-  }
+setLeadVinculado(''); setVendedorId(''); setContaId(''); setMensagem('')  }
 
   async function salvarVenda(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
@@ -191,7 +199,7 @@ export default function DetalheTurma() {
     }
 
     if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(false); return }
-
+if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(false); return }
     const valorVenda = parseFloat(valor)
     const numParcelas = formaPagamento === 'cartao' ? 1 : parseInt(parcelas)
 
@@ -241,6 +249,7 @@ export default function DetalheTurma() {
         data_pagamento: i === 0 ? dataStr : null,
         status: i === 0 ? 'realizado' : 'previsto',
         turma_id: id,
+        conta_id: contaId,
       })
     }
     await supabase.from('lancamentos_empresa').insert(lancamentosParcelas)
@@ -571,7 +580,14 @@ export default function DetalheTurma() {
                       </div>
                     </div>
 
-                    {formaPagamento !== 'cartao' && parseInt(parcelas) > 1 && valor && (
+                    <div>
+                      <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Caixa que recebe o pagamento *</label>
+                      <select value={contaId} onChange={e => setContaId(e.target.value)} required style={{ ...select, width: '100%' }}>
+                        <option value="">Selecione a caixa</option>
+                        {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+                      </select>
+                    </div>
+                    {formaPagamento !== 'cartao' && parseInt(parcelas) > 1 && valor && (          
                       <div style={{ fontSize: 11, color: '#a78bfa', padding: '8px 12px', background: '#1c1c1e', borderRadius: 6 }}>
                         {parcelas}x de R$ {(parseFloat(valor) / parseInt(parcelas)).toFixed(2)} (primeira no dia da venda, demais com 1 mês de intervalo)
                       </div>
