@@ -37,7 +37,6 @@ type Professor = { id: string; nome: string; diaria_reais: number }
 type TurmaProfessor = { id: string; professor_id: string; modulo_id: string | null; valor_calculado: number; professores: { nome: string; diaria_reais: number }; produto_modulos: { nome: string; duracao_dias: number } | null }
 type Lead = { id: string; nome: string; whatsapp: string; vendedor_id: string }
 type Vendedor = { id: string; nome: string; setor?: string }
-type Conta = { id: string; nome: string }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
 const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
@@ -72,7 +71,6 @@ export default function DetalheTurma() {
   const [professores, setProfessores] = useState<Professor[]>([])
   const [leadsDisponiveis, setLeadsDisponiveis] = useState<Lead[]>([])
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
-  const [contas, setContas] = useState<Conta[]>([])
   const [carregando, setCarregando] = useState(true)
   const [novaVenda, setNovaVenda] = useState(false)
   const [salvando, setSalvando] = useState(false)
@@ -81,6 +79,7 @@ export default function DetalheTurma() {
   const [editandoProf, setEditandoProf] = useState<string | null>(null)
   const [novoProfId, setNovoProfId] = useState('')
 
+  // Form nova venda
   const [buscaAluno, setBuscaAluno] = useState('')
   const [alunoSelecionado, setAlunoSelecionado] = useState<Aluno | null>(null)
   const [resultadosBusca, setResultadosBusca] = useState<Aluno[]>([])
@@ -95,7 +94,6 @@ export default function DetalheTurma() {
   const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0])
   const [leadVinculado, setLeadVinculado] = useState('')
   const [vendedorId, setVendedorId] = useState('')
-  const [contaId, setContaId] = useState('')
 
   useEffect(() => { if (id) carregarTudo() }, [id])
   useEffect(() => { if (turma) setValor(turma.preco_venda.toString()) }, [turma])
@@ -109,8 +107,7 @@ export default function DetalheTurma() {
     await Promise.all([
       carregarTurma(), carregarMatriculas(), carregarFinanceiro(),
       carregarDatas(), carregarLancamentos(), carregarTurmaProfessores(),
-      carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores(),
-      carregarContas()
+      carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores()
     ])
     setCarregando(false)
   }
@@ -160,11 +157,6 @@ export default function DetalheTurma() {
       .order('nome')
     if (data) setVendedores(data as any)
   }
-  async function carregarContas() {
-    const { data } = await supabase.from('contas_financeiras')
-      .select('id, nome').eq('ativo', true).order('nome')
-    if (data) setContas(data)
-  }
 
   async function buscarAlunos() {
     const { data } = await supabase.from('alunos')
@@ -178,7 +170,7 @@ export default function DetalheTurma() {
     setNovaVenda(false); setAlunoSelecionado(null); setBuscaAluno('')
     setNovoNome(''); setNovoCpf(''); setNovoWhatsapp(''); setNovoEmail('')
     setModoAluno('buscar'); setFormaPagamento('pix'); setParcelas('1')
-    setLeadVinculado(''); setVendedorId(''); setContaId(''); setMensagem('')
+    setLeadVinculado(''); setVendedorId(''); setMensagem('')
   }
 
   async function salvarVenda(e: React.FormEvent) {
@@ -199,11 +191,11 @@ export default function DetalheTurma() {
     }
 
     if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(false); return }
-    if (!contaId) { setMensagem('Selecione a caixa onde o pagamento cai.'); setSalvando(false); return }
 
     const valorVenda = parseFloat(valor)
     const numParcelas = formaPagamento === 'cartao' ? 1 : parseInt(parcelas)
 
+    // Se vinculou lead, pega vendedor do lead (a menos que tenha selecionado outro)
     let vendedorFinal = vendedorId || null
     if (leadVinculado && !vendedorId) {
       const lead = leadsDisponiveis.find(l => l.id === leadVinculado)
@@ -219,9 +211,11 @@ export default function DetalheTurma() {
     }).select().single()
     if (errMat) { setMensagem('Erro ao registrar venda: ' + errMat.message); setSalvando(false); return }
 
+    // LTV do aluno
     const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
     await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorVenda }).eq('id', alunoId)
 
+    // Receita realizada no financeiro_turma
     if (financeiro) {
       const novaReceita = (financeiro.receita_realizada || 0) + valorVenda
       await supabase.from('financeiro_turma').update({
@@ -231,6 +225,7 @@ export default function DetalheTurma() {
       }).eq('turma_id', id)
     }
 
+    // Cria N lançamentos (parcelas)
     const valorParcela = valorVenda / numParcelas
     const dataBase = new Date(dataVenda + 'T12:00:00')
     const lancamentosParcelas = []
@@ -246,11 +241,11 @@ export default function DetalheTurma() {
         data_pagamento: i === 0 ? dataStr : null,
         status: i === 0 ? 'realizado' : 'previsto',
         turma_id: id,
-        conta_id: contaId,
       })
     }
     await supabase.from('lancamentos_empresa').insert(lancamentosParcelas)
 
+    // Subtrair do lançamento de receita PREVISTA da turma
     const { data: prevista } = await supabase.from('lancamentos_empresa')
       .select('id, valor')
       .eq('turma_id', id)
@@ -268,6 +263,7 @@ export default function DetalheTurma() {
       }
     }
 
+    // Se vinculou um lead, marca como ganho
     if (leadVinculado) {
       await supabase.from('leads').update({
         etapa: 'ganho',
@@ -370,7 +366,9 @@ export default function DetalheTurma() {
     </div>
   )
 
-  const s = statusCor[turma.status] || statusCor.planejadareturn (
+  const s = statusCor[turma.status] || statusCor.planejada
+
+  return (
     <div style={{ minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
       <header style={{ padding: '20px 32px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
@@ -571,14 +569,6 @@ export default function DetalheTurma() {
                         <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Data da venda</label>
                         <input value={dataVenda} onChange={e => setDataVenda(e.target.value)} type="date" required style={input} />
                       </div>
-                    </div>
-
-                    <div>
-                      <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Caixa que recebe o pagamento *</label>
-                      <select value={contaId} onChange={e => setContaId(e.target.value)} required style={{ ...select, width: '100%' }}>
-                        <option value="">Selecione a caixa</option>
-                        {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
-                      </select>
                     </div>
 
                     {formaPagamento !== 'cartao' && parseInt(parcelas) > 1 && valor && (
