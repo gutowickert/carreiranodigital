@@ -15,6 +15,7 @@ type Lancamento = {
   data_pagamento: string
   status: string
   turma_id: string | null
+  conta_id: string | null
   recorrente: boolean
   grupo_recorrencia: string | null
 }
@@ -38,6 +39,14 @@ type FinanceiroTurma = {
     produtos: { nome: string }
     cidades: { nome: string }
   }
+}
+
+type Conta = {
+  id: string
+  nome: string
+  tipo: string
+  unidade: string
+  ativo: boolean
 }
 
 const unidadeNome: Record<string, string> = { lajeado: 'Lajeado', porto_alegre: 'Porto Alegre', ambas: 'Ambas', geral: 'Geral' }
@@ -73,6 +82,7 @@ export default function Financeiro() {
   const [aba, setAba] = useState<'visao_geral' | 'turmas' | 'lancamentos' | 'dre'>('visao_geral')
   const [financeiros, setFinanceiros] = useState<FinanceiroTurma[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
+  const [contas, setContas] = useState<Conta[]>([])
   const [selecionado, setSelecionado] = useState<FinanceiroTurma | null>(null)
   const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
@@ -81,6 +91,7 @@ export default function Financeiro() {
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [agrupamento, setAgrupamento] = useState<'mes' | 'dia'>('mes')
+  const [filtroConta, setFiltroConta] = useState('')
 
   const [lancTipo, setLancTipo] = useState('custo')
   const [lancCategoria, setLancCategoria] = useState('outro')
@@ -91,6 +102,7 @@ export default function Financeiro() {
   const [lancStatus, setLancStatus] = useState('previsto')
   const [lancRecorrente, setLancRecorrente] = useState(false)
   const [lancMeses, setLancMeses] = useState('12')
+  const [lancContaId, setLancContaId] = useState('')
 
   const mesRef = mesSelecionado + '-01'
 
@@ -98,7 +110,7 @@ export default function Financeiro() {
 
   async function carregarTudo() {
     setCarregando(true)
-    await Promise.all([carregarFinanceiros(), carregarLancamentos()])
+    await Promise.all([carregarFinanceiros(), carregarLancamentos(), carregarContas()])
     setCarregando(false)
   }
 
@@ -117,11 +129,19 @@ export default function Financeiro() {
     if (data) setLancamentos(data)
   }
 
+  async function carregarContas() {
+    const { data } = await supabase.from('contas_financeiras')
+      .select('id, nome, tipo, unidade, ativo')
+      .eq('ativo', true)
+      .order('nome')
+    if (data) setContas(data)
+  }
+
   function limparForm() {
     setLancTipo('custo'); setLancCategoria('outro'); setLancDescricao('')
     setLancValor(''); setLancUnidade('geral'); setLancVencimento('')
     setLancStatus('previsto'); setLancRecorrente(false); setLancMeses('12')
-    setEditando(null); setMensagem('')
+    setLancContaId(''); setEditando(null); setMensagem('')
   }
 
   function abrirEdicao(l: Lancamento) {
@@ -129,11 +149,14 @@ export default function Financeiro() {
     setLancTipo(l.tipo); setLancCategoria(l.categoria); setLancDescricao(l.descricao)
     setLancValor(l.valor.toString()); setLancUnidade(l.unidade)
     setLancVencimento(l.data_vencimento); setLancStatus(l.status)
+    setLancContaId(l.conta_id || '')
     setLancRecorrente(false); setNovoLanc(true)
   }
 
   async function salvarLancamento(e: React.FormEvent) {
     e.preventDefault(); setSalvando(true); setMensagem('')
+
+    if (!lancContaId) { setMensagem('Selecione a caixa.'); setSalvando(false); return }
 
     if (editando) {
       const payload: any = {
@@ -141,6 +164,7 @@ export default function Financeiro() {
         valor: parseFloat(lancValor),
         data_vencimento: lancVencimento,
         status: lancStatus,
+        conta_id: lancContaId,
       }
       if (lancStatus === 'realizado' && !editando.data_pagamento) {
         payload.data_pagamento = new Date().toISOString().split('T')[0]
@@ -150,7 +174,7 @@ export default function Financeiro() {
         const confirma = confirm('Este lançamento é recorrente. Aplicar a alteração também nos meses futuros do mesmo grupo?')
         if (confirma) {
           const { error } = await supabase.from('lancamentos_empresa').update({
-            descricao: lancDescricao, valor: parseFloat(lancValor), status: lancStatus,
+            descricao: lancDescricao, valor: parseFloat(lancValor), status: lancStatus, conta_id: lancContaId,
           }).eq('grupo_recorrencia', editando.grupo_recorrencia)
             .gte('data_vencimento', editando.data_vencimento)
           if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
@@ -192,6 +216,7 @@ export default function Financeiro() {
           data_vencimento: dataVencimento,
           status: i === 0 ? lancStatus : 'previsto',
           recorrente: true, grupo_recorrencia: grupoId,
+          conta_id: lancContaId,
         })
       }
       const { error } = await supabase.from('lancamentos_empresa').insert(lancamentosParaInserir)
@@ -203,6 +228,7 @@ export default function Financeiro() {
         valor: parseFloat(lancValor), unidade: lancUnidade,
         mes_referencia: mesRef, data_vencimento: lancVencimento,
         status: lancStatus, recorrente: false,
+        conta_id: lancContaId,
       })
       if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
       setMensagem('Lançamento criado!')
@@ -233,28 +259,37 @@ export default function Financeiro() {
     carregarLancamentos()
   }
 
+  function nomeConta(id: string | null) {
+    if (!id) return '—'
+    return contas.find(c => c.id === id)?.nome || '—'
+  }
+
   function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 
-  const receitasPrev = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
-  const receitasReal = lancamentos.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
-  const custosPrev = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
-  const custosReal = lancamentos.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
-  const custosFixosMes = lancamentos.filter(l => l.tipo === 'custo' && l.recorrente).reduce((s, l) => s + l.valor, 0)
+  const lancamentosFiltrados = filtroConta
+    ? lancamentos.filter(l => l.conta_id === filtroConta)
+    : lancamentos
+
+  const receitasPrev = lancamentosFiltrados.filter(l => l.tipo === 'receita' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
+  const receitasReal = lancamentosFiltrados.filter(l => l.tipo === 'receita' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
+  const custosPrev = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
+  const custosReal = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
+  const custosFixosMes = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente).reduce((s, l) => s + l.valor, 0)
   const margemPrev = receitasPrev - custosPrev
   const margemReal = receitasReal - custosReal
   const resultadoPrev = receitasPrev - custosPrev
   const resultadoReal = receitasReal - custosReal
 
   function totalPorCategoria(cat: string, status: string) {
-    return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
+    return lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
   }
   function totalPorCategoriaRecorrente(cat: string) {
-    return lancamentos.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
+    return lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
   }
 
   function agruparPorDia() {
     const grupos: Record<string, Lancamento[]> = {}
-    lancamentos.forEach(l => {
+    lancamentosFiltrados.forEach(l => {
       const dia = l.data_vencimento
       if (!grupos[dia]) grupos[dia] = []
       grupos[dia].push(l)
@@ -277,7 +312,13 @@ export default function Financeiro() {
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Financeiro</h1>
-        <input type="month" value={mesSelecionado} onChange={e => setMesSelecionado(e.target.value)} style={{ ...select, width: 'auto' }} />
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+          <select value={filtroConta} onChange={e => setFiltroConta(e.target.value)} style={{ ...select, width: 'auto' }}>
+            <option value="">Todas as caixas</option>
+            {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+          </select>
+          <input type="month" value={mesSelecionado} onChange={e => setMesSelecionado(e.target.value)} style={{ ...select, width: 'auto' }} />
+        </div>
       </div>
 
       <div style={{ display: 'flex', gap: '4px', marginBottom: '24px', borderBottom: '1px solid #3a3a3c' }}>
@@ -319,7 +360,7 @@ export default function Financeiro() {
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos (recorrentes)</div>
               <div style={{ fontSize: '20px', fontWeight: '700', color: '#f87171' }}>{fmt(custosFixosMes)}</div>
-              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{lancamentos.filter(l => l.tipo === 'custo' && l.recorrente).length} lançamentos no mês</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente).length} lançamentos no mês</div>
             </div>
             <div style={card}>
               <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Resultado</div>
@@ -336,8 +377,8 @@ export default function Financeiro() {
 
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
             {['lajeado', 'porto_alegre'].map(unidade => {
-              const custosU = lancamentos.filter(l => l.tipo === 'custo' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
-              const receitaU = lancamentos.filter(l => l.tipo === 'receita' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
+              const custosU = lancamentosFiltrados.filter(l => l.tipo === 'custo' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
+              const receitaU = lancamentosFiltrados.filter(l => l.tipo === 'receita' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
               return (
                 <div key={unidade} style={card}>
                   <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>{unidadeNome[unidade]}</div>
@@ -444,7 +485,7 @@ export default function Financeiro() {
         <div>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentos.length} lançamento(s) em {mesSelecionado.split('-').reverse().join('/')}</span>
+              <span style={{ fontSize: '14px', color: '#9ca3af' }}>{lancamentosFiltrados.length} lançamento(s) em {mesSelecionado.split('-').reverse().join('/')}</span>
               <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
                 <button onClick={() => setAgrupamento('mes')}
                   style={{ padding: '6px 14px', background: agrupamento === 'mes' ? '#7c3aed' : 'transparent', color: agrupamento === 'mes' ? '#fff' : '#9ca3af', border: 'none', fontSize: 12, fontWeight: 500, cursor: 'pointer' }}>
@@ -488,12 +529,16 @@ export default function Financeiro() {
                   </select>
                 </div>
                 <input value={lancDescricao} onChange={e => setLancDescricao(e.target.value)} placeholder="Descrição" required style={{ ...input, marginBottom: '12px' }} />
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                   <input value={lancValor} onChange={e => setLancValor(e.target.value)} placeholder="Valor R$" type="number" step="0.01" required style={input} />
                   <input value={lancVencimento} onChange={e => setLancVencimento(e.target.value)} type="date" required style={input} />
                   <select value={lancStatus} onChange={e => setLancStatus(e.target.value)} style={select}>
                     <option value="previsto">Previsto</option>
                     <option value="realizado">Realizado</option>
+                  </select>
+                  <select value={lancContaId} onChange={e => setLancContaId(e.target.value)} style={select} required>
+                    <option value="">Caixa *</option>
+                    {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                   </select>
                 </div>
 
@@ -528,25 +573,26 @@ export default function Financeiro() {
 
           {agrupamento === 'mes' && (
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-              {lancamentos.length === 0 ? (
+              {lancamentosFiltrados.length === 0 ? (
                 <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum lançamento neste mês.</p>
               ) : (
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      {['Descrição', 'Categoria', 'Vencimento', 'Valor', 'Status', ''].map(h => (
+                      {['Descrição', 'Categoria', 'Caixa', 'Vencimento', 'Valor', 'Status', ''].map(h => (
                         <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody>
-                    {lancamentos.map(l => (
+                    {lancamentosFiltrados.map(l => (
                       <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: '#ffffff' }}>
                           {l.descricao}
                           {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻ recorrente</span>}
                         </td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{categoriaNome[l.categoria]}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '12px', color: l.conta_id ? '#9ca3af' : '#f87171' }}>{nomeConta(l.conta_id)}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: '#9ca3af' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
                         <td style={{ padding: '12px 16px' }}>
@@ -573,7 +619,7 @@ export default function Financeiro() {
 
           {agrupamento === 'dia' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {lancamentos.length === 0 ? (
+              {lancamentosFiltrados.length === 0 ? (
                 <div style={{ ...card, padding: '24px' }}>
                   <p style={{ fontSize: '14px', color: '#6b7280' }}>Nenhum lançamento neste mês.</p>
                 </div>
@@ -601,7 +647,7 @@ export default function Financeiro() {
                             {l.descricao}
                             {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: '#2e1065', color: '#a78bfa' }}>↻</span>}
                           </div>
-                          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{categoriaNome[l.categoria]} · {unidadeNome[l.unidade]}</div>
+                          <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '2px' }}>{categoriaNome[l.categoria]} · {unidadeNome[l.unidade]} · {nomeConta(l.conta_id)}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <span style={{ fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? '#34d399' : '#f87171' }}>
@@ -629,6 +675,7 @@ export default function Financeiro() {
             <div style={cardHeader}>
               <span style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>
                 DRE — {new Date(mesRef + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
+                {filtroConta && ` · ${nomeConta(filtroConta)}`}
               </span>
             </div>
             <div style={{ padding: '24px' }}>
