@@ -28,11 +28,7 @@ const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRa
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
 const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 
-const TAREFAS_AUTO = [
-  { titulo: 'Confirmar professor', setor: 'operacoes', dias_relativo: 3 },
-  { titulo: 'Colocar tráfego no ar', setor: 'marketing', dias_relativo: 5 },
-  { titulo: 'Entregar criativos prontos', setor: 'marketing', dias_relativo: 4 },
-]
+
 
 
 
@@ -337,12 +333,30 @@ export default function Turmas() {
     })
 
     const hoje = new Date().toISOString().split('T')[0]
-    const tarefasParaInserir = TAREFAS_AUTO.map(t => ({
-      turma_id: turma.id, titulo: `${t.titulo} — ${produto.nome}`, setor: t.setor,
-      tipo: 'prevista', data_prazo: addDays(hoje, t.dias_relativo),
-      status: 'pendente', prioridade: 'normal',
-      usuario_id: usuariosPorSetor[t.setor] || null,
-    }))
+
+    const { data: templatesAtivos } = await supabase.from('tarefa_templates')
+      .select('*').eq('ativo', true).order('ordem')
+
+    const tarefasParaInserir = (templatesAtivos || []).map((t: any) => {
+      const dataRef = t.referencia === 'inicio' ? dataInicio : dataFim
+      const sinal = t.quando === 'antes' ? -1 : 1
+      let dataPrazo = hoje
+      if (dataRef) {
+        const dataRefObj = new Date(dataRef + 'T12:00:00')
+        dataRefObj.setDate(dataRefObj.getDate() + (sinal * t.dias))
+        dataPrazo = dataRefObj.toISOString().split('T')[0]
+      }
+      return {
+        turma_id: turma.id,
+        titulo: `${t.titulo} — ${produto.nome}`,
+        setor: t.setor,
+        tipo: 'prevista',
+        data_prazo: dataPrazo,
+        status: 'pendente',
+        prioridade: 'normal',
+        usuario_id: usuariosPorSetor[t.setor] || null,
+      }
+    })
 
     if (sala?.nome === 'A Definir') {
       tarefasParaInserir.push({
