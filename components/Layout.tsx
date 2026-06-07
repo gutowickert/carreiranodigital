@@ -53,6 +53,7 @@ const grupos: Grupo[] = [
       { nome: 'Usuários', href: '/dashboard/usuarios' },
     { nome: 'Configurações', href: '/dashboard/configuracoes' },
     { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
+    { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
     ],
   },
 ]
