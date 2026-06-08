@@ -13,7 +13,7 @@ type Produto = { id: string; nome: string; duracao_dias: number; preco_venda: nu
 type Cidade = { id: string; nome: string; tipo: string }
 type Sala = { id: string; nome: string; cidade_id: string }
 type Modulo = { id: string; nome: string; ordem: number; duracao_dias: number }
-type Professor = { id: string; nome: string; diaria_reais: number }
+type Professor = { id: string; nome: string; diaria_reais: number; tipo_pagamento?: 'diaria_fixa' | 'percentual_vendas'; percentual_vendas?: number }
 type DiaAula = { data: string; horario_inicio: string; horario_fim: string; modulo_id?: string; modulo_nome?: string }
 
 const statusCor: Record<string, { bg: string; color: string }> = {
@@ -219,45 +219,64 @@ export default function Turmas() {
       })))
     }
 
-    let custoProfessores = 0
+   let custoProfessores = 0
+    let custoCoproducao = 0
+    const coproducoes: Array<{ professor_id: string, professor_nome: string, percentual: number, modulo_nome?: string }> = []
+
     if (modulos.length > 0) {
       for (const mod of modulos) {
         const profId = profPorModulo[mod.id]
         if (profId) {
           const prof = professores.find(p => p.id === profId)
-          const val = prof ? prof.diaria_reais * mod.duracao_dias : 0
-          custoProfessores += val
-          await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: profId, modulo_id: mod.id, valor_calculado: val })
+          if (!prof) continue
 
-          const diasDoMod = datasOrdenadas.filter(d => d.modulo_id === mod.id)
-          const ultimoDia = diasDoMod[diasDoMod.length - 1]?.data
-          if (ultimoDia) {
-            await supabase.from('lancamentos_empresa').insert({
-              tipo: 'custo', categoria: 'pessoal',
-              descricao: `Professor ${prof?.nome} — ${mod.nome}`,
-              valor: val, unidade: 'geral',
-              mes_referencia: ultimoDia.substring(0, 7) + '-01',
-              data_vencimento: addDays(ultimoDia, DIAS_PAGTO_PROFESSOR),
-              status: 'previsto', turma_id: turma.id,
-            })
+          if (prof.tipo_pagamento === 'percentual_vendas') {
+            // Coprodução por %: não cria lançamento de diária, registra pra criar coprodução depois
+            await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: profId, modulo_id: mod.id, valor_calculado: 0 })
+            coproducoes.push({ professor_id: profId, professor_nome: prof.nome, percentual: prof.percentual_vendas || 0, modulo_nome: mod.nome })
+          } else {
+            const val = prof.diaria_reais * mod.duracao_dias
+            custoProfessores += val
+            await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: profId, modulo_id: mod.id, valor_calculado: val })
+
+            const diasDoMod = datasOrdenadas.filter(d => d.modulo_id === mod.id)
+            const ultimoDia = diasDoMod[diasDoMod.length - 1]?.data
+            if (ultimoDia) {
+              await supabase.from('lancamentos_empresa').insert({
+                tipo: 'custo', categoria: 'pessoal',
+                descricao: `Professor ${prof.nome} — ${mod.nome}`,
+                valor: val, unidade: 'geral',
+                mes_referencia: ultimoDia.substring(0, 7) + '-01',
+                data_vencimento: addDays(ultimoDia, DIAS_PAGTO_PROFESSOR),
+                status: 'previsto', turma_id: turma.id,
+              })
+            }
           }
         }
       }
     } else if (professorId) {
       const prof = professores.find(p => p.id === professorId)
-      const val = prof ? prof.diaria_reais * produto.duracao_dias : 0
-      custoProfessores = val
-      await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: professorId, valor_calculado: val })
-      if (dataFim) {
-        await supabase.from('lancamentos_empresa').insert({
-          tipo: 'custo', categoria: 'pessoal',
-          descricao: `Professor ${prof?.nome}`,
-          valor: val, unidade: 'geral',
-          mes_referencia: dataFim.substring(0, 7) + '-01',
-          data_vencimento: addDays(dataFim, DIAS_PAGTO_PROFESSOR),
-          status: 'previsto', turma_id: turma.id,
-        })
+      if (prof) {
+        if (prof.tipo_pagamento === 'percentual_vendas') {
+          await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: professorId, valor_calculado: 0 })
+          coproducoes.push({ professor_id: professorId, professor_nome: prof.nome, percentual: prof.percentual_vendas || 0 })
+        } else {
+          const val = prof.diaria_reais * produto.duracao_dias
+          custoProfessores = val
+          await supabase.from('turma_professores').insert({ turma_id: turma.id, professor_id: professorId, valor_calculado: val })
+          if (dataFim) {
+            await supabase.from('lancamentos_empresa').insert({
+              tipo: 'custo', categoria: 'pessoal',
+              descricao: `Professor ${prof.nome}`,
+              valor: val, unidade: 'geral',
+              mes_referencia: dataFim.substring(0, 7) + '-01',
+              data_vencimento: addDays(dataFim, DIAS_PAGTO_PROFESSOR),
+              status: 'previsto', turma_id: turma.id,
+            })
+          }
+        }
       }
+    }
     }
 
     const receitaPrevista = parseFloat(preco) * Math.floor(parseInt(vagas) * PCT_RECEITA_VAGAS)
@@ -323,12 +342,29 @@ export default function Turmas() {
       await supabase.from('lancamentos_empresa').insert(lancamentosDesloc)
     }
 
-    const custoDeslocamento = VALOR_DESLOC_DIARIO * datasValidas.length
+   const custoDeslocamento = VALOR_DESLOC_DIARIO * datasValidas.length
+
+    // Lançamentos previstos de coprodução (% sobre líquido previsto)
+    const liquidoPrevisto = receitaPrevista - totalTrafego - imposto - custoDeslocamento
+    if (coproducoes.length > 0 && dataFim) {
+      for (const cop of coproducoes) {
+        const valorCoproducao = (liquidoPrevisto * cop.percentual) / 100
+        custoCoproducao += valorCoproducao
+        await supabase.from('lancamentos_empresa').insert({
+          tipo: 'custo', categoria: 'pessoal',
+          descricao: `Coprodução ${cop.professor_nome}${cop.modulo_nome ? ' — ' + cop.modulo_nome : ''} — PREVISTO`,
+          valor: valorCoproducao, unidade: 'geral',
+          mes_referencia: dataFim.substring(0, 7) + '-01',
+          data_vencimento: addDays(dataFim, DIAS_PAGTO_PROFESSOR),
+          status: 'previsto', turma_id: turma.id,
+        })
+      }
+    }
 
     await supabase.from('financeiro_turma').insert({
-      turma_id: turma.id, receita_prevista: receitaPrevista, custo_professores: custoProfessores,
+      turma_id: turma.id, receita_prevista: receitaPrevista, custo_professores: custoProfessores + custoCoproducao,
       custo_trafego_previsto: totalTrafego, imposto_previsto: imposto, custo_deslocamento: custoDeslocamento,
-      margem_prevista: receitaPrevista - custoProfessores - totalTrafego - imposto - custoDeslocamento,
+      margem_prevista: receitaPrevista - custoProfessores - custoCoproducao - totalTrafego - imposto - custoDeslocamento,
       break_even_matriculas: parseInt(meta),
     })
 
@@ -473,7 +509,11 @@ export default function Turmas() {
                 <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Professor</label>
                 <select value={professorId} onChange={e => setProfessorId(e.target.value)} style={{ ...sel, width: '100%' }}>
                   <option value="">Selecione</option>
-                  {professores.map(p => <option key={p.id} value={p.id}>{p.nome} — R$ {p.diaria_reais}/dia</option>)}
+                  {professores.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.nome} — {p.tipo_pagamento === 'percentual_vendas' ? `${p.percentual_vendas}% sobre vendas (coprodução)` : `R$ ${p.diaria_reais}/dia`}
+                    </option>
+                  ))}
                 </select>
               </div>
             )}
@@ -490,7 +530,11 @@ export default function Turmas() {
                         <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa' }}>Módulo {modulo.ordem} — {modulo.nome}</span>
                         <select value={profPorModulo[modulo.id] || ''} onChange={e => setProfPorModulo(prev => ({ ...prev, [modulo.id]: e.target.value }))} style={{ ...sel, fontSize: '12px', padding: '6px 10px' }}>
                           <option value="">Professor</option>
-                          {professores.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                          {professores.map(p => (
+                            <option key={p.id} value={p.id}>
+                              {p.nome}{p.tipo_pagamento === 'percentual_vendas' ? ` (${p.percentual_vendas}% coprodução)` : ''}
+                            </option>
+                          ))}
                         </select>
                       </div>
                       {dias.map((dia, i) => (
