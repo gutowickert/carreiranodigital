@@ -9,6 +9,8 @@ type Professor = {
   email: string
   whatsapp: string
   diaria_reais: number
+  tipo_pagamento: 'diaria_fixa' | 'percentual_vendas'
+  percentual_vendas: number
   pix_chave: string
   pix_tipo: string
   banco: string
@@ -32,6 +34,8 @@ export default function Professores() {
   const [email, setEmail] = useState('')
   const [whatsapp, setWhatsapp] = useState('')
   const [diaria, setDiaria] = useState('')
+  const [tipoPagamento, setTipoPagamento] = useState<'diaria_fixa' | 'percentual_vendas'>('diaria_fixa')
+  const [percentualVendas, setPercentualVendas] = useState('')
   const [pixChave, setPixChave] = useState('')
   const [pixTipo, setPixTipo] = useState('cpf')
   const [banco, setBanco] = useState('')
@@ -46,6 +50,7 @@ export default function Professores() {
 
   function limparForm() {
     setNome(''); setEmail(''); setWhatsapp(''); setDiaria('')
+    setTipoPagamento('diaria_fixa'); setPercentualVendas('')
     setPixChave(''); setPixTipo('cpf'); setBanco(''); setObservacoes('')
     setMensagem(''); setEditandoId(null)
   }
@@ -75,7 +80,9 @@ export default function Professores() {
       nome,
       email: email || null,
       whatsapp: whatsapp || null,
-      diaria_reais: parseFloat(diaria),
+      diaria_reais: tipoPagamento === 'diaria_fixa' ? parseFloat(diaria) : 0,
+      tipo_pagamento: tipoPagamento,
+      percentual_vendas: tipoPagamento === 'percentual_vendas' ? parseFloat(percentualVendas) : 0,
       pix_chave: pixChave || null,
       pix_tipo: pixChave ? pixTipo : null,
       banco: banco || null,
@@ -113,9 +120,31 @@ export default function Professores() {
             {editandoId ? 'Editar professor' : 'Novo professor'}
           </div>
           <form onSubmit={salvar}>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div style={{ marginBottom: '12px' }}>
               <input value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome completo *" required style={input} />
-              <input value={diaria} onChange={e => setDiaria(e.target.value)} placeholder="Diaria R$ *" type="number" required style={input} />
+            </div>
+
+            <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Tipo de pagamento</label>
+                <select value={tipoPagamento} onChange={e => setTipoPagamento(e.target.value as any)} style={select}>
+                  <option value="diaria_fixa">Diária fixa (R$ por dia)</option>
+                  <option value="percentual_vendas">% sobre vendas (coprodução)</option>
+                </select>
+              </div>
+              <div>
+                {tipoPagamento === 'diaria_fixa' ? (
+                  <>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Diária R$ *</label>
+                    <input value={diaria} onChange={e => setDiaria(e.target.value)} type="number" step="0.01" required style={input} />
+                  </>
+                ) : (
+                  <>
+                    <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>% sobre líquido *</label>
+                    <input value={percentualVendas} onChange={e => setPercentualVendas(e.target.value)} type="number" step="0.01" required style={input} placeholder="Ex: 50 para 50%" />
+                  </>
+                )}
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <input value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" type="email" style={input} />
@@ -177,7 +206,14 @@ export default function Professores() {
                     ) : '-'}
                   </td>
                   <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '600', color: '#34d399' }}>
-                    R$ {(p.diaria_reais || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    {p.tipo_pagamento === 'percentual_vendas' ? (
+                      <div>
+                        {p.percentual_vendas || 0}%
+                        <div style={{ fontSize: '10px', color: '#a78bfa', textTransform: 'uppercase', marginTop: 2 }}>coprodução</div>
+                      </div>
+                    ) : (
+                      <>R$ {(p.diaria_reais || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                    )}
                   </td>
                   <td style={{ padding: '14px 24px' }}>
                     <button onClick={() => toggleAtivo(p.id, p.ativo)} style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: p.ativo ? '#052e16' : '#3a3a3c', color: p.ativo ? '#4ade80' : '#9ca3af' }}>
