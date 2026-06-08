@@ -33,7 +33,7 @@ type Matricula = {
 }
 
 type Aluno = { id: string; nome: string; whatsapp: string; email: string; cpf: string }
-type Professor = { id: string; nome: string; diaria_reais: number }
+type Professor = { id: string; nome: string; diaria_reais: number; tipo_pagamento?: 'diaria_fixa' | 'percentual_vendas'; percentual_vendas?: number }
 type TurmaProfessor = { id: string; professor_id: string; modulo_id: string | null; valor_calculado: number; professores: { nome: string; diaria_reais: number }; produto_modulos: { nome: string; duracao_dias: number } | null }
 type Lead = { id: string; nome: string; whatsapp: string; vendedor_id: string }
 type Vendedor = { id: string; nome: string; setor?: string }
@@ -297,6 +297,70 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
   async function atualizarStatus(novoStatus: string) {
     await supabase.from('turmas').update({ status: novoStatus }).eq('id', id)
     carregarTurma()
+  }
+  async function fecharTurma() {
+    // Pega lançamentos previstos de coprodução
+    const { data: copreviews } = await supabase.from('lancamentos_empresa')
+      .select('*')
+      .eq('turma_id', id)
+      .eq('categoria', 'pessoal')
+      .ilike('descricao', 'Coprodução%')
+
+    if (!copreviews || copreviews.length === 0) {
+      alert('Esta turma não tem coproduções (% sobre vendas) cadastradas.')
+      return
+    }
+
+    // Calcula líquido realizado
+    const receitaReal = financeiro?.receita_realizada || 0
+    const trafegoReal = custoRealizadoTrafego
+    const impostoReal = custoRealizadoImposto
+    const deslocReal = custoRealizadoDesloc
+    const liquidoReal = receitaReal - trafegoReal - impostoReal - deslocReal
+
+    // Pra cada coprodução, recalcula com líquido real
+    let resumo = `Fechamento da turma:\n\n`
+    resumo += `Receita realizada: ${fmt(receitaReal)}\n`
+    resumo += `(-) Tráfego realizado: ${fmt(trafegoReal)}\n`
+    resumo += `(-) Imposto realizado: ${fmt(impostoReal)}\n`
+    resumo += `(-) Deslocamento realizado: ${fmt(deslocReal)}\n`
+    resumo += `= Líquido: ${fmt(liquidoReal)}\n\n`
+    resumo += `Coproduções (recalculadas):\n`
+
+    const atualizacoes: Array<{ id: string, valor: number, descricao: string }> = []
+    for (const c of copreviews) {
+      // Tenta extrair o % do registro de professor
+      const tp = turmaProfessores.find(p => c.descricao.includes(p.professores.nome))
+      const prof = tp ? professores.find(p => p.id === tp.professor_id) : null
+      const pct = (prof as any)?.percentual_vendas || 0
+      const valorReal = (liquidoReal * pct) / 100
+      const novaDesc = c.descricao.replace(' — PREVISTO', '')
+
+      resumo += `  ${novaDesc}: ${pct}% × ${fmt(liquidoReal)} = ${fmt(valorReal)}\n`
+      atualizacoes.push({ id: c.id, valor: valorReal, descricao: novaDesc })
+    }
+
+    resumo += `\nConfirma o fechamento?`
+
+    if (!confirm(resumo)) return
+
+    // Aplica atualizações
+    for (const a of atualizacoes) {
+      await supabase.from('lancamentos_empresa').update({
+        valor: a.valor,
+        descricao: a.descricao,
+        status: 'realizado',
+        data_pagamento: new Date().toISOString().split('T')[0],
+      }).eq('id', a.id)
+    }
+
+    // Marca turma como realizada (se não estiver)
+    if (turma?.status !== 'realizada') {
+      await supabase.from('turmas').update({ status: 'realizada' }).eq('id', id)
+    }
+
+    alert('Turma fechada com sucesso!')
+    carregarTudo()
   }
 
   async function trocarProfessor(turmaProfId: string) {
@@ -644,6 +708,14 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
 
           {aba === 'financeiro' && financeiro && (
             <div style={{ padding: '24px' }}>
+              {turma.status === 'realizada' && (
+                <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'flex-end' }}>
+                  <button onClick={fecharTurma} style={{ ...btnPrimary, backgroundColor: '#16a34a' }}>
+                    🔒 Fechar turma e recalcular coproduções
+                  </button>
+                </div>
+              )}
+
               {trafegoPorDia > 0 && (
                 <div style={{ backgroundColor: '#1e3a5f', border: '1px solid #2563eb', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px' }}>
                   <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: '600', marginBottom: '4px' }}>📊 Investimento diário sugerido de tráfego</div>
