@@ -47,12 +47,12 @@ export async function POST(req: NextRequest) {
 
   try {
     // Extrai dados do payload
-    const productId = pick(payload, ['product.id', 'product_id', 'data.product.id', 'produto.id'])
-    const productName = pick(payload, ['product.name', 'product_name', 'data.product.name', 'produto.nome'])
-    const buyerName = pick(payload, ['buyer.name', 'customer.name', 'data.buyer.name', 'comprador.nome', 'student.name'])
-    const buyerEmail = pick(payload, ['buyer.email', 'customer.email', 'data.buyer.email', 'comprador.email', 'student.email'])
-    const buyerCpf = pick(payload, ['buyer.cpf', 'customer.cpf', 'data.buyer.cpf', 'comprador.cpf', 'student.cpf'])
-    const buyerPhone = pick(payload, ['buyer.phone', 'customer.phone', 'data.buyer.phone', 'comprador.telefone', 'student.phone'])
+    const productId = pick(payload, ['product_id', 'product.id', 'data.product.id', 'produto.id'])
+    const productName = pick(payload, ['product_name', 'product.name', 'data.product.name', 'produto.nome'])
+    const buyerName = pick(payload, ['buyer_name', 'buyer.name', 'customer.name', 'data.buyer.name', 'comprador.nome', 'student.name'])
+    const buyerEmail = pick(payload, ['buyer_email', 'buyer.email', 'customer.email', 'data.buyer.email', 'comprador.email', 'student.email'])
+    const buyerCpf = pick(payload, ['buyer_cpf', 'buyer.cpf', 'customer.cpf', 'data.buyer.cpf', 'comprador.cpf', 'student.cpf'])
+    const buyerPhone = pick(payload, ['buyer_phone', 'buyer.phone', 'customer.phone', 'data.buyer.phone', 'comprador.telefone', 'student.phone'])
     const amount = parseFloat(pick(payload, ['amount', 'value', 'total', 'data.amount', 'valor'], '0'))
     const paymentMethod = pick(payload, ['payment_method', 'data.payment_method', 'metodo_pagamento'], 'pix')
 
