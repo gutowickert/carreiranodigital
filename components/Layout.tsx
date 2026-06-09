@@ -52,8 +52,9 @@ const grupos: Grupo[] = [
       { nome: 'Professores', href: '/dashboard/professores' },
       { nome: 'Usuários', href: '/dashboard/usuarios' },
     { nome: 'Configurações', href: '/dashboard/configuracoes' },
-    { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
-    { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
+      { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
+      { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
+      { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
     ],
   },
 ]
