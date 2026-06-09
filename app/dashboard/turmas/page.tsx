@@ -59,6 +59,7 @@ export default function Turmas() {
   const [profPorModulo, setProfPorModulo] = useState<Record<string, string>>({})
   const [professorId, setProfessorId] = useState('')
   const [codigoTurma, setCodigoTurma] = useState('')
+  const [idHeroSpark, setIdHeroSpark] = useState('')
   const [produtoId, setProdutoId] = useState('')
   const [cidadeId, setCidadeId] = useState('')
   const [salaId, setSalaId] = useState('')
@@ -208,6 +209,7 @@ export default function Turmas() {
       tipo_localidade: cidade.tipo === 'sede_propria' ? 'sede_propria' : 'cidade_externa',
       custo_deslocamento_prof: parseFloat(deslocProf), custo_deslocamento_equipe: parseFloat(deslocEquipe),
       status: 'planejada', codigo: codigoTurma || null,
+      id_externo_herospark: idHeroSpark || null,
     }).select().single()
 
     if (error || !turma) { setMensagem('Erro: ' + error?.message); setSalvando(false); return }
@@ -445,7 +447,7 @@ export default function Turmas() {
 
     setMensagem('Turma aberta com sucesso!')
     setAbrirForm(false); setProdutoId(''); setCidadeId(''); setSalaId(''); setProfessorId('')
-    setProfPorModulo({}); setDiasAula([]); setModulos([]); setDeslocProf('0'); setDeslocEquipe('0'); setCodigoTurma('')
+    setProfPorModulo({}); setDiasAula([]); setModulos([]); setDeslocProf('0'); setDeslocEquipe('0'); setCodigoTurma(''); setIdHeroSpark('')
     carregarTurmas(); setSalvando(false)
   }
 
@@ -471,9 +473,18 @@ export default function Turmas() {
         <div style={{ ...card, padding: '28px', marginBottom: '28px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', marginBottom: '20px', marginTop: 0 }}>Nova turma</h2>
           <form onSubmit={handleSalvar}>
-            <div style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Código da turma</label>
-              <input value={codigoTurma} onChange={e => setCodigoTurma(e.target.value)} placeholder="Ex: reels-lajeado-jul25" style={inp} />
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Código da turma</label>
+                <input value={codigoTurma} onChange={e => setCodigoTurma(e.target.value)} placeholder="Ex: reels-lajeado-jul25" style={inp} />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>
+                  ID HeroSpark (opcional)
+                  <span style={{ marginLeft: 6, color: '#6b7280', fontWeight: 'normal' }}>— pra matrícula automática via webhook</span>
+                </label>
+                <input value={idHeroSpark} onChange={e => setIdHeroSpark(e.target.value)} placeholder="Ex: 12345" style={inp} />
+              </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
