@@ -83,16 +83,34 @@ export async function POST(req: NextRequest) {
       alunoId = novo.id
     }
 
-    // 2) Encontra turma pelo ID externo HeroSpark
+    // 2) Encontra turma pelo CÓDIGO embutido no nome do produto
     let turmaId: string | null = null
-    if (productId) {
-      const { data } = await supabase.from('turmas').select('id, produto_id, preco_venda, produtos(nome)').eq('id_externo_herospark', productId.toString()).limit(1).single()
-      if (data) turmaId = data.id
+    let turmaCodigo: string | null = null
+
+    // Busca todas as turmas com código preenchido
+    const { data: turmasComCodigo } = await supabase.from('turmas')
+      .select('id, codigo')
+      .not('codigo', 'is', null)
+      .neq('codigo', '')
+
+    if (turmasComCodigo && productName) {
+      const nomeUpper = productName.toString().toUpperCase()
+      for (const t of turmasComCodigo) {
+        if (t.codigo && nomeUpper.includes(t.codigo.toUpperCase())) {
+          turmaId = t.id
+          turmaCodigo = t.codigo
+          break
+        }
+      }
     }
 
     if (!turmaId) {
-      await supabase.from('webhook_logs').update({ status: 'ignorado', erro: `Turma não encontrada (id_externo_herospark=${productId})`, processado_em: new Date().toISOString() }).eq('id', logId!)
-      return NextResponse.json({ warn: 'Turma não cadastrada com este ID HeroSpark, ignorado' }, { status: 200 })
+      await supabase.from('webhook_logs').update({
+        status: 'ignorado',
+        erro: `Nenhuma turma com código encontrado no nome do produto: "${productName}"`,
+        processado_em: new Date().toISOString()
+      }).eq('id', logId!)
+      return NextResponse.json({ warn: 'Nenhuma turma identificada pelo código no nome do produto' }, { status: 200 })
     }
 
     // 3) Busca caixa HeroSpark
