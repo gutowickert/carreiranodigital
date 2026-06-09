@@ -277,7 +277,6 @@ export default function Turmas() {
         }
       }
     }
-    }
 
     const receitaPrevista = parseFloat(preco) * Math.floor(parseInt(vagas) * PCT_RECEITA_VAGAS)
     const totalTrafego = receitaPrevista * PCT_TRAFEGO
