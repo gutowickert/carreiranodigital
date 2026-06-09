@@ -28,13 +28,22 @@ export async function POST(req: NextRequest) {
   }
 
   // Salva log primeiro (mesmo se falhar depois, registro fica)
-  const { data: log } = await supabase.from('webhook_logs').insert({
+  const { data: log, error: errLog } = await supabase.from('webhook_logs').insert({
     origem: 'herospark',
     evento: pick(payload, ['event', 'event_name', 'tipo']),
     payload,
     status: 'recebido',
   }).select().single()
+
+  if (errLog) {
+    console.error('[webhook] erro ao inserir log:', errLog)
+    return NextResponse.json({ error: 'Erro ao salvar log: ' + errLog.message, payload_received: payload }, { status: 500 })
+  }
+
   logId = log?.id || null
+  if (!logId) {
+    return NextResponse.json({ error: 'Log não foi criado (sem id retornado)', payload_received: payload }, { status: 500 })
+  }
 
   try {
     // Extrai dados do payload
