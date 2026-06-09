@@ -300,17 +300,27 @@ export default function Turmas() {
       const fimTrafDate = new Date(dataFimTrafego + 'T12:00:00')
       const diasTrafego = Math.max(1, Math.ceil((fimTrafDate.getTime() - inicioTrafDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
       const valorDiarioTrafego = totalTrafego / diasTrafego
+      const DIAS_AGRUPAMENTO_TRAFEGO = await getConfigNumero('financeiro.dias_agrupamento_trafego', 4)
+      const intervalo = Math.max(1, DIAS_AGRUPAMENTO_TRAFEGO)
 
       const lancamentosTrafego = []
-      for (let i = 0; i < diasTrafego; i++) {
+      let i = 0
+      while (i < diasTrafego) {
+        const diasNesteBloco = Math.min(intervalo, diasTrafego - i)
         const data = addDays(dataInicioTrafego, i)
+        const valorBloco = valorDiarioTrafego * diasNesteBloco
+        const dataFimBloco = addDays(dataInicioTrafego, i + diasNesteBloco - 1)
+        const descricaoPeriodo = diasNesteBloco > 1
+          ? `${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(dataFimBloco + 'T12:00:00').toLocaleDateString('pt-BR')}`
+          : new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
         lancamentosTrafego.push({
           tipo: 'custo', categoria: 'marketing',
-          descricao: `Tráfego diário — ${produto.nome}`,
-          valor: valorDiarioTrafego, unidade: 'geral',
+          descricao: `Tráfego ${descricaoPeriodo} — ${produto.nome}`,
+          valor: valorBloco, unidade: 'geral',
           mes_referencia: data.substring(0, 7) + '-01',
           data_vencimento: data, status: 'previsto', turma_id: turma.id,
         })
+        i += diasNesteBloco
       }
       if (lancamentosTrafego.length > 0) {
         await supabase.from('lancamentos_empresa').insert(lancamentosTrafego)
