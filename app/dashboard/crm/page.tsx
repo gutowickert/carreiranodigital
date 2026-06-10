@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { getPrimeiraTarefa, SEQUENCIA_POR_ETAPA } from '@/lib/sequencia-tarefas'
 
 type Lead = {
   id: string
@@ -23,6 +24,7 @@ type Lead = {
   prazo_prometido: string
   fbclid: string
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
+  temTarefaAtrasada?: boolean
 }
 
 type Turma = { id: string; codigo: string; data_inicio: string; preco_venda: number; produtos: { nome: string }; cidades: { nome: string } }
@@ -30,7 +32,6 @@ type Vendedor = { id: string; nome: string }
 type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
-// 9 etapas conforme design v4 + aguardando_pagamento
 const ETAPAS = [
   { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: '#9ca3af', bg: '#1f2937' },
   { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#60a5fa', bg: '#172554' },
@@ -43,14 +44,13 @@ const ETAPAS = [
   { id: 'perda', label: 'Perda', cor: '#f87171', bg: '#450a0a' },
 ]
 
-// Etapas mostradas como colunas no kanban (Ganho e Perda ficam num bloco compacto)
 const ETAPAS_KANBAN = ETAPAS.filter(e => e.id !== 'ganho' && e.id !== 'perda')
 
 const ORIGEM_LABEL: Record<string, string> = {
   formulario: 'Formulário', whatsapp_site: 'WhatsApp', whatsapp: 'WhatsApp', manual: 'Manual', herospark: 'HeroSpark', outro: 'Outro',
 }
 
-const PRAZO_CICLO = 6  // dia em que termina o ciclo ativo
+const PRAZO_CICLO = 6
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
@@ -58,7 +58,6 @@ const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRad
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
-// Calcula em que dia do ciclo o lead está (0 a N)
 function diaDoCiclo(criadoEm: string): number {
   const inicio = new Date(criadoEm)
   const agora = new Date()
@@ -89,7 +88,24 @@ export default function CRM() {
     const { data } = await supabase.from('leads')
       .select('*, turmas(id, codigo, produtos(nome), cidades(nome))')
       .order('criado_em', { ascending: false })
-    if (data) setLeads(data as any)
+    if (!data) return
+
+    // Pra cada lead, verifica se tem tarefa atrasada
+    const leadIds = data.map((l: any) => l.id)
+    const { data: tarefasAtrasadas } = await supabase.from('tarefas_lead')
+      .select('lead_id')
+      .in('lead_id', leadIds)
+      .eq('concluida', false)
+      .eq('cancelada', false)
+      .lt('data_vencimento', new Date().toISOString())
+
+    const leadsComTarefaAtrasada = new Set(tarefasAtrasadas?.map((t: any) => t.lead_id) || [])
+    const leadsEnriquecidos = data.map((l: any) => ({
+      ...l,
+      temTarefaAtrasada: leadsComTarefaAtrasada.has(l.id),
+    }))
+
+    setLeads(leadsEnriquecidos as any)
   }
 
   async function carregarTurmas() {
@@ -153,44 +169,69 @@ export default function CRM() {
     return proximoVendedor
   }
 
-  async function criarTarefaLead(leadId: string, vendedorId: string | null, tipo: string, titulo: string, descricao: string, diasAteVencimento: number) {
-    const vencimento = new Date()
-    vencimento.setDate(vencimento.getDate() + diasAteVencimento)
+  // Cancela TODAS as tarefas pendentes do lead (chamado ao mudar de etapa)
+  async function cancelarTarefasPendentes(leadId: string) {
+    await supabase.from('tarefas_lead').update({
+      cancelada: true,
+      cancelada_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString(),
+    })
+      .eq('lead_id', leadId)
+      .eq('concluida', false)
+      .eq('cancelada', false)
+  }
+
+  // Cria a PRIMEIRA tarefa da sequência de uma etapa
+  async function criarPrimeiraTarefaDaEtapa(leadId: string, vendedorId: string | null, etapa: string, dataReferencia: Date, leadNome: string) {
+    const primeira = getPrimeiraTarefa(etapa)
+    if (!primeira) return
+
+    // Data de vencimento = data de referência + N dias
+    const vencimento = new Date(dataReferencia)
+    vencimento.setDate(vencimento.getDate() + primeira.diasAposEntrada)
+
+    await supabase.from('tarefas_lead').insert({
+      lead_id: leadId,
+      vendedor_id: vendedorId || null,
+      tipo: primeira.chave,
+      titulo: `${primeira.titulo} — ${leadNome}`,
+      descricao: primeira.descricao,
+      data_vencimento: vencimento.toISOString(),
+    })
+
+    await supabase.from('lead_andamentos').insert({
+      lead_id: leadId,
+      vendedor_id: vendedorId || null,
+      tipo: 'tarefa_criada',
+      observacao: `Sistema criou tarefa: ${primeira.titulo} (vence ${vencimento.toLocaleString('pt-BR')})`,
+    })
+  }
+
+  // Cria tarefa com data específica (Pediu prazo e Aguardando pagamento)
+  async function criarTarefaComData(leadId: string, vendedorId: string | null, tipo: string, titulo: string, descricao: string, dataIso: string) {
     await supabase.from('tarefas_lead').insert({
       lead_id: leadId,
       vendedor_id: vendedorId || null,
       tipo,
       titulo,
       descricao,
-      data_vencimento: vencimento.toISOString(),
+      data_vencimento: dataIso,
     })
+
     await supabase.from('lead_andamentos').insert({
       lead_id: leadId,
       vendedor_id: vendedorId || null,
       tipo: 'tarefa_criada',
-      observacao: `Sistema criou tarefa: ${titulo}`,
+      observacao: `Sistema criou tarefa: ${titulo} (vence ${new Date(dataIso).toLocaleString('pt-BR')})`,
     })
   }
 
-  async function criarCompromissoAgenda(leadId: string, vendedorId: string, leadNome: string, prazoIso: string) {
-    const fim = new Date(prazoIso)
-    fim.setHours(fim.getHours() + 1)
-    await supabase.from('agenda_eventos').insert({
-      usuario_id: vendedorId,
-      lead_id: leadId,
-      titulo: `Retorno: ${leadNome}`,
-      tipo: 'compromisso_lead',
-      inicio: prazoIso,
-      fim: fim.toISOString(),
-      descricao: `Lead pediu prazo. Retornar contato.`,
-    })
-  }
-
-  async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string }) {
-    const payload: any = { etapa: novaEtapa, atualizado_em: new Date().toISOString() }
+  async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) {
+    const agora = new Date()
+    const payload: any = { etapa: novaEtapa, atualizado_em: agora.toISOString() }
 
     if (novaEtapa === 'perda') {
-      payload.data_perda = new Date().toISOString()
+      payload.data_perda = agora.toISOString()
       payload.motivo_perda_id = extras?.motivoPerdaId
     }
     if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
@@ -207,12 +248,33 @@ export default function CRM() {
       observacao: `Movido para ${ETAPAS.find(e => e.id === novaEtapa)?.label || novaEtapa}`,
     })
 
-    if (novaEtapa === 'nao_chegou_preco') {
-      await criarTarefaLead(lead.id, lead.vendedor_id, 'tentar_contato', 'Tentar contato D+1', `Lead ${lead.nome} — tentar contato novamente`, 1)
-    }
+    // Cancela tarefas pendentes da etapa anterior
+    await cancelarTarefasPendentes(lead.id)
 
-    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido && lead.vendedor_id) {
-      await criarCompromissoAgenda(lead.id, lead.vendedor_id, lead.nome, extras.prazoPrometido)
+    // Cria primeira tarefa da nova etapa
+    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
+      // Tarefa com data específica (escolhida pelo vendedor)
+      await criarTarefaComData(
+        lead.id,
+        lead.vendedor_id,
+        'retornar_prazo',
+        `Retornar contato — ${lead.nome}`,
+        'Cliente pediu prazo. Retornar contato na data prometida.',
+        extras.prazoPrometido
+      )
+    } else if (novaEtapa === 'aguardando_pagamento' && extras?.dataAgendada) {
+      // Tarefa com data específica acordada com cliente
+      await criarTarefaComData(
+        lead.id,
+        lead.vendedor_id,
+        'verificar_pagamento',
+        `Verificar pagamento — ${lead.nome}`,
+        'Cliente disse que vai pagar. Confirmar se pagamento foi efetuado.',
+        extras.dataAgendada
+      )
+    } else if (SEQUENCIA_POR_ETAPA[novaEtapa]?.length > 0) {
+      // Tarefa automática conforme sequência da etapa
+      await criarPrimeiraTarefaDaEtapa(lead.id, lead.vendedor_id, novaEtapa, agora, lead.nome)
     }
 
     carregarLeads()
@@ -292,7 +354,8 @@ export default function CRM() {
                       const dia = diaDoCiclo(lead.criado_em)
                       const cicloEstourou = dia > PRAZO_CICLO
                       const prazoEstourou = lead.prazo_prometido && new Date(lead.prazo_prometido) < new Date() && lead.etapa === 'pediu_prazo'
-                      const alerta = cicloEstourou || prazoEstourou
+                      const tarefaAtrasada = lead.temTarefaAtrasada
+                      const alerta = cicloEstourou || prazoEstourou || tarefaAtrasada
                       return (
                         <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 12, cursor: 'pointer', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
@@ -308,12 +371,17 @@ export default function CRM() {
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                             <div style={{ fontSize: 10, color: '#6b7280' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
-                            {cicloEstourou && (
-                              <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ ciclo</div>
-                            )}
-                            {prazoEstourou && (
-                              <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ prazo</div>
-                            )}
+                            <div style={{ display: 'flex', gap: 4 }}>
+                              {tarefaAtrasada && (
+                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ tarefa</div>
+                              )}
+                              {cicloEstourou && (
+                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ ciclo</div>
+                              )}
+                              {prazoEstourou && (
+                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ prazo</div>
+                              )}
+                            </div>
                           </div>
                         </div>
                       )
@@ -435,7 +503,7 @@ interface ModalLeadProps {
   aberto: boolean; lead: Lead | null; novoLead: boolean
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
-  moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string }) => Promise<void>
+  moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) => Promise<void>
   onFechar: () => void
 }
 
@@ -446,9 +514,12 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
   const [prazoData, setPrazoData] = useState('')
   const [prazoHora, setPrazoHora] = useState('14:00')
+  const [pagData, setPagData] = useState('')
+  const [pagHora, setPagHora] = useState('14:00')
   const [mostrarPerda, setMostrarPerda] = useState(false)
   const [mostrarGanho, setMostrarGanho] = useState(false)
   const [mostrarPrazo, setMostrarPrazo] = useState(false)
+  const [mostrarPag, setMostrarPag] = useState(false)
 
   useEffect(() => {
     if (lead) {
@@ -463,8 +534,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       setForm({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
       setAndamentos([])
     }
-    setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false)
-    setMotivoSelecionado(''); setPrazoData('')
+    setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false); setMostrarPag(false)
+    setMotivoSelecionado(''); setPrazoData(''); setPagData('')
   }, [lead, aberto])
 
   async function carregarAndamentos(leadId: string) {
@@ -518,8 +589,15 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   async function confirmarPrazo() {
     if (!lead || !prazoData) return
-    const prazoIso = `${prazoData}T${prazoHora}:00`
+    const prazoIso = new Date(`${prazoData}T${prazoHora}:00`).toISOString()
     await moverEtapa(lead, 'pediu_prazo', { prazoPrometido: prazoIso })
+    onFechar()
+  }
+
+  async function confirmarAguardandoPag() {
+    if (!lead || !pagData) return
+    const dataIso = new Date(`${pagData}T${pagHora}:00`).toISOString()
+    await moverEtapa(lead, 'aguardando_pagamento', { dataAgendada: dataIso })
     onFechar()
   }
 
@@ -606,21 +684,25 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
               <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo').map(e => (
+                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento').map(e => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
                     style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
                     → {e.label}
                   </button>
                 ))}
-                <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false) }}
+                <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fbbf2440', background: '#451a03', color: '#fbbf24', fontSize: 11, cursor: 'pointer' }}>
                   → Pediu prazo
                 </button>
-                <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false) }}
+                <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false) }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 11, cursor: 'pointer' }}>
+                  → Aguardando pagamento
+                </button>
+                <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✓ Ganho
                 </button>
-                <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false) }}
+                <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false); setMostrarPag(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✗ Perda
                 </button>
@@ -635,7 +717,21 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                   </div>
                   <button onClick={confirmarPrazo} disabled={!prazoData}
                     style={{ ...btnPrimary, background: '#d97706', marginTop: 8, width: '100%', opacity: prazoData ? 1 : 0.5 }}>
-                    Marcar prazo e criar compromisso
+                    Marcar prazo e criar tarefa
+                  </button>
+                </div>
+              )}
+
+              {mostrarPag && (
+                <div style={{ marginTop: 12, padding: 12, background: '#083344', borderRadius: 8, border: '1px solid #06b6d440' }}>
+                  <label style={labelStyle}>Quando cliente disse que paga? *</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" style={inp} value={pagData} onChange={e => setPagData(e.target.value)} />
+                    <input type="time" style={inp} value={pagHora} onChange={e => setPagHora(e.target.value)} />
+                  </div>
+                  <button onClick={confirmarAguardandoPag} disabled={!pagData}
+                    style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: pagData ? 1 : 0.5 }}>
+                    Mover e criar tarefa de acompanhamento
                   </button>
                 </div>
               )}
@@ -693,8 +789,6 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   )
 }
 
-// ============ VINCULAR MATRÍCULA EXISTENTE (modal de Ganho) ============
-
 interface ModalGanhoVincularProps {
   lead: Lead
   turma: Turma | undefined
@@ -741,7 +835,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
     const mat = matriculas.find(m => m.id === matriculaSelecionada)
     if (!mat) { setSalvando(false); return }
 
-    await supabase.from('matriculas').update({ lead_id: lead.id }).eq('id', matriculaSelecionada)
+    await supabase.from('matriculas').update({ lead_id: lead.id, vendedor_id: lead.vendedor_id || null }).eq('id', matriculaSelecionada)
 
     await supabase.from('leads').update({
       etapa: 'ganho',
@@ -751,6 +845,16 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
       motivo_ganho: motivoGanho.trim() || null,
       atualizado_em: new Date().toISOString(),
     }).eq('id', lead.id)
+
+    // Cancela tarefas pendentes (ganho encerra o ciclo)
+    await supabase.from('tarefas_lead').update({
+      cancelada: true,
+      cancelada_em: new Date().toISOString(),
+      atualizado_em: new Date().toISOString(),
+    })
+      .eq('lead_id', lead.id)
+      .eq('concluida', false)
+      .eq('cancelada', false)
 
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id,
