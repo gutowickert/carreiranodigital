@@ -15,10 +15,13 @@ type Lead = {
   vendedor_id: string
   etapa: string
   motivo_perda_id: string
+  motivo_ganho: string
   mensagem_inicial: string
   valor_venda: number
   observacoes: string
   criado_em: string
+  prazo_prometido: string
+  fbclid: string
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
 }
 
@@ -27,25 +30,41 @@ type Vendedor = { id: string; nome: string }
 type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
+// 8 etapas novas conforme design v4
 const ETAPAS = [
-  { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#6b7280', bg: '#1f2937' },
-  { id: 'em_atendimento', label: 'Em atendimento', cor: '#60a5fa', bg: '#172554' },
-  { id: 'agendado', label: 'Agendado', cor: '#a78bfa', bg: '#2e1065' },
-  { id: 'ligacao_quente', label: 'Ligação quente', cor: '#fb923c', bg: '#431407' },
-  { id: 'ligacao_fria', label: 'Ligação fria', cor: '#94a3b8', bg: '#1e293b' },
-  { id: 'whatsapp_quente', label: 'WhatsApp quente', cor: '#34d399', bg: '#052e16' },
-  { id: 'whatsapp_frio', label: 'WhatsApp frio', cor: '#94a3b8', bg: '#1e293b' },
+  { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: '#9ca3af', bg: '#1f2937' },
+  { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#60a5fa', bg: '#172554' },
+  { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399', bg: '#052e16' },
+  { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: '#fb923c', bg: '#431407' },
+  { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa', bg: '#2e1065' },
+  { id: 'pediu_prazo', label: 'Pediu prazo', cor: '#fbbf24', bg: '#451a03' },
+  { id: 'ganho', label: 'Ganho', cor: '#4ade80', bg: '#052e16' },
+  { id: 'perda', label: 'Perda', cor: '#f87171', bg: '#450a0a' },
 ]
 
+// Etapas mostradas como colunas no kanban (Ganho e Perda ficam num bloco compacto)
+const ETAPAS_KANBAN = ETAPAS.filter(e => e.id !== 'ganho' && e.id !== 'perda')
+
 const ORIGEM_LABEL: Record<string, string> = {
-  formulario: 'Formulário', whatsapp_site: 'WhatsApp', manual: 'Manual', outro: 'Outro',
+  formulario: 'Formulário', whatsapp_site: 'WhatsApp', whatsapp: 'WhatsApp', manual: 'Manual', herospark: 'HeroSpark', outro: 'Outro',
 }
+
+const PRAZO_VIRADA = 3 // dia da virada do lote
+const PRAZO_CICLO = 6  // dia em que termina o ciclo ativo
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
 const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
 const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+
+// Calcula em que dia do ciclo o lead está (0 a N)
+function diaDoCiclo(criadoEm: string): number {
+  const inicio = new Date(criadoEm)
+  const agora = new Date()
+  const diffMs = agora.getTime() - inicio.getTime()
+  return Math.floor(diffMs / (1000 * 60 * 60 * 24))
+}
 
 export default function CRM() {
   const [leads, setLeads] = useState<Lead[]>([])
@@ -58,6 +77,7 @@ export default function CRM() {
   const [modalAberto, setModalAberto] = useState(false)
   const [leadEditando, setLeadEditando] = useState<Lead | null>(null)
   const [novoLead, setNovoLead] = useState(false)
+  const [verFinalizados, setVerFinalizados] = useState(false)
 
   useEffect(() => { carregarTudo() }, [])
 
@@ -68,7 +88,6 @@ export default function CRM() {
   async function carregarLeads() {
     const { data } = await supabase.from('leads')
       .select('*, turmas(id, codigo, produtos(nome), cidades(nome))')
-      .not('etapa', 'in', '(ganho,perdido)')
       .order('criado_em', { ascending: false })
     if (data) setLeads(data as any)
   }
@@ -134,22 +153,78 @@ export default function CRM() {
     return proximoVendedor
   }
 
-  async function moverEtapa(lead: Lead, novaEtapa: string, motivoId?: string) {
-    if (novaEtapa === 'ganho') {
-      alert('Para marcar como ganho, use o botão "✓ Ganho" no modal do lead.')
-      return
-    }
+  // Cria tarefa automática vinculada ao lead
+  async function criarTarefaLead(leadId: string, vendedorId: string | null, tipo: string, titulo: string, descricao: string, diasAteVencimento: number) {
+    const vencimento = new Date()
+    vencimento.setDate(vencimento.getDate() + diasAteVencimento)
+    await supabase.from('tarefas_lead').insert({
+      lead_id: leadId,
+      vendedor_id: vendedorId || null,
+      tipo,
+      titulo,
+      descricao,
+      data_vencimento: vencimento.toISOString(),
+    })
+    // Registra no histórico
+    await supabase.from('lead_andamentos').insert({
+      lead_id: leadId,
+      vendedor_id: vendedorId || null,
+      tipo: 'tarefa_criada',
+      observacao: `Sistema criou tarefa: ${titulo}`,
+    })
+  }
+
+  // Cria compromisso na agenda do vendedor
+  async function criarCompromissoAgenda(leadId: string, vendedorId: string, leadNome: string, prazoIso: string) {
+    const fim = new Date(prazoIso)
+    fim.setHours(fim.getHours() + 1)
+    await supabase.from('agenda_eventos').insert({
+      usuario_id: vendedorId,
+      lead_id: leadId,
+      titulo: `Retorno: ${leadNome}`,
+      tipo: 'compromisso_lead',
+      inicio: prazoIso,
+      fim: fim.toISOString(),
+      descricao: `Lead pediu prazo. Retornar contato.`,
+    })
+  }
+
+  async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; motivoGanho?: string; prazoPrometido?: string; valorVenda?: number }) {
     const payload: any = { etapa: novaEtapa, atualizado_em: new Date().toISOString() }
-    if (novaEtapa === 'perdido') {
+
+    if (novaEtapa === 'perda') {
       payload.data_perda = new Date().toISOString()
-      payload.motivo_perda_id = motivoId
+      payload.motivo_perda_id = extras?.motivoPerdaId
     }
+    if (novaEtapa === 'ganho') {
+      payload.data_ganho = new Date().toISOString()
+      payload.motivo_ganho = extras?.motivoGanho
+      if (extras?.valorVenda) payload.valor_venda = extras.valorVenda
+    }
+    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
+      payload.prazo_prometido = extras.prazoPrometido
+    }
+
     await supabase.from('leads').update(payload).eq('id', lead.id)
     await supabase.from('lead_andamentos').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id,
-      etapa_anterior: lead.etapa, etapa_nova: novaEtapa,
-      observacao: novaEtapa === 'perdido' ? 'Lead perdido' : `Movido para ${novaEtapa}`,
+      lead_id: lead.id,
+      vendedor_id: lead.vendedor_id,
+      tipo: 'mudanca_etapa',
+      etapa_anterior: lead.etapa,
+      etapa_nova: novaEtapa,
+      observacao: `Movido para ${ETAPAS.find(e => e.id === novaEtapa)?.label || novaEtapa}`,
     })
+
+    // Comportamentos automáticos
+    if (novaEtapa === 'nao_chegou_preco') {
+      // Cria tarefa D+1
+      await criarTarefaLead(lead.id, lead.vendedor_id, 'tentar_contato', 'Tentar contato D+1', `Lead ${lead.nome} — tentar contato novamente (não atendeu/respondeu)`, 1)
+    }
+
+    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido && lead.vendedor_id) {
+      await criarCompromissoAgenda(lead.id, lead.vendedor_id, lead.nome, extras.prazoPrometido)
+    }
+
     carregarLeads()
   }
 
@@ -159,9 +234,13 @@ export default function CRM() {
     return true
   })
 
-  const leadsPorEtapa = ETAPAS.map(e => ({
+  const leadsAtivos = leadsFiltrados.filter(l => l.etapa !== 'ganho' && l.etapa !== 'perda')
+  const leadsGanho = leadsFiltrados.filter(l => l.etapa === 'ganho')
+  const leadsPerda = leadsFiltrados.filter(l => l.etapa === 'perda')
+
+  const leadsPorEtapa = ETAPAS_KANBAN.map(e => ({
     etapa: e,
-    leads: leadsFiltrados.filter(l => l.etapa === e.id),
+    leads: leadsAtivos.filter(l => l.etapa === e.id),
   }))
 
   return (
@@ -170,7 +249,7 @@ export default function CRM() {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>CRM</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{leadsFiltrados.length} lead(s) ativos no funil</p>
+            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{leadsAtivos.length} lead(s) ativos no funil</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
@@ -208,38 +287,99 @@ export default function CRM() {
         </div>
 
         {visao === 'kanban' && (
-          <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
-            {leadsPorEtapa.map(({ etapa, leads: leadsEtapa }) => (
-              <div key={etapa.id} style={{ flex: '0 0 280px', minHeight: 400 }}>
-                <div style={{ background: etapa.bg, border: `1px solid ${etapa.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: etapa.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{etapa.label}</span>
-                    <span style={{ fontSize: 12, color: etapa.cor }}>{leadsEtapa.length}</span>
+          <>
+            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
+              {leadsPorEtapa.map(({ etapa, leads: leadsEtapa }) => (
+                <div key={etapa.id} style={{ flex: '0 0 260px', minHeight: 400 }}>
+                  <div style={{ background: etapa.bg, border: `1px solid ${etapa.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: etapa.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{etapa.label}</span>
+                      <span style={{ fontSize: 12, color: etapa.cor }}>{leadsEtapa.length}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    {leadsEtapa.map(lead => {
+                      const dia = diaDoCiclo(lead.criado_em)
+                      const cicloEstourou = dia > PRAZO_CICLO
+                      const prazoEstourou = lead.prazo_prometido && new Date(lead.prazo_prometido) < new Date() && lead.etapa === 'pediu_prazo'
+                      const alerta = cicloEstourou || prazoEstourou
+                      return (
+                        <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
+                          style={{ ...card, padding: 12, cursor: 'pointer', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1 }}>{lead.nome}</div>
+                            <div style={{ fontSize: 9, color: alerta ? '#f87171' : '#6b7280', fontWeight: 600 }}>D{dia}</div>
+                          </div>
+                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
+                          {lead.turmas && (
+                            <div style={{ fontSize: 10, color: '#a78bfa', marginTop: 6, padding: '2px 6px', background: '#2e1065', borderRadius: 4, display: 'inline-block' }}>
+                              {lead.turmas.codigo || lead.turmas.produtos?.nome}
+                            </div>
+                          )}
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                            <div style={{ fontSize: 10, color: '#6b7280' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
+                            {cicloEstourou && (
+                              <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ ciclo</div>
+                            )}
+                            {prazoEstourou && (
+                              <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ prazo</div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {leadsEtapa.length === 0 && (
+                      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: '#6b7280', border: '1px dashed #3a3a3c', borderRadius: 8 }}>
+                        Vazio
+                      </div>
+                    )}
                   </div>
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {leadsEtapa.map(lead => (
-                    <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                      style={{ ...card, padding: 12, cursor: 'pointer' }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{lead.nome}</div>
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
-                      {lead.turmas && (
-                        <div style={{ fontSize: 10, color: '#a78bfa', marginTop: 6, padding: '2px 6px', background: '#2e1065', borderRadius: 4, display: 'inline-block' }}>
-                          {lead.turmas.codigo || lead.turmas.produtos?.nome}
-                        </div>
-                      )}
-                      <div style={{ fontSize: 10, color: '#6b7280', marginTop: 4 }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
-                    </div>
-                  ))}
-                  {leadsEtapa.length === 0 && (
-                    <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: '#6b7280', border: '1px dashed #3a3a3c', borderRadius: 8 }}>
-                      Vazio
-                    </div>
-                  )}
+              ))}
+            </div>
+
+            {/* Bloco compacto Ganho/Perda */}
+            <div style={{ marginTop: 20, borderTop: '1px solid #3a3a3c', paddingTop: 16 }}>
+              <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
+                <button onClick={() => setVerFinalizados(!verFinalizados)} style={btnSecondary}>
+                  {verFinalizados ? '▾ Esconder' : '▸ Mostrar'} finalizados
+                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13 }}>
+                  <span style={{ color: '#4ade80', fontWeight: 600 }}>Ganho: {leadsGanho.length}</span>
+                  <span style={{ color: '#f87171', fontWeight: 600 }}>Perda: {leadsPerda.length}</span>
                 </div>
               </div>
-            ))}
-          </div>
+              {verFinalizados && (
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', textTransform: 'uppercase', marginBottom: 8 }}>Ganho ({leadsGanho.length})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+                      {leadsGanho.map(lead => (
+                        <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
+                          style={{ ...card, padding: 10, cursor: 'pointer' }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{lead.nome}</div>
+                          <div style={{ fontSize: 10, color: '#34d399', marginTop: 4 }}>R$ {lead.valor_venda?.toFixed(2) || '0,00'}</div>
+                        </div>
+                      ))}
+                      {leadsGanho.length === 0 && <p style={{ fontSize: 11, color: '#6b7280' }}>Nenhum.</p>}
+                    </div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', textTransform: 'uppercase', marginBottom: 8 }}>Perda ({leadsPerda.length})</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+                      {leadsPerda.map(lead => (
+                        <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
+                          style={{ ...card, padding: 10, cursor: 'pointer' }}>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{lead.nome}</div>
+                        </div>
+                      ))}
+                      {leadsPerda.length === 0 && <p style={{ fontSize: 11, color: '#6b7280' }}>Nenhum.</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
         )}
 
         {visao === 'lista' && (
@@ -250,7 +390,7 @@ export default function CRM() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
-                    {['Nome', 'WhatsApp', 'Turma', 'Etapa', 'Origem', 'Criado em'].map(h => (
+                    {['Nome', 'WhatsApp', 'Turma', 'Etapa', 'Dia', 'Origem', 'Criado em'].map(h => (
                       <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
@@ -258,6 +398,7 @@ export default function CRM() {
                 <tbody>
                   {leadsFiltrados.map(lead => {
                     const etapa = ETAPAS.find(e => e.id === lead.etapa)
+                    const dia = diaDoCiclo(lead.criado_em)
                     return (
                       <tr key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                         style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
@@ -269,6 +410,7 @@ export default function CRM() {
                             {etapa?.label || lead.etapa}
                           </span>
                         </td>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: dia > PRAZO_CICLO ? '#f87171' : '#9ca3af' }}>D{dia}</td>
                         <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</td>
                         <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>
                           {new Date(lead.criado_em).toLocaleDateString('pt-BR')}
@@ -304,17 +446,21 @@ interface ModalLeadProps {
   aberto: boolean; lead: Lead | null; novoLead: boolean
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
-  moverEtapa: (lead: Lead, novaEtapa: string, motivoId?: string) => Promise<void>
+  moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; motivoGanho?: string; prazoPrometido?: string; valorVenda?: number }) => Promise<void>
   onFechar: () => void
 }
 
 function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, onFechar }: ModalLeadProps) {
-  const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'atendimento_inicial', origem: 'manual', observacoes: '' })
+  const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [novoAndamento, setNovoAndamento] = useState('')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
+  const [motivoGanhoTexto, setMotivoGanhoTexto] = useState('')
+  const [prazoData, setPrazoData] = useState('')
+  const [prazoHora, setPrazoHora] = useState('14:00')
   const [mostrarPerda, setMostrarPerda] = useState(false)
   const [mostrarGanho, setMostrarGanho] = useState(false)
+  const [mostrarPrazo, setMostrarPrazo] = useState(false)
 
   useEffect(() => {
     if (lead) {
@@ -326,10 +472,11 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       })
       carregarAndamentos(lead.id)
     } else {
-      setForm({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'atendimento_inicial', origem: 'manual', observacoes: '' })
+      setForm({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
       setAndamentos([])
     }
-    setMostrarPerda(false); setMostrarGanho(false); setMotivoSelecionado('')
+    setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false)
+    setMotivoSelecionado(''); setMotivoGanhoTexto(''); setPrazoData('')
   }, [lead, aberto])
 
   async function carregarAndamentos(leadId: string) {
@@ -357,7 +504,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       await supabase.from('leads').insert({
         nome: form.nome, whatsapp: form.whatsapp || null, email: form.email || null,
         turma_id: form.turma_id || null, codigo_turma: codigoTurma,
-        vendedor_id: vendedorIdFinal || null, etapa: 'atendimento_inicial',
+        vendedor_id: vendedorIdFinal || null, etapa: 'aguardando_atendimento',
         origem: form.origem, observacoes: form.observacoes || null,
       })
     }
@@ -368,7 +515,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     if (!lead || !novoAndamento.trim()) return
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id,
-      observacao: novoAndamento, etapa_anterior: lead.etapa, etapa_nova: lead.etapa,
+      tipo: 'observacao',
+      observacao: novoAndamento,
     })
     setNovoAndamento('')
     carregarAndamentos(lead.id)
@@ -376,7 +524,20 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   async function confirmarPerda() {
     if (!lead || !motivoSelecionado) return
-    await moverEtapa(lead, 'perdido', motivoSelecionado)
+    await moverEtapa(lead, 'perda', { motivoPerdaId: motivoSelecionado })
+    onFechar()
+  }
+
+  async function confirmarGanho() {
+    if (!lead || !motivoGanhoTexto.trim()) return
+    await moverEtapa(lead, 'ganho', { motivoGanho: motivoGanhoTexto.trim() })
+    onFechar()
+  }
+
+  async function confirmarPrazo() {
+    if (!lead || !prazoData) return
+    const prazoIso = `${prazoData}T${prazoHora}:00`
+    await moverEtapa(lead, 'pediu_prazo', { prazoPrometido: prazoIso })
     onFechar()
   }
 
@@ -384,12 +545,21 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
   const turmaSelecionada = turmas.find(t => t.id === form.turma_id)
+  const dia = lead ? diaDoCiclo(lead.criado_em) : 0
+  const cicloEstourou = dia > PRAZO_CICLO
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 560, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
+          <div>
+            <h2 style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
+            {!novoLead && lead && (
+              <div style={{ fontSize: 11, color: cicloEstourou ? '#f87171' : '#9ca3af', marginTop: 4 }}>
+                Dia {dia} do ciclo {cicloEstourou && '⚠ ciclo terminou'}
+              </div>
+            )}
+          </div>
           <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 22, cursor: 'pointer' }}>x</button>
         </div>
 
@@ -436,7 +606,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             <select style={{ ...inp, cursor: 'pointer' }} value={form.origem} onChange={e => setForm((f: any) => ({ ...f, origem: e.target.value }))}>
               <option value="manual">Manual</option>
               <option value="formulario">Formulário</option>
-              <option value="whatsapp_site">WhatsApp do site</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="herospark">HeroSpark</option>
               <option value="outro">Outro</option>
             </select>
           </div>
@@ -448,29 +619,56 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             value={form.observacoes} onChange={e => setForm((f: any) => ({ ...f, observacoes: e.target.value }))} />
         </div>
 
-        {!novoLead && lead && (
+        {!novoLead && lead && lead.etapa !== 'ganho' && lead.etapa !== 'perda' && (
           <>
             <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Avançar funil</div>
+              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {ETAPAS.filter(e => e.id !== lead.etapa).map(e => (
+                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo').map(e => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
                     style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
                     → {e.label}
                   </button>
                 ))}
-                <button onClick={() => setMostrarGanho(!mostrarGanho)}
+                <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false) }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fbbf2440', background: '#451a03', color: '#fbbf24', fontSize: 11, cursor: 'pointer' }}>
+                  → Pediu prazo
+                </button>
+                <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✓ Ganho
                 </button>
-                <button onClick={() => setMostrarPerda(!mostrarPerda)}
+                <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✗ Perda
                 </button>
               </div>
 
+              {mostrarPrazo && (
+                <div style={{ marginTop: 12, padding: 12, background: '#451a03', borderRadius: 8, border: '1px solid #fbbf2440' }}>
+                  <label style={labelStyle}>Quando cliente prometeu retornar? *</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" style={inp} value={prazoData} onChange={e => setPrazoData(e.target.value)} />
+                    <input type="time" style={inp} value={prazoHora} onChange={e => setPrazoHora(e.target.value)} />
+                  </div>
+                  <button onClick={confirmarPrazo} disabled={!prazoData}
+                    style={{ ...btnPrimary, background: '#d97706', marginTop: 8, width: '100%', opacity: prazoData ? 1 : 0.5 }}>
+                    Marcar prazo e criar compromisso
+                  </button>
+                </div>
+              )}
+
               {mostrarGanho && (
-                <ModalGanhoVincular lead={lead} turma={turmaSelecionada} onFechar={() => { setMostrarGanho(false); onFechar() }} />
+                <div style={{ marginTop: 12, padding: 12, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
+                  <label style={labelStyle}>Como foi o ganho? *</label>
+                  <textarea style={{ ...inp, resize: 'none', minHeight: 60 }} rows={2}
+                    placeholder="Ex: Fechou na virada do lote, cliente decidido"
+                    value={motivoGanhoTexto} onChange={e => setMotivoGanhoTexto(e.target.value)} />
+                  <button onClick={confirmarGanho} disabled={!motivoGanhoTexto.trim()}
+                    style={{ ...btnPrimary, background: '#16a34a', marginTop: 8, width: '100%', opacity: motivoGanhoTexto.trim() ? 1 : 0.5 }}>
+                    Confirmar ganho
+                  </button>
+                </div>
               )}
 
               {mostrarPerda && (
@@ -500,6 +698,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                   <div key={a.id} style={{ padding: 10, background: '#1c1c1e', borderRadius: 6, fontSize: 12 }}>
                     <div style={{ color: '#d1d1d1' }}>{a.observacao}</div>
                     <div style={{ color: '#6b7280', fontSize: 10, marginTop: 4 }}>
+                      {a.tipo && a.tipo !== 'observacao' && <span style={{ color: '#a78bfa', marginRight: 6 }}>[{a.tipo}]</span>}
                       {new Date(a.criado_em).toLocaleString('pt-BR')}
                     </div>
                   </div>
@@ -517,146 +716,6 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           </button>
         </div>
       </div>
-    </div>
-  )
-}
-
-// ============ VINCULAR MATRÍCULA EXISTENTE ============
-
-interface ModalGanhoVincularProps {
-  lead: Lead
-  turma: Turma | undefined
-  onFechar: () => void
-}
-
-function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) {
-  const [matriculas, setMatriculas] = useState<MatriculaDisponivel[]>([])
-  const [matriculaSelecionada, setMatriculaSelecionada] = useState<string>('')
-  const [salvando, setSalvando] = useState(false)
-  const [mensagem, setMensagem] = useState('')
-  const [carregando, setCarregando] = useState(true)
-
-  useEffect(() => {
-    if (turma) carregarMatriculas()
-  }, [turma])
-
-  async function carregarMatriculas() {
-    if (!turma) return
-    setCarregando(true)
-    
-    // Busca matrículas dessa turma que ainda não estão vinculadas a outro lead
-    const { data } = await supabase.from('matriculas')
-      .select('id, aluno_id, valor_pago, data_compra, lead_id, alunos(nome, cpf)')
-      .eq('turma_id', turma.id)
-      .order('data_compra', { ascending: false })
-    
-    if (data) {
-      const disponiveis = data
-        .filter((m: any) => !m.lead_id || m.lead_id === lead.id)
-        .map((m: any) => ({
-          id: m.id, aluno_id: m.aluno_id, valor_pago: m.valor_pago,
-          data_compra: m.data_compra, aluno_nome: m.alunos?.nome, aluno_cpf: m.alunos?.cpf,
-        }))
-      setMatriculas(disponiveis)
-    }
-    setCarregando(false)
-  }
-
-  async function confirmar() {
-    if (!matriculaSelecionada || !turma) return
-    setSalvando(true); setMensagem('')
-
-    const mat = matriculas.find(m => m.id === matriculaSelecionada)
-    if (!mat) { setSalvando(false); return }
-
-    // Vincula matrícula ao lead
-    await supabase.from('matriculas').update({ lead_id: lead.id }).eq('id', matriculaSelecionada)
-
-    // Atualiza lead para ganho
-    await supabase.from('leads').update({
-      etapa: 'ganho',
-      data_ganho: new Date().toISOString(),
-      valor_venda: mat.valor_pago,
-      matricula_id: matriculaSelecionada,
-      atualizado_em: new Date().toISOString(),
-    }).eq('id', lead.id)
-
-    await supabase.from('lead_andamentos').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id,
-      etapa_anterior: lead.etapa, etapa_nova: 'ganho',
-      observacao: `Vinculado a matrícula de ${mat.aluno_nome} (R$ ${mat.valor_pago.toFixed(2)})`,
-    })
-
-    setMensagem('Lead marcado como ganho!')
-    setTimeout(onFechar, 800)
-  }
-
-  return (
-    <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
-        Vincular matrícula existente
-      </div>
-
-      {!turma && (
-        <p style={{ fontSize: 12, color: '#f87171' }}>
-          Este lead não está vinculado a uma turma. Vincule uma turma primeiro.
-        </p>
-      )}
-
-      {turma && carregando && (
-        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
-      )}
-
-      {turma && !carregando && matriculas.length === 0 && (
-        <div>
-          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
-            Nenhuma matrícula disponível para esta turma ainda.
-          </p>
-          <p style={{ fontSize: 11, color: '#9ca3af' }}>
-            Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
-          </p>
-        </div>
-      )}
-
-      {turma && matriculas.length > 0 && (
-        <>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-            Selecione a matrícula deste lead:
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-            {matriculas.map(m => (
-              <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
-                style={{
-                  padding: 10, borderRadius: 6, cursor: 'pointer',
-                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
-                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
-                }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
-                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
-                      {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
-                      {new Date(m.data_compra).toLocaleDateString('pt-BR')}
-                    </div>
-                  </div>
-                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
-                    R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {mensagem && (
-            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
-          )}
-
-          <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
-            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
-            {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
-          </button>
-        </>
-      )}
     </div>
   )
 }
