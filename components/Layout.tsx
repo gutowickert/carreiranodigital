@@ -36,6 +36,7 @@ const grupos: Grupo[] = [
       { nome: 'Resultados Externo', href: '/dashboard/crm-externo/resultados' },
       { nome: 'Vendedores', href: '/dashboard/vendedores' },
       { nome: 'Comissões', href: '/dashboard/comissoes' },
+      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
     ],
   },
   {
