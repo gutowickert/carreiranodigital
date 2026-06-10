@@ -143,6 +143,58 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: errMat?.message }, { status: 500 })
     }
 
+    // 4.5) Procura lead correspondente por whatsapp ou email — se achar, vincula
+    let leadEncontrado: any = null
+    if (buyerPhone) {
+      const phoneNumeros = buyerPhone.toString().replace(/\D/g, '')
+      const { data: leadPorPhone } = await supabase.from('leads')
+        .select('id, vendedor_id, etapa, nome')
+        .or(`whatsapp.eq.${buyerPhone},whatsapp.eq.${phoneNumeros}`)
+        .not('etapa', 'in', '(perda)')
+        .order('criado_em', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (leadPorPhone) leadEncontrado = leadPorPhone
+    }
+    if (!leadEncontrado && buyerEmail) {
+      const { data: leadPorEmail } = await supabase.from('leads')
+        .select('id, vendedor_id, etapa, nome')
+        .eq('email', buyerEmail)
+        .not('etapa', 'in', '(perda)')
+        .order('criado_em', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (leadPorEmail) leadEncontrado = leadPorEmail
+    }
+
+    if (leadEncontrado) {
+      // Vincula matrícula ao lead + ao vendedor do lead (pra gerar comissão automática)
+      await supabase.from('matriculas').update({
+        lead_id: leadEncontrado.id,
+        vendedor_id: leadEncontrado.vendedor_id || null,
+      }).eq('id', matricula.id)
+
+      // Move o lead pra Ganho
+      await supabase.from('leads').update({
+        etapa: 'ganho',
+        data_ganho: new Date().toISOString(),
+        valor_venda: valorFinal,
+        matricula_id: matricula.id,
+        motivo_ganho: 'Convertido via HeroSpark',
+        atualizado_em: new Date().toISOString(),
+      }).eq('id', leadEncontrado.id)
+
+      // Registra andamento
+      await supabase.from('lead_andamentos').insert({
+        lead_id: leadEncontrado.id,
+        vendedor_id: leadEncontrado.vendedor_id,
+        tipo: 'webhook_convertido',
+        etapa_anterior: leadEncontrado.etapa,
+        etapa_nova: 'ganho',
+        observacao: `Convertido via HeroSpark — R$ ${valorFinal.toFixed(2)}`,
+      })
+    }
+
     // 5) Atualiza LTV do aluno
     const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
     await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorFinal }).eq('id', alunoId)
