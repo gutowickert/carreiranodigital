@@ -52,6 +52,7 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Alunos', href: '/dashboard/alunos' },
       { nome: 'Professores', href: '/dashboard/professores' },
+      { nome: 'Módulos', href: '/dashboard/modulos' },
       { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
       { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
