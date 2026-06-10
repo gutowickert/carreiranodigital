@@ -83,6 +83,10 @@ export async function POST(req: NextRequest) {
   const utmCampaign = (payload.utm_campaign || '').toString().trim() || null
   const utmContent = (payload.utm_content || '').toString().trim() || null
   const observacoes = (payload.observacoes || '').toString().trim() || null
+  const tamanhoEquipe = (payload.tamanho_equipe || '').toString().trim() || null
+  const investimentoMarketing = (payload.investimento_marketing || '').toString().trim() || null
+  const geraLeadsDigital = (payload.gera_leads_digital || '').toString().trim() || null
+  const maiorProblema = (payload.maior_problema || '').toString().trim() || null
  
   // Validação mínima
   if (!nome) {
@@ -136,6 +140,10 @@ export async function POST(req: NextRequest) {
     utm_campaign: utmCampaign,
     utm_content: utmContent,
     observacoes,
+    tamanho_equipe: tamanhoEquipe,
+    investimento_marketing: investimentoMarketing,
+    gera_leads_digital: geraLeadsDigital,
+    maior_problema: maiorProblema,
   }).select().single()
  
   if (error || !leadCriado) {
