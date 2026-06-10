@@ -23,6 +23,15 @@ type Lead = {
   criado_em: string
   prazo_prometido: string
   fbclid: string
+  negocio: string
+  tamanho_equipe: string
+  investimento_marketing: string
+  gera_leads_digital: string
+  maior_problema: string
+  utm_source: string
+  utm_medium: string
+  utm_campaign: string
+  utm_content: string
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
   temTarefaAtrasada?: boolean
 }
@@ -608,6 +617,17 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const dia = lead ? diaDoCiclo(lead.criado_em) : 0
   const cicloEstourou = dia > PRAZO_CICLO
 
+  // --- Seção de qualificação (somente leitura) ---
+  const qualLinhas: [string, string][] = lead ? ([
+    ['Negócio', lead.negocio],
+    ['Tamanho da equipe', lead.tamanho_equipe],
+    ['Investimento em marketing', lead.investimento_marketing],
+    ['Já gera leads pelo digital', lead.gera_leads_digital],
+    ['Maior problema', lead.maior_problema],
+  ].filter(([, v]) => v && String(v).trim()) as [string, string][]) : []
+  const temTracking = !!(lead && (lead.utm_source || lead.utm_medium || lead.utm_campaign || lead.utm_content || lead.fbclid))
+  const tagStyle = { fontSize: 11, color: '#a78bfa', background: '#2e1065', border: '1px solid #a78bfa30', borderRadius: 4, padding: '2px 8px' } as React.CSSProperties
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
@@ -678,6 +698,37 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           <textarea style={{ ...inp, resize: 'none', minHeight: 60 } as React.CSSProperties} rows={2}
             value={form.observacoes} onChange={e => setForm((f: any) => ({ ...f, observacoes: e.target.value }))} />
         </div>
+
+        {!novoLead && lead && (
+          <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+              Qualificação (formulário)
+            </div>
+            {qualLinhas.length > 0 ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {qualLinhas.map(([rotulo, valor]) => (
+                  <div key={rotulo} style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: 8, alignItems: 'start' }}>
+                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{rotulo}</div>
+                    <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{valor}</div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+                Sem dados de qualificação (lead não veio do formulário ou campos em branco).
+              </p>
+            )}
+            {temTracking && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #3a3a3c', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {lead.utm_source && <span style={tagStyle}>utm_source: {lead.utm_source}</span>}
+                {lead.utm_medium && <span style={tagStyle}>utm_medium: {lead.utm_medium}</span>}
+                {lead.utm_campaign && <span style={tagStyle}>utm_campaign: {lead.utm_campaign}</span>}
+                {lead.utm_content && <span style={tagStyle}>utm_content: {lead.utm_content}</span>}
+                {lead.fbclid && <span style={tagStyle}>fbclid ✓</span>}
+              </div>
+            )}
+          </div>
+        )}
 
         {!novoLead && lead && lead.etapa !== 'ganho' && lead.etapa !== 'perda' && (
           <>
