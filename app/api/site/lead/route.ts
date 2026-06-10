@@ -87,6 +87,7 @@ export async function POST(req: NextRequest) {
   const investimentoMarketing = (payload.investimento_marketing || '').toString().trim() || null
   const geraLeadsDigital = (payload.gera_leads_digital || '').toString().trim() || null
   const maiorProblema = (payload.maior_problema || '').toString().trim() || null
+  const negocio = (payload.negocio || '').toString().trim() || null
  
   // Validação mínima
   if (!nome) {
@@ -144,6 +145,7 @@ export async function POST(req: NextRequest) {
     investimento_marketing: investimentoMarketing,
     gera_leads_digital: geraLeadsDigital,
     maior_problema: maiorProblema,
+    negocio: negocio,
   }).select().single()
  
   if (error || !leadCriado) {
