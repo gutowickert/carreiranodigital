@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { getProximaTarefa } from '@/lib/sequencia-tarefas'
 
 type TarefaLead = {
   id: string
@@ -14,6 +15,7 @@ type TarefaLead = {
   data_vencimento: string
   concluida: boolean
   concluida_em: string | null
+  cancelada: boolean
   criado_em: string
   leads?: { id: string; nome: string; whatsapp: string; etapa: string; turma_id: string; turmas?: { codigo: string; produtos: { nome: string } } }
 }
@@ -26,9 +28,15 @@ const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const TIPO_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
-  tentar_contato: { label: 'Tentar contato', cor: '#fb923c', bg: '#431407' },
-  oferecer_bolsa: { label: 'Oferecer bolsa', cor: '#a78bfa', bg: '#2e1065' },
-  retornar_contato: { label: 'Retornar contato', cor: '#fbbf24', bg: '#451a03' },
+  tentar_contato_d1: { label: 'Tentar contato D+1', cor: '#fb923c', bg: '#431407' },
+  tentar_contato_d2: { label: 'Tentar contato D+2', cor: '#fb923c', bg: '#431407' },
+  tentar_contato_d4: { label: 'Tentar contato D+4', cor: '#fb923c', bg: '#431407' },
+  tentar_contato_d6: { label: 'Tentar contato D+6', cor: '#fb923c', bg: '#431407' },
+  lote_fecha_hoje_d3: { label: 'Lote fecha hoje', cor: '#34d399', bg: '#052e16' },
+  dar_andamento_d4: { label: 'Dar andamento', cor: '#60a5fa', bg: '#172554' },
+  encerrar_lead_d2: { label: 'Encerrar lead', cor: '#a78bfa', bg: '#2e1065' },
+  retornar_prazo: { label: 'Retornar (prazo)', cor: '#fbbf24', bg: '#451a03' },
+  verificar_pagamento: { label: 'Verificar pagamento', cor: '#06b6d4', bg: '#083344' },
 }
 
 function tempoRelativo(dataIso: string): string {
@@ -47,7 +55,8 @@ export default function TarefasLeads() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [carregando, setCarregando] = useState(true)
   const [filtroVendedor, setFiltroVendedor] = useState('')
-  const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'todas'>('pendentes')
+  const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'canceladas' | 'todas'>('pendentes')
+  const [mensagem, setMensagem] = useState('')
 
   useEffect(() => { carregar() }, [filtroVendedor, filtroStatus])
 
@@ -59,8 +68,9 @@ export default function TarefasLeads() {
       .order('data_vencimento', { ascending: true })
 
     if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
-    if (filtroStatus === 'pendentes') query = query.eq('concluida', false)
+    if (filtroStatus === 'pendentes') query = query.eq('concluida', false).eq('cancelada', false)
     if (filtroStatus === 'concluidas') query = query.eq('concluida', true)
+    if (filtroStatus === 'canceladas') query = query.eq('cancelada', true)
 
     const [tarRes, vendRes] = await Promise.all([
       query,
@@ -76,12 +86,46 @@ export default function TarefasLeads() {
     setCarregando(false)
   }
 
-  async function marcarConcluida(tarefaId: string) {
+  async function marcarConcluida(tarefa: TarefaLead) {
+    // 1. Marca como concluída
     await supabase.from('tarefas_lead').update({
       concluida: true,
       concluida_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString(),
-    }).eq('id', tarefaId)
+    }).eq('id', tarefa.id)
+
+    // 2. Verifica se tem próxima tarefa na sequência
+    const lead = tarefa.leads
+    if (lead && tarefa.tipo) {
+      const proxima = getProximaTarefa(lead.etapa, tarefa.tipo)
+      if (proxima) {
+        // Calcula vencimento da próxima: data da tarefa concluída + (proxima.diasAposEntrada - diasAposEntrada_atual)
+        // Pra simplificar: vence hoje + 1 dia (1 dia depois da atual)
+        // Solução melhor: usar a hora atual + diferença de dias entre as duas
+        const vencimento = new Date()
+        vencimento.setDate(vencimento.getDate() + 1)
+
+        await supabase.from('tarefas_lead').insert({
+          lead_id: lead.id,
+          vendedor_id: tarefa.vendedor_id,
+          tipo: proxima.chave,
+          titulo: `${proxima.titulo} — ${lead.nome}`,
+          descricao: proxima.descricao,
+          data_vencimento: vencimento.toISOString(),
+        })
+
+        await supabase.from('lead_andamentos').insert({
+          lead_id: lead.id,
+          vendedor_id: tarefa.vendedor_id,
+          tipo: 'tarefa_criada',
+          observacao: `Sistema criou próxima tarefa após conclusão: ${proxima.titulo}`,
+        })
+
+        setMensagem(`Tarefa concluída. Próxima criada: ${proxima.titulo}`)
+        setTimeout(() => setMensagem(''), 3000)
+      }
+    }
+
     carregar()
   }
 
@@ -94,22 +138,32 @@ export default function TarefasLeads() {
     carregar()
   }
 
+  async function descancelar(tarefaId: string) {
+    await supabase.from('tarefas_lead').update({
+      cancelada: false,
+      cancelada_em: null,
+      atualizado_em: new Date().toISOString(),
+    }).eq('id', tarefaId)
+    carregar()
+  }
+
   const agora = new Date()
-  const tarefasAtrasadas = tarefas.filter(t => !t.concluida && new Date(t.data_vencimento) < agora)
+  const tarefasAtrasadas = tarefas.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) < agora)
   const tarefasHoje = tarefas.filter(t => {
-    if (t.concluida) return false
+    if (t.concluida || t.cancelada) return false
     const v = new Date(t.data_vencimento)
-    return v.toDateString() === agora.toDateString()
+    return v.toDateString() === agora.toDateString() && v >= agora
   })
-  const tarefasFuturas = tarefas.filter(t => !t.concluida && new Date(t.data_vencimento) > agora && new Date(t.data_vencimento).toDateString() !== agora.toDateString())
+  const tarefasFuturas = tarefas.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) > agora && new Date(t.data_vencimento).toDateString() !== agora.toDateString())
   const tarefasConcluidas = tarefas.filter(t => t.concluida)
+  const tarefasCanceladas = tarefas.filter(t => t.cancelada)
 
   function renderTarefa(t: TarefaLead) {
     const tipo = TIPO_LABEL[t.tipo] || { label: t.tipo, cor: '#9ca3af', bg: '#1f2937' }
     const venc = new Date(t.data_vencimento)
-    const atrasada = !t.concluida && venc < agora
+    const atrasada = !t.concluida && !t.cancelada && venc < agora
     return (
-      <div key={t.id} style={{ ...card, padding: 14, opacity: t.concluida ? 0.6 : 1, border: atrasada ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
+      <div key={t.id} style={{ ...card, padding: 14, opacity: (t.concluida || t.cancelada) ? 0.6 : 1, border: atrasada ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -124,6 +178,11 @@ export default function TarefasLeads() {
               {t.concluida && (
                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#052e16', color: '#34d399', fontWeight: 600 }}>
                   ✓ Concluída
+                </span>
+              )}
+              {t.cancelada && (
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#1f2937', color: '#9ca3af', fontWeight: 600 }}>
+                  Cancelada
                 </span>
               )}
             </div>
@@ -141,10 +200,14 @@ export default function TarefasLeads() {
             </div>
           </div>
           <div>
-            {t.concluida ? (
+            {!t.concluida && !t.cancelada && (
+              <button onClick={() => marcarConcluida(t)} style={btnPrimary}>✓ Concluir</button>
+            )}
+            {t.concluida && (
               <button onClick={() => desmarcarConcluida(t.id)} style={btnSecondary}>Reabrir</button>
-            ) : (
-              <button onClick={() => marcarConcluida(t.id)} style={btnPrimary}>✓ Concluir</button>
+            )}
+            {t.cancelada && (
+              <button onClick={() => descancelar(t.id)} style={btnSecondary}>Restaurar</button>
             )}
           </div>
         </div>
@@ -162,10 +225,17 @@ export default function TarefasLeads() {
           </p>
         </div>
 
+        {mensagem && (
+          <div style={{ padding: 12, marginBottom: 16, background: '#052e16', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: '#34d399', margin: 0 }}>{mensagem}</p>
+          </div>
+        )}
+
         <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
           <select style={sel} value={filtroStatus} onChange={e => setFiltroStatus(e.target.value as any)}>
             <option value="pendentes">Pendentes</option>
             <option value="concluidas">Concluídas</option>
+            <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
           </select>
           <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
@@ -183,12 +253,12 @@ export default function TarefasLeads() {
           <div style={{ ...card, padding: 32, textAlign: 'center' }}>
             <p style={{ fontSize: 14, color: '#4ade80', margin: 0, fontWeight: 500 }}>✓ Tudo em dia</p>
             <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6, margin: 0 }}>
-              Nenhuma tarefa {filtroStatus === 'pendentes' ? 'pendente' : filtroStatus === 'concluidas' ? 'concluída' : ''} no momento.
+              Nenhuma tarefa {filtroStatus === 'pendentes' ? 'pendente' : filtroStatus === 'concluidas' ? 'concluída' : filtroStatus === 'canceladas' ? 'cancelada' : ''} no momento.
             </p>
           </div>
         ) : (
           <>
-            {filtroStatus !== 'concluidas' && (
+            {filtroStatus === 'pendentes' && (
               <>
                 {tarefasAtrasadas.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
@@ -231,14 +301,15 @@ export default function TarefasLeads() {
               </div>
             )}
 
-            {filtroStatus === 'todas' && tarefasConcluidas.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', textTransform: 'uppercase', marginBottom: 8 }}>
-                  Concluídas ({tarefasConcluidas.length})
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {tarefasConcluidas.map(renderTarefa)}
-                </div>
+            {filtroStatus === 'canceladas' && tarefasCanceladas.length > 0 && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {tarefasCanceladas.map(renderTarefa)}
+              </div>
+            )}
+
+            {filtroStatus === 'todas' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {tarefas.map(renderTarefa)}
               </div>
             )}
           </>
