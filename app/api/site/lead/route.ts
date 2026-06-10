@@ -1,0 +1,168 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+ 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+)
+ 
+// Headers de CORS — necessários porque o site (HostGator) é um domínio diferente do Vercel
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type',
+}
+ 
+// Preflight CORS (browser manda OPTIONS antes do POST quando é cross-origin)
+export async function OPTIONS() {
+  return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
+}
+ 
+// Aplica rateio entre vendedores da turma e retorna o vendedor_id escolhido
+async function aplicarRateio(turmaId: string): Promise<string | null> {
+  const { data: config } = await supabase.from('vendedor_config_turma')
+    .select('vendedor_id, leads_por_ciclo, ordem')
+    .eq('turma_id', turmaId).eq('ativo', true).order('ordem')
+  if (!config || config.length === 0) return null
+ 
+  const { data: estado } = await supabase.from('rateio_estado')
+    .select('*').eq('turma_id', turmaId).maybeSingle()
+ 
+  let proximoVendedor: string
+  let novoContador: number
+ 
+  if (!estado) {
+    proximoVendedor = config[0].vendedor_id
+    novoContador = 1
+  } else {
+    const idxAtual = config.findIndex(c => c.vendedor_id === estado.ultimo_vendedor_id)
+    const configAtual = idxAtual >= 0 ? config[idxAtual] : config[0]
+    if (estado.leads_atribuidos_ciclo >= configAtual.leads_por_ciclo) {
+      const proxIdx = (idxAtual + 1) % config.length
+      proximoVendedor = config[proxIdx].vendedor_id
+      novoContador = 1
+    } else {
+      proximoVendedor = estado.ultimo_vendedor_id
+      novoContador = estado.leads_atribuidos_ciclo + 1
+    }
+  }
+ 
+  if (estado) {
+    await supabase.from('rateio_estado').update({
+      ultimo_vendedor_id: proximoVendedor,
+      leads_atribuidos_ciclo: novoContador,
+      atualizado_em: new Date().toISOString(),
+    }).eq('turma_id', turmaId)
+  } else {
+    await supabase.from('rateio_estado').insert({
+      turma_id: turmaId, ultimo_vendedor_id: proximoVendedor, leads_atribuidos_ciclo: novoContador,
+    })
+  }
+  return proximoVendedor
+}
+ 
+export async function POST(req: NextRequest) {
+  let payload: any = {}
+ 
+  try {
+    payload = await req.json()
+  } catch {
+    return NextResponse.json(
+      { error: 'JSON inválido' },
+      { status: 400, headers: CORS_HEADERS }
+    )
+  }
+ 
+  const nome = (payload.nome || '').toString().trim()
+  const whatsapp = (payload.whatsapp || '').toString().trim()
+  const email = (payload.email || '').toString().trim()
+  const codigoTurma = (payload.codigo_turma || '').toString().trim().toUpperCase()
+  const fbclid = (payload.fbclid || '').toString().trim() || null
+  const utmSource = (payload.utm_source || '').toString().trim() || null
+  const utmMedium = (payload.utm_medium || '').toString().trim() || null
+  const utmCampaign = (payload.utm_campaign || '').toString().trim() || null
+  const utmContent = (payload.utm_content || '').toString().trim() || null
+  const observacoes = (payload.observacoes || '').toString().trim() || null
+ 
+  // Validação mínima
+  if (!nome) {
+    return NextResponse.json(
+      { error: 'Nome é obrigatório' },
+      { status: 400, headers: CORS_HEADERS }
+    )
+  }
+  if (!whatsapp && !email) {
+    return NextResponse.json(
+      { error: 'WhatsApp ou email obrigatório' },
+      { status: 400, headers: CORS_HEADERS }
+    )
+  }
+  if (!codigoTurma) {
+    return NextResponse.json(
+      { error: 'Código da turma é obrigatório' },
+      { status: 400, headers: CORS_HEADERS }
+    )
+  }
+ 
+  // Procura turma pelo código
+  const { data: turma } = await supabase.from('turmas')
+    .select('id, codigo, status')
+    .eq('codigo', codigoTurma)
+    .maybeSingle()
+ 
+  if (!turma) {
+    return NextResponse.json(
+      { error: 'Turma não encontrada para o código informado' },
+      { status: 404, headers: CORS_HEADERS }
+    )
+  }
+ 
+  // Aplica rateio pra escolher vendedor
+  const vendedorId = await aplicarRateio(turma.id)
+ 
+  // Cria lead
+  const { data: leadCriado, error } = await supabase.from('leads').insert({
+    nome,
+    whatsapp: whatsapp || null,
+    email: email || null,
+    turma_id: turma.id,
+    codigo_turma: turma.codigo,
+    vendedor_id: vendedorId,
+    etapa: 'aguardando_atendimento',
+    origem: 'formulario',
+    fbclid,
+    utm_source: utmSource,
+    utm_medium: utmMedium,
+    utm_campaign: utmCampaign,
+    utm_content: utmContent,
+    observacoes,
+  }).select().single()
+ 
+  if (error || !leadCriado) {
+    return NextResponse.json(
+      { error: 'Erro ao criar lead: ' + (error?.message || 'desconhecido') },
+      { status: 500, headers: CORS_HEADERS }
+    )
+  }
+ 
+  // Registra andamento inicial
+  await supabase.from('lead_andamentos').insert({
+    lead_id: leadCriado.id,
+    vendedor_id: vendedorId,
+    tipo: 'criado',
+    etapa_nova: 'aguardando_atendimento',
+    observacao: `Lead criado via formulário do site${fbclid ? ' (fbclid capturado)' : ''}`,
+  })
+ 
+  return NextResponse.json(
+    { ok: true, lead_id: leadCriado.id },
+    { status: 200, headers: CORS_HEADERS }
+  )
+}
+ 
+export async function GET() {
+  return NextResponse.json(
+    { status: 'ok', endpoint: 'site-lead' },
+    { headers: CORS_HEADERS }
+  )
+}
