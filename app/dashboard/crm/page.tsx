@@ -30,7 +30,7 @@ type Vendedor = { id: string; nome: string }
 type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
-// 8 etapas novas conforme design v4
+// 9 etapas conforme design v4 + aguardando_pagamento
 const ETAPAS = [
   { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: '#9ca3af', bg: '#1f2937' },
   { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#60a5fa', bg: '#172554' },
@@ -38,6 +38,7 @@ const ETAPAS = [
   { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: '#fb923c', bg: '#431407' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa', bg: '#2e1065' },
   { id: 'pediu_prazo', label: 'Pediu prazo', cor: '#fbbf24', bg: '#451a03' },
+  { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: '#06b6d4', bg: '#083344' },
   { id: 'ganho', label: 'Ganho', cor: '#4ade80', bg: '#052e16' },
   { id: 'perda', label: 'Perda', cor: '#f87171', bg: '#450a0a' },
 ]
@@ -49,7 +50,6 @@ const ORIGEM_LABEL: Record<string, string> = {
   formulario: 'Formulário', whatsapp_site: 'WhatsApp', whatsapp: 'WhatsApp', manual: 'Manual', herospark: 'HeroSpark', outro: 'Outro',
 }
 
-const PRAZO_VIRADA = 3 // dia da virada do lote
 const PRAZO_CICLO = 6  // dia em que termina o ciclo ativo
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
@@ -153,7 +153,6 @@ export default function CRM() {
     return proximoVendedor
   }
 
-  // Cria tarefa automática vinculada ao lead
   async function criarTarefaLead(leadId: string, vendedorId: string | null, tipo: string, titulo: string, descricao: string, diasAteVencimento: number) {
     const vencimento = new Date()
     vencimento.setDate(vencimento.getDate() + diasAteVencimento)
@@ -165,7 +164,6 @@ export default function CRM() {
       descricao,
       data_vencimento: vencimento.toISOString(),
     })
-    // Registra no histórico
     await supabase.from('lead_andamentos').insert({
       lead_id: leadId,
       vendedor_id: vendedorId || null,
@@ -174,7 +172,6 @@ export default function CRM() {
     })
   }
 
-  // Cria compromisso na agenda do vendedor
   async function criarCompromissoAgenda(leadId: string, vendedorId: string, leadNome: string, prazoIso: string) {
     const fim = new Date(prazoIso)
     fim.setHours(fim.getHours() + 1)
@@ -189,17 +186,12 @@ export default function CRM() {
     })
   }
 
-  async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; motivoGanho?: string; prazoPrometido?: string; valorVenda?: number }) {
+  async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string }) {
     const payload: any = { etapa: novaEtapa, atualizado_em: new Date().toISOString() }
 
     if (novaEtapa === 'perda') {
       payload.data_perda = new Date().toISOString()
       payload.motivo_perda_id = extras?.motivoPerdaId
-    }
-    if (novaEtapa === 'ganho') {
-      payload.data_ganho = new Date().toISOString()
-      payload.motivo_ganho = extras?.motivoGanho
-      if (extras?.valorVenda) payload.valor_venda = extras.valorVenda
     }
     if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
       payload.prazo_prometido = extras.prazoPrometido
@@ -215,10 +207,8 @@ export default function CRM() {
       observacao: `Movido para ${ETAPAS.find(e => e.id === novaEtapa)?.label || novaEtapa}`,
     })
 
-    // Comportamentos automáticos
     if (novaEtapa === 'nao_chegou_preco') {
-      // Cria tarefa D+1
-      await criarTarefaLead(lead.id, lead.vendedor_id, 'tentar_contato', 'Tentar contato D+1', `Lead ${lead.nome} — tentar contato novamente (não atendeu/respondeu)`, 1)
+      await criarTarefaLead(lead.id, lead.vendedor_id, 'tentar_contato', 'Tentar contato D+1', `Lead ${lead.nome} — tentar contato novamente`, 1)
     }
 
     if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido && lead.vendedor_id) {
@@ -338,7 +328,6 @@ export default function CRM() {
               ))}
             </div>
 
-            {/* Bloco compacto Ganho/Perda */}
             <div style={{ marginTop: 20, borderTop: '1px solid #3a3a3c', paddingTop: 16 }}>
               <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                 <button onClick={() => setVerFinalizados(!verFinalizados)} style={btnSecondary}>
@@ -446,7 +435,7 @@ interface ModalLeadProps {
   aberto: boolean; lead: Lead | null; novoLead: boolean
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
-  moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; motivoGanho?: string; prazoPrometido?: string; valorVenda?: number }) => Promise<void>
+  moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string }) => Promise<void>
   onFechar: () => void
 }
 
@@ -455,7 +444,6 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [novoAndamento, setNovoAndamento] = useState('')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
-  const [motivoGanhoTexto, setMotivoGanhoTexto] = useState('')
   const [prazoData, setPrazoData] = useState('')
   const [prazoHora, setPrazoHora] = useState('14:00')
   const [mostrarPerda, setMostrarPerda] = useState(false)
@@ -476,7 +464,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       setAndamentos([])
     }
     setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false)
-    setMotivoSelecionado(''); setMotivoGanhoTexto(''); setPrazoData('')
+    setMotivoSelecionado(''); setPrazoData('')
   }, [lead, aberto])
 
   async function carregarAndamentos(leadId: string) {
@@ -525,12 +513,6 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function confirmarPerda() {
     if (!lead || !motivoSelecionado) return
     await moverEtapa(lead, 'perda', { motivoPerdaId: motivoSelecionado })
-    onFechar()
-  }
-
-  async function confirmarGanho() {
-    if (!lead || !motivoGanhoTexto.trim()) return
-    await moverEtapa(lead, 'ganho', { motivoGanho: motivoGanhoTexto.trim() })
     onFechar()
   }
 
@@ -659,16 +641,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               )}
 
               {mostrarGanho && (
-                <div style={{ marginTop: 12, padding: 12, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-                  <label style={labelStyle}>Como foi o ganho? *</label>
-                  <textarea style={{ ...inp, resize: 'none', minHeight: 60 }} rows={2}
-                    placeholder="Ex: Fechou na virada do lote, cliente decidido"
-                    value={motivoGanhoTexto} onChange={e => setMotivoGanhoTexto(e.target.value)} />
-                  <button onClick={confirmarGanho} disabled={!motivoGanhoTexto.trim()}
-                    style={{ ...btnPrimary, background: '#16a34a', marginTop: 8, width: '100%', opacity: motivoGanhoTexto.trim() ? 1 : 0.5 }}>
-                    Confirmar ganho
-                  </button>
-                </div>
+                <ModalGanhoVincular lead={lead} turma={turmaSelecionada} onFechar={() => { setMostrarGanho(false); onFechar() }} />
               )}
 
               {mostrarPerda && (
@@ -716,6 +689,155 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+// ============ VINCULAR MATRÍCULA EXISTENTE (modal de Ganho) ============
+
+interface ModalGanhoVincularProps {
+  lead: Lead
+  turma: Turma | undefined
+  onFechar: () => void
+}
+
+function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) {
+  const [matriculas, setMatriculas] = useState<MatriculaDisponivel[]>([])
+  const [matriculaSelecionada, setMatriculaSelecionada] = useState<string>('')
+  const [motivoGanho, setMotivoGanho] = useState('')
+  const [salvando, setSalvando] = useState(false)
+  const [mensagem, setMensagem] = useState('')
+  const [carregando, setCarregando] = useState(true)
+
+  useEffect(() => {
+    if (turma) carregarMatriculas()
+  }, [turma])
+
+  async function carregarMatriculas() {
+    if (!turma) return
+    setCarregando(true)
+    
+    const { data } = await supabase.from('matriculas')
+      .select('id, aluno_id, valor_pago, data_compra, lead_id, alunos(nome, cpf)')
+      .eq('turma_id', turma.id)
+      .order('data_compra', { ascending: false })
+    
+    if (data) {
+      const disponiveis = data
+        .filter((m: any) => !m.lead_id || m.lead_id === lead.id)
+        .map((m: any) => ({
+          id: m.id, aluno_id: m.aluno_id, valor_pago: m.valor_pago,
+          data_compra: m.data_compra, aluno_nome: m.alunos?.nome, aluno_cpf: m.alunos?.cpf,
+        }))
+      setMatriculas(disponiveis)
+    }
+    setCarregando(false)
+  }
+
+  async function confirmar() {
+    if (!matriculaSelecionada || !turma) return
+    setSalvando(true); setMensagem('')
+
+    const mat = matriculas.find(m => m.id === matriculaSelecionada)
+    if (!mat) { setSalvando(false); return }
+
+    await supabase.from('matriculas').update({ lead_id: lead.id }).eq('id', matriculaSelecionada)
+
+    await supabase.from('leads').update({
+      etapa: 'ganho',
+      data_ganho: new Date().toISOString(),
+      valor_venda: mat.valor_pago,
+      matricula_id: matriculaSelecionada,
+      motivo_ganho: motivoGanho.trim() || null,
+      atualizado_em: new Date().toISOString(),
+    }).eq('id', lead.id)
+
+    await supabase.from('lead_andamentos').insert({
+      lead_id: lead.id, vendedor_id: lead.vendedor_id,
+      tipo: 'mudanca_etapa',
+      etapa_anterior: lead.etapa, etapa_nova: 'ganho',
+      observacao: `Vinculado a matrícula de ${mat.aluno_nome} (R$ ${mat.valor_pago.toFixed(2)})${motivoGanho.trim() ? ' — ' + motivoGanho.trim() : ''}`,
+    })
+
+    setMensagem('Lead marcado como ganho!')
+    setTimeout(onFechar, 800)
+  }
+
+  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+
+  return (
+    <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
+        Vincular matrícula existente
+      </div>
+
+      {!turma && (
+        <p style={{ fontSize: 12, color: '#f87171' }}>
+          Este lead não está vinculado a uma turma. Vincule uma turma primeiro.
+        </p>
+      )}
+
+      {turma && carregando && (
+        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
+      )}
+
+      {turma && !carregando && matriculas.length === 0 && (
+        <div>
+          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
+            Nenhuma matrícula disponível para esta turma ainda.
+          </p>
+          <p style={{ fontSize: 11, color: '#9ca3af' }}>
+            Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
+          </p>
+        </div>
+      )}
+
+      {turma && matriculas.length > 0 && (
+        <>
+          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+            Selecione a matrícula deste lead:
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+            {matriculas.map(m => (
+              <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
+                style={{
+                  padding: 10, borderRadius: 6, cursor: 'pointer',
+                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
+                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
+                }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
+                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                      {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
+                      {new Date(m.data_compra).toLocaleDateString('pt-BR')}
+                    </div>
+                  </div>
+                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
+                    R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 12 }}>
+            <label style={labelStyle}>Motivo do ganho (opcional)</label>
+            <textarea style={{ ...inp, resize: 'none', minHeight: 50 }} rows={2}
+              placeholder="Ex: Fechou na virada do lote, cliente decidido"
+              value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} />
+          </div>
+
+          {mensagem && (
+            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+          )}
+
+          <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
+            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+            {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
+          </button>
+        </>
+      )}
     </div>
   )
 }
