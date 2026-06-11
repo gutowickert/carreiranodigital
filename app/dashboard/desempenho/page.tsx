@@ -41,7 +41,7 @@ export default function Desempenho() {
   async function carregar() {
     setCarregando(true)
     const [t, m, l, mk, f] = await Promise.all([
-      supabase.from('turmas').select('id, codigo, preco_venda, meta_matriculas, data_inicio, status, produtos(nome), cidades(nome)'),
+      supabase.from('turmas').select('id, codigo, preco_venda, meta_matriculas, data_inicio, status, produto_id, cidade_id, produtos(nome), cidades(nome)'),
       supabase.from('matriculas').select('id, turma_id, valor_pago, data_compra, lead_id'),
       supabase.from('leads').select('id, turma_id, etapa, utm_source, utm_campaign, valor_venda, criado_em, atualizado_em'),
       supabase.from('lancamentos_empresa').select('valor, data_vencimento, data_pagamento, descricao').eq('categoria', 'marketing'),
@@ -76,14 +76,27 @@ export default function Desempenho() {
   const matsPorTurma: Record<string, number> = {}; matriculas.forEach(m => { matsPorTurma[m.turma_id] = (matsPorTurma[m.turma_id] || 0) + 1 })
   const leadsPorTurma: Record<string, number> = {}; leads.forEach(l => { if (l.turma_id) leadsPorTurma[l.turma_id] = (leadsPorTurma[l.turma_id] || 0) + 1 })
 
-  const gastoPorTurma: Record<string, number> = {}
+  // grupo = produto + cidade (turmas que dividem a mesma campanha/página, ex: POA tarde+noite)
+  const grupoKey = (t: any) => `${t.produto_id || ''}|${t.cidade_id || ''}`
+  const gastoPorGrupo: Record<string, number> = {}
   if (spend.ok) {
     spend.campaigns.forEach(c => {
       const nomeUpper = (c.name || '').toUpperCase()
       const turma = turmas.find(t => t.codigo && nomeUpper.includes(t.codigo.toUpperCase()))
-      if (turma) gastoPorTurma[turma.id] = (gastoPorTurma[turma.id] || 0) + (c.spend || 0)
+      if (turma) gastoPorGrupo[grupoKey(turma)] = (gastoPorGrupo[grupoKey(turma)] || 0) + (c.spend || 0)
     })
   }
+  // distribui o gasto do grupo entre suas turmas, proporcional aos leads (igual se ainda nao ha lead)
+  const gastoPorTurma: Record<string, number> = {}
+  Object.entries(gastoPorGrupo).forEach(([k, gastoGrupo]) => {
+    const turmasGrupo = turmas.filter(t => grupoKey(t) === k)
+    const totalLeadsGrupo = turmasGrupo.reduce((s, t) => s + (leadsPorTurma[t.id] || 0), 0)
+    turmasGrupo.forEach(t => {
+      gastoPorTurma[t.id] = totalLeadsGrupo > 0
+        ? gastoGrupo * ((leadsPorTurma[t.id] || 0) / totalLeadsGrupo)
+        : gastoGrupo / turmasGrupo.length
+    })
+  })
 
   const turmasAvaliadas = turmas
     .filter(t => !['realizada', 'cancelada'].includes(t.status))
