@@ -11,7 +11,7 @@ type Turma = {
 }
 type Produto = { id: string; nome: string; duracao_dias: number; preco_venda: number; vagas_padrao: number; meta_matriculas: number }
 type Cidade = { id: string; nome: string; tipo: string }
-type Sala = { id: string; nome: string; cidade_id: string }
+type Sala = { id: string; nome: string; cidade_id: string; diaria_reais?: number }
 type Modulo = { id: string; nome: string; ordem: number; duracao_dias: number }
 type Professor = { id: string; nome: string; diaria_reais: number; tipo_pagamento?: 'diaria_fixa' | 'percentual_vendas'; percentual_vendas?: number }
 type DiaAula = { data: string; horario_inicio: string; horario_fim: string; modulo_id?: string; modulo_nome?: string }
@@ -343,18 +343,62 @@ export default function Turmas() {
     }
 
     const cidadeEhExterna = cidade.tipo === 'cidade_externa'
-    const lancamentosDesloc = cidadeEhExterna ? datasValidas.map(d => ({
-      tipo: 'custo', categoria: 'outro',
-      descricao: `Deslocamento — ${produto.nome}`,
-      valor: VALOR_DESLOC_DIARIO, unidade: 'geral',
-      mes_referencia: d.data.substring(0, 7) + '-01',
-      data_vencimento: d.data, status: 'previsto', turma_id: turma.id,
-    })) : []
-    if (lancamentosDesloc.length > 0) {
-      await supabase.from('lancamentos_empresa').insert(lancamentosDesloc)
+    const custoDeslocamento = cidadeEhExterna ? VALOR_DESLOC_DIARIO * datasValidas.length : 0
+
+    // Deslocamento: valor único por turma (ou por módulo), vencendo no 1º dia. Só cidade externa.
+    if (cidadeEhExterna) {
+      const lancamentosDesloc: any[] = []
+      if (modulos.length > 0) {
+        for (const mod of modulos) {
+          const diasDoMod = datasOrdenadas.filter(d => d.modulo_id === mod.id)
+          if (diasDoMod.length === 0) continue
+          const primeiroDia = diasDoMod[0].data
+          lancamentosDesloc.push({
+            tipo: 'custo', categoria: 'outro',
+            descricao: `Deslocamento — ${produto.nome} — ${mod.nome}`,
+            valor: VALOR_DESLOC_DIARIO * diasDoMod.length, unidade: 'geral',
+            mes_referencia: primeiroDia.substring(0, 7) + '-01',
+            data_vencimento: primeiroDia, status: 'previsto', turma_id: turma.id,
+          })
+        }
+      } else if (dataInicio) {
+        lancamentosDesloc.push({
+          tipo: 'custo', categoria: 'outro',
+          descricao: `Deslocamento — ${produto.nome}`,
+          valor: VALOR_DESLOC_DIARIO * datasValidas.length, unidade: 'geral',
+          mes_referencia: dataInicio.substring(0, 7) + '-01',
+          data_vencimento: dataInicio, status: 'previsto', turma_id: turma.id,
+        })
+      }
+      if (lancamentosDesloc.length > 0) {
+        await supabase.from('lancamentos_empresa').insert(lancamentosDesloc)
+      }
     }
 
-   const custoDeslocamento = cidadeEhExterna ? VALOR_DESLOC_DIARIO * datasValidas.length : 0
+    // Aluguel de sala: total = diária × dias da turma, lançado 50% 1 dia antes do início e 50% 1 dia depois do fim.
+    const diariaSala = sala?.diaria_reais || 0
+    const custoSala = diariaSala > 0 ? diariaSala * datasValidas.length : 0
+    if (custoSala > 0 && dataInicio && dataFim) {
+      const metadeSala = custoSala / 2
+      const vencAntes = addDays(dataInicio, -1)
+      const vencDepois = addDays(dataFim, 1)
+      await supabase.from('lancamentos_empresa').insert([
+        {
+          tipo: 'custo', categoria: 'outro',
+          descricao: `Aluguel sala — ${produto.nome} (1/2)`,
+          valor: metadeSala, unidade: 'geral',
+          mes_referencia: vencAntes.substring(0, 7) + '-01',
+          data_vencimento: vencAntes, status: 'previsto', turma_id: turma.id,
+        },
+        {
+          tipo: 'custo', categoria: 'outro',
+          descricao: `Aluguel sala — ${produto.nome} (2/2)`,
+          valor: metadeSala, unidade: 'geral',
+          mes_referencia: vencDepois.substring(0, 7) + '-01',
+          data_vencimento: vencDepois, status: 'previsto', turma_id: turma.id,
+        },
+      ])
+    }
 
     // Lançamentos previstos de coprodução (% sobre líquido previsto)
     const liquidoPrevisto = receitaPrevista - totalTrafego - imposto - custoDeslocamento
@@ -376,7 +420,8 @@ export default function Turmas() {
     await supabase.from('financeiro_turma').insert({
       turma_id: turma.id, receita_prevista: receitaPrevista, custo_professores: custoProfessores + custoCoproducao,
       custo_trafego_previsto: totalTrafego, imposto_previsto: imposto, custo_deslocamento: custoDeslocamento,
-      margem_prevista: receitaPrevista - custoProfessores - custoCoproducao - totalTrafego - imposto - custoDeslocamento,
+      custo_sala: custoSala,
+      margem_prevista: receitaPrevista - custoProfessores - custoCoproducao - totalTrafego - imposto - custoDeslocamento - custoSala,
       break_even_matriculas: parseInt(meta),
     })
 

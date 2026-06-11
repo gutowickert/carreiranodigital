@@ -473,7 +473,8 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
   const custoRealizadoTrafego = lancamentos.filter(l => l.categoria === 'marketing' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custoRealizadoImposto = lancamentos.filter(l => l.categoria === 'imposto' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custoRealizadoDesloc = lancamentos.filter(l => l.categoria === 'outro' && l.status === 'realizado' && l.descricao?.startsWith('Deslocamento')).reduce((s, l) => s + l.valor, 0)
-  const totalCustosRealizados = custoRealizadoProf + custoRealizadoTrafego + custoRealizadoImposto + custoRealizadoDesloc
+  const custoRealizadoSala = lancamentos.filter(l => l.categoria === 'outro' && l.status === 'realizado' && l.descricao?.startsWith('Aluguel sala')).reduce((s, l) => s + l.valor, 0)
+  const totalCustosRealizados = custoRealizadoProf + custoRealizadoTrafego + custoRealizadoImposto + custoRealizadoDesloc + custoRealizadoSala
   const margemRealizada = (financeiro?.receita_realizada || 0) - totalCustosRealizados
 
   const trafegoPendente = lancamentos.filter(l => l.categoria === 'marketing' && l.status === 'previsto' && l.descricao?.startsWith('Tráfego'))
@@ -852,6 +853,11 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                     <td style={{ padding: '6px 0', fontSize: '13px', color: '#9ca3af' }}>(-) Deslocamento</td>
                     <td style={{ padding: '6px 16px', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{fmt(financeiro.custo_deslocamento)}</td>
                     <td style={{ padding: '6px 0', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{fmt(custoRealizadoDesloc)}</td>
+                  </tr>
+                  <tr>
+                    <td style={{ padding: '6px 0', fontSize: '13px', color: '#9ca3af' }}>(-) Aluguel sala</td>
+                    <td style={{ padding: '6px 16px', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{fmt(financeiro.custo_sala)}</td>
+                    <td style={{ padding: '6px 0', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{fmt(custoRealizadoSala)}</td>
                   </tr>
                   <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid #3a3a3c' }}></td></tr>
                   <tr>
