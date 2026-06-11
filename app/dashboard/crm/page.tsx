@@ -521,6 +521,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
   const [msgLigacao, setMsgLigacao] = useState('')
+  const [ligacoes, setLigacoes] = useState<any[]>([])
   const [novoAndamento, setNovoAndamento] = useState('')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
   const [prazoData, setPrazoData] = useState('')
@@ -541,9 +542,11 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         observacoes: lead.observacoes || '',
       })
       carregarAndamentos(lead.id)
+      carregarLigacoes(lead.id)
     } else {
       setForm({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
       setAndamentos([])
+      setLigacoes([])
     }
     setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false); setMostrarPag(false)
     setMotivoSelecionado(''); setPrazoData(''); setPagData('')
@@ -553,6 +556,12 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     const { data } = await supabase.from('lead_andamentos')
       .select('*').eq('lead_id', leadId).order('criado_em', { ascending: false })
     if (data) setAndamentos(data)
+  }
+
+  async function carregarLigacoes(leadId: string) {
+    const { data } = await supabase.from('ligacoes')
+      .select('*').eq('lead_id', leadId).order('criado_em', { ascending: false })
+    if (data) setLigacoes(data)
   }
 
   async function ligar() {
@@ -770,6 +779,39 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                 {lead.fbclid && <span style={tagStyle}>fbclid ✓</span>}
               </div>
             )}
+          </div>
+        )}
+
+        {!novoLead && lead && (
+          <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ligações</div>
+              <button onClick={() => carregarLigacoes(lead.id)} style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: 11, cursor: 'pointer' }}>↻ atualizar</button>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
+              {ligacoes.map(l => {
+                const s = l.duracao || 0
+                const dur = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
+                return (
+                  <div key={l.id} style={{ padding: 10, background: '#1c1c1e', borderRadius: 6, fontSize: 12 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ color: '#d1d1d1' }}>{new Date(l.criado_em).toLocaleString('pt-BR')}</span>
+                      <span style={{ color: l.status === 'encerrada' ? '#34d399' : '#fbbf24' }}>
+                        {l.status === 'encerrada' ? dur : (l.status || 'iniciada')}
+                      </span>
+                    </div>
+                    {l.gravacao_url ? (
+                      <audio controls src={l.gravacao_url} style={{ width: '100%', marginTop: 6, height: 34 }} />
+                    ) : (
+                      <div style={{ color: '#6b7280', fontSize: 10, marginTop: 4 }}>
+                        {l.status === 'encerrada' ? 'Sem gravação' : 'Aguardando resultado (clica ↻ após desligar)'}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {ligacoes.length === 0 && <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhuma ligação ainda.</p>}
+            </div>
           </div>
         )}
 

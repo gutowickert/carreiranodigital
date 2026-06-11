@@ -18,10 +18,22 @@ export async function POST(req: NextRequest) {
     }
 
     let achou = false
+
     if (callId) {
       const { data } = await supabase.from('ligacoes').update(update).eq('api4com_id', callId).select('id')
       achou = !!(data && data.length)
     }
+
+    if (!achou && leadId) {
+      const { data: pend } = await supabase.from('ligacoes')
+        .select('id').eq('lead_id', leadId).eq('status', 'iniciada')
+        .order('criado_em', { ascending: false }).limit(1)
+      if (pend && pend.length) {
+        await supabase.from('ligacoes').update({ ...update, api4com_id: callId }).eq('id', pend[0].id)
+        achou = true
+      }
+    }
+
     if (!achou) {
       await supabase.from('ligacoes').insert({
         api4com_id: callId,
