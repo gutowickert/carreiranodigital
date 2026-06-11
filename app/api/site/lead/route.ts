@@ -76,7 +76,7 @@ export async function POST(req: NextRequest) {
   const nome = (payload.nome || '').toString().trim()
   const whatsapp = (payload.whatsapp || '').toString().trim()
   const email = (payload.email || '').toString().trim()
-  const codigoTurma = (payload.codigo_turma || '').toString().trim().toUpperCase()
+  const codigoTurma = (payload.codigo_turma || '').toString().trim()
   const fbclid = (payload.fbclid || '').toString().trim() || null
   const utmSource = (payload.utm_source || '').toString().trim() || null
   const utmMedium = (payload.utm_medium || '').toString().trim() || null
@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
   // Procura turma pelo código
   const { data: turma } = await supabase.from('turmas')
     .select('id, codigo, status')
-    .eq('codigo', codigoTurma)
+    .ilike('codigo', codigoTurma)
     .maybeSingle()
  
   if (!turma) {
