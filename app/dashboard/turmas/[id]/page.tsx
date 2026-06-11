@@ -78,6 +78,8 @@ export default function DetalheTurma() {
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [aba, setAba] = useState<'matriculas' | 'financeiro' | 'datas' | 'professores'>('matriculas')
+  const [editandoProf, setEditandoProf] = useState<string | null>(null)
+  const [novoProfId, setNovoProfId] = useState('')
   const [cidades, setCidades] = useState<{ id: string; nome: string }[]>([])
   const [editandoTurma, setEditandoTurma] = useState(false)
   const [edCodigo, setEdCodigo] = useState('')
