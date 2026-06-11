@@ -78,8 +78,13 @@ export default function DetalheTurma() {
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [aba, setAba] = useState<'matriculas' | 'financeiro' | 'datas' | 'professores'>('matriculas')
-  const [editandoProf, setEditandoProf] = useState<string | null>(null)
-  const [novoProfId, setNovoProfId] = useState('')
+  const [cidades, setCidades] = useState<{ id: string; nome: string }[]>([])
+  const [editandoTurma, setEditandoTurma] = useState(false)
+  const [edCodigo, setEdCodigo] = useState('')
+  const [edPreco, setEdPreco] = useState('')
+  const [edVagas, setEdVagas] = useState('')
+  const [edMeta, setEdMeta] = useState('')
+  const [edCidadeId, setEdCidadeId] = useState('')
 
   // Form nova venda
   const [buscaAluno, setBuscaAluno] = useState('')
@@ -111,7 +116,7 @@ export default function DetalheTurma() {
       carregarTurma(), carregarMatriculas(), carregarFinanceiro(),
       carregarDatas(), carregarLancamentos(), carregarTurmaProfessores(),
       carregarProfessores(), carregarLeadsDisponiveis(), carregarVendedores(),
-      carregarContas()
+      carregarContas(), carregarCidades()
     ])
     setCarregando(false)
   }
@@ -298,6 +303,51 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
     await supabase.from('turmas').update({ status: novoStatus }).eq('id', id)
     carregarTurma()
   }
+  async function carregarCidades() {
+    const { data } = await supabase.from('cidades').select('id, nome').eq('ativo', true).order('nome')
+    if (data) setCidades(data)
+  }
+
+  function abrirEdicao() {
+    if (!turma) return
+    setEdCodigo(turma.codigo || '')
+    setEdPreco(String(turma.preco_venda ?? ''))
+    setEdVagas(String(turma.vagas ?? ''))
+    setEdMeta(String(turma.meta_matriculas ?? ''))
+    setEdCidadeId((turma as any).cidade_id || '')
+    setEditandoTurma(true)
+  }
+
+  async function salvarEdicao() {
+    const { error } = await supabase.from('turmas').update({
+      codigo: edCodigo.trim() || null,
+      preco_venda: parseFloat(edPreco) || 0,
+      vagas: parseInt(edVagas) || 0,
+      meta_matriculas: parseInt(edMeta) || 0,
+      cidade_id: edCidadeId || null,
+    }).eq('id', id)
+    if (error) { alert('Erro ao salvar: ' + error.message); return }
+    setEditandoTurma(false)
+    carregarTurma()
+  }
+
+  async function excluirTurma() {
+    if (matriculas.length > 0) {
+      alert('Esta turma tem matrículas registradas. Cancele ou transfira as matrículas antes de excluir.')
+      return
+    }
+    if (!confirm('Excluir esta turma e tudo provisionado (datas, financeiro, tarefas, agenda)? Os leads serão desvinculados, não apagados. Não dá pra desfazer.')) return
+    await supabase.from('agenda_aulas').delete().eq('turma_id', id)
+    await supabase.from('lancamentos_empresa').delete().eq('turma_id', id)
+    await supabase.from('tarefas').delete().eq('turma_id', id)
+    await supabase.from('financeiro_turma').delete().eq('turma_id', id)
+    await supabase.from('turma_professores').delete().eq('turma_id', id)
+    await supabase.from('turma_datas').delete().eq('turma_id', id)
+    await supabase.from('leads').update({ turma_id: null }).eq('turma_id', id)
+    const { error } = await supabase.from('turmas').delete().eq('id', id)
+    if (error) { alert('Erro ao excluir: ' + error.message); return }
+    window.location.href = '/dashboard/turmas'
+  }
   async function fecharTurma() {
     // Pega lançamentos previstos de coprodução
     const { data: copreviews } = await supabase.from('lancamentos_empresa')
@@ -454,6 +504,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <button onClick={abrirEdicao} style={btnSecondary}>Editar</button>
           <select value={turma.status} onChange={e => atualizarStatus(e.target.value)} style={select}>
             <option value="planejada">Planejada</option>
             <option value="em_vendas">Em vendas</option>
@@ -466,6 +517,47 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
           </span>
         </div>
       </header>
+
+      {editandoTurma && (
+        <div style={{ padding: '20px 32px', borderBottom: '1px solid #3a3a3c', backgroundColor: '#1c1c1e' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#d1d1d1', margin: '0 0 14px' }}>Editar turma</h3>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Código</label>
+              <input value={edCodigo} onChange={e => setEdCodigo(e.target.value)} style={input} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Preço R$</label>
+              <input value={edPreco} onChange={e => setEdPreco(e.target.value)} type="number" style={input} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Cidade</label>
+              <select value={edCidadeId} onChange={e => setEdCidadeId(e.target.value)} style={{ ...select, width: '100%' }}>
+                <option value="">—</option>
+                {cidades.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Vagas</label>
+              <input value={edVagas} onChange={e => setEdVagas(e.target.value)} type="number" style={input} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Mínimo p/ não cancelar</label>
+              <input value={edMeta} onChange={e => setEdMeta(e.target.value)} type="number" style={input} />
+            </div>
+          </div>
+          <p style={{ fontSize: '11px', color: '#fb923c', margin: '0 0 12px' }}>
+            Atenção: trocar a cidade entre própria e externa não recalcula o deslocamento já provisionado. Se precisar disso, exclua e reabra a turma.
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <button onClick={excluirTurma} style={{ ...btnSecondary, border: '1px solid #7f1d1d', color: '#f87171' }}>Excluir turma</button>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setEditandoTurma(false)} style={btnSecondary}>Cancelar</button>
+              <button onClick={salvarEdicao} style={btnPrimary}>Salvar alterações</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <main style={{ padding: '24px 32px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
