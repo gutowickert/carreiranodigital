@@ -297,7 +297,7 @@ export default function Turmas() {
     // Tráfego: provisiona COMBINADO no nível da empresa, em janelas fixas de 4 dias de calendário.
     // Cada turma soma sua parte na janela correspondente (turma_id null). O previsto por turma
     // continua guardado em financeiro_turma.custo_trafego_previsto (pra margem da turma).
-    if (dataInicio && totalTrafego > 0) {
+    if (false /* tráfego agora é regra fixa no financeiro, não por turma */) {
       const REF_TRAFEGO = '2026-01-01' // âncora dos blocos fixos de 4 dias
       const BLOCO = Math.max(1, await getConfigNumero('financeiro.dias_agrupamento_trafego', 4))
       const hojeTraf = new Date().toISOString().split('T')[0]

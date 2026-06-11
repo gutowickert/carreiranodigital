@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { getConfigNumero } from '@/lib/configuracoes'
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
+const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
 const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none' } as React.CSSProperties
 
@@ -15,86 +15,51 @@ function addDays(date: string, days: number) {
   return d.toISOString().split('T')[0]
 }
 
-export default function RecalcularTrafego() {
+export default function TrafegoRegraFixa() {
+  const hoje = new Date().toISOString().split('T')[0]
+  const [valor, setValor] = useState('2000')
+  const [intervalo, setIntervalo] = useState('3')
+  const [inicio, setInicio] = useState(hoje)
+  const [fim, setFim] = useState(addDays(hoje, 90))
   const [rodando, setRodando] = useState(false)
   const [log, setLog] = useState<string[]>([])
   const [feito, setFeito] = useState(false)
 
-  function add(msg: string) { setLog(prev => [...prev, msg]) }
+  function add(m: string) { setLog(prev => [...prev, m]) }
 
-  async function recalcular() {
-    if (!confirm('Isso apaga o tráfego combinado atual e recalcula a partir das turmas. Continuar?')) return
+  async function gerar() {
+    if (!confirm('Isso apaga TODO o tráfego anterior (das turmas e da regra fixa) e gera a nova regra. Continuar?')) return
     setRodando(true); setLog([]); setFeito(false)
 
-    add('Apagando tráfego combinado antigo...')
-    const { error: errDel } = await supabase.from('lancamentos_empresa')
-      .delete().is('turma_id', null).eq('categoria', 'marketing').ilike('descricao', 'Tráfego turmas —%')
-    if (errDel) { add('Erro ao apagar: ' + errDel.message); setRodando(false); return }
+    add('Apagando tráfego anterior...')
+    await supabase.from('lancamentos_empresa').delete().is('turma_id', null).eq('categoria', 'marketing').ilike('descricao', 'Tráfego turmas —%')
+    await supabase.from('lancamentos_empresa').delete().is('turma_id', null).eq('categoria', 'marketing').ilike('descricao', 'Tráfego (regra fixa)%')
 
-    const BLOCO = Math.max(1, await getConfigNumero('financeiro.dias_agrupamento_trafego', 4))
-    const REF = '2026-01-01'
-    const hoje = new Date().toISOString().split('T')[0]
-    const diffDias = (a: string, b: string) =>
-      Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000)
-    const inicioJanela = (d: string) => {
-      const idx = Math.floor(diffDias(REF, d) / BLOCO)
-      return addDays(REF, idx * BLOCO)
-    }
+    const v = parseFloat(valor) || 0
+    const step = Math.max(1, parseInt(intervalo) || 3)
+    if (v <= 0) { add('Valor inválido.'); setRodando(false); return }
+    if (fim < inicio) { add('Data final antes da inicial.'); setRodando(false); return }
 
-    const { data: turmas } = await supabase.from('turmas').select('id, data_inicio, status')
-    const { data: fins } = await supabase.from('financeiro_turma').select('turma_id, custo_trafego_previsto')
-    const totalPorTurma: Record<string, number> = {}
-    ;(fins || []).forEach((f: any) => { totalPorTurma[f.turma_id] = f.custo_trafego_previsto || 0 })
-
-    const janelas: Record<string, { valor: number; winFim: string }> = {}
-    let comTrafego = 0, semRunway = 0
-
-    for (const t of (turmas || []) as any[]) {
-      if (t.status === 'cancelada') continue
-      const total = totalPorTurma[t.id] || 0
-      if (total <= 0 || !t.data_inicio) continue
-      const trafInicio = hoje
-      const trafFim = addDays(t.data_inicio, -1)
-      if (diffDias(trafInicio, trafFim) < 0) { semRunway++; continue }
-      comTrafego++
-      const diasTraf = diffDias(trafInicio, trafFim) + 1
-      const vDia = total / diasTraf
-      let cursor = inicioJanela(trafInicio)
-      while (diffDias(cursor, trafFim) >= 0) {
-        const winInicio = cursor
-        const winFim = addDays(cursor, BLOCO - 1)
-        const ovStart = diffDias(winInicio, trafInicio) > 0 ? trafInicio : winInicio
-        const ovEnd = diffDias(winFim, trafFim) < 0 ? winFim : trafFim
-        const dias = diffDias(ovStart, ovEnd) + 1
-        if (dias > 0) {
-          if (!janelas[winInicio]) janelas[winInicio] = { valor: 0, winFim }
-          janelas[winInicio].valor += vDia * dias
-        }
-        cursor = addDays(cursor, BLOCO)
-      }
-    }
-
-    const rows = Object.keys(janelas).sort().map(winInicio => {
-      const { valor, winFim } = janelas[winInicio]
-      return {
+    const rows: any[] = []
+    let d = inicio
+    while (d <= fim) {
+      rows.push({
         tipo: 'custo', categoria: 'marketing',
-        descricao: `Tráfego turmas — ${new Date(winInicio + 'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(winFim + 'T12:00:00').toLocaleDateString('pt-BR')}`,
-        valor, unidade: 'geral',
-        mes_referencia: winInicio.substring(0, 7) + '-01',
-        data_vencimento: winInicio, status: 'previsto', turma_id: null,
-      }
-    })
+        descricao: `Tráfego (regra fixa) — ${new Date(d + 'T12:00:00').toLocaleDateString('pt-BR')}`,
+        valor: v, unidade: 'geral',
+        mes_referencia: d.substring(0, 7) + '-01',
+        data_vencimento: d, status: 'previsto', turma_id: null,
+      })
+      d = addDays(d, step)
+    }
 
     if (rows.length > 0) {
-      const { error: errIns } = await supabase.from('lancamentos_empresa').insert(rows)
-      if (errIns) { add('Erro ao inserir: ' + errIns.message); setRodando(false); return }
+      const { error } = await supabase.from('lancamentos_empresa').insert(rows)
+      if (error) { add('Erro ao inserir: ' + error.message); setRodando(false); return }
     }
 
-    const totalGeral = rows.reduce((s, r) => s + r.valor, 0)
-    add(`Turmas com tráfego provisionado: ${comTrafego}`)
-    add(`Turmas já iniciadas (sem provisão): ${semRunway}`)
-    add(`Janelas de 4 dias criadas: ${rows.length}`)
-    add(`Total provisionado: ${totalGeral.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
+    add(`Lançamentos criados: ${rows.length} (1 a cada ${step} dia(s))`)
+    add(`Total provisionado: ${(rows.length * v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
     add('Pronto! Confere no Fluxo de Caixa.')
     setFeito(true); setRodando(false)
   }
@@ -103,19 +68,39 @@ export default function RecalcularTrafego() {
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Recalcular tráfego</h1>
-          <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Refaz o tráfego combinado de todas as turmas, sem reabri-las</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Tráfego — regra fixa</h1>
+          <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Provisiona um valor fixo a cada X dias, direto no financeiro</p>
         </div>
         <Link href="/dashboard/financeiro/fluxo" style={btnSecondary}>← Fluxo de caixa</Link>
       </div>
 
       <div style={{ ...card, padding: '24px', maxWidth: '640px' }}>
-        <p style={{ fontSize: '14px', color: '#d1d1d1', lineHeight: 1.6, marginTop: 0 }}>
-          Espalha o tráfego de cada turma de hoje até a véspera do início, em janelas fixas de 4 dias.
-          Turmas já iniciadas não recebem provisão (o tráfego delas é passado). O previsto por turma na margem não muda.
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Valor R$ (por lançamento)</label>
+            <input value={valor} onChange={e => setValor(e.target.value)} type="number" style={inp} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>A cada quantos dias</label>
+            <input value={intervalo} onChange={e => setIntervalo(e.target.value)} type="number" min="1" style={inp} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>De</label>
+            <input value={inicio} onChange={e => setInicio(e.target.value)} type="date" style={inp} />
+          </div>
+          <div>
+            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Até</label>
+            <input value={fim} onChange={e => setFim(e.target.value)} type="date" style={inp} />
+          </div>
+        </div>
+
+        <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+          Apaga o tráfego anterior (o que vinha das turmas e qualquer regra fixa já gerada) e cria os lançamentos novos.
+          Pode rodar de novo quando quiser pra estender ou mudar o valor.
         </p>
-        <button onClick={recalcular} disabled={rodando} style={{ ...btnPrimary, opacity: rodando ? 0.6 : 1 }}>
-          {rodando ? 'Recalculando...' : 'Recalcular tráfego agora'}
+
+        <button onClick={gerar} disabled={rodando} style={{ ...btnPrimary, opacity: rodando ? 0.6 : 1 }}>
+          {rodando ? 'Gerando...' : 'Gerar tráfego (regra fixa)'}
         </button>
 
         {log.length > 0 && (
