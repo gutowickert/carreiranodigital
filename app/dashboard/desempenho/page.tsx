@@ -38,13 +38,6 @@ export default function Desempenho() {
   useEffect(() => { carregar() }, [])
   useEffect(() => { carregarGasto() }, [de, ate])
 
-  async function carregarGasto() {
-    try {
-      const res = await fetch(`/api/meta/spend?since=${de}&until=${ate}`)
-      setSpend(await res.json())
-    } catch { setSpend({ ok: false, total: 0, campaigns: [], error: 'falha ao buscar gasto' }) }
-  }
-
   async function carregar() {
     setCarregando(true)
     const [t, m, l, mk, f] = await Promise.all([
@@ -59,9 +52,15 @@ export default function Desempenho() {
     setCarregando(false)
   }
 
+  async function carregarGasto() {
+    try {
+      const res = await fetch(`/api/meta/spend?since=${de}&until=${ate}`)
+      setSpend(await res.json())
+    } catch { setSpend({ ok: false, total: 0, campaigns: [], error: 'falha ao buscar gasto' }) }
+  }
+
   const inPeriodo = (d?: string | null) => { if (!d) return false; const day = d.substring(0, 10); return day >= de && day <= ate }
 
-  // KPIs do período
   const leadsPeriodo = leads.filter(l => inPeriodo(l.criado_em))
   const matsPeriodo = matriculas.filter(m => inPeriodo(m.data_compra))
   const receitaPeriodo = matsPeriodo.reduce((s, m) => s + (m.valor_pago || 0), 0)
@@ -73,12 +72,19 @@ export default function Desempenho() {
   const roas = trafegoPeriodo ? receitaPeriodo / trafegoPeriodo : 0
   const convGeral = leadsPeriodo.length ? matsPeriodo.length / leadsPeriodo.length : 0
 
-  // mapas auxiliares
   const finMap: Record<string, any> = {}; financeiros.forEach(f => { finMap[f.turma_id] = f })
   const matsPorTurma: Record<string, number> = {}; matriculas.forEach(m => { matsPorTurma[m.turma_id] = (matsPorTurma[m.turma_id] || 0) + 1 })
   const leadsPorTurma: Record<string, number> = {}; leads.forEach(l => { if (l.turma_id) leadsPorTurma[l.turma_id] = (leadsPorTurma[l.turma_id] || 0) + 1 })
 
-  // Bloco 1: turmas em risco
+  const gastoPorTurma: Record<string, number> = {}
+  if (spend.ok) {
+    spend.campaigns.forEach(c => {
+      const nomeUpper = (c.name || '').toUpperCase()
+      const turma = turmas.find(t => t.codigo && nomeUpper.includes(t.codigo.toUpperCase()))
+      if (turma) gastoPorTurma[turma.id] = (gastoPorTurma[turma.id] || 0) + (c.spend || 0)
+    })
+  }
+
   const turmasAvaliadas = turmas
     .filter(t => !['realizada', 'cancelada'].includes(t.status))
     .map(t => {
@@ -104,7 +110,6 @@ export default function Desempenho() {
       return a.dias - b.dias
     })
 
-  // Bloco 2: campanhas/origens (período)
   const campMap: Record<string, { leads: number; ganhos: number; receita: number }> = {}
   leadsPeriodo.forEach(l => {
     const k = l.utm_campaign || l.utm_source || 'sem origem'
@@ -112,11 +117,15 @@ export default function Desempenho() {
     campMap[k].leads++
     if (l.etapa === 'ganho') { campMap[k].ganhos++; campMap[k].receita += (l.valor_venda || 0) }
   })
+  const gastoCampMap: Record<string, number> = {}
+  if (spend.ok) spend.campaigns.forEach(c => { gastoCampMap[c.name] = (gastoCampMap[c.name] || 0) + (c.spend || 0); if (!campMap[c.name]) campMap[c.name] = { leads: 0, ganhos: 0, receita: 0 } })
   const campanhas = Object.entries(campMap)
-    .map(([nome, v]) => ({ nome, ...v, conv: v.leads ? v.ganhos / v.leads : 0 }))
-    .sort((a, b) => b.leads - a.leads)
+    .map(([nome, v]) => {
+      const g = gastoCampMap[nome] || 0
+      return { nome, ...v, conv: v.leads ? v.ganhos / v.leads : 0, gasto: g, cpv: v.ganhos ? g / v.ganhos : 0, roas: g ? v.receita / g : 0 }
+    })
+    .sort((a, b) => (b.gasto - a.gasto) || (b.leads - a.leads))
 
-  // Bloco 3: funil
   const etapaMap: Record<string, { count: number; somaDias: number }> = {}
   leads.forEach(l => {
     const e = l.etapa || 'sem_etapa'
@@ -131,9 +140,18 @@ export default function Desempenho() {
     .sort((a, b) => b.count - a.count)
   const gargalo = funil.filter(f => !f.terminal).sort((a, b) => (b.count * b.diasMedio) - (a.count * a.diasMedio))[0]
 
-  // Bloco 4: resultado por turma
   const resultadoTurmas = turmas
-    .map(t => ({ t, receita: finMap[t.id]?.receita_realizada ?? 0, margem: finMap[t.id]?.margem_realizada ?? finMap[t.id]?.margem_prevista ?? 0, mats: matsPorTurma[t.id] || 0 }))
+    .map(t => {
+      const gasto = gastoPorTurma[t.id] || 0
+      const mats = matsPorTurma[t.id] || 0
+      const receita = finMap[t.id]?.receita_realizada ?? 0
+      return {
+        t, receita, mats, gasto,
+        margem: finMap[t.id]?.margem_realizada ?? finMap[t.id]?.margem_prevista ?? 0,
+        cpvReal: mats ? gasto / mats : 0,
+        roasReal: gasto ? receita / gasto : 0,
+      }
+    })
     .sort((a, b) => b.receita - a.receita)
 
   const KPI = ({ label, valor, cor, sub }: any) => (
@@ -179,7 +197,7 @@ export default function Desempenho() {
       </p>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>1. Turmas: saúde e risco</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Ordenadas do mais crítico pro mais tranquilo. 🔴 puxar venda / decidir cancelar · 🟡 acompanhar · 🟢 ok</p>
+      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Do mais crítico pro mais tranquilo. 🔴 puxar venda / decidir cancelar · 🟡 acompanhar · 🟢 ok</p>
       <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 32 }}>
         {turmasAvaliadas.length === 0 ? (
           <p style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Nenhuma turma aberta no momento.</p>
@@ -216,16 +234,16 @@ export default function Desempenho() {
         )}
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>2. Campanhas / origens que convertem</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>No período. Muitos leads com conversão baixa = revisar criativo/segmentação. Conversão alta = escalar.</p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>2. Campanhas / origens</h2>
+      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>No período. Gasto real do Meta quando a campanha tem o código no nome. "⚠ revisar" = gastou e não vendeu, ou muito lead com pouca conversão.</p>
       <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 32 }}>
         {campanhas.length === 0 ? (
-          <p style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem leads no período.</p>
+          <p style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem dados no período.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                {['Origem / campanha', 'Leads', 'Vendas', 'Conversão', 'Receita', 'Leitura'].map((h, i) => (
+                {['Origem / campanha', 'Leads', 'Vendas', 'Conversão', 'Gasto', 'Receita', 'ROAS', 'Leitura'].map((h, i) => (
                   <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>{h}</th>
                 ))}
               </tr>
@@ -233,14 +251,16 @@ export default function Desempenho() {
             <tbody>
               {campanhas.map(c => {
                 const escala = c.leads >= 5 && c.conv >= 0.15
-                const revisar = c.leads >= 10 && c.conv < 0.08
+                const revisar = (c.gasto > 0 && c.ganhos === 0) || (c.leads >= 10 && c.conv < 0.08)
                 return (
                   <tr key={c.nome} style={{ borderBottom: '1px solid #3a3a3c' }}>
                     <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{c.nome}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{c.leads}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{c.ganhos}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: c.conv >= 0.15 ? '#34d399' : c.conv < 0.08 ? '#f87171' : '#d1d1d1' }}>{pct(c.conv)}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{c.gasto ? fmt(c.gasto) : '—'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#34d399' }}>{fmt(c.receita)}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: c.roas >= 1 ? '#34d399' : c.gasto ? '#f87171' : '#6b7280' }}>{c.gasto ? c.roas.toFixed(2) + 'x' : '—'}</td>
                     <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 11, color: escala ? '#34d399' : revisar ? '#f87171' : '#6b7280' }}>
                       {escala ? '↑ escalar' : revisar ? '⚠ revisar' : '—'}
                     </td>
@@ -251,31 +271,6 @@ export default function Desempenho() {
           </table>
         )}
       </div>
-
-      {spend.ok && spend.campaigns.length > 0 && (
-        <>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Gasto real por campanha (Meta)</h2>
-          <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Gasto real do Meta no período. Pra cruzar com as vendas por campanha, configure os parâmetros de URL do anúncio passando o nome da campanha no utm_campaign.</p>
-          <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 32 }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                  <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Campanha</th>
-                  <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Gasto</th>
-                </tr>
-              </thead>
-              <tbody>
-                {[...spend.campaigns].sort((a, b) => b.spend - a.spend).map((c, i) => (
-                  <tr key={i} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{c.name}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{fmt(c.spend)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Funil: onde os leads travam</h2>
       <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
@@ -299,12 +294,12 @@ export default function Desempenho() {
       </div>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>4. Resultado por turma</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Receita e margem realizadas (ou previstas quando ainda não fechou).</p>
+      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Receita, margem e — quando há campanha com o código no nome — gasto, CPV e ROAS reais por turma.</p>
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
             <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-              {['Turma', 'Matrículas', 'Receita', 'Margem'].map((h, i) => (
+              {['Turma', 'Matrículas', 'Receita', 'Gasto real', 'CPV real', 'ROAS real', 'Margem'].map((h, i) => (
                 <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>{h}</th>
               ))}
             </tr>
@@ -315,6 +310,9 @@ export default function Desempenho() {
                 <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{r.t.produtos?.nome} — {r.t.cidades?.nome} <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>{r.t.codigo}</span></td>
                 <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{r.mats}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#34d399' }}>{fmt(r.receita)}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{r.gasto ? fmt(r.gasto) : '—'}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{r.gasto ? fmt(r.cpvReal) : '—'}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: r.roasReal >= 1 ? '#34d399' : '#f87171' }}>{r.gasto ? r.roasReal.toFixed(2) + 'x' : '—'}</td>
                 <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: r.margem >= 0 ? '#34d399' : '#f87171' }}>{fmt(r.margem)}</td>
               </tr>
             ))}
