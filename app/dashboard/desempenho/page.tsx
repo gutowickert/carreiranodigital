@@ -33,8 +33,17 @@ export default function Desempenho() {
   const [leads, setLeads] = useState<any[]>([])
   const [marketing, setMarketing] = useState<any[]>([])
   const [financeiros, setFinanceiros] = useState<any[]>([])
+  const [spend, setSpend] = useState<{ ok: boolean; total: number; campaigns: { name: string; spend: number }[]; error?: string }>({ ok: false, total: 0, campaigns: [] })
 
   useEffect(() => { carregar() }, [])
+  useEffect(() => { carregarGasto() }, [de, ate])
+
+  async function carregarGasto() {
+    try {
+      const res = await fetch(`/api/meta/spend?since=${de}&until=${ate}`)
+      setSpend(await res.json())
+    } catch { setSpend({ ok: false, total: 0, campaigns: [], error: 'falha ao buscar gasto' }) }
+  }
 
   async function carregar() {
     setCarregando(true)
@@ -56,7 +65,9 @@ export default function Desempenho() {
   const leadsPeriodo = leads.filter(l => inPeriodo(l.criado_em))
   const matsPeriodo = matriculas.filter(m => inPeriodo(m.data_compra))
   const receitaPeriodo = matsPeriodo.reduce((s, m) => s + (m.valor_pago || 0), 0)
-  const trafegoPeriodo = marketing.filter(x => inPeriodo(x.data_pagamento || x.data_vencimento)).reduce((s, x) => s + (x.valor || 0), 0)
+  const trafegoProvisionado = marketing.filter(x => inPeriodo(x.data_pagamento || x.data_vencimento)).reduce((s, x) => s + (x.valor || 0), 0)
+  const usandoReal = spend.ok && spend.total > 0
+  const trafegoPeriodo = usandoReal ? spend.total : trafegoProvisionado
   const cpl = leadsPeriodo.length ? trafegoPeriodo / leadsPeriodo.length : 0
   const cpv = matsPeriodo.length ? trafegoPeriodo / matsPeriodo.length : 0
   const roas = trafegoPeriodo ? receitaPeriodo / trafegoPeriodo : 0
@@ -155,12 +166,16 @@ export default function Desempenho() {
         <KPI label="Leads" valor={leadsPeriodo.length} />
         <KPI label="Vendas" valor={matsPeriodo.length} sub={`Conversão ${pct(convGeral)}`} />
         <KPI label="Receita" valor={fmt(receitaPeriodo)} cor="#34d399" />
-        <KPI label="Tráfego gasto" valor={fmt(trafegoPeriodo)} cor="#f87171" />
+        <KPI label="Tráfego gasto" valor={fmt(trafegoPeriodo)} cor="#f87171" sub={usandoReal ? 'real (Meta)' : 'provisionado'} />
         <KPI label="ROAS geral" valor={(roas).toFixed(2) + 'x'} cor={roas >= 1 ? '#34d399' : '#f87171'} sub="Receita ÷ tráfego" />
         <KPI label="CPL / CPV" valor={`${fmt(cpl)} / ${fmt(cpv)}`} sub="Custo por lead / por venda" />
       </div>
-      <p style={{ fontSize: 11, color: '#6b7280', marginBottom: 24 }}>
-        ROAS/CPL/CPV usam o tráfego provisionado (nível empresa). O custo real por campanha/turma entra quando ligarmos a Meta Ads API.
+      <p style={{ fontSize: 11, color: spend.error ? '#f87171' : '#6b7280', marginBottom: 24 }}>
+        {usandoReal
+          ? 'ROAS/CPL/CPV calculados com o gasto REAL do Meta no período.'
+          : spend.error
+            ? `Sem gasto real do Meta (${spend.error}). Usando tráfego provisionado.`
+            : 'Usando tráfego provisionado (sem gasto real do Meta no período, ou ainda carregando).'}
       </p>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>1. Turmas: saúde e risco</h2>
@@ -236,6 +251,31 @@ export default function Desempenho() {
           </table>
         )}
       </div>
+
+      {spend.ok && spend.campaigns.length > 0 && (
+        <>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Gasto real por campanha (Meta)</h2>
+          <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Gasto real do Meta no período. Pra cruzar com as vendas por campanha, configure os parâmetros de URL do anúncio passando o nome da campanha no utm_campaign.</p>
+          <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 32 }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+                  <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Campanha</th>
+                  <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Gasto</th>
+                </tr>
+              </thead>
+              <tbody>
+                {[...spend.campaigns].sort((a, b) => b.spend - a.spend).map((c, i) => (
+                  <tr key={i} style={{ borderBottom: '1px solid #3a3a3c' }}>
+                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{c.name}</td>
+                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{fmt(c.spend)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Funil: onde os leads travam</h2>
       <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
