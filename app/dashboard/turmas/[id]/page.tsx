@@ -226,6 +226,13 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
     }).select().single()
     if (errMat) { setMensagem('Erro ao registrar venda: ' + errMat.message); setSalvando(false); return }
 
+    // Dispara Purchase pro CAPI (server-side, via route — token fica protegido)
+    fetch('/api/capi/purchase', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ matricula_id: matricula.id }),
+    }).catch(() => {})
+
     // LTV do aluno
     const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
     await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorVenda }).eq('id', alunoId)

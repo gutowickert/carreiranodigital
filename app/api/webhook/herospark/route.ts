@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { sendPurchase } from '@/lib/capi'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -223,6 +224,23 @@ export async function POST(req: NextRequest) {
         receita_realizada: novaReceita,
         atualizado_em: new Date().toISOString(),
       }).eq('turma_id', turmaId)
+    }
+
+    // 7.5) Dispara Purchase pro CAPI (server-side)
+    try {
+      const capiPurchase = await sendPurchase({
+        eventId: matricula.id,
+        value: valorFinal,
+        currency: 'BRL',
+        email: buyerEmail,
+        phone: buyerPhone,
+        firstName: buyerName,
+        externalId: leadEncontrado?.id || alunoId,
+        codigoTurma: turmaCodigo,
+      })
+      if (!capiPurchase.ok) console.error('[webhook] CAPI Purchase falhou:', capiPurchase.error)
+    } catch (e) {
+      console.error('[webhook] CAPI Purchase exception:', e)
     }
 
     // 8) Marca log como processado
