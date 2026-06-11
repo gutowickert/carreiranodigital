@@ -401,7 +401,7 @@ export default function Turmas() {
     }
 
     // Lançamentos previstos de coprodução (% sobre líquido previsto)
-    const liquidoPrevisto = receitaPrevista - totalTrafego - imposto - custoDeslocamento
+    const liquidoPrevisto = receitaPrevista - totalTrafego - imposto - custoDeslocamento - custoSala
     if (coproducoes.length > 0 && dataFim) {
       for (const cop of coproducoes) {
         const valorCoproducao = (liquidoPrevisto * cop.percentual) / 100
