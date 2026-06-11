@@ -294,38 +294,63 @@ export default function Turmas() {
       })
     }
 
-    if (dataInicio) {
-      const hoje = new Date().toISOString().split('T')[0]
-      const dataInicioTrafego = addDays(hoje, DIAS_INICIO_TRAFEGO)
-      const dataFimTrafego = addDays(dataInicio, -1)
-      const inicioTrafDate = new Date(dataInicioTrafego + 'T12:00:00')
-      const fimTrafDate = new Date(dataFimTrafego + 'T12:00:00')
-      const diasTrafego = Math.max(1, Math.ceil((fimTrafDate.getTime() - inicioTrafDate.getTime()) / (1000 * 60 * 60 * 24)) + 1)
-      const valorDiarioTrafego = totalTrafego / diasTrafego
-      const DIAS_AGRUPAMENTO_TRAFEGO = await getConfigNumero('financeiro.dias_agrupamento_trafego', 4)
-      const intervalo = Math.max(1, DIAS_AGRUPAMENTO_TRAFEGO)
+    // Tráfego: provisiona COMBINADO no nível da empresa, em janelas fixas de 4 dias de calendário.
+    // Cada turma soma sua parte na janela correspondente (turma_id null). O previsto por turma
+    // continua guardado em financeiro_turma.custo_trafego_previsto (pra margem da turma).
+    if (dataInicio && totalTrafego > 0) {
+      const REF_TRAFEGO = '2026-01-01' // âncora dos blocos fixos de 4 dias
+      const BLOCO = Math.max(1, await getConfigNumero('financeiro.dias_agrupamento_trafego', 4))
+      const hojeTraf = new Date().toISOString().split('T')[0]
+      const trafInicio = addDays(hojeTraf, DIAS_INICIO_TRAFEGO)
+      const trafFimBruto = addDays(dataInicio, -1)
 
-      const lancamentosTrafego = []
-      let i = 0
-      while (i < diasTrafego) {
-        const diasNesteBloco = Math.min(intervalo, diasTrafego - i)
-        const data = addDays(dataInicioTrafego, i)
-        const valorBloco = valorDiarioTrafego * diasNesteBloco
-        const dataFimBloco = addDays(dataInicioTrafego, i + diasNesteBloco - 1)
-        const descricaoPeriodo = diasNesteBloco > 1
-          ? `${new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(dataFimBloco + 'T12:00:00').toLocaleDateString('pt-BR')}`
-          : new Date(data + 'T12:00:00').toLocaleDateString('pt-BR')
-        lancamentosTrafego.push({
-          tipo: 'custo', categoria: 'marketing',
-          descricao: `Tráfego ${descricaoPeriodo} — ${produto.nome}`,
-          valor: valorBloco, unidade: 'geral',
-          mes_referencia: data.substring(0, 7) + '-01',
-          data_vencimento: data, status: 'previsto', turma_id: turma.id,
-        })
-        i += diasNesteBloco
+      const diffDias = (a: string, b: string) =>
+        Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000)
+
+      const trafFim = diffDias(trafInicio, trafFimBruto) < 0 ? trafInicio : trafFimBruto
+      const diasTrafego = diffDias(trafInicio, trafFim) + 1
+      const valorDiarioTrafego = totalTrafego / diasTrafego
+
+      const inicioJanela = (dateStr: string) => {
+        const idx = Math.floor(diffDias(REF_TRAFEGO, dateStr) / BLOCO)
+        return addDays(REF_TRAFEGO, idx * BLOCO)
       }
-      if (lancamentosTrafego.length > 0) {
-        await supabase.from('lancamentos_empresa').insert(lancamentosTrafego)
+
+      let cursor = inicioJanela(trafInicio)
+      while (diffDias(cursor, trafFim) >= 0) {
+        const winInicio = cursor
+        const winFim = addDays(cursor, BLOCO - 1)
+        const ovStart = diffDias(winInicio, trafInicio) > 0 ? trafInicio : winInicio
+        const ovEnd = diffDias(winFim, trafFim) < 0 ? winFim : trafFim
+        const diasNaJanela = diffDias(ovStart, ovEnd) + 1
+        if (diasNaJanela > 0) {
+          const contrib = valorDiarioTrafego * diasNaJanela
+          const descricao = `Tráfego turmas — ${new Date(winInicio + 'T12:00:00').toLocaleDateString('pt-BR')} a ${new Date(winFim + 'T12:00:00').toLocaleDateString('pt-BR')}`
+
+          const { data: existentes } = await supabase.from('lancamentos_empresa')
+            .select('id, valor')
+            .is('turma_id', null)
+            .eq('categoria', 'marketing')
+            .eq('status', 'previsto')
+            .eq('data_vencimento', winInicio)
+            .ilike('descricao', 'Tráfego turmas —%')
+            .limit(1)
+          const existente = existentes && existentes[0]
+
+          if (existente) {
+            await supabase.from('lancamentos_empresa')
+              .update({ valor: (existente.valor || 0) + contrib })
+              .eq('id', existente.id)
+          } else {
+            await supabase.from('lancamentos_empresa').insert({
+              tipo: 'custo', categoria: 'marketing',
+              descricao, valor: contrib, unidade: 'geral',
+              mes_referencia: winInicio.substring(0, 7) + '-01',
+              data_vencimento: winInicio, status: 'previsto', turma_id: null,
+            })
+          }
+        }
+        cursor = addDays(cursor, BLOCO)
       }
     }
 
