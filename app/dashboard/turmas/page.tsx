@@ -342,18 +342,19 @@ export default function Turmas() {
       })
     }
 
-    const lancamentosDesloc = datasValidas.map(d => ({
+    const cidadeEhExterna = cidade.tipo === 'cidade_externa'
+    const lancamentosDesloc = cidadeEhExterna ? datasValidas.map(d => ({
       tipo: 'custo', categoria: 'outro',
       descricao: `Deslocamento — ${produto.nome}`,
       valor: VALOR_DESLOC_DIARIO, unidade: 'geral',
       mes_referencia: d.data.substring(0, 7) + '-01',
       data_vencimento: d.data, status: 'previsto', turma_id: turma.id,
-    }))
+    })) : []
     if (lancamentosDesloc.length > 0) {
       await supabase.from('lancamentos_empresa').insert(lancamentosDesloc)
     }
 
-   const custoDeslocamento = VALOR_DESLOC_DIARIO * datasValidas.length
+   const custoDeslocamento = cidadeEhExterna ? VALOR_DESLOC_DIARIO * datasValidas.length : 0
 
     // Lançamentos previstos de coprodução (% sobre líquido previsto)
     const liquidoPrevisto = receitaPrevista - totalTrafego - imposto - custoDeslocamento
