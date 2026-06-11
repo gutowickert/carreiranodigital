@@ -922,8 +922,8 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                           </select>
                         ) : (
                           <>
-                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{tp.professores.nome}</div>
-                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>R$ {tp.professores.diaria_reais}/dia · {fmt(tp.valor_calculado)} total</div>
+                            <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{tp.professores?.nome || 'Professor não encontrado'}</div>
+                            <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>R$ {tp.professores?.diaria_reais ?? 0}/dia · {fmt(tp.valor_calculado)} total</div>
                           </>
                         )}
                       </div>
