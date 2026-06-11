@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { randomUUID } from 'crypto'
+import { sendLead } from '@/lib/capi'
  
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -88,6 +90,15 @@ export async function POST(req: NextRequest) {
   const geraLeadsDigital = (payload.gera_leads_digital || '').toString().trim() || null
   const maiorProblema = (payload.maior_problema || '').toString().trim() || null
   const negocio = (payload.negocio || '').toString().trim() || null
+
+  // CAPI: dados pra deduplicação e correspondência
+  const eventId = (payload.event_id || '').toString().trim() || randomUUID()
+  const fbp = (payload.fbp || '').toString().trim() || null
+  let fbc = (payload.fbc || '').toString().trim() || null
+  if (!fbc && fbclid) fbc = `fb.1.${Date.now()}.${fbclid}`
+  const eventSourceUrl = (payload.event_source_url || '').toString().trim() || null
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null
+  const userAgent = req.headers.get('user-agent') || null
  
   // Validação mínima
   if (!nome) {
@@ -146,6 +157,8 @@ export async function POST(req: NextRequest) {
     gera_leads_digital: geraLeadsDigital,
     maior_problema: maiorProblema,
     negocio: negocio,
+    fbp,
+    fbc,
   }).select().single()
  
   if (error || !leadCriado) {
@@ -164,8 +177,28 @@ export async function POST(req: NextRequest) {
     observacao: `Lead criado via formulário do site${fbclid ? ' (fbclid capturado)' : ''}`,
   })
  
+  // Dispara o evento Lead pro CAPI (server-side). Falha aqui não quebra a captação.
+  try {
+    const capi = await sendLead({
+      eventId,
+      eventSourceUrl,
+      email,
+      phone: whatsapp,
+      firstName: nome,
+      fbc,
+      fbp,
+      clientIp,
+      userAgent,
+      externalId: leadCriado.id,
+      codigoTurma: turma.codigo,
+    })
+    if (!capi.ok) console.error('CAPI Lead falhou:', capi.error)
+  } catch (e) {
+    console.error('CAPI Lead exception:', e)
+  }
+
   return NextResponse.json(
-    { ok: true, lead_id: leadCriado.id },
+    { ok: true, lead_id: leadCriado.id, event_id: eventId },
     { status: 200, headers: CORS_HEADERS }
   )
 }
