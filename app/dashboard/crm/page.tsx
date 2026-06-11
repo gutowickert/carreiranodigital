@@ -519,6 +519,8 @@ interface ModalLeadProps {
 function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
+  const [ligando, setLigando] = useState(false)
+  const [msgLigacao, setMsgLigacao] = useState('')
   const [novoAndamento, setNovoAndamento] = useState('')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
   const [prazoData, setPrazoData] = useState('')
@@ -551,6 +553,33 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     const { data } = await supabase.from('lead_andamentos')
       .select('*').eq('lead_id', leadId).order('criado_em', { ascending: false })
     if (data) setAndamentos(data)
+  }
+
+  async function ligar() {
+    if (!lead) return
+    setLigando(true); setMsgLigacao('')
+    try {
+      const res = await fetch('/api/ligacao', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      })
+      const json = await res.json()
+      if (json.ok) {
+        setMsgLigacao('Discando... atende no teu Webphone')
+        await supabase.from('lead_andamentos').insert({
+          lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'ligacao',
+          observacao: 'Ligacao iniciada via API4COM',
+        })
+        carregarAndamentos(lead.id)
+      } else {
+        setMsgLigacao('Erro: ' + (json.error || 'nao foi possivel ligar'))
+      }
+    } catch (e: any) {
+      setMsgLigacao('Falha: ' + ((e && e.message) || 'erro de rede'))
+    } finally {
+      setLigando(false)
+    }
   }
 
   async function salvar() {
@@ -642,6 +671,20 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           </div>
           <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 22, cursor: 'pointer' }}>x</button>
         </div>
+
+        {!novoLead && lead && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <button onClick={ligar} disabled={ligando || !form.whatsapp}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 13, fontWeight: 600, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
+              📞 {ligando ? 'Discando...' : 'Ligar'}
+            </button>
+            <button disabled title="Em breve — chat de WhatsApp dentro do lead"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #25D36640', background: '#0b2e1a', color: '#25D366', fontSize: 13, fontWeight: 600, cursor: 'default', opacity: 0.5 }}>
+              💬 WhatsApp <span style={{ fontSize: 9, opacity: 0.8 }}>(em breve)</span>
+            </button>
+            {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
+          </div>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
