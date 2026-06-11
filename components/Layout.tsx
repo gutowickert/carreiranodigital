@@ -40,12 +40,13 @@ const grupos: Grupo[] = [
       { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
     ],
   },
- {
+{
     titulo: 'Financeiro',
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
       { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
+      { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
     ],
   },
   {
