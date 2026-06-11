@@ -110,19 +110,22 @@ export default function Caixas() {
     setMensagem('')
 
     if (editando) {
-      await supabase.from('contas_financeiras').update({
+      const { error } = await supabase.from('contas_financeiras').update({
         nome: form.nome, tipo: form.tipo, unidade: form.unidade,
         saldo_inicial: parseFloat(form.saldo_inicial) || 0,
         observacoes: form.observacoes || null,
         atualizado_em: new Date().toISOString(),
       }).eq('id', editando)
+      if (error) { setMensagem('Erro ao atualizar caixa: ' + error.message); return }
       setMensagem('Conta atualizada!')
     } else {
-      await supabase.from('contas_financeiras').insert({
+      const { error } = await supabase.from('contas_financeiras').insert({
         nome: form.nome, tipo: form.tipo, unidade: form.unidade,
         saldo_inicial: parseFloat(form.saldo_inicial) || 0,
         observacoes: form.observacoes || null,
+        ativo: true,
       })
+      if (error) { setMensagem('Erro ao criar caixa: ' + error.message); return }
       setMensagem('Conta criada!')
     }
     limparForm()
