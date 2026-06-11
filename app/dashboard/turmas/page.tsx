@@ -301,13 +301,12 @@ export default function Turmas() {
       const REF_TRAFEGO = '2026-01-01' // âncora dos blocos fixos de 4 dias
       const BLOCO = Math.max(1, await getConfigNumero('financeiro.dias_agrupamento_trafego', 4))
       const hojeTraf = new Date().toISOString().split('T')[0]
-      const trafInicio = addDays(hojeTraf, DIAS_INICIO_TRAFEGO)
-      const trafFimBruto = addDays(dataInicio, -1)
+      const trafInicio = hojeTraf
+      const trafFim = addDays(dataInicio, -1)
 
       const diffDias = (a: string, b: string) =>
         Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000)
 
-      const trafFim = diffDias(trafInicio, trafFimBruto) < 0 ? trafInicio : trafFimBruto
       const diasTrafego = diffDias(trafInicio, trafFim) + 1
       const valorDiarioTrafego = totalTrafego / diasTrafego
 
@@ -316,6 +315,7 @@ export default function Turmas() {
         return addDays(REF_TRAFEGO, idx * BLOCO)
       }
 
+      if (diffDias(trafInicio, trafFim) >= 0) {
       let cursor = inicioJanela(trafInicio)
       while (diffDias(cursor, trafFim) >= 0) {
         const winInicio = cursor
@@ -351,6 +351,7 @@ export default function Turmas() {
           }
         }
         cursor = addDays(cursor, BLOCO)
+      }
       }
     }
 
