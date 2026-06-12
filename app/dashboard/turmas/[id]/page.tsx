@@ -602,6 +602,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>de {turma.vagas} total</div>
           </div>
           {ehAdmin && (
+          <>
           <div style={{ ...card, padding: '16px' }}>
             <div style={{ fontSize: '18px', fontWeight: '700', color: '#4ade80' }}>{fmt(financeiro?.receita_realizada || 0)}</div>
             <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Receita realizada</div>
@@ -612,6 +613,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Margem prevista</div>
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Break-even: {turma.meta_matriculas}</div>
           </div>
+          </>
           )}
         </div>
 
@@ -937,7 +939,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             </div>
           )}
 
-          {aba === 'professores' && (
+          {ehAdmin && aba === 'professores' && (
             <div style={{ padding: '24px' }}>
               {turmaProfessores.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#6b7280' }}>Nenhum professor vinculado.</p>
