@@ -1,18 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
-// Webhook Z-API "ao receber mensagem" (e enviadas pelo celular, se habilitado)
 export async function POST(req: NextRequest) {
   try {
     const ev = await req.json()
 
-    // So processa mensagens de verdade (ignora status: READ/RECEIVED/DELIVERY etc)
     if (ev.type && ev.type !== 'ReceivedCallback') return NextResponse.json({ ok: true, skip: 'nao e mensagem' })
-    if (ev.isGroup) return NextResponse.json({ ok: true, skip: 'grupo' })
-    if (ev.isNewsletter) return NextResponse.json({ ok: true, skip: 'newsletter' })
+    if (ev.isGroup) { console.log('ZAPI skip grupo'); return NextResponse.json({ ok: true, skip: 'grupo' }) }
+    if (ev.isNewsletter) { console.log('ZAPI skip newsletter'); return NextResponse.json({ ok: true, skip: 'newsletter' }) }
 
     const telefone = (ev.phone || '').toString().replace(/\D/g, '')
-    if (!telefone) return NextResponse.json({ ok: true, skip: 'sem telefone' })
+    if (!telefone) { console.log('ZAPI skip sem telefone'); return NextResponse.json({ ok: true, skip: 'sem telefone' }) }
 
     const zapiId = ev.messageId || null
     const fromMe = !!ev.fromMe
@@ -30,9 +28,11 @@ export async function POST(req: NextRequest) {
     else if (ev.sticker) { tipo = 'imagem'; midiaUrl = ev.sticker.stickerUrl; midiaMime = 'image/webp' }
     else { console.log('ZAPI tipo nao tratado:', JSON.stringify(ev)); return NextResponse.json({ ok: true, skip: 'tipo nao tratado' }) }
 
+    console.log('ZAPI processando:', telefone, tipo, texto)
+
     if (zapiId) {
       const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', zapiId).limit(1)
-      if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
+      if (ja && ja.length) { console.log('ZAPI skip duplicada', zapiId); return NextResponse.json({ ok: true, skip: 'duplicada' }) }
     }
 
     let { data: conversa, error: errBusca } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
       if (errInsConv) console.log('ZAPI erro insert conversa:', JSON.stringify(errInsConv))
       conversa = nova
     }
-    if (!conversa) return NextResponse.json({ ok: false, error: 'conversa nao criada' }, { status: 200 })
+    if (!conversa) { console.log('ZAPI conversa nula'); return NextResponse.json({ ok: false, error: 'conversa nao criada' }, { status: 200 }) }
 
     const { error: errMsg } = await supabase.from('wa_mensagens').insert({
       conversa_id: conversa.id,
@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
       status: fromMe ? 'enviada' : 'recebida',
     })
     if (errMsg) console.log('ZAPI erro insert mensagem:', JSON.stringify(errMsg))
+    else console.log('ZAPI mensagem salva OK')
 
     const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : '📎 Documento')
     await supabase.from('wa_conversas').update({
@@ -83,7 +84,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
-    console.log('ZAPI catch:', (e && e.message) || 'erro', (e && e.stack) || '')
+    console.log('ZAPI catch:', (e && e.message) || 'erro')
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
   }
 }
