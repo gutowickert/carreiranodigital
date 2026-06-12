@@ -952,7 +952,15 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={onFechar} style={btnSecondary}>Cancelar</button>
           <button onClick={salvar} disabled={!form.nome} style={{ ...btnPrimary, opacity: form.nome ? 1 : 0.5 }}>
-          function ChatLead({ lead }: { lead: Lead }) {
+            {novoLead ? 'Criar lead' : 'Salvar'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function ChatLead({ lead }: { lead: Lead }) {
   const [mensagens, setMensagens] = useState<any[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
