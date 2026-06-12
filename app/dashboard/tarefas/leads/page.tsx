@@ -57,7 +57,6 @@ export default function TarefasLeads() {
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'canceladas' | 'todas'>('pendentes')
   const [mensagem, setMensagem] = useState('')
-const [mensagem, setMensagem] = useState('')
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
 
   useEffect(() => {

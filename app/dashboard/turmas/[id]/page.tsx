@@ -937,7 +937,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             </div>
           )}
 
-          {ehAdmin && aba === 'professores' && (
+          {aba === 'professores' && (
             <div style={{ padding: '24px' }}>
               {turmaProfessores.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#6b7280' }}>Nenhum professor vinculado.</p>
