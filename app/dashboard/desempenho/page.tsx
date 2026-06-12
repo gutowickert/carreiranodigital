@@ -33,6 +33,7 @@ export default function Desempenho() {
   const [leads, setLeads] = useState<any[]>([])
   const [marketing, setMarketing] = useState<any[]>([])
   const [financeiros, setFinanceiros] = useState<any[]>([])
+  const [vendedores, setVendedores] = useState<any[]>([])
   const [spend, setSpend] = useState<{ ok: boolean; total: number; campaigns: { name: string; spend: number }[]; error?: string }>({ ok: false, total: 0, campaigns: [] })
 
   useEffect(() => { carregar() }, [])
@@ -40,15 +41,16 @@ export default function Desempenho() {
 
   async function carregar() {
     setCarregando(true)
-    const [t, m, l, mk, f] = await Promise.all([
+    const [t, m, l, mk, f, v] = await Promise.all([
       supabase.from('turmas').select('id, codigo, preco_venda, meta_matriculas, data_inicio, status, produto_id, cidade_id, produtos(nome), cidades(nome)'),
       supabase.from('matriculas').select('id, turma_id, valor_pago, data_compra, lead_id'),
-      supabase.from('leads').select('id, turma_id, etapa, utm_source, utm_campaign, valor_venda, criado_em, atualizado_em'),
+      supabase.from('leads').select('id, turma_id, etapa, vendedor_id, utm_source, utm_campaign, valor_venda, criado_em, atualizado_em'),
       supabase.from('lancamentos_empresa').select('valor, data_vencimento, data_pagamento, descricao').eq('categoria', 'marketing'),
       supabase.from('financeiro_turma').select('turma_id, receita_realizada, receita_prevista, margem_prevista, margem_realizada'),
+      supabase.from('usuarios_perfil').select('id, nome').in('setor', ['comercial', 'comercial_externo']).eq('ativo', true).order('nome'),
     ])
     setTurmas(t.data || []); setMatriculas(m.data || []); setLeads(l.data || [])
-    setMarketing(mk.data || []); setFinanceiros(f.data || [])
+    setMarketing(mk.data || []); setFinanceiros(f.data || []); setVendedores(v.data || [])
     setCarregando(false)
   }
 
@@ -152,6 +154,19 @@ export default function Desempenho() {
     .map(([etapa, v]) => ({ etapa, count: v.count, pctv: v.count / totalLeadsFunil, diasMedio: v.count ? v.somaDias / v.count : 0, terminal: ETAPAS_TERMINAIS.includes(etapa) }))
     .sort((a, b) => b.count - a.count)
   const gargalo = funil.filter(f => !f.terminal).sort((a, b) => (b.count * b.diasMedio) - (a.count * a.diasMedio))[0]
+
+  // Leads por vendedor x etapa
+  const etapasColunas = funil.map(f => f.etapa)
+  const contaPorEtapa = (lista: any[]) => {
+    const m: Record<string, number> = {}
+    lista.forEach(l => { const e = l.etapa || 'sem_etapa'; m[e] = (m[e] || 0) + 1 })
+    return m
+  }
+  const linhasVendedor = vendedores
+    .map(v => { const meus = leads.filter(l => l.vendedor_id === v.id); return { nome: v.nome, total: meus.length, porEtapa: contaPorEtapa(meus) } })
+    .filter(r => r.total > 0)
+  const semVend = leads.filter(l => !l.vendedor_id)
+  if (semVend.length > 0) linhasVendedor.push({ nome: 'Sem vendedor', total: semVend.length, porEtapa: contaPorEtapa(semVend) })
 
   const resultadoTurmas = turmas
     .map(t => {
@@ -304,6 +319,35 @@ export default function Desempenho() {
             </div>
           </div>
         ))}
+      </div>
+
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Leads por vendedor</h2>
+      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Quantos leads cada vendedor tem em mãos, por etapa.</p>
+      <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 32 }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <thead>
+            <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+              <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Vendedor</th>
+              <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>Total</th>
+              {etapasColunas.map(e => (
+                <th key={e} style={{ textAlign: 'right', padding: '10px 12px', fontSize: 11, color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' }}>{labelEtapa(e)}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {linhasVendedor.length === 0 ? (
+              <tr><td colSpan={2 + etapasColunas.length} style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Nenhum lead atribuído.</td></tr>
+            ) : linhasVendedor.map(r => (
+              <tr key={r.nome} style={{ borderBottom: '1px solid #3a3a3c' }}>
+                <td style={{ padding: '12px 16px', fontSize: 13, color: r.nome === 'Sem vendedor' ? '#fbbf24' : '#fff' }}>{r.nome}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700 }}>{r.total}</td>
+                {etapasColunas.map(e => (
+                  <td key={e} style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, color: r.porEtapa[e] ? '#d1d1d1' : '#3f3f46' }}>{r.porEtapa[e] || 0}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>4. Resultado por turma</h2>
