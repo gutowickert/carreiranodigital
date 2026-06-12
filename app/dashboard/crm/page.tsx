@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getPrimeiraTarefa, SEQUENCIA_POR_ETAPA } from '@/lib/sequencia-tarefas'
@@ -554,6 +554,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [ligando, setLigando] = useState(false)
   const [msgLigacao, setMsgLigacao] = useState('')
   const [ligacoes, setLigacoes] = useState<any[]>([])
+  const [chatAberto, setChatAberto] = useState(false)
   const [novoAndamento, setNovoAndamento] = useState('')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
   const [prazoData, setPrazoData] = useState('')
@@ -719,9 +720,9 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 13, fontWeight: 600, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
               📞 {ligando ? 'Discando...' : 'Ligar'}
             </button>
-            <button disabled title="Em breve — chat de WhatsApp dentro do lead"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #25D36640', background: '#0b2e1a', color: '#25D366', fontSize: 13, fontWeight: 600, cursor: 'default', opacity: 0.5 }}>
-              💬 WhatsApp <span style={{ fontSize: 9, opacity: 0.8 }}>(em breve)</span>
+            <button onClick={() => setChatAberto(v => !v)} disabled={!form.whatsapp}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #25D36640', background: chatAberto ? '#25D366' : '#0b2e1a', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 600, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
+              💬 WhatsApp
             </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
           </div>
@@ -813,6 +814,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             )}
           </div>
         )}
+
+        {!novoLead && lead && chatAberto && <ChatLead lead={lead} />}
 
         {!novoLead && lead && (
           <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
@@ -949,6 +952,154 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
           <button onClick={onFechar} style={btnSecondary}>Cancelar</button>
           <button onClick={salvar} disabled={!form.nome} style={{ ...btnPrimary, opacity: form.nome ? 1 : 0.5 }}>
+          function ChatLead({ lead }: { lead: Lead }) {
+  const [mensagens, setMensagens] = useState<any[]>([])
+  const [texto, setTexto] = useState('')
+  const [enviando, setEnviando] = useState(false)
+  const [erro, setErro] = useState('')
+  const [gravando, setGravando] = useState(false)
+  const [conversaId, setConversaId] = useState<string | null>(null)
+  const mediaRef = useRef<MediaRecorder | null>(null)
+  const chunksRef = useRef<Blob[]>([])
+  const fimRef = useRef<HTMLDivElement | null>(null)
+
+  async function carregar() {
+    const sufixo = (lead.whatsapp || '').replace(/\D/g, '').slice(-8)
+    if (!sufixo) return
+    const { data: conv } = await supabase.from('wa_conversas')
+      .select('id').or(`lead_id.eq.${lead.id},telefone.ilike.%${sufixo}%`).limit(1)
+    const cid = conv && conv[0] ? conv[0].id : null
+    setConversaId(cid)
+    if (!cid) { setMensagens([]); return }
+    const { data: msgs } = await supabase.from('wa_mensagens')
+      .select('*').eq('conversa_id', cid).order('criado_em', { ascending: true })
+    setMensagens(msgs || [])
+  }
+
+  useEffect(() => {
+    carregar()
+    const t = setInterval(carregar, 5000)
+    return () => clearInterval(t)
+  }, [lead.id])
+
+  useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
+
+  async function enviarTexto() {
+    if (!texto.trim()) return
+    setEnviando(true); setErro('')
+    try {
+      const res = await fetch('/api/wa/enviar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id, telefone: lead.whatsapp, texto }),
+      })
+      const json = await res.json()
+      if (json.ok) { setTexto(''); carregar() }
+      else setErro(json.error || 'falha ao enviar')
+    } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
+    finally { setEnviando(false) }
+  }
+
+  async function iniciarGravacao() {
+    setErro('')
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      const mr = new MediaRecorder(stream)
+      chunksRef.current = []
+      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
+      mr.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop())
+        const blob = new Blob(chunksRef.current, { type: 'audio/ogg' })
+        const reader = new FileReader()
+        reader.onloadend = async () => {
+          const base64 = reader.result as string
+          setEnviando(true)
+          try {
+            const res = await fetch('/api/wa/enviar', {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ leadId: lead.id, telefone: lead.whatsapp, audioBase64: base64 }),
+            })
+            const json = await res.json()
+            if (json.ok) carregar(); else setErro(json.error || 'falha ao enviar audio')
+          } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
+          finally { setEnviando(false) }
+        }
+        reader.readAsDataURL(blob)
+      }
+      mr.start()
+      mediaRef.current = mr
+      setGravando(true)
+    } catch {
+      setErro('Sem acesso ao microfone')
+    }
+  }
+
+  function pararGravacao() {
+    mediaRef.current?.stop()
+    setGravando(false)
+  }
+
+  function renderMidia(m: any) {
+    if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
+    if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: '#60a5fa', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
+    if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
+    return null
+  }
+
+  return (
+    <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
+      <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>WhatsApp</div>
+      <div style={{ background: '#1c1c1e', borderRadius: 8, padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {mensagens.length === 0 && <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', margin: '12px 0' }}>Nenhuma mensagem ainda. Manda a primeira!</p>}
+        {mensagens.map(m => {
+          const eu = m.direcao === 'enviada'
+          return (
+            <div key={m.id} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
+              <div style={{ background: eu ? '#075E54' : '#2c2c2e', border: eu ? 'none' : '1px solid #3a3a3c', borderRadius: 10, padding: '8px 10px' }}>
+                {m.texto && m.tipo === 'texto' && <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{m.texto}</div>}
+                {m.tipo !== 'texto' && (
+                  <>
+                    {renderMidia(m)}
+                    {m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: '#d1d1d1', marginTop: 4 }}>{m.texto}</div>}
+                  </>
+                )}
+                <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : '#6b7280', marginTop: 4, textAlign: 'right' }}>
+                  {new Date(m.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                </div>
+              </div>
+            </div>
+          )
+        })}
+        <div ref={fimRef} />
+      </div>
+
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+        <input style={inp} placeholder="Mensagem..." value={texto} disabled={gravando}
+          onChange={e => setTexto(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
+        {texto.trim() ? (
+          <button onClick={enviarTexto} disabled={enviando}
+            style={{ ...btnPrimary, background: '#25D366', minWidth: 70 }}>
+            {enviando ? '...' : 'Enviar'}
+          </button>
+        ) : gravando ? (
+          <button onClick={pararGravacao}
+            style={{ ...btnPrimary, background: '#dc2626', minWidth: 70 }}>
+            ⏹ Parar
+          </button>
+        ) : (
+          <button onClick={iniciarGravacao} disabled={enviando} title="Gravar áudio"
+            style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 70 }}>
+            🎤
+          </button>
+        )}
+      </div>
+      {gravando && <div style={{ fontSize: 11, color: '#f87171', marginTop: 6 }}>● Gravando... clica em Parar pra enviar</div>}
+      {erro && <div style={{ fontSize: 11, color: '#f87171', marginTop: 6 }}>{erro}</div>}
+    </div>
+  )
+}
             {novoLead ? 'Criar lead' : 'Salvar'}
           </button>
         </div>
