@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 // Recebe o resultado da ligacao da API4COM (evento channel-hangup)
 export async function POST(req: NextRequest) {
