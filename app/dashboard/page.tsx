@@ -32,7 +32,7 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       const { data: p } = await supabase.from('usuarios_perfil')
-        .select('id, papel, leads_escopo').eq('id', session.user.id).single()
+        .select('id, papel, leads_escopo, crm_interno, crm_externo').eq('id', session.user.id).single()
       if (!p) return
       setPerfil(p)
       if (p.papel !== 'admin') {
@@ -40,7 +40,7 @@ export default function Dashboard() {
           .select('id, titulo, data_vencimento, vendedor_id')
           .eq('concluida', false).eq('cancelada', false)
           .order('data_vencimento').limit(8)
-        if (p.leads_escopo === 'proprios') q = q.eq('vendedor_id', p.id)
+        q = q.eq('vendedor_id', p.id)
         const { data: tl } = await q
         setTarefasLead(tl || [])
       }
@@ -146,7 +146,7 @@ export default function Dashboard() {
 
   const maxMatricula = Math.max(...matriculasUltimos30.map(m => m.count), 1)
   const ehAdmin = perfil?.papel === 'admin'
-  const meusLeadsAtivos = leadsRaw.filter(l =>
+  const meusLeadsAtivos = !perfil?.crm_interno ? 0 : leadsRaw.filter(l =>
     !['ganho', 'perda', 'perdido'].includes(l.etapa) &&
     (perfil?.leads_escopo !== 'proprios' || l.vendedor_id === perfil?.id)
   ).length
