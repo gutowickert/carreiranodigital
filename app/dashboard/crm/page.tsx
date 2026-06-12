@@ -90,6 +90,22 @@ export default function CRM() {
 
   useEffect(() => { carregarTudo() }, [])
 
+  // Abre o card do lead quando chega via /dashboard/crm?lead=<id>
+  useEffect(() => {
+    if (leads.length === 0) return
+    const params = new URLSearchParams(window.location.search)
+    const leadId = params.get('lead')
+    if (leadId) {
+      const l = leads.find(x => x.id === leadId)
+      if (l) {
+        setLeadEditando(l as any)
+        setNovoLead(false)
+        setModalAberto(true)
+        window.history.replaceState({}, '', '/dashboard/crm')
+      }
+    }
+  }, [leads])
+
   useEffect(() => {
     async function carregarPerfil() {
       const { data: { session } } = await supabase.auth.getSession()

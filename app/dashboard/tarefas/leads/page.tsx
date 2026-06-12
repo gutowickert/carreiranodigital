@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import Link from 'next/link'
 import { getProximaTarefa } from '@/lib/sequencia-tarefas'
 
 type TarefaLead = {
@@ -202,7 +203,7 @@ export default function TarefasLeads() {
             {t.descricao && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{t.descricao}</div>}
             {t.leads && (
               <div style={{ fontSize: 11, color: '#a78bfa', marginTop: 6 }}>
-                Lead: <strong style={{ color: '#fff' }}>{t.leads.nome}</strong>
+                Lead: <Link href={`/dashboard/crm?lead=${t.leads.id}`} style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>{t.leads.nome}</Link>
                 {t.leads.whatsapp && <span> · {t.leads.whatsapp}</span>}
                 {t.leads.turmas?.codigo && <span style={{ marginLeft: 6, padding: '1px 6px', background: '#2e1065', borderRadius: 4 }}>{t.leads.turmas.codigo}</span>}
               </div>
