@@ -21,8 +21,32 @@ export default function Dashboard() {
   const [funilLeads, setFunilLeads] = useState<any[]>([])
   const [topAlunos, setTopAlunos] = useState<any[]>([])
   const [matriculasUltimos30, setMatriculasUltimos30] = useState<{ data: string; count: number }[]>([])
+  const [perfil, setPerfil] = useState<any>(null)
+  const [tarefasLead, setTarefasLead] = useState<any[]>([])
+  const [leadsRaw, setLeadsRaw] = useState<any[]>([])
 
   useEffect(() => { carregar() }, [])
+
+  useEffect(() => {
+    async function carregarPerfil() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: p } = await supabase.from('usuarios_perfil')
+        .select('id, papel, leads_escopo').eq('id', session.user.id).single()
+      if (!p) return
+      setPerfil(p)
+      if (p.papel !== 'admin') {
+        let q = supabase.from('tarefas_lead')
+          .select('id, titulo, data_vencimento, vendedor_id')
+          .eq('concluida', false).eq('cancelada', false)
+          .order('data_vencimento').limit(8)
+        if (p.leads_escopo === 'proprios') q = q.eq('vendedor_id', p.id)
+        const { data: tl } = await q
+        setTarefasLead(tl || [])
+      }
+    }
+    carregarPerfil()
+  }, [])
 
   async function carregar() {
     setCarregando(true)
@@ -40,27 +64,18 @@ export default function Dashboard() {
       tarefasResp, leadsResp, alunosResp, lancTrafegoHoje,
       matriculasResp,
     ] = await Promise.all([
-      // Lançamentos do mês corrente
       supabase.from('lancamentos_empresa').select('*')
         .gte('data_vencimento', inicioMes).lte('data_vencimento', fimMes),
-      // Turmas ativas
       supabase.from('turmas').select('id, status').in('status', ['planejada', 'em_vendas', 'confirmada']),
-      // Turmas em andamento com produtos/cidades
       supabase.from('turmas').select('id, data_inicio, data_fim, meta_matriculas, vagas, status, produtos(nome), cidades(nome)')
         .in('status', ['em_vendas', 'confirmada', 'planejada']).order('data_inicio', { ascending: true }).limit(5),
-      // Próximas aulas (7 dias)
       supabase.from('agenda_aulas').select('id, titulo, inicio, fim, turmas(produtos(nome)), professores(nome), salas(nome)')
         .gte('inicio', hojeStr).lte('inicio', data7Str).order('inicio').limit(8),
-      // Tarefas urgentes/atrasadas
       supabase.from('tarefas').select('id, titulo, setor, data_prazo, prioridade, status, turmas(produtos(nome))')
         .neq('status', 'concluida').order('data_prazo', { ascending: true }).limit(50),
-      // Leads do funil
-      supabase.from('leads').select('id, etapa'),
-      // Top alunos por LTV
+      supabase.from('leads').select('id, etapa, vendedor_id'),
       supabase.from('alunos').select('id, nome, ltv').order('ltv', { ascending: false }).limit(5),
-      // Tráfego de hoje
       supabase.from('lancamentos_empresa').select('valor').eq('categoria', 'marketing').eq('data_vencimento', hojeStr).eq('status', 'previsto'),
-      // Matrículas últimos 30 dias
       supabase.from('matriculas').select('data_compra, valor_pago').gte('data_compra', data30Str),
     ])
 
@@ -77,7 +92,6 @@ export default function Dashboard() {
     const matriculas = matriculasResp.data || []
     const trafegoTotal = (lancTrafegoHoje.data || []).reduce((s, l) => s + (l.valor || 0), 0)
 
-    // Agrupa matrículas por dia
     const porDia: Record<string, number> = {}
     matriculas.forEach((m: any) => {
       const d = m.data_compra?.substring(0, 10)
@@ -87,8 +101,8 @@ export default function Dashboard() {
       .map(([data, count]) => ({ data, count }))
       .sort((a, b) => a.data.localeCompare(b.data))
 
-    // Funil de leads
     const leadsData = leadsResp.data || []
+    setLeadsRaw(leadsData)
     const etapas = ['novo', 'sdr', 'closer', 'ganho', 'perdido']
     const funil = etapas.map(e => ({ etapa: e, count: leadsData.filter((l: any) => l.etapa === e).length }))
 
@@ -131,7 +145,12 @@ export default function Dashboard() {
   }
 
   const maxMatricula = Math.max(...matriculasUltimos30.map(m => m.count), 1)
-
+  const ehAdmin = perfil?.papel === 'admin'
+  const meusLeadsAtivos = leadsRaw.filter(l =>
+    !['ganho', 'perda', 'perdido'].includes(l.etapa) &&
+    (perfil?.leads_escopo !== 'proprios' || l.vendedor_id === perfil?.id)
+  ).length
+  const tarefasLeadAtrasadas = tarefasLead.filter(t => new Date(t.data_vencimento) < new Date()).length
   if (carregando) return (
     <div style={{ minHeight: '100vh', backgroundColor: '#1c1c1e', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: '#6b7280', fontSize: '14px' }}>Carregando dashboard...</p>
@@ -147,18 +166,34 @@ export default function Dashboard() {
         </p>
       </div>
 
-      {/* KPIs principais */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-        <div style={{ ...card, padding: '20px' }}>
-          <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita do mês</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: '#4ade80' }}>{fmt(stats.receitaRealizadaMes)}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.receitaPrevistaMes)}</div>
-        </div>
-        <div style={{ ...card, padding: '20px' }}>
-          <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Margem do mês</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: stats.margemRealizadaMes >= 0 ? '#4ade80' : '#f87171' }}>{fmt(stats.margemRealizadaMes)}</div>
-          <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.margemPrevistaMes)}</div>
-        </div>
+        {ehAdmin ? (
+          <>
+            <div style={{ ...card, padding: '20px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita do mês</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#4ade80' }}>{fmt(stats.receitaRealizadaMes)}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.receitaPrevistaMes)}</div>
+            </div>
+            <div style={{ ...card, padding: '20px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Margem do mês</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: stats.margemRealizadaMes >= 0 ? '#4ade80' : '#f87171' }}>{fmt(stats.margemRealizadaMes)}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>Prevista: {fmt(stats.margemPrevistaMes)}</div>
+            </div>
+          </>
+        ) : (
+          <>
+            <div style={{ ...card, padding: '20px' }}>
+              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Meus leads ativos</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff' }}>{meusLeadsAtivos}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>no funil agora</div>
+            </div>
+            <div style={{ ...card, padding: '20px', backgroundColor: tarefasLeadAtrasadas > 0 ? '#3a1a1a' : '#2c2c2e', borderColor: tarefasLeadAtrasadas > 0 ? '#ef4444' : '#3a3a3c' }}>
+              <div style={{ fontSize: '11px', color: tarefasLeadAtrasadas > 0 ? '#ef4444' : '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Tarefas de leads</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: tarefasLeadAtrasadas > 0 ? '#f87171' : '#ffffff' }}>{tarefasLead.length}</div>
+              <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '4px' }}>{tarefasLeadAtrasadas} atrasada(s)</div>
+            </div>
+          </>
+        )}
         <div style={{ ...card, padding: '20px' }}>
           <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Turmas ativas</div>
           <div style={{ fontSize: '22px', fontWeight: '700', color: '#ffffff' }}>{stats.turmasAtivas}</div>
@@ -171,8 +206,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Tráfego de hoje */}
-      {stats.trafegoHoje > 0 && (
+      {ehAdmin && stats.trafegoHoje > 0 && (
         <div style={{ backgroundColor: '#1e3a5f', border: '1px solid #2563eb', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <div style={{ fontSize: '12px', color: '#60a5fa', fontWeight: '600' }}>📊 Investimento de tráfego previsto para hoje</div>
@@ -183,7 +217,6 @@ export default function Dashboard() {
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        {/* Turmas em andamento */}
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Turmas em andamento</span>
@@ -213,7 +246,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Próximas aulas */}
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Próximas aulas (7 dias)</span>
@@ -245,7 +277,7 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '24px' }}>
-        {/* Tarefas urgentes */}
+        {ehAdmin ? (
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Tarefas que precisam atenção</span>
@@ -279,8 +311,32 @@ export default function Dashboard() {
             })
           )}
         </div>
+        ) : (
+        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Minhas tarefas de leads</span>
+            <Link href="/dashboard/tarefas/leads" style={{ fontSize: '12px', color: '#a78bfa', textDecoration: 'none' }}>Ver todas →</Link>
+          </div>
+          {tarefasLead.length === 0 ? (
+            <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Nenhuma tarefa de lead pendente. 🎉</p>
+          ) : (
+            tarefasLead.map((t: any) => {
+              const atrasada = new Date(t.data_vencimento) < new Date()
+              return (
+                <div key={t.id} style={{ padding: '12px 20px', borderBottom: '1px solid #3a3a3c', backgroundColor: atrasada ? '#1a0a0a' : 'transparent' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: '#ffffff' }}>{t.titulo}</div>
+                    <span style={{ fontSize: '11px', color: atrasada ? '#f87171' : '#6b7280', fontWeight: atrasada ? '600' : '400' }}>
+                      {new Date(t.data_vencimento).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </span>
+                  </div>
+                </div>
+              )
+            })
+          )}
+        </div>
+        )}
 
-        {/* Funil de leads */}
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Funil de leads ({stats.leadsTotal})</span>
@@ -311,7 +367,6 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        {/* Gráfico de matrículas */}
         <div style={{ ...card, padding: '20px' }}>
           <div style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1', marginBottom: '16px' }}>
             Matrículas nos últimos 30 dias
@@ -336,7 +391,7 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Top alunos por LTV */}
+        {ehAdmin && (
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Top alunos por LTV</span>
@@ -356,6 +411,7 @@ export default function Dashboard() {
             ))
           )}
         </div>
+        )}
       </div>
     </div>
   )
