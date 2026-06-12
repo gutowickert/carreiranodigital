@@ -76,7 +76,7 @@ const grupos: Grupo[] = [
 function itemPermitido(href: string, p: Perfil): boolean {
   if (p.papel === 'admin') return true
   // base do vendedor
-  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/comissoes', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
+  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
   if (baseVendedor.includes(href)) return true
   // CRM interno
   if (p.crm_interno && (href === '/dashboard/crm' || href === '/dashboard/crm/resultados')) return true

@@ -73,7 +73,18 @@ export default function DetalheTurma() {
   const [leadsDisponiveis, setLeadsDisponiveis] = useState<Lead[]>([])
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [contas, setContas] = useState<Conta[]>([])
-  const [carregando, setCarregando] = useState(true)
+ const [carregando, setCarregando] = useState(true)
+  const [ehAdmin, setEhAdmin] = useState(false)
+
+  useEffect(() => {
+    async function checarPapel() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: p } = await supabase.from('usuarios_perfil').select('papel').eq('id', session.user.id).single()
+      setEhAdmin(p?.papel === 'admin')
+    }
+    checarPapel()
+  }, [])
   const [novaVenda, setNovaVenda] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
@@ -514,14 +525,18 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <button onClick={abrirEdicao} style={btnSecondary}>Editar</button>
-          <select value={turma.status} onChange={e => atualizarStatus(e.target.value)} style={select}>
-            <option value="planejada">Planejada</option>
-            <option value="em_vendas">Em vendas</option>
-            <option value="confirmada">Confirmada</option>
-            <option value="realizada">Realizada</option>
-            <option value="cancelada">Cancelada</option>
-          </select>
+          {ehAdmin && (
+            <>
+              <button onClick={abrirEdicao} style={btnSecondary}>Editar</button>
+              <select value={turma.status} onChange={e => atualizarStatus(e.target.value)} style={select}>
+                <option value="planejada">Planejada</option>
+                <option value="em_vendas">Em vendas</option>
+                <option value="confirmada">Confirmada</option>
+                <option value="realizada">Realizada</option>
+                <option value="cancelada">Cancelada</option>
+              </select>
+            </>
+          )}
           <span style={{ fontSize: '12px', padding: '4px 12px', borderRadius: '20px', backgroundColor: s.bg, color: s.color }}>
             {turma.status.replace('_', ' ')}
           </span>
@@ -586,6 +601,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Vagas restantes</div>
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>de {turma.vagas} total</div>
           </div>
+          {ehAdmin && (
           <div style={{ ...card, padding: '16px' }}>
             <div style={{ fontSize: '18px', fontWeight: '700', color: '#4ade80' }}>{fmt(financeiro?.receita_realizada || 0)}</div>
             <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Receita realizada</div>
@@ -596,13 +612,16 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '4px' }}>Margem prevista</div>
             <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>Break-even: {turma.meta_matriculas}</div>
           </div>
+          )}
         </div>
 
         <div style={{ display: 'flex', gap: '4px', borderBottom: '1px solid #3a3a3c', marginBottom: '0' }}>
           {[
             { id: 'matriculas', label: `Matrículas (${matriculas.length})` },
-            { id: 'financeiro', label: 'Financeiro' },
-            { id: 'professores', label: `Professores (${turmaProfessores.length})` },
+            ...(ehAdmin ? [
+              { id: 'financeiro', label: 'Financeiro' },
+              { id: 'professores', label: `Professores (${turmaProfessores.length})` },
+            ] : []),
             { id: 'datas', label: `Datas (${datas.length})` },
           ].map(a => (
             <button key={a.id} onClick={() => setAba(a.id as any)} style={{
@@ -808,7 +827,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             </div>
           )}
 
-          {aba === 'financeiro' && financeiro && (
+          {ehAdmin && aba === 'financeiro' && financeiro && (
             <div style={{ padding: '24px' }}>
               {turma.status === 'realizada' && (
                 <div style={{ marginBottom: 20, display: 'flex', justifyContent: 'flex-end' }}>
@@ -918,7 +937,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             </div>
           )}
 
-          {aba === 'professores' && (
+          {ehAdmin && aba === 'professores' && (
             <div style={{ padding: '24px' }}>
               {turmaProfessores.length === 0 ? (
                 <p style={{ fontSize: '13px', color: '#6b7280' }}>Nenhum professor vinculado.</p>

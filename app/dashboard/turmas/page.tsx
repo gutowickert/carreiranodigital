@@ -71,6 +71,17 @@ export default function Turmas() {
   const [salvando, setSalvando] = useState(false)
   const [mensagem, setMensagem] = useState('')
   const [conflitos, setConflitos] = useState<string[]>([])
+  const [ehAdmin, setEhAdmin] = useState(false)
+
+  useEffect(() => {
+    async function checarPapel() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: p } = await supabase.from('usuarios_perfil').select('papel').eq('id', session.user.id).single()
+      setEhAdmin(p?.papel === 'admin')
+    }
+    checarPapel()
+  }, [])
 
   useEffect(() => {
     carregarTurmas(); carregarProdutos(); carregarCidades(); carregarSalas()
@@ -535,10 +546,12 @@ export default function Turmas() {
           <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Turmas</h1>
           <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>{turmas.length} turma{turmas.length !== 1 ? 's' : ''} cadastrada{turmas.length !== 1 ? 's' : ''}</p>
         </div>
+        {ehAdmin && (
         <button onClick={() => setAbrirForm(!abrirForm)}
           style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
           + Abrir turma
         </button>
+        )}
       </div>
 
       {abrirForm && (

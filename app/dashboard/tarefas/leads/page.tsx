@@ -57,8 +57,20 @@ export default function TarefasLeads() {
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'canceladas' | 'todas'>('pendentes')
   const [mensagem, setMensagem] = useState('')
+const [mensagem, setMensagem] = useState('')
+  const [meuPerfil, setMeuPerfil] = useState<any>(null)
 
-  useEffect(() => { carregar() }, [filtroVendedor, filtroStatus])
+  useEffect(() => {
+    async function init() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: p } = await supabase.from('usuarios_perfil').select('id, papel').eq('id', session.user.id).single()
+      if (p) setMeuPerfil(p)
+    }
+    init()
+  }, [])
+
+  useEffect(() => { if (meuPerfil) carregar() }, [meuPerfil, filtroVendedor, filtroStatus])
 
   async function carregar() {
     setCarregando(true)
@@ -67,7 +79,8 @@ export default function TarefasLeads() {
       .select('*, leads(id, nome, whatsapp, etapa, turma_id, turmas(codigo, produtos(nome)))')
       .order('data_vencimento', { ascending: true })
 
-    if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
+    if (meuPerfil && meuPerfil.papel !== 'admin') query = query.eq('vendedor_id', meuPerfil.id)
+    else if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
     if (filtroStatus === 'pendentes') query = query.eq('concluida', false).eq('cancelada', false)
     if (filtroStatus === 'concluidas') query = query.eq('concluida', true)
     if (filtroStatus === 'canceladas') query = query.eq('cancelada', true)
@@ -238,10 +251,12 @@ export default function TarefasLeads() {
             <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
           </select>
-          <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
-            <option value="">Todos vendedores</option>
-            {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
-          </select>
+          {meuPerfil?.papel === 'admin' && (
+            <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
+              <option value="">Todos vendedores</option>
+              {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
+          )}
           {filtroVendedor && (
             <button onClick={() => setFiltroVendedor('')} style={btnSecondary}>Limpar</button>
           )}
