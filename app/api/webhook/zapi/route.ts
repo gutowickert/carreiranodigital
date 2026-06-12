@@ -5,6 +5,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 export async function POST(req: NextRequest) {
   try {
     const ev = await req.json()
+    console.log('ZAPI WEBHOOK RECEBIDO:', JSON.stringify(ev))
 
     if (ev.isGroup) return NextResponse.json({ ok: true, skip: 'grupo' })
 
