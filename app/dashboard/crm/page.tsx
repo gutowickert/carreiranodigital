@@ -1108,13 +1108,6 @@ function ChatLead({ lead }: { lead: Lead }) {
     </div>
   )
 }
-            {novoLead ? 'Criar lead' : 'Salvar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 interface ModalGanhoVincularProps {
   lead: Lead
