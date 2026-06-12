@@ -86,9 +86,20 @@ export default function CRM() {
   const [leadEditando, setLeadEditando] = useState<Lead | null>(null)
   const [novoLead, setNovoLead] = useState(false)
   const [verFinalizados, setVerFinalizados] = useState(false)
+  const [meuPerfil, setMeuPerfil] = useState<any>(null)
 
   useEffect(() => { carregarTudo() }, [])
 
+  useEffect(() => {
+    async function carregarPerfil() {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) return
+      const { data: p } = await supabase.from('usuarios_perfil')
+        .select('id, papel, leads_escopo').eq('id', session.user.id).single()
+      if (p) setMeuPerfil(p)
+    }
+    carregarPerfil()
+  }, [])
   async function carregarTudo() {
     await Promise.all([carregarLeads(), carregarTurmas(), carregarVendedores(), carregarMotivos()])
   }
@@ -289,7 +300,10 @@ export default function CRM() {
     carregarLeads()
   }
 
+  const soProprios = meuPerfil && meuPerfil.papel !== 'admin' && meuPerfil.leads_escopo === 'proprios'
+
   const leadsFiltrados = leads.filter(l => {
+    if (soProprios && l.vendedor_id !== meuPerfil.id) return false
     if (filtroTurma && l.turma_id !== filtroTurma) return false
     if (filtroVendedor && l.vendedor_id !== filtroVendedor) return false
     return true
@@ -338,10 +352,12 @@ export default function CRM() {
               </option>
             ))}
           </select>
-          <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
-            <option value="">Todos vendedores</option>
-            {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
-          </select>
+          {!soProprios && (
+            <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
+              <option value="">Todos vendedores</option>
+              {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
+            </select>
+          )}
           {(filtroTurma || filtroVendedor) && (
             <button onClick={() => { setFiltroTurma(''); setFiltroVendedor('') }} style={btnSecondary}>Limpar</button>
           )}
