@@ -1,0 +1,56 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { enviarTexto, enviarAudio, foneZapi } from '@/lib/zapi'
+
+// Envia texto ou audio pra um telefone (cria a conversa se nao existir)
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json()
+    const { telefone, texto, audioBase64, leadId, enviadoPor } = body
+
+    let fone = (telefone || '').toString()
+    let leadInfo: any = null
+
+    if (!fone && leadId) {
+      const { data: lead } = await supabase.from('leads').select('id, nome, whatsapp').eq('id', leadId).single()
+      if (lead) { fone = lead.whatsapp || ''; leadInfo = lead }
+    }
+    fone = foneZapi(fone)
+    if (!fone) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
+    if (!texto && !audioBase64) return NextResponse.json({ ok: false, error: 'nada pra enviar' }, { status: 400 })
+
+    const r = texto ? await enviarTexto(fone, texto) : await enviarAudio(fone, audioBase64)
+    if (!r.ok) return NextResponse.json(r, { status: 200 })
+
+    let { data: conversa } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).maybeSingle()
+    if (!conversa) {
+      const { data: nova } = await supabase.from('wa_conversas').insert({
+        telefone: fone,
+        nome: leadInfo ? leadInfo.nome : null,
+        lead_id: leadInfo ? leadInfo.id : (leadId || null),
+      }).select().single()
+      conversa = nova
+    }
+
+    if (conversa) {
+      await supabase.from('wa_mensagens').insert({
+        conversa_id: conversa.id,
+        zapi_id: r.id,
+        direcao: 'enviada',
+        tipo: texto ? 'texto' : 'audio',
+        texto: texto || null,
+        midia_mime: texto ? null : 'audio/ogg',
+        status: 'enviada',
+        enviado_por: enviadoPor || null,
+      })
+      await supabase.from('wa_conversas').update({
+        ultima_msg: texto || '🎤 Áudio',
+        ultima_msg_em: new Date().toISOString(),
+      }).eq('id', conversa.id)
+    }
+
+    return NextResponse.json({ ok: true, conversaId: conversa ? conversa.id : null })
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
+  }
+}
