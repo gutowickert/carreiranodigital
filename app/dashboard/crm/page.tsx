@@ -973,14 +973,13 @@ function ChatLead({ lead }: { lead: Lead }) {
 
   async function carregar() {
     const sufixo = (lead.whatsapp || '').replace(/\D/g, '').slice(-8)
-    if (!sufixo) return
     const { data: conv } = await supabase.from('wa_conversas')
-      .select('id').or(`lead_id.eq.${lead.id},telefone.ilike.%${sufixo}%`).limit(1)
-    const cid = conv && conv[0] ? conv[0].id : null
-    setConversaId(cid)
-    if (!cid) { setMensagens([]); return }
+      .select('id')
+      .or(`lead_id.eq.${lead.id}${sufixo ? `,telefone.ilike.%${sufixo}%` : ''}`)
+    const ids = (conv || []).map((c: any) => c.id)
+    if (ids.length === 0) { setMensagens([]); return }
     const { data: msgs } = await supabase.from('wa_mensagens')
-      .select('*').eq('conversa_id', cid).order('criado_em', { ascending: true })
+      .select('*').in('conversa_id', ids).order('criado_em', { ascending: true })
     setMensagens(msgs || [])
   }
 

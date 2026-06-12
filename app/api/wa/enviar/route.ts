@@ -23,6 +23,12 @@ export async function POST(req: NextRequest) {
     if (!r.ok) return NextResponse.json(r, { status: 200 })
 
     let { data: conversa } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).maybeSingle()
+    // se nao achou por telefone exato, tenta pela conversa ja existente do lead
+    if (!conversa && (leadInfo || leadId)) {
+      const lid = leadInfo ? leadInfo.id : leadId
+      const { data: porLead } = await supabase.from('wa_conversas').select('*').eq('lead_id', lid).limit(1)
+      if (porLead && porLead[0]) conversa = porLead[0]
+    }
     if (!conversa) {
       const { data: nova } = await supabase.from('wa_conversas').insert({
         telefone: fone,
