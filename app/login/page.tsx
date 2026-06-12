@@ -23,9 +23,9 @@ export default function Login() {
   return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#1c1c1e', padding: 20 }}>
       <form onSubmit={entrar} style={{ width: '100%', maxWidth: 380, background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ textAlign: 'center', marginBottom: 6 }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: '#fff', margin: 0 }}>CarreiraNoDigital</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Entrar no sistema</p>
+        <div style={{ textAlign: 'center', marginBottom: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+          <Image src="/logo.png" alt="CarreiraNoDigital" width={220} height={66} style={{ objectFit: 'contain' }} priority />
+          <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Entrar no sistema</p>
         </div>
         <div>
           <label style={{ fontSize: 12, color: '#9ca3af', display: 'block', marginBottom: 4 }}>E-mail</label>
