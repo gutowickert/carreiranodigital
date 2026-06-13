@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
     if (ev.isNewsletter) return NextResponse.json({ ok: true, skip: 'newsletter' })
 
     const rawPhone = (ev.phone || '').toString()
-    const ehLid = rawPhone.includes('@lid') || rawPhone.length > 14  // telefone "fake" (chatLid)
+    const ehLid = rawPhone.includes('@lid') || rawPhone.length > 14
     const telefone = rawPhone.replace(/\D/g, '')
     if (!telefone) return NextResponse.json({ ok: true, skip: 'sem telefone' })
 
@@ -35,22 +35,11 @@ export async function POST(req: NextRequest) {
       const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', zapiId).limit(1)
       if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
     }
-    // Dedup extra pra fromMe: o envio pelo sistema ja gravou; o eco do "notificar enviadas" repetiria.
-    // Se ja existe uma mensagem enviada com o mesmo texto nos ultimos 60s, ignora o eco.
-    if (fromMe && texto) {
-      const limite = new Date(Date.now() - 60000).toISOString()
-      const { data: recente } = await supabase.from('wa_mensagens')
-        .select('id').eq('direcao', 'enviada').eq('texto', texto)
-        .gte('criado_em', limite).limit(1)
-      if (recente && recente.length) return NextResponse.json({ ok: true, skip: 'eco fromMe' })
-    }
 
     const sufixo = telefone.slice(-8)
-    // So tenta casar lead/aluno por telefone se NAO for lid
     const lead = ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
     const aluno = ehLid ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
 
-    // Acha conversa: telefone exato -> lead -> aluno -> sufixo -> (se lid) por chatName
     let conversa: any = null
     if (!ehLid) {
       const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
@@ -68,12 +57,9 @@ export async function POST(req: NextRequest) {
       const { data: c } = await supabase.from('wa_conversas').select('*').ilike('telefone', `%${sufixo}%`).limit(1)
       if (c && c[0]) conversa = c[0]
     }
-    // Ultimo recurso (fromMe com @lid): casa pela conversa cujo nome OU lead/aluno bate com chatName
     if (!conversa && chatName) {
-      // 1) conversa com mesmo nome
       const { data: c1 } = await supabase.from('wa_conversas').select('*').ilike('nome', chatName).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
       if (c1 && c1[0]) conversa = c1[0]
-      // 2) lead com esse nome -> sua conversa
       if (!conversa) {
         const { data: ld } = await supabase.from('leads').select('id').ilike('nome', chatName).limit(1)
         if (ld && ld[0]) {
@@ -81,7 +67,6 @@ export async function POST(req: NextRequest) {
           if (c2 && c2[0]) conversa = c2[0]
         }
       }
-      // 3) aluno com esse nome -> sua conversa
       if (!conversa) {
         const { data: al } = await supabase.from('alunos').select('id').ilike('nome', chatName).limit(1)
         if (al && al[0]) {
@@ -92,7 +77,6 @@ export async function POST(req: NextRequest) {
     }
 
     if (!conversa) {
-      // So cria conversa nova se tiver um telefone de verdade (nao cria pra @lid orfao)
       if (ehLid) return NextResponse.json({ ok: true, skip: 'lid sem conversa' })
       const nome = chatName || ev.senderName || (lead && lead.nome) || (aluno && aluno.nome) || null
       const { data: nova } = await supabase.from('wa_conversas').insert({
@@ -105,7 +89,7 @@ export async function POST(req: NextRequest) {
     }
     if (!conversa) return NextResponse.json({ ok: false, error: 'conversa nao criada' }, { status: 200 })
 
-    await supabase.from('wa_mensagens').insert({
+    const { error: errMsg } = await supabase.from('wa_mensagens').insert({
       conversa_id: conversa.id,
       zapi_id: zapiId,
       direcao: fromMe ? 'enviada' : 'recebida',
@@ -115,6 +99,8 @@ export async function POST(req: NextRequest) {
       midia_mime: midiaMime,
       status: fromMe ? 'enviada' : 'recebida',
     })
+    // 23505 = violacao do indice unico (zapi_id repetido = eco do "notificar enviadas"). Ignora.
+    if (errMsg && errMsg.code === '23505') return NextResponse.json({ ok: true, skip: 'duplicada (unique)' })
 
     const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : '📎 Documento')
     await supabase.from('wa_conversas').update({
