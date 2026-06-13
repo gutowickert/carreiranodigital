@@ -2,37 +2,37 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import { sendLead } from '@/lib/capi'
- 
+
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
- 
+
 // Headers de CORS — necessários porque o site (HostGator) é um domínio diferente do Vercel
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type',
 }
- 
+
 // Preflight CORS (browser manda OPTIONS antes do POST quando é cross-origin)
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
 }
- 
+
 // Aplica rateio entre vendedores da turma e retorna o vendedor_id escolhido
 async function aplicarRateio(turmaId: string): Promise<string | null> {
   const { data: config } = await supabase.from('vendedor_config_turma')
     .select('vendedor_id, leads_por_ciclo, ordem')
     .eq('turma_id', turmaId).eq('ativo', true).order('ordem')
   if (!config || config.length === 0) return null
- 
+
   const { data: estado } = await supabase.from('rateio_estado')
     .select('*').eq('turma_id', turmaId).maybeSingle()
- 
+
   let proximoVendedor: string
   let novoContador: number
- 
+
   if (!estado) {
     proximoVendedor = config[0].vendedor_id
     novoContador = 1
@@ -48,7 +48,7 @@ async function aplicarRateio(turmaId: string): Promise<string | null> {
       novoContador = estado.leads_atribuidos_ciclo + 1
     }
   }
- 
+
   if (estado) {
     await supabase.from('rateio_estado').update({
       ultimo_vendedor_id: proximoVendedor,
@@ -62,10 +62,10 @@ async function aplicarRateio(turmaId: string): Promise<string | null> {
   }
   return proximoVendedor
 }
- 
+
 export async function POST(req: NextRequest) {
   let payload: any = {}
- 
+
   try {
     payload = await req.json()
   } catch {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     )
   }
- 
+
   const nome = (payload.nome || '').toString().trim()
   const whatsapp = (payload.whatsapp || '').toString().trim()
   const email = (payload.email || '').toString().trim()
@@ -85,11 +85,27 @@ export async function POST(req: NextRequest) {
   const utmCampaign = (payload.utm_campaign || '').toString().trim() || null
   const utmContent = (payload.utm_content || '').toString().trim() || null
   const observacoes = (payload.observacoes || '').toString().trim() || null
+
+  // Qualificadores do modelo antigo (páginas de ANÚNCIO ainda mandam estes)
   const tamanhoEquipe = (payload.tamanho_equipe || '').toString().trim() || null
   const investimentoMarketing = (payload.investimento_marketing || '').toString().trim() || null
   const geraLeadsDigital = (payload.gera_leads_digital || '').toString().trim() || null
   const maiorProblema = (payload.maior_problema || '').toString().trim() || null
   const negocio = (payload.negocio || '').toString().trim() || null
+
+  // Qualificadores novos por produto (páginas ORGÂNICAS) → guardados no jsonb `qualificacao`
+  const jaAnuncia = (payload.ja_anuncia || '').toString().trim() || null       // Anúncios Locais
+  const atuacao = (payload.atuacao || '').toString().trim() || null            // Imersão IA (imobiliário)
+  const conteudoHoje = (payload.conteudo_hoje || '').toString().trim() || null // Imersão IA (imobiliário)
+  const perfil = (payload.perfil || '').toString().trim() || null              // Formação Completa
+  const objetivo = (payload.objetivo || '').toString().trim() || null          // Formação Completa
+
+  const qualificacao: Record<string, string> = {}
+  if (jaAnuncia) qualificacao.ja_anuncia = jaAnuncia
+  if (atuacao) qualificacao.atuacao = atuacao
+  if (conteudoHoje) qualificacao.conteudo_hoje = conteudoHoje
+  if (perfil) qualificacao.perfil = perfil
+  if (objetivo) qualificacao.objetivo = objetivo
 
   // CAPI: dados pra deduplicação e correspondência
   const eventId = (payload.event_id || '').toString().trim() || randomUUID()
@@ -99,7 +115,7 @@ export async function POST(req: NextRequest) {
   const eventSourceUrl = (payload.event_source_url || '').toString().trim() || null
   const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null
   const userAgent = req.headers.get('user-agent') || null
- 
+
   // Validação mínima
   if (!nome) {
     return NextResponse.json(
@@ -119,23 +135,23 @@ export async function POST(req: NextRequest) {
       { status: 400, headers: CORS_HEADERS }
     )
   }
- 
+
   // Procura turma pelo código
   const { data: turma } = await supabase.from('turmas')
     .select('id, codigo, status')
     .ilike('codigo', codigoTurma)
     .maybeSingle()
- 
+
   if (!turma) {
     return NextResponse.json(
       { error: 'Turma não encontrada para o código informado' },
       { status: 404, headers: CORS_HEADERS }
     )
   }
- 
+
   // Aplica rateio pra escolher vendedor
   const vendedorId = await aplicarRateio(turma.id)
- 
+
   // Cria lead
   const { data: leadCriado, error } = await supabase.from('leads').insert({
     nome,
@@ -157,17 +173,18 @@ export async function POST(req: NextRequest) {
     gera_leads_digital: geraLeadsDigital,
     maior_problema: maiorProblema,
     negocio: negocio,
+    qualificacao,
     fbp,
     fbc,
   }).select().single()
- 
+
   if (error || !leadCriado) {
     return NextResponse.json(
       { error: 'Erro ao criar lead: ' + (error?.message || 'desconhecido') },
       { status: 500, headers: CORS_HEADERS }
     )
   }
- 
+
   // Registra andamento inicial
   await supabase.from('lead_andamentos').insert({
     lead_id: leadCriado.id,
@@ -176,7 +193,7 @@ export async function POST(req: NextRequest) {
     etapa_nova: 'aguardando_atendimento',
     observacao: `Lead criado via formulário do site${fbclid ? ' (fbclid capturado)' : ''}`,
   })
- 
+
   // Dispara o evento Lead pro CAPI (server-side). Falha aqui não quebra a captação.
   try {
     const capi = await sendLead({
@@ -202,7 +219,7 @@ export async function POST(req: NextRequest) {
     { status: 200, headers: CORS_HEADERS }
   )
 }
- 
+
 export async function GET() {
   return NextResponse.json(
     { status: 'ok', endpoint: 'site-lead' },
