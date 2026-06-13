@@ -35,21 +35,34 @@ export async function POST(req: NextRequest) {
       if (ja && ja.length) { console.log('ZAPI skip duplicada', zapiId); return NextResponse.json({ ok: true, skip: 'duplicada' }) }
     }
 
-    let { data: conversa, error: errBusca } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
-    if (errBusca) console.log('ZAPI erro busca conversa:', JSON.stringify(errBusca))
+    const sufixo = telefone.slice(-8)
+    const { data: leadMatch } = await supabase.from('leads')
+      .select('id, nome').ilike('whatsapp', `%${sufixo}%`)
+      .order('criado_em', { ascending: false }).limit(1)
+    const { data: alunoMatch } = await supabase.from('alunos')
+      .select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)
+    const lead = leadMatch && leadMatch[0]
+    const aluno = alunoMatch && alunoMatch[0]
+
+    // Acha conversa: 1) telefone exato  2) mesmo lead  3) mesmo aluno  4) qualquer telefone com mesmo sufixo de 8 digitos
+    let conversa: any = null
+    const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
+    conversa = porFone || null
+    if (!conversa && lead) {
+      const { data: c } = await supabase.from('wa_conversas').select('*').eq('lead_id', lead.id).limit(1)
+      if (c && c[0]) conversa = c[0]
+    }
+    if (!conversa && aluno) {
+      const { data: c } = await supabase.from('wa_conversas').select('*').eq('aluno_id', aluno.id).limit(1)
+      if (c && c[0]) conversa = c[0]
+    }
+    if (!conversa) {
+      const { data: c } = await supabase.from('wa_conversas').select('*').ilike('telefone', `%${sufixo}%`).limit(1)
+      if (c && c[0]) conversa = c[0]
+    }
 
     if (!conversa) {
-      const sufixo = telefone.slice(-8)
-      const { data: leadMatch } = await supabase.from('leads')
-        .select('id, nome').ilike('whatsapp', `%${sufixo}%`)
-        .order('criado_em', { ascending: false }).limit(1)
-      const { data: alunoMatch } = await supabase.from('alunos')
-        .select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)
-
-      const lead = leadMatch && leadMatch[0]
-      const aluno = alunoMatch && alunoMatch[0]
       const nome = ev.senderName || ev.chatName || (lead && lead.nome) || (aluno && aluno.nome) || null
-
       const { data: nova, error: errInsConv } = await supabase.from('wa_conversas').insert({
         telefone,
         nome,
