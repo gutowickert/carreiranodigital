@@ -59,10 +59,27 @@ export async function POST(req: NextRequest) {
       const { data: c } = await supabase.from('wa_conversas').select('*').ilike('telefone', `%${sufixo}%`).limit(1)
       if (c && c[0]) conversa = c[0]
     }
-    // Ultimo recurso (geralmente fromMe com @lid): casa pelo nome do chat
+    // Ultimo recurso (fromMe com @lid): casa pela conversa cujo nome OU lead/aluno bate com chatName
     if (!conversa && chatName) {
-      const { data: c } = await supabase.from('wa_conversas').select('*').eq('nome', chatName).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
-      if (c && c[0]) conversa = c[0]
+      // 1) conversa com mesmo nome
+      const { data: c1 } = await supabase.from('wa_conversas').select('*').ilike('nome', chatName).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
+      if (c1 && c1[0]) conversa = c1[0]
+      // 2) lead com esse nome -> sua conversa
+      if (!conversa) {
+        const { data: ld } = await supabase.from('leads').select('id').ilike('nome', chatName).limit(1)
+        if (ld && ld[0]) {
+          const { data: c2 } = await supabase.from('wa_conversas').select('*').eq('lead_id', ld[0].id).limit(1)
+          if (c2 && c2[0]) conversa = c2[0]
+        }
+      }
+      // 3) aluno com esse nome -> sua conversa
+      if (!conversa) {
+        const { data: al } = await supabase.from('alunos').select('id').ilike('nome', chatName).limit(1)
+        if (al && al[0]) {
+          const { data: c3 } = await supabase.from('wa_conversas').select('*').eq('aluno_id', al[0].id).limit(1)
+          if (c3 && c3[0]) conversa = c3[0]
+        }
+      }
     }
 
     if (!conversa) {
@@ -95,6 +112,7 @@ export async function POST(req: NextRequest) {
       ultima_msg: resumo,
       ultima_msg_em: new Date().toISOString(),
       nao_lidas: fromMe ? (conversa.nao_lidas || 0) : (conversa.nao_lidas || 0) + 1,
+      nome: conversa.nome || (!ehLid ? chatName : null) || null,
     }).eq('id', conversa.id)
 
     return NextResponse.json({ ok: true })
