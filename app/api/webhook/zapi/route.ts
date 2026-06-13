@@ -35,6 +35,15 @@ export async function POST(req: NextRequest) {
       const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', zapiId).limit(1)
       if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
     }
+    // Dedup extra pra fromMe: o envio pelo sistema ja gravou; o eco do "notificar enviadas" repetiria.
+    // Se ja existe uma mensagem enviada com o mesmo texto nos ultimos 60s, ignora o eco.
+    if (fromMe && texto) {
+      const limite = new Date(Date.now() - 60000).toISOString()
+      const { data: recente } = await supabase.from('wa_mensagens')
+        .select('id').eq('direcao', 'enviada').eq('texto', texto)
+        .gte('criado_em', limite).limit(1)
+      if (recente && recente.length) return NextResponse.json({ ok: true, skip: 'eco fromMe' })
+    }
 
     const sufixo = telefone.slice(-8)
     // So tenta casar lead/aluno por telefone se NAO for lid
