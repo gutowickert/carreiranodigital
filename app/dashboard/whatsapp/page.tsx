@@ -120,6 +120,7 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   const mediaRef = useRef<MediaRecorder | null>(null)
   const chunksRef = useRef<Blob[]>([])
   const fimRef = useRef<HTMLDivElement | null>(null)
+  const fileRef = useRef<HTMLInputElement | null>(null)
 
   async function carregar() {
     const { data } = await supabase.from('wa_mensagens')
@@ -181,6 +182,32 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
 
   function pararGravacao() { mediaRef.current?.stop(); setGravando(false) }
 
+  async function enviarAnexo(file: File) {
+    setEnviando(true); setErro('')
+    try {
+      const ehImagem = file.type.startsWith('image/')
+      const ext = (file.name.split('.').pop() || (ehImagem ? 'jpg' : 'pdf')).toLowerCase()
+      const reader = new FileReader()
+      reader.onloadend = async () => {
+        try {
+          const res = await fetch('/api/wa/enviar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              telefone: conversa.telefone, leadId: conversa.lead_id,
+              anexoBase64: reader.result, anexoNome: file.name,
+              anexoTipo: ehImagem ? 'imagem' : 'documento', anexoExt: ext,
+            }),
+          })
+          const json = await res.json()
+          if (json.ok) { carregar(); onEnviou() }
+          else setErro(json.error || 'falha ao enviar anexo')
+        } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
+        finally { setEnviando(false) }
+      }
+      reader.readAsDataURL(file)
+    } catch { setErro('falha ao ler arquivo'); setEnviando(false) }
+  }
+
   function renderMidia(m: any) {
     if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
@@ -214,6 +241,11 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
         <div ref={fimRef} />
       </div>
       <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'center' }}>
+        <input ref={fileRef} type="file" style={{ display: 'none' }}
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+          onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
+        <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
+          style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 44, padding: '8px' }}>📎</button>
         <input style={inp} placeholder="Mensagem..." value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
         {texto.trim() ? (
