@@ -8,7 +8,7 @@ import { supabase } from '@/lib/supabase'
 
 type Item = { nome: string; href: string }
 type Grupo = { titulo: string; itens: Item[] }
-type Perfil = { id: string; nome: string; email: string; papel: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string }
+type Perfil = { id: string; nome: string; email: string; papel: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
 const grupos: Grupo[] = [
   {
@@ -31,6 +31,7 @@ const grupos: Grupo[] = [
   {
     titulo: 'Comercial',
     itens: [
+      { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Config CRM', href: '/dashboard/crm/config' },
@@ -75,6 +76,7 @@ const grupos: Grupo[] = [
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (p.papel === 'admin') return true
+  if (href === '/dashboard/whatsapp') return p.wa_caixa === true
   // base do vendedor
   const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
   if (baseVendedor.includes(href)) return true
@@ -110,7 +112,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
       const { data: p } = await supabase.from('usuarios_perfil')
-        .select('id, nome, email, papel, crm_interno, crm_externo, leads_escopo')
+        .select('id, nome, email, papel, crm_interno, crm_externo, leads_escopo, wa_caixa')
         .eq('id', session.user.id).single()
       if (!ativo) return
       if (!p) { await supabase.auth.signOut(); router.replace('/login'); return }
