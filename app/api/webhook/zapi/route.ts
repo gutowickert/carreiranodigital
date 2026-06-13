@@ -4,6 +4,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 export async function POST(req: NextRequest) {
   try {
     const ev = await req.json()
+    console.log('ZAPI FULL:', JSON.stringify(ev))
 
     if (ev.type && ev.type !== 'ReceivedCallback') return NextResponse.json({ ok: true, skip: 'nao e mensagem' })
     if (ev.isGroup) { console.log('ZAPI skip grupo'); return NextResponse.json({ ok: true, skip: 'grupo' }) }
@@ -28,7 +29,7 @@ export async function POST(req: NextRequest) {
     else if (ev.sticker) { tipo = 'imagem'; midiaUrl = ev.sticker.stickerUrl; midiaMime = 'image/webp' }
     else { console.log('ZAPI tipo nao tratado:', JSON.stringify(ev)); return NextResponse.json({ ok: true, skip: 'tipo nao tratado' }) }
 
-    console.log('ZAPI processando:', telefone, tipo, texto)
+    console.log('ZAPI processando:', telefone, 'fromMe', fromMe, tipo, texto)
 
     if (zapiId) {
       const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', zapiId).limit(1)
@@ -44,7 +45,6 @@ export async function POST(req: NextRequest) {
     const lead = leadMatch && leadMatch[0]
     const aluno = alunoMatch && alunoMatch[0]
 
-    // Acha conversa: 1) telefone exato  2) mesmo lead  3) mesmo aluno  4) qualquer telefone com mesmo sufixo de 8 digitos
     let conversa: any = null
     const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
     conversa = porFone || null
