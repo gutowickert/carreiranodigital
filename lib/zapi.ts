@@ -25,11 +25,7 @@ async function post(path: string, body: any) {
 // Normaliza telefone pra formato Z-API: só dígitos, com DDI 55
 export function foneZapi(raw: string): string {
   let d = (raw || '').replace(/\D/g, '')
-  // tira DDI 55 se veio junto, pra normalizar
-  if (d.startsWith('55') && d.length > 11) d = d.slice(2)
-  // remove o nono digito de celular (DDD + 9 + 8 digitos = 11) -> Z-API usa sem o 9 em alguns casos
-  // mantém com 9 pro ENVIO (Z-API envia com 9), só re-adiciona DDI
-  if (d.length === 10 || d.length === 11) d = '55' + d
+  if (d.length >= 10 && d.length <= 11) d = '55' + d
   return d
 }
 
@@ -40,4 +36,13 @@ export async function enviarTexto(phone: string, message: string) {
 // audio: data URI base64 (ex: data:audio/ogg;base64,xxxx) ou URL publica
 export async function enviarAudio(phone: string, audio: string) {
   return post('/send-audio', { phone: foneZapi(phone), audio })
+}
+// imagem: data URI base64 ou URL. caption opcional
+export async function enviarImagem(phone: string, image: string, caption?: string) {
+  return post('/send-image', { phone: foneZapi(phone), image, caption: caption || '' })
+}
+
+// documento: precisa da extensao no path. data URI base64 ou URL
+export async function enviarDocumento(phone: string, document: string, fileName: string, extension: string) {
+  return post(`/send-document/${extension}`, { phone: foneZapi(phone), document, fileName })
 }
