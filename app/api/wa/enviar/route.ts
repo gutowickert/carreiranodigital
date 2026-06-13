@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { enviarTexto, enviarAudio, foneZapi } from '@/lib/zapi'
 
-// Envia texto ou audio pra um telefone (cria a conversa se nao existir)
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
@@ -11,23 +10,28 @@ export async function POST(req: NextRequest) {
     let fone = (telefone || '').toString()
     let leadInfo: any = null
 
-    if (!fone && leadId) {
+    if (leadId) {
       const { data: lead } = await supabase.from('leads').select('id, nome, whatsapp').eq('id', leadId).single()
-      if (lead) { fone = lead.whatsapp || ''; leadInfo = lead }
+      if (lead) { leadInfo = lead; if (!fone) fone = lead.whatsapp || '' }
     }
     fone = foneZapi(fone)
     if (!fone) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
     if (!texto && !audioBase64) return NextResponse.json({ ok: false, error: 'nada pra enviar' }, { status: 400 })
 
+    // Envia pelo Z-API
     const r = texto ? await enviarTexto(fone, texto) : await enviarAudio(fone, audioBase64)
     if (!r.ok) return NextResponse.json(r, { status: 200 })
 
-    let { data: conversa } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).maybeSingle()
-    // se nao achou por telefone exato, tenta pela conversa ja existente do lead
-    if (!conversa && (leadInfo || leadId)) {
+    // Acha a conversa: PRIMEIRO pelo lead (fonte da verdade), depois por telefone exato
+    let conversa: any = null
+    if (leadInfo || leadId) {
       const lid = leadInfo ? leadInfo.id : leadId
-      const { data: porLead } = await supabase.from('wa_conversas').select('*').eq('lead_id', lid).limit(1)
+      const { data: porLead } = await supabase.from('wa_conversas').select('*').eq('lead_id', lid).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
       if (porLead && porLead[0]) conversa = porLead[0]
+    }
+    if (!conversa) {
+      const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).maybeSingle()
+      conversa = porFone || null
     }
     if (!conversa) {
       const { data: nova } = await supabase.from('wa_conversas').insert({
