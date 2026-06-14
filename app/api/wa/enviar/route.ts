@@ -51,21 +51,7 @@ export async function POST(req: NextRequest) {
     }
 
     if (conversa) {
-      await supabase.from('wa_mensagens').insert({
-        conversa_id: conversa.id,
-        zapi_id: r.id,
-        direcao: 'enviada',
-        tipo: texto ? 'texto' : 'audio',
-        texto: texto || null,
-        midia_mime: texto ? null : 'audio/ogg',
-        status: 'enviada',
-        enviado_por: enviadoPor || null,
-      })
-      await supabase.from('wa_conversas').update({
-        ultima_msg: texto || '🎤 Áudio',
-        ultima_msg_em: new Date().toISOString(),
-      }).eq('id', conversa.id)
-    }const tipoMsg = anexoBase64 ? (anexoTipo === 'imagem' ? 'imagem' : 'documento') : (audioBase64 ? 'audio' : 'texto')
+      const tipoMsg = anexoBase64 ? (anexoTipo === 'imagem' ? 'imagem' : 'documento') : (audioBase64 ? 'audio' : 'texto')
       await supabase.from('wa_mensagens').insert({
         conversa_id: conversa.id,
         zapi_id: r.id,
@@ -82,6 +68,7 @@ export async function POST(req: NextRequest) {
         ultima_msg: resumoMsg,
         ultima_msg_em: new Date().toISOString(),
       }).eq('id', conversa.id)
+    }
 
     return NextResponse.json({ ok: true, conversaId: conversa ? conversa.id : null })
   } catch (e: any) {

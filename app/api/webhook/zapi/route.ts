@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { aplicarRateio } from '@/lib/rateio'
+import { sendLead } from '@/lib/capi'
+import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
@@ -36,8 +39,74 @@ export async function POST(req: NextRequest) {
       if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
     }
 
+    // Lead via botão de WhatsApp: a 1ª mensagem traz o ref [XXXX] gerado em /wa.
+    // Só cria lead quando vier do botão (tem ref válido e ainda não consumido).
+    let leadCriado: { id: string; nome: string | null } | null = null
+    const refMatch = !fromMe && !ehLid ? (texto || '').match(/\[([0-9A-Fa-f]{6,12})\]/) : null
+    if (refMatch) {
+      const ref = refMatch[1].toUpperCase()
+      const { data: click } = await supabase.from('wa_clicks')
+        .select('*').eq('ref', ref).is('consumido_em', null).maybeSingle()
+      if (click) {
+        let turmaId: string | null = null
+        let codigoTurma: string | null = click.codigo_turma || null
+        if (codigoTurma) {
+          const { data: turma } = await supabase.from('turmas').select('id, codigo').ilike('codigo', codigoTurma).maybeSingle()
+          if (turma) { turmaId = turma.id; codigoTurma = turma.codigo }
+        }
+        const vendedorId = turmaId ? await aplicarRateio(supabase, turmaId) : null
+        const nomeLead = chatName || ev.senderName || null
+        const { data: novoLead } = await supabase.from('leads').insert({
+          nome: nomeLead || 'Lead WhatsApp',
+          whatsapp: telefone,
+          turma_id: turmaId,
+          codigo_turma: codigoTurma,
+          vendedor_id: vendedorId,
+          etapa: 'aguardando_atendimento',
+          origem: 'whatsapp',
+          fbclid: click.fbclid,
+          fbc: click.fbc,
+          fbp: click.fbp,
+          utm_source: click.utm_source,
+          utm_medium: click.utm_medium,
+          utm_campaign: click.utm_campaign,
+          utm_content: click.utm_content,
+        }).select('id, nome').single()
+        if (novoLead) {
+          leadCriado = novoLead
+          await supabase.from('lead_andamentos').insert({
+            lead_id: novoLead.id,
+            vendedor_id: vendedorId,
+            tipo: 'criado',
+            etapa_nova: 'aguardando_atendimento',
+            observacao: 'Lead criado via botão de WhatsApp',
+          })
+          // CAPI Lead com atribuição completa (fbc/fbp guardados no clique). Falha não quebra.
+          try {
+            const capi = await sendLead({
+              eventId: click.event_id || randomUUID(),
+              eventSourceUrl: click.event_source_url,
+              phone: telefone,
+              firstName: nomeLead,
+              fbc: click.fbc,
+              fbp: click.fbp,
+              clientIp: click.client_ip,
+              userAgent: click.user_agent,
+              externalId: novoLead.id,
+              codigoTurma: codigoTurma,
+            })
+            if (!capi.ok) console.error('CAPI Lead (WhatsApp) falhou:', capi.error)
+          } catch (e) { console.error('CAPI Lead (WhatsApp) exception:', e) }
+          await supabase.from('wa_clicks').update({
+            consumido_em: new Date().toISOString(),
+            lead_id: novoLead.id,
+          }).eq('id', click.id)
+        }
+      }
+    }
+
     const sufixo = telefone.slice(-8)
-    const lead = ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
+    const lead = leadCriado || (ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0])
     const aluno = ehLid ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
 
     let conversa: any = null

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { randomUUID } from 'crypto'
 import { sendLead } from '@/lib/capi'
+import { aplicarRateio } from '@/lib/rateio'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -18,49 +19,6 @@ const CORS_HEADERS = {
 // Preflight CORS (browser manda OPTIONS antes do POST quando é cross-origin)
 export async function OPTIONS() {
   return new NextResponse(null, { status: 204, headers: CORS_HEADERS })
-}
-
-// Aplica rateio entre vendedores da turma e retorna o vendedor_id escolhido
-async function aplicarRateio(turmaId: string): Promise<string | null> {
-  const { data: config } = await supabase.from('vendedor_config_turma')
-    .select('vendedor_id, leads_por_ciclo, ordem')
-    .eq('turma_id', turmaId).eq('ativo', true).order('ordem')
-  if (!config || config.length === 0) return null
-
-  const { data: estado } = await supabase.from('rateio_estado')
-    .select('*').eq('turma_id', turmaId).maybeSingle()
-
-  let proximoVendedor: string
-  let novoContador: number
-
-  if (!estado) {
-    proximoVendedor = config[0].vendedor_id
-    novoContador = 1
-  } else {
-    const idxAtual = config.findIndex(c => c.vendedor_id === estado.ultimo_vendedor_id)
-    const configAtual = idxAtual >= 0 ? config[idxAtual] : config[0]
-    if (estado.leads_atribuidos_ciclo >= configAtual.leads_por_ciclo) {
-      const proxIdx = (idxAtual + 1) % config.length
-      proximoVendedor = config[proxIdx].vendedor_id
-      novoContador = 1
-    } else {
-      proximoVendedor = estado.ultimo_vendedor_id
-      novoContador = estado.leads_atribuidos_ciclo + 1
-    }
-  }
-
-  if (estado) {
-    await supabase.from('rateio_estado').update({
-      ultimo_vendedor_id: proximoVendedor,
-      leads_atribuidos_ciclo: novoContador,
-      atualizado_em: new Date().toISOString(),
-    }).eq('turma_id', turmaId)
-  } else {
-    await supabase.from('rateio_estado').insert({
-      turma_id: turmaId, ultimo_vendedor_id: proximoVendedor, leads_atribuidos_ciclo: novoContador,
-    })
-  }
-  return proximoVendedor
 }
 
 export async function POST(req: NextRequest) {
@@ -150,7 +108,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Aplica rateio pra escolher vendedor
-  const vendedorId = await aplicarRateio(turma.id)
+  const vendedorId = await aplicarRateio(supabase, turma.id)
 
   // Cria lead
   const { data: leadCriado, error } = await supabase.from('leads').insert({
