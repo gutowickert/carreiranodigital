@@ -39,6 +39,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'WA_NUMERO_CENTRAL nao configurado' }, { status: 500 })
     }
 
+    // ref interno: identifica este clique no banco (NÃO aparece pro cliente).
     const ref = gerarRef()
 
     await supabase.from('wa_clicks').insert({
@@ -57,8 +58,11 @@ export async function GET(req: NextRequest) {
       user_agent: userAgent,
     })
 
-    // Mensagem pre-preenchida + o ref entre colchetes (o webhook le isso).
-    const texto = `${msgBase} [${ref}]`
+    // A mensagem leva o CÓDIGO DA TURMA (o mesmo do sistema) — é isso que o
+    // webhook usa pra criar o lead na turma certa. Só adiciona se ainda não
+    // estiver no texto (evita duplicar caso você já o tenha escrito na MENSAGEM).
+    const jaTemCodigo = codigoTurma && msgBase.toLowerCase().includes(codigoTurma.toLowerCase())
+    const texto = codigoTurma && !jaTemCodigo ? `${msgBase} (${codigoTurma})` : msgBase
     const url = `https://wa.me/${WA_NUMERO}?text=${encodeURIComponent(texto)}`
 
     return NextResponse.redirect(url, 302)

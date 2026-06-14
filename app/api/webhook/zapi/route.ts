@@ -39,38 +39,40 @@ export async function POST(req: NextRequest) {
       if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
     }
 
-    // Lead via botão de WhatsApp: a 1ª mensagem traz o ref [XXXX] gerado em /wa.
-    // Só cria lead quando vier do botão (tem ref válido e ainda não consumido).
+    const sufixo = telefone.slice(-8)
+    const leadExistente = ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
+    const aluno = ehLid ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
+
+    // Lead via botão de WhatsApp: a 1ª mensagem traz o CÓDIGO DA TURMA (o mesmo
+    // do sistema). Se o número ainda não é lead nem aluno e a mensagem cita um
+    // código de turma conhecido, cria o lead completo (turma + rateio + CAPI).
     let leadCriado: { id: string; nome: string | null } | null = null
-    const refMatch = !fromMe && !ehLid ? (texto || '').match(/\[([0-9A-Fa-f]{6,12})\]/) : null
-    if (refMatch) {
-      const ref = refMatch[1].toUpperCase()
-      const { data: click } = await supabase.from('wa_clicks')
-        .select('*').eq('ref', ref).is('consumido_em', null).maybeSingle()
-      if (click) {
-        let turmaId: string | null = null
-        let codigoTurma: string | null = click.codigo_turma || null
-        if (codigoTurma) {
-          const { data: turma } = await supabase.from('turmas').select('id, codigo').ilike('codigo', codigoTurma).maybeSingle()
-          if (turma) { turmaId = turma.id; codigoTurma = turma.codigo }
-        }
-        const vendedorId = turmaId ? await aplicarRateio(supabase, turmaId) : null
+    if (!fromMe && !leadExistente && !aluno && texto) {
+      const txtLower = texto.toLowerCase()
+      const { data: turmas } = await supabase.from('turmas').select('id, codigo').not('codigo', 'is', null)
+      const turmaMatch = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
+      if (turmaMatch) {
+        // Clique mais recente dessa turma carrega o tracking (fbclid/fbp) pro CAPI.
+        const { data: click } = await supabase.from('wa_clicks')
+          .select('*').eq('codigo_turma', turmaMatch.codigo).is('consumido_em', null)
+          .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+        const vendedorId = await aplicarRateio(supabase, turmaMatch.id)
         const nomeLead = chatName || ev.senderName || null
         const { data: novoLead } = await supabase.from('leads').insert({
           nome: nomeLead || 'Lead WhatsApp',
           whatsapp: telefone,
-          turma_id: turmaId,
-          codigo_turma: codigoTurma,
+          turma_id: turmaMatch.id,
+          codigo_turma: turmaMatch.codigo,
           vendedor_id: vendedorId,
           etapa: 'aguardando_atendimento',
           origem: 'whatsapp',
-          fbclid: click.fbclid,
-          fbc: click.fbc,
-          fbp: click.fbp,
-          utm_source: click.utm_source,
-          utm_medium: click.utm_medium,
-          utm_campaign: click.utm_campaign,
-          utm_content: click.utm_content,
+          fbclid: click?.fbclid ?? null,
+          fbc: click?.fbc ?? null,
+          fbp: click?.fbp ?? null,
+          utm_source: click?.utm_source ?? null,
+          utm_medium: click?.utm_medium ?? null,
+          utm_campaign: click?.utm_campaign ?? null,
+          utm_content: click?.utm_content ?? null,
         }).select('id, nome').single()
         if (novoLead) {
           leadCriado = novoLead
@@ -81,33 +83,33 @@ export async function POST(req: NextRequest) {
             etapa_nova: 'aguardando_atendimento',
             observacao: 'Lead criado via botão de WhatsApp',
           })
-          // CAPI Lead com atribuição completa (fbc/fbp guardados no clique). Falha não quebra.
+          // CAPI Lead. Telefone só entra se não for @lid (senão o hash é lixo). Falha não quebra.
           try {
             const capi = await sendLead({
-              eventId: click.event_id || randomUUID(),
-              eventSourceUrl: click.event_source_url,
-              phone: telefone,
+              eventId: click?.event_id || randomUUID(),
+              eventSourceUrl: click?.event_source_url,
+              phone: ehLid ? null : telefone,
               firstName: nomeLead,
-              fbc: click.fbc,
-              fbp: click.fbp,
-              clientIp: click.client_ip,
-              userAgent: click.user_agent,
+              fbc: click?.fbc,
+              fbp: click?.fbp,
+              clientIp: click?.client_ip,
+              userAgent: click?.user_agent,
               externalId: novoLead.id,
-              codigoTurma: codigoTurma,
+              codigoTurma: turmaMatch.codigo,
             })
             if (!capi.ok) console.error('CAPI Lead (WhatsApp) falhou:', capi.error)
           } catch (e) { console.error('CAPI Lead (WhatsApp) exception:', e) }
-          await supabase.from('wa_clicks').update({
-            consumido_em: new Date().toISOString(),
-            lead_id: novoLead.id,
-          }).eq('id', click.id)
+          if (click) {
+            await supabase.from('wa_clicks').update({
+              consumido_em: new Date().toISOString(),
+              lead_id: novoLead.id,
+            }).eq('id', click.id)
+          }
         }
       }
     }
 
-    const sufixo = telefone.slice(-8)
-    const lead = leadCriado || (ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0])
-    const aluno = ehLid ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
+    const lead = leadCriado || leadExistente
 
     let conversa: any = null
     if (!ehLid) {
@@ -177,6 +179,7 @@ export async function POST(req: NextRequest) {
       ultima_msg_em: new Date().toISOString(),
       nao_lidas: fromMe ? (conversa.nao_lidas || 0) : (conversa.nao_lidas || 0) + 1,
       nome: conversa.nome || (!ehLid ? chatName : null) || null,
+      lead_id: conversa.lead_id || (lead ? lead.id : null),
     }).eq('id', conversa.id)
 
     return NextResponse.json({ ok: true })
