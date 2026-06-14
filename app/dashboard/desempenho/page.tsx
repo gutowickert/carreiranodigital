@@ -11,6 +11,8 @@ function pct(v: number) { return (isFinite(v) ? v * 100 : 0).toFixed(0) + '%' }
 function hojeStr() { return new Date().toISOString().split('T')[0] }
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 function diasEntre(a: string, b: string) { return Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000) }
+// normaliza texto pra casar utm/codigo com nome de campanha do Meta (sem acento/maiuscula/pontuacao)
+function norm(s?: string | null) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() }
 
 const ETAPA_LABEL: Record<string, string> = {
   aguardando_atendimento: 'Aguardando atendimento', em_atendimento: 'Em atendimento',
@@ -44,7 +46,7 @@ export default function Desempenho() {
     const [t, m, l, mk, f, v] = await Promise.all([
       supabase.from('turmas').select('id, codigo, preco_venda, meta_matriculas, data_inicio, status, produto_id, cidade_id, produtos(nome), cidades(nome)'),
       supabase.from('matriculas').select('id, turma_id, valor_pago, data_compra, lead_id'),
-      supabase.from('leads').select('id, turma_id, etapa, vendedor_id, utm_source, utm_campaign, valor_venda, criado_em, atualizado_em'),
+      supabase.from('leads').select('id, turma_id, etapa, vendedor_id, utm_source, utm_campaign, fbclid, valor_venda, criado_em, atualizado_em'),
       supabase.from('lancamentos_empresa').select('valor, data_vencimento, data_pagamento, descricao').eq('categoria', 'marketing'),
       supabase.from('financeiro_turma').select('turma_id, receita_realizada, receita_prevista, margem_prevista, margem_realizada'),
       supabase.from('usuarios_perfil').select('id, nome').in('setor', ['comercial', 'comercial_externo']).eq('ativo', true).order('nome'),
@@ -125,13 +127,42 @@ export default function Desempenho() {
       return a.dias - b.dias
     })
 
+  // Resolve a campanha do Meta de cada lead por chaves que REALMENTE batem:
+  // 1) utm_campaign casado (normalizado) com o nome da campanha do Meta
+  // 2) codigo da turma presente no nome da campanha
+  // 3) fbclid/utm presente mas sem campanha casada -> pago nao identificado
+  // 4) nada -> organico/direto
+  const codigoPorTurma: Record<string, string> = {}
+  turmas.forEach(t => { if (t.codigo) codigoPorTurma[t.id] = t.codigo })
+  const SEM_CAMPANHA = '⚠ Pago (campanha não identificada)'
+  const ORGANICO = 'Orgânico / direto'
+
+  function resolverCampanha(l: any): { chave: string; identificado: boolean; pago: boolean } {
+    const camps = spend.campaigns || []
+    const u = norm(l.utm_campaign)
+    if (u) {
+      const m = camps.find(c => { const n = norm(c.name); return !!n && (n.includes(u) || u.includes(n)) })
+      if (m) return { chave: m.name, identificado: true, pago: true }
+    }
+    const cod = norm(codigoPorTurma[l.turma_id])
+    if (cod) {
+      const m = camps.find(c => norm(c.name).includes(cod))
+      if (m) return { chave: m.name, identificado: true, pago: true }
+    }
+    if (l.fbclid || l.utm_source || l.utm_campaign) return { chave: SEM_CAMPANHA, identificado: false, pago: true }
+    return { chave: ORGANICO, identificado: false, pago: false }
+  }
+
   const campMap: Record<string, { leads: number; ganhos: number; receita: number }> = {}
+  let leadsIdentificados = 0
   leadsPeriodo.forEach(l => {
-    const k = l.utm_campaign || l.utm_source || 'sem origem'
-    if (!campMap[k]) campMap[k] = { leads: 0, ganhos: 0, receita: 0 }
-    campMap[k].leads++
-    if (l.etapa === 'ganho') { campMap[k].ganhos++; campMap[k].receita += (l.valor_venda || 0) }
+    const r = resolverCampanha(l)
+    if (r.identificado) leadsIdentificados++
+    if (!campMap[r.chave]) campMap[r.chave] = { leads: 0, ganhos: 0, receita: 0 }
+    campMap[r.chave].leads++
+    if (l.etapa === 'ganho') { campMap[r.chave].ganhos++; campMap[r.chave].receita += (l.valor_venda || 0) }
   })
+  const coberturaOrigem = leadsPeriodo.length ? leadsIdentificados / leadsPeriodo.length : 0
   const gastoCampMap: Record<string, number> = {}
   if (spend.ok) spend.campaigns.forEach(c => { gastoCampMap[c.name] = (gastoCampMap[c.name] || 0) + (c.spend || 0); if (!campMap[c.name]) campMap[c.name] = { leads: 0, ganhos: 0, receita: 0 } })
   const campanhas = Object.entries(campMap)
@@ -215,6 +246,7 @@ export default function Desempenho() {
         <KPI label="Tráfego gasto" valor={fmt(trafegoPeriodo)} cor="#f87171" sub={usandoReal ? 'real (Meta)' : 'provisionado'} />
         <KPI label="ROAS geral" valor={(roas).toFixed(2) + 'x'} cor={roas >= 1 ? '#34d399' : '#f87171'} sub="Receita ÷ tráfego" />
         <KPI label="CPL / CPV" valor={`${fmt(cpl)} / ${fmt(cpv)}`} sub="Custo por lead / por venda" />
+        <KPI label="Origem identificada" valor={pct(coberturaOrigem)} cor={coberturaOrigem >= 0.7 ? '#34d399' : coberturaOrigem >= 0.4 ? '#fbbf24' : '#f87171'} sub={`${leadsIdentificados}/${leadsPeriodo.length} leads ligados a uma campanha`} />
       </div>
       <p style={{ fontSize: 11, color: spend.error ? '#f87171' : '#6b7280', marginBottom: 24 }}>
         {usandoReal
