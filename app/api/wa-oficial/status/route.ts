@@ -2,7 +2,6 @@ import { NextResponse } from 'next/server'
 
 // Diagnóstico da conta oficial: lista números e templates disponíveis.
 const TOKEN = process.env.WA_OFICIAL_TOKEN || ''
-const WABA_ID = process.env.WA_OFICIAL_WABA_ID || ''
 const PHONE_ID = process.env.WA_OFICIAL_PHONE_ID || ''
 const GRAPH = 'https://graph.facebook.com/v25.0'
 
@@ -11,7 +10,9 @@ async function get(path: string) {
   return { status: res.status, json: await res.json().catch(() => ({})) }
 }
 
-export async function GET() {
+export async function GET(req: import('next/server').NextRequest) {
+  // permite inspecionar qualquer WABA via ?waba=  (default = env)
+  const WABA_ID = req.nextUrl.searchParams.get('waba') || process.env.WA_OFICIAL_WABA_ID || ''
   if (!TOKEN || !WABA_ID) {
     return NextResponse.json({ ok: false, error: 'Faltam WA_OFICIAL_TOKEN/WA_OFICIAL_WABA_ID' }, { status: 200 })
   }
