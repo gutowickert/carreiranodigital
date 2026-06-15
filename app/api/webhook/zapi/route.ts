@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     const zapiId = ev.messageId || null
     const fromMe = !!ev.fromMe
     const chatName = ev.chatName || null
+    const chatLid = ev.chatLid ? ev.chatLid.toString() : null
 
     let tipo = 'texto'
     let texto: string | null = null
@@ -118,8 +119,13 @@ export async function POST(req: NextRequest) {
     const lead = leadCriado || leadExistente
 
     let conversa: any = null
-    {
-      // casa pelo telefone exato — vale pro número real e pro id @lid (estável por contato)
+    // 1) casa pelo chatLid (identificador estável) — une recebida (nº real) com enviada (@lid)
+    if (chatLid) {
+      const { data: porLid } = await supabase.from('wa_conversas').select('*').eq('chat_lid', chatLid).maybeSingle()
+      conversa = porLid || null
+    }
+    // 2) casa pelo telefone exato — nº real ou dígitos do @lid
+    if (!conversa) {
       const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
       conversa = porFone || null
     }
@@ -183,6 +189,11 @@ export async function POST(req: NextRequest) {
     })
     // 23505 = violacao do indice unico (zapi_id repetido = eco do "notificar enviadas"). Ignora.
     if (errMsg && errMsg.code === '23505') return NextResponse.json({ ok: true, skip: 'duplicada (unique)' })
+
+    // guarda o chatLid na conversa (passo separado pra não quebrar se a coluna não existir)
+    if (chatLid && !conversa.chat_lid) {
+      await supabase.from('wa_conversas').update({ chat_lid: chatLid }).eq('id', conversa.id)
+    }
 
     const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : '📎 Documento')
     await supabase.from('wa_conversas').update({
