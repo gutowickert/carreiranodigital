@@ -8,6 +8,19 @@ export async function POST(req: NextRequest) {
   try {
     const ev = await req.json()
 
+    // [TEMP] diagnóstico: registra eventos enviados (fromMe) pra entender por que
+    // contato novo falado pelo celular não aparece na caixa. Remover depois.
+    if (ev.fromMe) {
+      try {
+        await supabase.from('webhook_logs').insert({
+          origem: 'zapi',
+          evento: `fromMe type=${ev.type || '?'} group=${!!ev.isGroup} lid=${(ev.phone || '').toString().includes('@lid')} phone=${ev.phone || ''} chatName=${ev.chatName || ''}`,
+          payload: ev,
+          status: 'recebido',
+        })
+      } catch { /* ignore */ }
+    }
+
     if (ev.type && ev.type !== 'ReceivedCallback') return NextResponse.json({ ok: true, skip: 'nao e mensagem' })
     if (ev.isNewsletter) return NextResponse.json({ ok: true, skip: 'newsletter' })
 
