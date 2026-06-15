@@ -10,6 +10,7 @@ type Conversa = {
   id: string; telefone: string; nome: string | null
   lead_id: string | null; aluno_id: string | null
   ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number
+  eh_grupo?: boolean
 }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
@@ -67,6 +68,7 @@ export default function CaixaWhatsApp() {
   )
 
   function tag(c: Conversa) {
+    if (c.eh_grupo) return { txt: 'Grupo', cor: '#60a5fa', bg: '#172554' }
     if (c.lead_id) return { txt: 'Lead', cor: '#a78bfa', bg: '#2e1065' }
     if (c.aluno_id) return { txt: 'Aluno', cor: '#4ade80', bg: '#052e16' }
     return { txt: 'Contato', cor: '#9ca3af', bg: '#1f2937' }
@@ -256,7 +258,7 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
             style={{ background: '#2e1065', color: '#a78bfa', border: '1px solid #a78bfa40', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
             Abrir card
           </a>
-        ) : !conversa.aluno_id ? (
+        ) : (!conversa.aluno_id && !conversa.eh_grupo) ? (
           <button onClick={criarLead} disabled={criandoLead}
             style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
             {criandoLead ? '...' : '+ Criar lead'}

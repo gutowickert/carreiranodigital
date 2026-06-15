@@ -9,11 +9,11 @@ export async function POST(req: NextRequest) {
     const ev = await req.json()
 
     if (ev.type && ev.type !== 'ReceivedCallback') return NextResponse.json({ ok: true, skip: 'nao e mensagem' })
-    if (ev.isGroup) return NextResponse.json({ ok: true, skip: 'grupo' })
     if (ev.isNewsletter) return NextResponse.json({ ok: true, skip: 'newsletter' })
 
+    const ehGrupo = !!ev.isGroup
     const rawPhone = (ev.phone || '').toString()
-    const ehLid = rawPhone.includes('@lid') || rawPhone.length > 14
+    const ehLid = !ehGrupo && (rawPhone.includes('@lid') || rawPhone.length > 14)
     const telefone = rawPhone.replace(/\D/g, '')
     if (!telefone) return NextResponse.json({ ok: true, skip: 'sem telefone' })
 
@@ -34,20 +34,26 @@ export async function POST(req: NextRequest) {
     else if (ev.sticker) { tipo = 'imagem'; midiaUrl = ev.sticker.stickerUrl; midiaMime = 'image/webp' }
     else return NextResponse.json({ ok: true, skip: 'tipo nao tratado' })
 
+    // Em grupo, prefixa quem falou pra dar contexto na conversa
+    if (ehGrupo && !fromMe) {
+      const remetente = ev.senderName || ev.participantPhone || ''
+      if (texto && remetente) texto = `${remetente}: ${texto}`
+    }
+
     if (zapiId) {
       const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', zapiId).limit(1)
       if (ja && ja.length) return NextResponse.json({ ok: true, skip: 'duplicada' })
     }
 
     const sufixo = telefone.slice(-8)
-    const leadExistente = ehLid ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
-    const aluno = ehLid ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
+    const leadExistente = (ehLid || ehGrupo) ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
+    const aluno = (ehLid || ehGrupo) ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
 
     // Lead via botão de WhatsApp: a 1ª mensagem traz o CÓDIGO DA TURMA (o mesmo
     // do sistema). Se o número ainda não é lead nem aluno e a mensagem cita um
     // código de turma conhecido, cria o lead completo (turma + rateio + CAPI).
     let leadCriado: { id: string; nome: string | null } | null = null
-    if (!fromMe && !leadExistente && !aluno && texto) {
+    if (!fromMe && !ehGrupo && !leadExistente && !aluno && texto) {
       const txtLower = texto.toLowerCase()
       const { data: turmas } = await supabase.from('turmas').select('id, codigo').not('codigo', 'is', null)
       const turmaMatch = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
@@ -124,11 +130,11 @@ export async function POST(req: NextRequest) {
       const { data: c } = await supabase.from('wa_conversas').select('*').eq('aluno_id', aluno.id).limit(1)
       if (c && c[0]) conversa = c[0]
     }
-    if (!conversa && !ehLid) {
+    if (!conversa && !ehLid && !ehGrupo) {
       const { data: c } = await supabase.from('wa_conversas').select('*').ilike('telefone', `%${sufixo}%`).limit(1)
       if (c && c[0]) conversa = c[0]
     }
-    if (!conversa && chatName) {
+    if (!conversa && chatName && !ehGrupo) {
       const { data: c1 } = await supabase.from('wa_conversas').select('*').ilike('nome', chatName).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
       if (c1 && c1[0]) conversa = c1[0]
       if (!conversa) {
@@ -155,6 +161,7 @@ export async function POST(req: NextRequest) {
         nome,
         lead_id: lead ? lead.id : null,
         aluno_id: aluno ? aluno.id : null,
+        eh_grupo: ehGrupo,
       }).select().single()
       conversa = nova
     }
