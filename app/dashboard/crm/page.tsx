@@ -34,6 +34,7 @@ type Lead = {
   utm_content: string
   turmas?: { id: string; codigo: string; produtos: { nome: string }; cidades: { nome: string } }
   temTarefaAtrasada?: boolean
+  nao_lida?: boolean
 }
 
 type Turma = { id: string; codigo: string; data_inicio: string; preco_venda: number; produtos: { nome: string }; cidades: { nome: string } }
@@ -401,7 +402,7 @@ export default function CRM() {
                         <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 12, cursor: 'pointer', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1 }}>{lead.nome}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{lead.nome}</div>
                             <div style={{ fontSize: 9, color: alerta ? '#f87171' : '#6b7280', fontWeight: 600 }}>D{dia}</div>
                           </div>
                           <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
@@ -500,7 +501,7 @@ export default function CRM() {
                     return (
                       <tr key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                         style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff', fontWeight: 500 }}>{lead.nome}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff', fontWeight: 500 }}>{lead.nao_lida && <span title="Não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{lead.nome}</td>
                         <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{lead.whatsapp || '-'}</td>
                         <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{lead.turmas?.codigo || lead.turmas?.produtos?.nome || '-'}</td>
                         <td style={{ padding: '12px 16px' }}>
@@ -565,6 +566,14 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [mostrarGanho, setMostrarGanho] = useState(false)
   const [mostrarPrazo, setMostrarPrazo] = useState(false)
   const [mostrarPag, setMostrarPag] = useState(false)
+  const [naoLida, setNaoLida] = useState(false)
+
+  async function toggleNaoLida() {
+    if (!lead) return
+    const novo = !naoLida
+    setNaoLida(novo)
+    await supabase.from('leads').update({ nao_lida: novo }).eq('id', lead.id)
+  }
 
   useEffect(() => {
     if (lead) {
@@ -574,10 +583,12 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         etapa: lead.etapa, origem: lead.origem || 'manual',
         observacoes: lead.observacoes || '',
       })
+      setNaoLida(!!lead.nao_lida)
       carregarAndamentos(lead.id)
       carregarLigacoes(lead.id)
     } else {
       setForm({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
+      setNaoLida(false)
       setAndamentos([])
       setLigacoes([])
     }
@@ -723,6 +734,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             <button onClick={() => setChatAberto(v => !v)} disabled={!form.whatsapp}
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #25D36640', background: chatAberto ? '#25D366' : '#0b2e1a', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 600, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
               💬 WhatsApp
+            </button>
+            <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? '#fbbf2440' : '#48484a'), background: naoLida ? '#451a03' : '#3a3a3c', color: naoLida ? '#fbbf24' : '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {naoLida ? '🔴 Não lida' : '○ Marcar não lida'}
             </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
           </div>
