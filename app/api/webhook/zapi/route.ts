@@ -156,14 +156,18 @@ export async function POST(req: NextRequest) {
 
     if (!conversa) {
       const nome = chatName || (lead && lead.nome) || (aluno && aluno.nome) || (!fromMe ? ev.senderName : null) || null
-      const { data: nova } = await supabase.from('wa_conversas').insert({
+      const { data: nova, error: errNova } = await supabase.from('wa_conversas').insert({
         telefone,
         nome,
         lead_id: lead ? lead.id : null,
         aluno_id: aluno ? aluno.id : null,
-        eh_grupo: ehGrupo,
       }).select().single()
+      if (errNova) console.log('ZAPI erro criar conversa:', errNova.message)
       conversa = nova
+      // marca grupo num passo separado pra não quebrar a criação caso a coluna não exista
+      if (conversa && ehGrupo) {
+        await supabase.from('wa_conversas').update({ eh_grupo: true }).eq('id', conversa.id)
+      }
     }
     if (!conversa) return NextResponse.json({ ok: false, error: 'conversa nao criada' }, { status: 200 })
 
