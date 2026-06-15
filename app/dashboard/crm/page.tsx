@@ -534,6 +534,7 @@ export default function CRM() {
             motivosPerda={motivosPerda}
             aplicarRateio={aplicarRateio}
             moverEtapa={moverEtapa}
+            podeExcluir={meuPerfil?.papel === 'admin'}
             onFechar={() => { setModalAberto(false); setLeadEditando(null); setNovoLead(false); carregarLeads() }}
           />
         )}
@@ -547,10 +548,11 @@ interface ModalLeadProps {
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
   moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) => Promise<void>
+  podeExcluir?: boolean
   onFechar: () => void
 }
 
-function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, onFechar }: ModalLeadProps) {
+function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, podeExcluir, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
@@ -985,7 +987,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
         <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
           <div>
-            {!novoLead && lead && (
+            {!novoLead && lead && podeExcluir && (
               <button onClick={excluir} disabled={excluindo}
                 style={{ background: '#450a0a', color: '#f87171', border: '1px solid #f8717140', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
                 {excluindo ? 'Excluindo...' : '🗑 Excluir lead'}
