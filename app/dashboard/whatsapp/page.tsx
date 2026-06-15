@@ -148,9 +148,12 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   async function criarLead() {
     setCriandoLead(true); setErro('')
     try {
+      // Contato @lid não tem número real (privacidade do WhatsApp). Nesse caso
+      // deixa o WhatsApp em branco pra preencher na mão e usa nome neutro.
+      const ehLid = (conversa.nome || '').includes('@lid') || (conversa.telefone || '').replace(/\D/g, '').length > 13
       const { data: novo, error } = await supabase.from('leads').insert({
-        nome: conversa.nome || conversa.telefone,
-        whatsapp: conversa.telefone,
+        nome: ehLid ? 'Contato WhatsApp' : (conversa.nome || conversa.telefone),
+        whatsapp: ehLid ? null : conversa.telefone,
         etapa: 'aguardando_atendimento',
         origem: 'whatsapp',
       }).select('id').single()
