@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
@@ -20,6 +21,7 @@ export default function CaixaWhatsApp() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [ativa, setAtiva] = useState<Conversa | null>(null)
   const [busca, setBusca] = useState('')
+  const [naoLidaSet, setNaoLidaSet] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     async function checar() {
@@ -38,6 +40,9 @@ export default function CaixaWhatsApp() {
     const { data } = await supabase.from('wa_conversas')
       .select('*').order('ultima_msg_em', { ascending: false, nullsFirst: false })
     setConversas(data || [])
+    // leads marcados como "não lida" (marcador manual do CRM) pra mostrar na lista
+    const { data: nl } = await supabase.from('leads').select('id').eq('nao_lida', true)
+    setNaoLidaSet(new Set((nl || []).map((l: any) => l.id)))
   }
 
   useEffect(() => {
@@ -86,7 +91,7 @@ export default function CaixaWhatsApp() {
                   <div key={c.id} onClick={() => abrir(c)}
                     style={{ padding: '12px 14px', borderBottom: '1px solid #3a3a3c', cursor: 'pointer', background: sel ? '#1c1c1e' : 'transparent' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{c.nome || c.telefone}</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{c.lead_id && naoLidaSet.has(c.lead_id) && <span title="Lead marcado como não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{c.nome || c.telefone}</span>
                       {c.nao_lidas > 0 && <span style={{ fontSize: 11, background: '#25D366', color: '#063', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>{c.nao_lidas}</span>}
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
@@ -118,6 +123,8 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
+  const [criandoLead, setCriandoLead] = useState(false)
+  const router = useRouter()
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -135,6 +142,23 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   }, [conversa.id])
 
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
+
+  async function criarLead() {
+    setCriandoLead(true); setErro('')
+    try {
+      const { data: novo, error } = await supabase.from('leads').insert({
+        nome: conversa.nome || conversa.telefone,
+        whatsapp: conversa.telefone,
+        etapa: 'aguardando_atendimento',
+        origem: 'whatsapp',
+      }).select('id').single()
+      if (error || !novo) { setErro('Erro ao criar lead'); return }
+      await supabase.from('wa_conversas').update({ lead_id: novo.id }).eq('id', conversa.id)
+      onEnviou()
+      router.push(`/dashboard/crm?lead=${novo.id}`)
+    } catch (e: any) { setErro((e && e.message) || 'erro ao criar lead') }
+    finally { setCriandoLead(false) }
+  }
 
   async function enviarTexto() {
     if (!texto.trim()) return
@@ -215,9 +239,29 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
 
   return (
     <>
-      <div style={{ padding: '14px 18px', borderBottom: '1px solid #3a3a3c' }}>
-        <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{conversa.nome || conversa.telefone}</div>
-        <div style={{ fontSize: 11, color: '#6b7280' }}>{conversa.telefone}</div>
+      <div style={{ padding: '14px 18px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+        <div>
+          {conversa.lead_id ? (
+            <a href={`/dashboard/crm?lead=${conversa.lead_id}`} title="Abrir card do lead"
+              style={{ fontSize: 15, fontWeight: 600, color: '#a78bfa', textDecoration: 'none', cursor: 'pointer' }}>
+              {conversa.nome || conversa.telefone} ↗
+            </a>
+          ) : (
+            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{conversa.nome || conversa.telefone}</div>
+          )}
+          <div style={{ fontSize: 11, color: '#6b7280' }}>{conversa.telefone}</div>
+        </div>
+        {conversa.lead_id ? (
+          <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
+            style={{ background: '#2e1065', color: '#a78bfa', border: '1px solid #a78bfa40', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+            Abrir card
+          </a>
+        ) : !conversa.aluno_id ? (
+          <button onClick={criarLead} disabled={criandoLead}
+            style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
+            {criandoLead ? '...' : '+ Criar lead'}
+          </button>
+        ) : null}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 6, background: '#1c1c1e' }}>
         {mensagens.map(m => {
