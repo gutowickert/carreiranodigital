@@ -983,9 +983,29 @@ function ChatLead({ lead }: { lead: Lead }) {
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
   const [conversaId, setConversaId] = useState<string | null>(null)
+  const [mostrarVincular, setMostrarVincular] = useState(false)
+  const [buscaConv, setBuscaConv] = useState('')
+  const [convResultados, setConvResultados] = useState<any[]>([])
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+
+  async function buscarConversas(termo: string) {
+    const t = termo.trim()
+    if (!t) { setConvResultados([]); return }
+    const tel = t.replace(/\D/g, '')
+    let q = supabase.from('wa_conversas').select('id, nome, telefone, lead_id')
+      .order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(12)
+    q = tel.length >= 3 ? q.ilike('telefone', `%${tel}%`) : q.ilike('nome', `%${t}%`)
+    const { data } = await q
+    setConvResultados(data || [])
+  }
+
+  async function vincularConversa(convId: string) {
+    await supabase.from('wa_conversas').update({ lead_id: lead.id }).eq('id', convId)
+    setMostrarVincular(false); setBuscaConv(''); setConvResultados([])
+    carregar()
+  }
 
   async function carregar() {
     const sufixo = (lead.whatsapp || '').replace(/\D/g, '').slice(-8)
@@ -1088,7 +1108,30 @@ function ChatLead({ lead }: { lead: Lead }) {
 
   return (
     <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-      <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>WhatsApp</div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+        <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</div>
+        <button onClick={() => { setMostrarVincular(v => !v); setBuscaConv(''); setConvResultados([]) }}
+          style={{ background: 'none', border: '1px solid #3a3a3c', borderRadius: 6, color: '#9ca3af', fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>
+          🔗 Vincular conversa
+        </button>
+      </div>
+      {mostrarVincular && (
+        <div style={{ marginBottom: 8, background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>Busca por nome ou telefone e vincula a este lead — útil quando o cliente fala de um número diferente do cadastrado.</div>
+          <input style={inp} placeholder="Nome ou telefone..." value={buscaConv}
+            onChange={e => { setBuscaConv(e.target.value); buscarConversas(e.target.value) }} />
+          <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
+            {convResultados.map(c => (
+              <button key={c.id} onClick={() => vincularConversa(c.id)}
+                style={{ textAlign: 'left', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 6, padding: '6px 8px', color: '#fff', fontSize: 12, cursor: 'pointer' }}>
+                {c.nome || c.telefone} <span style={{ color: '#6b7280' }}>· {c.telefone}</span>
+                {c.lead_id && <span style={{ color: '#fbbf24' }}> (já vinculada)</span>}
+              </button>
+            ))}
+            {buscaConv && convResultados.length === 0 && <div style={{ fontSize: 11, color: '#6b7280' }}>Nenhuma conversa encontrada.</div>}
+          </div>
+        </div>
+      )}
       <div style={{ background: '#1c1c1e', borderRadius: 8, padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {mensagens.length === 0 && <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', margin: '12px 0' }}>Nenhuma mensagem ainda. Manda a primeira!</p>}
         {mensagens.map(m => {
