@@ -576,6 +576,24 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     await supabase.from('leads').update({ nao_lida: novo }).eq('id', lead.id)
   }
 
+  const [excluindo, setExcluindo] = useState(false)
+  async function excluir() {
+    if (!lead) return
+    if (!confirm(`Excluir o lead "${lead.nome}"? Essa ação não pode ser desfeita.`)) return
+    if (!confirm('Tem certeza? O lead e o histórico (andamentos, tarefas, ligações) serão apagados. A conversa do WhatsApp é mantida, só desvinculada.')) return
+    setExcluindo(true)
+    try {
+      const res = await fetch('/api/lead/excluir', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id }),
+      })
+      const json = await res.json()
+      if (json.ok) onFechar()
+      else alert(json.error || 'Não foi possível excluir.')
+    } catch { alert('Erro de rede ao excluir.') }
+    finally { setExcluindo(false) }
+  }
+
   useEffect(() => {
     if (lead) {
       setForm({
@@ -965,11 +983,21 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           </>
         )}
 
-        <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end', marginTop: 8 }}>
-          <button onClick={onFechar} style={btnSecondary}>Cancelar</button>
-          <button onClick={salvar} disabled={!form.nome} style={{ ...btnPrimary, opacity: form.nome ? 1 : 0.5 }}>
-            {novoLead ? 'Criar lead' : 'Salvar'}
-          </button>
+        <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between', alignItems: 'center', marginTop: 8 }}>
+          <div>
+            {!novoLead && lead && (
+              <button onClick={excluir} disabled={excluindo}
+                style={{ background: '#450a0a', color: '#f87171', border: '1px solid #f8717140', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
+                {excluindo ? 'Excluindo...' : '🗑 Excluir lead'}
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={onFechar} style={btnSecondary}>Cancelar</button>
+            <button onClick={salvar} disabled={!form.nome} style={{ ...btnPrimary, opacity: form.nome ? 1 : 0.5 }}>
+              {novoLead ? 'Criar lead' : 'Salvar'}
+            </button>
+          </div>
         </div>
       </div>
     </div>
