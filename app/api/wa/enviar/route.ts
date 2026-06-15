@@ -18,9 +18,14 @@ export async function POST(req: NextRequest) {
     if (!fone && !chatLid) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
     if (!texto && !audioBase64 && !anexoBase64) return NextResponse.json({ ok: false, error: 'nada pra enviar' }, { status: 400 })
 
-    // Alvo do envio: número real (10–13 dígitos) usa o número; senão usa o @lid (Z-API aceita)
+    // Alvo do envio: número real (10–13 dígitos) usa o número; senão usa o @lid
+    // (do chatLid salvo, ou reconstruído dos dígitos do id). Z-API aceita @lid.
     const foneDigits = fone.replace(/\D/g, '')
-    const alvo = (foneDigits.length >= 10 && foneDigits.length <= 13) ? fone : (chatLid ? chatLid.toString() : fone)
+    let alvo: string
+    if (foneDigits.length >= 10 && foneDigits.length <= 13) alvo = fone
+    else if (chatLid) alvo = chatLid.toString()
+    else if (foneDigits.length > 13) alvo = `${foneDigits}@lid`
+    else alvo = fone
 
     // Envia pelo Z-API
     let r
