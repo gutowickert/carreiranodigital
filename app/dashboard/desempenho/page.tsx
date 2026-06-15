@@ -11,8 +11,6 @@ function pct(v: number) { return (isFinite(v) ? v * 100 : 0).toFixed(0) + '%' }
 function hojeStr() { return new Date().toISOString().split('T')[0] }
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 function diasEntre(a: string, b: string) { return Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000) }
-// normaliza texto pra casar utm/codigo com nome de campanha do Meta (sem acento/maiuscula/pontuacao)
-function norm(s?: string | null) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() }
 
 const ETAPA_LABEL: Record<string, string> = {
   aguardando_atendimento: 'Aguardando atendimento', em_atendimento: 'Em atendimento',
@@ -33,34 +31,23 @@ export default function Desempenho() {
   const [turmas, setTurmas] = useState<any[]>([])
   const [matriculas, setMatriculas] = useState<any[]>([])
   const [leads, setLeads] = useState<any[]>([])
-  const [marketing, setMarketing] = useState<any[]>([])
   const [financeiros, setFinanceiros] = useState<any[]>([])
   const [vendedores, setVendedores] = useState<any[]>([])
-  const [spend, setSpend] = useState<{ ok: boolean; total: number; campaigns: { name: string; spend: number }[]; error?: string }>({ ok: false, total: 0, campaigns: [] })
 
   useEffect(() => { carregar() }, [])
-  useEffect(() => { carregarGasto() }, [de, ate])
 
   async function carregar() {
     setCarregando(true)
-    const [t, m, l, mk, f, v] = await Promise.all([
+    const [t, m, l, f, v] = await Promise.all([
       supabase.from('turmas').select('id, codigo, preco_venda, meta_matriculas, data_inicio, status, produto_id, cidade_id, produtos(nome), cidades(nome)'),
       supabase.from('matriculas').select('id, turma_id, valor_pago, data_compra, lead_id'),
-      supabase.from('leads').select('id, turma_id, etapa, vendedor_id, utm_source, utm_campaign, fbclid, valor_venda, criado_em, atualizado_em'),
-      supabase.from('lancamentos_empresa').select('valor, data_vencimento, data_pagamento, descricao').eq('categoria', 'marketing'),
+      supabase.from('leads').select('id, turma_id, etapa, vendedor_id, valor_venda, criado_em, atualizado_em'),
       supabase.from('financeiro_turma').select('turma_id, receita_realizada, receita_prevista, margem_prevista, margem_realizada'),
       supabase.from('usuarios_perfil').select('id, nome').in('setor', ['comercial', 'comercial_externo']).eq('ativo', true).order('nome'),
     ])
     setTurmas(t.data || []); setMatriculas(m.data || []); setLeads(l.data || [])
-    setMarketing(mk.data || []); setFinanceiros(f.data || []); setVendedores(v.data || [])
+    setFinanceiros(f.data || []); setVendedores(v.data || [])
     setCarregando(false)
-  }
-
-  async function carregarGasto() {
-    try {
-      const res = await fetch(`/api/meta/spend?since=${de}&until=${ate}`)
-      setSpend(await res.json())
-    } catch { setSpend({ ok: false, total: 0, campaigns: [], error: 'falha ao buscar gasto' }) }
   }
 
   const inPeriodo = (d?: string | null) => { if (!d) return false; const day = d.substring(0, 10); return day >= de && day <= ate }
@@ -68,39 +55,11 @@ export default function Desempenho() {
   const leadsPeriodo = leads.filter(l => inPeriodo(l.criado_em))
   const matsPeriodo = matriculas.filter(m => inPeriodo(m.data_compra))
   const receitaPeriodo = matsPeriodo.reduce((s, m) => s + (m.valor_pago || 0), 0)
-  const trafegoProvisionado = marketing.filter(x => inPeriodo(x.data_pagamento || x.data_vencimento)).reduce((s, x) => s + (x.valor || 0), 0)
-  const usandoReal = spend.ok && spend.total > 0
-  const trafegoPeriodo = usandoReal ? spend.total : trafegoProvisionado
-  const cpl = leadsPeriodo.length ? trafegoPeriodo / leadsPeriodo.length : 0
-  const cpv = matsPeriodo.length ? trafegoPeriodo / matsPeriodo.length : 0
-  const roas = trafegoPeriodo ? receitaPeriodo / trafegoPeriodo : 0
   const convGeral = leadsPeriodo.length ? matsPeriodo.length / leadsPeriodo.length : 0
 
   const finMap: Record<string, any> = {}; financeiros.forEach(f => { finMap[f.turma_id] = f })
   const matsPorTurma: Record<string, number> = {}; matriculas.forEach(m => { matsPorTurma[m.turma_id] = (matsPorTurma[m.turma_id] || 0) + 1 })
   const leadsPorTurma: Record<string, number> = {}; leads.forEach(l => { if (l.turma_id) leadsPorTurma[l.turma_id] = (leadsPorTurma[l.turma_id] || 0) + 1 })
-
-  // grupo = produto + cidade (turmas que dividem a mesma campanha/página, ex: POA tarde+noite)
-  const grupoKey = (t: any) => `${t.produto_id || ''}|${t.cidade_id || ''}`
-  const gastoPorGrupo: Record<string, number> = {}
-  if (spend.ok) {
-    spend.campaigns.forEach(c => {
-      const nomeUpper = (c.name || '').toUpperCase()
-      const turma = turmas.find(t => t.codigo && nomeUpper.includes(t.codigo.toUpperCase()))
-      if (turma) gastoPorGrupo[grupoKey(turma)] = (gastoPorGrupo[grupoKey(turma)] || 0) + (c.spend || 0)
-    })
-  }
-  // distribui o gasto do grupo entre suas turmas, proporcional aos leads (igual se ainda nao ha lead)
-  const gastoPorTurma: Record<string, number> = {}
-  Object.entries(gastoPorGrupo).forEach(([k, gastoGrupo]) => {
-    const turmasGrupo = turmas.filter(t => grupoKey(t) === k)
-    const totalLeadsGrupo = turmasGrupo.reduce((s, t) => s + (leadsPorTurma[t.id] || 0), 0)
-    turmasGrupo.forEach(t => {
-      gastoPorTurma[t.id] = totalLeadsGrupo > 0
-        ? gastoGrupo * ((leadsPorTurma[t.id] || 0) / totalLeadsGrupo)
-        : gastoGrupo / turmasGrupo.length
-    })
-  })
 
   const turmasAvaliadas = turmas
     .filter(t => !['realizada', 'cancelada'].includes(t.status))
@@ -126,51 +85,6 @@ export default function Desempenho() {
       if (ordem[a.nivel] !== ordem[b.nivel]) return ordem[a.nivel] - ordem[b.nivel]
       return a.dias - b.dias
     })
-
-  // Resolve a campanha do Meta de cada lead por chaves que REALMENTE batem:
-  // 1) utm_campaign casado (normalizado) com o nome da campanha do Meta
-  // 2) codigo da turma presente no nome da campanha
-  // 3) fbclid/utm presente mas sem campanha casada -> pago nao identificado
-  // 4) nada -> organico/direto
-  const codigoPorTurma: Record<string, string> = {}
-  turmas.forEach(t => { if (t.codigo) codigoPorTurma[t.id] = t.codigo })
-  const SEM_CAMPANHA = '⚠ Pago (campanha não identificada)'
-  const ORGANICO = 'Orgânico / direto'
-
-  function resolverCampanha(l: any): { chave: string; identificado: boolean; pago: boolean } {
-    const camps = spend.campaigns || []
-    const u = norm(l.utm_campaign)
-    if (u) {
-      const m = camps.find(c => { const n = norm(c.name); return !!n && (n.includes(u) || u.includes(n)) })
-      if (m) return { chave: m.name, identificado: true, pago: true }
-    }
-    const cod = norm(codigoPorTurma[l.turma_id])
-    if (cod) {
-      const m = camps.find(c => norm(c.name).includes(cod))
-      if (m) return { chave: m.name, identificado: true, pago: true }
-    }
-    if (l.fbclid || l.utm_source || l.utm_campaign) return { chave: SEM_CAMPANHA, identificado: false, pago: true }
-    return { chave: ORGANICO, identificado: false, pago: false }
-  }
-
-  const campMap: Record<string, { leads: number; ganhos: number; receita: number }> = {}
-  let leadsIdentificados = 0
-  leadsPeriodo.forEach(l => {
-    const r = resolverCampanha(l)
-    if (r.identificado) leadsIdentificados++
-    if (!campMap[r.chave]) campMap[r.chave] = { leads: 0, ganhos: 0, receita: 0 }
-    campMap[r.chave].leads++
-    if (l.etapa === 'ganho') { campMap[r.chave].ganhos++; campMap[r.chave].receita += (l.valor_venda || 0) }
-  })
-  const coberturaOrigem = leadsPeriodo.length ? leadsIdentificados / leadsPeriodo.length : 0
-  const gastoCampMap: Record<string, number> = {}
-  if (spend.ok) spend.campaigns.forEach(c => { gastoCampMap[c.name] = (gastoCampMap[c.name] || 0) + (c.spend || 0); if (!campMap[c.name]) campMap[c.name] = { leads: 0, ganhos: 0, receita: 0 } })
-  const campanhas = Object.entries(campMap)
-    .map(([nome, v]) => {
-      const g = gastoCampMap[nome] || 0
-      return { nome, ...v, conv: v.leads ? v.ganhos / v.leads : 0, gasto: g, cpv: v.ganhos ? g / v.ganhos : 0, roas: g ? v.receita / g : 0 }
-    })
-    .sort((a, b) => (b.gasto - a.gasto) || (b.leads - a.leads))
 
   const etapaMap: Record<string, { count: number; somaDias: number }> = {}
   leads.forEach(l => {
@@ -199,20 +113,6 @@ export default function Desempenho() {
   const semVend = leads.filter(l => !l.vendedor_id)
   if (semVend.length > 0) linhasVendedor.push({ nome: 'Sem vendedor', total: semVend.length, porEtapa: contaPorEtapa(semVend) })
 
-  const resultadoTurmas = turmas
-    .map(t => {
-      const gasto = gastoPorTurma[t.id] || 0
-      const mats = matsPorTurma[t.id] || 0
-      const receita = finMap[t.id]?.receita_realizada ?? 0
-      return {
-        t, receita, mats, gasto,
-        margem: finMap[t.id]?.margem_realizada ?? finMap[t.id]?.margem_prevista ?? 0,
-        cpvReal: mats ? gasto / mats : 0,
-        roasReal: gasto ? receita / gasto : 0,
-      }
-    })
-    .sort((a, b) => b.receita - a.receita)
-
   const KPI = ({ label, valor, cor, sub }: any) => (
     <div style={{ ...card, padding: 16 }}>
       <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
@@ -228,7 +128,7 @@ export default function Desempenho() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Desempenho</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>O que está bom, o que está em risco e onde agir</p>
+          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Comercial: saúde das turmas, funil e vendedores · tráfego/ROI ficam na página Tráfego</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <span style={{ fontSize: 12, color: '#9ca3af' }}>Período:</span>
@@ -239,22 +139,11 @@ export default function Desempenho() {
         </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
         <KPI label="Leads" valor={leadsPeriodo.length} />
         <KPI label="Vendas" valor={matsPeriodo.length} sub={`Conversão ${pct(convGeral)}`} />
         <KPI label="Receita" valor={fmt(receitaPeriodo)} cor="#34d399" />
-        <KPI label="Tráfego gasto" valor={fmt(trafegoPeriodo)} cor="#f87171" sub={usandoReal ? 'real (Meta)' : 'provisionado'} />
-        <KPI label="ROAS geral" valor={(roas).toFixed(2) + 'x'} cor={roas >= 1 ? '#34d399' : '#f87171'} sub="Receita ÷ tráfego" />
-        <KPI label="CPL / CPV" valor={`${fmt(cpl)} / ${fmt(cpv)}`} sub="Custo por lead / por venda" />
-        <KPI label="Origem identificada" valor={pct(coberturaOrigem)} cor={coberturaOrigem >= 0.7 ? '#34d399' : coberturaOrigem >= 0.4 ? '#fbbf24' : '#f87171'} sub={`${leadsIdentificados}/${leadsPeriodo.length} leads ligados a uma campanha`} />
       </div>
-      <p style={{ fontSize: 11, color: spend.error ? '#f87171' : '#6b7280', marginBottom: 24 }}>
-        {usandoReal
-          ? 'ROAS/CPL/CPV calculados com o gasto REAL do Meta no período.'
-          : spend.error
-            ? `Sem gasto real do Meta (${spend.error}). Usando tráfego provisionado.`
-            : 'Usando tráfego provisionado (sem gasto real do Meta no período, ou ainda carregando).'}
-      </p>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>1. Turmas: saúde e risco</h2>
       <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Do mais crítico pro mais tranquilo. 🔴 puxar venda / decidir cancelar · 🟡 acompanhar · 🟢 ok</p>
@@ -294,45 +183,7 @@ export default function Desempenho() {
         )}
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>2. Campanhas / origens</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>No período. Gasto real do Meta quando a campanha tem o código no nome. "⚠ revisar" = gastou e não vendeu, ou muito lead com pouca conversão.</p>
-      <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: 32 }}>
-        {campanhas.length === 0 ? (
-          <p style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem dados no período.</p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                {['Origem / campanha', 'Leads', 'Vendas', 'Conversão', 'Gasto', 'Receita', 'ROAS', 'Leitura'].map((h, i) => (
-                  <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {campanhas.map(c => {
-                const escala = c.leads >= 5 && c.conv >= 0.15
-                const revisar = (c.gasto > 0 && c.ganhos === 0) || (c.leads >= 10 && c.conv < 0.08)
-                return (
-                  <tr key={c.nome} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{c.nome}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{c.leads}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{c.ganhos}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: c.conv >= 0.15 ? '#34d399' : c.conv < 0.08 ? '#f87171' : '#d1d1d1' }}>{pct(c.conv)}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{c.gasto ? fmt(c.gasto) : '—'}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#34d399' }}>{fmt(c.receita)}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: c.roas >= 1 ? '#34d399' : c.gasto ? '#f87171' : '#6b7280' }}>{c.gasto ? c.roas.toFixed(2) + 'x' : '—'}</td>
-                    <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 11, color: escala ? '#34d399' : revisar ? '#f87171' : '#6b7280' }}>
-                      {escala ? '↑ escalar' : revisar ? '⚠ revisar' : '—'}
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Funil: onde os leads travam</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>2. Funil: onde os leads travam</h2>
       <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
         {gargalo
           ? <>Maior gargalo: <b style={{ color: '#fbbf24' }}>{labelEtapa(gargalo.etapa)}</b> — {gargalo.count} leads parados há ~{gargalo.diasMedio.toFixed(0)} dias em média. Vale cobrar atendimento.</>
@@ -353,7 +204,7 @@ export default function Desempenho() {
         ))}
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Leads por vendedor</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Leads por vendedor</h2>
       <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Quantos leads cada vendedor tem em mãos, por etapa.</p>
       <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 32 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -376,33 +227,6 @@ export default function Desempenho() {
                 {etapasColunas.map(e => (
                   <td key={e} style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, color: r.porEtapa[e] ? '#d1d1d1' : '#3f3f46' }}>{r.porEtapa[e] || 0}</td>
                 ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>4. Resultado por turma</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Receita, margem e — quando há campanha com o código no nome — gasto, CPV e ROAS reais por turma.</p>
-      <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-              {['Turma', 'Matrículas', 'Receita', 'Gasto real', 'CPV real', 'ROAS real', 'Margem'].map((h, i) => (
-                <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {resultadoTurmas.map(r => (
-              <tr key={r.t.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff' }}>{r.t.produtos?.nome} — {r.t.cidades?.nome} <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>{r.t.codigo}</span></td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{r.mats}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#34d399' }}>{fmt(r.receita)}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#f87171' }}>{r.gasto ? fmt(r.gasto) : '—'}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#d1d1d1' }}>{r.gasto ? fmt(r.cpvReal) : '—'}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: r.roasReal >= 1 ? '#34d399' : '#f87171' }}>{r.gasto ? r.roasReal.toFixed(2) + 'x' : '—'}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: r.margem >= 0 ? '#34d399' : '#f87171' }}>{fmt(r.margem)}</td>
               </tr>
             ))}
           </tbody>

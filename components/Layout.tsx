@@ -47,6 +47,7 @@ const grupos: Grupo[] = [
     titulo: 'Dashboards',
     itens: [
       { nome: 'Desempenho', href: '/dashboard/desempenho' },
+      { nome: 'Tráfego', href: '/dashboard/trafego' },
     ],
   },
   {
