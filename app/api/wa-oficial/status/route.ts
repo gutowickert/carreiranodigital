@@ -18,7 +18,7 @@ export async function GET() {
   // números da WABA (status, id) — pra conferir se o PHONE_ID bate
   const nums = await get(`/${WABA_ID}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,platform_type`)
   // templates aprovados (nome, idioma, status, categoria)
-  const tpls = await get(`/${WABA_ID}/message_templates?fields=name,language,status,category&limit=100`)
+  const tpls = await get(`/${WABA_ID}/message_templates?fields=name,language,status,category,components&limit=100`)
 
   const numerosResumo = (nums.json?.data || []).map((n: any) => ({
     id: n.id,
@@ -29,7 +29,13 @@ export async function GET() {
     plataforma: n.platform_type,
     confere_com_env: n.id === PHONE_ID,
   }))
-  const templatesResumo = (tpls.json?.data || []).map((t: any) => ({ nome: t.name, idioma: t.language, status: t.status, categoria: t.category }))
+  const templatesResumo = (tpls.json?.data || []).map((t: any) => {
+    // conta variáveis do corpo e detecta tipo de header
+    const body = (t.components || []).find((c: any) => c.type === 'BODY')
+    const header = (t.components || []).find((c: any) => c.type === 'HEADER')
+    const vars = (body?.text?.match(/\{\{\d+\}\}/g) || []).length
+    return { nome: t.name, idioma: t.language, categoria: t.category, variaveis_corpo: vars, header: header ? header.format : 'nenhum' }
+  })
 
   return NextResponse.json({
     ok: true,
