@@ -119,6 +119,7 @@ export async function POST(req: NextRequest) {
     const lead = leadCriado || leadExistente
 
     let conversa: any = null
+    let conversaCriada = false
     // 1) casa pelo chatLid (identificador estável) — une recebida (nº real) com enviada (@lid)
     if (chatLid) {
       const { data: porLid } = await supabase.from('wa_conversas').select('*').eq('chat_lid', chatLid).maybeSingle()
@@ -170,6 +171,7 @@ export async function POST(req: NextRequest) {
       }).select().single()
       if (errNova) console.log('ZAPI erro criar conversa:', errNova.message)
       conversa = nova
+      conversaCriada = !!nova
       // marca grupo num passo separado pra não quebrar a criação caso a coluna não exista
       if (conversa && ehGrupo) {
         await supabase.from('wa_conversas').update({ eh_grupo: true }).eq('id', conversa.id)
@@ -203,6 +205,18 @@ export async function POST(req: NextRequest) {
       nome: conversa.nome || chatName || null,
       lead_id: conversa.lead_id || (lead ? lead.id : null),
     }).eq('id', conversa.id)
+
+    // [TEMP] diagnóstico de mensagens enviadas (fromMe): onde caiu. Remover depois.
+    if (fromMe) {
+      try {
+        await supabase.from('webhook_logs').insert({
+          origem: 'zapi-debug',
+          evento: `conv=${conversa.id} criada=${conversaCriada} lid=${chatLid || ''} tel=${telefone} nome=${chatName || ''} err=${(errMsg && errMsg.code) || ''}`,
+          payload: ev,
+          status: 'recebido',
+        })
+      } catch { /* ignore */ }
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
