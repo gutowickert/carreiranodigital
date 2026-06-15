@@ -24,7 +24,9 @@ async function post(path: string, body: any) {
 
 // Normaliza telefone pra formato Z-API: só dígitos, com DDI 55
 export function foneZapi(raw: string): string {
-  let d = (raw || '').replace(/\D/g, '')
+  const s = (raw || '').toString()
+  if (s.includes('@')) return s // @lid / @g.us — envia como veio (Z-API aceita)
+  let d = s.replace(/\D/g, '')
   if (d.length >= 10 && d.length <= 11) d = '55' + d
   return d
 }

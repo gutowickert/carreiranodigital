@@ -5,7 +5,7 @@ import { enviarTexto, enviarAudio, enviarImagem, enviarDocumento, foneZapi } fro
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { telefone, texto, audioBase64, anexoBase64, anexoNome, anexoTipo, anexoExt, leadId, enviadoPor } = body
+    const { telefone, texto, audioBase64, anexoBase64, anexoNome, anexoTipo, anexoExt, leadId, chatLid, enviadoPor } = body
 
     let fone = (telefone || '').toString()
     let leadInfo: any = null
@@ -15,18 +15,22 @@ export async function POST(req: NextRequest) {
       if (lead) { leadInfo = lead; if (!fone) fone = lead.whatsapp || '' }
     }
     fone = foneZapi(fone)
-    if (!fone) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
+    if (!fone && !chatLid) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
     if (!texto && !audioBase64 && !anexoBase64) return NextResponse.json({ ok: false, error: 'nada pra enviar' }, { status: 400 })
+
+    // Alvo do envio: número real (10–13 dígitos) usa o número; senão usa o @lid (Z-API aceita)
+    const foneDigits = fone.replace(/\D/g, '')
+    const alvo = (foneDigits.length >= 10 && foneDigits.length <= 13) ? fone : (chatLid ? chatLid.toString() : fone)
 
     // Envia pelo Z-API
     let r
     if (anexoBase64) {
-      if (anexoTipo === 'imagem') r = await enviarImagem(fone, anexoBase64, texto || '')
-      else r = await enviarDocumento(fone, anexoBase64, anexoNome || 'arquivo', anexoExt || 'pdf')
+      if (anexoTipo === 'imagem') r = await enviarImagem(alvo, anexoBase64, texto || '')
+      else r = await enviarDocumento(alvo, anexoBase64, anexoNome || 'arquivo', anexoExt || 'pdf')
     } else if (audioBase64) {
-      r = await enviarAudio(fone, audioBase64)
+      r = await enviarAudio(alvo, audioBase64)
     } else {
-      r = await enviarTexto(fone, texto)
+      r = await enviarTexto(alvo, texto)
     }
     if (!r.ok) return NextResponse.json(r, { status: 200 })
 

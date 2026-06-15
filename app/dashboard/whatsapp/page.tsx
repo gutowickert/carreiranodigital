@@ -11,6 +11,7 @@ type Conversa = {
   lead_id: string | null; aluno_id: string | null
   ultima_msg: string | null; ultima_msg_em: string | null; nao_lidas: number
   eh_grupo?: boolean
+  chat_lid?: string | null
 }
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
@@ -182,7 +183,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
     try {
       const res = await fetch('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, texto }),
+        body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto }),
       })
       const json = await res.json()
       if (json.ok) { setTexto(''); carregar(); onEnviou() }
@@ -210,7 +211,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
       const audioBase64 = await g.parar()
       const res = await fetch('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, audioBase64 }),
+        body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, audioBase64 }),
       })
       const json = await res.json()
       if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
@@ -229,7 +230,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
           const res = await fetch('/api/wa/enviar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              telefone: conversa.telefone, leadId: conversa.lead_id,
+              telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid,
               anexoBase64: reader.result, anexoNome: file.name,
               anexoTipo: ehImagem ? 'imagem' : 'documento', anexoExt: ext,
             }),
