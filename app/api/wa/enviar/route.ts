@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         direcao: 'enviada',
         tipo: tipoMsg,
         texto: tipoMsg === 'documento' ? (anexoNome || null) : (texto || null),
-        midia_url: anexoBase64 || null,
+        midia_url: anexoBase64 || audioBase64 || null,
         midia_mime: anexoBase64 ? (anexoTipo === 'imagem' ? 'image/*' : 'application/octet-stream') : (audioBase64 ? 'audio/ogg' : null),
         status: 'enviada',
         enviado_por: enviadoPor || null,

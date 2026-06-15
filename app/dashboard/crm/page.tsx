@@ -1011,12 +1011,16 @@ function ChatLead({ lead }: { lead: Lead }) {
     setErro('')
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      const mr = new MediaRecorder(stream)
+      // Etiqueta o áudio com o mime real (antes forçava 'audio/ogg' em bytes webm → ia vazio).
+      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus'
+        : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : ''
+      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
       chunksRef.current = []
       mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop())
-        const blob = new Blob(chunksRef.current, { type: 'audio/ogg' })
+        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || 'audio/webm' })
         const reader = new FileReader()
         reader.onloadend = async () => {
           const base64 = reader.result as string
