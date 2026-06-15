@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { blobParaMp3DataUri } from '@/lib/audio'
 
 type Conversa = {
   id: string; telefone: string; nome: string | null
@@ -166,20 +167,18 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
       mr.onstop = async () => {
         stream.getTracks().forEach(t => t.stop())
         const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || 'audio/webm' })
-        const reader = new FileReader()
-        reader.onloadend = async () => {
-          setEnviando(true)
-          try {
-            const res = await fetch('/api/wa/enviar', {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, audioBase64: reader.result }),
-            })
-            const json = await res.json()
-            if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
-          } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
-          finally { setEnviando(false) }
-        }
-        reader.readAsDataURL(blob)
+        setEnviando(true)
+        try {
+          // converte pra MP3 (o Z-API não aceita webm/opus -> ia vazio)
+          const audioBase64 = await blobParaMp3DataUri(blob)
+          const res = await fetch('/api/wa/enviar', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, audioBase64 }),
+          })
+          const json = await res.json()
+          if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
+        } catch (e: any) { setErro((e && e.message) || 'erro ao processar áudio') }
+        finally { setEnviando(false) }
       }
       mr.start(); mediaRef.current = mr; setGravando(true)
     } catch { setErro('Sem acesso ao microfone') }
