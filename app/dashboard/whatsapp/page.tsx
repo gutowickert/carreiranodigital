@@ -108,7 +108,7 @@ export default function CaixaWhatsApp() {
 
           {/* Chat */}
           <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {ativa ? <ChatConversa conversa={ativa} onEnviou={carregarConversas} /> : (
+            {ativa ? <ChatConversa conversa={ativa} onEnviou={carregarConversas} onConversaChange={setAtiva} /> : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 14 }}>
                 Selecione uma conversa
               </div>
@@ -119,14 +119,27 @@ export default function CaixaWhatsApp() {
     </Layout>
   )
 }
-function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: () => void }) {
+function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conversa; onEnviou: () => void; onConversaChange: (c: Conversa) => void }) {
   const [mensagens, setMensagens] = useState<any[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
   const [criandoLead, setCriandoLead] = useState(false)
+  const [editInfo, setEditInfo] = useState(false)
+  const [nomeEd, setNomeEd] = useState('')
+  const [foneEd, setFoneEd] = useState('')
   const router = useRouter()
+
+  async function salvarInfo() {
+    const novoFone = foneEd.replace(/\D/g, '')
+    const patch = { nome: nomeEd.trim() || null, telefone: novoFone || conversa.telefone }
+    const { error } = await supabase.from('wa_conversas').update(patch).eq('id', conversa.id)
+    if (error) { setErro('Não foi possível salvar: ' + error.message); return }
+    setEditInfo(false)
+    onConversaChange({ ...conversa, ...patch })
+    onEnviou()
+  }
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -138,6 +151,7 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   }
 
   useEffect(() => {
+    setEditInfo(false)
     carregar()
     const t = setInterval(carregar, 5000)
     return () => clearInterval(t)
@@ -148,12 +162,9 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   async function criarLead() {
     setCriandoLead(true); setErro('')
     try {
-      // Contato @lid não tem número real (privacidade do WhatsApp). Nesse caso
-      // deixa o WhatsApp em branco pra preencher na mão e usa nome neutro.
-      const ehLid = (conversa.nome || '').includes('@lid') || (conversa.telefone || '').replace(/\D/g, '').length > 13
       const { data: novo, error } = await supabase.from('leads').insert({
-        nome: ehLid ? 'Contato WhatsApp' : (conversa.nome || conversa.telefone),
-        whatsapp: ehLid ? null : conversa.telefone,
+        nome: conversa.nome || conversa.telefone,
+        whatsapp: conversa.telefone,
         etapa: 'aguardando_atendimento',
         origem: 'whatsapp',
       }).select('id').single()
@@ -245,28 +256,44 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   return (
     <>
       <div style={{ padding: '14px 18px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
-        <div>
-          {conversa.lead_id ? (
-            <a href={`/dashboard/crm?lead=${conversa.lead_id}`} title="Abrir card do lead"
-              style={{ fontSize: 15, fontWeight: 600, color: '#a78bfa', textDecoration: 'none', cursor: 'pointer' }}>
-              {conversa.nome || conversa.telefone} ↗
-            </a>
-          ) : (
-            <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{conversa.nome || conversa.telefone}</div>
-          )}
-          <div style={{ fontSize: 11, color: '#6b7280' }}>{conversa.telefone}</div>
-        </div>
-        {conversa.lead_id ? (
-          <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
-            style={{ background: '#2e1065', color: '#a78bfa', border: '1px solid #a78bfa40', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-            Abrir card
-          </a>
-        ) : (!conversa.aluno_id && !conversa.eh_grupo) ? (
-          <button onClick={criarLead} disabled={criandoLead}
-            style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
-            {criandoLead ? '...' : '+ Criar lead'}
-          </button>
-        ) : null}
+        {editInfo ? (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap', flex: 1 }}>
+            <input style={{ ...inp, width: 180, padding: '6px 10px' }} placeholder="Nome do contato" value={nomeEd} onChange={e => setNomeEd(e.target.value)} />
+            <input style={{ ...inp, width: 180, padding: '6px 10px' }} placeholder="Telefone (com DDD)" value={foneEd} onChange={e => setFoneEd(e.target.value)} />
+            <button onClick={salvarInfo} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Salvar</button>
+            <button onClick={() => setEditInfo(false)} style={{ background: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ minWidth: 0 }}>
+              {conversa.lead_id ? (
+                <a href={`/dashboard/crm?lead=${conversa.lead_id}`} title="Abrir card do lead"
+                  style={{ fontSize: 15, fontWeight: 600, color: '#a78bfa', textDecoration: 'none', cursor: 'pointer' }}>
+                  {conversa.nome || conversa.telefone} ↗
+                </a>
+              ) : (
+                <div style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{conversa.nome || conversa.telefone}</div>
+              )}
+              <div style={{ fontSize: 11, color: '#6b7280', display: 'flex', alignItems: 'center', gap: 8 }}>
+                {conversa.telefone}
+                <button onClick={() => { setNomeEd(conversa.nome || ''); setFoneEd(conversa.telefone || ''); setEditInfo(true) }}
+                  title="Editar nome/telefone do contato"
+                  style={{ background: 'none', border: 'none', color: '#6b7280', cursor: 'pointer', fontSize: 12, padding: 0 }}>✏️ editar</button>
+              </div>
+            </div>
+            {conversa.lead_id ? (
+              <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
+                style={{ background: '#2e1065', color: '#a78bfa', border: '1px solid #a78bfa40', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                Abrir card
+              </a>
+            ) : (!conversa.aluno_id && !conversa.eh_grupo) ? (
+              <button onClick={criarLead} disabled={criandoLead}
+                style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
+                {criandoLead ? '...' : '+ Criar lead'}
+              </button>
+            ) : null}
+          </>
+        )}
       </div>
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 6, background: '#1c1c1e' }}>
         {mensagens.map(m => {
