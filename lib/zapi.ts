@@ -48,3 +48,25 @@ export async function enviarImagem(phone: string, image: string, caption?: strin
 export async function enviarDocumento(phone: string, document: string, fileName: string, extension: string) {
   return post(`/send-document/${extension}`, { phone: foneZapi(phone), document, fileName })
 }
+
+async function get(path: string) {
+  if (!INSTANCE || !TOKEN || !CLIENT_TOKEN) return { ok: false, error: 'Faltam credenciais Z-API', data: null }
+  try {
+    const res = await fetch(`${BASE()}${path}`, { headers: { 'Client-Token': CLIENT_TOKEN } })
+    const json = await res.json().catch(() => null)
+    if (!res.ok) return { ok: false, error: JSON.stringify(json), data: null }
+    return { ok: true, data: json }
+  } catch (e: any) {
+    return { ok: false, error: (e && e.message) || 'falha', data: null }
+  }
+}
+
+// Lista os chats da instância (traz o nº de não-lidas reais do WhatsApp)
+export async function listarChats(page = 1, pageSize = 100) {
+  return get(`/chats?page=${page}&pageSize=${pageSize}`)
+}
+
+// Marca um chat como lido no WhatsApp (some o não-lida no celular)
+export async function marcarChatLido(phone: string) {
+  return post('/chats/read', { phone, action: 'read' })
+}

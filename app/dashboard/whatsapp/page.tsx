@@ -53,11 +53,23 @@ export default function CaixaWhatsApp() {
     return () => clearInterval(t)
   }, [autorizado])
 
+  // Espelha as não-lidas reais do WhatsApp (ex: lidas no celular) no sistema
+  useEffect(() => {
+    if (autorizado !== true) return
+    const sync = () => fetch('/api/wa/sync-lidas', { method: 'POST' }).then(() => carregarConversas()).catch(() => {})
+    sync()
+    const t = setInterval(sync, 30000)
+    return () => clearInterval(t)
+  }, [autorizado])
+
   async function abrir(c: Conversa) {
     setAtiva(c)
     if (c.nao_lidas > 0) {
-      await supabase.from('wa_conversas').update({ nao_lidas: 0 }).eq('id', c.id)
-      carregarConversas()
+      // marca como lida no WhatsApp (celular) e zera no sistema
+      fetch('/api/wa/marcar-lida', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversaId: c.id, telefone: c.telefone, chatLid: c.chat_lid }),
+      }).then(() => carregarConversas()).catch(() => {})
     }
   }
 
