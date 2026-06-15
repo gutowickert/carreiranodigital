@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
-import { blobParaMp3DataUri } from '@/lib/audio'
+import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 type Conversa = {
   id: string; telefone: string; nome: string | null
@@ -118,8 +118,7 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
-  const mediaRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
+  const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
 
@@ -155,36 +154,29 @@ function ChatConversa({ conversa, onEnviou }: { conversa: Conversa; onEnviou: ()
   async function iniciarGravacao() {
     setErro('')
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      // Grava num formato que o navegador realmente suporta e ETIQUETA com o mime real
-      // (antes forçava 'audio/ogg' em bytes webm → o Z-API não convertia e o áudio ia vazio).
-      const mime = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/ogg;codecs=opus') ? 'audio/ogg;codecs=opus'
-        : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : ''
-      const mr = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream)
-      chunksRef.current = []
-      mr.ondataavailable = e => { if (e.data.size > 0) chunksRef.current.push(e.data) }
-      mr.onstop = async () => {
-        stream.getTracks().forEach(t => t.stop())
-        const blob = new Blob(chunksRef.current, { type: mr.mimeType || mime || 'audio/webm' })
-        setEnviando(true)
-        try {
-          // converte pra MP3 (o Z-API não aceita webm/opus -> ia vazio)
-          const audioBase64 = await blobParaMp3DataUri(blob)
-          const res = await fetch('/api/wa/enviar', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, audioBase64 }),
-          })
-          const json = await res.json()
-          if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
-        } catch (e: any) { setErro((e && e.message) || 'erro ao processar áudio') }
-        finally { setEnviando(false) }
-      }
-      mr.start(); mediaRef.current = mr; setGravando(true)
+      gravadorRef.current = await iniciarGravacaoOpus()
+      setGravando(true)
     } catch { setErro('Sem acesso ao microfone') }
   }
 
-  function pararGravacao() { mediaRef.current?.stop(); setGravando(false) }
+  async function pararGravacao() {
+    const g = gravadorRef.current
+    gravadorRef.current = null
+    setGravando(false)
+    if (!g) return
+    setEnviando(true)
+    try {
+      // OGG/Opus nativo: WhatsApp não reconverte e a reprodução em 1.5x/2x funciona
+      const audioBase64 = await g.parar()
+      const res = await fetch('/api/wa/enviar', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, audioBase64 }),
+      })
+      const json = await res.json()
+      if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
+    } catch (e: any) { setErro((e && e.message) || 'erro ao processar áudio') }
+    finally { setEnviando(false) }
+  }
 
   async function enviarAnexo(file: File) {
     setEnviando(true); setErro('')
