@@ -540,8 +540,8 @@ export default function Turmas() {
   const diasPorModulo = modulos.length > 0 ? modulos.map(mod => ({ modulo: mod, dias: diasAula.map((d, i) => ({ ...d, index: i })).filter(d => d.modulo_id === mod.id) })) : null
 
   return (
-    <div style={{ padding: '40px', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px' }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 40px)', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Turmas</h1>
           <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>{turmas.length} turma{turmas.length !== 1 ? 's' : ''} cadastrada{turmas.length !== 1 ? 's' : ''}</p>
@@ -558,7 +558,7 @@ export default function Turmas() {
         <div style={{ ...card, padding: '28px', marginBottom: '28px' }}>
           <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', marginBottom: '20px', marginTop: 0 }}>Nova turma</h2>
           <form onSubmit={handleSalvar}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Código da turma</label>
                 <input value={codigoTurma} onChange={e => setCodigoTurma(e.target.value)} placeholder="Ex: reels-lajeado-jul25" style={inp} />
@@ -571,7 +571,7 @@ export default function Turmas() {
                 <input value={idHeroSpark} onChange={e => setIdHeroSpark(e.target.value)} placeholder="Ex: 12345" style={inp} />
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Produto</label>
                 <select value={produtoId} onChange={e => setProdutoId(e.target.value)} required style={{ ...sel, width: '100%' }}>
@@ -594,7 +594,7 @@ export default function Turmas() {
                 </select>
               </div>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Preço R$</label>
                 <input value={preco} onChange={e => setPreco(e.target.value)} type="number" required style={inp} />
@@ -666,7 +666,7 @@ export default function Turmas() {
             )}
 
             {isExterna && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px', backgroundColor: '#431407', borderRadius: '10px', padding: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px', backgroundColor: '#431407', borderRadius: '10px', padding: '16px' }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '12px', color: '#fb923c', marginBottom: '6px' }}>Deslocamento professor R$</label>
                   <input value={deslocProf} onChange={e => setDeslocProf(e.target.value)} type="number" style={inp} />
