@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState, useRef } from 'react'
-import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getPrimeiraTarefa, SEQUENCIA_POR_ETAPA } from '@/lib/sequencia-tarefas'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
@@ -51,6 +50,8 @@ const ETAPAS = [
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa', bg: '#2e1065' },
   { id: 'pediu_prazo', label: 'Pediu prazo', cor: '#fbbf24', bg: '#451a03' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: '#06b6d4', bg: '#083344' },
+  { id: 'agendado', label: 'Agendado', cor: '#22d3ee', bg: '#083344' },
+  { id: 'proxima_turma', label: 'Próxima turma', cor: '#a78bfa', bg: '#2e1065' },
   { id: 'ganho', label: 'Ganho', cor: '#4ade80', bg: '#052e16' },
   { id: 'perda', label: 'Perda', cor: '#f87171', bg: '#450a0a' },
 ]
@@ -310,6 +311,16 @@ export default function CRM() {
         'Cliente disse que vai pagar. Confirmar se pagamento foi efetuado.',
         extras.dataAgendada
       )
+    } else if ((novaEtapa === 'agendado' || novaEtapa === 'proxima_turma') && extras?.dataAgendada) {
+      // Contato agendado pra um dia (cria a tarefa de chamar)
+      await criarTarefaComData(
+        lead.id,
+        lead.vendedor_id,
+        novaEtapa,
+        `${novaEtapa === 'agendado' ? 'Contato agendado' : 'Próxima turma'} — ${lead.nome}`,
+        novaEtapa === 'agendado' ? 'Retomar contato com o lead (agendado).' : 'Lead para a próxima turma. Retomar contato.',
+        extras.dataAgendada
+      )
     } else if (SEQUENCIA_POR_ETAPA[novaEtapa]?.length > 0) {
       // Tarefa automática conforme sequência da etapa
       await criarPrimeiraTarefaDaEtapa(lead.id, lead.vendedor_id, novaEtapa, agora, lead.nome)
@@ -337,7 +348,6 @@ export default function CRM() {
   }))
 
   return (
-    <Layout>
       <div style={{ padding: '24px clamp(12px, 4vw, 40px)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
@@ -539,7 +549,6 @@ export default function CRM() {
           />
         )}
       </div>
-    </Layout>
   )
 }
 
@@ -718,44 +727,20 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     onFechar()
   }
 
-  // Andamento "agendado": agenda um contato pra um dia (cria tarefa + registra andamento)
+  // Move o lead pra etapa "Agendado" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarAgendado() {
     if (!lead || !agendadoData) return
     const dataIso = new Date(`${agendadoData}T09:00:00`).toISOString()
-    const dataBR = new Date(dataIso).toLocaleDateString('pt-BR')
-    const { error: e1 } = await supabase.from('tarefas_lead').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
-      tipo: 'agendado', titulo: `Contato agendado — ${lead.nome}`,
-      descricao: 'Retomar contato com o lead (agendado).', data_vencimento: dataIso,
-    })
-    if (e1) { setMsgLigacao('Erro ao agendar: ' + e1.message); return }
-    await supabase.from('lead_andamentos').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'agendado',
-      observacao: `Contato agendado para ${dataBR}`,
-    })
-    setMostrarAgendado(false); setAgendadoData('')
-    setMsgLigacao(`✓ Contato agendado para ${dataBR}`)
-    carregarAndamentos(lead.id)
+    await moverEtapa(lead, 'agendado', { dataAgendada: dataIso })
+    onFechar()
   }
 
-  // Andamento "próxima turma": marca o lead pra próxima turma e agenda o contato
+  // Move o lead pra etapa "Próxima turma" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarProxTurma() {
     if (!lead || !proxTurmaData) return
     const dataIso = new Date(`${proxTurmaData}T09:00:00`).toISOString()
-    const dataBR = new Date(dataIso).toLocaleDateString('pt-BR')
-    const { error: e1 } = await supabase.from('tarefas_lead').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
-      tipo: 'proxima_turma', titulo: `Próxima turma — ${lead.nome}`,
-      descricao: 'Lead para a próxima turma. Retomar contato.', data_vencimento: dataIso,
-    })
-    if (e1) { setMsgLigacao('Erro na próxima turma: ' + e1.message); return }
-    await supabase.from('lead_andamentos').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'proxima_turma',
-      observacao: `Marcado para a próxima turma — chamar em ${dataBR}`,
-    })
-    setMostrarProxTurma(false); setProxTurmaData('')
-    setMsgLigacao(`✓ Próxima turma — chamar em ${dataBR}`)
-    carregarAndamentos(lead.id)
+    await moverEtapa(lead, 'proxima_turma', { dataAgendada: dataIso })
+    onFechar()
   }
 
   if (!aberto) return null
@@ -936,7 +921,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
               <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento').map(e => (
+                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento' && e.id !== 'agendado' && e.id !== 'proxima_turma').map(e => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
                     style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
                     → {e.label}
