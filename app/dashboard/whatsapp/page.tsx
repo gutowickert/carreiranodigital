@@ -24,6 +24,13 @@ export default function CaixaWhatsApp() {
   const [ativa, setAtiva] = useState<Conversa | null>(null)
   const [busca, setBusca] = useState('')
   const [naoLidaSet, setNaoLidaSet] = useState<Set<string>>(new Set())
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const f = () => setIsMobile(window.innerWidth < 768)
+    f(); window.addEventListener('resize', f)
+    return () => window.removeEventListener('resize', f)
+  }, [])
 
   useEffect(() => {
     async function checar() {
@@ -87,13 +94,17 @@ export default function CaixaWhatsApp() {
     return { txt: 'Contato', cor: '#9ca3af', bg: '#1f2937' }
   }
 
+  const mostrarLista = !isMobile || !ativa
+  const mostrarChat = !isMobile || !!ativa
+
   return (
     <Layout>
-      <div style={{ padding: '24px 32px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
-        <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: '0 0 16px' }}>WhatsApp</h1>
-        <div style={{ flex: 1, display: 'flex', gap: 16, minHeight: 0 }}>
+      <div style={{ padding: isMobile ? '10px' : '24px 32px', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+        {(!isMobile || !ativa) && <h1 style={{ fontSize: isMobile ? 20 : 26, fontWeight: 700, color: '#fff', margin: isMobile ? '0 0 10px' : '0 0 16px' }}>WhatsApp</h1>}
+        <div style={{ flex: 1, display: 'flex', gap: isMobile ? 0 : 16, minHeight: 0 }}>
           {/* Lista */}
-          <div style={{ ...card, width: 320, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+          {mostrarLista && (
+          <div style={{ ...card, width: isMobile ? '100%' : 320, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: 12, borderBottom: '1px solid #3a3a3c' }}>
               <input style={inp} placeholder="Buscar nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
             </div>
@@ -118,15 +129,28 @@ export default function CaixaWhatsApp() {
               })}
             </div>
           </div>
+          )}
 
           {/* Chat */}
+          {mostrarChat && (
           <div style={{ ...card, flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-            {ativa ? <ChatConversa conversa={ativa} onEnviou={carregarConversas} onConversaChange={setAtiva} /> : (
+            {ativa ? (
+              <>
+                {isMobile && (
+                  <button onClick={() => setAtiva(null)}
+                    style={{ textAlign: 'left', background: '#1c1c1e', border: 'none', borderBottom: '1px solid #3a3a3c', color: '#a78bfa', fontSize: 14, fontWeight: 600, padding: '10px 14px', cursor: 'pointer' }}>
+                    ← Voltar
+                  </button>
+                )}
+                <ChatConversa conversa={ativa} onEnviou={carregarConversas} onConversaChange={setAtiva} />
+              </>
+            ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 14 }}>
                 Selecione uma conversa
               </div>
             )}
           </div>
+          )}
         </div>
       </div>
     </Layout>
