@@ -805,35 +805,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? '#fbbf2440' : '#48484a'), background: naoLida ? '#451a03' : '#3a3a3c', color: naoLida ? '#fbbf24' : '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {naoLida ? '🔴 Não lida' : '○ Marcar não lida'}
             </button>
-            <button onClick={() => { setMostrarAgendado(v => !v); setMostrarProxTurma(false) }} title="Agendar um contato pra um dia"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              📅 Agendar
-            </button>
-            <button onClick={() => { setMostrarProxTurma(v => !v); setMostrarAgendado(false) }} title="Marcar pra próxima turma e agendar o contato"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #a78bfa40', background: '#2e1065', color: '#a78bfa', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              ➡️ Próxima turma
-            </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
-          </div>
-        )}
-
-        {mostrarAgendado && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: '#083344', border: '1px solid #06b6d440', borderRadius: 8, padding: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' }}>📅 Chamar o lead em:</label>
-              <input type="date" style={inp} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
-            </div>
-            <button onClick={confirmarAgendado} disabled={!agendadoData} style={{ ...btnPrimary, background: '#06b6d4', color: '#063', opacity: agendadoData ? 1 : 0.5 }}>Agendar contato</button>
-          </div>
-        )}
-
-        {mostrarProxTurma && (
-          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: '#2e1065', border: '1px solid #a78bfa40', borderRadius: 8, padding: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' }}>➡️ Próxima turma — chamar em:</label>
-              <input type="date" style={inp} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
-            </div>
-            <button onClick={confirmarProxTurma} disabled={!proxTurmaData} style={{ ...btnPrimary, background: '#a78bfa', color: '#1c1c1e', opacity: proxTurmaData ? 1 : 0.5 }}>Marcar próxima turma</button>
           </div>
         )}
 
@@ -970,19 +942,27 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                     → {e.label}
                   </button>
                 ))}
-                <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false) }}
+                <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fbbf2440', background: '#451a03', color: '#fbbf24', fontSize: 11, cursor: 'pointer' }}>
                   → Pediu prazo
                 </button>
-                <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false) }}
+                <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 11, cursor: 'pointer' }}>
                   → Aguardando pagamento
                 </button>
-                <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false) }}
+                <button onClick={() => { setMostrarAgendado(!mostrarAgendado); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 11, cursor: 'pointer' }}>
+                  📅 Agendar contato
+                </button>
+                <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #a78bfa40', background: '#2e1065', color: '#a78bfa', fontSize: 11, cursor: 'pointer' }}>
+                  ➡️ Próxima turma
+                </button>
+                <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✓ Ganho
                 </button>
-                <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false); setMostrarPag(false) }}
+                <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✗ Perda
                 </button>
@@ -1012,6 +992,28 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                   <button onClick={confirmarAguardandoPag} disabled={!pagData}
                     style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: pagData ? 1 : 0.5 }}>
                     Mover e criar tarefa de acompanhamento
+                  </button>
+                </div>
+              )}
+
+              {mostrarAgendado && (
+                <div style={{ marginTop: 12, padding: 12, background: '#083344', borderRadius: 8, border: '1px solid #06b6d440' }}>
+                  <label style={labelStyle}>📅 Chamar o lead em: *</label>
+                  <input type="date" style={inp} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
+                  <button onClick={confirmarAgendado} disabled={!agendadoData}
+                    style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
+                    Agendar contato
+                  </button>
+                </div>
+              )}
+
+              {mostrarProxTurma && (
+                <div style={{ marginTop: 12, padding: 12, background: '#2e1065', borderRadius: 8, border: '1px solid #a78bfa40' }}>
+                  <label style={labelStyle}>➡️ Próxima turma — chamar em: *</label>
+                  <input type="date" style={inp} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
+                  <button onClick={confirmarProxTurma} disabled={!proxTurmaData}
+                    style={{ ...btnPrimary, background: '#7c3aed', marginTop: 8, width: '100%', opacity: proxTurmaData ? 1 : 0.5 }}>
+                    Marcar próxima turma
                   </button>
                 </div>
               )}
