@@ -57,6 +57,7 @@ export default function TarefasLeads() {
   const [carregando, setCarregando] = useState(true)
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'canceladas' | 'todas'>('pendentes')
+  const [filtroDia, setFiltroDia] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
 
@@ -161,15 +162,19 @@ export default function TarefasLeads() {
   }
 
   const agora = new Date()
-  const tarefasAtrasadas = tarefas.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) < agora)
-  const tarefasHoje = tarefas.filter(t => {
+  // filtro por dia (data de vencimento)
+  const base = filtroDia
+    ? tarefas.filter(t => new Date(t.data_vencimento).toDateString() === new Date(filtroDia + 'T12:00:00').toDateString())
+    : tarefas
+  const tarefasAtrasadas = base.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) < agora)
+  const tarefasHoje = base.filter(t => {
     if (t.concluida || t.cancelada) return false
     const v = new Date(t.data_vencimento)
     return v.toDateString() === agora.toDateString() && v >= agora
   })
-  const tarefasFuturas = tarefas.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) > agora && new Date(t.data_vencimento).toDateString() !== agora.toDateString())
-  const tarefasConcluidas = tarefas.filter(t => t.concluida)
-  const tarefasCanceladas = tarefas.filter(t => t.cancelada)
+  const tarefasFuturas = base.filter(t => !t.concluida && !t.cancelada && new Date(t.data_vencimento) > agora && new Date(t.data_vencimento).toDateString() !== agora.toDateString())
+  const tarefasConcluidas = base.filter(t => t.concluida)
+  const tarefasCanceladas = base.filter(t => t.cancelada)
 
   function renderTarefa(t: TarefaLead) {
     const tipo = TIPO_LABEL[t.tipo] || { label: t.tipo, cor: '#9ca3af', bg: '#1f2937' }
@@ -251,6 +256,8 @@ export default function TarefasLeads() {
             <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
           </select>
+          <input type="date" style={sel} value={filtroDia} onChange={e => setFiltroDia(e.target.value)} title="Filtrar por dia de vencimento" />
+          {filtroDia && <button onClick={() => setFiltroDia('')} style={btnSecondary}>Limpar dia</button>}
           {meuPerfil?.papel === 'admin' && (
             <select style={sel} value={filtroVendedor} onChange={e => setFiltroVendedor(e.target.value)}>
               <option value="">Todos vendedores</option>

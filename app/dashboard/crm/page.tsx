@@ -722,16 +722,19 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function confirmarAgendado() {
     if (!lead || !agendadoData) return
     const dataIso = new Date(`${agendadoData}T09:00:00`).toISOString()
-    await supabase.from('tarefas_lead').insert({
+    const dataBR = new Date(dataIso).toLocaleDateString('pt-BR')
+    const { error: e1 } = await supabase.from('tarefas_lead').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
       tipo: 'agendado', titulo: `Contato agendado — ${lead.nome}`,
       descricao: 'Retomar contato com o lead (agendado).', data_vencimento: dataIso,
     })
+    if (e1) { setMsgLigacao('Erro ao agendar: ' + e1.message); return }
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'agendado',
-      observacao: `Contato agendado para ${new Date(dataIso).toLocaleDateString('pt-BR')}`,
+      observacao: `Contato agendado para ${dataBR}`,
     })
     setMostrarAgendado(false); setAgendadoData('')
+    setMsgLigacao(`✓ Contato agendado para ${dataBR}`)
     carregarAndamentos(lead.id)
   }
 
@@ -739,16 +742,19 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function confirmarProxTurma() {
     if (!lead || !proxTurmaData) return
     const dataIso = new Date(`${proxTurmaData}T09:00:00`).toISOString()
-    await supabase.from('tarefas_lead').insert({
+    const dataBR = new Date(dataIso).toLocaleDateString('pt-BR')
+    const { error: e1 } = await supabase.from('tarefas_lead').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
       tipo: 'proxima_turma', titulo: `Próxima turma — ${lead.nome}`,
       descricao: 'Lead para a próxima turma. Retomar contato.', data_vencimento: dataIso,
     })
+    if (e1) { setMsgLigacao('Erro na próxima turma: ' + e1.message); return }
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'proxima_turma',
-      observacao: `Marcado para a próxima turma — chamar em ${new Date(dataIso).toLocaleDateString('pt-BR')}`,
+      observacao: `Marcado para a próxima turma — chamar em ${dataBR}`,
     })
     setMostrarProxTurma(false); setProxTurmaData('')
+    setMsgLigacao(`✓ Próxima turma — chamar em ${dataBR}`)
     carregarAndamentos(lead.id)
   }
 
