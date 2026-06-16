@@ -569,6 +569,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [mostrarGanho, setMostrarGanho] = useState(false)
   const [mostrarPrazo, setMostrarPrazo] = useState(false)
   const [mostrarPag, setMostrarPag] = useState(false)
+  const [mostrarAgendado, setMostrarAgendado] = useState(false)
+  const [agendadoData, setAgendadoData] = useState('')
+  const [mostrarProxTurma, setMostrarProxTurma] = useState(false)
+  const [proxTurmaData, setProxTurmaData] = useState('')
   const [naoLida, setNaoLida] = useState(false)
 
   async function toggleNaoLida() {
@@ -614,6 +618,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       setLigacoes([])
     }
     setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false); setMostrarPag(false)
+    setMostrarAgendado(false); setMostrarProxTurma(false); setAgendadoData(''); setProxTurmaData('')
     setMotivoSelecionado(''); setPrazoData(''); setPagData('')
   }, [lead, aberto])
 
@@ -713,6 +718,40 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     onFechar()
   }
 
+  // Andamento "agendado": agenda um contato pra um dia (cria tarefa + registra andamento)
+  async function confirmarAgendado() {
+    if (!lead || !agendadoData) return
+    const dataIso = new Date(`${agendadoData}T09:00:00`).toISOString()
+    await supabase.from('tarefas_lead').insert({
+      lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
+      tipo: 'agendado', titulo: `Contato agendado — ${lead.nome}`,
+      descricao: 'Retomar contato com o lead (agendado).', data_vencimento: dataIso,
+    })
+    await supabase.from('lead_andamentos').insert({
+      lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'agendado',
+      observacao: `Contato agendado para ${new Date(dataIso).toLocaleDateString('pt-BR')}`,
+    })
+    setMostrarAgendado(false); setAgendadoData('')
+    carregarAndamentos(lead.id)
+  }
+
+  // Andamento "próxima turma": marca o lead pra próxima turma e agenda o contato
+  async function confirmarProxTurma() {
+    if (!lead || !proxTurmaData) return
+    const dataIso = new Date(`${proxTurmaData}T09:00:00`).toISOString()
+    await supabase.from('tarefas_lead').insert({
+      lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
+      tipo: 'proxima_turma', titulo: `Próxima turma — ${lead.nome}`,
+      descricao: 'Lead para a próxima turma. Retomar contato.', data_vencimento: dataIso,
+    })
+    await supabase.from('lead_andamentos').insert({
+      lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'proxima_turma',
+      observacao: `Marcado para a próxima turma — chamar em ${new Date(dataIso).toLocaleDateString('pt-BR')}`,
+    })
+    setMostrarProxTurma(false); setProxTurmaData('')
+    carregarAndamentos(lead.id)
+  }
+
   if (!aberto) return null
 
   const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
@@ -760,7 +799,35 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? '#fbbf2440' : '#48484a'), background: naoLida ? '#451a03' : '#3a3a3c', color: naoLida ? '#fbbf24' : '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {naoLida ? '🔴 Não lida' : '○ Marcar não lida'}
             </button>
+            <button onClick={() => { setMostrarAgendado(v => !v); setMostrarProxTurma(false) }} title="Agendar um contato pra um dia"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              📅 Agendar
+            </button>
+            <button onClick={() => { setMostrarProxTurma(v => !v); setMostrarAgendado(false) }} title="Marcar pra próxima turma e agendar o contato"
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #a78bfa40', background: '#2e1065', color: '#a78bfa', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              ➡️ Próxima turma
+            </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
+          </div>
+        )}
+
+        {mostrarAgendado && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: '#083344', border: '1px solid #06b6d440', borderRadius: 8, padding: 12 }}>
+            <div>
+              <label style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' }}>📅 Chamar o lead em:</label>
+              <input type="date" style={inp} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
+            </div>
+            <button onClick={confirmarAgendado} disabled={!agendadoData} style={{ ...btnPrimary, background: '#06b6d4', color: '#063', opacity: agendadoData ? 1 : 0.5 }}>Agendar contato</button>
+          </div>
+        )}
+
+        {mostrarProxTurma && (
+          <div style={{ display: 'flex', gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', background: '#2e1065', border: '1px solid #a78bfa40', borderRadius: 8, padding: 12 }}>
+            <div>
+              <label style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' }}>➡️ Próxima turma — chamar em:</label>
+              <input type="date" style={inp} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
+            </div>
+            <button onClick={confirmarProxTurma} disabled={!proxTurmaData} style={{ ...btnPrimary, background: '#a78bfa', color: '#1c1c1e', opacity: proxTurmaData ? 1 : 0.5 }}>Marcar próxima turma</button>
           </div>
         )}
 
