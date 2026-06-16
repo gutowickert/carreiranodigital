@@ -98,7 +98,7 @@ export default function Tarefas() {
       </div>
 
       {/* Contadores */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '16px', marginBottom: '24px' }}>
         {[
           { label: 'Atrasadas', val: contadores.atrasadas, cor: '#f87171', bg: '#450a0a', filtro: () => setFiltroStatus('atrasada') },
           { label: 'Pendentes', val: contadores.pendentes, cor: '#9ca3af', bg: '#2c2c2e', filtro: () => setFiltroStatus('pendente') },
@@ -121,7 +121,7 @@ export default function Tarefas() {
             <input value={avTitulo} onChange={e => setAvTitulo(e.target.value)} placeholder="Título da tarefa" required style={{ ...input, marginBottom: '12px' }} />
             <textarea value={avDescricao} onChange={e => setAvDescricao(e.target.value)} placeholder="Descrição (opcional)" rows={2}
               style={{ ...input, resize: 'none', marginBottom: '12px' } as React.CSSProperties} />
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <select value={avSetor} onChange={e => setAvSetor(e.target.value)} style={select}>
                 <option value="operacoes">Operações</option>
                 <option value="marketing">Marketing</option>
