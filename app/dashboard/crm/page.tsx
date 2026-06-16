@@ -338,8 +338,8 @@ export default function CRM() {
 
   return (
     <Layout>
-      <div style={{ padding: '32px 40px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+      <div style={{ padding: '24px clamp(12px, 4vw, 40px)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
             <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>CRM</h1>
             <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{leadsAtivos.length} lead(s) ativos no funil</p>
@@ -361,7 +361,7 @@ export default function CRM() {
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
           <select style={sel} value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)}>
             <option value="">Todas as turmas</option>
             {turmas.map(t => (
@@ -483,11 +483,11 @@ export default function CRM() {
         )}
 
         {visao === 'lista' && (
-          <div style={{ ...card, overflow: 'hidden' }}>
+          <div style={{ ...card, overflowX: 'auto' }}>
             {leadsFiltrados.length === 0 ? (
               <p style={{ padding: 24, fontSize: 14, color: '#6b7280' }}>Nenhum lead no funil.</p>
             ) : (
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
                     {['Nome', 'WhatsApp', 'Turma', 'Etapa', 'Dia', 'Origem', 'Criado em'].map(h => (
@@ -733,7 +733,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 600, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h2 style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
