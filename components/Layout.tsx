@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import NotifCelular from '@/components/NotifCelular'
 
 type Item = { nome: string; href: string }
 type Grupo = { titulo: string; itens: Item[] }
@@ -293,6 +294,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <div style={{ padding: '12px 16px', borderTop: '1px solid #3a3a3c', flexShrink: 0 }}>
               <div style={{ fontSize: '12px', color: '#d1d1d1', fontWeight: 500 }}>{perfil.nome}</div>
               <div style={{ fontSize: '10px', color: '#6b7280', marginTop: 2 }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
+              {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
               <button onClick={sair} style={{ marginTop: 8, width: '100%', background: '#3a3a3c', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: '#d1d1d1', cursor: 'pointer' }}>
                 Sair
               </button>

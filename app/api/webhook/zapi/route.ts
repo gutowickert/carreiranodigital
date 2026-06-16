@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { aplicarRateio } from '@/lib/rateio'
 import { sendLead } from '@/lib/capi'
+import { enviarPush } from '@/lib/push'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -205,6 +206,14 @@ export async function POST(req: NextRequest) {
       nome: conversa.nome || chatName || null,
       lead_id: conversa.lead_id || (lead ? lead.id : null),
     }).eq('id', conversa.id)
+
+    // Notificação no celular (push) quando chega mensagem de cliente
+    if (!fromMe && !ehGrupo) {
+      try {
+        const nomeContato = conversa.nome || chatName || telefone
+        await enviarPush('Nova mensagem 💬', `${nomeContato}: ${resumo}`, '/dashboard/whatsapp')
+      } catch { /* ignore */ }
+    }
 
     // [TEMP] diagnóstico de mensagens enviadas (fromMe): onde caiu. Remover depois.
     if (fromMe) {
