@@ -1,7 +1,7 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
@@ -75,6 +75,21 @@ const grupos: Grupo[] = [
   },
 ]
 
+// Bipe curto pra avisar nova mensagem (sem precisar de arquivo de áudio)
+function bipe() {
+  try {
+    const AC: typeof AudioContext = (window as any).AudioContext || (window as any).webkitAudioContext
+    const ctx = new AC()
+    const o = ctx.createOscillator(); const g = ctx.createGain()
+    o.connect(g); g.connect(ctx.destination)
+    o.type = 'sine'; o.frequency.value = 880
+    g.gain.setValueAtTime(0.12, ctx.currentTime)
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.25)
+    o.start(); o.stop(ctx.currentTime + 0.25)
+    o.onended = () => ctx.close()
+  } catch { /* ignore */ }
+}
+
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (p.papel === 'admin') return true
@@ -99,6 +114,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
   const [isMobile, setIsMobile] = useState(false)
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [checando, setChecando] = useState(true)
+  const [waUnread, setWaUnread] = useState(0)
+  const waPrevRef = useRef(-1)
 
   useEffect(() => {
     function checkMobile() { setIsMobile(window.innerWidth < 768) }
@@ -127,6 +144,34 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     })
     return () => { ativo = false; sub.subscription.unsubscribe() }
   }, [router])
+
+  // Notificação de novas mensagens do WhatsApp (badge no menu + som + aviso do navegador)
+  useEffect(() => {
+    if (!perfil) return
+    const temWa = perfil.papel === 'admin' || perfil.wa_caixa === true
+    if (!temWa) return
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => {})
+    }
+    let ativo = true
+    async function checar() {
+      const { data } = await supabase.from('wa_conversas').select('nao_lidas').gt('nao_lidas', 0)
+      if (!ativo) return
+      const total = (data || []).reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
+      setWaUnread(total)
+      // só avisa quando AUMENTA (não na 1ª carga nem quando você lê)
+      if (waPrevRef.current >= 0 && total > waPrevRef.current) {
+        bipe()
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('Carreira No Digital', { body: 'Nova mensagem no WhatsApp 💬' }) } catch { /* ignore */ }
+        }
+      }
+      waPrevRef.current = total
+    }
+    checar()
+    const t = setInterval(checar, 12000)
+    return () => { ativo = false; clearInterval(t) }
+  }, [perfil])
 
   // Fecha menu ao trocar de página no mobile
   useEffect(() => { setMenuMobileAberto(false) }, [pathname])
@@ -218,7 +263,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                         const ativo = pathname === m.href
                         return (
                           <Link key={m.href} href={m.href} style={{
-                            display: 'block',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            gap: 6,
                             padding: grupo.titulo ? '7px 10px 7px 18px' : '9px 14px',
                             borderRadius: '6px',
                             fontSize: '13px',
@@ -227,7 +275,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             backgroundColor: ativo ? '#7c3aed' : 'transparent',
                             color: ativo ? '#ffffff' : '#9ca3af',
                           }}>
-                            {m.nome}
+                            <span>{m.nome}</span>
+                            {m.href === '/dashboard/whatsapp' && waUnread > 0 && (
+                              <span style={{ background: '#25D366', color: '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
+                                {waUnread > 99 ? '99+' : waUnread}
+                              </span>
+                            )}
                           </Link>
                         )
                       })}
