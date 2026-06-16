@@ -198,13 +198,22 @@ export async function POST(req: NextRequest) {
       await supabase.from('wa_conversas').update({ chat_lid: chatLid }).eq('id', conversa.id)
     }
 
+    // Auto-vincula conversa @lid (sem lead) a um lead pelo NOME do contato,
+    // quando há exatamente um lead com aquele nome. Resolve a conversa duplicada
+    // (card do lead × caixa) que o @lid cria por esconder o número real.
+    let leadVinc: any = lead
+    if (!leadVinc && !conversa.lead_id && chatName && !chatName.includes('@lid')) {
+      const { data: porNome } = await supabase.from('leads').select('id').ilike('nome', chatName).limit(2)
+      if (porNome && porNome.length === 1) leadVinc = porNome[0]
+    }
+
     const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : '📎 Documento')
     await supabase.from('wa_conversas').update({
       ultima_msg: resumo,
       ultima_msg_em: new Date().toISOString(),
       nao_lidas: fromMe ? (conversa.nao_lidas || 0) : (conversa.nao_lidas || 0) + 1,
       nome: conversa.nome || chatName || null,
-      lead_id: conversa.lead_id || (lead ? lead.id : null),
+      lead_id: conversa.lead_id || (leadVinc ? leadVinc.id : null),
     }).eq('id', conversa.id)
 
     // Notificação no celular (push) quando chega mensagem de cliente
