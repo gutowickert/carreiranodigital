@@ -79,6 +79,8 @@ function diaDoCiclo(criadoEm: string): number {
 
 export default function CRM() {
   const [leads, setLeads] = useState<Lead[]>([])
+  const dragLeadRef = useRef<Lead | null>(null)
+  const [colunaAlvo, setColunaAlvo] = useState<string | null>(null)
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [motivosPerda, setMotivosPerda] = useState<MotivoPerda[]>([])
@@ -395,14 +397,24 @@ export default function CRM() {
           <>
             <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
               {leadsPorEtapa.map(({ etapa, leads: leadsEtapa }) => (
-                <div key={etapa.id} style={{ flex: '0 0 260px', minHeight: 400 }}>
+                <div key={etapa.id}
+                  onDragOver={e => { if (dragLeadRef.current) { e.preventDefault(); if (colunaAlvo !== etapa.id) setColunaAlvo(etapa.id) } }}
+                  onDragLeave={() => { if (colunaAlvo === etapa.id) setColunaAlvo(null) }}
+                  onDrop={async e => {
+                    e.preventDefault()
+                    const l = dragLeadRef.current
+                    dragLeadRef.current = null
+                    setColunaAlvo(null)
+                    if (l && l.etapa !== etapa.id) { await moverEtapa(l, etapa.id) }
+                  }}
+                  style={{ flex: '0 0 260px', minHeight: 400, borderRadius: 8, outline: colunaAlvo === etapa.id ? `2px dashed ${etapa.cor}` : '2px dashed transparent', transition: 'outline-color 0.15s' }}>
                   <div style={{ background: etapa.bg, border: `1px solid ${etapa.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ fontSize: 11, fontWeight: 600, color: etapa.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{etapa.label}</span>
                       <span style={{ fontSize: 12, color: etapa.cor }}>{leadsEtapa.length}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 340px)', overflowY: 'auto', paddingRight: 4 }}>
                     {leadsEtapa.map(lead => {
                       const dia = diaDoCiclo(lead.criado_em)
                       const cicloEstourou = dia > PRAZO_CICLO
@@ -410,8 +422,12 @@ export default function CRM() {
                       const tarefaAtrasada = lead.temTarefaAtrasada
                       const alerta = cicloEstourou || prazoEstourou || tarefaAtrasada
                       return (
-                        <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                          style={{ ...card, padding: 12, cursor: 'pointer', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
+                        <div key={lead.id}
+                          draggable
+                          onDragStart={e => { dragLeadRef.current = lead; e.dataTransfer.effectAllowed = 'move' }}
+                          onDragEnd={() => { dragLeadRef.current = null; setColunaAlvo(null) }}
+                          onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
+                          style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{lead.nome}</div>
                             <div style={{ fontSize: 9, color: alerta ? '#f87171' : '#6b7280', fontWeight: 600 }}>D{dia}</div>
