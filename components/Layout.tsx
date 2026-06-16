@@ -1,11 +1,15 @@
 'use client'
 
 import { usePathname, useRouter } from 'next/navigation'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import NotifCelular from '@/components/NotifCelular'
+
+// Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
+// dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
+const LayoutMontado = createContext(false)
 
 type Item = { nome: string; href: string }
 type Grupo = { titulo: string; itens: Item[] }
@@ -106,6 +110,16 @@ function itemPermitido(href: string, p: Perfil): boolean {
 }
 
 export default function Layout({ children }: { children: React.ReactNode }) {
+  const jaMontado = useContext(LayoutMontado)
+  if (jaMontado) return <>{children}</>
+  return (
+    <LayoutMontado.Provider value={true}>
+      <LayoutInterno>{children}</LayoutInterno>
+    </LayoutMontado.Provider>
+  )
+}
+
+function LayoutInterno({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
   const router = useRouter()
   const [abertos, setAbertos] = useState<Record<string, boolean>>(
