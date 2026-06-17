@@ -83,6 +83,13 @@ const MAP: Record<string, string> = { sent: 'enviado', delivered: 'entregue', re
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    // [DIAG temporário] registra TODO POST recebido da Meta, pra confirmar se as
+    // mensagens reais estão chegando aqui. Remover depois de diagnosticar.
+    try {
+      const ch0 = body.entry?.[0]?.changes?.[0]?.value || {}
+      const resumo = `msgs=${(ch0.messages || []).length} status=${(ch0.statuses || []).length}`
+      await supabase.from('webhook_logs').insert({ origem: 'wa-oficial', evento: resumo, payload: body, status: 'recebido' })
+    } catch { /* ignore */ }
     const entries = body.entry || []
     for (const e of entries) {
       for (const ch of (e.changes || [])) {
