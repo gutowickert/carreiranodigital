@@ -53,7 +53,7 @@ function normFone(raw: string, dddPadrao: string): string {
   return d
 }
 
-type Linha = { nome: string; telefone: string; email: string; notas: string }
+type Linha = { nome: string; telefone: string; email: string; notas: string; cidade?: string }
 
 export async function POST(req: NextRequest) {
   try {
@@ -68,23 +68,37 @@ export async function POST(req: NextRequest) {
 
     const linhas: Linha[] = []
 
-    if (formato === 'sleekflow') {
+    if (formato === 'sleekflow' || formato === 'csv' || formato === 'planilha') {
+      // CSV genérico: acha o cabeçalho que tem Nome + Telefone (SleekFlow ou planilha de compradores)
       const rows = parseDelim(texto, ',')
       if (!rows.length) return NextResponse.json({ ok: false, error: 'csv vazio' }, { status: 200 })
-      const header = rows[0].map(h => h.replace(/^﻿/, '').trim().toLowerCase())
-      const iNome = header.indexOf('firstname')
-      const iFone = header.indexOf('phonenumber')
-      const iLast = header.indexOf('lastname')
-      for (let r = 1; r < rows.length; r++) {
+      let h = -1
+      let header: string[] = []
+      for (let i = 0; i < Math.min(rows.length, 20); i++) {
+        const low = rows[i].map(c => (c || '').replace(/^﻿/, '').trim().toLowerCase())
+        const temNome = low.some(c => /^(nome|name|firstname|first ?name)$/.test(c))
+        const temFone = low.some(c => /telefone|phone|celular|whats/.test(c))
+        if (temNome && temFone) { h = i; header = low; break }
+      }
+      if (h < 0) return NextResponse.json({ ok: false, error: 'não encontrei as colunas Nome e Telefone no arquivo' }, { status: 200 })
+      const find = (re: RegExp) => header.findIndex(c => re.test(c))
+      const iNome = find(/^(nome|name|firstname|first ?name)$/)
+      const iLast = find(/^(lastname|last ?name|sobrenome)$/)
+      const iEmail = find(/e-?mail/)
+      const iFone = find(/telefone|phone|celular|whats/)
+      const iCidade = find(/cidade|city/)
+      const colsNotas = header.map((c, idx) => /valor|mentoria|situa|status|obs/.test(c) ? idx : -1).filter(x => x >= 0)
+      for (let r = h + 1; r < rows.length; r++) {
         const row = rows[r]
-        if (!row || row.length < 2) continue
-        const c0 = (row[0] || '').trim()
-        if (c0.startsWith('Index:') || c0.startsWith('Contact owner') || c0.startsWith('LeadStage') ||
-            c0.startsWith('LeadSource') || c0.startsWith('Priority') || c0.startsWith('Country') || c0.startsWith('AssignedTeam')) break
-        const fone = iFone >= 0 ? (row[iFone] || '') : ''
+        if (!row) continue
+        const fone = iFone < row.length ? (row[iFone] || '') : ''
         if (!fone.replace(/\D/g, '')) continue
         const nome = [iNome >= 0 ? row[iNome] : '', iLast >= 0 ? row[iLast] : ''].filter(Boolean).join(' ').trim()
-        linhas.push({ nome, telefone: fone, email: '', notas: '' })
+        const email = iEmail >= 0 ? (row[iEmail] || '') : ''
+        let cid = iCidade >= 0 ? (row[iCidade] || '').trim() : ''
+        if (!cid && iFone + 1 < row.length) { const nxt = (row[iFone + 1] || '').trim(); if (nxt && !/\d{6,}/.test(nxt)) cid = nxt }
+        const notas = colsNotas.map(idx => (row[idx] || '').trim()).filter(Boolean).join(' · ')
+        linhas.push({ nome, telefone: fone, email, notas, cidade: cid })
       }
     } else {
       // colado: tab-delimitado (com aspas/multilinha) OU separado por 2+ espaços
@@ -118,11 +132,12 @@ export async function POST(req: NextRequest) {
         if (!ex.nome && l.nome) ex.nome = l.nome
         if (!ex.email && l.email) ex.email = l.email
         if (!ex.notas && l.notas) ex.notas = l.notas
+        if (!ex.cidade && l.cidade) ex.cidade = l.cidade
         continue
       }
       porFone.set(tel, {
         telefone: tel, nome: l.nome || null, email: l.email || null,
-        cidade, categoria, origem, notas: l.notas || null,
+        cidade: cidade || l.cidade || null, categoria, origem, notas: l.notas || null,
         status: 'novo', atualizado_em: new Date().toISOString(),
       })
     }
