@@ -18,6 +18,8 @@ export async function GET(req: import('next/server').NextRequest) {
   }
   // números da WABA (status, id) — pra conferir se o PHONE_ID bate
   const nums = await get(`/${WABA_ID}/phone_numbers?fields=id,display_phone_number,verified_name,quality_rating,code_verification_status,platform_type`)
+  // override de webhook NO PRÓPRIO NÚMERO (pode roubar as mensagens reais do webhook do app)
+  const override = await get(`/${PHONE_ID}?fields=id,display_phone_number,webhook_configuration`)
   // templates aprovados (nome, idioma, status, categoria)
   const tpls = await get(`/${WABA_ID}/message_templates?fields=name,language,status,category,components&limit=100`)
 
@@ -42,6 +44,7 @@ export async function GET(req: import('next/server').NextRequest) {
     ok: true,
     phone_id_env: PHONE_ID,
     numeros: nums.json?.error ? nums.json.error : numerosResumo,
+    webhook_do_numero: override.json?.error ? override.json.error : (override.json?.webhook_configuration || 'sem override (usa o webhook do app)'),
     templates: tpls.json?.error ? tpls.json.error : templatesResumo,
   })
 }
