@@ -117,10 +117,10 @@ export default function Listas() {
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <div>
-            <label style={label}>Arquivos CSV (SleekFlow ou planilha de compradores)</label>
-            <input type="file" accept=".csv" multiple onChange={onArquivos} disabled={importando}
+            <label style={label}>Arquivos CSV ou VCF (SleekFlow, planilha ou contatos do Kommo)</label>
+            <input type="file" accept=".csv,.vcf" multiple onChange={onArquivos} disabled={importando}
               style={{ ...inp, padding: 8, cursor: 'pointer' }} />
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Pode selecionar vários. Detecta as colunas Nome/Telefone sozinho. A cidade vem do arquivo (ou do campo acima). Marque a categoria certa!</div>
+            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Pode selecionar vários. Lê CSV (Nome/Telefone) e VCF (vCard). VCF não traz cidade — preencha o campo "Cidade" acima antes. Marque a categoria certa!</div>
           </div>
           <div>
             <label style={label}>Colar lista (Nome [tab] email [tab] telefone [tab] situação)</label>

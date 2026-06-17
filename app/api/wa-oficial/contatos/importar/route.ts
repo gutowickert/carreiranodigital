@@ -68,7 +68,18 @@ export async function POST(req: NextRequest) {
 
     const linhas: Linha[] = []
 
-    if (formato === 'sleekflow' || formato === 'csv' || formato === 'planilha') {
+    if (texto.includes('BEGIN:VCARD')) {
+      // vCard (.vcf) — ex: export do Kommo. Pega FN (nome) e TEL (telefone).
+      const cards = texto.split(/BEGIN:VCARD/i)
+      for (const c of cards) {
+        if (!/END:VCARD/i.test(c)) continue
+        const fn = c.match(/^FN[^:\r\n]*:(.+)$/im)
+        const tel = c.match(/^TEL[^:\r\n]*:(.+)$/im)
+        const telv = tel ? tel[1].trim() : ''
+        if (!telv.replace(/\D/g, '')) continue
+        linhas.push({ nome: fn ? fn[1].trim() : '', telefone: telv, email: '', notas: '' })
+      }
+    } else if (formato === 'sleekflow' || formato === 'csv' || formato === 'planilha') {
       // CSV genérico: acha o cabeçalho que tem Nome + Telefone (SleekFlow ou planilha de compradores)
       const rows = parseDelim(texto, ',')
       if (!rows.length) return NextResponse.json({ ok: false, error: 'csv vazio' }, { status: 200 })
