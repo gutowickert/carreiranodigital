@@ -37,6 +37,7 @@ const grupos: Grupo[] = [
     titulo: 'Comercial',
     itens: [
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
+      { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Config CRM', href: '/dashboard/crm/config' },
@@ -99,7 +100,7 @@ function bipe() {
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (p.papel === 'admin') return true
-  if (href === '/dashboard/whatsapp') return p.wa_caixa === true
+  if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
   const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
   if (baseVendedor.includes(href)) return true

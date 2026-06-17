@@ -19,6 +19,53 @@ async function registrarOptout(telefone: string) {
   await supabase.from('wa_contatos').update({ status: 'optout', atualizado_em: new Date().toISOString() }).eq('telefone', tel)
 }
 
+// Guarda uma RESPOSTA recebida no número de disparo (canal 'oficial'): cria/acha a
+// conversa, grava a mensagem e atualiza o funil do contato (respondeu / opt-out).
+async function registrarRecebida(m: any, value: any) {
+  const tel = foneOficial(m.from || '')
+  if (!tel || tel.length < 12) return
+  const nome = value?.contacts?.[0]?.profile?.name || null
+
+  let tipo = 'texto'
+  let texto: string | null = null
+  if (m.type === 'text') texto = m.text?.body || ''
+  else if (m.type === 'image') { tipo = 'imagem'; texto = m.image?.caption || '📷 Imagem' }
+  else if (m.type === 'audio' || m.type === 'voice') { tipo = 'audio'; texto = '🎤 Áudio' }
+  else if (m.type === 'video') { tipo = 'video'; texto = m.video?.caption || '🎬 Vídeo' }
+  else if (m.type === 'document') { tipo = 'documento'; texto = m.document?.filename || '📎 Documento' }
+  else if (m.type === 'button') texto = m.button?.text || ''
+  else if (m.type === 'interactive') texto = m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || ''
+  else texto = `(${m.type || 'mensagem'})`
+
+  // dedup por wamid (guardado em zapi_id)
+  if (m.id) {
+    const { data: ja } = await supabase.from('wa_mensagens').select('id').eq('zapi_id', m.id).limit(1)
+    if (ja && ja.length) return
+  }
+
+  // acha/cria a conversa do canal oficial
+  let { data: conv } = await supabase.from('wa_conversas').select('*').eq('telefone', tel).eq('canal', 'oficial').maybeSingle()
+  if (!conv) {
+    const { data: nova } = await supabase.from('wa_conversas').insert({ telefone: tel, nome, canal: 'oficial' }).select().single()
+    conv = nova
+  }
+  if (!conv) return
+
+  await supabase.from('wa_mensagens').insert({
+    conversa_id: conv.id, zapi_id: m.id || null, direcao: 'recebida',
+    tipo, texto, status: 'recebida', canal: 'oficial',
+  })
+  await supabase.from('wa_conversas').update({
+    ultima_msg: (texto || '').slice(0, 200), ultima_msg_em: new Date().toISOString(),
+    nao_lidas: (conv.nao_lidas || 0) + 1, nome: conv.nome || nome || null,
+  }).eq('id', conv.id)
+
+  // funil do contato frio: "SAIR" => opt-out; qualquer outra resposta => respondeu
+  const limpo = semAcento((m.text?.body || '').trim().toLowerCase())
+  if (PALAVRAS_OPTOUT.has(limpo)) await registrarOptout(tel)
+  else await supabase.from('wa_contatos').update({ status: 'respondeu', atualizado_em: new Date().toISOString() }).eq('telefone', tel).neq('status', 'optout')
+}
+
 // Verificação do webhook (a Meta chama via GET ao configurar)
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
@@ -39,10 +86,9 @@ export async function POST(req: NextRequest) {
     const entries = body.entry || []
     for (const e of entries) {
       for (const ch of (e.changes || [])) {
-        // respostas recebidas: opt-out por "SAIR" e afins
+        // respostas recebidas: guarda na caixa "WhatsApp Disparos" + funil (respondeu/opt-out)
         for (const m of (ch.value?.messages || [])) {
-          const texto = semAcento((m.text?.body || '').trim().toLowerCase())
-          if (m.from && PALAVRAS_OPTOUT.has(texto)) await registrarOptout(m.from)
+          if (m.from) await registrarRecebida(m, ch.value)
         }
         const statuses = ch.value?.statuses || []
         for (const st of statuses) {

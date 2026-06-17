@@ -47,7 +47,8 @@ export default function CaixaWhatsApp() {
 
   async function carregarConversas() {
     const { data } = await supabase.from('wa_conversas')
-      .select('*').order('ultima_msg_em', { ascending: false, nullsFirst: false })
+      .select('*').or('canal.eq.zapi,canal.is.null')
+      .order('ultima_msg_em', { ascending: false, nullsFirst: false })
     setConversas(data || [])
     // leads marcados como "não lida" (marcador manual do CRM) pra mostrar na lista
     const { data: nl } = await supabase.from('leads').select('id').eq('nao_lida', true)
