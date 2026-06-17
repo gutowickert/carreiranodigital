@@ -87,14 +87,15 @@ export async function POST(req: NextRequest) {
       let header: string[] = []
       for (let i = 0; i < Math.min(rows.length, 20); i++) {
         const low = rows[i].map(c => (c || '').replace(/^﻿/, '').trim().toLowerCase())
-        const temNome = low.some(c => /^(nome|name|firstname|first ?name)$/.test(c))
+        const temNome = low.some(c => /nome|name/.test(c))
         const temFone = low.some(c => /telefone|phone|celular|whats/.test(c))
         if (temNome && temFone) { h = i; header = low; break }
       }
       if (h < 0) return NextResponse.json({ ok: false, error: 'não encontrei as colunas Nome e Telefone no arquivo' }, { status: 200 })
       const find = (re: RegExp) => header.findIndex(c => re.test(c))
-      const iNome = find(/^(nome|name|firstname|first ?name)$/)
-      const iLast = find(/^(lastname|last ?name|sobrenome)$/)
+      const iNomeFull = find(/nome completo|full ?name/)
+      const iNome = iNomeFull >= 0 ? iNomeFull : find(/^(nome|name|firstname|first ?name|primeiro ?nome)$/)
+      const iLast = iNomeFull >= 0 ? -1 : find(/^(lastname|last ?name|sobrenome)$/)
       const iEmail = find(/e-?mail/)
       const iFone = find(/telefone|phone|celular|whats/)
       const iCidade = find(/cidade|city/)
