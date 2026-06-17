@@ -78,6 +78,15 @@ export async function POST(req: NextRequest) {
         falhas: (d?.falhas || 0) + falhas,
       }).eq('id', disparoId)
 
+      // marca os contatos frios que receberam (só novo -> enviado; preserva respondeu/optout/etc).
+      // Inofensivo p/ leads/colados: telefone que não está em wa_contatos só não casa.
+      const enviadosFones = envios.filter(e => e.status === 'enviado').map(e => e.telefone)
+      if (enviadosFones.length) {
+        await supabase.from('wa_contatos')
+          .update({ status: 'enviado', atualizado_em: new Date().toISOString() })
+          .in('telefone', enviadosFones).eq('status', 'novo')
+      }
+
       return NextResponse.json({ ok: true, enviados, falhas })
     }
 

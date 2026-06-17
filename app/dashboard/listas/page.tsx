@@ -10,12 +10,18 @@ const label = { display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 
 type Contato = { id: string; nome: string | null; telefone: string; cidade: string | null; categoria: string; status: string; notas: string | null; criado_em: string }
 type Resumo = { total: number; interessados: number; compradores: number; cidades: { cidade: string; interessado: number; comprador: number; total: number }[] }
 
-// Deriva a cidade do nome do arquivo do SleekFlow (ex: ..._NOVO_HAMBURGO.csv)
+// Deriva a cidade do nome do arquivo. Suporta dois padrões:
+//  - Kommo:     "kommo_export_contacts_2026-06-17   LAJEADO.csv" → cidade vem depois da data
+//  - SleekFlow: "algo_algo_NOVO_HAMBURGO.csv"                    → cidade após o 2º "_"
 function cidadeDoArquivo(nome: string): string {
-  const base = nome.replace(/\.csv$/i, '').replace(/\s*\(\d+\)\s*$/, '')
-  const partes = base.split('_')
-  const cidade = partes.slice(2).join(' ').trim()
-  return cidade ? cidade.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : ''
+  let base = nome.replace(/\.(csv|vcf)$/i, '').replace(/\s*\(\d+\)\s*$/, '')
+  const aposData = base.match(/\d{4}[-_]\d{2}[-_]\d{2}[\s_]+(.+)$/)
+  if (aposData) base = aposData[1]
+  else base = base.split('_').slice(2).join(' ')
+  const cidade = base.replace(/[_\s]+/g, ' ').trim()
+  // descarta se sobrou só data/número (nome sem cidade de verdade)
+  if (!cidade || /^\d/.test(cidade) || !/[a-zà-ú]/i.test(cidade)) return ''
+  return cidade.toLowerCase().replace(/\b\w/g, c => c.toUpperCase())
 }
 
 export default function Listas() {
