@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
+// O PostgREST (Supabase) limita ~1000 linhas por request. Paginamos por range
+// pra não truncar nem a lista nem as contagens do resumo.
+const PAGINA = 1000
+
 // Lista contatos frios com filtros + resumo (por cidade/categoria).
 export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
@@ -8,26 +12,45 @@ export async function GET(req: NextRequest) {
   const categoria = sp.get('categoria') || ''
   const status = sp.get('status') || ''
   const q = (sp.get('q') || '').trim()
-  const limit = Math.min(parseInt(sp.get('limit') || '300', 10) || 300, 1000)
+  const limit = Math.min(parseInt(sp.get('limit') || '300', 10) || 300, 20000)
 
-  let query = supabase.from('wa_contatos').select('*').order('criado_em', { ascending: false }).limit(limit)
-  if (cidade) query = query.eq('cidade', cidade)
-  if (categoria) query = query.eq('categoria', categoria)
-  if (status) query = query.eq('status', status)
-  if (q) query = query.or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`)
-  const { data: contatos, error } = await query
-  if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+  const baseFiltrada = () => {
+    let query = supabase.from('wa_contatos').select('*').order('criado_em', { ascending: false })
+    if (cidade) query = query.eq('cidade', cidade)
+    if (categoria) query = query.eq('categoria', categoria)
+    if (status) query = query.eq('status', status)
+    if (q) query = query.or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`)
+    return query
+  }
 
-  // resumo: traz só cidade/categoria de tudo e agrega no servidor
-  const { data: leves } = await supabase.from('wa_contatos').select('cidade,categoria').limit(50000)
+  // contatos paginados até o limite pedido (driblando o teto de 1000 do PostgREST)
+  const contatos: any[] = []
+  for (let from = 0; from < limit; from += PAGINA) {
+    const to = Math.min(from + PAGINA, limit) - 1
+    const { data, error } = await baseFiltrada().range(from, to)
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+    contatos.push(...(data || []))
+    if (!data || data.length < to - from + 1) break
+  }
+
+  // resumo: totais via COUNT exato (não trunca) + quebra por cidade paginando só 2 colunas
+  const [tot, totInt, totComp] = await Promise.all([
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }),
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('categoria', 'interessado'),
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('categoria', 'comprador'),
+  ])
   const porCidade: Record<string, { interessado: number; comprador: number; total: number }> = {}
-  let totInteressado = 0, totComprador = 0
-  for (const r of (leves || [])) {
-    const cid = r.cidade || '(sem cidade)'
-    if (!porCidade[cid]) porCidade[cid] = { interessado: 0, comprador: 0, total: 0 }
-    if (r.categoria === 'comprador') { porCidade[cid].comprador++; totComprador++ }
-    else { porCidade[cid].interessado++; totInteressado++ }
-    porCidade[cid].total++
+  for (let from = 0; ; from += PAGINA) {
+    const { data, error } = await supabase.from('wa_contatos').select('cidade,categoria').range(from, from + PAGINA - 1)
+    if (error || !data) break
+    for (const r of data) {
+      const cid = r.cidade || '(sem cidade)'
+      if (!porCidade[cid]) porCidade[cid] = { interessado: 0, comprador: 0, total: 0 }
+      if (r.categoria === 'comprador') porCidade[cid].comprador++
+      else porCidade[cid].interessado++
+      porCidade[cid].total++
+    }
+    if (data.length < PAGINA) break
   }
   const cidades = Object.entries(porCidade)
     .map(([cidade, v]) => ({ cidade, ...v }))
@@ -35,7 +58,12 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     ok: true,
-    contatos: contatos || [],
-    resumo: { total: (leves || []).length, interessados: totInteressado, compradores: totComprador, cidades },
+    contatos,
+    resumo: {
+      total: tot.count || 0,
+      interessados: totInt.count || 0,
+      compradores: totComp.count || 0,
+      cidades,
+    },
   })
 }

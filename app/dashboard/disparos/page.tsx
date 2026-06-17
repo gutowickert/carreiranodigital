@@ -14,9 +14,13 @@ type Contato = { telefone: string; nome: string; lead_id?: string }
 export default function Disparos() {
   const [turmas, setTurmas] = useState<any[]>([])
   const [templates, setTemplates] = useState<Tpl[]>([])
-  const [modo, setModo] = useState<'turma' | 'colar'>('turma')
+  const [modo, setModo] = useState<'turma' | 'colar' | 'lista'>('turma')
   const [turmaId, setTurmaId] = useState('')
   const [numerosTexto, setNumerosTexto] = useState('')
+  // listas frias (wa_contatos)
+  const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; total: number }[]>([])
+  const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador'>('interessado')
+  const [listaCidade, setListaCidade] = useState('') // '' = todas
   const [contatos, setContatos] = useState<Contato[]>([])
   const [carregandoPublico, setCarregandoPublico] = useState(false)
 
@@ -32,6 +36,8 @@ export default function Disparos() {
   useEffect(() => {
     supabase.from('turmas').select('id, codigo, produtos(nome), cidades(nome)').then(({ data }) => setTurmas(data || []))
     fetch('/api/wa-oficial/templates').then(r => r.json()).then(j => setTemplates(j.templates || []))
+    // resumo das listas frias (só pra popular o seletor de cidade)
+    fetch('/api/wa-oficial/contatos?limit=1').then(r => r.json()).then(j => { if (j.ok) setCidades(j.resumo?.cidades || []) })
   }, [])
 
   const tpl = templates.find(t => t.nome === tplNome)
@@ -51,6 +57,13 @@ export default function Disparos() {
         if (!turmaId) { setCarregandoPublico(false); return }
         const { data } = await supabase.from('leads').select('id, nome, whatsapp').eq('turma_id', turmaId).not('whatsapp', 'is', null)
         setContatos((data || []).filter((l: any) => l.whatsapp).map((l: any) => ({ telefone: l.whatsapp, nome: l.nome || '', lead_id: l.id })))
+      } else if (modo === 'lista') {
+        const p = new URLSearchParams({ categoria: listaCategoria, limit: '5000' })
+        if (listaCidade) p.set('cidade', listaCidade)
+        const j = await fetch('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
+        // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
+        const cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
+        setContatos(cs)
       } else {
         const linhas = numerosTexto.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean)
         setContatos(linhas.map(t => ({ telefone: t, nome: '' })))
@@ -104,16 +117,39 @@ export default function Disparos() {
       {/* 1. Público */}
       <div style={{ ...card, padding: 20, marginBottom: 16 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 12 }}>1. Público</div>
-        <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+        <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
           <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'turma'} onChange={() => setModo('turma')} /> Leads por turma</label>
+          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'lista'} onChange={() => setModo('lista')} /> Listas (frias)</label>
           <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
         </div>
-        {modo === 'turma' ? (
+        {modo === 'turma' && (
           <select style={inp} value={turmaId} onChange={e => setTurmaId(e.target.value)}>
             <option value="">Selecione a turma...</option>
             {turmas.map(t => <option key={t.id} value={t.id}>{t.produtos?.nome} — {t.cidades?.nome} ({t.codigo})</option>)}
           </select>
-        ) : (
+        )}
+        {modo === 'lista' && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <div>
+              <label style={label}>Categoria</label>
+              <select style={{ ...inp, width: 'auto' }} value={listaCategoria} onChange={e => setListaCategoria(e.target.value as any)}>
+                <option value="interessado">Interessados</option>
+                <option value="comprador">Compradores</option>
+              </select>
+            </div>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <label style={label}>Cidade</label>
+              <select style={inp} value={listaCidade} onChange={e => setListaCidade(e.target.value)}>
+                <option value="">Todas as cidades</option>
+                {cidades.map(c => {
+                  const n = listaCategoria === 'comprador' ? c.comprador : c.interessado
+                  return <option key={c.cidade} value={c.cidade}>{c.cidade} ({n})</option>
+                })}
+              </select>
+            </div>
+          </div>
+        )}
+        {modo === 'colar' && (
           <textarea style={{ ...inp, minHeight: 90 }} placeholder="Um número por linha (com DDD)" value={numerosTexto} onChange={e => setNumerosTexto(e.target.value)} />
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
