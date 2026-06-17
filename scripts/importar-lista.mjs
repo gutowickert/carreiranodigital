@@ -197,6 +197,14 @@ let salvos = 0
 const lote = 500
 for (let i = 0; i < registros.length; i += lote) {
   const chunk = registros.slice(i, i + lote)
+  // BLINDAGEM: importar como 'interessado' NUNCA rebaixa quem já é 'comprador'
+  // (mesmo com --sobrescrever). Atualiza cidade/nome/etc, mas preserva a categoria comprador.
+  if (categoria === 'interessado') {
+    const fones = chunk.map(r => r.telefone)
+    const { data: comps } = await supabase.from('wa_contatos').select('telefone').eq('categoria', 'comprador').in('telefone', fones)
+    const setComp = new Set((comps || []).map(c => c.telefone))
+    for (const r of chunk) if (setComp.has(r.telefone)) r.categoria = 'comprador'
+  }
   const { error } = await supabase
     .from('wa_contatos')
     .upsert(chunk, { onConflict: 'telefone', ignoreDuplicates: sobrescrever ? false : categoria !== 'comprador' })
