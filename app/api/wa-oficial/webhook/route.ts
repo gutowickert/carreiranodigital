@@ -28,11 +28,15 @@ async function registrarRecebida(m: any, value: any) {
 
   let tipo = 'texto'
   let texto: string | null = null
+  let midiaUrl: string | null = null
+  let midiaMime: string | null = null
+  const proxy = (mid: string) => `/api/wa-oficial/midia?id=${mid}`
   if (m.type === 'text') texto = m.text?.body || ''
-  else if (m.type === 'image') { tipo = 'imagem'; texto = m.image?.caption || '📷 Imagem' }
-  else if (m.type === 'audio' || m.type === 'voice') { tipo = 'audio'; texto = '🎤 Áudio' }
-  else if (m.type === 'video') { tipo = 'video'; texto = m.video?.caption || '🎬 Vídeo' }
-  else if (m.type === 'document') { tipo = 'documento'; texto = m.document?.filename || '📎 Documento' }
+  else if (m.type === 'image') { tipo = 'imagem'; texto = m.image?.caption || null; midiaMime = m.image?.mime_type || 'image/jpeg'; if (m.image?.id) midiaUrl = proxy(m.image.id) }
+  else if (m.type === 'audio' || m.type === 'voice') { tipo = 'audio'; midiaMime = m.audio?.mime_type || 'audio/ogg'; if (m.audio?.id) midiaUrl = proxy(m.audio.id) }
+  else if (m.type === 'video') { tipo = 'video'; texto = m.video?.caption || null; midiaMime = m.video?.mime_type || 'video/mp4'; if (m.video?.id) midiaUrl = proxy(m.video.id) }
+  else if (m.type === 'document') { tipo = 'documento'; texto = m.document?.filename || 'documento'; midiaMime = m.document?.mime_type || null; if (m.document?.id) midiaUrl = proxy(m.document.id) }
+  else if (m.type === 'sticker') { tipo = 'imagem'; midiaMime = 'image/webp'; if (m.sticker?.id) midiaUrl = proxy(m.sticker.id) }
   else if (m.type === 'button') texto = m.button?.text || ''
   else if (m.type === 'interactive') texto = m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || ''
   else texto = `(${m.type || 'mensagem'})`
@@ -53,10 +57,11 @@ async function registrarRecebida(m: any, value: any) {
 
   await supabase.from('wa_mensagens').insert({
     conversa_id: conv.id, zapi_id: m.id || null, direcao: 'recebida',
-    tipo, texto, status: 'recebida', canal: 'oficial',
+    tipo, texto, midia_url: midiaUrl, midia_mime: midiaMime, status: 'recebida', canal: 'oficial',
   })
+  const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : tipo === 'documento' ? '📎 Documento' : '')
   await supabase.from('wa_conversas').update({
-    ultima_msg: (texto || '').slice(0, 200), ultima_msg_em: new Date().toISOString(),
+    ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),
     nao_lidas: (conv.nao_lidas || 0) + 1, nome: conv.nome || nome || null,
   }).eq('id', conv.id)
 
