@@ -55,6 +55,7 @@ const grupos: Grupo[] = [
       { nome: 'Desempenho', href: '/dashboard/desempenho' },
       { nome: 'Tráfego', href: '/dashboard/trafego' },
       { nome: 'Disparos', href: '/dashboard/disparos' },
+      { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
     ],
   },
