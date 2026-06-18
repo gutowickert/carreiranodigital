@@ -596,8 +596,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [mostrarPag, setMostrarPag] = useState(false)
   const [mostrarAgendado, setMostrarAgendado] = useState(false)
   const [agendadoData, setAgendadoData] = useState('')
+  const [agendadoHora, setAgendadoHora] = useState('09:00')
   const [mostrarProxTurma, setMostrarProxTurma] = useState(false)
   const [proxTurmaData, setProxTurmaData] = useState('')
+  const [proxTurmaHora, setProxTurmaHora] = useState('09:00')
   const [naoLida, setNaoLida] = useState(false)
 
   async function toggleNaoLida() {
@@ -643,7 +645,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       setLigacoes([])
     }
     setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false); setMostrarPag(false)
-    setMostrarAgendado(false); setMostrarProxTurma(false); setAgendadoData(''); setProxTurmaData('')
+    setMostrarAgendado(false); setMostrarProxTurma(false); setAgendadoData(''); setProxTurmaData(''); setAgendadoHora('09:00'); setProxTurmaHora('09:00')
     setMotivoSelecionado(''); setPrazoData(''); setPagData('')
   }, [lead, aberto])
 
@@ -746,7 +748,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   // Move o lead pra etapa "Agendado" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarAgendado() {
     if (!lead || !agendadoData) return
-    const dataIso = new Date(`${agendadoData}T09:00:00`).toISOString()
+    const dataIso = new Date(`${agendadoData}T${agendadoHora || '09:00'}:00`).toISOString()
     await moverEtapa(lead, 'agendado', { dataAgendada: dataIso })
     onFechar()
   }
@@ -754,7 +756,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   // Move o lead pra etapa "Próxima turma" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarProxTurma() {
     if (!lead || !proxTurmaData) return
-    const dataIso = new Date(`${proxTurmaData}T09:00:00`).toISOString()
+    const dataIso = new Date(`${proxTurmaData}T${proxTurmaHora || '09:00'}:00`).toISOString()
     await moverEtapa(lead, 'proxima_turma', { dataAgendada: dataIso })
     onFechar()
   }
@@ -1000,7 +1002,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               {mostrarAgendado && (
                 <div style={{ marginTop: 12, padding: 12, background: '#083344', borderRadius: 8, border: '1px solid #06b6d440' }}>
                   <label style={labelStyle}>📅 Chamar o lead em: *</label>
-                  <input type="date" style={inp} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" style={{ ...inp, flex: 1 }} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
+                    <input type="time" style={{ ...inp, width: 110 }} value={agendadoHora} onChange={e => setAgendadoHora(e.target.value)} />
+                  </div>
                   <button onClick={confirmarAgendado} disabled={!agendadoData}
                     style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
                     Agendar contato
@@ -1011,7 +1016,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               {mostrarProxTurma && (
                 <div style={{ marginTop: 12, padding: 12, background: '#2e1065', borderRadius: 8, border: '1px solid #a78bfa40' }}>
                   <label style={labelStyle}>➡️ Próxima turma — chamar em: *</label>
-                  <input type="date" style={inp} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" style={{ ...inp, flex: 1 }} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
+                    <input type="time" style={{ ...inp, width: 110 }} value={proxTurmaHora} onChange={e => setProxTurmaHora(e.target.value)} />
+                  </div>
                   <button onClick={confirmarProxTurma} disabled={!proxTurmaData}
                     style={{ ...btnPrimary, background: '#7c3aed', marginTop: 8, width: '100%', opacity: proxTurmaData ? 1 : 0.5 }}>
                     Marcar próxima turma
