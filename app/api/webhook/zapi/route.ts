@@ -128,7 +128,7 @@ export async function POST(req: NextRequest) {
     }
     // 2) casa pelo telefone exato — nº real ou dígitos do @lid
     if (!conversa) {
-      const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).maybeSingle()
+      const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).eq('canal', 'zapi').maybeSingle()
       conversa = porFone || null
     }
     if (!conversa && lead) {

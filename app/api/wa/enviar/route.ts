@@ -43,11 +43,11 @@ export async function POST(req: NextRequest) {
     let conversa: any = null
     if (leadInfo || leadId) {
       const lid = leadInfo ? leadInfo.id : leadId
-      const { data: porLead } = await supabase.from('wa_conversas').select('*').eq('lead_id', lid).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
+      const { data: porLead } = await supabase.from('wa_conversas').select('*').eq('lead_id', lid).eq('canal', 'zapi').order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
       if (porLead && porLead[0]) conversa = porLead[0]
     }
     if (!conversa) {
-      const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).maybeSingle()
+      const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', fone).eq('canal', 'zapi').maybeSingle()
       conversa = porFone || null
     }
     if (!conversa) {
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest) {
         telefone: fone,
         nome: leadInfo ? leadInfo.nome : null,
         lead_id: leadInfo ? leadInfo.id : (leadId || null),
+        canal: 'zapi',
       }).select().single()
       conversa = nova
     }
