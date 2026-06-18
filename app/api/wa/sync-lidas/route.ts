@@ -11,7 +11,7 @@ export async function POST() {
       return NextResponse.json({ ok: false, error: r.error || 'sem dados' }, { status: 200 })
     }
 
-    const { data: conversas } = await supabase.from('wa_conversas').select('id, telefone, nao_lidas')
+    const { data: conversas } = await supabase.from('wa_conversas').select('id, telefone, nao_lidas').eq('canal', 'zapi')
     const porTel: Record<string, { id: string; nao_lidas: number }> = {}
     ;(conversas || []).forEach((c: any) => { if (c.telefone) porTel[c.telefone] = { id: c.id, nao_lidas: c.nao_lidas || 0 } })
 
