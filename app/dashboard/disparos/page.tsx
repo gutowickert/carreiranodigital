@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
 const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
@@ -26,8 +26,28 @@ export default function Disparos() {
 
   const [tplNome, setTplNome] = useState('')
   const [headerLink, setHeaderLink] = useState('')
+  const [headerMediaId, setHeaderMediaId] = useState('')
+  const [headerArquivo, setHeaderArquivo] = useState('')
+  const [subindoMidia, setSubindoMidia] = useState(false)
+  const headerFileRef = useRef<HTMLInputElement | null>(null)
   const [bodyParams, setBodyParams] = useState<string[]>([])
   const [nomeCampanha, setNomeCampanha] = useState('')
+
+  async function subirHeaderMidia(file: File) {
+    setSubindoMidia(true)
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      try {
+        const j = await fetch('/api/wa-oficial/upload-midia', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ base64: reader.result, nome: file.name }),
+        }).then(r => r.json())
+        if (j.ok) { setHeaderMediaId(j.id); setHeaderArquivo(file.name); setHeaderLink('') }
+        else alert('Falha no upload: ' + j.error)
+      } catch { alert('Erro de rede no upload') } finally { setSubindoMidia(false) }
+    }
+    reader.readAsDataURL(file)
+  }
 
   const [rodando, setRodando] = useState(false)
   const [progresso, setProgresso] = useState({ feitos: 0, total: 0, enviados: 0, falhas: 0 })
@@ -47,7 +67,7 @@ export default function Disparos() {
   // ajusta os campos de variáveis quando troca o template
   useEffect(() => {
     if (tpl) setBodyParams(Array.from({ length: tpl.variaveis }, () => '')); else setBodyParams([])
-    setHeaderLink('')
+    setHeaderLink(''); setHeaderMediaId(''); setHeaderArquivo('')
   }, [tplNome])
 
   async function carregarPublico() {
@@ -73,7 +93,8 @@ export default function Disparos() {
 
   async function disparar() {
     if (!tpl || contatos.length === 0) return
-    if (headerMidia && !headerLink.trim()) { alert('Esse template tem mídia no topo — informe a URL da mídia.'); return }
+    if (headerMidia && !headerMediaId && !headerLink.trim()) { alert('Esse template tem mídia no topo — faça upload de um arquivo ou informe a URL.'); return }
+    if (subindoMidia) { alert('Aguarde o upload da mídia terminar.'); return }
     if (!confirm(`Disparar "${tpl.nome}" para ${contatos.length} contato(s)? Custo estimado: ${(contatos.length * custoUnit).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)) return
 
     setRodando(true); setResultadoFinal(null)
@@ -90,7 +111,7 @@ export default function Disparos() {
       // 2) envia em lotes de 25
       const lote = 25
       let enviados = 0, falhas = 0
-      const headerObj = headerMidia ? { tipo: tpl!.header, link: headerLink.trim() } : null
+      const headerObj = headerMidia ? { tipo: tpl!.header, ...(headerMediaId ? { id: headerMediaId } : { link: headerLink.trim() }) } : null
       for (let i = 0; i < contatos.length; i += lote) {
         const chunk = contatos.slice(i, i + lote)
         const res = await fetch('/api/wa-oficial/disparar', {
@@ -172,8 +193,20 @@ export default function Disparos() {
             {tpl.corpo && <div style={{ fontSize: 12, color: '#9ca3af', background: '#1c1c1e', borderRadius: 8, padding: 10, marginTop: 10, whiteSpace: 'pre-wrap' }}>{tpl.corpo}</div>}
             {headerMidia && (
               <div style={{ marginTop: 12 }}>
-                <label style={label}>URL da mídia do topo ({tpl.header})</label>
-                <input style={inp} placeholder="https://..." value={headerLink} onChange={e => setHeaderLink(e.target.value)} />
+                <label style={label}>Mídia do topo ({tpl.header})</label>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input ref={headerFileRef} type="file" style={{ display: 'none' }}
+                    accept={tpl.header === 'image' ? 'image/*' : tpl.header === 'video' ? 'video/*' : 'application/pdf,.pdf,.doc,.docx,.xls,.xlsx'}
+                    onChange={e => { const f = e.target.files?.[0]; if (f) subirHeaderMidia(f); e.target.value = '' }} />
+                  <button type="button" onClick={() => headerFileRef.current?.click()} disabled={subindoMidia}
+                    style={{ ...btn, background: '#3a3a3c', opacity: subindoMidia ? 0.6 : 1 }}>
+                    {subindoMidia ? 'Enviando...' : '📎 Escolher arquivo'}
+                  </button>
+                  {headerMediaId && <span style={{ fontSize: 12, color: '#34d399' }}>✓ {headerArquivo}</span>}
+                </div>
+                <div style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 4px' }}>ou cole uma URL pública:</div>
+                <input style={inp} placeholder="https://..." value={headerLink}
+                  onChange={e => { setHeaderLink(e.target.value); if (e.target.value) { setHeaderMediaId(''); setHeaderArquivo('') } }} />
               </div>
             )}
             {bodyParams.map((v, i) => (

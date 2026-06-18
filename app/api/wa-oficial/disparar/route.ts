@@ -50,9 +50,10 @@ export async function POST(req: NextRequest) {
 
         // monta componentes do template
         const componentes: any[] = []
-        if (headerMidia && headerMidia.tipo && headerMidia.link) {
+        if (headerMidia && headerMidia.tipo && (headerMidia.id || headerMidia.link)) {
           const tipo = headerMidia.tipo // image | video | document
-          componentes.push({ type: 'header', parameters: [{ type: tipo, [tipo]: { link: headerMidia.link } }] })
+          const midiaParam = headerMidia.id ? { id: headerMidia.id } : { link: headerMidia.link }
+          componentes.push({ type: 'header', parameters: [{ type: tipo, [tipo]: midiaParam }] })
         }
         if (Array.isArray(bodyParams) && bodyParams.length) {
           const params = bodyParams.map((p: string) => ({ type: 'text', text: (p || '').replace(/\{nome\}/gi, c.nome || '') }))
