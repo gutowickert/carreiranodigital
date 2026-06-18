@@ -35,18 +35,16 @@ export default function Disparos() {
 
   async function subirHeaderMidia(file: File) {
     setSubindoMidia(true)
-    const reader = new FileReader()
-    reader.onloadend = async () => {
-      try {
-        const j = await fetch('/api/wa-oficial/upload-midia', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ base64: reader.result, nome: file.name }),
-        }).then(r => r.json())
-        if (j.ok) { setHeaderMediaId(j.id); setHeaderArquivo(file.name); setHeaderLink('') }
-        else alert('Falha no upload: ' + j.error)
-      } catch { alert('Erro de rede no upload') } finally { setSubindoMidia(false) }
-    }
-    reader.readAsDataURL(file)
+    try {
+      // Sobe direto pro Supabase Storage (navegador -> Supabase), sem passar pela
+      // Vercel — assim aguenta vídeo grande. Usa a URL pública no template.
+      const ext = (file.name.split('.').pop() || 'bin').toLowerCase()
+      const caminho = `header/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const { error } = await supabase.storage.from('disparos').upload(caminho, file, { contentType: file.type || undefined, upsert: false })
+      if (error) { alert('Falha no upload: ' + error.message); return }
+      const { data } = supabase.storage.from('disparos').getPublicUrl(caminho)
+      setHeaderLink(data.publicUrl); setHeaderArquivo(file.name); setHeaderMediaId('')
+    } catch (e: any) { alert('Erro no upload: ' + (e?.message || '')) } finally { setSubindoMidia(false) }
   }
 
   const [rodando, setRodando] = useState(false)
@@ -202,7 +200,7 @@ export default function Disparos() {
                     style={{ ...btn, background: '#3a3a3c', opacity: subindoMidia ? 0.6 : 1 }}>
                     {subindoMidia ? 'Enviando...' : '📎 Escolher arquivo'}
                   </button>
-                  {headerMediaId && <span style={{ fontSize: 12, color: '#34d399' }}>✓ {headerArquivo}</span>}
+                  {headerArquivo && <span style={{ fontSize: 12, color: '#34d399' }}>✓ {headerArquivo}</span>}
                 </div>
                 <div style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 4px' }}>ou cole uma URL pública:</div>
                 <input style={inp} placeholder="https://..." value={headerLink}
