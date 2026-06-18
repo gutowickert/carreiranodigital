@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 // Caixa de entrada do NÚMERO DE DISPAROS (Cloud API / API oficial). Recebe as
 // respostas dos disparos (canal 'oficial'). Responder = mensagem de sessão (24h).
@@ -131,8 +132,59 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [criandoLead, setCriandoLead] = useState(false)
+  const [gravando, setGravando] = useState(false)
   const fimRef = useRef<HTMLDivElement | null>(null)
+  const gravadorRef = useRef<GravadorOpus | null>(null)
+  const fileRef = useRef<HTMLInputElement | null>(null)
   const router = useRouter()
+
+  const erroEnvio = (json: any) => json.foraJanela ? 'Fora da janela de 24h — só dá pra reabrir com um template aprovado.' : (json.error || 'falha ao enviar')
+
+  async function enviarAnexo(file: File) {
+    setEnviando(true); setErro('')
+    const ehImagem = file.type.startsWith('image/')
+    const reader = new FileReader()
+    reader.onloadend = async () => {
+      try {
+        const res = await fetch('/api/wa-oficial/responder', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ conversaId: conversa.id, telefone: conversa.telefone, anexoBase64: reader.result, anexoNome: file.name, anexoTipo: ehImagem ? 'imagem' : 'documento' }),
+        })
+        const json = await res.json()
+        if (json.ok) { carregar(); onEnviou() } else setErro(erroEnvio(json))
+      } catch { setErro('erro de rede') } finally { setEnviando(false) }
+    }
+    reader.readAsDataURL(file)
+  }
+
+  async function iniciarGravacao() {
+    setErro('')
+    try { gravadorRef.current = await iniciarGravacaoOpus(); setGravando(true) } catch { setErro('Sem acesso ao microfone') }
+  }
+  async function pararGravacao() {
+    const g = gravadorRef.current; gravadorRef.current = null; setGravando(false)
+    if (!g) return
+    setEnviando(true)
+    try {
+      const audioBase64 = await g.parar()
+      const res = await fetch('/api/wa-oficial/responder', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ conversaId: conversa.id, telefone: conversa.telefone, audioBase64 }),
+      })
+      const json = await res.json()
+      if (json.ok) { carregar(); onEnviou() } else setErro(erroEnvio(json))
+    } catch { setErro('erro ao processar áudio') } finally { setEnviando(false) }
+  }
+
+  function renderMidia(m: any) {
+    if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
+    if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: '#60a5fa', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
+    if (m.tipo === 'audio') return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
+    if (m.tipo === 'imagem') return <span style={{ fontSize: 12, opacity: 0.8 }}>📷 Imagem</span>
+    return null
+  }
 
   async function carregar() {
     const { data } = await supabase.from('wa_mensagens').select('*').eq('conversa_id', conversa.id).order('criado_em', { ascending: true })
@@ -198,7 +250,9 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
           return (
             <div key={m.id} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
               <div style={{ background: eu ? '#075E54' : '#2c2c2e', border: eu ? 'none' : '1px solid #3a3a3c', borderRadius: 10, padding: '8px 10px' }}>
-                <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{m.texto || `(${m.tipo})`}</div>
+                {m.tipo === 'texto'
+                  ? <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{m.texto}</div>
+                  : <>{renderMidia(m)}{m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: '#d1d1d1', marginTop: 4 }}>{m.texto}</div>}</>}
                 <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : '#6b7280', marginTop: 4, textAlign: 'right' }}>
                   {new Date(m.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </div>
@@ -214,9 +268,22 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'center' }}>
-        <input style={inp} placeholder="Resposta..." value={texto} onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
-        <button onClick={enviarTexto} disabled={enviando || !texto.trim()} style={{ ...btnPrimary, background: '#25D366', minWidth: 70, opacity: (enviando || !texto.trim()) ? 0.6 : 1 }}>{enviando ? '...' : 'Enviar'}</button>
+        <input ref={fileRef} type="file" style={{ display: 'none' }}
+          accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+          onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
+        <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
+          style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 44, padding: '8px' }}>📎</button>
+        <input style={inp} placeholder="Resposta..." value={texto} disabled={gravando}
+          onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
+        {texto.trim() ? (
+          <button onClick={enviarTexto} disabled={enviando} style={{ ...btnPrimary, background: '#25D366', minWidth: 70 }}>{enviando ? '...' : 'Enviar'}</button>
+        ) : gravando ? (
+          <button onClick={pararGravacao} style={{ ...btnPrimary, background: '#dc2626', minWidth: 70 }}>⏹ Parar</button>
+        ) : (
+          <button onClick={iniciarGravacao} disabled={enviando} style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 70 }}>🎤</button>
+        )}
       </div>
+      {gravando && <div style={{ fontSize: 11, color: '#f87171', padding: '0 12px 8px' }}>● Gravando... clica em Parar pra enviar</div>}
       {erro && <div style={{ fontSize: 11, color: '#f87171', padding: '0 12px 8px' }}>{erro}</div>}
     </>
   )
