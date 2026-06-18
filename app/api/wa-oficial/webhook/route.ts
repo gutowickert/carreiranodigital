@@ -65,10 +65,19 @@ async function registrarRecebida(m: any, value: any) {
     nao_lidas: (conv.nao_lidas || 0) + 1, nome: conv.nome || nome || null,
   }).eq('id', conv.id)
 
-  // funil do contato frio: "SAIR" => opt-out; qualquer outra resposta => respondeu
+  // funil: "SAIR" => opt-out; qualquer outra resposta => respondeu.
+  // Casa por sufixo (8 últimos dígitos) pra resolver o 9º dígito do BR.
   const limpo = semAcento((m.text?.body || '').trim().toLowerCase())
-  if (PALAVRAS_OPTOUT.has(limpo)) await registrarOptout(tel)
-  else await supabase.from('wa_contatos').update({ status: 'respondeu', atualizado_em: new Date().toISOString() }).eq('telefone', tel).neq('status', 'optout')
+  const sufixo = tel.slice(-8)
+  if (PALAVRAS_OPTOUT.has(limpo)) {
+    await registrarOptout(tel)
+  } else {
+    const agora = new Date().toISOString()
+    await supabase.from('wa_contatos').update({ status: 'respondeu', atualizado_em: agora }).ilike('telefone', `%${sufixo}`).neq('status', 'optout')
+    // atribui a resposta à campanha de disparo mais recente desse número
+    const { data: ult } = await supabase.from('wa_disparo_envios').select('id').ilike('telefone', `%${sufixo}`).is('respondeu_em', null).order('enviado_em', { ascending: false }).limit(1).maybeSingle()
+    if (ult) await supabase.from('wa_disparo_envios').update({ respondeu_em: agora }).eq('id', ult.id)
+  }
 }
 
 // Verificação do webhook (a Meta chama via GET ao configurar)
