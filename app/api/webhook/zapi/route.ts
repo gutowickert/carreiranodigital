@@ -58,12 +58,32 @@ export async function POST(req: NextRequest) {
     if (!fromMe && !ehGrupo && !leadExistente && !aluno && texto) {
       const txtLower = texto.toLowerCase()
       const { data: turmas } = await supabase.from('turmas').select('id, codigo').not('codigo', 'is', null)
-      const turmaMatch = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
+
+      // 1) Casa pelo `ref` (#A1B2C3D4) que o /wa colou na mensagem: é o clique
+      // EXATO desta pessoa, então a UTM/criativo vem certinho. Esse é o caminho
+      // bom. Se não houver ref (mensagem antiga ou botão direto pro wa.me), cai
+      // no fallback por turma mais embaixo.
+      const refMatch = texto.match(/#([0-9A-Fa-f]{8})\b/)
+      const ref = refMatch ? refMatch[1].toUpperCase() : null
+      let click = ref
+        ? (await supabase.from('wa_clicks')
+            .select('*').eq('ref', ref).is('consumido_em', null)
+            .order('criado_em', { ascending: false }).limit(1).maybeSingle()).data
+        : null
+
+      // A turma vem do clique (quando casou por ref) ou do código no texto.
+      const acharTurma = (cod?: string | null) =>
+        (turmas || []).find(t => t.codigo && cod && t.codigo.toLowerCase() === cod.toLowerCase())
+      const turmaPorTexto = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
+      const turmaMatch = (click ? acharTurma(click.codigo_turma) : null) || turmaPorTexto
       if (turmaMatch) {
-        // Clique mais recente dessa turma carrega o tracking (fbclid/fbp) pro CAPI.
-        const { data: click } = await supabase.from('wa_clicks')
-          .select('*').eq('codigo_turma', turmaMatch.codigo).is('consumido_em', null)
-          .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+        // Fallback (sem ref): pega o clique mais recente não-consumido da turma.
+        if (!click) {
+          const { data } = await supabase.from('wa_clicks')
+            .select('*').eq('codigo_turma', turmaMatch.codigo).is('consumido_em', null)
+            .order('criado_em', { ascending: false }).limit(1).maybeSingle()
+          click = data || null
+        }
         const vendedorId = await aplicarRateio(supabase, turmaMatch.id)
         const nomeLead = chatName || ev.senderName || null
         const { data: novoLead } = await supabase.from('leads').insert({

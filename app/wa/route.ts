@@ -62,7 +62,13 @@ export async function GET(req: NextRequest) {
     // webhook usa pra criar o lead na turma certa. Só adiciona se ainda não
     // estiver no texto (evita duplicar caso você já o tenha escrito na MENSAGEM).
     const jaTemCodigo = codigoTurma && msgBase.toLowerCase().includes(codigoTurma.toLowerCase())
-    const texto = codigoTurma && !jaTemCodigo ? `${msgBase} (${codigoTurma})` : msgBase
+    // O `ref` (#A1B2C3D4) identifica ESTE clique na mensagem. O webhook lê esse
+    // código e casa o lead com o clique exato desta pessoa — é assim que a UTM
+    // (campanha/criativo) cola no lead certo, e não num clique qualquer da turma.
+    const partes = [msgBase]
+    if (codigoTurma && !jaTemCodigo) partes.push(`(${codigoTurma})`)
+    partes.push(`#${ref}`)
+    const texto = partes.join(' ')
     const url = `https://wa.me/${WA_NUMERO}?text=${encodeURIComponent(texto)}`
 
     return NextResponse.redirect(url, 302)
