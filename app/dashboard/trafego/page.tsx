@@ -41,7 +41,6 @@ export default function Trafego() {
   const [ate, setAte] = useState(hoje)
   const [carregando, setCarregando] = useState(true)
   const [leads, setLeads] = useState<any[]>([])
-  const [turmas, setTurmas] = useState<any[]>([])
   const [spend, setSpend] = useState<Spend>({ ok: false, total: 0, campaigns: [], ads: [] })
   const [abertos, setAbertos] = useState<Set<string>>(new Set())
 
@@ -50,11 +49,8 @@ export default function Trafego() {
 
   async function carregar() {
     setCarregando(true)
-    const [l, t] = await Promise.all([
-      supabase.from('leads').select('id, turma_id, etapa, utm_source, utm_campaign, utm_content, fbclid, valor_venda, criado_em'),
-      supabase.from('turmas').select('id, codigo, produto_id, cidade_id, produtos(nome), cidades(nome)'),
-    ])
-    setLeads(l.data || []); setTurmas(t.data || [])
+    const l = await supabase.from('leads').select('id, turma_id, etapa, utm_source, utm_campaign, utm_content, fbclid, valor_venda, criado_em')
+    setLeads(l.data || [])
     setCarregando(false)
   }
   async function carregarGasto() {
@@ -144,40 +140,7 @@ export default function Trafego() {
   const queimando = adsDeriv.filter(a => a.spend > 0 && a.vendas === 0).sort((a, b) => b.spend - a.spend).slice(0, 6)
   const qualidade = adsDeriv.filter(a => a.leads >= 1).sort((a, b) => b.leads - a.leads).slice(0, 15)
 
-  // ---- ROI por turma ----
-  const leadsPorTurma: Record<string, number> = {}
-  const vendasPorTurma: Record<string, number> = {}
-  const receitaPorTurma: Record<string, number> = {}
-  leadsPeriodo.forEach(l => {
-    if (!l.turma_id) return
-    leadsPorTurma[l.turma_id] = (leadsPorTurma[l.turma_id] || 0) + 1
-    if (l.etapa === 'ganho') {
-      vendasPorTurma[l.turma_id] = (vendasPorTurma[l.turma_id] || 0) + 1
-      receitaPorTurma[l.turma_id] = (receitaPorTurma[l.turma_id] || 0) + (l.valor_venda || 0)
-    }
-  })
-  const grupoKey = (t: any) => `${t.produto_id || ''}|${t.cidade_id || ''}`
-  const gastoPorGrupo: Record<string, number> = {}
-  ;(spend.campaigns || []).forEach(c => {
-    const nomeUpper = (c.name || '').toUpperCase()
-    const turma = turmas.find(t => t.codigo && nomeUpper.includes(t.codigo.toUpperCase()))
-    if (turma) gastoPorGrupo[grupoKey(turma)] = (gastoPorGrupo[grupoKey(turma)] || 0) + (c.spend || 0)
-  })
-  const gastoPorTurma: Record<string, number> = {}
-  Object.entries(gastoPorGrupo).forEach(([k, gastoGrupo]) => {
-    const turmasGrupo = turmas.filter(t => grupoKey(t) === k)
-    const totalLeadsGrupo = turmasGrupo.reduce((s, t) => s + (leadsPorTurma[t.id] || 0), 0)
-    turmasGrupo.forEach(t => {
-      gastoPorTurma[t.id] = totalLeadsGrupo > 0 ? gastoGrupo * ((leadsPorTurma[t.id] || 0) / totalLeadsGrupo) : gastoGrupo / turmasGrupo.length
-    })
-  })
-  const roiTurmas = turmas
-    .map(t => {
-      const g = gastoPorTurma[t.id] || 0, lds = leadsPorTurma[t.id] || 0, vds = vendasPorTurma[t.id] || 0, rec = receitaPorTurma[t.id] || 0
-      return { t, g, lds, vds, rec, cpl: lds ? g / lds : 0, cpv: vds ? g / vds : 0, roas: g ? rec / g : 0 }
-    })
-    .filter(r => r.g > 0 || r.lds > 0)
-    .sort((a, b) => b.g - a.g)
+  // ROI por turma migrou para a página Captação (visão por turma fica lá; aqui é só criativo).
 
   const KPI = ({ label, valor, cor, sub }: any) => (
     <div style={{ ...card, padding: 16 }}>
@@ -250,7 +213,7 @@ export default function Trafego() {
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Tráfego</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Investimento, criativos e retorno — onde colocar e onde tirar verba</p>
+          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Criativos e campanhas — qual anúncio escalar e qual matar · visão por turma fica em Captação</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
           <input type="date" value={de} onChange={e => setDe(e.target.value)} style={inp} />
@@ -347,27 +310,8 @@ export default function Trafego() {
         </table>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>4. ROI por turma / produto</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Gasto casado pelo código da turma no nome da campanha, rateado por leads quando turmas dividem a mesma campanha.</p>
-      <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 40 }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 760 }}>
-          <thead><tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-            {['Turma', 'Gasto', 'Leads', 'Vendas', 'CPL', 'CPV', 'Receita', 'ROAS'].map(th)}
-          </tr></thead>
-          <tbody>
-            {roiTurmas.length === 0 && <tr><td colSpan={8} style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem gasto/leads por turma no período.</td></tr>}
-            {roiTurmas.map(r => (
-              <tr key={r.t.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                <td style={{ padding: '9px 14px', fontSize: 12, color: '#fff' }}>{r.t.produtos?.nome} — {r.t.cidades?.nome}<div style={{ fontSize: 10, color: '#6b7280', fontFamily: 'monospace' }}>{r.t.codigo}</div></td>
-                {tdNum(r.g ? fmt(r.g) : '—', '#f87171')}
-                {tdNum(r.lds)}{tdNum(r.vds)}
-                {tdNum(r.lds ? fmt(r.cpl) : '—')}{tdNum(r.vds ? fmt(r.cpv) : '—')}
-                {tdNum(fmt(r.rec), '#34d399')}
-                {tdNum(r.g ? r.roas.toFixed(2) + 'x' : '—', r.roas >= 1 ? '#34d399' : r.g ? '#f87171' : '#6b7280')}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+      <div style={{ ...card, padding: 16, marginBottom: 40, fontSize: 13, color: '#9ca3af' }}>
+        A visão <b style={{ color: '#d1d1d1' }}>por turma</b> (leads, CPL, matrículas/meta e ação de verba) agora fica em <a href="/dashboard/captacao" style={{ color: '#a78bfa', textDecoration: 'none' }}>Captação ↗</a>. Aqui o foco é o criativo.
       </div>
     </div>
   )
