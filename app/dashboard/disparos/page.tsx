@@ -14,9 +14,12 @@ type Contato = { telefone: string; nome: string; lead_id?: string }
 export default function Disparos() {
   const [turmas, setTurmas] = useState<any[]>([])
   const [templates, setTemplates] = useState<Tpl[]>([])
-  const [modo, setModo] = useState<'turma' | 'colar' | 'lista'>('turma')
+  const [modo, setModo] = useState<'turma' | 'colar' | 'lista' | 'naoentregues'>('turma')
   const [turmaId, setTurmaId] = useState('')
   const [numerosTexto, setNumerosTexto] = useState('')
+  // redisparo: campanhas anteriores p/ pegar os não-entregues
+  const [campanhas, setCampanhas] = useState<any[]>([])
+  const [campanhaId, setCampanhaId] = useState('')
   // listas frias (wa_contatos)
   const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; total: number }[]>([])
   const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador'>('interessado')
@@ -64,6 +67,8 @@ export default function Disparos() {
     fetch('/api/wa-oficial/templates').then(r => r.json()).then(j => setTemplates(j.templates || []))
     // resumo das listas frias (só pra popular o seletor de cidade)
     fetch('/api/wa-oficial/contatos?limit=1').then(r => r.json()).then(j => { if (j.ok) setCidades(j.resumo?.cidades || []) })
+    // campanhas anteriores (pro redisparo dos não-entregues)
+    fetch('/api/wa-oficial/relatorio').then(r => r.json()).then(j => { if (j.ok) setCampanhas(j.campanhas || []) })
   }, [])
 
   const tpl = templates.find(t => t.nome === tplNome)
@@ -90,6 +95,10 @@ export default function Disparos() {
         // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
         const cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
         setContatos(cs)
+      } else if (modo === 'naoentregues') {
+        if (!campanhaId) { setCarregandoPublico(false); return }
+        const j = await fetch('/api/wa-oficial/relatorio?naoEntregues=' + encodeURIComponent(campanhaId)).then(r => r.json())
+        setContatos((j.contatos || []).map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' })))
       } else {
         const linhas = numerosTexto.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean)
         setContatos(linhas.map(t => ({ telefone: t, nome: '' })))
@@ -147,6 +156,7 @@ export default function Disparos() {
         <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
           <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'turma'} onChange={() => setModo('turma')} /> Leads por turma</label>
           <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'lista'} onChange={() => setModo('lista')} /> Listas (frias)</label>
+          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'naoentregues'} onChange={() => setModo('naoentregues')} /> Não-entregues</label>
           <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
         </div>
         {modo === 'turma' && (
@@ -174,6 +184,19 @@ export default function Disparos() {
                 })}
               </select>
             </div>
+          </div>
+        )}
+        {modo === 'naoentregues' && (
+          <div>
+            <label style={label}>Campanha (pega quem ficou em &quot;enviado&quot; e não respondeu)</label>
+            <select style={inp} value={campanhaId} onChange={e => setCampanhaId(e.target.value)}>
+              <option value="">Selecione a campanha...</option>
+              {campanhas.map(c => {
+                const d = c.criado_em ? new Date(c.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+                return <option key={c.id} value={c.id}>{c.nome} · {d} · {c.enviados} env / {c.entregues} entr</option>
+              })}
+            </select>
+            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Carrega os contatos que o WhatsApp aceitou mas não entregou. Quem já recebeu, leu ou respondeu fica de fora.</div>
           </div>
         )}
         {modo === 'colar' && (
