@@ -34,6 +34,14 @@ export default function Disparos() {
   const [nomeCampanha, setNomeCampanha] = useState('')
 
   async function subirHeaderMidia(file: File) {
+    // Limites do WhatsApp por tipo de mídia do template (senão dá "Media upload error" e não entrega)
+    const limitesMB: Record<string, number> = { image: 5, video: 16, document: 100 }
+    const limMB = limitesMB[tpl?.header || ''] || 16
+    const tamMB = file.size / 1048576
+    if (tamMB > limMB) {
+      alert(`Arquivo muito grande: ${tamMB.toFixed(1)} MB.\nO WhatsApp aceita ${tpl?.header || 'mídia'} de até ${limMB} MB no template.\nComprime o arquivo e tente de novo.`)
+      return
+    }
     setSubindoMidia(true)
     try {
       // Sobe direto pro Supabase Storage (navegador -> Supabase), sem passar pela

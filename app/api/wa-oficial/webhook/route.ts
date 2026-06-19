@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { foneOficial } from '@/lib/whatsapp-oficial'
+import { enviarPush } from '@/lib/push'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -64,6 +65,9 @@ async function registrarRecebida(m: any, value: any) {
     ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),
     nao_lidas: (conv.nao_lidas || 0) + 1, nome: conv.nome || nome || null,
   }).eq('id', conv.id)
+
+  // push no celular (caixa de disparos é separada da principal)
+  await enviarPush('Nova resposta (Disparos) 💬', `${conv.nome || nome || tel}: ${resumo}`.slice(0, 120), '/dashboard/whatsapp-disparos')
 
   // funil: "SAIR" => opt-out; qualquer outra resposta => respondeu.
   // Casa por sufixo (8 últimos dígitos) pra resolver o 9º dígito do BR.
