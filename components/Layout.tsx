@@ -133,6 +133,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [checando, setChecando] = useState(true)
   const [waUnread, setWaUnread] = useState(0)
+  const [dispUnread, setDispUnread] = useState(0)
   const waPrevRef = useRef(-1)
 
   useEffect(() => {
@@ -173,10 +174,15 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     }
     let ativo = true
     async function checar() {
-      const { data } = await supabase.from('wa_conversas').select('nao_lidas').gt('nao_lidas', 0)
+      const { data } = await supabase.from('wa_conversas').select('nao_lidas, canal').gt('nao_lidas', 0)
       if (!ativo) return
-      const total = (data || []).reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
-      setWaUnread(total)
+      const linhas = data || []
+      // caixa principal = tudo que não é 'oficial'; Disparos = canal 'oficial'
+      const totZapi = linhas.filter((c: any) => c.canal !== 'oficial').reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
+      const totDisp = linhas.filter((c: any) => c.canal === 'oficial').reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
+      const total = totZapi + totDisp
+      setWaUnread(totZapi)
+      setDispUnread(totDisp)
       // só avisa quando AUMENTA (não na 1ª carga nem quando você lê)
       if (waPrevRef.current >= 0 && total > waPrevRef.current) {
         bipe()
@@ -297,6 +303,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                             {m.href === '/dashboard/whatsapp' && waUnread > 0 && (
                               <span style={{ background: '#25D366', color: '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                                 {waUnread > 99 ? '99+' : waUnread}
+                              </span>
+                            )}
+                            {m.href === '/dashboard/whatsapp-disparos' && dispUnread > 0 && (
+                              <span style={{ background: '#25D366', color: '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
+                                {dispUnread > 99 ? '99+' : dispUnread}
                               </span>
                             )}
                           </Link>
