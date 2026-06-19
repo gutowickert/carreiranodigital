@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
     if (buyerPhone) {
       const phoneNumeros = buyerPhone.toString().replace(/\D/g, '')
       const { data: leadPorPhone } = await supabase.from('leads')
-        .select('id, vendedor_id, etapa, nome')
+        .select('id, vendedor_id, etapa, nome, fbc, fbp')
         .or(`whatsapp.eq.${buyerPhone},whatsapp.eq.${phoneNumeros}`)
         .not('etapa', 'in', '(perda)')
         .order('criado_em', { ascending: false })
@@ -159,7 +159,7 @@ export async function POST(req: NextRequest) {
     }
     if (!leadEncontrado && buyerEmail) {
       const { data: leadPorEmail } = await supabase.from('leads')
-        .select('id, vendedor_id, etapa, nome')
+        .select('id, vendedor_id, etapa, nome, fbc, fbp')
         .eq('email', buyerEmail)
         .not('etapa', 'in', '(perda)')
         .order('criado_em', { ascending: false })
@@ -235,6 +235,10 @@ export async function POST(req: NextRequest) {
         email: buyerEmail,
         phone: buyerPhone,
         firstName: buyerName,
+        // fbc/fbp do lead = carimbo do clique no anúncio; é o que dá ao Meta a
+        // atribuição forte da compra ao anúncio que trouxe o lead.
+        fbc: leadEncontrado?.fbc || null,
+        fbp: leadEncontrado?.fbp || null,
         externalId: leadEncontrado?.id || alunoId,
         codigoTurma: turmaCodigo,
       })
