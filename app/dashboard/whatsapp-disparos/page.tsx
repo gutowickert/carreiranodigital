@@ -215,9 +215,17 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   async function criarLead() {
     setCriandoLead(true); setErro('')
     try {
+      // Se esse número já recebeu um disparo, a origem do lead é 'disparo'
+      // (e não 'whatsapp') — é assim que o lead aparece como disparo na Captação.
+      const sufixo = (conversa.telefone || '').replace(/\D/g, '').slice(-8)
+      let origem = 'whatsapp'
+      if (sufixo) {
+        const { data: env } = await supabase.from('wa_disparo_envios').select('id').ilike('telefone', `%${sufixo}`).limit(1).maybeSingle()
+        if (env) origem = 'disparo'
+      }
       const { data: novo, error } = await supabase.from('leads').insert({
         nome: conversa.nome || conversa.telefone, whatsapp: conversa.telefone,
-        etapa: 'aguardando_atendimento', origem: 'whatsapp',
+        etapa: 'aguardando_atendimento', origem,
       }).select('id').single()
       if (error || !novo) { setErro('Erro ao criar lead'); return }
       await supabase.from('wa_conversas').update({ lead_id: novo.id }).eq('id', conversa.id)
