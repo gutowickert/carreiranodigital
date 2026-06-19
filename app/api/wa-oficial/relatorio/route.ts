@@ -6,6 +6,30 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 //  - ?disparo=<id>: lista quem RESPONDEU aquela campanha
 export async function GET(req: NextRequest) {
   const disparoId = req.nextUrl.searchParams.get('disparo')
+  const naoEntregues = req.nextUrl.searchParams.get('naoEntregues')
+
+  // Lista os NÃO-ENTREGUES de uma campanha (travados em 'enviado' que não responderam),
+  // pra montar um redisparo. Pagina (PostgREST corta em ~1000).
+  if (naoEntregues) {
+    const vistos = new Set<string>()
+    const contatos: { telefone: string; nome: string }[] = []
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase.from('wa_disparo_envios')
+        .select('telefone, nome')
+        .eq('disparo_id', naoEntregues).eq('status', 'enviado').is('respondeu_em', null)
+        .range(from, from + 999)
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+      for (const r of data || []) {
+        if (!r.telefone || vistos.has(r.telefone)) continue
+        vistos.add(r.telefone)
+        contatos.push({ telefone: r.telefone, nome: r.nome || '' })
+      }
+      if (!data || data.length < 1000) break
+      from += 1000
+    }
+    return NextResponse.json({ ok: true, contatos })
+  }
 
   if (disparoId) {
     const { data, error } = await supabase.from('wa_disparo_envios')
