@@ -39,8 +39,9 @@ type Spend = { ok: boolean; total: number; campaigns: { name: string; spend: num
 
 export default function Captacao() {
   const hoje = hojeStr()
-  const [de, setDe] = useState(addDays(hoje, -7))
+  const [de, setDe] = useState(hoje)
   const [ate, setAte] = useState(hoje)
+  const [preset, setPreset] = useState('Hoje')
   const [carregando, setCarregando] = useState(true)
   const [leads, setLeads] = useState<any[]>([])
   const [turmas, setTurmas] = useState<any[]>([])
@@ -159,6 +160,15 @@ export default function Captacao() {
   const semVend = leads.filter(l => !l.vendedor_id)
   if (semVend.length > 0) linhasVendedor.push({ nome: 'Sem vendedor', total: semVend.length, porEtapa: contaPorEtapa(semVend) })
 
+  // Atalhos de período (botão ativo destacado). 'de' inclui o dia; 'ate' é sempre hoje.
+  const PRESETS: [string, string][] = [
+    ['Hoje', hoje],
+    ['Esse mês', hoje.slice(0, 7) + '-01'],
+    ['Últimos 3 dias', addDays(hoje, -2)],
+    ['Últimos 7 dias', addDays(hoje, -6)],
+    ['Últimos 30 dias', addDays(hoje, -29)],
+  ]
+
   if (carregando) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando captação...</div>
 
   return (
@@ -169,11 +179,13 @@ export default function Captacao() {
           <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Por turma: leads, origem, custo e saúde · onde o lead trava · carga por vendedor</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-          <input type="date" value={de} onChange={e => setDe(e.target.value)} style={inp} />
+          {PRESETS.map(([label, dDe]) => (
+            <button key={label} onClick={() => { setDe(dDe); setAte(hoje); setPreset(label) }}
+              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' } : {}) }}>{label}</button>
+          ))}
+          <input type="date" value={de} onChange={e => { setDe(e.target.value); setPreset('') }} style={inp} />
           <span style={{ color: '#6b7280' }}>—</span>
-          <input type="date" value={ate} onChange={e => setAte(e.target.value)} style={inp} />
-          <button onClick={() => { setDe(addDays(hoje, -7)); setAte(hoje) }} style={{ ...inp, cursor: 'pointer' }}>7d</button>
-          <button onClick={() => { setDe(addDays(hoje, -30)); setAte(hoje) }} style={{ ...inp, cursor: 'pointer' }}>30d</button>
+          <input type="date" value={ate} onChange={e => { setAte(e.target.value); setPreset('') }} style={inp} />
         </div>
       </div>
 

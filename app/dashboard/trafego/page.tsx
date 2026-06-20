@@ -37,8 +37,9 @@ function leitura(m: Metricas): { t: string; c: string } | null {
 
 export default function Trafego() {
   const hoje = hojeStr()
-  const [de, setDe] = useState(addDays(hoje, -30))
+  const [de, setDe] = useState(hoje)
   const [ate, setAte] = useState(hoje)
+  const [preset, setPreset] = useState('Hoje')
   const [carregando, setCarregando] = useState(true)
   const [leads, setLeads] = useState<any[]>([])
   const [spend, setSpend] = useState<Spend>({ ok: false, total: 0, campaigns: [], ads: [] })
@@ -206,6 +207,15 @@ export default function Trafego() {
     })
   })
 
+  // Atalhos de período (botão ativo destacado). 'de' inclui o dia; 'ate' é sempre hoje.
+  const PRESETS: [string, string][] = [
+    ['Hoje', hoje],
+    ['Esse mês', hoje.slice(0, 7) + '-01'],
+    ['Últimos 3 dias', addDays(hoje, -2)],
+    ['Últimos 7 dias', addDays(hoje, -6)],
+    ['Últimos 30 dias', addDays(hoje, -29)],
+  ]
+
   if (carregando) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando tráfego...</div>
 
   return (
@@ -215,12 +225,14 @@ export default function Trafego() {
           <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Tráfego</h1>
           <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Criativos e campanhas — qual anúncio escalar e qual matar · visão por turma fica em Captação</p>
         </div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <input type="date" value={de} onChange={e => setDe(e.target.value)} style={inp} />
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          {PRESETS.map(([label, dDe]) => (
+            <button key={label} onClick={() => { setDe(dDe); setAte(hoje); setPreset(label) }}
+              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' } : {}) }}>{label}</button>
+          ))}
+          <input type="date" value={de} onChange={e => { setDe(e.target.value); setPreset('') }} style={inp} />
           <span style={{ color: '#6b7280' }}>—</span>
-          <input type="date" value={ate} onChange={e => setAte(e.target.value)} style={inp} />
-          <button onClick={() => { setDe(addDays(hoje, -7)); setAte(hoje) }} style={{ ...inp, cursor: 'pointer' }}>7d</button>
-          <button onClick={() => { setDe(addDays(hoje, -30)); setAte(hoje) }} style={{ ...inp, cursor: 'pointer' }}>30d</button>
+          <input type="date" value={ate} onChange={e => { setAte(e.target.value); setPreset('') }} style={inp} />
         </div>
       </div>
 
