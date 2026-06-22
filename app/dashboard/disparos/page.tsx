@@ -24,6 +24,7 @@ export default function Disparos() {
   const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; total: number }[]>([])
   const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador'>('interessado')
   const [listaCidade, setListaCidade] = useState('') // '' = todas
+  const [descontarCampId, setDescontarCampId] = useState('') // reenvio inteligente: descontar quem já recebeu nessa campanha
   const [contatos, setContatos] = useState<Contato[]>([])
   const [carregandoPublico, setCarregandoPublico] = useState(false)
 
@@ -93,7 +94,14 @@ export default function Disparos() {
         if (listaCidade) p.set('cidade', listaCidade)
         const j = await fetch('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
         // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
-        const cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
+        let cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
+        // reenvio inteligente: desconta quem JÁ recebeu (entregue/lido) numa campanha anterior
+        if (descontarCampId) {
+          const jr = await fetch('/api/wa-oficial/relatorio?recebidos=' + encodeURIComponent(descontarCampId)).then(r => r.json())
+          const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
+          const jaRecebeu = new Set<string>((jr.telefones || []).map((t: string) => suf(t)))
+          cs = cs.filter((c: any) => !jaRecebeu.has(suf(c.telefone)))
+        }
         setContatos(cs)
       } else if (modo === 'naoentregues') {
         if (!campanhaId) { setCarregandoPublico(false); return }
@@ -183,6 +191,17 @@ export default function Disparos() {
                   return <option key={c.cidade} value={c.cidade}>{c.cidade} ({n})</option>
                 })}
               </select>
+            </div>
+            <div style={{ flexBasis: '100%' }}>
+              <label style={label}>Reenvio inteligente — descontar quem já recebeu em (opcional)</label>
+              <select style={inp} value={descontarCampId} onChange={e => setDescontarCampId(e.target.value)}>
+                <option value="">Não descontar (manda pra lista toda)</option>
+                {campanhas.map(c => {
+                  const d = c.criado_em ? new Date(c.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+                  return <option key={c.id} value={c.id}>{c.nome} · {d} · {c.entregues} já receberam</option>
+                })}
+              </select>
+              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Tira da lista quem já recebeu (entregue/lido) nessa campanha — pra completar um disparo que travou no meio, sem mandar 2x pra ninguém.</div>
             </div>
           </div>
         )}

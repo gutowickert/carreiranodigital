@@ -31,6 +31,25 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, contatos })
   }
 
+  // Telefones que JÁ RECEBERAM (entregue/lido) numa campanha — pra descontar de um
+  // novo disparo pela lista (reenvio inteligente sem mandar 2x pra quem já recebeu).
+  const recebidos = req.nextUrl.searchParams.get('recebidos')
+  if (recebidos) {
+    const telefones: string[] = []
+    let from = 0
+    for (;;) {
+      const { data, error } = await supabase.from('wa_disparo_envios')
+        .select('telefone')
+        .eq('disparo_id', recebidos).in('status', ['entregue', 'lido'])
+        .range(from, from + 999)
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+      for (const r of data || []) { if (r.telefone) telefones.push(r.telefone) }
+      if (!data || data.length < 1000) break
+      from += 1000
+    }
+    return NextResponse.json({ ok: true, telefones })
+  }
+
   if (disparoId) {
     const { data, error } = await supabase.from('wa_disparo_envios')
       .select('telefone, nome, lead_id, respondeu_em')
