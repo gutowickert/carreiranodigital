@@ -181,6 +181,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const txtRef = useRef<HTMLTextAreaElement | null>(null)
 
   async function carregar() {
     const { data } = await supabase.from('wa_mensagens')
@@ -196,6 +197,8 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   }, [conversa.id])
 
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
+  // auto-cresce a caixa de texto conforme digita (e volta pra 1 linha ao limpar)
+  useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px' } }, [texto])
 
   async function criarLead() {
     setCriandoLead(true); setErro('')
@@ -350,14 +353,14 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
         })}
         <div ref={fimRef} />
       </div>
-      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 44, padding: '8px' }}>📎</button>
-        <input style={inp} placeholder="Mensagem..." value={texto} disabled={gravando}
-          onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
+        <textarea ref={txtRef} rows={1} style={{ ...inp, flex: 1, resize: 'none', maxHeight: 140, lineHeight: 1.4, fontFamily: 'inherit' }} placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
+          onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarTexto() } }} />
         {texto.trim() ? (
           <button onClick={enviarTexto} disabled={enviando} style={{ ...btnPrimary, background: '#25D366', minWidth: 70 }}>{enviando ? '...' : 'Enviar'}</button>
         ) : gravando ? (

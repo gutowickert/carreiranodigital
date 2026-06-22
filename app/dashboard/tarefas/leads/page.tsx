@@ -60,6 +60,8 @@ export default function TarefasLeads() {
   const [filtroDia, setFiltroDia] = useState('')
   const [mensagem, setMensagem] = useState('')
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
+  const [concluindoId, setConcluindoId] = useState<string | null>(null)
+  const [obsConcluir, setObsConcluir] = useState('')
 
   useEffect(() => {
     async function init() {
@@ -100,13 +102,25 @@ export default function TarefasLeads() {
     setCarregando(false)
   }
 
-  async function marcarConcluida(tarefa: TarefaLead) {
+  async function marcarConcluida(tarefa: TarefaLead, observacao = '') {
     // 1. Marca como concluída
     await supabase.from('tarefas_lead').update({
       concluida: true,
       concluida_em: new Date().toISOString(),
       atualizado_em: new Date().toISOString(),
     }).eq('id', tarefa.id)
+
+    // 1.5 Registra o andamento que o atendente escreveu (aparece no card do CRM)
+    if (observacao.trim()) {
+      await supabase.from('lead_andamentos').insert({
+        lead_id: tarefa.lead_id,
+        vendedor_id: tarefa.vendedor_id,
+        tipo: 'observacao',
+        observacao: `[${tarefa.titulo}] ${observacao.trim()}`,
+      })
+    }
+    setConcluindoId(null)
+    setObsConcluir('')
 
     // 2. Verifica se tem próxima tarefa na sequência
     const lead = tarefa.leads
@@ -218,8 +232,8 @@ export default function TarefasLeads() {
             </div>
           </div>
           <div>
-            {!t.concluida && !t.cancelada && (
-              <button onClick={() => marcarConcluida(t)} style={btnPrimary}>✓ Concluir</button>
+            {!t.concluida && !t.cancelada && concluindoId !== t.id && (
+              <button onClick={() => { setConcluindoId(t.id); setObsConcluir('') }} style={btnPrimary}>✓ Concluir</button>
             )}
             {t.concluida && (
               <button onClick={() => desmarcarConcluida(t.id)} style={btnSecondary}>Reabrir</button>
@@ -229,6 +243,18 @@ export default function TarefasLeads() {
             )}
           </div>
         </div>
+        {concluindoId === t.id && (
+          <div style={{ marginTop: 12, borderTop: '1px solid #3a3a3c', paddingTop: 12 }}>
+            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>O que aconteceu nesse contato? (vai pro andamento do lead no CRM)</div>
+            <textarea autoFocus value={obsConcluir} onChange={e => setObsConcluir(e.target.value)}
+              placeholder="Ex: Falei com o lead, pediu pra retornar quinta. Demonstrou interesse na turma..."
+              style={{ width: '100%', minHeight: 70, resize: 'vertical', boxSizing: 'border-box', background: '#1c1c1e', border: '1px solid #48484a', borderRadius: 8, padding: 10, fontSize: 13, color: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+            <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
+              <button onClick={() => { setConcluindoId(null); setObsConcluir('') }} style={btnSecondary}>Cancelar</button>
+              <button onClick={() => marcarConcluida(t, obsConcluir)} style={btnPrimary}>✓ Salvar e concluir</button>
+            </div>
+          </div>
+        )}
       </div>
     )
   }

@@ -136,6 +136,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   const fimRef = useRef<HTMLDivElement | null>(null)
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const txtRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
 
   const erroEnvio = (json: any) => json.foraJanela ? 'Fora da janela de 24h — só dá pra reabrir com um template aprovado.' : (json.error || 'falha ao enviar')
@@ -192,6 +193,8 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   }
   useEffect(() => { carregar(); const t = setInterval(carregar, 5000); return () => clearInterval(t) }, [conversa.id])
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
+  // auto-cresce a caixa de texto conforme digita (e volta pra 1 linha ao limpar)
+  useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px' } }, [texto])
 
   // janela de 24h: dá pra responder com texto livre só se a última msg recebida foi < 24h
   const ultimaRecebida = [...mensagens].reverse().find(m => m.direcao === 'recebida')
@@ -275,14 +278,14 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
           ⚠️ Fora da janela de 24h (ou sem resposta ainda) — texto livre pode não entregar; nesse caso só com template aprovado.
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #3a3a3c', alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 44, padding: '8px' }}>📎</button>
-        <input style={inp} placeholder="Resposta..." value={texto} disabled={gravando}
-          onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
+        <textarea ref={txtRef} rows={1} style={{ ...inp, flex: 1, resize: 'none', maxHeight: 140, lineHeight: 1.4, fontFamily: 'inherit' }} placeholder="Resposta... (Shift+Enter pula linha)" value={texto} disabled={gravando}
+          onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarTexto() } }} />
         {texto.trim() ? (
           <button onClick={enviarTexto} disabled={enviando} style={{ ...btnPrimary, background: '#25D366', minWidth: 70 }}>{enviando ? '...' : 'Enviar'}</button>
         ) : gravando ? (
