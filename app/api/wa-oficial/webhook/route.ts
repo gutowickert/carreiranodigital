@@ -48,11 +48,20 @@ async function registrarRecebida(m: any, value: any) {
     if (ja && ja.length) return
   }
 
+  // vincula ao lead pelo telefone (sufixo de 8 dígitos resolve o 9º dígito do BR),
+  // pra a resposta aparecer no CARD DO CRM e não só na caixa de Disparos.
+  const sufLead = tel.slice(-8)
+  const { data: leadMatch } = await supabase.from('leads').select('id')
+    .ilike('whatsapp', `%${sufLead}%`).order('criado_em', { ascending: false }).limit(1).maybeSingle()
+
   // acha/cria a conversa do canal oficial
   let { data: conv } = await supabase.from('wa_conversas').select('*').eq('telefone', tel).eq('canal', 'oficial').maybeSingle()
   if (!conv) {
-    const { data: nova } = await supabase.from('wa_conversas').insert({ telefone: tel, nome, canal: 'oficial' }).select().single()
+    const { data: nova } = await supabase.from('wa_conversas').insert({ telefone: tel, nome, canal: 'oficial', lead_id: leadMatch?.id || null }).select().single()
     conv = nova
+  } else if (!conv.lead_id && leadMatch) {
+    await supabase.from('wa_conversas').update({ lead_id: leadMatch.id }).eq('id', conv.id)
+    conv.lead_id = leadMatch.id
   }
   if (!conv) return
 
