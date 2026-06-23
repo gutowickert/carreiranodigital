@@ -50,6 +50,20 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ ok: true, telefones })
   }
 
+  // Contexto do disparo de um CONTATO: qual campanha foi enviada pra esse número
+  // (pra mostrar na caixa de Disparos qual cidade/campanha o lead respondeu).
+  const contato = req.nextUrl.searchParams.get('contato')
+  if (contato) {
+    const suf = contato.replace(/\D/g, '').slice(-8)
+    const { data: env } = await supabase.from('wa_disparo_envios')
+      .select('disparo_id, enviado_em').ilike('telefone', `%${suf}`).not('disparo_id', 'is', null)
+      .order('enviado_em', { ascending: false }).limit(1).maybeSingle()
+    if (!env) return NextResponse.json({ ok: true, disparo: null })
+    const { data: d } = await supabase.from('wa_disparos')
+      .select('nome, template_nome').eq('id', env.disparo_id).maybeSingle()
+    return NextResponse.json({ ok: true, disparo: d ? { nome: d.nome, template: d.template_nome, enviado_em: env.enviado_em } : null })
+  }
+
   if (disparoId) {
     const { data, error } = await supabase.from('wa_disparo_envios')
       .select('telefone, nome, lead_id, respondeu_em')

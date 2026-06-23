@@ -133,6 +133,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   const [erro, setErro] = useState('')
   const [criandoLead, setCriandoLead] = useState(false)
   const [gravando, setGravando] = useState(false)
+  const [dispCtx, setDispCtx] = useState<{ nome: string; template: string; enviado_em: string } | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
@@ -193,6 +194,12 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   }
   useEffect(() => { carregar(); const t = setInterval(carregar, 5000); return () => clearInterval(t) }, [conversa.id])
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
+  // contexto do disparo: qual campanha (cidade) foi enviada pra esse número
+  useEffect(() => {
+    setDispCtx(null)
+    fetch('/api/wa-oficial/relatorio?contato=' + encodeURIComponent(conversa.telefone))
+      .then(r => r.json()).then(j => { if (j.ok) setDispCtx(j.disparo) }).catch(() => {})
+  }, [conversa.id, conversa.telefone])
   // auto-cresce a caixa de texto conforme digita (e volta pra 1 linha ao limpar)
   useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 140) + 'px' } }, [texto])
 
@@ -255,6 +262,13 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
           <button onClick={criarLead} disabled={criandoLead} style={{ background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>{criandoLead ? '...' : '+ Criar lead'}</button>
         )}
       </div>
+      {dispCtx && (
+        <div style={{ padding: '8px 16px', borderBottom: '1px solid #3a3a3c', background: '#172554', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: '#60a5fa', textTransform: 'uppercase' }}>📣 Respondeu ao disparo</span>
+          <span style={{ fontSize: 13, color: '#fff', fontWeight: 600 }}>{dispCtx.nome}</span>
+          <span style={{ fontSize: 11, color: '#9ca3af' }}>· {dispCtx.template}{dispCtx.enviado_em ? ` · ${new Date(dispCtx.enviado_em).toLocaleDateString('pt-BR')}` : ''}</span>
+        </div>
+      )}
       <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 6, background: '#1c1c1e' }}>
         {mensagens.map(m => {
           const eu = m.direcao === 'enviada'
