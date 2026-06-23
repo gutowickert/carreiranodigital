@@ -85,6 +85,7 @@ export default function CRM() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [motivosPerda, setMotivosPerda] = useState<MotivoPerda[]>([])
   const [visao, setVisao] = useState<'kanban' | 'lista'>('kanban')
+  const [busca, setBusca] = useState('')
   const [filtroTurma, setFiltroTurma] = useState('')
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [modalAberto, setModalAberto] = useState(false)
@@ -337,6 +338,13 @@ export default function CRM() {
     if (soProprios && l.vendedor_id !== meuPerfil.id) return false
     if (filtroTurma && l.turma_id !== filtroTurma) return false
     if (filtroVendedor && l.vendedor_id !== filtroVendedor) return false
+    if (busca.trim()) {
+      const b = busca.trim().toLowerCase()
+      const bDig = b.replace(/\D/g, '')
+      const achaNome = (l.nome || '').toLowerCase().includes(b)
+      const achaFone = bDig.length >= 3 && (l.whatsapp || '').replace(/\D/g, '').includes(bDig)
+      if (!achaNome && !achaFone) return false
+    }
     return true
   })
 
@@ -374,6 +382,7 @@ export default function CRM() {
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
+          <input style={{ ...inp, minWidth: 220, flex: '0 1 280px' }} placeholder="🔎 Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
           <select style={sel} value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)}>
             <option value="">Todas as turmas</option>
             {turmas.map(t => (
@@ -388,8 +397,8 @@ export default function CRM() {
               {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
             </select>
           )}
-          {(filtroTurma || filtroVendedor) && (
-            <button onClick={() => { setFiltroTurma(''); setFiltroVendedor('') }} style={btnSecondary}>Limpar</button>
+          {(busca || filtroTurma || filtroVendedor) && (
+            <button onClick={() => { setBusca(''); setFiltroTurma(''); setFiltroVendedor('') }} style={btnSecondary}>Limpar</button>
           )}
         </div>
 
@@ -1380,12 +1389,87 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
     setTimeout(onFechar, 800)
   }
 
+  // ---- Cadastrar nova venda direto do lead (quando não há matrícula pra vincular) ----
+  const [contas, setContas] = useState<{ id: string; nome: string }[]>([])
+  const [modoVenda, setModoVenda] = useState(false)
+  const [vNome, setVNome] = useState(lead.nome || '')
+  const [vCpf, setVCpf] = useState('')
+  const [vEmail, setVEmail] = useState((lead as any).email || '')
+  const [vWhats, setVWhats] = useState(lead.whatsapp || '')
+  const [vValor, setVValor] = useState('')
+  const [vForma, setVForma] = useState('pix')
+  const [vParcelas, setVParcelas] = useState('1')
+  const [vConta, setVConta] = useState('')
+  const [vData, setVData] = useState(new Date().toISOString().split('T')[0])
+
+  useEffect(() => {
+    supabase.from('contas_financeiras').select('id, nome').eq('ativo', true).order('nome').then(({ data }) => setContas((data as any) || []))
+  }, [])
+  useEffect(() => { if (turma?.preco_venda) setVValor(String(turma.preco_venda)) }, [turma])
+
+  async function cadastrarVenda() {
+    if (!turma) return
+    const valorVenda = parseFloat(vValor)
+    if (!valorVenda || valorVenda <= 0) { setMensagem('Erro: informe o valor da venda'); return }
+    if (!vConta) { setMensagem('Erro: escolha em qual caixa o dinheiro entrou'); return }
+    setSalvando(true); setMensagem('')
+    try {
+      // acha ou cria o aluno a partir dos dados (cpf > email > whatsapp)
+      let alunoId: string | null = null
+      if (vCpf.trim()) { const { data } = await supabase.from('alunos').select('id').eq('cpf', vCpf.trim()).maybeSingle(); if (data) alunoId = data.id }
+      if (!alunoId && vEmail.trim()) { const { data } = await supabase.from('alunos').select('id').eq('email', vEmail.trim()).maybeSingle(); if (data) alunoId = data.id }
+      if (!alunoId && vWhats.trim()) { const suf = vWhats.replace(/\D/g, '').slice(-8); if (suf.length >= 8) { const { data } = await supabase.from('alunos').select('id').ilike('whatsapp', `%${suf}`).maybeSingle(); if (data) alunoId = data.id } }
+      if (!alunoId) {
+        const { data: novo, error } = await supabase.from('alunos').insert({ nome: vNome || lead.nome, cpf: vCpf.trim() || null, email: vEmail.trim() || null, whatsapp: vWhats.trim() || null }).select('id').single()
+        if (error || !novo) { setMensagem('Erro ao criar aluno: ' + (error?.message || '')); setSalvando(false); return }
+        alunoId = novo.id
+      }
+      const numParcelas = vForma === 'cartao' ? 1 : (parseInt(vParcelas) || 1)
+      // matrícula
+      const { data: mat, error: eM } = await supabase.from('matriculas').insert({
+        aluno_id: alunoId, turma_id: turma.id, valor_pago: valorVenda, data_compra: vData,
+        forma_pagamento: vForma, parcelas: numParcelas, status: 'ativa', lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
+      }).select('id').single()
+      if (eM || !mat) { setMensagem('Erro ao criar matrícula: ' + (eM?.message || '')); setSalvando(false); return }
+      // lançamentos (parcelas) na caixa escolhida
+      const valorParcela = valorVenda / numParcelas
+      const base = new Date(vData + 'T12:00:00')
+      const lanc: any[] = []
+      for (let i = 0; i < numParcelas; i++) {
+        const d = new Date(base); d.setMonth(d.getMonth() + i)
+        const ds = d.toISOString().split('T')[0]
+        lanc.push({
+          tipo: 'receita', categoria: 'outro',
+          descricao: `Matrícula ${vNome || lead.nome} (${vForma})${numParcelas > 1 ? ` ${i + 1}/${numParcelas}` : ''}`,
+          valor: valorParcela, unidade: 'geral', mes_referencia: ds.substring(0, 7) + '-01',
+          data_vencimento: ds, data_pagamento: i === 0 ? ds : null, status: i === 0 ? 'realizado' : 'previsto',
+          turma_id: turma.id, conta_id: vConta,
+        })
+      }
+      await supabase.from('lancamentos_empresa').insert(lanc)
+      // receita realizada da turma + abate da prevista
+      const { data: fin } = await supabase.from('financeiro_turma').select('receita_realizada').eq('turma_id', turma.id).maybeSingle()
+      if (fin) await supabase.from('financeiro_turma').update({ receita_realizada: (fin.receita_realizada || 0) + valorVenda, atualizado_em: new Date().toISOString() }).eq('turma_id', turma.id)
+      const { data: prev } = await supabase.from('lancamentos_empresa').select('id, valor').eq('turma_id', turma.id).eq('tipo', 'receita').eq('status', 'previsto').ilike('descricao', 'Receita prevista%').maybeSingle()
+      if (prev) { const nv = Math.max(0, (prev.valor || 0) - valorVenda); if (nv === 0) await supabase.from('lancamentos_empresa').delete().eq('id', prev.id); else await supabase.from('lancamentos_empresa').update({ valor: nv }).eq('id', prev.id) }
+      // LTV do aluno
+      const { data: al } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
+      await supabase.from('alunos').update({ ltv: (al?.ltv || 0) + valorVenda }).eq('id', alunoId)
+      // lead -> ganho
+      await supabase.from('leads').update({ etapa: 'ganho', data_ganho: new Date().toISOString(), valor_venda: valorVenda, matricula_id: mat.id, motivo_ganho: motivoGanho.trim() || null, atualizado_em: new Date().toISOString() }).eq('id', lead.id)
+      await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false)
+      await supabase.from('lead_andamentos').insert({ lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: 'ganho', observacao: `Venda cadastrada pelo CRM: ${vForma} ${numParcelas}x — R$ ${valorVenda.toFixed(2)}${motivoGanho.trim() ? ' — ' + motivoGanho.trim() : ''}` })
+      setMensagem('Venda cadastrada e lead em ganho!')
+      setTimeout(onFechar, 900)
+    } catch (e: any) { setMensagem('Erro: ' + (e?.message || '')) } finally { setSalvando(false) }
+  }
+
   const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
 
   return (
     <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
-        Vincular matrícula existente
+        {modoVenda ? 'Cadastrar nova venda (dados do lead)' : 'Marcar ganho'}
       </div>
 
       {!turma && (
@@ -1395,64 +1479,79 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
       )}
 
       {turma && carregando && (
-        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
+        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando...</p>
       )}
 
-      {turma && !carregando && matriculas.length === 0 && (
-        <div>
-          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
-            Nenhuma matrícula disponível para esta turma ainda.
-          </p>
-          <p style={{ fontSize: 11, color: '#9ca3af' }}>
-            Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
-          </p>
-        </div>
-      )}
-
-      {turma && matriculas.length > 0 && (
+      {/* MODO VINCULAR: matrícula existente + atalho pra cadastrar nova */}
+      {turma && !carregando && !modoVenda && (
         <>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
-            Selecione a matrícula deste lead:
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
-            {matriculas.map(m => (
-              <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
-                style={{
-                  padding: 10, borderRadius: 6, cursor: 'pointer',
-                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
-                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
-                }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
-                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
-                      {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
-                      {new Date(m.data_compra).toLocaleDateString('pt-BR')}
+          {matriculas.length > 0 ? (
+            <>
+              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>Selecione a matrícula deste lead:</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
+                {matriculas.map(m => (
+                  <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
+                    style={{ padding: 10, borderRadius: 6, cursor: 'pointer', border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c', background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
+                        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}{new Date(m.data_compra).toLocaleDateString('pt-BR')}</div>
+                      </div>
+                      <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
-                    R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </div>
-                </div>
+                ))}
               </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 12 }}>
-            <label style={labelStyle}>Motivo do ganho (opcional)</label>
-            <textarea style={{ ...inp, resize: 'none', minHeight: 50 }} rows={2}
-              placeholder="Ex: Fechou na virada do lote, cliente decidido"
-              value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} />
-          </div>
-
-          {mensagem && (
-            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+              <div style={{ marginTop: 12 }}>
+                <label style={labelStyle}>Motivo do ganho (opcional)</label>
+                <textarea style={{ ...inp, resize: 'none', minHeight: 50 }} rows={2} placeholder="Ex: Fechou na virada do lote, cliente decidido" value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} />
+              </div>
+              {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
+              <button onClick={confirmar} disabled={!matriculaSelecionada || salvando} style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+                {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
+              </button>
+            </>
+          ) : (
+            <p style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Nenhuma matrícula existente pra vincular. Cadastre a venda com os dados do lead:</p>
           )}
-
-          <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
-            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
-            {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
+          <button onClick={() => { setMensagem(''); setModoVenda(true) }} style={{ ...btnPrimary, background: matriculas.length > 0 ? '#3a3a3c' : '#16a34a', marginTop: 10, width: '100%' }}>
+            + Cadastrar nova venda (dados do lead)
           </button>
+        </>
+      )}
+
+      {/* MODO NOVA VENDA: formulário com os dados do lead */}
+      {turma && modoVenda && (
+        <>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Aluno (quem vai cursar)</label><input style={inp} value={vNome} onChange={e => setVNome(e.target.value)} /></div>
+            <div><label style={labelStyle}>CPF (opcional)</label><input style={inp} value={vCpf} onChange={e => setVCpf(e.target.value)} placeholder="000.000.000-00" /></div>
+            <div><label style={labelStyle}>WhatsApp</label><input style={inp} value={vWhats} onChange={e => setVWhats(e.target.value)} /></div>
+            <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Email (opcional)</label><input style={inp} value={vEmail} onChange={e => setVEmail(e.target.value)} /></div>
+            <div><label style={labelStyle}>Valor da venda (R$)</label><input style={inp} type="number" value={vValor} onChange={e => setVValor(e.target.value)} /></div>
+            <div><label style={labelStyle}>Data</label><input style={inp} type="date" value={vData} onChange={e => setVData(e.target.value)} /></div>
+            <div><label style={labelStyle}>Forma de pagamento</label>
+              <select style={inp} value={vForma} onChange={e => setVForma(e.target.value)}>
+                <option value="pix">Pix</option><option value="cartao">Cartão</option><option value="boleto">Boleto</option><option value="dinheiro">Dinheiro</option>
+              </select>
+            </div>
+            <div><label style={labelStyle}>Parcelas</label><input style={inp} type="number" min={1} value={vParcelas} onChange={e => setVParcelas(e.target.value)} disabled={vForma === 'cartao'} /></div>
+            <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Caixa (onde o dinheiro entrou)</label>
+              <select style={inp} value={vConta} onChange={e => setVConta(e.target.value)}>
+                <option value="">Selecione a caixa...</option>
+                {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
+              </select>
+            </div>
+            <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Motivo do ganho (opcional)</label><textarea style={{ ...inp, resize: 'none', minHeight: 44 }} rows={2} value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} /></div>
+          </div>
+          {vForma === 'cartao' && <p style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>Cartão entra como 1 lançamento (lança o valor que cair na caixa).</p>}
+          {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button onClick={() => setModoVenda(false)} disabled={salvando} style={{ ...btnSecondary }}>Voltar</button>
+            <button onClick={cadastrarVenda} disabled={salvando} style={{ ...btnPrimary, background: '#16a34a', flex: 1, opacity: salvando ? 0.6 : 1 }}>
+              {salvando ? 'Cadastrando...' : '✓ Cadastrar venda e dar ganho'}
+            </button>
+          </div>
         </>
       )}
     </div>
