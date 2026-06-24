@@ -70,3 +70,19 @@ export async function listarChats(page = 1, pageSize = 100) {
 export async function marcarChatLido(phone: string) {
   return post('/chats/read', { phone, action: 'read' })
 }
+
+// Resolve o @lid (identificador estável de privacidade) de um número REAL, via phone-exists.
+// O Z-API NÃO converte @lid -> telefone (privacidade), mas converte telefone -> @lid.
+// Guardamos esse @lid na conversa pra casar as mensagens que o vendedor envia do CELULAR
+// (que chegam só com o @lid). Retorna os dígitos do lid (ex: "260060353708108") ou null.
+export async function lidDoTelefone(phone: string): Promise<string | null> {
+  const fone = foneZapi(phone)
+  if (!fone || fone.includes('@')) return null
+  const r = await get(`/phone-exists/${fone}`)
+  if (!r.ok || !r.data) return null
+  const item = Array.isArray(r.data) ? r.data[0] : r.data
+  const lid = item?.lid
+  if (!lid) return null
+  const dig = lid.toString().replace(/\D/g, '')
+  return dig || null
+}

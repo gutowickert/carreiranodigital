@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { aplicarRateio } from '@/lib/rateio'
 import { sendLead } from '@/lib/capi'
 import { enviarPush } from '@/lib/push'
+import { lidDoTelefone } from '@/lib/zapi'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
     const zapiId = ev.messageId || null
     const fromMe = !!ev.fromMe
     const chatName = ev.chatName || null
-    const chatLid = ev.chatLid ? ev.chatLid.toString() : null
+    const chatLid = ev.chatLid ? ev.chatLid.toString().replace(/\D/g, '') : null
 
     let tipo = 'texto'
     let texto: string | null = null
@@ -146,6 +147,11 @@ export async function POST(req: NextRequest) {
       const { data: porLid } = await supabase.from('wa_conversas').select('*').eq('chat_lid', chatLid).maybeSingle()
       conversa = porLid || null
     }
+    // 1b) mensagem enviada do CELULAR (@lid): casa pelo @lid guardado na conversa do número real
+    if (!conversa && ehLid) {
+      const { data: porLidGuardado } = await supabase.from('wa_conversas').select('*').eq('chat_lid', telefone).maybeSingle()
+      conversa = porLidGuardado || null
+    }
     // 2) casa pelo telefone exato — nº real ou dígitos do @lid
     if (!conversa) {
       const { data: porFone } = await supabase.from('wa_conversas').select('*').eq('telefone', telefone).eq('canal', 'zapi').maybeSingle()
@@ -213,9 +219,15 @@ export async function POST(req: NextRequest) {
     // 23505 = violacao do indice unico (zapi_id repetido = eco do "notificar enviadas"). Ignora.
     if (errMsg && errMsg.code === '23505') return NextResponse.json({ ok: true, skip: 'duplicada (unique)' })
 
-    // guarda o chatLid na conversa (passo separado pra não quebrar se a coluna não existir)
+    // guarda o @lid na conversa pra casar as mensagens enviadas do CELULAR (que chegam só com @lid)
     if (chatLid && !conversa.chat_lid) {
       await supabase.from('wa_conversas').update({ chat_lid: chatLid }).eq('id', conversa.id)
+    } else if (conversaCriada && !conversa.chat_lid && !ehLid && !ehGrupo && telefone) {
+      // conversa nova de número real: resolve o @lid no Z-API e guarda (best-effort; falha não quebra)
+      try {
+        const lid = await lidDoTelefone(telefone)
+        if (lid) await supabase.from('wa_conversas').update({ chat_lid: lid }).eq('id', conversa.id)
+      } catch { /* ignore */ }
     }
 
     // Auto-vincula conversa @lid (sem lead) a um lead pelo NOME do contato,
