@@ -53,7 +53,8 @@ export default function Dashboard() {
     const hoje = new Date()
     const hojeStr = hoje.toISOString().split('T')[0]
     const inicioMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
-    const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-31`
+    const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate()
+    const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(ultimoDiaMes).padStart(2, '0')}`
     const data30Atras = new Date(hoje); data30Atras.setDate(data30Atras.getDate() - 30)
     const data30Str = data30Atras.toISOString().split('T')[0]
     const data7Frente = new Date(hoje); data7Frente.setDate(data7Frente.getDate() + 7)

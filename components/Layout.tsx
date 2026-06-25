@@ -241,7 +241,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
 
       {menuVisivel && (
         <div style={{ flexShrink: 0, width: '220px' }}>
-          <div style={{
+          <div data-theme="dark" style={{
             width: '220px',
             backgroundColor: 'var(--surface)',
             borderRight: '1px solid var(--border)',

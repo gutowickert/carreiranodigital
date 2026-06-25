@@ -12,9 +12,9 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  // TEMP: força o tema ESCURO pra todos enquanto o tema claro é ajustado.
-  // (limpa a escolha salva e ignora o claro). Reverter quando o claro ficar pronto.
-  const aplicaTema = `(function(){try{localStorage.removeItem('tema')}catch(e){};document.documentElement.setAttribute('data-theme','dark')})()`
+  // Aplica o tema salvo ANTES de pintar (sem flash). Padrão: escuro.
+  // reset-once ('tema_reset'): zera a escolha antiga uma vez (tira quem ficou preso no claro v1).
+  const aplicaTema = `(function(){try{if(localStorage.getItem('tema_reset')!=='2'){localStorage.removeItem('tema');localStorage.setItem('tema_reset','2')}var t=localStorage.getItem('tema');document.documentElement.setAttribute('data-theme',t==='claro'?'light':'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}})()`
   return (
     <>
       <script dangerouslySetInnerHTML={{ __html: aplicaTema }} />
