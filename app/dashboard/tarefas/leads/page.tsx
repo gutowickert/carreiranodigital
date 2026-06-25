@@ -23,21 +23,21 @@ type TarefaLead = {
 
 type Vendedor = { id: string; nome: string }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#ffffff', outline: 'none', cursor: 'pointer' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none', cursor: 'pointer' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const TIPO_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
-  tentar_contato_d1: { label: 'Tentar contato D+1', cor: '#fb923c', bg: '#431407' },
-  tentar_contato_d2: { label: 'Tentar contato D+2', cor: '#fb923c', bg: '#431407' },
-  tentar_contato_d4: { label: 'Tentar contato D+4', cor: '#fb923c', bg: '#431407' },
-  tentar_contato_d6: { label: 'Tentar contato D+6', cor: '#fb923c', bg: '#431407' },
-  lote_fecha_hoje_d3: { label: 'Lote fecha hoje', cor: '#34d399', bg: '#052e16' },
-  dar_andamento_d4: { label: 'Dar andamento', cor: '#60a5fa', bg: '#172554' },
-  encerrar_lead_d2: { label: 'Encerrar lead', cor: '#a78bfa', bg: '#2e1065' },
-  retornar_prazo: { label: 'Retornar (prazo)', cor: '#fbbf24', bg: '#451a03' },
-  verificar_pagamento: { label: 'Verificar pagamento', cor: '#06b6d4', bg: '#083344' },
+  tentar_contato_d1: { label: 'Tentar contato D+1', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  tentar_contato_d2: { label: 'Tentar contato D+2', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  tentar_contato_d4: { label: 'Tentar contato D+4', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  tentar_contato_d6: { label: 'Tentar contato D+6', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  lote_fecha_hoje_d3: { label: 'Lote fecha hoje', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  dar_andamento_d4: { label: 'Dar andamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  encerrar_lead_d2: { label: 'Encerrar lead', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  retornar_prazo: { label: 'Retornar (prazo)', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  verificar_pagamento: { label: 'Verificar pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
 }
 
 function tempoRelativo(dataIso: string): string {
@@ -191,11 +191,11 @@ export default function TarefasLeads() {
   const tarefasCanceladas = base.filter(t => t.cancelada)
 
   function renderTarefa(t: TarefaLead) {
-    const tipo = TIPO_LABEL[t.tipo] || { label: t.tipo, cor: '#9ca3af', bg: '#1f2937' }
+    const tipo = TIPO_LABEL[t.tipo] || { label: t.tipo, cor: 'var(--text-muted)', bg: 'var(--surface-2)' }
     const venc = new Date(t.data_vencimento)
     const atrasada = !t.concluida && !t.cancelada && venc < agora
     return (
-      <div key={t.id} style={{ ...card, padding: 14, opacity: (t.concluida || t.cancelada) ? 0.6 : 1, border: atrasada ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
+      <div key={t.id} style={{ ...card, padding: 14, opacity: (t.concluida || t.cancelada) ? 0.6 : 1, border: atrasada ? '1px solid var(--red)' : '1px solid var(--border)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
           <div style={{ flex: 1 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
@@ -203,31 +203,31 @@ export default function TarefasLeads() {
                 {tipo.label}
               </span>
               {atrasada && (
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#450a0a', color: '#f87171', fontWeight: 600 }}>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 }}>
                   ⚠ Atrasada
                 </span>
               )}
               {t.concluida && (
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#052e16', color: '#34d399', fontWeight: 600 }}>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--green-bg)', color: 'var(--green)', fontWeight: 600 }}>
                   ✓ Concluída
                 </span>
               )}
               {t.cancelada && (
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#1f2937', color: '#9ca3af', fontWeight: 600 }}>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--surface-2)', color: 'var(--text-muted)', fontWeight: 600 }}>
                   Cancelada
                 </span>
               )}
             </div>
-            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{t.titulo}</div>
-            {t.descricao && <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 4 }}>{t.descricao}</div>}
+            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{t.titulo}</div>
+            {t.descricao && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 4 }}>{t.descricao}</div>}
             {t.leads && (
-              <div style={{ fontSize: 11, color: '#a78bfa', marginTop: 6 }}>
-                Lead: <Link href={`/dashboard/crm?lead=${t.leads.id}`} style={{ color: '#fff', fontWeight: 700, textDecoration: 'underline' }}>{t.leads.nome}</Link>
+              <div style={{ fontSize: 11, color: 'var(--accent-soft)', marginTop: 6 }}>
+                Lead: <Link href={`/dashboard/crm?lead=${t.leads.id}`} style={{ color: 'var(--text)', fontWeight: 700, textDecoration: 'underline' }}>{t.leads.nome}</Link>
                 {t.leads.whatsapp && <span> · {t.leads.whatsapp}</span>}
-                {t.leads.turmas?.codigo && <span style={{ marginLeft: 6, padding: '1px 6px', background: '#2e1065', borderRadius: 4 }}>{t.leads.turmas.codigo}</span>}
+                {t.leads.turmas?.codigo && <span style={{ marginLeft: 6, padding: '1px 6px', background: 'var(--accent-bg)', borderRadius: 4 }}>{t.leads.turmas.codigo}</span>}
               </div>
             )}
-            <div style={{ fontSize: 10, color: atrasada ? '#f87171' : '#6b7280', marginTop: 6 }}>
+            <div style={{ fontSize: 10, color: atrasada ? 'var(--red)' : 'var(--text-faint)', marginTop: 6 }}>
               Vence: {venc.toLocaleString('pt-BR')} · {tempoRelativo(t.data_vencimento)}
             </div>
           </div>
@@ -244,11 +244,11 @@ export default function TarefasLeads() {
           </div>
         </div>
         {concluindoId === t.id && (
-          <div style={{ marginTop: 12, borderTop: '1px solid #3a3a3c', paddingTop: 12 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 6 }}>O que aconteceu nesse contato? (vai pro andamento do lead no CRM)</div>
+          <div style={{ marginTop: 12, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>O que aconteceu nesse contato? (vai pro andamento do lead no CRM)</div>
             <textarea autoFocus value={obsConcluir} onChange={e => setObsConcluir(e.target.value)}
               placeholder="Ex: Falei com o lead, pediu pra retornar quinta. Demonstrou interesse na turma..."
-              style={{ width: '100%', minHeight: 70, resize: 'vertical', boxSizing: 'border-box', background: '#1c1c1e', border: '1px solid #48484a', borderRadius: 8, padding: 10, fontSize: 13, color: '#fff', outline: 'none', fontFamily: 'inherit' }} />
+              style={{ width: '100%', minHeight: 70, resize: 'vertical', boxSizing: 'border-box', background: 'var(--bg)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: 10, fontSize: 13, color: 'var(--text)', outline: 'none', fontFamily: 'inherit' }} />
             <div style={{ display: 'flex', gap: 8, marginTop: 8, justifyContent: 'flex-end' }}>
               <button onClick={() => { setConcluindoId(null); setObsConcluir('') }} style={btnSecondary}>Cancelar</button>
               <button onClick={() => marcarConcluida(t, obsConcluir)} style={btnPrimary}>✓ Salvar e concluir</button>
@@ -263,15 +263,15 @@ export default function TarefasLeads() {
     <Layout>
       <div style={{ padding: '32px 40px' }}>
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Tarefas de Leads</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Tarefas de Leads</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>
             Tarefas automáticas criadas pelo sistema durante o ciclo de vida dos leads
           </p>
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
@@ -296,11 +296,11 @@ export default function TarefasLeads() {
         </div>
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : tarefas.length === 0 ? (
           <div style={{ ...card, padding: 32, textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: '#4ade80', margin: 0, fontWeight: 500 }}>✓ Tudo em dia</p>
-            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6, margin: 0 }}>
+            <p style={{ fontSize: 14, color: 'var(--green-strong)', margin: 0, fontWeight: 500 }}>✓ Tudo em dia</p>
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6, margin: 0 }}>
               Nenhuma tarefa {filtroStatus === 'pendentes' ? 'pendente' : filtroStatus === 'concluidas' ? 'concluída' : filtroStatus === 'canceladas' ? 'cancelada' : ''} no momento.
             </p>
           </div>
@@ -310,7 +310,7 @@ export default function TarefasLeads() {
               <>
                 {tarefasAtrasadas.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', textTransform: 'uppercase', marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)', textTransform: 'uppercase', marginBottom: 8 }}>
                       ⚠ Atrasadas ({tarefasAtrasadas.length})
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -321,7 +321,7 @@ export default function TarefasLeads() {
 
                 {tarefasHoje.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#fbbf24', textTransform: 'uppercase', marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--amber)', textTransform: 'uppercase', marginBottom: 8 }}>
                       Hoje ({tarefasHoje.length})
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -332,7 +332,7 @@ export default function TarefasLeads() {
 
                 {tarefasFuturas.length > 0 && (
                   <div style={{ marginBottom: 20 }}>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#9ca3af', textTransform: 'uppercase', marginBottom: 8 }}>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: 8 }}>
                       Próximas ({tarefasFuturas.length})
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

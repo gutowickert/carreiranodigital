@@ -15,12 +15,12 @@ type Sala = {
 }
 type Cidade = { id: string; nome: string }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnLink = { background: 'none', border: '1px solid #48484a', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', color: '#a78bfa', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnLink = { background: 'none', border: '1px solid var(--border-strong)', borderRadius: '6px', padding: '5px 12px', fontSize: '12px', color: 'var(--accent-soft)', cursor: 'pointer' } as React.CSSProperties
 
 export default function Salas() {
   const [salas, setSalas] = useState<Sala[]>([])
@@ -83,14 +83,14 @@ export default function Salas() {
   }
 
   const tipoInfo: Record<string, { label: string; bg: string; color: string }> = {
-    sede_propria: { label: 'Própria', bg: '#052e16', color: '#4ade80' },
-    sala_externa: { label: 'Externa', bg: '#172554', color: '#60a5fa' },
+    sede_propria: { label: 'Própria', bg: 'var(--green-bg)', color: 'var(--green-strong)' },
+    sala_externa: { label: 'Externa', bg: 'var(--blue-bg)', color: 'var(--blue)' },
   }
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Salas</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>Salas</h1>
         <button onClick={() => (novo ? fecharForm() : abrirNovo())} style={btnPrimary}>
           {novo ? 'Fechar' : '+ Cadastrar sala'}
         </button>
@@ -98,7 +98,7 @@ export default function Salas() {
 
       {novo && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>
             {editandoId ? 'Editar sala' : 'Nova sala'}
           </div>
           <form onSubmit={salvar}>
@@ -123,40 +123,40 @@ export default function Salas() {
                 {salvando ? 'Salvando...' : (editandoId ? 'Salvar alterações' : 'Cadastrar')}
               </button>
             </div>
-            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{mensagem}</p>}
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--red)' }}>{mensagem}</p>}
           </form>
         </div>
       )}
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{salas.length} sala(s)</span>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{salas.length} sala(s)</span>
         </div>
         {salas.length === 0 ? (
-          <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhuma sala cadastrada.</p>
+          <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>Nenhuma sala cadastrada.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Nome', 'Cidade', 'Tipo', 'Capacidade', 'Diaria', ''].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {salas.map(s => {
-                const info = tipoInfo[s.tipo] || { label: s.tipo || '-', bg: '#3a3a3c', color: '#9ca3af' }
+                const info = tipoInfo[s.tipo] || { label: s.tipo || '-', bg: 'var(--surface-2)', color: 'var(--text-muted)' }
                 return (
-                  <tr key={s.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{s.nome}</td>
-                    <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.cidades?.nome}</td>
+                  <tr key={s.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{s.nome}</td>
+                    <td style={{ padding: '14px 24px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.cidades?.nome}</td>
                     <td style={{ padding: '14px 24px' }}>
                       <span style={{ fontSize: '12px', backgroundColor: info.bg, color: info.color, padding: '3px 10px', borderRadius: '20px' }}>
                         {info.label}
                       </span>
                     </td>
-                    <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{s.capacidade_maxima ? s.capacidade_maxima + ' pessoas' : '-'}</td>
-                    <td style={{ padding: '14px 24px', fontSize: '14px', color: s.diaria_reais > 0 ? '#f87171' : '#6b7280' }}>
+                    <td style={{ padding: '14px 24px', fontSize: '14px', color: 'var(--text-muted)' }}>{s.capacidade_maxima ? s.capacidade_maxima + ' pessoas' : '-'}</td>
+                    <td style={{ padding: '14px 24px', fontSize: '14px', color: s.diaria_reais > 0 ? 'var(--red)' : 'var(--text-faint)' }}>
                       {s.diaria_reais > 0 ? 'R$ ' + s.diaria_reais : '—'}
                     </td>
                     <td style={{ padding: '14px 24px', textAlign: 'right' }}>

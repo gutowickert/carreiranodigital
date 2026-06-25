@@ -18,17 +18,17 @@ type Conta = {
   total_saidas?: number
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const TIPOS_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
-  dinheiro: { label: 'Dinheiro', cor: '#fbbf24', bg: '#422006' },
-  banco: { label: 'Banco', cor: '#60a5fa', bg: '#172554' },
-  checkout: { label: 'Checkout', cor: '#a78bfa', bg: '#2e1065' },
-  cartao_credito: { label: 'Cartão crédito', cor: '#f87171', bg: '#450a0a' },
+  dinheiro: { label: 'Dinheiro', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  banco: { label: 'Banco', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  checkout: { label: 'Checkout', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  cartao_credito: { label: 'Cartão crédito', cor: 'var(--red)', bg: 'var(--red-bg)' },
 }
 
 const UNIDADES_LABEL: Record<string, string> = {
@@ -189,8 +189,8 @@ export default function Caixas() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Caixas e Contas</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Dinheiro, banco, checkout e cartões</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Caixas e Contas</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Dinheiro, banco, checkout e cartões</p>
           </div>
           <div style={{ display: 'flex', gap: 12 }}>
             <button onClick={() => setTransferencia(!transferencia)} style={btnSecondary}>⇄ Transferência</button>
@@ -201,25 +201,25 @@ export default function Caixas() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 24 }}>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Saldo total (ativas)</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: saldoTotal >= 0 ? '#34d399' : '#f87171' }}>{fmt(saldoTotal)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Saldo total (ativas)</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: saldoTotal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(saldoTotal)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total entradas</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{fmt(totalEntradas)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total entradas</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(totalEntradas)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total saídas</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#f87171' }}>{fmt(totalSaidas)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total saídas</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--red)' }}>{fmt(totalSaidas)}</div>
           </div>
         </div>
 
         {transferencia && (
           <div style={{ ...card, padding: 24, marginBottom: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 16, marginTop: 0 }}>Nova transferência entre caixas</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 16, marginTop: 0 }}>Nova transferência entre caixas</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>De (origem)</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>De (origem)</label>
                 <select style={{ ...sel, width: '100%' }} value={transfOrigem} onChange={e => setTransfOrigem(e.target.value)}>
                   <option value="">Selecione</option>
                   {contas.filter(c => c.ativo).map(c => (
@@ -228,7 +228,7 @@ export default function Caixas() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Para (destino)</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Para (destino)</label>
                 <select style={{ ...sel, width: '100%' }} value={transfDestino} onChange={e => setTransfDestino(e.target.value)}>
                   <option value="">Selecione</option>
                   {contas.filter(c => c.ativo && c.id !== transfOrigem).map(c => (
@@ -239,15 +239,15 @@ export default function Caixas() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Valor R$</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Valor R$</label>
                 <input type="number" step="0.01" style={inp} value={transfValor} onChange={e => setTransfValor(e.target.value)} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Data</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Data</label>
                 <input type="date" style={inp} value={transfData} onChange={e => setTransfData(e.target.value)} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Descrição</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Descrição</label>
                 <input style={inp} placeholder="Ex: Saque Hotmart para banco" value={transfDesc} onChange={e => setTransfDesc(e.target.value)} />
               </div>
             </div>
@@ -260,16 +260,16 @@ export default function Caixas() {
 
         {novaConta && (
           <div style={{ ...card, padding: 24, marginBottom: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 16, marginTop: 0 }}>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 16, marginTop: 0 }}>
               {editando ? 'Editar caixa' : 'Nova caixa'}
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Nome *</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Nome *</label>
                 <input style={inp} value={form.nome} onChange={e => setForm(f => ({ ...f, nome: e.target.value }))} placeholder="Ex: Caixinha sala Lajeado" />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Tipo</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Tipo</label>
                 <select style={{ ...sel, width: '100%' }} value={form.tipo} onChange={e => setForm(f => ({ ...f, tipo: e.target.value as any }))}>
                   <option value="dinheiro">Dinheiro</option>
                   <option value="banco">Banco</option>
@@ -278,7 +278,7 @@ export default function Caixas() {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Unidade</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Unidade</label>
                 <select style={{ ...sel, width: '100%' }} value={form.unidade} onChange={e => setForm(f => ({ ...f, unidade: e.target.value as any }))}>
                   <option value="geral">Geral</option>
                   <option value="lajeado">Lajeado</option>
@@ -288,11 +288,11 @@ export default function Caixas() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 3fr', gap: 12, marginBottom: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Saldo inicial R$</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Saldo inicial R$</label>
                 <input type="number" step="0.01" style={inp} value={form.saldo_inicial} onChange={e => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Observações</label>
+                <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Observações</label>
                 <input style={inp} value={form.observacoes} onChange={e => setForm(f => ({ ...f, observacoes: e.target.value }))} />
               </div>
             </div>
@@ -304,18 +304,18 @@ export default function Caixas() {
         )}
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? '#450a0a' : '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {Object.entries(contasPorUnidade).map(([unidade, contasUnidade]) => (
               <div key={unidade}>
-                <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>
                   {UNIDADES_LABEL[unidade]}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
@@ -325,7 +325,7 @@ export default function Caixas() {
                       <div key={c.id} style={{ ...card, padding: 18, opacity: c.ativo ? 1 : 0.5 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                           <div>
-                            <div style={{ fontSize: 14, fontWeight: 600, color: '#fff' }}>{c.nome}</div>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.nome}</div>
                             <div style={{ marginTop: 4 }}>
                               <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: tipo.bg, color: tipo.cor, textTransform: 'uppercase', fontWeight: 600 }}>
                                 {tipo.label}
@@ -333,20 +333,20 @@ export default function Caixas() {
                             </div>
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                            <button onClick={() => abrirEdicao(c)} style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: 11, cursor: 'pointer', padding: 2 }}>Editar</button>
-                            <button onClick={() => alternarAtivo(c)} style={{ background: 'none', border: 'none', color: c.ativo ? '#f87171' : '#34d399', fontSize: 11, cursor: 'pointer', padding: 2 }}>
+                            <button onClick={() => abrirEdicao(c)} style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer', padding: 2 }}>Editar</button>
+                            <button onClick={() => alternarAtivo(c)} style={{ background: 'none', border: 'none', color: c.ativo ? 'var(--red)' : 'var(--green)', fontSize: 11, cursor: 'pointer', padding: 2 }}>
                               {c.ativo ? 'Desativar' : 'Ativar'}
                             </button>
                           </div>
                         </div>
 
-                        <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 12 }}>
-                          <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Saldo atual</div>
-                          <div style={{ fontSize: 22, fontWeight: 700, color: (c.saldo_atual || 0) >= 0 ? '#34d399' : '#f87171', marginTop: 2 }}>
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                          <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Saldo atual</div>
+                          <div style={{ fontSize: 22, fontWeight: 700, color: (c.saldo_atual || 0) >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 2 }}>
                             {fmt(c.saldo_atual || 0)}
                           </div>
                           {(c.saldo_inicial || 0) !== 0 && (
-                            <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                            <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
                               Inicial: {fmt(c.saldo_inicial)}
                             </div>
                           )}
@@ -354,17 +354,17 @@ export default function Caixas() {
 
                         <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11 }}>
                           <div>
-                            <span style={{ color: '#6b7280' }}>↑ </span>
-                            <span style={{ color: '#34d399' }}>{fmt(c.total_entradas || 0)}</span>
+                            <span style={{ color: 'var(--text-faint)' }}>↑ </span>
+                            <span style={{ color: 'var(--green)' }}>{fmt(c.total_entradas || 0)}</span>
                           </div>
                           <div>
-                            <span style={{ color: '#6b7280' }}>↓ </span>
-                            <span style={{ color: '#f87171' }}>{fmt(c.total_saidas || 0)}</span>
+                            <span style={{ color: 'var(--text-faint)' }}>↓ </span>
+                            <span style={{ color: 'var(--red)' }}>{fmt(c.total_saidas || 0)}</span>
                           </div>
                         </div>
 
                         {c.observacoes && (
-                          <div style={{ fontSize: 11, color: '#6b7280', marginTop: 10, paddingTop: 10, borderTop: '1px solid #3a3a3c' }}>
+                          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
                             {c.observacoes}
                           </div>
                         )}

@@ -130,7 +130,7 @@ export default function AgendaAulas() {
     setModalAberto(false); setAulaEditando(null); carregar()
   }
 
-  const selectStyle = { background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, padding: '8px 12px', color: '#f4f4f5', fontSize: 13, cursor: 'pointer', outline: 'none' }
+  const selectStyle = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 13, cursor: 'pointer', outline: 'none' }
 
   // Aulas filtradas pelo mês (grade)
   const aulasMes = aulasRaw.filter((a: any) => {
@@ -163,23 +163,23 @@ export default function AgendaAulas() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f4f4f5' }}>Agenda de Aulas</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Clique em um horario para agendar uma aula</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Agenda de Aulas</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Clique em um horario para agendar uma aula</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setVisao('calendario')}
-                style={{ padding: '8px 16px', background: visao === 'calendario' ? '#7c3aed' : 'transparent', color: visao === 'calendario' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'calendario' ? 'var(--accent)' : 'transparent', color: visao === 'calendario' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Calendário
               </button>
               <button onClick={() => setVisao('grade')}
-                style={{ padding: '8px 16px', background: visao === 'grade' ? '#7c3aed' : 'transparent', color: visao === 'grade' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'grade' ? 'var(--accent)' : 'transparent', color: visao === 'grade' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Grade
               </button>
             </div>
             <button
               onClick={() => { setAulaEditando(null); setInicioSugerido(new Date()); setFimSugerido(new Date()); setModalAberto(true) }}
-              style={{ padding: '10px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ padding: '10px 20px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
               + Nova aula
             </button>
           </div>
@@ -203,7 +203,7 @@ export default function AgendaAulas() {
           )}
           {(filtros.professor_id || filtros.turma_id || filtros.sala_id) && (
             <button onClick={() => setFiltros({ professor_id: '', turma_id: '', sala_id: '' })}
-              style={{ ...selectStyle, background: 'transparent', color: '#9ca3af', border: '1px solid #3a3a3c' }}>
+              style={{ ...selectStyle, background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)' }}>
               Limpar filtros
             </button>
           )}
@@ -216,20 +216,20 @@ export default function AgendaAulas() {
             onEventClick={(evento) => abrirEdicao(evento.resource)}
           />
         ) : (
-          <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: 14, fontWeight: 600, color: '#f4f4f5' }}>
+          <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
                 {aulasMes.length} aula(s) em {new Date(mesGrade + '-01T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
               </span>
             </div>
             {aulasMes.length === 0 ? (
-              <p style={{ padding: 24, fontSize: 13, color: '#6b7280' }}>Nenhuma aula neste mês.</p>
+              <p style={{ padding: 24, fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma aula neste mês.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
                     {['Dia', 'Horário', 'Produto', 'Cidade', 'Sala', 'Professor'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -239,23 +239,23 @@ export default function AgendaAulas() {
                     const fim = parseLocal(a.fim)
                     return (
                       <tr key={a.id} onClick={() => abrirEdicao(a)}
-                        style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#f4f4f5', fontWeight: 500 }}>
+                        style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>
                           {inicio.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' })}
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#a78bfa', fontFamily: 'monospace' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--accent-soft)', fontFamily: 'monospace' }}>
                           {fmtHora(inicio)} - {fmtHora(fim)}
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#f4f4f5' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text)' }}>
                           {a.turmas?.produtos?.nome || a.titulo}
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                           {a.turmas?.cidades?.nome || '-'}
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                           {a.salas?.nome || '-'}
                         </td>
-                        <td style={{ padding: '14px 16px', fontSize: 13, color: '#9ca3af' }}>
+                        <td style={{ padding: '14px 16px', fontSize: 13, color: 'var(--text-muted)' }}>
                           {a.professores?.nome || '-'}
                         </td>
                       </tr>
@@ -317,8 +317,8 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
 
   if (!aberto) return null
 
-  const inputStyle = { background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, padding: '8px 12px', color: '#f4f4f5', fontSize: 14, outline: 'none', width: '100%' }
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+  const inputStyle = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' }
+  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
 
   const diasSemana = [
     { value: 'mon', label: 'Seg' }, { value: 'tue', label: 'Ter' },
@@ -328,10 +328,10 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 480, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: 480, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 16, fontWeight: 600, color: '#f4f4f5' }}>{aula?.id ? 'Editar aula' : 'Nova aula'}</h2>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 20, cursor: 'pointer' }}>x</button>
+          <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)' }}>{aula?.id ? 'Editar aula' : 'Nova aula'}</h2>
+          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 20, cursor: 'pointer' }}>x</button>
         </div>
 
         <div>
@@ -364,7 +364,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
         </div>
 
         {conflito && (
-          <div style={{ background: '#3a1a1a', border: '1px solid #ef4444', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#ef4444' }}>
+          <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--red)' }}>
             Sala ocupada neste horario - escolha outro horario ou outra sala.
           </div>
         )}
@@ -381,8 +381,8 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm((f: any) => ({ ...f, recorrente: e.target.checked }))} style={{ accentColor: '#7c3aed', width: 16, height: 16, cursor: 'pointer' }} />
-          <label htmlFor="recorrente" style={{ fontSize: 13, color: '#9ca3af', cursor: 'pointer' }}>Aula recorrente (semanal)</label>
+          <input type="checkbox" id="recorrente" checked={form.recorrente} onChange={e => setForm((f: any) => ({ ...f, recorrente: e.target.checked }))} style={{ accentColor: 'var(--accent)', width: 16, height: 16, cursor: 'pointer' }} />
+          <label htmlFor="recorrente" style={{ fontSize: 13, color: 'var(--text-muted)', cursor: 'pointer' }}>Aula recorrente (semanal)</label>
         </div>
 
         {form.recorrente && (
@@ -398,7 +398,7 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
                       const novos = selecionado ? dias.filter((x: string) => x !== d.value) : [...dias, d.value]
                       setForm((f: any) => ({ ...f, regra_recorrencia: novos.join(',') }))
                     }}
-                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid ' + (selecionado ? '#7c3aed' : '#3a3a3c'), background: selecionado ? '#2d1f4a' : 'transparent', color: selecionado ? '#a78bfa' : '#9ca3af', fontSize: 12, cursor: 'pointer' }}>
+                    style={{ padding: '6px 10px', borderRadius: 6, border: '1px solid ' + (selecionado ? 'var(--accent)' : 'var(--border)'), background: selecionado ? 'var(--accent-bg)' : 'transparent', color: selecionado ? 'var(--accent-soft)' : 'var(--text-muted)', fontSize: 12, cursor: 'pointer' }}>
                     {d.label}
                   </button>
                 )
@@ -415,16 +415,16 @@ function ModalAula({ aberto, aula, inicioSugerido, fimSugerido, professores, tur
         <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
           {aula?.id && onExcluir && (
             <button onClick={() => onExcluir(aula.id)}
-              style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', fontSize: 13, cursor: 'pointer' }}>
+              style={{ padding: '10px 16px', borderRadius: 8, border: '1px solid var(--red)', background: 'transparent', color: 'var(--red)', fontSize: 13, cursor: 'pointer' }}>
               Excluir
             </button>
           )}
           <button onClick={onFechar}
-            style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: '1px solid #3a3a3c', background: 'transparent', color: '#9ca3af', fontSize: 13, cursor: 'pointer' }}>
+            style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>
             Cancelar
           </button>
           <button onClick={() => !conflito && onSalvar(form)} disabled={conflito}
-            style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', background: conflito ? '#3a3a3c' : '#7c3aed', color: conflito ? '#6b7280' : '#fff', fontSize: 13, fontWeight: 600, cursor: conflito ? 'not-allowed' : 'pointer' }}>
+            style={{ flex: 1, padding: '10px 16px', borderRadius: 8, border: 'none', background: conflito ? 'var(--surface-2)' : 'var(--accent)', color: conflito ? 'var(--text-faint)' : 'var(--on-accent)', fontSize: 13, fontWeight: 600, cursor: conflito ? 'not-allowed' : 'pointer' }}>
             Salvar
           </button>
         </div>

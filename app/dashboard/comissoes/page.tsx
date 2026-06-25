@@ -25,9 +25,9 @@ type VendedorComissao = {
   }>
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 
 
@@ -201,8 +201,8 @@ export default function Comissoes() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Comissões</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Comissões</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>
               Faixas e percentuais configurados em Cadastros → Configurações
             </p>
           </div>
@@ -211,36 +211,36 @@ export default function Comissoes() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total vendido no mês</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{fmt(totalVendido)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total vendido no mês</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(totalVendido)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total comissão</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#a78bfa' }}>{fmt(totalGeral)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total comissão</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent-soft)' }}>{fmt(totalGeral)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Aprovados</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{aprovados}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Aprovados</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{aprovados}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Pendentes aprovação</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#fbbf24' }}>{pendentes}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Pendentes aprovação</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--amber)' }}>{pendentes}</div>
           </div>
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? '#450a0a' : '#052e16', borderRadius: 8, border: '1px solid', borderColor: mensagem.includes('Erro') ? '#f87171' : '#4ade80' }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8, border: '1px solid', borderColor: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green-strong)' }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
         {carregando ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 13, color: '#6b7280' }}>Calculando comissões...</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Calculando comissões...</p>
           </div>
         ) : vendedores.length === 0 ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 14, color: '#6b7280' }}>Nenhum vendedor cadastrado.</p>
+            <p style={{ fontSize: 14, color: 'var(--text-faint)' }}>Nenhum vendedor cadastrado.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -249,24 +249,24 @@ export default function Comissoes() {
                 <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
                   <div style={{ flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{v.nome}</span>
-                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, 
-                        background: v.setor === 'comercial_externo' ? '#431407' : '#172554',
-                        color: v.setor === 'comercial_externo' ? '#fb923c' : '#60a5fa',
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{v.nome}</span>
+                      <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4,
+                        background: v.setor === 'comercial_externo' ? 'var(--amber-bg)' : 'var(--blue-bg)',
+                        color: v.setor === 'comercial_externo' ? 'var(--amber)' : 'var(--blue)',
                         textTransform: 'uppercase', fontWeight: 600 }}>
                         {v.setor === 'comercial_externo' ? 'Externo' : 'Interno'}
                       </span>
                       {v.ja_aprovado && (
-                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: '#052e16', color: '#34d399', textTransform: 'uppercase', fontWeight: 600 }}>
+                        <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--green-bg)', color: 'var(--green)', textTransform: 'uppercase', fontWeight: 600 }}>
                           ✓ Aprovado
                         </span>
                       )}
                     </div>
-                    <div style={{ fontSize: 12, color: '#6b7280' }}>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
                       {v.matriculas_count} matrícula(s) no mês
                       {v.detalhes.length > 0 && (
                         <button onClick={() => setExpandido(expandido === v.id ? null : v.id)}
-                          style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: 11, cursor: 'pointer', marginLeft: 8 }}>
+                          style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer', marginLeft: 8 }}>
                           {expandido === v.id ? 'Ocultar' : 'Ver detalhes'}
                         </button>
                       )}
@@ -275,54 +275,54 @@ export default function Comissoes() {
 
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, auto)', gap: 24, alignItems: 'center' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Total vendido</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#34d399' }}>{fmt(v.total_vendido)}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Total vendido</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--green)' }}>{fmt(v.total_vendido)}</div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Comissão {v.percentual}%</div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa' }}>{fmt(v.comissao)}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Comissão {v.percentual}%</div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-soft)' }}>{fmt(v.comissao)}</div>
                     </div>
                     <div>
                       {v.comissao > 0 && !v.ja_aprovado && (
-                        <button onClick={() => aprovar(v)} style={{ ...btnPrimary, background: '#16a34a' }}>
+                        <button onClick={() => aprovar(v)} style={{ ...btnPrimary, background: 'var(--green)' }}>
                           Aprovar e lançar
                         </button>
                       )}
                       {v.ja_aprovado && (
                         <button onClick={() => cancelarAprovacao(v)}
-                          style={{ background: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>
+                          style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 12, cursor: 'pointer' }}>
                           Cancelar aprovação
                         </button>
                       )}
                       {v.comissao === 0 && (
-                        <span style={{ fontSize: 12, color: '#6b7280' }}>Sem vendas</span>
+                        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Sem vendas</span>
                       )}
                     </div>
                   </div>
                 </div>
 
                 {expandido === v.id && v.detalhes.length > 0 && (
-                  <div style={{ borderTop: '1px solid #3a3a3c', padding: '16px 20px', background: '#1c1c1e' }}>
-                    <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                  <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px', background: 'var(--bg)' }}>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
                       Composição da venda do mês
                     </div>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr>
                           {['Aluno', 'Turma', 'Parcela', 'Valor'].map(h => (
-                            <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 10, color: '#6b7280', fontWeight: 500, textTransform: 'uppercase' }}>{h}</th>
+                            <th key={h} style={{ textAlign: 'left', padding: '6px 8px', fontSize: 10, color: 'var(--text-faint)', fontWeight: 500, textTransform: 'uppercase' }}>{h}</th>
                           ))}
                         </tr>
                       </thead>
                       <tbody>
                         {v.detalhes.map((d, i) => (
-                          <tr key={i} style={{ borderTop: '1px solid #3a3a3c' }}>
-                            <td style={{ padding: '8px', fontSize: 12, color: '#d1d1d1' }}>{d.aluno_nome}</td>
-                            <td style={{ padding: '8px', fontSize: 11, color: '#9ca3af' }}>{d.turma}</td>
-                            <td style={{ padding: '8px', fontSize: 11, color: '#9ca3af' }}>
+                          <tr key={i} style={{ borderTop: '1px solid var(--border)' }}>
+                            <td style={{ padding: '8px', fontSize: 12, color: 'var(--text-2)' }}>{d.aluno_nome}</td>
+                            <td style={{ padding: '8px', fontSize: 11, color: 'var(--text-muted)' }}>{d.turma}</td>
+                            <td style={{ padding: '8px', fontSize: 11, color: 'var(--text-muted)' }}>
                               {d.parcelas_total > 1 ? `${d.parcela_num}/${d.parcelas_total}` : 'À vista'}
                             </td>
-                            <td style={{ padding: '8px', fontSize: 12, color: '#34d399', fontWeight: 600 }}>{fmt(d.valor_parcela)}</td>
+                            <td style={{ padding: '8px', fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>{fmt(d.valor_parcela)}</td>
                           </tr>
                         ))}
                       </tbody>

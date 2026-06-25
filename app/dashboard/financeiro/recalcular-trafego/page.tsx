@@ -4,10 +4,10 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer', textDecoration: 'none' } as React.CSSProperties
 
 function addDays(date: string, days: number) {
   const d = new Date(date + 'T12:00:00')
@@ -68,8 +68,8 @@ export default function TrafegoRegraFixa() {
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Tráfego — regra fixa</h1>
-          <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Provisiona um valor fixo a cada X dias, direto no financeiro</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Tráfego — regra fixa</h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '4px' }}>Provisiona um valor fixo a cada X dias, direto no financeiro</p>
         </div>
         <Link href="/dashboard/financeiro/fluxo" style={btnSecondary}>← Fluxo de caixa</Link>
       </div>
@@ -77,24 +77,24 @@ export default function TrafegoRegraFixa() {
       <div style={{ ...card, padding: '24px', maxWidth: '640px' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginBottom: '14px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Valor R$ (por lançamento)</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Valor R$ (por lançamento)</label>
             <input value={valor} onChange={e => setValor(e.target.value)} type="number" style={inp} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>A cada quantos dias</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>A cada quantos dias</label>
             <input value={intervalo} onChange={e => setIntervalo(e.target.value)} type="number" min="1" style={inp} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>De</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>De</label>
             <input value={inicio} onChange={e => setInicio(e.target.value)} type="date" style={inp} />
           </div>
           <div>
-            <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Até</label>
+            <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Até</label>
             <input value={fim} onChange={e => setFim(e.target.value)} type="date" style={inp} />
           </div>
         </div>
 
-        <p style={{ fontSize: '12px', color: '#6b7280', lineHeight: 1.6, margin: '0 0 16px' }}>
+        <p style={{ fontSize: '12px', color: 'var(--text-faint)', lineHeight: 1.6, margin: '0 0 16px' }}>
           Apaga o tráfego anterior (o que vinha das turmas e qualquer regra fixa já gerada) e cria os lançamentos novos.
           Pode rodar de novo quando quiser pra estender ou mudar o valor.
         </p>
@@ -104,9 +104,9 @@ export default function TrafegoRegraFixa() {
         </button>
 
         {log.length > 0 && (
-          <div style={{ marginTop: '20px', backgroundColor: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: '8px', padding: '16px' }}>
+          <div style={{ marginTop: '20px', backgroundColor: 'var(--bg)', border: '1px solid var(--border)', borderRadius: '8px', padding: '16px' }}>
             {log.map((l, i) => (
-              <div key={i} style={{ fontSize: '13px', color: l.includes('Erro') ? '#f87171' : '#d1d1d1', fontFamily: 'monospace', marginBottom: '4px' }}>{l}</div>
+              <div key={i} style={{ fontSize: '13px', color: l.includes('Erro') ? 'var(--red)' : 'var(--text-2)', fontFamily: 'monospace', marginBottom: '4px' }}>{l}</div>
             ))}
           </div>
         )}

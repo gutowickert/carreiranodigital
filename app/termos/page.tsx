@@ -1,6 +1,6 @@
 export const metadata = { title: 'Termos de Uso — Carreira No Digital' }
 
-const wrap = { maxWidth: 820, margin: '0 auto', padding: '48px 24px', color: '#1f2937', fontFamily: 'system-ui, sans-serif', lineHeight: 1.7 } as React.CSSProperties
+const wrap = { maxWidth: 820, margin: '0 auto', padding: '48px 24px', color: 'var(--text)', fontFamily: 'system-ui, sans-serif', lineHeight: 1.7 } as React.CSSProperties
 const h1 = { fontSize: 28, fontWeight: 700, marginBottom: 8 } as React.CSSProperties
 const h2 = { fontSize: 18, fontWeight: 700, margin: '28px 0 8px' } as React.CSSProperties
 const p = { fontSize: 15, margin: '8px 0' } as React.CSSProperties
@@ -9,7 +9,7 @@ export default function Termos() {
   return (
     <main style={wrap}>
       <h1 style={h1}>Termos de Uso</h1>
-      <p style={{ ...p, color: '#6b7280' }}>Carreira No Digital — última atualização: junho de 2026.</p>
+      <p style={{ ...p, color: 'var(--text-faint)' }}>Carreira No Digital — última atualização: junho de 2026.</p>
 
       <h2 style={h2}>1. Aceitação</h2>
       <p style={p}>Ao se cadastrar, se comunicar conosco ou utilizar nossos serviços e canais (incluindo WhatsApp), você concorda com estes Termos de Uso e com a nossa Política de Privacidade.</p>

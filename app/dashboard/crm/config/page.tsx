@@ -9,11 +9,11 @@ type Turma = { id: string; codigo: string; produtos: { nome: string }; cidades: 
 type Vendedor = { id: string; nome: string; email: string }
 type ConfigVendedor = { id?: string; turma_id: string; vendedor_id: string; leads_por_ciclo: number; ordem: number; ativo: boolean; vendedor_nome?: string }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 export default function ConfigCRM() {
   const [turmas, setTurmas] = useState<Turma[]>([])
@@ -136,14 +136,14 @@ export default function ConfigCRM() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Configuração do CRM</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Defina quais vendedores recebem leads de cada turma e o rateio (round-robin)</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Configuração do CRM</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Defina quais vendedores recebem leads de cada turma e o rateio (round-robin)</p>
           </div>
           <Link href="/dashboard/crm" style={{ ...btnSecondary, textDecoration: 'none', display: 'inline-block' }}>← Voltar</Link>
         </div>
 
         <div style={{ ...card, padding: 24, marginBottom: 20 }}>
-          <label style={{ display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          <label style={{ display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
             Selecione a turma para configurar
           </label>
           <select style={{ ...sel, width: '100%' }} value={turmaSelecionada} onChange={e => setTurmaSelecionada(e.target.value)}>
@@ -160,8 +160,8 @@ export default function ConfigCRM() {
           <div style={{ ...card, padding: 24 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <div>
-                <h2 style={{ fontSize: 16, fontWeight: 600, color: '#fff', margin: 0 }}>Rateio de leads</h2>
-                <p style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                <h2 style={{ fontSize: 16, fontWeight: 600, color: 'var(--text)', margin: 0 }}>Rateio de leads</h2>
+                <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 4 }}>
                   Vendedores ativos recebem leads na ordem definida. Cada um pega "X leads" antes de passar para o próximo.
                 </p>
               </div>
@@ -169,29 +169,29 @@ export default function ConfigCRM() {
             </div>
 
             {carregandoConfig ? (
-              <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+              <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
             ) : configs.length === 0 ? (
-              <div style={{ padding: 32, textAlign: 'center', border: '1px dashed #3a3a3c', borderRadius: 8 }}>
-                <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 12 }}>Nenhum vendedor configurado para esta turma.</p>
-                <p style={{ fontSize: 12, color: '#6b7280' }}>Sem configuração, os leads serão criados sem vendedor atribuído.</p>
+              <div style={{ padding: 32, textAlign: 'center', border: '1px dashed var(--border)', borderRadius: 8 }}>
+                <p style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 12 }}>Nenhum vendedor configurado para esta turma.</p>
+                <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Sem configuração, os leads serão criados sem vendedor atribuído.</p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {configs.map((c, i) => (
-                  <div key={i} style={{ background: '#1c1c1e', borderRadius: 8, padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
+                  <div key={i} style={{ background: 'var(--bg)', borderRadius: 8, padding: 14, display: 'flex', gap: 12, alignItems: 'center' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       <button onClick={() => moverOrdem(i, 'cima')} disabled={i === 0}
-                        style={{ background: 'none', border: 'none', color: i === 0 ? '#3a3a3c' : '#a78bfa', cursor: i === 0 ? 'default' : 'pointer', fontSize: 12, padding: 2 }}>▲</button>
+                        style={{ background: 'none', border: 'none', color: i === 0 ? 'var(--border)' : 'var(--accent-soft)', cursor: i === 0 ? 'default' : 'pointer', fontSize: 12, padding: 2 }}>▲</button>
                       <button onClick={() => moverOrdem(i, 'baixo')} disabled={i === configs.length - 1}
-                        style={{ background: 'none', border: 'none', color: i === configs.length - 1 ? '#3a3a3c' : '#a78bfa', cursor: i === configs.length - 1 ? 'default' : 'pointer', fontSize: 12, padding: 2 }}>▼</button>
+                        style={{ background: 'none', border: 'none', color: i === configs.length - 1 ? 'var(--border)' : 'var(--accent-soft)', cursor: i === configs.length - 1 ? 'default' : 'pointer', fontSize: 12, padding: 2 }}>▼</button>
                     </div>
-                    
-                    <div style={{ fontSize: 18, fontWeight: 700, color: '#a78bfa', width: 32, textAlign: 'center' }}>
+
+                    <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--accent-soft)', width: 32, textAlign: 'center' }}>
                       {i + 1}º
                     </div>
 
                     <div style={{ flex: 1 }}>
-                      <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4 }}>Vendedor</label>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Vendedor</label>
                       <select style={{ ...sel, width: '100%' }} value={c.vendedor_id} onChange={e => atualizarConfig(i, 'vendedor_id', e.target.value)}>
                         <option value="">Selecione</option>
                         {vendedores.map(v => (
@@ -201,25 +201,25 @@ export default function ConfigCRM() {
                     </div>
 
                     <div style={{ width: 140 }}>
-                      <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4 }}>Leads por ciclo</label>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Leads por ciclo</label>
                       <input type="number" min="1" max="100" style={inp}
                         value={c.leads_por_ciclo}
                         onChange={e => atualizarConfig(i, 'leads_por_ciclo', parseInt(e.target.value) || 1)} />
                     </div>
 
                     <div style={{ width: 100 }}>
-                      <label style={{ fontSize: 11, color: '#9ca3af', display: 'block', marginBottom: 4 }}>Ativo</label>
+                      <label style={{ fontSize: 11, color: 'var(--text-muted)', display: 'block', marginBottom: 4 }}>Ativo</label>
                       <button onClick={() => atualizarConfig(i, 'ativo', !c.ativo)}
                         style={{ width: '100%', padding: '8px 12px', borderRadius: 8, border: 'none',
-                          background: c.ativo ? '#052e16' : '#3a3a3c',
-                          color: c.ativo ? '#4ade80' : '#9ca3af',
+                          background: c.ativo ? 'var(--green-bg)' : 'var(--surface-2)',
+                          color: c.ativo ? 'var(--green-strong)' : 'var(--text-muted)',
                           fontSize: 12, cursor: 'pointer' }}>
                         {c.ativo ? 'Sim' : 'Não'}
                       </button>
                     </div>
 
                     <button onClick={() => removerLinha(i)}
-                      style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: 18, padding: '8px 12px', alignSelf: 'flex-end' }}>
+                      style={{ background: 'transparent', border: 'none', color: 'var(--red)', cursor: 'pointer', fontSize: 18, padding: '8px 12px', alignSelf: 'flex-end' }}>
                       ×
                     </button>
                   </div>
@@ -228,11 +228,11 @@ export default function ConfigCRM() {
             )}
 
             {configs.length > 0 && (
-              <div style={{ marginTop: 16, padding: 12, background: '#172554', border: '1px solid #2563eb40', borderRadius: 8 }}>
-                <div style={{ fontSize: 12, color: '#60a5fa', fontWeight: 600, marginBottom: 6 }}>
+              <div style={{ marginTop: 16, padding: 12, background: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: 8 }}>
+                <div style={{ fontSize: 12, color: 'var(--blue)', fontWeight: 600, marginBottom: 6 }}>
                   📋 Como funciona o rateio
                 </div>
-                <div style={{ fontSize: 11, color: '#93c5fd', lineHeight: 1.5 }}>
+                <div style={{ fontSize: 11, color: 'var(--blue)', lineHeight: 1.5 }}>
                   Exemplo com a config atual: {configs.filter(c => c.vendedor_id && c.ativo).map((c, i) => 
                     `${c.vendedor_nome || vendedores.find(v => v.id === c.vendedor_id)?.nome} (${c.leads_por_ciclo} leads)`
                   ).join(' → ')}
@@ -242,7 +242,7 @@ export default function ConfigCRM() {
             )}
 
             {mensagem && (
-              <p style={{ marginTop: 16, fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#4ade80' }}>
+              <p style={{ marginTop: 16, fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green-strong)' }}>
                 {mensagem}
               </p>
             )}

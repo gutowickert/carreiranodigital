@@ -17,16 +17,16 @@ type Professor = { id: string; nome: string; diaria_reais: number; tipo_pagament
 type DiaAula = { data: string; horario_inicio: string; horario_fim: string; modulo_id?: string; modulo_nome?: string }
 
 const statusCor: Record<string, { bg: string; color: string }> = {
-  planejada: { bg: '#3a3a3c', color: '#9ca3af' },
-  em_vendas: { bg: '#172554', color: '#60a5fa' },
-  confirmada: { bg: '#052e16', color: '#4ade80' },
-  realizada: { bg: '#2e1065', color: '#a78bfa' },
-  cancelada: { bg: '#450a0a', color: '#f87171' },
+  planejada: { bg: 'var(--surface-2)', color: 'var(--text-muted)' },
+  em_vendas: { bg: 'var(--blue-bg)', color: 'var(--blue)' },
+  confirmada: { bg: 'var(--green-bg)', color: 'var(--green-strong)' },
+  realizada: { bg: 'var(--accent-bg)', color: 'var(--accent-soft)' },
+  cancelada: { bg: 'var(--red-bg)', color: 'var(--red)' },
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '14px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 
 
 
@@ -540,15 +540,15 @@ export default function Turmas() {
   const diasPorModulo = modulos.length > 0 ? modulos.map(mod => ({ modulo: mod, dias: diasAula.map((d, i) => ({ ...d, index: i })).filter(d => d.modulo_id === mod.id) })) : null
 
   return (
-    <div style={{ padding: 'clamp(16px, 4vw, 40px)', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 40px)', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: '28px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Turmas</h1>
-          <p style={{ fontSize: '14px', color: '#6b7280', marginTop: '4px' }}>{turmas.length} turma{turmas.length !== 1 ? 's' : ''} cadastrada{turmas.length !== 1 ? 's' : ''}</p>
+          <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Turmas</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginTop: '4px' }}>{turmas.length} turma{turmas.length !== 1 ? 's' : ''} cadastrada{turmas.length !== 1 ? 's' : ''}</p>
         </div>
         {ehAdmin && (
         <button onClick={() => setAbrirForm(!abrirForm)}
-          style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+          style={{ backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '10px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
           + Abrir turma
         </button>
         )}
@@ -556,38 +556,38 @@ export default function Turmas() {
 
       {abrirForm && (
         <div style={{ ...card, padding: '28px', marginBottom: '28px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff', marginBottom: '20px', marginTop: 0 }}>Nova turma</h2>
+          <h2 style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)', marginBottom: '20px', marginTop: 0 }}>Nova turma</h2>
           <form onSubmit={handleSalvar}>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Código da turma</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Código da turma</label>
                 <input value={codigoTurma} onChange={e => setCodigoTurma(e.target.value)} placeholder="Ex: reels-lajeado-jul25" style={inp} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>
                   ID HeroSpark (opcional)
-                  <span style={{ marginLeft: 6, color: '#6b7280', fontWeight: 'normal' }}>— pra matrícula automática via webhook</span>
+                  <span style={{ marginLeft: 6, color: 'var(--text-faint)', fontWeight: 'normal' }}>— pra matrícula automática via webhook</span>
                 </label>
                 <input value={idHeroSpark} onChange={e => setIdHeroSpark(e.target.value)} placeholder="Ex: 12345" style={inp} />
               </div>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Produto</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Produto</label>
                 <select value={produtoId} onChange={e => setProdutoId(e.target.value)} required style={{ ...sel, width: '100%' }}>
                   <option value="">Selecione</option>
                   {produtos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Cidade</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Cidade</label>
                 <select value={cidadeId} onChange={e => setCidadeId(e.target.value)} required style={{ ...sel, width: '100%' }}>
                   <option value="">Selecione</option>
                   {cidades.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Sala</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Sala</label>
                 <select value={salaId} onChange={e => setSalaId(e.target.value)} required style={{ ...sel, width: '100%' }}>
                   <option value="">Selecione</option>
                   {salasFiltradas.map(s => <option key={s.id} value={s.id}>{s.nome}</option>)}
@@ -596,22 +596,22 @@ export default function Turmas() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Preço R$</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Preço R$</label>
                 <input value={preco} onChange={e => setPreco(e.target.value)} type="number" required style={inp} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Vagas</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Vagas</label>
                 <input value={vagas} onChange={e => setVagas(e.target.value)} type="number" required style={inp} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Mínimo para não cancelar</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Mínimo para não cancelar</label>
                 <input value={meta} onChange={e => setMeta(e.target.value)} type="number" required style={inp} />
               </div>
             </div>
 
             {produtoSelecionado && modulos.length === 0 && (
               <div style={{ marginBottom: '16px' }}>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Professor</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Professor</label>
                 <select value={professorId} onChange={e => setProfessorId(e.target.value)} style={{ ...sel, width: '100%' }}>
                   <option value="">Selecione</option>
                   {professores.map(p => (
@@ -625,14 +625,14 @@ export default function Turmas() {
 
             {produtoSelecionado && diasAula.length > 0 && (
               <div style={{ ...card, marginBottom: '16px', overflow: 'hidden' }}>
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c' }}>
-                  <span style={{ fontSize: '13px', fontWeight: '600', color: '#d1d1d1' }}>Datas e horários</span>
+                <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)' }}>
+                  <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text-2)' }}>Datas e horários</span>
                 </div>
                 <div style={{ padding: '16px 20px' }}>
                   {diasPorModulo ? diasPorModulo.map(({ modulo, dias }) => (
                     <div key={modulo.id} style={{ marginBottom: '16px' }}>
                       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: '600', color: '#a78bfa' }}>Módulo {modulo.ordem} — {modulo.nome}</span>
+                        <span style={{ fontSize: '13px', fontWeight: '600', color: 'var(--accent-soft)' }}>Módulo {modulo.ordem} — {modulo.nome}</span>
                         <select value={profPorModulo[modulo.id] || ''} onChange={e => setProfPorModulo(prev => ({ ...prev, [modulo.id]: e.target.value }))} style={{ ...sel, fontSize: '12px', padding: '6px 10px' }}>
                           <option value="">Professor</option>
                           {professores.map(p => (
@@ -644,20 +644,20 @@ export default function Turmas() {
                       </div>
                       {dias.map((dia, i) => (
                         <div key={dia.index} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
-                          <span style={{ fontSize: '12px', color: '#6b7280', width: '48px' }}>Dia {i + 1}</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-faint)', width: '48px' }}>Dia {i + 1}</span>
                           <input type="date" value={dia.data} onChange={e => atualizarDia(dia.index, 'data', e.target.value)} required style={{ ...inp, width: 'auto' }} />
                           <input type="time" value={dia.horario_inicio} onChange={e => atualizarDia(dia.index, 'horario_inicio', e.target.value)} style={{ ...inp, width: '110px' }} />
-                          <span style={{ fontSize: '12px', color: '#6b7280' }}>até</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>até</span>
                           <input type="time" value={dia.horario_fim} onChange={e => atualizarDia(dia.index, 'horario_fim', e.target.value)} style={{ ...inp, width: '110px' }} />
                         </div>
                       ))}
                     </div>
                   )) : diasAula.map((dia, i) => (
                     <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '12px', color: '#6b7280', width: '48px' }}>Dia {i + 1}</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-faint)', width: '48px' }}>Dia {i + 1}</span>
                       <input type="date" value={dia.data} onChange={e => atualizarDia(i, 'data', e.target.value)} required style={{ ...inp, width: 'auto' }} />
                       <input type="time" value={dia.horario_inicio} onChange={e => atualizarDia(i, 'horario_inicio', e.target.value)} style={{ ...inp, width: '110px' }} />
-                      <span style={{ fontSize: '12px', color: '#6b7280' }}>até</span>
+                      <span style={{ fontSize: '12px', color: 'var(--text-faint)' }}>até</span>
                       <input type="time" value={dia.horario_fim} onChange={e => atualizarDia(i, 'horario_fim', e.target.value)} style={{ ...inp, width: '110px' }} />
                     </div>
                   ))}
@@ -666,36 +666,36 @@ export default function Turmas() {
             )}
 
             {isExterna && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px', backgroundColor: '#431407', borderRadius: '10px', padding: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px', marginBottom: '16px', backgroundColor: 'var(--amber-bg)', borderRadius: '10px', padding: '16px' }}>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#fb923c', marginBottom: '6px' }}>Deslocamento professor R$</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--amber)', marginBottom: '6px' }}>Deslocamento professor R$</label>
                   <input value={deslocProf} onChange={e => setDeslocProf(e.target.value)} type="number" style={inp} />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '12px', color: '#fb923c', marginBottom: '6px' }}>Deslocamento equipe R$</label>
+                  <label style={{ display: 'block', fontSize: '12px', color: 'var(--amber)', marginBottom: '6px' }}>Deslocamento equipe R$</label>
                   <input value={deslocEquipe} onChange={e => setDeslocEquipe(e.target.value)} type="number" style={inp} />
                 </div>
               </div>
             )}
 
             {conflitos.length > 0 && (
-              <div style={{ backgroundColor: '#3a1a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: '#ef4444', marginBottom: '6px' }}>⚠ Conflitos detectados:</div>
-                {conflitos.map((c, i) => <div key={i} style={{ fontSize: '12px', color: '#fca5a5', marginTop: '4px' }}>• {c}</div>)}
+              <div style={{ backgroundColor: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--red)', marginBottom: '6px' }}>⚠ Conflitos detectados:</div>
+                {conflitos.map((c, i) => <div key={i} style={{ fontSize: '12px', color: 'var(--red)', marginTop: '4px' }}>• {c}</div>)}
               </div>
             )}
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
               <button type="button" onClick={() => setAbrirForm(false)}
-                style={{ backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', cursor: 'pointer' }}>
+                style={{ backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', cursor: 'pointer' }}>
                 Cancelar
               </button>
               <button type="submit" disabled={salvando}
-                style={{ backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
+                style={{ backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '10px 20px', fontSize: '14px', fontWeight: '600', cursor: 'pointer' }}>
                 {salvando ? 'Salvando...' : 'Abrir turma'}
               </button>
             </div>
-            {mensagem && <p style={{ marginTop: '12px', fontSize: '14px', color: mensagem.includes('Erro') ? '#f87171' : '#4ade80' }}>{mensagem}</p>}
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '14px', color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green-strong)' }}>{mensagem}</p>}
           </form>
         </div>
       )}
@@ -703,7 +703,7 @@ export default function Turmas() {
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         {turmas.length === 0 ? (
           <div style={{ ...card, padding: '40px', textAlign: 'center' }}>
-            <p style={{ fontSize: '15px', color: '#6b7280', margin: 0 }}>Nenhuma turma cadastrada ainda.</p>
+            <p style={{ fontSize: '15px', color: 'var(--text-faint)', margin: 0 }}>Nenhuma turma cadastrada ainda.</p>
           </div>
         ) : turmas.map(t => {
           const s = statusCor[t.status] || statusCor.planejada
@@ -713,29 +713,29 @@ export default function Turmas() {
               <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                 <div style={{ width: '4px', height: '48px', borderRadius: '4px', backgroundColor: s.color, flexShrink: 0 }} />
                 <div>
-                  <div style={{ fontSize: '16px', fontWeight: '600', color: '#ffffff' }}>{t.produtos?.nome}</div>
-                  <div style={{ fontSize: '13px', color: '#9ca3af', marginTop: '3px' }}>
+                  <div style={{ fontSize: '16px', fontWeight: '600', color: 'var(--text)' }}>{t.produtos?.nome}</div>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '3px' }}>
                     {t.cidades?.nome}
-                    {t.codigo && <span style={{ marginLeft: '10px', color: '#6b7280', fontFamily: 'monospace' }}>{t.codigo}</span>}
+                    {t.codigo && <span style={{ marginLeft: '10px', color: 'var(--text-faint)', fontFamily: 'monospace' }}>{t.codigo}</span>}
                   </div>
                 </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '32px' }}>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '13px', color: '#9ca3af' }}>Início</div>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff', marginTop: '2px' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Início</div>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)', marginTop: '2px' }}>
                     {new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR')}
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '13px', color: '#9ca3af' }}>Fim</div>
-                  <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff', marginTop: '2px' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Fim</div>
+                  <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)', marginTop: '2px' }}>
                     {new Date(t.data_fim + 'T12:00:00').toLocaleDateString('pt-BR')}
                   </div>
                 </div>
                 <div style={{ textAlign: 'center' }}>
-                  <div style={{ fontSize: '13px', color: '#9ca3af' }}>Preço</div>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: '#4ade80', marginTop: '2px' }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text-muted)' }}>Preço</div>
+                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--green-strong)', marginTop: '2px' }}>
                     R$ {t.preco_venda}
                   </div>
                 </div>

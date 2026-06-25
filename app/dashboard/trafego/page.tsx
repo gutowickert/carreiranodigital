@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#fff', outline: 'none' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 
 function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 function pct(v: number) { return (isFinite(v) ? v * 100 : 0).toFixed(0) + '%' }
@@ -27,12 +27,12 @@ function deriv(m: Metricas) {
   return { ...m, conv: m.leads ? m.vendas / m.leads : 0, cpl: m.leads ? m.spend / m.leads : 0, cpv: m.vendas ? m.spend / m.vendas : 0, roas: m.spend ? m.receita / m.spend : 0 }
 }
 function leitura(m: Metricas): { t: string; c: string } | null {
-  if (m.spend <= 0) return m.leads > 0 ? { t: 'orgânico', c: '#6b7280' } : null
+  if (m.spend <= 0) return m.leads > 0 ? { t: 'orgânico', c: 'var(--text-faint)' } : null
   const roas = m.receita / m.spend
-  if (m.vendas > 0 && roas >= 1) return { t: '🟢 escalar', c: '#34d399' }
-  if (m.vendas > 0) return { t: '🟡 observar', c: '#fbbf24' }
-  if (m.leads >= 3) return { t: '🔴 matar', c: '#f87171' }
-  return { t: '🟡 observar', c: '#fbbf24' }
+  if (m.vendas > 0 && roas >= 1) return { t: '🟢 escalar', c: 'var(--green)' }
+  if (m.vendas > 0) return { t: '🟡 observar', c: 'var(--amber)' }
+  if (m.leads >= 3) return { t: '🔴 matar', c: 'var(--red)' }
+  return { t: '🟡 observar', c: 'var(--amber)' }
 }
 
 export default function Trafego() {
@@ -145,13 +145,13 @@ export default function Trafego() {
 
   const KPI = ({ label, valor, cor, sub }: any) => (
     <div style={{ ...card, padding: 16 }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: cor || '#fff', marginTop: 6 }}>{valor}</div>
-      {sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{sub}</div>}
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: cor || 'var(--text)', marginTop: 6 }}>{valor}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{sub}</div>}
     </div>
   )
-  const th = (h: string, i: number) => <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 14px', fontSize: 11, color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
-  const tdNum = (v: any, cor?: string) => <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: cor || '#d1d1d1', whiteSpace: 'nowrap' }}>{v}</td>
+  const th = (h: string, i: number) => <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 14px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
+  const tdNum = (v: any, cor?: string) => <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: cor || 'var(--text-2)', whiteSpace: 'nowrap' }}>{v}</td>
 
   // monta as linhas do drill-down (sem fragmentos, pra key ficar correta)
   const drillRows: any[] = []
@@ -160,16 +160,16 @@ export default function Trafego() {
     const cAberto = abertos.has(cKey)
     const lc = leitura(c.m)
     drillRows.push(
-      <tr key={cKey} onClick={() => toggle(cKey)} style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer', background: '#222' }}>
-        <td style={{ padding: '10px 14px', fontSize: 13, color: '#fff', fontWeight: 600 }}>
-          <span style={{ display: 'inline-block', width: 14, color: '#6b7280' }}>{cAberto ? '▾' : '▸'}</span> {c.campaign}
+      <tr key={cKey} onClick={() => toggle(cKey)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer', background: 'var(--bg)' }}>
+        <td style={{ padding: '10px 14px', fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>
+          <span style={{ display: 'inline-block', width: 14, color: 'var(--text-faint)' }}>{cAberto ? '▾' : '▸'}</span> {c.campaign}
         </td>
-        {tdNum(c.m.spend ? fmt(c.m.spend) : '—', '#f87171')}
+        {tdNum(c.m.spend ? fmt(c.m.spend) : '—', 'var(--red)')}
         {tdNum(c.m.leads)}{tdNum(c.m.vendas)}
-        {tdNum(pct(c.m.conv), c.m.conv >= 0.15 ? '#34d399' : c.m.conv < 0.08 ? '#f87171' : '#d1d1d1')}
+        {tdNum(pct(c.m.conv), c.m.conv >= 0.15 ? 'var(--green)' : c.m.conv < 0.08 ? 'var(--red)' : 'var(--text-2)')}
         {tdNum(c.m.leads ? fmt(c.m.cpl) : '—')}{tdNum(c.m.vendas ? fmt(c.m.cpv) : '—')}
-        {tdNum(c.m.spend ? c.m.roas.toFixed(2) + 'x' : '—', c.m.roas >= 1 ? '#34d399' : c.m.spend ? '#f87171' : '#6b7280')}
-        {tdNum(lc ? lc.t : '—', lc ? lc.c : '#6b7280')}
+        {tdNum(c.m.spend ? c.m.roas.toFixed(2) + 'x' : '—', c.m.roas >= 1 ? 'var(--green)' : c.m.spend ? 'var(--red)' : 'var(--text-faint)')}
+        {tdNum(lc ? lc.t : '—', lc ? lc.c : 'var(--text-faint)')}
       </tr>
     )
     if (!cAberto) return
@@ -177,15 +177,15 @@ export default function Trafego() {
       const aKey = 'a:' + c.campaign + '|' + a.adset
       const aAberto = abertos.has(aKey)
       drillRows.push(
-        <tr key={aKey} onClick={() => toggle(aKey)} style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
-          <td style={{ padding: '8px 14px 8px 30px', fontSize: 12, color: '#d1d1d1' }}>
-            <span style={{ display: 'inline-block', width: 14, color: '#6b7280' }}>{aAberto ? '▾' : '▸'}</span> {a.adset}
+        <tr key={aKey} onClick={() => toggle(aKey)} style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+          <td style={{ padding: '8px 14px 8px 30px', fontSize: 12, color: 'var(--text-2)' }}>
+            <span style={{ display: 'inline-block', width: 14, color: 'var(--text-faint)' }}>{aAberto ? '▾' : '▸'}</span> {a.adset}
           </td>
-          {tdNum(a.m.spend ? fmt(a.m.spend) : '—', '#f87171')}
+          {tdNum(a.m.spend ? fmt(a.m.spend) : '—', 'var(--red)')}
           {tdNum(a.m.leads)}{tdNum(a.m.vendas)}
           {tdNum(pct(a.m.conv))}
           {tdNum(a.m.leads ? fmt(a.m.cpl) : '—')}{tdNum(a.m.vendas ? fmt(a.m.cpv) : '—')}
-          {tdNum(a.m.spend ? a.m.roas.toFixed(2) + 'x' : '—', a.m.roas >= 1 ? '#34d399' : a.m.spend ? '#f87171' : '#6b7280')}
+          {tdNum(a.m.spend ? a.m.roas.toFixed(2) + 'x' : '—', a.m.roas >= 1 ? 'var(--green)' : a.m.spend ? 'var(--red)' : 'var(--text-faint)')}
           <td />
         </tr>
       )
@@ -193,14 +193,14 @@ export default function Trafego() {
       a.adsDeriv.forEach(r => {
         const rl = leitura(r)
         drillRows.push(
-          <tr key={r.key} style={{ borderBottom: '1px solid #2a2a2c' }}>
-            <td style={{ padding: '8px 14px 8px 48px', fontSize: 12, color: '#9ca3af' }}>{r.ad}</td>
-            {tdNum(r.spend ? fmt(r.spend) : '—', '#f87171')}
+          <tr key={r.key} style={{ borderBottom: '1px solid var(--border)' }}>
+            <td style={{ padding: '8px 14px 8px 48px', fontSize: 12, color: 'var(--text-muted)' }}>{r.ad}</td>
+            {tdNum(r.spend ? fmt(r.spend) : '—', 'var(--red)')}
             {tdNum(r.leads)}{tdNum(r.vendas)}
-            {tdNum(pct(r.conv), r.conv >= 0.15 ? '#34d399' : r.conv < 0.08 ? '#f87171' : '#d1d1d1')}
+            {tdNum(pct(r.conv), r.conv >= 0.15 ? 'var(--green)' : r.conv < 0.08 ? 'var(--red)' : 'var(--text-2)')}
             {tdNum(r.leads ? fmt(r.cpl) : '—')}{tdNum(r.vendas ? fmt(r.cpv) : '—')}
-            {tdNum(r.spend ? r.roas.toFixed(2) + 'x' : '—', r.roas >= 1 ? '#34d399' : r.spend ? '#f87171' : '#6b7280')}
-            {tdNum(rl ? rl.t : '—', rl ? rl.c : '#6b7280')}
+            {tdNum(r.spend ? r.roas.toFixed(2) + 'x' : '—', r.roas >= 1 ? 'var(--green)' : r.spend ? 'var(--red)' : 'var(--text-faint)')}
+            {tdNum(rl ? rl.t : '—', rl ? rl.c : 'var(--text-faint)')}
           </tr>
         )
       })
@@ -216,105 +216,105 @@ export default function Trafego() {
     ['Últimos 30 dias', addDays(hoje, -29)],
   ]
 
-  if (carregando) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando tráfego...</div>
+  if (carregando) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>Carregando tráfego...</div>
 
   return (
     <div style={{ padding: '32px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Tráfego</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Criativos e campanhas — qual anúncio escalar e qual matar · visão por turma fica em Captação</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Tráfego</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Criativos e campanhas — qual anúncio escalar e qual matar · visão por turma fica em Captação</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {PRESETS.map(([label, dDe]) => (
             <button key={label} onClick={() => { setDe(dDe); setAte(hoje); setPreset(label) }}
-              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' } : {}) }}>{label}</button>
+              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' } : {}) }}>{label}</button>
           ))}
           <input type="date" value={de} onChange={e => { setDe(e.target.value); setPreset('') }} style={inp} />
-          <span style={{ color: '#6b7280' }}>—</span>
+          <span style={{ color: 'var(--text-faint)' }}>—</span>
           <input type="date" value={ate} onChange={e => { setAte(e.target.value); setPreset('') }} style={inp} />
         </div>
       </div>
 
       {!spend.ok && (
-        <div style={{ ...card, padding: 14, marginBottom: 16, borderColor: '#7f1d1d', background: '#2a1414' }}>
-          <span style={{ fontSize: 13, color: '#f87171' }}>Sem gasto real do Meta no período{spend.error ? `: ${spend.error}` : ''}. As métricas de gasto/ROAS/CPV ficam zeradas até a API responder.</span>
+        <div style={{ ...card, padding: 14, marginBottom: 16, borderColor: 'var(--red-bg)', background: 'var(--red-bg)' }}>
+          <span style={{ fontSize: 13, color: 'var(--red)' }}>Sem gasto real do Meta no período{spend.error ? `: ${spend.error}` : ''}. As métricas de gasto/ROAS/CPV ficam zeradas até a API responder.</span>
         </div>
       )}
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: 12, marginBottom: 8 }}>
-        <KPI label="Investido" valor={fmt(investido)} cor="#f87171" />
+        <KPI label="Investido" valor={fmt(investido)} cor="var(--red)" />
         <KPI label="Leads" valor={totalLeads} />
         <KPI label="Vendas" valor={totalVendas} sub={`Conversão ${pct(totalLeads ? totalVendas / totalLeads : 0)}`} />
-        <KPI label="Receita" valor={fmt(receita)} cor="#34d399" />
-        <KPI label="ROAS" valor={roas.toFixed(2) + 'x'} cor={roas >= 1 ? '#34d399' : '#f87171'} sub="Receita ÷ investido" />
+        <KPI label="Receita" valor={fmt(receita)} cor="var(--green)" />
+        <KPI label="ROAS" valor={roas.toFixed(2) + 'x'} cor={roas >= 1 ? 'var(--green)' : 'var(--red)'} sub="Receita ÷ investido" />
         <KPI label="CPL" valor={fmt(cpl)} sub="Custo por lead" />
         <KPI label="CPV" valor={fmt(cpv)} sub="Custo por venda" />
-        <KPI label="Origem identificada" valor={pct(cobertura)} cor={cobertura >= 0.7 ? '#34d399' : cobertura >= 0.4 ? '#fbbf24' : '#f87171'} sub={`${leadsComAnuncio}/${totalLeads} com anúncio`} />
+        <KPI label="Origem identificada" valor={pct(cobertura)} cor={cobertura >= 0.7 ? 'var(--green)' : cobertura >= 0.4 ? 'var(--amber)' : 'var(--red)'} sub={`${leadsComAnuncio}/${totalLeads} com anúncio`} />
       </div>
-      <p style={{ fontSize: 11, color: '#6b7280', margin: '6px 0 28px' }}>Leads casam com o anúncio pelo <b style={{ color: '#9ca3af' }}>utm_content</b> (nome do anúncio) + <b style={{ color: '#9ca3af' }}>utm_campaign</b>. Gasto real do Meta por anúncio.</p>
+      <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '6px 0 28px' }}>Leads casam com o anúncio pelo <b style={{ color: 'var(--text-muted)' }}>utm_content</b> (nome do anúncio) + <b style={{ color: 'var(--text-muted)' }}>utm_campaign</b>. Gasto real do Meta por anúncio.</p>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>1. Campanha ▸ Conjunto ▸ Anúncio</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Clique pra abrir. 🟢 escalar (vende com ROAS ≥ 1) · 🟡 observar · 🔴 matar (gastou, gerou lead e não vendeu).</p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>1. Campanha ▸ Conjunto ▸ Anúncio</h2>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>Clique pra abrir. 🟢 escalar (vende com ROAS ≥ 1) · 🟡 observar · 🔴 matar (gastou, gerou lead e não vendeu).</p>
       <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 32 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 880 }}>
-          <thead><tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
             {['Campanha / conjunto / anúncio', 'Gasto', 'Leads', 'Vendas', 'Conv', 'CPL', 'CPV', 'ROAS', 'Leitura'].map(th)}
           </tr></thead>
           <tbody>
-            {campanhas.length === 0 && <tr><td colSpan={9} style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem dados no período.</td></tr>}
+            {campanhas.length === 0 && <tr><td colSpan={9} style={{ padding: 20, fontSize: 13, color: 'var(--text-faint)' }}>Sem dados no período.</td></tr>}
             {drillRows}
           </tbody>
         </table>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 12px' }}>2. Ranking de criativos</h2>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 12px' }}>2. Ranking de criativos</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(380px, 1fr))', gap: 16, marginBottom: 32 }}>
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #3a3a3c', fontSize: 13, fontWeight: 600, color: '#34d399' }}>🟢 Vendem mais (por ROAS)</div>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--green)' }}>🟢 Vendem mais (por ROAS)</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}><tbody>
-            {melhores.length === 0 && <tr><td style={{ padding: 16, fontSize: 12, color: '#6b7280' }}>Nenhum criativo com venda no período.</td></tr>}
+            {melhores.length === 0 && <tr><td style={{ padding: 16, fontSize: 12, color: 'var(--text-faint)' }}>Nenhum criativo com venda no período.</td></tr>}
             {melhores.map(a => (
-              <tr key={a.key} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                <td style={{ padding: '9px 16px', fontSize: 12, color: '#fff' }}>{a.ad}<div style={{ fontSize: 10, color: '#6b7280' }}>{a.campaign}</div></td>
-                {tdNum(a.vendas + 'v')}{tdNum(fmt(a.spend), '#f87171')}{tdNum(a.roas.toFixed(2) + 'x', '#34d399')}
+              <tr key={a.key} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '9px 16px', fontSize: 12, color: 'var(--text)' }}>{a.ad}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.campaign}</div></td>
+                {tdNum(a.vendas + 'v')}{tdNum(fmt(a.spend), 'var(--red)')}{tdNum(a.roas.toFixed(2) + 'x', 'var(--green)')}
               </tr>
             ))}
           </tbody></table>
         </div>
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '12px 16px', borderBottom: '1px solid #3a3a3c', fontSize: 13, fontWeight: 600, color: '#f87171' }}>🔴 Queimando verba (gastou, 0 venda)</div>
+          <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontSize: 13, fontWeight: 600, color: 'var(--red)' }}>🔴 Queimando verba (gastou, 0 venda)</div>
           <table style={{ width: '100%', borderCollapse: 'collapse' }}><tbody>
-            {queimando.length === 0 && <tr><td style={{ padding: 16, fontSize: 12, color: '#6b7280' }}>Nenhum criativo gastando sem vender. 👏</td></tr>}
+            {queimando.length === 0 && <tr><td style={{ padding: 16, fontSize: 12, color: 'var(--text-faint)' }}>Nenhum criativo gastando sem vender. 👏</td></tr>}
             {queimando.map(a => (
-              <tr key={a.key} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                <td style={{ padding: '9px 16px', fontSize: 12, color: '#fff' }}>{a.ad}<div style={{ fontSize: 10, color: '#6b7280' }}>{a.campaign}</div></td>
-                {tdNum(a.leads + 'l')}{tdNum(fmt(a.spend), '#f87171')}{tdNum(a.leads ? fmt(a.cpl) : '—')}
+              <tr key={a.key} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '9px 16px', fontSize: 12, color: 'var(--text)' }}>{a.ad}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.campaign}</div></td>
+                {tdNum(a.leads + 'l')}{tdNum(fmt(a.spend), 'var(--red)')}{tdNum(a.leads ? fmt(a.cpl) : '—')}
               </tr>
             ))}
           </tbody></table>
         </div>
       </div>
 
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Qualidade do lead por anúncio</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Lead barato que não fecha é caro. 🔴 = muitos leads e conversão baixa. 🟢 = lead que vira venda.</p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>3. Qualidade do lead por anúncio</h2>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>Lead barato que não fecha é caro. 🔴 = muitos leads e conversão baixa. 🟢 = lead que vira venda.</p>
       <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 32 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 700 }}>
-          <thead><tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+          <thead><tr style={{ borderBottom: '1px solid var(--border)' }}>
             {['Anúncio', 'Leads', 'Vendas', 'Conversão', 'CPL', 'CPV', 'Qualidade'].map(th)}
           </tr></thead>
           <tbody>
-            {qualidade.length === 0 && <tr><td colSpan={7} style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Sem leads com anúncio no período.</td></tr>}
+            {qualidade.length === 0 && <tr><td colSpan={7} style={{ padding: 20, fontSize: 13, color: 'var(--text-faint)' }}>Sem leads com anúncio no período.</td></tr>}
             {qualidade.map(a => {
               const ruim = a.leads >= 5 && a.conv < 0.08
               const bom = a.conv >= 0.15 && a.vendas > 0
               return (
-                <tr key={a.key} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                  <td style={{ padding: '9px 14px', fontSize: 12, color: '#fff' }}>{a.ad}<div style={{ fontSize: 10, color: '#6b7280' }}>{a.campaign}</div></td>
+                <tr key={a.key} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '9px 14px', fontSize: 12, color: 'var(--text)' }}>{a.ad}<div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{a.campaign}</div></td>
                   {tdNum(a.leads)}{tdNum(a.vendas)}
-                  {tdNum(pct(a.conv), bom ? '#34d399' : ruim ? '#f87171' : '#d1d1d1')}
+                  {tdNum(pct(a.conv), bom ? 'var(--green)' : ruim ? 'var(--red)' : 'var(--text-2)')}
                   {tdNum(a.leads ? fmt(a.cpl) : '—')}{tdNum(a.vendas ? fmt(a.cpv) : '—')}
-                  {tdNum(bom ? '🟢 bom' : ruim ? '🔴 lead ruim' : '—', bom ? '#34d399' : ruim ? '#f87171' : '#6b7280')}
+                  {tdNum(bom ? '🟢 bom' : ruim ? '🔴 lead ruim' : '—', bom ? 'var(--green)' : ruim ? 'var(--red)' : 'var(--text-faint)')}
                 </tr>
               )
             })}
@@ -322,8 +322,8 @@ export default function Trafego() {
         </table>
       </div>
 
-      <div style={{ ...card, padding: 16, marginBottom: 40, fontSize: 13, color: '#9ca3af' }}>
-        A visão <b style={{ color: '#d1d1d1' }}>por turma</b> (leads, CPL, matrículas/meta e ação de verba) agora fica em <a href="/dashboard/captacao" style={{ color: '#a78bfa', textDecoration: 'none' }}>Captação ↗</a>. Aqui o foco é o criativo.
+      <div style={{ ...card, padding: 16, marginBottom: 40, fontSize: 13, color: 'var(--text-muted)' }}>
+        A visão <b style={{ color: 'var(--text-2)' }}>por turma</b> (leads, CPL, matrículas/meta e ação de verba) agora fica em <a href="/dashboard/captacao" style={{ color: 'var(--accent-soft)', textDecoration: 'none' }}>Captação ↗</a>. Aqui o foco é o criativo.
       </div>
     </div>
   )

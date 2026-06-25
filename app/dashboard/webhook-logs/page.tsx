@@ -16,15 +16,15 @@ type Log = {
   processado_em: string | null
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '13px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '6px', padding: '4px 10px', fontSize: '11px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
 
 const statusInfo: Record<string, { bg: string; color: string; label: string }> = {
-  recebido: { bg: '#1c1917', color: '#9ca3af', label: 'Recebido' },
-  processado: { bg: '#052e16', color: '#4ade80', label: 'Processado' },
-  erro: { bg: '#450a0a', color: '#f87171', label: 'Erro' },
-  ignorado: { bg: '#451a03', color: '#fb923c', label: 'Ignorado' },
+  recebido: { bg: 'var(--surface-2)', color: 'var(--text-muted)', label: 'Recebido' },
+  processado: { bg: 'var(--green-bg)', color: 'var(--green-strong)', label: 'Processado' },
+  erro: { bg: 'var(--red-bg)', color: 'var(--red)', label: 'Erro' },
+  ignorado: { bg: 'var(--amber-bg)', color: 'var(--amber)', label: 'Ignorado' },
 }
 
 function tempoRelativo(dataIso: string) {
@@ -111,8 +111,8 @@ export default function WebhookLogs() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Webhook Logs</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Webhook Logs</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>
               Histórico de eventos recebidos de integrações externas
             </p>
           </div>
@@ -123,33 +123,33 @@ export default function WebhookLogs() {
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') || mensagem.includes('Falha') ? '#450a0a' : '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') || mensagem.includes('Falha') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') || mensagem.includes('Falha') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') || mensagem.includes('Falha') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
           <div style={{ ...card, padding: 14 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{stats.total}</div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Total exibido</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{stats.total}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Total exibido</div>
           </div>
           <div style={{ ...card, padding: 14 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#4ade80' }}>{stats.processado}</div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Processados</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green-strong)' }}>{stats.processado}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Processados</div>
           </div>
           <div style={{ ...card, padding: 14 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#f87171' }}>{stats.erro}</div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Com erro</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--red)' }}>{stats.erro}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Com erro</div>
           </div>
           <div style={{ ...card, padding: 14 }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#fb923c' }}>{stats.ignorado}</div>
-            <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>Ignorados</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--amber)' }}>{stats.ignorado}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Ignorados</div>
           </div>
         </div>
 
         <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
           <select value={filtroStatus} onChange={e => setFiltroStatus(e.target.value)}
-            style={{ ...card, padding: '8px 12px', fontSize: 13, color: '#fff', cursor: 'pointer' }}>
+            style={{ ...card, padding: '8px 12px', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
             <option value="todos">Todos os status</option>
             <option value="recebido">Recebidos</option>
             <option value="processado">Processados</option>
@@ -157,17 +157,17 @@ export default function WebhookLogs() {
             <option value="ignorado">Ignorados</option>
           </select>
           <select value={filtroOrigem} onChange={e => setFiltroOrigem(e.target.value)}
-            style={{ ...card, padding: '8px 12px', fontSize: 13, color: '#fff', cursor: 'pointer' }}>
+            style={{ ...card, padding: '8px 12px', fontSize: 13, color: 'var(--text)', cursor: 'pointer' }}>
             <option value="todos">Todas as origens</option>
             {origensUnicas.map(o => <option key={o} value={o}>{o}</option>)}
           </select>
         </div>
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : logs.length === 0 ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Nenhum log encontrado com esses filtros.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Nenhum log encontrado com esses filtros.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -182,39 +182,39 @@ export default function WebhookLogs() {
                       <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 4, background: s.bg, color: s.color, textTransform: 'uppercase', fontWeight: 600 }}>
                         {s.label}
                       </span>
-                      <span style={{ fontSize: 13, color: '#a78bfa', fontWeight: 500, textTransform: 'uppercase' }}>{log.origem}</span>
-                      <span style={{ fontSize: 12, color: '#9ca3af' }}>{log.evento || '—'}</span>
-                      {log.erro && <span style={{ fontSize: 11, color: '#f87171', fontStyle: 'italic' }}>· {log.erro}</span>}
+                      <span style={{ fontSize: 13, color: 'var(--accent-soft)', fontWeight: 500, textTransform: 'uppercase' }}>{log.origem}</span>
+                      <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>{log.evento || '—'}</span>
+                      {log.erro && <span style={{ fontSize: 11, color: 'var(--red)', fontStyle: 'italic' }}>· {log.erro}</span>}
                     </div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                      <span style={{ fontSize: 11, color: '#6b7280' }}>{tempoRelativo(log.recebido_em)}</span>
-                      <span style={{ fontSize: 16, color: '#6b7280' }}>{aberto ? '▾' : '▸'}</span>
+                      <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{tempoRelativo(log.recebido_em)}</span>
+                      <span style={{ fontSize: 16, color: 'var(--text-faint)' }}>{aberto ? '▾' : '▸'}</span>
                     </div>
                   </div>
 
                   {aberto && (
-                    <div style={{ padding: '16px 18px', borderTop: '1px solid #3a3a3c', background: '#1c1c1e' }}>
+                    <div style={{ padding: '16px 18px', borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 14 }}>
                         <div>
-                          <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Recebido</div>
-                          <div style={{ fontSize: 12, color: '#d1d1d1', fontFamily: 'monospace' }}>{new Date(log.recebido_em).toLocaleString('pt-BR')}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Recebido</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'monospace' }}>{new Date(log.recebido_em).toLocaleString('pt-BR')}</div>
                         </div>
                         <div>
-                          <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Processado</div>
-                          <div style={{ fontSize: 12, color: '#d1d1d1', fontFamily: 'monospace' }}>{log.processado_em ? new Date(log.processado_em).toLocaleString('pt-BR') : '—'}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Processado</div>
+                          <div style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'monospace' }}>{log.processado_em ? new Date(log.processado_em).toLocaleString('pt-BR') : '—'}</div>
                         </div>
                       </div>
 
                       {log.matricula_id && (
                         <div style={{ marginBottom: 12 }}>
-                          <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Matrícula criada</div>
-                          <div style={{ fontSize: 12, color: '#34d399', fontFamily: 'monospace' }}>{log.matricula_id}</div>
+                          <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Matrícula criada</div>
+                          <div style={{ fontSize: 12, color: 'var(--green)', fontFamily: 'monospace' }}>{log.matricula_id}</div>
                         </div>
                       )}
 
                       <div style={{ marginBottom: 12 }}>
-                        <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', marginBottom: 4 }}>Payload</div>
-                        <pre style={{ fontSize: 11, color: '#d1d1d1', background: '#0a0a0a', padding: 12, borderRadius: 6, overflow: 'auto', maxHeight: 300, margin: 0 }}>
+                        <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 4 }}>Payload</div>
+                        <pre style={{ fontSize: 11, color: 'var(--text-2)', background: 'var(--bg)', padding: 12, borderRadius: 6, overflow: 'auto', maxHeight: 300, margin: 0 }}>
                           {JSON.stringify(log.payload, null, 2)}
                         </pre>
                       </div>

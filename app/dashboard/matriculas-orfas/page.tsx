@@ -19,10 +19,10 @@ type MatriculaOrfa = {
 
 type Vendedor = { id: string; nome: string; setor: string }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 function fmt(v: number) {
   return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
@@ -154,33 +154,33 @@ export default function MatriculasOrfas() {
     <Layout>
       <div style={{ padding: '32px 40px' }}>
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Matrículas Órfãs</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Matrículas Órfãs</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>
             Matrículas que chegaram via HeroSpark mas o sistema não conseguiu identificar o lead/vendedor automaticamente.
           </p>
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? '#450a0a' : '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
         <div style={{ ...card, padding: 14, marginBottom: 16 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: matriculas.length > 0 ? '#fbbf24' : '#4ade80' }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: matriculas.length > 0 ? 'var(--amber)' : 'var(--green-strong)' }}>
             {matriculas.length}
           </div>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>
             {matriculas.length === 0 ? 'Nenhuma matrícula órfã' : 'matrícula(s) aguardando vinculação'}
           </div>
         </div>
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : matriculas.length === 0 ? (
           <div style={{ ...card, padding: 32, textAlign: 'center' }}>
-            <p style={{ fontSize: 14, color: '#4ade80', margin: 0, fontWeight: 500 }}>✓ Tudo em ordem</p>
-            <p style={{ fontSize: 12, color: '#6b7280', marginTop: 6, margin: 0 }}>
+            <p style={{ fontSize: 14, color: 'var(--green-strong)', margin: 0, fontWeight: 500 }}>✓ Tudo em ordem</p>
+            <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6, margin: 0 }}>
               Todas as matrículas estão com vendedor vinculado.
             </p>
           </div>
@@ -194,24 +194,24 @@ export default function MatriculasOrfas() {
                 <div key={mat.id} style={{ ...card, padding: 0, overflow: 'hidden' }}>
                   <div style={{ padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 16 }}>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 4 }}>
+                      <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 4 }}>
                         {aluno?.nome || '—'}
                       </div>
-                      <div style={{ fontSize: 12, color: '#9ca3af' }}>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
                         {aluno?.cpf && <span>CPF: {aluno.cpf} · </span>}
                         {aluno?.whatsapp && <span>{aluno.whatsapp} · </span>}
                         {aluno?.email && <span>{aluno.email}</span>}
                       </div>
-                      <div style={{ fontSize: 11, color: '#a78bfa', marginTop: 6 }}>
+                      <div style={{ fontSize: 11, color: 'var(--accent-soft)', marginTop: 6 }}>
                         {turma?.produtos?.nome} — {turma?.cidades?.nome} {turma?.codigo ? '(' + turma.codigo + ')' : ''}
                       </div>
-                      <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>
                         Compra: {new Date(mat.data_compra).toLocaleDateString('pt-BR')} · {mat.forma_pagamento}
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: 18, fontWeight: 700, color: '#34d399' }}>{fmt(mat.valor_pago)}</div>
+                      <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)' }}>{fmt(mat.valor_pago)}</div>
                     </div>
 
                     <div style={{ display: 'flex', gap: 8 }}>
@@ -234,8 +234,8 @@ export default function MatriculasOrfas() {
                   </div>
 
                   {expandido && (
-                    <div style={{ padding: 16, borderTop: '1px solid #3a3a3c', background: '#1c1c1e' }}>
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+                    <div style={{ padding: 16, borderTop: '1px solid var(--border)', background: 'var(--bg)' }}>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
                         Selecione o vendedor responsável (vai gerar comissão retroativa):
                       </div>
                       <div style={{ display: 'flex', gap: 8 }}>

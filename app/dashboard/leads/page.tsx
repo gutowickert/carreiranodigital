@@ -25,28 +25,28 @@ type Lead = {
 type Produto = { id: string; nome: string }
 
 const statusFunil = [
-  { key: 'aguardando_atendimento', label: 'Aguardando', resp: 'SDR', bg: '#172554', cor: '#60a5fa' },
-  { key: 'atendimento_inicial', label: 'Atendimento', resp: 'SDR', bg: '#1c1917', cor: '#fbbf24' },
-  { key: 'nao_agendou', label: 'Não Agendou', resp: 'SDR', bg: '#450a0a', cor: '#f87171' },
-  { key: 'agendado', label: 'Agendado', resp: 'SDR', bg: '#052e16', cor: '#4ade80' },
-  { key: 'nao_atendeu', label: 'Não Atendeu', resp: 'SDR', bg: '#1c1917', cor: '#9ca3af' },
-  { key: 'ligacao_quente', label: 'Quente 🔥', resp: 'Closer', bg: '#431407', cor: '#fb923c' },
-  { key: 'ligacao_fria', label: 'Fria ❄️', resp: 'Closer', bg: '#1e1b4b', cor: '#818cf8' },
-  { key: 'venda_ganha', label: 'Venda Ganha', resp: '—', bg: '#052e16', cor: '#34d399' },
-  { key: 'venda_perdida', label: 'Venda Perdida', resp: '—', bg: '#450a0a', cor: '#f87171' },
+  { key: 'aguardando_atendimento', label: 'Aguardando', resp: 'SDR', bg: 'var(--blue-bg)', cor: 'var(--blue)' },
+  { key: 'atendimento_inicial', label: 'Atendimento', resp: 'SDR', bg: 'var(--amber-bg)', cor: 'var(--amber)' },
+  { key: 'nao_agendou', label: 'Não Agendou', resp: 'SDR', bg: 'var(--red-bg)', cor: 'var(--red)' },
+  { key: 'agendado', label: 'Agendado', resp: 'SDR', bg: 'var(--green-bg)', cor: 'var(--green-strong)' },
+  { key: 'nao_atendeu', label: 'Não Atendeu', resp: 'SDR', bg: 'var(--amber-bg)', cor: 'var(--text-muted)' },
+  { key: 'ligacao_quente', label: 'Quente 🔥', resp: 'Closer', bg: 'var(--amber-bg)', cor: 'var(--amber)' },
+  { key: 'ligacao_fria', label: 'Fria ❄️', resp: 'Closer', bg: 'var(--accent-bg)', cor: 'var(--accent-soft)' },
+  { key: 'venda_ganha', label: 'Venda Ganha', resp: '—', bg: 'var(--green-bg)', cor: 'var(--green)' },
+  { key: 'venda_perdida', label: 'Venda Perdida', resp: '—', bg: 'var(--red-bg)', cor: 'var(--red)' },
 ]
 
 const turnoBg: Record<string, { bg: string; color: string }> = {
-  manha: { bg: '#422006', color: '#fbbf24' },
-  tarde: { bg: '#431407', color: '#fb923c' },
-  noite: { bg: '#1e1b4b', color: '#818cf8' },
+  manha: { bg: 'var(--amber-bg)', color: 'var(--amber)' },
+  tarde: { bg: 'var(--amber-bg)', color: 'var(--amber)' },
+  noite: { bg: 'var(--accent-bg)', color: 'var(--accent-soft)' },
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 export default function Leads() {
   const [leads, setLeads] = useState<Lead[]>([])
@@ -127,7 +127,7 @@ export default function Leads() {
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>CRM Comercial</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>CRM Comercial</h1>
         <button onClick={() => setNovoLead(!novoLead)} style={btnPrimary}>+ Novo lead</button>
       </div>
 
@@ -138,7 +138,7 @@ export default function Leads() {
             style={{ backgroundColor: s.bg, border: `1px solid ${s.cor}33`, borderRadius: '10px', padding: '12px', cursor: 'pointer', outline: filtroStatus === s.key ? `2px solid ${s.cor}` : 'none' }}>
             <div style={{ fontSize: '22px', fontWeight: '700', color: s.cor }}>{contagemPorStatus[s.key] || 0}</div>
             <div style={{ fontSize: '11px', fontWeight: '500', color: s.cor, marginTop: '4px', lineHeight: '1.3' }}>{s.label}</div>
-            <div style={{ fontSize: '10px', color: '#6b7280', marginTop: '2px' }}>{s.resp}</div>
+            <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: '2px' }}>{s.resp}</div>
           </div>
         ))}
       </div>
@@ -146,7 +146,7 @@ export default function Leads() {
       {/* Form novo lead */}
       {novoLead && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>Cadastrar novo lead</div>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>Cadastrar novo lead</div>
           <form onSubmit={salvarLead}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr auto auto', gap: '12px', marginBottom: '12px' }}>
               <input value={lNome} onChange={e => setLNome(e.target.value)} placeholder="Nome completo *" required style={input} />
@@ -219,8 +219,8 @@ export default function Leads() {
               return (
                 <button key={s} onClick={() => setFiltroStatus(s)} style={{
                   fontSize: '12px', padding: '5px 12px', borderRadius: '20px', cursor: 'pointer', border: 'none',
-                  backgroundColor: filtroStatus === s ? '#7c3aed' : '#3a3a3c',
-                  color: filtroStatus === s ? '#ffffff' : '#9ca3af',
+                  backgroundColor: filtroStatus === s ? 'var(--accent)' : 'var(--surface-2)',
+                  color: filtroStatus === s ? 'var(--on-accent)' : 'var(--text-muted)',
                 }}>
                   {s === 'todos' ? 'Todos' : info?.label}
                 </button>
@@ -229,28 +229,28 @@ export default function Leads() {
           </div>
 
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '12px 24px', borderBottom: '1px solid #3a3a3c' }}>
-              <span style={{ fontSize: '13px', color: '#9ca3af' }}>{leadsFiltrados.length} lead{leadsFiltrados.length !== 1 ? 's' : ''}</span>
+            <div style={{ padding: '12px 24px', borderBottom: '1px solid var(--border)' }}>
+              <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{leadsFiltrados.length} lead{leadsFiltrados.length !== 1 ? 's' : ''}</span>
             </div>
-            {carregando ? <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Carregando...</p>
-              : leadsFiltrados.length === 0 ? <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum lead encontrado.</p>
+            {carregando ? <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>Carregando...</p>
+              : leadsFiltrados.length === 0 ? <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>Nenhum lead encontrado.</p>
               : leadsFiltrados.map(l => {
                 const info = statusInfo(l.status)
                 const turno = turnoBg[l.melhor_turno]
                 return (
                   <div key={l.id} onClick={() => setSelecionado(l)}
-                    style={{ padding: '14px 24px', borderBottom: '1px solid #3a3a3c', cursor: 'pointer', backgroundColor: selecionado?.id === l.id ? '#2e1065' : 'transparent' }}>
+                    style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selecionado?.id === l.id ? 'var(--surface-sel)' : 'transparent' }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{l.nome}</span>
+                          <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{l.nome}</span>
                           {turno && <span style={{ fontSize: '11px', backgroundColor: turno.bg, color: turno.color, padding: '2px 8px', borderRadius: '20px' }}>{l.melhor_turno}</span>}
                         </div>
-                        <div style={{ fontSize: '12px', color: '#6b7280', marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                        <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                           {l.whatsapp && <span>📱 {l.whatsapp}</span>}
                           {l.cidade && <span>📍 {l.cidade}</span>}
                           {l.negocio && <span>🏢 {l.negocio}</span>}
-                          {l.produtos && <span style={{ color: '#a78bfa' }}>📚 {l.produtos.nome}</span>}
+                          {l.produtos && <span style={{ color: 'var(--accent-soft)' }}>📚 {l.produtos.nome}</span>}
                         </div>
                       </div>
                       {info && (
@@ -269,15 +269,15 @@ export default function Leads() {
         {selecionado && (
           <div style={{ width: '300px', flexShrink: 0 }}>
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #3a3a3c' }}>
-                <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff' }}>{selecionado.nome}</div>
-                {selecionado.produtos && <div style={{ fontSize: '12px', color: '#a78bfa', marginTop: '2px' }}>{selecionado.produtos.nome}</div>}
-                <div style={{ marginTop: '10px', fontSize: '12px', color: '#9ca3af', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)' }}>{selecionado.nome}</div>
+                {selecionado.produtos && <div style={{ fontSize: '12px', color: 'var(--accent-soft)', marginTop: '2px' }}>{selecionado.produtos.nome}</div>}
+                <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {selecionado.whatsapp && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <span>📱 {selecionado.whatsapp}</span>
                       <a href={`https://wa.me/55${selecionado.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
-                        style={{ fontSize: '11px', color: '#4ade80', textDecoration: 'none' }}>Abrir ↗</a>
+                        style={{ fontSize: '11px', color: 'var(--green-strong)', textDecoration: 'none' }}>Abrir ↗</a>
                     </div>
                   )}
                   {selecionado.email && <div>✉️ {selecionado.email}</div>}
@@ -287,22 +287,22 @@ export default function Leads() {
                   {selecionado.investimento_marketing && <div>💰 {selecionado.investimento_marketing}</div>}
                 </div>
                 {selecionado.problema_principal && (
-                  <div style={{ marginTop: '10px', backgroundColor: '#3a3a3c', borderRadius: '8px', padding: '10px' }}>
-                    <div style={{ fontSize: '11px', color: '#6b7280', marginBottom: '4px' }}>Problema principal</div>
-                    <div style={{ fontSize: '12px', color: '#d1d1d1' }}>{selecionado.problema_principal}</div>
+                  <div style={{ marginTop: '10px', backgroundColor: 'var(--surface-2)', borderRadius: '8px', padding: '10px' }}>
+                    <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginBottom: '4px' }}>Problema principal</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-2)' }}>{selecionado.problema_principal}</div>
                   </div>
                 )}
               </div>
 
               {/* Mover no funil */}
-              <div style={{ padding: '16px 20px', borderBottom: '1px solid #3a3a3c' }}>
-                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '8px' }}>Mover no funil</div>
+              <div style={{ padding: '16px 20px', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginBottom: '8px' }}>Mover no funil</div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {statusFunil.map(s => (
                     <button key={s.key} onClick={() => { if (s.key === 'venda_perdida') setMostrarPerda(true); else atualizarStatus(selecionado.id, s.key) }}
-                      style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: selecionado.status === s.key ? s.bg : 'transparent', color: selecionado.status === s.key ? s.cor : '#9ca3af', fontSize: '12px', fontWeight: selecionado.status === s.key ? '600' : '400', outline: selecionado.status === s.key ? `1px solid ${s.cor}44` : 'none' }}>
+                      style={{ display: 'flex', justifyContent: 'space-between', padding: '8px 12px', borderRadius: '8px', border: 'none', cursor: 'pointer', backgroundColor: selecionado.status === s.key ? s.bg : 'transparent', color: selecionado.status === s.key ? s.cor : 'var(--text-muted)', fontSize: '12px', fontWeight: selecionado.status === s.key ? '600' : '400', outline: selecionado.status === s.key ? `1px solid ${s.cor}44` : 'none' }}>
                       <span>{s.label}</span>
-                      <span style={{ color: '#6b7280' }}>{s.resp}</span>
+                      <span style={{ color: 'var(--text-faint)' }}>{s.resp}</span>
                     </button>
                   ))}
                 </div>
@@ -318,7 +318,7 @@ export default function Leads() {
                   <div style={{ marginTop: '8px' }}>
                     <textarea value={motivoPerda} onChange={e => setMotivoPerda(e.target.value)} placeholder="Motivo da perda *" rows={2}
                       style={{ ...input, resize: 'none', marginBottom: '6px' } as React.CSSProperties} />
-                    <button onClick={() => atualizarStatus(selecionado.id, 'venda_perdida')} style={{ ...btnPrimary, backgroundColor: '#dc2626', width: '100%' }}>Confirmar perda</button>
+                    <button onClick={() => atualizarStatus(selecionado.id, 'venda_perdida')} style={{ ...btnPrimary, backgroundColor: 'var(--red)', width: '100%' }}>Confirmar perda</button>
                   </div>
                 )}
               </div>
@@ -326,12 +326,12 @@ export default function Leads() {
               {/* Histórico */}
               <div style={{ padding: '16px 20px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                  <span style={{ fontSize: '12px', color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Histórico</span>
-                  <button onClick={() => setNovoContato(!novoContato)} style={{ fontSize: '12px', color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>+ Registrar</button>
+                  <span style={{ fontSize: '12px', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Histórico</span>
+                  <button onClick={() => setNovoContato(!novoContato)} style={{ fontSize: '12px', color: 'var(--accent-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>+ Registrar</button>
                 </div>
 
                 {novoContato && (
-                  <form onSubmit={salvarContato} style={{ backgroundColor: '#3a3a3c', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
+                  <form onSubmit={salvarContato} style={{ backgroundColor: 'var(--surface-2)', borderRadius: '10px', padding: '12px', marginBottom: '12px' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
                       <select value={cCanal} onChange={e => setCCanal(e.target.value)} style={{ ...select, fontSize: '12px', padding: '6px 10px' }}>
                         <option value="whatsapp">WhatsApp</option>
@@ -356,19 +356,19 @@ export default function Leads() {
                   </form>
                 )}
 
-                {contatos.length === 0 ? <p style={{ fontSize: '12px', color: '#6b7280' }}>Nenhum contato registrado.</p>
+                {contatos.length === 0 ? <p style={{ fontSize: '12px', color: 'var(--text-faint)' }}>Nenhum contato registrado.</p>
                   : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '240px', overflowY: 'auto' }}>
                       {contatos.map(c => (
-                        <div key={c.id} style={{ backgroundColor: '#3a3a3c', borderRadius: '8px', padding: '10px' }}>
+                        <div key={c.id} style={{ backgroundColor: 'var(--surface-2)', borderRadius: '8px', padding: '10px' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                            <span style={{ fontSize: '12px', fontWeight: '500', color: '#d1d1d1', textTransform: 'capitalize' }}>{c.canal}</span>
-                            <span style={{ fontSize: '11px', color: c.resultado === 'fechou' ? '#4ade80' : c.resultado === 'interessado' ? '#a78bfa' : '#9ca3af' }}>
+                            <span style={{ fontSize: '12px', fontWeight: '500', color: 'var(--text-2)', textTransform: 'capitalize' }}>{c.canal}</span>
+                            <span style={{ fontSize: '11px', color: c.resultado === 'fechou' ? 'var(--green-strong)' : c.resultado === 'interessado' ? 'var(--accent-soft)' : 'var(--text-muted)' }}>
                               {c.resultado?.replace('_', ' ')}
                             </span>
                           </div>
-                          <p style={{ fontSize: '12px', color: '#9ca3af', margin: 0 }}>{c.descricao}</p>
-                          <p style={{ fontSize: '11px', color: '#48484a', margin: '4px 0 0' }}>{new Date(c.criado_em).toLocaleString('pt-BR')}</p>
+                          <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>{c.descricao}</p>
+                          <p style={{ fontSize: '11px', color: 'var(--text-faint)', margin: '4px 0 0' }}>{new Date(c.criado_em).toLocaleString('pt-BR')}</p>
                         </div>
                       ))}
                     </div>

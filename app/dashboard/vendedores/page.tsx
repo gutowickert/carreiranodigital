@@ -22,9 +22,9 @@ type VendedorStats = {
   leads_detalhes: any[]
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 
 
 
@@ -174,8 +174,8 @@ export default function DashboardVendedores() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Dashboard de Vendedores</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Performance, ranking e comissões</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Dashboard de Vendedores</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Performance, ranking e comissões</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
             <select style={sel} value={filtroSetor} onChange={e => setFiltroSetor(e.target.value as any)}>
@@ -189,30 +189,30 @@ export default function DashboardVendedores() {
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total vendido</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#34d399' }}>{fmt(totalVendido)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total vendido</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(totalVendido)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Matrículas</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#fff' }}>{totalMatriculas}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Matrículas</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>{totalMatriculas}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ticket médio</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#60a5fa' }}>{fmt(ticketGeral)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ticket médio</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--blue)' }}>{fmt(ticketGeral)}</div>
           </div>
           <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total comissão</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: '#a78bfa' }}>{fmt(totalComissao)}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total comissão</div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--accent-soft)' }}>{fmt(totalComissao)}</div>
           </div>
         </div>
 
         {carregando ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 13, color: '#6b7280' }}>Calculando...</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Calculando...</p>
           </div>
         ) : vendedores.length === 0 ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 14, color: '#6b7280' }}>Nenhum vendedor encontrado.</p>
+            <p style={{ fontSize: 14, color: 'var(--text-faint)' }}>Nenhum vendedor encontrado.</p>
           </div>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -220,78 +220,78 @@ export default function DashboardVendedores() {
               <div key={v.id} style={card}>
                 <div style={{ padding: 20, display: 'grid', gridTemplateColumns: '60px 1fr repeat(5, auto)', gap: 24, alignItems: 'center' }}>
                   <div style={{ fontSize: 32, textAlign: 'center' }}>
-                    {medalhas[i] || <span style={{ fontSize: 16, color: '#6b7280', fontWeight: 700 }}>#{i + 1}</span>}
+                    {medalhas[i] || <span style={{ fontSize: 16, color: 'var(--text-faint)', fontWeight: 700 }}>#{i + 1}</span>}
                   </div>
 
                   <div>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-                      <span style={{ fontSize: 15, fontWeight: 600, color: '#fff' }}>{v.nome}</span>
+                      <span style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)' }}>{v.nome}</span>
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4,
-                        background: v.setor === 'comercial_externo' ? '#431407' : '#172554',
-                        color: v.setor === 'comercial_externo' ? '#fb923c' : '#60a5fa',
+                        background: v.setor === 'comercial_externo' ? 'var(--amber-bg)' : 'var(--blue-bg)',
+                        color: v.setor === 'comercial_externo' ? 'var(--amber)' : 'var(--blue)',
                         textTransform: 'uppercase', fontWeight: 600 }}>
                         {v.setor === 'comercial_externo' ? 'Externo' : 'Interno'}
                       </span>
                     </div>
                     <button onClick={() => setExpandido(expandido === v.id ? null : v.id)}
-                      style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: 11, cursor: 'pointer', padding: 0 }}>
+                      style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer', padding: 0 }}>
                       {expandido === v.id ? 'Ocultar detalhes' : 'Ver detalhes'}
                     </button>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Vendido</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#34d399' }}>{fmt(v.total_vendido)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Vendido</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--green)' }}>{fmt(v.total_vendido)}</div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Matrículas</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#fff' }}>{v.matriculas_count}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Matrículas</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{v.matriculas_count}</div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Ticket médio</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: '#60a5fa' }}>{fmt(v.ticket_medio)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Ticket médio</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)' }}>{fmt(v.ticket_medio)}</div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Conversão CRM</div>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: v.conversao >= 30 ? '#34d399' : v.conversao >= 15 ? '#fbbf24' : '#f87171' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Conversão CRM</div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: v.conversao >= 30 ? 'var(--green)' : v.conversao >= 15 ? 'var(--amber)' : 'var(--red)' }}>
                       {v.conversao.toFixed(1)}%
                     </div>
-                    <div style={{ fontSize: 10, color: '#6b7280' }}>
+                    <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>
                       {v.leads_ganhos}/{v.leads_recebidos}
                     </div>
                   </div>
 
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: 10, color: '#9ca3af', textTransform: 'uppercase' }}>Comissão {v.percentual}%</div>
-                    <div style={{ fontSize: 16, fontWeight: 700, color: '#a78bfa' }}>{fmt(v.comissao_acumulada)}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase' }}>Comissão {v.percentual}%</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--accent-soft)' }}>{fmt(v.comissao_acumulada)}</div>
                   </div>
                 </div>
 
                 {expandido === v.id && (
-                  <div style={{ borderTop: '1px solid #3a3a3c', padding: '16px 20px', background: '#1c1c1e' }}>
+                  <div style={{ borderTop: '1px solid var(--border)', padding: '16px 20px', background: 'var(--bg)' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 24 }}>
                       <div>
-                        <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
                           Matrículas no mês ({v.matriculas_detalhes.length})
                         </div>
                         {v.matriculas_detalhes.length === 0 ? (
-                          <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhuma matrícula no período.</p>
+                          <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhuma matrícula no período.</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                             {v.matriculas_detalhes.map((d, idx) => (
-                              <div key={idx} style={{ padding: 8, background: '#2c2c2e', borderRadius: 6 }}>
+                              <div key={idx} style={{ padding: 8, background: 'var(--surface)', borderRadius: 6 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                   <div>
-                                    <div style={{ fontSize: 12, color: '#fff', fontWeight: 500 }}>{d.aluno}</div>
-                                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                                    <div style={{ fontSize: 12, color: 'var(--text)', fontWeight: 500 }}>{d.aluno}</div>
+                                    <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
                                       {d.turma}
                                       {d.parcelas_total > 1 && ` · ${d.parcela_num}/${d.parcelas_total}`}
                                     </div>
                                   </div>
-                                  <div style={{ fontSize: 12, color: '#34d399', fontWeight: 600 }}>{fmt(d.valor_parcela)}</div>
+                                  <div style={{ fontSize: 12, color: 'var(--green)', fontWeight: 600 }}>{fmt(d.valor_parcela)}</div>
                                 </div>
                               </div>
                             ))}
@@ -300,19 +300,19 @@ export default function DashboardVendedores() {
                       </div>
 
                       <div>
-                        <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
+                        <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>
                           {v.setor === 'comercial_externo' ? 'Prospecções' : 'Leads'} no mês ({v.leads_detalhes.length})
                         </div>
                         {v.leads_detalhes.length === 0 ? (
-                          <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhum {v.setor === 'comercial_externo' ? 'prospecção' : 'lead'} no período.</p>
+                          <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhum {v.setor === 'comercial_externo' ? 'prospecção' : 'lead'} no período.</p>
                         ) : (
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                             {v.leads_detalhes.map((l: any) => (
-                              <div key={l.id} style={{ padding: 8, background: '#2c2c2e', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                <div style={{ fontSize: 12, color: '#fff' }}>{l.nome || l.nome_contato}</div>
+                              <div key={l.id} style={{ padding: 8, background: 'var(--surface)', borderRadius: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                <div style={{ fontSize: 12, color: 'var(--text)' }}>{l.nome || l.nome_contato}</div>
                                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4,
-                                  background: l.etapa === 'ganho' ? '#052e16' : l.etapa === 'perdido' ? '#450a0a' : '#1f2937',
-                                  color: l.etapa === 'ganho' ? '#34d399' : l.etapa === 'perdido' ? '#f87171' : '#9ca3af',
+                                  background: l.etapa === 'ganho' ? 'var(--green-bg)' : l.etapa === 'perdido' ? 'var(--red-bg)' : 'var(--surface-2)',
+                                  color: l.etapa === 'ganho' ? 'var(--green)' : l.etapa === 'perdido' ? 'var(--red)' : 'var(--text-muted)',
                                   textTransform: 'uppercase', fontWeight: 600 }}>
                                   {ETAPA_LABELS[l.etapa] || l.etapa}
                                 </span>

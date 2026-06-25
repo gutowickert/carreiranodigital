@@ -7,9 +7,9 @@ import ModalEvento from '@/components/ModalEvento'
 import { supabase } from '@/lib/supabase'
 
 const coresPorTipo: Record<string, string> = {
-  reuniao: '#7c3aed',
-  ligacao: '#2563eb',
-  tarefa: '#16a34a',
+  reuniao: 'var(--accent)',
+  ligacao: 'var(--blue)',
+  tarefa: 'var(--green)',
 }
 
 export default function AgendaPessoal() {
@@ -27,7 +27,7 @@ export default function AgendaPessoal() {
         title: e.titulo,
         start: new Date(e.inicio),
         end: new Date(e.fim),
-        color: coresPorTipo[e.tipo] || '#7c3aed',
+        color: coresPorTipo[e.tipo] || 'var(--accent)',
         resource: e,
       })))
     }
@@ -81,11 +81,11 @@ export default function AgendaPessoal() {
       <div style={{ padding: '24px clamp(12px, 4vw, 40px)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, color: '#f4f4f5' }}>Minha Agenda</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Clique em um horário para criar um evento</p>
+            <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)' }}>Minha Agenda</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Clique em um horário para criar um evento</p>
           </div>
           <button onClick={() => { setEventoEditando(null); setInicioSugerido(new Date()); setFimSugerido(new Date()); setModalAberto(true) }}
-            style={{ padding: '10px 20px', background: '#7c3aed', color: '#fff', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
+            style={{ padding: '10px 20px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer' }}>
             + Novo evento
           </button>
         </div>

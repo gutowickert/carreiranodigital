@@ -36,31 +36,31 @@ export default function CalendarioBase({ eventos, onSlotSelect, onEventClick }: 
   return (
     <div style={{ height: '100%' }}>
       <style>{`
-        .rbc-calendar { background: #1c1c1e; color: #f4f4f5; font-family: inherit; }
+        .rbc-calendar { background: var(--bg); color: var(--text); font-family: inherit; }
         .rbc-toolbar { padding: 12px 0 16px; gap: 8px; flex-wrap: wrap; }
-        .rbc-toolbar button { background: #2c2c2e; color: #9ca3af; border: 1px solid #3a3a3c; border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
-        .rbc-toolbar button:hover { background: #3a3a3c; color: #fff; }
-        .rbc-toolbar button.rbc-active { background: #7c3aed; color: #fff; border-color: #7c3aed; }
-        .rbc-toolbar-label { color: #f4f4f5; font-size: 15px; font-weight: 500; }
-        .rbc-header { background: #2c2c2e; color: #9ca3af; border-color: #3a3a3c; padding: 8px 0; font-size: 12px; font-weight: 500; }
-        .rbc-month-view, .rbc-time-view { border-color: #3a3a3c; }
-        .rbc-day-bg { background: #1c1c1e; }
-        .rbc-day-bg.rbc-today { background: #2a1f4a; }
-        .rbc-off-range-bg { background: #161618; }
-        .rbc-date-cell { color: #9ca3af; font-size: 12px; padding: 4px 8px; }
-        .rbc-date-cell.rbc-now { color: #a78bfa; font-weight: 600; }
-        .rbc-month-row { border-color: #3a3a3c; }
-        .rbc-day-slot .rbc-time-slot { border-color: #2c2c2e; }
-        .rbc-timeslot-group { border-color: #3a3a3c; }
-        .rbc-time-content { border-color: #3a3a3c; }
-        .rbc-time-header { border-color: #3a3a3c; }
-        .rbc-time-header-content { border-color: #3a3a3c; }
-        .rbc-time-gutter .rbc-timeslot-group { border-color: #3a3a3c; }
-        .rbc-label { color: #6b7280; font-size: 11px; }
-        .rbc-current-time-indicator { background: #7c3aed; }
-        .rbc-selected-cell { background: #2d1f4a !important; }
-        .rbc-slot-selection { background: #2d1f4a; border: 1px solid #7c3aed; color: #a78bfa; font-size: 12px; }
-        .rbc-show-more { color: #a78bfa; font-size: 11px; background: transparent; }
+        .rbc-toolbar button { background: var(--surface); color: var(--text-muted); border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer; }
+        .rbc-toolbar button:hover { background: var(--surface-2); color: var(--text); }
+        .rbc-toolbar button.rbc-active { background: var(--accent); color: var(--on-accent); border-color: var(--accent); }
+        .rbc-toolbar-label { color: var(--text); font-size: 15px; font-weight: 500; }
+        .rbc-header { background: var(--surface); color: var(--text-muted); border-color: var(--border); padding: 8px 0; font-size: 12px; font-weight: 500; }
+        .rbc-month-view, .rbc-time-view { border-color: var(--border); }
+        .rbc-day-bg { background: var(--bg); }
+        .rbc-day-bg.rbc-today { background: var(--accent-bg); }
+        .rbc-off-range-bg { background: var(--bg); }
+        .rbc-date-cell { color: var(--text-muted); font-size: 12px; padding: 4px 8px; }
+        .rbc-date-cell.rbc-now { color: var(--accent-soft); font-weight: 600; }
+        .rbc-month-row { border-color: var(--border); }
+        .rbc-day-slot .rbc-time-slot { border-color: var(--surface); }
+        .rbc-timeslot-group { border-color: var(--border); }
+        .rbc-time-content { border-color: var(--border); }
+        .rbc-time-header { border-color: var(--border); }
+        .rbc-time-header-content { border-color: var(--border); }
+        .rbc-time-gutter .rbc-timeslot-group { border-color: var(--border); }
+        .rbc-label { color: var(--text-faint); font-size: 11px; }
+        .rbc-current-time-indicator { background: var(--accent); }
+        .rbc-selected-cell { background: var(--accent-bg) !important; }
+        .rbc-slot-selection { background: var(--accent-bg); border: 1px solid var(--accent); color: var(--accent-soft); font-size: 12px; }
+        .rbc-show-more { color: var(--accent-soft); font-size: 11px; background: transparent; }
         .rbc-event:focus { outline: none; }
         .rbc-event { border: none !important; }
       `}</style>
@@ -92,15 +92,15 @@ export default function CalendarioBase({ eventos, onSlotSelect, onEventClick }: 
         onSelectEvent={(evento) => onEventClick?.(evento as EventoCalendario)}
         eventPropGetter={(evento) => ({
           style: {
-            backgroundColor: (evento as EventoCalendario).color || '#7c3aed',
+            backgroundColor: (evento as EventoCalendario).color || 'var(--accent)',
             borderRadius: '6px',
             padding: '2px 6px',
             fontSize: '12px',
-            color: '#fff',
+            color: 'var(--on-accent)',
           },
         })}
         dayPropGetter={(date) => ({
-          style: { borderColor: '#3a3a3c' },
+          style: { borderColor: 'var(--border)' },
         })}
       />
     </div>

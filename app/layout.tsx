@@ -12,5 +12,12 @@ export default function DashboardLayout({
 }: {
   children: React.ReactNode
 }) {
-  return <>{children}</>
+  // Aplica o tema salvo ANTES de pintar (sem flash). Padrão: escuro.
+  const aplicaTema = `(function(){try{var t=localStorage.getItem('tema');document.documentElement.setAttribute('data-theme',t==='claro'?'light':'dark')}catch(e){}})()`
+  return (
+    <>
+      <script dangerouslySetInnerHTML={{ __html: aplicaTema }} />
+      {children}
+    </>
+  )
 }

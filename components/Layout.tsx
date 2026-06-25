@@ -6,6 +6,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import NotifCelular from '@/components/NotifCelular'
+import ThemeToggle from '@/components/ThemeToggle'
 
 // Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
 // dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
@@ -210,7 +211,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   }
 
   if (checando || !perfil) {
-    return <div style={{ minHeight: '100vh', background: '#1c1c1e', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6b7280', fontSize: 14 }}>Carregando...</div>
+    return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 14 }}>Carregando...</div>
   }
 
   const gruposVisiveis = grupos
@@ -220,13 +221,13 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const menuVisivel = !isMobile || menuMobileAberto
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#1c1c1e' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
       {isMobile && (
         <button onClick={() => setMenuMobileAberto(!menuMobileAberto)}
           style={{
             position: 'fixed', top: 12, left: 12, zIndex: 60,
-            background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8,
-            padding: '8px 12px', fontSize: 22, color: '#fff', cursor: 'pointer',
+            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
+            padding: '8px 12px', fontSize: 22, color: 'var(--text)', cursor: 'pointer',
             lineHeight: 1,
           }}>
           {menuMobileAberto ? '×' : '☰'}
@@ -242,8 +243,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
         <div style={{ flexShrink: 0, width: '220px' }}>
           <div style={{
             width: '220px',
-            backgroundColor: '#2c2c2e',
-            borderRight: '1px solid #3a3a3c',
+            backgroundColor: 'var(--surface)',
+            borderRight: '1px solid var(--border)',
             height: '100vh',
             position: 'fixed',
             top: 0,
@@ -253,7 +254,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             overflowY: 'auto',
             zIndex: 50,
           }}>
-            <div style={{ padding: '20px 16px', borderBottom: '1px solid #3a3a3c', flexShrink: 0 }}>
+            <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
               <Image src="/logo.png" alt="CarreiraNoDigital" width={160} height={48} style={{ objectFit: 'contain' }} />
             </div>
 
@@ -270,7 +271,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       background: 'transparent',
                       border: 'none',
                       cursor: 'pointer',
-                      color: '#6b7280',
+                      color: 'var(--text-faint)',
                       fontSize: '10px',
                       fontWeight: 600,
                       textTransform: 'uppercase',
@@ -296,8 +297,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                             fontSize: '13px',
                             fontWeight: ativo ? '600' : '400',
                             textDecoration: 'none',
-                            backgroundColor: ativo ? '#7c3aed' : 'transparent',
-                            color: ativo ? '#ffffff' : '#9ca3af',
+                            backgroundColor: ativo ? 'var(--accent)' : 'transparent',
+                            color: ativo ? 'var(--on-accent)' : 'var(--text-muted)',
                           }}>
                             <span>{m.nome}</span>
                             {m.href === '/dashboard/whatsapp' && waUnread > 0 && (
@@ -319,11 +320,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
 
-            <div style={{ padding: '12px 16px', borderTop: '1px solid #3a3a3c', flexShrink: 0 }}>
-              <div style={{ fontSize: '12px', color: '#d1d1d1', fontWeight: 500 }}>{perfil.nome}</div>
-              <div style={{ fontSize: '10px', color: '#6b7280', marginTop: 2 }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
+            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+              <div style={{ fontSize: '12px', color: 'var(--text-2)', fontWeight: 500 }}>{perfil.nome}</div>
+              <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: 2 }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
-              <button onClick={sair} style={{ marginTop: 8, width: '100%', background: '#3a3a3c', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: '#d1d1d1', cursor: 'pointer' }}>
+              <div style={{ marginTop: 8 }}><ThemeToggle /></div>
+              <button onClick={sair} style={{ marginTop: 8, width: '100%', background: 'var(--surface-2)', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: 'var(--text-2)', cursor: 'pointer' }}>
                 Sair
               </button>
             </div>
@@ -331,7 +333,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div style={{ flex: 1, minWidth: 0, backgroundColor: '#1c1c1e', paddingTop: isMobile ? 50 : 0 }}>
+      <div style={{ flex: 1, minWidth: 0, backgroundColor: 'var(--bg)', paddingTop: isMobile ? 50 : 0 }}>
         {children}
       </div>
     </div>

@@ -31,20 +31,20 @@ type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
 const ETAPAS = [
-  { id: 'tentativa_contato', label: 'Tentativa contato', cor: '#6b7280', bg: '#1f2937' },
-  { id: 'ligacao_quente', label: 'Ligação quente', cor: '#fb923c', bg: '#431407' },
-  { id: 'ligacao_fria', label: 'Ligação fria', cor: '#94a3b8', bg: '#1e293b' },
-  { id: 'visita_quente', label: 'Visita quente', cor: '#34d399', bg: '#052e16' },
-  { id: 'visita_fria', label: 'Visita fria', cor: '#a78bfa', bg: '#2e1065' },
-  { id: 'whatsapp_quente', label: 'WhatsApp quente', cor: '#60a5fa', bg: '#172554' },
-  { id: 'whatsapp_frio', label: 'WhatsApp frio', cor: '#94a3b8', bg: '#1e293b' },
+  { id: 'tentativa_contato', label: 'Tentativa contato', cor: 'var(--text-faint)', bg: 'var(--surface-2)' },
+  { id: 'ligacao_quente', label: 'Ligação quente', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  { id: 'ligacao_fria', label: 'Ligação fria', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  { id: 'visita_quente', label: 'Visita quente', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  { id: 'visita_fria', label: 'Visita fria', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  { id: 'whatsapp_quente', label: 'WhatsApp quente', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'whatsapp_frio', label: 'WhatsApp frio', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
 ]
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 export default function CRMExterno() {
   const [prospeccoes, setProspeccoes] = useState<Prospeccao[]>([])
@@ -126,17 +126,17 @@ export default function CRMExterno() {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>CRM Externo</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{prospeccoesFiltradas.length} prospecção(ões) ativas</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>CRM Externo</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>{prospeccoesFiltradas.length} prospecção(ões) ativas</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setVisao('kanban')}
-                style={{ padding: '8px 16px', background: visao === 'kanban' ? '#7c3aed' : 'transparent', color: visao === 'kanban' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'kanban' ? 'var(--accent)' : 'transparent', color: visao === 'kanban' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Kanban
               </button>
               <button onClick={() => setVisao('lista')}
-                style={{ padding: '8px 16px', background: visao === 'lista' ? '#7c3aed' : 'transparent', color: visao === 'lista' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'lista' ? 'var(--accent)' : 'transparent', color: visao === 'lista' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Lista
               </button>
             </div>
@@ -165,9 +165,9 @@ export default function CRMExterno() {
         </div>
 
         {vendedores.length === 0 && (
-          <div style={{ background: '#431407', border: '1px solid #fb923c40', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
-            <div style={{ fontSize: 13, color: '#fb923c', fontWeight: 600 }}>⚠ Nenhum vendedor externo cadastrado</div>
-            <div style={{ fontSize: 12, color: '#fdba74', marginTop: 4 }}>
+          <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
+            <div style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 600 }}>⚠ Nenhum vendedor externo cadastrado</div>
+            <div style={{ fontSize: 12, color: 'var(--amber)', marginTop: 4 }}>
               Cadastre usuários com setor "comercial_externo" em /dashboard/usuarios.
             </div>
           </div>
@@ -187,21 +187,21 @@ export default function CRMExterno() {
                   {items.map(p => (
                     <div key={p.id} onClick={() => { setEditando(p); setNovoModal(false); setModalAberto(true) }}
                       style={{ ...card, padding: 12, cursor: 'pointer' }}>
-                      <div style={{ fontSize: 13, fontWeight: 600, color: '#fff' }}>{p.nome_contato}</div>
-                      {p.empresa && <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 2 }}>{p.empresa}</div>}
-                      <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{p.whatsapp || p.cidade || '-'}</div>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)' }}>{p.nome_contato}</div>
+                      {p.empresa && <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{p.empresa}</div>}
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{p.whatsapp || p.cidade || '-'}</div>
                       {p.turmas && (
-                        <div style={{ fontSize: 10, color: '#a78bfa', marginTop: 6, padding: '2px 6px', background: '#2e1065', borderRadius: 4, display: 'inline-block' }}>
+                        <div style={{ fontSize: 10, color: 'var(--accent-soft)', marginTop: 6, padding: '2px 6px', background: 'var(--accent-bg)', borderRadius: 4, display: 'inline-block' }}>
                           {p.turmas.codigo || p.turmas.produtos?.nome}
                         </div>
                       )}
                       {p.usuarios_perfil && (
-                        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>👤 {p.usuarios_perfil.nome}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 6 }}>👤 {p.usuarios_perfil.nome}</div>
                       )}
                     </div>
                   ))}
                   {items.length === 0 && (
-                    <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: '#6b7280', border: '1px dashed #3a3a3c', borderRadius: 8 }}>
+                    <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', border: '1px dashed var(--border)', borderRadius: 8 }}>
                       Vazio
                     </div>
                   )}
@@ -214,13 +214,13 @@ export default function CRMExterno() {
         {visao === 'lista' && (
           <div style={{ ...card, overflow: 'hidden' }}>
             {prospeccoesFiltradas.length === 0 ? (
-              <p style={{ padding: 24, fontSize: 14, color: '#6b7280' }}>Nenhuma prospecção no funil.</p>
+              <p style={{ padding: 24, fontSize: 14, color: 'var(--text-faint)' }}>Nenhuma prospecção no funil.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
                     {['Contato', 'Empresa', 'Cidade', 'Vendedor', 'Turma', 'Etapa'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -229,12 +229,12 @@ export default function CRMExterno() {
                     const etapa = ETAPAS.find(e => e.id === p.etapa)
                     return (
                       <tr key={p.id} onClick={() => { setEditando(p); setNovoModal(false); setModalAberto(true) }}
-                        style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff', fontWeight: 500 }}>{p.nome_contato}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{p.empresa || '-'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{p.cidade || '-'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{p.usuarios_perfil?.nome || '-'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{p.turmas?.codigo || p.turmas?.produtos?.nome || '-'}</td>
+                        style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{p.nome_contato}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.empresa || '-'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.cidade || '-'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.usuarios_perfil?.nome || '-'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.turmas?.codigo || p.turmas?.produtos?.nome || '-'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: etapa?.bg, color: etapa?.cor, fontWeight: 500 }}>
                             {etapa?.label || p.etapa}
@@ -350,15 +350,15 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
 
   if (!aberto) return null
 
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
   const turmaSelecionada = turmas.find(t => t.id === form.turma_id)
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 24, width: 580, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 24, width: 580, maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <h2 style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: 0 }}>{novoModal ? 'Nova prospecção' : form.nome_contato}</h2>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 22, cursor: 'pointer' }}>x</button>
+          <h2 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{novoModal ? 'Nova prospecção' : form.nome_contato}</h2>
+          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 22, cursor: 'pointer' }}>x</button>
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 10 }}>
@@ -416,8 +416,8 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
 
         {!novoModal && prospeccao && (
           <>
-            <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Avançar funil</div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Avançar funil</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {ETAPAS.filter(e => e.id !== prospeccao.etapa).map(e => (
                   <button key={e.id} onClick={() => moverEtapa(prospeccao, e.id).then(onFechar)}
@@ -426,11 +426,11 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
                   </button>
                 ))}
                 <button onClick={() => setMostrarGanho(!mostrarGanho)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✓ Ganho
                 </button>
                 <button onClick={() => setMostrarPerda(!mostrarPerda)}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--red)', background: 'var(--red-bg)', color: 'var(--red)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✗ Perda
                 </button>
               </div>
@@ -440,22 +440,22 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
               )}
 
               {mostrarPerda && (
-                <div style={{ marginTop: 12, padding: 12, background: '#450a0a', borderRadius: 8, border: '1px solid #f8717140' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--red-bg)', borderRadius: 8, border: '1px solid var(--red)' }}>
                   <label style={labelStyle}>Motivo da perda *</label>
                   <select style={{ ...inp, cursor: 'pointer' }} value={motivoSelecionado} onChange={e => setMotivoSelecionado(e.target.value)}>
                     <option value="">Selecione</option>
                     {motivosPerda.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
                   </select>
                   <button onClick={confirmarPerda} disabled={!motivoSelecionado}
-                    style={{ ...btnPrimary, background: '#dc2626', marginTop: 8, width: '100%', opacity: motivoSelecionado ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--red)', marginTop: 8, width: '100%', opacity: motivoSelecionado ? 1 : 0.5 }}>
                     Confirmar perda
                   </button>
                 </div>
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr auto', gap: 8, marginBottom: 12 }}>
                 <select style={{ ...inp, cursor: 'pointer' }} value={tipoAndamento} onChange={e => setTipoAndamento(e.target.value)}>
                   <option value="ligacao">Ligação</option>
@@ -470,17 +470,17 @@ function ModalProspeccao({ aberto, prospeccao, novoModal, vendedores, turmas, mo
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
                 {andamentos.map(a => (
-                  <div key={a.id} style={{ padding: 10, background: '#1c1c1e', borderRadius: 6, fontSize: 12 }}>
+                  <div key={a.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 6, fontSize: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: '#2e1065', color: '#a78bfa', textTransform: 'uppercase' }}>
+                      <span style={{ fontSize: 10, padding: '2px 6px', borderRadius: 4, background: 'var(--accent-bg)', color: 'var(--accent-soft)', textTransform: 'uppercase' }}>
                         {a.tipo || 'andamento'}
                       </span>
-                      <span style={{ fontSize: 10, color: '#6b7280' }}>{new Date(a.criado_em).toLocaleString('pt-BR')}</span>
+                      <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{new Date(a.criado_em).toLocaleString('pt-BR')}</span>
                     </div>
-                    <div style={{ color: '#d1d1d1' }}>{a.observacao}</div>
+                    <div style={{ color: 'var(--text-2)' }}>{a.observacao}</div>
                   </div>
                 ))}
-                {andamentos.length === 0 && <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhum andamento registrado.</p>}
+                {andamentos.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhum andamento registrado.</p>}
               </div>
             </div>
           </>
@@ -576,27 +576,27 @@ function ModalGanhoVincularExterno({ prospeccao, turma, onFechar }: ModalGanhoVi
   }
 
   return (
-    <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
+    <div style={{ marginTop: 12, padding: 16, background: 'var(--green-bg)', borderRadius: 8, border: '1px solid var(--green-strong)' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--green-strong)', marginBottom: 12 }}>
         Vincular matrícula existente
       </div>
 
       {!turma && (
-        <p style={{ fontSize: 12, color: '#f87171' }}>
+        <p style={{ fontSize: 12, color: 'var(--red)' }}>
           Esta prospecção não tem turma vinculada. Vincule uma turma primeiro.
         </p>
       )}
 
       {turma && carregando && (
-        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando matrículas...</p>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Carregando matrículas...</p>
       )}
 
       {turma && !carregando && matriculas.length === 0 && (
         <div>
-          <p style={{ fontSize: 12, color: '#fbbf24', marginBottom: 8 }}>
+          <p style={{ fontSize: 12, color: 'var(--amber)', marginBottom: 8 }}>
             Nenhuma matrícula disponível para esta turma ainda.
           </p>
-          <p style={{ fontSize: 11, color: '#9ca3af' }}>
+          <p style={{ fontSize: 11, color: 'var(--text-muted)' }}>
             Crie a matrícula primeiro em <strong>Turmas → {turma.produtos?.nome} → Nova venda</strong>, depois volte aqui para vincular.
           </p>
         </div>
@@ -604,7 +604,7 @@ function ModalGanhoVincularExterno({ prospeccao, turma, onFechar }: ModalGanhoVi
 
       {turma && matriculas.length > 0 && (
         <>
-          <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>
             Selecione a matrícula desta prospecção:
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
@@ -612,18 +612,18 @@ function ModalGanhoVincularExterno({ prospeccao, turma, onFechar }: ModalGanhoVi
               <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
                 style={{
                   padding: 10, borderRadius: 6, cursor: 'pointer',
-                  border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c',
-                  background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e',
+                  border: matriculaSelecionada === m.id ? '2px solid var(--green-strong)' : '1px solid var(--border)',
+                  background: matriculaSelecionada === m.id ? 'var(--green-bg)' : 'var(--bg)',
                 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
-                    <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
-                    <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>
+                    <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{m.aluno_nome}</div>
+                    <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
                       {m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}
                       {new Date(m.data_compra).toLocaleDateString('pt-BR')}
                     </div>
                   </div>
-                  <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>
+                  <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>
                     R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                   </div>
                 </div>
@@ -632,11 +632,11 @@ function ModalGanhoVincularExterno({ prospeccao, turma, onFechar }: ModalGanhoVi
           </div>
 
           {mensagem && (
-            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>
+            <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)' }}>{mensagem}</p>
           )}
 
           <button onClick={confirmar} disabled={!matriculaSelecionada || salvando}
-            style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+            style={{ ...btnPrimary, background: 'var(--green)', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
             {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
           </button>
         </>

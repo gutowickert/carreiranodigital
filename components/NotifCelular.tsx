@@ -36,7 +36,7 @@ export default function NotifCelular() {
   }
 
   if (estado === 'indisponivel') return null
-  if (estado === 'ok') return <div style={{ fontSize: 11, color: '#34d399', marginTop: 8 }}>🔔 Notificações ativas neste aparelho</div>
+  if (estado === 'ok') return <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 8 }}>🔔 Notificações ativas neste aparelho</div>
   return (
     <button onClick={ativar} style={{ marginTop: 8, width: '100%', background: '#25D366', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: '#063', fontWeight: 600, cursor: 'pointer' }}>
       🔔 Ativar notificações no celular

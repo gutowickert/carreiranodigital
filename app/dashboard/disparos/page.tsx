@@ -3,10 +3,10 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#fff', outline: 'none', width: '100%' } as React.CSSProperties
-const btn = { backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
-const label = { display: 'block', fontSize: 12, color: '#9ca3af', marginBottom: 6 } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btn = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '10px 18px', fontSize: '14px', fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
+const label = { display: 'block', fontSize: 12, color: 'var(--text-muted)', marginBottom: 6 } as React.CSSProperties
 
 type Tpl = { nome: string; idioma: string; categoria: string; variaveis: number; header: string | null; corpo: string }
 type Contato = { telefone: string; nome: string; lead_id?: string }
@@ -155,17 +155,17 @@ export default function Disparos() {
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 760 }}>
-      <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>Disparos</h1>
-      <p style={{ fontSize: 13, color: '#6b7280', margin: '0 0 24px' }}>Envio em massa pela API Oficial do WhatsApp (templates aprovados).</p>
+      <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>Disparos</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 24px' }}>Envio em massa pela API Oficial do WhatsApp (templates aprovados).</p>
 
       {/* 1. Público */}
       <div style={{ ...card, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 12 }}>1. Público</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>1. Público</div>
         <div style={{ display: 'flex', gap: 16, marginBottom: 12, flexWrap: 'wrap' }}>
-          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'turma'} onChange={() => setModo('turma')} /> Leads por turma</label>
-          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'lista'} onChange={() => setModo('lista')} /> Listas (frias)</label>
-          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'naoentregues'} onChange={() => setModo('naoentregues')} /> Não-entregues</label>
-          <label style={{ fontSize: 13, color: '#d1d1d1', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
+          <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'turma'} onChange={() => setModo('turma')} /> Leads por turma</label>
+          <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'lista'} onChange={() => setModo('lista')} /> Listas (frias)</label>
+          <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'naoentregues'} onChange={() => setModo('naoentregues')} /> Não-entregues</label>
+          <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
         </div>
         {modo === 'turma' && (
           <select style={inp} value={turmaId} onChange={e => setTurmaId(e.target.value)}>
@@ -201,7 +201,7 @@ export default function Disparos() {
                   return <option key={c.id} value={c.id}>{c.nome} · {d} · {c.entregues} já receberam</option>
                 })}
               </select>
-              <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Tira da lista quem já recebeu (entregue/lido) nessa campanha — pra completar um disparo que travou no meio, sem mandar 2x pra ninguém.</div>
+              <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Tira da lista quem já recebeu (entregue/lido) nessa campanha — pra completar um disparo que travou no meio, sem mandar 2x pra ninguém.</div>
             </div>
           </div>
         )}
@@ -215,21 +215,21 @@ export default function Disparos() {
                 return <option key={c.id} value={c.id}>{c.nome} · {d} · {c.enviados} env / {c.entregues} entr</option>
               })}
             </select>
-            <div style={{ fontSize: 11, color: '#6b7280', marginTop: 6 }}>Carrega os contatos que o WhatsApp aceitou mas não entregou. Quem já recebeu, leu ou respondeu fica de fora.</div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Carrega os contatos que o WhatsApp aceitou mas não entregou. Quem já recebeu, leu ou respondeu fica de fora.</div>
           </div>
         )}
         {modo === 'colar' && (
           <textarea style={{ ...inp, minHeight: 90 }} placeholder="Um número por linha (com DDD)" value={numerosTexto} onChange={e => setNumerosTexto(e.target.value)} />
         )}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 12 }}>
-          <button onClick={carregarPublico} disabled={carregandoPublico} style={{ ...btn, background: '#3a3a3c' }}>{carregandoPublico ? '...' : 'Carregar público'}</button>
-          {contatos.length > 0 && <span style={{ fontSize: 13, color: '#34d399' }}>{contatos.length} contato(s) carregado(s)</span>}
+          <button onClick={carregarPublico} disabled={carregandoPublico} style={{ ...btn, background: 'var(--surface-2)' }}>{carregandoPublico ? '...' : 'Carregar público'}</button>
+          {contatos.length > 0 && <span style={{ fontSize: 13, color: 'var(--green)' }}>{contatos.length} contato(s) carregado(s)</span>}
         </div>
       </div>
 
       {/* 2. Mensagem */}
       <div style={{ ...card, padding: 20, marginBottom: 16 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 12 }}>2. Mensagem (template)</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>2. Mensagem (template)</div>
         <label style={label}>Template aprovado</label>
         <select style={inp} value={tplNome} onChange={e => setTplNome(e.target.value)}>
           <option value="">Selecione...</option>
@@ -238,7 +238,7 @@ export default function Disparos() {
 
         {tpl && (
           <>
-            {tpl.corpo && <div style={{ fontSize: 12, color: '#9ca3af', background: '#1c1c1e', borderRadius: 8, padding: 10, marginTop: 10, whiteSpace: 'pre-wrap' }}>{tpl.corpo}</div>}
+            {tpl.corpo && <div style={{ fontSize: 12, color: 'var(--text-muted)', background: 'var(--bg)', borderRadius: 8, padding: 10, marginTop: 10, whiteSpace: 'pre-wrap' }}>{tpl.corpo}</div>}
             {headerMidia && (
               <div style={{ marginTop: 12 }}>
                 <label style={label}>Mídia do topo ({tpl.header})</label>
@@ -247,12 +247,12 @@ export default function Disparos() {
                     accept={tpl.header === 'image' ? 'image/*' : tpl.header === 'video' ? 'video/*' : 'application/pdf,.pdf,.doc,.docx,.xls,.xlsx'}
                     onChange={e => { const f = e.target.files?.[0]; if (f) subirHeaderMidia(f); e.target.value = '' }} />
                   <button type="button" onClick={() => headerFileRef.current?.click()} disabled={subindoMidia}
-                    style={{ ...btn, background: '#3a3a3c', opacity: subindoMidia ? 0.6 : 1 }}>
+                    style={{ ...btn, background: 'var(--surface-2)', opacity: subindoMidia ? 0.6 : 1 }}>
                     {subindoMidia ? 'Enviando...' : '📎 Escolher arquivo'}
                   </button>
-                  {headerArquivo && <span style={{ fontSize: 12, color: '#34d399' }}>✓ {headerArquivo}</span>}
+                  {headerArquivo && <span style={{ fontSize: 12, color: 'var(--green)' }}>✓ {headerArquivo}</span>}
                 </div>
-                <div style={{ fontSize: 11, color: '#6b7280', margin: '8px 0 4px' }}>ou cole uma URL pública:</div>
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', margin: '8px 0 4px' }}>ou cole uma URL pública:</div>
                 <input style={inp} placeholder="https://..." value={headerLink}
                   onChange={e => { setHeaderLink(e.target.value); if (e.target.value) { setHeaderMediaId(''); setHeaderArquivo('') } }} />
               </div>
@@ -263,7 +263,7 @@ export default function Disparos() {
                 <input style={inp} value={v} onChange={e => setBodyParams(p => p.map((x, j) => j === i ? e.target.value : x))} />
               </div>
             ))}
-            <div style={{ fontSize: 12, color: tpl.categoria === 'marketing' ? '#fbbf24' : '#34d399', marginTop: 12 }}>
+            <div style={{ fontSize: 12, color: tpl.categoria === 'marketing' ? 'var(--amber)' : 'var(--green)', marginTop: 12 }}>
               Categoria <b>{tpl.categoria}</b> — custo ~{custoUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}/mensagem
             </div>
           </>
@@ -272,13 +272,13 @@ export default function Disparos() {
 
       {/* 3. Disparar */}
       <div style={{ ...card, padding: 20 }}>
-        <div style={{ fontSize: 14, fontWeight: 600, color: '#fff', marginBottom: 12 }}>3. Disparar</div>
+        <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 12 }}>3. Disparar</div>
         <label style={label}>Nome da campanha (opcional)</label>
         <input style={{ ...inp, marginBottom: 12 }} value={nomeCampanha} onChange={e => setNomeCampanha(e.target.value)} placeholder={tpl ? `Disparo ${tpl.nome}` : 'Ex: Oferta POA junho'} />
 
         {contatos.length > 0 && tpl && (
-          <div style={{ fontSize: 13, color: '#d1d1d1', marginBottom: 12 }}>
-            {contatos.length} contatos × {custoUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = <b style={{ color: '#f87171' }}>{(contatos.length * custoUnit).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b> (estimado)
+          <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 12 }}>
+            {contatos.length} contatos × {custoUnit.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })} = <b style={{ color: 'var(--red)' }}>{(contatos.length * custoUnit).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}</b> (estimado)
           </div>
         )}
 
@@ -288,13 +288,13 @@ export default function Disparos() {
 
         {rodando && (
           <div style={{ marginTop: 12 }}>
-            <div style={{ background: '#1c1c1e', borderRadius: 6, height: 10, overflow: 'hidden' }}>
+            <div style={{ background: 'var(--bg)', borderRadius: 6, height: 10, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${progresso.total ? (progresso.feitos / progresso.total * 100) : 0}%`, background: '#25D366' }} />
             </div>
-            <div style={{ fontSize: 12, color: '#9ca3af', marginTop: 6 }}>{progresso.enviados} enviados · {progresso.falhas} falhas</div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6 }}>{progresso.enviados} enviados · {progresso.falhas} falhas</div>
           </div>
         )}
-        {resultadoFinal && <div style={{ marginTop: 12, fontSize: 13, color: resultadoFinal.startsWith('Erro') ? '#f87171' : '#34d399' }}>{resultadoFinal}</div>}
+        {resultadoFinal && <div style={{ marginTop: 12, fontSize: 13, color: resultadoFinal.startsWith('Erro') ? 'var(--red)' : 'var(--green)' }}>{resultadoFinal}</div>}
       </div>
     </div>
   )

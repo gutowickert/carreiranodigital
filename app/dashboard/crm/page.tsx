@@ -43,17 +43,17 @@ type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
 const ETAPAS = [
-  { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: '#9ca3af', bg: '#1f2937' },
-  { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: '#60a5fa', bg: '#172554' },
-  { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399', bg: '#052e16' },
-  { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: '#fb923c', bg: '#431407' },
-  { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa', bg: '#2e1065' },
-  { id: 'pediu_prazo', label: 'Pediu prazo', cor: '#fbbf24', bg: '#451a03' },
-  { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: '#06b6d4', bg: '#083344' },
-  { id: 'agendado', label: 'Agendado', cor: '#22d3ee', bg: '#083344' },
-  { id: 'proxima_turma', label: 'Próxima turma', cor: '#a78bfa', bg: '#2e1065' },
-  { id: 'ganho', label: 'Ganho', cor: '#4ade80', bg: '#052e16' },
-  { id: 'perda', label: 'Perda', cor: '#f87171', bg: '#450a0a' },
+  { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  { id: 'pediu_prazo', label: 'Pediu prazo', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  { id: 'ganho', label: 'Ganho', cor: 'var(--green-strong)', bg: 'var(--green-bg)' },
+  { id: 'perda', label: 'Perda', cor: 'var(--red)', bg: 'var(--red-bg)' },
 ]
 
 const ETAPAS_KANBAN = ETAPAS.filter(e => e.id !== 'ganho' && e.id !== 'perda')
@@ -64,11 +64,11 @@ const ORIGEM_LABEL: Record<string, string> = {
 
 const PRAZO_CICLO = 6
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 function diaDoCiclo(criadoEm: string): number {
   const inicio = new Date(criadoEm)
@@ -361,17 +361,17 @@ export default function CRM() {
       <div style={{ padding: '24px clamp(12px, 4vw, 40px)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>CRM</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>{leadsAtivos.length} lead(s) ativos no funil</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>CRM</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>{leadsAtivos.length} lead(s) ativos no funil</p>
           </div>
           <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 8, overflow: 'hidden' }}>
+            <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
               <button onClick={() => setVisao('kanban')}
-                style={{ padding: '8px 16px', background: visao === 'kanban' ? '#7c3aed' : 'transparent', color: visao === 'kanban' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'kanban' ? 'var(--accent)' : 'transparent', color: visao === 'kanban' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Kanban
               </button>
               <button onClick={() => setVisao('lista')}
-                style={{ padding: '8px 16px', background: visao === 'lista' ? '#7c3aed' : 'transparent', color: visao === 'lista' ? '#fff' : '#9ca3af', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                style={{ padding: '8px 16px', background: visao === 'lista' ? 'var(--accent)' : 'transparent', color: visao === 'lista' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
                 Lista
               </button>
             </div>
@@ -436,28 +436,28 @@ export default function CRM() {
                           onDragStart={e => { dragLeadRef.current = lead; e.dataTransfer.effectAllowed = 'move' }}
                           onDragEnd={() => { dragLeadRef.current = null; setColunaAlvo(null) }}
                           onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                          style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid #f87171' : '1px solid #3a3a3c' }}>
+                          style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: '#fff', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{lead.nome}</div>
-                            <div style={{ fontSize: 9, color: alerta ? '#f87171' : '#6b7280', fontWeight: 600 }}>D{dia}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ color: 'var(--amber)' }}>🔴 </span>}{lead.nome}</div>
+                            <div style={{ fontSize: 9, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 600 }}>D{dia}</div>
                           </div>
-                          <div style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
+                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
                           {lead.turmas && (
-                            <div style={{ fontSize: 10, color: '#a78bfa', marginTop: 6, padding: '2px 6px', background: '#2e1065', borderRadius: 4, display: 'inline-block' }}>
+                            <div style={{ fontSize: 10, color: 'var(--accent-soft)', marginTop: 6, padding: '2px 6px', background: 'var(--accent-bg)', borderRadius: 4, display: 'inline-block' }}>
                               {lead.turmas.codigo || lead.turmas.produtos?.nome}
                             </div>
                           )}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <div style={{ fontSize: 10, color: '#6b7280' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
+                            <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
                             <div style={{ display: 'flex', gap: 4 }}>
                               {tarefaAtrasada && (
-                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ tarefa</div>
+                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ tarefa</div>
                               )}
                               {cicloEstourou && (
-                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ ciclo</div>
+                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ ciclo</div>
                               )}
                               {prazoEstourou && (
-                                <div style={{ fontSize: 9, color: '#f87171', fontWeight: 600 }}>⚠ prazo</div>
+                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ prazo</div>
                               )}
                             </div>
                           </div>
@@ -465,7 +465,7 @@ export default function CRM() {
                       )
                     })}
                     {leadsEtapa.length === 0 && (
-                      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: '#6b7280', border: '1px dashed #3a3a3c', borderRadius: 8 }}>
+                      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', border: '1px dashed var(--border)', borderRadius: 8 }}>
                         Vazio
                       </div>
                     )}
@@ -474,41 +474,41 @@ export default function CRM() {
               ))}
             </div>
 
-            <div style={{ marginTop: 20, borderTop: '1px solid #3a3a3c', paddingTop: 16 }}>
+            <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
               <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                 <button onClick={() => setVerFinalizados(!verFinalizados)} style={btnSecondary}>
                   {verFinalizados ? '▾ Esconder' : '▸ Mostrar'} finalizados
                 </button>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13 }}>
-                  <span style={{ color: '#4ade80', fontWeight: 600 }}>Ganho: {leadsGanho.length}</span>
-                  <span style={{ color: '#f87171', fontWeight: 600 }}>Perda: {leadsPerda.length}</span>
+                  <span style={{ color: 'var(--green-strong)', fontWeight: 600 }}>Ganho: {leadsGanho.length}</span>
+                  <span style={{ color: 'var(--red)', fontWeight: 600 }}>Perda: {leadsPerda.length}</span>
                 </div>
               </div>
               {verFinalizados && (
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#4ade80', textTransform: 'uppercase', marginBottom: 8 }}>Ganho ({leadsGanho.length})</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--green-strong)', textTransform: 'uppercase', marginBottom: 8 }}>Ganho ({leadsGanho.length})</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                       {leadsGanho.map(lead => (
                         <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 10, cursor: 'pointer' }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{lead.nome}</div>
-                          <div style={{ fontSize: 10, color: '#34d399', marginTop: 4 }}>R$ {lead.valor_venda?.toFixed(2) || '0,00'}</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{lead.nome}</div>
+                          <div style={{ fontSize: 10, color: 'var(--green)', marginTop: 4 }}>R$ {lead.valor_venda?.toFixed(2) || '0,00'}</div>
                         </div>
                       ))}
-                      {leadsGanho.length === 0 && <p style={{ fontSize: 11, color: '#6b7280' }}>Nenhum.</p>}
+                      {leadsGanho.length === 0 && <p style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nenhum.</p>}
                     </div>
                   </div>
                   <div>
-                    <div style={{ fontSize: 11, fontWeight: 600, color: '#f87171', textTransform: 'uppercase', marginBottom: 8 }}>Perda ({leadsPerda.length})</div>
+                    <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--red)', textTransform: 'uppercase', marginBottom: 8 }}>Perda ({leadsPerda.length})</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                       {leadsPerda.map(lead => (
                         <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 10, cursor: 'pointer' }}>
-                          <div style={{ fontSize: 12, fontWeight: 600, color: '#fff' }}>{lead.nome}</div>
+                          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{lead.nome}</div>
                         </div>
                       ))}
-                      {leadsPerda.length === 0 && <p style={{ fontSize: 11, color: '#6b7280' }}>Nenhum.</p>}
+                      {leadsPerda.length === 0 && <p style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nenhum.</p>}
                     </div>
                   </div>
                 </div>
@@ -520,13 +520,13 @@ export default function CRM() {
         {visao === 'lista' && (
           <div style={{ ...card, overflowX: 'auto' }}>
             {leadsFiltrados.length === 0 ? (
-              <p style={{ padding: 24, fontSize: 14, color: '#6b7280' }}>Nenhum lead no funil.</p>
+              <p style={{ padding: 24, fontSize: 14, color: 'var(--text-faint)' }}>Nenhum lead no funil.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c', background: '#1c1c1e' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
                     {['Nome', 'WhatsApp', 'Turma', 'Etapa', 'Dia', 'Origem', 'Criado em'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: '#9ca3af', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -536,18 +536,18 @@ export default function CRM() {
                     const dia = diaDoCiclo(lead.criado_em)
                     return (
                       <tr key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                        style={{ borderBottom: '1px solid #3a3a3c', cursor: 'pointer' }}>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#fff', fontWeight: 500 }}>{lead.nao_lida && <span title="Não lida" style={{ color: '#fbbf24' }}>🔴 </span>}{lead.nome}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{lead.whatsapp || '-'}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: '#9ca3af' }}>{lead.turmas?.codigo || lead.turmas?.produtos?.nome || '-'}</td>
+                        style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{lead.nao_lida && <span title="Não lida" style={{ color: 'var(--amber)' }}>🔴 </span>}{lead.nome}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{lead.whatsapp || '-'}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{lead.turmas?.codigo || lead.turmas?.produtos?.nome || '-'}</td>
                         <td style={{ padding: '12px 16px' }}>
                           <span style={{ fontSize: 11, padding: '3px 10px', borderRadius: 20, background: etapa?.bg, color: etapa?.cor, fontWeight: 500 }}>
                             {etapa?.label || lead.etapa}
                           </span>
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: 12, color: dia > PRAZO_CICLO ? '#f87171' : '#9ca3af' }}>D{dia}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</td>
-                        <td style={{ padding: '12px 16px', fontSize: 12, color: '#6b7280' }}>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: dia > PRAZO_CICLO ? 'var(--red)' : 'var(--text-muted)' }}>D{dia}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-faint)' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-faint)' }}>
                           {new Date(lead.criado_em).toLocaleDateString('pt-BR')}
                         </td>
                       </tr>
@@ -772,7 +772,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   if (!aberto) return null
 
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
   const turmaSelecionada = turmas.find(t => t.id === form.turma_id)
   const dia = lead ? diaDoCiclo(lead.criado_em) : 0
   const cicloEstourou = dia > PRAZO_CICLO
@@ -786,27 +786,27 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     ['Maior problema', lead.maior_problema],
   ].filter(([, v]) => v && String(v).trim()) as [string, string][]) : []
   const temTracking = !!(lead && (lead.utm_source || lead.utm_medium || lead.utm_campaign || lead.utm_content || lead.fbclid))
-  const tagStyle = { fontSize: 11, color: '#a78bfa', background: '#2e1065', border: '1px solid #a78bfa30', borderRadius: 4, padding: '2px 8px' } as React.CSSProperties
+  const tagStyle = { fontSize: 11, color: 'var(--accent-soft)', background: 'var(--accent-bg)', border: '1px solid var(--accent-soft)', borderRadius: 4, padding: '2px 8px' } as React.CSSProperties
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 12, padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
-            <h2 style={{ fontSize: 17, fontWeight: 600, color: '#fff', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
+            <h2 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
             {!novoLead && lead && (
-              <div style={{ fontSize: 11, color: cicloEstourou ? '#f87171' : '#9ca3af', marginTop: 4 }}>
+              <div style={{ fontSize: 11, color: cicloEstourou ? 'var(--red)' : 'var(--text-muted)', marginTop: 4 }}>
                 Dia {dia} do ciclo {cicloEstourou && '⚠ ciclo terminou'}
               </div>
             )}
           </div>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: '#6b7280', fontSize: 22, cursor: 'pointer' }}>x</button>
+          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 22, cursor: 'pointer' }}>x</button>
         </div>
 
         {!novoLead && lead && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button onClick={ligar} disabled={ligando || !form.whatsapp}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 13, fontWeight: 600, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 13, fontWeight: 600, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
               📞 {ligando ? 'Discando...' : 'Ligar'}
             </button>
             <button onClick={() => setChatAberto(v => !v)} disabled={!form.whatsapp}
@@ -814,10 +814,10 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               💬 WhatsApp
             </button>
             <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? '#fbbf2440' : '#48484a'), background: naoLida ? '#451a03' : '#3a3a3c', color: naoLida ? '#fbbf24' : '#9ca3af', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? 'var(--amber)' : 'var(--border-strong)'), background: naoLida ? 'var(--amber-bg)' : 'var(--surface-2)', color: naoLida ? 'var(--amber)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {naoLida ? '🔴 Não lida' : '○ Marcar não lida'}
             </button>
-            {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? '#f87171' : '#9ca3af' }}>{msgLigacao}</span>}
+            {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? 'var(--red)' : 'var(--text-muted)' }}>{msgLigacao}</span>}
           </div>
         )}
 
@@ -878,26 +878,26 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         </div>
 
         {!novoLead && lead && (
-          <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
               Qualificação (formulário)
             </div>
             {qualLinhas.length > 0 ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {qualLinhas.map(([rotulo, valor]) => (
                   <div key={rotulo} style={{ display: 'grid', gridTemplateColumns: '190px 1fr', gap: 8, alignItems: 'start' }}>
-                    <div style={{ fontSize: 12, color: '#9ca3af' }}>{rotulo}</div>
-                    <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{valor}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{rotulo}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>{valor}</div>
                   </div>
                 ))}
               </div>
             ) : (
-              <p style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
+              <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0 }}>
                 Sem dados de qualificação (lead não veio do formulário ou campos em branco).
               </p>
             )}
             {temTracking && (
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed #3a3a3c', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px dashed var(--border)', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {lead.utm_source && <span style={tagStyle}>utm_source: {lead.utm_source}</span>}
                 {lead.utm_medium && <span style={tagStyle}>utm_medium: {lead.utm_medium}</span>}
                 {lead.utm_campaign && <span style={tagStyle}>utm_campaign: {lead.utm_campaign}</span>}
@@ -911,42 +911,42 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
         {!novoLead && lead && chatAberto && <ChatLead lead={lead} />}
 
         {!novoLead && lead && (
-          <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ligações</div>
-              <button onClick={() => carregarLigacoes(lead.id)} style={{ background: 'none', border: 'none', color: '#7c3aed', fontSize: 11, cursor: 'pointer' }}>↻ atualizar</button>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ligações</div>
+              <button onClick={() => carregarLigacoes(lead.id)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, cursor: 'pointer' }}>↻ atualizar</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
               {ligacoes.map(l => {
                 const s = l.duracao || 0
                 const dur = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
                 return (
-                  <div key={l.id} style={{ padding: 10, background: '#1c1c1e', borderRadius: 6, fontSize: 12 }}>
+                  <div key={l.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 6, fontSize: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: '#d1d1d1' }}>{new Date(l.criado_em).toLocaleString('pt-BR')}</span>
-                      <span style={{ color: l.status === 'encerrada' ? '#34d399' : '#fbbf24' }}>
+                      <span style={{ color: 'var(--text-2)' }}>{new Date(l.criado_em).toLocaleString('pt-BR')}</span>
+                      <span style={{ color: l.status === 'encerrada' ? 'var(--green)' : 'var(--amber)' }}>
                         {l.status === 'encerrada' ? dur : (l.status || 'iniciada')}
                       </span>
                     </div>
                     {l.gravacao_url ? (
                       <audio controls src={l.gravacao_url} style={{ width: '100%', marginTop: 6, height: 34 }} />
                     ) : (
-                      <div style={{ color: '#6b7280', fontSize: 10, marginTop: 4 }}>
+                      <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
                         {l.status === 'encerrada' ? 'Sem gravação' : 'Aguardando resultado (clica ↻ após desligar)'}
                       </div>
                     )}
                   </div>
                 )
               })}
-              {ligacoes.length === 0 && <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhuma ligação ainda.</p>}
+              {ligacoes.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhuma ligação ainda.</p>}
             </div>
           </div>
         )}
 
         {!novoLead && lead && lead.etapa !== 'ganho' && lead.etapa !== 'perda' && (
           <>
-            <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento' && e.id !== 'agendado' && e.id !== 'proxima_turma').map(e => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
@@ -955,82 +955,82 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                   </button>
                 ))}
                 <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #fbbf2440', background: '#451a03', color: '#fbbf24', fontSize: 11, cursor: 'pointer' }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer' }}>
                   → Pediu prazo
                 </button>
                 <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 11, cursor: 'pointer' }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
                   → Aguardando pagamento
                 </button>
                 <button onClick={() => { setMostrarAgendado(!mostrarAgendado); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #06b6d440', background: '#083344', color: '#06b6d4', fontSize: 11, cursor: 'pointer' }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
                   📅 Agendar contato
                 </button>
                 <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #a78bfa40', background: '#2e1065', color: '#a78bfa', fontSize: 11, cursor: 'pointer' }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer' }}>
                   ➡️ Próxima turma
                 </button>
                 <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #4ade8040', background: '#052e16', color: '#4ade80', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✓ Ganho
                 </button>
                 <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid #f8717140', background: '#450a0a', color: '#f87171', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--red)', background: 'var(--red-bg)', color: 'var(--red)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
                   ✗ Perda
                 </button>
               </div>
 
               {mostrarPrazo && (
-                <div style={{ marginTop: 12, padding: 12, background: '#451a03', borderRadius: 8, border: '1px solid #fbbf2440' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
                   <label style={labelStyle}>Quando cliente prometeu retornar? *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={inp} value={prazoData} onChange={e => setPrazoData(e.target.value)} />
                     <input type="time" style={inp} value={prazoHora} onChange={e => setPrazoHora(e.target.value)} />
                   </div>
                   <button onClick={confirmarPrazo} disabled={!prazoData}
-                    style={{ ...btnPrimary, background: '#d97706', marginTop: 8, width: '100%', opacity: prazoData ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--amber)', marginTop: 8, width: '100%', opacity: prazoData ? 1 : 0.5 }}>
                     Marcar prazo e criar tarefa
                   </button>
                 </div>
               )}
 
               {mostrarPag && (
-                <div style={{ marginTop: 12, padding: 12, background: '#083344', borderRadius: 8, border: '1px solid #06b6d440' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 8, border: '1px solid var(--blue)' }}>
                   <label style={labelStyle}>Quando cliente disse que paga? *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={inp} value={pagData} onChange={e => setPagData(e.target.value)} />
                     <input type="time" style={inp} value={pagHora} onChange={e => setPagHora(e.target.value)} />
                   </div>
                   <button onClick={confirmarAguardandoPag} disabled={!pagData}
-                    style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: pagData ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--blue)', marginTop: 8, width: '100%', opacity: pagData ? 1 : 0.5 }}>
                     Mover e criar tarefa de acompanhamento
                   </button>
                 </div>
               )}
 
               {mostrarAgendado && (
-                <div style={{ marginTop: 12, padding: 12, background: '#083344', borderRadius: 8, border: '1px solid #06b6d440' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 8, border: '1px solid var(--blue)' }}>
                   <label style={labelStyle}>📅 Chamar o lead em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
                     <input type="time" style={{ ...inp, width: 110 }} value={agendadoHora} onChange={e => setAgendadoHora(e.target.value)} />
                   </div>
                   <button onClick={confirmarAgendado} disabled={!agendadoData}
-                    style={{ ...btnPrimary, background: '#0891b2', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--blue)', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
                     Agendar contato
                   </button>
                 </div>
               )}
 
               {mostrarProxTurma && (
-                <div style={{ marginTop: 12, padding: 12, background: '#2e1065', borderRadius: 8, border: '1px solid #a78bfa40' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--accent-bg)', borderRadius: 8, border: '1px solid var(--accent-soft)' }}>
                   <label style={labelStyle}>➡️ Próxima turma — chamar em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
                     <input type="time" style={{ ...inp, width: 110 }} value={proxTurmaHora} onChange={e => setProxTurmaHora(e.target.value)} />
                   </div>
                   <button onClick={confirmarProxTurma} disabled={!proxTurmaData}
-                    style={{ ...btnPrimary, background: '#7c3aed', marginTop: 8, width: '100%', opacity: proxTurmaData ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--accent)', marginTop: 8, width: '100%', opacity: proxTurmaData ? 1 : 0.5 }}>
                     Marcar próxima turma
                   </button>
                 </div>
@@ -1041,22 +1041,22 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               )}
 
               {mostrarPerda && (
-                <div style={{ marginTop: 12, padding: 12, background: '#450a0a', borderRadius: 8, border: '1px solid #f8717140' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--red-bg)', borderRadius: 8, border: '1px solid var(--red)' }}>
                   <label style={labelStyle}>Motivo da perda *</label>
                   <select style={{ ...inp, cursor: 'pointer' }} value={motivoSelecionado} onChange={e => setMotivoSelecionado(e.target.value)}>
                     <option value="">Selecione</option>
                     {motivosPerda.map(m => <option key={m.id} value={m.id}>{m.nome}</option>)}
                   </select>
                   <button onClick={confirmarPerda} disabled={!motivoSelecionado}
-                    style={{ ...btnPrimary, background: '#dc2626', marginTop: 8, width: '100%', opacity: motivoSelecionado ? 1 : 0.5 }}>
+                    style={{ ...btnPrimary, background: 'var(--red)', marginTop: 8, width: '100%', opacity: motivoSelecionado ? 1 : 0.5 }}>
                     Confirmar perda
                   </button>
                 </div>
               )}
             </div>
 
-            <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
+            <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <input style={inp} placeholder="Adicionar anotação..." value={novoAndamento} onChange={e => setNovoAndamento(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') adicionarAndamento() }} />
@@ -1064,15 +1064,15 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
                 {andamentos.map(a => (
-                  <div key={a.id} style={{ padding: 10, background: '#1c1c1e', borderRadius: 6, fontSize: 12 }}>
-                    <div style={{ color: '#d1d1d1' }}>{a.observacao}</div>
-                    <div style={{ color: '#6b7280', fontSize: 10, marginTop: 4 }}>
-                      {a.tipo && a.tipo !== 'observacao' && <span style={{ color: '#a78bfa', marginRight: 6 }}>[{a.tipo}]</span>}
+                  <div key={a.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 6, fontSize: 12 }}>
+                    <div style={{ color: 'var(--text-2)' }}>{a.observacao}</div>
+                    <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
+                      {a.tipo && a.tipo !== 'observacao' && <span style={{ color: 'var(--accent-soft)', marginRight: 6 }}>[{a.tipo}]</span>}
                       {new Date(a.criado_em).toLocaleString('pt-BR')}
                     </div>
                   </div>
                 ))}
-                {andamentos.length === 0 && <p style={{ fontSize: 12, color: '#6b7280' }}>Nenhum andamento registrado.</p>}
+                {andamentos.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhum andamento registrado.</p>}
               </div>
             </div>
           </>
@@ -1082,7 +1082,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           <div>
             {!novoLead && lead && podeExcluir && (
               <button onClick={excluir} disabled={excluindo}
-                style={{ background: '#450a0a', color: '#f87171', border: '1px solid #f8717140', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
+                style={{ background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
                 {excluindo ? 'Excluindo...' : '🗑 Excluir lead'}
               </button>
             )}
@@ -1224,52 +1224,52 @@ function ChatLead({ lead }: { lead: Lead }) {
     if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
     if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
-    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: '#60a5fa', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
     if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
     return null
   }
 
   return (
-    <div style={{ borderTop: '1px solid #3a3a3c', paddingTop: 14 }}>
+    <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 12, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</div>
         <button onClick={() => { setMostrarVincular(v => !v); setBuscaConv(''); setConvResultados([]) }}
-          style={{ background: 'none', border: '1px solid #3a3a3c', borderRadius: 6, color: '#9ca3af', fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>
           🔗 Vincular conversa
         </button>
       </div>
       {mostrarVincular && (
-        <div style={{ marginBottom: 8, background: '#1c1c1e', border: '1px solid #3a3a3c', borderRadius: 8, padding: 10 }}>
-          <div style={{ fontSize: 11, color: '#6b7280', marginBottom: 6 }}>Busca por nome ou telefone e vincula a este lead — útil quando o cliente fala de um número diferente do cadastrado.</div>
+        <div style={{ marginBottom: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6 }}>Busca por nome ou telefone e vincula a este lead — útil quando o cliente fala de um número diferente do cadastrado.</div>
           <input style={inp} placeholder="Nome ou telefone..." value={buscaConv}
             onChange={e => { setBuscaConv(e.target.value); buscarConversas(e.target.value) }} />
           <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
             {convResultados.map(c => (
               <button key={c.id} onClick={() => vincularConversa(c.id)}
-                style={{ textAlign: 'left', background: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: 6, padding: '6px 8px', color: '#fff', fontSize: 12, cursor: 'pointer' }}>
-                {c.nome || c.telefone} <span style={{ color: '#6b7280' }}>· {c.telefone}</span>
-                {c.lead_id && <span style={{ color: '#fbbf24' }}> (já vinculada)</span>}
+                style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }}>
+                {c.nome || c.telefone} <span style={{ color: 'var(--text-faint)' }}>· {c.telefone}</span>
+                {c.lead_id && <span style={{ color: 'var(--amber)' }}> (já vinculada)</span>}
               </button>
             ))}
-            {buscaConv && convResultados.length === 0 && <div style={{ fontSize: 11, color: '#6b7280' }}>Nenhuma conversa encontrada.</div>}
+            {buscaConv && convResultados.length === 0 && <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nenhuma conversa encontrada.</div>}
           </div>
         </div>
       )}
-      <div style={{ background: '#1c1c1e', borderRadius: 8, padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
-        {mensagens.length === 0 && <p style={{ fontSize: 12, color: '#6b7280', textAlign: 'center', margin: '12px 0' }}>Nenhuma mensagem ainda. Manda a primeira!</p>}
+      <div style={{ background: 'var(--bg)', borderRadius: 8, padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {mensagens.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', margin: '12px 0' }}>Nenhuma mensagem ainda. Manda a primeira!</p>}
         {mensagens.map(m => {
           const eu = m.direcao === 'enviada'
           return (
             <div key={m.id} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '78%' }}>
-              <div style={{ background: eu ? '#075E54' : '#2c2c2e', border: eu ? 'none' : '1px solid #3a3a3c', borderRadius: 10, padding: '8px 10px' }}>
-                {m.texto && m.tipo === 'texto' && <div style={{ fontSize: 13, color: '#fff', whiteSpace: 'pre-wrap' }}>{m.texto}</div>}
+              <div style={{ background: eu ? '#075E54' : 'var(--surface)', border: eu ? 'none' : '1px solid var(--border)', borderRadius: 10, padding: '8px 10px' }}>
+                {m.texto && m.tipo === 'texto' && <div style={{ fontSize: 13, color: eu ? 'var(--on-accent)' : 'var(--text)', whiteSpace: 'pre-wrap' }}>{m.texto}</div>}
                 {m.tipo !== 'texto' && (
                   <>
                     {renderMidia(m)}
-                    {m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: '#d1d1d1', marginTop: 4 }}>{m.texto}</div>}
+                    {m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>{m.texto}</div>}
                   </>
                 )}
-                <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : '#6b7280', marginTop: 4, textAlign: 'right' }}>
+                <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : 'var(--text-faint)', marginTop: 4, textAlign: 'right' }}>
                   {new Date(m.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </div>
               </div>
@@ -1284,7 +1284,7 @@ function ChatLead({ lead }: { lead: Lead }) {
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
-          style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 44, padding: '8px' }}>📎</button>
+          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
         <input style={inp} placeholder="Mensagem..." value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
@@ -1295,18 +1295,18 @@ function ChatLead({ lead }: { lead: Lead }) {
           </button>
         ) : gravando ? (
           <button onClick={pararGravacao}
-            style={{ ...btnPrimary, background: '#dc2626', minWidth: 70 }}>
+            style={{ ...btnPrimary, background: 'var(--red)', minWidth: 70 }}>
             ⏹ Parar
           </button>
         ) : (
           <button onClick={iniciarGravacao} disabled={enviando} title="Gravar áudio"
-            style={{ ...btnPrimary, background: '#3a3a3c', minWidth: 70 }}>
+            style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 70 }}>
             🎤
           </button>
         )}
       </div>
-      {gravando && <div style={{ fontSize: 11, color: '#f87171', marginTop: 6 }}>● Gravando... clica em Parar pra enviar</div>}
-      {erro && <div style={{ fontSize: 11, color: '#f87171', marginTop: 6 }}>{erro}</div>}
+      {gravando && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 6 }}>● Gravando... clica em Parar pra enviar</div>}
+      {erro && <div style={{ fontSize: 11, color: 'var(--red)', marginTop: 6 }}>{erro}</div>}
     </div>
   )
 }
@@ -1464,22 +1464,22 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
     } catch (e: any) { setMensagem('Erro: ' + (e?.message || '')) } finally { setSalvando(false) }
   }
 
-  const labelStyle = { fontSize: 12, color: '#9ca3af', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
 
   return (
-    <div style={{ marginTop: 12, padding: 16, background: '#052e16', borderRadius: 8, border: '1px solid #4ade8040' }}>
-      <div style={{ fontSize: 13, fontWeight: 600, color: '#4ade80', marginBottom: 12 }}>
+    <div style={{ marginTop: 12, padding: 16, background: 'var(--green-bg)', borderRadius: 8, border: '1px solid var(--green-strong)' }}>
+      <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--green-strong)', marginBottom: 12 }}>
         {modoVenda ? 'Cadastrar nova venda (dados do lead)' : 'Marcar ganho'}
       </div>
 
       {!turma && (
-        <p style={{ fontSize: 12, color: '#f87171' }}>
+        <p style={{ fontSize: 12, color: 'var(--red)' }}>
           Este lead não está vinculado a uma turma. Vincule uma turma primeiro.
         </p>
       )}
 
       {turma && carregando && (
-        <p style={{ fontSize: 12, color: '#9ca3af' }}>Carregando...</p>
+        <p style={{ fontSize: 12, color: 'var(--text-muted)' }}>Carregando...</p>
       )}
 
       {/* MODO VINCULAR: matrícula existente + atalho pra cadastrar nova */}
@@ -1487,17 +1487,17 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
         <>
           {matriculas.length > 0 ? (
             <>
-              <div style={{ fontSize: 11, color: '#9ca3af', marginBottom: 8 }}>Selecione a matrícula deste lead:</div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 8 }}>Selecione a matrícula deste lead:</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
                 {matriculas.map(m => (
                   <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
-                    style={{ padding: 10, borderRadius: 6, cursor: 'pointer', border: matriculaSelecionada === m.id ? '2px solid #4ade80' : '1px solid #3a3a3c', background: matriculaSelecionada === m.id ? '#052e16' : '#1c1c1e' }}>
+                    style={{ padding: 10, borderRadius: 6, cursor: 'pointer', border: matriculaSelecionada === m.id ? '2px solid var(--green-strong)' : '1px solid var(--border)', background: matriculaSelecionada === m.id ? 'var(--green-bg)' : 'var(--bg)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
-                        <div style={{ fontSize: 13, color: '#fff', fontWeight: 500 }}>{m.aluno_nome}</div>
-                        <div style={{ fontSize: 10, color: '#6b7280', marginTop: 2 }}>{m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}{new Date(m.data_compra).toLocaleDateString('pt-BR')}</div>
+                        <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{m.aluno_nome}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>{m.aluno_cpf && `CPF: ${m.aluno_cpf} · `}{new Date(m.data_compra).toLocaleDateString('pt-BR')}</div>
                       </div>
-                      <div style={{ fontSize: 13, color: '#34d399', fontWeight: 600 }}>R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                      <div style={{ fontSize: 13, color: 'var(--green)', fontWeight: 600 }}>R$ {m.valor_pago.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
                     </div>
                   </div>
                 ))}
@@ -1506,15 +1506,15 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
                 <label style={labelStyle}>Motivo do ganho (opcional)</label>
                 <textarea style={{ ...inp, resize: 'none', minHeight: 50 }} rows={2} placeholder="Ex: Fechou na virada do lote, cliente decidido" value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} />
               </div>
-              {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
-              <button onClick={confirmar} disabled={!matriculaSelecionada || salvando} style={{ ...btnPrimary, background: '#16a34a', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
+              {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)' }}>{mensagem}</p>}
+              <button onClick={confirmar} disabled={!matriculaSelecionada || salvando} style={{ ...btnPrimary, background: 'var(--green)', marginTop: 12, width: '100%', opacity: (matriculaSelecionada && !salvando) ? 1 : 0.5 }}>
                 {salvando ? 'Vinculando...' : 'Confirmar vinculação'}
               </button>
             </>
           ) : (
-            <p style={{ fontSize: 12, color: '#9ca3af', marginBottom: 4 }}>Nenhuma matrícula existente pra vincular. Cadastre a venda com os dados do lead:</p>
+            <p style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>Nenhuma matrícula existente pra vincular. Cadastre a venda com os dados do lead:</p>
           )}
-          <button onClick={() => { setMensagem(''); setModoVenda(true) }} style={{ ...btnPrimary, background: matriculas.length > 0 ? '#3a3a3c' : '#16a34a', marginTop: 10, width: '100%' }}>
+          <button onClick={() => { setMensagem(''); setModoVenda(true) }} style={{ ...btnPrimary, background: matriculas.length > 0 ? 'var(--surface-2)' : 'var(--green)', marginTop: 10, width: '100%' }}>
             + Cadastrar nova venda (dados do lead)
           </button>
         </>
@@ -1544,11 +1544,11 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
             </div>
             <div style={{ gridColumn: '1 / -1' }}><label style={labelStyle}>Motivo do ganho (opcional)</label><textarea style={{ ...inp, resize: 'none', minHeight: 44 }} rows={2} value={motivoGanho} onChange={e => setMotivoGanho(e.target.value)} /></div>
           </div>
-          {vForma === 'cartao' && <p style={{ fontSize: 10, color: '#6b7280', marginTop: 6 }}>Cartão entra como 1 lançamento (lança o valor que cair na caixa).</p>}
-          {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? '#f87171' : '#34d399' }}>{mensagem}</p>}
+          {vForma === 'cartao' && <p style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 6 }}>Cartão entra como 1 lançamento (lança o valor que cair na caixa).</p>}
+          {mensagem && <p style={{ marginTop: 10, fontSize: 12, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)' }}>{mensagem}</p>}
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button onClick={() => setModoVenda(false)} disabled={salvando} style={{ ...btnSecondary }}>Voltar</button>
-            <button onClick={cadastrarVenda} disabled={salvando} style={{ ...btnPrimary, background: '#16a34a', flex: 1, opacity: salvando ? 0.6 : 1 }}>
+            <button onClick={cadastrarVenda} disabled={salvando} style={{ ...btnPrimary, background: 'var(--green)', flex: 1, opacity: salvando ? 0.6 : 1 }}>
               {salvando ? 'Cadastrando...' : '✓ Cadastrar venda e dar ganho'}
             </button>
           </div>

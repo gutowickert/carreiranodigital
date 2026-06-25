@@ -8,11 +8,11 @@ type Conta = { id: string; nome: string; tipo: string; unidade: string; saldo_in
 type Lanc = { id: string; tipo: string; categoria: string; descricao: string; valor: number; status: string; data_vencimento: string; data_pagamento: string | null; conta_id: string | null }
 type Transf = { id: string; conta_origem_id: string; conta_destino_id: string; valor: number; data_transferencia: string; descricao: string | null }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' } as React.CSSProperties
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
+const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const categoriaNome: Record<string, string> = { pessoal: 'Pessoal', estrutura: 'Estrutura', sistemas: 'Sistemas', marketing: 'Marketing', imposto: 'Imposto', outro: 'Outro' }
 
@@ -138,8 +138,8 @@ export default function FluxoCaixa() {
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
         <div>
-          <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff', margin: 0 }}>Fluxo de caixa</h1>
-          <p style={{ fontSize: '13px', color: '#6b7280', marginTop: '4px' }}>Entradas, saídas e saldo do mês — dinheiro real</p>
+          <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Fluxo de caixa</h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginTop: '4px' }}>Entradas, saídas e saldo do mês — dinheiro real</p>
         </div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Link href="/dashboard/financeiro" style={{ ...btnSecondary, textDecoration: 'none' }}>Financeiro</Link>
@@ -150,7 +150,7 @@ export default function FluxoCaixa() {
 
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
         <button onClick={() => mudarMes(-1)} style={btnSecondary}>←</button>
-        <span style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', minWidth: '160px', textAlign: 'center', textTransform: 'capitalize' }}>{tituloMes}</span>
+        <span style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', minWidth: '160px', textAlign: 'center', textTransform: 'capitalize' }}>{tituloMes}</span>
         <button onClick={() => mudarMes(1)} style={btnSecondary}>→</button>
         <select value={filtroConta} onChange={e => setFiltroConta(e.target.value)} style={{ ...select, width: 'auto', marginLeft: '8px' }}>
           <option value="">Consolidado (todas as caixas)</option>
@@ -188,7 +188,7 @@ export default function FluxoCaixa() {
             </select>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
-            {msg && <span style={{ fontSize: '13px', color: msg.includes('Erro') ? '#f87171' : '#34d399', marginRight: 'auto' }}>{msg}</span>}
+            {msg && <span style={{ fontSize: '13px', color: msg.includes('Erro') ? 'var(--red)' : 'var(--green)', marginRight: 'auto' }}>{msg}</span>}
             <button type="button" onClick={() => setNovo(false)} style={btnSecondary}>Cancelar</button>
             <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Salvando...' : 'Lançar'}</button>
           </div>
@@ -196,39 +196,39 @@ export default function FluxoCaixa() {
       )}
 
       {carregando ? (
-        <p style={{ fontSize: '13px', color: '#6b7280' }}>Carregando...</p>
+        <p style={{ fontSize: '13px', color: 'var(--text-faint)' }}>Carregando...</p>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
             <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo inicial do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoInicial >= 0 ? '#ffffff' : '#f87171' }}>{fmt(resumo.saldoInicial)}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo inicial do mês</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoInicial >= 0 ? 'var(--text)' : 'var(--red)' }}>{fmt(resumo.saldoInicial)}</div>
             </div>
             <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Entradas</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#34d399' }}>{fmt(resumo.entradas)}</div>
-              {entradasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>previstas: {fmt(entradasPrev)}</div>}
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Entradas</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--green)' }}>{fmt(resumo.entradas)}</div>
+              {entradasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>previstas: {fmt(entradasPrev)}</div>}
             </div>
             <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saídas</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: '#f87171' }}>{fmt(resumo.saidas)}</div>
-              {saidasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>previstas: {fmt(saidasPrev)}</div>}
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saídas</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--red)' }}>{fmt(resumo.saidas)}</div>
+              {saidasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>previstas: {fmt(saidasPrev)}</div>}
             </div>
-            <div style={{ ...card, padding: '20px', borderColor: '#7c3aed' }}>
-              <div style={{ fontSize: '11px', color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo final do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoFinal >= 0 ? '#34d399' : '#f87171' }}>{fmt(resumo.saldoFinal)}</div>
-              {!filtroConta && <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>projetado (c/ previstos): {fmt(saldoProjetado)}</div>}
+            <div style={{ ...card, padding: '20px', borderColor: 'var(--accent)' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo final do mês</div>
+              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoFinal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(resumo.saldoFinal)}</div>
+              {!filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>projetado (c/ previstos): {fmt(saldoProjetado)}</div>}
             </div>
           </div>
 
           {!filtroConta && (
             <div style={{ ...card, padding: 0, overflow: 'hidden', marginBottom: '24px' }}>
-              <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>Por caixa</div>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Por caixa</div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Caixa', 'Saldo inicial', 'Entradas', 'Saídas', 'Transf.', 'Saldo final'].map((h, i) => (
-                      <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 20px', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                      <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 20px', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -236,13 +236,13 @@ export default function FluxoCaixa() {
                   {contas.map(c => {
                     const r = calcCaixa(c.id, c.saldo_inicial)
                     return (
-                      <tr key={c.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', color: '#ffffff' }}>{c.nome}</td>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', color: '#9ca3af', textAlign: 'right' }}>{fmt(r.saldoInicial)}</td>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', color: '#34d399', textAlign: 'right' }}>{fmt(r.entradas)}</td>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{fmt(r.saidas)}</td>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', color: r.transf >= 0 ? '#9ca3af' : '#f87171', textAlign: 'right' }}>{r.transf !== 0 ? fmt(r.transf) : '—'}</td>
-                        <td style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '600', color: r.saldoFinal >= 0 ? '#34d399' : '#f87171', textAlign: 'right' }}>{fmt(r.saldoFinal)}</td>
+                      <tr key={c.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--text)' }}>{c.nome}</td>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--text-muted)', textAlign: 'right' }}>{fmt(r.saldoInicial)}</td>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--green)', textAlign: 'right' }}>{fmt(r.entradas)}</td>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--red)', textAlign: 'right' }}>{fmt(r.saidas)}</td>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', color: r.transf >= 0 ? 'var(--text-muted)' : 'var(--red)', textAlign: 'right' }}>{r.transf !== 0 ? fmt(r.transf) : '—'}</td>
+                        <td style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '600', color: r.saldoFinal >= 0 ? 'var(--green)' : 'var(--red)', textAlign: 'right' }}>{fmt(r.saldoFinal)}</td>
                       </tr>
                     )
                   })}
@@ -252,29 +252,29 @@ export default function FluxoCaixa() {
           )}
 
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            <div style={{ padding: '14px 20px', borderBottom: '1px solid #3a3a3c', fontSize: '14px', fontWeight: '600', color: '#d1d1d1' }}>
+            <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>
               Extrato do mês {contaSel ? `· ${contaSel.nome}` : '· consolidado'} ({extrato.length})
             </div>
             {extrato.length === 0 ? (
-              <p style={{ padding: '20px', fontSize: '13px', color: '#6b7280' }}>Nenhum movimento realizado neste mês.</p>
+              <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Nenhum movimento realizado neste mês.</p>
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)' }}>
                     {['Data', 'Descrição', 'Categoria', 'Entrada', 'Saída', 'Saldo'].map((h, i) => (
-                      <th key={h} style={{ textAlign: i >= 3 ? 'right' : 'left', padding: '10px 20px', fontSize: '11px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                      <th key={h} style={{ textAlign: i >= 3 ? 'right' : 'left', padding: '10px 20px', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {extrato.map(l => (
-                    <tr key={l.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                      <td style={{ padding: '10px 20px', fontSize: '12px', color: '#9ca3af' }}>{new Date(dataEf(l) + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '13px', color: '#ffffff' }}>{l.descricao}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '12px', color: '#9ca3af' }}>{categoriaNome[l.categoria] || l.categoria}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '13px', color: '#34d399', textAlign: 'right' }}>{l.tipo === 'receita' ? fmt(l.valor) : ''}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '13px', color: '#f87171', textAlign: 'right' }}>{l.tipo === 'custo' ? fmt(l.valor) : ''}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '600', color: l.saldo >= 0 ? '#d1d1d1' : '#f87171', textAlign: 'right' }}>{fmt(l.saldo)}</td>
+                    <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                      <td style={{ padding: '10px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(dataEf(l) + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--text)' }}>{l.descricao}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{categoriaNome[l.categoria] || l.categoria}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--green)', textAlign: 'right' }}>{l.tipo === 'receita' ? fmt(l.valor) : ''}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--red)', textAlign: 'right' }}>{l.tipo === 'custo' ? fmt(l.valor) : ''}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '600', color: l.saldo >= 0 ? 'var(--text-2)' : 'var(--red)', textAlign: 'right' }}>{fmt(l.saldo)}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -1,3 +1,62 @@
+/* ============================================================
+   TEMA (claro/escuro) — tokens de cor
+   Use SEMPRE var(--token) nos estilos, nunca hex fixo.
+   Escuro é o padrão (:root); claro entra com [data-theme="light"].
+   ============================================================ */
+:root {
+  /* superfícies */
+  --bg: #1c1c1e;            /* fundo da página */
+  --surface: #2c2c2e;      /* cards / painéis */
+  --surface-2: #3a3a3c;    /* inputs / chips / botão secundário */
+  --surface-sel: #1c1c1e;  /* item selecionado/hover em lista */
+  --border: #3a3a3c;
+  --border-strong: #48484a;
+  /* texto */
+  --text: #ffffff;         /* títulos / texto principal */
+  --text-2: #d1d1d1;       /* texto secundário */
+  --text-muted: #9ca3af;   /* rótulos / apoio */
+  --text-faint: #6b7280;   /* bem fraco */
+  --on-accent: #ffffff;    /* texto SOBRE cor (botão roxo/verde) — não muda */
+  /* marca */
+  --accent: #7c3aed;
+  --accent-soft: #a78bfa;  /* texto/ícone roxo claro */
+  --accent-bg: #2e1065;    /* fundo de selo roxo */
+  /* status */
+  --green: #34d399;  --green-strong: #4ade80;  --green-bg: #052e16;
+  --red: #f87171;    --red-bg: #450a0a;
+  --amber: #fbbf24;  --amber-bg: #431407;
+  --blue: #60a5fa;   --blue-bg: #172554;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+
+:root[data-theme="light"] {
+  /* TEMA CLARO — branco limpo + roxo da marca */
+  --bg: #f7f7f8;
+  --surface: #ffffff;
+  --surface-2: #f3f4f6;
+  --surface-sel: #f1edfd;
+  --border: #e5e7eb;
+  --border-strong: #d1d5db;
+  --text: #1f2937;
+  --text-2: #374151;
+  --text-muted: #6b7280;
+  --text-faint: #9ca3af;
+  --on-accent: #ffffff;
+  --accent: #7c3aed;
+  --accent-soft: #7c3aed;
+  --accent-bg: #ede9fe;
+  --green: #16a34a;  --green-strong: #16a34a;  --green-bg: #dcfce7;
+  --red: #dc2626;    --red-bg: #fee2e2;
+  --amber: #d97706;  --amber-bg: #fef3c7;
+  --blue: #2563eb;   --blue-bg: #dbeafe;
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+html, body { background: var(--bg); color: var(--text); }
+body { transition: background-color .2s ease, color .2s ease; }
+input, textarea, select { color: var(--text); }
+input::placeholder, textarea::placeholder { color: var(--text-faint); }
+
 /* Adaptações mobile */
 @media (max-width: 768px) {
   /* Tabelas com scroll horizontal */

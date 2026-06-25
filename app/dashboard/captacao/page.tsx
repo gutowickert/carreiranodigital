@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '14px' } as React.CSSProperties
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: '#fff', outline: 'none' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px' } as React.CSSProperties
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 
 function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 function fmt0(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) }
@@ -16,9 +16,9 @@ function diasEntre(a: string, b: string) { return Math.round((new Date(b + 'T12:
 // Canais de origem do lead.
 // anúncio = tem UTM (casou com um clique de anúncio) · disparo = origem 'disparo' · resto = orgânico/direto
 const CANAL = {
-  anuncio: { nome: 'Anúncio', cor: '#a78bfa' },
-  disparo: { nome: 'Disparo', cor: '#38bdf8' },
-  organico: { nome: 'Orgânico', cor: '#6b7280' },
+  anuncio: { nome: 'Anúncio', cor: 'var(--accent-soft)' },
+  disparo: { nome: 'Disparo', cor: 'var(--blue)' },
+  organico: { nome: 'Orgânico', cor: 'var(--text-faint)' },
 }
 function canalDoLead(l: any): 'anuncio' | 'disparo' | 'organico' {
   if (l.utm_campaign || l.utm_content) return 'anuncio'
@@ -26,7 +26,7 @@ function canalDoLead(l: any): 'anuncio' | 'disparo' | 'organico' {
   return 'organico'
 }
 
-const CORES = { verde: '#34d399', amarelo: '#fbbf24', vermelho: '#f87171' }
+const CORES = { verde: 'var(--green)', amarelo: 'var(--amber)', vermelho: 'var(--red)' }
 const ETAPA_LABEL: Record<string, string> = {
   aguardando_atendimento: 'Aguardando atendimento', em_atendimento: 'Em atendimento',
   qualificado: 'Qualificado', proposta: 'Proposta enviada', negociacao: 'Negociação',
@@ -169,29 +169,29 @@ export default function Captacao() {
     ['Últimos 30 dias', addDays(hoje, -29)],
   ]
 
-  if (carregando) return <div style={{ padding: 40, color: '#6b7280' }}>Carregando captação...</div>
+  if (carregando) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>Carregando captação...</div>
 
   return (
     <div style={{ padding: '32px 40px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Captação</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Por turma: leads, origem, custo e saúde · onde o lead trava · carga por vendedor</p>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Captação</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Por turma: leads, origem, custo e saúde · onde o lead trava · carga por vendedor</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           {PRESETS.map(([label, dDe]) => (
             <button key={label} onClick={() => { setDe(dDe); setAte(hoje); setPreset(label) }}
-              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: '#7c3aed', borderColor: '#7c3aed', color: '#fff' } : {}) }}>{label}</button>
+              style={{ ...inp, cursor: 'pointer', ...(preset === label ? { background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' } : {}) }}>{label}</button>
           ))}
           <input type="date" value={de} onChange={e => { setDe(e.target.value); setPreset('') }} style={inp} />
-          <span style={{ color: '#6b7280' }}>—</span>
+          <span style={{ color: 'var(--text-faint)' }}>—</span>
           <input type="date" value={ate} onChange={e => { setAte(e.target.value); setPreset('') }} style={inp} />
         </div>
       </div>
 
       {!spend.ok && (
-        <div style={{ ...card, padding: 14, marginBottom: 16, borderColor: '#7f1d1d', background: '#2a1414' }}>
-          <span style={{ fontSize: 13, color: '#f87171' }}>Sem gasto real do Meta no período{spend.error ? `: ${spend.error}` : ''}. CPL e a ação por verba ficam parciais até a API responder.</span>
+        <div style={{ ...card, padding: 14, marginBottom: 16, borderColor: 'var(--red-bg)', background: 'var(--red-bg)' }}>
+          <span style={{ fontSize: 13, color: 'var(--red)' }}>Sem gasto real do Meta no período{spend.error ? `: ${spend.error}` : ''}. CPL e a ação por verba ficam parciais até a API responder.</span>
         </div>
       )}
 
@@ -199,22 +199,22 @@ export default function Captacao() {
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 10 }}>
         <KpiCard label="Leads no período" valor={String(totLeads)} />
         <KpiCard label="Vindos de anúncio" valor={pct(totLeads ? totAnuncio / totLeads : 0)} sub={`${totAnuncio} de ${totLeads}`} cor={CANAL.anuncio.cor} />
-        <KpiCard label="Matrículas" valor={String(totVendas)} sub={`Conversão ${pct(totLeads ? totVendas / totLeads : 0)}`} cor="#34d399" />
-        <KpiCard label="Receita" valor={fmt0(totReceita)} cor="#34d399" />
-        <KpiCard label="Investido" valor={fmt0(totInvest)} cor="#f87171" />
+        <KpiCard label="Matrículas" valor={String(totVendas)} sub={`Conversão ${pct(totLeads ? totVendas / totLeads : 0)}`} cor="var(--green)" />
+        <KpiCard label="Receita" valor={fmt0(totReceita)} cor="var(--green)" />
+        <KpiCard label="Investido" valor={fmt0(totInvest)} cor="var(--red)" />
         <KpiCard label="CPL médio" valor={fmt(cplMedio)} sub="investido ÷ leads" />
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 24px', fontSize: 12, color: '#6b7280', flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '6px 0 24px', fontSize: 12, color: 'var(--text-faint)', flexWrap: 'wrap' }}>
         <span>CPL alvo = </span>
         <input type="number" value={alvoPct} min={1} max={20} onChange={e => setAlvoPct(Number(e.target.value) || 0)} style={{ ...inp, width: 60, padding: '4px 8px' }} />
         <span>% do ticket da turma · acima disso o CPL fica vermelho e a ação vira “trocar criativo”.</span>
       </div>
 
       {/* 1. Cards por turma */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>1. Turmas: captação e saúde</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 14px' }}>Borda colorida = risco de fechar a turma (🔴/🟡/🟢). A pílula = o que fazer com a verba.</p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>1. Turmas: captação e saúde</h2>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 14px' }}>Borda colorida = risco de fechar a turma (🔴/🟡/🟢). A pílula = o que fazer com a verba.</p>
       {cards.length === 0 ? (
-        <div style={{ ...card, padding: 28, color: '#6b7280', fontSize: 13, marginBottom: 32 }}>Sem leads, gasto ou matrículas no período.</div>
+        <div style={{ ...card, padding: 28, color: 'var(--text-faint)', fontSize: 13, marginBottom: 32 }}>Sem leads, gasto ou matrículas no período.</div>
       ) : (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16, marginBottom: 36 }}>
           {cards.map(c => {
@@ -223,9 +223,9 @@ export default function Captacao() {
               <div key={c.t.id} style={{ ...card, padding: 18, borderTop: `3px solid ${CORES[c.saude.nivel]}`, display: 'flex', flexDirection: 'column', gap: 13 }}>
                 {/* header + situação */}
                 <div>
-                  <div style={{ fontSize: 15, fontWeight: 700, color: '#fff', lineHeight: 1.2 }}>{c.t.produtos?.nome} <span style={{ color: '#9ca3af', fontWeight: 500 }}>— {c.t.cidades?.nome}</span></div>
+                  <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--text)', lineHeight: 1.2 }}>{c.t.produtos?.nome} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>— {c.t.cidades?.nome}</span></div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8, marginTop: 4 }}>
-                    <span style={{ fontSize: 11, color: '#6b7280', fontFamily: 'monospace' }}>{c.t.codigo}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>{c.t.codigo}</span>
                     <span style={{ fontSize: 11, color: CORES[c.saude.nivel], fontWeight: 600, textAlign: 'right' }}>{c.saude.motivo}</span>
                   </div>
                 </div>
@@ -233,29 +233,29 @@ export default function Captacao() {
                 {/* leads + barra de canais */}
                 <div>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                    <span style={{ fontSize: 34, fontWeight: 800, color: '#fff', lineHeight: 1 }}>{c.total}</span>
-                    <span style={{ fontSize: 12, color: '#9ca3af' }}>leads no período</span>
+                    <span style={{ fontSize: 34, fontWeight: 800, color: 'var(--text)', lineHeight: 1 }}>{c.total}</span>
+                    <span style={{ fontSize: 12, color: 'var(--text-muted)' }}>leads no período</span>
                   </div>
-                  <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 10, background: '#1c1c1e' }}>
+                  <div style={{ display: 'flex', height: 8, borderRadius: 4, overflow: 'hidden', marginTop: 10, background: 'var(--bg)' }}>
                     {barras.map(k => <div key={k} style={{ width: `${(c.canais[k] / c.total) * 100}%`, background: CANAL[k].cor }} />)}
                   </div>
                   <div style={{ display: 'flex', gap: 14, marginTop: 8, flexWrap: 'wrap' }}>
                     {(['anuncio', 'disparo', 'organico'] as const).map(k => (
-                      <span key={k} style={{ fontSize: 11, color: '#9ca3af', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                      <span key={k} style={{ fontSize: 11, color: 'var(--text-muted)', display: 'inline-flex', alignItems: 'center', gap: 5 }}>
                         <span style={{ width: 8, height: 8, borderRadius: 2, background: CANAL[k].cor, display: 'inline-block' }} />
-                        {CANAL[k].nome} <b style={{ color: '#fff' }}>{c.canais[k]}</b>
+                        {CANAL[k].nome} <b style={{ color: 'var(--text)' }}>{c.canais[k]}</b>
                       </span>
                     ))}
                   </div>
                 </div>
 
                 {/* mini-stats: aquisição + saúde */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, borderTop: '1px solid #3a3a3c', paddingTop: 12 }}>
-                  <Mini label="Investido" valor={c.gasto ? fmt0(c.gasto) : '—'} cor="#f87171" />
-                  <Mini label="CPL" valor={c.cpl ? fmt0(c.cpl) : '—'} cor={c.cpl && c.alvoCpl && c.cpl > c.alvoCpl ? '#f87171' : '#34d399'} />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                  <Mini label="Investido" valor={c.gasto ? fmt0(c.gasto) : '—'} cor="var(--red)" />
+                  <Mini label="CPL" valor={c.cpl ? fmt0(c.cpl) : '—'} cor={c.cpl && c.alvoCpl && c.cpl > c.alvoCpl ? 'var(--red)' : 'var(--green)'} />
                   <Mini label="Conversão" valor={pct(c.conv)} />
                   <Mini label="Matríc/meta" valor={`${c.mats}/${c.meta}`} />
-                  <Mini label="Margem prev." valor={c.margem ? fmt0(c.margem) : '—'} cor={c.margem >= 0 ? '#34d399' : '#f87171'} />
+                  <Mini label="Margem prev." valor={c.margem ? fmt0(c.margem) : '—'} cor={c.margem >= 0 ? 'var(--green)' : 'var(--red)'} />
                   <Mini label="Início" valor={c.dias > 0 ? `${c.dias}d` : c.dias === 0 ? 'hoje' : `−${-c.dias}d`} />
                 </div>
 
@@ -267,21 +267,21 @@ export default function Captacao() {
       )}
 
       {/* 2. Funil */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>2. Funil: onde os leads travam</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>2. Funil: onde os leads travam</h2>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>
         {gargalo
-          ? <>Maior gargalo: <b style={{ color: '#fbbf24' }}>{labelEtapa(gargalo.etapa)}</b> — {gargalo.count} leads parados há ~{gargalo.diasMedio.toFixed(0)} dias em média. Vale cobrar atendimento.</>
+          ? <>Maior gargalo: <b style={{ color: 'var(--amber)' }}>{labelEtapa(gargalo.etapa)}</b> — {gargalo.count} leads parados há ~{gargalo.diasMedio.toFixed(0)} dias em média. Vale cobrar atendimento.</>
           : 'Sem gargalo evidente.'}
       </p>
       <div style={{ ...card, padding: 16, marginBottom: 36 }}>
         {funil.map(f => (
           <div key={f.etapa} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '8px 0' }}>
-            <div style={{ width: 180, fontSize: 13, color: f.terminal ? '#6b7280' : '#d1d1d1' }}>{labelEtapa(f.etapa)}</div>
-            <div style={{ flex: 1, background: '#1c1c1e', borderRadius: 6, height: 22, position: 'relative', overflow: 'hidden' }}>
-              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(2, f.pctv * 100)}%`, background: f.terminal ? '#3a3a3c' : (gargalo && f.etapa === gargalo.etapa ? '#fbbf24' : '#7c3aed'), borderRadius: 6 }} />
-              <span style={{ position: 'absolute', left: 8, top: 3, fontSize: 12, color: '#fff', fontWeight: 600 }}>{f.count}</span>
+            <div style={{ width: 180, fontSize: 13, color: f.terminal ? 'var(--text-faint)' : 'var(--text-2)' }}>{labelEtapa(f.etapa)}</div>
+            <div style={{ flex: 1, background: 'var(--bg)', borderRadius: 6, height: 22, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, width: `${Math.max(2, f.pctv * 100)}%`, background: f.terminal ? 'var(--surface-2)' : (gargalo && f.etapa === gargalo.etapa ? 'var(--amber)' : 'var(--accent)'), borderRadius: 6 }} />
+              <span style={{ position: 'absolute', left: 8, top: 3, fontSize: 12, color: 'var(--text)', fontWeight: 600 }}>{f.count}</span>
             </div>
-            <div style={{ width: 90, textAlign: 'right', fontSize: 11, color: '#6b7280' }}>
+            <div style={{ width: 90, textAlign: 'right', fontSize: 11, color: 'var(--text-faint)' }}>
               {!f.terminal && f.diasMedio > 0 ? `~${f.diasMedio.toFixed(0)}d parado` : ''}
             </div>
           </div>
@@ -289,28 +289,28 @@ export default function Captacao() {
       </div>
 
       {/* 3. Vendedores */}
-      <h2 style={{ fontSize: 16, fontWeight: 700, color: '#fff', margin: '0 0 4px' }}>3. Leads por vendedor</h2>
-      <p style={{ fontSize: 12, color: '#6b7280', margin: '0 0 12px' }}>Quantos leads cada vendedor tem em mãos, por etapa.</p>
+      <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>3. Leads por vendedor</h2>
+      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>Quantos leads cada vendedor tem em mãos, por etapa.</p>
       <div style={{ ...card, padding: 0, overflowX: 'auto', marginBottom: 32 }}>
         <table style={{ width: '100%', borderCollapse: 'collapse' }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-              <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Vendedor</th>
-              <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, color: '#a78bfa', fontWeight: 600 }}>Total</th>
+            <tr style={{ borderBottom: '1px solid var(--border)' }}>
+              <th style={{ textAlign: 'left', padding: '10px 16px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Vendedor</th>
+              <th style={{ textAlign: 'right', padding: '10px 16px', fontSize: 11, color: 'var(--accent-soft)', fontWeight: 600 }}>Total</th>
               {etapasColunas.map(e => (
-                <th key={e} style={{ textAlign: 'right', padding: '10px 12px', fontSize: 11, color: '#6b7280', fontWeight: 500, whiteSpace: 'nowrap' }}>{labelEtapa(e)}</th>
+                <th key={e} style={{ textAlign: 'right', padding: '10px 12px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500, whiteSpace: 'nowrap' }}>{labelEtapa(e)}</th>
               ))}
             </tr>
           </thead>
           <tbody>
             {linhasVendedor.length === 0 ? (
-              <tr><td colSpan={2 + etapasColunas.length} style={{ padding: 20, fontSize: 13, color: '#6b7280' }}>Nenhum lead atribuído.</td></tr>
+              <tr><td colSpan={2 + etapasColunas.length} style={{ padding: 20, fontSize: 13, color: 'var(--text-faint)' }}>Nenhum lead atribuído.</td></tr>
             ) : linhasVendedor.map(r => (
-              <tr key={r.nome} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                <td style={{ padding: '12px 16px', fontSize: 13, color: r.nome === 'Sem vendedor' ? '#fbbf24' : '#fff' }}>{r.nome}</td>
-                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: '#fff', fontWeight: 700 }}>{r.total}</td>
+              <tr key={r.nome} style={{ borderBottom: '1px solid var(--border)' }}>
+                <td style={{ padding: '12px 16px', fontSize: 13, color: r.nome === 'Sem vendedor' ? 'var(--amber)' : 'var(--text)' }}>{r.nome}</td>
+                <td style={{ padding: '12px 16px', textAlign: 'right', fontSize: 13, color: 'var(--text)', fontWeight: 700 }}>{r.total}</td>
                 {etapasColunas.map(e => (
-                  <td key={e} style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, color: r.porEtapa[e] ? '#d1d1d1' : '#3f3f46' }}>{r.porEtapa[e] || 0}</td>
+                  <td key={e} style={{ padding: '12px 12px', textAlign: 'right', fontSize: 13, color: r.porEtapa[e] ? 'var(--text-2)' : 'var(--text-faint)' }}>{r.porEtapa[e] || 0}</td>
                 ))}
               </tr>
             ))}
@@ -339,37 +339,37 @@ function avaliarSaude({ mats, meta, dias, margem }: { mats: number; meta: number
 type Acao = { tipo: keyof typeof ordemAcao; label: string; sub?: string; emoji: string; cor: string }
 const ordemAcao = { cortar: 0, trocar: 1, subir: 2, segurar: 3, organico: 4, semdados: 5 }
 function decidir({ total, gasto, cpl, alvoCpl, mats, meta, dias }: { total: number; gasto: number; cpl: number; alvoCpl: number; mats: number; meta: number; dias: number }): Acao {
-  if (gasto <= 0) return total > 0 ? { tipo: 'organico', label: 'orgânico', sub: 'sem verba', emoji: '🌱', cor: '#34d399' } : { tipo: 'semdados', label: 'sem dados', emoji: '·', cor: '#6b7280' }
-  if (mats === 0 && total >= 8) return { tipo: 'cortar', label: 'cortar / revisar', sub: 'gastou, 0 matrícula', emoji: '⚫', cor: '#9ca3af' }
+  if (gasto <= 0) return total > 0 ? { tipo: 'organico', label: 'orgânico', sub: 'sem verba', emoji: '🌱', cor: 'var(--green)' } : { tipo: 'semdados', label: 'sem dados', emoji: '·', cor: 'var(--text-faint)' }
+  if (mats === 0 && total >= 8) return { tipo: 'cortar', label: 'cortar / revisar', sub: 'gastou, 0 matrícula', emoji: '⚫', cor: 'var(--text-muted)' }
   const atras = meta > 0 && mats < meta * 0.7 && dias <= 12
   const caro = alvoCpl > 0 && cpl > alvoCpl
-  if (atras && caro) return { tipo: 'trocar', label: 'trocar criativo', sub: 'CPL alto', emoji: '🔴', cor: '#f87171' }
-  if (atras && !caro) return { tipo: 'subir', label: 'subir verba', sub: 'CPL ok, falta volume', emoji: '🟢', cor: '#34d399' }
-  return { tipo: 'segurar', label: 'segurar', sub: 'no ritmo', emoji: '🟡', cor: '#fbbf24' }
+  if (atras && caro) return { tipo: 'trocar', label: 'trocar criativo', sub: 'CPL alto', emoji: '🔴', cor: 'var(--red)' }
+  if (atras && !caro) return { tipo: 'subir', label: 'subir verba', sub: 'CPL ok, falta volume', emoji: '🟢', cor: 'var(--green)' }
+  return { tipo: 'segurar', label: 'segurar', sub: 'no ritmo', emoji: '🟡', cor: 'var(--amber)' }
 }
 
 // ---------- componentes auxiliares ----------
 function Pill({ a }: { a: Acao }) {
   return (
     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, background: a.cor + '22', border: `1px solid ${a.cor}55`, color: a.cor, borderRadius: 999, padding: '5px 12px', fontSize: 12, fontWeight: 700 }}>
-      {a.emoji} {a.label}{a.sub && <span style={{ color: '#9ca3af', fontWeight: 400 }}>· {a.sub}</span>}
+      {a.emoji} {a.label}{a.sub && <span style={{ color: 'var(--text-muted)', fontWeight: 400 }}>· {a.sub}</span>}
     </div>
   )
 }
 function KpiCard({ label, valor, cor, sub }: { label: string; valor: string; cor?: string; sub?: string }) {
   return (
     <div style={{ ...card, padding: 16 }}>
-      <div style={{ fontSize: 11, color: '#9ca3af', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: cor || '#fff', marginTop: 6 }}>{valor}</div>
-      {sub && <div style={{ fontSize: 11, color: '#6b7280', marginTop: 4 }}>{sub}</div>}
+      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
+      <div style={{ fontSize: 22, fontWeight: 700, color: cor || 'var(--text)', marginTop: 6 }}>{valor}</div>
+      {sub && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{sub}</div>}
     </div>
   )
 }
 function Mini({ label, valor, cor }: { label: string; valor: string; cor?: string }) {
   return (
     <div>
-      <div style={{ fontSize: 10, color: '#6b7280', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
-      <div style={{ fontSize: 13, fontWeight: 600, color: cor || '#d1d1d1', marginTop: 3, whiteSpace: 'nowrap' }}>{valor}</div>
+      <div style={{ fontSize: 10, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.03em' }}>{label}</div>
+      <div style={{ fontSize: 13, fontWeight: 600, color: cor || 'var(--text-2)', marginTop: 3, whiteSpace: 'nowrap' }}>{valor}</div>
     </div>
   )
 }

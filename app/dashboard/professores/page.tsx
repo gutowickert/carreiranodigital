@@ -18,11 +18,11 @@ type Professor = {
   ativo: boolean
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 export default function Professores() {
   const [professores, setProfessores] = useState<Professor[]>([])
@@ -108,7 +108,7 @@ export default function Professores() {
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Professores</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>Professores</h1>
         <button onClick={() => aberto ? (setAberto(false), limparForm()) : abrirNovo()} style={btnPrimary}>
           {aberto ? 'Fechar' : '+ Cadastrar professor'}
         </button>
@@ -116,7 +116,7 @@ export default function Professores() {
 
       {aberto && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '16px' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>
             {editandoId ? 'Editar professor' : 'Novo professor'}
           </div>
           <form onSubmit={salvar}>
@@ -126,7 +126,7 @@ export default function Professores() {
 
             <div style={{ marginBottom: '12px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Tipo de pagamento</label>
+                <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Tipo de pagamento</label>
                 <select value={tipoPagamento} onChange={e => setTipoPagamento(e.target.value as any)} style={select}>
                   <option value="diaria_fixa">Diária fixa (R$ por dia)</option>
                   <option value="percentual_vendas">% sobre vendas (coprodução)</option>
@@ -135,12 +135,12 @@ export default function Professores() {
               <div>
                 {tipoPagamento === 'diaria_fixa' ? (
                   <>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>Diária R$ *</label>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Diária R$ *</label>
                     <input value={diaria} onChange={e => setDiaria(e.target.value)} type="number" step="0.01" required style={input} />
                   </>
                 ) : (
                   <>
-                    <label style={{ display: 'block', fontSize: '11px', color: '#9ca3af', marginBottom: '4px' }}>% sobre líquido *</label>
+                    <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>% sobre líquido *</label>
                     <input value={percentualVendas} onChange={e => setPercentualVendas(e.target.value)} type="number" step="0.01" required style={input} placeholder="Ex: 50 para 50%" />
                   </>
                 )}
@@ -169,60 +169,60 @@ export default function Professores() {
                 {salvando ? 'Salvando...' : (editandoId ? 'Atualizar' : 'Cadastrar')}
               </button>
             </div>
-            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{mensagem}</p>}
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--red)' }}>{mensagem}</p>}
           </form>
         </div>
       )}
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{professores.length} professor(es)</span>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{professores.length} professor(es)</span>
         </div>
         {professores.length === 0 ? (
-          <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>Nenhum professor cadastrado.</p>
+          <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>Nenhum professor cadastrado.</p>
         ) : (
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
-              <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
+              <tr style={{ borderBottom: '1px solid var(--border)' }}>
                 {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status', ''].map(h => (
-                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: '#6b7280', fontWeight: '500' }}>{h}</th>
+                  <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
             </thead>
             <tbody>
               {professores.map(p => (
-                <tr key={p.id} style={{ borderBottom: '1px solid #3a3a3c' }}>
+                <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
                   <td style={{ padding: '14px 24px' }}>
-                    <div style={{ fontSize: '14px', fontWeight: '500', color: '#ffffff' }}>{p.nome}</div>
-                    {p.email && <div style={{ fontSize: '12px', color: '#6b7280' }}>{p.email}</div>}
+                    <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{p.nome}</div>
+                    {p.email && <div style={{ fontSize: '12px', color: 'var(--text-faint)' }}>{p.email}</div>}
                   </td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', color: '#9ca3af' }}>{p.whatsapp || '-'}</td>
-                  <td style={{ padding: '14px 24px', fontSize: '13px', color: '#9ca3af' }}>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', color: 'var(--text-muted)' }}>{p.whatsapp || '-'}</td>
+                  <td style={{ padding: '14px 24px', fontSize: '13px', color: 'var(--text-muted)' }}>
                     {p.pix_chave ? (
                       <div>
                         <div>{p.pix_chave}</div>
-                        <div style={{ fontSize: '11px', color: '#6b7280', textTransform: 'uppercase' }}>{p.pix_tipo}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-faint)', textTransform: 'uppercase' }}>{p.pix_tipo}</div>
                       </div>
                     ) : '-'}
                   </td>
-                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '600', color: '#34d399' }}>
+                  <td style={{ padding: '14px 24px', fontSize: '14px', fontWeight: '600', color: 'var(--green)' }}>
                     {p.tipo_pagamento === 'percentual_vendas' ? (
                       <div>
                         {p.percentual_vendas || 0}%
-                        <div style={{ fontSize: '10px', color: '#a78bfa', textTransform: 'uppercase', marginTop: 2 }}>coprodução</div>
+                        <div style={{ fontSize: '10px', color: 'var(--accent-soft)', textTransform: 'uppercase', marginTop: 2 }}>coprodução</div>
                       </div>
                     ) : (
                       <>R$ {(p.diaria_reais || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
                     )}
                   </td>
                   <td style={{ padding: '14px 24px' }}>
-                    <button onClick={() => toggleAtivo(p.id, p.ativo)} style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: p.ativo ? '#052e16' : '#3a3a3c', color: p.ativo ? '#4ade80' : '#9ca3af' }}>
+                    <button onClick={() => toggleAtivo(p.id, p.ativo)} style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: p.ativo ? 'var(--green-bg)' : 'var(--surface-2)', color: p.ativo ? 'var(--green-strong)' : 'var(--text-muted)' }}>
                       {p.ativo ? 'Ativo' : 'Inativo'}
                     </button>
                   </td>
                   <td style={{ padding: '14px 24px' }}>
                     <button onClick={() => abrirEdicao(p)}
-                      style={{ background: 'none', border: 'none', color: '#a78bfa', fontSize: '12px', cursor: 'pointer' }}>
+                      style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: '12px', cursor: 'pointer' }}>
                       Editar
                     </button>
                   </td>

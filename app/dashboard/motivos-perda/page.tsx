@@ -11,10 +11,10 @@ type Motivo = {
   ordem: number
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#fff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
 
 export default function MotivosPerda() {
   const [motivos, setMotivos] = useState<Motivo[]>([])
@@ -77,15 +77,15 @@ export default function MotivosPerda() {
     <Layout>
       <div style={{ padding: '32px 40px' }}>
         <div style={{ marginBottom: 20 }}>
-          <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Motivos de Perda</h1>
-          <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>
+          <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Motivos de Perda</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>
             Razões que vendedores podem selecionar ao marcar um lead como perdido
           </p>
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? '#450a0a' : '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
@@ -103,25 +103,25 @@ export default function MotivosPerda() {
         </div>
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : motivos.length === 0 ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Nenhum motivo cadastrado.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Nenhum motivo cadastrado.</p>
           </div>
         ) : (
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Motivo</th>
-                  <th style={{ textAlign: 'center', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Status</th>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Motivo</th>
+                  <th style={{ textAlign: 'center', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Status</th>
                   <th style={{ padding: '12px 20px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {motivos.map(m => (
-                  <tr key={m.id} style={{ borderBottom: '1px solid #3a3a3c', opacity: m.ativo ? 1 : 0.5 }}>
-                    <td style={{ padding: '12px 20px', fontSize: 13, color: '#fff' }}>
+                  <tr key={m.id} style={{ borderBottom: '1px solid var(--border)', opacity: m.ativo ? 1 : 0.5 }}>
+                    <td style={{ padding: '12px 20px', fontSize: 13, color: 'var(--text)' }}>
                       {editando === m.id ? (
                         <input
                           autoFocus
@@ -137,8 +137,8 @@ export default function MotivosPerda() {
                     </td>
                     <td style={{ padding: '12px 20px', textAlign: 'center' }}>
                       <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4,
-                        background: m.ativo ? '#052e16' : '#3a3a3c',
-                        color: m.ativo ? '#34d399' : '#9ca3af',
+                        background: m.ativo ? 'var(--green-bg)' : 'var(--surface-2)',
+                        color: m.ativo ? 'var(--green)' : 'var(--text-muted)',
                         textTransform: 'uppercase', fontWeight: 600 }}>
                         {m.ativo ? 'Ativo' : 'Inativo'}
                       </span>
@@ -147,16 +147,16 @@ export default function MotivosPerda() {
                       <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
                         {editando === m.id ? (
                           <>
-                            <button onClick={() => salvarEdicao(m.id)} style={{ fontSize: 11, color: '#34d399', background: 'none', border: 'none', cursor: 'pointer' }}>Salvar</button>
-                            <button onClick={() => setEditando(null)} style={{ fontSize: 11, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>Cancelar</button>
+                            <button onClick={() => salvarEdicao(m.id)} style={{ fontSize: 11, color: 'var(--green)', background: 'none', border: 'none', cursor: 'pointer' }}>Salvar</button>
+                            <button onClick={() => setEditando(null)} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Cancelar</button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => { setEditando(m.id); setValorEdit(m.nome) }} style={{ fontSize: 11, color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
-                            <button onClick={() => alternarAtivo(m)} style={{ fontSize: 11, color: m.ativo ? '#fbbf24' : '#34d399', background: 'none', border: 'none', cursor: 'pointer' }}>
+                            <button onClick={() => { setEditando(m.id); setValorEdit(m.nome) }} style={{ fontSize: 11, color: 'var(--accent-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                            <button onClick={() => alternarAtivo(m)} style={{ fontSize: 11, color: m.ativo ? 'var(--amber)' : 'var(--green)', background: 'none', border: 'none', cursor: 'pointer' }}>
                               {m.ativo ? 'Desativar' : 'Ativar'}
                             </button>
-                            <button onClick={() => deletar(m)} style={{ fontSize: 11, color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>Deletar</button>
+                            <button onClick={() => deletar(m)} style={{ fontSize: 11, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}>Deletar</button>
                           </>
                         )}
                       </div>

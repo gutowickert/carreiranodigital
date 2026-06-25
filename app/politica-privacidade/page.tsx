@@ -1,6 +1,6 @@
 export const metadata = { title: 'Política de Privacidade — Carreira No Digital' }
 
-const wrap = { maxWidth: 820, margin: '0 auto', padding: '48px 24px', color: '#1f2937', fontFamily: 'system-ui, sans-serif', lineHeight: 1.7 } as React.CSSProperties
+const wrap = { maxWidth: 820, margin: '0 auto', padding: '48px 24px', color: 'var(--text)', fontFamily: 'system-ui, sans-serif', lineHeight: 1.7 } as React.CSSProperties
 const h1 = { fontSize: 28, fontWeight: 700, marginBottom: 8 } as React.CSSProperties
 const h2 = { fontSize: 18, fontWeight: 700, margin: '28px 0 8px' } as React.CSSProperties
 const p = { fontSize: 15, margin: '8px 0' } as React.CSSProperties
@@ -9,7 +9,7 @@ export default function PoliticaPrivacidade() {
   return (
     <main style={wrap}>
       <h1 style={h1}>Política de Privacidade</h1>
-      <p style={{ ...p, color: '#6b7280' }}>Carreira No Digital — última atualização: junho de 2026.</p>
+      <p style={{ ...p, color: 'var(--text-faint)' }}>Carreira No Digital — última atualização: junho de 2026.</p>
 
       <h2 style={h2}>1. Quem somos</h2>
       <p style={p}>Esta Política descreve como a Carreira No Digital ("nós") coleta, usa e protege os dados das pessoas que se relacionam conosco — alunos, leads e interessados em nossos cursos e turmas.</p>

@@ -15,11 +15,11 @@ type Config = {
   sistema: boolean
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const inp = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#fff', outline: 'none' } as React.CSSProperties
-const sel = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#fff', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#fff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: 500, cursor: 'pointer' } as React.CSSProperties
 
 const CATEGORIAS_LABEL: Record<string, string> = {
   financeiro: 'Financeiro',
@@ -137,8 +137,8 @@ async function salvarEdicao(chave: string) {
       <div style={{ padding: '32px 40px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: '#fff', margin: 0 }}>Configurações</h1>
-            <p style={{ fontSize: 13, color: '#6b7280', marginTop: 4 }}>Parâmetros do sistema, editáveis sem precisar mexer no código</p>
+            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Configurações</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>Parâmetros do sistema, editáveis sem precisar mexer no código</p>
           </div>
           <button onClick={() => setNovaConfig(!novaConfig)} style={btnPrimary}>
             {novaConfig ? 'Cancelar' : '+ Novo parâmetro'}
@@ -146,23 +146,23 @@ async function salvarEdicao(chave: string) {
         </div>
 
         {mensagem && (
-          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? '#450a0a' : '#052e16', borderRadius: 8 }}>
-            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? '#f87171' : '#34d399', margin: 0 }}>{mensagem}</p>
+          <div style={{ padding: 12, marginBottom: 16, background: mensagem.includes('Erro') ? 'var(--red-bg)' : 'var(--green-bg)', borderRadius: 8 }}>
+            <p style={{ fontSize: 13, color: mensagem.includes('Erro') ? 'var(--red)' : 'var(--green)', margin: 0 }}>{mensagem}</p>
           </div>
         )}
 
         {novaConfig && (
           <div style={{ ...card, padding: 20, marginBottom: 20 }}>
-            <h3 style={{ fontSize: 15, fontWeight: 600, color: '#fff', marginBottom: 14, marginTop: 0 }}>Novo parâmetro personalizado</h3>
+            <h3 style={{ fontSize: 15, fontWeight: 600, color: 'var(--text)', marginBottom: 14, marginTop: 0 }}>Novo parâmetro personalizado</h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 12 }}>
               <div>
-                <label style={{ display: 'block', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>
                   Chave (sem espaços, prefixo "custom.")
                 </label>
                 <input style={{ ...inp, width: '100%' }} placeholder="custom.meu_parametro" value={novaChave} onChange={e => setNovaChave(e.target.value.toLowerCase())} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Categoria</label>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Categoria</label>
                 <select style={{ ...sel, width: '100%' }} value={novaCategoria} onChange={e => setNovaCategoria(e.target.value)}>
                   <option value="custom">Personalizadas</option>
                   <option value="financeiro">Financeiro</option>
@@ -171,7 +171,7 @@ async function salvarEdicao(chave: string) {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Tipo</label>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Tipo</label>
                 <select style={{ ...sel, width: '100%' }} value={novoTipo} onChange={e => setNovoTipo(e.target.value as Config['tipo'])}>
                   <option value="texto">Texto</option>
                   <option value="numero">Número</option>
@@ -182,16 +182,16 @@ async function salvarEdicao(chave: string) {
                 </select>
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Valor inicial</label>
+                <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Valor inicial</label>
                 <input style={{ ...inp, width: '100%' }} value={novoValor} onChange={e => setNovoValor(e.target.value)} />
               </div>
             </div>
             <div style={{ marginBottom: 12 }}>
-              <label style={{ display: 'block', fontSize: 11, color: '#9ca3af', marginBottom: 4 }}>Descrição (o que faz)</label>
+              <label style={{ display: 'block', fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Descrição (o que faz)</label>
               <input style={{ ...inp, width: '100%' }} value={novaDescricao} onChange={e => setNovaDescricao(e.target.value)} placeholder="Ex: % de desconto pra alunos antigos" />
             </div>
-            <div style={{ background: '#1c1c1e', padding: 10, borderRadius: 6, marginBottom: 12 }}>
-              <p style={{ fontSize: 11, color: '#9ca3af', margin: 0 }}>
+            <div style={{ background: 'var(--bg)', padding: 10, borderRadius: 6, marginBottom: 12 }}>
+              <p style={{ fontSize: 11, color: 'var(--text-muted)', margin: 0 }}>
                 ⚠️ Parâmetros criados aqui ficam armazenados, mas só vão "agir" no sistema se o desenvolvedor integrar a lógica.
               </p>
             </div>
@@ -202,12 +202,12 @@ async function salvarEdicao(chave: string) {
           </div>
         )}
 
-        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid #3a3a3c' }}>
+        <div style={{ display: 'flex', gap: 4, marginBottom: 20, borderBottom: '1px solid var(--border)' }}>
           {(['financeiro', 'comissao', 'categorias', 'custom'] as const).map(a => (
             <button key={a} onClick={() => setAba(a)} style={{
               padding: '10px 18px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
-              border: 'none', borderBottom: aba === a ? '2px solid #7c3aed' : '2px solid transparent',
-              backgroundColor: 'transparent', color: aba === a ? '#a78bfa' : '#9ca3af',
+              border: 'none', borderBottom: aba === a ? '2px solid var(--accent)' : '2px solid transparent',
+              backgroundColor: 'transparent', color: aba === a ? 'var(--accent-soft)' : 'var(--text-muted)',
               marginBottom: '-1px',
             }}>
               {CATEGORIAS_LABEL[a]}
@@ -216,38 +216,38 @@ async function salvarEdicao(chave: string) {
         </div>
 
         {carregando ? (
-          <p style={{ fontSize: 13, color: '#6b7280' }}>Carregando...</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : configsFiltradas.length === 0 ? (
           <div style={{ ...card, padding: 24 }}>
-            <p style={{ fontSize: 13, color: '#6b7280', margin: 0 }}>Nenhum parâmetro nesta categoria.</p>
+            <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Nenhum parâmetro nesta categoria.</p>
           </div>
         ) : (
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse' }}>
               <thead>
-                <tr style={{ borderBottom: '1px solid #3a3a3c' }}>
-                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Parâmetro</th>
-                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Chave</th>
-                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Tipo</th>
-                  <th style={{ textAlign: 'right', padding: '12px 20px', fontSize: 11, color: '#6b7280', fontWeight: 500 }}>Valor</th>
+                <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Parâmetro</th>
+                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Chave</th>
+                  <th style={{ textAlign: 'left', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Tipo</th>
+                  <th style={{ textAlign: 'right', padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>Valor</th>
                   <th style={{ padding: '12px 20px' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {configsFiltradas.map(c => (
-                  <tr key={c.chave} style={{ borderBottom: '1px solid #3a3a3c' }}>
-                    <td style={{ padding: '12px 20px', fontSize: 13, color: '#fff', verticalAlign: 'top' }}>
+                  <tr key={c.chave} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: '12px 20px', fontSize: 13, color: 'var(--text)', verticalAlign: 'top' }}>
                       {c.descricao}
                       {c.sistema && (
-                        <span style={{ fontSize: 9, marginLeft: 8, padding: '2px 6px', borderRadius: 4, background: '#2e1065', color: '#a78bfa', textTransform: 'uppercase', fontWeight: 600 }}>
+                        <span style={{ fontSize: 9, marginLeft: 8, padding: '2px 6px', borderRadius: 4, background: 'var(--accent-bg)', color: 'var(--accent-soft)', textTransform: 'uppercase', fontWeight: 600 }}>
                           sistema
                         </span>
                       )}
                     </td>
-                    <td style={{ padding: '12px 20px', fontSize: 11, color: '#6b7280', fontFamily: 'monospace', verticalAlign: 'top' }}>
+                    <td style={{ padding: '12px 20px', fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace', verticalAlign: 'top' }}>
                       {c.chave}
                     </td>
-                    <td style={{ padding: '12px 20px', fontSize: 12, color: '#9ca3af', verticalAlign: 'top' }}>
+                    <td style={{ padding: '12px 20px', fontSize: 12, color: 'var(--text-muted)', verticalAlign: 'top' }}>
                       {TIPO_LABEL[c.tipo]}
                     </td>
                     <td style={{ padding: '12px 20px', textAlign: 'right', verticalAlign: 'top' }}>
@@ -263,21 +263,21 @@ async function salvarEdicao(chave: string) {
                           }}
                         />
                       ) : (
-                        <span style={{ fontSize: 14, fontWeight: 600, color: '#34d399' }}>{formatarValor(c)}</span>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--green)' }}>{formatarValor(c)}</span>
                       )}
                     </td>
                     <td style={{ padding: '12px 20px', verticalAlign: 'top' }}>
                       <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
                         {editando === c.chave ? (
                           <>
-                            <button onClick={() => salvarEdicao(c.chave)} style={{ fontSize: 11, color: '#34d399', background: 'none', border: 'none', cursor: 'pointer' }}>Salvar</button>
-                            <button onClick={() => { setEditando(null); setMensagem('') }} style={{ fontSize: 11, color: '#9ca3af', background: 'none', border: 'none', cursor: 'pointer' }}>Cancelar</button>
+                            <button onClick={() => salvarEdicao(c.chave)} style={{ fontSize: 11, color: 'var(--green)', background: 'none', border: 'none', cursor: 'pointer' }}>Salvar</button>
+                            <button onClick={() => { setEditando(null); setMensagem('') }} style={{ fontSize: 11, color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Cancelar</button>
                           </>
                         ) : (
                           <>
-                            <button onClick={() => iniciarEdicao(c)} style={{ fontSize: 11, color: '#a78bfa', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
+                            <button onClick={() => iniciarEdicao(c)} style={{ fontSize: 11, color: 'var(--accent-soft)', background: 'none', border: 'none', cursor: 'pointer' }}>Editar</button>
                             {!c.sistema && (
-                              <button onClick={() => deletar(c)} style={{ fontSize: 11, color: '#f87171', background: 'none', border: 'none', cursor: 'pointer' }}>Deletar</button>
+                              <button onClick={() => deletar(c)} style={{ fontSize: 11, color: 'var(--red)', background: 'none', border: 'none', cursor: 'pointer' }}>Deletar</button>
                             )}
                           </>
                         )}

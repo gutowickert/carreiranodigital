@@ -12,20 +12,20 @@ type UsuarioPerfil = {
   criado_em: string
 }
 
-const card = { backgroundColor: '#2c2c2e', border: '1px solid #3a3a3c', borderRadius: '12px' }
-const input = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const select = { backgroundColor: '#3a3a3c', border: '1px solid #48484a', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: '#ffffff', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: '#7c3aed', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: '#3a3a3c', color: '#d1d1d1', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const setores = [
-  { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: '#2e1065', color: '#a78bfa' },
-  { value: 'operacoes', label: 'Operacoes', desc: 'Turmas, professores, salas', bg: '#422006', color: '#fbbf24' },
-  { value: 'comercial', label: 'Comercial', desc: 'CRM digital e leads', bg: '#172554', color: '#60a5fa' },
-  { value: 'comercial_externo', label: 'Comercial Externo', desc: 'Prospeccoes e visitas', bg: '#431407', color: '#fb923c' },
-  { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatorios', bg: '#042f2e', color: '#34d399' },
-  { value: 'marketing', label: 'Marketing', desc: 'Trafego e criativos', bg: '#450a0a', color: '#f87171' },
-  { value: 'pos_venda', label: 'Pos-venda', desc: 'Alunos e suporte', bg: '#052e16', color: '#4ade80' },
+  { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: 'var(--accent-bg)', color: 'var(--accent-soft)' },
+  { value: 'operacoes', label: 'Operacoes', desc: 'Turmas, professores, salas', bg: 'var(--amber-bg)', color: 'var(--amber)' },
+  { value: 'comercial', label: 'Comercial', desc: 'CRM digital e leads', bg: 'var(--blue-bg)', color: 'var(--blue)' },
+  { value: 'comercial_externo', label: 'Comercial Externo', desc: 'Prospeccoes e visitas', bg: 'var(--amber-bg)', color: 'var(--amber)' },
+  { value: 'financeiro', label: 'Financeiro', desc: 'Financeiro e relatorios', bg: 'var(--green-bg)', color: 'var(--green)' },
+  { value: 'marketing', label: 'Marketing', desc: 'Trafego e criativos', bg: 'var(--red-bg)', color: 'var(--red)' },
+  { value: 'pos_venda', label: 'Pos-venda', desc: 'Alunos e suporte', bg: 'var(--green-bg)', color: 'var(--green-strong)' },
 ]
 
 export default function Usuarios() {
@@ -98,10 +98,10 @@ export default function Usuarios() {
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: '700', color: '#ffffff' }}>Usuarios do sistema</h1>
+        <h1 style={{ fontSize: '24px', fontWeight: '700', color: 'var(--text)' }}>Usuarios do sistema</h1>
         <button onClick={() => setNovoUsuario(!novoUsuario)} style={btnPrimary}>+ Criar usuario</button>
       </div>
-      <p style={{ fontSize: '14px', color: '#6b7280', marginBottom: '24px' }}>
+      <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginBottom: '24px' }}>
         Cada setor precisa de pelo menos um usuario ativo para receber tarefas automaticas na agenda.
       </p>
 
@@ -111,8 +111,8 @@ export default function Usuarios() {
           return (
             <div key={s.value} style={{ backgroundColor: s.bg, border: '1px solid ' + s.color + '33', borderRadius: '10px', padding: '14px' }}>
               <div style={{ fontSize: '13px', fontWeight: '600', color: s.color }}>{s.label}</div>
-              <div style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px' }}>{s.desc}</div>
-              <div style={{ fontSize: '11px', color: responsavel ? '#d1d1d1' : '#f87171', marginTop: '8px', fontWeight: '500' }}>
+              <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>{s.desc}</div>
+              <div style={{ fontSize: '11px', color: responsavel ? 'var(--text-2)' : 'var(--red)', marginTop: '8px', fontWeight: '500' }}>
                 {responsavel ? responsavel.nome : 'sem responsavel'}
               </div>
             </div>
@@ -121,11 +121,11 @@ export default function Usuarios() {
       </div>
 
       {setoresSemUsuario.length > 0 && (
-        <div style={{ backgroundColor: '#3a1a1a', border: '1px solid #ef4444', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '13px', fontWeight: '600', color: '#ef4444', marginBottom: '4px' }}>
+        <div style={{ backgroundColor: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: '10px', padding: '14px 18px', marginBottom: '24px' }}>
+          <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--red)', marginBottom: '4px' }}>
             Setores sem responsavel: {setoresSemUsuario.map(s => s.label).join(', ')}
           </div>
-          <div style={{ fontSize: '12px', color: '#fca5a5' }}>
+          <div style={{ fontSize: '12px', color: 'var(--red)' }}>
             Tarefas automaticas desses setores nao chegarao em nenhuma agenda ate que um usuario seja cadastrado.
           </div>
         </div>
@@ -133,18 +133,18 @@ export default function Usuarios() {
 
       {novoUsuario && (
         <div style={{ ...card, padding: '24px', marginBottom: '24px' }}>
-          <div style={{ fontSize: '15px', fontWeight: '600', color: '#ffffff', marginBottom: '4px' }}>Criar novo usuario</div>
-          <p style={{ fontSize: '13px', color: '#6b7280', marginBottom: '16px' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>Criar novo usuario</div>
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '16px' }}>
             O usuario recebe um email para confirmar o acesso e fica vinculado ao setor escolhido.
           </p>
           <form onSubmit={criarUsuario}>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Nome completo</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Nome completo</label>
                 <input value={uNome} onChange={e => setUNome(e.target.value)} placeholder="Ex: Ana Silva" required style={input} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Setor</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Setor</label>
                 <select value={uSetor} onChange={e => setUSetor(e.target.value)} style={select}>
                   {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
@@ -152,11 +152,11 @@ export default function Usuarios() {
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '16px' }}>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Email</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Email</label>
                 <input value={uEmail} onChange={e => setUEmail(e.target.value)} placeholder="email@exemplo.com" type="email" required style={input} />
               </div>
               <div>
-                <label style={{ display: 'block', fontSize: '12px', color: '#9ca3af', marginBottom: '6px' }}>Senha inicial</label>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Senha inicial</label>
                 <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Minimo 6 caracteres" type="password" required minLength={6} style={input} />
               </div>
             </div>
@@ -164,19 +164,19 @@ export default function Usuarios() {
               <button type="button" onClick={() => setNovoUsuario(false)} style={btnSecondary}>Cancelar</button>
               <button type="submit" disabled={salvando} style={btnPrimary}>{salvando ? 'Criando...' : 'Criar usuario'}</button>
             </div>
-            {erro && <p style={{ marginTop: '12px', fontSize: '13px', color: '#f87171' }}>{erro}</p>}
-            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: '#34d399' }}>{mensagem}</p>}
+            {erro && <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--red)' }}>{erro}</p>}
+            {mensagem && <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--green)' }}>{mensagem}</p>}
           </form>
         </div>
       )}
 
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid #3a3a3c' }}>
-          <span style={{ fontSize: '14px', color: '#9ca3af' }}>{usuarios.length} usuario(s) cadastrado(s)</span>
+        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
+          <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{usuarios.length} usuario(s) cadastrado(s)</span>
         </div>
 
         {usuarios.length === 0 ? (
-          <p style={{ padding: '24px', fontSize: '14px', color: '#6b7280' }}>
+          <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>
             Nenhum usuario cadastrado ainda. Crie ao menos um por setor.
           </p>
         ) : (
@@ -184,10 +184,10 @@ export default function Usuarios() {
             {usuarios.map(u => {
               const info = setorInfo(u.setor)
               return (
-                <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid #3a3a3c', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: u.ativo ? 1 : 0.5 }}>
+                <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: u.ativo ? 1 : 0.5 }}>
                   <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: '#ffffff' }}>{u.nome || '-'}</div>
-                    <div style={{ fontSize: '12px', color: '#9ca3af', marginTop: '2px' }}>{u.email}</div>
+                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{u.nome || '-'}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{u.email}</div>
                   </div>
 
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -205,11 +205,11 @@ export default function Usuarios() {
                           {info.label}
                         </span>
                         <button onClick={() => { setEditando(u.id); setSetorEdit(u.setor) }}
-                          style={{ background: 'none', border: 'none', color: '#9ca3af', fontSize: '12px', cursor: 'pointer' }}>
+                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
                           Trocar setor
                         </button>
                         <button onClick={() => alternarAtivo(u.id, u.ativo)}
-                          style={{ background: 'none', border: 'none', color: u.ativo ? '#9ca3af' : '#4ade80', fontSize: '12px', cursor: 'pointer' }}>
+                          style={{ background: 'none', border: 'none', color: u.ativo ? 'var(--text-muted)' : 'var(--green-strong)', fontSize: '12px', cursor: 'pointer' }}>
                           {u.ativo ? 'Desativar' : 'Ativar'}
                         </button>
                       </>
@@ -222,9 +222,9 @@ export default function Usuarios() {
         )}
       </div>
 
-      <div style={{ backgroundColor: '#1e1b4b', border: '1px solid #3730a3', borderRadius: '12px', padding: '16px 20px', marginTop: '24px' }}>
-        <div style={{ fontSize: '13px', fontWeight: '600', color: '#a5b4fc', marginBottom: '6px' }}>Como funciona</div>
-        <div style={{ fontSize: '12px', color: '#818cf8', lineHeight: '1.6' }}>
+      <div style={{ backgroundColor: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: '12px', padding: '16px 20px', marginTop: '24px' }}>
+        <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--blue)', marginBottom: '6px' }}>Como funciona</div>
+        <div style={{ fontSize: '12px', color: 'var(--blue)', lineHeight: '1.6' }}>
           Cada usuario pertence a um setor. Quando uma turma e aberta, as tarefas automaticas chegam na agenda do primeiro usuario ativo daquele setor.
         </div>
       </div>
