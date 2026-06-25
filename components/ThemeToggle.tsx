@@ -11,6 +11,9 @@ export default function ThemeToggle({ compacto = false }: { compacto?: boolean }
     setClaro(document.documentElement.getAttribute('data-theme') === 'light')
   }, [])
 
+  // TEMP: botão desligado enquanto o tema claro é ajustado (sistema fica no escuro).
+  return null
+
   function alternar() {
     const novo = !claro
     setClaro(novo)
