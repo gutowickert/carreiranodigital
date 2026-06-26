@@ -1112,6 +1112,9 @@ function ChatLead({ lead }: { lead: Lead }) {
   const gravadorRef = useRef<GravadorOpus | null>(null)
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
+  const txtRef = useRef<HTMLTextAreaElement | null>(null)
+  // caixa de mensagem cresce conforme o texto (volta ao tamanho ao limpar)
+  useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(Math.max(t.scrollHeight, 76), 160) + 'px' } }, [texto])
 
   async function buscarConversas(termo: string) {
     const t = termo.trim()
@@ -1279,15 +1282,16 @@ function ChatLead({ lead }: { lead: Lead }) {
         <div ref={fimRef} />
       </div>
 
-      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center' }}>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
-        <input style={inp} placeholder="Mensagem..." value={texto} disabled={gravando}
+        <textarea ref={txtRef} rows={3} style={{ ...inp, flex: 1, resize: 'none', minHeight: 76, maxHeight: 160, lineHeight: 1.4, fontFamily: 'inherit' }}
+          placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
-          onKeyDown={e => { if (e.key === 'Enter') enviarTexto() }} />
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarTexto() } }} />
         {texto.trim() ? (
           <button onClick={enviarTexto} disabled={enviando}
             style={{ ...btnPrimary, background: '#25D366', minWidth: 70 }}>
