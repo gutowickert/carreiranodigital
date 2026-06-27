@@ -127,35 +127,47 @@ export async function POST(req: NextRequest) {
     const { data: caixaHero } = await supabase.from('contas_financeiras')
       .select('id').eq('ativo', true).ilike('nome', '%herospark%').limit(1).single()
 
-    // 4) Cria matrícula
+    // 4) Acha matrícula existente (evita DUPLICAR) ou cria
     const valorFinal = amount > 0 ? amount : 0
-    const { data: matricula, error: errMat } = await supabase.from('matriculas').insert({
-      aluno_id: alunoId,
-      turma_id: turmaId,
-      valor_pago: valorFinal,
-      data_compra: new Date().toISOString().split('T')[0],
-      forma_pagamento: paymentMethod.includes('pix') ? 'pix' : paymentMethod.includes('boleto') ? 'boleto' : 'cartao',
-      parcelas: 1,
-      status: 'ativa',
-    }).select().single()
+    const { data: matExistente } = await supabase.from('matriculas')
+      .select('id').eq('aluno_id', alunoId).eq('turma_id', turmaId).limit(1).maybeSingle()
 
-    if (errMat || !matricula) {
-      await supabase.from('webhook_logs').update({ status: 'erro', erro: 'Erro ao criar matrícula: ' + errMat?.message, processado_em: new Date().toISOString() }).eq('id', logId!)
-      return NextResponse.json({ error: errMat?.message }, { status: 500 })
+    let matricula: any = matExistente
+    const jaExistia = !!matExistente
+    if (!matricula) {
+      const { data: novaMat, error: errMat } = await supabase.from('matriculas').insert({
+        aluno_id: alunoId,
+        turma_id: turmaId,
+        valor_pago: valorFinal,
+        data_compra: new Date().toISOString().split('T')[0],
+        forma_pagamento: paymentMethod.includes('pix') ? 'pix' : paymentMethod.includes('boleto') ? 'boleto' : 'cartao',
+        parcelas: 1,
+        status: 'ativa',
+      }).select().single()
+
+      if (errMat || !novaMat) {
+        await supabase.from('webhook_logs').update({ status: 'erro', erro: 'Erro ao criar matrícula: ' + errMat?.message, processado_em: new Date().toISOString() }).eq('id', logId!)
+        return NextResponse.json({ error: errMat?.message }, { status: 500 })
+      }
+      matricula = novaMat
     }
 
     // 4.5) Procura lead correspondente por whatsapp ou email — se achar, vincula
     let leadEncontrado: any = null
     if (buyerPhone) {
       const phoneNumeros = buyerPhone.toString().replace(/\D/g, '')
-      const { data: leadPorPhone } = await supabase.from('leads')
-        .select('id, vendedor_id, etapa, nome, fbc, fbp')
-        .or(`whatsapp.eq.${buyerPhone},whatsapp.eq.${phoneNumeros}`)
-        .not('etapa', 'in', '(perda)')
-        .order('criado_em', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (leadPorPhone) leadEncontrado = leadPorPhone
+      // Casa pelos ÚLTIMOS 8 dígitos — tolera diferenças de 55/DDD/9 do celular
+      const suf8 = phoneNumeros.slice(-8)
+      if (suf8.length >= 8) {
+        const { data: leadPorPhone } = await supabase.from('leads')
+          .select('id, vendedor_id, etapa, nome, fbc, fbp')
+          .ilike('whatsapp', `%${suf8}`)
+          .not('etapa', 'in', '(perda)')
+          .order('criado_em', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (leadPorPhone) leadEncontrado = leadPorPhone
+      }
     }
     if (!leadEncontrado && buyerEmail) {
       const { data: leadPorEmail } = await supabase.from('leads')
@@ -196,34 +208,38 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 5) Atualiza LTV do aluno
-    const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
-    await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorFinal }).eq('id', alunoId)
+    // 5/6/7) Financeiro só na PRIMEIRA vez — se a matrícula já existia, não relança
+    // (evita dobrar LTV, receita da turma e criar lançamento duplicado)
+    if (!jaExistia) {
+      // 5) Atualiza LTV do aluno
+      const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
+      await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorFinal }).eq('id', alunoId)
 
-    // 6) Cria lançamento de receita (à vista)
-    const hoje = new Date().toISOString().split('T')[0]
-    await supabase.from('lancamentos_empresa').insert({
-      tipo: 'receita',
-      categoria: 'outro',
-      descricao: `Matrícula HeroSpark — ${alunoNome}`,
-      valor: valorFinal,
-      unidade: 'geral',
-      mes_referencia: hoje.substring(0, 7) + '-01',
-      data_vencimento: hoje,
-      data_pagamento: hoje,
-      status: 'realizado',
-      turma_id: turmaId,
-      conta_id: caixaHero?.id || null,
-    })
+      // 6) Cria lançamento de receita (à vista)
+      const hoje = new Date().toISOString().split('T')[0]
+      await supabase.from('lancamentos_empresa').insert({
+        tipo: 'receita',
+        categoria: 'outro',
+        descricao: `Matrícula HeroSpark — ${alunoNome}`,
+        valor: valorFinal,
+        unidade: 'geral',
+        mes_referencia: hoje.substring(0, 7) + '-01',
+        data_vencimento: hoje,
+        data_pagamento: hoje,
+        status: 'realizado',
+        turma_id: turmaId,
+        conta_id: caixaHero?.id || null,
+      })
 
-    // 7) Atualiza financeiro_turma (receita realizada)
-    const { data: fin } = await supabase.from('financeiro_turma').select('*').eq('turma_id', turmaId).single()
-    if (fin) {
-      const novaReceita = (fin.receita_realizada || 0) + valorFinal
-      await supabase.from('financeiro_turma').update({
-        receita_realizada: novaReceita,
-        atualizado_em: new Date().toISOString(),
-      }).eq('turma_id', turmaId)
+      // 7) Atualiza financeiro_turma (receita realizada)
+      const { data: fin } = await supabase.from('financeiro_turma').select('*').eq('turma_id', turmaId).single()
+      if (fin) {
+        const novaReceita = (fin.receita_realizada || 0) + valorFinal
+        await supabase.from('financeiro_turma').update({
+          receita_realizada: novaReceita,
+          atualizado_em: new Date().toISOString(),
+        }).eq('turma_id', turmaId)
+      }
     }
 
     // 7.5) Dispara Purchase pro CAPI (server-side)
@@ -251,6 +267,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('webhook_logs').update({
       status: 'processado',
       matricula_id: matricula.id,
+      erro: jaExistia ? 'Matrícula já existia — vinculada ao lead sem duplicar (financeiro não relançado)' : null,
       processado_em: new Date().toISOString(),
     }).eq('id', logId!)
 
