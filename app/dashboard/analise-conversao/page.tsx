@@ -22,6 +22,52 @@ function Exemplo({ lead, trecho }: { lead?: string; trecho?: string }) {
   )
 }
 
+const pct = (n: number, tot: number) => tot ? Math.round((n / tot) * 100) : 0
+
+function Barra({ label, g, p, gtot, ptot }: { label: string; g: number; p: number; gtot: number; ptot: number }) {
+  const gp = pct(g, gtot), pp = pct(p, ptot)
+  const linha = (nome: string, perc: number, n: number, cor: string) => (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+      <span style={{ width: 56, fontSize: 11, color: cor, fontWeight: 700 }}>{nome}</span>
+      <div style={{ flex: 1, height: 20, background: 'var(--surface-2)', borderRadius: 4, overflow: 'hidden' }}>
+        <div style={{ width: `${perc}%`, height: '100%', background: cor, transition: 'width .4s' }} />
+      </div>
+      <span style={{ width: 70, fontSize: 12, fontWeight: 700, color: 'var(--text)', textAlign: 'right' }}>{perc}% <span style={{ color: '#6b7280', fontWeight: 400 }}>({n})</span></span>
+    </div>
+  )
+  return (
+    <div style={{ marginBottom: 14 }}>
+      <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 6 }}>{label}</div>
+      {linha('Vendas', gp, g, '#4ade80')}
+      {linha('Perdas', pp, p, '#f87171')}
+    </div>
+  )
+}
+
+function Placar({ p }: { p: any }) {
+  if (!p || !p.ganho) return null
+  const g = p.ganho, pe = p.perda
+  const mini = (titulo: string, valor: number, cor: string) => (
+    <div style={{ flex: 1, background: 'var(--surface-2)', border: `1px solid ${cor}`, borderRadius: 8, padding: '10px 12px' }}>
+      <div style={{ fontSize: 11, color: '#6b7280' }}>{titulo}</div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: cor }}>{valor}</div>
+    </div>
+  )
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
+      <h2 style={{ fontSize: 18, color: 'var(--text)', margin: '0 0 2px' }}>📊 Placar — o que as vendas têm que as perdas não têm</h2>
+      <p style={{ fontSize: 12, color: '#6b7280', marginTop: 0, marginBottom: 14 }}>{g.total} vendas × {pe.total} perdas</p>
+      <Barra label="📞 Tiveram ligação" g={g.comLigacao} p={pe.comLigacao} gtot={g.total} ptot={pe.total} />
+      <Barra label="🎤 Tiveram áudio" g={g.comAudio} p={pe.comAudio} gtot={g.total} ptot={pe.total} />
+      <Barra label="💬 Só texto (sem ligação nem áudio)" g={g.soTexto} p={pe.soTexto} gtot={g.total} ptot={pe.total} />
+      <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
+        {mini('Média de mensagens por VENDA', g.mediaMsgs, '#4ade80')}
+        {mini('Média de mensagens por PERDA', pe.mediaMsgs, '#f87171')}
+      </div>
+    </div>
+  )
+}
+
 export default function AnaliseConversao() {
   const [analise, setAnalise] = useState<any>(null)
   const [geradoEm, setGeradoEm] = useState<string | null>(null)
@@ -84,6 +130,7 @@ export default function AnaliseConversao() {
           </div>
         ) : d ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            {d._placar && <Placar p={d._placar} />}
             {d.resumo && <div style={{ ...card, background: 'var(--surface-2)' }}><div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>{d.resumo}</div></div>}
 
             <div>
