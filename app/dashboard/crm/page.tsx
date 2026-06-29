@@ -1113,8 +1113,24 @@ function ChatLead({ lead }: { lead: Lead }) {
   const fimRef = useRef<HTMLDivElement | null>(null)
   const fileRef = useRef<HTMLInputElement | null>(null)
   const txtRef = useRef<HTMLTextAreaElement | null>(null)
+  // copiloto (sugestão de IA)
+  const [sugerindo, setSugerindo] = useState(false)
+  const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
   // caixa de mensagem cresce conforme o texto (volta ao tamanho ao limpar)
   useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(Math.max(t.scrollHeight, 76), 160) + 'px' } }, [texto])
+
+  async function sugerirResposta() {
+    setSugerindo(true); setSugestao(null); setErro('')
+    try {
+      const r = await fetch('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
+      const j = await r.json()
+      if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
+      setTexto(j.rascunho || '')
+      setSugestao({ objecao: j.objecao || 'nenhuma', dica: j.dica || '' })
+      setTimeout(() => txtRef.current?.focus(), 50)
+    } catch { setErro('Falha ao falar com o copiloto.') }
+    finally { setSugerindo(false) }
+  }
 
   async function buscarConversas(termo: string) {
     const t = termo.trim()
@@ -1282,12 +1298,23 @@ function ChatLead({ lead }: { lead: Lead }) {
         <div ref={fimRef} />
       </div>
 
+      {sugestao && (
+        <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
+          <span style={{ color: '#a78bfa', fontWeight: 700 }}>✨ Copiloto</span>
+          {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
+          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
+          <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
+        <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
+          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : '✨'}</button>
         <textarea ref={txtRef} rows={3} style={{ ...inp, flex: 1, resize: 'none', minHeight: 76, maxHeight: 160, lineHeight: 1.4, fontFamily: 'inherit' }}
           placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
