@@ -8,10 +8,10 @@ export const maxDuration = 60
 // Trigger: POST { groqKey, limite?, teste?, debug? }  — groqKey é a chave do Groq (gate simples).
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => ({}))
-  const groqKey: string = body.groqKey || ''
+  const dgKey: string = body.dgKey || body.groqKey || ''
   const limite: number = body.teste ? 1 : (body.limite || 5)
   const debug: boolean = !!body.debug || !!body.teste
-  if (!groqKey) return NextResponse.json({ ok: false, error: 'falta groqKey' }, { status: 200 })
+  if (!dgKey) return NextResponse.json({ ok: false, error: 'falta dgKey (chave Deepgram)' }, { status: 200 })
 
   const token = process.env.API4COM_TOKEN || ''
   if (!token) return NextResponse.json({ ok: false, error: 'API4COM_TOKEN ausente no servidor' }, { status: 200 })
@@ -53,20 +53,21 @@ export async function POST(req: NextRequest) {
     if (!b.ok) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: false, log: b.log }); continue }
     const kb = Math.round(b.buf.length / 1024)
     try {
-      const fd = new FormData()
-      fd.append('file', new Blob([b.buf], { type: b.ct || 'audio/mpeg' }), 'lig.mp3')
-      fd.append('model', 'whisper-large-v3'); fd.append('language', 'pt')
-      const tr = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: fd })
+      const tr = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
+        method: 'POST',
+        headers: { Authorization: `Token ${dgKey}`, 'Content-Type': b.ct || 'audio/mpeg' },
+        body: b.buf,
+      })
       const rawResp = await tr.text()
       let j: any = null; try { j = JSON.parse(rawResp) } catch {}
-      if (!tr.ok || !j || typeof j.text !== 'string') {
-        falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, groqStatus: tr.status, groqRaw: rawResp.slice(0, 250) }); continue
+      const txt = j?.results?.channels?.[0]?.alternatives?.[0]?.transcript
+      if (!tr.ok || typeof txt !== 'string') {
+        falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dgStatus: tr.status, dgRaw: rawResp.slice(0, 250) }); continue
       }
-      const txt = j.text.trim()
-      const meta = { ...(l.metadata || {}), transcricao: txt }
+      const meta = { ...(l.metadata || {}), transcricao: txt.trim() }
       await supabase.from('ligacoes').update({ metadata: meta }).eq('id', l.id)
       ok++
-      if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dur: l.duracao, preview: txt.slice(0, 120) })
+      if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dur: l.duracao, preview: txt.trim().slice(0, 120) })
     } catch (e: any) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, erro: e.message }) }
   }
 
