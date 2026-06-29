@@ -52,10 +52,17 @@ async function montarCorpus() {
   const todasConvIds = [...new Set(alvo.flatMap(convIdsDoLead))]
 
   const msgsPorConv: Record<string, any[]> = {}
-  for (let i = 0; i < todasConvIds.length; i += 200) {
-    const chunk = todasConvIds.slice(i, i + 200)
-    const { data } = await supabase.from('wa_mensagens').select('conversa_id,direcao,status,texto,criado_em,tipo').in('conversa_id', chunk)
-    for (const m of data || []) (msgsPorConv[m.conversa_id] = msgsPorConv[m.conversa_id] || []).push(m)
+  for (let i = 0; i < todasConvIds.length; i += 100) {
+    const chunk = todasConvIds.slice(i, i + 100)
+    // pagina dentro do lote (a query do Supabase retorna no máx 1000 linhas)
+    let from = 0
+    for (;;) {
+      const { data } = await supabase.from('wa_mensagens').select('conversa_id,direcao,status,texto,criado_em,tipo').in('conversa_id', chunk).range(from, from + 999)
+      if (!data || !data.length) break
+      for (const m of data) (msgsPorConv[m.conversa_id] = msgsPorConv[m.conversa_id] || []).push(m)
+      if (data.length < 1000) break
+      from += 1000
+    }
   }
   const ligPorLead: Record<string, string[]> = {}
   const temLigacao: Record<string, boolean> = {}
