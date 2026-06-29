@@ -51,19 +51,23 @@ export async function POST(req: NextRequest) {
   for (const l of pendentes) {
     const b = await baixar(l.gravacao_url)
     if (!b.ok) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: false, log: b.log }); continue }
+    const kb = Math.round(b.buf.length / 1024)
     try {
       const fd = new FormData()
       fd.append('file', new Blob([b.buf], { type: b.ct || 'audio/mpeg' }), 'lig.mp3')
       fd.append('model', 'whisper-large-v3'); fd.append('language', 'pt')
       const tr = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', { method: 'POST', headers: { Authorization: `Bearer ${groqKey}` }, body: fd })
-      const j = await tr.json()
-      if (!tr.ok) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, groq: JSON.stringify(j).slice(0, 150) }); continue }
-      const txt = (j.text || '').trim()
+      const rawResp = await tr.text()
+      let j: any = null; try { j = JSON.parse(rawResp) } catch {}
+      if (!tr.ok || !j || typeof j.text !== 'string') {
+        falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, groqStatus: tr.status, groqRaw: rawResp.slice(0, 250) }); continue
+      }
+      const txt = j.text.trim()
       const meta = { ...(l.metadata || {}), transcricao: txt }
       await supabase.from('ligacoes').update({ metadata: meta }).eq('id', l.id)
       ok++
-      if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, dur: l.duracao, preview: txt.slice(0, 120) })
-    } catch (e: any) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), erro: e.message }) }
+      if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dur: l.duracao, preview: txt.slice(0, 120) })
+    } catch (e: any) { falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, erro: e.message }) }
   }
 
   const restam = (ligs || []).filter(l => !(l.metadata && l.metadata.transcricao)).length - ok
