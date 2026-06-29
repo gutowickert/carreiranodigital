@@ -1,7 +1,6 @@
 # Playbook de Conversão — extraído das vendas reais da Carreira No Digital
 
-> **v2** — agora **com os áudios transcritos** (306 áudios via speech-to-text). Tirado de **16 vendas ganhas × 15 perdas com diálogo** (texto + áudio do WhatsApp).
-> Próxima camada: as **ligações** (68 conversas reais gravadas) — entram quando ligarmos o token da API4COM.
+> **v3 — COMPLETO**: texto + áudios do WhatsApp (306) + **ligações transcritas (70 conversas reais)**, tudo via speech-to-text. Tirado de 16 vendas ganhas × perdas, cruzando os 3 canais.
 
 ---
 
@@ -9,94 +8,89 @@
 
 | | 🟢 Vendeu | 🔴 Perdeu |
 |---|---|---|
+| **Descoberta** | Na ligação, **perguntou o negócio e o objetivo ANTES de falar do curso** | Despejou os 4 módulos / preço sem entender o cliente |
 | **Contato pessoal** | Entrou em **ligação ou áudio** cedo; relação quente | Ficou no texto frio; "posso ligar?" sem nunca conectar |
-| **A oferta** | Pitch **estruturado** (o que é + diferencial + bônus + âncora + urgência + CTA) | Só **preço + cronograma**, reativo |
-| **Paciência na objeção** | Respondeu **cada micro-dúvida** com calma, sem pressa (áudios longos) | Repetiu "gostaria de dar sequência?" sem resolver a dúvida real |
-| **Pagamento** | Usou **flexibilidade pra fechar** (sinal R$100, Pix CNPJ, 1x+dinheiro, 2 cartões) | Deixou a **fricção de pagamento sem resolver** |
-| **Alternativa** | Ofereceu o **outro turno / outra condição** quando bateu objeção | Não ofereceu a saída que existia (ex: turma da tarde) |
-| **Quem conduz** | Atendente **puxa o próximo passo** | Atendente **pede permissão** |
-
-**Resumo brutal:** quem **virou a conversa pessoal (áudio/ligação), teve paciência pra dissolver cada dúvida, removeu a barreira de pagamento e ofereceu alternativa** vendeu. Quem mandou preço e ficou esperando, perdeu.
+| **A oferta** | Pitch **estruturado** (o que é + diferencial + bônus + âncora + urgência + CTA) | Só preço + cronograma, reativo |
+| **Paciência** | Respondeu **cada micro-dúvida** com calma (áudios/ligações longas) | "Gostaria de dar sequência?" sem resolver a dúvida real |
+| **Pagamento** | **Flexibilidade pra fechar** (sinal R$100, Pix CNPJ, 1x+dinheiro, 2 cartões) | Deixou a fricção de pagamento sem resolver |
+| **Alternativa** | Ofereceu **o outro turno / outra condição** quando bateu objeção | Não ofereceu a saída que existia (turma da tarde!) |
+| **Próximo passo** | Encerrou com **ação concreta** (link enviado, vaga reservada) | Acabou em "manda por WhatsApp / depois te retorno" |
 
 ---
 
-## O fluxo vencedor (passo a passo)
+## Na LIGAÇÃO (voz) — a estrutura que vende
 
-**1. Abertura rápida e pessoal** — responde em minutos, com nome.
-> "Fala Matheus, tudo bem? Vou te explicar tudo aqui, sem enrolação."
+Olhando as 70 ligações, as **vendas** seguem sempre o mesmo roteiro — e as **perdas** pulam a descoberta e viram monólogo.
 
-**2. Áudio pessoal de aproximação** (assinatura das vendas — funciona muito):
-> 🎤 *"Oi [nome], tudo bem? Aqui é o Matheus da Carreira no Digital, vi que tu teve interesse no nosso curso. Me diz um horário que eu te ligo, tenho uma **condição especial** pra ti. Fico no aguardo, abraço!"*
-Se não rolar ligação, **seguir por áudio** — não insista em ligar 4x.
+**1. Abre e pede permissão de tempo:**
+> "Oi [nome], aqui é o Ricardo da Carreira no Digital, tudo bem? Tu tem um tempinho pra falar agora?"
 
-**3. Descoberta curta** (1 pergunta que importa):
-> "Qual tua ideia — vender mais no teu negócio ou prestar serviço?" / "Trabalha com quê hoje?"
-Liga ao curso: *"O mesmo cliente que precisa do teu site contrata quem anuncia."*
+**2. DESCOBERTA primeiro (o pulo do gato):**
+> "Antes de eu te explicar, me conta um pouco: **com o que tu trabalha hoje e qual teu objetivo** com o digital? Aí eu te explico certinho como funciona e se encaixa pra ti."
+Aí **escuta** (pet shop, loja de toldos, locação de roupa, clínica…) e **amarra o curso ao negócio dele**. As vendas (Marlon, Mauro, Ana Claudia) fizeram isso; as perdas (Maria, Cytrus, nano) despejaram os módulos sem ouvir.
 
-**4. Oferta estruturada** (modelo Matheus/João Batista):
-- **O que é:** "3 dias / 4 semanas presenciais, 19h-22h15, professor que vive do que ensina."
-- **Diferencial (melhor argumento de vocês):** *"Tu não sai com apostila. Tu sai com o marketing do teu negócio rodando. Quando termina, já tá aplicado."*
-- **Bônus:** "10 agentes de IA, gravação por 1 ano, certificado."
-- **Âncora de preço:** *"Normalmente R$ 2.697. Mas pra essa lista separei: R$ 1.997 à vista no Pix, ou 10x de R$ 229,70."*
-- **Urgência real:** "Vagas poucas, vale pros primeiros / o lote fecha [dia]."
-- **CTA:** *"Se quiser garantir, me responde que te passo o link."*
+**3. Explica curto e conectado ao que ele disse**, oferece **turno** (tarde/noite), e quando faz sentido **cross-sell**:
+> (Ana Claudia) "Tem o gestor agora, e depois a formação completa — se quiser, a gente **desconta o valor do gestor** na formação."
 
-**5. Fechar conduzindo:** "Vou preparar o link e já te envio." → manda → "Assim que pagar, recebe acesso na hora."
+**4. Encerra com PRÓXIMO PASSO concreto** — manda o link, reserva a vaga. Nunca deixe a ligação morrer em "depois te retorno".
 
-**6. Pós-venda imediato:** "Inscrição confirmada, parabéns! Criamos o grupo e te esperamos dia X às 19h. Leva só o notebook."
+**Regras de voz:**
+- 📵 **Caiu na caixa postal?** Manda **WhatsApp/áudio na hora** (o Claudio comprou depois de 2 caixas postais + Whats).
+- 📞 **Linha ruim?** *"Me manda um oi no Whats que te mando um áudio, fica mais fácil"* — não insista numa ligação picotada.
 
 ---
 
-## Contorno de objeção (o que REALMENTE virou venda — agora com os áudios)
+## Contorno de objeção (o que REALMENTE virou venda)
 
-**💸 "Tá caro / não tenho à vista / só boleto"** — a jogada de ouro (Luciano, João Batista fecharam assim):
-> "Pode ser um **sinal de R$ 100 agora** no **Pix do CNPJ**, e o **restante na hora do curso**, como preferir?"
-> + empatia: *"Entendo a insegurança de pagar antes. Mas muita gente que promete pagar na hora não aparece — o sinal garante tua vaga."*
-> Variações que apareceram: **1x no cartão + resto em dinheiro**, **2 cartões**, entrada no Pix + resto no cartão.
+**🕐 "Esse horário não dá / trabalho à noite"** — ⚠️ **O DEAL-KILLER Nº 1.** Aparece repetido (Manuela, Maria, e outras) — e **existe turma da tarde (14h-17h15)** que muitas vezes não foi oferecida. **Sempre ofereça o outro turno:**
+> "Sem problema — tem turma da **tarde, das 14h às 17h15** também. Encaixa melhor?"
 
-**🕐 "Esse horário não dá / trabalho à noite"** — ⚠️ **a Manuela foi perdida assim e dava pra salvar:** existe **turma da tarde (14h-17h15)** além da noite! Sempre ofereça o outro turno:
-> "Sem problema — a gente tem turma da **tarde, das 14h às 17h15** também. Encaixa melhor pra ti?"
+**💸 "Tá caro / não tenho à vista / só boleto"** — jogada de ouro (Luciano, João Batista):
+> "Pode ser um **sinal de R$ 100 agora** no **Pix do CNPJ**, e o **restante na hora do curso**?"
+> + *"Muita gente que promete pagar na hora não aparece — o sinal garante tua vaga."*
+> Variações reais: 1x cartão + resto dinheiro · 2 cartões · entrada Pix + resto cartão.
 
-**😬 "Sou leigo / zero à esquerda / não entendo nada"** — medo super comum (Richard repetiu isso e fechou):
-> *"É justamente pra quem está no zero. Tu aprende fazendo, passo a passo, com o professor do lado. Pode ficar tranquilo que tu vai conseguir."*
+**🏃 "Começa hoje?" → cliente se sente apressado** (Denise/Setor Comercial pediu a próxima turma e sumiu): em vez de só "começa hoje!", ofereça **segurar a vaga** ou reconheça o tempo de organização:
+> "Consigo **segurar tua vaga** — tu fecha com um sinal e te organiza com calma pro primeiro dia."
 
-**🤨 "O curso vai acontecer mesmo? Vocês não adiam?"** (Richard):
-> *"Pode ficar tranquilo, já temos [X] alunos matriculados, vai acontecer nessas datas."* — remove o risco de "será que sai do papel?".
+**😬 "Sou leigo / zero à esquerda"** (Richard, Fabíola fecharam mesmo assim):
+> *"É justamente pra quem está no zero. Tu aprende fazendo, passo a passo, com o professor do lado."*
 
-**🤔 "Vou pensar / falar com meu marido/pai / te retorno"** — onde as PERDAS morreram (Paulo, Débora, Mary Kay):
-> "Claro! Até [dia] tu vê? Daí te chamo [dia] pra fechar." — **agenda data+hora** (etapa *Pediu prazo*) e **amarra com urgência real**. Não aceite "vou analisar" solto.
+**🤨 "O curso vai acontecer mesmo?"** (Richard):
+> *"Pode ficar tranquilo, já temos [X] alunos matriculados, vai acontecer nas datas."*
 
-**💡 Valor quando o cliente quer "fazer sozinho":** (Richard)
+**🤔 "Vou pensar / falar com meu marido/pai"** (Paulo, Débora, Mary Kay morreram aqui):
+> "Claro! Até [dia] tu vê? Daí te chamo [dia] pra fechar." — **agenda data+hora** + urgência real. Não aceite solto.
+
+**💡 "Quero fazer sozinho / já terceirizo":** (Mauro, Fernando)
 > *"Nosso objetivo é tu ter controle total do marketing do teu negócio. Terceirizar é caro e ninguém conhece teu negócio como tu."*
-
-**📞 "Por ligação não consigo agora"** → manda **áudio** explicando, segue por ali.
 
 ---
 
 ## 🚩 Sinais de alerta (apareceram nas PERDAS — evite)
 
-1. **Ficar só no texto** empurrando "posso ligar?" sem nunca conectar nem mandar áudio.
-2. **Mandar cronograma gigante + preço** e esperar o cliente reagir.
-3. **Follow-up genérico** repetido ("Gostaria de dar segmento?") sem novo ângulo.
-4. **Deixar objeção de pagamento no ar** sem oferecer sinal/entrada/parcelado/2 cartões.
-5. **Não oferecer a alternativa que existe** (turma da tarde, condição menor) quando bate a objeção.
-6. **Aceitar "vou analisar"** sem marcar retorno e sem urgência.
-7. **Resposta passiva à objeção de preço**: "faça uma proposta que eu levo pra direção" (Mary Kay) — fraco. Traga você a condição.
+1. **Na ligação, virar monólogo dos 4 módulos** sem descoberta e sem perguntar nada.
+2. **Ficar só no texto** empurrando "posso ligar?" sem nunca conectar nem mandar áudio.
+3. **Deixar a objeção de horário no ar** sem oferecer a turma da tarde.
+4. **Deixar objeção de pagamento sem resolver** (sinal/entrada/parcelado/2 cartões).
+5. **Follow-up genérico** ("Gostaria de dar segmento?") sem ângulo novo.
+6. **Encerrar a ligação/conversa sem próximo passo** ("manda por WhatsApp / depois retorno").
+7. **Aceitar "vou analisar"** sem marcar retorno e sem urgência.
 
 ---
 
 ## 🔧 Onde dá pra melhorar (as perdas mostram)
 
-- **Régua de pagamento na ponta da língua:** sinal R$100, entrada + boleto Nx, 1x+dinheiro, 2 cartões — várias perdas eram só fricção de pagamento.
-- **Reflexo de oferecer o outro turno** quando o horário trava (perdemos a Manuela por não fazer isso).
-- **Descoberta antes do preço** — várias perdas receberam preço sem ninguém entender o negócio.
-- **Follow-up com ângulo novo** a cada toque (prova social, vaga enchendo, condição que vira).
+- **Reflexo de oferecer a turma da tarde** quando bate horário — perdemos Manuela E Maria pelo mesmo motivo evitável.
+- **Descoberta antes do pitch**, principalmente na ligação.
+- **Régua de pagamento na ponta da língua** (sinal R$100, entrada+boleto, 2 cartões).
+- **Sempre fechar com próximo passo concreto.**
+- **Pivotar pro Whats/áudio** quando a ligação cai ou está ruim.
 
 ---
 
 ## Próximo passo
 
-1. **Transcrever as ligações** (68 conversas reais) — falta o token da API4COM. É a última camada de fechamento que ainda está cega.
-2. **Virar isto em copiloto:** dentro da tela "Atender agora", o agente sugere a próxima jogada conforme a etapa e a objeção do cliente — usando estes scripts, no tom de vocês.
+Quadro completo (texto + áudio + ligações) ✅. Agora: **virar isto em copiloto** dentro da tela "Atender agora" — o agente sugere a próxima jogada conforme a etapa e a objeção do cliente, usando estes scripts no tom de vocês, e avisa "oferece a turma da tarde" quando detectar objeção de horário.
 
-*Fonte: vendas reais (Matheus, João Batista, Luciano, Jeferson, Altamir, Richard, Alexandre e outras) × perdas com diálogo (Manuela, Mary Kay, Paulo, Débora, "❤️" e outras). Áudios transcritos via Whisper/Groq. Atualiza a cada novo lote de vendas.*
+*Fonte: 16 vendas reais × perdas com diálogo, nos 3 canais (WhatsApp texto + áudio + ligações API4COM). Transcrição via Whisper/Groq (áudios) e Deepgram (ligações). Atualiza a cada novo lote de vendas.*
