@@ -102,9 +102,9 @@ async function montarCorpus() {
 
 export async function GET() {
   // guardamos a última análise em webhook_logs (origem=analise-conversao) pra não exigir tabela nova
-  const { data } = await supabase.from('webhook_logs').select('payload, criado_em')
-    .eq('origem', 'analise-conversao').order('criado_em', { ascending: false }).limit(1).maybeSingle()
-  return NextResponse.json({ ok: true, analise: data ? { dados: data.payload, gerado_em: data.criado_em } : null })
+  const { data } = await supabase.from('webhook_logs').select('payload, recebido_em')
+    .eq('origem', 'analise-conversao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
+  return NextResponse.json({ ok: true, analise: data ? { dados: data.payload, gerado_em: data.recebido_em } : null })
 }
 
 export async function POST() {
@@ -130,9 +130,9 @@ export async function POST() {
     dados._meta = { ganho: nGanho, perda: nPerda }
     const { data: salvo, error } = await supabase.from('webhook_logs')
       .insert({ origem: 'analise-conversao', evento: 'analise', payload: dados, status: 'processado' })
-      .select('payload, criado_em').single()
+      .select('payload, recebido_em').single()
     if (error) return NextResponse.json({ ok: false, error: error.message })
-    return NextResponse.json({ ok: true, analise: { dados: salvo.payload, gerado_em: salvo.criado_em } })
+    return NextResponse.json({ ok: true, analise: { dados: salvo.payload, gerado_em: salvo.recebido_em } })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' })
   }
