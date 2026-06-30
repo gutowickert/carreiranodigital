@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -143,6 +144,15 @@ export default function Trafego() {
 
   // ROI por turma migrou para a página Captação (visão por turma fica lá; aqui é só criativo).
 
+  // ---- datasets dos gráficos (panorama) ----
+  const campanhasChart = campanhas.filter(c => c.m.spend > 0 || c.m.leads > 0).slice(0, 8).map(c => ({
+    campanha: c.campaign.length > 22 ? c.campaign.slice(0, 22) + '…' : c.campaign,
+    investido: Math.round(c.m.spend),
+    receita: Math.round(c.m.receita),
+    leads: c.m.leads,
+  }))
+  const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
+
   const KPI = ({ label, valor, cor, sub }: any) => (
     <div style={{ ...card, padding: 16 }}>
       <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
@@ -253,6 +263,39 @@ export default function Trafego() {
         <KPI label="Origem identificada" valor={pct(cobertura)} cor={cobertura >= 0.7 ? 'var(--green)' : cobertura >= 0.4 ? 'var(--amber)' : 'var(--red)'} sub={`${leadsComAnuncio}/${totalLeads} com anúncio`} />
       </div>
       <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '6px 0 28px' }}>Leads casam com o anúncio pelo <b style={{ color: 'var(--text-muted)' }}>utm_content</b> (nome do anúncio) + <b style={{ color: 'var(--text-muted)' }}>utm_campaign</b>. Gasto real do Meta por anúncio.</p>
+
+      {/* Panorama visual */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: 16, marginBottom: 32 }}>
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Investimento × Receita por campanha</div>
+          {campanhasChart.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem dados no período.</p> : (
+            <ResponsiveContainer width="100%" height={Math.max(190, campanhasChart.length * 46)}>
+              <BarChart data={campanhasChart} layout="vertical" margin={{ left: 8, right: 16, top: 4, bottom: 4 }}>
+                <XAxis type="number" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+                <YAxis type="category" dataKey="campanha" width={150} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} formatter={(v: any) => fmt(v)} />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Bar dataKey="investido" name="Investido" fill="#f87171" radius={[0, 3, 3, 0]} barSize={9} />
+                <Bar dataKey="receita" name="Receita" fill="#34d399" radius={[0, 3, 3, 0]} barSize={9} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Leads por campanha</div>
+          {campanhasChart.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem dados no período.</p> : (
+            <ResponsiveContainer width="100%" height={Math.max(190, campanhasChart.length * 46)}>
+              <BarChart data={campanhasChart} layout="vertical" margin={{ left: 8, right: 28, top: 4, bottom: 4 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="campanha" width={150} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
+                <Bar dataKey="leads" name="Leads" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </div>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>1. Campanha ▸ Conjunto ▸ Anúncio</h2>
       <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>Clique pra abrir. 🟢 escalar (vende com ROAS ≥ 1) · 🟡 observar · 🔴 matar (gastou, gerou lead e não vendeu).</p>
