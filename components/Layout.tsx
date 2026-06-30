@@ -290,7 +290,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       {grupo.itens.map(m => {
                         const ativo = pathname === m.href
                         return (
-                          <Link key={m.href} href={m.href} style={{
+                          <Link key={m.href} href={m.href} className={'navItem' + (ativo ? ' ativo' : '')} style={{
                             display: 'flex',
                             justifyContent: 'space-between',
                             alignItems: 'center',
@@ -302,6 +302,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                             textDecoration: 'none',
                             backgroundColor: ativo ? 'var(--accent)' : 'transparent',
                             color: ativo ? 'var(--on-accent)' : 'var(--text-muted)',
+                            boxShadow: ativo ? '0 1px 6px rgba(124,58,237,.45)' : 'none',
+                            transition: 'background-color .15s ease, color .15s ease',
                           }}>
                             <span>{m.nome}</span>
                             {m.href === '/dashboard/whatsapp' && waUnread > 0 && (
@@ -323,9 +325,16 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
 
-            <div style={{ padding: '12px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-              <div style={{ fontSize: '12px', color: 'var(--text-2)', fontWeight: 500 }}>{perfil.nome}</div>
-              <div style={{ fontSize: '10px', color: 'var(--text-faint)', marginTop: 2 }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
+            <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--accent-soft))', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+                  {(perfil.nome || '?').trim().charAt(0).toUpperCase()}
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
+                </div>
+              </div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
               <div style={{ marginTop: 8 }}><ThemeToggle /></div>
               <button onClick={sair} style={{ marginTop: 8, width: '100%', background: 'var(--surface-2)', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: 'var(--text-2)', cursor: 'pointer' }}>

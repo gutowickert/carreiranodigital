@@ -1,3 +1,6 @@
+/* Fonte do sistema (profissional, com fallback do SO). @import deve vir primeiro. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+
 /* ============================================================
    TEMA (claro/escuro) — tokens de cor
    Use SEMPRE var(--token) nos estilos, nunca hex fixo.
@@ -26,6 +29,7 @@
   --amber: #fbbf24;  --amber-bg: #431407;
   --blue: #60a5fa;   --blue-bg: #172554;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  --ring: rgba(124, 58, 237, 0.35);
 }
 
 [data-theme="light"] {
@@ -49,12 +53,62 @@
   --amber: #c2680c;  --amber-bg: #fdeecb;
   --blue: #2563eb;   --blue-bg: #dce9fe;
   --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .10);
+  --ring: rgba(124, 58, 237, 0.28);
 }
 
 html, body { background: var(--bg); color: var(--text); }
-body { transition: background-color .2s ease, color .2s ease; }
-input, textarea, select { color: var(--text); }
+body {
+  transition: background-color .2s ease, color .2s ease;
+  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+input, textarea, select { color: var(--text); font-family: inherit; }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
+
+/* ============================================================
+   POLISH GLOBAL — vale pra qualquer tela (não depende de tokens)
+   ============================================================ */
+/* Títulos com leve aperto de letra (cara mais "desenhada") */
+h1, h2, h3, h4 { letter-spacing: -0.018em; }
+h1 { line-height: 1.15; }
+
+/* Botões: cursor, transição suave, hover que ilumina e clique que afunda */
+button { cursor: pointer; transition: filter .15s ease, transform .04s ease, box-shadow .15s ease; }
+button:hover:not(:disabled) { filter: brightness(1.08); }
+button:active:not(:disabled) { transform: translateY(1px); }
+button:disabled { cursor: default; opacity: .6; }
+
+/* Links com transição */
+a { transition: color .15s ease, opacity .15s ease; }
+
+/* Foco visível e elegante (acessibilidade + cara de produto) */
+input:focus-visible, textarea:focus-visible, select:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--ring);
+}
+button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Seleção de texto na cor da marca */
+::selection { background: rgba(124, 58, 237, .85); color: #fff; }
+
+/* Itens do menu lateral: hover suave (só nos não-ativos) */
+.navItem:not(.ativo):hover { background-color: var(--surface-2) !important; color: var(--text) !important; }
+
+/* Scrollbar fina e discreta (Chrome/Edge/Firefox) */
+* { scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 8px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* Imagens/SVG não estouram o container */
+img, svg { max-width: 100%; }
 
 /* Adaptações mobile */
 @media (max-width: 768px) {
