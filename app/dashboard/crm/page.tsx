@@ -1285,7 +1285,7 @@ function ChatLead({ lead }: { lead: Lead }) {
                 {m.tipo !== 'texto' && (
                   <>
                     {renderMidia(m)}
-                    {m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>{m.texto}</div>}
+                    {m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: eu ? '#e6f4ea' : 'var(--text-2)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.texto}</div>}
                   </>
                 )}
                 <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : 'var(--text-faint)', marginTop: 4, textAlign: 'right' }}>

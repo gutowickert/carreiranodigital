@@ -370,7 +370,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
             <div key={m.id} style={{ alignSelf: eu ? 'flex-end' : 'flex-start', maxWidth: '70%' }}>
               <div style={{ background: eu ? '#075E54' : 'var(--surface)', border: eu ? 'none' : '1px solid var(--border)', borderRadius: 10, padding: '8px 10px' }}>
                 {m.texto && m.tipo === 'texto' && <div style={{ fontSize: 13, color: eu ? 'var(--on-accent)' : 'var(--text)', whiteSpace: 'pre-wrap' }}>{m.texto}</div>}
-                {m.tipo !== 'texto' && <>{renderMidia(m)}{m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 4 }}>{m.texto}</div>}</>}
+                {m.tipo !== 'texto' && <>{renderMidia(m)}{m.texto && m.tipo !== 'documento' && <div style={{ fontSize: 12, color: eu ? '#e6f4ea' : 'var(--text-2)', whiteSpace: 'pre-wrap', marginTop: 4 }}>{m.texto}</div>}</>}
                 <div style={{ fontSize: 9, color: eu ? '#a7f3d0' : 'var(--text-faint)', marginTop: 4, textAlign: 'right' }}>
                   {new Date(m.criado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
                 </div>
