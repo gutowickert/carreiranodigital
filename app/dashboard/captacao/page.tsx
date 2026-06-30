@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -160,6 +161,18 @@ export default function Captacao() {
   const semVend = leads.filter(l => !l.vendedor_id)
   if (semVend.length > 0) linhasVendedor.push({ nome: 'Sem vendedor', total: semVend.length, porEtapa: contaPorEtapa(semVend) })
 
+  // ---- datasets dos gráficos (panorama) ----
+  const totDisparo = leadsPeriodo.filter(l => canalDoLead(l) === 'disparo').length
+  const totOrganico = leadsPeriodo.filter(l => canalDoLead(l) === 'organico').length
+  const canaisData = [
+    { name: 'Anúncio', value: totAnuncio, cor: '#a78bfa' },
+    { name: 'Disparo', value: totDisparo, cor: '#60a5fa' },
+    { name: 'Orgânico', value: totOrganico, cor: '#9ca3af' },
+  ].filter(c => c.value > 0)
+  const funilChart = funil.filter(f => f.count > 0).map(f => ({ etapa: labelEtapa(f.etapa), count: f.count, cor: f.etapa === 'ganho' ? '#4ade80' : (f.etapa === 'perda' || f.etapa === 'perdido') ? '#f87171' : '#7c3aed' }))
+  const vendedorChart = linhasVendedor.map(v => ({ nome: v.nome, total: v.total })).sort((a, b) => b.total - a.total).slice(0, 10)
+  const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
+
   // Atalhos de período (botão ativo destacado). 'de' inclui o dia; 'ate' é sempre hoje.
   const PRESETS: [string, string][] = [
     ['Hoje', hoje],
@@ -208,6 +221,58 @@ export default function Captacao() {
         <span>CPL alvo = </span>
         <input type="number" value={alvoPct} min={1} max={20} onChange={e => setAlvoPct(Number(e.target.value) || 0)} style={{ ...inp, width: 60, padding: '4px 8px' }} />
         <span>% do ticket da turma · acima disso o CPL fica vermelho e a ação vira “trocar criativo”.</span>
+      </div>
+
+      {/* Panorama visual */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 16, marginBottom: 32 }}>
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Canais de captação</div>
+          {canaisData.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem leads no período.</p> : (
+            <>
+              <ResponsiveContainer width="100%" height={180}>
+                <PieChart>
+                  <Pie data={canaisData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={48} outerRadius={72} paddingAngle={2} stroke="none">
+                    {canaisData.map((d, i) => <Cell key={i} fill={d.cor} />)}
+                  </Pie>
+                  <Tooltip {...tipProps} />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: 'flex', justifyContent: 'center', gap: 12, fontSize: 11, flexWrap: 'wrap' }}>
+                {canaisData.map((d, i) => <span key={i} style={{ color: d.cor }}>● {d.name} {d.value}</span>)}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Funil — onde os leads estão</div>
+          {funilChart.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem leads.</p> : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={funilChart} layout="vertical" margin={{ left: 8, right: 28, top: 0, bottom: 0 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="etapa" width={120} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
+                <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }}>
+                  {funilChart.map((f, i) => <Cell key={i} fill={f.cor} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+
+        <div style={{ ...card, padding: 18 }}>
+          <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Leads por vendedor</div>
+          {vendedorChart.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem dados.</p> : (
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={vendedorChart} layout="vertical" margin={{ left: 8, right: 24, top: 0, bottom: 0 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="nome" width={120} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
+                <Bar dataKey="total" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </div>
       </div>
 
       {/* 1. Cards por turma */}
