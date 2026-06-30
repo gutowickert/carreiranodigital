@@ -72,6 +72,7 @@ export async function POST(req: NextRequest) {
 
     // últimas mensagens da conversa — inclui áudios pra transcrever na hora
     let linhas: string[] = []
+    const diag = { temKey: false, pendentes: 0, transcritos: 0, erro: '' }
     if (convIds.length) {
       const { data: msgs } = await supabase.from('wa_mensagens')
         .select('id, direcao, status, texto, tipo, midia_url, criado_em').in('conversa_id', convIds)
@@ -81,18 +82,20 @@ export async function POST(req: NextRequest) {
       // transcreve áudios recebidos ainda sem texto (Deepgram), salva e usa — pro copiloto "ouvir" o cliente
       const dgKey = process.env.DEEPGRAM_API_KEY
       const pendentes = recentes.filter((m: any) => m.tipo === 'audio' && m.midia_url && !(m.texto || '').trim()).slice(-12)
+      diag.temKey = !!dgKey; diag.pendentes = pendentes.length
       if (dgKey && pendentes.length) {
         await Promise.all(pendentes.map(async (m: any) => {
           try {
-            const a = await fetch(m.midia_url); if (!a.ok) return
+            const a = await fetch(m.midia_url); if (!a.ok) { diag.erro = diag.erro || ('dl ' + a.status); return }
             const buf = Buffer.from(await a.arrayBuffer())
             const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true', {
               method: 'POST', headers: { Authorization: 'Token ' + dgKey, 'Content-Type': 'audio/ogg' }, body: buf,
             })
             const j = await r.json()
             const tx = (j?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '').trim()
-            if (tx) { m.texto = '🎤 ' + tx; await supabase.from('wa_mensagens').update({ texto: m.texto }).eq('id', m.id) }
-          } catch { /* ignora falha de 1 áudio */ }
+            if (tx) { m.texto = '🎤 ' + tx; await supabase.from('wa_mensagens').update({ texto: m.texto }).eq('id', m.id); diag.transcritos++ }
+            else diag.erro = diag.erro || ('dg ' + r.status + ' ' + JSON.stringify(j).slice(0, 80))
+          } catch (e: any) { diag.erro = diag.erro || ('ex ' + (e?.message || 'erro')) }
         }))
       }
 
@@ -135,9 +138,9 @@ export async function POST(req: NextRequest) {
       if (a >= 0 && z > a) { try { out = JSON.parse(raw.slice(a, z + 1)) } catch {} }
     }
     if (!out || typeof out.rascunho !== 'string') {
-      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: raw.slice(0, 800) })
+      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: raw.slice(0, 800), diag })
     }
-    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: out.rascunho })
+    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: out.rascunho, diag })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
   }
