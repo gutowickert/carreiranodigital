@@ -121,8 +121,9 @@ export default function CaixaWhatsApp() {
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
                       <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone}</span>
                       <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
-                        {c.lead_id && naoLidaSet.has(c.lead_id) && <span title="Marcado como não lida" style={{ fontSize: 10 }}>🔴</span>}
-                        {c.nao_lidas > 0 && <span style={{ fontSize: 11, background: '#25D366', color: '#063', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>{c.nao_lidas}</span>}
+                        {c.nao_lidas > 0
+                          ? <span style={{ fontSize: 11, background: '#25D366', color: '#063', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>{c.nao_lidas}</span>
+                          : (c.lead_id && naoLidaSet.has(c.lead_id)) ? <span title="Não lida" style={{ width: 10, height: 10, borderRadius: '50%', background: '#25D366', display: 'inline-block' }} /> : null}
                       </span>
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>

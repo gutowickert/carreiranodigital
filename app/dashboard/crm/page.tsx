@@ -438,7 +438,7 @@ export default function CRM() {
                           onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ color: 'var(--amber)' }}>🔴 </span>}{lead.nome}</div>
+                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle' }} />}{lead.nome}</div>
                             <div style={{ fontSize: 9, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 600 }}>D{dia}</div>
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
@@ -537,7 +537,7 @@ export default function CRM() {
                     return (
                       <tr key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                         style={{ borderBottom: '1px solid var(--border)', cursor: 'pointer' }}>
-                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{lead.nao_lida && <span title="Não lida" style={{ color: 'var(--amber)' }}>🔴 </span>}{lead.nome}</td>
+                        <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle' }} />}{lead.nome}</td>
                         <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{lead.whatsapp || '-'}</td>
                         <td style={{ padding: '12px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{lead.turmas?.codigo || lead.turmas?.produtos?.nome || '-'}</td>
                         <td style={{ padding: '12px 16px' }}>
@@ -818,8 +818,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               💬 WhatsApp
             </button>
             <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? 'var(--amber)' : 'var(--border-strong)'), background: naoLida ? 'var(--amber-bg)' : 'var(--surface-2)', color: naoLida ? 'var(--amber)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              {naoLida ? '🔴 Não lida' : '○ Marcar não lida'}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? 'var(--green)' : 'var(--border-strong)'), background: naoLida ? 'var(--green-bg)' : 'var(--surface-2)', color: naoLida ? 'var(--green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {naoLida ? '● Não lida' : '○ Marcar não lida'}
             </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? 'var(--red)' : 'var(--text-muted)' }}>{msgLigacao}</span>}
           </div>
