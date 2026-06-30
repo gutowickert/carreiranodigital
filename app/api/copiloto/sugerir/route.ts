@@ -70,16 +70,40 @@ export async function POST(req: NextRequest) {
       convIds = (convs || []).map((c: any) => c.id)
     }
 
-    // últimas mensagens da conversa (áudios já transcritos chegam como texto 🎤)
+    // últimas mensagens da conversa — inclui áudios pra transcrever na hora
     let linhas: string[] = []
     if (convIds.length) {
       const { data: msgs } = await supabase.from('wa_mensagens')
-        .select('direcao, status, texto, criado_em').in('conversa_id', convIds)
-        .not('texto', 'is', null).order('criado_em', { ascending: false }).limit(30)
-      linhas = (msgs || []).reverse().map((m: any) => {
-        const quem = (m.direcao === 'recebida' || m.status === 'recebida') ? 'CLIENTE' : 'VENDEDOR'
-        return `${quem}: ${(m.texto || '').replace(/\s+/g, ' ').trim().slice(0, 400)}`
-      }).filter((l: string) => l.length > 9)
+        .select('id, direcao, status, texto, tipo, midia_url, criado_em').in('conversa_id', convIds)
+        .order('criado_em', { ascending: false }).limit(40)
+      const recentes = (msgs || []).reverse() // ordem cronológica
+
+      // transcreve áudios recebidos ainda sem texto (Deepgram), salva e usa — pro copiloto "ouvir" o cliente
+      const dgKey = process.env.DEEPGRAM_API_KEY
+      const pendentes = recentes.filter((m: any) => m.tipo === 'audio' && m.midia_url && !(m.texto || '').trim()).slice(-12)
+      if (dgKey && pendentes.length) {
+        await Promise.all(pendentes.map(async (m: any) => {
+          try {
+            const a = await fetch(m.midia_url); if (!a.ok) return
+            const buf = Buffer.from(await a.arrayBuffer())
+            const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true', {
+              method: 'POST', headers: { Authorization: 'Token ' + dgKey, 'Content-Type': 'audio/ogg' }, body: buf,
+            })
+            const j = await r.json()
+            const tx = (j?.results?.channels?.[0]?.alternatives?.[0]?.transcript || '').trim()
+            if (tx) { m.texto = '🎤 ' + tx; await supabase.from('wa_mensagens').update({ texto: m.texto }).eq('id', m.id) }
+          } catch { /* ignora falha de 1 áudio */ }
+        }))
+      }
+
+      linhas = recentes
+        .filter((m: any) => (m.texto || '').trim())
+        .map((m: any) => {
+          const quem = (m.direcao === 'recebida' || m.status === 'recebida') ? 'CLIENTE' : 'VENDEDOR'
+          return `${quem}: ${(m.texto || '').replace(/\s+/g, ' ').trim().slice(0, 400)}`
+        })
+        .filter((l: string) => l.length > 9)
+        .slice(-30)
     }
 
     // turmas ABERTAS (em vendas) — abastece a oferta com cidade/data/preço reais
