@@ -17,6 +17,7 @@ type Conversa = {
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
 const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const EMOJIS = ['😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😉', '😎', '🤩', '🥳', '🤗', '🙏', '👍', '👏', '🙌', '💪', '🔥', '✅', '✨', '🎉', '💯', '❤️', '🧡', '💛', '💚', '💙', '💜', '🤝', '👋', '😅', '😄', '🙂', '😌', '🤔', '😢', '😭', '😡', '🥺', '😴', '💰', '💸', '📈', '📲', '📅', '⏰', '⚡', '🚀']
 
 export default function CaixaWhatsApp() {
   const [autorizado, setAutorizado] = useState<boolean | null>(null)
@@ -163,6 +164,9 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
+  const [sugerindo, setSugerindo] = useState(false)
+  const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
+  const [showEmoji, setShowEmoji] = useState(false)
   const [criandoLead, setCriandoLead] = useState(false)
   const [editInfo, setEditInfo] = useState(false)
   const [nomeEd, setNomeEd] = useState('')
@@ -230,6 +234,29 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
       else setErro(json.error || 'falha ao enviar')
     } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
     finally { setEnviando(false) }
+  }
+
+  // Copiloto: lê a conversa + turmas abertas e sugere a próxima mensagem
+  async function sugerirResposta() {
+    setSugerindo(true); setSugestao(null); setErro('')
+    try {
+      const r = await fetch('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
+      const j = await r.json()
+      if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
+      setTexto(j.rascunho || '')
+      setSugestao({ objecao: j.objecao || 'nenhuma', dica: j.dica || '' })
+      setTimeout(() => txtRef.current?.focus(), 50)
+    } catch { setErro('Falha ao falar com o copiloto.') }
+    finally { setSugerindo(false) }
+  }
+
+  function inserirEmoji(emo: string) {
+    const t = txtRef.current
+    if (t && typeof t.selectionStart === 'number') {
+      const a = t.selectionStart, b = t.selectionEnd
+      setTexto(texto.slice(0, a) + emo + texto.slice(b))
+      setTimeout(() => { t.focus(); const p = a + emo.length; t.setSelectionRange(p, p) }, 0)
+    } else setTexto(texto + emo)
   }
 
   async function iniciarGravacao() {
@@ -353,12 +380,31 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
         })}
         <div ref={fimRef} />
       </div>
+      {sugestao && (
+        <div style={{ margin: '0 12px', padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
+          <span style={{ color: '#a78bfa', fontWeight: 700 }}>✨ Copiloto</span>
+          {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
+          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
+          <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
+        </div>
+      )}
       <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)', alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
+        <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
+          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : '✨'}</button>
+        <div style={{ position: 'relative' }}>
+          {showEmoji && (
+            <div style={{ position: 'absolute', bottom: '110%', left: 0, zIndex: 30, width: 268, maxHeight: 180, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 8, boxShadow: 'var(--shadow)', display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2 }}>
+              {EMOJIS.map(e => <button key={e} onClick={() => inserirEmoji(e)} style={{ background: 'transparent', border: 'none', fontSize: 20, padding: 2, cursor: 'pointer', lineHeight: 1 }}>{e}</button>)}
+            </div>
+          )}
+          <button onClick={() => setShowEmoji(v => !v)} disabled={gravando} title="Emojis"
+            style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>😊</button>
+        </div>
         <textarea ref={txtRef} rows={1} style={{ ...inp, flex: 1, resize: 'none', maxHeight: 140, lineHeight: 1.4, fontFamily: 'inherit' }} placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviarTexto() } }} />
         {texto.trim() ? (

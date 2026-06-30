@@ -30,6 +30,8 @@ CONTORNO DE OBJEÇÃO (regras de ouro):
 
 EVITE: monólogo dos módulos sem descoberta; mandar só preço e esperar; deixar objeção de horário/pagamento sem oferecer saída; follow-up genérico repetido; encerrar sem próximo passo concreto.
 
+TURMAS E OFERTA: as turmas ABERTAS reais (produto, cidade, data de início, preço) vêm no contexto. Use SEMPRE esses dados na oferta — nunca invente data ou preço. Ofereça a turma que combina com a cidade e o objetivo do contato; se houver turma na cidade dele, priorize-a.
+
 Sua tarefa: olhar a conversa até agora e a etapa do funil, e sugerir a PRÓXIMA mensagem que o vendedor deve enviar AGORA, já pronta, no tom da escola. Curta e natural (2-5 frases). Se o cliente levantou uma objeção, trate-a com a regra acima.
 
 Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatamente neste formato:
@@ -37,23 +39,42 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatament
 
 export async function POST(req: NextRequest) {
   try {
-    const { leadId } = await req.json().catch(() => ({}))
-    if (!leadId) return NextResponse.json({ ok: false, error: 'falta leadId' }, { status: 200 })
+    const body = await req.json().catch(() => ({}))
+    const leadId: string | undefined = body.leadId
+    const conversaId: string | undefined = body.conversaId
+    if (!leadId && !conversaId) return NextResponse.json({ ok: false, error: 'falta leadId ou conversaId' }, { status: 200 })
 
     const key = process.env.ANTHROPIC_API_KEY
     if (!key) return NextResponse.json({ ok: false, error: 'Falta ANTHROPIC_API_KEY no servidor (configurar na Vercel).' }, { status: 200 })
 
-    const { data: lead } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('id', leadId).single()
-    if (!lead) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
+    // resolve contato: pode vir de um lead (card do CRM) ou direto de uma conversa (caixa de entrada)
+    let lead: any = null
+    let convIds: string[] = []
+    let nomeContato = ''
+    let telefone = ''
 
-    // conversa do lead (por lead_id ou telefone) — últimas mensagens, áudios já transcritos (🎤)
-    const s = suf(lead.whatsapp)
-    const { data: convs } = await supabase.from('wa_conversas').select('id').or(`lead_id.eq.${leadId}${s.length === 8 ? `,telefone.ilike.%${s}` : ''}`)
-    const ids = (convs || []).map((c: any) => c.id)
+    if (conversaId) {
+      const { data: conv } = await supabase.from('wa_conversas').select('id, telefone, nome, lead_id').eq('id', conversaId).single()
+      if (!conv) return NextResponse.json({ ok: false, error: 'conversa não encontrada' }, { status: 200 })
+      nomeContato = conv.nome || ''; telefone = conv.telefone || ''; convIds = [conv.id]
+      if (conv.lead_id) {
+        const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('id', conv.lead_id).single()
+        lead = l
+      }
+    } else {
+      const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('id', leadId).single()
+      if (!l) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
+      lead = l; nomeContato = l.nome || ''; telefone = l.whatsapp || ''
+      const s = suf(l.whatsapp)
+      const { data: convs } = await supabase.from('wa_conversas').select('id').or(`lead_id.eq.${leadId}${s.length === 8 ? `,telefone.ilike.%${s}` : ''}`)
+      convIds = (convs || []).map((c: any) => c.id)
+    }
+
+    // últimas mensagens da conversa (áudios já transcritos chegam como texto 🎤)
     let linhas: string[] = []
-    if (ids.length) {
+    if (convIds.length) {
       const { data: msgs } = await supabase.from('wa_mensagens')
-        .select('direcao, status, texto, criado_em').in('conversa_id', ids)
+        .select('direcao, status, texto, criado_em').in('conversa_id', convIds)
         .not('texto', 'is', null).order('criado_em', { ascending: false }).limit(30)
       linhas = (msgs || []).reverse().map((m: any) => {
         const quem = (m.direcao === 'recebida' || m.status === 'recebida') ? 'CLIENTE' : 'VENDEDOR'
@@ -61,7 +82,18 @@ export async function POST(req: NextRequest) {
       }).filter((l: string) => l.length > 9)
     }
 
-    const contexto = `Lead: ${lead.nome || '(sem nome)'} | etapa do funil: ${lead.etapa || '-'} | turma: ${lead.codigo_turma || '-'}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora.`
+    // turmas ABERTAS (em vendas) — abastece a oferta com cidade/data/preço reais
+    const { data: turmas } = await supabase.from('turmas')
+      .select('codigo, preco_venda, data_inicio, produtos(nome), cidades(nome)')
+      .eq('status', 'em_vendas').order('data_inicio')
+    const turmasTxt = (turmas || []).map((t: any) => {
+      const d = t.data_inicio ? new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '?'
+      const preco = t.preco_venda ? `R$${Number(t.preco_venda).toLocaleString('pt-BR')}` : 's/ preço'
+      return `- ${t.produtos?.nome || t.codigo} em ${t.cidades?.nome || '?'} — início ${d} — ${preco} (cód ${t.codigo})`
+    }).join('\n') || '(nenhuma turma em vendas no momento)'
+
+    const quemTxt = nomeContato || telefone || '(sem nome)'
+    const contexto = `Contato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\nTURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora.`
 
     const client = new Anthropic({ apiKey: key })
     const resp = await client.messages.create({
