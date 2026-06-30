@@ -351,6 +351,16 @@ export default function CRM() {
   const leadsAtivos = leadsFiltrados.filter(l => l.etapa !== 'ganho' && l.etapa !== 'perda')
   const leadsGanho = leadsFiltrados.filter(l => l.etapa === 'ganho')
   const leadsPerda = leadsFiltrados.filter(l => l.etapa === 'perda')
+  // motivo de perda → nome + cor (indicador visual nos leads perdidos)
+  const motivoMap: Record<string, string> = Object.fromEntries(motivosPerda.map((m: any) => [m.id, m.nome]))
+  const corMotivo = (nome: string) => {
+    const n = (nome || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    if (n.includes('preco') || n.includes('orcamento')) return { color: 'var(--amber)', background: 'var(--amber-bg)' }
+    if (n.includes('concorrente')) return { color: 'var(--accent-soft)', background: 'var(--accent-bg)' }
+    if (n.includes('data')) return { color: 'var(--blue)', background: 'var(--blue-bg)' }
+    if (n.includes('interesse')) return { color: 'var(--red)', background: 'var(--red-bg)' }
+    return { color: 'var(--text-muted)', background: 'var(--surface-2)' } // sem resposta, outro, etc.
+  }
 
   const leadsPorEtapa = ETAPAS_KANBAN.map(e => ({
     etapa: e,
@@ -506,6 +516,9 @@ export default function CRM() {
                         <div key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 10, cursor: 'pointer' }}>
                           <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{lead.nome}</div>
+                          {lead.motivo_perda_id && motivoMap[lead.motivo_perda_id] && (
+                            <span style={{ display: 'inline-block', marginTop: 5, fontSize: 9, fontWeight: 700, borderRadius: 4, padding: '2px 6px', ...corMotivo(motivoMap[lead.motivo_perda_id]) }}>{motivoMap[lead.motivo_perda_id]}</span>
+                          )}
                         </div>
                       ))}
                       {leadsPerda.length === 0 && <p style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nenhum.</p>}
