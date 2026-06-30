@@ -570,6 +570,7 @@ export default function CRM() {
             aplicarRateio={aplicarRateio}
             moverEtapa={moverEtapa}
             podeExcluir={meuPerfil?.papel === 'admin'}
+            meuPerfil={meuPerfil}
             onFechar={() => { setModalAberto(false); setLeadEditando(null); setNovoLead(false); carregarLeads() }}
           />
         )}
@@ -583,10 +584,11 @@ interface ModalLeadProps {
   aplicarRateio: (turmaId: string) => Promise<string | null>
   moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) => Promise<void>
   podeExcluir?: boolean
+  meuPerfil?: any
   onFechar: () => void
 }
 
-function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, podeExcluir, onFechar }: ModalLeadProps) {
+function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
@@ -594,6 +596,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [ligacoes, setLigacoes] = useState<any[]>([])
   const [chatAberto, setChatAberto] = useState(false)
   const [novoAndamento, setNovoAndamento] = useState('')
+  // nome de quem registrou o andamento (resolve pelo id do usuário)
+  const nomeUsuario = (id: string) => (vendedores.find((v: any) => v.id === id) as any)?.nome || (id === meuPerfil?.id ? meuPerfil?.nome : '')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
   const [prazoData, setPrazoData] = useState('')
   const [prazoHora, setPrazoHora] = useState('14:00')
@@ -683,7 +687,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       if (json.ok) {
         setMsgLigacao('Discando... atende no teu Webphone')
         await supabase.from('lead_andamentos').insert({
-          lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'ligacao',
+          lead_id: lead.id, vendedor_id: meuPerfil?.id || lead.vendedor_id, tipo: 'ligacao',
           observacao: 'Ligacao iniciada via API4COM',
         })
         carregarAndamentos(lead.id)
@@ -726,7 +730,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function adicionarAndamento() {
     if (!lead || !novoAndamento.trim()) return
     await supabase.from('lead_andamentos').insert({
-      lead_id: lead.id, vendedor_id: lead.vendedor_id,
+      lead_id: lead.id, vendedor_id: meuPerfil?.id || lead.vendedor_id,
       tipo: 'observacao',
       observacao: novoAndamento,
     })
@@ -1068,6 +1072,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                     <div style={{ color: 'var(--text-2)' }}>{a.observacao}</div>
                     <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
                       {a.tipo && a.tipo !== 'observacao' && <span style={{ color: 'var(--accent-soft)', marginRight: 6 }}>[{a.tipo}]</span>}
+                      {a.vendedor_id && nomeUsuario(a.vendedor_id) && <span style={{ color: 'var(--text-muted)', marginRight: 6 }}>👤 {nomeUsuario(a.vendedor_id)}</span>}
                       {new Date(a.criado_em).toLocaleString('pt-BR')}
                     </div>
                   </div>
