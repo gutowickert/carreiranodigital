@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -55,6 +56,16 @@ export default function Resultados() {
   const totalVendido = ganhos.reduce((s, l) => s + (l.valor_venda || 0), 0)
   const taxaConversao = leads.length > 0 ? (ganhos.length / leads.length * 100) : 0
 
+  // datasets dos gráficos
+  const donutData = [{ name: 'Ganhos', value: ganhos.length, cor: '#34d399' }, { name: 'Perdidos', value: perdidos.length, cor: '#f87171' }]
+  const motivosMap: Record<string, number> = {}
+  perdidos.forEach(l => { const m = buscarMotivo(l.motivo_perda_id)?.nome || 'Sem motivo'; motivosMap[m] = (motivosMap[m] || 0) + 1 })
+  const motivosData = Object.entries(motivosMap).map(([nome, qtd]) => ({ nome, qtd })).sort((a, b) => b.qtd - a.qtd).slice(0, 8)
+  const turmaMap: Record<string, number> = {}
+  ganhos.forEach(l => { const t = buscarTurma(l.turma_id); const nome = t?.codigo || t?.produtos?.nome || 'Sem turma'; turmaMap[nome] = (turmaMap[nome] || 0) + (l.valor_venda || 0) })
+  const turmaData = Object.entries(turmaMap).map(([nome, val]) => ({ nome, val })).sort((a, b) => b.val - a.val).slice(0, 8)
+  const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
+
   function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 
   return (
@@ -87,6 +98,57 @@ export default function Resultados() {
           <div style={{ ...card, padding: 20 }}>
             <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Conversão</div>
             <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--accent-soft)' }}>{taxaConversao.toFixed(1)}%</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>
+          <div style={{ ...card, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Conversão</div>
+            {leads.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem dados no mês.</p> : (
+              <>
+                <ResponsiveContainer width="100%" height={190}>
+                  <PieChart>
+                    <Pie data={donutData} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={52} outerRadius={78} paddingAngle={2} stroke="none">
+                      {donutData.map((d, i) => <Cell key={i} fill={d.cor} />)}
+                    </Pie>
+                    <Tooltip {...tipProps} />
+                  </PieChart>
+                </ResponsiveContainer>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: 16, fontSize: 12, marginTop: 4 }}>
+                  <span style={{ color: 'var(--green)' }}>● {ganhos.length} ganhos</span>
+                  <span style={{ color: 'var(--red)' }}>● {perdidos.length} perdas</span>
+                  <span style={{ color: 'var(--accent-soft)', fontWeight: 700 }}>{taxaConversao.toFixed(0)}%</span>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div style={{ ...card, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>Motivos de perda</div>
+            {motivosData.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma perda no mês.</p> : (
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={motivosData} layout="vertical" margin={{ left: 8, right: 28, top: 0, bottom: 0 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="nome" width={110} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
+                  <Bar dataKey="qtd" fill="#f87171" radius={[0, 4, 4, 0]} barSize={15} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
+          </div>
+
+          <div style={{ ...card, padding: 20 }}>
+            <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 12 }}>Vendas por turma (R$)</div>
+            {turmaData.length === 0 ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma venda no mês.</p> : (
+              <ResponsiveContainer width="100%" height={190}>
+                <BarChart data={turmaData} layout="vertical" margin={{ left: 8, right: 8, top: 0, bottom: 0 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="nome" width={130} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} formatter={(v: any) => fmt(v)} />
+                  <Bar dataKey="val" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={15} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </div>
 

@@ -3,8 +3,38 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+
+// Etapas reais do funil (ordem + cor) — antes usava novo/sdr/closer que não existem
+const FUNIL_ETAPAS = [
+  { id: 'aguardando_atendimento', label: 'Aguardando atend.', cor: '#9ca3af' },
+  { id: 'atendimento_inicial', label: 'Atendimento', cor: '#60a5fa' },
+  { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399' },
+  { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: '#fb923c' },
+  { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa' },
+  { id: 'pediu_prazo', label: 'Pediu prazo', cor: '#fbbf24' },
+  { id: 'aguardando_pagamento', label: 'Aguard. pagamento', cor: '#06b6d4' },
+  { id: 'agendado', label: 'Agendado', cor: '#22d3ee' },
+  { id: 'proxima_turma', label: 'Próxima turma', cor: '#c084fc' },
+  { id: 'ganho', label: 'Ganhos', cor: '#4ade80' },
+  { id: 'perda', label: 'Perdas', cor: '#f87171' },
+]
+const fmtBRL = (v: number) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+// Tooltip dos gráficos no estilo do tema
+function TipChart({ active, payload, label, money }: any) {
+  if (!active || !payload?.length) return null
+  return (
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 10px', fontSize: 12, color: 'var(--text)', boxShadow: 'var(--shadow)' }}>
+      <div style={{ color: 'var(--text-faint)', marginBottom: 2 }}>{label}</div>
+      {payload.map((p: any, i: number) => (
+        <div key={i} style={{ fontWeight: 700, color: p.color || 'var(--text)' }}>{money ? fmtBRL(p.value) : p.value}</div>
+      ))}
+    </div>
+  )
+}
 
 export default function Dashboard() {
   const [carregando, setCarregando] = useState(true)
@@ -20,7 +50,7 @@ export default function Dashboard() {
   const [tarefasUrgentes, setTarefasUrgentes] = useState<any[]>([])
   const [funilLeads, setFunilLeads] = useState<any[]>([])
   const [topAlunos, setTopAlunos] = useState<any[]>([])
-  const [matriculasUltimos30, setMatriculasUltimos30] = useState<{ data: string; count: number }[]>([])
+  const [serie30, setSerie30] = useState<{ dia: string; matriculas: number; receita: number }[]>([])
   const [perfil, setPerfil] = useState<any>(null)
   const [tarefasLead, setTarefasLead] = useState<any[]>([])
   const [leadsRaw, setLeadsRaw] = useState<any[]>([])
@@ -93,19 +123,23 @@ export default function Dashboard() {
     const matriculas = matriculasResp.data || []
     const trafegoTotal = (lancTrafegoHoje.data || []).reduce((s, l) => s + (l.valor || 0), 0)
 
-    const porDia: Record<string, number> = {}
+    // série contínua de 30 dias (matrículas + receita por dia)
+    const porDiaCount: Record<string, number> = {}
+    const porDiaReceita: Record<string, number> = {}
     matriculas.forEach((m: any) => {
       const d = m.data_compra?.substring(0, 10)
-      if (d) porDia[d] = (porDia[d] || 0) + 1
+      if (d) { porDiaCount[d] = (porDiaCount[d] || 0) + 1; porDiaReceita[d] = (porDiaReceita[d] || 0) + (m.valor_pago || 0) }
     })
-    const matriculasGrafico = Object.entries(porDia)
-      .map(([data, count]) => ({ data, count }))
-      .sort((a, b) => a.data.localeCompare(b.data))
+    const serie: { dia: string; matriculas: number; receita: number }[] = []
+    for (let i = 29; i >= 0; i--) {
+      const dt = new Date(hoje); dt.setDate(dt.getDate() - i)
+      const ds = dt.toISOString().split('T')[0]
+      serie.push({ dia: `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`, matriculas: porDiaCount[ds] || 0, receita: porDiaReceita[ds] || 0 })
+    }
 
     const leadsData = leadsResp.data || []
     setLeadsRaw(leadsData)
-    const etapas = ['novo', 'sdr', 'closer', 'ganho', 'perdido']
-    const funil = etapas.map(e => ({ etapa: e, count: leadsData.filter((l: any) => l.etapa === e).length }))
+    const funil = FUNIL_ETAPAS.map(e => ({ etapa: e.label, count: leadsData.filter((l: any) => l.etapa === e.id).length, cor: e.cor }))
 
     setStats({
       receitaPrevistaMes: receitaPrev, receitaRealizadaMes: receitaReal,
@@ -121,7 +155,7 @@ export default function Dashboard() {
     setTarefasUrgentes(tarefas.filter((t: any) => new Date(t.data_prazo + 'T23:59:59') < new Date() || t.prioridade === 'urgente').slice(0, 5))
     setFunilLeads(funil)
     setTopAlunos(alunosResp.data || [])
-    setMatriculasUltimos30(matriculasGrafico)
+    setSerie30(serie)
     setCarregando(false)
   }
 
@@ -145,7 +179,6 @@ export default function Dashboard() {
     novo: 'var(--text-muted)', sdr: 'var(--blue)', closer: 'var(--accent-soft)', ganho: 'var(--green-strong)', perdido: 'var(--red)',
   }
 
-  const maxMatricula = Math.max(...matriculasUltimos30.map(m => m.count), 1)
   const ehAdmin = perfil?.papel === 'admin'
   const meusLeadsAtivos = !perfil?.crm_interno ? 0 : leadsRaw.filter(l =>
     !['ganho', 'perda', 'perdido'].includes(l.etapa) &&
@@ -341,27 +374,22 @@ export default function Dashboard() {
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Funil de leads ({stats.leadsTotal})</span>
-            <Link href="/dashboard/leads" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver CRM →</Link>
+            <Link href="/dashboard/crm" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver CRM →</Link>
           </div>
-          <div style={{ padding: '20px' }}>
-            {funilLeads.every(f => f.count === 0) ? (
-              <p style={{ fontSize: '13px', color: 'var(--text-faint)' }}>Nenhum lead cadastrado ainda.</p>
+          <div style={{ padding: '12px 12px 12px 0' }}>
+            {funilLeads.every((f: any) => f.count === 0) ? (
+              <p style={{ fontSize: '13px', color: 'var(--text-faint)', padding: 16 }}>Nenhum lead cadastrado ainda.</p>
             ) : (
-              funilLeads.map(f => {
-                const max = Math.max(...funilLeads.map(x => x.count), 1)
-                const pct = (f.count / max) * 100
-                return (
-                  <div key={f.etapa} style={{ marginBottom: '12px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '12px', color: etapaCor[f.etapa] }}>{etapaLabel[f.etapa]}</span>
-                      <span style={{ fontSize: '12px', color: 'var(--text-2)', fontWeight: '600' }}>{f.count}</span>
-                    </div>
-                    <div style={{ backgroundColor: 'var(--surface-2)', borderRadius: '20px', height: '6px', overflow: 'hidden' }}>
-                      <div style={{ height: '6px', borderRadius: '20px', backgroundColor: etapaCor[f.etapa], width: `${pct}%` }} />
-                    </div>
-                  </div>
-                )
-              })
+              <ResponsiveContainer width="100%" height={320}>
+                <BarChart data={funilLeads} layout="vertical" margin={{ left: 8, right: 28, top: 4, bottom: 4 }}>
+                  <XAxis type="number" hide />
+                  <YAxis type="category" dataKey="etapa" width={120} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                  <Tooltip cursor={{ fill: 'var(--surface-2)' }} content={<TipChart />} />
+                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={15} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }}>
+                    {funilLeads.map((f: any, i: number) => <Cell key={i} fill={f.cor} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             )}
           </div>
         </div>
@@ -369,27 +397,25 @@ export default function Dashboard() {
 
       <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
         <div style={{ ...card, padding: '20px' }}>
-          <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)', marginBottom: '16px' }}>
-            Matrículas nos últimos 30 dias
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Receita — últimos 30 dias</div>
+            <div style={{ fontSize: 15, color: 'var(--green-strong)', fontWeight: 700 }}>{fmtBRL(serie30.reduce((s, d) => s + d.receita, 0))}</div>
           </div>
-          {matriculasUltimos30.length === 0 ? (
-            <p style={{ fontSize: '13px', color: 'var(--text-faint)' }}>Nenhuma matrícula nos últimos 30 dias.</p>
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '120px' }}>
-              {matriculasUltimos30.map(m => (
-                <div key={m.data} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <div style={{
-                    width: '100%', backgroundColor: 'var(--accent)', borderRadius: '4px 4px 0 0',
-                    height: `${(m.count / maxMatricula) * 100}%`, minHeight: '4px',
-                  }} title={`${m.count} matrículas em ${new Date(m.data + 'T12:00:00').toLocaleDateString('pt-BR')}`} />
-                </div>
-              ))}
-            </div>
-          )}
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '10px', color: 'var(--text-faint)', marginTop: '8px' }}>
-            <span>30 dias atrás</span>
-            <span>hoje</span>
-          </div>
+          <ResponsiveContainer width="100%" height={210}>
+            <AreaChart data={serie30} margin={{ left: -10, right: 8, top: 4, bottom: 0 }}>
+              <defs>
+                <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+              <XAxis dataKey="dia" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} interval={6} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={46} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <Tooltip content={<TipChart money />} />
+              <Area type="monotone" dataKey="receita" stroke="#a78bfa" strokeWidth={2.5} fill="url(#gReceita)" />
+            </AreaChart>
+          </ResponsiveContainer>
         </div>
 
         {ehAdmin && (
