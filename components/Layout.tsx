@@ -24,17 +24,6 @@ const grupos: Grupo[] = [
     ],
   },
   {
-    titulo: 'Operações',
-    itens: [
-      { nome: 'Turmas', href: '/dashboard/turmas' },
-      { nome: 'Tarefas', href: '/dashboard/tarefas' },
-      { nome: 'Salas', href: '/dashboard/salas' },
-      { nome: 'Cidades', href: '/dashboard/cidades' },
-      { nome: 'Minha Agenda', href: '/dashboard/agenda' },
-      { nome: 'Agenda de Aulas', href: '/dashboard/agenda/aulas' },
-    ],
-  },
-  {
     titulo: 'Comercial',
     itens: [
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
@@ -42,10 +31,11 @@ const grupos: Grupo[] = [
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Config CRM', href: '/dashboard/crm/config' },
-      { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
-      { nome: 'Resultados Externo', href: '/dashboard/crm-externo/resultados' },
-      { nome: 'Vendedores', href: '/dashboard/vendedores' },
-      { nome: 'Comissões', href: '/dashboard/comissoes' },
+      // ocultos (reativar quando precisar):
+      // { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
+      // { nome: 'Resultados Externo', href: '/dashboard/crm-externo/resultados' },
+      // { nome: 'Vendedores', href: '/dashboard/vendedores' },
+      // { nome: 'Comissões', href: '/dashboard/comissoes' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
       { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
     ],
@@ -56,9 +46,21 @@ const grupos: Grupo[] = [
       { nome: 'Captação', href: '/dashboard/captacao' },
       { nome: 'Análise de Conversão', href: '/dashboard/analise-conversao' },
       { nome: 'Tráfego', href: '/dashboard/trafego' },
+    ],
+  },
+  {
+    titulo: 'Operações',
+    itens: [
+      { nome: 'Turmas', href: '/dashboard/turmas' },
+      { nome: 'Salas', href: '/dashboard/salas' },
+      { nome: 'Cidades', href: '/dashboard/cidades' },
       { nome: 'Disparos', href: '/dashboard/disparos' },
       { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
+      // ocultos (reativar quando precisar):
+      // { nome: 'Tarefas', href: '/dashboard/tarefas' },
+      // { nome: 'Minha Agenda', href: '/dashboard/agenda' },
+      // { nome: 'Agenda de Aulas', href: '/dashboard/agenda/aulas' },
     ],
   },
   {

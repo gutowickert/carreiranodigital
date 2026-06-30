@@ -14,7 +14,7 @@ export default function Resultados() {
   const [turmas, setTurmas] = useState<any[]>([])
   const [vendedores, setVendedores] = useState<any[]>([])
   const [motivos, setMotivos] = useState<any[]>([])
-  const [filtro, setFiltro] = useState<'todos' | 'ganho' | 'perdido'>('todos')
+  const [filtro, setFiltro] = useState<'todos' | 'ganho' | 'perda'>('todos')
   const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
 
   useEffect(() => { carregar() }, [mesFiltro])
@@ -22,7 +22,7 @@ export default function Resultados() {
   async function carregar() {
     const { data: leadsData, error } = await supabase.from('leads')
       .select('*')
-      .in('etapa', ['ganho', 'perdido'])
+      .in('etapa', ['ganho', 'perda'])
       .order('atualizado_em', { ascending: false })
 
     if (error) { console.error('Erro:', error); return }
@@ -51,7 +51,7 @@ export default function Resultados() {
 
   const filtrados = leads.filter(l => filtro === 'todos' || l.etapa === filtro)
   const ganhos = leads.filter(l => l.etapa === 'ganho')
-  const perdidos = leads.filter(l => l.etapa === 'perdido')
+  const perdidos = leads.filter(l => l.etapa === 'perda')
   const totalVendido = ganhos.reduce((s, l) => s + (l.valor_venda || 0), 0)
   const taxaConversao = leads.length > 0 ? (ganhos.length / leads.length * 100) : 0
 
@@ -94,7 +94,7 @@ export default function Resultados() {
           {[
             { id: 'todos', label: 'Todos' },
             { id: 'ganho', label: 'Ganhos' },
-            { id: 'perdido', label: 'Perdidos' },
+            { id: 'perda', label: 'Perdidos' },
           ].map(f => (
             <button key={f.id} onClick={() => setFiltro(f.id as any)}
               style={{ padding: '8px 16px', borderRadius: 8, border: '1px solid var(--border)', background: filtro === f.id ? 'var(--accent)' : 'transparent', color: filtro === f.id ? 'var(--on-accent)' : 'var(--text-muted)', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
@@ -147,7 +147,7 @@ export default function Resultados() {
                       </td>
                       <td style={{ padding: '12px 16px', fontSize: 12, color: 'var(--text-faint)' }}>
                         {l.etapa === 'ganho' && l.data_ganho ? new Date(l.data_ganho).toLocaleDateString('pt-BR') : ''}
-                        {l.etapa === 'perdido' && l.data_perda ? new Date(l.data_perda).toLocaleDateString('pt-BR') : ''}
+                        {l.etapa === 'perda' && l.data_perda ? new Date(l.data_perda).toLocaleDateString('pt-BR') : ''}
                       </td>
                     </tr>
                   )
