@@ -24,6 +24,7 @@ export default function CaixaDisparos() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [ativa, setAtiva] = useState<Conversa | null>(null)
   const [busca, setBusca] = useState('')
+  const [naoLidaSet, setNaoLidaSet] = useState<Set<string>>(new Set())
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -49,6 +50,9 @@ export default function CaixaDisparos() {
       .select('*').eq('canal', 'oficial')
       .order('ultima_msg_em', { ascending: false, nullsFirst: false })
     setConversas(data || [])
+    // leads marcados como "não lida" no CRM (mesmo marcador da caixa principal)
+    const { data: nl } = await supabase.from('leads').select('id').eq('nao_lida', true)
+    setNaoLidaSet(new Set((nl || []).map((l: any) => l.id)))
   }
 
   useEffect(() => {
@@ -95,9 +99,12 @@ export default function CaixaDisparos() {
                   return (
                     <div key={c.id} onClick={() => abrir(c)}
                       style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', cursor: 'pointer', background: sel ? 'var(--surface-sel)' : 'transparent' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.nome || c.telefone}</span>
-                        {c.nao_lidas > 0 && <span style={{ fontSize: 11, background: '#25D366', color: '#063', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>{c.nao_lidas}</span>}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 6 }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{c.nome || c.telefone}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: 4, flexShrink: 0 }}>
+                          {c.lead_id && naoLidaSet.has(c.lead_id) && <span title="Marcado como não lida" style={{ fontSize: 10 }}>🔴</span>}
+                          {c.nao_lidas > 0 && <span style={{ fontSize: 11, background: '#25D366', color: '#063', borderRadius: 10, padding: '1px 7px', fontWeight: 700 }}>{c.nao_lidas}</span>}
+                        </span>
                       </div>
                       <div style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: 4 }}>{c.ultima_msg || '—'}</div>
                     </div>
