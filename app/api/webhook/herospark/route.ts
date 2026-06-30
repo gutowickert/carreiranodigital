@@ -56,6 +56,7 @@ export async function POST(req: NextRequest) {
     const buyerPhone = pick(payload, ['buyer_phone', 'buyer.phone', 'customer.phone', 'data.buyer.phone', 'comprador.telefone', 'student.phone'])
     const amount = parseFloat(pick(payload, ['amount', 'value', 'total', 'data.amount', 'valor'], '0'))
     const paymentMethod = pick(payload, ['payment_method', 'data.payment_method', 'metodo_pagamento'], 'pix')
+    const installments = parseInt(pick(payload, ['installments', 'data.installments', 'parcelas'], '1')) || 1
 
     if (!buyerEmail && !buyerCpf) {
       await supabase.from('webhook_logs').update({ status: 'erro', erro: 'Faltam CPF e email do comprador', processado_em: new Date().toISOString() }).eq('id', logId!)
@@ -230,6 +231,40 @@ export async function POST(req: NextRequest) {
         turma_id: turmaId,
         conta_id: caixaHero?.id || null,
       })
+
+      // 6.1) Tarifa da HeroSpark como CUSTO (pra refletir o líquido real no caixa)
+      // Tabela: 4,6% + R$1,00 (cartão/pix) ou + R$3,00 (boleto); parcelado = antecipação a 3,49%/mês (valor presente).
+      const mPag = (paymentMethod || '').toLowerCase()
+      const fixo = mPag.includes('boleto') ? 3.00 : 1.00
+      const ehCartao = mPag.includes('credit') || mPag.includes('cartao') || mPag.includes('card')
+      let liquido: number
+      if (ehCartao && installments >= 2) {
+        // Parcelado: antecipa as parcelas (valor presente a 3,49%/mês) e DEPOIS aplica 4,6% + R$1
+        const parcela = valorFinal / installments
+        let fator = 0
+        for (let k = 1; k <= installments; k++) fator += 1 / Math.pow(1 + 0.0349, k)
+        const antecipado = parcela * fator
+        liquido = antecipado - (antecipado * 0.046 + 1.00)
+      } else {
+        // Pix / boleto / cartão à vista: só a taxa base
+        liquido = valorFinal - (valorFinal * 0.046 + fixo)
+      }
+      let taxa = Math.round((valorFinal - liquido) * 100) / 100
+      if (taxa > 0) {
+        await supabase.from('lancamentos_empresa').insert({
+          tipo: 'custo',
+          categoria: 'outro',
+          descricao: `Tarifa HeroSpark — ${alunoNome}${installments >= 2 ? ` (cartão ${installments}x)` : ''}`,
+          valor: taxa,
+          unidade: 'geral',
+          mes_referencia: hoje.substring(0, 7) + '-01',
+          data_vencimento: hoje,
+          data_pagamento: hoje,
+          status: 'realizado',
+          turma_id: turmaId,
+          conta_id: caixaHero?.id || null,
+        })
+      }
 
       // 7) Atualiza financeiro_turma (receita realizada)
       const { data: fin } = await supabase.from('financeiro_turma').select('*').eq('turma_id', turmaId).single()
