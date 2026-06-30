@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { ResponsiveContainer, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 
 type Conta = { id: string; nome: string; tipo: string; unidade: string; saldo_inicial: number; ativo: boolean }
 type Lanc = { id: string; tipo: string; categoria: string; descricao: string; valor: number; status: string; data_vencimento: string; data_pagamento: string | null; conta_id: string | null }
@@ -111,6 +112,26 @@ export default function FluxoCaixa() {
   const saidasPrev = somaTipo(previstosMes, 'custo')
   const saldoProjetado = saldoFinalTotal + entradasPrev - saidasPrev
 
+  // ---- série dos últimos 12 meses (entradas, saídas, saldo acumulado) ----
+  const saldoIniContas = contas.reduce((s, c) => s + (c.saldo_inicial || 0), 0)
+  const [yBase, mBase] = mes.split('-').map(Number)
+  const serie12 = Array.from({ length: 12 }, (_, idx) => {
+    const i = 11 - idx
+    const d = new Date(yBase, mBase - 1 - i, 1)
+    const mm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+    const ini = mm + '-01', fim = `${mm}-${String(ultimoDiaDoMes(mm)).padStart(2, '0')}`
+    const noMes = reaisTodos.filter(l => { const x = dataEf(l); return x >= ini && x <= fim })
+    const ate = reaisTodos.filter(l => dataEf(l) <= fim)
+    return {
+      mes: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`,
+      entradas: Math.round(somaTipo(noMes, 'receita')),
+      saidas: Math.round(somaTipo(noMes, 'custo')),
+      saldo: Math.round(saldoIniContas + somaTipo(ate, 'receita') - somaTipo(ate, 'custo')),
+    }
+  })
+  const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
+  const kfmt = (v: number) => Math.abs(v) >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`
+
   // Resumo exibido (consolidado ou caixa filtrada)
   const contaSel = filtroConta ? contas.find(c => c.id === filtroConta) : null
   const resumo = contaSel ? calcCaixa(contaSel.id, contaSel.saldo_inicial) : { saldoInicial: saldoInicialTotal, entradas: entradasTotal, saidas: saidasTotal, transf: 0, saldoFinal: saldoFinalTotal }
@@ -218,6 +239,42 @@ export default function FluxoCaixa() {
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo final do mês</div>
               <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoFinal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(resumo.saldoFinal)}</div>
               {!filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>projetado (c/ previstos): {fmt(saldoProjetado)}</div>}
+            </div>
+          </div>
+
+          {/* Panorama 12 meses */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))', gap: 16, marginBottom: 24 }}>
+            <div style={{ ...card, padding: 18 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Entradas × Saídas — 12 meses</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
+                  <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} formatter={(v: any) => fmt(v)} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Bar dataKey="entradas" name="Entradas" fill="#34d399" radius={[3, 3, 0, 0]} />
+                  <Bar dataKey="saidas" name="Saídas" fill="#f87171" radius={[3, 3, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div style={{ ...card, padding: 18 }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Saldo acumulado — 12 meses</div>
+              <ResponsiveContainer width="100%" height={220}>
+                <AreaChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
+                  <Tooltip {...tipProps} formatter={(v: any) => fmt(v)} />
+                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="#a78bfa" strokeWidth={2.5} fill="url(#gSaldo)" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
           </div>
 
