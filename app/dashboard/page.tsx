@@ -185,6 +185,10 @@ export default function Dashboard() {
     (perfil?.leads_escopo !== 'proprios' || l.vendedor_id === perfil?.id)
   ).length
   const tarefasLeadAtrasadas = tarefasLead.filter(t => new Date(t.data_vencimento) < new Date()).length
+  const leadsAtivos = leadsRaw.filter(l => !['ganho', 'perda', 'perdido'].includes(l.etapa)).length
+  const gTot = leadsRaw.filter(l => l.etapa === 'ganho').length
+  const pTot = leadsRaw.filter(l => l.etapa === 'perda').length
+  const conversaoGeral = (gTot + pTot) > 0 ? (gTot / (gTot + pTot) * 100) : 0
   if (carregando) return (
     <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Carregando dashboard...</p>
@@ -233,11 +237,18 @@ export default function Dashboard() {
           <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{stats.turmasAtivas}</div>
           <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{stats.totalMatriculas} matrículas em 30 dias</div>
         </div>
-        <div style={{ ...card, padding: '20px', backgroundColor: stats.tarefasAtrasadas > 0 ? 'var(--red-bg)' : 'var(--surface)', borderColor: stats.tarefasAtrasadas > 0 ? 'var(--red)' : 'var(--border)' }}>
-          <div style={{ fontSize: '11px', color: stats.tarefasAtrasadas > 0 ? 'var(--red)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Tarefas atrasadas</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: stats.tarefasAtrasadas > 0 ? 'var(--red)' : 'var(--text)' }}>{stats.tarefasAtrasadas}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{stats.tarefasUrgentes} marcadas como urgentes</div>
+        <div style={{ ...card, padding: '20px' }}>
+          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Leads ativos</div>
+          <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{leadsAtivos}</div>
+          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>no funil agora</div>
         </div>
+        {ehAdmin && (
+          <div style={{ ...card, padding: '20px' }}>
+            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Conversão</div>
+            <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--accent-soft)' }}>{conversaoGeral.toFixed(0)}%</div>
+            <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{gTot} ganhos · {pTot} perdas</div>
+          </div>
+        )}
       </div>
 
       {ehAdmin && stats.trafegoHoje > 0 && (
@@ -311,41 +322,7 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        {ehAdmin ? (
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Tarefas que precisam atenção</span>
-            <Link href="/dashboard/tarefas" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver todas →</Link>
-          </div>
-          {tarefasUrgentes.length === 0 ? (
-            <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Tudo em dia! Nenhuma tarefa urgente ou atrasada.</p>
-          ) : (
-            tarefasUrgentes.map((t: any) => {
-              const atrasada = new Date(t.data_prazo + 'T23:59:59') < new Date()
-              return (
-                <div key={t.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', backgroundColor: atrasada ? 'var(--red-bg)' : 'transparent' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>{t.titulo}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                        {t.turmas?.produtos?.nome || 'Avulsa'}
-                      </div>
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', backgroundColor: 'var(--bg)', color: setorCor[t.setor] || 'var(--text-muted)' }}>
-                        {t.setor}
-                      </span>
-                      <span style={{ fontSize: '11px', color: atrasada ? 'var(--red)' : 'var(--text-faint)', fontWeight: atrasada ? '600' : '400' }}>
-                        {new Date(t.data_prazo + 'T12:00:00').toLocaleDateString('pt-BR')}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              )
-            })
-          )}
-        </div>
-        ) : (
+        {!ehAdmin && (
         <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
           <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Minhas tarefas de leads</span>
