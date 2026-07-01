@@ -276,6 +276,11 @@ export default function CRM() {
       payload.data_perda = agora.toISOString()
       payload.motivo_perda_id = extras?.motivoPerdaId
     }
+    // Reabrindo um lead perdido: limpa a marcação de perda pra não sujar relatórios
+    if (lead.etapa === 'perda' && novaEtapa !== 'perda') {
+      payload.data_perda = null
+      payload.motivo_perda_id = null
+    }
     if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
       payload.prazo_prometido = extras.prazoPrometido
     }
@@ -957,6 +962,17 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
               })}
               {ligacoes.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhuma ligação ainda.</p>}
             </div>
+          </div>
+        )}
+
+        {!novoLead && lead && lead.etapa === 'perda' && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Lead perdido</div>
+            <button onClick={() => moverEtapa(lead, 'atendimento_inicial').then(onFechar)}
+              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              🔄 Reabrir negociação
+            </button>
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Volta o lead pra "Atendimento inicial" e limpa a marcação de perda.</p>
           </div>
         )}
 
