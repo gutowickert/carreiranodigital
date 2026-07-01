@@ -170,6 +170,7 @@ export default function Financeiro() {
     if (editando) {
       const payload: any = {
         descricao: lancDescricao,
+        categoria: lancCategoria,
         valor: parseFloat(lancValor),
         data_vencimento: lancVencimento,
         status: lancStatus,
@@ -183,7 +184,7 @@ export default function Financeiro() {
         const confirma = confirm('Este lançamento é recorrente. Aplicar a alteração também nos meses futuros do mesmo grupo?')
         if (confirma) {
           const { error } = await supabase.from('lancamentos_empresa').update({
-            descricao: lancDescricao, valor: parseFloat(lancValor), status: lancStatus, conta_id: lancContaId,
+            descricao: lancDescricao, categoria: lancCategoria, valor: parseFloat(lancValor), status: lancStatus, conta_id: lancContaId,
           }).eq('grupo_recorrencia', editando.grupo_recorrencia)
             .gte('data_vencimento', editando.data_vencimento)
           if (error) { setMensagem('Erro: ' + error.message); setSalvando(false); return }
@@ -522,7 +523,7 @@ export default function Financeiro() {
                     <option value="custo">Custo</option>
                     <option value="receita">Receita</option>
                   </select>
-                  <select value={lancCategoria} onChange={e => setLancCategoria(e.target.value)} style={select} disabled={!!editando}>
+                  <select value={lancCategoria} onChange={e => setLancCategoria(e.target.value)} style={select}>
                     {cats.map(n => <option key={n.chave} value={n.chave}>{n.nome}</option>)}
                   </select>
                   <select value={lancUnidade} onChange={e => setLancUnidade(e.target.value)} style={select} disabled={!!editando}>
