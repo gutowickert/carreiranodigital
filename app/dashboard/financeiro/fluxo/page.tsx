@@ -29,6 +29,7 @@ export default function FluxoCaixa() {
   const [transferencias, setTransferencias] = useState<Transf[]>([])
   const [mes, setMes] = useState(new Date().toISOString().slice(0, 7))
   const [filtroConta, setFiltroConta] = useState('')
+  const [naturezas, setNaturezas] = useState<{ chave: string; nome: string; ativo: boolean }[]>([])
   const [carregando, setCarregando] = useState(true)
 
   const [novo, setNovo] = useState(false)
@@ -46,14 +47,16 @@ export default function FluxoCaixa() {
 
   async function carregar() {
     setCarregando(true)
-    const [{ data: c }, { data: l }, { data: t }] = await Promise.all([
+    const [{ data: c }, { data: l }, { data: t }, { data: n }] = await Promise.all([
       supabase.from('contas_financeiras').select('id, nome, tipo, unidade, saldo_inicial, ativo').eq('ativo', true).order('nome'),
       supabase.from('lancamentos_empresa').select('id, tipo, categoria, descricao, valor, status, data_vencimento, data_pagamento, conta_id'),
       supabase.from('transferencias_caixa').select('id, conta_origem_id, conta_destino_id, valor, data_transferencia, descricao'),
+      supabase.from('naturezas_financeiras').select('chave, nome, ativo').order('ordem').order('nome'),
     ])
     setContas(c || [])
     setLancamentos((l || []) as Lanc[])
     setTransferencias((t || []) as Transf[])
+    setNaturezas((n || []) as any)
     setCarregando(false)
   }
 
@@ -154,6 +157,9 @@ export default function FluxoCaixa() {
   }
 
   const tituloMes = new Date(inicioMes + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  // naturezas dinâmicas (tabela) com fallback pras fixas antigas
+  const natMap: Record<string, string> = { ...categoriaNome, ...Object.fromEntries(naturezas.map(n => [n.chave, n.nome])) }
+  const cats = naturezas.length ? naturezas.filter(n => n.ativo) : Object.entries(categoriaNome).map(([chave, nome]) => ({ chave, nome, ativo: true }))
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
@@ -165,6 +171,7 @@ export default function FluxoCaixa() {
         <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Link href="/dashboard/financeiro" style={{ ...btnSecondary, textDecoration: 'none' }}>Financeiro</Link>
           <Link href="/dashboard/financeiro/caixas" style={{ ...btnSecondary, textDecoration: 'none' }}>Caixas</Link>
+          <Link href="/dashboard/financeiro/naturezas" style={{ ...btnSecondary, textDecoration: 'none' }}>Naturezas</Link>
           <button onClick={() => setNovo(!novo)} style={btnPrimary}>{novo ? 'Fechar' : '+ Lançar'}</button>
         </div>
       </div>
@@ -196,12 +203,7 @@ export default function FluxoCaixa() {
               {contas.map(c => <option key={c.id} value={c.id}>{c.nome}</option>)}
             </select>
             <select value={fCategoria} onChange={e => setFCategoria(e.target.value)} style={select}>
-              <option value="outro">Outro</option>
-              <option value="pessoal">Pessoal</option>
-              <option value="estrutura">Estrutura</option>
-              <option value="sistemas">Sistemas</option>
-              <option value="marketing">Marketing</option>
-              <option value="imposto">Imposto</option>
+              {cats.map(n => <option key={n.chave} value={n.chave}>{n.nome}</option>)}
             </select>
             <select value={fStatus} onChange={e => setFStatus(e.target.value as any)} style={select}>
               <option value="realizado">Já caiu (realizado)</option>
@@ -328,7 +330,7 @@ export default function FluxoCaixa() {
                     <tr key={l.id} style={{ borderBottom: '1px solid var(--border)' }}>
                       <td style={{ padding: '10px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(dataEf(l) + 'T12:00:00').toLocaleDateString('pt-BR')}</td>
                       <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--text)' }}>{l.descricao}</td>
-                      <td style={{ padding: '10px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{categoriaNome[l.categoria] || l.categoria}</td>
+                      <td style={{ padding: '10px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{natMap[l.categoria] || l.categoria}</td>
                       <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--green)', textAlign: 'right' }}>{l.tipo === 'receita' ? fmt(l.valor) : ''}</td>
                       <td style={{ padding: '10px 20px', fontSize: '13px', color: 'var(--red)', textAlign: 'right' }}>{l.tipo === 'custo' ? fmt(l.valor) : ''}</td>
                       <td style={{ padding: '10px 20px', fontSize: '13px', fontWeight: '600', color: l.saldo >= 0 ? 'var(--text-2)' : 'var(--red)', textAlign: 'right' }}>{fmt(l.saldo)}</td>

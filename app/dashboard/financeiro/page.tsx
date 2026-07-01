@@ -83,6 +83,7 @@ export default function Financeiro() {
   const [financeiros, setFinanceiros] = useState<FinanceiroTurma[]>([])
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [contas, setContas] = useState<Conta[]>([])
+  const [naturezas, setNaturezas] = useState<{ chave: string; nome: string; ativo: boolean }[]>([])
   const [selecionado, setSelecionado] = useState<FinanceiroTurma | null>(null)
   const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
@@ -110,9 +111,17 @@ export default function Financeiro() {
 
   async function carregarTudo() {
     setCarregando(true)
-    await Promise.all([carregarFinanceiros(), carregarLancamentos(), carregarContas()])
+    await Promise.all([carregarFinanceiros(), carregarLancamentos(), carregarContas(), carregarNaturezas()])
     setCarregando(false)
   }
+
+  async function carregarNaturezas() {
+    const { data } = await supabase.from('naturezas_financeiras').select('chave, nome, ativo').order('ordem').order('nome')
+    setNaturezas((data || []) as any)
+  }
+  // naturezas dinâmicas (tabela) com fallback pras fixas antigas
+  const natMap: Record<string, string> = { ...categoriaNome, ...Object.fromEntries(naturezas.map(n => [n.chave, n.nome])) }
+  const cats = naturezas.length ? naturezas.filter(n => n.ativo) : Object.entries(categoriaNome).map(([chave, nome]) => ({ chave, nome, ativo: true }))
 
   async function carregarFinanceiros() {
     const { data } = await supabase.from('financeiro_turma').select('*, turmas(data_inicio, preco_venda, meta_matriculas, produtos(nome), cidades(nome))').order('atualizado_em', { ascending: false })
@@ -514,12 +523,7 @@ export default function Financeiro() {
                     <option value="receita">Receita</option>
                   </select>
                   <select value={lancCategoria} onChange={e => setLancCategoria(e.target.value)} style={select} disabled={!!editando}>
-                    <option value="pessoal">Pessoal</option>
-                    <option value="estrutura">Estrutura</option>
-                    <option value="sistemas">Sistemas</option>
-                    <option value="marketing">Marketing</option>
-                    <option value="imposto">Imposto</option>
-                    <option value="outro">Outro</option>
+                    {cats.map(n => <option key={n.chave} value={n.chave}>{n.nome}</option>)}
                   </select>
                   <select value={lancUnidade} onChange={e => setLancUnidade(e.target.value)} style={select} disabled={!!editando}>
                     <option value="geral">Geral</option>
@@ -591,7 +595,7 @@ export default function Financeiro() {
                           {l.descricao}
                           {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>↻ recorrente</span>}
                         </td>
-                        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{categoriaNome[l.categoria]}</td>
+                        <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{natMap[l.categoria] || l.categoria}</td>
                         <td style={{ padding: '12px 16px', fontSize: '12px', color: l.conta_id ? 'var(--text-muted)' : 'var(--red)' }}>{nomeConta(l.conta_id)}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', color: 'var(--text-muted)' }}>{l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'}</td>
                         <td style={{ padding: '12px 16px', fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? 'var(--green)' : 'var(--red)' }}>{l.tipo === 'receita' ? '+' : '-'}{fmt(l.valor)}</td>
@@ -647,7 +651,7 @@ export default function Financeiro() {
                             {l.descricao}
                             {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>↻</span>}
                           </div>
-                          <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>{categoriaNome[l.categoria]} · {unidadeNome[l.unidade]} · {nomeConta(l.conta_id)}</div>
+                          <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>{natMap[l.categoria] || l.categoria} · {unidadeNome[l.unidade]} · {nomeConta(l.conta_id)}</div>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                           <span style={{ fontSize: '13px', fontWeight: '600', color: l.tipo === 'receita' ? 'var(--green)' : 'var(--red)' }}>

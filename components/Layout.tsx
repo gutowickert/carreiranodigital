@@ -69,6 +69,7 @@ const grupos: Grupo[] = [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
       { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
+      { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
       { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
     ],
   },
