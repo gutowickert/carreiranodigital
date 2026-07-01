@@ -653,11 +653,11 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                   <form onSubmit={salvarVenda} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                     <div style={{ display: 'flex', gap: '8px' }}>
                       <button type="button" onClick={() => setModoAluno('buscar')}
-                        style={{ ...btnSecondary, backgroundColor: modoAluno === 'buscar' ? 'var(--accent)' : 'var(--surface-2)', color: 'var(--on-accent)', fontSize: '12px', padding: '6px 12px' }}>
+                        style={{ ...btnSecondary, backgroundColor: modoAluno === 'buscar' ? 'var(--accent)' : 'var(--surface-2)', color: modoAluno === 'buscar' ? 'var(--on-accent)' : 'var(--text-2)', fontSize: '12px', padding: '6px 12px' }}>
                         Aluno existente
                       </button>
                       <button type="button" onClick={() => setModoAluno('novo')}
-                        style={{ ...btnSecondary, backgroundColor: modoAluno === 'novo' ? 'var(--accent)' : 'var(--surface-2)', color: 'var(--on-accent)', fontSize: '12px', padding: '6px 12px' }}>
+                        style={{ ...btnSecondary, backgroundColor: modoAluno === 'novo' ? 'var(--accent)' : 'var(--surface-2)', color: modoAluno === 'novo' ? 'var(--on-accent)' : 'var(--text-2)', fontSize: '12px', padding: '6px 12px' }}>
                         Novo aluno
                       </button>
                     </div>
