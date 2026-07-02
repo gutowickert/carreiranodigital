@@ -34,6 +34,11 @@ export async function GET(req: NextRequest) {
     const eventId = (sp.get('event_id') || '').toString().trim() || randomUUID()
     const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null
     const userAgent = req.headers.get('user-agent') || null
+    // Identidade do visitante no site (mesmo id da tabela site_eventos). É o que
+    // costura o rastro do site (page_view -> scroll -> clique) a este clique e,
+    // via #ref -> lead, à pessoa que virou lead. `sid` = sessão específica.
+    const visitorId = (sp.get('vid') || '').toString().trim() || null
+    const sessaoId = (sp.get('sid') || '').toString().trim() || null
 
     if (!WA_NUMERO) {
       return NextResponse.json({ error: 'WA_NUMERO_CENTRAL nao configurado' }, { status: 500 })
@@ -56,6 +61,8 @@ export async function GET(req: NextRequest) {
       event_source_url: eventSourceUrl,
       client_ip: clientIp,
       user_agent: userAgent,
+      visitor_id: visitorId,
+      sessao_id: sessaoId,
     })
 
     // A mensagem leva o CÓDIGO DA TURMA (o mesmo do sistema) — é isso que o

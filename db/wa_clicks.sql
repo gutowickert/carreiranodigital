@@ -18,6 +18,8 @@ create table if not exists public.wa_clicks (
   event_source_url text,
   client_ip text,
   user_agent text,
+  visitor_id text,        -- id persistente do visitante no site (costura com site_eventos)
+  sessao_id text,         -- id da sessão específica que gerou o clique
   lead_id uuid references public.leads(id) on delete set null,
   consumido_em timestamptz,
   criado_em timestamptz not null default now()
@@ -25,3 +27,10 @@ create table if not exists public.wa_clicks (
 
 -- Busca rápida pelo ref ainda não consumido (usada no webhook).
 create index if not exists wa_clicks_ref_idx on public.wa_clicks (ref) where consumido_em is null;
+
+-- Costura site_eventos <-> wa_clicks <-> lead pela identidade do visitante.
+create index if not exists wa_clicks_visitor_idx on public.wa_clicks (visitor_id) where visitor_id is not null;
+
+-- Migração (banco já existente): rode estas duas linhas no SQL Editor do Supabase.
+--   alter table public.wa_clicks add column if not exists visitor_id text;
+--   alter table public.wa_clicks add column if not exists sessao_id text;
