@@ -129,7 +129,9 @@ export async function POST(req: NextRequest) {
       .select('id').eq('ativo', true).ilike('nome', '%herospark%').limit(1).single()
 
     // 4) Acha matrícula existente (evita DUPLICAR) ou cria
-    const valorFinal = amount > 0 ? amount : 0
+    // Boleto parcelado: a HeroSpark manda o valor da PARCELA + installments. O total da venda = parcela × parcelas.
+    const ehBoletoParc = ((paymentMethod || '').toLowerCase().includes('boleto') || (paymentMethod || '').toLowerCase().includes('slip')) && installments > 1
+    const valorFinal = ehBoletoParc ? Math.round(amount * installments * 100) / 100 : (amount > 0 ? amount : 0)
     const { data: matExistente } = await supabase.from('matriculas')
       .select('id').eq('aluno_id', alunoId).eq('turma_id', turmaId).limit(1).maybeSingle()
 
@@ -141,8 +143,8 @@ export async function POST(req: NextRequest) {
         turma_id: turmaId,
         valor_pago: valorFinal,
         data_compra: new Date().toISOString().split('T')[0],
-        forma_pagamento: paymentMethod.includes('pix') ? 'pix' : paymentMethod.includes('boleto') ? 'boleto' : 'cartao',
-        parcelas: 1,
+        forma_pagamento: paymentMethod.includes('pix') ? 'pix' : (paymentMethod.includes('boleto') || paymentMethod.includes('slip')) ? 'boleto' : 'cartao',
+        parcelas: ehBoletoParc ? installments : 1,
         status: 'ativa',
       }).select().single()
 
@@ -181,7 +183,7 @@ export async function POST(req: NextRequest) {
       if (leadPorEmail) leadEncontrado = leadPorEmail
     }
 
-    if (leadEncontrado) {
+    if (leadEncontrado && leadEncontrado.etapa !== 'ganho') {
       // Vincula matrícula ao lead + ao vendedor do lead (pra gerar comissão automática)
       await supabase.from('matriculas').update({
         lead_id: leadEncontrado.id,
@@ -209,15 +211,50 @@ export async function POST(req: NextRequest) {
       })
     }
 
-    // 5/6/7) Financeiro só na PRIMEIRA vez — se a matrícula já existia, não relança
-    // (evita dobrar LTV, receita da turma e criar lançamento duplicado)
-    if (!jaExistia) {
+    // 5/6/7) Financeiro
+    const hoje = new Date().toISOString().split('T')[0]
+
+    if (ehBoletoParc) {
+      // BOLETO PARCELADO: a HeroSpark manda 1 webhook por boleto PAGO (valor da parcela).
+      // No 1º boleto provisiona os N (1 pago + resto previsto, mensal). Nos seguintes, confirma o próximo previsto.
+      // Dedup de retry: se já confirmei um boleto desse aluno HOJE, não faz de novo.
+      const { count: jaHoje } = await supabase.from('lancamentos_empresa')
+        .select('id', { count: 'exact', head: true })
+        .eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'realizado').eq('data_pagamento', hoje)
+        .ilike('descricao', `Boleto%${alunoNome}%`)
+      if (!jaHoje) {
+        const taxaBoleto = Math.round((amount * 0.046 + 3) * 100) / 100 // boleto: 4,6% + R$3 por parcela
+        const addMeses = (d: string, n: number) => { const x = new Date(d + 'T12:00:00'); x.setMonth(x.getMonth() + n); return x.toISOString().split('T')[0] }
+        const { data: prox } = await supabase.from('lancamentos_empresa')
+          .select('id, descricao').eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'previsto')
+          .ilike('descricao', `Boleto%${alunoNome}%`).order('data_vencimento').limit(1).maybeSingle()
+        if (prox) {
+          // confirma o próximo boleto previsto + a tarifa dele
+          await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: hoje }).eq('id', prox.id)
+          const num = (prox.descricao.match(/Boleto (\d+)\//) || [])[1]
+          if (num) await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: hoje })
+            .eq('turma_id', turmaId).eq('tipo', 'custo').eq('status', 'previsto').ilike('descricao', `Tarifa%boleto ${num}/%${alunoNome}%`)
+        } else {
+          // 1º boleto de uma matrícula nova: provisiona os N boletos
+          for (let i = 0; i < installments; i++) {
+            const d = addMeses(hoje, i); const pago = i === 0
+            const base = { unidade: 'geral', mes_referencia: d.substring(0, 7) + '-01', data_vencimento: d, data_pagamento: pago ? d : null, status: pago ? 'realizado' : 'previsto', turma_id: turmaId, conta_id: caixaHero?.id || null }
+            await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'receita', categoria: 'outro', descricao: `Boleto ${i + 1}/${installments} — ${alunoNome} (HeroSpark)`, valor: amount })
+            if (taxaBoleto > 0) await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'custo', categoria: 'outro', descricao: `Tarifa HeroSpark boleto ${i + 1}/${installments} — ${alunoNome}`, valor: taxaBoleto })
+          }
+        }
+        // LTV e receita da turma sobem pelo valor do boleto pago (amount), a cada boleto
+        const { data: alunoB } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
+        await supabase.from('alunos').update({ ltv: (alunoB?.ltv || 0) + amount }).eq('id', alunoId)
+        const { data: finB } = await supabase.from('financeiro_turma').select('receita_realizada').eq('turma_id', turmaId).maybeSingle()
+        if (finB) await supabase.from('financeiro_turma').update({ receita_realizada: (finB.receita_realizada || 0) + amount, atualizado_em: new Date().toISOString() }).eq('turma_id', turmaId)
+      }
+    } else if (!jaExistia) {
       // 5) Atualiza LTV do aluno
       const { data: alunoAtual } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
       await supabase.from('alunos').update({ ltv: (alunoAtual?.ltv || 0) + valorFinal }).eq('id', alunoId)
 
       // 6) Cria lançamento de receita (à vista)
-      const hoje = new Date().toISOString().split('T')[0]
       await supabase.from('lancamentos_empresa').insert({
         tipo: 'receita',
         categoria: 'outro',
