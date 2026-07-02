@@ -16,6 +16,7 @@ export default function Disparos() {
   const [templates, setTemplates] = useState<Tpl[]>([])
   const [modo, setModo] = useState<'turma' | 'colar' | 'lista' | 'naoentregues'>('turma')
   const [turmaId, setTurmaId] = useState('')
+  const [turmaEtapa, setTurmaEtapa] = useState('') // '' = todas; 'perda' = só perdidos; 'ganho' = só ganhos
   const [numerosTexto, setNumerosTexto] = useState('')
   // redisparo: campanhas anteriores p/ pegar os não-entregues
   const [campanhas, setCampanhas] = useState<any[]>([])
@@ -87,7 +88,9 @@ export default function Disparos() {
     try {
       if (modo === 'turma') {
         if (!turmaId) { setCarregandoPublico(false); return }
-        const { data } = await supabase.from('leads').select('id, nome, whatsapp').eq('turma_id', turmaId).not('whatsapp', 'is', null)
+        let q = supabase.from('leads').select('id, nome, whatsapp').eq('turma_id', turmaId).not('whatsapp', 'is', null)
+        if (turmaEtapa) q = q.eq('etapa', turmaEtapa)
+        const { data } = await q
         setContatos((data || []).filter((l: any) => l.whatsapp).map((l: any) => ({ telefone: l.whatsapp, nome: l.nome || '', lead_id: l.id })))
       } else if (modo === 'lista') {
         const p = new URLSearchParams({ categoria: listaCategoria, limit: '5000' })
@@ -168,10 +171,17 @@ export default function Disparos() {
           <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
         </div>
         {modo === 'turma' && (
-          <select style={inp} value={turmaId} onChange={e => setTurmaId(e.target.value)}>
-            <option value="">Selecione a turma...</option>
-            {turmas.map(t => <option key={t.id} value={t.id}>{t.produtos?.nome} — {t.cidades?.nome} ({t.codigo})</option>)}
-          </select>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <select style={inp} value={turmaId} onChange={e => setTurmaId(e.target.value)}>
+              <option value="">Selecione a turma...</option>
+              {turmas.map(t => <option key={t.id} value={t.id}>{t.produtos?.nome} — {t.cidades?.nome} ({t.codigo})</option>)}
+            </select>
+            <select style={{ ...inp, width: 'auto' }} value={turmaEtapa} onChange={e => setTurmaEtapa(e.target.value)}>
+              <option value="">Todas as etapas</option>
+              <option value="perda">Só perdidos</option>
+              <option value="ganho">Só ganhos</option>
+            </select>
+          </div>
         )}
         {modo === 'lista' && (
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
