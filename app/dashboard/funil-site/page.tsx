@@ -400,12 +400,13 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
 
   const T = rows.reduce((a, r) => { a.impressions += r.impressions; a.clicks += r.clicks; a.spend += r.spend; a.visitou += r.visitou; a.engajou += r.engajou; a.clicou += r.clicou; a.whats += r.whats; a.leads += r.leads; a.receita += r.receita; return a }, { impressions: 0, clicks: 0, spend: 0, visitou: 0, engajou: 0, clicou: 0, whats: 0, leads: 0, receita: 0 })
 
+  // Funil = caminho do dinheiro (atribuição por utm_content), sempre monotônico:
+  // cliques pagos >= foram pro WhatsApp >= viraram lead. O comportamento do site
+  // (visita/engajou/clicou) fica na tabela — o rastreio ainda cobre parte do
+  // tráfego, então misturá-lo aqui faria o funil "subir".
   const etapas = [
     { label: 'Cliques no anúncio', n: T.clicks, cor: '#f59e0b', desc: 'Meta' },
-    { label: 'Visitou o site', n: T.visitou, cor: '#7c3aed', desc: 'chegou na página' },
-    { label: 'Engajou', n: T.engajou, cor: '#4f46e5', desc: 'rolou / viu oferta' },
-    { label: 'Clicou no CTA', n: T.clicou, cor: '#2563eb', desc: 'botão de WhatsApp' },
-    { label: 'Foi pro WhatsApp', n: T.whats, cor: '#0ea5e9', desc: '/wa' },
+    { label: 'Foi pro WhatsApp', n: T.whats, cor: '#0ea5e9', desc: 'atribuído ao anúncio (utm)' },
     { label: 'Virou lead', n: T.leads, cor: '#10b981', desc: 'lead no CRM' },
   ]
   const etapasView = T.clicks > 0 ? etapas : etapas.slice(1)
@@ -415,18 +416,20 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
   const c2v = T.clicks ? T.visitou / T.clicks : 0
   const roas = T.spend ? T.receita / T.spend : 0
 
+  // Onde o anúncio mais perde gente. Usa o caminho do dinheiro (CTR, WhatsApp→lead)
+  // e a página só quando há visita rastreada suficiente. NÃO usa clique→visita como
+  // "vazamento" enquanto o rastreio do site ainda cobre parte do tráfego (seria
+  // confundido com falta de rastreio, não com perda real).
   function leitura(r: Full): { t: string; c: string } {
     if (r.leads > 0 && (r.spend === 0 || r.receita >= r.spend)) return { t: '🟢 escalar', c: 'var(--green)' }
     const stages = [
       { k: 'anúncio (CTR)', from: r.impressions, to: r.clicks },
-      { k: 'clique→visita', from: r.clicks, to: r.visitou },
-      { k: 'página', from: r.visitou, to: r.engajou },
-      { k: 'CTA', from: r.engajou, to: r.clicou },
-      { k: 'WhatsApp', from: r.clicou, to: r.whats },
-      { k: 'oferta', from: r.whats, to: r.leads },
-    ].filter(s => s.from >= 5)
+      { k: 'oferta (WhatsApp→lead)', from: r.whats, to: r.leads },
+    ]
+    if (r.visitou >= 10) stages.push({ k: 'página (não clicou)', from: r.visitou, to: r.clicou })
+    const valid = stages.filter(s => s.from >= 5)
     let worst: any = null, wd = -1
-    for (const s of stages) { const d = (s.from - s.to) / s.from; if (d > wd) { wd = d; worst = s } }
+    for (const s of valid) { const d = (s.from - s.to) / s.from; if (d > wd) { wd = d; worst = s } }
     if (!worst || wd <= 0) return { t: '—', c: 'var(--text-faint)' }
     return { t: `🔴 ${worst.k}`, c: 'var(--red)' }
   }
@@ -445,7 +448,7 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
         <KPI label="Investido" valor={fmt(T.spend)} cor="var(--red)" />
         <KPI label="Impressões" valor={T.impressions.toLocaleString('pt-BR')} sub={`CTR ${(ctr * 100).toFixed(1)}%`} />
         <KPI label="Cliques anúncio" valor={T.clicks.toLocaleString('pt-BR')} cor="#f59e0b" />
-        <KPI label="Clique→Visita" valor={`${Math.round(c2v * 100)}%`} cor={c2v >= 0.6 ? 'var(--green)' : c2v >= 0.3 ? 'var(--amber)' : 'var(--red)'} sub={`${T.visitou.toLocaleString('pt-BR')} visitas`} />
+        <KPI label="Rastreio do site" valor={`${Math.round(c2v * 100)}%`} cor={c2v >= 0.6 ? 'var(--green)' : c2v >= 0.3 ? 'var(--amber)' : 'var(--red)'} sub={`captou ${T.visitou.toLocaleString('pt-BR')} dos cliques`} />
         <KPI label="Leads" valor={T.leads.toLocaleString('pt-BR')} cor="var(--green)" />
         <KPI label="CPL" valor={T.leads ? fmt(cpl) : '—'} sub="custo por lead" />
         <KPI label="ROAS" valor={T.spend ? roas.toFixed(2) + 'x' : '—'} cor={roas >= 1 ? 'var(--green)' : 'var(--red)'} />
@@ -474,7 +477,7 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
           </div>
         )}
       </div>
-      <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '0 0 28px' }}>Impressões e cliques vêm do <b style={{ color: 'var(--text-muted)' }}>Meta</b>; visita→clique vêm do <b style={{ color: 'var(--text-muted)' }}>site</b>; lead do <b style={{ color: 'var(--text-muted)' }}>CRM</b> — casados pelo nome do anúncio (utm_content). O salto <b style={{ color: 'var(--text-muted)' }}>clique→visita</b> é a perda entre pagar o clique e a pessoa carregar a página.</p>
+      <p style={{ fontSize: 11, color: 'var(--text-faint)', margin: '0 0 28px' }}>Funil casado pelo nome do anúncio (<b style={{ color: 'var(--text-muted)' }}>utm_content</b>): cliques do <b style={{ color: 'var(--text-muted)' }}>Meta</b> → WhatsApp (<b style={{ color: 'var(--text-muted)' }}>/wa</b>) → lead (<b style={{ color: 'var(--text-muted)' }}>CRM</b>). Visita/engajou/clicou (na tabela) vêm do <b style={{ color: 'var(--text-muted)' }}>rastreio do site</b>, que ainda cobre parte do tráfego — por isso podem ficar menores que o WhatsApp por enquanto.</p>
 
       <h2 style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', margin: '0 0 4px' }}>Diagnóstico por anúncio</h2>
       <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '0 0 12px' }}>“Vazou em” = a etapa onde o anúncio mais perde gente. Aí você sabe se mexe no criativo, na página ou na oferta.</p>
