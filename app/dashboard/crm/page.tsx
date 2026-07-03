@@ -843,6 +843,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
           </div>
         )}
 
+        {!novoLead && lead && <ResumoIA leadId={lead.id} />}
+
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           <div>
             <label style={labelStyle}>Nome *</label>
