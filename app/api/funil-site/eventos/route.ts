@@ -17,8 +17,8 @@ export async function GET(req: NextRequest) {
     const vidf = (sp.get('vid') || '').trim()
     const q = (sp.get('q') || '').trim()
     const limit = Math.min(1000, Math.max(10, parseInt(sp.get('limit') || '200', 10) || 200))
-    const deISO = de + 'T00:00:00'
-    const ateISO = addDays(ate, 1) + 'T00:00:00'
+    const deISO = de + 'T00:00:00-03:00'   // fuso de Brasília (UTC-3)
+    const ateISO = addDays(ate, 1) + 'T00:00:00-03:00'
 
     let query = supabase.from('site_eventos')
       .select('visitor_id, sessao_id, evento, url, referrer, utm_source, utm_campaign, utm_content, codigo_turma, meta, criado_em', { count: 'exact' })

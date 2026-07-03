@@ -33,8 +33,8 @@ export async function GET(req: NextRequest) {
     const ate = (sp.get('ate') || '').slice(0, 10)
     const q = (sp.get('q') || '').toLowerCase().trim()
     if (!de || !ate) return NextResponse.json({ ok: false, error: 'informe de e ate (YYYY-MM-DD)' }, { status: 400 })
-    const deISO = de + 'T00:00:00'
-    const ateISO = addDays(ate, 1) + 'T00:00:00'
+    const deISO = de + 'T00:00:00-03:00'   // fuso de Brasília (UTC-3)
+    const ateISO = addDays(ate, 1) + 'T00:00:00-03:00'
 
     const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, utm_content, url, criado_em', deISO, ateISO)
     const clicks = await carregar('wa_clicks', 'visitor_id, ref, codigo_turma, utm_campaign, utm_content, lead_id, consumido_em, criado_em', deISO, ateISO)
