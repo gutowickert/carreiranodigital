@@ -1,6 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
+// Traduz o erro cru da Meta num motivo legível pra equipe.
+function motivoLabel(erro?: string | null): string {
+  const s = (erro || '').toString()
+  if (!s) return 'Outro'
+  if (s.includes('131049')) return 'Marketing limitado pela Meta (131049)'
+  if (s.includes('131047')) return 'Precisa re-engajar o contato (131047)'
+  if (s.includes('131048') || s.includes('130472')) return 'Bloqueio anti-spam da Meta (131048/130472)'
+  if (s.includes('131026')) return 'Número inválido / sem WhatsApp (131026)'
+  if (s.includes('132') ) return 'Problema no template (132xxx)'
+  if (/opt-?out/i.test(s)) return 'Opt-out (pediu pra sair)'
+  if (/inv[aá]lid/i.test(s)) return 'Telefone inválido'
+  const m = s.match(/\b(1\d{5})\b/)
+  if (m) return `Erro Meta ${m[1]}`
+  return s.slice(0, 48)
+}
+
 // Relatório de disparos.
 //  - sem params: lista campanhas com o resumo (enviados/entregues/lidos/falhas/respostas/custo)
 //  - ?disparo=<id>: lista quem RESPONDEU aquela campanha
@@ -98,5 +114,21 @@ export async function GET(req: NextRequest) {
       custo: Number(r.custo ?? 0),
     }
   })
-  return NextResponse.json({ ok: true, campanhas: linhas })
+
+  // Motivos de FALHA (agrega o erro das linhas que a Meta recusou no envio).
+  // Os "não entregues" travados em status 'enviado' não têm erro — são calculados
+  // na página como (enviados - entregues) e mostrados como limbo à parte.
+  const motivos: Record<string, number> = {}
+  let mf = 0
+  for (;;) {
+    const { data } = await supabase.from('wa_disparo_envios')
+      .select('erro').eq('status', 'falha').not('erro', 'is', null).range(mf, mf + 999)
+    if (!data || !data.length) break
+    for (const r of data) { const k = motivoLabel(r.erro); motivos[k] = (motivos[k] || 0) + 1 }
+    if (data.length < 1000) break
+    mf += 1000
+  }
+  const motivosArr = Object.entries(motivos).map(([motivo, n]) => ({ motivo, n })).sort((a, b) => b.n - a.n)
+
+  return NextResponse.json({ ok: true, campanhas: linhas, motivos: motivosArr })
 }
