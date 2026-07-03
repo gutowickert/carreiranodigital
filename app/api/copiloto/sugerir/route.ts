@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
       if (!conv) return NextResponse.json({ ok: false, error: 'conversa não encontrada' }, { status: 200 })
       nomeContato = conv.nome || ''; telefone = conv.telefone || ''; convIds = [conv.id]
       if (conv.lead_id) {
-        const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('id', conv.lead_id).single()
+        const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('id', conv.lead_id).single()
         lead = l
       }
     } else {
-      const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('id', leadId).single()
+      const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('id', leadId).single()
       if (!l) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
       lead = l; nomeContato = l.nome || ''; telefone = l.whatsapp || ''
       const s = suf(l.whatsapp)
@@ -116,8 +116,17 @@ export async function POST(req: NextRequest) {
       return `- ${t.produtos?.nome || t.codigo} em ${t.cidades?.nome || '?'} — início ${d} — ${preco} (cód ${t.codigo})`
     }).join('\n') || '(nenhuma turma em vendas no momento)'
 
+    // Resumo da negociação (já destila conversa + andamentos) — o copiloto sugere
+    // EM CIMA dele. A conversa abaixo é a fonte fresca; o resumo dá o histórico e o rumo.
+    const r: any = lead?.resumo_ia
+    const resumoTxt = r ? `RESUMO DA NEGOCIAÇÃO (análise prévia — use como contexto do histórico e do rumo):
+- Temperatura: ${r.temperatura || '-'} | Curso já explicado: ${r.jaExplicouCurso || '-'}
+- Onde parou: ${r.ondeParou || '-'}
+- Objeções: ${r.objecoes || '-'}
+- Próximo passo mapeado: ${r.proximoPasso || '-'}${Array.isArray(r.resumo) && r.resumo.length ? '\n- ' + r.resumo.join('\n- ') : ''}\n\n` : ''
+
     const quemTxt = nomeContato || telefone || '(sem nome)'
-    const contexto = `Contato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\nTURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora.`
+    const contexto = `Contato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
 
     const client = new Anthropic({ apiKey: key })
     const resp = await client.messages.create({
