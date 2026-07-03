@@ -37,8 +37,8 @@ export async function GET(req: NextRequest) {
     const deISO = de + 'T00:00:00'
     const ateISO = addDays(ate, 1) + 'T00:00:00'
 
-    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, url', deISO, ateISO)
-    const clicks = await carregar('wa_clicks', 'visitor_id, codigo_turma, utm_campaign, lead_id', deISO, ateISO)
+    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, url, criado_em', deISO, ateISO)
+    const clicks = await carregar('wa_clicks', 'visitor_id, codigo_turma, utm_campaign, lead_id, criado_em', deISO, ateISO)
 
     const vid = (e: any) => (e.visitor_id || '').toString() || null
 
@@ -55,9 +55,14 @@ export async function GET(req: NextRequest) {
       try { const x = new URL(u); return (x.host + x.pathname).replace(/\/$/, '') || x.host } catch { return u.slice(0, 80) }
     }
 
+    // Turma do clique por visitante: fallback pra atribuir turma aos eventos do
+    // site enquanto o snippet não manda codigo_turma (páginas com turma no path).
+    const turmaPorVid = new Map<string, string>()
+    for (const c of clicks) { const id = (c.visitor_id || '').toString(); if (id && c.codigo_turma && !turmaPorVid.has(id)) turmaPorVid.set(id, c.codigo_turma.toString()) }
+
     for (const e of eventos) {
       const id = vid(e); if (!id) continue
-      const turma = (e.codigo_turma || '(sem turma)').toString()
+      const turma = (e.codigo_turma || turmaPorVid.get(id) || '(sem turma)').toString()
       const camp = (e.utm_campaign || '(sem campanha)').toString()
       const pag = paginaDe(e.url)
       const alvos = [G, grupo(porTurmaMap, turma), grupo(porCampMap, camp), grupo(porPagMap, pag)]
@@ -71,23 +76,14 @@ export async function GET(req: NextRequest) {
 
     // ---- ponte site -> whatsapp -> lead (via wa_clicks) ----
     // Por pessoa (quando o vid já viaja no /wa) e no agregado (sempre).
-    const waVisitors = new Set<string>()
-    const leadVisitors = new Set<string>()
-    const waPorTurma = new Map<string, { cliques: number; leads: number; visit: Set<string>; leadVisit: Set<string> }>()
-    const waPorCamp = new Map<string, { cliques: number; leads: number; visit: Set<string>; leadVisit: Set<string> }>()
-    const waGrp = (m: Map<string, any>, k: string) => { let g = m.get(k); if (!g) { g = { cliques: 0, leads: 0, visit: new Set(), leadVisit: new Set() }; m.set(k, g) } return g }
-    let cliquesWa = 0, leadsWa = 0
+    const waVisitors = new Set<string>()   // visitantes (vid) que têm clique no /wa
+    const leadVisitors = new Set<string>() // visitantes (vid) cujo clique virou lead
+    let cliquesWa = 0, leadsWa = 0          // totais de TODAS as origens (contexto, fora do funil)
     for (const c of clicks) {
       const id = (c.visitor_id || '').toString() || null
-      const turma = (c.codigo_turma || '(sem turma)').toString()
-      const camp = (c.utm_campaign || '(sem campanha)').toString()
       const temLead = !!c.lead_id
       cliquesWa++; if (temLead) leadsWa++
       if (id) { waVisitors.add(id); if (temLead) leadVisitors.add(id) }
-      for (const [m, k] of [[waPorTurma, turma], [waPorCamp, camp]] as const) {
-        const g = waGrp(m, k); g.cliques++; if (temLead) g.leads++
-        if (id) { g.visit.add(id); if (temLead) g.leadVisit.add(id) }
-      }
     }
 
     const funil = {
@@ -101,24 +97,27 @@ export async function GET(req: NextRequest) {
       leadsVisitors: leadVisitors.size,
     }
 
-    const linhaTurma = (k: string, g: ReturnType<typeof contaGrupo>) => {
-      const w = waPorTurma.get(k)
-      return { chave: k, visitantes: g.visitantes.size, engajaram: g.engajaram.size, viuCta: g.viuCta.size, clicouCta: g.clicouCta.size, cliquesWa: w?.cliques || 0, leads: w?.leads || 0 }
-    }
-    const linhaCamp = (k: string, g: ReturnType<typeof contaGrupo>) => {
-      const w = waPorCamp.get(k)
-      return { chave: k, visitantes: g.visitantes.size, engajaram: g.engajaram.size, viuCta: g.viuCta.size, clicouCta: g.clicouCta.size, cliquesWa: w?.cliques || 0, leads: w?.leads || 0 }
-    }
+    // ---- tendência diária (visitantes distintos, cliques /wa e leads por dia) ----
+    const dias = new Map<string, { visit: Set<string>; cliquesWa: number; leads: number }>()
+    const dia = (m: Map<string, any>, k: string) => { let g = m.get(k); if (!g) { g = { visit: new Set(), cliquesWa: 0, leads: 0 }; m.set(k, g) } return g }
+    for (const e of eventos) { const id = vid(e); if (!id) continue; const k = (e.criado_em || '').slice(0, 10); if (k) dia(dias, k).visit.add(id) }
+    for (const c of clicks) { const k = (c.criado_em || '').slice(0, 10); if (!k) continue; const g = dia(dias, k); g.cliquesWa++; if (c.lead_id) g.leads++ }
+    const tendencia = [...dias.entries()].map(([d0, g]) => ({ dia: d0, visitantes: g.visit.size, cliquesWa: g.cliquesWa, leads: g.leads })).sort((a, b) => a.dia < b.dia ? -1 : 1)
 
-    // turmas/campanhas que só têm clique (sem evento de site) também aparecem
-    for (const k of waPorTurma.keys()) if (!porTurmaMap.has(k)) porTurmaMap.set(k, contaGrupo())
-    for (const k of waPorCamp.keys()) if (!porCampMap.has(k)) porCampMap.set(k, contaGrupo())
+    // Casa por pessoa: "foram pro WA" e "leads" de um grupo = visitantes DAQUELE
+    // grupo que também têm clique/lead (mesma população do site). Nada de somar
+    // cliques de outras origens — é isso que evitava o "3974% do topo".
+    const inter = (a: Set<string>, b: Set<string>) => { let n = 0; for (const x of a) if (b.has(x)) n++; return n }
+    const linha = (k: string, g: ReturnType<typeof contaGrupo>) => ({
+      chave: k, visitantes: g.visitantes.size, engajaram: g.engajaram.size, viuCta: g.viuCta.size, clicouCta: g.clicouCta.size,
+      cliquesWa: inter(g.visitantes, waVisitors), leads: inter(g.visitantes, leadVisitors),
+    })
 
-    const porTurma = [...porTurmaMap.entries()].map(([k, g]) => linhaTurma(k, g)).sort((a, b) => b.visitantes - a.visitantes || b.cliquesWa - a.cliquesWa)
-    const porCampanha = [...porCampMap.entries()].map(([k, g]) => linhaCamp(k, g)).sort((a, b) => b.visitantes - a.visitantes || b.cliquesWa - a.cliquesWa)
+    const porTurma = [...porTurmaMap.entries()].map(([k, g]) => linha(k, g)).sort((a, b) => b.visitantes - a.visitantes || b.cliquesWa - a.cliquesWa)
+    const porCampanha = [...porCampMap.entries()].map(([k, g]) => linha(k, g)).sort((a, b) => b.visitantes - a.visitantes || b.cliquesWa - a.cliquesWa)
     const porPagina = [...porPagMap.entries()].map(([k, g]) => ({ chave: k, visitantes: g.visitantes.size, engajaram: g.engajaram.size, viuCta: g.viuCta.size, clicouCta: g.clicouCta.size })).sort((a, b) => b.visitantes - a.visitantes)
 
-    return NextResponse.json({ ok: true, de, ate, funil, porTurma, porCampanha, porPagina })
+    return NextResponse.json({ ok: true, de, ate, funil, tendencia, porTurma, porCampanha, porPagina })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
   }
