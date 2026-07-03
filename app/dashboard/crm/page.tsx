@@ -1133,6 +1133,86 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   )
 }
 
+function ResumoIA({ leadId }: { leadId: string }) {
+  const [dados, setDados] = useState<any>(null)
+  const [em, setEm] = useState<string | null>(null)
+  const [stale, setStale] = useState(false)
+  const [temMsg, setTemMsg] = useState(true)
+  const [gerando, setGerando] = useState(false)
+  const [erro, setErro] = useState('')
+  const [aberto, setAberto] = useState(true)
+
+  useEffect(() => {
+    let vivo = true
+    fetch('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: false }) })
+      .then(r => r.json()).then(j => { if (vivo && j.ok) { setDados(j.resumo); setEm(j.em); setStale(j.stale); setTemMsg(j.temMensagens !== false) } }).catch(() => {})
+    return () => { vivo = false }
+  }, [leadId])
+
+  async function gerar() {
+    setGerando(true); setErro('')
+    try {
+      const j = await fetch('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: true }) }).then(r => r.json())
+      if (j.ok) { setDados(j.resumo); setEm(j.em); setStale(false) } else setErro(j.error || 'falha ao gerar')
+    } catch { setErro('falha ao gerar') } finally { setGerando(false) }
+  }
+
+  const Chip = ({ txt, cor }: { txt: string; cor: string }) => (
+    <span style={{ fontSize: 11, fontWeight: 600, color: cor, background: 'var(--surface-2)', border: `1px solid ${cor}`, borderRadius: 20, padding: '2px 9px' }}>{txt}</span>
+  )
+  const corTemp = (t: string) => t === 'quente' ? '#ef4444' : t === 'morno' ? 'var(--amber)' : '#60a5fa'
+  const corCurso = (c: string) => c === 'sim' ? 'var(--green)' : c === 'parcial' ? 'var(--amber)' : 'var(--red)'
+  const lblCurso = (c: string) => c === 'sim' ? 'Curso explicado' : c === 'parcial' ? 'Curso explicado em parte' : 'Curso não explicado'
+  const emFmt = em ? new Date(em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''
+
+  return (
+    <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', marginBottom: 12 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <button onClick={() => setAberto(a => !a)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ color: 'var(--text-faint)' }}>{aberto ? '▾' : '▸'}</span> 🧠 Resumo IA
+        </button>
+        {stale && dados && <span style={{ fontSize: 10, color: 'var(--amber)' }}>• desatualizado</span>}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
+          {em && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{emFmt}</span>}
+          <button onClick={gerar} disabled={gerando} title="Atualizar resumo"
+            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: stale ? 'var(--amber)' : 'var(--text-muted)', fontSize: 11, padding: '3px 8px', cursor: gerando ? 'default' : 'pointer' }}>
+            {gerando ? '...' : dados ? '🔄 Atualizar' : '✨ Gerar'}
+          </button>
+        </div>
+      </div>
+
+      {aberto && (
+        <div style={{ marginTop: 10 }}>
+          {erro && <div style={{ fontSize: 11, color: 'var(--red)', marginBottom: 6 }}>{erro}</div>}
+          {gerando && <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Lendo a conversa e os andamentos...</div>}
+          {!gerando && !dados && (
+            <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
+              {temMsg ? 'Ainda não há resumo. ' : 'Sem conversa registrada ainda. '}
+              {temMsg && <button onClick={gerar} style={{ background: 'var(--accent)', border: 'none', borderRadius: 6, color: 'var(--on-accent)', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>Gerar resumo</button>}
+            </div>
+          )}
+          {!gerando && dados && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {dados.temperatura && <Chip txt={`🔥 ${dados.temperatura}`} cor={corTemp(dados.temperatura)} />}
+                {dados.jaExplicouCurso && <Chip txt={lblCurso(dados.jaExplicouCurso)} cor={corCurso(dados.jaExplicouCurso)} />}
+              </div>
+              {dados.ondeParou && <div style={{ fontSize: 12, color: 'var(--text)' }}><b style={{ color: 'var(--text-muted)' }}>Onde parou:</b> {dados.ondeParou}</div>}
+              {Array.isArray(dados.resumo) && dados.resumo.length > 0 && (
+                <ul style={{ margin: 0, paddingLeft: 16, display: 'flex', flexDirection: 'column', gap: 3 }}>
+                  {dados.resumo.map((b: string, i: number) => <li key={i} style={{ fontSize: 12, color: 'var(--text-2)' }}>{b}</li>)}
+                </ul>
+              )}
+              {dados.objecoes && !/^nenhuma$/i.test(dados.objecoes) && <div style={{ fontSize: 12, color: 'var(--text-2)' }}><b style={{ color: 'var(--amber)' }}>Objeções:</b> {dados.objecoes}</div>}
+              {dados.proximoPasso && <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--surface-2)', borderLeft: '3px solid var(--green)', borderRadius: 6, padding: '6px 10px' }}><b style={{ color: 'var(--green)' }}>Próximo passo:</b> {dados.proximoPasso}</div>}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 function ChatLead({ lead }: { lead: Lead }) {
   const [mensagens, setMensagens] = useState<any[]>([])
   const [texto, setTexto] = useState('')
