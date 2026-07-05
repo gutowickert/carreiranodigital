@@ -163,14 +163,19 @@ export async function gerarDossie(produto: string, cidade: string) {
   if (corpus.length < 800) return { ok: false as const, error: 'Poucas conversas com diálogo nesse segmento pra destilar.' }
 
   const client = new Anthropic({ apiKey: key })
-  const resp = await client.messages.create({ model: MODELO, max_tokens: 4096, system: PROMPT, messages: [{ role: 'user', content: corpus }] })
-  const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
+  const resp = await client.messages.create({ model: MODELO, max_tokens: 8192, system: PROMPT, messages: [{ role: 'user', content: corpus }] })
+  let raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
+  raw = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim() // tira cercas de markdown
+  const stop = (resp as any).stop_reason
   let dossie: any = null
   try { dossie = JSON.parse(raw) } catch {
     const a = raw.indexOf('{'), z = raw.lastIndexOf('}')
     if (a >= 0 && z > a) { try { dossie = JSON.parse(raw.slice(a, z + 1)) } catch {} }
   }
-  if (!dossie) return { ok: false as const, error: 'não consegui destilar o dossiê agora' }
+  if (!dossie) {
+    const motivo = stop === 'max_tokens' ? ' (resposta cortou por tamanho)' : ''
+    return { ok: false as const, error: `não consegui destilar o dossiê${motivo}. fim: …${raw.slice(-180)}` }
+  }
 
   const agora = new Date().toISOString()
   await supabase.from('inteligencia_cliente').upsert({
