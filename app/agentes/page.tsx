@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Image from 'next/image'
 import { Bebas_Neue, Barlow } from 'next/font/google'
 
 const bebas = Bebas_Neue({ weight: '400', subsets: ['latin'], variable: '--f-bebas' })
@@ -31,8 +32,8 @@ export default function Agentes() {
     <div className={`${bebas.variable} ${barlow.variable}`} style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: 'var(--f-barlow), system-ui, sans-serif' }}>
       {/* Header */}
       <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 20px 40px', textAlign: 'center', background: `radial-gradient(120% 100% at 50% 0%, rgba(61,17,128,0.55) 0%, rgba(11,11,18,0) 60%)` }}>
-        <div style={{ ...bebasStyle, fontSize: 20, letterSpacing: 4, color: ROXO_L }}>🧠 CARREIRA NO DIGITAL</div>
-        <div style={{ fontSize: 14, fontStyle: 'italic', color: FAINT, marginTop: 2 }}>Crie o futuro, domine o agora.</div>
+        <Image src="/logo.png" alt="Carreira no Digital" width={300} height={100} priority style={{ objectFit: 'contain', width: 'min(300px, 78%)', height: 'auto', margin: '0 auto' }} />
+        <div style={{ fontSize: 14, fontStyle: 'italic', color: FAINT, marginTop: 8 }}>Crie o futuro, domine o agora.</div>
         <h1 style={{ ...bebasStyle, fontSize: 'clamp(38px, 9vw, 64px)', lineHeight: 0.95, margin: '22px 0 8px', background: `linear-gradient(90deg, #fff, ${ROXO_L})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MÓDULO 1 · ESTRATÉGIA DIGITAL</h1>
         <p style={{ fontSize: 16, color: FAINT, margin: 0, maxWidth: 520, marginInline: 'auto' }}>Do zero até ter conteúdo, anúncios e estratégia prontos pra rodar.</p>
       </div>
@@ -109,8 +110,8 @@ export default function Agentes() {
         </div>
 
         <div style={{ textAlign: 'center', marginTop: 30 }}>
-          <div style={{ ...bebasStyle, fontSize: 18, letterSpacing: 3, color: ROXO_L }}>🧠 CARREIRA NO DIGITAL</div>
-          <div style={{ fontSize: 13, fontStyle: 'italic', color: FAINT, marginTop: 2 }}>Crie o futuro, domine o agora.</div>
+          <Image src="/logo.png" alt="Carreira no Digital" width={190} height={64} style={{ objectFit: 'contain', width: 190, height: 'auto', margin: '0 auto', opacity: 0.9 }} />
+          <div style={{ fontSize: 13, fontStyle: 'italic', color: FAINT, marginTop: 6 }}>Crie o futuro, domine o agora.</div>
         </div>
       </div>
     </div>
