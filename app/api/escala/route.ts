@@ -14,24 +14,33 @@ const EXCLUI = new Set(['anlportoalegre072601', 'anlportoalegre072602'])
 export async function GET(_req: NextRequest) {
   try {
     const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produto_id, status, encerrada_em, data_fim').in('produto_id', [ANL, FC])
+    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produto_id, cidade_id, status, encerrada_em, data_fim').in('produto_id', [ANL, FC])
     const abertas = (turmas || []).filter((t: any) => !t.encerrada_em && !['encerrada', 'cancelada', 'concluida'].includes(t.status) && (t.data_fim || '') >= hoje)
 
+    const { data: cidades } = await supabase.from('cidades').select('id, nome')
+    const cid = Object.fromEntries((cidades || []).map((c: any) => [c.id, c.nome]))
     const { data: escolhas } = await supabase.from('escala_escolhas').select('chave, escolha')
     const mapa = new Map((escolhas || []).map((e: any) => [e.chave, e.escolha]))
+
+    const diasDe = async (turma_id: string, modulo_id: string | null) => {
+      let q = supabase.from('turma_datas').select('data, horario_inicio, horario_fim').eq('turma_id', turma_id).order('data')
+      if (modulo_id) q = q.eq('modulo_id', modulo_id)
+      const { data } = await q
+      const vistos = new Set<string>(); const out: any[] = []
+      for (const x of (data || [])) { if (vistos.has(x.data)) continue; vistos.add(x.data); out.push({ data: x.data, hi: (x.horario_inicio || '19:00').slice(0, 5), hf: (x.horario_fim || '22:15').slice(0, 5) }) }
+      return out
+    }
 
     const eventos: any[] = []
     for (const t of abertas) {
       const cod = (t.codigo || '').toLowerCase()
       if (t.produto_id === ANL) {
         if (EXCLUI.has(cod)) continue
-        const { data: dts } = await supabase.from('turma_datas').select('data').eq('turma_id', t.id).order('data')
-        const dias = [...new Set((dts || []).map((x: any) => x.data))].sort()
-        if (dias.length) eventos.push(mk(t, null, 'ANL', dias, mapa))
+        const dias = await diasDe(t.id, null)
+        if (dias.length) eventos.push(mk(t, null, 'ANL', dias, mapa, cid))
       } else if (t.produto_id === FC) {
-        const { data: dts } = await supabase.from('turma_datas').select('data').eq('turma_id', t.id).eq('modulo_id', MOD_TRAFEGO).order('data')
-        const dias = [...new Set((dts || []).map((x: any) => x.data))].sort()
-        if (dias.length) eventos.push(mk(t, MOD_TRAFEGO, 'Gestor de Tráfego', dias, mapa))
+        const dias = await diasDe(t.id, MOD_TRAFEGO)
+        if (dias.length) eventos.push(mk(t, MOD_TRAFEGO, 'Gestor de Tráfego', dias, mapa, cid))
       }
     }
     eventos.sort((a, b) => a.ini < b.ini ? -1 : 1)
@@ -41,9 +50,9 @@ export async function GET(_req: NextRequest) {
   }
 }
 
-function mk(t: any, modulo_id: string | null, tipo: string, dias: string[], mapa: Map<string, string>) {
+function mk(t: any, modulo_id: string | null, tipo: string, dias: any[], mapa: Map<string, string>, cid: Record<string, string>) {
   const chave = `${t.id}|${modulo_id || 'anl'}`
-  return { chave, turma_id: t.id, modulo_id, codigo: t.codigo, tipo, dias, ini: dias[0], escolha: mapa.get(chave) || 'julio' }
+  return { chave, turma_id: t.id, modulo_id, codigo: t.codigo, cidade: cid[t.cidade_id] || '', tipo, dias, ini: dias[0].data, escolha: mapa.get(chave) || 'julio' }
 }
 
 export async function POST(req: NextRequest) {
