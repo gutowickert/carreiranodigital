@@ -1,4 +1,8 @@
 import type { Metadata } from 'next'
+import { Bebas_Neue, Barlow } from 'next/font/google'
+
+const bebas = Bebas_Neue({ weight: '400', subsets: ['latin'], variable: '--f-bebas' })
+const barlow = Barlow({ weight: ['400', '500', '600', '700', '800', '900'], subsets: ['latin'], variable: '--f-barlow' })
 
 export const metadata: Metadata = {
   title: 'Agentes de IA — Módulo 1 | Carreira no Digital',
@@ -18,54 +22,75 @@ const AGENTES = [
   { n: 10, titulo: 'Script de Imagens e Carrossel', objetivo: 'Criar material visual para campanhas.', faz: ['Scripts de imagem ou carrossel para anúncios'], saida: 'Scripts de anúncios prontos (imagem + texto).', url: 'https://chatgpt.com/g/g-69c2f51632308191b67726a95b17974b-agente-9-criativos-de-anuncios' },
 ]
 
-const roxo = '#7c3aed', roxoClaro = '#a78bfa', tinta = '#1f2937', cinza = '#6b7280'
+// paleta do site carreiranodigital.com
+const BG = '#0b0b12', CARD = '#14121e', BORDER = '#2a2440', ROXO = '#7b2fbe', ROXO_L = '#b87af0', TEXT = '#f0eef7', FAINT = '#9090b8'
+const bebasStyle = { fontFamily: 'var(--f-bebas), sans-serif', letterSpacing: '0.5px' } as React.CSSProperties
 
 export default function Agentes() {
   return (
-    <div style={{ minHeight: '100vh', background: '#faf9ff', color: tinta, fontFamily: 'system-ui, -apple-system, Segoe UI, Arial, sans-serif' }}>
+    <div className={`${bebas.variable} ${barlow.variable}`} style={{ minHeight: '100vh', background: BG, color: TEXT, fontFamily: 'var(--f-barlow), system-ui, sans-serif' }}>
       {/* Header */}
-      <div style={{ background: `linear-gradient(135deg, ${roxo}, #5b21b6)`, color: '#fff', padding: '36px 20px 30px', textAlign: 'center' }}>
-        <div style={{ fontSize: 13, letterSpacing: 3, opacity: 0.85, fontWeight: 700 }}>🧠 CARREIRA NO DIGITAL</div>
-        <div style={{ fontSize: 15, fontStyle: 'italic', opacity: 0.9, marginTop: 4 }}>Crie o futuro, domine o agora.</div>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: '18px 0 6px' }}>Módulo 1 — Estratégia Digital</h1>
-        <p style={{ fontSize: 15, opacity: 0.92, margin: 0 }}>Do zero até ter conteúdo, anúncios e estratégia prontos pra rodar.</p>
+      <div style={{ position: 'relative', overflow: 'hidden', padding: '52px 20px 40px', textAlign: 'center', background: `radial-gradient(120% 100% at 50% 0%, rgba(61,17,128,0.55) 0%, rgba(11,11,18,0) 60%)` }}>
+        <div style={{ ...bebasStyle, fontSize: 20, letterSpacing: 4, color: ROXO_L }}>🧠 CARREIRA NO DIGITAL</div>
+        <div style={{ fontSize: 14, fontStyle: 'italic', color: FAINT, marginTop: 2 }}>Crie o futuro, domine o agora.</div>
+        <h1 style={{ ...bebasStyle, fontSize: 'clamp(38px, 9vw, 64px)', lineHeight: 0.95, margin: '22px 0 8px', background: `linear-gradient(90deg, #fff, ${ROXO_L})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text' }}>MÓDULO 1 · ESTRATÉGIA DIGITAL</h1>
+        <p style={{ fontSize: 16, color: FAINT, margin: 0, maxWidth: 520, marginInline: 'auto' }}>Do zero até ter conteúdo, anúncios e estratégia prontos pra rodar.</p>
       </div>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: '24px 18px 60px' }}>
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '8px 18px 70px' }}>
+        {/* Antes de começar — como preencher */}
+        <div style={{ background: `linear-gradient(135deg, rgba(123,47,190,0.28), ${CARD})`, border: `1px solid ${ROXO}`, borderRadius: 18, padding: 24, marginBottom: 26, boxShadow: '0 0 34px rgba(123,47,190,0.25)' }}>
+          <div style={{ ...bebasStyle, fontSize: 26, color: '#fff' }}>ANTES DE COMEÇAR — COMO PREENCHER</div>
+          <p style={{ fontSize: 15, color: '#e6e2f2', margin: '8px 0 12px', lineHeight: 1.6 }}>
+            A ideia dos agentes é <b style={{ color: ROXO_L }}>encontrar os diferenciais do teu negócio</b> e comunicar a <b style={{ color: ROXO_L }}>essência da tua empresa</b> na internet — pra te destacar e vender no digital.
+          </p>
+          <p style={{ fontSize: 15, color: '#e6e2f2', margin: '0 0 14px', lineHeight: 1.6 }}>
+            O que já te faz vender <b>hoje</b> — no atendimento físico, no boca a boca, na indicação — é o teu ouro. Aqui a gente extrai isso e monta a estrutura pra mostrar online e transformar em venda.
+          </p>
+          <div style={{ fontSize: 13, fontWeight: 700, color: ROXO_L, letterSpacing: 1, marginBottom: 6 }}>PREENCHE CADA AGENTE COMPLETO E HONESTO:</div>
+          <ul style={{ margin: '0 0 12px', paddingLeft: 18 }}>
+            <li style={{ fontSize: 14.5, color: '#cfc9e0', marginBottom: 4 }}>O que <b style={{ color: TEXT }}>funciona</b> — por que o cliente te escolhe, o que ele elogia.</li>
+            <li style={{ fontSize: 14.5, color: '#cfc9e0', marginBottom: 4 }}>O que <b style={{ color: TEXT }}>não funciona</b> — onde trava, onde tu perde venda.</li>
+            <li style={{ fontSize: 14.5, color: '#cfc9e0' }}>Como tu <b style={{ color: TEXT }}>vende de verdade</b> hoje.</li>
+          </ul>
+          <p style={{ fontSize: 14, color: FAINT, margin: 0, fontStyle: 'italic' }}>Quanto mais real e completo tu for aqui, mais forte fica o resultado. Não é sobre parecer bonito — é sobre traduzir a tua essência em vendas no digital.</p>
+        </div>
+
         {/* Fluxo + como usar */}
-        <div style={{ background: '#fff', border: '1px solid #eee', borderRadius: 16, padding: 20, marginBottom: 24, boxShadow: '0 2px 12px rgba(124,58,237,0.06)' }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: roxo, textTransform: 'uppercase', letterSpacing: 1 }}>Visão geral do fluxo</div>
-          <p style={{ fontSize: 14, color: cinza, margin: '6px 0 10px' }}>Você não aprende ferramentas primeiro. Você constrói, passo a passo:</p>
+        <div style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 22, marginBottom: 26 }}>
+          <div style={{ ...bebasStyle, fontSize: 22, color: ROXO_L }}>VISÃO GERAL DO FLUXO</div>
+          <p style={{ fontSize: 14.5, color: FAINT, margin: '4px 0 12px' }}>Você não aprende ferramentas primeiro. Você constrói, passo a passo:</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
             {['Clareza do negócio', 'Clareza do público', 'Clareza da oferta', 'Estratégia', 'Planejamento', 'Conteúdo pronto', 'Anúncios prontos'].map(x => (
-              <span key={x} style={{ fontSize: 12, fontWeight: 600, color: roxo, background: '#f3edff', border: '1px solid #e5d9ff', borderRadius: 20, padding: '4px 12px' }}>{x}</span>
+              <span key={x} style={{ fontSize: 12.5, fontWeight: 600, color: ROXO_L, background: 'rgba(123,47,190,0.15)', border: `1px solid ${BORDER}`, borderRadius: 20, padding: '5px 13px' }}>{x}</span>
             ))}
           </div>
-          <div style={{ background: `linear-gradient(135deg, ${roxo}, #6d28d9)`, color: '#fff', borderRadius: 12, padding: '14px 16px', marginTop: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 800, color: '#ffe27a', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>Como usar os agentes</div>
-            <div style={{ fontSize: 13.5, marginBottom: 6 }}><b style={{ color: '#ffe27a' }}>GPT Pago:</b> vai seguindo na mesma janela, de agente em agente.</div>
-            <div style={{ fontSize: 13.5 }}><b style={{ color: '#ffe27a' }}>GPT Gratuito:</b> copia as informações no Word e cola no próximo agente.</div>
+          <div style={{ background: `linear-gradient(135deg, ${ROXO}, #4e1a80)`, borderRadius: 14, padding: '16px 18px', marginTop: 18 }}>
+            <div style={{ ...bebasStyle, fontSize: 20, color: '#fff', marginBottom: 8 }}>COMO USAR OS AGENTES</div>
+            <div style={{ fontSize: 14, color: '#f0eef7', marginBottom: 8, lineHeight: 1.5 }}><b style={{ color: '#ffe27a' }}>GPT Pago:</b> vai seguindo na mesma janela, de agente em agente.</div>
+            <div style={{ fontSize: 14, color: '#f0eef7', lineHeight: 1.5 }}><b style={{ color: '#ffe27a' }}>GPT Gratuito:</b> copia no Word e cola os resultados de <b>TODOS os agentes anteriores</b> no próximo.</div>
           </div>
         </div>
 
         {/* Agentes */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
           {AGENTES.map(a => (
-            <div key={a.n} style={{ background: '#fff', border: '1px solid #eee', borderRadius: 16, padding: 20, boxShadow: '0 2px 12px rgba(124,58,237,0.05)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 8 }}>
-                <div style={{ width: 40, height: 40, borderRadius: 12, background: `linear-gradient(135deg, ${roxo}, ${roxoClaro})`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: 17, flexShrink: 0 }}>{a.n}</div>
+            <div key={a.n} style={{ background: CARD, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 22, position: 'relative', overflow: 'hidden' }}>
+              <div style={{ position: 'absolute', top: 0, left: 0, width: 4, height: '100%', background: `linear-gradient(${ROXO}, ${ROXO_L})` }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 10 }}>
+                <div style={{ ...bebasStyle, width: 48, height: 48, borderRadius: 14, background: `linear-gradient(135deg, ${ROXO}, ${ROXO_L})`, color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 26, flexShrink: 0, boxShadow: `0 0 22px rgba(123,47,190,0.5)` }}>{a.n}</div>
                 <div>
-                  <div style={{ fontSize: 11, fontWeight: 700, color: roxoClaro, letterSpacing: 1 }}>AGENTE {a.n}</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, color: tinta, lineHeight: 1.2 }}>{a.titulo}</div>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: FAINT, letterSpacing: 2 }}>AGENTE {a.n}</div>
+                  <div style={{ ...bebasStyle, fontSize: 27, color: TEXT, lineHeight: 1 }}>{a.titulo}</div>
                 </div>
               </div>
-              <p style={{ fontSize: 14, color: cinza, margin: '0 0 12px' }}><b style={{ color: tinta }}>Objetivo:</b> {a.objetivo}</p>
-              <div style={{ fontSize: 13, fontWeight: 700, color: tinta, marginBottom: 4 }}>O que faz:</div>
-              <ul style={{ margin: '0 0 12px', paddingLeft: 18 }}>
-                {a.faz.map((f, i) => <li key={i} style={{ fontSize: 13.5, color: '#374151', marginBottom: 3 }}>{f}</li>)}
+              <p style={{ fontSize: 14.5, color: FAINT, margin: '0 0 12px', lineHeight: 1.5 }}><b style={{ color: TEXT }}>Objetivo:</b> {a.objetivo}</p>
+              <div style={{ fontSize: 12, fontWeight: 700, color: ROXO_L, letterSpacing: 1, marginBottom: 5 }}>O QUE FAZ</div>
+              <ul style={{ margin: '0 0 14px', paddingLeft: 18 }}>
+                {a.faz.map((f, i) => <li key={i} style={{ fontSize: 14, color: '#cfc9e0', marginBottom: 3 }}>{f}</li>)}
               </ul>
-              <div style={{ fontSize: 13.5, color: tinta, background: '#f7f3ff', borderLeft: `3px solid ${roxo}`, borderRadius: 8, padding: '8px 12px', marginBottom: 14 }}><b>Saída:</b> {a.saida}</div>
-              <a href={a.url} target="_blank" rel="noreferrer" style={{ display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${roxo}, ${roxoClaro})`, color: '#fff', fontWeight: 800, fontSize: 15, padding: '13px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 4px 14px rgba(124,58,237,0.35)' }}>
+              <div style={{ fontSize: 14, color: TEXT, background: 'rgba(123,47,190,0.14)', borderLeft: `3px solid ${ROXO_L}`, borderRadius: 8, padding: '9px 13px', marginBottom: 16 }}><b style={{ color: ROXO_L }}>Saída:</b> {a.saida}</div>
+              <a href={a.url} target="_blank" rel="noreferrer" style={{ ...bebasStyle, display: 'block', textAlign: 'center', background: `linear-gradient(135deg, ${ROXO}, ${ROXO_L})`, color: '#fff', fontSize: 20, padding: '14px', borderRadius: 12, textDecoration: 'none', boxShadow: '0 6px 22px rgba(123,47,190,0.4)' }}>
                 ABRIR AGENTE {a.n} →
               </a>
             </div>
@@ -73,19 +98,19 @@ export default function Agentes() {
         </div>
 
         {/* Resultado final */}
-        <div style={{ background: `linear-gradient(135deg, ${roxo}, #5b21b6)`, color: '#fff', borderRadius: 16, padding: 24, marginTop: 24, textAlign: 'center' }}>
-          <div style={{ fontSize: 13, fontWeight: 800, color: '#ffe27a', textTransform: 'uppercase', letterSpacing: 1 }}>Resultado final do aluno</div>
-          <p style={{ fontSize: 15, margin: '8px 0 14px', opacity: 0.95 }}>Ao final do Módulo 1, você sai com:</p>
+        <div style={{ background: `linear-gradient(135deg, rgba(123,47,190,0.25), rgba(11,11,18,0.2))`, border: `1px solid ${BORDER}`, borderRadius: 18, padding: 26, marginTop: 26, textAlign: 'center' }}>
+          <div style={{ ...bebasStyle, fontSize: 24, color: ROXO_L }}>RESULTADO FINAL DO ALUNO</div>
+          <p style={{ fontSize: 15, margin: '6px 0 16px', color: FAINT }}>Ao final do Módulo 1, você sai com:</p>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
             {['Estratégia definida', 'Público claro', 'Oferta estruturada', 'Conteúdo planejado', 'Roteiros prontos', 'Posts prontos', 'Anúncios prontos'].map(x => (
-              <span key={x} style={{ fontSize: 12.5, fontWeight: 600, background: 'rgba(255,255,255,0.15)', borderRadius: 20, padding: '5px 13px' }}>✓ {x}</span>
+              <span key={x} style={{ fontSize: 13, fontWeight: 600, color: TEXT, background: 'rgba(123,47,190,0.2)', border: `1px solid ${BORDER}`, borderRadius: 20, padding: '6px 14px' }}>✓ {x}</span>
             ))}
           </div>
         </div>
 
-        <div style={{ textAlign: 'center', marginTop: 28, color: cinza }}>
-          <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 2, color: roxo }}>🧠 CARREIRA NO DIGITAL</div>
-          <div style={{ fontSize: 13, fontStyle: 'italic', marginTop: 2 }}>Crie o futuro, domine o agora.</div>
+        <div style={{ textAlign: 'center', marginTop: 30 }}>
+          <div style={{ ...bebasStyle, fontSize: 18, letterSpacing: 3, color: ROXO_L }}>🧠 CARREIRA NO DIGITAL</div>
+          <div style={{ fontSize: 13, fontStyle: 'italic', color: FAINT, marginTop: 2 }}>Crie o futuro, domine o agora.</div>
         </div>
       </div>
     </div>
