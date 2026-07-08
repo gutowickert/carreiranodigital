@@ -19,8 +19,8 @@ export async function GET(req: NextRequest) {
     const turmaId = sp.get('turma')
     if (turmaId) {
       const { data } = await supabase.from('matriculas')
-        .select('id, concluido, alunos(nome)').eq('turma_id', turmaId).eq('concluido', true)
-      const alunos = (data || []).map((m: any) => ({ matricula_id: m.id, nome: m.alunos?.nome || '(sem nome)' })).sort((a, b) => a.nome.localeCompare(b.nome))
+        .select('id, concluido, alunos(nome)').eq('turma_id', turmaId)
+      const alunos = (data || []).map((m: any) => ({ matricula_id: m.id, nome: m.alunos?.nome || '(sem nome)', concluido: !!m.concluido })).sort((a, b) => a.nome.localeCompare(b.nome))
       return NextResponse.json({ ok: true, alunos })
     }
     const matId = sp.get('matricula')

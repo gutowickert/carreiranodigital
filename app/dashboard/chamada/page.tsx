@@ -18,8 +18,7 @@ export default function Chamada() {
   const [alunos, setAlunos] = useState<Aluno[]>([])
   const [pres, setPres] = useState<Record<string, boolean>>({}) // matricula|data -> presente
   const [carregando, setCarregando] = useState(false)
-  const [certs, setCerts] = useState<{ matricula_id: string; nome: string }[] | null>(null)
-  const [copiado, setCopiado] = useState('')
+  const [certs, setCerts] = useState<{ matricula_id: string; nome: string; concluido?: boolean }[] | null>(null)
 
   async function carregarCerts() {
     if (certs) { setCerts(null); return }
@@ -107,23 +106,21 @@ export default function Chamada() {
               <KPI label="Vendeu" valor={pct(cont('vendeu'), n) + '%'} cor="var(--green)" />
             </div>
 
-            {/* Certificados dos concluídos */}
+            {/* Certificados — você escolhe quem gerar */}
             <div style={{ marginBottom: 16 }}>
-              <button onClick={carregarCerts} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>🎓 Certificados dos concluídos {cont('concluido') ? `(${cont('concluido')})` : ''}</button>
+              <button onClick={carregarCerts} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>🎓 Gerar certificados {certs ? '▾' : '▸'}</button>
               {certs && (
                 <div style={{ ...card, padding: 14, marginTop: 8 }}>
-                  {certs.length === 0 ? <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Ninguém marcado como “Concluiu” ainda. Marca na tabela abaixo que o certificado aparece aqui.</span> : (
+                  <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 10 }}>Escolha quem quer gerar. <b style={{ color: 'var(--text-muted)' }}>Baixar PNG</b> gera o arquivo pra mandar imprimir; <b style={{ color: 'var(--text-muted)' }}>abrir</b> mostra a prévia.</div>
+                  {certs.length === 0 ? <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nenhum aluno na turma.</span> : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                      {certs.map(c => {
-                        const link = typeof window !== 'undefined' ? `${window.location.origin}/certificado/${c.matricula_id}` : ''
-                        return (
-                          <div key={c.matricula_id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-                            <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, minWidth: 200 }}>{c.nome}</span>
-                            <a href={`/certificado/${c.matricula_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-soft)', textDecoration: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px' }}>abrir certificado ↗</a>
-                            <button onClick={() => { navigator.clipboard.writeText(link); setCopiado(c.matricula_id); setTimeout(() => setCopiado(''), 1500) }} style={{ ...inp, cursor: 'pointer', fontSize: 12, padding: '4px 10px' }}>{copiado === c.matricula_id ? '✓ copiado' : 'copiar link'}</button>
-                          </div>
-                        )
-                      })}
+                      {certs.map(c => (
+                        <div key={c.matricula_id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, minWidth: 200 }}>{c.nome}{c.concluido && <span style={{ fontSize: 10, color: 'var(--green)', marginLeft: 6 }}>✓ concluiu</span>}</span>
+                          <a href={`/api/certificado/png?matricula=${c.matricula_id}`} style={{ fontSize: 12, color: '#fff', background: 'var(--accent)', textDecoration: 'none', borderRadius: 6, padding: '5px 12px', fontWeight: 600 }}>⬇ Baixar PNG</a>
+                          <a href={`/certificado/${c.matricula_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-soft)', textDecoration: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px' }}>abrir ↗</a>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
