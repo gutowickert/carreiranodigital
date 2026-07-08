@@ -39,43 +39,42 @@ export async function GET(req: NextRequest) {
     fonte(`${origin}/fonts/Pacifico-Regular.ttf`),
   ])
 
-  const B = (s: string) => <span style={{ fontWeight: 700 }}>{s}</span>
-  const corpo = tipo === 'FC' ? (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, fontSize: 19, color: '#374151', maxWidth: 760, textAlign: 'center', lineHeight: 1.5 }}>
-      <div>Você concluiu com sucesso a {B('Formação Completa em Marketing Digital')}, realizada entre os dias {B(fmt(t.data_inicio))} e {B(fmt(t.data_fim))}, na cidade de {B(cidade)}.</div>
-      <div>Desenvolveu as competências essenciais em {B('Estratégia Digital, Videomaker Mobile, Design Digital e Gestão de Tráfego')}, totalizando 50 horas de formação.</div>
-      <div>Ao final, demonstrou domínio das habilidades necessárias para vender na internet e compreensão completa do funil de vendas digital.</div>
-    </div>
-  ) : (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 16, fontSize: 21, color: '#374151', maxWidth: 760, textAlign: 'center', lineHeight: 1.55 }}>
-      <div>Você concluiu com sucesso o curso {B(produto)}, realizado entre os dias {B(fmt(t.data_inicio))} e {B(fmt(t.data_fim))}, na cidade de {B(cidade)}.</div>
-      <div>Durante este período, demonstrou as habilidades necessárias para criar anúncios patrocinados na Plataforma Meta.</div>
-    </div>
-  )
+  const linhas = tipo === 'FC' ? [
+    `Você concluiu com sucesso a Formação Completa em Marketing Digital, realizada entre ${fmt(t.data_inicio)} e ${fmt(t.data_fim)}, em ${cidade}.`,
+    `Desenvolveu as competências essenciais em Estratégia Digital, Videomaker Mobile, Design Digital e Gestão de Tráfego, totalizando 50 horas de formação.`,
+    `Ao final, demonstrou domínio das habilidades para vender na internet e compreensão completa do funil de vendas digital.`,
+  ] : [
+    `Você concluiu com sucesso o curso ${produto}, realizado entre ${fmt(t.data_inicio)} e ${fmt(t.data_fim)}, em ${cidade}.`,
+    `Durante este período, demonstrou as habilidades necessárias para criar anúncios patrocinados na Plataforma Meta.`,
+  ]
 
   const img = (
     <div style={{ display: 'flex', width: 1400, height: 990, background: '#fff', fontFamily: 'Poppins' }}>
       {/* faixa lateral */}
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'flex-start', width: 372, backgroundImage: 'linear-gradient(160deg, #8b3fd6 0%, #4c1d95 55%, #3730a3 100%)', paddingTop: 90 }}>
-        <img src={`${origin}/logo.png`} width={260} height={88} style={{ objectFit: 'contain' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', width: 372, backgroundImage: 'linear-gradient(160deg, #8b3fd6 0%, #4c1d95 55%, #3730a3 100%)', padding: 40 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 56, color: '#fff', letterSpacing: 2, lineHeight: 1 }}>CARREIRA</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 28, color: '#e9d5ff', lineHeight: 1 }}>no</div>
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 56, color: '#fff', letterSpacing: 2, lineHeight: 1 }}>DIGITAL</div>
+        </div>
       </div>
       {/* conteúdo */}
-      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'space-between', padding: '60px 70px' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', flex: 1, alignItems: 'center', justifyContent: 'space-between', padding: '70px 60px' }}>
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ display: 'flex', width: 90, height: 90, borderRadius: 45, backgroundImage: 'linear-gradient(135deg,#7c3aed,#5b21b6)', alignItems: 'center', justifyContent: 'center', marginBottom: 8 }}>
-            <svg width="46" height="46" viewBox="0 0 24 24" fill="#fff"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z" /></svg>
-          </div>
-          <div style={{ fontFamily: 'Bebas Neue', fontSize: 72, color: '#5b21b6', letterSpacing: 3 }}>CERTIFICADO</div>
+          <div style={{ display: 'flex', width: 78, height: 78, borderRadius: 39, backgroundImage: 'linear-gradient(135deg,#7c3aed,#5b21b6)', marginBottom: 14 }} />
+          <div style={{ fontFamily: 'Bebas Neue', fontSize: 74, color: '#5b21b6', letterSpacing: 3 }}>CERTIFICADO</div>
         </div>
 
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 840 }}>
           <div style={{ fontSize: 46, fontWeight: 700, color: '#111' }}>{aluno}</div>
-          <div style={{ display: 'flex', width: 560, height: 2, background: '#111', marginTop: 6, marginBottom: 30 }} />
-          {corpo}
+          <div style={{ display: 'flex', width: 560, height: 2, background: '#111', marginTop: 8, marginBottom: 28 }} />
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: 820 }}>
+            {linhas.map((l, i) => <div key={i} style={{ fontSize: tipo === 'FC' ? 20 : 23, color: '#374151', textAlign: 'center', lineHeight: 1.5, marginBottom: 14 }}>{l}</div>)}
+          </div>
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-          <div style={{ fontFamily: 'Pacifico', fontSize: 40, color: '#4b5563' }}>{assinante}</div>
+          <div style={{ fontFamily: 'Pacifico', fontSize: 42, color: '#4b5563' }}>{assinante}</div>
           <div style={{ display: 'flex', width: 320, height: 2, background: '#111', marginTop: 4, marginBottom: 6 }} />
           <div style={{ fontSize: 16, fontWeight: 700, color: '#111' }}>{cargo}</div>
         </div>
