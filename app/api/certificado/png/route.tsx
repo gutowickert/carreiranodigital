@@ -31,6 +31,7 @@ export async function GET(req: NextRequest) {
   }
 
   const origin = req.nextUrl.origin
+  try {
   const [poppins, poppinsBold, bebas, pacifico] = await Promise.all([
     fonte(`${origin}/fonts/Poppins-Regular.ttf`),
     fonte(`${origin}/fonts/Poppins-Bold.ttf`),
@@ -93,4 +94,7 @@ export async function GET(req: NextRequest) {
     ],
     headers: { 'Content-Disposition': `attachment; filename="certificado-${nomeArq}.png"` },
   })
+  } catch (e: any) {
+    return new Response('ERRO PNG: ' + (e?.stack || e?.message || String(e)), { status: 500 })
+  }
 }
