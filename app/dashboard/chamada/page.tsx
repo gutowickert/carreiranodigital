@@ -18,11 +18,20 @@ export default function Chamada() {
   const [alunos, setAlunos] = useState<Aluno[]>([])
   const [pres, setPres] = useState<Record<string, boolean>>({}) // matricula|data -> presente
   const [carregando, setCarregando] = useState(false)
+  const [certs, setCerts] = useState<{ matricula_id: string; nome: string }[] | null>(null)
+  const [copiado, setCopiado] = useState('')
+
+  async function carregarCerts() {
+    if (certs) { setCerts(null); return }
+    const j = await fetch(`/api/certificado?turma=${turmaId}`).then(r => r.json())
+    setCerts(j.ok ? (j.alunos || []) : [])
+  }
 
   useEffect(() => { fetch('/api/chamada').then(r => r.json()).then(j => { if (j.ok) setTurmas(j.turmas || []) }) }, [])
 
   useEffect(() => {
     if (!turmaId) return
+    setCerts(null)
     setCarregando(true)
     fetch(`/api/chamada?turma=${turmaId}`).then(r => r.json()).then(j => {
       if (j.ok) {
@@ -96,6 +105,29 @@ export default function Chamada() {
               <KPI label="Rodou campanha" valor={pct(cont('rodou_campanha'), n) + '%'} />
               <KPI label="Gerou lead" valor={pct(cont('gerou_lead'), n) + '%'} cor="var(--accent-soft)" />
               <KPI label="Vendeu" valor={pct(cont('vendeu'), n) + '%'} cor="var(--green)" />
+            </div>
+
+            {/* Certificados dos concluídos */}
+            <div style={{ marginBottom: 16 }}>
+              <button onClick={carregarCerts} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>🎓 Certificados dos concluídos {cont('concluido') ? `(${cont('concluido')})` : ''}</button>
+              {certs && (
+                <div style={{ ...card, padding: 14, marginTop: 8 }}>
+                  {certs.length === 0 ? <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Ninguém marcado como “Concluiu” ainda. Marca na tabela abaixo que o certificado aparece aqui.</span> : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      {certs.map(c => {
+                        const link = typeof window !== 'undefined' ? `${window.location.origin}/certificado/${c.matricula_id}` : ''
+                        return (
+                          <div key={c.matricula_id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600, minWidth: 200 }}>{c.nome}</span>
+                            <a href={`/certificado/${c.matricula_id}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--accent-soft)', textDecoration: 'none', border: '1px solid var(--border)', borderRadius: 6, padding: '4px 10px' }}>abrir certificado ↗</a>
+                            <button onClick={() => { navigator.clipboard.writeText(link); setCopiado(c.matricula_id); setTimeout(() => setCopiado(''), 1500) }} style={{ ...inp, cursor: 'pointer', fontSize: 12, padding: '4px 10px' }}>{copiado === c.matricula_id ? '✓ copiado' : 'copiar link'}</button>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ ...card, padding: 0, overflowX: 'auto' }}>
