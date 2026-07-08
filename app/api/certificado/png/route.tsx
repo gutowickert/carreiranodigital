@@ -32,10 +32,10 @@ export async function GET(req: NextRequest) {
 
   const origin = req.nextUrl.origin
   const [poppins, poppinsBold, bebas, pacifico] = await Promise.all([
-    fonte('https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Regular.ttf'),
-    fonte('https://raw.githubusercontent.com/google/fonts/main/ofl/poppins/Poppins-Bold.ttf'),
-    fonte('https://raw.githubusercontent.com/google/fonts/main/ofl/bebasneue/BebasNeue-Regular.ttf'),
-    fonte('https://raw.githubusercontent.com/google/fonts/main/ofl/pacifico/Pacifico-Regular.ttf'),
+    fonte(`${origin}/fonts/Poppins-Regular.ttf`),
+    fonte(`${origin}/fonts/Poppins-Bold.ttf`),
+    fonte(`${origin}/fonts/BebasNeue-Regular.ttf`),
+    fonte(`${origin}/fonts/Pacifico-Regular.ttf`),
   ])
 
   const B = (s: string) => <span style={{ fontWeight: 700 }}>{s}</span>
