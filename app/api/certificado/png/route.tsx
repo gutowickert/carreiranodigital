@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
             <div style={{ display: 'flex', width: 640, height: 2, background: '#111827', marginTop: 8, marginBottom: 34 }} />
             {paras.map((p, i) => (
               <div key={i} style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', width: 830, fontSize: fs, lineHeight: 1.5, color: '#2b3a52', marginBottom: 20 }}>
-                {p.map((tk, j) => <span key={j} style={{ fontWeight: tk.b ? 700 : 400 }}>{tk.t}</span>)}
+                {p.map((tk, j) => <span key={j} style={{ fontWeight: tk.b ? 700 : 400, whiteSpace: 'pre-wrap' }}>{tk.t}</span>)}
               </div>
             ))}
           </div>
