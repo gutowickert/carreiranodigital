@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
       fonte(`${origin}/fonts/Poppins-Regular.ttf`),
       fonte(`${origin}/fonts/Poppins-Bold.ttf`),
       fonte(`${origin}/fonts/Poppins-ExtraBold.ttf`),
-      fonte(`${origin}/fonts/DancingScript.ttf`),
+      fonte(`${origin}/fonts/GreatVibes.ttf`),
     ])
 
     const img = (
@@ -80,7 +80,7 @@ export async function GET(req: NextRequest) {
 
           {/* rodapé: assinatura */}
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{ fontFamily: 'Dancing Script', fontSize: 54, color: '#6b7280', lineHeight: 1 }}>{assinante}</div>
+            <div style={{ fontFamily: 'Great Vibes', fontSize: 54, color: '#6b7280', lineHeight: 1 }}>{assinante}</div>
             <div style={{ display: 'flex', width: 360, height: 2, background: '#111827', marginTop: 2, marginBottom: 8 }} />
             <div style={{ fontFamily: 'Poppins', fontWeight: 700, fontSize: 17, color: '#111827' }}>{cargo}</div>
           </div>
@@ -95,7 +95,7 @@ export async function GET(req: NextRequest) {
         { name: 'Poppins', data: reg, weight: 400 as const },
         { name: 'Poppins', data: bold, weight: 700 as const },
         { name: 'Poppins', data: xbold, weight: 800 as const },
-        { name: 'Dancing Script', data: script, weight: 400 as const },
+        { name: 'Great Vibes', data: script, weight: 400 as const },
       ],
     })
     const buf = await resp.arrayBuffer() // força o render aqui pra capturar erro no catch
