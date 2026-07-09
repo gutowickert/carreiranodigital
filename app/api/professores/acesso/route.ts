@@ -7,7 +7,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 export async function GET() {
   try {
-    const { data } = await supabase.from('usuarios_perfil').select('email').eq('setor', 'professor')
+    const { data } = await supabase.from('usuarios_perfil').select('email').eq('papel', 'professor')
     return NextResponse.json({ ok: true, emails: (data || []).map((r: any) => (r.email || '').toLowerCase()) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: errPerfil } = await supabase.from('usuarios_perfil').insert({
-      id: created.user.id, nome: prof.nome, email, setor: 'professor', ativo: true,
+      id: created.user.id, nome: prof.nome, email, papel: 'professor', setor: 'operacoes', ativo: true,
     })
     if (errPerfil) {
       // desfaz o auth pra não deixar login órfão
