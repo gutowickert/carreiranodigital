@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 type Dia = { data: string; hi: string; hf: string }
 type Ev = { chave: string; turma_id: string; modulo_id: string | null; codigo: string; cidade: string; tipo: string; dias: Dia[]; ini: string; escolha: string }
@@ -15,11 +15,30 @@ function baixar(nome: string, blob: Blob) {
 export default function Escala() {
   const [evs, setEvs] = useState<Ev[]>([])
   const [carregando, setCarregando] = useState(true)
+  const toqueRef = useRef<Record<string, number>>({}) // chave -> quando foi tocada aqui (pra não sobrescrever no poll)
 
-  useEffect(() => { fetch('/api/escala').then(r => r.json()).then(j => { if (j.ok) setEvs(j.eventos || []) }).finally(() => setCarregando(false)) }, [])
+  // carrega e re-carrega sozinho a cada 12s (pra ver o que o outro marcou quase na hora)
+  useEffect(() => {
+    let ativo = true
+    const carregar = () => fetch('/api/escala').then(r => r.json()).then(j => {
+      if (!ativo || !j.ok) return
+      setEvs(prev => {
+        const local = Object.fromEntries(prev.map(e => [e.chave, e.escolha]))
+        const agora = Date.now()
+        return (j.eventos || []).map((e: Ev) => {
+          const recente = (toqueRef.current[e.chave] || 0) > agora - 6000 // clique recente: mantém o local
+          return recente && local[e.chave] ? { ...e, escolha: local[e.chave] } : e
+        })
+      })
+    }).catch(() => {}).finally(() => { if (ativo) setCarregando(false) })
+    carregar()
+    const t = setInterval(carregar, 12000)
+    return () => { ativo = false; clearInterval(t) }
+  }, [])
 
   async function toggle(ev: Ev) {
     const nova = ev.escolha === 'douglas' ? 'julio' : 'douglas'
+    toqueRef.current[ev.chave] = Date.now()
     setEvs(prev => prev.map(e => e.chave === ev.chave ? { ...e, escolha: nova } : e))
     await fetch('/api/escala', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chave: ev.chave, turma_id: ev.turma_id, modulo_id: ev.modulo_id, escolha: nova }) }).catch(() => {})
   }
