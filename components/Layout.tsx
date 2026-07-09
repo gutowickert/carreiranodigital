@@ -14,7 +14,7 @@ const LayoutMontado = createContext(false)
 
 type Item = { nome: string; href: string }
 type Grupo = { titulo: string; itens: Item[] }
-type Perfil = { id: string; nome: string; email: string; papel: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
+type Perfil = { id: string; nome: string; email: string; papel: string; setor: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
 const grupos: Grupo[] = [
   {
@@ -159,10 +159,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
       const { data: p } = await supabase.from('usuarios_perfil')
-        .select('id, nome, email, papel, crm_interno, crm_externo, leads_escopo, wa_caixa')
+        .select('id, nome, email, papel, setor, crm_interno, crm_externo, leads_escopo, wa_caixa')
         .eq('id', session.user.id).single()
       if (!ativo) return
       if (!p) { await supabase.auth.signOut(); router.replace('/login'); return }
+      // professor não usa o painel admin — vai pro portal dele
+      if ((p as any).setor === 'professor' || (p as any).papel === 'professor') { router.replace('/professor'); return }
       setPerfil(p as Perfil)
       setChecando(false)
     }

@@ -41,11 +41,45 @@ export default function Professores() {
   const [banco, setBanco] = useState('')
   const [observacoes, setObservacoes] = useState('')
 
-  useEffect(() => { carregar() }, [])
+  // acesso ao portal do professor
+  const [acessos, setAcessos] = useState<Set<string>>(new Set())
+  const [acessoPara, setAcessoPara] = useState<Professor | null>(null)
+  const [acEmail, setAcEmail] = useState('')
+  const [acSenha, setAcSenha] = useState('')
+  const [acMsg, setAcMsg] = useState('')
+  const [acSalvando, setAcSalvando] = useState(false)
+
+  useEffect(() => { carregar(); carregarAcessos() }, [])
 
   async function carregar() {
     const { data } = await supabase.from('professores').select('*').order('nome')
     if (data) setProfessores(data)
+  }
+
+  async function carregarAcessos() {
+    const j = await fetch('/api/professores/acesso').then(r => r.json()).catch(() => null)
+    if (j?.ok) setAcessos(new Set((j.emails || []).map((e: string) => e.toLowerCase())))
+  }
+
+  function abrirAcesso(p: Professor) {
+    setAcessoPara(p)
+    setAcEmail(p.email || '')
+    setAcSenha('cnd' + Math.floor(1000 + Math.random() * 9000)) // sugestão de senha
+    setAcMsg('')
+  }
+
+  async function criarAcesso(e: React.FormEvent) {
+    e.preventDefault()
+    if (!acessoPara) return
+    setAcSalvando(true); setAcMsg('')
+    const j = await fetch('/api/professores/acesso', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ professor_id: acessoPara.id, email: acEmail.trim(), senha: acSenha }),
+    }).then(r => r.json()).catch(() => null)
+    setAcSalvando(false)
+    if (!j?.ok) { setAcMsg('Erro: ' + (j?.error || 'falhou')); return }
+    setAcMsg(`✅ Acesso criado! Login: ${j.email} · Senha: ${j.senha} — mande pro professor.`)
+    carregar(); carregarAcessos()
   }
 
   function limparForm() {
@@ -174,6 +208,30 @@ export default function Professores() {
         </div>
       )}
 
+      {acessoPara && (
+        <div style={{ ...card, padding: '20px 24px', marginBottom: '24px', borderColor: 'var(--accent)' }}>
+          <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '4px' }}>Criar acesso — {acessoPara.nome}</div>
+          <p style={{ fontSize: '13px', color: 'var(--text-faint)', marginBottom: '14px' }}>Gera o login do portal do professor (chamada + agenda + NPS das turmas dele). O e-mail vira o login e é vinculado ao cadastro.</p>
+          <form onSubmit={criarAcesso}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: '12px', alignItems: 'end' }}>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>E-mail (login)</label>
+                <input value={acEmail} onChange={e => setAcEmail(e.target.value)} type="email" required style={input} placeholder="email@exemplo.com" />
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Senha inicial</label>
+                <input value={acSenha} onChange={e => setAcSenha(e.target.value)} required minLength={6} style={input} />
+              </div>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <button type="submit" disabled={acSalvando} style={btnPrimary}>{acSalvando ? 'Criando...' : 'Criar acesso'}</button>
+                <button type="button" onClick={() => setAcessoPara(null)} style={btnSecondary}>Fechar</button>
+              </div>
+            </div>
+            {acMsg && <p style={{ marginTop: '12px', fontSize: '13px', color: acMsg.startsWith('Erro') ? 'var(--red)' : 'var(--green)', fontWeight: 600 }}>{acMsg}</p>}
+          </form>
+        </div>
+      )}
+
       <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)' }}>
           <span style={{ fontSize: '14px', color: 'var(--text-muted)' }}>{professores.length} professor(es)</span>
@@ -184,7 +242,7 @@ export default function Professores() {
           <table style={{ width: '100%', borderCollapse: 'collapse' }}>
             <thead>
               <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status', ''].map(h => (
+                {['Nome', 'WhatsApp', 'PIX', 'Diaria', 'Status', 'Acesso', ''].map(h => (
                   <th key={h} style={{ textAlign: 'left', padding: '12px 24px', fontSize: '12px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                 ))}
               </tr>
@@ -219,6 +277,16 @@ export default function Professores() {
                     <button onClick={() => toggleAtivo(p.id, p.ativo)} style={{ fontSize: '12px', padding: '3px 10px', borderRadius: '20px', border: 'none', cursor: 'pointer', backgroundColor: p.ativo ? 'var(--green-bg)' : 'var(--surface-2)', color: p.ativo ? 'var(--green-strong)' : 'var(--text-muted)' }}>
                       {p.ativo ? 'Ativo' : 'Inativo'}
                     </button>
+                  </td>
+                  <td style={{ padding: '14px 24px' }}>
+                    {p.email && acessos.has(p.email.toLowerCase()) ? (
+                      <span style={{ fontSize: '12px', color: 'var(--green-strong)', fontWeight: 600 }}>✓ tem acesso</span>
+                    ) : (
+                      <button onClick={() => abrirAcesso(p)}
+                        style={{ fontSize: '12px', padding: '5px 12px', borderRadius: '6px', border: '1px solid var(--accent)', background: 'transparent', color: 'var(--accent-soft)', cursor: 'pointer', fontWeight: 600 }}>
+                        Criar acesso
+                      </button>
+                    )}
                   </td>
                   <td style={{ padding: '14px 24px' }}>
                     <button onClick={() => abrirEdicao(p)}
