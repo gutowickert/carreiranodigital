@@ -89,7 +89,7 @@ export async function GET(req: NextRequest) {
     )
 
     const nomeArq = aluno.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').toLowerCase()
-    return new ImageResponse(img, {
+    const resp = new ImageResponse(img, {
       width: 1400, height: 990,
       fonts: [
         { name: 'Poppins', data: reg, weight: 400 as const },
@@ -97,8 +97,9 @@ export async function GET(req: NextRequest) {
         { name: 'Poppins', data: xbold, weight: 800 as const },
         { name: 'Dancing Script', data: script, weight: 400 as const },
       ],
-      headers: { 'Content-Disposition': `attachment; filename="certificado-${nomeArq}.png"` },
     })
+    const buf = await resp.arrayBuffer() // força o render aqui pra capturar erro no catch
+    return new Response(buf, { headers: { 'Content-Type': 'image/png', 'Content-Disposition': `attachment; filename="certificado-${nomeArq}.png"` } })
   } catch (e: any) {
     return new Response('ERRO PNG: ' + (e?.stack || e?.message || String(e)), { status: 500 })
   }
