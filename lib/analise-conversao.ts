@@ -92,8 +92,8 @@ async function montarCorpus() {
     return `\n\n===== ${tag} | ${l.nome} | turma:${l.codigo_turma || '-'}${l.etapa === 'ganho' ? ` | VENDA R$${l.valor_venda || '?'}` : ''} =====\n${txt}`
   }
   const ordena = (arr: any[]) => arr.map(l => ({ l, n: transcript(l).length })).sort((a, b) => b.n - a.n)
-  const topGanho = ordena(ganho).slice(0, 16).map(x => x.l)
-  const topPerda = ordena(perda).slice(0, 16).map(x => x.l)
+  const topGanho = ordena(ganho).slice(0, 30).map(x => x.l)
+  const topPerda = ordena(perda).slice(0, 30).map(x => x.l)
 
   // PLACAR visual: sobre TODOS os ganhos e TODAS as perdas
   function placarDe(arr: any[]) {
@@ -136,7 +136,7 @@ export async function gerarESalvarAnalise() {
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({
-    model: MODELO, max_tokens: 4096, system: PROMPT,
+    model: MODELO, max_tokens: 8192, system: PROMPT,
     messages: [{ role: 'user', content: corpus }],
   })
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
