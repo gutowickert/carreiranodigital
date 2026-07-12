@@ -5,9 +5,9 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 
-type Turma = { id: string; codigo: string; produto: string; cidade: string; data_inicio: string; data_fim: string }
+type Turma = { id: string; codigo: string; produto: string; cidade: string; datas: string[]; horario: string; primeira: string; ultima: string; nDias: number }
 type Nps = { n: number; nps: number; prom: number; neu: number; det: number; mediaProf: number; mediaConteudo: number; mediaEstrutura: number }
-type Dia = { id: string; data: string; horario_inicio: string }
+type Dia = { id: string; data: string; horario_inicio: string; horario_fim?: string }
 type Aluno = { matricula_id: string; nome: string }
 type Presenca = { matricula_id: string; turma_data_id: string; presente: boolean }
 
@@ -51,7 +51,7 @@ export default function PortalProfessor() {
   async function abrirTurma(t: Turma) {
     if (aberta?.id === t.id) { setAberta(null); return }
     setAberta(t); setDias([]); setAlunos([]); setPres({})
-    const j = await fetch(`/api/chamada?turma=${t.id}`).then(r => r.json()).catch(() => null)
+    const j = await fetch(`/api/professor?email=${encodeURIComponent(email)}&turma=${t.id}`).then(r => r.json()).catch(() => null)
     if (!j?.ok) return
     setDias(j.dias || [])
     setAlunos((j.alunos || []).map((a: any) => ({ matricula_id: a.matricula_id, nome: a.nome })))
@@ -127,7 +127,10 @@ export default function PortalProfessor() {
                 <button onClick={() => abrirTurma(t)} style={{ width: '100%', textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{t.produto || t.codigo}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{t.codigo} · {t.cidade} · {fmtData(t.data_inicio)} a {fmtData(t.data_fim)}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>{t.codigo} · {t.cidade}</div>
+                    <div style={{ fontSize: 12, color: 'var(--accent-soft)', marginTop: 3, fontWeight: 600 }}>
+                      {t.datas?.length ? t.datas.map(fmtData).join(', ') : 'sem datas'}{t.horario ? ` · ${t.horario}h` : ''}
+                    </div>
                   </div>
                   <span style={{ fontSize: 12, color: 'var(--accent-soft)' }}>{aberta?.id === t.id ? 'fechar ▾' : 'chamada ▸'}</span>
                 </button>
@@ -140,7 +143,10 @@ export default function PortalProfessor() {
                           <tr>
                             <th style={{ textAlign: 'left', padding: '6px 10px', color: 'var(--text-faint)', fontWeight: 500, position: 'sticky', left: 0, background: 'var(--surface)' }}>Aluno</th>
                             {dias.map(d => (
-                              <th key={d.id} style={{ padding: '6px 8px', color: 'var(--text-faint)', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>{fmtData(d.data)}</th>
+                              <th key={d.id} style={{ padding: '6px 8px', color: 'var(--text-faint)', fontWeight: 500, textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                <div>{fmtData(d.data)}</div>
+                                {d.horario_inicio && <div style={{ fontSize: 10, color: 'var(--accent-soft)', fontWeight: 600 }}>{d.horario_inicio.slice(0, 5)}</div>}
+                              </th>
                             ))}
                           </tr>
                         </thead>
