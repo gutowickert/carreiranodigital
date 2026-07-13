@@ -125,7 +125,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const atual = simul
     ? ((input.situacaoTexto || '').includes('CLIENTE:') ? (input.situacaoTexto || '').split('\n').filter(Boolean) : ['CLIENTE: ' + input.situacaoTexto])
     : linhas(convAtual, msgs, 30)
-  if (!simul && atual.length < 2) return { ok: false, error: 'conversa atual sem mensagens suficientes' }
+  if (!simul && atual.length < 1) return { ok: false, error: 'conversa atual sem mensagens' }
 
   // tempo desde a última mensagem (pra saber se precisa REABRIR a conversa)
   const msAtual = convAtual.flatMap(id => msgs[id] || []).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em))
