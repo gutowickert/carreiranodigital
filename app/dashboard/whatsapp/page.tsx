@@ -244,13 +244,15 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   async function sugerirResposta() {
     setSugerindo(true); setSugestao(null); setErro('')
     try {
-      const r = await fetch('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
+      // motor de vendas (ancorado em vendas ganhas + pipeline + ajustes). Semi-auto: joga no campo pra revisar e enviar.
+      const r = await fetch('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
       const j = await r.json()
       if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
-      setTexto(j.rascunho || '')
-      setSugestao({ objecao: j.objecao || 'nenhuma', dica: j.dica || '' })
+      const s = j.sugestao || {}
+      setTexto(s.resposta || '')
+      setSugestao({ objecao: s.objecao || 'nenhuma', dica: [s.etapa_funil, s.proximo_passo].filter(Boolean).join(' · ') })
       setTimeout(() => txtRef.current?.focus(), 50)
-    } catch { setErro('Falha ao falar com o copiloto.') }
+    } catch { setErro('Falha ao falar com a IA de vendas.') }
     finally { setSugerindo(false) }
   }
 
