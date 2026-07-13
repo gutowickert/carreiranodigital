@@ -41,7 +41,7 @@ PIPELINE OFICIAL (ciclo de 9 dias — SEMPRE saiba em que ETAPA o lead está pel
 
 REABRIR CONVERSA FRIA: se a última mensagem foi de outro dia (faz 1+ dia), NÃO responda como continuação — REABRA: cumprimente pelo nome, retome o contexto do que ficou pendente ("passando aqui pra retomar…") e puxe de volta com uma pergunta ou uma oferta concreta.
 
-TURMAS: SEMPRE olhe a lista de TURMAS ABERTAS. Você TEM tudo de cada turma: as DATAS exatas com o DIA DA SEMANA já calculado, o HORÁRIO, o LOCAL e as VAGAS — e sabe QUE DIA É HOJE (no topo do contexto). Então NUNCA diga "vou confirmar", "deixa eu checar" ou "confirmo depois" pra uma info que você JÁ TEM (dias, dia da semana, horário, local, vagas): responda na hora, com os dados exatos. Nunca chute dia da semana — use o que está na lista. NUNCA invente preço/data/turma. Se a turma etiquetada já aconteceu, ofereça a próxima na mesma cidade.
+TURMAS: SEMPRE olhe a lista de TURMAS ABERTAS. Você TEM tudo de cada turma: as DATAS exatas com o DIA DA SEMANA já calculado, o HORÁRIO, o LOCAL e as VAGAS — e sabe QUE DIA É HOJE (no topo do contexto). Então NUNCA diga "vou confirmar", "deixa eu checar" ou "confirmo depois" pra uma info que você JÁ TEM (dias, dia da semana, horário, local, vagas): responda na hora, com os dados exatos. Nunca chute dia da semana — use o que está na lista. NUNCA invente preço/data/turma. Se a turma etiquetada já COMEÇOU (matrícula fechada), ofereça a próxima na mesma cidade. NUNCA diga que uma turma de um produto está "chegando"/"nova" numa cidade se ela NÃO está na lista TURMAS ABERTAS — isso é mentira e queima a venda. Se o produto que o lead quer NÃO tem turma na cidade dele, seja honesto: ofereça o que EXISTE de verdade (outro produto disponível na mesma cidade, OU o mesmo produto na cidade mais próxima que estiver na lista) — nunca prometa uma turma que não está listada.
 
 RESPONDA ANTES DE VENDER: se o lead faz uma pergunta operacional (que dias? que horário? quantas vagas? onde é?), RESPONDA completo primeiro, com os dados reais. NÃO empurre "Pix ou cartão?" enquanto o lead ainda está pedindo informação — isso irrita e derruba a venda. Só conduza pro pagamento DEPOIS que ele tiver o que precisa e demonstrar que está decidindo. Se o lead falou por áudio, o texto vem com 🎤.
 
@@ -170,11 +170,20 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     return `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda}` +
       `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}`
   })
-  // a turma que o lead veio etiquetado já aconteceu?
+  // a turma que o lead veio etiquetado já COMEÇOU? (matrícula fecha quando a turma inicia — não dá pra entrar no meio)
   let turmaPassada = ''
   if (lead.codigo_turma) {
-    const { data: tt } = await supabase.from('turmas').select('codigo, data_fim, cidades(nome)').eq('codigo', lead.codigo_turma).maybeSingle()
-    if (tt && (tt.data_fim || '') < hoje) turmaPassada = `${tt.codigo} (${(tt as any).cidades?.nome || ''})`
+    const { data: tt } = await supabase.from('turmas').select('codigo, data_inicio, data_fim, produtos(nome), cidades(nome)').eq('codigo', lead.codigo_turma).maybeSingle()
+    if (tt && (tt.data_inicio || '') < hoje) {
+      const cidNome = (tt as any).cidades?.nome || ''
+      const prodNome = (tt as any).produtos?.nome || produto || ''
+      const naCidade = (tv || []).filter((t: any) => (t.cidades?.nome || '') === cidNome)
+      const mesmoProd = naCidade.filter((t: any) => (t.produtos?.nome || '') === prodNome)
+      turmaPassada = `${tt.codigo} (${cidNome}${prodNome ? ' · ' + prodNome : ''}) já COMEÇOU em ${brData(tt.data_inicio)} — matrícula ENCERRADA.`
+      if (mesmoProd.length) turmaPassada += ` Há turma NOVA de ${prodNome} em ${cidNome} na lista abaixo — ofereça essa.`
+      else if (naCidade.length) turmaPassada += ` NÃO há turma nova de ${prodNome} em ${cidNome}. O que temos em ${cidNome} é: ${naCidade.map((t: any) => t.produtos?.nome).filter(Boolean).join(', ')}. Ofereça o que EXISTE de verdade (seja honesto) OU ${prodNome} na cidade mais próxima da lista. NUNCA prometa ${prodNome} em ${cidNome}.`
+      else turmaPassada += ` NÃO há NENHUMA turma nova em ${cidNome} na lista. Seja honesto: registre o interesse pra próxima de ${cidNome} e ofereça ${prodNome} na cidade mais próxima que ESTIVER na lista. NUNCA diga que vem ${prodNome} em ${cidNome} se não está listada.`
+    }
   }
   const { data: cids } = await supabase.from('cidades').select('nome').eq('ativo', true)
   const cidades = (cids || []).map((c: any) => c.nome).join(', ')
@@ -185,7 +194,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}).\n`
   corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
-  if (turmaPassada) corpus += `⚠️ ATENÇÃO: a turma que ele veio etiquetado (${turmaPassada}) JÁ ACONTECEU. Ofereça a PRÓXIMA turma aberta na MESMA cidade (veja abaixo). NUNCA diga que não há turma sem conferir a lista de turmas abertas.\n`
+  if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS abaixo.\n`
   if (gap) corpus += gap + '\n'
   corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`
   corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
