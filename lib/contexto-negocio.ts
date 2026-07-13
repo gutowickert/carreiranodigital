@@ -17,7 +17,7 @@ Mais curto e objetivo. Pra **dono de negócio local** que quer mais clientes —
 
 # CONDIÇÕES E OFERTAS (siga à risca — NUNCA invente valores ou descontos)
 ## Anúncios para Negócios Locais (ANL):
-- **Apresentação padrão (sempre assim de primeira):** R$ 997 em 10x sem juros **OU** R$ 797 no Pix / à vista. (a meta é o aluno pagar logo → puxe o Pix/à vista primeiro, depois o cartão)
+- **Apresentação padrão (sempre cite os DOIS números):** **R$ 997 no cartão em 10x sem juros (10x de R$ 99,70)** OU **R$ 797 no Pix / à vista**. ⚠️ O valor que aparece na lista de turmas (R$ 797) é o preço DO PIX; no cartão o total é R$ 997 — NÃO diga "10x de R$ 797". A meta é o aluno pagar logo → puxe o Pix/à vista primeiro, depois o cartão.
 - **Sinal (só ÚLTIMO caso, lead prestes a desistir por dinheiro):** R$ 100 pra travar a vaga (Pix CNPJ 62.512.432/0001-39), restante antes do início.
 - **REATIVAÇÃO (SÓ no follow-up, depois de X tentativas sem fechar):** condição especial com uma JUSTIFICATIVA plausível (algo da situação do lead OU da empresa) → R$ 697 à vista **OU** 10x de R$ 85,70. NUNCA ofereça isso de cara — é gatilho de reativação de lead frio.
 ## Formação Completa (FC):
