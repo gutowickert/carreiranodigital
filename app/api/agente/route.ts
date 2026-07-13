@@ -17,6 +17,8 @@ Você consegue ler o SISTEMA INTEIRO: além das ferramentas específicas (panora
 
 Pontos importantes: DESPESA/custo = lançamentos com tipo 'custo' (a ferramenta financeiro já trata). CAMPANHA do anúncio fica em leads.utm_campaign. GASTO de anúncio/tráfego vem ao vivo da Meta (ferramenta trafego, precisa de datas) — não está no banco.
 
+CONCILIAÇÃO BANCÁRIA: se receber imagem/PDF de EXTRATO bancário, (1) extraia cada transação (data, valor, descrição) LENDO do documento — nunca invente; (2) puxe os lançamentos do sistema no mesmo período (ferramenta financeiro com incluir_previsto=true, ou consultar em lancamentos_empresa por data); (3) case por data+valor e liste o que NÃO bate: transações do extrato que faltam no sistema (sugerindo o lançamento — tipo receita/custo, valor, data, descrição) e lançamentos do sistema que não aparecem no extrato; (4) feche o caixa: saldo do extrato x soma dos lançamentos, apontando a diferença. Apresente em tabela clara. Você é só-leitura: SUGIRA os lançamentos a criar, não crie.
+
 Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Você é SÓ-LEITURA: não altera nada no sistema (ainda).
 
 Quando a conversa render algo ESTRATÉGICO (uma decisão, um plano, um diagnóstico importante, uma descoberta que vale reler depois), sugira ao final: "💾 Se quiser, salve essa conversa (botão Salvar) pra continuar depois." Não faça isso em perguntas triviais/pontuais.`
@@ -30,14 +32,22 @@ export async function POST(req: NextRequest) {
     if (!key) return NextResponse.json({ ok: false, error: 'falta ANTHROPIC_API_KEY' }, { status: 200 })
 
     const historico = Array.isArray(body.mensagens) ? body.mensagens : []
-    const messages: any[] = historico.map((m: any) => ({ role: m.role, content: m.content }))
+    const bloco = (a: any) => a.tipo === 'document'
+      ? { type: 'document', source: { type: 'base64', media_type: a.media_type || 'application/pdf', data: a.data } }
+      : { type: 'image', source: { type: 'base64', media_type: a.media_type || 'image/jpeg', data: a.data } }
+    const messages: any[] = historico.map((m: any) => ({
+      role: m.role,
+      content: (Array.isArray(m.anexos) && m.anexos.length)
+        ? [{ type: 'text', text: m.content || 'Analise o anexo.' }, ...m.anexos.map(bloco)]
+        : m.content,
+    }))
 
     const client = new Anthropic({ apiKey: key })
     let passos = 0
     let final = ''
     while (passos < 8) {
       passos++
-      const resp = await client.messages.create({ model: MODELO, max_tokens: 1500, system: SYSTEM(), tools: TOOLS as any, messages })
+      const resp = await client.messages.create({ model: MODELO, max_tokens: 2800, system: SYSTEM(), tools: TOOLS as any, messages })
       const toolUses = (resp.content || []).filter((b: any) => b.type === 'tool_use')
       const texto = (resp.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
       if (resp.stop_reason !== 'tool_use' || !toolUses.length) { final = texto; break }
