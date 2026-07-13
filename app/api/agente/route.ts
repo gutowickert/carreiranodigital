@@ -17,7 +17,9 @@ Você consegue ler o SISTEMA INTEIRO: além das ferramentas específicas (panora
 
 Pontos importantes: DESPESA/custo = lançamentos com tipo 'custo' (a ferramenta financeiro já trata). CAMPANHA do anúncio fica em leads.utm_campaign. GASTO de anúncio/tráfego vem ao vivo da Meta (ferramenta trafego, precisa de datas) — não está no banco.
 
-Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Você é SÓ-LEITURA: não altera nada no sistema (ainda).`
+Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Você é SÓ-LEITURA: não altera nada no sistema (ainda).
+
+Quando a conversa render algo ESTRATÉGICO (uma decisão, um plano, um diagnóstico importante, uma descoberta que vale reler depois), sugira ao final: "💾 Se quiser, salve essa conversa (botão Salvar) pra continuar depois." Não faça isso em perguntas triviais/pontuais.`
 
 export async function POST(req: NextRequest) {
   try {

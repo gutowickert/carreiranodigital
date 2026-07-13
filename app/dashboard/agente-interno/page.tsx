@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase'
 
 const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
 type Msg = { role: 'user' | 'assistant'; content: string }
+const btnTop: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px', fontSize: 12, color: 'var(--text-2)', cursor: 'pointer', whiteSpace: 'nowrap' }
 const sugestoes = [
   'Quantas vendas e quanto faturamos nos últimos 30 dias?',
   'De onde vêm nossas vendas (por origem)?',
@@ -19,6 +20,9 @@ export default function AgenteInterno() {
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [input, setInput] = useState('')
   const [pensando, setPensando] = useState(false)
+  const [salvas, setSalvas] = useState<any[]>([])
+  const [mostrarSalvas, setMostrarSalvas] = useState(false)
+  const [aviso, setAviso] = useState('')
   const fimRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -43,6 +47,29 @@ export default function AgenteInterno() {
     } finally { setPensando(false) }
   }
 
+  async function salvar() {
+    if (!msgs.length) { setAviso('Nada pra salvar ainda.'); return }
+    const sugestao = msgs.find(m => m.role === 'user')?.content.slice(0, 60) || 'Conversa'
+    const titulo = window.prompt('Dê um nome pra essa conversa (pra achar depois):', sugestao)
+    if (titulo === null) return
+    const j = await fetch('/api/agente/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, titulo, mensagens: msgs }) }).then(r => r.json())
+    setAviso(j.ok ? '💾 Salva!' : `⚠️ ${j.error}`)
+    setTimeout(() => setAviso(''), 3000)
+  }
+  async function carregarSalvas() {
+    const j = await fetch(`/api/agente/salvar?email=${encodeURIComponent(email)}`).then(r => r.json())
+    if (j.ok) setSalvas(j.salvas || [])
+  }
+  async function abrirSalva(id: string) {
+    const j = await fetch(`/api/agente/salvar?id=${id}`).then(r => r.json())
+    if (j.ok) { setMsgs(j.mensagens || []); setMostrarSalvas(false) }
+  }
+  async function apagarSalva(id: string) {
+    await fetch(`/api/agente/salvar?id=${id}`, { method: 'DELETE' })
+    carregarSalvas()
+  }
+  function toggleSalvas() { const v = !mostrarSalvas; setMostrarSalvas(v); if (v) carregarSalvas() }
+
   if (bloqueado === null) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>Carregando...</div>
   if (bloqueado) return (
     <div style={{ padding: 40 }}>
@@ -54,9 +81,31 @@ export default function AgenteInterno() {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', maxWidth: 820, margin: '0 auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 12 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🧠 Agente Interno</h1>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🧠 Agente Interno</h1>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+            {aviso && <span style={{ fontSize: 12, color: 'var(--green)' }}>{aviso}</span>}
+            <button onClick={() => { setMsgs([]); setMostrarSalvas(false) }} style={btnTop}>➕ Nova</button>
+            <button onClick={salvar} style={btnTop}>💾 Salvar</button>
+            <button onClick={toggleSalvas} style={btnTop}>📁 Salvas</button>
+          </div>
+        </div>
         <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 0' }}>Pergunte qualquer coisa sobre a empresa — vendas, marketing, financeiro, turmas, NPS. Consulta os dados reais. (só leitura)</p>
       </div>
+
+      {mostrarSalvas && (
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 12, maxHeight: 240, overflowY: 'auto' }}>
+          <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 8 }}>Conversas salvas</div>
+          {salvas.length === 0 ? <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma ainda. Salve as conversas estratégicas pra continuar depois.</span> : salvas.map(s => (
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 0', borderTop: '1px solid var(--border)' }}>
+              <button onClick={() => abrirSalva(s.id)} style={{ flex: 1, textAlign: 'left', background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text)', fontSize: 13 }}>
+                {s.titulo} <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>· {s.n} msgs</span>
+              </button>
+              <button onClick={() => apagarSalva(s.id)} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--text-faint)', fontSize: 12 }}>apagar</button>
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, paddingBottom: 12 }}>
         {msgs.length === 0 && (
