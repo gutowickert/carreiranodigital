@@ -13,7 +13,12 @@ const stat = (arr: number[]) => {
 const emRange = (d: string | null, desde?: string, ate?: string) => !!d && (!desde || d >= desde) && (!ate || d <= ate)
 const OPS = new Set(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'ilike', 'like', 'in', 'is'])
 const HOJE = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-const CATS = new Set(['pessoal', 'aluguel', 'marketing', 'estrutura', 'taxa_financeira', 'imposto', 'sistemas', 'deslocamentos', 'telefone_internet', 'salarios', 'teste', 'custos_de_expediente', 'outro'])
+
+// naturezas financeiras: chave (= categoria do lançamento) -> nome amigável
+async function naturezas(): Promise<Record<string, string>> {
+  const { data } = await supabase.from('naturezas_financeiras').select('chave, nome')
+  return Object.fromEntries((data || []).map((n: any) => [n.chave, n.nome]))
+}
 
 // Esquema resumido do banco (o que o agente precisa saber pra consultar direito)
 const ESQUEMA = `TABELAS PRINCIPAIS (Postgres/Supabase):
@@ -27,6 +32,17 @@ const ESQUEMA = `TABELAS PRINCIPAIS (Postgres/Supabase):
 - contas_financeiras: id, nome, tipo. nps_respostas: turma_id, nota, nota_professor, nota_conteudo, nota_estrutura, comentario
 - wa_conversas: id, telefone, nome, lead_id, canal. wa_mensagens: conversa_id, direcao, tipo, texto, criado_em (GRANDE ~9k linhas, sempre filtre/limite). ligacoes: lead_id, duracao, metadata
 - escala_escolhas: chave, turma_id, escolha('douglas'|'julio'). usuarios_perfil: id, nome, email, papel, setor
+- naturezas_financeiras: chave, nome, ativo. motivos_perda: id, nome. contas_financeiras: id, nome, tipo. salas: id, nome, cidade_id
+
+⚠️ TRADUZA IDs/CHAVES — nunca mostre UUID cru. Mapa de referência (coluna → tabela.campo do nome):
+- lancamentos_empresa.categoria = naturezas_financeiras.chave → nome (ex: 'teste'='Tráfego Pago Escola', 'pessoal'='Professores', 'estrutura'='Estrutura/Investimentos', 'turma'='Receita'). A ferramenta financeiro já traduz.
+- lancamentos_empresa.conta_id = contas_financeiras.id → nome
+- leads.motivo_perda_id = motivos_perda.id → nome (use a ferramenta 'perdas')
+- turmas.produto_id = produtos.id → nome | turmas.cidade_id = cidades.id → nome | turmas.sala_id = salas.id → nome
+- turma_professores.professor_id / matriculas... = professores.id → nome
+- *.turma_id = turmas.id → codigo | matriculas.aluno_id = alunos.id → nome | *.lead_id = leads.id → nome
+- modulo_id = modulos.id → nome (tabela modulos pode estar vazia; se não achar, diga "módulo" genérico)
+Quando usar consultar/agregar e aparecer um *_id, faça uma consulta extra na tabela de referência pra mostrar o NOME.
 OBS: gasto de anúncio (tráfego) NÃO está no banco — use a ferramenta 'trafego' (vem ao vivo da Meta).`
 
 export const TOOLS = [
@@ -36,6 +52,7 @@ export const TOOLS = [
   { name: 'trafego', description: 'Gasto de anúncio (Meta, ao vivo) + CAC, CPL e ROAS no período. Exige desde e ate. Use pra "quanto gastamos em anúncio", "CAC", "custo por lead/venda", "ROAS".', input_schema: { type: 'object', properties: { desde: { type: 'string', description: 'YYYY-MM-DD' }, ate: { type: 'string', description: 'YYYY-MM-DD' } }, required: ['desde', 'ate'] } },
   { name: 'turmas_status', description: 'Turmas com matriculados, vagas e ocupação.', input_schema: { type: 'object', properties: { status: { type: 'string' } } } },
   { name: 'nps', description: 'NPS geral e notas médias (professor, conteúdo, estrutura).', input_schema: { type: 'object', properties: {} } },
+  { name: 'perdas', description: 'Motivos de perda dos leads (traduzidos), num período. Use pra "por que perdemos", "principais motivos de perda".', input_schema: { type: 'object', properties: { desde: { type: 'string' }, ate: { type: 'string' } } } },
   { name: 'detalhe_lead', description: 'Detalhe de um lead pelo nome.', input_schema: { type: 'object', properties: { nome: { type: 'string' } }, required: ['nome'] } },
   { name: 'esquema', description: 'Lista as tabelas e colunas do banco. Use ANTES de consultar/agregar quando precisar saber onde estão os dados.', input_schema: { type: 'object', properties: {} } },
   { name: 'consultar', description: 'Consulta genérica em QUALQUER tabela (só leitura). Escolha tabela, colunas, filtros, ordem e limite. Use pra qualquer coisa que as ferramentas específicas não cobrem.', input_schema: { type: 'object', properties: { tabela: { type: 'string' }, colunas: { type: 'string', description: 'ex "nome,valor_venda" ou "*"' }, filtros: { type: 'array', items: { type: 'object', properties: { coluna: { type: 'string' }, op: { type: 'string', description: 'eq,neq,gt,gte,lt,lte,ilike,in,is' }, valor: {} } } }, ordenar: { type: 'string' }, ascendente: { type: 'boolean' }, limite: { type: 'number' } }, required: ['tabela'] } },
@@ -61,11 +78,13 @@ export async function runTool(name: string, input: any, origin?: string): Promis
   if (name === 'esquema') return { esquema: ESQUEMA }
 
   if (name === 'propor_despesas') {
-    const itens = (input?.despesas || []).map((d: any) => ({
-      descricao: String(d.descricao || '').slice(0, 200), valor: Math.round((Number(d.valor) || 0) * 100) / 100,
-      categoria: CATS.has(d.categoria) ? d.categoria : 'outro', data: d.data || HOJE(),
-      status: d.status === 'previsto' ? 'previsto' : 'realizado', conta: d.conta || 'Conta Bancária PJ',
-    })).filter((d: any) => d.valor > 0 && d.descricao)
+    const nat = await naturezas() // chave -> nome
+    const porNome: Record<string, string> = {}; for (const [ch, nm] of Object.entries(nat)) porNome[nm.toLowerCase()] = ch
+    const resolveChave = (c: string) => { const x = (c || '').toString().trim(); if (nat[x]) return x; if (porNome[x.toLowerCase()]) return porNome[x.toLowerCase()]; return 'outro' }
+    const itens = (input?.despesas || []).map((d: any) => {
+      const chave = resolveChave(d.categoria)
+      return { descricao: String(d.descricao || '').slice(0, 200), valor: Math.round((Number(d.valor) || 0) * 100) / 100, categoria: chave, natureza: nat[chave] || chave, data: d.data || HOJE(), status: d.status === 'previsto' ? 'previsto' : 'realizado', conta: d.conta || 'Conta Bancária PJ' }
+    }).filter((d: any) => d.valor > 0 && d.descricao)
     if (!itens.length) return { erro: 'informe pelo menos uma despesa com descrição e valor' }
     return { proposta: { tipo: 'despesas', itens }, n: itens.length, total: itens.reduce((s: number, d: any) => s + d.valor, 0) }
   }
@@ -125,13 +144,14 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     if (desde) q = q.gte(dataCol, desde)
     if (ate) q = q.lte(dataCol, ate)
     const { data } = await q
+    const nomeNat = await naturezas() // chave -> nome amigável
     const rec = (data || []).filter(l => l.tipo === 'receita')
     const cus = (data || []).filter(l => l.tipo === 'custo')
     const somaCat: Record<string, number> = {}
-    for (const l of cus) { const c = l.categoria || '(sem categoria)'; somaCat[c] = (somaCat[c] || 0) + (l.valor || 0) }
+    for (const l of cus) { const c = l.categoria || 'outro'; somaCat[c] = (somaCat[c] || 0) + (l.valor || 0) }
     const receita = rec.reduce((s, l) => s + (l.valor || 0), 0)
     const despesa = cus.reduce((s, l) => s + (l.valor || 0), 0)
-    return { periodo: { desde: desde || 'início', ate: ate || 'hoje' }, considerando: input?.incluir_previsto ? 'realizado+previsto' : 'só realizado', receita: Math.round(receita), despesa: Math.round(despesa), saldo: Math.round(receita - despesa), despesa_por_categoria: Object.entries(somaCat).map(([cat, v]) => ({ categoria: cat, valor: Math.round(v) })).sort((a, b) => b.valor - a.valor) }
+    return { periodo: { desde: desde || 'início', ate: ate || 'hoje' }, considerando: input?.incluir_previsto ? 'realizado+previsto' : 'só realizado', receita: Math.round(receita), despesa: Math.round(despesa), saldo: Math.round(receita - despesa), despesa_por_natureza: Object.entries(somaCat).map(([chave, v]) => ({ natureza: nomeNat[chave] || chave, chave, valor: Math.round(v) })).sort((a, b) => b.valor - a.valor) }
   }
 
   if (name === 'marketing') {
@@ -188,6 +208,19 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     const prom = rs.filter(r => r.nota >= 9).length, det = rs.filter(r => r.nota <= 6).length
     const avg = (k: string) => { const v = rs.filter((r: any) => r[k] != null); return v.length ? +(v.reduce((s: number, r: any) => s + r[k], 0) / v.length).toFixed(1) : 0 }
     return { respostas: n, nps: Math.round((prom / n - det / n) * 100), promotores: prom, detratores: det, media_professor: avg('nota_professor'), media_conteudo: avg('nota_conteudo'), media_estrutura: avg('nota_estrutura') }
+  }
+
+  if (name === 'perdas') {
+    let q = supabase.from('leads').select('motivo_perda_id, data_perda').eq('etapa', 'perda')
+    if (desde) q = q.gte('data_perda', desde)
+    if (ate) q = q.lte('data_perda', ate)
+    const { data } = await q
+    const { data: mot } = await supabase.from('motivos_perda').select('id, nome')
+    const nomeM = Object.fromEntries((mot || []).map((m: any) => [m.id, m.nome]))
+    const cont: Record<string, number> = {}
+    for (const l of (data || [])) { const k = l.motivo_perda_id ? (nomeM[l.motivo_perda_id] || 'Outro') : '(sem motivo)'; cont[k] = (cont[k] || 0) + 1 }
+    const total = (data || []).length
+    return { total_perdas: total, motivos: Object.entries(cont).map(([motivo, n]) => ({ motivo, n, pct: total ? Math.round(n / total * 100) : 0 })).sort((a, b) => b.n - a.n) }
   }
 
   if (name === 'detalhe_lead') {
