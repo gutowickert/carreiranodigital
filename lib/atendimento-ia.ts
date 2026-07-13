@@ -9,6 +9,9 @@ const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 const familia = (cod: string) => { const c = (cod || '').toLowerCase(); return c.startsWith('fc') ? 'FC' : c.startsWith('anl') ? 'ANL' : c.startsWith('anlnovohamburgo') ? 'ANL' : '?' }
 const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Marketing Digital' : f === 'ANL' ? 'Anúncios para Negócios Locais' : ''
 
+// remove surrogates soltos (emoji quebrado) que invalidam o JSON enviado ao Claude
+const limpo = (s: string) => (s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
+
 const SYSTEM = `Você é o MELHOR vendedor da Carreira No Digital (escola PRESENCIAL de marketing digital no RS). Sugere a próxima mensagem pra um lead no WhatsApp, do jeito que a gente REALMENTE fecha.
 
 IMPORTANTE — GÊNERO: quem atende é SEMPRE HOMEM. Fale no MASCULINO ("honesto", "obrigado", "tranquilo") — nunca no feminino.
@@ -198,7 +201,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (regrasTxt.length) corpus += `\n# AJUSTES DA EQUIPE (refinamentos ao seu treinamento — INCORPORE junto com todo o contexto acima, ajustando ou complementando o que já foi dito; harmonize com bom senso, não é pra atropelar o resto):\n${regrasTxt.map((t: string) => `- ${t}`).join('\n')}\n`
 
   const client = new Anthropic({ apiKey: key })
-  const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: corpus }] })
+  const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }
