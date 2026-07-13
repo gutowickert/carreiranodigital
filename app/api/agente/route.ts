@@ -27,6 +27,8 @@ Quando a conversa render algo ESTRATÉGICO (uma decisão, um plano, um diagnóst
 
 ATENDIMENTO/VENDAS: você é o painel de controle da IA de vendas. Pra TESTAR fluxos/mensagens/funil, use 'simular_atendimento' (com um lead real ou uma situação hipotética) e mostre a resposta que a IA de vendas daria. Pra GERENCIAR/CORRIGIR o atendimento (mudar andamento/etapa, corrigir dados, reetiquetar turma/cidade de um lead), use 'propor_lead' (com confirmação).
 
+AJUSTAR A IA DE VENDAS (importante): quando o usuário der uma ORIENTAÇÃO ou CORREÇÃO pro comportamento da IA de vendas (ex: "a IA deveria...", "nunca faça...", "sempre confirme...", "seja mais breve", "não ofereça bolsa cedo"), você NÃO muda nada sozinho — use 'propor_regra_ia' pra propor salvar essa regra, que só entra no cérebro da IA depois que o usuário clicar Confirmar no cartão. Reformule a orientação numa regra clara e direta. NUNCA diga que "já ajustei" sem a confirmação. Pra ver/remover regras use 'listar_regras_ia' + 'propor_regra_ia' (remover).
+
 ATALHOS (escrita com confirmação): você PODE cadastrar despesas (inclusive em lote) e criar/atualizar leads — mas NUNCA grava direto. Use as ferramentas 'propor_despesas' e 'propor_lead' pra montar a proposta; o sistema mostra um cartão e o usuário clica em Confirmar pra efetivar. Antes de propor, confira se tem os dados essenciais (despesa: descrição+valor; lead: nome). Se faltar algo importante (ex.: valor de uma despesa), pergunte. Depois de propor, diga em 1 linha que é só confirmar no cartão abaixo. Nunca diga que já cadastrou — quem efetiva é o clique do usuário.`
 
 export async function POST(req: NextRequest) {

@@ -107,7 +107,7 @@ export default function AgenteInterno() {
     const j = await fetch('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
     if (j.ok) {
       const r = j.resultado || {}
-      const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
+      const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
       setFeitas(f => ({ ...f, [pend.id]: '✅ ' + txt }))
     } else setFeitas(f => ({ ...f, [pend.id]: '⚠️ ' + (j.error || 'falhou') }))
   }
@@ -198,12 +198,14 @@ export default function AgenteInterno() {
             {(m.pendencias || []).map((p: any) => (
               <div key={p.id} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
+                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover regra da IA de vendas' : '🧩 Nova regra pra IA de vendas') : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
                 </div>
                 {p.tipo === 'despesas' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
                     {p.itens.map((d: any, k: number) => <div key={k} style={{ fontSize: 13, color: 'var(--text-2)' }}>• {d.descricao} — <b>{brl(d.valor)}</b> <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>({d.categoria} · {d.status} · {d.data} · {d.conta})</span></div>)}
                   </div>
+                ) : p.tipo === 'regra_ia' ? (
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10, fontStyle: 'italic' }}>{p.acao === 'remover' ? `Remover a regra ${(p.id || '').slice(0, 8)}` : `"${p.texto}"`}</div>
                 ) : (
                   <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10 }}>{p.busca ? <>Lead: <b>{p.busca}</b><br /></> : null}{Object.entries(p.dados || {}).map(([k, v]) => <span key={k} style={{ marginRight: 10 }}>{k}: <b>{String(v)}</b></span>)}</div>
                 )}

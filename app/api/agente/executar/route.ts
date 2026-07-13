@@ -53,6 +53,17 @@ export async function POST(req: NextRequest) {
         resultado = { atualizado: achado.nome }
       }
     }
+    else if (p.tipo === 'regra_ia') {
+      if (p.acao === 'remover') {
+        await supabase.from('webhook_logs').delete().eq('id', p.id).eq('origem', 'ia-regra')
+        resultado = { regra_removida: p.id }
+      } else {
+        if (!p.texto) return NextResponse.json({ ok: false, error: 'regra vazia' }, { status: 200 })
+        const { data, error } = await supabase.from('webhook_logs').insert({ origem: 'ia-regra', evento: 'ativa', status: 'processado', payload: { texto: p.texto, criado_por: email } }).select('id').single()
+        if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
+        resultado = { regra_criada: data.id }
+      }
+    }
     else return NextResponse.json({ ok: false, error: 'tipo desconhecido' }, { status: 200 })
 
     // auditoria

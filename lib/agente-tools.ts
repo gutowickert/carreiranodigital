@@ -61,6 +61,8 @@ export const TOOLS = [
   { name: 'propor_despesas', description: 'Propõe cadastrar UMA ou VÁRIAS despesas (lote). NÃO grava — gera uma proposta que o usuário confirma na tela (cartão com botão Confirmar). Use quando pedirem pra lançar/cadastrar despesa(s). Se faltar valor ou descrição, pergunte antes.', input_schema: { type: 'object', properties: { despesas: { type: 'array', items: { type: 'object', properties: { descricao: { type: 'string' }, valor: { type: 'number' }, categoria: { type: 'string', description: 'pessoal, aluguel, marketing, estrutura, taxa_financeira, imposto, sistemas, deslocamentos, telefone_internet, salarios, outro' }, data: { type: 'string', description: 'YYYY-MM-DD, default hoje' }, status: { type: 'string', description: 'realizado ou previsto (default realizado)' }, conta: { type: 'string', description: 'nome da conta (default Conta Bancária PJ)' } }, required: ['descricao', 'valor'] } } }, required: ['despesas'] } },
   { name: 'propor_lead', description: 'Propõe CRIAR ou ATUALIZAR um lead — inclui MUDAR ANDAMENTO/ETAPA, corrigir erros do atendimento, reetiquetar turma/cidade, marcar ganho/perda, registrar venda. NÃO grava — gera proposta pra confirmar. Pra atualizar, informe o nome em "busca".', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'criar ou atualizar' }, busca: { type: 'string', description: 'nome do lead (quando atualizar)' }, dados: { type: 'object', description: 'campos: nome, whatsapp, origem, etapa (novo/atendimento_inicial/agendado/aguardando_pagamento/proxima_turma/ganho/perda), valor_venda, codigo_turma, data_ganho, motivo_ganho' } }, required: ['acao'] } },
   { name: 'simular_atendimento', description: 'TESTA/simula o que a IA de VENDAS responderia — pra validar fluxo, funil, mensagens e timing. Passe um lead REAL (nome) OU uma situação hipotética (texto). A IA de vendas busca vendas ganhas similares e sugere a resposta no nosso tom.', input_schema: { type: 'object', properties: { lead: { type: 'string', description: 'nome de um lead real (opcional)' }, situacao: { type: 'string', description: 'situação/conversa hipotética a testar (opcional) — ex: "lead novo de Caxias pergunta se serve pra quem não entende nada"' }, produto: { type: 'string', description: 'FC ou ANL (ajuda a simulação)' }, cidade: { type: 'string' } } } },
+  { name: 'listar_regras_ia', description: 'Lista as REGRAS/ajustes que já estão ativas no cérebro da IA de VENDAS (definidas pela equipe).', input_schema: { type: 'object', properties: {} } },
+  { name: 'propor_regra_ia', description: 'Propõe ADICIONAR ou REMOVER uma regra/ajuste da IA de VENDAS (o cérebro do atendimento). Use SEMPRE que o usuário der uma orientação/correção pra IA de vendas (ex: "nunca ofereça bolsa antes do dia 7", "seja mais breve", "sempre confirme a cidade"). NÃO aplica sozinho — vira um cartão pra confirmar; só entra depois do Confirmar.', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'adicionar ou remover' }, texto: { type: 'string', description: 'a regra em português, clara e direta (ao adicionar)' }, id: { type: 'string', description: 'id da regra (ao remover)' } }, required: ['acao'] } },
 ]
 
 function aplicaFiltros(q: any, filtros: any[]) {
@@ -210,6 +212,17 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     const prom = rs.filter(r => r.nota >= 9).length, det = rs.filter(r => r.nota <= 6).length
     const avg = (k: string) => { const v = rs.filter((r: any) => r[k] != null); return v.length ? +(v.reduce((s: number, r: any) => s + r[k], 0) / v.length).toFixed(1) : 0 }
     return { respostas: n, nps: Math.round((prom / n - det / n) * 100), promotores: prom, detratores: det, media_professor: avg('nota_professor'), media_conteudo: avg('nota_conteudo'), media_estrutura: avg('nota_estrutura') }
+  }
+
+  if (name === 'listar_regras_ia') {
+    const { data } = await supabase.from('webhook_logs').select('id, payload, recebido_em').eq('origem', 'ia-regra').order('recebido_em')
+    return { regras: (data || []).map((r: any) => ({ id: r.id, texto: r.payload?.texto, em: r.recebido_em })) }
+  }
+  if (name === 'propor_regra_ia') {
+    const acao = input?.acao === 'remover' ? 'remover' : 'adicionar'
+    if (acao === 'adicionar' && !input?.texto) return { erro: 'informe o texto da regra' }
+    if (acao === 'remover' && !input?.id) return { erro: 'informe o id da regra a remover (use listar_regras_ia)' }
+    return { proposta: { tipo: 'regra_ia', acao, texto: (input?.texto || '').toString().slice(0, 500), id: input?.id || '' } }
   }
 
   if (name === 'simular_atendimento') {
