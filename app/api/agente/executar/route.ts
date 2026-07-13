@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     else if (p.tipo === 'lead') {
       const d = p.dados || {}
       const campos: any = {}
-      for (const k of ['nome', 'whatsapp', 'origem', 'etapa', 'valor_venda', 'codigo_turma', 'motivo_ganho', 'data_ganho', 'data_perda']) if (d[k] != null) campos[k] = d[k]
+      for (const k of ['nome', 'whatsapp', 'origem', 'etapa', 'valor_venda', 'codigo_turma', 'motivo_ganho', 'data_ganho', 'data_perda', 'atendido_por']) if (d[k] != null) campos[k] = d[k]
       if (campos.etapa === 'ganho' && !campos.data_ganho) campos.data_ganho = new Date().toISOString()
       if (campos.etapa === 'perda' && !campos.data_perda) campos.data_perda = new Date().toISOString()
       if (campos.codigo_turma) { const { data: t } = await supabase.from('turmas').select('id').eq('codigo', campos.codigo_turma).maybeSingle(); if (t) campos.turma_id = t.id }
