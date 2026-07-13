@@ -17,7 +17,9 @@ REGRA DE OURO: antes de responder, olhe os EXEMPLOS DE VENDAS GANHAS fornecidos 
 
 DESCOBERTA ANTES DO PITCH: se o lead ainda NÃO está etiquetado (sem cidade/curso definidos), sua PRIORIDADE é descobrir, de forma natural e no nosso tom, a CIDADE e o CURSO de interesse (e turno preferido) ANTES de ofertar — isso separa ganho de perda. Se ele já disse cidade/curso na conversa, use, não pergunte de novo. Se não tem turma na cidade dele agora, registre o interesse pra PRÓXIMA turma daquela cidade.
 
-NUNCA invente preço, data ou turma — use só as TURMAS EM VENDAS informadas. Só ofereça cidade que a gente atende. Se o lead falou por áudio, o texto vem com 🎤.
+REABRIR CONVERSA FRIA: se a última mensagem foi de outro dia (faz 1+ dia), NÃO responda como continuação — REABRA: cumprimente pelo nome, retome o contexto do que ficou pendente ("passando aqui pra retomar…") e puxe de volta com uma pergunta ou uma oferta concreta.
+
+TURMAS: SEMPRE olhe a lista de TURMAS ABERTAS (são as futuras). NUNCA diga que "não tem turma" na cidade sem conferir a lista. Se a turma que o lead veio etiquetado já aconteceu, ofereça a PRÓXIMA na mesma cidade. NUNCA invente preço/data/turma — use só as TURMAS ABERTAS informadas. Só ofereça cidade que a gente atende. Se o lead falou por áudio, o texto vem com 🎤.
 
 Responda APENAS um JSON válido:
 {
@@ -93,6 +95,18 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const atual = linhas(convAtual, msgs, 30)
   if (atual.length < 2) return { ok: false, error: 'conversa atual sem mensagens suficientes' }
 
+  // tempo desde a última mensagem (pra saber se precisa REABRIR a conversa)
+  const msAtual = convAtual.flatMap(id => msgs[id] || []).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em))
+  const ult = msAtual[msAtual.length - 1]
+  let gap = ''
+  if (ult) {
+    const dias = Math.floor((Date.now() - +new Date(ult.criado_em)) / 864e5)
+    const quem = (ult.direcao === 'recebida' || ult.status === 'recebida') ? 'CLIENTE' : 'NÓS'
+    gap = dias >= 1
+      ? `⚠️ A última mensagem foi há ${dias} dia(s) (${new Date(ult.criado_em).toLocaleDateString('pt-BR')}), enviada por ${quem}. A conversa ESFRIOU — REABRA: cumprimente (Oi ${(lead.nome || '').split(' ')[0]}!), retome o contexto do que ficou pendente e puxe de volta. NÃO responda como se fosse continuação do mesmo papo.`
+      : `A última mensagem foi hoje (por ${quem}) — conversa quente, siga a continuação.`
+  }
+
   const ganhas = convWon.map(x => ({ nome: x.l.nome, valor: x.l.valor_venda, t: linhas(x.ids, msgs, 30) }))
     .filter(x => x.t.length >= 4).sort((a, b) => b.t.length - a.t.length).slice(0, 6)
 
@@ -102,9 +116,16 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   let dossie: any = null
   if (produto) { const { data: d } = await supabase.from('inteligencia_cliente').select('dossie, cidade').eq('produto', produto).limit(1).maybeSingle(); dossie = (d as any)?.dossie || null }
 
-  // 6) turmas em vendas (ofertas reais) + cidades atendidas
-  const { data: tv } = await supabase.from('turmas').select('codigo, preco_venda, data_inicio, data_fim, produtos(nome), cidades(nome)').eq('status', 'em_vendas').limit(30)
+  // 6) TURMAS ABERTAS = futuras (data_fim >= hoje) e não canceladas/realizadas. SEMPRE ofertar destas.
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const { data: tv } = await supabase.from('turmas').select('codigo, status, preco_venda, data_inicio, data_fim, produtos(nome), cidades(nome)').gte('data_fim', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const ofertas = (tv || []).map((t: any) => `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda} — ${t.data_inicio} a ${t.data_fim}`)
+  // a turma que o lead veio etiquetado já aconteceu?
+  let turmaPassada = ''
+  if (lead.codigo_turma) {
+    const { data: tt } = await supabase.from('turmas').select('codigo, data_fim, cidades(nome)').eq('codigo', lead.codigo_turma).maybeSingle()
+    if (tt && (tt.data_fim || '') < hoje) turmaPassada = `${tt.codigo} (${(tt as any).cidades?.nome || ''})`
+  }
   const { data: cids } = await supabase.from('cidades').select('nome').eq('ativo', true)
   const cidades = (cids || []).map((c: any) => c.nome).join(', ')
   const etiquetado = !!(lead.codigo_turma || lead.turma_id)
@@ -112,13 +133,16 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   // 7) monta o prompt
   let corpus = CONTEXTO_NEGOCIO + '\n\n'
   corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
-  corpus += `# LEAD ATUAL\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n\n## Conversa até agora (responda à última do CLIENTE):\n${atual.join('\n')}\n\n`
+  corpus += `# LEAD ATUAL\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
+  if (turmaPassada) corpus += `⚠️ ATENÇÃO: a turma que ele veio etiquetado (${turmaPassada}) JÁ ACONTECEU. Ofereça a PRÓXIMA turma aberta na MESMA cidade (veja abaixo). NUNCA diga que não há turma sem conferir a lista de turmas abertas.\n`
+  if (gap) corpus += gap + '\n'
+  corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`
   corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
   ganhas.forEach((g, i) => { corpus += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
   if (playbook?.o_que_funciona) corpus += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
   if (playbook?.melhor_fluxo) corpus += `\n# FLUXO QUE CONVERTE:\n${(playbook.melhor_fluxo || []).map((x: any, i: number) => `${i + 1}. ${x.passo}: ${x.descricao}`).join('\n')}\n`
   if (dossie?.objecoes) corpus += `\n# OBJEÇÕES E CONTORNOS (voz do cliente):\n${JSON.stringify(dossie.objecoes).slice(0, 1500)}\n`
-  if (ofertas.length) corpus += `\n# TURMAS EM VENDAS (única fonte de preço/data — não invente):\n${ofertas.join('\n')}\n`
+  if (ofertas.length) corpus += `\n# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: corpus }] })
