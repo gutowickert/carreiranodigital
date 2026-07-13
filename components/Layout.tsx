@@ -16,11 +16,15 @@ type Item = { nome: string; href: string }
 type Grupo = { titulo: string; itens: Item[] }
 type Perfil = { id: string; nome: string; email: string; papel: string; setor: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
+// Agente Interno: só estes 3 (Guto, Nando, Rick), mesmo os outros sendo admin.
+const AGENTE_PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+
 const grupos: Grupo[] = [
   {
     titulo: '',
     itens: [
       { nome: 'Painel', href: '/dashboard' },
+      { nome: '🧠 Agente Interno', href: '/dashboard/agente-interno' },
     ],
   },
   {
@@ -110,6 +114,7 @@ function bipe() {
 
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
+  if (href === '/dashboard/agente-interno') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   if (p.papel === 'admin') return true
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
