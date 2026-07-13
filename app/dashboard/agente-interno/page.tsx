@@ -198,7 +198,7 @@ export default function AgenteInterno() {
             {(m.pendencias || []).map((p: any) => (
               <div key={p.id} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover regra da IA de vendas' : '🧩 Nova regra pra IA de vendas') : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
+                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover ajuste da IA de vendas' : '🧩 Novo ajuste no treinamento da IA') : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
                 </div>
                 {p.tipo === 'despesas' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>

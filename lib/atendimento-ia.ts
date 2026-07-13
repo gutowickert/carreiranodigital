@@ -188,10 +188,10 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (dossie?.objecoes) corpus += `\n# OBJEÇÕES E CONTORNOS (voz do cliente):\n${JSON.stringify(dossie.objecoes).slice(0, 1500)}\n`
   if (ofertas.length) corpus += `\n# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
 
-  // REGRAS definidas pela equipe (ajustes ao vivo do cérebro da IA) — obrigatórias
+  // AJUSTES definidos pela equipe (refinamentos ao vivo do treinamento) — integrados ao contexto, não sobrepõem tudo
   const { data: regras } = await supabase.from('webhook_logs').select('payload').eq('origem', 'ia-regra')
   const regrasTxt = (regras || []).map((r: any) => r.payload?.texto).filter(Boolean)
-  if (regrasTxt.length) corpus += `\n# REGRAS DA EQUIPE (OBRIGATÓRIO seguir — têm prioridade sobre o resto):\n${regrasTxt.map((t: string) => `- ${t}`).join('\n')}\n`
+  if (regrasTxt.length) corpus += `\n# AJUSTES DA EQUIPE (refinamentos ao seu treinamento — INCORPORE junto com todo o contexto acima, ajustando ou complementando o que já foi dito; harmonize com bom senso, não é pra atropelar o resto):\n${regrasTxt.map((t: string) => `- ${t}`).join('\n')}\n`
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: corpus }] })
