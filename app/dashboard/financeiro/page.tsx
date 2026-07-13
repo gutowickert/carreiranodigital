@@ -155,11 +155,13 @@ export default function Financeiro() {
 
   function abrirEdicao(l: Lancamento) {
     setEditando(l)
-    setLancTipo(l.tipo); setLancCategoria(l.categoria); setLancDescricao(l.descricao)
-    setLancValor(l.valor.toString()); setLancUnidade(l.unidade)
-    setLancVencimento(l.data_vencimento); setLancStatus(l.status)
+    setLancTipo(l.tipo || 'custo'); setLancCategoria(l.categoria || 'outro'); setLancDescricao(l.descricao || '')
+    setLancValor((l.valor ?? '').toString()); setLancUnidade(l.unidade || 'geral')
+    setLancVencimento(l.data_vencimento || ''); setLancStatus(l.status || 'previsto')
     setLancContaId(l.conta_id || '')
     setLancRecorrente(false); setNovoLanc(true)
+    // o form abre no topo da página — rola até ele pra não parecer que "não abriu nada"
+    setTimeout(() => { try { window.scrollTo({ top: 0, behavior: 'smooth' }) } catch { /* ignore */ } }, 60)
   }
 
   async function salvarLancamento(e: React.FormEvent) {
