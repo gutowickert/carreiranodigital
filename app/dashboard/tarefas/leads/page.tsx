@@ -18,7 +18,7 @@ type TarefaLead = {
   concluida_em: string | null
   cancelada: boolean
   criado_em: string
-  leads?: { id: string; nome: string; whatsapp: string; etapa: string; turma_id: string; turmas?: { codigo: string; produtos: { nome: string } } }
+  leads?: { id: string; nome: string; whatsapp: string; etapa: string; atendido_por?: string; turma_id: string; turmas?: { codigo: string; produtos: { nome: string } } }
 }
 
 type Vendedor = { id: string; nome: string }
@@ -58,6 +58,7 @@ export default function TarefasLeads() {
   const [filtroVendedor, setFiltroVendedor] = useState('')
   const [filtroStatus, setFiltroStatus] = useState<'pendentes' | 'concluidas' | 'canceladas' | 'todas'>('pendentes')
   const [filtroDia, setFiltroDia] = useState('')
+  const [filtroAtendido, setFiltroAtendido] = useState<'geral' | 'ia' | 'humano'>('geral')
   const [mensagem, setMensagem] = useState('')
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
   const [concluindoId, setConcluindoId] = useState<string | null>(null)
@@ -73,15 +74,17 @@ export default function TarefasLeads() {
     init()
   }, [])
 
-  useEffect(() => { if (meuPerfil) carregar() }, [meuPerfil, filtroVendedor, filtroStatus])
+  useEffect(() => { if (meuPerfil) carregar() }, [meuPerfil, filtroVendedor, filtroStatus, filtroAtendido])
 
   async function carregar() {
     setCarregando(true)
 
+    const leadSel = `leads${filtroAtendido !== 'geral' ? '!inner' : ''}(id, nome, whatsapp, etapa, atendido_por, turma_id, turmas(codigo, produtos(nome)))`
     let query = supabase.from('tarefas_lead')
-      .select('*, leads(id, nome, whatsapp, etapa, turma_id, turmas(codigo, produtos(nome)))')
+      .select(`*, ${leadSel}`)
       .order('data_vencimento', { ascending: true })
 
+    if (filtroAtendido !== 'geral') query = query.eq('leads.atendido_por', filtroAtendido)
     if (meuPerfil && meuPerfil.papel !== 'admin') query = query.eq('vendedor_id', meuPerfil.id)
     else if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
     if (filtroStatus === 'pendentes') query = query.eq('concluida', false).eq('cancelada', false)
@@ -202,6 +205,9 @@ export default function TarefasLeads() {
               <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: tipo.bg, color: tipo.cor, fontWeight: 600, textTransform: 'uppercase' }}>
                 {tipo.label}
               </span>
+              {t.leads?.atendido_por === 'ia' && (
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontWeight: 700 }}>🤖 IA</span>
+              )}
               {atrasada && (
                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 }}>
                   ⚠ Atrasada
@@ -281,6 +287,11 @@ export default function TarefasLeads() {
             <option value="concluidas">Concluídas</option>
             <option value="canceladas">Canceladas</option>
             <option value="todas">Todas</option>
+          </select>
+          <select style={sel} value={filtroAtendido} onChange={e => setFiltroAtendido(e.target.value as any)} title="Quem atende o lead">
+            <option value="geral">Geral (IA + humano)</option>
+            <option value="humano">👤 Só humano</option>
+            <option value="ia">🤖 Só IA</option>
           </select>
           <input type="date" style={sel} value={filtroDia} onChange={e => setFiltroDia(e.target.value)} title="Filtrar por dia de vencimento" />
           {filtroDia && <button onClick={() => setFiltroDia('')} style={btnSecondary}>Limpar dia</button>}

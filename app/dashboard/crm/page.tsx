@@ -88,6 +88,7 @@ export default function CRM() {
   const [busca, setBusca] = useState('')
   const [filtroTurma, setFiltroTurma] = useState('')
   const [filtroVendedor, setFiltroVendedor] = useState('')
+  const [filtroAtendido, setFiltroAtendido] = useState<'geral' | 'ia' | 'humano'>('geral')
   const [modalAberto, setModalAberto] = useState(false)
   const [leadEditando, setLeadEditando] = useState<Lead | null>(null)
   const [novoLead, setNovoLead] = useState(false)
@@ -343,6 +344,7 @@ export default function CRM() {
     if (soProprios && l.vendedor_id !== meuPerfil.id) return false
     if (filtroTurma && l.turma_id !== filtroTurma) return false
     if (filtroVendedor && l.vendedor_id !== filtroVendedor) return false
+    if (filtroAtendido !== 'geral' && ((l as any).atendido_por || 'humano') !== filtroAtendido) return false
     if (busca.trim()) {
       const b = busca.trim().toLowerCase()
       const bDig = b.replace(/\D/g, '')
@@ -412,8 +414,13 @@ export default function CRM() {
               {vendedores.map(v => <option key={v.id} value={v.id}>{v.nome}</option>)}
             </select>
           )}
-          {(busca || filtroTurma || filtroVendedor) && (
-            <button onClick={() => { setBusca(''); setFiltroTurma(''); setFiltroVendedor('') }} style={btnSecondary}>Limpar</button>
+          <select style={sel} value={filtroAtendido} onChange={e => setFiltroAtendido(e.target.value as any)} title="Quem atende o lead">
+            <option value="geral">Geral (IA + humano)</option>
+            <option value="humano">👤 Só humano</option>
+            <option value="ia">🤖 Só IA</option>
+          </select>
+          {(busca || filtroTurma || filtroVendedor || filtroAtendido !== 'geral') && (
+            <button onClick={() => { setBusca(''); setFiltroTurma(''); setFiltroVendedor(''); setFiltroAtendido('geral') }} style={btnSecondary}>Limpar</button>
           )}
         </div>
 
