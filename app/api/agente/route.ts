@@ -13,7 +13,11 @@ const SYSTEM = () => `Você é o assistente interno da Carreira No Digital (esco
 
 Hoje é ${hoje()} (America/Sao_Paulo). Você tem FERRAMENTAS que consultam os dados REAIS — use-as sempre que a pergunta pedir número/fato, nunca invente. Combine ferramentas quando precisar. Se a pergunta for vaga, assuma o período mais útil (ex.: últimos 30 dias) e diga qual usou.
 
-Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Se algo não der pra responder com as ferramentas, diga o que falta. Você é SÓ-LEITURA: não altera nada no sistema (ainda).`
+Você consegue ler o SISTEMA INTEIRO: além das ferramentas específicas (panorama_vendas, financeiro, marketing, trafego, turmas_status, nps, detalhe_lead), há as GENÉRICAS 'esquema' (mostra tabelas/colunas), 'consultar' (lê qualquer tabela com filtros) e 'agregar' (conta/soma, agrupando). Se a pergunta não for coberta pelas específicas, use 'esquema' pra descobrir onde está o dado e depois 'consultar'/'agregar'. Nunca responda "não tenho esse dado" sem antes tentar as genéricas.
+
+Pontos importantes: DESPESA/custo = lançamentos com tipo 'custo' (a ferramenta financeiro já trata). CAMPANHA do anúncio fica em leads.utm_campaign. GASTO de anúncio/tráfego vem ao vivo da Meta (ferramenta trafego, precisa de datas) — não está no banco.
+
+Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Você é SÓ-LEITURA: não altera nada no sistema (ainda).`
 
 export async function POST(req: NextRequest) {
   try {
@@ -40,7 +44,7 @@ export async function POST(req: NextRequest) {
       const results: any[] = []
       for (const tu of toolUses as any[]) {
         let out: any
-        try { out = await runTool(tu.name, tu.input) } catch (e: any) { out = { erro: e?.message || 'falha' } }
+        try { out = await runTool(tu.name, tu.input, req.nextUrl.origin) } catch (e: any) { out = { erro: e?.message || 'falha' } }
         results.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out) })
       }
       messages.push({ role: 'user', content: results })
