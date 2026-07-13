@@ -1,5 +1,6 @@
 {
   "crons": [
-    { "path": "/api/analise-conversao/cron", "schedule": "0 10 * * *" }
+    { "path": "/api/analise-conversao/cron", "schedule": "0 10 * * *" },
+    { "path": "/api/atendimento/orquestrar", "schedule": "*/15 * * * *" }
   ]
 }
