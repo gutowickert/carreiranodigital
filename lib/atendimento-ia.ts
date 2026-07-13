@@ -99,8 +99,12 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   }
   if (!lead) return { ok: false, error: 'lead/conversa não encontrado' }
 
-  // 2) mapa de conversas
-  const { data: convs } = await supabase.from('wa_conversas').select('id, telefone, lead_id')
+  // 2) mapa de conversas (PAGINADO — o Supabase corta em 1000)
+  let convs: any[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data } = await supabase.from('wa_conversas').select('id, telefone, lead_id').range(from, from + 999)
+    if (!data?.length) break; convs.push(...data); if (data.length < 1000) break
+  }
   const byLead: Record<string, string[]> = {}, telConv: Record<string, string[]> = {}
   for (const c of (convs || [])) { if (c.lead_id) (byLead[c.lead_id] = byLead[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (telConv[s] = telConv[s] || []).push(c.id) }
   const convIdsDe = (l: any) => [...new Set([...(l.id ? byLead[l.id] || [] : []), ...(telConv[suf(l.whatsapp)] || [])])]
