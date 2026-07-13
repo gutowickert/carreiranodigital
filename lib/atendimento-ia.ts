@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
+import { CONTEXTO_NEGOCIO } from '@/lib/contexto-negocio'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
 // FECHOU (mesmo produto/situação) e responde no nosso tom, seguindo o fluxo que converte.
@@ -8,20 +9,26 @@ const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 const familia = (cod: string) => { const c = (cod || '').toLowerCase(); return c.startsWith('fc') ? 'FC' : c.startsWith('anl') ? 'ANL' : c.startsWith('anlnovohamburgo') ? 'ANL' : '?' }
 const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Marketing Digital' : f === 'ANL' ? 'Anúncios para Negócios Locais' : ''
 
-const SYSTEM = `Você é o MELHOR vendedor da Carreira No Digital (escola de marketing digital, cursos presenciais no RS). Seu trabalho: sugerir a próxima mensagem pra um lead no WhatsApp, do jeito que a gente REALMENTE fecha.
+const SYSTEM = `Você é o MELHOR vendedor da Carreira No Digital (escola PRESENCIAL de marketing digital no RS). Sugere a próxima mensagem pra um lead no WhatsApp, do jeito que a gente REALMENTE fecha.
+
+IMPORTANTE — GÊNERO: quem atende é SEMPRE HOMEM. Fale no MASCULINO ("honesto", "obrigado", "tranquilo") — nunca no feminino.
 
 REGRA DE OURO: antes de responder, olhe os EXEMPLOS DE VENDAS GANHAS fornecidos e ache o momento/objeção mais parecido com o do lead atual — responda como a gente respondeu nas que FECHARAM. Copie o TOM (humano, direto, caloroso, sem robô), o ritmo e as jogadas que funcionam.
 
-NUNCA invente preço, data ou turma — use só as TURMAS EM VENDAS informadas. Se o lead falou por áudio, o texto vem com 🎤. Se faltar oferta pro caso, diga a próxima ação (ligar, segurar vaga).
+DESCOBERTA ANTES DO PITCH: se o lead ainda NÃO está etiquetado (sem cidade/curso definidos), sua PRIORIDADE é descobrir, de forma natural e no nosso tom, a CIDADE e o CURSO de interesse (e turno preferido) ANTES de ofertar — isso separa ganho de perda. Se ele já disse cidade/curso na conversa, use, não pergunte de novo. Se não tem turma na cidade dele agora, registre o interesse pra PRÓXIMA turma daquela cidade.
+
+NUNCA invente preço, data ou turma — use só as TURMAS EM VENDAS informadas. Só ofereça cidade que a gente atende. Se o lead falou por áudio, o texto vem com 🎤.
 
 Responda APENAS um JSON válido:
 {
  "situacao": "<1 frase: onde o lead está / o que ele acabou de dizer>",
  "objecao": "<a barreira atual, ou 'nenhuma'>",
  "etapa_funil": "<ex: descoberta, oferta, objeção de preço, fechamento>",
- "resposta": "<a mensagem PRONTA pra mandar no WhatsApp — nosso tom, curta, humana, 1 a 3 frases; pode sugerir áudio se fizer sentido>",
+ "resposta": "<a mensagem PRONTA pra mandar no WhatsApp — nosso tom, MASCULINO, curta, humana, 1 a 3 frases>",
  "baseado_em": "<em qual venda ganha você se baseou + o que era parecido>",
- "proximo_passo": "<a ação concreta depois dessa mensagem>"
+ "proximo_passo": "<a ação concreta depois dessa mensagem>",
+ "etiqueta": {"produto": "<FC|ANL|indefinido>", "cidade": "<cidade de interesse ou indefinido>", "turma_alvo": "<código de uma turma em vendas que encaixa, ou 'próxima turma' se não houver na cidade>"},
+ "precisa_descobrir": ["<o que ainda falta saber pra etiquetar: cidade, curso, turno — vazio se já sabe tudo>"]
 }`
 
 async function carregarMensagens(convIds: string[]) {
@@ -95,12 +102,17 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   let dossie: any = null
   if (produto) { const { data: d } = await supabase.from('inteligencia_cliente').select('dossie, cidade').eq('produto', produto).limit(1).maybeSingle(); dossie = (d as any)?.dossie || null }
 
-  // 6) turmas em vendas (ofertas reais)
+  // 6) turmas em vendas (ofertas reais) + cidades atendidas
   const { data: tv } = await supabase.from('turmas').select('codigo, preco_venda, data_inicio, data_fim, produtos(nome), cidades(nome)').eq('status', 'em_vendas').limit(30)
   const ofertas = (tv || []).map((t: any) => `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda} — ${t.data_inicio} a ${t.data_fim}`)
+  const { data: cids } = await supabase.from('cidades').select('nome').eq('ativo', true)
+  const cidades = (cids || []).map((c: any) => c.nome).join(', ')
+  const etiquetado = !!(lead.codigo_turma || lead.turma_id)
 
   // 7) monta o prompt
-  let corpus = `# LEAD ATUAL\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indef)'} | Etapa: ${lead.etapa}\n\n## Conversa até agora (responda à última do CLIENTE):\n${atual.join('\n')}\n\n`
+  let corpus = CONTEXTO_NEGOCIO + '\n\n'
+  corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
+  corpus += `# LEAD ATUAL\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n\n## Conversa até agora (responda à última do CLIENTE):\n${atual.join('\n')}\n\n`
   corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
   ganhas.forEach((g, i) => { corpus += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
   if (playbook?.o_que_funciona) corpus += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
