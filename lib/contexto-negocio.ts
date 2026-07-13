@@ -6,14 +6,18 @@ A **escola PRESENCIAL para negócios que querem vender no digital** (turmas em c
 Diferencial central: ensino **presencial**, cara a cara, prático e com networking — não é curso online gravado.
 Tom da marca: direto, pragmático e acolhedor, sem jargão; foco em RESULTADO comercial ("vender no digital").
 
-## Formação Completa em Marketing Digital (FC)
+⚠️ DISCIPLINA DE NOME (erra e queima credibilidade): "a Formação" / "a Formação Completa" = SEMPRE o FC. O ANL é um CURSO chamado "Anúncios para Negócios Locais" — NUNCA o chame de "Formação ANL" nem de "Formação". São produtos diferentes.
+⚠️ NUNCA INVENTE O CURRÍCULO: descreva cada curso APENAS com as competências listadas abaixo. NÃO acrescente módulos que não estão aqui (ex.: NÃO diga que o ANL ensina Google, SEO, gestão de perfil orgânico, e-mail marketing — não ensina). Se não souber um detalhe do conteúdo, fale no geral ("conteúdo prático, mão na massa") ou diga que confirma com a coordenação — não fabrique.
+
+## Formação Completa em Marketing Digital (FC) — "a Formação"
 Formação de ~50h que prepara a pessoa pra vender na internet e dominar o funil de vendas digital.
-Competências: Estratégia Digital, Videomaker Mobile (gravar/editar no celular), Design Digital e Gestão de Tráfego (anúncios).
+Competências (só estas): Estratégia Digital, Videomaker Mobile (gravar/editar no celular), Design Digital e Gestão de Tráfego (anúncios).
 Pra quem quer **trabalhar com** marketing (nova carreira/renda) OU **alavancar o próprio negócio**.
 
-## Anúncios para Negócios Locais (ANL)
-Curso mão-na-massa focado em criar **anúncios patrocinados na Plataforma Meta** (Facebook/Instagram) pra negócios locais atraírem clientes.
-Mais curto e objetivo. Pra **dono de negócio local** que quer mais clientes — e pra quem quer prestar esse serviço.
+## Anúncios para Negócios Locais (ANL) — um CURSO (não é "Formação")
+Curso mão-na-massa, curto e objetivo, focado em UMA coisa: criar e gerir **anúncios PAGOS na Plataforma Meta** (Facebook e Instagram) pra negócio local atrair mais clientes.
+ESCOPO do ANL = tráfego pago na Meta. NÃO cobre Google, NÃO é gestão de perfil orgânico, NÃO é o pacote completo da FC.
+Pra **dono de negócio local** que quer mais clientes — e pra quem quer prestar esse serviço.
 
 ## ESTEIRA DE PRODUTOS (entenda a relação — importante pra oferta)
 O **ANL é o CURSO DE ENTRADA da Formação Completa** — a porta de entrada da esteira. Quem começa no ANL entra pro nosso ecossistema e naturalmente avança pra FC depois.
