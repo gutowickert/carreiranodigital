@@ -57,13 +57,17 @@ function linhas(convIds: string[], msgs: Record<string, any[]>, max = 40) {
   return out.slice(-max)
 }
 
-export async function sugerirAtendimento(input: { leadId?: string; conversaId?: string }): Promise<any> {
+export async function sugerirAtendimento(input: { leadId?: string; conversaId?: string; situacaoTexto?: string; produtoHint?: string; cidadeHint?: string }): Promise<any> {
   const key = process.env.ANTHROPIC_API_KEY
   if (!key) return { ok: false, error: 'falta ANTHROPIC_API_KEY' }
+  const simul = !!input.situacaoTexto && !input.leadId && !input.conversaId
 
-  // 1) lead/conversa atual
+  // 1) lead/conversa atual (ou lead simulado)
   let lead: any = null
-  if (input.leadId) {
+  if (simul) {
+    const f = /anl|an[úu]ncio/i.test(input.produtoHint || '') ? 'anl' : /fc|forma/i.test(input.produtoHint || '') ? 'fc' : ''
+    lead = { id: null, nome: '(lead simulado)', whatsapp: '', codigo_turma: f, turma_id: null, etapa: 'simulação' }
+  } else if (input.leadId) {
     const { data } = await supabase.from('leads').select('id, nome, whatsapp, codigo_turma, turma_id, etapa').eq('id', input.leadId).maybeSingle()
     lead = data
   } else if (input.conversaId) {
@@ -92,8 +96,10 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const todosIds = [...new Set([...convAtual, ...convWon.flatMap(x => x.ids)])]
   const msgs = await carregarMensagens(todosIds)
 
-  const atual = linhas(convAtual, msgs, 30)
-  if (atual.length < 2) return { ok: false, error: 'conversa atual sem mensagens suficientes' }
+  const atual = simul
+    ? ((input.situacaoTexto || '').includes('CLIENTE:') ? (input.situacaoTexto || '').split('\n').filter(Boolean) : ['CLIENTE: ' + input.situacaoTexto])
+    : linhas(convAtual, msgs, 30)
+  if (!simul && atual.length < 2) return { ok: false, error: 'conversa atual sem mensagens suficientes' }
 
   // tempo desde a última mensagem (pra saber se precisa REABRIR a conversa)
   const msAtual = convAtual.flatMap(id => msgs[id] || []).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em))
@@ -128,12 +134,12 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   }
   const { data: cids } = await supabase.from('cidades').select('nome').eq('ativo', true)
   const cidades = (cids || []).map((c: any) => c.nome).join(', ')
-  const etiquetado = !!(lead.codigo_turma || lead.turma_id)
+  const etiquetado = simul ? !!(input.cidadeHint && input.produtoHint) : !!(lead.codigo_turma || lead.turma_id)
 
   // 7) monta o prompt
   let corpus = CONTEXTO_NEGOCIO + '\n\n'
   corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
-  corpus += `# LEAD ATUAL\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
+  corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
   if (turmaPassada) corpus += `⚠️ ATENÇÃO: a turma que ele veio etiquetado (${turmaPassada}) JÁ ACONTECEU. Ofereça a PRÓXIMA turma aberta na MESMA cidade (veja abaixo). NUNCA diga que não há turma sem conferir a lista de turmas abertas.\n`
   if (gap) corpus += gap + '\n'
   corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`

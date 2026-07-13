@@ -1,4 +1,5 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { sugerirAtendimento } from '@/lib/atendimento-ia'
 
 // Ferramentas SÓ-LEITURA do Agente Interno. Cobrem o sistema inteiro:
 // específicas (vendas/financeiro/marketing/tráfego/turmas/NPS) + genéricas (esquema/consultar/agregar).
@@ -58,7 +59,8 @@ export const TOOLS = [
   { name: 'consultar', description: 'Consulta genérica em QUALQUER tabela (só leitura). Escolha tabela, colunas, filtros, ordem e limite. Use pra qualquer coisa que as ferramentas específicas não cobrem.', input_schema: { type: 'object', properties: { tabela: { type: 'string' }, colunas: { type: 'string', description: 'ex "nome,valor_venda" ou "*"' }, filtros: { type: 'array', items: { type: 'object', properties: { coluna: { type: 'string' }, op: { type: 'string', description: 'eq,neq,gt,gte,lt,lte,ilike,in,is' }, valor: {} } } }, ordenar: { type: 'string' }, ascendente: { type: 'boolean' }, limite: { type: 'number' } }, required: ['tabela'] } },
   { name: 'agregar', description: 'Conta e/ou soma linhas de uma tabela, opcionalmente agrupando por uma coluna. Use pra totais e "por X". Ex: somar valor_venda de leads ganho agrupando por codigo_turma.', input_schema: { type: 'object', properties: { tabela: { type: 'string' }, filtros: { type: 'array', items: { type: 'object', properties: { coluna: { type: 'string' }, op: { type: 'string' }, valor: {} } } }, somar: { type: 'string', description: 'coluna numérica a somar (opcional)' }, agrupar_por: { type: 'string', description: 'coluna pra agrupar (opcional)' } }, required: ['tabela'] } },
   { name: 'propor_despesas', description: 'Propõe cadastrar UMA ou VÁRIAS despesas (lote). NÃO grava — gera uma proposta que o usuário confirma na tela (cartão com botão Confirmar). Use quando pedirem pra lançar/cadastrar despesa(s). Se faltar valor ou descrição, pergunte antes.', input_schema: { type: 'object', properties: { despesas: { type: 'array', items: { type: 'object', properties: { descricao: { type: 'string' }, valor: { type: 'number' }, categoria: { type: 'string', description: 'pessoal, aluguel, marketing, estrutura, taxa_financeira, imposto, sistemas, deslocamentos, telefone_internet, salarios, outro' }, data: { type: 'string', description: 'YYYY-MM-DD, default hoje' }, status: { type: 'string', description: 'realizado ou previsto (default realizado)' }, conta: { type: 'string', description: 'nome da conta (default Conta Bancária PJ)' } }, required: ['descricao', 'valor'] } } }, required: ['despesas'] } },
-  { name: 'propor_lead', description: 'Propõe CRIAR ou ATUALIZAR um lead (ex.: marcar ganho/perda, mudar etapa, registrar venda). NÃO grava — gera proposta pra confirmar. Pra atualizar, informe o nome em "busca".', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'criar ou atualizar' }, busca: { type: 'string', description: 'nome do lead (quando atualizar)' }, dados: { type: 'object', description: 'campos: nome, whatsapp, origem, etapa (novo/agendado/aguardando_pagamento/ganho/perda), valor_venda, codigo_turma, data_ganho, motivo_ganho' } }, required: ['acao'] } },
+  { name: 'propor_lead', description: 'Propõe CRIAR ou ATUALIZAR um lead — inclui MUDAR ANDAMENTO/ETAPA, corrigir erros do atendimento, reetiquetar turma/cidade, marcar ganho/perda, registrar venda. NÃO grava — gera proposta pra confirmar. Pra atualizar, informe o nome em "busca".', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'criar ou atualizar' }, busca: { type: 'string', description: 'nome do lead (quando atualizar)' }, dados: { type: 'object', description: 'campos: nome, whatsapp, origem, etapa (novo/atendimento_inicial/agendado/aguardando_pagamento/proxima_turma/ganho/perda), valor_venda, codigo_turma, data_ganho, motivo_ganho' } }, required: ['acao'] } },
+  { name: 'simular_atendimento', description: 'TESTA/simula o que a IA de VENDAS responderia — pra validar fluxo, funil, mensagens e timing. Passe um lead REAL (nome) OU uma situação hipotética (texto). A IA de vendas busca vendas ganhas similares e sugere a resposta no nosso tom.', input_schema: { type: 'object', properties: { lead: { type: 'string', description: 'nome de um lead real (opcional)' }, situacao: { type: 'string', description: 'situação/conversa hipotética a testar (opcional) — ex: "lead novo de Caxias pergunta se serve pra quem não entende nada"' }, produto: { type: 'string', description: 'FC ou ANL (ajuda a simulação)' }, cidade: { type: 'string' } } } },
 ]
 
 function aplicaFiltros(q: any, filtros: any[]) {
@@ -208,6 +210,13 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     const prom = rs.filter(r => r.nota >= 9).length, det = rs.filter(r => r.nota <= 6).length
     const avg = (k: string) => { const v = rs.filter((r: any) => r[k] != null); return v.length ? +(v.reduce((s: number, r: any) => s + r[k], 0) / v.length).toFixed(1) : 0 }
     return { respostas: n, nps: Math.round((prom / n - det / n) * 100), promotores: prom, detratores: det, media_professor: avg('nota_professor'), media_conteudo: avg('nota_conteudo'), media_estrutura: avg('nota_estrutura') }
+  }
+
+  if (name === 'simular_atendimento') {
+    let leadId: string | undefined
+    if (input?.lead) { const { data } = await supabase.from('leads').select('id').ilike('nome', `%${input.lead}%`).limit(1).maybeSingle(); leadId = (data as any)?.id }
+    const r = await sugerirAtendimento({ leadId, situacaoTexto: leadId ? undefined : input?.situacao, produtoHint: input?.produto, cidadeHint: input?.cidade })
+    return r.ok ? { sugestao: r.sugestao, baseado_em_vendas: r.baseado_em_n } : { erro: r.error }
   }
 
   if (name === 'perdas') {
