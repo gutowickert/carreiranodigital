@@ -124,7 +124,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
 
   // 6) TURMAS ABERTAS = futuras (data_fim >= hoje) e não canceladas/realizadas. SEMPRE ofertar destas.
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  const { data: tv } = await supabase.from('turmas').select('codigo, status, preco_venda, data_inicio, data_fim, produtos(nome), cidades(nome)').gte('data_fim', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tv } = await supabase.from('turmas').select('codigo, status, preco_venda, data_inicio, data_fim, produtos(nome), cidades(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const ofertas = (tv || []).map((t: any) => `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda} — ${t.data_inicio} a ${t.data_fim}`)
   // a turma que o lead veio etiquetado já aconteceu?
   let turmaPassada = ''
