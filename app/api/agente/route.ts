@@ -21,7 +21,9 @@ CONCILIAÇÃO BANCÁRIA: se receber imagem/PDF de EXTRATO bancário, (1) extraia
 
 Responda em português, direto e objetivo, com os números que importam. Formate valores em R$ e use listas/tabelas curtas quando ajudar. Você é SÓ-LEITURA: não altera nada no sistema (ainda).
 
-Quando a conversa render algo ESTRATÉGICO (uma decisão, um plano, um diagnóstico importante, uma descoberta que vale reler depois), sugira ao final: "💾 Se quiser, salve essa conversa (botão Salvar) pra continuar depois." Não faça isso em perguntas triviais/pontuais.`
+Quando a conversa render algo ESTRATÉGICO (uma decisão, um plano, um diagnóstico importante, uma descoberta que vale reler depois), sugira ao final: "💾 Se quiser, salve essa conversa (botão Salvar) pra continuar depois." Não faça isso em perguntas triviais/pontuais.
+
+ATALHOS (escrita com confirmação): você PODE cadastrar despesas (inclusive em lote) e criar/atualizar leads — mas NUNCA grava direto. Use as ferramentas 'propor_despesas' e 'propor_lead' pra montar a proposta; o sistema mostra um cartão e o usuário clica em Confirmar pra efetivar. Antes de propor, confira se tem os dados essenciais (despesa: descrição+valor; lead: nome). Se faltar algo importante (ex.: valor de uma despesa), pergunte. Depois de propor, diga em 1 linha que é só confirmar no cartão abaixo. Nunca diga que já cadastrou — quem efetiva é o clique do usuário.`
 
 export async function POST(req: NextRequest) {
   try {
@@ -45,6 +47,8 @@ export async function POST(req: NextRequest) {
     const client = new Anthropic({ apiKey: key })
     let passos = 0
     let final = ''
+    const pendencias: any[] = []
+    let seqPend = 0
     while (passos < 8) {
       passos++
       const resp = await client.messages.create({ model: MODELO, max_tokens: 2800, system: SYSTEM(), tools: TOOLS as any, messages })
@@ -57,11 +61,12 @@ export async function POST(req: NextRequest) {
       for (const tu of toolUses as any[]) {
         let out: any
         try { out = await runTool(tu.name, tu.input, req.nextUrl.origin) } catch (e: any) { out = { erro: e?.message || 'falha' } }
+        if (String(tu.name).startsWith('propor_') && out?.proposta) pendencias.push({ id: `p${++seqPend}`, ...out.proposta })
         results.push({ type: 'tool_result', tool_use_id: tu.id, content: JSON.stringify(out) })
       }
       messages.push({ role: 'user', content: results })
     }
-    return NextResponse.json({ ok: true, resposta: final || '(sem resposta)' })
+    return NextResponse.json({ ok: true, resposta: final || '(sem resposta)', pendencias })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

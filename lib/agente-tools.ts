@@ -12,6 +12,8 @@ const stat = (arr: number[]) => {
 }
 const emRange = (d: string | null, desde?: string, ate?: string) => !!d && (!desde || d >= desde) && (!ate || d <= ate)
 const OPS = new Set(['eq', 'neq', 'gt', 'gte', 'lt', 'lte', 'ilike', 'like', 'in', 'is'])
+const HOJE = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+const CATS = new Set(['pessoal', 'aluguel', 'marketing', 'estrutura', 'taxa_financeira', 'imposto', 'sistemas', 'deslocamentos', 'telefone_internet', 'salarios', 'teste', 'custos_de_expediente', 'outro'])
 
 // Esquema resumido do banco (o que o agente precisa saber pra consultar direito)
 const ESQUEMA = `TABELAS PRINCIPAIS (Postgres/Supabase):
@@ -38,6 +40,8 @@ export const TOOLS = [
   { name: 'esquema', description: 'Lista as tabelas e colunas do banco. Use ANTES de consultar/agregar quando precisar saber onde estão os dados.', input_schema: { type: 'object', properties: {} } },
   { name: 'consultar', description: 'Consulta genérica em QUALQUER tabela (só leitura). Escolha tabela, colunas, filtros, ordem e limite. Use pra qualquer coisa que as ferramentas específicas não cobrem.', input_schema: { type: 'object', properties: { tabela: { type: 'string' }, colunas: { type: 'string', description: 'ex "nome,valor_venda" ou "*"' }, filtros: { type: 'array', items: { type: 'object', properties: { coluna: { type: 'string' }, op: { type: 'string', description: 'eq,neq,gt,gte,lt,lte,ilike,in,is' }, valor: {} } } }, ordenar: { type: 'string' }, ascendente: { type: 'boolean' }, limite: { type: 'number' } }, required: ['tabela'] } },
   { name: 'agregar', description: 'Conta e/ou soma linhas de uma tabela, opcionalmente agrupando por uma coluna. Use pra totais e "por X". Ex: somar valor_venda de leads ganho agrupando por codigo_turma.', input_schema: { type: 'object', properties: { tabela: { type: 'string' }, filtros: { type: 'array', items: { type: 'object', properties: { coluna: { type: 'string' }, op: { type: 'string' }, valor: {} } } }, somar: { type: 'string', description: 'coluna numérica a somar (opcional)' }, agrupar_por: { type: 'string', description: 'coluna pra agrupar (opcional)' } }, required: ['tabela'] } },
+  { name: 'propor_despesas', description: 'Propõe cadastrar UMA ou VÁRIAS despesas (lote). NÃO grava — gera uma proposta que o usuário confirma na tela (cartão com botão Confirmar). Use quando pedirem pra lançar/cadastrar despesa(s). Se faltar valor ou descrição, pergunte antes.', input_schema: { type: 'object', properties: { despesas: { type: 'array', items: { type: 'object', properties: { descricao: { type: 'string' }, valor: { type: 'number' }, categoria: { type: 'string', description: 'pessoal, aluguel, marketing, estrutura, taxa_financeira, imposto, sistemas, deslocamentos, telefone_internet, salarios, outro' }, data: { type: 'string', description: 'YYYY-MM-DD, default hoje' }, status: { type: 'string', description: 'realizado ou previsto (default realizado)' }, conta: { type: 'string', description: 'nome da conta (default Conta Bancária PJ)' } }, required: ['descricao', 'valor'] } } }, required: ['despesas'] } },
+  { name: 'propor_lead', description: 'Propõe CRIAR ou ATUALIZAR um lead (ex.: marcar ganho/perda, mudar etapa, registrar venda). NÃO grava — gera proposta pra confirmar. Pra atualizar, informe o nome em "busca".', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'criar ou atualizar' }, busca: { type: 'string', description: 'nome do lead (quando atualizar)' }, dados: { type: 'object', description: 'campos: nome, whatsapp, origem, etapa (novo/agendado/aguardando_pagamento/ganho/perda), valor_venda, codigo_turma, data_ganho, motivo_ganho' } }, required: ['acao'] } },
 ]
 
 function aplicaFiltros(q: any, filtros: any[]) {
@@ -55,6 +59,21 @@ export async function runTool(name: string, input: any, origin?: string): Promis
   const { desde, ate } = input || {}
 
   if (name === 'esquema') return { esquema: ESQUEMA }
+
+  if (name === 'propor_despesas') {
+    const itens = (input?.despesas || []).map((d: any) => ({
+      descricao: String(d.descricao || '').slice(0, 200), valor: Math.round((Number(d.valor) || 0) * 100) / 100,
+      categoria: CATS.has(d.categoria) ? d.categoria : 'outro', data: d.data || HOJE(),
+      status: d.status === 'previsto' ? 'previsto' : 'realizado', conta: d.conta || 'Conta Bancária PJ',
+    })).filter((d: any) => d.valor > 0 && d.descricao)
+    if (!itens.length) return { erro: 'informe pelo menos uma despesa com descrição e valor' }
+    return { proposta: { tipo: 'despesas', itens }, n: itens.length, total: itens.reduce((s: number, d: any) => s + d.valor, 0) }
+  }
+  if (name === 'propor_lead') {
+    const acao = input?.acao === 'criar' ? 'criar' : 'atualizar'
+    if (acao === 'atualizar' && !input?.busca) return { erro: 'pra atualizar, informe o nome do lead em "busca"' }
+    return { proposta: { tipo: 'lead', acao, busca: input?.busca || '', dados: input?.dados || {} } }
+  }
 
   if (name === 'consultar') {
     if (!input?.tabela) return { erro: 'informe a tabela' }

@@ -1,12 +1,36 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 import { supabase } from '@/lib/supabase'
 
 const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
 type Anexo = { tipo: 'image' | 'document'; media_type: string; data: string; nome: string }
-type Msg = { role: 'user' | 'assistant'; content: string; anexos?: Anexo[] }
+type Msg = { role: 'user' | 'assistant'; content: string; anexos?: Anexo[]; pendencias?: any[] }
 const btnTop: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 8, padding: '5px 10px', fontSize: 12, color: 'var(--text-2)', cursor: 'pointer', whiteSpace: 'nowrap' }
+const brl = (v: number) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+// Renderiza a resposta do agente em markdown (tabelas, negrito, listas)
+function Md({ children }: { children: string }) {
+  return (
+    <ReactMarkdown remarkPlugins={[remarkGfm]} components={{
+      p: (p: any) => <p style={{ margin: '6px 0' }}>{p.children}</p>,
+      table: (p: any) => <div style={{ overflowX: 'auto', margin: '8px 0' }}><table style={{ borderCollapse: 'collapse', width: '100%', fontSize: 13 }}>{p.children}</table></div>,
+      th: (p: any) => <th style={{ border: '1px solid var(--border)', padding: '6px 10px', textAlign: 'left', background: 'var(--surface-2)', fontWeight: 700, whiteSpace: 'nowrap' }}>{p.children}</th>,
+      td: (p: any) => <td style={{ border: '1px solid var(--border)', padding: '6px 10px' }}>{p.children}</td>,
+      ul: (p: any) => <ul style={{ margin: '6px 0', paddingLeft: 20 }}>{p.children}</ul>,
+      ol: (p: any) => <ol style={{ margin: '6px 0', paddingLeft: 20 }}>{p.children}</ol>,
+      li: (p: any) => <li style={{ margin: '2px 0' }}>{p.children}</li>,
+      h1: (p: any) => <div style={{ fontSize: 17, fontWeight: 700, margin: '10px 0 4px' }}>{p.children}</div>,
+      h2: (p: any) => <div style={{ fontSize: 16, fontWeight: 700, margin: '10px 0 4px' }}>{p.children}</div>,
+      h3: (p: any) => <div style={{ fontSize: 14, fontWeight: 700, margin: '8px 0 4px' }}>{p.children}</div>,
+      code: (p: any) => <code style={{ background: 'var(--surface-2)', borderRadius: 4, padding: '1px 5px', fontSize: 12.5 }}>{p.children}</code>,
+      a: (p: any) => <a href={p.href} target="_blank" rel="noreferrer" style={{ color: 'var(--accent-soft)' }}>{p.children}</a>,
+      hr: () => <hr style={{ border: 'none', borderTop: '1px solid var(--border)', margin: '10px 0' }} />,
+    }}>{children}</ReactMarkdown>
+  )
+}
 const sugestoes = [
   'Quantas vendas e quanto faturamos nos últimos 30 dias?',
   'De onde vêm nossas vendas (por origem)?',
@@ -26,6 +50,7 @@ export default function AgenteInterno() {
   const [aviso, setAviso] = useState('')
   const [pendentes, setPendentes] = useState<Anexo[]>([])
   const [anexando, setAnexando] = useState(false)
+  const [feitas, setFeitas] = useState<Record<string, string>>({})
   const fimRef = useRef<HTMLDivElement>(null)
   const arqRef = useRef<HTMLInputElement>(null)
   const audRef = useRef<HTMLInputElement>(null)
@@ -70,10 +95,20 @@ export default function AgenteInterno() {
     setMsgs(novo); setInput(''); setPendentes([]); setPensando(true)
     try {
       const j = await fetch('/api/agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, mensagens: novo }) }).then(r => r.json())
-      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `⚠️ ${j.error || 'erro'}` }])
+      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `⚠️ ${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias : undefined }])
     } catch {
       setMsgs(m => [...m, { role: 'assistant', content: '⚠️ falha de conexão' }])
     } finally { setPensando(false) }
+  }
+
+  async function confirmar(pend: any) {
+    setFeitas(f => ({ ...f, [pend.id]: '...' }))
+    const j = await fetch('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
+    if (j.ok) {
+      const r = j.resultado || {}
+      const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
+      setFeitas(f => ({ ...f, [pend.id]: '✅ ' + txt }))
+    } else setFeitas(f => ({ ...f, [pend.id]: '⚠️ ' + (j.error || 'falhou') }))
   }
 
   async function salvar() {
@@ -146,13 +181,35 @@ export default function AgenteInterno() {
           </div>
         )}
         {msgs.map((m, i) => (
-          <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
-            <div style={{ maxWidth: '85%', whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.5, padding: '10px 14px', borderRadius: 12, background: m.role === 'user' ? 'var(--accent)' : 'var(--surface)', color: m.role === 'user' ? 'var(--on-accent)' : 'var(--text)', border: m.role === 'user' ? 'none' : '1px solid var(--border)' }}>
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+            <div style={{ maxWidth: m.role === 'user' ? '85%' : '96%', fontSize: 14, lineHeight: 1.5, padding: '10px 14px', borderRadius: 12, background: m.role === 'user' ? 'var(--accent)' : 'var(--surface)', color: m.role === 'user' ? 'var(--on-accent)' : 'var(--text)', border: m.role === 'user' ? 'none' : '1px solid var(--border)', whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal' }}>
               {(m.anexos || []).map((a, j) => a.tipo === 'image'
                 ? <img key={j} src={`data:${a.media_type};base64,${a.data}`} style={{ maxWidth: 220, borderRadius: 8, display: 'block', marginBottom: 6 }} />
                 : <div key={j} style={{ fontSize: 12, opacity: 0.9, marginBottom: 6 }}>📎 {a.nome}</div>)}
-              {m.content}
+              {m.role === 'assistant' ? <Md>{m.content}</Md> : m.content}
             </div>
+            {(m.pendencias || []).map((p: any) => (
+              <div key={p.id} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
+                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
+                </div>
+                {p.tipo === 'despesas' ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
+                    {p.itens.map((d: any, k: number) => <div key={k} style={{ fontSize: 13, color: 'var(--text-2)' }}>• {d.descricao} — <b>{brl(d.valor)}</b> <span style={{ color: 'var(--text-faint)', fontSize: 11 }}>({d.categoria} · {d.status} · {d.data} · {d.conta})</span></div>)}
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10 }}>{p.busca ? <>Lead: <b>{p.busca}</b><br /></> : null}{Object.entries(p.dados || {}).map(([k, v]) => <span key={k} style={{ marginRight: 10 }}>{k}: <b>{String(v)}</b></span>)}</div>
+                )}
+                {feitas[p.id] ? (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: feitas[p.id].startsWith('⚠️') ? 'var(--red)' : 'var(--green)' }}>{feitas[p.id]}</div>
+                ) : (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button onClick={() => confirmar(p)} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>✅ Confirmar</button>
+                    <button onClick={() => setFeitas(f => ({ ...f, [p.id]: '✖ descartado' }))} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}>Descartar</button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ))}
         {pensando && <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '4px 6px' }}>consultando os dados…</div>}
@@ -174,9 +231,9 @@ export default function AgenteInterno() {
         <input ref={audRef} type="file" accept="audio/*" onChange={onAudio} style={{ display: 'none' }} />
         <button onClick={() => arqRef.current?.click()} disabled={anexando} title="Anexar imagem ou PDF (ex: extrato)" style={{ ...btnTop, padding: '9px 11px', fontSize: 16 }}>📎</button>
         <button onClick={() => audRef.current?.click()} disabled={anexando} title="Enviar áudio (transcreve)" style={{ ...btnTop, padding: '9px 11px', fontSize: 16 }}>🎤</button>
-        <input value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') enviar() }}
-          placeholder={anexando ? 'processando anexo…' : 'Pergunte ou anexe um extrato...'} disabled={pensando}
-          style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '11px 14px', fontSize: 14, color: 'var(--text)', outline: 'none' }} />
+        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }} rows={2}
+          placeholder={anexando ? 'processando anexo…' : 'Pergunte ou anexe um extrato...  (Enter envia · Shift+Enter quebra linha)'} disabled={pensando}
+          style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '11px 14px', fontSize: 14, color: 'var(--text)', outline: 'none', resize: 'vertical', minHeight: 48, maxHeight: 200, fontFamily: 'inherit', lineHeight: 1.4 }} />
         <button onClick={() => enviar()} disabled={pensando || (!input.trim() && !pendentes.length)}
           style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 10, padding: '0 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: pensando || (!input.trim() && !pendentes.length) ? 0.6 : 1 }}>Enviar</button>
       </div>
