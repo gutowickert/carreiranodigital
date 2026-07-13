@@ -459,9 +459,12 @@ export default function CRM() {
                           onDragEnd={() => { dragLeadRef.current = null; setColunaAlvo(null) }}
                           onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
                           style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle' }} />}{lead.nome}</div>
-                            <div style={{ fontSize: 9, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 600 }}>D{dia}</div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+                              {(lead as any).temperatura && (() => { const t = (lead as any).temperatura; const tc = t === 'quente' ? { c: '#ef4444', e: '🔥' } : t === 'morno' ? { c: 'var(--amber)', e: '🌡️' } : { c: '#60a5fa', e: '❄️' }; return <span title={`Temperatura: ${t}`} style={{ fontSize: 9, fontWeight: 700, color: tc.c, border: `1px solid ${tc.c}`, borderRadius: 20, padding: '1px 6px', whiteSpace: 'nowrap' }}>{tc.e} {t}</span> })()}
+                              <div style={{ fontSize: 9, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 600 }}>D{dia}</div>
+                            </div>
                           </div>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
                           {lead.turmas && (

@@ -4,6 +4,7 @@ import { aplicarRateio } from '@/lib/rateio'
 import { sendLead } from '@/lib/capi'
 import { enviarPush } from '@/lib/push'
 import { lidDoTelefone } from '@/lib/zapi'
+import { classificarTemperatura } from '@/lib/temperatura'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -267,6 +268,10 @@ export async function POST(req: NextRequest) {
         })
       } catch { /* ignore */ }
     }
+
+    // Atualiza a temperatura do lead (quente/morno/frio) após mensagem do CLIENTE
+    const leadTemp = conversa.lead_id || (leadVinc ? leadVinc.id : null)
+    if (!fromMe && !ehGrupo && leadTemp) { await classificarTemperatura(leadTemp, conversa.id) }
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {
