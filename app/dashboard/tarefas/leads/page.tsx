@@ -223,7 +223,7 @@ export default function TarefasLeads() {
             {t.leads && (
               <div style={{ fontSize: 11, color: 'var(--accent-soft)', marginTop: 6 }}>
                 Lead: <Link href={`/dashboard/crm?lead=${t.leads.id}`} style={{ color: 'var(--text)', fontWeight: 700, textDecoration: 'underline' }}>{t.leads.nome}</Link>
-                {t.leads.whatsapp && <span> · {t.leads.whatsapp}</span>}
+                {t.leads.whatsapp && (() => { const n = t.leads.whatsapp.replace(/\D/g, ''); const wa = n ? `https://wa.me/${n.startsWith('55') ? n : '55' + n}` : null; return wa ? <a href={wa} target="_blank" rel="noreferrer" style={{ marginLeft: 6, color: 'var(--green-strong)', textDecoration: 'none', fontWeight: 600 }}>📞 {t.leads.whatsapp}</a> : <span> · {t.leads.whatsapp}</span> })()}
                 {t.leads.turmas?.codigo && <span style={{ marginLeft: 6, padding: '1px 6px', background: 'var(--accent-bg)', borderRadius: 4 }}>{t.leads.turmas.codigo}</span>}
               </div>
             )}
