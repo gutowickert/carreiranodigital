@@ -51,6 +51,7 @@ export default function AgenteInterno() {
   const [pendentes, setPendentes] = useState<Anexo[]>([])
   const [anexando, setAnexando] = useState(false)
   const [feitas, setFeitas] = useState<Record<string, string>>({})
+  const [modo, setModo] = useState<'agente' | 'simular'>('agente')
   const fimRef = useRef<HTMLDivElement>(null)
   const arqRef = useRef<HTMLInputElement>(null)
   const audRef = useRef<HTMLInputElement>(null)
@@ -149,13 +150,19 @@ export default function AgenteInterno() {
           <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🧠 Agente Interno</h1>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {aviso && <span style={{ fontSize: 12, color: 'var(--green)' }}>{aviso}</span>}
-            <button onClick={() => { setMsgs([]); setMostrarSalvas(false) }} style={btnTop}>➕ Nova</button>
-            <button onClick={salvar} style={btnTop}>💾 Salvar</button>
-            <button onClick={toggleSalvas} style={btnTop}>📁 Salvas</button>
+            <button onClick={() => setModo(m => m === 'agente' ? 'simular' : 'agente')} style={{ ...btnTop, borderColor: 'var(--accent)', color: 'var(--accent-soft)', fontWeight: 600 }}>{modo === 'agente' ? '🎭 Simular atendimento' : '🧠 Voltar ao agente'}</button>
+            {modo === 'agente' && <>
+              <button onClick={() => { setMsgs([]); setMostrarSalvas(false) }} style={btnTop}>➕ Nova</button>
+              <button onClick={salvar} style={btnTop}>💾 Salvar</button>
+              <button onClick={toggleSalvas} style={btnTop}>📁 Salvas</button>
+            </>}
           </div>
         </div>
-        <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 0' }}>Pergunte qualquer coisa sobre a empresa — vendas, marketing, financeiro, turmas, NPS. Consulta os dados reais. (só leitura)</p>
+        <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '2px 0 0' }}>{modo === 'agente' ? 'Pergunte qualquer coisa sobre a empresa — consulta os dados reais. (só leitura)' : '🎭 Você faz de LEAD, a IA de vendas conduz o atendimento. Teste o fluxo até o fechamento.'}</p>
       </div>
+
+      {modo === 'simular' && <SimAtendimento />}
+      {modo === 'agente' && (<>
 
       {mostrarSalvas && (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 12, marginBottom: 12, maxHeight: 240, overflowY: 'auto' }}>
@@ -237,6 +244,62 @@ export default function AgenteInterno() {
         <button onClick={() => enviar()} disabled={pensando || (!input.trim() && !pendentes.length)}
           style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 10, padding: '0 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: pensando || (!input.trim() && !pendentes.length) ? 0.6 : 1 }}>Enviar</button>
       </div>
+      </>)}
     </div>
+  )
+}
+
+const sel: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 10px', fontSize: 13, color: 'var(--text)', outline: 'none' }
+
+// Simulação de conversa multi-turno: você faz de LEAD, a IA de vendas conduz.
+function SimAtendimento() {
+  const [produto, setProduto] = useState('')
+  const [cidade, setCidade] = useState('')
+  const [msgs, setMsgs] = useState<{ de: 'lead' | 'vendedor'; texto: string; meta?: any }[]>([])
+  const [input, setInput] = useState('')
+  const [pensando, setPensando] = useState(false)
+  const fim = useRef<HTMLDivElement>(null)
+  useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, pensando])
+
+  async function enviar() {
+    const t = input.trim(); if (!t || pensando) return
+    const dialog = [...msgs, { de: 'lead' as const, texto: t }]
+    setMsgs(dialog); setInput(''); setPensando(true)
+    try {
+      const j = await fetch('/api/atendimento/simular-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dialog: dialog.map(m => ({ de: m.de, texto: m.texto })), produto, cidade }) }).then(r => r.json())
+      setMsgs(m => [...m, j.ok ? { de: 'vendedor', texto: j.resposta, meta: j.meta } : { de: 'vendedor', texto: '⚠️ ' + j.error }])
+    } catch { setMsgs(m => [...m, { de: 'vendedor', texto: '⚠️ falha de conexão' }]) }
+    finally { setPensando(false) }
+  }
+
+  return (
+    <>
+      <div style={{ display: 'flex', gap: 8, padding: '8px 0', flexWrap: 'wrap', alignItems: 'center' }}>
+        <select value={produto} onChange={e => setProduto(e.target.value)} style={sel}><option value="">produto (opcional)</option><option value="FC">Formação Completa</option><option value="ANL">Anúncios Locais</option></select>
+        <input value={cidade} onChange={e => setCidade(e.target.value)} placeholder="cidade (opcional)" style={{ ...sel, width: 150 }} />
+        <button onClick={() => setMsgs([])} style={btnTop}>♻️ Reiniciar</button>
+        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>Digite como se fosse o cliente.</span>
+      </div>
+      <div style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 10, paddingBottom: 12 }}>
+        {msgs.length === 0 && <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 8 }}>Comece mandando a 1ª mensagem como o lead (ex.: "Oi, vi o anúncio de vocês, como funciona?").</div>}
+        {msgs.map((m, i) => (
+          <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: m.de === 'lead' ? 'flex-end' : 'flex-start' }}>
+            <div style={{ maxWidth: '85%', whiteSpace: 'pre-wrap', fontSize: 14, lineHeight: 1.5, padding: '10px 14px', borderRadius: 12, background: m.de === 'lead' ? 'var(--accent)' : 'var(--surface)', color: m.de === 'lead' ? 'var(--on-accent)' : 'var(--text)', border: m.de === 'lead' ? 'none' : '1px solid var(--border)' }}>
+              {m.de === 'vendedor' && <div style={{ fontSize: 10, color: 'var(--accent-soft)', fontWeight: 700, marginBottom: 3 }}>VENDEDOR IA</div>}
+              {m.texto}
+            </div>
+            {m.meta && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 3 }}>🎯 {m.meta.etapa} · ação: {m.meta.acao}{m.meta.etiqueta?.turma_alvo && m.meta.etiqueta.turma_alvo !== 'indefinido' ? ' · ' + m.meta.etiqueta.turma_alvo : ''}</div>}
+          </div>
+        ))}
+        {pensando && <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>o vendedor está pensando…</div>}
+        <div ref={fim} />
+      </div>
+      <div style={{ display: 'flex', gap: 8, padding: '10px 0 16px', borderTop: '1px solid var(--border)' }}>
+        <textarea value={input} onChange={e => setInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); enviar() } }} rows={2}
+          placeholder="Responda como o cliente..." disabled={pensando}
+          style={{ flex: 1, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: '11px 14px', fontSize: 14, color: 'var(--text)', outline: 'none', resize: 'vertical', minHeight: 48, maxHeight: 160, fontFamily: 'inherit', lineHeight: 1.4 }} />
+        <button onClick={enviar} disabled={pensando || !input.trim()} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 10, padding: '0 20px', fontSize: 14, fontWeight: 600, cursor: 'pointer', opacity: pensando || !input.trim() ? 0.6 : 1 }}>Enviar</button>
+      </div>
+    </>
   )
 }
