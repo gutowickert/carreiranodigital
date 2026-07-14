@@ -32,6 +32,7 @@ const grupos: Grupo[] = [
   {
     titulo: 'Comercial',
     itens: [
+      { nome: '🎯 Atender Agora', href: '/dashboard/atender' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
