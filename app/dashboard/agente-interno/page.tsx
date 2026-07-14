@@ -96,20 +96,20 @@ export default function AgenteInterno() {
     setMsgs(novo); setInput(''); setPendentes([]); setPensando(true)
     try {
       const j = await fetch('/api/agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, mensagens: novo }) }).then(r => r.json())
-      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `⚠️ ${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias : undefined }])
+      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `⚠️ ${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias.map((p: any, i: number) => ({ ...p, _uid: `${m.length}-${i}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}` })) : undefined }])
     } catch {
       setMsgs(m => [...m, { role: 'assistant', content: '⚠️ falha de conexão' }])
     } finally { setPensando(false) }
   }
 
   async function confirmar(pend: any) {
-    setFeitas(f => ({ ...f, [pend.id]: '...' }))
+    setFeitas(f => ({ ...f, [pend._uid]: '...' }))
     const j = await fetch('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
     if (j.ok) {
       const r = j.resultado || {}
       const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
-      setFeitas(f => ({ ...f, [pend.id]: '✅ ' + txt }))
-    } else setFeitas(f => ({ ...f, [pend.id]: '⚠️ ' + (j.error || 'falhou') }))
+      setFeitas(f => ({ ...f, [pend._uid]: '✅ ' + txt }))
+    } else setFeitas(f => ({ ...f, [pend._uid]: '⚠️ ' + (j.error || 'falhou') }))
   }
 
   async function salvar() {
@@ -196,7 +196,7 @@ export default function AgenteInterno() {
               {m.role === 'assistant' ? <Md>{m.content}</Md> : m.content}
             </div>
             {(m.pendencias || []).map((p: any) => (
-              <div key={p.id} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
+              <div key={p._uid} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
                   {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover ajuste da IA de vendas' : '🧩 Novo ajuste no treinamento da IA') : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
                 </div>
@@ -209,12 +209,12 @@ export default function AgenteInterno() {
                 ) : (
                   <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10 }}>{p.busca ? <>Lead: <b>{p.busca}</b><br /></> : null}{Object.entries(p.dados || {}).map(([k, v]) => <span key={k} style={{ marginRight: 10 }}>{k}: <b>{String(v)}</b></span>)}</div>
                 )}
-                {feitas[p.id] ? (
-                  <div style={{ fontSize: 13, fontWeight: 600, color: feitas[p.id].startsWith('⚠️') ? 'var(--red)' : 'var(--green)' }}>{feitas[p.id]}</div>
+                {feitas[p._uid] ? (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: feitas[p._uid].startsWith('⚠️') ? 'var(--red)' : 'var(--green)' }}>{feitas[p._uid]}</div>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button onClick={() => confirmar(p)} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>✅ Confirmar</button>
-                    <button onClick={() => setFeitas(f => ({ ...f, [p.id]: '✖ descartado' }))} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}>Descartar</button>
+                    <button onClick={() => setFeitas(f => ({ ...f, [p._uid]: '✖ descartado' }))} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}>Descartar</button>
                   </div>
                 )}
               </div>
