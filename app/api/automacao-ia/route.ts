@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getConfigIA, setConfigIA } from '@/lib/ia-config'
 
 // Config da automação (só Guto/Nando/Rick).
-const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
 
 export async function GET(req: NextRequest) {

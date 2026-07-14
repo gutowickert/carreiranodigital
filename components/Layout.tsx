@@ -17,7 +17,7 @@ type Grupo = { titulo: string; itens: Item[] }
 type Perfil = { id: string; nome: string; email: string; papel: string; setor: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
 // Agente Interno: só estes 3 (Guto, Nando, Rick), mesmo os outros sendo admin.
-const AGENTE_PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+const AGENTE_PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 
 const grupos: Grupo[] = [
   {

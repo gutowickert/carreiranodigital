@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
-import { getProximaTarefa } from '@/lib/sequencia-tarefas'
 
 type TarefaLead = {
   id: string
@@ -128,7 +127,7 @@ export default function TarefasLeads() {
     // 2. Verifica se tem próxima tarefa na sequência
     const lead = tarefa.leads
     if (lead && tarefa.tipo) {
-      const proxima = getProximaTarefa(lead.etapa, tarefa.tipo)
+      const proxima = await fetch('/api/tarefas/spec', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etapa: lead.etapa, apos: tarefa.tipo }) }).then(r => r.json()).then(j => j.tarefa).catch(() => null)
       if (proxima) {
         // Calcula vencimento da próxima: data da tarefa concluída + (proxima.diasAposEntrada - diasAposEntrada_atual)
         // Pra simplificar: vence hoje + 1 dia (1 dia depois da atual)

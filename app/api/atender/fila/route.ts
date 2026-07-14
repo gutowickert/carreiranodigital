@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { getFluxo, PRIORIDADE_PADRAO } from '@/lib/fluxo'
 
 export const maxDuration = 60
 
@@ -50,6 +51,7 @@ export async function GET() {
       if (data.length < 1000) break; from += 1000
     }
   }
+  const P = (await getFluxo().then(f => f.prioridade).catch(() => null)) || PRIORIDADE_PADRAO
   const fila: any[] = []
   for (const l of leads) {
     const cs = [...(convDeLead[l.id] || []), ...(convPorTel[suf(l.whatsapp)] || [])]
@@ -66,9 +68,11 @@ export async function GET() {
       produto: familia(l.codigo_turma), cidade: null,
     }
     if (best.dir === 'in') fila.push({ ...item, prioridade: 'quente', ord: best.lastAny })   // respondeu, esperando
-    else if (!hojeC && dSC >= 1 && dSC <= 13) fila.push({ ...item, prioridade: 'followup', ord: -dSC }) // frio a nutrir
+    else if ((P.incluirFaladoHoje || !hojeC) && dSC >= 1 && dSC <= (P.followupDias || 13)) fila.push({ ...item, prioridade: 'followup' }) // frio a nutrir
   }
-  const quentes = fila.filter(f => f.prioridade === 'quente').sort((a, b) => b.ord - a.ord)
-  const followups = fila.filter(f => f.prioridade === 'followup').sort((a, b) => a.dSC > b.dSC ? -1 : 1)
+  // produto prioritário sobe dentro do bloco
+  const prod = (a: any) => (P.produtoPrioritario && a.produto === P.produtoPrioritario) ? 0 : 1
+  const quentes = fila.filter(f => f.prioridade === 'quente').sort((a, b) => prod(a) - prod(b) || (P.ordemQuente === 'esperando' ? a.ord - b.ord : b.ord - a.ord))
+  const followups = fila.filter(f => f.prioridade === 'followup').sort((a, b) => prod(a) - prod(b) || (P.ordemFollowup === 'menos_frio' ? a.dSC - b.dSC : b.dSC - a.dSC))
   return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups] })
 }

@@ -4,7 +4,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 // Controle de Qualidade dos atendimentos da IA (Nando + Guto + Rick).
 //  GET ?email= -> atendimentos da IA (leads atendido_por='ia') + conversa + última revisão + métricas
 //  POST { email, lead_id, nota, status, comentario } -> salva a revisão (webhook_logs origem='qc-ia')
-const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
 const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 

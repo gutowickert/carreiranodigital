@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { getConfigIA } from '@/lib/ia-config'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
-import { getProximaTarefa } from '@/lib/sequencia-tarefas'
+import { gerarProxima } from '@/lib/fluxo'
 
 export const maxDuration = 300
 
@@ -36,10 +36,9 @@ export async function GET(req: NextRequest) {
       const msg = r.sugestao.resposta
       // envia pela via oficial (salva a msg + atualiza conversa)
       const env = await fetch(`${origin}/api/wa/enviar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: lead.whatsapp, leadId: lead.id, texto: msg }) }).then(x => x.json()).catch(() => ({ ok: false }))
-      // conclui a tarefa e cria a próxima do pipeline
+      // conclui a tarefa e cria a próxima do pipeline (lendo o fluxo editável)
       await supabase.from('tarefas_lead').update({ concluida: true, concluida_em: agora, atualizado_em: agora }).eq('id', t.id)
-      const prox = getProximaTarefa(lead.etapa, t.tipo)
-      if (prox) { const v = new Date(); v.setDate(v.getDate() + 1); await supabase.from('tarefas_lead').insert({ lead_id: lead.id, tipo: prox.chave, titulo: `${prox.titulo} — ${lead.nome}`, descricao: prox.descricao, data_vencimento: v.toISOString() }) }
+      await gerarProxima(supabase, lead.id, lead.etapa, t.tipo, lead.nome)
       // log da ação da IA (pra Qualidade IA)
       await supabase.from('webhook_logs').insert({ origem: 'ia-acao', evento: t.tipo, status: 'processado', payload: { lead_id: lead.id, texto: msg, enviado: !!env.ok, etapa: r.sugestao.etapa_funil } })
       if (env.ok) enviados++

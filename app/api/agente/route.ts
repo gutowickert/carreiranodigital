@@ -5,7 +5,7 @@ import { TOOLS, runTool } from '@/lib/agente-tools'
 export const maxDuration = 120
 
 // Agente Interno (só Guto, Nando, Rick). Loop de tool-use sobre os dados, SÓ-LEITURA.
-export const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+export const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 
 const MODELO = 'claude-sonnet-4-6'
 const hoje = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
@@ -31,7 +31,7 @@ CONHECIMENTO DOS CURSOS E DO FLUXO: você tem o material OFICIAL. Pra qualquer p
 
 AJUSTAR A IA DE VENDAS — DUAS GAVETAS (roteie certo, é essencial): toda correção cai em UMA de duas gavetas:
 1) COMUNICAÇÃO (como a IA FALA e DECIDE) → 'propor_regra_ia'. Ex: "não solte preço sem diagnóstico", "seja mais breve", "ofereça ligação quando hesitar", "contorne a objeção X assim", "não ofereça bolsa cedo". É tom, o que dizer, quando ofertar, objeção, regra de decisão.
-2) FLUXO/CADÊNCIA (as ETAPAS e as TAREFAS/follow-ups: número de ligações, quando manda áudio/mensagem, prazo D+N, ordem, adicionar/remover passo) → 'propor_fluxo'. Ex: "na chegada liga 3x não 2", "manda o áudio no D+1", "adiciona um follow-up antes da bolsa", "muda o prazo pra 5 dias".
+2) FLUXO/CADÊNCIA + PRIORIDADE (as ETAPAS e as TAREFAS/follow-ups, E a ordem da fila/lote) → 'propor_fluxo'. Cadência: "na chegada liga 3x não 2", "manda o áudio no D+1", "adiciona um follow-up antes da bolsa", "muda o prazo pra 5 dias". Prioridade (acao editar_prioridade): "quem atender primeiro", "prioriza FC antes de ANL", "inclui os de 14 dias no follow-up", "quente por quem espera há mais tempo".
 COMO ACERTAR A GAVETA: se o pedido fala de ETAPA/TAREFA/LIGAÇÃO-ÁUDIO-MENSAGEM-COMO-PASSO/PRAZO/ORDEM → é FLUXO. Se fala de TOM/O-QUE-DIZER/QUANDO-OFERTAR/OBJEÇÃO → é COMUNICAÇÃO. Na dúvida, pergunte OU proponha nas duas.
 REGRA DE OURO: antes de propor mudança de fluxo, SEMPRE chame 'fluxo_comercial' pra pegar os HANDLES exatos [etapa: x] [tarefa: y] e referencie eles. Você NÃO muda nada sozinho — tudo vira cartão de confirmação. NUNCA diga que "já ajustei" sem o Confirmar. Pra ver regras: 'listar_regras_ia'; pra ver o fluxo: 'fluxo_comercial'. Pra TESTAR o efeito, use 'simular_atendimento'.
 

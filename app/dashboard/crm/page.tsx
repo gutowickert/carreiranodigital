@@ -2,7 +2,6 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
-import { getPrimeiraTarefa, SEQUENCIA_POR_ETAPA } from '@/lib/sequencia-tarefas'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 type Lead = {
@@ -226,7 +225,7 @@ export default function CRM() {
 
   // Cria a PRIMEIRA tarefa da sequência de uma etapa
   async function criarPrimeiraTarefaDaEtapa(leadId: string, vendedorId: string | null, etapa: string, dataReferencia: Date, leadNome: string) {
-    const primeira = getPrimeiraTarefa(etapa)
+    const primeira = await fetch('/api/tarefas/spec', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etapa }) }).then(r => r.json()).then(j => j.tarefa).catch(() => null)
     if (!primeira) return
 
     // Data de vencimento = data de referência + N dias
@@ -330,8 +329,8 @@ export default function CRM() {
         novaEtapa === 'agendado' ? 'Retomar contato com o lead (agendado).' : 'Lead para a próxima turma. Retomar contato.',
         extras.dataAgendada
       )
-    } else if (SEQUENCIA_POR_ETAPA[novaEtapa]?.length > 0) {
-      // Tarefa automática conforme sequência da etapa
+    } else {
+      // Tarefa automática conforme a cadência do fluxo (editável no Agente Interno)
       await criarPrimeiraTarefaDaEtapa(lead.id, lead.vendedor_id, novaEtapa, agora, lead.nome)
     }
 

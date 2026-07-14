@@ -4,7 +4,7 @@ import { getFluxo, setFluxo, aplicarPatch } from '@/lib/fluxo'
 
 // Executa uma AÇÃO proposta pelo Agente Interno, DEPOIS que o usuário confirma no cartão.
 //  POST { email, pendencia:{tipo, ...} }
-const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const mesRef = (d: string) => (d || '').slice(0, 8) + '01'
 
 export async function POST(req: NextRequest) {

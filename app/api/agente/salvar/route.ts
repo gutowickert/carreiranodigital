@@ -7,7 +7,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 //  GET  ?email=            -> lista as salvas do usuário
 //  GET  ?id=               -> abre uma (com as mensagens)
 //  DELETE ?id=             -> apaga
-const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com']
+const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
 
 export async function POST(req: NextRequest) {
