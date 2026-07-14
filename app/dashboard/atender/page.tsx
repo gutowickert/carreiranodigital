@@ -17,6 +17,26 @@ function Tag({ p }: { p: 'quente' | 'followup' }) {
   return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: p === 'quente' ? 'rgba(239,68,68,.15)' : 'rgba(34,197,94,.15)', color: p === 'quente' ? '#ef4444' : '#16a34a' }}>{p === 'quente' ? '🔥 respondeu' : '🌱 follow-up'}</span>
 }
 
+type Msg = { de: string; texto: string; em: string }
+async function fetchConversa(conversaId: string): Promise<Msg[]> {
+  const j = await fetch(`/api/atender/conversa?conversaId=${conversaId}`).then(r => r.json()).catch(() => null)
+  return j?.ok ? j.msgs : []
+}
+function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
+  if (carregando) return <div style={{ padding: 14, fontSize: 12, color: 'var(--text-faint)' }}>carregando conversa…</div>
+  if (!msgs.length) return <div style={{ padding: 14, fontSize: 12, color: 'var(--text-faint)' }}>sem histórico de conversa.</div>
+  return (
+    <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: 12, background: 'var(--surface-2)', borderRadius: 10 }}>
+      {msgs.map((m, i) => (
+        <div key={i} style={{ alignSelf: m.de === 'cliente' ? 'flex-start' : 'flex-end', maxWidth: '80%', background: m.de === 'cliente' ? 'var(--surface)' : 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 11px', fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>{m.de === 'cliente' ? '👤 cliente' : '💚 nós'}</div>
+          {m.texto}
+        </div>
+      ))}
+    </div>
+  )
+}
+
 export default function AtenderPage() {
   const [email, setEmail] = useState('')
   const [fila, setFila] = useState<Item[]>([])
@@ -81,11 +101,14 @@ function Agora({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => 
   const [enviando, setEnviando] = useState(false)
   const [feitos, setFeitos] = useState(0)
   const [erro, setErro] = useState('')
+  const [msgs, setMsgs] = useState<Msg[]>([])
+  const [carregandoConv, setCarregandoConv] = useState(false)
   const item = fila[idx]
 
   useEffect(() => {
     if (!item) return
-    setSug(null); setTexto(''); setErro(''); setPensando(true)
+    setSug(null); setTexto(''); setErro(''); setPensando(true); setMsgs([]); setCarregandoConv(true)
+    fetchConversa(item.conversaId).then(m => { setMsgs(m); setCarregandoConv(false) })
     sugerir(item).then(s => { setSug(s); setTexto(s?.resposta || ''); setPensando(false) })
   }, [idx, item?.leadId])
 
@@ -109,9 +132,12 @@ function Agora({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => 
           <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{item.nome}</span>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{item.etapa} · {item.produto || '—'} · {item.cidade || 'cidade ?'} · {item.dSC}d</span>
         </div>
-        {item.snippet && <div style={{ marginTop: 12, padding: 10, background: 'var(--surface-2)', borderRadius: 8, fontSize: 13, color: 'var(--text-2)' }}><span style={{ color: 'var(--text-faint)', fontSize: 11 }}>última mensagem:</span><br />{item.snippet}</div>}
+        <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)', marginBottom: 6 }}>🧵 CONVERSA</div>
+        <Thread msgs={msgs} carregando={carregandoConv} />
 
-        <div style={{ marginTop: 16, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)' }}>💬 SUGESTÃO DA IA {pensando && '· pensando…'}</div>
+        {sug && (sug.situacao || (sug.objecao && sug.objecao !== 'nenhuma')) && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-2)', padding: '8px 11px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.etapa_funil ? ` · ${sug.etapa_funil}` : ''}{sug.acao_sugerida ? ` · ação: ${sug.acao_sugerida}` : ''}</div>}
+
+        <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)' }}>💬 SUGESTÃO DA IA — revise e aprove {pensando && '· pensando…'}</div>
         {pensando ? <div style={{ ...area, color: 'var(--text-faint)', display: 'flex', alignItems: 'center' }}>montando a melhor resposta…</div>
           : <textarea value={texto} onChange={e => setTexto(e.target.value)} style={{ ...area, marginTop: 6 }} />}
         {sug?.baseado_em && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>base: {sug.baseado_em}</div>}
@@ -135,10 +161,13 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
   const [pensando, setPensando] = useState(false)
   const [enviando, setEnviando] = useState(false)
   const [feito, setFeito] = useState<Record<string, boolean>>({})
+  const [msgs, setMsgs] = useState<Msg[]>([])
+  const [carregandoConv, setCarregandoConv] = useState(false)
 
   useEffect(() => {
     if (!sel) return
-    setSug(null); setTexto(''); setPensando(true)
+    setSug(null); setTexto(''); setPensando(true); setMsgs([]); setCarregandoConv(true)
+    fetchConversa(sel.conversaId).then(m => { setMsgs(m); setCarregandoConv(false) })
     sugerir(sel).then(s => { setSug(s); setTexto(s?.resposta || ''); setPensando(false) })
   }, [sel?.leadId])
 
@@ -154,9 +183,9 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
       </div>
       <div style={{ ...card, padding: 20 }}>
         {!sel ? <div style={{ color: 'var(--text-faint)' }}>Escolhe um lead na lista.</div> : <>
-          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{sel.nome} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-faint)' }}>· {sel.etapa} · {sel.produto || '—'}</span></div>
-          {sel.snippet && <div style={{ marginTop: 10, padding: 10, background: 'var(--surface-2)', borderRadius: 8, fontSize: 13, color: 'var(--text-2)' }}>{sel.snippet}</div>}
-          {sug && (sug.situacao || sug.objecao) && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 10 }}>🤖 {sug.situacao} {sug.objecao && sug.objecao !== 'nenhuma' ? `· objeção: ${sug.objecao}` : ''} {sug.etapa_funil ? `· ${sug.etapa_funil}` : ''}</div>}
+          <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{sel.nome} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-faint)' }}>· {sel.etapa} · {sel.produto || '—'} · {sel.dSC}d</span></div>
+          <div style={{ marginTop: 10 }}><Thread msgs={msgs} carregando={carregandoConv} /></div>
+          {sug && (sug.situacao || (sug.objecao && sug.objecao !== 'nenhuma')) && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 10, padding: '8px 11px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura:</b> {sug.situacao} {sug.objecao && sug.objecao !== 'nenhuma' ? `· objeção: ${sug.objecao}` : ''} {sug.etapa_funil ? `· ${sug.etapa_funil}` : ''}</div>}
           {pensando ? <div style={{ ...area, marginTop: 10, color: 'var(--text-faint)' }}>pensando…</div>
             : <textarea value={texto} onChange={e => setTexto(e.target.value)} style={{ ...area, marginTop: 10 }} />}
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
