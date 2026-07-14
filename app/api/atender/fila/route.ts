@@ -34,17 +34,18 @@ export async function GET() {
   const alvo = new Set<string>()
   for (const l of leads) { (convDeLead[l.id] || []).forEach(id => alvo.add(id)); (convPorTel[suf(l.whatsapp)] || []).forEach(id => alvo.add(id)) }
   const ids = [...alvo]
-  const perConv: Record<string, { lastAny: number; lastIn: number; dir: string; texto: string }> = {}
+  const perConv: Record<string, { lastAny: number; lastIn: number; dir: string; texto: string; textoCliente: string }> = {}
   for (let i = 0; i < ids.length; i += 100) {
     const chunk = ids.slice(i, i + 100); let from = 0
     for (; ;) {
-      const { data } = await sb.from('wa_mensagens').select('conversa_id,direcao,status,texto,criado_em').in('conversa_id', chunk).range(from, from + 999)
+      const { data } = await sb.from('wa_mensagens').select('conversa_id,direcao,status,texto,tipo,criado_em').in('conversa_id', chunk).range(from, from + 999)
       if (!data?.length) break
       for (const m of data as any[]) {
         const t = +new Date(m.criado_em); const inbound = (m.direcao === 'recebida' || m.status === 'recebida')
-        const o = perConv[m.conversa_id] = perConv[m.conversa_id] || { lastAny: 0, lastIn: 0, dir: 'out', texto: '' }
-        if (t > o.lastAny) { o.lastAny = t; o.dir = inbound ? 'in' : 'out'; o.texto = (m.texto || '').slice(0, 120) }
-        if (inbound && t > o.lastIn) o.lastIn = t
+        const txt = m.texto || (m.tipo === 'audio' ? '🎤 áudio' : m.tipo && m.tipo !== 'texto' ? `📎 ${m.tipo}` : '')
+        const o = perConv[m.conversa_id] = perConv[m.conversa_id] || { lastAny: 0, lastIn: 0, dir: 'out', texto: '', textoCliente: '' }
+        if (t > o.lastAny) { o.lastAny = t; o.dir = inbound ? 'in' : 'out'; o.texto = txt.slice(0, 160) }
+        if (inbound && t > o.lastIn) { o.lastIn = t; o.textoCliente = txt.slice(0, 220) }
       }
       if (data.length < 1000) break; from += 1000
     }
@@ -61,7 +62,7 @@ export async function GET() {
     const item = {
       leadId: l.id, nome: l.nome, etapa: l.etapa,
       conversaId: bestConv, telefone: conv.telefone || l.whatsapp, chatLid: conv.chat_lid || null,
-      snippet: best.texto || conv.ultima_msg || '', dSC,
+      snippet: best.texto || conv.ultima_msg || '', ultimaCliente: best.textoCliente || '', dSC,
       produto: familia(l.codigo_turma), cidade: null,
     }
     if (best.dir === 'in') fila.push({ ...item, prioridade: 'quente', ord: best.lastAny })   // respondeu, esperando

@@ -5,9 +5,9 @@ import { supabase } from '@/lib/supabase'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
-  snippet: string; dSC: number; produto: string; cidade: string | null; prioridade: 'quente' | 'followup'
+  snippet: string; ultimaCliente: string; dSC: number; produto: string; cidade: string | null; prioridade: 'quente' | 'followup'
 }
-type Sug = { resposta: string; situacao?: string; objecao?: string; etapa_funil?: string; baseado_em?: string; acao_sugerida?: string }
+type Sug = { resposta: string; situacao?: string; objecao?: string; etapa_funil?: string; baseado_em?: string; acao_sugerida?: string; proximo_passo?: string }
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const area: React.CSSProperties = { width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 12, fontSize: 14, color: 'var(--text)', outline: 'none', resize: 'vertical', minHeight: 90, lineHeight: 1.5, fontFamily: 'inherit' }
@@ -15,6 +15,20 @@ const btn = (bg: string): React.CSSProperties => ({ background: bg, color: '#fff
 
 function Tag({ p }: { p: 'quente' | 'followup' }) {
   return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: p === 'quente' ? 'rgba(239,68,68,.15)' : 'rgba(34,197,94,.15)', color: p === 'quente' ? '#ef4444' : '#16a34a' }}>{p === 'quente' ? '🔥 respondeu' : '🌱 follow-up'}</span>
+}
+
+// Resumo pra decidir rápido: última fala do CLIENTE + leitura da IA (situação/objeção/próximo passo)
+function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      {item.ultimaCliente
+        ? <div style={{ fontSize: 13.5, color: 'var(--text)', padding: '9px 12px', background: 'rgba(239,68,68,.08)', borderRadius: 8, borderLeft: '3px solid #ef4444' }}>👤 <b>Cliente:</b> “{item.ultimaCliente}”</div>
+        : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>o cliente ainda não respondeu — este é um follow-up de reativação</div>}
+      {sug?.situacao
+        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Resumo:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.proximo_passo ? ` · próximo: ${sug.proximo_passo}` : ''}</div>
+        : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px' }}>montando o resumo…</div>}
+    </div>
+  )
 }
 
 type Msg = { de: string; texto: string; em: string }
@@ -135,10 +149,12 @@ function Agora({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => 
           <span style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{item.nome}</span>
           <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>{item.etapa} · {item.produto || '—'} · {item.cidade || 'cidade ?'} · {item.dSC}d</span>
         </div>
-        <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)', marginBottom: 6 }}>🧵 CONVERSA</div>
-        <Thread msgs={msgs} carregando={carregandoConv} />
+        <div style={{ marginTop: 14 }}><Resumo item={item} sug={sug} /></div>
 
-        {sug && (sug.situacao || (sug.objecao && sug.objecao !== 'nenhuma')) && <div style={{ marginTop: 12, fontSize: 12, color: 'var(--text-2)', padding: '8px 11px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.etapa_funil ? ` · ${sug.etapa_funil}` : ''}{sug.acao_sugerida ? ` · ação: ${sug.acao_sugerida}` : ''}</div>}
+        <details style={{ marginTop: 12 }}>
+          <summary style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-faint)', cursor: 'pointer' }}>🧵 ver conversa completa</summary>
+          <div style={{ marginTop: 8 }}><Thread msgs={msgs} carregando={carregandoConv} /></div>
+        </details>
 
         <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)' }}>💬 SUGESTÃO DA IA — revise e aprove {pensando && '· pensando…'}</div>
         {pensando ? <div style={{ ...area, color: 'var(--text-faint)', display: 'flex', alignItems: 'center' }}>montando a melhor resposta…</div>
@@ -187,8 +203,11 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
       <div style={{ ...card, padding: 20 }}>
         {!sel ? <div style={{ color: 'var(--text-faint)' }}>Escolhe um lead na lista.</div> : <>
           <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)' }}>{sel.nome} <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-faint)' }}>· {sel.etapa} · {sel.produto || '—'} · {sel.dSC}d</span></div>
-          <div style={{ marginTop: 10 }}><Thread msgs={msgs} carregando={carregandoConv} /></div>
-          {sug && (sug.situacao || (sug.objecao && sug.objecao !== 'nenhuma')) && <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 10, padding: '8px 11px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura:</b> {sug.situacao} {sug.objecao && sug.objecao !== 'nenhuma' ? `· objeção: ${sug.objecao}` : ''} {sug.etapa_funil ? `· ${sug.etapa_funil}` : ''}</div>}
+          <div style={{ marginTop: 10 }}><Resumo item={sel} sug={sug} /></div>
+          <details style={{ marginTop: 10 }}>
+            <summary style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-faint)', cursor: 'pointer' }}>🧵 ver conversa completa</summary>
+            <div style={{ marginTop: 8 }}><Thread msgs={msgs} carregando={carregandoConv} /></div>
+          </details>
           {pensando ? <div style={{ ...area, marginTop: 10, color: 'var(--text-faint)' }}>pensando…</div>
             : <textarea value={texto} onChange={e => setTexto(e.target.value)} style={{ ...area, marginTop: 10 }} />}
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
@@ -201,7 +220,7 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
 }
 
 // linha do lote: contexto (última fala do cliente + thread expansível) + sugestão editável
-function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean }; onTexto: (t: string) => void; onCheck: (v: boolean) => void }) {
+function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onCheck: (v: boolean) => void }) {
   const [aberto, setAberto] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [carr, setCarr] = useState(false)
@@ -211,15 +230,16 @@ function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: 
   }
   return (
     <div style={{ ...card, padding: 12, opacity: l.enviado ? .55 : 1 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
         {l.enviado ? <span>✅</span> : <input type="checkbox" checked={l.ok} onChange={e => onCheck(e.target.checked)} />}
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.item.nome}</span>
         <Tag p={l.item.prioridade} />
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.etapa} · {l.item.produto || '—'} · {l.item.dSC}d</span>
         <button onClick={toggle} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
       </div>
-      {l.item.snippet && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 6, padding: '5px 9px', background: 'var(--surface-2)', borderRadius: 6 }}>👤 {l.item.snippet}</div>}
-      {aberto && <div style={{ marginBottom: 8 }}><Thread msgs={msgs} carregando={carr} /></div>}
+      <Resumo item={l.item} sug={l.sug || null} />
+      {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 resposta:</div>
       <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
     </div>
   )
@@ -227,7 +247,7 @@ function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: 
 
 // ————— ABA LOTE: gera sugestões pra vários, revisa e dispara em massa —————
 function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any> }) {
-  const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean }[]>([])
+  const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
   const [disparando, setDisparando] = useState(false)
   const N = 10
@@ -235,7 +255,7 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
   async function gerar() {
     setGerando(true)
     const alvo = fila.slice(0, N)
-    const res = await Promise.all(alvo.map(async it => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta } }))
+    const res = await Promise.all(alvo.map(async it => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }))
     setLinhas(res)
     setGerando(false)
   }
