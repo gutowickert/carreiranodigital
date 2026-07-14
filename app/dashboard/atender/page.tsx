@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 
 type Item = {
@@ -23,6 +23,8 @@ async function fetchConversa(conversaId: string): Promise<Msg[]> {
   return j?.ok ? j.msgs : []
 }
 function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
+  const fim = useRef<HTMLDivElement>(null)
+  useEffect(() => { fim.current?.scrollIntoView({ block: 'nearest' }) }, [msgs])
   if (carregando) return <div style={{ padding: 14, fontSize: 12, color: 'var(--text-faint)' }}>carregando conversa…</div>
   if (!msgs.length) return <div style={{ padding: 14, fontSize: 12, color: 'var(--text-faint)' }}>sem histórico de conversa.</div>
   return (
@@ -33,6 +35,7 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
           {m.texto}
         </div>
       ))}
+      <div ref={fim} />
     </div>
   )
 }
