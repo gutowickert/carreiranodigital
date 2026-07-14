@@ -5,7 +5,6 @@ import { sendLead } from '@/lib/capi'
 import { enviarPush } from '@/lib/push'
 import { lidDoTelefone } from '@/lib/zapi'
 import { classificarTemperatura } from '@/lib/temperatura'
-import { gerarPrimeira } from '@/lib/fluxo'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -114,8 +113,9 @@ export async function POST(req: NextRequest) {
             etapa_nova: 'aguardando_atendimento',
             observacao: 'Lead criado via botão de WhatsApp',
           })
-          // 1ª tarefa do funil na chegada — lê o fluxo EDITÁVEL (Nando ajusta a cadência no Agente Interno)
-          await gerarPrimeira(supabase, novoLead.id, 'aguardando_atendimento', novoLead.nome || 'Lead', vendedorId)
+          // 1ª tarefa do funil na chegada — SEGURADA até a equipe testar a cadência no simulador.
+          // (quando ligar: descomente o import e a linha; já lê o fluxo EDITÁVEL do Agente Interno)
+          // await gerarPrimeira(supabase, novoLead.id, 'aguardando_atendimento', novoLead.nome || 'Lead', vendedorId)
           // CAPI Lead. Telefone só entra se não for @lid (senão o hash é lixo). Falha não quebra.
           try {
             const capi = await sendLead({

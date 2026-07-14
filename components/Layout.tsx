@@ -24,27 +24,25 @@ const grupos: Grupo[] = [
     titulo: '',
     itens: [
       { nome: 'Painel', href: '/dashboard' },
+    ],
+  },
+  {
+    titulo: 'IA',
+    itens: [
       { nome: '🧠 Agente Interno', href: '/dashboard/agente-interno' },
       { nome: '🔎 Qualidade IA', href: '/dashboard/qualidade-ia' },
       { nome: '🤖 Automação IA', href: '/dashboard/automacao-ia' },
     ],
   },
   {
-    titulo: 'Comercial',
+    titulo: 'CRM',
     itens: [
       { nome: '🎯 Atender Agora', href: '/dashboard/atender' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
-      { nome: 'Config CRM', href: '/dashboard/crm/config' },
-      // ocultos (reativar quando precisar):
-      // { nome: 'CRM Externo', href: '/dashboard/crm-externo' },
-      // { nome: 'Resultados Externo', href: '/dashboard/crm-externo/resultados' },
-      // { nome: 'Vendedores', href: '/dashboard/vendedores' },
-      // { nome: 'Comissões', href: '/dashboard/comissoes' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
-      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
     ],
   },
   {
@@ -64,15 +62,9 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Turmas', href: '/dashboard/turmas' },
       { nome: 'Chamada', href: '/dashboard/chamada' },
-      { nome: 'Salas', href: '/dashboard/salas' },
-      { nome: 'Cidades', href: '/dashboard/cidades' },
       { nome: 'Disparos', href: '/dashboard/disparos' },
       { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
-      // ocultos (reativar quando precisar):
-      // { nome: 'Tarefas', href: '/dashboard/tarefas' },
-      // { nome: 'Minha Agenda', href: '/dashboard/agenda' },
-      // { nome: 'Agenda de Aulas', href: '/dashboard/agenda/aulas' },
     ],
   },
   {
@@ -80,21 +72,31 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
+      { nome: 'Relatório de Custos', href: '/dashboard/financeiro/custos' },
       { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
-      { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
     ],
   },
   {
     titulo: 'Cadastros',
     itens: [
+      { nome: 'Comercial', href: '' },
+      { nome: 'Config CRM', href: '/dashboard/crm/config' },
+      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
+      { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
+      { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
+      { nome: 'Operações', href: '' },
+      { nome: 'Salas', href: '/dashboard/salas' },
+      { nome: 'Cidades', href: '/dashboard/cidades' },
+      { nome: 'Módulos', href: '/dashboard/modulos' },
+      { nome: 'Financeiro', href: '' },
+      { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
+      { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
+      { nome: 'Pessoas', href: '' },
       { nome: 'Alunos', href: '/dashboard/alunos' },
       { nome: 'Professores', href: '/dashboard/professores' },
-      { nome: 'Módulos', href: '/dashboard/modulos' },
       { nome: 'Usuários', href: '/dashboard/usuarios' },
+      { nome: 'Sistema', href: '' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
-      { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
-      { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
       { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
     ],
   },
@@ -117,6 +119,7 @@ function bipe() {
 
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
+  if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
   if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   if (p.papel === 'admin') return true
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
@@ -233,9 +236,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     return <div style={{ minHeight: '100vh', background: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 14 }}>Carregando...</div>
   }
 
+  // remove sub-títulos (href vazio) que ficaram sem nenhum item real logo abaixo
+  const limpaLabels = (itens: Item[]): Item[] => itens.filter((it, i) => it.href || (itens[i + 1] && !!itens[i + 1].href))
   const gruposVisiveis = grupos
-    .map(g => ({ ...g, itens: g.itens.filter(i => itemPermitido(i.href, perfil)) }))
-    .filter(g => g.itens.length > 0)
+    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!))) }))
+    .filter(g => g.itens.some(i => i.href))
 
   const menuVisivel = !isMobile || menuMobileAberto
 
@@ -303,7 +308,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                   )}
                   {(abertos[grupo.titulo] || !grupo.titulo) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                      {grupo.itens.map(m => {
+                      {grupo.itens.map((m, mi) => {
+                        if (!m.href) return (
+                          <div key={'lbl-' + mi} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.06em', padding: '10px 10px 2px 18px', opacity: .65 }}>{m.nome}</div>
+                        )
                         const ativo = pathname === m.href
                         return (
                           <Link key={m.href} href={m.href} className={'navItem' + (ativo ? ' ativo' : '')} style={{
