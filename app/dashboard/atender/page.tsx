@@ -200,6 +200,31 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
   )
 }
 
+// linha do lote: contexto (última fala do cliente + thread expansível) + sugestão editável
+function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean }; onTexto: (t: string) => void; onCheck: (v: boolean) => void }) {
+  const [aberto, setAberto] = useState(false)
+  const [msgs, setMsgs] = useState<Msg[]>([])
+  const [carr, setCarr] = useState(false)
+  async function toggle() {
+    if (!aberto && !msgs.length) { setCarr(true); setMsgs(await fetchConversa(l.item.conversaId)); setCarr(false) }
+    setAberto(a => !a)
+  }
+  return (
+    <div style={{ ...card, padding: 12, opacity: l.enviado ? .55 : 1 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+        {l.enviado ? <span>✅</span> : <input type="checkbox" checked={l.ok} onChange={e => onCheck(e.target.checked)} />}
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.item.nome}</span>
+        <Tag p={l.item.prioridade} />
+        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.etapa} · {l.item.produto || '—'} · {l.item.dSC}d</span>
+        <button onClick={toggle} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
+      </div>
+      {l.item.snippet && <div style={{ fontSize: 12, color: 'var(--text-2)', marginBottom: 6, padding: '5px 9px', background: 'var(--surface-2)', borderRadius: 6 }}>👤 {l.item.snippet}</div>}
+      {aberto && <div style={{ marginBottom: 8 }}><Thread msgs={msgs} carregando={carr} /></div>}
+      <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
+    </div>
+  )
+}
+
 // ————— ABA LOTE: gera sugestões pra vários, revisa e dispara em massa —————
 function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any> }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean }[]>([])
@@ -241,15 +266,9 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {linhas.map((l, k) => (
-              <div key={l.item.leadId} style={{ ...card, padding: 12, opacity: l.enviado ? .55 : 1 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-                  {l.enviado ? <span>✅</span> : <input type="checkbox" checked={l.ok} onChange={e => { const n = [...linhas]; n[k].ok = e.target.checked; setLinhas(n) }} />}
-                  <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.item.nome}</span>
-                  <Tag p={l.item.prioridade} />
-                  <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.etapa} · {l.item.dSC}d</span>
-                </div>
-                <textarea value={l.texto} disabled={l.enviado} onChange={e => { const n = [...linhas]; n[k].texto = e.target.value; setLinhas(n) }} style={{ ...area, minHeight: 60 }} />
-              </div>
+              <LoteRow key={l.item.leadId} l={l}
+                onTexto={t => { const n = [...linhas]; n[k].texto = t; setLinhas(n) }}
+                onCheck={v => { const n = [...linhas]; n[k].ok = v; setLinhas(n) }} />
             ))}
           </div>
         </>
