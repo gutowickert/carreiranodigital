@@ -22,7 +22,7 @@ const familia = (cod: string) => /^fc/i.test(cod || '') ? 'FC' : /^anl/i.test(co
 export async function GET() {
   const now = Date.now()
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,cidade')).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
+  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma')).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
   const lset = new Set(leads.map((l: any) => l.id))
   const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em')
   const convDeLead: Record<string, string[]> = {}, convPorTel: Record<string, string[]> = {}, convById: Record<string, any> = {}
@@ -62,7 +62,7 @@ export async function GET() {
       leadId: l.id, nome: l.nome, etapa: l.etapa,
       conversaId: bestConv, telefone: conv.telefone || l.whatsapp, chatLid: conv.chat_lid || null,
       snippet: best.texto || conv.ultima_msg || '', dSC,
-      produto: familia(l.codigo_turma), cidade: l.cidade || null,
+      produto: familia(l.codigo_turma), cidade: null,
     }
     if (best.dir === 'in') fila.push({ ...item, prioridade: 'quente', ord: best.lastAny })   // respondeu, esperando
     else if (!hojeC && dSC >= 1 && dSC <= 13) fila.push({ ...item, prioridade: 'followup', ord: -dSC }) // frio a nutrir
