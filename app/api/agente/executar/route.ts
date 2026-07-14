@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { getFluxo, setFluxo, aplicarPatch } from '@/lib/fluxo'
 
 // Executa uma AÇÃO proposta pelo Agente Interno, DEPOIS que o usuário confirma no cartão.
 //  POST { email, pendencia:{tipo, ...} }
@@ -63,6 +64,12 @@ export async function POST(req: NextRequest) {
         if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
         resultado = { regra_criada: data.id }
       }
+    }
+    else if (p.tipo === 'fluxo') {
+      const atual = await getFluxo()
+      const { fluxo, resumo } = aplicarPatch(atual, p)
+      await setFluxo(fluxo, email)
+      resultado = { fluxo_atualizado: resumo }
     }
     else return NextResponse.json({ ok: false, error: 'tipo desconhecido' }, { status: 200 })
 

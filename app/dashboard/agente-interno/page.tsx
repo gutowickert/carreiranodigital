@@ -107,7 +107,7 @@ export default function AgenteInterno() {
     const j = await fetch('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
     if (j.ok) {
       const r = j.resultado || {}
-      const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
+      const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : pend.tipo === 'fluxo' ? (r.fluxo_atualizado || 'fluxo atualizado') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
       setFeitas(f => ({ ...f, [pend._uid]: '✅ ' + txt }))
     } else setFeitas(f => ({ ...f, [pend._uid]: '⚠️ ' + (j.error || 'falhou') }))
   }
@@ -198,7 +198,7 @@ export default function AgenteInterno() {
             {(m.pendencias || []).map((p: any) => (
               <div key={p._uid} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover ajuste da IA de vendas' : '🧩 Novo ajuste no treinamento da IA') : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
+                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover ajuste da IA de vendas' : '🧩 Novo ajuste no treinamento da IA') : p.tipo === 'fluxo' ? '🔄 Ajuste no fluxo comercial' : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
                 </div>
                 {p.tipo === 'despesas' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
@@ -206,6 +206,13 @@ export default function AgenteInterno() {
                   </div>
                 ) : p.tipo === 'regra_ia' ? (
                   <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10, fontStyle: 'italic' }}>{p.acao === 'remover' ? `Remover a regra ${(p.id || '').slice(0, 8)}` : `"${p.texto}"`}</div>
+                ) : p.tipo === 'fluxo' ? (
+                  <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10 }}>
+                    <b>{p.acao === 'add_tarefa' ? 'Adicionar tarefa' : p.acao === 'editar_tarefa' ? 'Editar tarefa' : p.acao === 'remover_tarefa' ? 'Remover tarefa' : 'Editar regras gerais'}</b>
+                    {p.etapa ? <> · etapa <b>{p.etapa}</b></> : null}{p.tarefa ? <> · tarefa <b>{p.tarefa}</b></> : null}
+                    {p.campos ? <div style={{ marginTop: 4, color: 'var(--text-faint)' }}>{Object.entries(p.campos).map(([k, v]) => `${k}: ${v}`).join(' · ')}</div> : null}
+                    {p.texto ? <div style={{ marginTop: 4, fontStyle: 'italic' }}>"{p.texto}"</div> : null}
+                  </div>
                 ) : (
                   <div style={{ fontSize: 13, color: 'var(--text-2)', marginBottom: 10 }}>{p.busca ? <>Lead: <b>{p.busca}</b><br /></> : null}{Object.entries(p.dados || {}).map(([k, v]) => <span key={k} style={{ marginRight: 10 }}>{k}: <b>{String(v)}</b></span>)}</div>
                 )}

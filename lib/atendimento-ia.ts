@@ -1,6 +1,7 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { CONTEXTO_NEGOCIO } from '@/lib/contexto-negocio'
+import { getFluxo, fluxoTexto } from '@/lib/fluxo'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
 // FECHOU (mesmo produto/situação) e responde no nosso tom, seguindo o fluxo que converte.
@@ -210,6 +211,9 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const { data: regras } = await supabase.from('webhook_logs').select('payload').eq('origem', 'ia-regra')
   const regrasTxt = (regras || []).map((r: any) => r.payload?.texto).filter(Boolean)
   if (regrasTxt.length) corpus += `\n# AJUSTES DA EQUIPE (refinamentos ao seu treinamento — INCORPORE junto com todo o contexto acima, ajustando ou complementando o que já foi dito; harmonize com bom senso, não é pra atropelar o resto):\n${regrasTxt.map((t: string) => `- ${t}`).join('\n')}\n`
+
+  // FLUXO definido pela equipe (gaveta editável no Agente Interno) — a cadência oficial que você segue AGORA
+  try { const fx = await getFluxo(); corpus += `\n# ${fluxoTexto(fx)}\n` } catch { /* usa o pipeline do system */ }
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })

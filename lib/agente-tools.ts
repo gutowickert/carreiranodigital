@@ -1,7 +1,7 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
 import { KB } from '@/lib/kb'
-import { FLUXO_COMERCIAL } from '@/lib/sequencia-tarefas'
+import { getFluxo, fluxoTexto } from '@/lib/fluxo'
 
 // Ferramentas SÓ-LEITURA do Agente Interno. Cobrem o sistema inteiro:
 // específicas (vendas/financeiro/marketing/tráfego/turmas/NPS) + genéricas (esquema/consultar/agregar).
@@ -66,7 +66,8 @@ export const TOOLS = [
   { name: 'listar_regras_ia', description: 'Lista as REGRAS/ajustes que já estão ativas no cérebro da IA de VENDAS (definidas pela equipe).', input_schema: { type: 'object', properties: {} } },
   { name: 'propor_regra_ia', description: 'Propõe ADICIONAR ou REMOVER um AJUSTE/refinamento no treinamento da IA de VENDAS. É um ajuste que se INTEGRA ao contexto que já existe (complementa ou corrige uma parte), NÃO uma prioridade que atropela o resto. Use SEMPRE que o usuário der uma orientação/correção pra IA de vendas (ex: "nunca ofereça bolsa antes do dia 7", "seja mais breve"). NÃO aplica sozinho — vira um cartão pra confirmar.', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'adicionar ou remover' }, texto: { type: 'string', description: 'o ajuste em português, claro e direto (ao adicionar)' }, id: { type: 'string', description: 'id do ajuste (ao remover)' } }, required: ['acao'] } },
   { name: 'base_conhecimento', description: 'Retorna o material OFICIAL da escola e dos cursos: posicionamento, público, ANL e Formação Completa (o que ensinam, módulos, professores, preços, esteira/abatimento), FAQ/objeções e argumentos de venda. USE quando perguntarem sobre os cursos, o que ensinam, conteúdo/módulos, professores, preços, diferenciais, objeções ou a escola — pra responder com o conteúdo real, sem inventar.', input_schema: { type: 'object', properties: { assunto: { type: 'string', description: 'escola | anl | fc | tudo' } }, required: ['assunto'] } },
-  { name: 'fluxo_comercial', description: 'Retorna o FLUXO comercial atual da IA de vendas: as etapas do funil, a cadência de TAREFAS/follow-ups de cada etapa (ligações, áudios, mensagens) e a regra de quando sugerir ligação. USE quando perguntarem "como funciona o atendimento/funil", "qual o fluxo", "que follow-ups temos", ou quando o usuário quiser ENTENDER/EDITAR o comportamento — mostre o fluxo e, se ele pedir mudança, use propor_regra_ia.', input_schema: { type: 'object', properties: {} } },
+  { name: 'fluxo_comercial', description: 'Retorna o FLUXO comercial atual (editável): as etapas do funil e a cadência de TAREFAS/follow-ups de cada uma (ligações, áudios, mensagens, prazos D+N) com seus HANDLES [etapa: x] [tarefa: y]. USE SEMPRE antes de propor mudança no fluxo — pra referenciar o handle exato. Também responde "como funciona o funil/atendimento", "que follow-ups temos".', input_schema: { type: 'object', properties: {} } },
+  { name: 'propor_fluxo', description: 'Propõe MUDAR a CADÊNCIA/estrutura do fluxo (etapas + tarefas + prazos) — NÃO a comunicação. Use quando o pedido for sobre O QUE FAZER e QUANDO: número de ligações, quando manda áudio/mensagem, prazo (D+N) de uma tarefa, ordem, adicionar/remover passo de follow-up. SEMPRE chame fluxo_comercial ANTES pra pegar os handles. NÃO aplica sozinho — vira cartão pra confirmar. (Pra mudar TOM/o que dizer/quando ofertar/objeção, use propor_regra_ia.)', input_schema: { type: 'object', properties: { acao: { type: 'string', description: 'add_tarefa | editar_tarefa | remover_tarefa | editar_regras' }, etapa: { type: 'string', description: 'handle da etapa (ex: aguardando_atendimento, atendimento_inicial). Obrigatório exceto em editar_regras' }, tarefa: { type: 'string', description: 'handle da tarefa (em editar/remover); ou chave nova (em add)' }, campos: { type: 'object', description: 'campos da tarefa: titulo, dias (número D+N), acao (ligacao|audio|mensagem|decisao), descricao' }, texto: { type: 'string', description: 'novo texto das regras gerais (só em editar_regras)' } }, required: ['acao'] } },
 ]
 
 function aplicaFiltros(q: any, filtros: any[]) {
@@ -92,7 +93,13 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     if (a === 'fc' || a.includes('forma')) return { conteudo: KB.fc }
     return { conteudo: `${KB.escola}\n\n${KB.anl}\n\n${KB.fc}` }
   }
-  if (name === 'fluxo_comercial') return { fluxo: FLUXO_COMERCIAL }
+  if (name === 'fluxo_comercial') { const f = await getFluxo(); return { fluxo: fluxoTexto(f, true) } }
+  if (name === 'propor_fluxo') {
+    const acao = input?.acao
+    if (!['add_tarefa', 'editar_tarefa', 'remover_tarefa', 'editar_regras'].includes(acao)) return { erro: 'ação inválida' }
+    if (acao !== 'editar_regras' && !input?.etapa) return { erro: 'informe a etapa (handle)' }
+    return { proposta: { tipo: 'fluxo', acao, etapa: input?.etapa || null, tarefa: input?.tarefa || null, campos: input?.campos || null, texto: input?.texto || null } }
+  }
 
   if (name === 'propor_despesas') {
     const nat = await naturezas() // chave -> nome
