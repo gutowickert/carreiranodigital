@@ -113,6 +113,8 @@ export async function POST(req: NextRequest) {
             etapa_nova: 'aguardando_atendimento',
             observacao: 'Lead criado via botão de WhatsApp',
           })
+          // 1ª tarefa do funil na chegada: SEGURADO até o Nando validar o fluxo (docs/fluxo-comercial.md)
+          // await criarPrimeiraTarefa(supabase, novoLead.id, 'aguardando_atendimento', novoLead.nome || 'Lead', vendedorId)
           // CAPI Lead. Telefone só entra se não for @lid (senão o hash é lixo). Falha não quebra.
           try {
             const capi = await sendLead({
