@@ -2,6 +2,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { CONTEXTO_NEGOCIO } from '@/lib/contexto-negocio'
 import { getFluxo, fluxoTexto } from '@/lib/fluxo'
+import { transcreverLigacao } from '@/lib/transcrever-ligacao'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
 // FECHOU (mesmo produto/situação) e responde no nosso tom, seguindo o fluxo que converte.
@@ -200,6 +201,18 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     if (rel.length) andamentosTxt = rel.slice(0, 12).reverse().map((a: any) => `- ${brData((a.criado_em || '').slice(0, 10))}: ${a.tipo === 'ligacao' ? '📞 NÓS LIGAMOS' : a.tipo}${a.observacao ? ' — ' + a.observacao : ''}`).join('\n')
   }
 
+  // TRANSCRIÇÃO das ligações (o que foi REALMENTE falado na call) — transcreve sob demanda se faltar (cacheado)
+  let ligacoesTxt = ''
+  if (lead.id) {
+    const { data: ligs } = await supabase.from('ligacoes').select('id, gravacao_url, duracao, metadata, criado_em').eq('lead_id', lead.id).order('criado_em', { ascending: false }).limit(5)
+    const comRec = (ligs || []).filter((l: any) => l.gravacao_url && (l.duracao || 0) > 10)
+    for (const l of comRec.slice(0, 1)) { // transcreve só a mais recente sem transcrição (evita travar demais)
+      if (!(l.metadata && l.metadata.transcricao)) { const t = await transcreverLigacao(l.id); if (t) l.metadata = { ...(l.metadata || {}), transcricao: t } }
+    }
+    const trans = comRec.filter((l: any) => l.metadata?.transcricao)
+    if (trans.length) ligacoesTxt = trans.slice(0, 2).reverse().map((l: any) => `📞 LIGAÇÃO de ${brData((l.criado_em || '').slice(0, 10))} (${Math.round((l.duracao || 0) / 60)}min):\n"${(l.metadata.transcricao || '').slice(0, 2200)}"`).join('\n\n')
+  }
+
   // 7) monta o prompt
   let corpus = CONTEXTO_NEGOCIO + '\n\n'
   corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}).\n`
@@ -209,6 +222,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (gap) corpus += gap + '\n'
   corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`
   if (andamentosTxt) corpus += `# CONTATOS/LIGAÇÕES FORA DO WHATSAPP (JÁ ACONTECERAM — leve em conta, NÃO ignore: se já ligamos, não fale "vou te ligar" como se fosse a 1ª vez; retome o que ficou):\n${andamentosTxt}\n\n`
+  if (ligacoesTxt) corpus += `# TRANSCRIÇÃO DA(S) LIGAÇÃO(ÕES) — o que o cliente REALMENTE falou na call (negócio, objetivo, objeções). USE isto: NÃO pergunte de novo o que ele já respondeu aqui; retome e avance a partir do que ele disse:\n${ligacoesTxt}\n\n`
   corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
   ganhas.forEach((g, i) => { corpus += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
   if (playbook?.o_que_funciona) corpus += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
