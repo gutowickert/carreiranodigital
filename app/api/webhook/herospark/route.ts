@@ -240,7 +240,7 @@ export async function POST(req: NextRequest) {
             const d = addMeses(hoje, i); const pago = i === 0
             const base = { unidade: 'geral', mes_referencia: d.substring(0, 7) + '-01', data_vencimento: d, data_pagamento: pago ? d : null, status: pago ? 'realizado' : 'previsto', turma_id: turmaId, conta_id: caixaHero?.id || null }
             await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'receita', categoria: 'outro', descricao: `Boleto ${i + 1}/${installments} — ${alunoNome} (HeroSpark)`, valor: amount })
-            if (taxaBoleto > 0) await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'custo', categoria: 'outro', descricao: `Tarifa HeroSpark boleto ${i + 1}/${installments} — ${alunoNome}`, valor: taxaBoleto })
+            if (taxaBoleto > 0) await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'custo', categoria: 'taxa_financeira', descricao: `Tarifa HeroSpark boleto ${i + 1}/${installments} — ${alunoNome}`, valor: taxaBoleto })
           }
         }
         // LTV e receita da turma sobem pelo valor do boleto pago (amount), a cada boleto
@@ -290,7 +290,7 @@ export async function POST(req: NextRequest) {
       if (taxa > 0) {
         await supabase.from('lancamentos_empresa').insert({
           tipo: 'custo',
-          categoria: 'outro',
+          categoria: 'taxa_financeira',
           descricao: `Tarifa HeroSpark — ${alunoNome}${installments >= 2 ? ` (cartão ${installments}x)` : ''}`,
           valor: taxa,
           unidade: 'geral',
