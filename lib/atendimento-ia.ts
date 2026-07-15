@@ -192,6 +192,14 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const cidades = (cids || []).map((c: any) => c.nome).join(', ')
   const etiquetado = simul ? !!(input.cidadeHint && input.produtoHint) : !!(lead.codigo_turma || lead.turma_id)
 
+  // Histórico de contatos FORA do WhatsApp (ligações via API4COM, anotações da equipe) — pra IA não ignorar o que já rolou
+  let andamentosTxt = ''
+  if (lead.id) {
+    const { data: ands } = await supabase.from('lead_andamentos').select('tipo, observacao, criado_em').eq('lead_id', lead.id).order('criado_em', { ascending: false }).limit(25)
+    const rel = (ands || []).filter((a: any) => a.tipo === 'ligacao' || (a.observacao && !['tarefa_criada', 'mudanca_etapa', 'criado'].includes(a.tipo)))
+    if (rel.length) andamentosTxt = rel.slice(0, 12).reverse().map((a: any) => `- ${brData((a.criado_em || '').slice(0, 10))}: ${a.tipo === 'ligacao' ? '📞 NÓS LIGAMOS' : a.tipo}${a.observacao ? ' — ' + a.observacao : ''}`).join('\n')
+  }
+
   // 7) monta o prompt
   let corpus = CONTEXTO_NEGOCIO + '\n\n'
   corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}).\n`
@@ -200,6 +208,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS abaixo.\n`
   if (gap) corpus += gap + '\n'
   corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`
+  if (andamentosTxt) corpus += `# CONTATOS/LIGAÇÕES FORA DO WHATSAPP (JÁ ACONTECERAM — leve em conta, NÃO ignore: se já ligamos, não fale "vou te ligar" como se fosse a 1ª vez; retome o que ficou):\n${andamentosTxt}\n\n`
   corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
   ganhas.forEach((g, i) => { corpus += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
   if (playbook?.o_que_funciona) corpus += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
