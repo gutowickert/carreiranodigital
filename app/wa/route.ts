@@ -19,8 +19,9 @@ export async function GET(req: NextRequest) {
   try {
     const sp = req.nextUrl.searchParams
 
-    const codigoTurma = (sp.get('turma') || '').toString().trim()
-    const msgBase = (sp.get('msg') || '').toString().trim() || 'Olá! Quero saber mais.'
+    let codigoTurma = (sp.get('turma') || '').toString().trim()
+    const cidade = (sp.get('cidade') || '').toString().trim()
+    const msgBase = (sp.get('msg') || '').toString().trim() || (cidade ? `Olá! Vim pelo site e tenho interesse nos cursos em ${cidade}.` : 'Olá! Quero conhecer os cursos da escola.')
 
     const fbclid = sp.get('fbclid') || null
     let fbc = sp.get('fbc') || null
@@ -42,6 +43,22 @@ export async function GET(req: NextRequest) {
 
     if (!WA_NUMERO) {
       return NextResponse.json({ error: 'WA_NUMERO_CENTRAL nao configurado' }, { status: 500 })
+    }
+
+    // Botão do site principal por CIDADE (sem turma explícita): resolve a turma ABERTA daquela cidade,
+    // pra o lead já chegar etiquetado na cidade certa (a IA acerta o curso na conversa).
+    if (!codigoTurma && cidade) {
+      try {
+        const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+        const { data: tv } = await supabase.from('turmas')
+          .select('codigo, data_inicio, cidades(nome)')
+          .gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)')
+          .order('data_inicio')
+        const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
+        const m = (tv || []).find((t: any) => norm(t.cidades?.nome) === norm(cidade))
+          || (tv || []).find((t: any) => norm(t.cidades?.nome).includes(norm(cidade)))
+        if (m) codigoTurma = (m as any).codigo
+      } catch { /* segue sem turma — lead entra untagged com origem certa */ }
     }
 
     // ref interno: identifica este clique no banco (NÃO aparece pro cliente).

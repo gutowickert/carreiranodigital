@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
           codigo_turma: turmaMatch.codigo,
           vendedor_id: vendedorId,
           etapa: 'aguardando_atendimento',
-          origem: 'whatsapp',
+          origem: click?.utm_source || 'whatsapp',
           fbclid: click?.fbclid ?? null,
           fbc: click?.fbc ?? null,
           fbp: click?.fbp ?? null,
@@ -138,6 +138,27 @@ export async function POST(req: NextRequest) {
               lead_id: novoLead.id,
             }).eq('id', click.id)
           }
+        }
+      } else if (click) {
+        // Clique veio pelo /wa (site principal / link na bio do Insta) mas SEM turma —
+        // cria o lead com a ORIGEM certa (untagged; a IA descobre cidade/curso na conversa).
+        const nomeLead = chatName || ev.senderName || null
+        const { data: novoLead } = await supabase.from('leads').insert({
+          nome: nomeLead || 'Lead WhatsApp',
+          whatsapp: telefone,
+          etapa: 'aguardando_atendimento',
+          origem: click.utm_source || 'site-principal',
+          fbclid: click?.fbclid ?? null, fbc: click?.fbc ?? null, fbp: click?.fbp ?? null,
+          utm_source: click?.utm_source ?? null, utm_medium: click?.utm_medium ?? null,
+          utm_campaign: click?.utm_campaign ?? null, utm_content: click?.utm_content ?? null,
+        }).select('id, nome').single()
+        if (novoLead) {
+          leadCriado = novoLead
+          await supabase.from('lead_andamentos').insert({
+            lead_id: novoLead.id, tipo: 'criado', etapa_nova: 'aguardando_atendimento',
+            observacao: `Lead criado via site (${click.utm_source || 'site-principal'})${click.utm_content ? ' — ' + click.utm_content : ''}`,
+          })
+          await supabase.from('wa_clicks').update({ consumido_em: new Date().toISOString(), lead_id: novoLead.id }).eq('id', click.id)
         }
       }
     }
