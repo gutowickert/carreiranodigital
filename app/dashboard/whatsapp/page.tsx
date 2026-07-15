@@ -168,6 +168,10 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const [enviando, setEnviando] = useState(false)
   const [erro, setErro] = useState('')
   const [gravando, setGravando] = useState(false)
+  const [pendenteAudio, setPendenteAudio] = useState<string | null>(null)
+  const [restante, setRestante] = useState(0)
+  const sendTimerRef = useRef<any>(null)
+  const tickRef = useRef<any>(null)
   const [sugerindo, setSugerindo] = useState(false)
   const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
   const [showEmoji, setShowEmoji] = useState(false)
@@ -273,22 +277,37 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
     } catch { setErro('Sem acesso ao microfone') }
   }
 
+  const JANELA_S = 5 // segundos pra cancelar antes do áudio sair
+
   async function pararGravacao() {
     const g = gravadorRef.current
     gravadorRef.current = null
     setGravando(false)
     if (!g) return
-    setEnviando(true)
     try {
       // OGG/Opus nativo: WhatsApp não reconverte e a reprodução em 1.5x/2x funciona
       const audioBase64 = await g.parar()
+      // NÃO envia na hora: segura JANELA_S segundos com opção de cancelar
+      setPendenteAudio(audioBase64); setRestante(JANELA_S)
+      sendTimerRef.current = setTimeout(() => { limparTimers(); enviarAudioReal(audioBase64) }, JANELA_S * 1000)
+      tickRef.current = setInterval(() => setRestante(r => Math.max(0, r - 1)), 1000)
+    } catch (e: any) { setErro((e && e.message) || 'erro ao processar áudio') }
+  }
+
+  function limparTimers() { clearTimeout(sendTimerRef.current); clearInterval(tickRef.current) }
+  function cancelarEnvioAudio() { limparTimers(); setPendenteAudio(null); setRestante(0) }
+  function enviarAudioAgora() { limparTimers(); const a = pendenteAudio; setPendenteAudio(null); setRestante(0); if (a) enviarAudioReal(a) }
+
+  async function enviarAudioReal(audioBase64: string) {
+    setPendenteAudio(null); setRestante(0); setEnviando(true)
+    try {
       const res = await fetch('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, audioBase64 }),
       })
       const json = await res.json()
       if (json.ok) { carregar(); onEnviou() } else setErro(json.error || 'falha ao enviar audio')
-    } catch (e: any) { setErro((e && e.message) || 'erro ao processar áudio') }
+    } catch (e: any) { setErro((e && e.message) || 'erro ao enviar áudio') }
     finally { setEnviando(false) }
   }
 
@@ -421,7 +440,14 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
           <button onClick={iniciarGravacao} disabled={enviando} style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 70 }}>🎤</button>
         )}
       </div>
-      {gravando && <div style={{ fontSize: 11, color: 'var(--red)', padding: '0 12px 8px' }}>● Gravando... clica em Parar pra enviar</div>}
+      {pendenteAudio && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', margin: '0 12px 8px', background: 'rgba(245,158,11,.14)', border: '1px solid #f59e0b', borderRadius: 10, flexWrap: 'wrap' }}>
+          <span style={{ fontSize: 13, color: 'var(--text)', flex: 1, minWidth: 160 }}>🎤 Áudio pronto — enviando em <b>{restante}s</b>… dá pra cancelar antes de sair.</span>
+          <button onClick={cancelarEnvioAudio} style={{ background: 'var(--red)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✖ Cancelar</button>
+          <button onClick={enviarAudioAgora} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Enviar agora</button>
+        </div>
+      )}
+      {gravando && <div style={{ fontSize: 11, color: 'var(--red)', padding: '0 12px 8px' }}>● Gravando... clica em Parar (dá {JANELA_S}s pra cancelar antes de enviar)</div>}
       {erro && <div style={{ fontSize: 11, color: 'var(--red)', padding: '0 12px 8px' }}>{erro}</div>}
     </>
   )
