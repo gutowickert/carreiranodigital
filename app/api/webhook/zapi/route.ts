@@ -58,7 +58,9 @@ export async function POST(req: NextRequest) {
     // código de turma conhecido, cria o lead completo (turma + rateio + CAPI).
     let leadCriado: { id: string; nome: string | null } | null = null
     if (!fromMe && !ehGrupo && !leadExistente && !aluno && texto) {
-      const txtLower = texto.toLowerCase()
+      // conserta typo conhecido dos botões do site (novoGamburgo -> novoHamburgo)
+      const corrigeTypo = (s: string) => (s || '').replace(/novogamburgo/gi, 'novohamburgo')
+      const txtLower = corrigeTypo(texto.toLowerCase())
       const { data: turmas } = await supabase.from('turmas').select('id, codigo').not('codigo', 'is', null)
 
       // 1) Casa pelo `ref` (#A1B2C3D4) que o /wa colou na mensagem: é o clique
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
 
       // A turma vem do clique (quando casou por ref) ou do código no texto.
       const acharTurma = (cod?: string | null) =>
-        (turmas || []).find(t => t.codigo && cod && t.codigo.toLowerCase() === cod.toLowerCase())
+        (turmas || []).find(t => t.codigo && cod && t.codigo.toLowerCase() === corrigeTypo(cod.toLowerCase()))
       const turmaPorTexto = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
       const turmaMatch = (click ? acharTurma(click.codigo_turma) : null) || turmaPorTexto
       if (turmaMatch) {
