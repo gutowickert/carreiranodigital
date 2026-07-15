@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { TOOLS, runTool } from '@/lib/agente-tools'
+import { contextoCentral } from '@/lib/contexto-central'
 
 export const maxDuration = 120
 
@@ -57,13 +58,16 @@ export async function POST(req: NextRequest) {
     }))
 
     const client = new Anthropic({ apiKey: key })
+    // CÉREBRO CENTRAL: mesma fonte de verdade que o motor de vendas usa (negócio + fluxo + regras)
+    const cerebro = await contextoCentral().catch(() => '')
+    const sys = cerebro ? `${cerebro}\n\n---\n\n${SYSTEM()}` : SYSTEM()
     let passos = 0
     let final = ''
     const pendencias: any[] = []
     let seqPend = 0
     while (passos < 8) {
       passos++
-      const resp = await client.messages.create({ model: MODELO, max_tokens: 2800, system: SYSTEM(), tools: TOOLS as any, messages })
+      const resp = await client.messages.create({ model: MODELO, max_tokens: 2800, system: sys, tools: TOOLS as any, messages })
       const toolUses = (resp.content || []).filter((b: any) => b.type === 'tool_use')
       const texto = (resp.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
       if (resp.stop_reason !== 'tool_use' || !toolUses.length) { final = texto; break }

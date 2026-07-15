@@ -1,7 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
-import { CONTEXTO_NEGOCIO } from '@/lib/contexto-negocio'
-import { getFluxo, fluxoTexto } from '@/lib/fluxo'
+import { contextoCentral } from '@/lib/contexto-central'
 import { transcreverLigacao } from '@/lib/transcrever-ligacao'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
@@ -214,7 +213,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   }
 
   // 7) monta o prompt
-  let corpus = CONTEXTO_NEGOCIO + '\n\n'
+  let corpus = await contextoCentral() // CÉREBRO CENTRAL: negócio + produtos + condições + fluxo/cadência/prioridade + regras vivas
   corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}).\n`
   corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
@@ -229,14 +228,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (playbook?.melhor_fluxo) corpus += `\n# FLUXO QUE CONVERTE:\n${(playbook.melhor_fluxo || []).map((x: any, i: number) => `${i + 1}. ${x.passo}: ${x.descricao}`).join('\n')}\n`
   if (dossie?.objecoes) corpus += `\n# OBJEÇÕES E CONTORNOS (voz do cliente):\n${JSON.stringify(dossie.objecoes).slice(0, 1500)}\n`
   if (ofertas.length) corpus += `\n# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
-
-  // AJUSTES definidos pela equipe (refinamentos ao vivo do treinamento) — integrados ao contexto, não sobrepõem tudo
-  const { data: regras } = await supabase.from('webhook_logs').select('payload').eq('origem', 'ia-regra')
-  const regrasTxt = (regras || []).map((r: any) => r.payload?.texto).filter(Boolean)
-  if (regrasTxt.length) corpus += `\n# AJUSTES DA EQUIPE (refinamentos ao seu treinamento — INCORPORE junto com todo o contexto acima, ajustando ou complementando o que já foi dito; harmonize com bom senso, não é pra atropelar o resto):\n${regrasTxt.map((t: string) => `- ${t}`).join('\n')}\n`
-
-  // FLUXO definido pela equipe (gaveta editável no Agente Interno) — a cadência oficial que você segue AGORA
-  try { const fx = await getFluxo(); corpus += `\n# ${fluxoTexto(fx)}\n` } catch { /* usa o pipeline do system */ }
+  // (fluxo + regras da equipe já vêm do CÉREBRO CENTRAL no topo do corpus)
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })
