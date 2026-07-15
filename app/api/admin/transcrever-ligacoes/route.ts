@@ -23,7 +23,7 @@ export async function POST(req: NextRequest) {
     .gt('duracao', 10)
     .order('criado_em', { ascending: false })
     .limit(400)
-  const pendentes = (ligs || []).filter(l => !(l.metadata && l.metadata.transcricao)).slice(0, limite)
+  const pendentes = (ligs || []).filter(l => !(l.metadata && (l.metadata.transcrita || l.metadata.transcricao))).slice(0, limite)
 
   // tenta baixar a gravação com várias estratégias de auth
   async function baixar(url: string) {
@@ -64,7 +64,7 @@ export async function POST(req: NextRequest) {
       if (!tr.ok || typeof txt !== 'string') {
         falha++; if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dgStatus: tr.status, dgRaw: rawResp.slice(0, 250) }); continue
       }
-      const meta = { ...(l.metadata || {}), transcricao: txt.trim() }
+      const meta = { ...(l.metadata || {}), transcricao: txt.trim(), transcrita: true }
       await supabase.from('ligacoes').update({ metadata: meta }).eq('id', l.id)
       ok++
       if (debug) dbg.push({ id: l.id.slice(0, 8), baixou: true, via: b.via, ct: b.ct, kb, dur: l.duracao, preview: txt.trim().slice(0, 120) })

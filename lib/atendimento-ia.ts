@@ -207,7 +207,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     const { data: ligs } = await supabase.from('ligacoes').select('id, gravacao_url, duracao, metadata, criado_em').eq('lead_id', lead.id).order('criado_em', { ascending: false }).limit(5)
     const comRec = (ligs || []).filter((l: any) => l.gravacao_url && (l.duracao || 0) > 10)
     for (const l of comRec.slice(0, 1)) { // transcreve só a mais recente sem transcrição (evita travar demais)
-      if (!(l.metadata && l.metadata.transcricao)) { const t = await transcreverLigacao(l.id); if (t) l.metadata = { ...(l.metadata || {}), transcricao: t } }
+      if (!(l.metadata && l.metadata.transcrita)) { const t = await transcreverLigacao(l.id); if (t) l.metadata = { ...(l.metadata || {}), transcricao: t } }
     }
     const trans = comRec.filter((l: any) => l.metadata?.transcricao)
     if (trans.length) ligacoesTxt = trans.slice(0, 2).reverse().map((l: any) => `📞 LIGAÇÃO de ${brData((l.criado_em || '').slice(0, 10))} (${Math.round((l.duracao || 0) / 60)}min):\n"${(l.metadata.transcricao || '').slice(0, 2200)}"`).join('\n\n')

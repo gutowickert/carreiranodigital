@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   const { data: ligs } = await sb.from('ligacoes').select('id, metadata')
     .not('gravacao_url', 'is', null).gt('duracao', 10)
     .order('criado_em', { ascending: false }).limit(300)
-  const pend = (ligs || []).filter((l: any) => !(l.metadata && l.metadata.transcricao))
+  const pend = (ligs || []).filter((l: any) => !(l.metadata && l.metadata.transcrita))
   let ok = 0
   for (const l of pend.slice(0, 6)) { const t = await transcreverLigacao(l.id); if (t) ok++ }
   return NextResponse.json({ ok: true, transcritos: ok, restam: Math.max(0, pend.length - ok) })

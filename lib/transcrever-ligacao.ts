@@ -29,7 +29,7 @@ export async function transcreverLigacao(ligacaoId: string): Promise<string | nu
     if (!token || !dgKey) return null
     const { data: l } = await sb.from('ligacoes').select('id, gravacao_url, duracao, metadata').eq('id', ligacaoId).maybeSingle()
     if (!l || !l.gravacao_url || (l.duracao || 0) <= 10) return null
-    if (l.metadata && (l.metadata as any).transcricao) return (l.metadata as any).transcricao
+    if (l.metadata && (l.metadata as any).transcrita) return (l.metadata as any).transcricao || null // já processada (mesmo se vazia)
     const b = await baixar(l.gravacao_url, token)
     if (!b.ok) return null
     const tr = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
@@ -37,8 +37,9 @@ export async function transcreverLigacao(ligacaoId: string): Promise<string | nu
     })
     const j: any = await tr.json().catch(() => null)
     const txt = j?.results?.channels?.[0]?.alternatives?.[0]?.transcript
-    if (!tr.ok || typeof txt !== 'string' || !txt.trim()) return null
-    await sb.from('ligacoes').update({ metadata: { ...(l.metadata || {}), transcricao: txt.trim() } }).eq('id', l.id)
-    return txt.trim()
+    if (!tr.ok || typeof txt !== 'string') return null // falha real da API — tenta de novo depois
+    // marca como PROCESSADA (transcrita:true) mesmo se vier vazia (ligação sem fala), pra não reprocessar eternamente
+    await sb.from('ligacoes').update({ metadata: { ...(l.metadata || {}), transcricao: txt.trim(), transcrita: true } }).eq('id', l.id)
+    return txt.trim() || null
   } catch { return null }
 }
