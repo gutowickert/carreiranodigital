@@ -27,7 +27,7 @@ const grupos: Grupo[] = [
     ],
   },
   {
-    titulo: 'IA',
+    titulo: 'Inteligência Artificial',
     itens: [
       { nome: '🧠 Agente Interno', href: '/dashboard/agente-interno' },
       { nome: '🔎 Qualidade IA', href: '/dashboard/qualidade-ia' },
