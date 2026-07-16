@@ -5,6 +5,7 @@ import { sendLead } from '@/lib/capi'
 import { enviarPush } from '@/lib/push'
 import { lidDoTelefone } from '@/lib/zapi'
 import { classificarTemperatura } from '@/lib/temperatura'
+import { transcreverAudioMsg } from '@/lib/transcrever-audio'
 import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
@@ -261,7 +262,7 @@ export async function POST(req: NextRequest) {
     }
     if (!conversa) return NextResponse.json({ ok: false, error: 'conversa nao criada' }, { status: 200 })
 
-    const { error: errMsg } = await supabase.from('wa_mensagens').insert({
+    const { data: msgIns, error: errMsg } = await supabase.from('wa_mensagens').insert({
       conversa_id: conversa.id,
       zapi_id: zapiId,
       direcao: fromMe ? 'enviada' : 'recebida',
@@ -270,9 +271,12 @@ export async function POST(req: NextRequest) {
       midia_url: midiaUrl,
       midia_mime: midiaMime,
       status: fromMe ? 'enviada' : 'recebida',
-    })
+    }).select('id').single()
     // 23505 = violacao do indice unico (zapi_id repetido = eco do "notificar enviadas"). Ignora.
     if (errMsg && errMsg.code === '23505') return NextResponse.json({ ok: true, skip: 'duplicada (unique)' })
+
+    // ÁUDIO (dos 2 lados): transcreve pra IA/equipe LER o que foi dito no áudio (guarda no próprio texto). Não bloqueia se falhar.
+    if (tipo === 'audio' && midiaUrl && msgIns?.id) { try { await transcreverAudioMsg(msgIns.id) } catch { } }
 
     // guarda o @lid na conversa pra casar as mensagens enviadas do CELULAR (que chegam só com @lid)
     if (chatLid && !conversa.chat_lid) {
