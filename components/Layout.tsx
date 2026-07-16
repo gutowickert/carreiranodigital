@@ -42,6 +42,7 @@ const grupos: Grupo[] = [
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
+      { nome: '📅 Datas das Turmas', href: '/dashboard/turmas-mensagens' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
     ],
   },
