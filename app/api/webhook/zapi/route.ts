@@ -167,6 +167,34 @@ export async function POST(req: NextRequest) {
 
     const lead = leadCriado || leadExistente
 
+    // ATRIBUIÇÃO ROBUSTA: se a mensagem trouxe #ref (clique do /wa) e há um lead (novo OU já existente/recorrente),
+    // garante que o CLIQUE seja consumido e a atribuição (utm/fbc/turma) seja preenchida no que estiver faltando.
+    // Conserta o vazamento: lead recorrente que clica de novo no anúncio não perdia mais a atribuição.
+    if (lead && !fromMe && texto) {
+      const rf = texto.match(/#([0-9A-Fa-f]{8})\b/)
+      if (rf) {
+        const { data: clk } = await supabase.from('wa_clicks').select('*').eq('ref', rf[1].toUpperCase()).is('consumido_em', null).limit(1).maybeSingle()
+        if (clk) {
+          const { data: atual } = await supabase.from('leads').select('utm_source, utm_medium, utm_campaign, utm_content, fbc, fbp, fbclid, codigo_turma').eq('id', lead.id).maybeSingle()
+          const patch: any = {}
+          if (!atual?.utm_source && clk.utm_source) { patch.utm_source = clk.utm_source; patch.origem = clk.utm_source }
+          if (!atual?.utm_medium && clk.utm_medium) patch.utm_medium = clk.utm_medium
+          if (!atual?.utm_campaign && clk.utm_campaign) patch.utm_campaign = clk.utm_campaign
+          if (!atual?.utm_content && clk.utm_content) patch.utm_content = clk.utm_content
+          if (!atual?.fbc && clk.fbc) patch.fbc = clk.fbc
+          if (!atual?.fbp && clk.fbp) patch.fbp = clk.fbp
+          if (!atual?.fbclid && clk.fbclid) patch.fbclid = clk.fbclid
+          if (!atual?.codigo_turma && clk.codigo_turma) {
+            const cod = clk.codigo_turma.replace(/novogamburgo/gi, 'novohamburgo')
+            const { data: t } = await supabase.from('turmas').select('id, codigo').ilike('codigo', cod).maybeSingle()
+            if (t) { patch.codigo_turma = t.codigo; patch.turma_id = t.id }
+          }
+          if (Object.keys(patch).length) await supabase.from('leads').update(patch).eq('id', lead.id)
+          await supabase.from('wa_clicks').update({ consumido_em: new Date().toISOString(), lead_id: lead.id }).eq('id', clk.id)
+        }
+      }
+    }
+
     let conversa: any = null
     let conversaCriada = false
     // 1) casa pelo chatLid (identificador estável) — une recebida (nº real) com enviada (@lid)
