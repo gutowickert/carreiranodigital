@@ -29,21 +29,21 @@ const grupos: Grupo[] = [
   {
     titulo: 'Inteligência Artificial',
     itens: [
-      { nome: '🧠 Agente Interno', href: '/dashboard/agente-interno' },
-      { nome: '🔎 Qualidade IA', href: '/dashboard/qualidade-ia' },
-      { nome: '🤖 Automação IA', href: '/dashboard/automacao-ia' },
-      { nome: '🧮 Custo da IA', href: '/dashboard/ia-uso' },
+      { nome: 'Agente Interno', href: '/dashboard/agente-interno' },
+      { nome: 'Qualidade IA', href: '/dashboard/qualidade-ia' },
+      { nome: 'Automação IA', href: '/dashboard/automacao-ia' },
+      { nome: 'Custo da IA', href: '/dashboard/ia-uso' },
     ],
   },
   {
     titulo: 'CRM',
     itens: [
-      { nome: '🎯 Atender Agora', href: '/dashboard/atender' },
+      { nome: 'Atender Agora', href: '/dashboard/atender' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
-      { nome: '📅 Datas das Turmas', href: '/dashboard/turmas-mensagens' },
+      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
     ],
   },
