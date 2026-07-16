@@ -116,5 +116,17 @@ export async function GET() {
   }
   lote.sort((a, b) => (a.tarefa.venc || '').localeCompare(b.tarefa.venc || ''))
 
-  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups], lote, loteCount: lote.length })
+  // SEM TAREFA (parados): leads em etapa ativa que NÃO têm nenhuma tarefa pendente — terminaram a cadência
+  // (ou nunca geraram) e não foram movidos. Ficam invisíveis no Lote/Copiloto e se perdem no CRM.
+  const pend = await todos('tarefas_lead', 'lead_id', q => q.eq('concluida', false).eq('cancelada', false))
+  const comTarefa = new Set(pend.map((t: any) => t.lead_id))
+  const parados: any[] = []
+  for (const l of leads) {
+    if (comTarefa.has(l.id)) continue
+    const { best, bestConv } = bestDe(l)
+    parados.push({ ...mkItem(l, best, bestConv), prioridade: 'followup' })
+  }
+  parados.sort((a, b) => (b.dSC || 0) - (a.dSC || 0)) // mais parado (mais silêncio) primeiro
+
+  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups], lote, loteCount: lote.length, parados, paradosCount: parados.length })
 }

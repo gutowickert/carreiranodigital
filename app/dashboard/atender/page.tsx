@@ -108,9 +108,10 @@ export default function AtenderPage() {
   const [email, setEmail] = useState('')
   const [fila, setFila] = useState<Item[]>([])
   const [lote, setLote] = useState<Item[]>([])
+  const [parados, setParados] = useState<Item[]>([])
   const [nq, setNq] = useState(0); const [nf, setNf] = useState(0)
   const [carregando, setCarregando] = useState(true)
-  const [aba, setAba] = useState<'agora' | 'copiloto' | 'lote'>('agora')
+  const [aba, setAba] = useState<'agora' | 'copiloto' | 'lote' | 'parados'>('agora')
 
   useEffect(() => {
     (async () => {
@@ -123,7 +124,7 @@ export default function AtenderPage() {
   async function carregar() {
     setCarregando(true)
     const j = await fetch('/api/atender/fila').then(r => r.json()).catch(() => null)
-    if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setNq(j.quentes); setNf(j.followups) }
+    if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setParados(j.parados || []); setNq(j.quentes); setNf(j.followups) }
     setCarregando(false)
   }
 
@@ -141,21 +142,21 @@ export default function AtenderPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🎯 Atender Agora</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} do dia no Lote`}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} no Lote · 🚩 ${parados.length} sem tarefa`}</p>
         </div>
         <button onClick={carregar} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>↻ Atualizar</button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, margin: '18px 0 20px', borderBottom: '1px solid var(--border)' }}>
-        {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Lote']] as const).map(([k, t]) => (
+        {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Lote'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
           <button key={k} onClick={() => setAba(k)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${aba === k ? 'var(--accent)' : 'transparent'}`, color: aba === k ? 'var(--text)' : 'var(--text-faint)', fontSize: 14, fontWeight: 700, padding: '8px 12px', cursor: 'pointer', marginBottom: -1 }}>{t}</button>
         ))}
       </div>
 
       {(() => {
         if (carregando) return <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
-        const dados = aba === 'lote' ? lote : fila
-        if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
+        const dados = aba === 'lote' ? lote : aba === 'parados' ? parados : fila
+        if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : aba === 'parados' ? '🎉 Nenhum lead parado! Todos têm tarefa ou já foram movidos.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
         return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
           : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
             : <Lote fila={dados} sugerir={sugerir} enviar={enviar} />
@@ -335,7 +336,7 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
     <div>
       {!linhas.length ? (
         <div style={{ ...card, padding: 24, textAlign: 'center' }}>
-          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>Follow-ups que vencem hoje. Gera as sugestões dos primeiros {Math.min(N, fila.length)} pra revisar e disparar de uma vez.</div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>Gera as sugestões dos primeiros {Math.min(N, fila.length)} pra revisar e agir de uma vez (revisar resposta, ou decidir com os botões).</div>
           <button onClick={gerar} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `✨ Gerar ${Math.min(N, fila.length)} sugestões`}</button>
         </div>
       ) : (
