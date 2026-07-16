@@ -2,6 +2,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { contextoCentral } from '@/lib/contexto-central'
 import { transcreverLigacao } from '@/lib/transcrever-ligacao'
+import { logIaUso } from '@/lib/ia-uso'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
 // FECHOU (mesmo produto/situação) e responde no nosso tom, seguindo o fluxo que converte.
@@ -232,6 +233,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
 
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })
+  await logIaUso('atendimento', MODELO, resp.usage)
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }

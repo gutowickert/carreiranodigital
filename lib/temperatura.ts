@@ -1,5 +1,6 @@
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
+import { logIaUso } from '@/lib/ia-uso'
 
 // Classifica a temperatura de compra do lead (quente/morno/frio) via Haiku, a cada mensagem.
 // Debounce de 2min por lead pra não reclassificar em rajada. NUNCA quebra o webhook (try/catch total).
@@ -22,6 +23,7 @@ export async function classificarTemperatura(leadId?: string, convId?: string) {
       system: 'Classifique a TEMPERATURA de compra do lead nesta conversa em UMA palavra só: "quente" (quer comprar agora — perguntou preço/forma de pagamento/quando começa, disse quero/como faço), "morno" (interessado mas indeciso ou sem urgência), "frio" (pouco interesse, evasivo, ou sumido). Responda APENAS a palavra.',
       messages: [{ role: 'user', content: linhas.join('\n') }],
     })
+    await logIaUso('temperatura', 'claude-haiku-4-5', r.usage, { lead_id: leadId })
     const raw = (r.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').toLowerCase()
     const temp = raw.includes('quente') ? 'quente' : raw.includes('morno') ? 'morno' : raw.includes('frio') ? 'frio' : null
     if (temp) await supabase.from('leads').update({ temperatura: temp, temperatura_em: new Date().toISOString() }).eq('id', leadId)

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
+import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 60
 
@@ -136,6 +137,7 @@ export async function POST(req: NextRequest) {
       messages: [{ role: 'user', content: contexto }],
     })
 
+    await logIaUso('copiloto', MODELO, resp.usage, { lead_id: lead?.id })
     const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
     // parse defensivo: extrai o primeiro objeto JSON da resposta
     let out: any = null

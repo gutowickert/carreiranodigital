@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { TOOLS, runTool } from '@/lib/agente-tools'
 import { contextoCentral } from '@/lib/contexto-central'
+import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 120
 
@@ -68,6 +69,7 @@ export async function POST(req: NextRequest) {
     while (passos < 8) {
       passos++
       const resp = await client.messages.create({ model: MODELO, max_tokens: 2800, system: sys, tools: TOOLS as any, messages })
+      await logIaUso('agente', MODELO, resp.usage)
       const toolUses = (resp.content || []).filter((b: any) => b.type === 'tool_use')
       const texto = (resp.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('')
       if (resp.stop_reason !== 'tool_use' || !toolUses.length) { final = texto; break }
