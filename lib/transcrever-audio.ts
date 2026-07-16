@@ -6,12 +6,16 @@ export async function transcreverAudioMsg(msgId: string): Promise<string | null>
   try {
     const dgKey = process.env.DEEPGRAM_API_KEY || ''
     if (!dgKey) return null
-    const { data: m } = await sb.from('wa_mensagens').select('id, tipo, texto, midia_url').eq('id', msgId).maybeSingle()
+    const { data: m } = await sb.from('wa_mensagens').select('id, tipo, texto, midia_url, midia_mime').eq('id', msgId).maybeSingle()
     if (!m || m.tipo !== 'audio' || !m.midia_url) return null
     if (m.texto && m.texto.trim()) return m.texto // já tem texto/transcrição
-    // Deepgram em modo URL (busca o áudio direto da URL da mídia)
+    // baixa o áudio no nosso servidor (a URL do Z-API não é roteável pelo Deepgram) e manda os BYTES
+    const dl = await fetch(m.midia_url)
+    if (!dl.ok) return null
+    const ct = dl.headers.get('content-type') || m.midia_mime || 'audio/ogg'
+    const buf = Buffer.from(await dl.arrayBuffer())
     const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
-      method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ url: m.midia_url }),
+      method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': ct }, body: buf,
     })
     const j: any = await r.json().catch(() => null)
     const txt = j?.results?.channels?.[0]?.alternatives?.[0]?.transcript
