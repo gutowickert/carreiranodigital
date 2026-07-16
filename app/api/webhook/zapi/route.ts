@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
           codigo_turma: turmaMatch.codigo,
           vendedor_id: vendedorId,
           etapa: 'aguardando_atendimento',
-          origem: click?.utm_source || 'whatsapp',
+          origem: 'whatsapp', // a FONTE real (ig/fb/site) fica em utm_source; origem tem check constraint
           fbclid: click?.fbclid ?? null,
           fbc: click?.fbc ?? null,
           fbp: click?.fbp ?? null,
@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
           nome: nomeLead || 'Lead WhatsApp',
           whatsapp: telefone,
           etapa: 'aguardando_atendimento',
-          origem: click.utm_source || 'site-principal',
+          origem: 'whatsapp', // fonte real fica em utm_source
           fbclid: click?.fbclid ?? null, fbc: click?.fbc ?? null, fbp: click?.fbp ?? null,
           utm_source: click?.utm_source ?? null, utm_medium: click?.utm_medium ?? null,
           utm_campaign: click?.utm_campaign ?? null, utm_content: click?.utm_content ?? null,
@@ -177,7 +177,7 @@ export async function POST(req: NextRequest) {
         if (clk) {
           const { data: atual } = await supabase.from('leads').select('utm_source, utm_medium, utm_campaign, utm_content, fbc, fbp, fbclid, codigo_turma').eq('id', lead.id).maybeSingle()
           const patch: any = {}
-          if (!atual?.utm_source && clk.utm_source) { patch.utm_source = clk.utm_source; patch.origem = clk.utm_source }
+          if (!atual?.utm_source && clk.utm_source) patch.utm_source = clk.utm_source
           if (!atual?.utm_medium && clk.utm_medium) patch.utm_medium = clk.utm_medium
           if (!atual?.utm_campaign && clk.utm_campaign) patch.utm_campaign = clk.utm_campaign
           if (!atual?.utm_content && clk.utm_content) patch.utm_content = clk.utm_content
