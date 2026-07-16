@@ -284,7 +284,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
               <Image src="/logo.png" alt="CarreiraNoDigital" width={160} height={48} style={{ objectFit: 'contain' }} />
             </div>
 
-            <nav style={{ flex: 1, padding: '8px 12px', display: 'flex', flexDirection: 'column' }}>
+            <nav style={{ flex: 1, padding: '12px 12px', display: 'flex', flexDirection: 'column' }}>
               {gruposVisiveis.map((grupo, idx) => (
                 <div key={idx} style={{ marginBottom: grupo.titulo ? 8 : 4 }}>
                   {grupo.titulo && (
@@ -309,7 +309,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                     </button>
                   )}
                   {(abertos[grupo.titulo] || !grupo.titulo) && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       {grupo.itens.map((m, mi) => {
                         if (!m.href) return (
                           <div key={'lbl-' + mi} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.06em', padding: '10px 10px 2px 18px', opacity: .65 }}>{m.nome}</div>
@@ -321,14 +321,14 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                             justifyContent: 'space-between',
                             alignItems: 'center',
                             gap: 6,
-                            padding: grupo.titulo ? '7px 10px 7px 18px' : '9px 14px',
-                            borderRadius: '6px',
+                            padding: grupo.titulo ? '8px 12px 8px 18px' : '10px 14px',
+                            borderRadius: 'var(--r-sm)',
                             fontSize: '13px',
-                            fontWeight: ativo ? '600' : '400',
+                            fontWeight: ativo ? 600 : 400,
                             textDecoration: 'none',
-                            backgroundColor: ativo ? 'var(--accent)' : 'transparent',
-                            color: ativo ? 'var(--on-accent)' : 'var(--text-muted)',
-                            boxShadow: ativo ? '0 1px 6px rgba(124,58,237,.45)' : 'none',
+                            backgroundColor: ativo ? 'var(--nav-active-bg)' : 'transparent',
+                            color: ativo ? 'var(--nav-active-text)' : 'var(--text-muted)',
+                            boxShadow: 'none',
                             transition: 'background-color .15s ease, color .15s ease',
                           }}>
                             <span>{m.nome}</span>
