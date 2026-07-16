@@ -18,13 +18,13 @@ async function todos(tab: string, cols: string, f?: (q: any) => any) {
 }
 const familia = (cod: string) => /^fc/i.test(cod || '') ? 'FC' : /^anl/i.test(cod || '') ? 'ANL' : ''
 
-// Fila de atendimento priorizada: 🔥 quem respondeu (última msg dele) primeiro; depois follow-ups frios (1-13d).
-// Não inclui agendado/aguardando pagamento (compromisso) nem falado hoje sem resposta.
+// Fila de atendimento. `fila` (Atender Agora / Copiloto): 🔥 quem respondeu + follow-ups frios.
+// `lote`: os FOLLOW-UPS DO DIA (tarefas vencidas/hoje), exceto quem está respondendo — pra despachar em massa.
+// Todo item vem enriquecido: tempo de chegada, etapa no funil, se teve ligação, e andamentos.
 export async function GET() {
   const now = Date.now()
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma')).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
-  const lset = new Set(leads.map((l: any) => l.id))
+  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em')).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
   const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em')
   const convDeLead: Record<string, string[]> = {}, convPorTel: Record<string, string[]> = {}, convById: Record<string, any> = {}
   for (const c of convs) {
@@ -51,28 +51,70 @@ export async function GET() {
       if (data.length < 1000) break; from += 1000
     }
   }
+
+  // ENRIQUECIMENTO: ligações (quantas) + andamentos (quantos + último) por lead
+  const leadIds = leads.map((l: any) => l.id)
+  const ligCount: Record<string, number> = {}
+  const andInfo: Record<string, { n: number; ultimo: string; em: string }> = {}
+  for (let i = 0; i < leadIds.length; i += 200) {
+    const chunk = leadIds.slice(i, i + 200)
+    const { data: ligs } = await sb.from('ligacoes').select('lead_id').in('lead_id', chunk)
+    for (const x of (ligs || [])) if (x.lead_id) ligCount[x.lead_id] = (ligCount[x.lead_id] || 0) + 1
+    const { data: ands } = await sb.from('lead_andamentos').select('lead_id,observacao,criado_em').in('lead_id', chunk).order('criado_em', { ascending: false })
+    for (const a of (ands || [])) { const o = andInfo[a.lead_id] = andInfo[a.lead_id] || { n: 0, ultimo: '', em: '' }; o.n++; if (!o.ultimo && a.observacao) { o.ultimo = a.observacao; o.em = a.criado_em } }
+  }
+
+  // FOLLOW-UPS DO DIA: tarefas pendentes vencidas ou de hoje
+  const tarefas = await todos('tarefas_lead', 'lead_id,tipo,titulo,data_vencimento', q => q.eq('concluida', false).eq('cancelada', false).lte('data_vencimento', hoje + 'T23:59:59'))
+  const tarefaDeLead: Record<string, any> = {}
+  for (const t of tarefas) { const c = tarefaDeLead[t.lead_id]; if (!c || (t.data_vencimento || '') < (c.data_vencimento || '')) tarefaDeLead[t.lead_id] = t }
+
+  const bestDe = (l: any) => {
+    const cs = [...(convDeLead[l.id] || []), ...(convPorTel[suf(l.whatsapp)] || [])]
+    let best: any = null, bestConv = ''
+    for (const cid of cs) { const o = perConv[cid]; if (o && (!best || o.lastAny > best.lastAny)) { best = o; bestConv = cid } }
+    if (!bestConv) bestConv = cs[0] || ''
+    return { best, bestConv }
+  }
+  const mkItem = (l: any, best: any, bestConv: string) => {
+    const conv = convById[bestConv] || {}
+    const a = andInfo[l.id]
+    return {
+      leadId: l.id, nome: l.nome, etapa: l.etapa,
+      conversaId: bestConv || null, telefone: conv.telefone || l.whatsapp, chatLid: conv.chat_lid || null,
+      snippet: best?.texto || conv.ultima_msg || '', ultimaCliente: best?.textoCliente || '',
+      dSC: best?.lastAny ? Math.floor((now - best.lastAny) / 864e5) : null,
+      chegouDias: l.criado_em ? Math.floor((now - +new Date(l.criado_em)) / 864e5) : null,
+      temLigacao: ligCount[l.id] || 0, qtdAndamentos: a?.n || 0, ultimoAndamento: (a?.ultimo || '').slice(0, 140),
+      produto: familia(l.codigo_turma), cidade: null,
+    }
+  }
+
   const P = (await getFluxo().then(f => f.prioridade).catch(() => null)) || PRIORIDADE_PADRAO
   const fila: any[] = []
   for (const l of leads) {
-    const cs = [...(convDeLead[l.id] || []), ...(convPorTel[suf(l.whatsapp)] || [])]
-    let best: any = null, bestConv: string = ''
-    for (const cid of cs) { const o = perConv[cid]; if (o && (!best || o.lastAny > best.lastAny)) { best = o; bestConv = cid } }
+    const { best, bestConv } = bestDe(l)
     if (!best || !best.lastAny) continue
     const dSC = Math.floor((now - best.lastAny) / 864e5)
     const hojeC = new Date(best.lastAny).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hoje
-    const conv = convById[bestConv] || {}
-    const item = {
-      leadId: l.id, nome: l.nome, etapa: l.etapa,
-      conversaId: bestConv, telefone: conv.telefone || l.whatsapp, chatLid: conv.chat_lid || null,
-      snippet: best.texto || conv.ultima_msg || '', ultimaCliente: best.textoCliente || '', dSC,
-      produto: familia(l.codigo_turma), cidade: null,
-    }
-    if (best.dir === 'in') fila.push({ ...item, prioridade: 'quente', ord: best.lastAny })   // respondeu, esperando
-    else if ((P.incluirFaladoHoje || !hojeC) && dSC >= 1 && dSC <= (P.followupDias || 13)) fila.push({ ...item, prioridade: 'followup' }) // frio a nutrir
+    const item = mkItem(l, best, bestConv)
+    if (best.dir === 'in') fila.push({ ...item, prioridade: 'quente', ord: best.lastAny })
+    else if ((P.incluirFaladoHoje || !hojeC) && dSC >= 1 && dSC <= (P.followupDias || 13)) fila.push({ ...item, prioridade: 'followup' })
   }
-  // produto prioritário sobe dentro do bloco
   const prod = (a: any) => (P.produtoPrioritario && a.produto === P.produtoPrioritario) ? 0 : 1
   const quentes = fila.filter(f => f.prioridade === 'quente').sort((a, b) => prod(a) - prod(b) || (P.ordemQuente === 'esperando' ? a.ord - b.ord : b.ord - a.ord))
   const followups = fila.filter(f => f.prioridade === 'followup').sort((a, b) => prod(a) - prod(b) || (P.ordemFollowup === 'menos_frio' ? a.dSC - b.dSC : b.dSC - a.dSC))
-  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups] })
+
+  // LOTE = follow-ups do dia (tarefa vencida/hoje), exceto quem está respondendo (esses vão pro Atender Agora)
+  const lote: any[] = []
+  for (const l of leads) {
+    const tf = tarefaDeLead[l.id]; if (!tf) continue
+    const { best, bestConv } = bestDe(l)
+    if (best && best.dir === 'in') continue
+    const item = mkItem(l, best, bestConv)
+    lote.push({ ...item, prioridade: 'followup', tarefa: { tipo: tf.tipo, titulo: tf.titulo, venc: (tf.data_vencimento || '').slice(0, 10) } })
+  }
+  lote.sort((a, b) => (a.tarefa.venc || '').localeCompare(b.tarefa.venc || ''))
+
+  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups], lote, loteCount: lote.length })
 }

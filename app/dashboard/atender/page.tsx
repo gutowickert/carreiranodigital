@@ -5,7 +5,9 @@ import { supabase } from '@/lib/supabase'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
-  snippet: string; ultimaCliente: string; dSC: number; produto: string; cidade: string | null; prioridade: 'quente' | 'followup'
+  snippet: string; ultimaCliente: string; dSC: number | null; produto: string; cidade: string | null; prioridade: 'quente' | 'followup'
+  chegouDias?: number | null; temLigacao?: number; qtdAndamentos?: number; ultimoAndamento?: string
+  tarefa?: { tipo: string; titulo: string; venc: string }
 }
 type Sug = { resposta: string; situacao?: string; objecao?: string; etapa_funil?: string; baseado_em?: string; acao_sugerida?: string; proximo_passo?: string }
 
@@ -17,15 +19,25 @@ function Tag({ p }: { p: 'quente' | 'followup' }) {
   return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: p === 'quente' ? 'rgba(239,68,68,.15)' : 'rgba(34,197,94,.15)', color: p === 'quente' ? '#ef4444' : '#16a34a' }}>{p === 'quente' ? '🔥 respondeu' : '🌱 follow-up'}</span>
 }
 
-// Resumo pra decidir rápido: última fala do CLIENTE + leitura da IA (situação/objeção/próximo passo)
+// Resumo pra DECIDIR: contexto do lead (funil/chegada/ligação/andamentos) + última fala do cliente + leitura da IA.
 function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
+  const info = [
+    `📍 ${item.etapa}`,
+    item.chegouDias != null ? `chegou há ${item.chegouDias}d` : null,
+    item.dSC != null ? `silêncio ${item.dSC}d` : null,
+    item.temLigacao ? `📞 ${item.temLigacao} ligação${item.temLigacao > 1 ? 'es' : ''} (IA leu)` : '📞 sem ligação',
+    item.qtdAndamentos ? `📝 ${item.qtdAndamentos} andamento${item.qtdAndamentos > 1 ? 's' : ''}` : '📝 sem andamento',
+  ].filter(Boolean).join('   ·   ')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
+      <div style={{ fontSize: 11.5, color: 'var(--text-2)', padding: '7px 11px', background: 'var(--surface-2)', borderRadius: 8, fontWeight: 600 }}>{info}</div>
+      {item.ultimoAndamento
+        ? <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '0 4px' }}>último andamento: “{item.ultimoAndamento}”</div> : null}
       {item.ultimaCliente
         ? <div style={{ fontSize: 13.5, color: 'var(--text)', padding: '9px 12px', background: 'rgba(239,68,68,.08)', borderRadius: 8, borderLeft: '3px solid #ef4444' }}>👤 <b>Cliente:</b> “{item.ultimaCliente}”</div>
         : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>o cliente ainda não respondeu — este é um follow-up de reativação</div>}
       {sug?.situacao
-        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Resumo:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.proximo_passo ? ` · próximo: ${sug.proximo_passo}` : ''}</div>
+        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura da IA:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.proximo_passo ? ` · sugere avançar pra: ${sug.proximo_passo}` : ''}</div>
         : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px' }}>montando o resumo…</div>}
     </div>
   )
@@ -36,6 +48,14 @@ async function fetchConversa(conversaId: string): Promise<Msg[]> {
   const j = await fetch(`/api/atender/conversa?conversaId=${conversaId}`).then(r => r.json()).catch(() => null)
   return j?.ok ? j.msgs : []
 }
+const quando = (iso: string) => {
+  if (!iso) return ''
+  const d = new Date(iso)
+  const dia = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })
+  const hora = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' })
+  const hoje = new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo' })
+  return dia === hoje ? `hoje ${hora}` : `${dia} ${hora}`
+}
 function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
   const fim = useRef<HTMLDivElement>(null)
   useEffect(() => { fim.current?.scrollIntoView({ block: 'nearest' }) }, [msgs])
@@ -45,7 +65,7 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
     <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: 12, background: 'var(--surface-2)', borderRadius: 10 }}>
       {msgs.map((m, i) => (
         <div key={i} style={{ alignSelf: m.de === 'cliente' ? 'flex-start' : 'flex-end', maxWidth: '80%', background: m.de === 'cliente' ? 'var(--surface)' : 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 11px', fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
-          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>{m.de === 'cliente' ? '👤 cliente' : '💚 nós'}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>{m.de === 'cliente' ? '👤 cliente' : '💚 nós'} · {quando(m.em)}</div>
           {m.texto}
         </div>
       ))}
@@ -57,6 +77,7 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
 export default function AtenderPage() {
   const [email, setEmail] = useState('')
   const [fila, setFila] = useState<Item[]>([])
+  const [lote, setLote] = useState<Item[]>([])
   const [nq, setNq] = useState(0); const [nf, setNf] = useState(0)
   const [carregando, setCarregando] = useState(true)
   const [aba, setAba] = useState<'agora' | 'copiloto' | 'lote'>('agora')
@@ -72,7 +93,7 @@ export default function AtenderPage() {
   async function carregar() {
     setCarregando(true)
     const j = await fetch('/api/atender/fila').then(r => r.json()).catch(() => null)
-    if (j?.ok) { setFila(j.fila); setNq(j.quentes); setNf(j.followups) }
+    if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setNq(j.quentes); setNf(j.followups) }
     setCarregando(false)
   }
 
@@ -89,7 +110,7 @@ export default function AtenderPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🎯 Atender Agora</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups na fila`}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} do dia no Lote`}</p>
         </div>
         <button onClick={carregar} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>↻ Atualizar</button>
       </div>
@@ -100,11 +121,14 @@ export default function AtenderPage() {
         ))}
       </div>
 
-      {carregando ? <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
-        : fila.length === 0 ? <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>🎉 Fila zerada! Ninguém esperando resposta e sem follow-up pendente.</div>
-          : aba === 'agora' ? <Agora fila={fila} sugerir={sugerir} enviar={enviar} />
-            : aba === 'copiloto' ? <Copiloto fila={fila} sugerir={sugerir} enviar={enviar} />
-              : <Lote fila={fila} sugerir={sugerir} enviar={enviar} />}
+      {(() => {
+        if (carregando) return <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
+        const dados = aba === 'lote' ? lote : fila
+        if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
+        return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} />
+          : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} />
+            : <Lote fila={dados} sugerir={sugerir} enviar={enviar} />
+      })()}
     </div>
   )
 }
@@ -233,8 +257,10 @@ function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
         {l.enviado ? <span>✅</span> : <input type="checkbox" checked={l.ok} onChange={e => onCheck(e.target.checked)} />}
         <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.item.nome}</span>
-        <Tag p={l.item.prioridade} />
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.etapa} · {l.item.produto || '—'} · {l.item.dSC}d</span>
+        {l.item.tarefa
+          ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>📋 {l.item.tarefa.titulo.split(' — ')[0]}</span>
+          : <Tag p={l.item.prioridade} />}
+        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.produto || '—'}{l.item.dSC != null ? ` · silêncio ${l.item.dSC}d` : ''}</span>
         <button onClick={toggle} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
       </div>
       <Resumo item={l.item} sug={l.sug || null} />
@@ -275,7 +301,7 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
     <div>
       {!linhas.length ? (
         <div style={{ ...card, padding: 24, textAlign: 'center' }}>
-          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>Gera as sugestões dos primeiros {Math.min(N, fila.length)} da fila pra revisar e disparar de uma vez.</div>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>Follow-ups que vencem hoje. Gera as sugestões dos primeiros {Math.min(N, fila.length)} pra revisar e disparar de uma vez.</div>
           <button onClick={gerar} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `✨ Gerar ${Math.min(N, fila.length)} sugestões`}</button>
         </div>
       ) : (
