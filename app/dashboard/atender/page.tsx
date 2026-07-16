@@ -74,6 +74,36 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
   )
 }
 
+const ETAPAS_MOVER: [string, string][] = [
+  ['aguardando_atendimento', 'Aguardando atendimento'], ['atendimento_inicial', 'Atendimento inicial'],
+  ['lote_preco_ok', 'Lote e preço ok'], ['nao_chegou_preco', 'Não chegou no preço'],
+  ['oferecer_bolsa', 'Oferecer bolsa'], ['pediu_prazo', 'Pediu prazo'],
+  ['aguardando_pagamento', 'Aguardando pagamento'], ['agendado', 'Agendado'], ['proxima_turma', 'Próxima turma'],
+]
+
+// Botões de decisão no card: ✓ feito (conclui a tarefa e avança a cadência), mover etapa, marcar perda.
+function Acoes({ item, onFeito }: { item: Item; onFeito?: (id: string) => void }) {
+  const [busy, setBusy] = useState('')
+  const [done, setDone] = useState('')
+  async function acao(a: string, extra: any = {}) {
+    setBusy(a)
+    const r = await fetch('/api/atender/acao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, acao: a, ...extra }) }).then(r => r.json()).catch(() => ({ ok: false }))
+    setBusy('')
+    if (r.ok) { setDone(a); onFeito?.(item.leadId) }
+  }
+  if (done) return <div style={{ fontSize: 12, color: 'var(--green-strong)', marginTop: 10, fontWeight: 700, borderTop: '1px solid var(--border)', paddingTop: 10 }}>✓ {done === 'concluir' ? 'tarefa concluída — próxima criada' : done === 'perda' ? 'marcado como perda' : 'etapa movida'}</div>
+  return (
+    <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center', flexWrap: 'wrap', borderTop: '1px solid var(--border)', paddingTop: 10 }}>
+      <button disabled={!!busy} onClick={() => acao('concluir')} style={{ background: 'var(--green-bg)', color: 'var(--green-strong)', border: '1px solid var(--green)', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{busy === 'concluir' ? '...' : '✓ Feito (avança cadência)'}</button>
+      <select disabled={!!busy} defaultValue="" onChange={e => { if (e.target.value) acao('mover', { etapa: e.target.value }) }} style={{ background: 'var(--surface-2)', color: 'var(--text)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>
+        <option value="">↷ mover etapa…</option>
+        {ETAPAS_MOVER.filter(([id]) => id !== item.etapa).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+      </select>
+      <button disabled={!!busy} onClick={() => { const m = prompt('Motivo da perda (opcional):'); if (m !== null) acao('perda', { motivo: m }) }} style={{ marginLeft: 'auto', background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{busy === 'perda' ? '...' : '✕ Perda'}</button>
+    </div>
+  )
+}
+
 export default function AtenderPage() {
   const [email, setEmail] = useState('')
   const [fila, setFila] = useState<Item[]>([])
@@ -104,6 +134,7 @@ export default function AtenderPage() {
   async function enviar(item: Item, texto: string) {
     return fetch('/api/atender/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, conversaId: item.conversaId, telefone: item.telefone, chatLid: item.chatLid, texto, email }) }).then(r => r.json()).catch(() => ({ ok: false }))
   }
+  function feito(leadId: string) { setFila(f => f.filter(x => x.leadId !== leadId)); setLote(l => l.filter(x => x.leadId !== leadId)) }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 980, margin: '0 auto' }}>
@@ -125,8 +156,8 @@ export default function AtenderPage() {
         if (carregando) return <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
         const dados = aba === 'lote' ? lote : fila
         if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
-        return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} />
-          : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} />
+        return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
+          : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
             : <Lote fila={dados} sugerir={sugerir} enviar={enviar} />
       })()}
     </div>
@@ -134,7 +165,7 @@ export default function AtenderPage() {
 }
 
 // ————— ABA ATENDER AGORA: um card por vez, ler → aprovar → próximo —————
-function Agora({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any> }) {
+function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any>; onFeito: (id: string) => void }) {
   const [idx, setIdx] = useState(0)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -191,13 +222,14 @@ function Agora({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => 
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
         </div>
+        <Acoes item={item} onFeito={onFeito} />
       </div>
     </div>
   )
 }
 
 // ————— ABA COPILOTO: lista à esquerda, conversa+sugestão à direita —————
-function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any> }) {
+function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any>; onFeito: (id: string) => void }) {
   const [sel, setSel] = useState<Item | null>(fila[0] || null)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -237,6 +269,7 @@ function Copiloto({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) 
           <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
             <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim()); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? '✅ Enviado' : '✅ Enviar'}</button>
           </div>
+          <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
         </>}
       </div>
     </div>
@@ -267,6 +300,7 @@ function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: 
       {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 resposta:</div>
       <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
+      <Acoes item={l.item} />
     </div>
   )
 }

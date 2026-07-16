@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { gerarProxima } from '@/lib/fluxo'
 
 // Ações rápidas do Atender: mover o lead de etapa no funil, ou marcar perda.
 // Registra o andamento (mudanca_etapa) igual ao CRM; na perda, cancela as tarefas pendentes.
@@ -27,6 +28,16 @@ export async function POST(req: NextRequest) {
     await sb.from('leads').update({ etapa: 'perda', data_perda: now, atualizado_em: now }).eq('id', leadId)
     await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: now, atualizado_em: now }).eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false)
     await sb.from('lead_andamentos').insert({ lead_id: leadId, vendedor_id: lead.vendedor_id || null, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: 'perda', observacao: motivo ? `Perda: ${motivo}` : 'Perda marcada pelo Atender' })
+    return NextResponse.json({ ok: true })
+  }
+
+  if (acao === 'concluir') {
+    // conclui a tarefa de followup atual e cria a PRÓXIMA da cadência (avança o D0/D1/D2 sozinho)
+    const { data: tf } = await sb.from('tarefas_lead').select('id, tipo').eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).order('data_vencimento').limit(1).maybeSingle()
+    if (!tf) return NextResponse.json({ ok: true, semTarefa: true })
+    await sb.from('tarefas_lead').update({ concluida: true, concluida_em: now, atualizado_em: now }).eq('id', tf.id)
+    const { data: l2 } = await sb.from('leads').select('nome').eq('id', leadId).maybeSingle()
+    await gerarProxima(sb, leadId, lead.etapa, tf.tipo, l2?.nome || 'Lead', lead.vendedor_id || null)
     return NextResponse.json({ ok: true })
   }
 
