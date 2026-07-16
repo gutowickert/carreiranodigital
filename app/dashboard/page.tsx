@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
-const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', boxShadow: 'var(--shadow-md)' }
 
 // Etapas reais do funil (ordem + cor) — antes usava novo/sdr/closer que não existem
 const FUNIL_ETAPAS = [
@@ -196,7 +196,7 @@ export default function Dashboard() {
   )
 
   return (
-    <div style={{ padding: '24px clamp(12px, 4vw, 40px)', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
+    <div style={{ padding: '32px clamp(16px, 4vw, 48px)', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Painel</h1>
         <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginTop: '4px' }}>
@@ -204,7 +204,7 @@ export default function Dashboard() {
         </p>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '18px', marginBottom: '28px' }}>
         {ehAdmin ? (
           <>
             <div style={{ ...card, padding: '20px' }}>
