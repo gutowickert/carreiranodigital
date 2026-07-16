@@ -32,6 +32,7 @@ const grupos: Grupo[] = [
       { nome: '🧠 Agente Interno', href: '/dashboard/agente-interno' },
       { nome: '🔎 Qualidade IA', href: '/dashboard/qualidade-ia' },
       { nome: '🤖 Automação IA', href: '/dashboard/automacao-ia' },
+      { nome: '🧮 Custo da IA', href: '/dashboard/ia-uso' },
     ],
   },
   {
@@ -121,7 +122,7 @@ function bipe() {
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
-  if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
+  if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   if (p.papel === 'admin') return true
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
