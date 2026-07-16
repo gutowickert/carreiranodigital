@@ -142,13 +142,13 @@ export default function AtenderPage() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🎯 Atender Agora</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} no Lote · 🚩 ${parados.length} sem tarefa`}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} com tarefa · 🚩 ${parados.length} sem tarefa`}</p>
         </div>
         <button onClick={carregar} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>↻ Atualizar</button>
       </div>
 
       <div style={{ display: 'flex', gap: 6, margin: '18px 0 20px', borderBottom: '1px solid var(--border)' }}>
-        {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Lote'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
+        {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Follow-up com tarefa'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
           <button key={k} onClick={() => setAba(k)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${aba === k ? 'var(--accent)' : 'transparent'}`, color: aba === k ? 'var(--text)' : 'var(--text-faint)', fontSize: 14, fontWeight: 700, padding: '8px 12px', cursor: 'pointer', marginBottom: -1 }}>{t}</button>
         ))}
       </div>
@@ -277,20 +277,20 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
   )
 }
 
-// linha do lote: contexto (última fala do cliente + thread expansível) + sugestão editável
-function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onCheck: (v: boolean) => void }) {
+// linha: contexto + sugestão editável + ENVIO INDIVIDUAL + botões de decisão (uma a uma)
+function LoteRow({ l, onTexto, onEnviar }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onEnviar: () => Promise<void> }) {
   const [aberto, setAberto] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [carr, setCarr] = useState(false)
+  const [env, setEnv] = useState(false)
   async function toggle() {
     if (!aberto && !msgs.length) { setCarr(true); setMsgs(await fetchConversa(l.item.conversaId)); setCarr(false) }
     setAberto(a => !a)
   }
   return (
-    <div style={{ ...card, padding: 12, opacity: l.enviado ? .55 : 1 }}>
+    <div style={{ ...card, padding: 12, opacity: l.enviado ? .7 : 1 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-        {l.enviado ? <span>✅</span> : <input type="checkbox" checked={l.ok} onChange={e => onCheck(e.target.checked)} />}
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.item.nome}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.enviado ? '✅ ' : ''}{l.item.nome}</span>
         {l.item.tarefa
           ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>📋 {l.item.tarefa.titulo.split(' — ')[0]}</span>
           : <Tag p={l.item.prioridade} />}
@@ -299,59 +299,52 @@ function LoteRow({ l, onTexto, onCheck }: { l: { item: Item; texto: string; ok: 
       </div>
       <Resumo item={l.item} sug={l.sug || null} />
       {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 resposta:</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 mensagem:</div>
       <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
+      <div style={{ marginTop: 6 }}>
+        <button disabled={l.enviado || env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviar(); setEnv(false) }} style={{ ...btn('var(--green)'), padding: '8px 16px', fontSize: 13, opacity: (l.enviado || env || !l.texto.trim()) ? .6 : 1 }}>{l.enviado ? '✅ Enviada' : env ? 'Enviando…' : '📤 Enviar mensagem'}</button>
+      </div>
       <Acoes item={l.item} />
     </div>
   )
 }
 
-// ————— ABA LOTE: gera sugestões pra vários, revisa e dispara em massa —————
+// ————— ABA FOLLOW-UP COM TAREFA: gera sugestões, envia UMA A UMA e decide o andamento na hora —————
 function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string) => Promise<any> }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
-  const [disparando, setDisparando] = useState(false)
   const N = 10
 
-  async function gerar() {
+  async function gerarMais() {
     setGerando(true)
-    const alvo = fila.slice(0, N)
+    const jaTem = new Set(linhas.map(l => l.item.leadId))
+    const alvo = fila.filter(it => !jaTem.has(it.leadId)).slice(0, N)
     const res = await Promise.all(alvo.map(async it => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }))
-    setLinhas(res)
+    setLinhas(l => [...l, ...res])
     setGerando(false)
   }
-  async function disparar() {
-    setDisparando(true)
-    const novas = [...linhas]
-    for (let i = 0; i < novas.length; i++) {
-      if (!novas[i].ok || novas[i].enviado || !novas[i].texto.trim()) continue
-      const r = await enviar(novas[i].item, novas[i].texto.trim())
-      novas[i].enviado = !!r.ok; setLinhas([...novas])
-    }
-    setDisparando(false)
-  }
-  const aprovados = linhas.filter(l => l.ok && !l.enviado).length
+
+  const enviados = linhas.filter(l => l.enviado).length
+  const restam = fila.length - linhas.length
 
   return (
     <div>
       {!linhas.length ? (
         <div style={{ ...card, padding: 24, textAlign: 'center' }}>
-          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>Gera as sugestões dos primeiros {Math.min(N, fila.length)} pra revisar e agir de uma vez (revisar resposta, ou decidir com os botões).</div>
-          <button onClick={gerar} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `✨ Gerar ${Math.min(N, fila.length)} sugestões`}</button>
+          <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>{fila.length} lead(s) na fila. Gera as sugestões pra revisar, <b>enviar uma a uma</b> e já marcar o andamento (mover etapa / ✓ feito) na hora.</div>
+          <button onClick={gerarMais} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `✨ Gerar ${Math.min(N, fila.length)} sugestões`}</button>
         </div>
       ) : (
         <>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>{aprovados} pra disparar</span>
-            <button onClick={disparar} disabled={disparando || aprovados === 0} style={{ ...btn('var(--green)'), opacity: (disparando || aprovados === 0) ? .6 : 1 }}>{disparando ? 'Disparando…' : `🚀 Disparar ${aprovados}`}</button>
-          </div>
+          <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 12 }}>{linhas.length} carregado(s) · {enviados} enviado(s){restam > 0 ? ` · ${restam} restante(s)` : ''}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {linhas.map((l, k) => (
               <LoteRow key={l.item.leadId} l={l}
                 onTexto={t => { const n = [...linhas]; n[k].texto = t; setLinhas(n) }}
-                onCheck={v => { const n = [...linhas]; n[k].ok = v; setLinhas(n) }} />
+                onEnviar={async () => { const r = await enviar(l.item, l.texto.trim()); if (r?.ok) { const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }} />
             ))}
           </div>
+          {restam > 0 && <button onClick={gerarMais} disabled={gerando} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', marginTop: 12 }}>{gerando ? 'Gerando…' : `+ Gerar mais ${Math.min(N, restam)}`}</button>}
         </>
       )}
     </div>
