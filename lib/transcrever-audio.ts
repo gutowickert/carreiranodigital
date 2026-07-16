@@ -9,11 +9,19 @@ export async function transcreverAudioMsg(msgId: string): Promise<string | null>
     const { data: m } = await sb.from('wa_mensagens').select('id, tipo, texto, midia_url, midia_mime').eq('id', msgId).maybeSingle()
     if (!m || m.tipo !== 'audio' || !m.midia_url) return null
     if (m.texto && m.texto.trim()) return m.texto // já tem texto/transcrição
-    // baixa o áudio no nosso servidor (a URL do Z-API não é roteável pelo Deepgram) e manda os BYTES
-    const dl = await fetch(m.midia_url)
-    if (!dl.ok) return null
-    const ct = dl.headers.get('content-type') || m.midia_mime || 'audio/ogg'
-    const buf = Buffer.from(await dl.arrayBuffer())
+    // Pega os BYTES do áudio: data URI (nossos áudios enviados) = decodifica base64; senão baixa a URL.
+    let buf: Buffer, ct: string
+    if (m.midia_url.startsWith('data:')) {
+      const virg = m.midia_url.indexOf(',')
+      ct = (m.midia_url.slice(5, virg).split(';')[0]) || m.midia_mime || 'audio/ogg'
+      buf = Buffer.from(m.midia_url.slice(virg + 1), 'base64')
+    } else {
+      const dl = await fetch(m.midia_url)
+      if (!dl.ok) return null
+      ct = dl.headers.get('content-type') || m.midia_mime || 'audio/ogg'
+      buf = Buffer.from(await dl.arrayBuffer())
+    }
+    if (!buf.length) return null
     const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
       method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': ct }, body: buf,
     })
