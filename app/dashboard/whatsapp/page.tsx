@@ -174,6 +174,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const tickRef = useRef<any>(null)
   const [sugerindo, setSugerindo] = useState(false)
   const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
+  const [sugeridoOrig, setSugeridoOrig] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const [criandoLead, setCriandoLead] = useState(false)
   const [editInfo, setEditInfo] = useState(false)
@@ -203,6 +204,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
 
   useEffect(() => {
     setEditInfo(false)
+    setSugeridoOrig(''); setSugestao(null)
     carregar()
     const t = setInterval(carregar, 5000)
     return () => clearInterval(t)
@@ -238,7 +240,11 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
         body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto }),
       })
       const json = await res.json()
-      if (json.ok) { setTexto(''); carregar(); onEnviou() }
+      if (json.ok) {
+        // aprendizado: se a msg veio de uma sugestão da IA e foi editada, captura o par
+        if (sugeridoOrig) { fetch('/api/ia/edicao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, original: sugeridoOrig, enviado: texto, tela: 'whatsapp' }) }).catch(() => { }); setSugeridoOrig('') }
+        setTexto(''); carregar(); onEnviou()
+      }
       else setErro(json.error || 'falha ao enviar')
     } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
     finally { setEnviando(false) }
@@ -254,6 +260,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
       if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
       const s = j.sugestao || {}
       setTexto(s.resposta || '')
+      setSugeridoOrig(s.resposta || '')
       setSugestao({ objecao: s.objecao || 'nenhuma', dica: [s.etapa_funil, s.proximo_passo].filter(Boolean).join(' · ') })
       setTimeout(() => txtRef.current?.focus(), 50)
     } catch { setErro('Falha ao falar com a IA de vendas.') }
