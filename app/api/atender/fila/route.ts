@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { getFluxo, PRIORIDADE_PADRAO } from '@/lib/fluxo'
+import { orgDaRequest } from '@/lib/org'
 
 export const maxDuration = 60
 
@@ -21,11 +22,12 @@ const familia = (cod: string) => /^fc/i.test(cod || '') ? 'FC' : /^anl/i.test(co
 // Fila de atendimento. `fila` (Atender Agora / Copiloto): 🔥 quem respondeu + follow-ups frios.
 // `lote`: os FOLLOW-UPS DO DIA (tarefas vencidas/hoje), exceto quem está respondendo — pra despachar em massa.
 // Todo item vem enriquecido: tempo de chegada, etapa no funil, se teve ligação, e andamentos.
-export async function GET() {
+export async function GET(req: Request) {
   const now = Date.now()
+  const org = await orgDaRequest(req.headers.get('authorization'))
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em')).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
-  const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em')
+  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em', q => q.eq('org_id', org))).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
+  const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em', q => q.eq('org_id', org))
   const convDeLead: Record<string, string[]> = {}, convPorTel: Record<string, string[]> = {}, convById: Record<string, any> = {}
   for (const c of convs) {
     convById[c.id] = c
@@ -65,7 +67,7 @@ export async function GET() {
   }
 
   // FOLLOW-UPS DO DIA: tarefas pendentes vencidas ou de hoje
-  const tarefas = await todos('tarefas_lead', 'lead_id,tipo,titulo,data_vencimento', q => q.eq('concluida', false).eq('cancelada', false).lte('data_vencimento', hoje + 'T23:59:59'))
+  const tarefas = await todos('tarefas_lead', 'lead_id,tipo,titulo,data_vencimento', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false).lte('data_vencimento', hoje + 'T23:59:59'))
   const tarefaDeLead: Record<string, any> = {}
   for (const t of tarefas) { const c = tarefaDeLead[t.lead_id]; if (!c || (t.data_vencimento || '') < (c.data_vencimento || '')) tarefaDeLead[t.lead_id] = t }
 
@@ -118,7 +120,7 @@ export async function GET() {
 
   // SEM TAREFA (parados): leads em etapa ativa que NÃO têm nenhuma tarefa pendente — terminaram a cadência
   // (ou nunca geraram) e não foram movidos. Ficam invisíveis no Lote/Copiloto e se perdem no CRM.
-  const pend = await todos('tarefas_lead', 'lead_id', q => q.eq('concluida', false).eq('cancelada', false))
+  const pend = await todos('tarefas_lead', 'lead_id', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false))
   const comTarefa = new Set(pend.map((t: any) => t.lead_id))
   const parados: any[] = []
   for (const l of leads) {

@@ -123,7 +123,8 @@ export default function AtenderPage() {
 
   async function carregar() {
     setCarregando(true)
-    const j = await fetch('/api/atender/fila').then(r => r.json()).catch(() => null)
+    const { data: { session } } = await supabase.auth.getSession()
+    const j = await fetch('/api/atender/fila', { headers: { Authorization: `Bearer ${session?.access_token || ''}` } }).then(r => r.json()).catch(() => null)
     if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setParados(j.parados || []); setNq(j.quentes); setNf(j.followups) }
     setCarregando(false)
   }
