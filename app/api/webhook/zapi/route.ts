@@ -327,9 +327,22 @@ export async function POST(req: NextRequest) {
       } catch { /* ignore */ }
     }
 
-    // Atualiza a temperatura do lead (quente/morno/frio) após mensagem do CLIENTE
+    // CLIENTE RESPONDEU: interrompe as automações pendentes (Regra 2) — cancela os follow-ups
+    // da cadência silenciosa; o lead vira "quente" no Atender e a IA/humano assume a conversa.
     const leadTemp = conversa.lead_id || (leadVinc ? leadVinc.id : null)
-    if (!fromMe && !ehGrupo && leadTemp) { await classificarTemperatura(leadTemp, conversa.id) }
+    if (!fromMe && !ehGrupo && leadTemp) {
+      try {
+        const { data: pend } = await supabase.from('tarefas_lead').select('id')
+          .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false)
+        if (pend && pend.length) {
+          const agora = new Date().toISOString()
+          await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: agora, atualizado_em: agora })
+            .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false)
+          await supabase.from('lead_andamentos').insert({ lead_id: leadTemp, tipo: 'mudanca_etapa', observacao: `🤖 Cliente respondeu — ${pend.length} follow-up(s) automático(s) pausado(s); atendimento assumido.` })
+        }
+      } catch { /* não quebra o webhook */ }
+      await classificarTemperatura(leadTemp, conversa.id)
+    }
 
     return NextResponse.json({ ok: true })
   } catch (e: any) {

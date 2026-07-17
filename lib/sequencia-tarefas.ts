@@ -7,7 +7,7 @@ export type SequenciaTarefa = {
   chave: string           // identificador único dentro da etapa
   titulo: string
   descricao: string
-  diasAposEntrada: number // D+N a partir do momento que o lead entrou nesta etapa
+  diasAposEntrada: number // GAP em dias: 1ª tarefa = dias após ENTRAR na etapa; próximas = dias após CONCLUIR a anterior. 0 = mesmo dia; 1 = dia seguinte.
   proximaChave: string | null  // qual tarefa criar quando essa for concluída (null = fim)
   acao?: 'ligacao' | 'audio' | 'mensagem' | 'decisao'
 }
@@ -34,13 +34,14 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
     },
   ],
 
-  // ATENDIMENTO INICIAL (D2-D3): D2 pergunta o melhor horário; D3 apresentação completa. Virada do D3 → Lote e Preço OK.
+  // ATENDIMENTO INICIAL (D2-D3): D2 puxa a conversa pro WhatsApp + contexto (dia SEGUINTE ao áudio);
+  // D3 apresentação completa. Virada do D3 → Lote e Preço OK.
   atendimento_inicial: [
     {
-      chave: 'msg_horario',
-      titulo: 'Mensagem: tentamos contato — melhor horário?',
-      descricao: 'D2: se ainda não respondeu, mensagem de texto informando que foram feitas tentativas de contato e perguntando qual o melhor horário pra conversar.',
-      diasAposEntrada: 0,
+      chave: 'msg_horario', // (chave mantida por compat; conteúdo agora é "seguir no WhatsApp")
+      titulo: 'Seguir a conversa pelo WhatsApp + puxar contexto',
+      descricao: 'D2 (dia seguinte ao áudio): se não respondeu, NÃO peça horário nem ofereça ligação. Puxe a conversa pra CÁ — cumprimente pelo nome, diga que dá pra resolver tudo por aqui pelo WhatsApp, e comece a DESCOBERTA: pergunte sobre o negócio/objetivo do lead pra ligar o curso à realidade dele.',
+      diasAposEntrada: 1,
       proximaChave: 'apresentacao_completa',
       acao: 'mensagem',
     },
@@ -59,8 +60,8 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
     {
       chave: 'quer_aproveitar',
       titulo: 'Perguntar se quer aproveitar a oportunidade',
-      descricao: 'D4: mensagem perguntando se o lead deseja aproveitar a oportunidade apresentada.',
-      diasAposEntrada: 0,
+      descricao: 'D4 (dia seguinte): mensagem perguntando se o lead deseja aproveitar a oportunidade apresentada.',
+      diasAposEntrada: 1,
       proximaChave: 'reforco_beneficios',
       acao: 'mensagem',
     },
@@ -76,7 +77,7 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
       chave: 'ultimo_dia_lote',
       titulo: 'Último dia do lote — condições encerram',
       descricao: 'D6: comunicação informando que é o ÚLTIMO DIA do lote vigente e que as condições atuais serão encerradas.',
-      diasAposEntrada: 2,
+      diasAposEntrada: 1,
       proximaChave: null,
       acao: 'mensagem',
     },
@@ -87,7 +88,7 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
     {
       chave: 'bolsa_1',
       titulo: '1ª oferta de bolsa',
-      descricao: 'D11 (após o período de espera D7-D10 sem comunicação): 1ª oferta de BOLSA — condição especial para ingresso no curso.',
+      descricao: 'D11 (após o período de espera D7-D10 sem comunicação — 4 dias): 1ª oferta de BOLSA — condição especial para ingresso no curso.',
       diasAposEntrada: 4,
       proximaChave: 'bolsa_2',
       acao: 'mensagem',
@@ -96,7 +97,7 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
       chave: 'bolsa_2',
       titulo: '2ª mensagem da bolsa',
       descricao: 'D12: se não houve retorno, 2ª mensagem reforçando a oportunidade da bolsa.',
-      diasAposEntrada: 5,
+      diasAposEntrada: 1,
       proximaChave: 'demissao',
       acao: 'mensagem',
     },
@@ -104,7 +105,7 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
       chave: 'demissao',
       titulo: 'Mensagem de encerramento (demissão do lead)',
       descricao: 'D13: não havendo resposta, mensagem de ENCERRAMENTO do atendimento informando que o contato será finalizado. Ao concluir, mover para Perdido.',
-      diasAposEntrada: 6,
+      diasAposEntrada: 1,
       proximaChave: null,
       acao: 'mensagem',
     },
@@ -122,7 +123,7 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
 export const FLUXO_COMERCIAL = `FLUXO COMERCIAL (ciclo D1–D13 — as TAREFAS de cada etapa são os follow-ups; conta os dias desde a ENTRADA do lead):
 
 1) LIGAÇÃO / Chegada (D1): liga DIRETO 2x no mesmo dia (NÃO manda mensagem nessa etapa). Se não atende, na hora manda ÁUDIO convidando a informar o melhor horário. Virada do dia → Atendimento Inicial.
-2) ATENDIMENTO INICIAL (D2-D3): D2 — se não respondeu, mensagem dizendo que tentamos contato e perguntando o melhor horário. D3 — se continua mudo, APRESENTAÇÃO COMPLETA (instituição, objetivo, benefícios, lote, valor, condições). Virada do D3 → Lote e Preço OK.
+2) ATENDIMENTO INICIAL (D2-D3): D2 (dia SEGUINTE ao áudio) — se não respondeu, NÃO peça horário nem ofereça ligação: puxe a conversa pro WhatsApp e já comece a descoberta (pergunte do negócio/objetivo). D3 — se continua mudo, APRESENTAÇÃO COMPLETA (instituição, objetivo, benefícios, lote, valor, condições). Virada do D3 → Lote e Preço OK.
 3) LOTE E PREÇO OK (D4-D6): D4 pergunta se quer aproveitar; D5 reforça benefícios; D6 avisa que é o ÚLTIMO DIA do lote. Virada do D6 → Oferecer Bolsa.
 4) OFERECER BOLSA (D7-D13): D7-D10 SILÊNCIO (sem comunicação); D11 1ª oferta de bolsa; D12 2ª mensagem da bolsa; D13 mensagem de encerramento (demissão) → Perdido.
 
