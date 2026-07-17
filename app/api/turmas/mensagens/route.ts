@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 export const maxDuration = 30
 
@@ -33,11 +34,12 @@ function bloco(datas: { data: string; hi?: string | null; hf?: string | null }[]
   }).join('\n')
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  const org = await orgDaRequest(req.headers.get('authorization'))
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   const { data: turmas } = await sb.from('turmas')
     .select('id, codigo, produto_id, produtos(nome), cidades(nome)')
-    .gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)')
+    .eq('org_id', org).gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)')
     .order('data_inicio')
   const ids = (turmas || []).map((t: any) => t.id)
   if (!ids.length) return NextResponse.json({ ok: true, turmas: [] })

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 type Turma = { codigo: string; cidade: string; produto: string; tipo: string; inicio: string; mensagem: string }
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
@@ -11,7 +12,7 @@ export default function TurmasMensagens() {
   const [copiado, setCopiado] = useState('')
   const [filtro, setFiltro] = useState<'todos' | 'FC' | 'ANL'>('todos')
 
-  useEffect(() => { (async () => { const j = await fetch('/api/turmas/mensagens').then(r => r.json()).catch(() => null); if (j?.ok) setTurmas(j.turmas); setCarregando(false) })() }, [])
+  useEffect(() => { (async () => { const j = await fetchAuth('/api/turmas/mensagens').then(r => r.json()).catch(() => null); if (j?.ok) setTurmas(j.turmas); setCarregando(false) })() }, [])
 
   async function copiar(t: Turma) {
     try { await navigator.clipboard.writeText(t.mensagem) } catch { }

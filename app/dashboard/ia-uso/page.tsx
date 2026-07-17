@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }
 const USD = 5.5 // aproximado p/ mostrar em R$
@@ -8,7 +9,7 @@ const USD = 5.5 // aproximado p/ mostrar em R$
 export default function IaUso() {
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
-  useEffect(() => { (async () => { const j = await fetch('/api/ia-uso/resumo').then(r => r.json()).catch(() => null); setD(j); setCarregando(false) })() }, [])
+  useEffect(() => { (async () => { const j = await fetchAuth('/api/ia-uso/resumo').then(r => r.json()).catch(() => null); setD(j); setCarregando(false) })() }, [])
 
   const brl = (u: number) => 'R$ ' + (u * USD).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const usd = (u: number) => '$' + (u || 0).toFixed(2)

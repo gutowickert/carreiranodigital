@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 export const maxDuration = 30
 
 // Resumo de custo de IA (a partir dos logs origem='ia-uso') — valida a base de custo do SaaS.
-export async function GET() {
+export async function GET(req: Request) {
+  const org = await orgDaRequest(req.headers.get('authorization'))
   const d30 = new Date(Date.now() - 30 * 864e5).toISOString()
   // pagina os logs de uso dos últimos 30 dias
   const linhas: any[] = []
   for (let p = 0; p < 20; p++) {
     const { data } = await sb.from('webhook_logs').select('evento, payload, recebido_em')
-      .eq('origem', 'ia-uso').gte('recebido_em', d30).order('recebido_em', { ascending: false })
+      .eq('origem', 'ia-uso').eq('org_id', org).gte('recebido_em', d30).order('recebido_em', { ascending: false })
       .range(p * 1000, p * 1000 + 999)
     if (!data || !data.length) break
     linhas.push(...data)
