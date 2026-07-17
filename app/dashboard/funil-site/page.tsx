@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -100,7 +101,7 @@ function AbaFunil({ de, ate }: { de: string; ate: string }) {
   const [d, setD] = useState<Dados | null>(null)
   useEffect(() => { (async () => {
     setCarregando(true)
-    try { const res = await fetch(`/api/funil-site?de=${de}&ate=${ate}`); setD(await res.json()) }
+    try { const res = await fetchAuth(`/api/funil-site?de=${de}&ate=${ate}`); setD(await res.json()) }
     catch { setD(null) }
     setCarregando(false)
   })() }, [de, ate])
@@ -241,7 +242,7 @@ function AbaJornadas({ de, ate }: { de: string; ate: string }) {
 
   useEffect(() => { (async () => {
     setCarregando(true)
-    try { const res = await fetch(`/api/funil-site/jornadas?de=${de}&ate=${ate}&q=${encodeURIComponent(busca)}`); const j = await res.json(); setJornadas(j.jornadas || []); setTotal(j.total || 0) }
+    try { const res = await fetchAuth(`/api/funil-site/jornadas?de=${de}&ate=${ate}&q=${encodeURIComponent(busca)}`); const j = await res.json(); setJornadas(j.jornadas || []); setTotal(j.total || 0) }
     catch { setJornadas([]) }
     setCarregando(false)
   })() }, [de, ate, busca])
@@ -320,7 +321,7 @@ function AbaEventos({ de, ate }: { de: string; ate: string }) {
     try {
       const p = new URLSearchParams({ de, ate, limit: '300' })
       if (fEvento) p.set('evento', fEvento); if (fTurma) p.set('turma', fTurma); if (fVid) p.set('vid', fVid)
-      const res = await fetch(`/api/funil-site/eventos?${p.toString()}`); const j = await res.json()
+      const res = await fetchAuth(`/api/funil-site/eventos?${p.toString()}`); const j = await res.json()
       setEventos(j.eventos || []); setTotal(j.total || 0); setMostrando(j.mostrando || 0)
       if (!fEvento && !fTurma && !fVid && j.tipos?.length) setTipos(j.tipos)
     } catch { setEventos([]) }
@@ -378,7 +379,7 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
     setCarregando(true)
     try {
       const [a, s] = await Promise.all([
-        fetch(`/api/funil-site/anuncios?de=${de}&ate=${ate}`).then(r => r.json()),
+        fetchAuth(`/api/funil-site/anuncios?de=${de}&ate=${ate}`).then(r => r.json()),
         fetch(`/api/meta/spend?since=${de}&until=${ate}`).then(r => r.json()).catch(() => ({ ok: false, ads: [] })),
       ])
       setAds(a.ads || [])

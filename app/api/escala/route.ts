@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Escala Douglas × Julio. Eventos = turmas ANL (inteiras) + módulo Gestor de
 // Tráfego das FC, abertas e futuras (menos as 2 POA 072601/072602).
@@ -11,15 +12,16 @@ const FC = '5985a70d-933d-4b0f-8972-b30a27ff412a'
 const MOD_TRAFEGO = '487350fb-4e0f-4a00-98a1-714c590732b2'
 const EXCLUI = new Set(['anlportoalegre072601', 'anlportoalegre072602'])
 
-export async function GET(_req: NextRequest) {
+export async function GET(req: NextRequest) {
   try {
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produto_id, cidade_id, status, encerrada_em, data_fim').in('produto_id', [ANL, FC])
+    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produto_id, cidade_id, status, encerrada_em, data_fim').eq('org_id', org).in('produto_id', [ANL, FC])
     const abertas = (turmas || []).filter((t: any) => !t.encerrada_em && !['encerrada', 'cancelada', 'concluida'].includes(t.status) && (t.data_fim || '') >= hoje)
 
-    const { data: cidades } = await supabase.from('cidades').select('id, nome')
+    const { data: cidades } = await supabase.from('cidades').select('id, nome').eq('org_id', org)
     const cid = Object.fromEntries((cidades || []).map((c: any) => [c.id, c.nome]))
-    const { data: escolhas } = await supabase.from('escala_escolhas').select('chave, escolha')
+    const { data: escolhas } = await supabase.from('escala_escolhas').select('chave, escolha').eq('org_id', org)
     const mapa = new Map((escolhas || []).map((e: any) => [e.chave, e.escolha]))
 
     const diasDe = async (turma_id: string, modulo_id: string | null) => {
@@ -59,7 +61,9 @@ export async function POST(req: NextRequest) {
   try {
     const b = await req.json().catch(() => ({}))
     if (!b.chave || !['douglas', 'julio'].includes(b.escolha)) return NextResponse.json({ ok: false, error: 'dados inválidos' }, { status: 200 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
     await supabase.from('escala_escolhas').upsert({
+      org_id: org,
       chave: b.chave, turma_id: b.turma_id || null, modulo_id: b.modulo_id || null,
       escolha: b.escolha, atualizado_em: new Date().toISOString(),
     }, { onConflict: 'chave' })

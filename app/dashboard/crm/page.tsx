@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 type Lead = {
@@ -656,7 +657,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     if (!confirm('Tem certeza? O lead e o histórico (andamentos, tarefas, ligações) serão apagados. A conversa do WhatsApp é mantida, só desvinculada.')) return
     setExcluindo(true)
     try {
-      const res = await fetch('/api/lead/excluir', {
+      const res = await fetchAuth('/api/lead/excluir', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadId: lead.id }),
       })
@@ -705,7 +706,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
     if (!lead) return
     setLigando(true); setMsgLigacao('')
     try {
-      const res = await fetch('/api/ligacao', {
+      const res = await fetchAuth('/api/ligacao', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadId: lead.id }),
@@ -1155,7 +1156,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
 
   useEffect(() => {
     let vivo = true
-    fetch('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: false }) })
+    fetchAuth('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: false }) })
       .then(r => r.json()).then(j => { if (vivo && j.ok) { setDados(j.resumo); setEm(j.em); setStale(j.stale); setTemMsg(j.temMensagens !== false) } }).catch(() => {})
     return () => { vivo = false }
   }, [leadId])
@@ -1163,7 +1164,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
   async function gerar() {
     setGerando(true); setErro('')
     try {
-      const j = await fetch('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: true }) }).then(r => r.json())
+      const j = await fetchAuth('/api/lead/resumo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, forcar: true }) }).then(r => r.json())
       if (j.ok) { setDados(j.resumo); setEm(j.em); setStale(false) } else setErro(j.error || 'falha ao gerar')
     } catch { setErro('falha ao gerar') } finally { setGerando(false) }
   }
@@ -1247,7 +1248,7 @@ function ChatLead({ lead }: { lead: Lead }) {
   async function sugerirResposta() {
     setSugerindo(true); setSugestao(null); setErro('')
     try {
-      const r = await fetch('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
+      const r = await fetchAuth('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id }) })
       const j = await r.json()
       if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
       setTexto(j.rascunho || '')
@@ -1298,7 +1299,7 @@ function ChatLead({ lead }: { lead: Lead }) {
     if (!texto.trim()) return
     setEnviando(true); setErro('')
     try {
-      const res = await fetch('/api/wa/enviar', {
+      const res = await fetchAuth('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadId: lead.id, telefone: lead.whatsapp, texto }),
       })
@@ -1328,7 +1329,7 @@ function ChatLead({ lead }: { lead: Lead }) {
     try {
       // OGG/Opus nativo: WhatsApp não reconverte e a reprodução em 1.5x/2x funciona
       const audioBase64 = await g.parar()
-      const res = await fetch('/api/wa/enviar', {
+      const res = await fetchAuth('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ leadId: lead.id, telefone: lead.whatsapp, audioBase64 }),
       })
@@ -1346,7 +1347,7 @@ function ChatLead({ lead }: { lead: Lead }) {
       const reader = new FileReader()
       reader.onloadend = async () => {
         try {
-          const res = await fetch('/api/wa/enviar', {
+          const res = await fetchAuth('/api/wa/enviar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               leadId: lead.id, telefone: lead.whatsapp,

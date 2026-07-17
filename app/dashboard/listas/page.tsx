@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
@@ -49,14 +50,14 @@ export default function Listas() {
       if (fCategoria) p.set('categoria', fCategoria)
       if (fStatus) p.set('status', fStatus)
       if (busca) p.set('q', busca)
-      const j = await fetch('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
+      const j = await fetchAuth('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
       if (j.ok) { setContatos(j.contatos); setResumo(j.resumo) }
     } finally { setCarregando(false) }
   }
   useEffect(() => { carregar() }, [fCidade, fCategoria, fStatus])
 
   async function importarTexto(formato: string, texto: string, cidade: string, origem: string) {
-    const j = await fetch('/api/wa-oficial/contatos/importar', {
+    const j = await fetchAuth('/api/wa-oficial/contatos/importar', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ formato, categoria, cidade, origem, dddPadrao, texto }),
     }).then(r => r.json())

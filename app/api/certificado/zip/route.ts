@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import JSZip from 'jszip'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import { carregarFontes, gerarCertificado } from '@/lib/certificado'
 
 export const maxDuration = 120 // gerar vários PNGs leva tempo
@@ -10,9 +11,11 @@ export async function GET(req: NextRequest) {
   const turmaId = req.nextUrl.searchParams.get('turma')
   if (!turmaId) return new Response('falta turma', { status: 400 })
   try {
-    const { data: turma } = await supabase.from('turmas').select('codigo').eq('id', turmaId).single()
+    const org = await orgDaRequest(req.headers.get('authorization'))
+    const { data: turma } = await supabase.from('turmas').select('codigo').eq('org_id', org).eq('id', turmaId).single()
+    if (!turma) return new Response('turma não encontrada', { status: 404 })
     const { data: mats } = await supabase.from('matriculas')
-      .select('id, alunos(nome)').eq('turma_id', turmaId)
+      .select('id, alunos(nome)').eq('org_id', org).eq('turma_id', turmaId)
     if (!mats?.length) return new Response('turma sem matrículas', { status: 404 })
 
     const fontes = await carregarFontes(req.nextUrl.origin)

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
@@ -9,7 +10,7 @@ type Item = {
   chegouDias?: number | null; temLigacao?: number; qtdAndamentos?: number; ultimoAndamento?: string
   tarefa?: { tipo: string; titulo: string; venc: string }
 }
-type Sug = { resposta: string; situacao?: string; objecao?: string; etapa_funil?: string; baseado_em?: string; acao_sugerida?: string; proximo_passo?: string }
+type Sug = { resposta: string; situacao?: string; objecao?: string; etapa_funil?: string; etapa_sugerida?: string; baseado_em?: string; acao_sugerida?: string; proximo_passo?: string }
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const area: React.CSSProperties = { width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 12, fontSize: 14, color: 'var(--text)', outline: 'none', resize: 'vertical', minHeight: 90, lineHeight: 1.5, fontFamily: 'inherit' }
@@ -37,7 +38,12 @@ function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
         ? <div style={{ fontSize: 13.5, color: 'var(--text)', padding: '9px 12px', background: 'rgba(239,68,68,.08)', borderRadius: 8, borderLeft: '3px solid #ef4444' }}>👤 <b>Cliente:</b> “{item.ultimaCliente}”</div>
         : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>o cliente ainda não respondeu — este é um follow-up de reativação</div>}
       {sug?.situacao
-        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura da IA:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{sug.proximo_passo ? ` · sugere avançar pra: ${sug.proximo_passo}` : ''}</div>
+        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura da IA:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{(() => {
+          const es = sug.etapa_sugerida
+          if (!es || es === 'manter' || es === item.etapa) return ''
+          const lbl = ETAPAS_MOVER.find(([id]) => id === es)?.[1] || (es === 'ganho' ? 'Ganho' : es === 'perda' ? 'Perda' : '')
+          return lbl ? ` · sugere mover pra: ${lbl}` : ''
+        })()}</div>
         : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px' }}>montando o resumo…</div>}
     </div>
   )
@@ -45,7 +51,7 @@ function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
 
 type Msg = { de: string; texto: string; em: string }
 async function fetchConversa(conversaId: string): Promise<Msg[]> {
-  const j = await fetch(`/api/atender/conversa?conversaId=${conversaId}`).then(r => r.json()).catch(() => null)
+  const j = await fetchAuth(`/api/atender/conversa?conversaId=${conversaId}`).then(r => r.json()).catch(() => null)
   return j?.ok ? j.msgs : []
 }
 const quando = (iso: string) => {
@@ -76,10 +82,21 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
 
 const ETAPAS_MOVER: [string, string][] = [
   ['aguardando_atendimento', 'Aguardando atendimento'], ['atendimento_inicial', 'Atendimento inicial'],
-  ['lote_preco_ok', 'Lote e preço ok'], ['nao_chegou_preco', 'Não chegou no preço'],
-  ['oferecer_bolsa', 'Oferecer bolsa'], ['pediu_prazo', 'Pediu prazo'],
+  ['lote_preco_ok', 'Lote e preço ok'], ['oferecer_bolsa', 'Oferecer bolsa'],
   ['aguardando_pagamento', 'Aguardando pagamento'], ['agendado', 'Agendado'], ['proxima_turma', 'Próxima turma'],
 ]
+
+// move um lead de etapa (o backend já cria a próxima tarefa da etapa nova)
+async function moverLead(leadId: string, etapa: string) {
+  return fetchAuth('/api/atender/acao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId, acao: 'mover', etapa }) }).then(r => r.json()).catch(() => ({ ok: false }))
+}
+// [chave, label] da etapa que a IA sugere mover — ou null se não muda / não é etapa movível
+function moverSugerido(sug: Sug | null, etapaAtual: string): [string, string] | null {
+  const es = sug?.etapa_sugerida
+  if (!es || es === 'manter' || es === etapaAtual) return null
+  const par = ETAPAS_MOVER.find(([id]) => id === es)
+  return par ? [par[0], par[1]] : null
+}
 
 // Botões de decisão no card: ✓ feito (conclui a tarefa e avança a cadência), mover etapa, marcar perda.
 function Acoes({ item, onFeito }: { item: Item; onFeito?: (id: string) => void }) {
@@ -87,7 +104,7 @@ function Acoes({ item, onFeito }: { item: Item; onFeito?: (id: string) => void }
   const [done, setDone] = useState('')
   async function acao(a: string, extra: any = {}) {
     setBusy(a)
-    const r = await fetch('/api/atender/acao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, acao: a, ...extra }) }).then(r => r.json()).catch(() => ({ ok: false }))
+    const r = await fetchAuth('/api/atender/acao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, acao: a, ...extra }) }).then(r => r.json()).catch(() => ({ ok: false }))
     setBusy('')
     if (r.ok) { setDone(a); onFeito?.(item.leadId) }
   }
@@ -130,11 +147,11 @@ export default function AtenderPage() {
   }
 
   async function sugerir(item: Item): Promise<Sug | null> {
-    const j = await fetch('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: item.conversaId, leadId: item.leadId }) }).then(r => r.json()).catch(() => null)
+    const j = await fetchAuth('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: item.conversaId, leadId: item.leadId }) }).then(r => r.json()).catch(() => null)
     return j?.ok ? j.sugestao : null
   }
-  async function enviar(item: Item, texto: string, original?: string) {
-    return fetch('/api/atender/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, conversaId: item.conversaId, telefone: item.telefone, chatLid: item.chatLid, texto, original: original || '', email }) }).then(r => r.json()).catch(() => ({ ok: false }))
+  async function enviar(item: Item, texto: string, original?: string, avancar: boolean = true) {
+    return fetchAuth('/api/atender/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, conversaId: item.conversaId, telefone: item.telefone, chatLid: item.chatLid, texto, original: original || '', email, avancar }) }).then(r => r.json()).catch(() => ({ ok: false }))
   }
   function feito(leadId: string) { setFila(f => f.filter(x => x.leadId !== leadId)); setLote(l => l.filter(x => x.leadId !== leadId)) }
 
@@ -167,7 +184,7 @@ export default function AtenderPage() {
 }
 
 // ————— ABA ATENDER AGORA: um card por vez, ler → aprovar → próximo —————
-function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string) => Promise<any>; onFeito: (id: string) => void }) {
+function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void }) {
   const [idx, setIdx] = useState(0)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -193,6 +210,15 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
     const r = await enviar(item, texto.trim(), sug?.resposta)
     setEnviando(false)
     if (r.ok) { setFeitos(f => f + 1); proximo() } else setErro(r.error || 'falha ao enviar')
+  }
+  // 1-clique guiado: envia a mensagem E move pra etapa sugerida (que já cria a próxima tarefa)
+  async function aprovarEMover(etapa: string) {
+    if (!item || !texto.trim()) return
+    setEnviando(true); setErro('')
+    const r = await enviar(item, texto.trim(), sug?.resposta, false)
+    if (!r.ok) { setEnviando(false); setErro(r.error || 'falha ao enviar'); return }
+    await moverLead(item.leadId, etapa)
+    setEnviando(false); setFeitos(f => f + 1); onFeito(item.leadId); proximo()
   }
 
   if (!item) return <div style={{ ...card, padding: 40, textAlign: 'center' }}><div style={{ fontSize: 40 }}>✅</div><div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)', marginTop: 8 }}>Fila concluída!</div><div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>{feitos} atendimento(s) enviado(s) nesta sessão.</div></div>
@@ -220,6 +246,11 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
         {erro && <div style={{ fontSize: 13, color: 'var(--red)', marginTop: 8 }}>⚠️ {erro}</div>}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
+          {(() => {
+            const mv = moverSugerido(sug, item.etapa)
+            if (!mv) return null
+            return <button onClick={() => aprovarEMover(mv[0])} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
+          })()}
           <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : '✅ Enviar & Próximo'}</button>
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
@@ -231,7 +262,7 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
 }
 
 // ————— ABA COPILOTO: lista à esquerda, conversa+sugestão à direita —————
-function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string) => Promise<any>; onFeito: (id: string) => void }) {
+function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void }) {
   const [sel, setSel] = useState<Item | null>(fila[0] || null)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -268,7 +299,12 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
           </details>
           {pensando ? <div style={{ ...area, marginTop: 10, color: 'var(--text-faint)' }}>pensando…</div>
             : <textarea value={texto} onChange={e => setTexto(e.target.value)} style={{ ...area, marginTop: 10 }} />}
-          <div style={{ display: 'flex', gap: 10, marginTop: 12 }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+            {(() => {
+              const mv = moverSugerido(sug, sel.etapa)
+              if (!mv || feito[sel.leadId]) return null
+              return <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta, false); if (r.ok) { await moverLead(sel.leadId, mv[0]); setFeito(f => ({ ...f, [sel.leadId]: true })); onFeito(sel.leadId); setSel(null) } setEnviando(false) }} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
+            })()}
             <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? '✅ Enviado' : '✅ Enviar'}</button>
           </div>
           <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
@@ -279,11 +315,12 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
 }
 
 // linha: contexto + sugestão editável + ENVIO INDIVIDUAL + botões de decisão (uma a uma)
-function LoteRow({ l, onTexto, onEnviar }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onEnviar: () => Promise<void> }) {
+function LoteRow({ l, onTexto, onEnviar, onEnviarEMover }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onEnviar: () => Promise<void>; onEnviarEMover: (etapa: string) => Promise<void> }) {
   const [aberto, setAberto] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [carr, setCarr] = useState(false)
   const [env, setEnv] = useState(false)
+  const mv = moverSugerido(l.sug || null, l.item.etapa)
   async function toggle() {
     if (!aberto && !msgs.length) { setCarr(true); setMsgs(await fetchConversa(l.item.conversaId)); setCarr(false) }
     setAberto(a => !a)
@@ -302,7 +339,8 @@ function LoteRow({ l, onTexto, onEnviar }: { l: { item: Item; texto: string; ok:
       {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}
       <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 mensagem:</div>
       <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
-      <div style={{ marginTop: 6 }}>
+      <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        {mv && !l.enviado && <button disabled={env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviarEMover(mv[0]); setEnv(false) }} style={{ ...btn('var(--accent)'), padding: '8px 16px', fontSize: 13, opacity: (env || !l.texto.trim()) ? .6 : 1 }}>{env ? 'Enviando…' : `📤 Enviar e mover → ${mv[1]}`}</button>}
         <button disabled={l.enviado || env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviar(); setEnv(false) }} style={{ ...btn('var(--green)'), padding: '8px 16px', fontSize: 13, opacity: (l.enviado || env || !l.texto.trim()) ? .6 : 1 }}>{l.enviado ? '✅ Enviada' : env ? 'Enviando…' : '📤 Enviar mensagem'}</button>
       </div>
       <Acoes item={l.item} />
@@ -311,7 +349,7 @@ function LoteRow({ l, onTexto, onEnviar }: { l: { item: Item; texto: string; ok:
 }
 
 // ————— ABA FOLLOW-UP COM TAREFA: gera sugestões, envia UMA A UMA e decide o andamento na hora —————
-function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string) => Promise<any> }) {
+function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any> }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
   const N = 10
@@ -342,7 +380,8 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
             {linhas.map((l, k) => (
               <LoteRow key={l.item.leadId} l={l}
                 onTexto={t => { const n = [...linhas]; n[k].texto = t; setLinhas(n) }}
-                onEnviar={async () => { const r = await enviar(l.item, l.texto.trim(), l.sug?.resposta); if (r?.ok) { const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }} />
+                onEnviar={async () => { const r = await enviar(l.item, l.texto.trim(), l.sug?.resposta); if (r?.ok) { const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }}
+                onEnviarEMover={async (etapa) => { const r = await enviar(l.item, l.texto.trim(), l.sug?.resposta, false); if (r?.ok) { await moverLead(l.item.leadId, etapa); const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }} />
             ))}
           </div>
           {restam > 0 && <button onClick={gerarMais} disabled={gerando} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', marginTop: 12 }}>{gerando ? 'Gerando…' : `+ Gerar mais ${Math.min(N, restam)}`}</button>}

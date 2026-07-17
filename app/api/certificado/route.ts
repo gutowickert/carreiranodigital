@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Certificados.
 //  GET ?matricula=<id> -> dados pra montar o certificado de 1 aluno
@@ -15,11 +16,12 @@ function tipoDe(produto: string): 'ANL' | 'FC' | 'GEN' {
 
 export async function GET(req: NextRequest) {
   try {
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const sp = req.nextUrl.searchParams
     const turmaId = sp.get('turma')
     if (turmaId) {
       const { data } = await supabase.from('matriculas')
-        .select('id, concluido, alunos(nome)').eq('turma_id', turmaId)
+        .select('id, concluido, alunos(nome)').eq('org_id', org).eq('turma_id', turmaId)
       const alunos = (data || []).map((m: any) => ({ matricula_id: m.id, nome: m.alunos?.nome || '(sem nome)', concluido: !!m.concluido })).sort((a, b) => a.nome.localeCompare(b.nome))
       return NextResponse.json({ ok: true, alunos })
     }
@@ -28,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     const { data: mat } = await supabase.from('matriculas')
       .select('id, turma_id, alunos(nome), turmas(codigo, data_inicio, data_fim, produto_id, cidade_id)')
-      .eq('id', matId).single()
+      .eq('org_id', org).eq('id', matId).single()
     if (!mat) return NextResponse.json({ ok: false, error: 'matrícula não encontrada' }, { status: 200 })
     const t: any = mat.turmas
     const [{ data: prod }, { data: cid }] = await Promise.all([

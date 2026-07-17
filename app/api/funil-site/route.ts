@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Agrega o Funil do Site a partir de site_eventos (comportamento no site) e
 // wa_clicks (clique no /wa -> lead). Tudo server-side pra não expor evento cru
@@ -10,10 +11,11 @@ const ENGAJOU = new Set(['scroll_50', 'scroll_90', 'video_50', 'viu_oferta', 'vi
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 
 // Carrega todas as linhas do período paginando de 1000 em 1000 (cap de segurança).
-async function carregar(tabela: string, cols: string, deISO: string, ateISO: string, cap = 100000) {
+async function carregar(tabela: string, cols: string, deISO: string, ateISO: string, org: string, cap = 100000) {
   const rows: any[] = []
   for (let from = 0; from < cap; from += 1000) {
     const { data, error } = await supabase.from(tabela).select(cols)
+      .eq('org_id', org)
       .gte('criado_em', deISO).lt('criado_em', ateISO)
       .order('criado_em', { ascending: true }).range(from, from + 999)
     if (error) throw new Error(`${tabela}: ${error.message}`)
@@ -34,11 +36,12 @@ export async function GET(req: NextRequest) {
     const de = (sp.get('de') || '').slice(0, 10)
     const ate = (sp.get('ate') || '').slice(0, 10)
     if (!de || !ate) return NextResponse.json({ ok: false, error: 'informe de e ate (YYYY-MM-DD)' }, { status: 400 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const deISO = de + 'T00:00:00-03:00'   // fuso de Brasília (UTC-3)
     const ateISO = addDays(ate, 1) + 'T00:00:00-03:00'
 
-    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, url, criado_em', deISO, ateISO)
-    const clicks = await carregar('wa_clicks', 'visitor_id, codigo_turma, utm_campaign, lead_id, criado_em', deISO, ateISO)
+    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, url, criado_em', deISO, ateISO, org)
+    const clicks = await carregar('wa_clicks', 'visitor_id, codigo_turma, utm_campaign, lead_id, criado_em', deISO, ateISO, org)
 
     const vid = (e: any) => (e.visitor_id || '').toString() || null
 

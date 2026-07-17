@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Explorador de eventos captados: lista bruta de site_eventos com filtros.
 // ?de=&ate=&evento=&turma=&vid=&q=&limit=  — pra investigar caso a caso.
@@ -17,11 +18,13 @@ export async function GET(req: NextRequest) {
     const vidf = (sp.get('vid') || '').trim()
     const q = (sp.get('q') || '').trim()
     const limit = Math.min(1000, Math.max(10, parseInt(sp.get('limit') || '200', 10) || 200))
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const deISO = de + 'T00:00:00-03:00'   // fuso de Brasília (UTC-3)
     const ateISO = addDays(ate, 1) + 'T00:00:00-03:00'
 
     let query = supabase.from('site_eventos')
       .select('visitor_id, sessao_id, evento, url, referrer, utm_source, utm_campaign, utm_content, codigo_turma, meta, criado_em', { count: 'exact' })
+      .eq('org_id', org)
       .gte('criado_em', deISO).lt('criado_em', ateISO)
     if (evento) query = query.eq('evento', evento)
     if (turma) query = query.eq('codigo_turma', turma)

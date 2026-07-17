@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -26,13 +27,13 @@ export default function Chamada() {
     setCerts(j.ok ? (j.alunos || []) : [])
   }
 
-  useEffect(() => { fetch('/api/chamada').then(r => r.json()).then(j => { if (j.ok) setTurmas(j.turmas || []) }) }, [])
+  useEffect(() => { fetchAuth('/api/chamada').then(r => r.json()).then(j => { if (j.ok) setTurmas(j.turmas || []) }) }, [])
 
   useEffect(() => {
     if (!turmaId) return
     setCerts(null)
     setCarregando(true)
-    fetch(`/api/chamada?turma=${turmaId}`).then(r => r.json()).then(j => {
+    fetchAuth(`/api/chamada?turma=${turmaId}`).then(r => r.json()).then(j => {
       if (j.ok) {
         setTurma(j.turma); setDias(j.dias || []); setAlunos(j.alunos || [])
         const p: Record<string, boolean> = {}
@@ -45,19 +46,19 @@ export default function Chamada() {
   function togglePresenca(mat: string, dia: string) {
     const k = `${mat}|${dia}`, novo = !pres[k]
     setPres(p => ({ ...p, [k]: novo }))
-    fetch('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'presenca', matricula_id: mat, turma_data_id: dia, presente: novo }) }).catch(() => {})
+    fetchAuth('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'presenca', matricula_id: mat, turma_data_id: dia, presente: novo }) }).catch(() => {})
   }
   function ciclo(a: Aluno, campo: keyof Aluno) {
     const atual = a[campo] as boolean | null
     const novo = atual === null || atual === undefined ? true : atual === true ? false : null
     setAlunos(prev => prev.map(x => x.matricula_id === a.matricula_id ? { ...x, [campo]: novo } : x))
-    fetch('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'acompanhamento', matricula_id: a.matricula_id, campo, valor: novo }) }).catch(() => {})
+    fetchAuth('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'acompanhamento', matricula_id: a.matricula_id, campo, valor: novo }) }).catch(() => {})
   }
   function setNicho(a: Aluno, v: string) {
     setAlunos(prev => prev.map(x => x.matricula_id === a.matricula_id ? { ...x, nicho: v } : x))
   }
   function salvaNicho(a: Aluno) {
-    fetch('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'acompanhamento', matricula_id: a.matricula_id, campo: 'nicho', valor: a.nicho }) }).catch(() => {})
+    fetchAuth('/api/chamada', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ tipo: 'acompanhamento', matricula_id: a.matricula_id, campo: 'nicho', valor: a.nicho }) }).catch(() => {})
   }
 
   const presDe = (mat: string) => dias.filter(d => pres[`${mat}|${d.id}`]).length

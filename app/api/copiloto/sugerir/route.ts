@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import Anthropic from '@anthropic-ai/sdk'
 import { logIaUso } from '@/lib/ia-uso'
 
@@ -41,6 +42,7 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatament
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json().catch(() => ({}))
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const leadId: string | undefined = body.leadId
     const conversaId: string | undefined = body.conversaId
     if (!leadId && !conversaId) return NextResponse.json({ ok: false, error: 'falta leadId ou conversaId' }, { status: 200 })
@@ -55,19 +57,19 @@ export async function POST(req: NextRequest) {
     let telefone = ''
 
     if (conversaId) {
-      const { data: conv } = await supabase.from('wa_conversas').select('id, telefone, nome, lead_id').eq('id', conversaId).single()
+      const { data: conv } = await supabase.from('wa_conversas').select('id, telefone, nome, lead_id').eq('org_id', org).eq('id', conversaId).single()
       if (!conv) return NextResponse.json({ ok: false, error: 'conversa não encontrada' }, { status: 200 })
       nomeContato = conv.nome || ''; telefone = conv.telefone || ''; convIds = [conv.id]
       if (conv.lead_id) {
-        const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('id', conv.lead_id).single()
+        const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('org_id', org).eq('id', conv.lead_id).single()
         lead = l
       }
     } else {
-      const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('id', leadId).single()
+      const { data: l } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia').eq('org_id', org).eq('id', leadId).single()
       if (!l) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
       lead = l; nomeContato = l.nome || ''; telefone = l.whatsapp || ''
       const s = suf(l.whatsapp)
-      const { data: convs } = await supabase.from('wa_conversas').select('id').or(`lead_id.eq.${leadId}${s.length === 8 ? `,telefone.ilike.%${s}` : ''}`)
+      const { data: convs } = await supabase.from('wa_conversas').select('id').eq('org_id', org).or(`lead_id.eq.${leadId}${s.length === 8 ? `,telefone.ilike.%${s}` : ''}`)
       convIds = (convs || []).map((c: any) => c.id)
     }
 
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
     let linhas: string[] = []
     if (convIds.length) {
       const { data: msgs } = await supabase.from('wa_mensagens')
-        .select('id, direcao, status, texto, tipo, midia_url, criado_em').in('conversa_id', convIds)
+        .select('id, direcao, status, texto, tipo, midia_url, criado_em').eq('org_id', org).in('conversa_id', convIds)
         .order('criado_em', { ascending: false }).limit(40)
       const recentes = (msgs || []).reverse() // ordem cronológica
 
@@ -110,7 +112,7 @@ export async function POST(req: NextRequest) {
     // turmas ABERTAS (em vendas) — abastece a oferta com cidade/data/preço reais
     const { data: turmas } = await supabase.from('turmas')
       .select('codigo, preco_venda, data_inicio, produtos(nome), cidades(nome)')
-      .eq('status', 'em_vendas').order('data_inicio')
+      .eq('org_id', org).eq('status', 'em_vendas').order('data_inicio')
     const turmasTxt = (turmas || []).map((t: any) => {
       const d = t.data_inicio ? new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '?'
       const preco = t.preco_venda ? `R$${Number(t.preco_venda).toLocaleString('pt-BR')}` : 's/ preço'

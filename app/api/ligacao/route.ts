@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import { fazerLigacao } from '@/lib/api4com'
 
 export async function POST(req: NextRequest) {
@@ -7,10 +8,12 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { leadId, vendedorId, ramal } = body
     if (!leadId) return NextResponse.json({ ok: false, error: 'leadId obrigatorio' }, { status: 400 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
 
     const { data: lead } = await supabase
       .from('leads')
       .select('id, nome, whatsapp, vendedor_id')
+      .eq('org_id', org)
       .eq('id', leadId)
       .single()
     if (!lead) return NextResponse.json({ ok: false, error: 'lead nao encontrado' }, { status: 404 })
@@ -23,6 +26,7 @@ export async function POST(req: NextRequest) {
     if (!r.ok) return NextResponse.json(r, { status: 200 })
 
     await supabase.from('ligacoes').insert({
+      org_id: org,
       api4com_id: r.id,
       lead_id: lead.id,
       vendedor_id: vend,

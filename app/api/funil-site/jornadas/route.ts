@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Jornada por pessoa: junta os eventos do site (site_eventos) de cada visitor_id
 // com o clique no /wa (wa_clicks) e o lead resultante. É a "foto da pessoa
@@ -8,10 +9,11 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 
-async function carregar(tabela: string, cols: string, deISO: string, ateISO: string, cap = 100000) {
+async function carregar(tabela: string, cols: string, deISO: string, ateISO: string, org: string, cap = 100000) {
   const rows: any[] = []
   for (let from = 0; from < cap; from += 1000) {
     const { data, error } = await supabase.from(tabela).select(cols)
+      .eq('org_id', org)
       .gte('criado_em', deISO).lt('criado_em', ateISO)
       .order('criado_em', { ascending: true }).range(from, from + 999)
     if (error) throw new Error(`${tabela}: ${error.message}`)
@@ -33,11 +35,12 @@ export async function GET(req: NextRequest) {
     const ate = (sp.get('ate') || '').slice(0, 10)
     const q = (sp.get('q') || '').toLowerCase().trim()
     if (!de || !ate) return NextResponse.json({ ok: false, error: 'informe de e ate (YYYY-MM-DD)' }, { status: 400 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const deISO = de + 'T00:00:00-03:00'   // fuso de Brasília (UTC-3)
     const ateISO = addDays(ate, 1) + 'T00:00:00-03:00'
 
-    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, utm_content, url, criado_em', deISO, ateISO)
-    const clicks = await carregar('wa_clicks', 'visitor_id, ref, codigo_turma, utm_campaign, utm_content, lead_id, consumido_em, criado_em', deISO, ateISO)
+    const eventos = await carregar('site_eventos', 'visitor_id, evento, codigo_turma, utm_campaign, utm_content, url, criado_em', deISO, ateISO, org)
+    const clicks = await carregar('wa_clicks', 'visitor_id, ref, codigo_turma, utm_campaign, utm_content, lead_id, consumido_em, criado_em', deISO, ateISO, org)
 
     // agrupa eventos por visitor_id
     type J = { visitor_id: string; inicio: string; fim: string; turma: string | null; campanha: string | null; criativo: string | null; paginas: Set<string>; eventos: { evento: string; em: string }[]; nEventos: number; engajou: boolean; clicou: boolean }
@@ -74,7 +77,7 @@ export async function GET(req: NextRequest) {
       // busca leads em lotes (in) — nomes/etapas pra mostrar na jornada
       for (let i = 0; i < leadIds.length; i += 300) {
         const lote = leadIds.slice(i, i + 300)
-        const { data } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').in('id', lote)
+        const { data } = await supabase.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).in('id', lote)
         for (const l of (data || [])) leadsById.set(l.id, l)
       }
     }

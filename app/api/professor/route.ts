@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Portal do professor. Resolve o professor pelo EMAIL do login (= professores.email).
 //  GET ?email=<email>            -> { professor, turmas, nps, comentarios } (só as turmas dele)
@@ -19,8 +20,9 @@ export async function GET(req: NextRequest) {
     const email = (req.nextUrl.searchParams.get('email') || '').trim().toLowerCase()
     const turmaParam = req.nextUrl.searchParams.get('turma')
     if (!email) return NextResponse.json({ ok: false, error: 'falta email' }, { status: 200 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
 
-    const { data: prof } = await supabase.from('professores').select('id, nome').ilike('email', email).maybeSingle()
+    const { data: prof } = await supabase.from('professores').select('id, nome').eq('org_id', org).ilike('email', email).maybeSingle()
     if (!prof) return NextResponse.json({ ok: false, error: 'professor não encontrado' }, { status: 200 })
 
     // turmas do professor + módulo(s) que ele dá em cada uma (null = turma toda, ex.: ANL)

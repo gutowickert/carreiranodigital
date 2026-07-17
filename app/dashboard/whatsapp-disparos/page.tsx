@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 // Caixa de entrada do NÚMERO DE DISPAROS (Cloud API / API oficial). Recebe as
@@ -160,7 +161,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
     const reader = new FileReader()
     reader.onloadend = async () => {
       try {
-        const res = await fetch('/api/wa-oficial/responder', {
+        const res = await fetchAuth('/api/wa-oficial/responder', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ conversaId: conversa.id, telefone: conversa.telefone, anexoBase64: reader.result, anexoNome: file.name, anexoTipo: ehImagem ? 'imagem' : 'documento' }),
         })
@@ -181,7 +182,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
     setEnviando(true)
     try {
       const audioBase64 = await g.parar()
-      const res = await fetch('/api/wa-oficial/responder', {
+      const res = await fetchAuth('/api/wa-oficial/responder', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversaId: conversa.id, telefone: conversa.telefone, audioBase64 }),
       })
@@ -209,7 +210,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   // contexto do disparo: qual campanha (cidade) foi enviada pra esse número
   useEffect(() => {
     setDispCtx(null)
-    fetch('/api/wa-oficial/relatorio?contato=' + encodeURIComponent(conversa.telefone))
+    fetchAuth('/api/wa-oficial/relatorio?contato=' + encodeURIComponent(conversa.telefone))
       .then(r => r.json()).then(j => { if (j.ok) setDispCtx(j.disparo) }).catch(() => {})
   }, [conversa.id, conversa.telefone])
   // auto-cresce a caixa de texto conforme digita (e volta pra 1 linha ao limpar)
@@ -223,7 +224,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
     if (!texto.trim()) return
     setEnviando(true); setErro('')
     try {
-      const res = await fetch('/api/wa-oficial/responder', {
+      const res = await fetchAuth('/api/wa-oficial/responder', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversaId: conversa.id, telefone: conversa.telefone, texto }),
       })
@@ -238,7 +239,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   async function sugerirResposta() {
     setSugerindo(true); setSugestao(null); setErro('')
     try {
-      const r = await fetch('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
+      const r = await fetchAuth('/api/copiloto/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
       const j = await r.json()
       if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
       setTexto(j.rascunho || '')

@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import { enviarTexto, enviarMidia, uploadMidia } from '@/lib/whatsapp-oficial'
 
 // Responde uma conversa da caixa "WhatsApp Disparos" (número novo / Cloud API).
 // Texto, foto, documento ou áudio — mensagem de SESSÃO (só entrega dentro de 24h).
 export async function POST(req: NextRequest) {
   try {
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const { conversaId, telefone, texto, audioBase64, anexoBase64, anexoNome, anexoTipo } = await req.json()
     if (!telefone) return NextResponse.json({ ok: false, error: 'sem telefone' }, { status: 200 })
     const dataUrl: string | null = audioBase64 || anexoBase64 || null
@@ -37,6 +39,7 @@ export async function POST(req: NextRequest) {
 
     if (conversaId) {
       await supabase.from('wa_mensagens').insert({
+        org_id: org,
         conversa_id: conversaId, zapi_id: r.wamid || null, direcao: 'enviada',
         tipo: tipoMsg, texto: tipoMsg === 'documento' ? (anexoNome || null) : (texto?.trim() || null),
         midia_url: dataUrl, midia_mime: midiaMime, status: 'enviada', canal: 'oficial',
@@ -44,7 +47,7 @@ export async function POST(req: NextRequest) {
       const resumo = tipoMsg === 'imagem' ? '📷 Imagem' : tipoMsg === 'audio' ? '🎤 Áudio' : tipoMsg === 'documento' ? `📎 ${anexoNome || 'documento'}` : (texto?.trim() || '')
       await supabase.from('wa_conversas').update({
         ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),
-      }).eq('id', conversaId)
+      }).eq('org_id', org).eq('id', conversaId)
     }
     return NextResponse.json({ ok: true, wamid: r.wamid })
   } catch (e: any) {

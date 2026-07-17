@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 type Conversa = {
@@ -75,7 +76,7 @@ export default function CaixaWhatsApp() {
     setAtiva(c)
     if (c.nao_lidas > 0) {
       // marca como lida no WhatsApp (celular) e zera no sistema
-      fetch('/api/wa/marcar-lida', {
+      fetchAuth('/api/wa/marcar-lida', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ conversaId: c.id, telefone: c.telefone, chatLid: c.chat_lid }),
       }).then(() => carregarConversas()).catch(() => {})
@@ -235,14 +236,14 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
     if (!texto.trim()) return
     setEnviando(true); setErro('')
     try {
-      const res = await fetch('/api/wa/enviar', {
+      const res = await fetchAuth('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto }),
       })
       const json = await res.json()
       if (json.ok) {
         // aprendizado: se a msg veio de uma sugestão da IA e foi editada, captura o par
-        if (sugeridoOrig) { fetch('/api/ia/edicao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, original: sugeridoOrig, enviado: texto, tela: 'whatsapp' }) }).catch(() => { }); setSugeridoOrig('') }
+        if (sugeridoOrig) { fetchAuth('/api/ia/edicao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, original: sugeridoOrig, enviado: texto, tela: 'whatsapp' }) }).catch(() => { }); setSugeridoOrig('') }
         setTexto(''); carregar(); onEnviou()
       }
       else setErro(json.error || 'falha ao enviar')
@@ -255,7 +256,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
     setSugerindo(true); setSugestao(null); setErro('')
     try {
       // motor de vendas (ancorado em vendas ganhas + pipeline + ajustes). Semi-auto: joga no campo pra revisar e enviar.
-      const r = await fetch('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
+      const r = await fetchAuth('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) })
       const j = await r.json()
       if (!j.ok) { setErro(j.error || 'Não consegui sugerir agora.'); return }
       const s = j.sugestao || {}
@@ -308,7 +309,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   async function enviarAudioReal(audioBase64: string) {
     setPendenteAudio(null); setRestante(0); setEnviando(true)
     try {
-      const res = await fetch('/api/wa/enviar', {
+      const res = await fetchAuth('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, audioBase64 }),
       })
@@ -326,7 +327,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
       const reader = new FileReader()
       reader.onloadend = async () => {
         try {
-          const res = await fetch('/api/wa/enviar', {
+          const res = await fetchAuth('/api/wa/enviar', {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid,

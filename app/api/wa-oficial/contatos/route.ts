@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // O PostgREST (Supabase) limita ~1000 linhas por request. Paginamos por range
 // pra não truncar nem a lista nem as contagens do resumo.
@@ -7,6 +8,7 @@ const PAGINA = 1000
 
 // Lista contatos frios com filtros + resumo (por cidade/categoria).
 export async function GET(req: NextRequest) {
+  const org = await orgDaRequest(req.headers.get('authorization'))
   const sp = req.nextUrl.searchParams
   const cidade = sp.get('cidade') || ''
   const categoria = sp.get('categoria') || ''
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
   const limit = Math.min(parseInt(sp.get('limit') || '300', 10) || 300, 20000)
 
   const baseFiltrada = () => {
-    let query = supabase.from('wa_contatos').select('*').order('criado_em', { ascending: false })
+    let query = supabase.from('wa_contatos').select('*').eq('org_id', org).order('criado_em', { ascending: false })
     if (cidade) query = query.eq('cidade', cidade)
     if (categoria) query = query.eq('categoria', categoria)
     if (status) query = query.eq('status', status)
@@ -35,13 +37,13 @@ export async function GET(req: NextRequest) {
 
   // resumo: totais via COUNT exato (não trunca) + quebra por cidade paginando só 2 colunas
   const [tot, totInt, totComp] = await Promise.all([
-    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }),
-    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('categoria', 'interessado'),
-    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('categoria', 'comprador'),
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('org_id', org),
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('org_id', org).eq('categoria', 'interessado'),
+    supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('org_id', org).eq('categoria', 'comprador'),
   ])
   const porCidade: Record<string, { interessado: number; comprador: number; total: number }> = {}
   for (let from = 0; ; from += PAGINA) {
-    const { data, error } = await supabase.from('wa_contatos').select('cidade,categoria').range(from, from + PAGINA - 1)
+    const { data, error } = await supabase.from('wa_contatos').select('cidade,categoria').eq('org_id', org).range(from, from + PAGINA - 1)
     if (error || !data) break
     for (const r of data) {
       const cid = r.cidade || '(sem cidade)'

@@ -13,114 +13,104 @@ export type SequenciaTarefa = {
 }
 
 export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
-  // CHEGADA: liga 2x no MESMO dia; se não atende na 2ª, na hora manda áudio de apresentação + tenta marcar ligação;
-  // no dia seguinte, se não respondeu, oferece continuar o atendimento pelo WhatsApp.
+  // D1 — LIGAÇÃO (Chegada): liga direto, NÃO manda mensagem. 2 tentativas no MESMO dia;
+  // se não atende na 2ª, na hora envia ÁUDIO convidando a informar o melhor horário. Virada do dia → Atendimento Inicial.
   aguardando_atendimento: [
     {
       chave: 'ligar_1',
       titulo: 'Ligar — 1ª tentativa',
-      descricao: 'Assim que o lead chega, primeira ligação.',
+      descricao: 'D1: primeira ligação do dia. Se atender, breve apresentação do curso e inicia o atendimento comercial.',
       diasAposEntrada: 0,
       proximaChave: 'ligar_2_audio',
       acao: 'ligacao',
     },
     {
       chave: 'ligar_2_audio',
-      titulo: 'Ligar — 2ª tentativa (e áudio se não atender)',
-      descricao: 'Segunda ligação no MESMO dia. Se não atender, na hora envie o áudio de apresentação e tente marcar uma ligação.',
+      titulo: 'Ligar — 2ª tentativa (áudio se não atender)',
+      descricao: 'D1: segunda ligação no MESMO dia. Se não atender nenhuma das duas, na hora envie um ÁUDIO no WhatsApp convidando o lead a informar o melhor horário pra conversar sobre o curso.',
       diasAposEntrada: 0,
-      proximaChave: 'oferecer_whatsapp',
+      proximaChave: null,
       acao: 'ligacao',
     },
-    {
-      chave: 'oferecer_whatsapp',
-      titulo: 'Oferecer atendimento pelo WhatsApp',
-      descricao: 'Dia seguinte: se não respondeu o áudio, ofereça continuar o atendimento por aqui, pelo WhatsApp.',
-      diasAposEntrada: 1,
-      proximaChave: null,
-      acao: 'mensagem',
-    },
   ],
 
-  // ATENDIMENTO INICIAL: apresenta curso + preço + lote; áudio de reforço; mensagem com validade.
+  // ATENDIMENTO INICIAL (D2-D3): D2 pergunta o melhor horário; D3 apresentação completa. Virada do D3 → Lote e Preço OK.
   atendimento_inicial: [
     {
-      chave: 'apresentar_curso',
-      titulo: 'Apresentar curso + preço + lote',
-      descricao: 'Apresenta o curso, entende o lead e informa preço + lote.',
-      diasAposEntrada: 1,
-      proximaChave: 'audio_valor',
+      chave: 'msg_horario',
+      titulo: 'Mensagem: tentamos contato — melhor horário?',
+      descricao: 'D2: se ainda não respondeu, mensagem de texto informando que foram feitas tentativas de contato e perguntando qual o melhor horário pra conversar.',
+      diasAposEntrada: 0,
+      proximaChave: 'apresentacao_completa',
       acao: 'mensagem',
     },
     {
-      chave: 'audio_valor',
-      titulo: 'Áudio: conteúdo + valor + lote',
-      descricao: 'Se não respondeu, áudio reforçando conteúdo, valor e o lote atual.',
-      diasAposEntrada: 2,
-      proximaChave: 'msg_preco_validade',
-      acao: 'audio',
-    },
-    {
-      chave: 'msg_preco_validade',
-      titulo: 'Mensagem: preço + lote + validade (3 dias)',
-      descricao: '3º dia sem retorno: mensagem com preço, lote e validade de 3 dias. Se não evoluir, mover para "Não chegou no preço".',
-      diasAposEntrada: 3,
+      chave: 'apresentacao_completa',
+      titulo: 'Apresentação completa do curso',
+      descricao: 'D3: se continua sem responder, envie a APRESENTAÇÃO COMPLETA por texto: apresentação da instituição, objetivo do curso, benefícios, lote vigente, valor do investimento e condições de pagamento.',
+      diasAposEntrada: 1,
       proximaChave: null,
       acao: 'mensagem',
     },
   ],
 
+  // LOTE E PREÇO OK (D4-D6): mede interesse; reforça; último dia do lote. Virada do D6 → Oferecer Bolsa.
   lote_preco_ok: [
     {
-      chave: 'lote_fecha_hoje_d3',
-      titulo: 'Lote fecha hoje — avisar lead',
-      descricao: 'Lote vai virar hoje. Avisar lead pra decidir antes do preço subir.',
-      diasAposEntrada: 3,
-      proximaChave: 'dar_andamento_d4',
+      chave: 'quer_aproveitar',
+      titulo: 'Perguntar se quer aproveitar a oportunidade',
+      descricao: 'D4: mensagem perguntando se o lead deseja aproveitar a oportunidade apresentada.',
+      diasAposEntrada: 0,
+      proximaChave: 'reforco_beneficios',
       acao: 'mensagem',
     },
     {
-      chave: 'dar_andamento_d4',
-      titulo: 'Dar andamento no lead',
-      descricao: 'Lote já virou. Se não fechou, decidir entre Oferecer bolsa, Pediu prazo ou Perda.',
-      diasAposEntrada: 4,
+      chave: 'reforco_beneficios',
+      titulo: 'Reforçar benefícios e incentivar resposta',
+      descricao: 'D5: se ainda não respondeu, nova mensagem reforçando os benefícios do curso e incentivando uma resposta.',
+      diasAposEntrada: 1,
+      proximaChave: 'ultimo_dia_lote',
+      acao: 'mensagem',
+    },
+    {
+      chave: 'ultimo_dia_lote',
+      titulo: 'Último dia do lote — condições encerram',
+      descricao: 'D6: comunicação informando que é o ÚLTIMO DIA do lote vigente e que as condições atuais serão encerradas.',
+      diasAposEntrada: 2,
       proximaChave: null,
-      acao: 'decisao',
+      acao: 'mensagem',
     },
   ],
 
-  nao_chegou_preco: [
+  // OFERECER BOLSA (D7-D13): D7-D10 silêncio (sem comunicação); D11 1ª bolsa; D12 2ª bolsa; D13 demissão → Perdido.
+  oferecer_bolsa: [
     {
-      chave: 'tentar_contato_d4',
-      titulo: 'Retomar contato',
-      descricao: 'Retomar contato (1ª tentativa após mover pra Não chegou no preço).',
+      chave: 'bolsa_1',
+      titulo: '1ª oferta de bolsa',
+      descricao: 'D11 (após o período de espera D7-D10 sem comunicação): 1ª oferta de BOLSA — condição especial para ingresso no curso.',
       diasAposEntrada: 4,
-      proximaChave: 'tentar_contato_d6',
+      proximaChave: 'bolsa_2',
       acao: 'mensagem',
     },
     {
-      chave: 'tentar_contato_d6',
-      titulo: 'Retomar contato (2ª)',
-      descricao: 'Retomar contato (2ª tentativa). Se não evoluir até D+7, mover para Perda.',
+      chave: 'bolsa_2',
+      titulo: '2ª mensagem da bolsa',
+      descricao: 'D12: se não houve retorno, 2ª mensagem reforçando a oportunidade da bolsa.',
+      diasAposEntrada: 5,
+      proximaChave: 'demissao',
+      acao: 'mensagem',
+    },
+    {
+      chave: 'demissao',
+      titulo: 'Mensagem de encerramento (demissão do lead)',
+      descricao: 'D13: não havendo resposta, mensagem de ENCERRAMENTO do atendimento informando que o contato será finalizado. Ao concluir, mover para Perdido.',
       diasAposEntrada: 6,
       proximaChave: null,
       acao: 'mensagem',
     },
   ],
 
-  oferecer_bolsa: [
-    {
-      chave: 'encerrar_lead_d2',
-      titulo: 'Encerrar lead — decidir',
-      descricao: 'Se o lead não fechou após a oferta de bolsa, decidir entre Ganho, Pediu prazo ou Perda.',
-      diasAposEntrada: 2,
-      proximaChave: null,
-      acao: 'decisao',
-    },
-  ],
-
-  // Pediu prazo e Aguardando pagamento têm DATA escolhida pelo vendedor — tarefa criada com data manual.
-  pediu_prazo: [],
+  // Estacionamentos e terminais: sem cadência automática (data/gatilho manual ou retorno ao fluxo).
   aguardando_pagamento: [],
   proxima_turma: [],
   agendado: [],
@@ -129,14 +119,19 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
 }
 
 // Resumo legível do fluxo comercial — fonte única pra exibir no Agente Interno (Nando edita a partir daqui).
-export const FLUXO_COMERCIAL = `FLUXO COMERCIAL (ciclo de ~9 dias — as TAREFAS de cada etapa são os follow-ups):
+export const FLUXO_COMERCIAL = `FLUXO COMERCIAL (ciclo D1–D13 — as TAREFAS de cada etapa são os follow-ups; conta os dias desde a ENTRADA do lead):
 
-1) CHEGADA (Aguardando Atendimento): liga 2x no MESMO dia. Se não atende na 2ª, na hora manda ÁUDIO de apresentação e tenta marcar uma ligação. No dia seguinte, se não respondeu, oferece continuar o atendimento pelo WhatsApp. → Atendimento Inicial.
-2) ATENDIMENTO INICIAL (D4-6): apresenta o curso, entende o lead e informa PREÇO + LOTE. Sem resposta → áudio (conteúdo+valor+lote). 3º dia mudo → mensagem com preço+lote+validade (3 dias). → Lote e Preço OK (ou Não chegou no preço).
-3) LOTE E PREÇO OK: confirma que recebeu preço/lote e mede interesse. Interessado + já entendemos o negócio → Oferecer Bolsa. Até D6 sem interesse → despedida → Perda.
-4) OFERECER BOLSA (D7-9, só quem demonstrou interesse): apresenta a bolsa com justificativa; fecha (link → Aguardando Pagamento) ou agenda (→ Agendado).
-EXCEÇÕES que congelam o ciclo (+3 dias): AGENDADO (marca dia/hora, liga no dia) e AGUARDANDO PAGAMENTO (mandou link).
-SAÍDAS: quer horário → Agendado; quer pagar → link → Aguardando Pagamento; sem interesse → despedida → Perda.
+1) LIGAÇÃO / Chegada (D1): liga DIRETO 2x no mesmo dia (NÃO manda mensagem nessa etapa). Se não atende, na hora manda ÁUDIO convidando a informar o melhor horário. Virada do dia → Atendimento Inicial.
+2) ATENDIMENTO INICIAL (D2-D3): D2 — se não respondeu, mensagem dizendo que tentamos contato e perguntando o melhor horário. D3 — se continua mudo, APRESENTAÇÃO COMPLETA (instituição, objetivo, benefícios, lote, valor, condições). Virada do D3 → Lote e Preço OK.
+3) LOTE E PREÇO OK (D4-D6): D4 pergunta se quer aproveitar; D5 reforça benefícios; D6 avisa que é o ÚLTIMO DIA do lote. Virada do D6 → Oferecer Bolsa.
+4) OFERECER BOLSA (D7-D13): D7-D10 SILÊNCIO (sem comunicação); D11 1ª oferta de bolsa; D12 2ª mensagem da bolsa; D13 mensagem de encerramento (demissão) → Perdido.
+
+DESVIOS POR EVENTO (a qualquer momento, quando o lead RESPONDE):
+- recebeu lote + preço → Lote e Preço OK
+- quer atendimento em outro horário/data → Agendado
+- quer entrar só na próxima turma → Próxima Turma
+- decidiu fechar / vai pagar → Aguardando Pagamento → (confirmado) Ganho
+ESTACIONAMENTOS (congelam o relógio; ao voltar, entram em Lote e Preço OK): Agendado, Próxima Turma.
 
 LIGAÇÃO (regra de ouro): quando COUBER ligação, SUGIRA ligação. Gatilhos fortes: lead pergunta "será que funciona pro MEU negócio?", negócio complexo/competitivo, é FC (ticket alto), traz várias objeções, ou está hesitando/esfriando — proponha uma ligação/conversa com especialista (vira Agendado) em vez de insistir no texto.
 QUEM FAZ: ligação = humano (Rick/Mateus). Áudio/mensagem = IA sugere e o humano envia (ou automático, quando ligado).`

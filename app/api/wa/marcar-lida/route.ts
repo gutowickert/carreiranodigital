@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import { marcarChatLido } from '@/lib/zapi'
 
 // Marca o chat como lido no WhatsApp (some o não-lida no celular) quando a
@@ -7,9 +8,10 @@ import { marcarChatLido } from '@/lib/zapi'
 export async function POST(req: NextRequest) {
   try {
     const { conversaId, telefone, chatLid } = await req.json()
+    const org = await orgDaRequest(req.headers.get('authorization'))
 
     if (conversaId) {
-      await supabase.from('wa_conversas').update({ nao_lidas: 0 }).eq('id', conversaId)
+      await supabase.from('wa_conversas').update({ nao_lidas: 0 }).eq('org_id', org).eq('id', conversaId)
     }
 
     // alvo no WhatsApp: número real (10–13 díg) usa o número; senão o @lid

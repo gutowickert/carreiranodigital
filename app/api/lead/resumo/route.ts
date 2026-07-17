@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 import Anthropic from '@anthropic-ai/sdk'
 
 export const maxDuration = 60
@@ -25,18 +26,19 @@ Regras: jaExplicouCurso = 'sim' só se oferta/formato E preço já foram apresen
 
 export async function POST(req: NextRequest) {
   try {
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const body = await req.json().catch(() => ({}))
     const leadId: string | undefined = body.leadId
     const forcar: boolean = !!body.forcar
     if (!leadId) return NextResponse.json({ ok: false, error: 'falta leadId' }, { status: 200 })
 
     const { data: lead } = await supabase.from('leads')
-      .select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia, resumo_ia_em').eq('id', leadId).single()
+      .select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia, resumo_ia_em').eq('org_id', org).eq('id', leadId).single()
     if (!lead) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
 
     // conversas do lead (por lead_id e por sufixo do telefone)
     const s = suf(lead.whatsapp)
-    const { data: convs } = await supabase.from('wa_conversas').select('id')
+    const { data: convs } = await supabase.from('wa_conversas').select('id').eq('org_id', org)
       .or(`lead_id.eq.${leadId}${s.length === 8 ? `,telefone.ilike.%${s}` : ''}`)
     const convIds = (convs || []).map((c: any) => c.id)
 

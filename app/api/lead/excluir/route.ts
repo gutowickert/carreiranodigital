@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Exclui um lead cadastrado por engano, limpando os registros ligados.
 // Bloqueia se houver matrícula vinculada (não quebrar o financeiro).
@@ -7,6 +8,11 @@ export async function POST(req: NextRequest) {
   try {
     const { leadId } = await req.json()
     if (!leadId) return NextResponse.json({ ok: false, error: 'leadId obrigatório' }, { status: 400 })
+    const org = await orgDaRequest(req.headers.get('authorization'))
+
+    // gate de org: o lead precisa ser da org de quem chamou
+    const { data: alvo } = await supabase.from('leads').select('id').eq('org_id', org).eq('id', leadId).maybeSingle()
+    if (!alvo) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
 
     // Bloqueia se já virou matrícula (venda real)
     const { count } = await supabase.from('matriculas')
@@ -24,7 +30,7 @@ export async function POST(req: NextRequest) {
     await supabase.from('wa_conversas').update({ lead_id: null }).eq('lead_id', leadId)
     await supabase.from('wa_clicks').update({ lead_id: null }).eq('lead_id', leadId)
 
-    const { error } = await supabase.from('leads').delete().eq('id', leadId)
+    const { error } = await supabase.from('leads').delete().eq('org_id', org).eq('id', leadId)
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
 
     return NextResponse.json({ ok: true })

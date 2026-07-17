@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
@@ -66,11 +67,11 @@ export default function Disparos() {
 
   useEffect(() => {
     supabase.from('turmas').select('id, codigo, produtos(nome), cidades(nome)').then(({ data }) => setTurmas(data || []))
-    fetch('/api/wa-oficial/templates').then(r => r.json()).then(j => setTemplates(j.templates || []))
+    fetchAuth('/api/wa-oficial/templates').then(r => r.json()).then(j => setTemplates(j.templates || []))
     // resumo das listas frias (só pra popular o seletor de cidade)
-    fetch('/api/wa-oficial/contatos?limit=1').then(r => r.json()).then(j => { if (j.ok) setCidades(j.resumo?.cidades || []) })
+    fetchAuth('/api/wa-oficial/contatos?limit=1').then(r => r.json()).then(j => { if (j.ok) setCidades(j.resumo?.cidades || []) })
     // campanhas anteriores (pro redisparo dos não-entregues)
-    fetch('/api/wa-oficial/relatorio').then(r => r.json()).then(j => { if (j.ok) setCampanhas(j.campanhas || []) })
+    fetchAuth('/api/wa-oficial/relatorio').then(r => r.json()).then(j => { if (j.ok) setCampanhas(j.campanhas || []) })
   }, [])
 
   const tpl = templates.find(t => t.nome === tplNome)
@@ -95,12 +96,12 @@ export default function Disparos() {
       } else if (modo === 'lista') {
         const p = new URLSearchParams({ categoria: listaCategoria, limit: '5000' })
         if (listaCidade) p.set('cidade', listaCidade)
-        const j = await fetch('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
+        const j = await fetchAuth('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
         // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
         let cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
         // reenvio inteligente: desconta quem JÁ recebeu (entregue/lido) numa campanha anterior
         if (descontarCampId) {
-          const jr = await fetch('/api/wa-oficial/relatorio?recebidos=' + encodeURIComponent(descontarCampId)).then(r => r.json())
+          const jr = await fetchAuth('/api/wa-oficial/relatorio?recebidos=' + encodeURIComponent(descontarCampId)).then(r => r.json())
           const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
           const jaRecebeu = new Set<string>((jr.telefones || []).map((t: string) => suf(t)))
           cs = cs.filter((c: any) => !jaRecebeu.has(suf(c.telefone)))
@@ -108,7 +109,7 @@ export default function Disparos() {
         setContatos(cs)
       } else if (modo === 'naoentregues') {
         if (!campanhaId) { setCarregandoPublico(false); return }
-        const j = await fetch('/api/wa-oficial/relatorio?naoEntregues=' + encodeURIComponent(campanhaId)).then(r => r.json())
+        const j = await fetchAuth('/api/wa-oficial/relatorio?naoEntregues=' + encodeURIComponent(campanhaId)).then(r => r.json())
         setContatos((j.contatos || []).map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' })))
       } else {
         const linhas = numerosTexto.split(/[\n,;]+/).map(s => s.trim()).filter(Boolean)
@@ -127,7 +128,7 @@ export default function Disparos() {
     setProgresso({ feitos: 0, total: contatos.length, enviados: 0, falhas: 0 })
     try {
       // 1) cria a campanha
-      const cr = await fetch('/api/wa-oficial/disparar', {
+      const cr = await fetchAuth('/api/wa-oficial/disparar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'criar', nome: nomeCampanha || `Disparo ${tpl.nome}`, template: tpl.nome, idioma: tpl.idioma, categoria: tpl.categoria, total: contatos.length }),
       }).then(r => r.json())
@@ -140,7 +141,7 @@ export default function Disparos() {
       const headerObj = headerMidia ? { tipo: tpl!.header, ...(headerMediaId ? { id: headerMediaId } : { link: headerLink.trim() }) } : null
       for (let i = 0; i < contatos.length; i += lote) {
         const chunk = contatos.slice(i, i + lote)
-        const res = await fetch('/api/wa-oficial/disparar', {
+        const res = await fetchAuth('/api/wa-oficial/disparar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ action: 'enviar', disparoId, template: tpl.nome, idioma: tpl.idioma, categoria: tpl.categoria, headerMidia: headerObj, bodyParams, contatos: chunk }),
         }).then(r => r.json())
@@ -149,7 +150,7 @@ export default function Disparos() {
         setProgresso({ feitos: Math.min(i + lote, contatos.length), total: contatos.length, enviados, falhas })
       }
 
-      await fetch('/api/wa-oficial/disparar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'concluir', disparoId }) })
+      await fetchAuth('/api/wa-oficial/disparar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'concluir', disparoId }) })
       setResultadoFinal(`Concluído! ${enviados} enviados, ${falhas} falhas. Custo estimado: ${(enviados * custoUnit).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}`)
     } catch (e: any) {
       setResultadoFinal('Erro: ' + ((e && e.message) || 'falha'))

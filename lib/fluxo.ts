@@ -18,11 +18,13 @@ export type Fluxo = { cadencia: Record<string, TarefaFluxo[]>; regrasGerais: str
 export const PRIORIDADE_PADRAO: Prioridade = { followupDias: 13, ordemQuente: 'recente', ordemFollowup: 'mais_frio', produtoPrioritario: null, incluirFaladoHoje: false }
 
 export const TITULO_ETAPA: Record<string, string> = {
-  aguardando_atendimento: 'Chegada (Aguardando Atendimento)',
+  aguardando_atendimento: 'Ligação (Chegada)',
   atendimento_inicial: 'Atendimento Inicial',
   lote_preco_ok: 'Lote e Preço OK',
-  nao_chegou_preco: 'Não chegou no preço',
   oferecer_bolsa: 'Oferecer Bolsa',
+  agendado: 'Agendado',
+  proxima_turma: 'Próxima Turma',
+  aguardando_pagamento: 'Aguardando Pagamento',
 }
 
 function defaultFluxo(): Fluxo {

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // NPS.
 //  GET ?turma=<id> -> nome da turma (pro cabeçalho da página pública)
@@ -19,15 +20,18 @@ export async function GET(req: NextRequest) {
   try {
     const turmaId = req.nextUrl.searchParams.get('turma')
     if (turmaId) {
+      // header público da página de NPS: pelo turma_id (UUID). Sem escopo de org aqui
+      // porque o aluno preenche sem login — o org sai da própria turma no POST.
       const { data: t } = await supabase.from('turmas').select('codigo, produtos(nome), cidades(nome)').eq('id', turmaId).maybeSingle()
       return NextResponse.json({ ok: true, turma: t ? { codigo: t.codigo, produto: (t as any).produtos?.nome, cidade: (t as any).cidades?.nome } : null })
     }
-    // agregado
-    const { data: rs } = await supabase.from('nps_respostas').select('turma_id, nota, nota_professor, nota_conteudo, nota_estrutura, comentario, criado_em').order('criado_em', { ascending: false })
+    // agregado (tela do CRM) — escopado por org
+    const org = await orgDaRequest(req.headers.get('authorization'))
+    const { data: rs } = await supabase.from('nps_respostas').select('turma_id, nota, nota_professor, nota_conteudo, nota_estrutura, comentario, criado_em').eq('org_id', org).order('criado_em', { ascending: false })
     const resp = rs || []
-    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produtos(nome)')
+    const { data: turmas } = await supabase.from('turmas').select('id, codigo, produtos(nome)').eq('org_id', org)
     const nomeT = Object.fromEntries((turmas || []).map((t: any) => [t.id, `${t.codigo}`]))
-    const { data: tp } = await supabase.from('turma_professores').select('turma_id, professores(nome)')
+    const { data: tp } = await supabase.from('turma_professores').select('turma_id, professores(nome)').eq('org_id', org)
     const profsDaTurma: Record<string, string[]> = {}
     for (const x of (tp || [])) { const nm = (x as any).professores?.nome; if (nm) (profsDaTurma[x.turma_id] = profsDaTurma[x.turma_id] || []).push(nm) }
 
@@ -51,7 +55,11 @@ export async function POST(req: NextRequest) {
     const nota = parseInt(b.nota)
     if (isNaN(nota) || nota < 0 || nota > 10) return NextResponse.json({ ok: false, error: 'nota inválida' }, { status: 200 })
     const num = (v: any) => { const x = parseInt(v); return isNaN(x) ? null : x }
+    // aluno preenche sem login: o org sai da própria turma (default CnD se sem turma)
+    let org = '00000000-0000-0000-0000-0000000000cd'
+    if (b.turma_id) { const { data: t } = await supabase.from('turmas').select('org_id').eq('id', b.turma_id).maybeSingle(); if (t?.org_id) org = t.org_id }
     await supabase.from('nps_respostas').insert({
+      org_id: org,
       turma_id: b.turma_id || null, nota,
       nota_professor: num(b.nota_professor), nota_conteudo: num(b.nota_conteudo), nota_estrutura: num(b.nota_estrutura),
       comentario: (b.comentario || '').toString().slice(0, 1000) || null,

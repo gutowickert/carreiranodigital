@@ -2,6 +2,7 @@
 
 import { useEffect, useState, Fragment } from 'react'
 import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend } from 'recharts'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const th = { padding: '8px 10px', fontSize: 11, color: 'var(--text-faint)', textTransform: 'uppercase', textAlign: 'left' } as React.CSSProperties
@@ -21,7 +22,7 @@ export default function RelatorioDisparos() {
   const [carregandoResp, setCarregandoResp] = useState(false)
 
   useEffect(() => {
-    fetch('/api/wa-oficial/relatorio').then(r => r.json()).then(j => {
+    fetchAuth('/api/wa-oficial/relatorio').then(r => r.json()).then(j => {
       if (j.ok) { setCampanhas(j.campanhas || []); setMotivos(j.motivos || []) }
     }).finally(() => setCarregando(false))
   }, [])
@@ -29,7 +30,7 @@ export default function RelatorioDisparos() {
   async function abrir(id: string) {
     if (aberta === id) { setAberta(null); return }
     setAberta(id); setRespostas([]); setCarregandoResp(true)
-    const j = await fetch('/api/wa-oficial/relatorio?disparo=' + id).then(r => r.json())
+    const j = await fetchAuth('/api/wa-oficial/relatorio?disparo=' + id).then(r => r.json())
     setRespostas(j.respostas || [])
     setCarregandoResp(false)
   }

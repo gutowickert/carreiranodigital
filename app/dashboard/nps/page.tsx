@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const corNps = (n: number) => n >= 50 ? 'var(--green)' : n >= 0 ? 'var(--amber)' : 'var(--red)'
@@ -13,8 +14,8 @@ export default function NPS() {
 
   useEffect(() => {
     Promise.all([
-      fetch('/api/nps').then(r => r.json()),
-      fetch('/api/chamada').then(r => r.json()),
+      fetchAuth('/api/nps').then(r => r.json()),
+      fetchAuth('/api/chamada').then(r => r.json()),
     ]).then(([nps, ch]) => { if (nps.ok) setD(nps); if (ch.ok) setTurmas(ch.turmas || []) }).finally(() => setCarregando(false))
   }, [])
 

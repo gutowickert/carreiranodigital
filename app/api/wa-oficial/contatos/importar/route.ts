@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Importa contatos frios (interessados/compradores) de duas fontes:
 //  - formato 'sleekflow': CSV exportado do SleekFlow (FirstName, PhoneNumber, ...)
@@ -58,6 +59,7 @@ type Linha = { nome: string; telefone: string; email: string; notas: string; cid
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const formato: string = body.formato || 'colado'
     const categoria: string = body.categoria === 'comprador' ? 'comprador' : 'interessado'
     const cidade: string = (body.cidade || '').trim() || null
@@ -148,6 +150,7 @@ export async function POST(req: NextRequest) {
         continue
       }
       porFone.set(tel, {
+        org_id: org,
         telefone: tel, nome: l.nome || null, email: l.email || null,
         cidade: cidade || l.cidade || null, categoria, origem, notas: l.notas || null,
         status: 'novo', atualizado_em: new Date().toISOString(),

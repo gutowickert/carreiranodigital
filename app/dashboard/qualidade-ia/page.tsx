@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 
 const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
@@ -30,7 +31,7 @@ export default function QualidadeIA() {
 
   async function carregar(e = email) {
     setCarregando(true)
-    const j = await fetch(`/api/qualidade-ia?email=${encodeURIComponent(e)}`).then(r => r.json()).catch(() => null)
+    const j = await fetchAuth(`/api/qualidade-ia?email=${encodeURIComponent(e)}`).then(r => r.json()).catch(() => null)
     if (j?.ok) setD(j)
     setCarregando(false)
   }
@@ -38,7 +39,7 @@ export default function QualidadeIA() {
   async function revisar(leadId: string) {
     const r = rasc[leadId] || {}
     if (!r.status) { setAviso('Escolha OK / Corrigir / Assumir'); return }
-    const j = await fetch('/api/qualidade-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, lead_id: leadId, nota: r.nota, status: r.status, comentario: r.comentario }) }).then(r => r.json())
+    const j = await fetchAuth('/api/qualidade-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, lead_id: leadId, nota: r.nota, status: r.status, comentario: r.comentario }) }).then(r => r.json())
     setAviso(j.ok ? '💾 Revisão salva!' : `⚠️ ${j.error}`)
     setTimeout(() => setAviso(''), 3000)
     if (j.ok) { setRasc(x => ({ ...x, [leadId]: {} })); carregar() }

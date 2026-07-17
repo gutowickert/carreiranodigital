@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Traduz o erro cru da Meta num motivo legível pra equipe.
 function motivoLabel(erro?: string | null): string {
@@ -21,6 +22,7 @@ function motivoLabel(erro?: string | null): string {
 //  - sem params: lista campanhas com o resumo (enviados/entregues/lidos/falhas/respostas/custo)
 //  - ?disparo=<id>: lista quem RESPONDEU aquela campanha
 export async function GET(req: NextRequest) {
+  const org = await orgDaRequest(req.headers.get('authorization'))
   const disparoId = req.nextUrl.searchParams.get('disparo')
   const naoEntregues = req.nextUrl.searchParams.get('naoEntregues')
 
@@ -33,7 +35,7 @@ export async function GET(req: NextRequest) {
     for (;;) {
       const { data, error } = await supabase.from('wa_disparo_envios')
         .select('telefone, nome')
-        .eq('disparo_id', naoEntregues).eq('status', 'enviado').is('respondeu_em', null)
+        .eq('org_id', org).eq('disparo_id', naoEntregues).eq('status', 'enviado').is('respondeu_em', null)
         .range(from, from + 999)
       if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
       for (const r of data || []) {
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
     for (;;) {
       const { data, error } = await supabase.from('wa_disparo_envios')
         .select('telefone')
-        .eq('disparo_id', recebidos).in('status', ['entregue', 'lido'])
+        .eq('org_id', org).eq('disparo_id', recebidos).in('status', ['entregue', 'lido'])
         .range(from, from + 999)
       if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
       for (const r of data || []) { if (r.telefone) telefones.push(r.telefone) }
@@ -72,18 +74,18 @@ export async function GET(req: NextRequest) {
   if (contato) {
     const suf = contato.replace(/\D/g, '').slice(-8)
     const { data: env } = await supabase.from('wa_disparo_envios')
-      .select('disparo_id, enviado_em').ilike('telefone', `%${suf}`).not('disparo_id', 'is', null)
+      .select('disparo_id, enviado_em').eq('org_id', org).ilike('telefone', `%${suf}`).not('disparo_id', 'is', null)
       .order('enviado_em', { ascending: false }).limit(1).maybeSingle()
     if (!env) return NextResponse.json({ ok: true, disparo: null })
     const { data: d } = await supabase.from('wa_disparos')
-      .select('nome, template_nome').eq('id', env.disparo_id).maybeSingle()
+      .select('nome, template_nome').eq('org_id', org).eq('id', env.disparo_id).maybeSingle()
     return NextResponse.json({ ok: true, disparo: d ? { nome: d.nome, template: d.template_nome, enviado_em: env.enviado_em } : null })
   }
 
   if (disparoId) {
     const { data, error } = await supabase.from('wa_disparo_envios')
       .select('telefone, nome, lead_id, respondeu_em')
-      .eq('disparo_id', disparoId).not('respondeu_em', 'is', null)
+      .eq('org_id', org).eq('disparo_id', disparoId).not('respondeu_em', 'is', null)
       .order('respondeu_em', { ascending: false }).limit(1000)
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
     return NextResponse.json({ ok: true, respostas: data || [] })
@@ -91,7 +93,7 @@ export async function GET(req: NextRequest) {
 
   const { data: campanhas, error } = await supabase.from('wa_disparos')
     .select('id, nome, template_nome, categoria, status, total, criado_em')
-    .order('criado_em', { ascending: false }).limit(100)
+    .eq('org_id', org).order('criado_em', { ascending: false }).limit(100)
   if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
 
   const ids = (campanhas || []).map(c => c.id)
@@ -122,7 +124,7 @@ export async function GET(req: NextRequest) {
   let mf = 0
   for (;;) {
     const { data } = await supabase.from('wa_disparo_envios')
-      .select('erro').eq('status', 'falha').not('erro', 'is', null).range(mf, mf + 999)
+      .select('erro').eq('org_id', org).eq('status', 'falha').not('erro', 'is', null).range(mf, mf + 999)
     if (!data || !data.length) break
     for (const r of data) { const k = motivoLabel(r.erro); motivos[k] = (motivos[k] || 0) + 1 }
     if (data.length < 1000) break

@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Acesso de professor ao portal (/professor). Link é pelo EMAIL (login = professores.email).
 //  GET  -> lista de emails que já têm acesso (setor='professor')
 //  POST -> { professor_id, email, senha } cria o login e o perfil
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const { data } = await supabase.from('usuarios_perfil').select('email').eq('papel', 'professor')
+    const org = await orgDaRequest(req.headers.get('authorization'))
+    const { data } = await supabase.from('usuarios_perfil').select('email').eq('org_id', org).eq('papel', 'professor')
     return NextResponse.json({ ok: true, emails: (data || []).map((r: any) => (r.email || '').toLowerCase()) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
@@ -23,11 +25,12 @@ export async function POST(req: NextRequest) {
     if (!professorId || !email || senha.length < 6) {
       return NextResponse.json({ ok: false, error: 'informe professor, email e senha (mín. 6)' }, { status: 200 })
     }
-    const { data: prof } = await supabase.from('professores').select('id, nome').eq('id', professorId).single()
+    const org = await orgDaRequest(req.headers.get('authorization'))
+    const { data: prof } = await supabase.from('professores').select('id, nome').eq('org_id', org).eq('id', professorId).single()
     if (!prof) return NextResponse.json({ ok: false, error: 'professor não encontrado' }, { status: 200 })
 
     // garante o link: professores.email = email do login
-    await supabase.from('professores').update({ email }).eq('id', professorId)
+    await supabase.from('professores').update({ email }).eq('org_id', org).eq('id', professorId)
 
     // cria o usuário no Auth (sem precisar confirmar email)
     const { data: created, error: errAuth } = await supabase.auth.admin.createUser({
@@ -39,7 +42,7 @@ export async function POST(req: NextRequest) {
     }
 
     const { error: errPerfil } = await supabase.from('usuarios_perfil').insert({
-      id: created.user.id, nome: prof.nome, email, papel: 'professor', setor: 'operacoes', ativo: true,
+      id: created.user.id, org_id: org, nome: prof.nome, email, papel: 'professor', setor: 'operacoes', ativo: true,
     })
     if (errPerfil) {
       // desfaz o auth pra não deixar login órfão
