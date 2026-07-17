@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { getFluxo, PRIORIDADE_PADRAO } from '@/lib/fluxo'
 import { orgDaRequest } from '@/lib/org'
+import { supabaseDoUsuario } from '@/lib/supabase-user'
 
 export const maxDuration = 60
 
@@ -24,7 +25,10 @@ const familia = (cod: string) => /^fc/i.test(cod || '') ? 'FC' : /^anl/i.test(co
 // Todo item vem enriquecido: tempo de chegada, etapa no funil, se teve ligação, e andamentos.
 export async function GET(req: Request) {
   const now = Date.now()
-  const org = await orgDaRequest(req.headers.get('authorization'))
+  const auth = req.headers.get('authorization')
+  const org = await orgDaRequest(auth)
+  const { data: userData } = await supabaseDoUsuario(auth).auth.getUser().catch(() => ({ data: { user: null } as any }))
+  const userId = userData?.user?.id || null
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em', q => q.eq('org_id', org))).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
   const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em', q => q.eq('org_id', org))
@@ -66,10 +70,13 @@ export async function GET(req: Request) {
     for (const a of (ands || [])) { const o = andInfo[a.lead_id] = andInfo[a.lead_id] || { n: 0, ultimo: '', em: '' }; o.n++; if (!o.ultimo && a.observacao) { o.ultimo = a.observacao; o.em = a.criado_em } }
   }
 
-  // FOLLOW-UPS DO DIA: tarefas pendentes vencidas ou de hoje
-  const tarefas = await todos('tarefas_lead', 'lead_id,tipo,titulo,data_vencimento', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false).lte('data_vencimento', hoje + 'T23:59:59'))
+  // FOLLOW-UPS DO DIA: tarefas pendentes vencidas ou de hoje.
+  // Exclui as RESERVADAS por OUTRO atendente nos últimos 30 min (reserva atômica pra 2+ pessoas).
+  const tarefas = await todos('tarefas_lead', 'lead_id,tipo,titulo,data_vencimento,reservada_por,reservada_em', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false).lte('data_vencimento', hoje + 'T23:59:59'))
+  const RESERVA_MS = 30 * 60 * 1000
+  const disponivel = (t: any) => !t.reservada_por || t.reservada_por === userId || !t.reservada_em || (now - +new Date(t.reservada_em) > RESERVA_MS)
   const tarefaDeLead: Record<string, any> = {}
-  for (const t of tarefas) { const c = tarefaDeLead[t.lead_id]; if (!c || (t.data_vencimento || '') < (c.data_vencimento || '')) tarefaDeLead[t.lead_id] = t }
+  for (const t of tarefas) { if (!disponivel(t)) continue; const c = tarefaDeLead[t.lead_id]; if (!c || (t.data_vencimento || '') < (c.data_vencimento || '')) tarefaDeLead[t.lead_id] = t }
 
   const bestDe = (l: any) => {
     const cs = [...(convDeLead[l.id] || []), ...(convPorTel[suf(l.whatsapp)] || [])]

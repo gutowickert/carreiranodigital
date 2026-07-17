@@ -354,10 +354,19 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
   const [gerando, setGerando] = useState(false)
   const N = 10
 
+  // Ao SAIR da tela de follow-up, libera minhas reservas não finalizadas (voltam pro pool pra outra pessoa).
+  useEffect(() => {
+    return () => { fetchAuth('/api/atender/liberar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).catch(() => { }) }
+  }, [])
+
   async function gerarMais() {
     setGerando(true)
+    // RESERVA atômica: trava N follow-ups livres pra mim (outro atendente não pega os mesmos)
+    const j = await fetchAuth('/api/atender/reservar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: N }) }).then(r => r.json()).catch(() => ({ ok: false }))
+    const ids: string[] = j?.ok ? (j.leadIds || []) : []
     const jaTem = new Set(linhas.map(l => l.item.leadId))
-    const alvo = fila.filter(it => !jaTem.has(it.leadId)).slice(0, N)
+    const byId = new Map(fila.map(it => [it.leadId, it]))
+    const alvo = ids.filter(id => !jaTem.has(id)).map(id => byId.get(id)).filter(Boolean) as Item[]
     const res = await Promise.all(alvo.map(async it => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }))
     setLinhas(l => [...l, ...res])
     setGerando(false)
