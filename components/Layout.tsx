@@ -39,12 +39,14 @@ const grupos: Grupo[] = [
     titulo: 'CRM',
     itens: [
       { nome: 'Atender Agora', href: '/dashboard/atender' },
+      { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
+      { nome: 'Fluxo Comercial', href: '/dashboard/fluxo' },
     ],
   },
   {
