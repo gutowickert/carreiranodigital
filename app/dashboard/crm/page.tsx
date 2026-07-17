@@ -43,12 +43,10 @@ type MotivoPerda = { id: string; nome: string }
 type MatriculaDisponivel = { id: string; aluno_id: string; valor_pago: number; data_compra: string; aluno_nome?: string; aluno_cpf?: string }
 
 const ETAPAS = [
-  { id: 'aguardando_atendimento', label: 'Aguardando atendimento', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  { id: 'aguardando_atendimento', label: 'Ligação', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
   { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
-  { id: 'nao_chegou_preco', label: 'Não chegou no preço', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
-  { id: 'pediu_prazo', label: 'Pediu prazo', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
@@ -282,8 +280,8 @@ export default function CRM() {
       payload.data_perda = null
       payload.motivo_perda_id = null
     }
-    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
-      payload.prazo_prometido = extras.prazoPrometido
+    if (novaEtapa === 'aguardando_atendimento' && extras?.prazoPrometido) {
+      payload.prazo_prometido = extras.prazoPrometido // data/hora da ligação agendada
     }
 
     await supabase.from('leads').update(payload).eq('id', lead.id)
@@ -300,14 +298,14 @@ export default function CRM() {
     await cancelarTarefasPendentes(lead.id)
 
     // Cria primeira tarefa da nova etapa
-    if (novaEtapa === 'pediu_prazo' && extras?.prazoPrometido) {
-      // Tarefa com data específica (escolhida pelo vendedor)
+    if (novaEtapa === 'aguardando_atendimento' && extras?.prazoPrometido) {
+      // Ligação AGENDADA: tarefa de ligação na data/hora combinada
       await criarTarefaComData(
         lead.id,
         lead.vendedor_id,
-        'retornar_prazo',
-        `Retornar contato — ${lead.nome}`,
-        'Cliente pediu prazo. Retornar contato na data prometida.',
+        'ligar_agendado',
+        `Ligar (agendado) — ${lead.nome}`,
+        'Cliente pediu ligação nesta data/hora. Ligar no horário combinado.',
         extras.prazoPrometido
       )
     } else if (novaEtapa === 'aguardando_pagamento' && extras?.dataAgendada) {
@@ -449,7 +447,7 @@ export default function CRM() {
                     {leadsEtapa.map(lead => {
                       const dia = diaDoCiclo(lead.criado_em)
                       const cicloEstourou = dia > PRAZO_CICLO
-                      const prazoEstourou = lead.prazo_prometido && new Date(lead.prazo_prometido) < new Date() && lead.etapa === 'pediu_prazo'
+                      const prazoEstourou = lead.prazo_prometido && new Date(lead.prazo_prometido) < new Date() && lead.etapa === 'aguardando_atendimento'
                       const tarefaAtrasada = lead.temTarefaAtrasada
                       const alerta = cicloEstourou || prazoEstourou || tarefaAtrasada
                       return (
@@ -775,7 +773,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function confirmarPrazo() {
     if (!lead || !prazoData) return
     const prazoIso = new Date(`${prazoData}T${prazoHora}:00`).toISOString()
-    await moverEtapa(lead, 'pediu_prazo', { prazoPrometido: prazoIso })
+    await moverEtapa(lead, 'aguardando_atendimento', { prazoPrometido: prazoIso })
     onFechar()
   }
 
@@ -1001,7 +999,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
                 ))}
                 <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer' }}>
-                  → Pediu prazo
+                  📞 Agendar ligação
                 </button>
                 <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
@@ -1027,14 +1025,14 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
               {mostrarPrazo && (
                 <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
-                  <label style={labelStyle}>Quando cliente prometeu retornar? *</label>
+                  <label style={labelStyle}>Quando ligar de volta? *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={inp} value={prazoData} onChange={e => setPrazoData(e.target.value)} />
                     <input type="time" style={inp} value={prazoHora} onChange={e => setPrazoHora(e.target.value)} />
                   </div>
                   <button onClick={confirmarPrazo} disabled={!prazoData}
                     style={{ ...btnPrimary, background: 'var(--amber)', marginTop: 8, width: '100%', opacity: prazoData ? 1 : 0.5 }}>
-                    Marcar prazo e criar tarefa
+                    Agendar ligação e criar tarefa
                   </button>
                 </div>
               )}
