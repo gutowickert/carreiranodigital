@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { orgDaRequest } from '@/lib/org'
 
 // Velocidade de venda: tempo entre o lead entrar (criado_em) e comprar (data_ganho).
 //  GET ?desde=<ISO>&ate=<ISO> -> geral, distribuição e quebra por origem/vendedor/produto
@@ -30,11 +31,12 @@ function grupo(rows: any[], key: string) {
 
 export async function GET(req: NextRequest) {
   try {
+    const org = await orgDaRequest(req.headers.get('authorization'))
     const desde = req.nextUrl.searchParams.get('desde')
     const ate = req.nextUrl.searchParams.get('ate')
     let q = supabase.from('leads')
       .select('criado_em, data_ganho, origem, vendedor_id, turma_id, codigo_turma, valor_venda, motivo_ganho')
-      .eq('etapa', 'ganho').not('data_ganho', 'is', null).not('criado_em', 'is', null)
+      .eq('org_id', org).eq('etapa', 'ganho').not('data_ganho', 'is', null).not('criado_em', 'is', null)
     if (desde) q = q.gte('data_ganho', desde)
     if (ate) q = q.lte('data_ganho', ate)
     const { data } = await q

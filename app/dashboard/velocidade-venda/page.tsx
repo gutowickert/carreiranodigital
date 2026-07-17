@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const periodos = [{ v: 30, l: '30 dias' }, { v: 90, l: '90 dias' }, { v: 365, l: '12 meses' }, { v: 0, l: 'Tudo' }]
@@ -15,7 +16,7 @@ export default function VelocidadeVenda() {
   useEffect(() => {
     setCarregando(true)
     const desde = periodo ? new Date(Date.now() - periodo * 864e5).toISOString() : ''
-    fetch(`/api/velocidade-venda${desde ? `?desde=${desde}` : ''}`).then(r => r.json())
+    fetchAuth(`/api/velocidade-venda${desde ? `?desde=${desde}` : ''}`).then(r => r.json())
       .then(j => { if (j.ok) setD(j) }).finally(() => setCarregando(false))
   }, [periodo])
 
