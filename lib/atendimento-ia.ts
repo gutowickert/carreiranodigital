@@ -231,6 +231,17 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (ofertas.length) corpus += `\n# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
   // (fluxo + regras da equipe já vêm do CÉREBRO CENTRAL no topo do corpus)
 
+  // APRENDIZADO com as CORREÇÕES da equipe: como o humano reescreveu a sugestão da IA (o tom REAL).
+  try {
+    const { data: edicoes } = await supabase.from('webhook_logs').select('payload').eq('origem', 'ia-edicao').order('recebido_em', { ascending: false }).limit(10)
+    const exs = (edicoes || []).map((e: any) => e.payload).filter((p: any) => p?.original && p?.enviado)
+    if (exs.length) {
+      corpus += `\n# COMO A EQUIPE REESCREVE (APRENDA O TOM REAL — a IA sugeriu e o vendedor CORRIGIU antes de enviar; imite o estilo do "ENVIADO", não do "SUGERIDO"):\n`
+      corpus += exs.slice(0, 6).map((p: any) => `— SUGERIDO: "${(p.original || '').slice(0, 320)}"\n  ✅ ENVIADO: "${(p.enviado || '').slice(0, 320)}"`).join('\n')
+      corpus += `\n`
+    }
+  } catch { /* aprendizado é best-effort */ }
+
   const client = new Anthropic({ apiKey: key })
   const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })
   await logIaUso('atendimento', MODELO, resp.usage)

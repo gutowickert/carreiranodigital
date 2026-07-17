@@ -20,6 +20,13 @@ export async function POST(req: NextRequest) {
       tarefas = (data || []).length
       await sb.from('webhook_logs').insert({ origem: 'ia-acao', evento: 'atender-semi', status: 'enviado', payload: { lead_id: leadId, texto, aprovado_por: b.email || null } })
     }
+    // APRENDIZADO: se o humano EDITOU a sugestão da IA (original != enviado), guarda o par pra IA aprender o tom real.
+    const original = (b.original || '').toString().trim()
+    const norm = (s: string) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase()
+    if (original && leadId && norm(original) !== norm(texto)) {
+      const { data: l } = await sb.from('leads').select('etapa, codigo_turma').eq('id', leadId).maybeSingle()
+      await sb.from('webhook_logs').insert({ origem: 'ia-edicao', evento: 'correcao', status: 'ok', payload: { lead_id: leadId, original, enviado: texto, etapa: l?.etapa || null, turma: l?.codigo_turma || null, por: b.email || null } })
+    }
     return NextResponse.json({ ok: true, tarefas })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
