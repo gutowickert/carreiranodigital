@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { randomUUID } from 'node:crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
 import { ORG_CND } from '@/lib/org'
@@ -75,4 +76,44 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: 'ação inválida' }, { status: 200 })
   }
   return NextResponse.json({ ok: true })
+}
+
+// Onboarding: cria a organização + o usuário ADMIN dela (login pronto).
+export async function PUT(req: Request) {
+  const sa = await superAdmin(req.headers.get('authorization'))
+  if (!sa.ok) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
+  const b = await req.json().catch(() => ({}))
+  const nome = (b.nome || '').toString().trim()
+  const slug = (b.slug || '').toString().trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-') || nome.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  const email = (b.adminEmail || '').toString().trim().toLowerCase()
+  const senha = (b.adminSenha || '').toString()
+  const adminNome = (b.adminNome || '').toString().trim() || nome
+  if (!nome || !email || senha.length < 6) return NextResponse.json({ ok: false, error: 'informe nome da org, email e senha (mín. 6)' }, { status: 200 })
+
+  // 1) cria a organização
+  const orgId = randomUUID()
+  const { error: eOrg } = await sb.from('organizacoes').insert({ id: orgId, nome, slug, plano: (b.plano || 'teste').toString(), ativo: true })
+  if (eOrg) return NextResponse.json({ ok: false, error: 'erro ao criar org: ' + eOrg.message }, { status: 200 })
+
+  // 2) cria o login no Auth
+  const { data: created, error: eAuth } = await sb.auth.admin.createUser({ email, password: senha, email_confirm: true, user_metadata: { nome: adminNome } })
+  if (eAuth || !created?.user?.id) {
+    await sb.from('organizacoes').delete().eq('id', orgId)
+    const msg = eAuth?.message || 'falha ao criar login'
+    return NextResponse.json({ ok: false, error: /already/i.test(msg) ? 'esse email já tem login' : msg }, { status: 200 })
+  }
+
+  // 3) cria o perfil admin da org (acesso completo)
+  const { error: ePerfil } = await sb.from('usuarios_perfil').insert({
+    id: created.user.id, auth_id: created.user.id, org_id: orgId,
+    nome: adminNome, email, papel: 'admin', setor: 'comercial', ativo: true,
+    crm_interno: true, crm_externo: true, leads_escopo: 'todos', wa_caixa: true,
+  })
+  if (ePerfil) {
+    await sb.auth.admin.deleteUser(created.user.id).catch(() => {})
+    await sb.from('organizacoes').delete().eq('id', orgId)
+    return NextResponse.json({ ok: false, error: 'erro ao criar perfil: ' + ePerfil.message }, { status: 200 })
+  }
+
+  return NextResponse.json({ ok: true, orgId, email, senha })
 }

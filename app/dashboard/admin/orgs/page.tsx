@@ -25,11 +25,26 @@ function Metrica({ label, valor, cor }: { label: string; valor: string; cor?: st
   )
 }
 
+const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: 'var(--text)', outline: 'none', width: '100%' }
+
 export default function AdminOrgs() {
   const [orgs, setOrgs] = useState<any[]>([])
   const [carregando, setCarregando] = useState(true)
   const [semAcesso, setSemAcesso] = useState(false)
   const [busy, setBusy] = useState('')
+  const [novaOpen, setNovaOpen] = useState(false)
+  const [f, setF] = useState<any>({ nome: '', slug: '', plano: 'teste', adminNome: '', adminEmail: '', adminSenha: '' })
+  const [criando, setCriando] = useState(false)
+  const [resultado, setResultado] = useState<any>(null)
+
+  async function criarOrg() {
+    if (!f.nome || !f.adminEmail || f.adminSenha.length < 6) { setResultado({ erro: 'preencha nome da org, email e senha (mín. 6)' }); return }
+    setCriando(true); setResultado(null)
+    const j = await fetchAuth('/api/admin/orgs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) }).then(r => r.json()).catch(() => ({ ok: false }))
+    setCriando(false)
+    if (j.ok) { setResultado({ email: j.email, senha: j.senha, nome: f.nome }); setF({ nome: '', slug: '', plano: 'teste', adminNome: '', adminEmail: '', adminSenha: '' }); carregar() }
+    else setResultado({ erro: j.error || 'falha' })
+  }
 
   async function carregar() {
     setCarregando(true)
@@ -56,8 +71,29 @@ export default function AdminOrgs() {
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🏢 Organizações</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Painel do SaaS: uso, custo de IA e controle de cada cliente. Números do mês atual.</p>
         </div>
-        <button onClick={carregar} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>↻ Atualizar</button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => { setNovaOpen(!novaOpen); setResultado(null) }} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>{novaOpen ? '✕ Fechar' : '➕ Nova organização'}</button>
+          <button onClick={carregar} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>↻ Atualizar</button>
+        </div>
       </div>
+
+      {novaOpen && (
+        <div style={{ ...card, padding: 18, marginTop: 16, border: '1px solid var(--accent)' }}>
+          <div style={{ fontSize: 14, fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}>Criar novo cliente (organização + login admin)</div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nome da organização *</label><input style={inp} value={f.nome} onChange={e => setF({ ...f, nome: e.target.value })} placeholder="Ex: Escola do Fulano" /></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Plano</label>
+              <select style={inp} value={f.plano} onChange={e => setF({ ...f, plano: e.target.value })}>{PLANOS.map(p => <option key={p} value={p}>{p}</option>)}</select></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nome do admin</label><input style={inp} value={f.adminNome} onChange={e => setF({ ...f, adminNome: e.target.value })} placeholder="Fulano de Tal" /></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Slug (opcional)</label><input style={inp} value={f.slug} onChange={e => setF({ ...f, slug: e.target.value })} placeholder="escola-fulano" /></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Email do admin *</label><input style={inp} value={f.adminEmail} onChange={e => setF({ ...f, adminEmail: e.target.value })} placeholder="admin@cliente.com" /></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Senha inicial * (mín. 6)</label><input style={inp} value={f.adminSenha} onChange={e => setF({ ...f, adminSenha: e.target.value })} placeholder="senha123" /></div>
+          </div>
+          <button onClick={criarOrg} disabled={criando} style={{ marginTop: 14, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: criando ? .6 : 1 }}>{criando ? 'Criando…' : 'Criar cliente'}</button>
+          {resultado?.erro && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--red)' }}>⚠️ {resultado.erro}</div>}
+          {resultado?.email && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--green-strong)', background: 'var(--green-bg)', borderRadius: 8, padding: 10 }}>✅ <b>{resultado.nome}</b> criada! Login: <b>{resultado.email}</b> · senha: <b>{resultado.senha}</b> — passa isso pro cliente (ele troca a senha depois).</div>}
+        </div>
+      )}
 
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 40 }}>Carregando…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 20 }}>
