@@ -101,6 +101,7 @@ const grupos: Grupo[] = [
       { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Sistema', href: '' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
+      { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs' },
       { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
     ],
   },
