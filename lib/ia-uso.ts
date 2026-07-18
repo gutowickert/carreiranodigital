@@ -18,7 +18,7 @@ export async function logIaUso(evento: string, model: string, usage: any, extra?
     const [pin, pout] = P[model] || [3, 15]
     const custo = (inp * pin + cw * pin * 1.25 + cr * pin * 0.1 + out * pout) / 1_000_000
     await supabaseAdmin.from('webhook_logs').insert({
-      origem: 'ia-uso', evento, status: model,
+      origem: 'ia-uso', evento, status: 'processado', // status tem CHECK constraint; o modelo vai no payload
       payload: { model, input: inp, output: out, cache_read: cr, cache_write: cw, custo_usd: Math.round(custo * 1e6) / 1e6, ...(extra || {}) },
     })
   } catch { /* silencioso */ }
