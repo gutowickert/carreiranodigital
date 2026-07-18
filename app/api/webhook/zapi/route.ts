@@ -349,7 +349,7 @@ export async function POST(req: NextRequest) {
     // Não mexe em ligação agendada nem em tarefas com data marcada pelo vendedor.
     if (fromMe && !ehGrupo && leadTemp) {
       try {
-        const MSGTASKS = ['msg_horario', 'seguir_whatsapp', 'apresentacao_completa', 'quer_aproveitar', 'reforco_beneficios', 'ultimo_dia_lote', 'bolsa_1', 'bolsa_2', 'demissao', 'apresentar_curso', 'audio_valor', 'msg_preco_validade', 'oferecer_whatsapp', 'lote_fecha_hoje_d3', 'dar_andamento_d4', 'tentar_contato_d4', 'tentar_contato_d6', 'encerrar_lead_d2', 'audio_horario', 'followup_pos_triagem']
+        const MSGTASKS = ['msg_horario', 'seguir_whatsapp', 'seguir_followup', 'apresentacao_completa', 'quer_aproveitar', 'reforco_beneficios', 'ultimo_dia_lote', 'bolsa_1', 'bolsa_2', 'demissao', 'apresentar_curso', 'audio_valor', 'msg_preco_validade', 'oferecer_whatsapp', 'lote_fecha_hoje_d3', 'dar_andamento_d4', 'tentar_contato_d4', 'tentar_contato_d6', 'encerrar_lead_d2', 'audio_horario', 'followup_pos_triagem']
         const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
         const amanha9 = new Date(hojeBR + 'T09:00:00-03:00'); amanha9.setDate(amanha9.getDate() + 1)
         await supabase.from('tarefas_lead').update({ data_vencimento: amanha9.toISOString(), atualizado_em: new Date().toISOString() })

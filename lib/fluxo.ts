@@ -94,6 +94,20 @@ export async function gerarProxima(supabase: any, leadId: string, etapa: string,
   try { const f = await getFluxo(); const t = proximaTarefaFluxo(f, etapa, aposChave); if (t) await inserirTarefa(supabase, leadId, t, leadNome, vendedorId, dataRef) } catch { /* não quebra */ }
 }
 
+// REDE DE SEGURANÇA: nenhum lead em etapa ATIVA fica sem tarefa depois de uma ação.
+// Se sobrou sem tarefa (ex.: concluiu tarefa de chave antiga que não encadeia, ou fim de etapa),
+// cria um follow-up genérico pra amanhã — o lead volta pra fila e a IA sugere a próxima etapa.
+const ETAPAS_ATIVAS = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+export async function garantirTarefa(supabase: any, leadId: string, etapa: string, leadNome: string, vendedorId?: string | null) {
+  try {
+    if (!ETAPAS_ATIVAS.includes(etapa)) return
+    const { data: pend } = await supabase.from('tarefas_lead').select('id').eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
+    if (pend) return
+    const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
+    await supabase.from('tarefas_lead').insert({ lead_id: leadId, vendedor_id: vendedorId ?? null, tipo: 'seguir_followup', titulo: `Continuar o follow-up — ${leadNome}`, descricao: 'Seguir a conversa: veja a leitura da IA e conduza pra próxima etapa.', data_vencimento: amanha.toISOString() })
+  } catch { /* não quebra */ }
+}
+
 // Aplica um patch estruturado (usado no executar, depois da confirmação).
 export function aplicarPatch(f: Fluxo, patch: any): { fluxo: Fluxo; resumo: string } {
   const nf: Fluxo = JSON.parse(JSON.stringify(f))

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
-import { gerarProxima, gerarPrimeira } from '@/lib/fluxo'
+import { gerarProxima, gerarPrimeira, garantirTarefa } from '@/lib/fluxo'
 
 // Ações rápidas do Atender: mover o lead de etapa no funil, ou marcar perda.
 // Registra o andamento (mudanca_etapa) igual ao CRM; na perda, cancela as tarefas pendentes.
@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
       // não duplica se já houver tarefa pendente
       const { data: pend } = await sb.from('tarefas_lead').select('id').eq('org_id', org).eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
       if (!pend) await gerarPrimeira(sb, leadId, etapa, lead.nome || 'Lead', lead.vendedor_id || null)
+      await garantirTarefa(sb, leadId, etapa, lead.nome || 'Lead', lead.vendedor_id || null)
     }
     return NextResponse.json({ ok: true })
   }
@@ -46,6 +47,7 @@ export async function POST(req: NextRequest) {
     await sb.from('tarefas_lead').update({ concluida: true, concluida_em: now, atualizado_em: now }).eq('id', tf.id)
     const { data: l2 } = await sb.from('leads').select('nome').eq('org_id', org).eq('id', leadId).maybeSingle()
     await gerarProxima(sb, leadId, lead.etapa, tf.tipo, l2?.nome || 'Lead', lead.vendedor_id || null)
+    await garantirTarefa(sb, leadId, lead.etapa, l2?.nome || 'Lead', lead.vendedor_id || null)
     return NextResponse.json({ ok: true })
   }
 

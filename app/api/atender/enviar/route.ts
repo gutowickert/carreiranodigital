@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
-import { gerarProxima } from '@/lib/fluxo'
+import { gerarProxima, garantirTarefa } from '@/lib/fluxo'
 
 // Envia a mensagem aprovada pelo humano na fila "Atender Agora", conclui a tarefa atual do lead
 // e AVANÇA a cadência (cria a próxima tarefa da mesma etapa). Se um MOVE vai seguir (botão "Enviar e mover"),
@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
       tarefas = (data || []).length
       // AVANÇA A CADÊNCIA na mesma etapa (cria a próxima tarefa) — a menos que um move vá seguir
       if (avancar && lead && pend) await gerarProxima(sb, leadId, lead.etapa, pend.tipo, lead.nome || 'Lead', lead.vendedor_id || null)
+      // rede de segurança: não deixa lead ativo sem tarefa (ex.: chave antiga não encadeou)
+      if (avancar && lead) await garantirTarefa(sb, leadId, lead.etapa, lead.nome || 'Lead', lead.vendedor_id || null)
       await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-acao', evento: 'atender-semi', status: 'enviado', payload: { lead_id: leadId, texto, aprovado_por: b.email || null } })
     }
     // APRENDIZADO: se o humano EDITOU a sugestão da IA (original != enviado), guarda o par pra IA aprender o tom real.
