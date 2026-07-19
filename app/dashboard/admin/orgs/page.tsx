@@ -16,21 +16,45 @@ function haQuanto(iso: string | null) {
   return `há ${Math.floor(h / 24)}d`
 }
 
-function Marca({ o, onSalvar }: { o: any; onSalvar: (d: any) => Promise<void> }) {
+function Marca({ o, onAcao }: { o: any; onAcao: (ac: string, extra?: any) => Promise<any> }) {
   const [aberto, setAberto] = useState(false)
   const [nome, setNome] = useState(o.nome || '')
   const [cor, setCor] = useState(o.cor || '#7c3abe')
   const [logo, setLogo] = useState(o.logo_url || '')
   const [salvando, setSalvando] = useState(false)
+  const [subindo, setSubindo] = useState(false)
+  const escola = (o.config?.features?.escola) !== false
   const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 12, color: 'var(--text)', outline: 'none' }
-  if (!aberto) return <button onClick={() => setAberto(true)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>🎨 Marca</button>
+
+  async function anexar(file: File) {
+    if (!file) return
+    if (file.size > 2_000_000) { alert('Imagem muito grande (máx 2MB).'); return }
+    setSubindo(true)
+    const dataUrl: string = await new Promise(res => { const r = new FileReader(); r.onload = () => res(r.result as string); r.readAsDataURL(file) })
+    const j = await onAcao('upload_logo', { dataUrl })
+    setSubindo(false)
+    if (j?.ok && j.url) setLogo(j.url)
+    else alert(j?.error || 'falha no upload')
+  }
+
+  if (!aberto) return <button onClick={() => setAberto(true)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>🎨 Marca & módulos</button>
   return (
-    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: 'var(--surface-2)', borderRadius: 8, padding: 8 }}>
-      <input style={{ ...inp, width: 150 }} value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome exibido" />
-      <input type="color" style={{ ...inp, width: 44, padding: 2, height: 32 }} value={cor} onChange={e => setCor(e.target.value)} title="Cor da marca" />
-      <input style={{ ...inp, width: 200 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL do logo (opcional)" />
-      <button disabled={salvando} onClick={async () => { setSalvando(true); await onSalvar({ nome, cor, logo_url: logo }); setSalvando(false); setAberto(false) }} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{salvando ? '…' : 'Salvar marca'}</button>
-      <button onClick={() => setAberto(false)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>cancelar</button>
+    <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 12, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+        <input style={{ ...inp, width: 150 }} value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome exibido" />
+        <input type="color" style={{ ...inp, width: 44, padding: 2, height: 32 }} value={cor} onChange={e => setCor(e.target.value)} title="Cor da marca" />
+        {logo && <img src={logo} alt="" style={{ height: 30, maxWidth: 90, objectFit: 'contain', background: '#fff', borderRadius: 4, padding: 2 }} />}
+        <label style={{ ...inp, cursor: 'pointer', background: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>
+          {subindo ? 'enviando…' : '📎 Anexar logo'}
+          <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) anexar(f) }} />
+        </label>
+        <button disabled={salvando} onClick={async () => { setSalvando(true); await onAcao('branding', { nome, cor, logo_url: logo }); setSalvando(false); setAberto(false) }} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{salvando ? '…' : 'Salvar marca'}</button>
+      </div>
+      <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12, color: 'var(--text-2)', cursor: 'pointer' }}>
+        <input type="checkbox" checked={escola} onChange={e => onAcao('features', { features: { escola: e.target.checked } })} />
+        É escola (mostra Turmas, Chamada, Professores, Datas, Salas, Módulos, NPS). Desmarque pra um negócio que não é escola.
+      </label>
+      <button onClick={() => setAberto(false)} style={{ alignSelf: 'flex-start', background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>fechar</button>
     </div>
   )
 }
@@ -76,9 +100,10 @@ export default function AdminOrgs() {
 
   async function acao(orgId: string, ac: string, extra: any = {}) {
     setBusy(orgId + ac)
-    await fetchAuth('/api/admin/orgs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orgId, acao: ac, ...extra }) }).then(r => r.json()).catch(() => ({}))
+    const j = await fetchAuth('/api/admin/orgs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orgId, acao: ac, ...extra }) }).then(r => r.json()).catch(() => ({}))
     setBusy('')
     carregar()
+    return j
   }
 
   if (semAcesso) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>🔒 Painel restrito ao administrador da Carreira no Digital.</div>
@@ -141,7 +166,7 @@ export default function AdminOrgs() {
                 <Metrica label="Chamadas IA" valor={String(o.chamadasIA)} />
               </div>
               <div style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                <Marca o={o} onSalvar={(d) => acao(o.id, 'branding', d)} />
+                <Marca o={o} onAcao={(ac, extra) => acao(o.id, ac, extra)} />
               </div>
             </div>
           ))}

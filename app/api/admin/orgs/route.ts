@@ -52,7 +52,7 @@ export async function GET(req: Request) {
     const { data: ult } = await sb.from('wa_mensagens').select('criado_em').eq('org_id', org).order('criado_em', { ascending: false }).limit(1).maybeSingle()
     lista.push({
       id: org, nome: o.nome, slug: o.slug, plano: o.plano, ativo: o.ativo, criado_em: o.criado_em,
-      cor: o.cor || null, logo_url: o.logo_url || null,
+      cor: o.cor || null, logo_url: o.logo_url || null, config: o.config || {},
       leads, ganhos, receita, usuarios, msgsMes,
       custoIA: Math.round(custoIA * 100) / 100, chamadasIA,
       ultimaAtividade: ult?.criado_em || null,
@@ -79,6 +79,26 @@ export async function POST(req: Request) {
     if (typeof b.cor === 'string') upd.cor = b.cor.trim().slice(0, 20) || null
     if (typeof b.logo_url === 'string') upd.logo_url = b.logo_url.trim().slice(0, 500) || null
     if (Object.keys(upd).length) await sb.from('organizacoes').update(upd).eq('id', orgId)
+  } else if (acao === 'upload_logo') {
+    // recebe a imagem em data URL (base64), sobe no bucket 'branding' e salva a URL pública
+    const m = (b.dataUrl || '').toString().match(/^data:([^;]+);base64,(.+)$/)
+    if (!m) return NextResponse.json({ ok: false, error: 'imagem inválida' }, { status: 200 })
+    const mime = m[1]
+    const ext = mime.includes('png') ? 'png' : mime.includes('webp') ? 'webp' : mime.includes('svg') ? 'svg' : 'jpg'
+    const buffer = Buffer.from(m[2], 'base64')
+    if (buffer.length > 2_000_000) return NextResponse.json({ ok: false, error: 'imagem muito grande (máx 2MB)' }, { status: 200 })
+    const path = `${orgId}-${Date.now()}.${ext}`
+    const { error: eUp } = await sb.storage.from('branding').upload(path, buffer, { contentType: mime, upsert: true })
+    if (eUp) return NextResponse.json({ ok: false, error: 'falha no upload: ' + eUp.message }, { status: 200 })
+    const url = sb.storage.from('branding').getPublicUrl(path).data.publicUrl
+    await sb.from('organizacoes').update({ logo_url: url }).eq('id', orgId)
+    return NextResponse.json({ ok: true, url })
+  } else if (acao === 'features') {
+    const feats = (b.features && typeof b.features === 'object') ? b.features : {}
+    // funde no config existente
+    const { data: cur } = await sb.from('organizacoes').select('config').eq('id', orgId).maybeSingle()
+    const config = { ...((cur?.config as any) || {}), features: { ...(((cur?.config as any) || {}).features || {}), ...feats } }
+    await sb.from('organizacoes').update({ config }).eq('id', orgId)
   } else {
     return NextResponse.json({ ok: false, error: 'ação inválida' }, { status: 200 })
   }

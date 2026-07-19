@@ -15,7 +15,7 @@ const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 // dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
 const LayoutMontado = createContext(false)
 
-type Item = { nome: string; href: string }
+type Item = { nome: string; href: string; feat?: string }
 type Grupo = { titulo: string; itens: Item[] }
 type Perfil = { id: string; nome: string; email: string; papel: string; setor: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
@@ -47,7 +47,7 @@ const grupos: Grupo[] = [
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
-      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens' },
+      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
       { nome: 'Fluxo Comercial', href: '/dashboard/fluxo' },
     ],
@@ -61,14 +61,14 @@ const grupos: Grupo[] = [
       { nome: 'Funil do Site', href: '/dashboard/funil-site' },
       { nome: 'Inteligência de Cliente', href: '/dashboard/inteligencia-cliente' },
       { nome: 'Velocidade de Venda', href: '/dashboard/velocidade-venda' },
-      { nome: 'NPS', href: '/dashboard/nps' },
+      { nome: 'NPS', href: '/dashboard/nps', feat: 'escola' },
     ],
   },
   {
     titulo: 'Operações',
     itens: [
-      { nome: 'Turmas', href: '/dashboard/turmas' },
-      { nome: 'Chamada', href: '/dashboard/chamada' },
+      { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
+      { nome: 'Chamada', href: '/dashboard/chamada', feat: 'escola' },
       { nome: 'Disparos', href: '/dashboard/disparos' },
       { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
@@ -92,15 +92,15 @@ const grupos: Grupo[] = [
       { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
       { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
       { nome: 'Operações', href: '' },
-      { nome: 'Salas', href: '/dashboard/salas' },
+      { nome: 'Salas', href: '/dashboard/salas', feat: 'escola' },
       { nome: 'Cidades', href: '/dashboard/cidades' },
-      { nome: 'Módulos', href: '/dashboard/modulos' },
+      { nome: 'Módulos', href: '/dashboard/modulos', feat: 'escola' },
       { nome: 'Financeiro', href: '' },
       { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
       { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
       { nome: 'Pessoas', href: '' },
-      { nome: 'Alunos', href: '/dashboard/alunos' },
-      { nome: 'Professores', href: '/dashboard/professores' },
+      { nome: 'Alunos', href: '/dashboard/alunos', feat: 'escola' },
+      { nome: 'Professores', href: '/dashboard/professores', feat: 'escola' },
       { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Sistema', href: '' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
@@ -250,8 +250,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
 
   // remove sub-títulos (href vazio) que ficaram sem nenhum item real logo abaixo
   const limpaLabels = (itens: Item[]): Item[] => itens.filter((it, i) => it.href || (itens[i + 1] && !!itens[i + 1].href))
+  const feats = (marca?.config?.features) || {}
+  const featOk = (i: Item) => !i.feat || feats[i.feat] !== false // opt-out: só some se explicitamente false
   const gruposVisiveis = grupos
-    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!))) }))
+    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
     .filter(g => g.itens.some(i => i.href))
 
   const menuVisivel = !isMobile || menuMobileAberto
