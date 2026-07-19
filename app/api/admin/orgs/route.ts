@@ -52,6 +52,7 @@ export async function GET(req: Request) {
     const { data: ult } = await sb.from('wa_mensagens').select('criado_em').eq('org_id', org).order('criado_em', { ascending: false }).limit(1).maybeSingle()
     lista.push({
       id: org, nome: o.nome, slug: o.slug, plano: o.plano, ativo: o.ativo, criado_em: o.criado_em,
+      cor: o.cor || null, logo_url: o.logo_url || null,
       leads, ganhos, receita, usuarios, msgsMes,
       custoIA: Math.round(custoIA * 100) / 100, chamadasIA,
       ultimaAtividade: ult?.criado_em || null,
@@ -72,6 +73,12 @@ export async function POST(req: Request) {
     await sb.from('organizacoes').update({ ativo: acao === 'reativar' }).eq('id', orgId)
   } else if (acao === 'plano') {
     await sb.from('organizacoes').update({ plano: (b.plano || '').toString().slice(0, 40) }).eq('id', orgId)
+  } else if (acao === 'branding') {
+    const upd: any = {}
+    if (typeof b.nome === 'string' && b.nome.trim()) upd.nome = b.nome.trim().slice(0, 80)
+    if (typeof b.cor === 'string') upd.cor = b.cor.trim().slice(0, 20) || null
+    if (typeof b.logo_url === 'string') upd.logo_url = b.logo_url.trim().slice(0, 500) || null
+    if (Object.keys(upd).length) await sb.from('organizacoes').update(upd).eq('id', orgId)
   } else {
     return NextResponse.json({ ok: false, error: 'ação inválida' }, { status: 200 })
   }

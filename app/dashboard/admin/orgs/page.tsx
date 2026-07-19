@@ -16,6 +16,25 @@ function haQuanto(iso: string | null) {
   return `há ${Math.floor(h / 24)}d`
 }
 
+function Marca({ o, onSalvar }: { o: any; onSalvar: (d: any) => Promise<void> }) {
+  const [aberto, setAberto] = useState(false)
+  const [nome, setNome] = useState(o.nome || '')
+  const [cor, setCor] = useState(o.cor || '#7c3abe')
+  const [logo, setLogo] = useState(o.logo_url || '')
+  const [salvando, setSalvando] = useState(false)
+  const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 12, color: 'var(--text)', outline: 'none' }
+  if (!aberto) return <button onClick={() => setAberto(true)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>🎨 Marca</button>
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', background: 'var(--surface-2)', borderRadius: 8, padding: 8 }}>
+      <input style={{ ...inp, width: 150 }} value={nome} onChange={e => setNome(e.target.value)} placeholder="Nome exibido" />
+      <input type="color" style={{ ...inp, width: 44, padding: 2, height: 32 }} value={cor} onChange={e => setCor(e.target.value)} title="Cor da marca" />
+      <input style={{ ...inp, width: 200 }} value={logo} onChange={e => setLogo(e.target.value)} placeholder="URL do logo (opcional)" />
+      <button disabled={salvando} onClick={async () => { setSalvando(true); await onSalvar({ nome, cor, logo_url: logo }); setSalvando(false); setAberto(false) }} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{salvando ? '…' : 'Salvar marca'}</button>
+      <button onClick={() => setAberto(false)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>cancelar</button>
+    </div>
+  )
+}
+
 function Metrica({ label, valor, cor }: { label: string; valor: string; cor?: string }) {
   return (
     <div style={{ minWidth: 90 }}>
@@ -120,6 +139,9 @@ export default function AdminOrgs() {
                 <Metrica label="Msgs (mês)" valor={String(o.msgsMes)} />
                 <Metrica label="Custo IA (mês)" valor={usd(o.custoIA)} cor={o.custoIA > 0 ? 'var(--amber)' : 'var(--text-faint)'} />
                 <Metrica label="Chamadas IA" valor={String(o.chamadasIA)} />
+              </div>
+              <div style={{ marginTop: 14, borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                <Marca o={o} onSalvar={(d) => acao(o.id, 'branding', d)} />
               </div>
             </div>
           ))}

@@ -5,8 +5,11 @@ import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 import NotifCelular from '@/components/NotifCelular'
 import ThemeToggle from '@/components/ThemeToggle'
+
+const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 
 // Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
 // dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
@@ -228,6 +231,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // Fecha menu ao trocar de página no mobile
   useEffect(() => { setMenuMobileAberto(false) }, [pathname])
 
+  // MARCA da org (logo/nome/cor) — veste a cara do cliente
+  const [marca, setMarca] = useState<any>(null)
+  useEffect(() => { fetchAuth('/api/org/me').then(r => r.json()).then(j => { if (j?.ok) setMarca(j.org) }).catch(() => { }) }, [])
+
   function toggle(titulo: string) {
     setAbertos(prev => ({ ...prev, [titulo]: !prev[titulo] }))
   }
@@ -250,7 +257,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const menuVisivel = !isMobile || menuMobileAberto
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
       {isMobile && (
         <button onClick={() => setMenuMobileAberto(!menuMobileAberto)}
           style={{
@@ -284,7 +291,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             zIndex: 50,
           }}>
             <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              <Image src="/logo.png" alt="CarreiraNoDigital" width={160} height={48} style={{ objectFit: 'contain' }} />
+              {marca?.logo_url
+                ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 48, maxWidth: 184, objectFit: 'contain' }} />
+                : (marca && marca.id !== CND_ID)
+                  ? <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>{marca.nome}</div>
+                  : <Image src="/logo.png" alt="CarreiraNoDigital" width={160} height={48} style={{ objectFit: 'contain' }} />}
             </div>
 
             <nav style={{ flex: 1, padding: '12px 12px', display: 'flex', flexDirection: 'column' }}>
