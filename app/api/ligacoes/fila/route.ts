@@ -10,10 +10,10 @@ export async function GET(req: Request) {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const now = Date.now()
 
-    // 1) AGENDADAS: tarefas de ligação com horário marcado, pendentes
+    // 1) AGENDADAS: tarefas de LIGAÇÃO pendentes (agendadas na mão + chamadas marcadas na triagem)
     const { data: ags } = await sb.from('tarefas_lead')
       .select('lead_id, titulo, data_vencimento, leads!inner(id, nome, whatsapp, etapa, vendedor_id)')
-      .eq('org_id', org).eq('tipo', 'ligar_agendado').eq('concluida', false).eq('cancelada', false)
+      .eq('org_id', org).in('tipo', ['ligar_agendado', 'triagem_ligacao']).eq('concluida', false).eq('cancelada', false)
       .order('data_vencimento', { ascending: true }).limit(200)
     const agendadas = (ags || []).map((t: any) => {
       const l = t.leads

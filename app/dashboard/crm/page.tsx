@@ -112,7 +112,13 @@ export default function CRM() {
     }
   }, [leadParam, leads])
 
-  useEffect(() => { carregarTudo() }, [])
+  // espera a sessão hidratar ANTES de buscar (senão a query vai sem token e a RLS zera o CRM);
+  // e re-busca se o login mudar/refrescar (evita o "CRM vazio até voltar")
+  useEffect(() => {
+    (async () => { await supabase.auth.getSession(); carregarTudo() })()
+    const { data: sub } = supabase.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'TOKEN_REFRESHED') carregarLeads() })
+    return () => sub.subscription.unsubscribe()
+  }, [])
 
   // Abre o card do lead quando chega via /dashboard/crm?lead=<id>
   useEffect(() => {
@@ -651,6 +657,8 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   const [ligacoes, setLigacoes] = useState<any[]>([])
   const [chatAberto, setChatAberto] = useState(false)
   const [novoAndamento, setNovoAndamento] = useState('')
+  const [mostrarLig, setMostrarLig] = useState(false)
+  const [lig, setLig] = useState<any>({ entendeu: false, explicou: false, passouPreco: false, preco: '', loteprazo: '', situacao: '', proximo: '' })
   // nome de quem registrou o andamento (resolve pelo id do usuário)
   const nomeUsuario = (id: string) => (vendedores.find((v: any) => v.id === id) as any)?.nome || (id === meuPerfil?.id ? meuPerfil?.nome : '')
   const [motivoSelecionado, setMotivoSelecionado] = useState('')
@@ -790,6 +798,26 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
       observacao: novoAndamento,
     })
     setNovoAndamento('')
+    carregarAndamentos(lead.id)
+  }
+
+  // Registro ESTRUTURADO de ligação/atendimento — vira um andamento padronizado que a IA lê.
+  async function registrarLigacao() {
+    if (!lead) return
+    const p: string[] = []
+    if (lig.entendeu) p.push('entendi o negócio dela')
+    if (lig.explicou) p.push('expliquei o curso')
+    if (lig.passouPreco) p.push('passei o preço' + (lig.preco ? ` (R$${lig.preco})` : ''))
+    if (lig.loteprazo.trim()) p.push('lote acaba em ' + lig.loteprazo.trim())
+    if (lig.situacao.trim()) p.push('situação: ' + lig.situacao.trim())
+    if (lig.proximo.trim()) p.push('próximo passo: ' + lig.proximo.trim())
+    if (!p.length) return
+    await supabase.from('lead_andamentos').insert({
+      lead_id: lead.id, vendedor_id: meuPerfil?.id || lead.vendedor_id,
+      tipo: 'ligacao', observacao: '📞 ' + p.join(' · '),
+    })
+    setLig({ entendeu: false, explicou: false, passouPreco: false, preco: '', loteprazo: '', situacao: '', proximo: '' })
+    setMostrarLig(false)
     carregarAndamentos(lead.id)
   }
 
@@ -1129,6 +1157,33 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
+
+              {/* Registro ESTRUTURADO de ligação — pra IA saber o que já foi feito */}
+              {!mostrarLig
+                ? <button onClick={() => setMostrarLig(true)} style={{ ...btnPrimary, background: 'var(--accent-bg)', color: 'var(--accent-soft)', marginBottom: 10 }}>📞 Registrar ligação/atendimento</button>
+                : (
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>O que rolou na ligação?</div>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--text-2)' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={lig.entendeu} onChange={e => setLig({ ...lig, entendeu: e.target.checked })} /> Entendi o negócio dela</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={lig.explicou} onChange={e => setLig({ ...lig, explicou: e.target.checked })} /> Expliquei o curso</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={lig.passouPreco} onChange={e => setLig({ ...lig, passouPreco: e.target.checked })} /> Passei o preço
+                        {lig.passouPreco && <input style={{ ...inp, width: 100, marginLeft: 4 }} placeholder="R$ valor" value={lig.preco} onChange={e => setLig({ ...lig, preco: e.target.value })} />}
+                      </label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <input style={{ ...inp, flex: 1 }} placeholder="Prazo do lote (ex: 3 dias)" value={lig.loteprazo} onChange={e => setLig({ ...lig, loteprazo: e.target.value })} />
+                      </div>
+                      <input style={inp} placeholder="Situação / objeção (ex: vai pensar, achou caro)" value={lig.situacao} onChange={e => setLig({ ...lig, situacao: e.target.value })} />
+                      <input style={inp} placeholder="Próximo passo (ex: retornar quinta 14h)" value={lig.proximo} onChange={e => setLig({ ...lig, proximo: e.target.value })} />
+                    </div>
+                    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                      <button onClick={registrarLigacao} style={btnPrimary}>Registrar</button>
+                      <button onClick={() => setMostrarLig(false)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>cancelar</button>
+                    </div>
+                  </div>
+                )}
+
               <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
                 <input style={inp} placeholder="Adicionar anotação..." value={novoAndamento} onChange={e => setNovoAndamento(e.target.value)}
                   onKeyDown={e => { if (e.key === 'Enter') adicionarAndamento() }} />

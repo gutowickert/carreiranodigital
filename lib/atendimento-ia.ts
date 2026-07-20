@@ -223,7 +223,9 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
 
   // 7) monta o prompt
   let corpus = await contextoCentral() // CÉREBRO CENTRAL: negócio + produtos + condições + fluxo/cadência/prioridade + regras vivas
-  corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}).\n`
+  const hAgora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
+  const periodoAgora = hAgora < 12 ? 'MANHÃ — cumprimente com "bom dia"' : hAgora < 18 ? 'TARDE — cumprimente com "boa tarde"' : 'NOITE — cumprimente com "boa noite"'
+  corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. Cumprimente pelo horário de AGORA — NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).\n`
   corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
   if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS abaixo.\n`

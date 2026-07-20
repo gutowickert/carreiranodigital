@@ -259,6 +259,7 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
           })()}
           <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : '✅ Enviar & Próximo'}</button>
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
+          <a href={`/dashboard/crm?lead=${item.leadId}`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>📇 Card</a>
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
         </div>
         <Acoes item={item} onFeito={onFeito} />
@@ -312,6 +313,7 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
               return <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta, false); if (r.ok) { await moverLead(sel.leadId, mv[0]); setFeito(f => ({ ...f, [sel.leadId]: true })); onFeito(sel.leadId); setSel(null) } setEnviando(false) }} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
             })()}
             <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? '✅ Enviado' : '✅ Enviar'}</button>
+            <a href={`/dashboard/crm?lead=${sel.leadId}`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>📇 Card</a>
           </div>
           <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
         </>}
@@ -339,7 +341,8 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover }: { l: { item: Item; te
           ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>📋 {l.item.tarefa.titulo.split(' — ')[0]}</span>
           : <Tag p={l.item.prioridade} />}
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.produto || '—'}{l.item.dSC != null ? ` · silêncio ${l.item.dSC}d` : ''}</span>
-        <button onClick={toggle} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
+        <a href={`/dashboard/crm?lead=${l.item.leadId}`} style={{ marginLeft: 'auto', color: 'var(--text-faint)', fontSize: 12, textDecoration: 'none' }}>📇 card</a>
+        <button onClick={toggle} style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
       </div>
       <Resumo item={l.item} sug={l.sug || null} />
       {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}

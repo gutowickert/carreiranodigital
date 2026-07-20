@@ -138,8 +138,14 @@ export async function POST(req: NextRequest) {
       if (rel.length) andamentosTxt = `ANOTAÇÕES/LIGAÇÕES DA EQUIPE (já aconteceram — NÃO ignore: se já ligaram e passaram preço/explicaram o curso, retome de onde parou, não reapresente do zero):\n${rel.slice(0, 10).reverse().map((a: any) => `- ${(a.criado_em || '').slice(0, 10)}: ${a.tipo === 'ligacao' ? '📞 ligamos' : (a.tipo || 'nota')}${a.observacao ? ' — ' + a.observacao : ''}`).join('\n')}\n\n`
     }
 
+    // HORÁRIO ATUAL (Brasília) — pra cumprimentar certo (o cliente pode ter mandado "bom dia" e a gente responder à tarde)
+    const agoraD = new Date()
+    const hAgora = Number(agoraD.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
+    const horaTxt = agoraD.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', hour: '2-digit', minute: '2-digit' })
+    const periodo = hAgora < 12 ? 'MANHÃ (use "bom dia")' : hAgora < 18 ? 'TARDE (use "boa tarde")' : 'NOITE (use "boa noite")'
+
     const quemTxt = nomeContato || telefone || '(sem nome)'
-    const contexto = `Contato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
+    const contexto = `AGORA são ${horaTxt} — período: ${periodo}. Cumprimente pelo horário de AGORA, NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo).\n\nContato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
 
     const client = new Anthropic({ apiKey: key })
     const resp = await client.messages.create({
