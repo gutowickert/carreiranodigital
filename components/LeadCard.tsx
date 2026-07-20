@@ -1,8 +1,9 @@
 'use client'
 
-// Card COMPLETO do lead — MESMO card do CRM, extraído pra abrir dentro do Atender e da Fila
-// de Ligações sem sair da tela. Os componentes ModalLead/ResumoIA/ChatLead/ModalGanhoVincular
-// abaixo são cópia fiel do CRM (app/dashboard/crm/page.tsx). Se mexer no card do CRM, sincronize aqui.
+// Card COMPLETO do lead — FONTE ÚNICA. Este arquivo é o card usado em TODAS as telas:
+//  - CRM (app/dashboard/crm/page.tsx) importa { ModalLead } daqui;
+//  - Atender e Fila de Ligações usam o LeadCardModal (default) daqui, que abre o card por cima da tela.
+// ModalLead/ResumoIA/ChatLead/ModalGanhoVincular vivem SÓ aqui. Mexeu no card = muda em todas as telas.
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
@@ -226,7 +227,7 @@ interface ModalLeadProps {
   onFechar: () => void
 }
 
-function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, agendarLigacao, etapas, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
+export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, agendarLigacao, etapas, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
