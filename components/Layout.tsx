@@ -46,6 +46,7 @@ const grupos: Grupo[] = [
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
       { nome: 'CRM', href: '/dashboard/crm' },
+      { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
@@ -104,7 +105,7 @@ const grupos: Grupo[] = [
       { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Sistema', href: '' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
-      { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs' },
+      { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs', feat: 'superadmin' },
       { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
     ],
   },
@@ -251,7 +252,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // remove sub-títulos (href vazio) que ficaram sem nenhum item real logo abaixo
   const limpaLabels = (itens: Item[]): Item[] => itens.filter((it, i) => it.href || (itens[i + 1] && !!itens[i + 1].href))
   const feats = (marca?.config?.features) || {}
-  const featOk = (i: Item) => !i.feat || feats[i.feat] !== false // opt-out: só some se explicitamente false
+  const featOk = (i: Item) => {
+    if (i.feat === 'superadmin') return marca?.id === CND_ID // só a CnD vê o painel do SaaS
+    return !i.feat || feats[i.feat] !== false // opt-out: só some se explicitamente false
+  }
   const gruposVisiveis = grupos
     .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
     .filter(g => g.itens.some(i => i.href))
