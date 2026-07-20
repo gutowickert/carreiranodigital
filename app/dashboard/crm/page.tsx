@@ -101,6 +101,17 @@ export default function CRM() {
   }, [])
   const etapasKanban = etapasOrg.filter(e => (e.papel ? (e.papel !== 'ganho' && e.papel !== 'perda') : (e.id !== 'ganho' && e.id !== 'perda')))
 
+  // abre o card do lead direto quando vem de outra tela (?lead=<id>) — ex.: Fila de Ligações
+  const [leadParam, setLeadParam] = useState<string | null>(null)
+  useEffect(() => { if (typeof window !== 'undefined') setLeadParam(new URLSearchParams(window.location.search).get('lead')) }, [])
+  useEffect(() => {
+    if (leadParam && leads.length) {
+      const l = leads.find(x => x.id === leadParam)
+      if (l) { setLeadEditando(l); setNovoLead(false); setModalAberto(true) }
+      setLeadParam(null)
+    }
+  }, [leadParam, leads])
+
   useEffect(() => { carregarTudo() }, [])
 
   // Abre o card do lead quando chega via /dashboard/crm?lead=<id>
@@ -273,6 +284,12 @@ export default function CRM() {
       tipo: 'tarefa_criada',
       observacao: `Sistema criou tarefa: ${titulo} (vence ${new Date(dataIso).toLocaleString('pt-BR')})`,
     })
+  }
+
+  // Agenda uma LIGAÇÃO pra data/hora, SEM mudar a etapa do lead — cai na Fila de Ligações no horário.
+  async function agendarLigacao(lead: Lead, dataIso: string) {
+    await criarTarefaComData(lead.id, lead.vendedor_id, 'ligar_agendado', `Ligar (agendado) — ${lead.nome}`, 'Ligação agendada pelo vendedor. Ligar no horário combinado.', dataIso)
+    carregarLeads()
   }
 
   async function moverEtapa(lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) {
@@ -603,6 +620,7 @@ export default function CRM() {
             motivosPerda={motivosPerda}
             aplicarRateio={aplicarRateio}
             moverEtapa={moverEtapa}
+            agendarLigacao={agendarLigacao}
             etapas={etapasOrg}
             podeExcluir={meuPerfil?.papel === 'admin'}
             meuPerfil={meuPerfil}
@@ -618,13 +636,14 @@ interface ModalLeadProps {
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
   moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) => Promise<void>
+  agendarLigacao: (lead: Lead, dataIso: string) => Promise<void>
   etapas?: any[]
   podeExcluir?: boolean
   meuPerfil?: any
   onFechar: () => void
 }
 
-function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, etapas, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
+function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, agendarLigacao, etapas, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
@@ -783,7 +802,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   async function confirmarPrazo() {
     if (!lead || !prazoData) return
     const prazoIso = new Date(`${prazoData}T${prazoHora}:00`).toISOString()
-    await moverEtapa(lead, 'aguardando_atendimento', { prazoPrometido: prazoIso })
+    await agendarLigacao(lead, prazoIso) // cria a tarefa de ligação na data, mantém a etapa do lead
     onFechar()
   }
 

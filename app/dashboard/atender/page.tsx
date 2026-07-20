@@ -196,6 +196,12 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
   const [carregandoConv, setCarregandoConv] = useState(false)
   const item = fila[idx]
 
+  // se veio de outra tela (?lead=<id>), pula pra esse lead na fila (se estiver nela)
+  useEffect(() => {
+    const lp = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('lead') : null
+    if (lp) { const i = fila.findIndex(x => x.leadId === lp); if (i >= 0) setIdx(i) }
+  }, [fila])
+
   useEffect(() => {
     if (!item) return
     setSug(null); setTexto(''); setErro(''); setPensando(true); setMsgs([]); setCarregandoConv(true)
