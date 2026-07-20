@@ -112,12 +112,31 @@ export default function CRM() {
     }
   }, [leadParam, leads])
 
-  // espera a sessão hidratar ANTES de buscar (senão a query vai sem token e a RLS zera o CRM);
-  // e re-busca se o login mudar/refrescar (evita o "CRM vazio até voltar")
+  // espera a sessão hidratar E o token estar VÁLIDO antes de buscar (senão a query vai sem token
+  // e a RLS zera o CRM); refresca se estiver perto de vencer; re-busca em qualquer evento de auth.
   useEffect(() => {
-    (async () => { await supabase.auth.getSession(); carregarTudo() })()
-    const { data: sub } = supabase.auth.onAuthStateChange((ev) => { if (ev === 'SIGNED_IN' || ev === 'TOKEN_REFRESHED') carregarLeads() })
-    return () => sub.subscription.unsubscribe()
+    let vivo = true
+    let tentativas = 0
+    async function sessaoOk() {
+      let { data: { session } } = await supabase.auth.getSession()
+      if (!session) return false
+      const expMs = (session.expires_at || 0) * 1000
+      if (expMs && expMs - Date.now() < 60_000) {   // vence em <1min: refresca já
+        const { data } = await supabase.auth.refreshSession()
+        session = data.session
+      }
+      return !!session
+    }
+    async function boot() {
+      if (!vivo) return
+      if (await sessaoOk()) { carregarTudo(); return }
+      if (tentativas++ < 25) setTimeout(boot, 300)   // sessão ainda hidratando: tenta de novo
+    }
+    boot()
+    const { data: sub } = supabase.auth.onAuthStateChange((ev, session) => {
+      if (session && (ev === 'SIGNED_IN' || ev === 'TOKEN_REFRESHED' || ev === 'INITIAL_SESSION')) carregarTudo()
+    })
+    return () => { vivo = false; sub.subscription.unsubscribe() }
   }, [])
 
   // Abre o card do lead quando chega via /dashboard/crm?lead=<id>
