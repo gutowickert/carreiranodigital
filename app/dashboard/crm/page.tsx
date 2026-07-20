@@ -829,14 +829,14 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
 
   async function confirmarPrazo() {
     if (!lead || !prazoData) return
-    const prazoIso = new Date(`${prazoData}T${prazoHora}:00`).toISOString()
+    const prazoIso = new Date(`${prazoData}T${prazoHora || '09:00'}:00-03:00`).toISOString()
     await agendarLigacao(lead, prazoIso) // cria a tarefa de ligação na data, mantém a etapa do lead
     onFechar()
   }
 
   async function confirmarAguardandoPag() {
     if (!lead || !pagData) return
-    const dataIso = new Date(`${pagData}T${pagHora}:00`).toISOString()
+    const dataIso = new Date(`${pagData}T${pagHora || '09:00'}:00-03:00`).toISOString()
     await moverEtapa(lead, 'aguardando_pagamento', { dataAgendada: dataIso })
     onFechar()
   }
@@ -844,7 +844,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   // Move o lead pra etapa "Agendado" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarAgendado() {
     if (!lead || !agendadoData) return
-    const dataIso = new Date(`${agendadoData}T${agendadoHora || '09:00'}:00`).toISOString()
+    const dataIso = new Date(`${agendadoData}T${agendadoHora || '09:00'}:00-03:00`).toISOString()
     await moverEtapa(lead, 'agendado', { dataAgendada: dataIso })
     onFechar()
   }
@@ -852,7 +852,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
   // Move o lead pra etapa "Próxima turma" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarProxTurma() {
     if (!lead || !proxTurmaData) return
-    const dataIso = new Date(`${proxTurmaData}T${proxTurmaHora || '09:00'}:00`).toISOString()
+    const dataIso = new Date(`${proxTurmaData}T${proxTurmaHora || '09:00'}:00-03:00`).toISOString()
     await moverEtapa(lead, 'proxima_turma', { dataAgendada: dataIso })
     onFechar()
   }
