@@ -55,28 +55,21 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
     },
   ],
 
-  // LOTE E PREÇO OK (D4-D6): mede interesse; reforça; último dia do lote. Virada do D6 → Oferecer Bolsa.
+  // LOTE E PREÇO OK: o cliente JÁ recebeu preço + prazo do lote (numa conversa/ligação completa).
+  // NÃO nagar todo dia — o follow-up acontece na VIRADA DO LOTE (padrão 3 dias), quando a condição encerra.
   lote_preco_ok: [
     {
-      chave: 'quer_aproveitar',
-      titulo: 'Perguntar se quer aproveitar a oportunidade',
-      descricao: 'D4 (dia seguinte): mensagem perguntando se o lead deseja aproveitar a oportunidade apresentada.',
-      diasAposEntrada: 1,
-      proximaChave: 'reforco_beneficios',
+      chave: 'lote_virando',
+      titulo: 'Lote virando — hora de decidir',
+      descricao: 'Na VIRADA DO LOTE (~3 dias após receber a oferta): retoma com o cliente avisando que a condição está encerrando, reforça o valor e conduz pra decisão. NÃO cutuque antes disso — ele já tem preço e prazo.',
+      diasAposEntrada: 3,
+      proximaChave: 'pos_virada_lote',
       acao: 'mensagem',
     },
     {
-      chave: 'reforco_beneficios',
-      titulo: 'Reforçar benefícios e incentivar resposta',
-      descricao: 'D5: se ainda não respondeu, nova mensagem reforçando os benefícios do curso e incentivando uma resposta.',
-      diasAposEntrada: 1,
-      proximaChave: 'ultimo_dia_lote',
-      acao: 'mensagem',
-    },
-    {
-      chave: 'ultimo_dia_lote',
-      titulo: 'Último dia do lote — condições encerram',
-      descricao: 'D6: comunicação informando que é o ÚLTIMO DIA do lote vigente e que as condições atuais serão encerradas.',
+      chave: 'pos_virada_lote',
+      titulo: 'Reforço pós-virada do lote',
+      descricao: 'Se não respondeu na virada, último reforço da condição/urgência antes de mover pra Oferecer Bolsa.',
       diasAposEntrada: 1,
       proximaChave: null,
       acao: 'mensagem',
@@ -124,7 +117,7 @@ export const FLUXO_COMERCIAL = `FLUXO COMERCIAL (ciclo D1–D13 — as TAREFAS d
 
 1) LIGAÇÃO / Chegada (D1): liga DIRETO 2x no mesmo dia (NÃO manda mensagem nessa etapa). Se não atende, na hora manda ÁUDIO convidando a informar o melhor horário. Virada do dia → Atendimento Inicial.
 2) ATENDIMENTO INICIAL (D2-D3): D2 (dia SEGUINTE ao áudio) — se não respondeu, NÃO peça horário nem ofereça ligação: puxe a conversa pro WhatsApp e já comece a descoberta (pergunte do negócio/objetivo). D3 — se continua mudo, APRESENTAÇÃO COMPLETA (instituição, objetivo, benefícios, lote, valor, condições). Virada do D3 → Lote e Preço OK.
-3) LOTE E PREÇO OK (D4-D6): D4 pergunta se quer aproveitar; D5 reforça benefícios; D6 avisa que é o ÚLTIMO DIA do lote. Virada do D6 → Oferecer Bolsa.
+3) LOTE E PREÇO OK: o cliente já tem preço + prazo do lote. NÃO cutuca todo dia — o follow-up acontece na VIRADA DO LOTE (~3 dias): avisa que a condição está encerrando e conduz pra decisão. Sem resposta → Oferecer Bolsa.
 4) OFERECER BOLSA (D7-D13): D7-D10 SILÊNCIO (sem comunicação); D11 1ª oferta de bolsa; D12 2ª mensagem da bolsa; D13 mensagem de encerramento (demissão) → Perdido.
 
 DESVIOS POR EVENTO (a qualquer momento, quando o lead RESPONDE):
