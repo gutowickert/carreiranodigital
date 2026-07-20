@@ -54,6 +54,7 @@ export default function FilaLigacoes() {
 
   const agendadas = d?.agendadas || []
   const novos = d?.novosLeads || []
+  const aLigar = d?.aLigar || []
   // separa as agendadas que já estão na hora (agora/atrasadas) das futuras
   const agora = agendadas.filter((a: any) => a.minutosPara == null || a.minutosPara <= 15)
   const futuras = agendadas.filter((a: any) => a.minutosPara != null && a.minutosPara > 15)
@@ -83,6 +84,14 @@ export default function FilaLigacoes() {
             {novos.length === 0 ? <div style={{ padding: 16, fontSize: 13, color: 'var(--text-faint)' }}>Nenhum lead novo esperando ligação. 🎉</div>
               : novos.map((n: any) => <Linha key={n.leadId} leadId={n.leadId} nome={n.nome} telefone={n.telefone} sub={`chegou ${haQuanto(n.chegouMin)}`} cor={n.chegouMin != null && n.chegouMin < 30 ? 'var(--green)' : 'var(--text-muted)'} />)}
           </div>
+
+          {/* A LIGAR (sem horário marcado) */}
+          {aLigar.length > 0 && (
+            <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
+              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>📞 A ligar — sem horário marcado <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({aLigar.length})</span></div>
+              {aLigar.map((n: any) => <Linha key={n.leadId} leadId={n.leadId} nome={n.nome} telefone={n.telefone} sub={n.etapa || 'a ligar'} cor={'var(--text-muted)'} />)}
+            </div>
+          )}
 
           {/* agendadas futuras (contexto) */}
           {futuras.length > 0 && (

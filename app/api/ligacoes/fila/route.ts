@@ -25,6 +25,13 @@ export async function GET(req: Request) {
       }
     })
 
+    // 1b) A LIGAR (sem horário): leads marcados pra ligar (ex.: triagem sugeriu ligação), sem hora agendada
+    const { data: al } = await sb.from('tarefas_lead')
+      .select('lead_id, data_vencimento, leads!inner(id, nome, whatsapp, etapa, vendedor_id)')
+      .eq('org_id', org).eq('tipo', 'triagem_ligacao').eq('concluida', false).eq('cancelada', false)
+      .order('data_vencimento', { ascending: true }).limit(300)
+    const aLigar = (al || []).map((t: any) => ({ leadId: t.leads.id, nome: t.leads.nome, telefone: t.leads.whatsapp, etapa: t.leads.etapa }))
+
     // 2) NOVOS LEADS na etapa Ligação (aguardando_atendimento), ainda abertos — mais novo primeiro (velocidade)
     const { data: novos } = await sb.from('leads')
       .select('id, nome, whatsapp, criado_em, vendedor_id')
@@ -36,7 +43,7 @@ export async function GET(req: Request) {
       chegouMin: l.criado_em ? Math.round((now - +new Date(l.criado_em)) / 60000) : null,
     }))
 
-    return NextResponse.json({ ok: true, agendadas, novosLeads })
+    return NextResponse.json({ ok: true, agendadas, aLigar, novosLeads })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }
