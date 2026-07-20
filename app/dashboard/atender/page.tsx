@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
+import CardLeadModal from '@/components/CardLeadModal'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
@@ -129,6 +130,7 @@ export default function AtenderPage() {
   const [nq, setNq] = useState(0); const [nf, setNf] = useState(0)
   const [carregando, setCarregando] = useState(true)
   const [aba, setAba] = useState<'agora' | 'copiloto' | 'lote' | 'parados'>('agora')
+  const [cardLead, setCardLead] = useState<string | null>(null)
 
   useEffect(() => {
     (async () => {
@@ -175,16 +177,17 @@ export default function AtenderPage() {
         if (carregando) return <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
         const dados = aba === 'lote' ? lote : aba === 'parados' ? parados : fila
         if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : aba === 'parados' ? '🎉 Nenhum lead parado! Todos têm tarefa ou já foram movidos.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
-        return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
-          : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} />
-            : <Lote fila={dados} sugerir={sugerir} enviar={enviar} />
+        return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
+          : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
+            : <Lote fila={dados} sugerir={sugerir} enviar={enviar} abrirCard={setCardLead} />
       })()}
+      {cardLead && <CardLeadModal leadId={cardLead} onClose={() => setCardLead(null)} />}
     </div>
   )
 }
 
 // ————— ABA ATENDER AGORA: um card por vez, ler → aprovar → próximo —————
-function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void }) {
+function Agora({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void; abrirCard: (id: string) => void }) {
   const [idx, setIdx] = useState(0)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -259,7 +262,7 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
           })()}
           <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : '✅ Enviar & Próximo'}</button>
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
-          <a href={`/dashboard/crm?lead=${item.leadId}`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>📇 Card</a>
+          <button onClick={() => abrirCard(item.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
         </div>
         <Acoes item={item} onFeito={onFeito} />
@@ -269,7 +272,7 @@ function Agora({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: 
 }
 
 // ————— ABA COPILOTO: lista à esquerda, conversa+sugestão à direita —————
-function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void }) {
+function Copiloto({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; onFeito: (id: string) => void; abrirCard: (id: string) => void }) {
   const [sel, setSel] = useState<Item | null>(fila[0] || null)
   const [sug, setSug] = useState<Sug | null>(null)
   const [texto, setTexto] = useState('')
@@ -313,7 +316,7 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
               return <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta, false); if (r.ok) { await moverLead(sel.leadId, mv[0]); setFeito(f => ({ ...f, [sel.leadId]: true })); onFeito(sel.leadId); setSel(null) } setEnviando(false) }} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
             })()}
             <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? '✅ Enviado' : '✅ Enviar'}</button>
-            <a href={`/dashboard/crm?lead=${sel.leadId}`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>📇 Card</a>
+            <button onClick={() => abrirCard(sel.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
           </div>
           <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
         </>}
@@ -323,7 +326,7 @@ function Copiloto({ fila, sugerir, enviar, onFeito }: { fila: Item[]; sugerir: (
 }
 
 // linha: contexto + sugestão editável + ENVIO INDIVIDUAL + botões de decisão (uma a uma)
-function LoteRow({ l, onTexto, onEnviar, onEnviarEMover }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onEnviar: () => Promise<void>; onEnviarEMover: (etapa: string) => Promise<void> }) {
+function LoteRow({ l, onTexto, onEnviar, onEnviarEMover, abrirCard }: { l: { item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }; onTexto: (t: string) => void; onEnviar: () => Promise<void>; onEnviarEMover: (etapa: string) => Promise<void>; abrirCard: (id: string) => void }) {
   const [aberto, setAberto] = useState(false)
   const [msgs, setMsgs] = useState<Msg[]>([])
   const [carr, setCarr] = useState(false)
@@ -341,7 +344,7 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover }: { l: { item: Item; te
           ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>📋 {l.item.tarefa.titulo.split(' — ')[0]}</span>
           : <Tag p={l.item.prioridade} />}
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.produto || '—'}{l.item.dSC != null ? ` · silêncio ${l.item.dSC}d` : ''}</span>
-        <a href={`/dashboard/crm?lead=${l.item.leadId}`} style={{ marginLeft: 'auto', color: 'var(--text-faint)', fontSize: 12, textDecoration: 'none' }}>📇 card</a>
+        <button onClick={() => abrirCard(l.item.leadId)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>📇 card</button>
         <button onClick={toggle} style={{ background: 'none', border: 'none', color: 'var(--accent-soft)', fontSize: 12, cursor: 'pointer' }}>{aberto ? '▲ fechar' : '🧵 ver conversa'}</button>
       </div>
       <Resumo item={l.item} sug={l.sug || null} />
@@ -358,7 +361,7 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover }: { l: { item: Item; te
 }
 
 // ————— ABA FOLLOW-UP COM TAREFA: gera sugestões, envia UMA A UMA e decide o andamento na hora —————
-function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any> }) {
+function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; abrirCard: (id: string) => void }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
   const N = 10
@@ -396,7 +399,7 @@ function Lote({ fila, sugerir, enviar }: { fila: Item[]; sugerir: (i: Item) => P
           <div style={{ fontSize: 13, color: 'var(--text-faint)', marginBottom: 12 }}>{linhas.length} carregado(s) · {enviados} enviado(s){restam > 0 ? ` · ${restam} restante(s)` : ''}</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {linhas.map((l, k) => (
-              <LoteRow key={l.item.leadId} l={l}
+              <LoteRow key={l.item.leadId} l={l} abrirCard={abrirCard}
                 onTexto={t => { const n = [...linhas]; n[k].texto = t; setLinhas(n) }}
                 onEnviar={async () => { const r = await enviar(l.item, l.texto.trim(), l.sug?.resposta); if (r?.ok) { const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }}
                 onEnviarEMover={async (etapa) => { const r = await enviar(l.item, l.texto.trim(), l.sug?.resposta, false); if (r?.ok) { await moverLead(l.item.leadId, etapa); const n = [...linhas]; n[k].enviado = true; setLinhas(n) } }} />
