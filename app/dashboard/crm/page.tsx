@@ -92,6 +92,14 @@ export default function CRM() {
   const [novoLead, setNovoLead] = useState(false)
   const [verFinalizados, setVerFinalizados] = useState(false)
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
+  // etapas do funil DA ORG (fallback: as hardcoded, pra CnD nunca quebrar)
+  const [etapasOrg, setEtapasOrg] = useState<any[]>(ETAPAS)
+  useEffect(() => {
+    fetchAuth('/api/etapas').then(r => r.json()).then(j => {
+      if (j?.ok && j.etapas?.length) setEtapasOrg(j.etapas.filter((e: any) => e.ativo !== false).map((e: any) => ({ id: e.chave, label: e.label, cor: e.cor || 'var(--text-muted)', bg: e.cor ? e.cor + '22' : 'var(--surface-2)', papel: e.papel })))
+    }).catch(() => { })
+  }, [])
+  const etapasKanban = etapasOrg.filter(e => (e.papel ? (e.papel !== 'ganho' && e.papel !== 'perda') : (e.id !== 'ganho' && e.id !== 'perda')))
 
   useEffect(() => { carregarTudo() }, [])
 
@@ -291,7 +299,7 @@ export default function CRM() {
       tipo: 'mudanca_etapa',
       etapa_anterior: lead.etapa,
       etapa_nova: novaEtapa,
-      observacao: `Movido para ${ETAPAS.find(e => e.id === novaEtapa)?.label || novaEtapa}`,
+      observacao: `Movido para ${etapasOrg.find(e => e.id === novaEtapa)?.label || novaEtapa}`,
     })
 
     // Cancela tarefas pendentes da etapa anterior
@@ -367,7 +375,7 @@ export default function CRM() {
     return { color: 'var(--text-muted)', background: 'var(--surface-2)' } // sem resposta, outro, etc.
   }
 
-  const leadsPorEtapa = ETAPAS_KANBAN.map(e => ({
+  const leadsPorEtapa = etapasKanban.map(e => ({
     etapa: e,
     leads: leadsAtivos.filter(l => l.etapa === e.id),
   }))
@@ -558,7 +566,7 @@ export default function CRM() {
                 </thead>
                 <tbody>
                   {leadsFiltrados.map(lead => {
-                    const etapa = ETAPAS.find(e => e.id === lead.etapa)
+                    const etapa = etapasOrg.find(e => e.id === lead.etapa)
                     const dia = diaDoCiclo(lead.criado_em)
                     return (
                       <tr key={lead.id} onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
@@ -595,6 +603,7 @@ export default function CRM() {
             motivosPerda={motivosPerda}
             aplicarRateio={aplicarRateio}
             moverEtapa={moverEtapa}
+            etapas={etapasOrg}
             podeExcluir={meuPerfil?.papel === 'admin'}
             meuPerfil={meuPerfil}
             onFechar={() => { setModalAberto(false); setLeadEditando(null); setNovoLead(false); carregarLeads() }}
@@ -609,12 +618,13 @@ interface ModalLeadProps {
   turmas: Turma[]; vendedores: Vendedor[]; motivosPerda: MotivoPerda[]
   aplicarRateio: (turmaId: string) => Promise<string | null>
   moverEtapa: (lead: Lead, novaEtapa: string, extras?: { motivoPerdaId?: string; prazoPrometido?: string; dataAgendada?: string }) => Promise<void>
+  etapas?: any[]
   podeExcluir?: boolean
   meuPerfil?: any
   onFechar: () => void
 }
 
-function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
+function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, aplicarRateio, moverEtapa, etapas, podeExcluir, meuPerfil, onFechar }: ModalLeadProps) {
   const [form, setForm] = useState<any>({ nome: '', whatsapp: '', email: '', turma_id: '', vendedor_id: '', etapa: 'aguardando_atendimento', origem: 'manual', observacoes: '' })
   const [andamentos, setAndamentos] = useState<any[]>([])
   const [ligando, setLigando] = useState(false)
@@ -991,7 +1001,7 @@ function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosPerda, a
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {ETAPAS.filter(e => e.id !== lead.etapa && e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento' && e.id !== 'agendado' && e.id !== 'proxima_turma').map(e => (
+                {(etapas || ETAPAS).filter((e: any) => e.id !== lead.etapa && (e.papel ? e.papel === 'ativa' : (e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento' && e.id !== 'agendado' && e.id !== 'proxima_turma'))).map((e: any) => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
                     style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
                     → {e.label}

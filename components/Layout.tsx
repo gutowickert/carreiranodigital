@@ -50,6 +50,7 @@ const grupos: Grupo[] = [
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
+      { nome: 'Etapas do Funil', href: '/dashboard/etapas' },
       { nome: 'Fluxo Comercial', href: '/dashboard/fluxo' },
     ],
   },
