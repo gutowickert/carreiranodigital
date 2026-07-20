@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
-import CardLeadModal from '@/components/CardLeadModal'
+import LeadCardModal from '@/components/LeadCard'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
@@ -181,7 +181,7 @@ export default function AtenderPage() {
           : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
             : <Lote fila={dados} sugerir={sugerir} enviar={enviar} abrirCard={setCardLead} />
       })()}
-      {cardLead && <CardLeadModal leadId={cardLead} onClose={() => setCardLead(null)} />}
+      {cardLead && <LeadCardModal leadId={cardLead} onClose={() => setCardLead(null)} />}
     </div>
   )
 }

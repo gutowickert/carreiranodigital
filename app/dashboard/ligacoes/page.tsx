@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
-import CardLeadModal from '@/components/CardLeadModal'
+import LeadCardModal from '@/components/LeadCard'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 
@@ -104,7 +104,7 @@ export default function FilaLigacoes() {
           )}
         </div>
       )}
-      {cardLead && <CardLeadModal leadId={cardLead} onClose={() => setCardLead(null)} />}
+      {cardLead && <LeadCardModal leadId={cardLead} onClose={() => setCardLead(null)} />}
     </div>
   )
 }
