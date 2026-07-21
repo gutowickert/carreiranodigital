@@ -1,4 +1,5 @@
 import { createHash } from 'crypto'
+import { supabaseAdmin } from '@/lib/supabase-admin'
 
 const PIXEL_ID = process.env.FB_PIXEL_ID || ''
 const TOKEN = process.env.FB_CAPI_TOKEN || ''
@@ -37,7 +38,31 @@ type CapiOpts = {
   customData?: Record<string, any>
 }
 
+// Envia o evento pro CAPI E registra em webhook_logs (origem='capi-<evento>') pra dar pra AUDITAR
+// depois quais vendas/leads foram (ou não) pro Meta. Todos os call sites (HeroSpark, manual, site)
+// passam por aqui, então o rastro é único. status usa só valores do CHECK: 'processado' | 'erro'.
 export async function sendCapiEvent(opts: CapiOpts): Promise<{ ok: boolean; error?: string }> {
+  const r = await enviarCapi(opts)
+  try {
+    await supabaseAdmin.from('webhook_logs').insert({
+      origem: 'capi-' + opts.eventName.toLowerCase(),
+      evento: (opts.customData?.content_ids?.[0] as string) || opts.eventName,
+      status: r.ok ? 'processado' : 'erro',
+      payload: {
+        ok: r.ok,
+        event_name: opts.eventName,
+        event_id: opts.eventId,
+        value: opts.customData?.value ?? null,
+        tem_fbc: !!opts.fbc, tem_fbp: !!opts.fbp,
+        external_id: !!opts.externalId,
+        erro: r.ok ? null : r.error,
+      },
+    })
+  } catch { /* log é best-effort, nunca quebra o envio */ }
+  return r
+}
+
+async function enviarCapi(opts: CapiOpts): Promise<{ ok: boolean; error?: string }> {
   if (!PIXEL_ID || !TOKEN) {
     return { ok: false, error: 'CAPI nao configurado (faltam FB_PIXEL_ID/FB_CAPI_TOKEN)' }
   }

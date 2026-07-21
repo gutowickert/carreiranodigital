@@ -56,12 +56,7 @@ export async function POST(req: NextRequest) {
     codigoTurma: turma?.codigo || null,
   })
 
-  // log pra dar pra CONFERIR depois quais vendas foram marcadas na Meta
-  await supabase.from('webhook_logs').insert({
-    origem: 'capi-purchase', evento: turma?.codigo || 'purchase', status: capi.ok ? 'enviado' : 'falha',
-    payload: { matricula_id: mat.id, lead_id: mat.lead_id, valor: Number(mat.valor_pago) || 0, erro: capi.ok ? null : capi.error },
-  }).select('id')
-
+  // (o log em webhook_logs origem='capi-purchase' agora é feito dentro do sendCapiEvent — não duplica aqui)
   if (!capi.ok) {
     console.error('CAPI Purchase (manual) falhou:', capi.error)
     return NextResponse.json({ ok: false, error: capi.error }, { status: 200 })
