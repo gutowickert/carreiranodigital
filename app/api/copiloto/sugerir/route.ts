@@ -6,9 +6,10 @@ import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 60
 
-// Modelo do copiloto. Opus 4.8 = mais inteligente. Pra mais barato/rápido troque
-// por 'claude-sonnet-4-6' ou 'claude-haiku-4-5'.
-const MODELO = 'claude-opus-4-8'
+// Modelo do copiloto. Usa o MESMO do motor principal (sonnet-4-6) — mesma tarefa (sugerir a próxima
+// mensagem), qualidade já validada pela equipe, e ~metade do custo do Opus. Pra mais inteligência
+// troque por 'claude-opus-4-8'; pra mais barato/rápido, 'claude-haiku-4-5'.
+const MODELO = 'claude-sonnet-4-6'
 
 const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 
@@ -151,7 +152,8 @@ export async function POST(req: NextRequest) {
     const resp = await client.messages.create({
       model: MODELO,
       max_tokens: 1024,
-      system: PLAYBOOK,
+      // PLAYBOOK é estático → cache_control paga 0.1x na releitura (quando dá o tamanho mínimo de cache).
+      system: [{ type: 'text', text: PLAYBOOK, cache_control: { type: 'ephemeral' } }],
       messages: [{ role: 'user', content: contexto }],
     })
 

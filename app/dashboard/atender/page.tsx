@@ -379,8 +379,13 @@ function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i:
     const jaTem = new Set(linhas.map(l => l.item.leadId))
     const byId = new Map(fila.map(it => [it.leadId, it]))
     const alvo = ids.filter(id => !jaTem.has(id)).map(id => byId.get(id)).filter(Boolean) as Item[]
-    const res = await Promise.all(alvo.map(async it => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }))
-    setLinhas(l => [...l, ...res])
+    const gerar1 = async (it: Item) => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }
+    // PRIMING DO CACHE: gera o 1º SOZINHO (aquece o prefixo estático do prompt: SYSTEM+brain+turmas+playbook);
+    // só então dispara o resto em paralelo — aí todos LEEM o cache (0.1x) em vez de cada um reescrever.
+    // Bônus: o 1º aparece na tela na hora, e reduz a rajada de chamadas idênticas simultâneas.
+    const [primeiro, ...resto] = alvo
+    if (primeiro) { const r0 = await gerar1(primeiro); setLinhas(l => [...l, r0]) }
+    if (resto.length) { const mais = await Promise.all(resto.map(gerar1)); setLinhas(l => [...l, ...mais]) }
     setGerando(false)
   }
 
