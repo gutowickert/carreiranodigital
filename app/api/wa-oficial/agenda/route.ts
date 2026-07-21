@@ -94,9 +94,13 @@ export async function POST(req: NextRequest) {
         const linhas = [...porData.values()].sort((a, b) => a.ordem - b.ordem).map(p => ({
           org_id: org, turma_id: t.id, tipo: p.tipo, titulo: `${p.titulo} — ${t.produto} ${t.cidade}`,
           copy: copyDe(p.tipo, t.produto, t.cidade, t.data_inicio),
-          canal: 'wa_oficial', data_agendada: as10h(p.quando), status: 'planejado',
+          canal: 'whatsapp', data_agendada: as10h(p.quando), status: 'planejado',
         }))
-        if (linhas.length) { await sb.from('disparos_turma').insert(linhas); criados += linhas.length }
+        if (linhas.length) {
+          const { error } = await sb.from('disparos_turma').insert(linhas)
+          if (error) return NextResponse.json({ ok: false, error: 'insert falhou: ' + error.message }, { status: 200 })
+          criados += linhas.length
+        }
       }
       return NextResponse.json({ ok: true, criados, turmasPuladas: pulados })
     }
