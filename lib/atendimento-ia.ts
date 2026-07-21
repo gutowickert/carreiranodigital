@@ -221,12 +221,13 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     if (trans.length) ligacoesTxt = trans.slice(0, 2).reverse().map((l: any) => `📞 LIGAÇÃO de ${brData((l.criado_em || '').slice(0, 10))} (${Math.round((l.duracao || 0) / 60)}min):\n"${(l.metadata.transcricao || '').slice(0, 2200)}"`).join('\n\n')
   }
 
-  // 7) monta o prompt
-  let corpus = await contextoCentral() // CÉREBRO CENTRAL: negócio + produtos + condições + fluxo/cadência/prioridade + regras vivas
+  // 7) monta o prompt — BRAIN estático (cacheável) + CORPUS dinâmico do lead
+  // O BRAIN (cérebro central: negócio + produtos + condições + fluxo/cadência + cidades) é IGUAL em
+  // toda chamada → vai no prefixo com cache_control (paga 0.1x na releitura). Só o corpus do lead varia.
+  const brain = (await contextoCentral()) + `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   const hAgora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
   const periodoAgora = hAgora < 12 ? 'MANHÃ — cumprimente com "bom dia"' : hAgora < 18 ? 'TARDE — cumprimente com "boa tarde"' : 'NOITE — cumprimente com "boa noite"'
-  corpus += `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. Cumprimente pelo horário de AGORA — NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).\n`
-  corpus += `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
+  let corpus = `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. Cumprimente pelo horário de AGORA — NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
   if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS abaixo.\n`
   if (gap) corpus += gap + '\n'
@@ -253,7 +254,16 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   } catch { /* aprendizado é best-effort */ }
 
   const client = new Anthropic({ apiKey: key })
-  const resp = await client.messages.create({ model: MODELO, max_tokens: 1200, system: SYSTEM, messages: [{ role: 'user', content: limpo(corpus) }] })
+  // PROMPT CACHING: SYSTEM + BRAIN são idênticos entre chamadas → cache_control paga 0.1x na releitura.
+  // Só o corpus do lead (dinâmico) vai sem cache. Reduz ~40% o input desta chamada (o maior custo de IA).
+  const resp = await client.messages.create({
+    model: MODELO, max_tokens: 1200,
+    system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+    messages: [{ role: 'user', content: [
+      { type: 'text', text: limpo(brain), cache_control: { type: 'ephemeral' } },
+      { type: 'text', text: limpo(corpus) },
+    ] }],
+  })
   await logIaUso('atendimento', MODELO, resp.usage)
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
   let dados: any = null
