@@ -364,7 +364,7 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover, abrirCard }: { l: { ite
 function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; abrirCard: (id: string) => void }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
-  const N = 10
+  const N = 5
 
   // Ao SAIR da tela de follow-up, libera minhas reservas não finalizadas (voltam pro pool pra outra pessoa).
   useEffect(() => {
