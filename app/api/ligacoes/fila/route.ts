@@ -30,14 +30,16 @@ export async function GET(req: Request) {
       .select('lead_id, data_vencimento, leads!inner(id, nome, whatsapp, etapa, vendedor_id)')
       .eq('org_id', org).eq('tipo', 'triagem_ligacao').eq('concluida', false).eq('cancelada', false)
       .order('data_vencimento', { ascending: true }).limit(300)
-    const aLigar = (al || []).map((t: any) => ({ leadId: t.leads.id, nome: t.leads.nome, telefone: t.leads.whatsapp, etapa: t.leads.etapa }))
+    // leads que JÁ têm ligação marcada pra um horário — não podem reaparecer como "novo" ou "a ligar"
+    const agendadosIds = new Set(agendadas.map((a: any) => a.leadId))
+    const aLigar = (al || []).filter((t: any) => !agendadosIds.has(t.leads.id)).map((t: any) => ({ leadId: t.leads.id, nome: t.leads.nome, telefone: t.leads.whatsapp, etapa: t.leads.etapa }))
 
     // 2) NOVOS LEADS na etapa Ligação (aguardando_atendimento), ainda abertos — mais novo primeiro (velocidade)
     const { data: novos } = await sb.from('leads')
       .select('id, nome, whatsapp, criado_em, vendedor_id')
       .eq('org_id', org).eq('etapa', 'aguardando_atendimento')
       .order('criado_em', { ascending: false }).limit(200)
-    const novosLeads = (novos || []).map((l: any) => ({
+    const novosLeads = (novos || []).filter((l: any) => !agendadosIds.has(l.id)).map((l: any) => ({
       leadId: l.id, nome: l.nome, telefone: l.whatsapp, vendedorId: l.vendedor_id,
       criadoEm: l.criado_em,
       chegouMin: l.criado_em ? Math.round((now - +new Date(l.criado_em)) / 60000) : null,
