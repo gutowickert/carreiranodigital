@@ -227,22 +227,15 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const brain = (await contextoCentral()) + `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   const hAgora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
   const periodoAgora = hAgora < 12 ? 'MANHÃ — cumprimente com "bom dia"' : hAgora < 18 ? 'TARDE — cumprimente com "boa tarde"' : 'NOITE — cumprimente com "boa noite"'
+  // CORPUS DINÂMICO (só deste lead — SEM cache): data/hora, lead, conversa, andamentos, transcrição, correções da equipe
   let corpus = `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. Cumprimente pelo horário de AGORA — NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
-  if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS abaixo.\n`
+  if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS.\n`
   if (gap) corpus += gap + '\n'
   corpus += `\n## Conversa até agora:\n${atual.join('\n')}\n\n`
   if (andamentosTxt) corpus += `# CONTATOS/LIGAÇÕES FORA DO WHATSAPP (JÁ ACONTECERAM — leve em conta, NÃO ignore: se já ligamos, não fale "vou te ligar" como se fosse a 1ª vez; retome o que ficou):\n${andamentosTxt}\n\n`
   if (ligacoesTxt) corpus += `# TRANSCRIÇÃO DA(S) LIGAÇÃO(ÕES) — o que o cliente REALMENTE falou na call (negócio, objetivo, objeções). USE isto: NÃO pergunte de novo o que ele já respondeu aqui; retome e avance a partir do que ele disse:\n${ligacoesTxt}\n\n`
-  corpus += `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
-  ganhas.forEach((g, i) => { corpus += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
-  if (playbook?.o_que_funciona) corpus += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
-  if (playbook?.melhor_fluxo) corpus += `\n# FLUXO QUE CONVERTE:\n${(playbook.melhor_fluxo || []).map((x: any, i: number) => `${i + 1}. ${x.passo}: ${x.descricao}`).join('\n')}\n`
-  if (dossie?.objecoes) corpus += `\n# OBJEÇÕES E CONTORNOS (voz do cliente):\n${JSON.stringify(dossie.objecoes).slice(0, 1500)}\n`
-  if (ofertas.length) corpus += `\n# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
-  // (fluxo + regras da equipe já vêm do CÉREBRO CENTRAL no topo do corpus)
-
-  // APRENDIZADO com as CORREÇÕES da equipe: como o humano reescreveu a sugestão da IA (o tom REAL).
+  // APRENDIZADO com as CORREÇÕES da equipe (dinâmico): como o humano reescreveu a sugestão da IA (o tom REAL).
   try {
     const { data: edicoes } = await supabase.from('webhook_logs').select('payload').eq('origem', 'ia-edicao').order('recebido_em', { ascending: false }).limit(10)
     const exs = (edicoes || []).map((e: any) => e.payload).filter((p: any) => p?.original && p?.enviado)
@@ -253,16 +246,29 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     }
   } catch { /* aprendizado é best-effort */ }
 
+  // REFERÊNCIA GLOBAL (igual pra TODO lead → cacheável): turmas abertas + playbook de conversão
+  let refGlobal = ''
+  if (ofertas.length) refGlobal += `# TURMAS ABERTAS (futuras — única fonte de preço/data; SEMPRE ofereça destas):\n${ofertas.join('\n')}\n`
+  if (playbook?.o_que_funciona) refGlobal += `\n# O QUE FUNCIONA (playbook):\n${(playbook.o_que_funciona || []).map((x: any) => `- ${x.titulo}: ${x.descricao}`).join('\n')}\n`
+  if (playbook?.melhor_fluxo) refGlobal += `\n# FLUXO QUE CONVERTE:\n${(playbook.melhor_fluxo || []).map((x: any, i: number) => `${i + 1}. ${x.passo}: ${x.descricao}`).join('\n')}\n`
+
+  // REFERÊNCIA POR PRODUTO (varia só por FC/ANL → cacheável por produto): vendas ganhas similares + objeções
+  let refProduto = `# VENDAS GANHAS SIMILARES (espelhe o TOM e as jogadas que fecharam):\n`
+  ganhas.forEach((g, i) => { refProduto += `\n--- GANHO ${i + 1}: ${g.nome}${g.valor ? ` (R$${g.valor})` : ''} ---\n${g.t.join('\n').slice(0, 2600)}\n` })
+  if (dossie?.objecoes) refProduto += `\n# OBJEÇÕES E CONTORNOS (voz do cliente):\n${JSON.stringify(dossie.objecoes).slice(0, 1500)}\n`
+
   const client = new Anthropic({ apiKey: key })
-  // PROMPT CACHING: SYSTEM + BRAIN são idênticos entre chamadas → cache_control paga 0.1x na releitura.
-  // Só o corpus do lead (dinâmico) vai sem cache. Reduz ~40% o input desta chamada (o maior custo de IA).
+  // PROMPT CACHING (até 4 blocos): SYSTEM + BRAIN + REF GLOBAL são iguais em toda chamada; REF PRODUTO
+  // varia só por FC/ANL. Todos com cache_control (0.1x na releitura). Só o corpus do lead vai sem cache.
+  const bloco = (t: string) => ({ type: 'text' as const, text: limpo(t), cache_control: { type: 'ephemeral' as const } })
+  const content: any[] = [bloco(brain)]
+  if (refGlobal.trim()) content.push(bloco(refGlobal))
+  if (refProduto.trim()) content.push(bloco(refProduto))
+  content.push({ type: 'text', text: limpo(corpus) }) // dinâmico — sem cache
   const resp = await client.messages.create({
     model: MODELO, max_tokens: 1200,
     system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
-    messages: [{ role: 'user', content: [
-      { type: 'text', text: limpo(brain), cache_control: { type: 'ephemeral' } },
-      { type: 'text', text: limpo(corpus) },
-    ] }],
+    messages: [{ role: 'user', content }],
   })
   await logIaUso('atendimento', MODELO, resp.usage)
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
