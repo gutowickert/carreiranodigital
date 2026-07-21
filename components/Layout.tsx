@@ -72,6 +72,7 @@ const grupos: Grupo[] = [
       { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
       { nome: 'Chamada', href: '/dashboard/chamada', feat: 'escola' },
       { nome: 'Disparos', href: '/dashboard/disparos' },
+      { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
       { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
     ],
