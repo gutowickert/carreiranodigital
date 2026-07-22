@@ -5,7 +5,7 @@ import { fetchAuth } from '@/lib/api'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const APP_ID = process.env.NEXT_PUBLIC_META_APP_ID || '1272702527991878'
-const CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID || ''
+const CONFIG_ID = process.env.NEXT_PUBLIC_META_CONFIG_ID || '1837572393890869' // Coexistência CnD
 
 export default function WhatsAppConectar() {
   const [pronto, setPronto] = useState(false)
