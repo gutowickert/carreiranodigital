@@ -227,8 +227,13 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const brain = (await contextoCentral()) + `# CIDADES QUE ATENDEMOS: ${cidades}\n\n`
   const hAgora = Number(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo', hour: '2-digit', hour12: false }))
   const periodoAgora = hAgora < 12 ? 'MANHÃ — cumprimente com "bom dia"' : hAgora < 18 ? 'TARDE — cumprimente com "boa tarde"' : 'NOITE — cumprimente com "boa noite"'
+  // se HOJE já mandamos algo pro lead, a conversa está em andamento → NÃO cumprimentar de novo
+  const jaFalamosHoje = msAtual.some((m: any) => (m.direcao !== 'recebida' && m.status !== 'recebida') && new Date(m.criado_em).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hoje)
+  const regraSaudacao = jaFalamosHoje
+    ? `JÁ FALAMOS HOJE com esse lead (conversa em andamento) — NÃO cumprimente de novo (nada de "bom dia/boa tarde/boa noite"): responda DIRETO, como continuação do papo.`
+    : `Se for REABRIR a conversa (fazia tempo), cumprimente pelo horário de AGORA; NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).`
   // CORPUS DINÂMICO (só deste lead — SEM cache): data/hora, lead, conversa, andamentos, transcrição, correções da equipe
-  let corpus = `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. Cumprimente pelo horário de AGORA — NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo desde que ele escreveu).\n`
+  let corpus = `# HOJE É ${brData(hoje)}/${hoje.slice(0, 4)} (${diaSem(hoje)}). AGORA é ${periodoAgora}. ${regraSaudacao}\n`
   corpus += `# LEAD ATUAL${simul ? ' (SIMULAÇÃO — teste de fluxo)' : ''}\nNome: ${lead.nome} | Produto de interesse: ${produto || '(indefinido)'}${simul && input.cidadeHint ? ` | Cidade: ${input.cidadeHint}` : ''} | Etapa: ${lead.etapa} | ${etiquetado ? 'JÁ ETIQUETADO (veio com turma)' : '⚠️ NÃO ETIQUETADO — descubra cidade e curso antes de ofertar'}\n`
   if (turmaPassada) corpus += `⚠️ ATENÇÃO — TURMA ETIQUETADA: ${turmaPassada} NUNCA invente turma/produto/cidade que não esteja na lista TURMAS ABERTAS.\n`
   if (gap) corpus += gap + '\n'

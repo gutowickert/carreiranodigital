@@ -77,11 +77,14 @@ export async function POST(req: NextRequest) {
 
     // últimas mensagens da conversa — inclui áudios pra transcrever na hora
     let linhas: string[] = []
+    let jaFalamosHoje = false // se HOJE já mandamos algo, não cumprimenta de novo (bom dia/boa tarde)
     if (convIds.length) {
       const { data: msgs } = await supabase.from('wa_mensagens')
         .select('id, direcao, status, texto, tipo, midia_url, criado_em').eq('org_id', org).in('conversa_id', convIds)
         .order('criado_em', { ascending: false }).limit(40)
       const recentes = (msgs || []).reverse() // ordem cronológica
+      const hojeBRT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+      jaFalamosHoje = recentes.some((m: any) => (m.direcao !== 'recebida' && m.status !== 'recebida') && new Date(m.criado_em).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBRT)
 
       // transcreve áudios recebidos ainda sem texto (Deepgram), salva e usa — pro copiloto "ouvir" o cliente
       const dgKey = process.env.DEEPGRAM_API_KEY
@@ -146,7 +149,10 @@ export async function POST(req: NextRequest) {
     const periodo = hAgora < 12 ? 'MANHÃ (use "bom dia")' : hAgora < 18 ? 'TARDE (use "boa tarde")' : 'NOITE (use "boa noite")'
 
     const quemTxt = nomeContato || telefone || '(sem nome)'
-    const contexto = `AGORA são ${horaTxt} — período: ${periodo}. Cumprimente pelo horário de AGORA, NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo).\n\nContato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
+    const saudacaoRegra = jaFalamosHoje
+      ? `IMPORTANTE — CONVERSA JÁ EM ANDAMENTO HOJE: já mandamos mensagem hoje pra esse contato. NÃO abra com "bom dia/boa tarde/boa noite" nem cumprimento nenhum — responda DIRETO, como continuação natural do papo.`
+      : `AGORA são ${horaTxt} — período: ${periodo}. Se for REABRIR a conversa (fazia tempo), cumprimente pelo horário de AGORA; NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo).`
+    const contexto = `${saudacaoRegra}\n\nContato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
 
     const client = new Anthropic({ apiKey: key })
     const resp = await client.messages.create({
