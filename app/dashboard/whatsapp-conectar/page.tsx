@@ -54,9 +54,10 @@ export default function WhatsAppConectar() {
     if (!CONFIG_ID) { setStatus('Falta NEXT_PUBLIC_META_CONFIG_ID (o ID da configuração de Embedded Signup do Meta).'); return }
     sessao.current = {}
     setOcupado(true); setStatus('Abrindo o login do WhatsApp…')
-    FB.login(async (response: any) => {
+    // handler async separado — o FB.login NÃO aceita callback async, então o callback é função simples
+    const finalizar = async (response: any) => {
       const code = response?.authResponse?.code
-      if (!code) { setOcupado(false); setStatus('Login cancelado ou sem permissão.'); return }
+      if (!code) { setOcupado(false); setStatus('Sem code. Resposta do Facebook: ' + JSON.stringify(response || {})); return }
       setStatus('Conectando o número ao sistema…')
       const r = await fetchAuth('/api/wa-oficial/conectar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -65,12 +66,17 @@ export default function WhatsAppConectar() {
       setOcupado(false)
       if (r?.ok) { setStatus(`✅ Conectado! Número ${r.phoneNumberId || ''} pronto. ${r.inscrito ? 'Webhook inscrito.' : ''}`); carregarContas() }
       else setStatus('Falha: ' + (r?.error || '?'))
-    }, {
-      config_id: CONFIG_ID,
-      response_type: 'code',
-      override_default_response_type: true,
-      extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' },
-    })
+    }
+    try {
+      FB.login((response: any) => { void finalizar(response) }, {
+        config_id: CONFIG_ID,
+        response_type: 'code',
+        override_default_response_type: true,
+        extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' },
+      })
+    } catch (e: any) {
+      setOcupado(false); setStatus('Erro ao abrir o login: ' + (e?.message || String(e)))
+    }
   }
 
   return (
