@@ -256,8 +256,12 @@ export default function AtenderPage() {
   }
 
   async function sugerir(item: Item): Promise<Sug | null> {
-    const j = await fetchAuth('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: item.conversaId, leadId: item.leadId }) }).then(r => r.json()).catch(() => null)
-    return j?.ok ? j.sugestao : null
+    // tenta 2x: a IA às vezes devolve vazio (timeout/limite) — o retry evita o "montando o resumo…" preso
+    for (let k = 0; k < 2; k++) {
+      const j = await fetchAuth('/api/atendimento/sugerir', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: item.conversaId, leadId: item.leadId }) }).then(r => r.json()).catch(() => null)
+      if (j?.ok && j.sugestao) return j.sugestao
+    }
+    return null
   }
   async function enviar(item: Item, texto: string, original?: string, avancar: boolean = true) {
     return fetchAuth('/api/atender/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: item.leadId, conversaId: item.conversaId, telefone: item.telefone, chatLid: item.chatLid, texto, original: original || '', email, avancar }) }).then(r => r.json()).catch(() => ({ ok: false }))
@@ -489,12 +493,10 @@ function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i:
     const byId = new Map(fila.map(it => [it.leadId, it]))
     const alvo = ids.filter(id => !jaTem.has(id)).map(id => byId.get(id)).filter(Boolean) as Item[]
     const gerar1 = async (it: Item) => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }
-    // PRIMING DO CACHE: gera o 1º SOZINHO (aquece o prefixo estático do prompt: SYSTEM+brain+turmas+playbook);
-    // só então dispara o resto em paralelo — aí todos LEEM o cache (0.1x) em vez de cada um reescrever.
-    // Bônus: o 1º aparece na tela na hora, e reduz a rajada de chamadas idênticas simultâneas.
-    const [primeiro, ...resto] = alvo
-    if (primeiro) { const r0 = await gerar1(primeiro); setLinhas(l => [...l, r0]) }
-    if (resto.length) { const mais = await Promise.all(resto.map(gerar1)); setLinhas(l => [...l, ...mais]) }
+    // gera TODAS em paralelo — chegam juntas (o priming sequencial fazia as próximas demorarem/parecerem
+    // que não vinham). O cache do prompt segue valendo entre lotes/uso sequencial do Atender.
+    const res = await Promise.all(alvo.map(gerar1))
+    setLinhas(l => [...l, ...res])
     setGerando(false)
   }
 
