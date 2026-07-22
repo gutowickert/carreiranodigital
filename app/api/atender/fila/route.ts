@@ -127,7 +127,7 @@ export async function GET(req: Request) {
 
   // SEM TAREFA (parados): leads em etapa ativa que NÃO têm nenhuma tarefa pendente — terminaram a cadência
   // (ou nunca geraram) e não foram movidos. Ficam invisíveis no Lote/Copiloto e se perdem no CRM.
-  const pend = await todos('tarefas_lead', 'lead_id', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false))
+  const pend = await todos('tarefas_lead', 'lead_id,tipo,data_vencimento', q => q.eq('org_id', org).eq('concluida', false).eq('cancelada', false))
   const comTarefa = new Set(pend.map((t: any) => t.lead_id))
   const parados: any[] = []
   for (const l of leads) {
@@ -137,5 +137,42 @@ export async function GET(req: Request) {
   }
   parados.sort((a, b) => (b.dSC || 0) - (a.dSC || 0)) // mais parado (mais silêncio) primeiro
 
-  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups], lote, loteCount: lote.length, parados, paradosCount: parados.length })
+  // ——— RESUMO pro painel do topo: tarefas por vencimento / tipo / dia + leads por etapa ———
+  const anchorHoje = new Date(hoje + 'T15:00:00Z') // meio-dia BRT, à prova de fuso
+  const dstr = (n: number) => { const d = new Date(anchorHoje); d.setUTCDate(d.getUTCDate() + n); return d.toISOString().slice(0, 10) }
+  const amanha = dstr(1), em7 = dstr(7)
+  const buckets = { atrasadas: 0, hoje: 0, amanha: 0, semana: 0, depois: 0, semData: 0 }
+  const porTipo: Record<string, number> = {}
+  const porDiaMap: Record<string, number> = {}
+  for (const t of pend) {
+    const v = (t.data_vencimento || '').slice(0, 10)
+    if (!v) buckets.semData++
+    else if (v < hoje) buckets.atrasadas++
+    else if (v === hoje) buckets.hoje++
+    else if (v === amanha) buckets.amanha++
+    else if (v <= em7) buckets.semana++
+    else buckets.depois++
+    porTipo[t.tipo || '—'] = (porTipo[t.tipo || '—'] || 0) + 1
+    if (v && v >= hoje) porDiaMap[v] = (porDiaMap[v] || 0) + 1
+  }
+  const porDia = Array.from({ length: 7 }, (_, i) => { const d = dstr(i); return { data: d, n: porDiaMap[d] || 0 } })
+  const porTipoArr = Object.entries(porTipo).map(([tipo, n]) => ({ tipo, n })).sort((a, b) => b.n - a.n)
+  const etapaMap: Record<string, number> = {}
+  for (const l of leads) etapaMap[l.etapa] = (etapaMap[l.etapa] || 0) + 1
+  const porEtapa = Object.entries(etapaMap).map(([etapa, n]) => ({ etapa, n })).sort((a, b) => b.n - a.n)
+
+  const resumo = {
+    responderam: quentes.length,
+    followups: followups.length,
+    comTarefa: lote.length,
+    semTarefa: parados.length,
+    leadsAtivos: leads.length,
+    tarefasPendentes: pend.length,
+    vencimento: buckets,
+    porTipo: porTipoArr,
+    porDia,
+    porEtapa,
+  }
+
+  return NextResponse.json({ ok: true, quentes: quentes.length, followups: followups.length, fila: [...quentes, ...followups], lote, loteCount: lote.length, parados, paradosCount: parados.length, resumo })
 }

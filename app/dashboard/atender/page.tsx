@@ -122,6 +122,112 @@ function Acoes({ item, onFeito }: { item: Item; onFeito?: (id: string) => void }
   )
 }
 
+// ————— Painel de RESUMO no topo do Atender: bater o olho e decidir —————
+const TIPO_LABEL: Record<string, string> = {
+  msg_horario: 'Seguir no WhatsApp', ligar_1: 'Ligar 1ª tentativa', ligar_2: 'Ligar 2ª tentativa',
+  ligar_agendado: 'Ligação agendada', triagem_ligacao: 'Triagem (ligar)', lote_virando: 'Lote virando',
+  pos_virada_lote: 'Pós-virada do lote', seguir_followup: 'Seguir follow-up', verificar_pagamento: 'Verificar pagamento',
+  quer_aproveitar: 'Quer aproveitar', reforco: 'Reforço', despedida: 'Despedida',
+}
+const ETAPA_LABEL: Record<string, string> = {
+  aguardando_atendimento: 'Ligação', atendimento_inicial: 'Atendimento inicial', lote_preco_ok: 'Lote e preço ok',
+  oferecer_bolsa: 'Oferecer bolsa', proxima_turma: 'Próxima turma',
+}
+const DOWS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
+const dowDe = (iso: string) => DOWS[new Date(iso + 'T15:00:00Z').getUTCDay()]
+const secStyle: React.CSSProperties = { fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.05em', marginBottom: 8 }
+
+function Kpi({ emoji, n, label, cor }: { emoji: string; n: number; label: string; cor?: string }) {
+  return (
+    <div style={{ background: 'var(--surface-2)', borderRadius: 10, padding: '12px 14px', textAlign: 'center', flex: 1, minWidth: 104 }}>
+      <div style={{ fontSize: 22, fontWeight: 800, color: cor || 'var(--text)' }}>{n}</div>
+      <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{emoji} {label}</div>
+    </div>
+  )
+}
+function Pill({ label, n, cor, bg }: { label: string; n: number; cor: string; bg: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: bg, border: `1px solid ${cor}`, borderRadius: 20, padding: '5px 12px' }}>
+      <span style={{ fontSize: 15, fontWeight: 800, color: cor }}>{n}</span>
+      <span style={{ fontSize: 11, color: 'var(--text-2)' }}>{label}</span>
+    </div>
+  )
+}
+function Barra({ label, n, max, cor }: { label: string; n: number; max: number; cor: string }) {
+  const w = max > 0 ? Math.max(4, Math.round((n / max) * 100)) : 0
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      <div style={{ width: 138, fontSize: 12, color: 'var(--text-2)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{label}</div>
+      <div style={{ flex: 1, background: 'var(--bg)', borderRadius: 6, height: 16 }}>
+        <div style={{ width: w + '%', background: cor, height: '100%', borderRadius: 6 }} />
+      </div>
+      <div style={{ width: 28, textAlign: 'right', fontSize: 12, fontWeight: 700, color: 'var(--text)' }}>{n}</div>
+    </div>
+  )
+}
+function ResumoPainel({ r }: { r: any }) {
+  const v = r.vencimento || {}
+  const maxTipo = Math.max(1, ...(r.porTipo || []).map((x: any) => x.n))
+  const maxEt = Math.max(1, ...(r.porEtapa || []).map((x: any) => x.n))
+  const maxDia = Math.max(1, ...(r.porDia || []).map((x: any) => x.n))
+  return (
+    <div style={{ ...card, padding: 16, marginTop: 16 }}>
+      <div style={{ ...secStyle, marginBottom: 10 }}>📊 Resumo de hoje</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Kpi emoji="🔥" n={r.responderam} label="responderam" cor="var(--red)" />
+        <Kpi emoji="💬" n={r.followups} label="follow-ups frios" />
+        <Kpi emoji="📋" n={r.comTarefa} label="com tarefa hoje" cor="var(--accent-soft)" />
+        <Kpi emoji="🚩" n={r.semTarefa} label="sem tarefa" cor="var(--amber)" />
+        <Kpi emoji="👥" n={r.leadsAtivos} label="leads ativos" />
+      </div>
+
+      <div style={{ ...secStyle, margin: '16px 0 8px' }}>Tarefas por vencimento ({r.tarefasPendentes})</div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <Pill label="atrasadas" n={v.atrasadas || 0} cor="var(--red)" bg="var(--red-bg)" />
+        <Pill label="hoje" n={v.hoje || 0} cor="var(--amber)" bg="var(--amber-bg)" />
+        <Pill label="amanhã" n={v.amanha || 0} cor="var(--blue)" bg="var(--blue-bg)" />
+        <Pill label="esta semana" n={v.semana || 0} cor="var(--text-2)" bg="var(--surface-2)" />
+        <Pill label="depois" n={v.depois || 0} cor="var(--text-faint)" bg="var(--surface-2)" />
+        {v.semData > 0 && <Pill label="sem data" n={v.semData} cor="var(--text-faint)" bg="var(--surface-2)" />}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 24, marginTop: 18 }}>
+        <div>
+          <div style={secStyle}>Próximos 7 dias</div>
+          <div style={{ display: 'flex', gap: 6, alignItems: 'flex-end' }}>
+            {(r.porDia || []).map((d: any, i: number) => (
+              <div key={d.data} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: d.n ? 'var(--text-2)' : 'transparent' }}>{d.n || 0}</div>
+                <div style={{ width: '100%', background: d.n ? (i === 0 ? 'var(--amber)' : 'var(--accent)') : 'var(--surface-2)', height: Math.max(4, Math.round((d.n / maxDia) * 64)), borderRadius: 4 }} />
+                <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{d.data.slice(8, 10)}/{d.data.slice(5, 7)}</div>
+                <div style={{ fontSize: 9, color: i === 0 ? 'var(--amber)' : 'var(--text-faint)' }}>{i === 0 ? 'hoje' : dowDe(d.data)}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div>
+          <div style={secStyle}>Por tipo de tarefa</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {(r.porTipo || []).slice(0, 6).map((x: any) => (
+              <Barra key={x.tipo} label={TIPO_LABEL[x.tipo] || x.tipo} n={x.n} max={maxTipo} cor="var(--accent-soft)" />
+            ))}
+            {(!r.porTipo || !r.porTipo.length) && <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>Sem tarefas pendentes.</div>}
+          </div>
+        </div>
+      </div>
+
+      <div style={{ marginTop: 18 }}>
+        <div style={secStyle}>Leads ativos por etapa</div>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          {(r.porEtapa || []).map((x: any) => (
+            <Barra key={x.etapa} label={ETAPA_LABEL[x.etapa] || x.etapa} n={x.n} max={maxEt} cor="var(--blue)" />
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function AtenderPage() {
   const [email, setEmail] = useState('')
   const [fila, setFila] = useState<Item[]>([])
@@ -131,6 +237,7 @@ export default function AtenderPage() {
   const [carregando, setCarregando] = useState(true)
   const [aba, setAba] = useState<'agora' | 'copiloto' | 'lote' | 'parados'>('agora')
   const [cardLead, setCardLead] = useState<string | null>(null)
+  const [resumo, setResumo] = useState<any>(null)
 
   useEffect(() => {
     (async () => {
@@ -144,7 +251,7 @@ export default function AtenderPage() {
     setCarregando(true)
     const { data: { session } } = await supabase.auth.getSession()
     const j = await fetch('/api/atender/fila', { headers: { Authorization: `Bearer ${session?.access_token || ''}` } }).then(r => r.json()).catch(() => null)
-    if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setParados(j.parados || []); setNq(j.quentes); setNf(j.followups) }
+    if (j?.ok) { setFila(j.fila); setLote(j.lote || []); setParados(j.parados || []); setNq(j.quentes); setNf(j.followups); setResumo(j.resumo || null) }
     setCarregando(false)
   }
 
@@ -166,6 +273,8 @@ export default function AtenderPage() {
         </div>
         <button onClick={carregar} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>↻ Atualizar</button>
       </div>
+
+      {!carregando && resumo && <ResumoPainel r={resumo} />}
 
       <div style={{ display: 'flex', gap: 6, margin: '18px 0 20px', borderBottom: '1px solid var(--border)' }}>
         {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Follow-up com tarefa'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
