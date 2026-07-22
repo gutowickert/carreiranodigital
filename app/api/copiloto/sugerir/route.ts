@@ -12,6 +12,11 @@ export const maxDuration = 60
 const MODELO = 'claude-sonnet-4-6'
 
 const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
+// tira emojis da mensagem sugerida (o time não quer emoji nas sugestões)
+const semEmoji = (s: string) => (s || '')
+  .replace(/[←-⇿⌀-➿⬀-⯿☀-⛿️‍]/g, '')
+  .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/gu, '')
+  .replace(/ +([,.!?;:])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim()
 
 // Playbook destilado (das vendas reais) — é o "gabarito" que guia a sugestão.
 const PLAYBOOK = `Você é o COPILOTO DE VENDAS da Carreira No Digital (cursos presenciais de marketing digital no RS). Ajuda o vendedor a converter no WhatsApp, no TOM da escola: próximo, direto, sem enrolação, tratando o cliente por "tu/você".
@@ -39,7 +44,7 @@ TURMAS E OFERTA: as turmas ABERTAS reais (produto, cidade, data de início, pre�
 Sua tarefa: olhar a conversa até agora e a etapa do funil, e sugerir a PRÓXIMA mensagem que o vendedor deve enviar AGORA, já pronta, no tom da escola. Curta e natural (2-5 frases). Se o cliente levantou uma objeção, trate-a com a regra acima.
 
 Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatamente neste formato:
-{"objecao":"<objeção detectada do cliente, ou 'nenhuma'>","dica":"<dica curta de 1 linha pro vendedor>","rascunho":"<a mensagem pronta pra enviar>"}`
+{"objecao":"<objeção detectada do cliente, ou 'nenhuma'>","dica":"<dica curta de 1 linha pro vendedor>","rascunho":"<a mensagem pronta pra enviar, SEM emojis>"}`
 
 export async function POST(req: NextRequest) {
   try {
@@ -172,9 +177,9 @@ export async function POST(req: NextRequest) {
       if (a >= 0 && z > a) { try { out = JSON.parse(raw.slice(a, z + 1)) } catch {} }
     }
     if (!out || typeof out.rascunho !== 'string') {
-      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: raw.slice(0, 800) })
+      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: semEmoji(raw.slice(0, 800)) })
     }
-    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: out.rascunho })
+    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: semEmoji(out.rascunho) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
   }

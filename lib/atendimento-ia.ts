@@ -14,6 +14,12 @@ const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Mar
 // remove surrogates soltos (emoji quebrado) que invalidam o JSON enviado ao Claude
 const limpo = (s: string) => (s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
 
+// tira emojis da mensagem sugerida (o time não quer emoji nas sugestões)
+const semEmoji = (s: string) => (s || '')
+  .replace(/[←-⇿⌀-➿⬀-⯿☀-⛿️‍]/g, '')
+  .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/gu, '')
+  .replace(/ +([,.!?;:])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim()
+
 const SYSTEM = `Você é o MELHOR vendedor da Carreira No Digital (escola PRESENCIAL de marketing digital no RS). Sugere a próxima mensagem pra um lead no WhatsApp, do jeito que a gente REALMENTE fecha.
 
 IMPORTANTE — GÊNERO: quem atende é SEMPRE HOMEM. Fale no MASCULINO ("honesto", "obrigado", "tranquilo") — nunca no feminino.
@@ -64,7 +70,7 @@ Responda APENAS um JSON válido:
  "objecao": "<a barreira atual, ou 'nenhuma'>",
  "etapa_funil": "<ex: descoberta, oferta, objeção de preço, fechamento>",
  "etapa_sugerida": "<EXATAMENTE uma chave da lista CHAVES DE ETAPA DO CRM acima, ou 'manter' se a etapa não muda>",
- "resposta": "<a mensagem PRONTA pra mandar no WhatsApp — nosso tom, MASCULINO, curta, humana, 1 a 3 frases>",
+ "resposta": "<a mensagem PRONTA pra mandar no WhatsApp — nosso tom, MASCULINO, curta, humana, 1 a 3 frases, SEM emojis>",
  "acao_sugerida": "<descobrir | construir_valor | ofertar | contornar_objecao | fechar | agendar_ligacao | reabrir | nutrir>",
  "baseado_em": "<em qual venda ganha você se baseou + o que era parecido>",
  "proximo_passo": "<a ação concreta depois dessa mensagem>",
@@ -291,5 +297,6 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }
   if (!dados) return { ok: false, error: 'IA não retornou JSON' }
+  if (typeof dados.resposta === 'string') dados.resposta = semEmoji(dados.resposta) // garante mensagem sem emoji
   return { ok: true, sugestao: dados, baseado_em_n: ganhas.length }
 }
