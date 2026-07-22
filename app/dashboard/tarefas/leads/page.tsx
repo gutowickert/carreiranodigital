@@ -28,15 +28,23 @@ const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)'
 const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 
 const TIPO_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
-  tentar_contato_d1: { label: 'Tentar contato D+1', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
-  tentar_contato_d2: { label: 'Tentar contato D+2', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
-  tentar_contato_d4: { label: 'Tentar contato D+4', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
-  tentar_contato_d6: { label: 'Tentar contato D+6', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
-  lote_fecha_hoje_d3: { label: 'Lote fecha hoje', cor: 'var(--green)', bg: 'var(--green-bg)' },
-  dar_andamento_d4: { label: 'Dar andamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
-  encerrar_lead_d2: { label: 'Encerrar lead', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
-  retornar_prazo: { label: 'Retornar (prazo)', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  // cadência NOVA (D1–D13)
+  ligar_1: { label: 'Ligar — 1ª tentativa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  ligar_2_audio: { label: 'Ligar — 2ª + áudio', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  msg_horario: { label: 'Seguir no WhatsApp', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  apresentacao_completa: { label: 'Apresentação completa', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  lote_virando: { label: 'Lote virando', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  pos_virada_lote: { label: 'Pós-virada do lote', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  bolsa_1: { label: '1ª oferta de bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  bolsa_2: { label: '2ª mensagem da bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+  demissao: { label: 'Encerramento', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  seguir_followup: { label: 'Continuar follow-up', cor: 'var(--accent)', bg: 'var(--accent-bg)' },
+  // agendamentos / etapas
+  ligar_agendado: { label: 'Ligação agendada', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  triagem_ligacao: { label: 'Triagem (ligar)', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   verificar_pagamento: { label: 'Verificar pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  agendado: { label: 'Contato agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  proxima_turma: { label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
 }
 
 function tempoRelativo(dataIso: string): string {
@@ -152,6 +160,17 @@ export default function TarefasLeads() {
         })
 
         setMensagem(`Tarefa concluída. Próxima criada: ${proxima.titulo}`)
+        setTimeout(() => setMensagem(''), 3000)
+      } else if (['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(lead.etapa)) {
+        // rede de segurança: etapa ativa sem próxima na cadência (ex.: tipo antigo) → não deixa o lead órfão
+        const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
+        await supabase.from('tarefas_lead').insert({
+          lead_id: lead.id, vendedor_id: tarefa.vendedor_id, tipo: 'seguir_followup',
+          titulo: `Continuar o follow-up — ${lead.nome}`,
+          descricao: 'Seguir a conversa: veja a leitura da IA e conduza pra próxima etapa.',
+          data_vencimento: amanha.toISOString(),
+        })
+        setMensagem('Tarefa concluída. Próxima: Continuar follow-up (amanhã).')
         setTimeout(() => setMensagem(''), 3000)
       }
     }

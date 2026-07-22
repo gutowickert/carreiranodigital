@@ -9,8 +9,8 @@ import { enviarTexto, enviarAudio, enviarImagem, enviarDocumento, foneZapi } fro
 // NÃO atrapalha o trabalho: responder quem já está em conversa hoje é SEMPRE liberado;
 // a regra só freia abrir muitos contatos novos rápido demais (o que o WhatsApp lê como disparo).
 // Números ajustáveis (peça pra afrouxar/apertar; dá pra virar tela de config depois).
-const WA_MAX_CONTATOS_DIA = 120  // teto de contatos NOVOS por dia
-const WA_MAX_CONTATOS_MIN = 6    // teto de contatos NOVOS por minuto (anti-rajada)
+const WA_MAX_CONTATOS_DIA = 50   // teto de contatos NOVOS por dia (conservador: número queimado até a coexistência)
+const WA_MAX_CONTATOS_MIN = 5    // teto de contatos NOVOS por minuto (anti-rajada)
 
 async function guardrailWA(org: string, convIdAtual: string | null): Promise<{ ok: true } | { ok: false; motivo: string }> {
   const hojeBRT = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
