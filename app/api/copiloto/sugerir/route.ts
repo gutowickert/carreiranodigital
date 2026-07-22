@@ -17,6 +17,11 @@ const semEmoji = (s: string) => (s || '')
   .replace(/[←-⇿⌀-➿⬀-⯿☀-⛿️‍]/g, '')
   .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/gu, '')
   .replace(/ +([,.!?;:])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim()
+// pro cliente, nome completo — nunca a sigla (ANL/FC isolados)
+const nomesCompletos = (s: string) => (s || '')
+  .replace(/\bANL\b/g, 'Anúncios para Negócios Locais')
+  .replace(/\bFC\b/g, 'Formação Completa em Marketing Digital')
+const limpaMsg = (s: string) => nomesCompletos(semEmoji(s))
 
 // Playbook destilado (das vendas reais) — é o "gabarito" que guia a sugestão.
 const PLAYBOOK = `Você é o COPILOTO DE VENDAS da Carreira No Digital (cursos presenciais de marketing digital no RS). Ajuda o vendedor a converter no WhatsApp, no TOM da escola: próximo, direto, sem enrolação, tratando o cliente por "tu/você".
@@ -179,9 +184,9 @@ export async function POST(req: NextRequest) {
       if (a >= 0 && z > a) { try { out = JSON.parse(raw.slice(a, z + 1)) } catch {} }
     }
     if (!out || typeof out.rascunho !== 'string') {
-      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: semEmoji(raw.slice(0, 800)) })
+      return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: limpaMsg(raw.slice(0, 800)) })
     }
-    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: semEmoji(out.rascunho) })
+    return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: limpaMsg(out.rascunho) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
   }

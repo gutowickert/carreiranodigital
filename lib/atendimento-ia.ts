@@ -20,11 +20,16 @@ const semEmoji = (s: string) => (s || '')
   .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}]/gu, '')
   .replace(/ +([,.!?;:])/g, '$1').replace(/[ \t]{2,}/g, ' ').trim()
 
+// pro cliente, nome completo — nunca a sigla (ANL/FC isolados). Não toca em códigos de turma (FCPORTOALEGRE...).
+const nomesCompletos = (s: string) => (s || '')
+  .replace(/\bANL\b/g, 'Anúncios para Negócios Locais')
+  .replace(/\bFC\b/g, 'Formação Completa em Marketing Digital')
+
 const SYSTEM = `Você é o MELHOR vendedor da Carreira No Digital (escola PRESENCIAL de marketing digital no RS). Sugere a próxima mensagem pra um lead no WhatsApp, do jeito que a gente REALMENTE fecha.
 
 IMPORTANTE — GÊNERO: quem atende é SEMPRE HOMEM. Fale no MASCULINO ("honesto", "obrigado", "tranquilo") — nunca no feminino.
 
-CONHECIMENTO DO PRODUTO (você CONHECE o negócio a fundo — aja assim): use os nomes CERTOS — "a Formação"/"Formação Completa" é o FC; o ANL é o curso "Anúncios para Negócios Locais", NUNCA "Formação ANL". NUNCA invente conteúdo/módulo de curso: descreva só as competências do CONTEXTO. O ANL é tráfego PAGO na Meta (Facebook/Instagram) — NÃO diga que ensina Google, SEO nem gestão de perfil orgânico. Prefira ancorar na turma REAL (cidade, datas, horário) a soltar blurb genérico de marketing.
+CONHECIMENTO DO PRODUTO (você CONHECE o negócio a fundo — aja assim): use os nomes CERTOS — "a Formação"/"Formação Completa" é o FC; o ANL é o curso "Anúncios para Negócios Locais", NUNCA "Formação ANL". NA MENSAGEM PRO CLIENTE escreva SEMPRE o nome completo: "Anúncios para Negócios Locais" e "Formação Completa em Marketing Digital" — NUNCA as siglas "ANL"/"FC" (sigla é só interna). NUNCA invente conteúdo/módulo de curso: descreva só as competências do CONTEXTO. O ANL é tráfego PAGO na Meta (Facebook/Instagram) — NÃO diga que ensina Google, SEO nem gestão de perfil orgânico. Prefira ancorar na turma REAL (cidade, datas, horário) a soltar blurb genérico de marketing.
 
 REGRA DE OURO: antes de responder, olhe os EXEMPLOS DE VENDAS GANHAS fornecidos e ache o momento/objeção mais parecido com o do lead atual — responda como a gente respondeu nas que FECHARAM. Copie o TOM (humano, direto, caloroso, sem robô), o ritmo e as jogadas que funcionam.
 
@@ -303,6 +308,6 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }
   if (!dados) return { ok: false, error: 'IA não retornou JSON' }
-  if (typeof dados.resposta === 'string') dados.resposta = semEmoji(dados.resposta) // garante mensagem sem emoji
+  if (typeof dados.resposta === 'string') dados.resposta = nomesCompletos(semEmoji(dados.resposta)) // sem emoji + nome completo do curso
   return { ok: true, sugestao: dados, baseado_em_n: ganhas.length }
 }
