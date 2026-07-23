@@ -214,12 +214,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       const { data } = await supabase.from('wa_conversas').select('nao_lidas, canal').gt('nao_lidas', 0)
       if (!ativo) return
       const linhas = data || []
-      // caixa principal = tudo que não é 'oficial'; Disparos = canal 'oficial'
-      const totZapi = linhas.filter((c: any) => c.canal !== 'oficial').reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
-      const totDisp = linhas.filter((c: any) => c.canal === 'oficial').reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
-      const total = totZapi + totDisp
-      setWaUnread(totZapi)
-      setDispUnread(totDisp)
+      // O número OFICIAL virou o atendimento principal → o inbox WhatsApp agora mostra
+      // TODOS os canais, então o badge principal conta tudo. Disparos segue com o subconjunto oficial.
+      const totOficial = linhas.filter((c: any) => c.canal === 'oficial').reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
+      const total = linhas.reduce((s: number, c: any) => s + (c.nao_lidas || 0), 0)
+      setWaUnread(total)
+      setDispUnread(totOficial)
       // só avisa quando AUMENTA (não na 1ª carga nem quando você lê)
       if (waPrevRef.current >= 0 && total > waPrevRef.current) {
         bipe()

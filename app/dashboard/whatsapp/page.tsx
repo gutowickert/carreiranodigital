@@ -48,8 +48,9 @@ export default function CaixaWhatsApp() {
   }, [])
 
   async function carregarConversas() {
+    // inclui o canal OFICIAL (número novo = atendimento principal agora), além do Z-API/antigo.
     const { data } = await supabase.from('wa_conversas')
-      .select('*').or('canal.eq.zapi,canal.is.null')
+      .select('*').or('canal.eq.zapi,canal.is.null,canal.eq.oficial')
       .order('ultima_msg_em', { ascending: false, nullsFirst: false })
     setConversas(data || [])
     // leads marcados como "não lida" (marcador manual do CRM) pra mostrar na lista
