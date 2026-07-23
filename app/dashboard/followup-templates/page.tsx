@@ -11,6 +11,16 @@ const ETAPA_LABEL: Record<string, string> = {
   oferecer_bolsa: '🎁 Oferecer bolsa (D11–D13)',
 }
 const ETAPA_ORDEM = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+// rótulos das etapas cobertas pela migração de número (inclui as que não estão na cadência)
+const MIG_ETAPA_LABEL: Record<string, string> = {
+  atendimento_inicial: '💬 Em atendimento',
+  lote_preco_ok: '🔥 Lote e preço',
+  agendado: '📅 Agendados',
+  aguardando_pagamento: '💳 Aguardando pagamento',
+  oferecer_bolsa: '🎁 Oferta de bolsa',
+}
+const MIG_ETAPA_ORDEM = ['atendimento_inicial', 'lote_preco_ok', 'agendado', 'aguardando_pagamento', 'oferecer_bolsa']
+const ehMigracao = (t: any) => (t.nome_meta || '').startsWith('cnd_mudanca_')
 const PROD: Record<string, { label: string; cor: string }> = {
   anl: { label: 'ANL', cor: 'var(--blue)' }, fc: { label: 'FC', cor: 'var(--accent-soft)' }, ambos: { label: 'ambos', cor: 'var(--text-muted)' },
 }
@@ -107,11 +117,30 @@ export default function FollowupTemplates() {
 
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 40 }}>Carregando…</div> : (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 22, marginTop: 20 }}>
-          {ETAPA_ORDEM.filter(et => templates.some(t => t.etapa === et)).map(et => (
+
+          {templates.some(ehMigracao) && (
+            <div style={{ ...card, padding: 16, background: 'var(--surface-2)', borderColor: 'var(--accent)' }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>📲 Migração de número</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '4px 0 14px', lineHeight: 1.55 }}>
+                Aviso de "mudamos de número" que já dá andamento — um por etapa do CRM. Vão pros leads ativos de cada etapa quando forem aprovados.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                {MIG_ETAPA_ORDEM.filter(et => templates.some(t => ehMigracao(t) && t.etapa === et)).map(et => (
+                  <div key={et}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-2)', marginBottom: 6 }}>{MIG_ETAPA_LABEL[et] || et}</div>
+                    {templates.filter(t => ehMigracao(t) && t.etapa === et).map(t => <TemplateCard key={t.id} t={t} onSalvo={carregar} />)}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-faint)', marginTop: 6 }}>Cadência do CRM (reabertura de conversa fria)</div>
+          {ETAPA_ORDEM.filter(et => templates.some(t => !ehMigracao(t) && t.etapa === et)).map(et => (
             <div key={et}>
               <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', marginBottom: 10 }}>{ETAPA_LABEL[et] || et}</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                {templates.filter(t => t.etapa === et).map(t => <TemplateCard key={t.id} t={t} onSalvo={carregar} />)}
+                {templates.filter(t => !ehMigracao(t) && t.etapa === et).map(t => <TemplateCard key={t.id} t={t} onSalvo={carregar} />)}
               </div>
             </div>
           ))}
