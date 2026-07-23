@@ -23,9 +23,10 @@ export default function Disparos() {
   const [campanhas, setCampanhas] = useState<any[]>([])
   const [campanhaId, setCampanhaId] = useState('')
   // listas frias (wa_contatos)
-  const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; total: number }[]>([])
-  const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador'>('interessado')
+  const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; perdido: number; total: number }[]>([])
+  const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador' | 'perdido'>('interessado')
   const [listaCidade, setListaCidade] = useState('') // '' = todas
+  const [listaProduto, setListaProduto] = useState('') // '' = todos, ou FC/ANL
   const [descontarCampId, setDescontarCampId] = useState('') // reenvio inteligente: descontar quem já recebeu nessa campanha
   const [contatos, setContatos] = useState<Contato[]>([])
   const [carregandoPublico, setCarregandoPublico] = useState(false)
@@ -96,6 +97,7 @@ export default function Disparos() {
       } else if (modo === 'lista') {
         const p = new URLSearchParams({ categoria: listaCategoria, limit: '5000' })
         if (listaCidade) p.set('cidade', listaCidade)
+        if (listaProduto) p.set('produto', listaProduto)
         const j = await fetchAuth('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
         // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
         let cs = (j.contatos || []).filter((c: any) => c.status !== 'optout').map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' }))
@@ -190,7 +192,16 @@ export default function Disparos() {
               <label style={label}>Categoria</label>
               <select style={{ ...inp, width: 'auto' }} value={listaCategoria} onChange={e => setListaCategoria(e.target.value as any)}>
                 <option value="interessado">Interessados</option>
+                <option value="perdido">Perdidos (reativar)</option>
                 <option value="comprador">Compradores</option>
+              </select>
+            </div>
+            <div>
+              <label style={label}>Produto</label>
+              <select style={{ ...inp, width: 'auto' }} value={listaProduto} onChange={e => setListaProduto(e.target.value)}>
+                <option value="">Todos</option>
+                <option value="FC">FC (Formação Completa)</option>
+                <option value="ANL">ANL (Anúncios p/ Negócios Locais)</option>
               </select>
             </div>
             <div style={{ flex: 1, minWidth: 220 }}>
@@ -198,7 +209,7 @@ export default function Disparos() {
               <select style={inp} value={listaCidade} onChange={e => setListaCidade(e.target.value)}>
                 <option value="">Todas as cidades</option>
                 {cidades.map(c => {
-                  const n = listaCategoria === 'comprador' ? c.comprador : c.interessado
+                  const n = listaCategoria === 'comprador' ? c.comprador : listaCategoria === 'perdido' ? c.perdido : c.interessado
                   return <option key={c.cidade} value={c.cidade}>{c.cidade} ({n})</option>
                 })}
               </select>

@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
   const sp = req.nextUrl.searchParams
   const cidade = sp.get('cidade') || ''
   const categoria = sp.get('categoria') || ''
+  const produto = sp.get('produto') || ''
   const status = sp.get('status') || ''
   const q = (sp.get('q') || '').trim()
   const limit = Math.min(parseInt(sp.get('limit') || '300', 10) || 300, 20000)
@@ -20,6 +21,7 @@ export async function GET(req: NextRequest) {
     let query = supabase.from('wa_contatos').select('*').eq('org_id', org).order('criado_em', { ascending: false })
     if (cidade) query = query.eq('cidade', cidade)
     if (categoria) query = query.eq('categoria', categoria)
+    if (produto) query = query.eq('produto', produto)
     if (status) query = query.eq('status', status)
     if (q) query = query.or(`nome.ilike.%${q}%,telefone.ilike.%${q}%`)
     return query
@@ -41,14 +43,15 @@ export async function GET(req: NextRequest) {
     supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('org_id', org).eq('categoria', 'interessado'),
     supabase.from('wa_contatos').select('*', { count: 'exact', head: true }).eq('org_id', org).eq('categoria', 'comprador'),
   ])
-  const porCidade: Record<string, { interessado: number; comprador: number; total: number }> = {}
+  const porCidade: Record<string, { interessado: number; comprador: number; perdido: number; total: number }> = {}
   for (let from = 0; ; from += PAGINA) {
     const { data, error } = await supabase.from('wa_contatos').select('cidade,categoria').eq('org_id', org).range(from, from + PAGINA - 1)
     if (error || !data) break
     for (const r of data) {
       const cid = r.cidade || '(sem cidade)'
-      if (!porCidade[cid]) porCidade[cid] = { interessado: 0, comprador: 0, total: 0 }
+      if (!porCidade[cid]) porCidade[cid] = { interessado: 0, comprador: 0, perdido: 0, total: 0 }
       if (r.categoria === 'comprador') porCidade[cid].comprador++
+      else if (r.categoria === 'perdido') porCidade[cid].perdido++
       else porCidade[cid].interessado++
       porCidade[cid].total++
     }
