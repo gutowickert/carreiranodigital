@@ -35,6 +35,7 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
   const [nome, setNome] = useState(t.nome_meta || '')
   const [status, setStatus] = useState(t.status || 'rascunho')
   const [salvando, setSalvando] = useState(false)
+  const [enviando, setEnviando] = useState(false)
   const [msg, setMsg] = useState('')
   const mudou = corpo !== t.corpo || nome !== t.nome_meta || status !== t.status
   const prod = PROD[t.produto] || PROD.ambos
@@ -45,6 +46,16 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
     const r = await fetchAuth('/api/followup-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: t.id, corpo, nome_meta: nome, status }) }).then(r => r.json()).catch(() => null)
     setSalvando(false)
     if (r?.ok) { setMsg('salvo ✓'); onSalvo() } else setMsg('falha')
+  }
+
+  async function enviarMeta() {
+    if (mudou && !confirm('Você tem alterações não salvas. Enviar assim mesmo (sem salvar)?')) return
+    setEnviando(true); setMsg('')
+    const j = await fetchAuth('/api/wa-oficial/criar-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ids: [t.id] }) }).then(r => r.json()).catch(() => null)
+    setEnviando(false)
+    const res = j?.resultados?.[0]
+    if (j?.ok && res?.ok) { setMsg(res.jaExiste ? 'já estava no Meta ✓' : 'enviado ao Meta ✓'); onSalvo() }
+    else setMsg('falha: ' + (res?.erro || j?.error || '?'))
   }
 
   return (
@@ -65,6 +76,7 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
         {vars.length > 0 && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>variáveis: {vars.map((v: string) => <code key={v} style={{ background: 'var(--surface-2)', padding: '1px 5px', borderRadius: 4, marginRight: 4 }}>{`{{${v}}}`}</code>)}</span>}
         {msg && <span style={{ fontSize: 12, color: msg.includes('✓') ? 'var(--green)' : 'var(--red)' }}>{msg}</span>}
         <button onClick={salvar} disabled={!mudou || salvando} style={{ marginLeft: 'auto', background: mudou ? 'var(--accent)' : 'var(--surface-2)', color: mudou ? 'var(--on-accent)' : 'var(--text-faint)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: mudou ? 'pointer' : 'default' }}>{salvando ? 'Salvando…' : 'Salvar'}</button>
+        <button onClick={enviarMeta} disabled={enviando} title="Envia só este template ao Meta" style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: enviando ? 0.6 : 1 }}>{enviando ? 'Enviando…' : (status === 'rascunho' ? '🚀 Enviar ao Meta' : '↻ Reenviar')}</button>
       </div>
     </div>
   )
@@ -85,7 +97,7 @@ export default function FollowupTemplates() {
   useEffect(() => { carregar() }, [])
 
   async function submeterMeta() {
-    if (!confirm('Submeter todos os templates pendentes ao Meta agora? Eles vão pra aprovação.')) return
+    if (!confirm('Enviar ao Meta só os templates ainda não enviados (rascunho)? Os que já foram são pulados. Vão pra aprovação.')) return
     setSubmetendo(true); setResultado(null)
     const j = await fetchAuth('/api/wa-oficial/criar-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()).catch(() => null)
     setSubmetendo(false); setResultado(j)

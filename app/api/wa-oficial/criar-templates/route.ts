@@ -33,8 +33,12 @@ export async function POST(req: NextRequest) {
     const TOKEN = conta?.token || process.env.WA_OFICIAL_TOKEN || ''
     if (!WABA || !TOKEN) return NextResponse.json({ ok: false, error: 'Falta WABA/token oficial (conecte a coexistência ou configure o número de disparo).' }, { status: 200 })
 
-    // templates ainda não aprovados
-    const { data: temps } = await sb.from('followup_templates').select('*').eq('org_id', org).eq('ativo', true).neq('status', 'aprovado').order('ordem')
+    // ids explícitos (envio 1-a-1 / lote selecionado) ou, sem ids, só os rascunhos (não reenvia o que já foi)
+    const b = await req.json().catch(() => ({} as any))
+    const ids: string[] | null = Array.isArray(b?.ids) ? b.ids.filter(Boolean) : null
+    let q = sb.from('followup_templates').select('*').eq('org_id', org).eq('ativo', true)
+    q = (ids && ids.length) ? q.in('id', ids) : q.eq('status', 'rascunho')
+    const { data: temps } = await q.order('ordem')
     if (!temps?.length) return NextResponse.json({ ok: true, criados: 0, msg: 'Nenhum template pendente pra submeter.' })
 
     const resultados: any[] = []
@@ -56,7 +60,8 @@ export async function POST(req: NextRequest) {
       }).then(x => x.json()).catch(() => null)
 
       const ok = !!(r && r.id)
-      const jaExiste = !ok && /already exists|conflita|duplicate/i.test(JSON.stringify(r?.error || ''))
+      // "Já existe conteúdo em Portuguese (BR) para esse modelo" = já está no Meta → trata como sucesso
+      const jaExiste = !ok && /j[áa]\s*existe|already exists|conflita|duplicate/i.test(JSON.stringify(r?.error || ''))
       if (ok || jaExiste) {
         await sb.from('followup_templates').update({ status: 'submetido', atualizado_em: new Date().toISOString() }).eq('id', t.id)
       }
