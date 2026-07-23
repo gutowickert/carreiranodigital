@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
-import { aplicarRateio } from '@/lib/rateio'
-import { sendLead } from '@/lib/capi'
+import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
 import { enviarPush } from '@/lib/push'
 import { lidDoTelefone } from '@/lib/zapi'
 import { classificarTemperatura } from '@/lib/temperatura'
 import { transcreverAudioMsg } from '@/lib/transcrever-audio'
-import { randomUUID } from 'crypto'
 
 export async function POST(req: NextRequest) {
   try {
@@ -51,150 +49,11 @@ export async function POST(req: NextRequest) {
     }
 
     const sufixo = telefone.slice(-8)
-    const leadExistente = (ehLid || ehGrupo) ? null : (await supabase.from('leads').select('id, nome').ilike('whatsapp', `%${sufixo}%`).order('criado_em', { ascending: false }).limit(1)).data?.[0]
-    const aluno = (ehLid || ehGrupo) ? null : (await supabase.from('alunos').select('id, nome').ilike('whatsapp', `%${sufixo}%`).limit(1)).data?.[0]
-
-    // Lead via botão de WhatsApp: a 1ª mensagem traz o CÓDIGO DA TURMA (o mesmo
-    // do sistema). Se o número ainda não é lead nem aluno e a mensagem cita um
-    // código de turma conhecido, cria o lead completo (turma + rateio + CAPI).
-    let leadCriado: { id: string; nome: string | null } | null = null
-    if (!fromMe && !ehGrupo && !leadExistente && !aluno && texto) {
-      // conserta typo conhecido dos botões do site (novoGamburgo -> novoHamburgo)
-      const corrigeTypo = (s: string) => (s || '').replace(/novogamburgo/gi, 'novohamburgo')
-      const txtLower = corrigeTypo(texto.toLowerCase())
-      const { data: turmas } = await supabase.from('turmas').select('id, codigo').not('codigo', 'is', null)
-
-      // 1) Casa pelo `ref` (#A1B2C3D4) que o /wa colou na mensagem: é o clique
-      // EXATO desta pessoa, então a UTM/criativo vem certinho. Esse é o caminho
-      // bom. Se não houver ref (mensagem antiga ou botão direto pro wa.me), cai
-      // no fallback por turma mais embaixo.
-      const refMatch = texto.match(/#([0-9A-Fa-f]{8})\b/)
-      const ref = refMatch ? refMatch[1].toUpperCase() : null
-      let click = ref
-        ? (await supabase.from('wa_clicks')
-            .select('*').eq('ref', ref).is('consumido_em', null)
-            .order('criado_em', { ascending: false }).limit(1).maybeSingle()).data
-        : null
-
-      // A turma vem do clique (quando casou por ref) ou do código no texto.
-      const acharTurma = (cod?: string | null) =>
-        (turmas || []).find(t => t.codigo && cod && t.codigo.toLowerCase() === corrigeTypo(cod.toLowerCase()))
-      const turmaPorTexto = (turmas || []).find(t => t.codigo && t.codigo.length >= 4 && txtLower.includes(t.codigo.toLowerCase()))
-      const turmaMatch = (click ? acharTurma(click.codigo_turma) : null) || turmaPorTexto
-      if (turmaMatch) {
-        // Fallback (sem ref): pega o clique mais recente não-consumido da turma.
-        if (!click) {
-          const { data } = await supabase.from('wa_clicks')
-            .select('*').eq('codigo_turma', turmaMatch.codigo).is('consumido_em', null)
-            .order('criado_em', { ascending: false }).limit(1).maybeSingle()
-          click = data || null
-        }
-        const vendedorId = await aplicarRateio(supabase, turmaMatch.id)
-        const nomeLead = chatName || ev.senderName || null
-        const { data: novoLead } = await supabase.from('leads').insert({
-          nome: nomeLead || 'Lead WhatsApp',
-          whatsapp: telefone,
-          turma_id: turmaMatch.id,
-          codigo_turma: turmaMatch.codigo,
-          vendedor_id: vendedorId,
-          etapa: 'aguardando_atendimento',
-          origem: 'whatsapp', // a FONTE real (ig/fb/site) fica em utm_source; origem tem check constraint
-          fbclid: click?.fbclid ?? null,
-          fbc: click?.fbc ?? null,
-          fbp: click?.fbp ?? null,
-          utm_source: click?.utm_source ?? null,
-          utm_medium: click?.utm_medium ?? null,
-          utm_campaign: click?.utm_campaign ?? null,
-          utm_content: click?.utm_content ?? null,
-        }).select('id, nome').single()
-        if (novoLead) {
-          leadCriado = novoLead
-          await supabase.from('lead_andamentos').insert({
-            lead_id: novoLead.id,
-            vendedor_id: vendedorId,
-            tipo: 'criado',
-            etapa_nova: 'aguardando_atendimento',
-            observacao: 'Lead criado via botão de WhatsApp',
-          })
-          // 1ª tarefa do funil na chegada — SEGURADA até a equipe testar a cadência no simulador.
-          // (quando ligar: descomente o import e a linha; já lê o fluxo EDITÁVEL do Agente Interno)
-          // await gerarPrimeira(supabase, novoLead.id, 'aguardando_atendimento', novoLead.nome || 'Lead', vendedorId)
-          // CAPI Lead. Telefone só entra se não for @lid (senão o hash é lixo). Falha não quebra.
-          try {
-            const capi = await sendLead({
-              eventId: click?.event_id || randomUUID(),
-              eventSourceUrl: click?.event_source_url,
-              phone: ehLid ? null : telefone,
-              firstName: nomeLead,
-              fbc: click?.fbc,
-              fbp: click?.fbp,
-              clientIp: click?.client_ip,
-              userAgent: click?.user_agent,
-              externalId: novoLead.id,
-              codigoTurma: turmaMatch.codigo,
-            })
-            if (!capi.ok) console.error('CAPI Lead (WhatsApp) falhou:', capi.error)
-          } catch (e) { console.error('CAPI Lead (WhatsApp) exception:', e) }
-          if (click) {
-            await supabase.from('wa_clicks').update({
-              consumido_em: new Date().toISOString(),
-              lead_id: novoLead.id,
-            }).eq('id', click.id)
-          }
-        }
-      } else if (click) {
-        // Clique veio pelo /wa (site principal / link na bio do Insta) mas SEM turma —
-        // cria o lead com a ORIGEM certa (untagged; a IA descobre cidade/curso na conversa).
-        const nomeLead = chatName || ev.senderName || null
-        const { data: novoLead } = await supabase.from('leads').insert({
-          nome: nomeLead || 'Lead WhatsApp',
-          whatsapp: telefone,
-          etapa: 'aguardando_atendimento',
-          origem: 'whatsapp', // fonte real fica em utm_source
-          fbclid: click?.fbclid ?? null, fbc: click?.fbc ?? null, fbp: click?.fbp ?? null,
-          utm_source: click?.utm_source ?? null, utm_medium: click?.utm_medium ?? null,
-          utm_campaign: click?.utm_campaign ?? null, utm_content: click?.utm_content ?? null,
-        }).select('id, nome').single()
-        if (novoLead) {
-          leadCriado = novoLead
-          await supabase.from('lead_andamentos').insert({
-            lead_id: novoLead.id, tipo: 'criado', etapa_nova: 'aguardando_atendimento',
-            observacao: `Lead criado via site (${click.utm_source || 'site-principal'})${click.utm_content ? ' — ' + click.utm_content : ''}`,
-          })
-          await supabase.from('wa_clicks').update({ consumido_em: new Date().toISOString(), lead_id: novoLead.id }).eq('id', click.id)
-        }
-      }
-    }
-
-    const lead = leadCriado || leadExistente
-
-    // ATRIBUIÇÃO ROBUSTA: se a mensagem trouxe #ref (clique do /wa) e há um lead (novo OU já existente/recorrente),
-    // garante que o CLIQUE seja consumido e a atribuição (utm/fbc/turma) seja preenchida no que estiver faltando.
-    // Conserta o vazamento: lead recorrente que clica de novo no anúncio não perdia mais a atribuição.
-    if (lead && !fromMe && texto) {
-      const rf = texto.match(/#([0-9A-Fa-f]{8})\b/)
-      if (rf) {
-        const { data: clk } = await supabase.from('wa_clicks').select('*').eq('ref', rf[1].toUpperCase()).is('consumido_em', null).limit(1).maybeSingle()
-        if (clk) {
-          const { data: atual } = await supabase.from('leads').select('utm_source, utm_medium, utm_campaign, utm_content, fbc, fbp, fbclid, codigo_turma').eq('id', lead.id).maybeSingle()
-          const patch: any = {}
-          if (!atual?.utm_source && clk.utm_source) patch.utm_source = clk.utm_source
-          if (!atual?.utm_medium && clk.utm_medium) patch.utm_medium = clk.utm_medium
-          if (!atual?.utm_campaign && clk.utm_campaign) patch.utm_campaign = clk.utm_campaign
-          if (!atual?.utm_content && clk.utm_content) patch.utm_content = clk.utm_content
-          if (!atual?.fbc && clk.fbc) patch.fbc = clk.fbc
-          if (!atual?.fbp && clk.fbp) patch.fbp = clk.fbp
-          if (!atual?.fbclid && clk.fbclid) patch.fbclid = clk.fbclid
-          if (!atual?.codigo_turma && clk.codigo_turma) {
-            const cod = clk.codigo_turma.replace(/novogamburgo/gi, 'novohamburgo')
-            const { data: t } = await supabase.from('turmas').select('id, codigo').ilike('codigo', cod).maybeSingle()
-            if (t) { patch.codigo_turma = t.codigo; patch.turma_id = t.id }
-          }
-          if (Object.keys(patch).length) await supabase.from('leads').update(patch).eq('id', lead.id)
-          await supabase.from('wa_clicks').update({ consumido_em: new Date().toISOString(), lead_id: lead.id }).eq('id', clk.id)
-        }
-      }
-    }
+    // Cria/atribui o lead (lógica compartilhada com o webhook OFICIAL — ver lib/lead-do-wa.ts).
+    const nomeLead = chatName || ev.senderName || null
+    const { lead, aluno } = await criarOuAtribuirLeadDoWa(supabase, {
+      telefone, texto, nome: nomeLead, ehLid, ehGrupo, fromMe,
+    })
 
     let conversa: any = null
     let conversaCriada = false

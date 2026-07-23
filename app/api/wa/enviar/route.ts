@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTexto, enviarAudio, enviarImagem, enviarDocumento, foneZapi } from '@/lib/zapi'
+import { enviarTexto as enviarTextoOf, enviarMidia as enviarMidiaOf, uploadMidia as uploadMidiaOf, foneOficial } from '@/lib/whatsapp-oficial'
 
 // ─────────────────────────────────────────────────────────────────────────
 // GUARDRAIL ANTI-BLOQUEIO (número Z-API não-oficial, usado no aparelho p/ ligar)
@@ -52,6 +53,52 @@ export async function POST(req: NextRequest) {
     fone = foneZapi(fone)
     if (!fone && !chatLid) return NextResponse.json({ ok: false, error: 'telefone invalido' }, { status: 400 })
     if (!texto && !audioBase64 && !anexoBase64) return NextResponse.json({ ok: false, error: 'nada pra enviar' }, { status: 400 })
+
+    // ─── ROTEAMENTO DE CANAL ───
+    // Detecta a conversa ATIVA do lead (a mais recente, qualquer canal). Se for do
+    // canal OFICIAL (número novo / Cloud API), responde por lá — livre dentro das 24h,
+    // sem passar pelo guardrail do Z-API. Caso contrário, segue no Z-API abaixo.
+    let convAtiva: any = null
+    if (leadId) {
+      const { data } = await supabase.from('wa_conversas').select('*').eq('org_id', org).eq('lead_id', leadId).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
+      if (data && data[0]) convAtiva = data[0]
+    }
+    if (!convAtiva && fone) {
+      const foneOf = foneOficial(fone)
+      const { data } = await supabase.from('wa_conversas').select('*').eq('org_id', org).in('telefone', [fone, foneOf]).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1)
+      if (data && data[0]) convAtiva = data[0]
+    }
+
+    if (convAtiva?.canal === 'oficial') {
+      const to = convAtiva.telefone || foneOficial(fone)
+      let ro: { ok: boolean; wamid?: string | null; error?: string }
+      let tipoMsg = 'texto'
+      let midiaMime: string | null = null
+      const dataUrl: string | null = audioBase64 || anexoBase64 || null
+      if (dataUrl) {
+        const mm = dataUrl.match(/^data:([^;]+);base64,(.+)$/)
+        if (!mm) return NextResponse.json({ ok: false, error: 'mídia inválida' }, { status: 200 })
+        midiaMime = mm[1]
+        const buffer = Buffer.from(mm[2], 'base64')
+        const ehAudio = !!audioBase64
+        const tipoEnvio = ehAudio ? 'audio' : (anexoTipo === 'imagem' ? 'image' : 'document')
+        const up = await uploadMidiaOf(buffer, midiaMime, anexoNome || (ehAudio ? 'audio.ogg' : 'arquivo'))
+        if (!up.ok || !up.id) return NextResponse.json({ ok: false, error: 'falha no upload: ' + up.error }, { status: 200 })
+        ro = await enviarMidiaOf(to, tipoEnvio, up.id, texto?.trim() || undefined, anexoNome)
+        tipoMsg = ehAudio ? 'audio' : (anexoTipo === 'imagem' ? 'imagem' : 'documento')
+      } else {
+        ro = await enviarTextoOf(to, (texto || '').trim())
+      }
+      if (!ro.ok) return NextResponse.json({ ok: false, error: ro.error || 'falha ao enviar', foraJanela: /131047|24|re-?engage|template/i.test(ro.error || '') }, { status: 200 })
+      await supabase.from('wa_mensagens').insert({
+        org_id: org, conversa_id: convAtiva.id, zapi_id: ro.wamid || null, direcao: 'enviada',
+        tipo: tipoMsg, texto: tipoMsg === 'documento' ? (anexoNome || null) : (texto?.trim() || null),
+        midia_url: dataUrl, midia_mime: midiaMime, status: 'enviada', canal: 'oficial', enviado_por: enviadoPor || null,
+      })
+      const resumoOf = tipoMsg === 'imagem' ? '📷 Imagem' : tipoMsg === 'documento' ? `📎 ${anexoNome || 'documento'}` : tipoMsg === 'audio' ? '🎤 Áudio' : (texto || '').trim()
+      await supabase.from('wa_conversas').update({ ultima_msg: (resumoOf || '').slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', convAtiva.id)
+      return NextResponse.json({ ok: true, conversaId: convAtiva.id, canal: 'oficial' })
+    }
 
     // GUARDRAIL: acha a conversa existente (só leitura, sem criar) e checa os limites de alcance.
     let convGuard: string | null = null

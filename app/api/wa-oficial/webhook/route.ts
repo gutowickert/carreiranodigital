@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { foneOficial } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
+import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -48,11 +49,12 @@ async function registrarRecebida(m: any, value: any) {
     if (ja && ja.length) return
   }
 
-  // vincula ao lead pelo telefone (sufixo de 8 dígitos resolve o 9º dígito do BR),
-  // pra a resposta aparecer no CARD DO CRM e não só na caixa de Disparos.
-  const sufLead = tel.slice(-8)
-  const { data: leadMatch } = await supabase.from('leads').select('id')
-    .ilike('whatsapp', `%${sufLead}%`).order('criado_em', { ascending: false }).limit(1).maybeSingle()
+  // CRIA o lead (chegada pelo botão do site: 1ª msg traz #ref → UTM/turma/rateio/CAPI) OU
+  // vincula ao lead existente pelo telefone. Mesma lógica do webhook Z-API (lib/lead-do-wa.ts).
+  // Resposta de disparo FRIO (sem #ref/turma no texto) NÃO vira lead — só marca "respondeu".
+  const { lead: leadMatch } = await criarOuAtribuirLeadDoWa(supabase, {
+    telefone: tel, texto, nome, ehLid: false, ehGrupo: false, fromMe: false,
+  })
 
   // acha/cria a conversa do canal oficial
   let { data: conv } = await supabase.from('wa_conversas').select('*').eq('telefone', tel).eq('canal', 'oficial').maybeSingle()
@@ -75,8 +77,10 @@ async function registrarRecebida(m: any, value: any) {
     nao_lidas: (conv.nao_lidas || 0) + 1, nome: conv.nome || nome || null,
   }).eq('id', conv.id)
 
-  // push no celular (caixa de disparos é separada da principal)
-  await enviarPush('Nova resposta (Disparos) 💬', `${conv.nome || nome || tel}: ${resumo}`.slice(0, 120), '/dashboard/whatsapp-disparos')
+  // push no celular: se é um LEAD (chegada de site ou lead existente), joga pro inbox principal;
+  // se é resposta de disparo frio (sem lead), mantém na caixa de Disparos.
+  if (leadMatch) await enviarPush('Nova mensagem 💬', `${conv.nome || nome || tel}: ${resumo}`.slice(0, 120), '/dashboard/whatsapp')
+  else await enviarPush('Nova resposta (Disparos) 💬', `${conv.nome || nome || tel}: ${resumo}`.slice(0, 120), '/dashboard/whatsapp-disparos')
 
   // funil: "SAIR" => opt-out; qualquer outra resposta => respondeu.
   // Casa por sufixo (8 últimos dígitos) pra resolver o 9º dígito do BR.

@@ -5,6 +5,9 @@ import { randomBytes, randomUUID } from 'crypto'
 // Numero central do WhatsApp (o conectado no Z-API), so digitos com DDI.
 // Ex: 5511999999999. Configure em .env.local / Vercel.
 const WA_NUMERO = (process.env.WA_NUMERO_CENTRAL || '').replace(/\D/g, '')
+// Numero OFICIAL (Cloud API / disparo). Usado no TESTE da migração: /wa?...&num=novo
+// redireciona pra ELE em vez do central, sem afetar os leads reais. Digitos com DDI.
+const WA_NUMERO_NOVO = (process.env.WA_OFICIAL_NUMERO || '').replace(/\D/g, '')
 
 // Gera um codigo curto pra identificar o clique na mensagem do WhatsApp.
 function gerarRef(): string {
@@ -93,7 +96,9 @@ export async function GET(req: NextRequest) {
     if (codigoTurma && !jaTemCodigo) partes.push(`(${codigoTurma})`)
     partes.push(`#${ref}`)
     const texto = partes.join(' ')
-    const url = `https://wa.me/${WA_NUMERO}?text=${encodeURIComponent(texto)}`
+    // TESTE da migração: ?num=novo manda pro número OFICIAL (se configurado), sem afetar leads reais.
+    const destino = (sp.get('num') === 'novo' && WA_NUMERO_NOVO) ? WA_NUMERO_NOVO : WA_NUMERO
+    const url = `https://wa.me/${destino}?text=${encodeURIComponent(texto)}`
 
     return NextResponse.redirect(url, 302)
   } catch (e: any) {
