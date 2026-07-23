@@ -261,22 +261,11 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
   async function criarLead() {
     setCriandoLead(true); setErro('')
     try {
-      // Se esse número já recebeu um disparo, a origem do lead é 'disparo'
-      // (e não 'whatsapp') — é assim que o lead aparece como disparo na Captação.
-      const sufixo = (conversa.telefone || '').replace(/\D/g, '').slice(-8)
-      let origem = 'whatsapp'
-      if (sufixo) {
-        const { data: env } = await supabase.from('wa_disparo_envios').select('id').ilike('telefone', `%${sufixo}`).limit(1).maybeSingle()
-        if (env) origem = 'disparo'
-      }
-      const { data: novo, error } = await supabase.from('leads').insert({
-        nome: conversa.nome || conversa.telefone, whatsapp: conversa.telefone,
-        etapa: 'aguardando_atendimento', origem,
-      }).select('id').single()
-      if (error || !novo) { setErro('Erro ao criar lead'); return }
-      await supabase.from('wa_conversas').update({ lead_id: novo.id }).eq('id', conversa.id)
-      onConversaChange({ ...conversa, lead_id: novo.id }); onEnviou()
-      router.push(`/dashboard/crm?lead=${novo.id}`)
+      // cria/vincula no servidor (service_role) — evita o "Erro ao criar lead" por RLS/sessão
+      const j = await fetchAuth('/api/lead/criar-do-disparo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ conversaId: conversa.id }) }).then(r => r.json()).catch(() => null)
+      if (!j?.ok || !j.leadId) { setErro(j?.error || 'Erro ao criar lead'); return }
+      onConversaChange({ ...conversa, lead_id: j.leadId }); onEnviou()
+      router.push(`/dashboard/crm?lead=${j.leadId}`)
     } catch (e: any) { setErro((e && e.message) || 'erro ao criar lead') }
     finally { setCriandoLead(false) }
   }
