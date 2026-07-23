@@ -45,6 +45,7 @@ const grupos: Grupo[] = [
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'WhatsApp Disparos', href: '/dashboard/whatsapp-disparos' },
+      { nome: 'Recuperar Histórico', href: '/dashboard/recuperar-historico' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },

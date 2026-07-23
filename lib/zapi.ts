@@ -66,6 +66,11 @@ export async function listarChats(page = 1, pageSize = 100) {
   return get(`/chats?page=${page}&pageSize=${pageSize}`)
 }
 
+// Busca as últimas N mensagens de um chat (recuperar histórico do aparelho após reconectar)
+export async function buscarMensagens(phone: string, amount = 50) {
+  return get(`/chat-messages/${encodeURIComponent(phone)}?amount=${amount}`)
+}
+
 // Marca um chat como lido no WhatsApp (some o não-lida no celular)
 export async function marcarChatLido(phone: string) {
   return post('/chats/read', { phone, action: 'read' })
