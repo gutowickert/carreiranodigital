@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { foneOficial } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
 import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
+import { classificarTemperatura } from '@/lib/temperatura'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -94,6 +95,21 @@ async function registrarRecebida(m: any, value: any) {
     // atribui a resposta à campanha de disparo mais recente desse número
     const { data: ult } = await supabase.from('wa_disparo_envios').select('id').ilike('telefone', `%${sufixo}`).is('respondeu_em', null).order('enviado_em', { ascending: false }).limit(1).maybeSingle()
     if (ult) await supabase.from('wa_disparo_envios').update({ respondeu_em: agora }).eq('id', ult.id)
+  }
+
+  // LEAD respondeu no canal oficial: pausa follow-ups automáticos + classifica temperatura.
+  // Mesma automação do webhook Z-API — pro atendimento no número novo funcionar igual (o lead vira
+  // "quente" no Atender e o humano/IA assume; não manda follow-up redundante).
+  if (leadMatch?.id) {
+    try {
+      const { data: pend } = await supabase.from('tarefas_lead').select('id').eq('lead_id', leadMatch.id).eq('concluida', false).eq('cancelada', false)
+      if (pend && pend.length) {
+        const ag = new Date().toISOString()
+        await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: ag, atualizado_em: ag }).eq('lead_id', leadMatch.id).eq('concluida', false).eq('cancelada', false)
+        await supabase.from('lead_andamentos').insert({ lead_id: leadMatch.id, tipo: 'mudanca_etapa', observacao: `🤖 Cliente respondeu — ${pend.length} follow-up(s) automático(s) pausado(s); atendimento assumido.` })
+      }
+    } catch { /* não quebra o webhook */ }
+    try { await classificarTemperatura(leadMatch.id, conv.id) } catch { /* não quebra */ }
   }
 }
 
