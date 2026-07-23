@@ -63,6 +63,8 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
 export default function FollowupTemplates() {
   const [templates, setTemplates] = useState<any[]>([])
   const [carregando, setCarregando] = useState(true)
+  const [submetendo, setSubmetendo] = useState(false)
+  const [resultado, setResultado] = useState<any>(null)
 
   async function carregar() {
     setCarregando(true)
@@ -72,10 +74,30 @@ export default function FollowupTemplates() {
   }
   useEffect(() => { carregar() }, [])
 
+  async function submeterMeta() {
+    if (!confirm('Submeter todos os templates pendentes ao Meta agora? Eles vão pra aprovação.')) return
+    setSubmetendo(true); setResultado(null)
+    const j = await fetchAuth('/api/wa-oficial/criar-templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' }).then(r => r.json()).catch(() => null)
+    setSubmetendo(false); setResultado(j)
+    carregar()
+  }
+
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📝 Templates de Follow-up</h1>
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>As mensagens de reabertura da cadência do CRM, na WhatsApp API oficial. Edite aqui, depois submeta ao Meta pra aprovação.</p>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
+        <div>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📝 Templates de Follow-up</h1>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>As mensagens de reabertura da cadência do CRM, na WhatsApp API oficial. Edite aqui e submeta ao Meta com 1 clique.</p>
+        </div>
+        <button onClick={submeterMeta} disabled={submetendo} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: submetendo ? 0.6 : 1 }}>{submetendo ? 'Submetendo…' : '🚀 Criar todos no Meta'}</button>
+      </div>
+      {resultado && (
+        <div style={{ ...card, padding: 12, marginTop: 12 }}>
+          {resultado.ok
+            ? <div style={{ fontSize: 13, color: 'var(--text-2)' }}>✅ {resultado.criados}/{resultado.total} enviados ao Meta.{(resultado.resultados || []).filter((r: any) => !r.ok).length > 0 && <span style={{ color: 'var(--red)' }}> Falhas: {(resultado.resultados || []).filter((r: any) => !r.ok).map((r: any) => `${r.nome} (${r.erro})`).join('; ')}</span>}</div>
+            : <div style={{ fontSize: 13, color: 'var(--red)' }}>Falha: {resultado.error || '?'}</div>}
+        </div>
+      )}
 
       <div style={{ ...card, padding: 14, marginTop: 16, background: 'var(--blue-bg)', border: '1px solid var(--blue)' }}>
         <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.6 }}>
