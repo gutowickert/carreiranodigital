@@ -31,6 +31,25 @@ function parseMsg(m: any) {
   return { zapiId, fromMe, mo, tipo, texto, midiaUrl, midiaMime }
 }
 
+// DIAGNÓSTICO: abre no navegador /api/wa/sincronizar-historico pra ver o formato REAL da Z-API.
+export async function GET() {
+  const rc = await listarChats(1, 5)
+  const chatsRaw: any[] = Array.isArray(rc.data) ? rc.data : (rc.data?.chats || rc.data?.data || [])
+  const c0 = chatsRaw[0] || null
+  let mensagens: any = { pulado: 'sem chat pra testar' }
+  if (c0) {
+    const phone = ((c0.phone || c0.id || '') as string).replace(/\D/g, '')
+    const rm = await buscarMensagens(phone, 5)
+    const arr: any[] = Array.isArray(rm.data) ? rm.data : (rm.data?.messages || rm.data?.data || [])
+    mensagens = { ok: rm.ok, error: rm.error, phoneTestado: phone, tipoResp: Array.isArray(rm.data) ? 'array' : typeof rm.data, chavesTopo: (rm.data && !Array.isArray(rm.data)) ? Object.keys(rm.data) : null, count: arr.length, amostra: arr[0] || null }
+  }
+  return NextResponse.json({
+    agora: Date.now(),
+    chats: { ok: rc.ok, error: rc.error, tipoResp: Array.isArray(rc.data) ? 'array' : typeof rc.data, chavesTopo: (rc.data && !Array.isArray(rc.data)) ? Object.keys(rc.data) : null, count: chatsRaw.length, amostra: c0 },
+    mensagens,
+  })
+}
+
 export async function POST(req: NextRequest) {
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
