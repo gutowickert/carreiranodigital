@@ -177,6 +177,17 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const [sugerindo, setSugerindo] = useState(false)
   const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
   const [sugeridoOrig, setSugeridoOrig] = useState('')
+  const [foraJanela, setForaJanela] = useState(false)
+  const [reabrindo, setReabrindo] = useState(false)
+
+  async function reabrirTemplate() {
+    setReabrindo(true); setErro('')
+    try {
+      const r = await fetchAuth('/api/wa-oficial/enviar-template', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, conversaId: conversa.id }) }).then(r => r.json())
+      if (r.ok) { setForaJanela(false); carregar() } else setErro(r.error || 'falha ao enviar template')
+    } catch (e: any) { setErro((e && e.message) || 'erro ao reabrir') }
+    finally { setReabrindo(false) }
+  }
   const [showEmoji, setShowEmoji] = useState(false)
   const [criandoLead, setCriandoLead] = useState(false)
   const [editInfo, setEditInfo] = useState(false)
@@ -235,7 +246,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
 
   async function enviarTexto() {
     if (!texto.trim()) return
-    setEnviando(true); setErro('')
+    setEnviando(true); setErro(''); setForaJanela(false)
     try {
       const res = await fetchAuth('/api/wa/enviar', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -247,7 +258,7 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
         if (sugeridoOrig) { fetchAuth('/api/ia/edicao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, original: sugeridoOrig, enviado: texto, tela: 'whatsapp' }) }).catch(() => { }); setSugeridoOrig('') }
         setTexto(''); carregar(); onEnviou()
       }
-      else setErro(json.error || 'falha ao enviar')
+      else { setErro(json.error || 'falha ao enviar'); if (json.foraJanela) setForaJanela(true) }
     } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
     finally { setEnviando(false) }
   }
@@ -420,6 +431,12 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
           {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
           {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
           <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
+        </div>
+      )}
+      {foraJanela && (
+        <div style={{ margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8, background: 'var(--amber-bg)', border: '1px solid var(--amber)', fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+          ⏳ <b>Passou de 24h</b> sem resposta do cliente — o WhatsApp bloqueia mensagem livre. Reabra com um <b>template aprovado</b>; quando ele responder, o campo livre volta (e o ✨ personaliza).
+          <button onClick={reabrirTemplate} disabled={reabrindo} style={{ display: 'block', marginTop: 8, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: reabrindo ? 0.6 : 1 }}>{reabrindo ? 'Reabrindo…' : '📨 Reabrir com template'}</button>
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)', alignItems: 'flex-end' }}>
