@@ -428,8 +428,8 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
-        <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
-          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : '✨'}</button>
+        <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta com a IA (Copiloto)"
+          style={{ ...btnPrimary, background: 'rgba(167,139,250,.16)', border: '1px solid #a78bfa', color: '#a78bfa', fontWeight: 700, padding: '8px 14px', whiteSpace: 'nowrap' }}>{sugerindo ? '… gerando' : '✨ Sugerir'}</button>
         <div style={{ position: 'relative' }}>
           {showEmoji && (
             <div style={{ position: 'absolute', bottom: '110%', left: 0, zIndex: 30, width: 268, maxHeight: 180, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 8, boxShadow: 'var(--shadow)', display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2 }}>
