@@ -130,8 +130,7 @@ export async function POST(req: NextRequest) {
       }
       falhasSeguidas = 0; enviados++
 
-      // atribui vendedor (Mateus) se ainda não tem
-      if (!l.vendedor_id) await sb.from('leads').update({ vendedor_id: MATEUS_ID, atualizado_em: new Date().toISOString() }).eq('id', l.id)
+      // (não atribui vendedor/dono — a equipe não usa atribuição por vendedor)
 
       // conversa do canal oficial vinculada ao lead
       let conv: any = null
@@ -152,7 +151,7 @@ export async function POST(req: NextRequest) {
       if (!pend) {
         const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
         await sb.from('tarefas_lead').insert({
-          lead_id: l.id, vendedor_id: MATEUS_ID, tipo: 'seguir_followup',
+          lead_id: l.id, vendedor_id: null, tipo: 'seguir_followup',
           titulo: `Retomar (migração de número) — ${l.nome || 'lead'}`,
           descricao: 'Avisamos a mudança de número. Se responder, a conversa abre no card; se não, retomar por aqui.',
           data_vencimento: amanha.toISOString(),
@@ -161,7 +160,7 @@ export async function POST(req: NextRequest) {
 
       // marca migrado (idempotência)
       await sb.from('lead_andamentos').insert({
-        lead_id: l.id, vendedor_id: MATEUS_ID, tipo: 'migracao_num',
+        lead_id: l.id, vendedor_id: null, tipo: 'migracao_num',
         observacao: `Migração de número: enviado ${template} (${v.curso}, ${v.cidade})`,
       })
     }

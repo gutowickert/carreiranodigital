@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
       }
       falhasSeguidas = 0; enviados++
 
-      if (!l.vendedor_id) await sb.from('leads').update({ vendedor_id: MATEUS_ID, atualizado_em: new Date().toISOString() }).eq('id', l.id)
+      // (não atribui vendedor/dono — a equipe não usa atribuição por vendedor)
       // conversa oficial + mensagem
       let conv: any = null
       const byLead = await sb.from('wa_conversas').select('id').eq('org_id', org).eq('lead_id', l.id).eq('canal', 'oficial').limit(1).maybeSingle()
@@ -127,9 +127,9 @@ export async function POST(req: NextRequest) {
       const { data: pend } = await sb.from('tarefas_lead').select('id').eq('lead_id', l.id).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
       if (!pend) {
         const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
-        await sb.from('tarefas_lead').insert({ lead_id: l.id, vendedor_id: MATEUS_ID, tipo: 'seguir_followup', titulo: `Retomar (próxima turma) — ${l.nome || 'lead'}`, descricao: 'Avisamos da mudança de número + próxima turma da cidade. Se responder, conversa abre no card.', data_vencimento: amanha.toISOString() })
+        await sb.from('tarefas_lead').insert({ lead_id: l.id, vendedor_id: null, tipo: 'seguir_followup', titulo: `Retomar (próxima turma) — ${l.nome || 'lead'}`, descricao: 'Avisamos da mudança de número + próxima turma da cidade. Se responder, conversa abre no card.', data_vencimento: amanha.toISOString() })
       }
-      await sb.from('lead_andamentos').insert({ lead_id: l.id, vendedor_id: MATEUS_ID, tipo: 'migracao_num', observacao: `Migração (próxima turma): ${templateNome}${datasStr ? ' — ' + datasStr : ''} (${v.cidade})` })
+      await sb.from('lead_andamentos').insert({ lead_id: l.id, vendedor_id: null, tipo: 'migracao_num', observacao: `Migração (próxima turma): ${templateNome}${datasStr ? ' — ' + datasStr : ''} (${v.cidade})` })
     }
 
     const restantes = pendentes.length - (dryRun ? 0 : (enviados + falhas))
