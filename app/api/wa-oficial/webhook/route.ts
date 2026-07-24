@@ -146,6 +146,9 @@ export async function POST(req: NextRequest) {
           const patch: any = { status: novo, atualizado_em: new Date().toISOString() }
           if (erro) patch.erro = erro
           await supabase.from('wa_disparo_envios').update(patch).eq('wamid', wamid)
+          // TAMBÉM atualiza a mensagem de ATENDIMENTO (card): assim entregue/lido/FALHOU fica visível,
+          // e o time enxerga quando uma mensagem NÃO foi entregue (ex.: fora da janela de 24h).
+          await supabase.from('wa_mensagens').update({ status: novo }).eq('zapi_id', wamid)
         }
       }
     }

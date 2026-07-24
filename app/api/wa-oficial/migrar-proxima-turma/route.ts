@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
+import { nomeSaudacao, datasCurtas } from '@/lib/saudacao'
 
 export const maxDuration = 60
 
@@ -18,9 +19,6 @@ const TPL_REABRIR = 'cnd_mudanca_atendimento'
 
 const digs = (s: string) => (s || '').replace(/\D/g, '')
 const numeroOk = (w: string) => { const d = digs(w); return d.length >= 10 && d.length <= 13 }
-const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
-const generico = (n: string | null) => !n || n.trim().length < 2 || /lead|whatsapp|contato|cliente/i.test(n) || /^\d/.test((n || '').trim())
-const primeiroNome = (n: string | null) => generico(n) ? 'tudo bem' : cap((n || '').trim().split(/\s+/)[0].toLowerCase())
 const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
 const cursoNome = (fam: string) => fam === 'FC' ? 'Formação Completa em Marketing Digital' : fam === 'ANL' ? 'Anúncios para Negócios Locais' : 'nossos cursos'
 const norm = (s: string) => (s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').trim()
@@ -89,11 +87,11 @@ export async function POST(req: NextRequest) {
       const prox = cidade ? proxNaCidade(cidade, fam) : null
       const datasArr = prox ? (datasPorTurma[prox.id] || []) : []
       const temDatas = !!prox && datasArr.length > 0
-      const datasStr = datasArr.length > 2 ? `${datasArr.slice(0, -1).join(', ')} e ${datasArr[datasArr.length - 1]}` : datasArr.join(' e ')
+      const datasStr = datasCurtas(datasArr)
 
       const templateNome = temDatas ? TPL_DATAS : TPL_REABRIR
       const v: Record<string, string> = {
-        nome: primeiroNome(l.nome), vendedor: VENDEDOR_NOME,
+        nome: nomeSaudacao(l.nome), vendedor: VENDEDOR_NOME,
         curso: cursoNome(fam) === 'nossos cursos' && prox ? ((prox as any).produtos?.nome || 'nossos cursos') : cursoNome(fam),
         cidade: cidade || 'sua região', datas: datasStr,
       }

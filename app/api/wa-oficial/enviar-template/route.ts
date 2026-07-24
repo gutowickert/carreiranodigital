@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
+import { nomeSaudacao } from '@/lib/saudacao'
 
 // Envia um TEMPLATE aprovado pra REABRIR uma conversa fria (>24h) pelo número oficial.
 // Escolhe o template pela ETAPA do lead (os cnd_mudanca_* de migração = "mudamos de número, me
@@ -16,9 +17,6 @@ const TEMPLATE_POR_ETAPA: Record<string, string> = {
   aguardando_pagamento: 'cnd_mudanca_pagamento',
   oferecer_bolsa: 'cnd_mudanca_bolsa',
 }
-const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
-const generico = (n: string | null) => !n || n.trim().length < 2 || /lead|whatsapp|contato|cliente/i.test(n) || /^\d/.test((n || '').trim())
-const primeiroNome = (n: string | null) => generico(n) ? 'tudo bem' : cap((n || '').trim().split(/\s+/)[0].toLowerCase())
 const cursoDe = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'Formação Completa em Marketing Digital' : x.startsWith('anl') ? 'Anúncios para Negócios Locais' : 'nossos cursos' }
 
 export async function POST(req: NextRequest) {
@@ -54,7 +52,7 @@ export async function POST(req: NextRequest) {
     if (lead.turma_id) { const { data: t } = await sb.from('turmas').select('cidades(nome)').eq('id', lead.turma_id).maybeSingle(); if ((t as any)?.cidades?.nome) cidade = (t as any).cidades.nome }
 
     const valores: Record<string, string> = {
-      nome: primeiroNome(lead.nome), vendedor: vendedorNome,
+      nome: nomeSaudacao(lead.nome), vendedor: vendedorNome,
       curso: cursoDe(lead.codigo_turma), cidade,
       prazo: 'esta semana', preco: '', condicao: '',
     }
