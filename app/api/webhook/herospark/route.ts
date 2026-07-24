@@ -115,13 +115,49 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 2.5) Acha o LEAD existente ANTES de tudo (a maioria dos compradores JÁ é lead do funil).
+    // Casa por telefone (últimos 8 díg) e depois email. Serve pra (a) usar a TURMA do lead como
+    // fallback quando o nome do produto não traz o código, e (b) mover o lead pra ganho depois.
+    let leadEncontrado: any = null
+    if (buyerPhone) {
+      const suf8 = buyerPhone.toString().replace(/\D/g, '').slice(-8)
+      if (suf8.length >= 8) {
+        const { data } = await supabase.from('leads').select('id, vendedor_id, etapa, nome, fbc, fbp, turma_id, codigo_turma')
+          .ilike('whatsapp', `%${suf8}`).not('etapa', 'in', '(perda)').order('criado_em', { ascending: false }).limit(1).maybeSingle()
+        if (data) leadEncontrado = data
+      }
+    }
+    if (!leadEncontrado && buyerEmail) {
+      const { data } = await supabase.from('leads').select('id, vendedor_id, etapa, nome, fbc, fbp, turma_id, codigo_turma')
+        .eq('email', buyerEmail).not('etapa', 'in', '(perda)').order('criado_em', { ascending: false }).limit(1).maybeSingle()
+      if (data) leadEncontrado = data
+    }
+
+    // FALLBACK de turma: nome do produto sem código → usa a turma que o LEAD já tinha do funil.
+    if (!turmaId && leadEncontrado?.turma_id) {
+      turmaId = leadEncontrado.turma_id
+      turmaCodigo = leadEncontrado.codigo_turma || null
+      if (!turmaCodigo) { const { data: t } = await supabase.from('turmas').select('codigo').eq('id', turmaId).maybeSingle(); turmaCodigo = t?.codigo || null }
+    }
+
+    // AINDA sem turma: NÃO perde a venda. Registra o ganho no lead (achado OU novo) + Purchase no Meta.
+    // Matrícula e financeiro ficam pendentes de ATRIBUIR TURMA manualmente (o produto não tem código).
     if (!turmaId) {
-      await supabase.from('webhook_logs').update({
-        status: 'ignorado',
-        erro: `Nenhuma turma com código encontrado no nome do produto: "${productName}"`,
-        processado_em: new Date().toISOString()
-      }).eq('id', logId!)
-      return NextResponse.json({ warn: 'Nenhuma turma identificada pelo código no nome do produto' }, { status: 200 })
+      const valor = amount > 0 ? amount : 0
+      const agoraISO = new Date().toISOString()
+      let leadId: string | null = leadEncontrado?.id || null
+      if (leadId && leadEncontrado.etapa !== 'ganho') {
+        await supabase.from('leads').update({ etapa: 'ganho', data_ganho: agoraISO, valor_venda: valor, matricula_id: null, motivo_ganho: `HeroSpark: ${productName} — ATRIBUIR TURMA`, atualizado_em: agoraISO }).eq('id', leadId)
+        await supabase.from('lead_andamentos').insert({ lead_id: leadId, vendedor_id: leadEncontrado.vendedor_id, tipo: 'webhook_convertido', etapa_anterior: leadEncontrado.etapa, etapa_nova: 'ganho', observacao: `Convertido via HeroSpark — R$ ${valor.toFixed(2)} (turma a atribuir: "${productName}")` })
+      } else if (!leadId) {
+        const { data: novoLead } = await supabase.from('leads').insert({ nome: buyerName || 'Comprador HeroSpark', whatsapp: (buyerPhone || '').toString().replace(/\D/g, '') || null, email: buyerEmail || null, origem: 'whatsapp', etapa: 'ganho', data_ganho: agoraISO, valor_venda: valor, motivo_ganho: `HeroSpark: ${productName} — lead criado no ganho, ATRIBUIR TURMA` }).select('id').single()
+        leadId = novoLead?.id || null
+      }
+      try {
+        await sendPurchase({ eventId: `hs-${alunoId}-${productId || 'x'}`, value: valor, currency: 'BRL', email: buyerEmail, phone: buyerPhone, firstName: buyerName, fbc: leadEncontrado?.fbc || null, fbp: leadEncontrado?.fbp || null, externalId: leadId || alunoId })
+      } catch (e) { console.error('[webhook] CAPI (sem turma) exception:', e) }
+      await supabase.from('webhook_logs').update({ status: 'processado', matricula_id: null, erro: `Sem código de turma no produto ("${productName}") — venda registrada no lead ${leadEncontrado ? '(existente)' : '(NOVO)'} + Purchase enviado. ATRIBUIR TURMA e lançar financeiro manualmente.`, processado_em: agoraISO }).eq('id', logId!)
+      return NextResponse.json({ ok: true, semTurma: true, lead_id: leadId }, { status: 200 })
     }
 
     // 3) Busca caixa HeroSpark
@@ -155,34 +191,7 @@ export async function POST(req: NextRequest) {
       matricula = novaMat
     }
 
-    // 4.5) Procura lead correspondente por whatsapp ou email — se achar, vincula
-    let leadEncontrado: any = null
-    if (buyerPhone) {
-      const phoneNumeros = buyerPhone.toString().replace(/\D/g, '')
-      // Casa pelos ÚLTIMOS 8 dígitos — tolera diferenças de 55/DDD/9 do celular
-      const suf8 = phoneNumeros.slice(-8)
-      if (suf8.length >= 8) {
-        const { data: leadPorPhone } = await supabase.from('leads')
-          .select('id, vendedor_id, etapa, nome, fbc, fbp')
-          .ilike('whatsapp', `%${suf8}`)
-          .not('etapa', 'in', '(perda)')
-          .order('criado_em', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        if (leadPorPhone) leadEncontrado = leadPorPhone
-      }
-    }
-    if (!leadEncontrado && buyerEmail) {
-      const { data: leadPorEmail } = await supabase.from('leads')
-        .select('id, vendedor_id, etapa, nome, fbc, fbp')
-        .eq('email', buyerEmail)
-        .not('etapa', 'in', '(perda)')
-        .order('criado_em', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-      if (leadPorEmail) leadEncontrado = leadPorEmail
-    }
-
+    // 4.5) Vincula o LEAD (já encontrado em 2.5, por telefone/email) à matrícula e move pra ganho.
     if (leadEncontrado && leadEncontrado.etapa !== 'ganho') {
       // Vincula matrícula ao lead + ao vendedor do lead (pra gerar comissão automática)
       await supabase.from('matriculas').update({
