@@ -41,7 +41,7 @@ Ex.: R$ 20 → R$ 190 mil (imóvel); R$ 40 → R$ 12 mil (loja de celular); R$ 8
 # CONDIÇÕES E OFERTAS (siga à risca — NUNCA invente valores ou descontos)
 ## ANL (Anúncios para Negócios Locais):
 - **Apresentação padrão (cite os DOIS números):** **R$ 997 no cartão em 10x sem juros (10x de R$ 99,70)** OU **R$ 797 no Pix / à vista**. ⚠️ O valor que aparece na lista de turmas (R$ 797) é o preço DO PIX; no cartão o total é R$ 997 — NÃO diga "10x de R$ 797". A meta é o aluno pagar logo → puxe o Pix/à vista primeiro, depois o cartão.
-- **Sinal (só ÚLTIMO caso, lead prestes a desistir por dinheiro):** R$ 100 pra travar a vaga (Pix CNPJ 62.512.432/0001-39), restante antes do início.
+- **Sinal de R$100 — NÃO usar na negociação/atendimento:** existe só pra disparo final específico (fora do fluxo de venda). A IA NUNCA oferece sinal — só à vista/Pix do valor cheio ou cartão 10x.
 - **BOLSA / condição especial (etapa "Oferecer Bolsa" — dias 7-9, SÓ pra quem demonstrou interesse):** R$ 697 à vista OU 10x de R$ 85,70, SEMPRE com uma JUSTIFICATIVA plausível. NUNCA de cara nem antes dos dias 7-9.
 ## FC (Formação Completa):
 - **Preço padrão:** **R$ 2.397 à vista (Pix)** OU **10x de R$ 269,70 no cartão**. Quem fez o ANL tem o valor ABATIDO (confirmar a condição/prazo vigente ao fechar). Quando a turma tiver preço próprio no sistema (lista de turmas abertas), use o preço DA TURMA.`

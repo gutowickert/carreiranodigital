@@ -26,8 +26,9 @@ const PROD: Record<string, { label: string; cor: string }> = {
 }
 const STATUS: Record<string, { label: string; cor: string; bg: string }> = {
   rascunho: { label: 'Rascunho', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
-  submetido: { label: 'Enviado ao Meta', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  submetido: { label: 'Em análise no Meta', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   aprovado: { label: 'Aprovado ✓', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  rejeitado: { label: 'Rejeitado ✗', cor: 'var(--red)', bg: 'var(--red-bg)' },
 }
 
 function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
@@ -67,8 +68,9 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
         {t.tipo_janela === 'template' ? null : <span style={{ fontSize: 11, color: 'var(--green)' }}>⏱ livre (24h)</span>}
         <select value={status} onChange={e => setStatus(e.target.value)} style={{ marginLeft: 'auto', fontSize: 11, background: (STATUS[status] || STATUS.rascunho).bg, color: (STATUS[status] || STATUS.rascunho).cor, border: 'none', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>
           <option value="rascunho">Rascunho</option>
-          <option value="submetido">Enviado ao Meta</option>
+          <option value="submetido">Em análise no Meta</option>
           <option value="aprovado">Aprovado</option>
+          <option value="rejeitado">Rejeitado</option>
         </select>
       </div>
       <textarea value={corpo} onChange={e => setCorpo(e.target.value)} style={{ width: '100%', minHeight: 92, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: 10, fontSize: 13, color: 'var(--text)', outline: 'none', resize: 'vertical', lineHeight: 1.5 }} />
