@@ -33,14 +33,14 @@ export async function POST(req: NextRequest) {
       if (avancar && lead && pend) await gerarProxima(sb, leadId, lead.etapa, pend.tipo, lead.nome || 'Lead', lead.vendedor_id || null)
       // rede de segurança: não deixa lead ativo sem tarefa (ex.: chave antiga não encadeou)
       if (avancar && lead) await garantirTarefa(sb, leadId, lead.etapa, lead.nome || 'Lead', lead.vendedor_id || null)
-      await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-acao', evento: 'atender-semi', status: 'enviado', payload: { lead_id: leadId, texto, aprovado_por: b.email || null } })
+      await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-acao', evento: 'atender-semi', status: 'processado', payload: { lead_id: leadId, texto, aprovado_por: b.email || null } })
     }
     // APRENDIZADO: se o humano EDITOU a sugestão da IA (original != enviado), guarda o par pra IA aprender o tom real.
     const original = (b.original || '').toString().trim()
     const norm = (s: string) => (s || '').replace(/\s+/g, ' ').trim().toLowerCase()
     if (original && leadId && norm(original) !== norm(texto)) {
       const { data: l } = await sb.from('leads').select('etapa, codigo_turma').eq('org_id', org).eq('id', leadId).maybeSingle()
-      await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-edicao', evento: 'correcao', status: 'ok', payload: { lead_id: leadId, original, enviado: texto, etapa: l?.etapa || null, turma: l?.codigo_turma || null, por: b.email || null } })
+      await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-edicao', evento: 'correcao', status: 'processado', payload: { lead_id: leadId, original, enviado: texto, etapa: l?.etapa || null, turma: l?.codigo_turma || null, por: b.email || null } })
     }
     return NextResponse.json({ ok: true, tarefas })
   } catch (e: any) {
