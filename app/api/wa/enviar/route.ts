@@ -47,6 +47,20 @@ export async function POST(req: NextRequest) {
     }
     if (!conversa) return NextResponse.json({ ok: false, error: 'conversa não criada' }, { status: 200 })
 
+    // JANELA DE 24h (checada com NOSSOS dados, antes de mandar): mensagem livre só entrega se o
+    // cliente respondeu no OFICIAL nas últimas 24h. Fora disso o Meta ACEITA (dá wamid) mas a entrega
+    // FALHA — então nem tentamos: devolvemos foraJanela pra UI reabrir com TEMPLATE.
+    const convIdsLead: string[] = [conversa.id]
+    if (leadId) {
+      const { data: outras } = await supabase.from('wa_conversas').select('id').eq('org_id', org).eq('lead_id', leadId).eq('canal', 'oficial')
+      for (const c of outras || []) if (!convIdsLead.includes(c.id)) convIdsLead.push(c.id)
+    }
+    const { data: ultIn } = await supabase.from('wa_mensagens').select('criado_em').in('conversa_id', convIdsLead).eq('direcao', 'recebida').order('criado_em', { ascending: false }).limit(1).maybeSingle()
+    const ultInMs = ultIn?.criado_em ? +new Date(ultIn.criado_em) : 0
+    if (Date.now() - ultInMs > 24 * 60 * 60 * 1000) {
+      return NextResponse.json({ ok: false, foraJanela: true, error: 'Fora da janela de 24h — o cliente não respondeu no WhatsApp nas últimas 24h. Reabra com um template.' }, { status: 200 })
+    }
+
     // envia via Cloud API (texto ou mídia)
     let ro: { ok: boolean; wamid?: string | null; error?: string }
     let tipoMsg = 'texto'
