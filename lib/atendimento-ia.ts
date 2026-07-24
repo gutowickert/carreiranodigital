@@ -68,6 +68,8 @@ TOM — NÃO use "não consegui te alcançar", "não consegui falar contigo", "t
 
 TURMAS: SEMPRE olhe a lista de TURMAS ABERTAS. Você TEM tudo de cada turma: as DATAS exatas com o DIA DA SEMANA já calculado, o HORÁRIO, o LOCAL e as VAGAS — e sabe QUE DIA É HOJE (no topo do contexto). Então NUNCA diga "vou confirmar", "deixa eu checar" ou "confirmo depois" pra uma info que você JÁ TEM (dias, dia da semana, horário, local, vagas): responda na hora, com os dados exatos. Nunca chute dia da semana — use o que está na lista. NUNCA invente preço/data/turma. Se a turma etiquetada já COMEÇOU (matrícula fechada), ofereça a próxima na mesma cidade. NUNCA diga que uma turma de um produto está "chegando"/"nova" numa cidade se ela NÃO está na lista TURMAS ABERTAS — isso é mentira e queima a venda. Se o produto que o lead quer NÃO tem turma na cidade dele, seja honesto e PRIORIZE manter o lead na cidade dele: se há turma aberta de OUTRO produto na mesma cidade, ofereça essa opção local primeiro (a pessoa tende a preferir na própria cidade); só depois, se ela insistir no produto original, ofereça o mesmo produto na cidade mais próxima que estiver na lista. Nunca prometa uma turma que não está listada.
 
+URGÊNCIA REAL (últimos dias antes de começar): cada turma na lista TURMAS ABERTAS traz "COMEÇA EM X DIAS". Se a turma que interessa ao lead está começando logo (marcada 🔥 ÚLTIMOS DIAS), USE essa urgência VERDADEIRA no follow-up: avise que são os últimos dias antes de começar e que a matrícula fecha quando a turma inicia (não dá pra entrar no meio). Use SÓ a contagem real da lista — nunca invente urgência nem data.
+
 RESPONDA ANTES DE VENDER: se o lead faz uma pergunta operacional (que dias? que horário? quantas vagas? onde é?), RESPONDA completo primeiro, com os dados reais. NÃO empurre "Pix ou cartão?" enquanto o lead ainda está pedindo informação — isso irrita e derruba a venda. Só conduza pro pagamento DEPOIS que ele tiver o que precisa e demonstrar que está decidindo. Se o lead falou por áudio, o texto vem com 🎤.
 
 CHAVES DE ETAPA DO CRM (o campo "etapa_sugerida" TEM que ser EXATAMENTE uma destas — são as únicas etapas que existem no sistema; NÃO invente "aguardar resposta" ou nomes fora da lista):
@@ -187,19 +189,22 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
   const diaSem = (d: string) => DS[new Date(d + 'T12:00:00-03:00').getDay()]
   const brData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
-  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, preco_venda, vagas, produtos(nome), cidades(nome), salas(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, produtos(nome), cidades(nome), salas(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const tvIds = (tv || []).map((t: any) => t.id)
   const datasPorTurma: Record<string, any[]> = {}
   if (tvIds.length) {
     const { data: dd } = await supabase.from('turma_datas').select('turma_id, data, horario_inicio, horario_fim').in('turma_id', tvIds).order('data')
     for (const d of (dd || [])) (datasPorTurma[d.turma_id] = datasPorTurma[d.turma_id] || []).push(d)
   }
+  const diasPara = (d: string) => Math.round((new Date(d + 'T12:00:00-03:00').getTime() - new Date(hoje + 'T12:00:00-03:00').getTime()) / 864e5)
   const ofertas = (tv || []).map((t: any) => {
     const ds = datasPorTurma[t.id] || []
     const dias = ds.map((d: any) => `${brData(d.data)} (${diaSem(d.data)})`).join(', ')
     const hor = ds[0]?.horario_inicio ? `${ds[0].horario_inicio.slice(0, 5)} às ${(ds[0].horario_fim || '').slice(0, 5)}` : ''
+    const dpc = t.data_inicio ? diasPara(t.data_inicio) : null
+    const urg = dpc != null ? ` — COMEÇA EM ${dpc} DIA(S)${dpc <= 7 ? ' 🔥 ÚLTIMOS DIAS' : ''}` : ''
     return `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda}` +
-      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}`
+      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}${urg}`
   })
   // a turma que o lead veio etiquetado já COMEÇOU? (matrícula fecha quando a turma inicia — não dá pra entrar no meio)
   let turmaPassada = ''
@@ -212,7 +217,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
       const mesmoProd = naCidade.filter((t: any) => (t.produtos?.nome || '') === prodNome)
       turmaPassada = `${tt.codigo} (${cidNome}${prodNome ? ' · ' + prodNome : ''}) já COMEÇOU em ${brData(tt.data_inicio)} — matrícula ENCERRADA.`
       if (mesmoProd.length) turmaPassada += ` Há turma NOVA de ${prodNome} em ${cidNome} na lista abaixo — ofereça essa.`
-      else if (naCidade.length) turmaPassada += ` NÃO há turma nova de ${prodNome} em ${cidNome} agora — MAS há turma aberta na PRÓPRIA cidade de ${cidNome}, de outro produto: ${naCidade.map((t: any) => `${t.produtos?.nome} (${t.codigo})`).filter(Boolean).join(', ')}. PRIORIZE oferecer essa opção LOCAL (a pessoa é de ${cidNome} e tende a preferir na cidade dela) — apresente como alternativa real e concreta. Só ofereça ${prodNome} em outra cidade se ela insistir no ${prodNome}. Seja honesto: NUNCA prometa ${prodNome} em ${cidNome}.`
+      else if (naCidade.length) turmaPassada += ` NÃO há turma nova de ${prodNome} em ${cidNome} agora — MAS há turma aberta na PRÓPRIA cidade, de OUTRO produto: ${naCidade.map((t: any) => `${t.produtos?.nome} (${t.codigo})`).filter(Boolean).join(', ')}. Como é produto DIFERENTE, vá com JEITO — NÃO abra com preço: comente com naturalidade que a turma anterior de ${prodNome} já começou, que temos ${naCidade.map((t: any) => t.produtos?.nome).filter(Boolean)[0]} em ${cidNome}, e PERGUNTE se ela quer conhecer. MANTENHA no atendimento inicial por mais um dia (etapa_sugerida = "atendimento_inicial"); só fale preço/condição DEPOIS que ela demonstrar interesse. Só ofereça ${prodNome} em outra cidade se ela insistir. NUNCA prometa ${prodNome} em ${cidNome}.`
       else turmaPassada += ` NÃO há NENHUMA turma nova em ${cidNome} na lista. Seja honesto: registre o interesse pra próxima de ${cidNome} e ofereça ${prodNome} na cidade mais próxima que ESTIVER na lista. NUNCA diga que vem ${prodNome} em ${cidNome} se não está listada.`
     }
   }
