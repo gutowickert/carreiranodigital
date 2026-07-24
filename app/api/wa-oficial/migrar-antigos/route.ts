@@ -68,7 +68,11 @@ export async function POST(req: NextRequest) {
     const { data: leads } = await sb.from('leads')
       .select('id, nome, whatsapp, etapa, codigo_turma, turma_id, vendedor_id')
       .eq('org_id', org).in('etapa', ETAPAS).order('etapa')
-    const reachable = (leads || []).filter(l => numeroOk(l.whatsapp))
+    // SÓ migra quem teve o NÚMERO ANTIGO (tem conversa canal 'zapi'). Leads NOVOS que já
+    // chegaram direto no número oficial (pós-flip) NÃO recebem "mudamos de número" — já estão no novo.
+    const { data: zapiConvs } = await sb.from('wa_conversas').select('lead_id').eq('org_id', org).eq('canal', 'zapi').not('lead_id', 'is', null).limit(10000)
+    const comZapi = new Set((zapiConvs || []).map((c: any) => c.lead_id))
+    const reachable = (leads || []).filter(l => numeroOk(l.whatsapp) && comZapi.has(l.id))
 
     // já migrados (idempotência): leads com andamento tipo 'migracao_num'
     const ids = reachable.map(l => l.id)
