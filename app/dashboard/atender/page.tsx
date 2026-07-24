@@ -292,7 +292,7 @@ export default function AtenderPage() {
         if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : aba === 'parados' ? '🎉 Nenhum lead parado! Todos têm tarefa ou já foram movidos.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
         return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
           : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
-            : <Lote fila={dados} sugerir={sugerir} enviar={enviar} abrirCard={setCardLead} />
+            : <Lote key={aba} fila={dados} sugerir={sugerir} enviar={enviar} abrirCard={setCardLead} semTarefa={aba === 'parados'} />
       })()}
       {cardLead && <LeadCardModal leadId={cardLead} onClose={() => setCardLead(null)} />}
     </div>
@@ -474,7 +474,7 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover, abrirCard }: { l: { ite
 }
 
 // ————— ABA FOLLOW-UP COM TAREFA: gera sugestões, envia UMA A UMA e decide o andamento na hora —————
-function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; abrirCard: (id: string) => void }) {
+function Lote({ fila, sugerir, enviar, abrirCard, semTarefa }: { fila: Item[]; sugerir: (i: Item) => Promise<Sug | null>; enviar: (i: Item, t: string, original?: string, avancar?: boolean) => Promise<any>; abrirCard: (id: string) => void; semTarefa?: boolean }) {
   const [linhas, setLinhas] = useState<{ item: Item; texto: string; ok: boolean; enviado?: boolean; sug?: Sug | null }[]>([])
   const [gerando, setGerando] = useState(false)
   const N = 5
@@ -486,12 +486,18 @@ function Lote({ fila, sugerir, enviar, abrirCard }: { fila: Item[]; sugerir: (i:
 
   async function gerarMais() {
     setGerando(true)
-    // RESERVA atômica: trava N follow-ups livres pra mim (outro atendente não pega os mesmos)
-    const j = await fetchAuth('/api/atender/reservar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: N }) }).then(r => r.json()).catch(() => ({ ok: false }))
-    const ids: string[] = j?.ok ? (j.leadIds || []) : []
     const jaTem = new Set(linhas.map(l => l.item.leadId))
-    const byId = new Map(fila.map(it => [it.leadId, it]))
-    const alvo = ids.filter(id => !jaTem.has(id)).map(id => byId.get(id)).filter(Boolean) as Item[]
+    let alvo: Item[]
+    if (semTarefa) {
+      // "Sem tarefa" (parados): NÃO há tarefa pra reservar — pega os próximos N direto da lista.
+      alvo = fila.filter(it => !jaTem.has(it.leadId)).slice(0, N)
+    } else {
+      // RESERVA atômica: trava N follow-ups livres pra mim (outro atendente não pega os mesmos)
+      const j = await fetchAuth('/api/atender/reservar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ limit: N }) }).then(r => r.json()).catch(() => ({ ok: false }))
+      const ids: string[] = j?.ok ? (j.leadIds || []) : []
+      const byId = new Map(fila.map(it => [it.leadId, it]))
+      alvo = ids.filter(id => !jaTem.has(id)).map(id => byId.get(id)).filter(Boolean) as Item[]
+    }
     const gerar1 = async (it: Item) => { const s = await sugerir(it); return { item: it, texto: s?.resposta || '', ok: !!s?.resposta, sug: s } }
     // gera TODAS em paralelo — chegam juntas (o priming sequencial fazia as próximas demorarem/parecerem
     // que não vinham). O cache do prompt segue valendo entre lotes/uso sequencial do Atender.
