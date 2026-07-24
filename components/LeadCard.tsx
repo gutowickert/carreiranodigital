@@ -161,6 +161,9 @@ export default function LeadCardModal({ leadId, onClose }: { leadId: string; onC
   }
 
   async function agendarLigacao(l: Lead, dataIso: string) {
+    // Reagendar = SUBSTITUIR: cancela a ligação agendada pendente que já existir (não duplica na fila).
+    await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString(), atualizado_em: new Date().toISOString() })
+      .eq('lead_id', l.id).eq('tipo', 'ligar_agendado').eq('concluida', false).eq('cancelada', false)
     await criarTarefaComData(l.id, l.vendedor_id, 'ligar_agendado', `Ligar (agendado) — ${l.nome}`, 'Ligação agendada pelo vendedor. Ligar no horário combinado.', dataIso)
     carregarLead()
   }

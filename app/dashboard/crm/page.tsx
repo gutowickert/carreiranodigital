@@ -312,6 +312,9 @@ export default function CRM() {
 
   // Agenda uma LIGAÇÃO pra data/hora, SEM mudar a etapa do lead — cai na Fila de Ligações no horário.
   async function agendarLigacao(lead: Lead, dataIso: string) {
+    // Reagendar = SUBSTITUIR: cancela a ligação agendada pendente existente (não duplica na fila).
+    await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString(), atualizado_em: new Date().toISOString() })
+      .eq('lead_id', lead.id).eq('tipo', 'ligar_agendado').eq('concluida', false).eq('cancelada', false)
     await criarTarefaComData(lead.id, lead.vendedor_id, 'ligar_agendado', `Ligar (agendado) — ${lead.nome}`, 'Ligação agendada pelo vendedor. Ligar no horário combinado.', dataIso)
     carregarLeads()
   }
