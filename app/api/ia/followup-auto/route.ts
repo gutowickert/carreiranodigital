@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     // leads das 3 etapas + conversas escopadas
-    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
     // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
     const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
@@ -60,8 +60,9 @@ export async function POST(req: NextRequest) {
     // DOSSIÊ ÚNICO (fonte de verdade): mensagens dos 2 canais (zapi+oficial, inclusive conversas só por telefone
     // que a busca por lead_id perdia) + ligações + TODOS os andamentos. Mesma lib da tela e do copiloto.
     const dossies = await dossiesLote(sb, org, leads)
-    // Esteira IA = SÓ frio de verdade: nunca respondeu mensagem E sem nota humana de conversa. Engajado → é do time.
-    const frios = (leads || []).filter(l => !dossies.get(l.id)?.engajado)
+    // Esteira IA = frio de verdade (nunca respondeu, sem nota humana) OU já é da IA (re-inscrito pelo reconciliador).
+    // Engajado sem ser da IA → é do time.
+    const frios = (leads || []).filter(l => (l as any).atendido_por === 'ia' || !dossies.get(l.id)?.engajado)
     const lastOutDe = (l: any) => { const e = dossies.get(l.id)?.ultimoOutboundEm; return e ? +new Date(e) : 0 }
 
     // entrada na etapa atual + toques da IA já dados NESSA etapa
