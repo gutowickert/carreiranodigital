@@ -33,6 +33,7 @@ const grupos: Grupo[] = [
     titulo: 'Inteligência Artificial',
     itens: [
       { nome: 'Agente Interno', href: '/dashboard/agente-interno' },
+      { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
       { nome: 'Qualidade IA', href: '/dashboard/qualidade-ia' },
       { nome: 'Automação IA', href: '/dashboard/automacao-ia' },
       { nome: 'Custo da IA', href: '/dashboard/ia-uso' },
