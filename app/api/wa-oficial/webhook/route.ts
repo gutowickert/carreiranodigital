@@ -101,6 +101,9 @@ async function registrarRecebida(m: any, value: any) {
   // Mesma automação do webhook Z-API — pro atendimento no número novo funcionar igual (o lead vira
   // "quente" no Atender e o humano/IA assume; não manda follow-up redundante).
   if (leadMatch?.id) {
+    // HAND-OFF: se estava na Esteira IA (atendido_por='ia'), o lead respondeu → devolve pro TIME.
+    // A IA para o follow-up automático; a conversa fica no inbox pros colegas atenderem.
+    await supabase.from('leads').update({ atendido_por: 'humano' }).eq('id', leadMatch.id).eq('atendido_por', 'ia')
     try {
       const { data: pend } = await supabase.from('tarefas_lead').select('id').eq('lead_id', leadMatch.id).eq('concluida', false).eq('cancelada', false)
       if (pend && pend.length) {
