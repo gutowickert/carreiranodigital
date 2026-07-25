@@ -3,27 +3,23 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
+import { getFluxo } from '@/lib/fluxo'
 
 export const maxDuration = 60
 
-// MOTOR DA ESTEIRA IA — follow-up 100% automático dos leads FRIOS (nunca responderam) nas etapas
-// de nutrição por mensagem. Cadência de TEMPLATES (frio = fora das 24h), espaçada, assinada Mateus.
-// Marca atendido_por='ia' (aparece na tela Qualidade IA). Esgotou os toques → demissão (perda).
-// Quando o lead responde, o webhook devolve pro humano (para a IA). Ver hand-off no wa-oficial/webhook.
-//
-// SEGURANÇA: dryRun=true (padrão) só simula. Enviar de verdade: { dryRun:false, confirm:true }.
-// KILL SWITCH: config em webhook_logs origem='ia-automacao' { ligado:false } desliga tudo.
+// MOTOR DA ESTEIRA IA — follow-up 100% automático dos leads FRIOS (nunca responderam), SEGUINDO O FLUXO
+// definido no sistema (getFluxo): o toque de cada etapa dispara no DIA que o fluxo manda (o `dias`),
+// com o TEMPLATE amarrado por etapa+chave (FC/ANL pelo curso). Assinado Mateus.
+// Esgotou os toques da etapa → avança pra próxima (atendimento→lote→bolsa). Toque 'demissao' → PERDA.
+// Marca atendido_por='ia' (aparece na Qualidade IA). Lead responde → webhook devolve pro humano.
+// dryRun (padrão) só simula. Enviar: { dryRun:false, confirm:true }. Kill switch: ia-automacao {ligado:false}.
 
 const ETAPAS = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+const PROX_ETAPA: Record<string, string | null> = { atendimento_inicial: 'lote_preco_ok', lote_preco_ok: 'oferecer_bolsa', oferecer_bolsa: null }
 const VENDEDOR = 'Mateus'
-const SPACING_DIAS = 3
-// sequência de toques (templates utility aprovados). O último DEMITE (→ perda).
-const TOQUES = [
-  { tpl: 'cnd_retomar', demite: false },
-  { tpl: 'cnd_nao_atendeu', demite: false },
-  { tpl: 'cnd_encerramento', demite: true },
-]
-const cursoDe = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'Formação Completa em Marketing Digital' : x.startsWith('anl') ? 'Anúncios para Negócios Locais' : 'nossos cursos' }
+const MOTIVO_SEM_RESPOSTA = 'f972b270-691a-4e24-bd79-3b7583970a51'
+const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
+const cursoNome = (fam: string) => fam === 'FC' ? 'Formação Completa em Marketing Digital' : fam === 'ANL' ? 'Anúncios para Negócios Locais' : 'nossos cursos'
 const suf = (s: string) => (s || '').replace(/\D/g, '').slice(-8)
 const DIA = 864e5
 
@@ -38,113 +34,135 @@ export async function POST(req: NextRequest) {
 
     // KILL SWITCH
     const { data: cfg } = await sb.from('webhook_logs').select('payload').eq('org_id', org).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
-    const ligado = (cfg?.payload as any)?.ligado
-    if (ligado === false && !dryRun) return NextResponse.json({ ok: false, killed: true, error: 'Automação DESLIGADA (kill switch). Ligue em ia-automacao {ligado:true}.' }, { status: 200 })
+    if ((cfg?.payload as any)?.ligado === false && !dryRun) return NextResponse.json({ ok: false, killed: true, error: 'Automação DESLIGADA (kill switch).' }, { status: 200 })
 
-    // leads das 3 etapas
-    const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
-    // conversas SÓ desses leads (escopado — evita truncar as 20k+ conversas gerais)
+    const fluxo = await getFluxo()
+    const now = Date.now()
+    const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+
+    // templates por etapa+chave (FC/ANL pelo nome)
+    const { data: tpls } = await sb.from('followup_templates').select('etapa, chave, nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true)
+    const tplMap: Record<string, any[]> = {}
+    for (const t of tpls || []) { if (!t.etapa || !t.chave) continue; const k = `${t.etapa}|${t.chave}`; (tplMap[k] = tplMap[k] || []).push(t) }
+    const pickTpl = (etapa: string, chave: string, fam: string) => {
+      const arr = tplMap[`${etapa}|${chave}`] || []
+      if (!arr.length) return null
+      const byFam = arr.find(t => fam === 'FC' ? /_fc$/i.test(t.nome_meta) : fam === 'ANL' ? /_anl$/i.test(t.nome_meta) : false)
+      return byFam || arr.find(t => !/_(fc|anl)$/i.test(t.nome_meta)) || arr[0]
+    }
+
+    // leads das 3 etapas + conversas escopadas
+    const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
     const leadIds = (leads || []).map(l => l.id)
     const convs: any[] = []
     for (let i = 0; i < leadIds.length; i += 300) { const { data } = await sb.from('wa_conversas').select('id, lead_id, telefone').eq('org_id', org).in('lead_id', leadIds.slice(i, i + 300)); convs.push(...(data || [])) }
     const cdl: Record<string, string[]> = {}, cpt: Record<string, string[]> = {}
-    for (const c of convs || []) { if (c.lead_id) (cdl[c.lead_id] = cdl[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (cpt[s] = cpt[s] || []).push(c.id) }
+    for (const c of convs) { if (c.lead_id) (cdl[c.lead_id] = cdl[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (cpt[s] = cpt[s] || []).push(c.id) }
     const cidsDe = (l: any) => [...new Set([...(cdl[l.id] || []), ...(cpt[suf(l.whatsapp)] || [])])]
-    // quem TEM inbound (respondeu) — esses NÃO são Esteira IA
     const allc = [...new Set((leads || []).flatMap(cidsDe))]
-    const temInbound = new Set<string>() // conversa_id (respondeu alguma vez)
-    const lastOutConv: Record<string, number> = {} // último enviado por conversa
+
+    // inbound (respondeu? não é Esteira IA) + último enviado por conversa
+    const temInbound = new Set<string>()
+    const lastOutConv: Record<string, number> = {}
     for (let i = 0; i < allc.length; i += 150) {
       const chunk = allc.slice(i, i + 150); let mf = 0
       for (; ;) {
         const { data } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', chunk).range(mf, mf + 999)
         if (!data || !data.length) break
-        for (const m of data) {
-          const inb = (m.direcao === 'recebida' || m.status === 'recebida')
-          if (inb) temInbound.add(m.conversa_id)
-          else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t }
-        }
+        for (const m of data) { const inb = (m.direcao === 'recebida' || m.status === 'recebida'); if (inb) temInbound.add(m.conversa_id); else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t } }
         if (data.length < 1000) break; mf += 1000
       }
     }
-    const frios = (leads || []).filter(l => { const cs = cidsDe(l); return cs.every(c => !temInbound.has(c)) })
+    const frios = (leads || []).filter(l => { const cs = cidsDe(l); return cs.length ? cs.every(c => !temInbound.has(c)) : true })
     const lastOutDe = (l: any) => Math.max(0, ...cidsDe(l).map((c: string) => lastOutConv[c] || 0))
 
-    // toques já dados (lead_andamentos tipo 'ia_followup') — pra saber o próximo e o espaçamento
+    // entrada na etapa atual + toques da IA já dados NESSA etapa
     const ids = frios.map(l => l.id)
-    const toquesDe: Record<string, { n: number; ultimo: number }> = {}
-    for (let i = 0; i < ids.length; i += 300) {
-      const { data: am } = await sb.from('lead_andamentos').select('lead_id, criado_em').eq('tipo', 'ia_followup').in('lead_id', ids.slice(i, i + 300))
-      for (const a of am || []) { const o = toquesDe[a.lead_id] = toquesDe[a.lead_id] || { n: 0, ultimo: 0 }; o.n++; const t = +new Date(a.criado_em); if (t > o.ultimo) o.ultimo = t }
+    const entradaEtapa: Record<string, number> = {}
+    const toquesIA: Record<string, { n: number; ultimo: number }> = {}
+    for (let i = 0; i < ids.length; i += 200) {
+      const chunk = ids.slice(i, i + 200)
+      const { data: ands } = await sb.from('lead_andamentos').select('lead_id, tipo, etapa_nova, criado_em').in('lead_id', chunk).order('criado_em', { ascending: true })
+      const byLead: Record<string, any[]> = {}
+      for (const a of ands || []) (byLead[a.lead_id] = byLead[a.lead_id] || []).push(a)
+      for (const l of frios) {
+        if (!chunk.includes(l.id)) continue
+        const as = byLead[l.id] || []
+        let ent = l.criado_em ? +new Date(l.criado_em) : 0
+        for (const a of as) if (a.tipo === 'mudanca_etapa' && a.etapa_nova === l.etapa) ent = +new Date(a.criado_em)
+        entradaEtapa[l.id] = ent
+        const toques = as.filter(a => a.tipo === 'ia_followup' && +new Date(a.criado_em) >= ent)
+        toquesIA[l.id] = { n: toques.length, ultimo: toques.length ? +new Date(toques[toques.length - 1].criado_em) : 0 }
+      }
     }
 
-    // due: ainda tem toque na sequência E não mandamos NADA (qualquer template/msg) nos últimos SPACING dias.
-    // (respeita migração/recuperação recentes — não manda por cima)
-    const now = Date.now()
-    const due = frios.filter(l => {
-      const o = toquesDe[l.id] || { n: 0, ultimo: 0 }
-      if (o.n >= TOQUES.length) return false
-      return now - lastOutDe(l) >= SPACING_DIAS * DIA
-    })
+    // decide, por lead: qual a ação (enviar toque X / avançar etapa / esperar / nada)
+    type Plano = { lead: any; acao: 'enviar' | 'avancar'; chave?: string; tpl?: any; demite?: boolean; proxEtapa?: string }
+    const planos: Plano[] = []
+    for (const l of frios) {
+      const cad = (fluxo.cadencia[l.etapa] || [])
+      const o = toquesIA[l.id] || { n: 0, ultimo: 0 }
+      if (o.n >= cad.length) {
+        // esgotou a etapa → avança pra próxima (a próxima rodada toca a nova etapa)
+        const prox = PROX_ETAPA[l.etapa]
+        if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
+        continue
+      }
+      const toque = cad[o.n]
+      const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
+      const due = now - ref >= (toque.dias || 0) * DIA
+      const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
+      if (!due || jaHoje) continue // segue o fluxo (dias) + não manda 2x no mesmo dia
+      const fam = familia(l.codigo_turma)
+      const tpl = pickTpl(l.etapa, toque.chave, fam)
+      if (!tpl) continue // sem template mapeado pra esse toque
+      planos.push({ lead: l, acao: 'enviar', chave: toque.chave, tpl, demite: /demiss|encerr/i.test(toque.chave) })
+    }
 
-    // cidade por turma
-    const turmaIds = [...new Set(due.map(l => l.turma_id).filter(Boolean))] as string[]
-    const cidadePorTurma = new Map<string, string>()
-    if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) if (t.cidades?.nome) cidadePorTurma.set(t.id, t.cidades.nome) }
-
-    // corpos dos templates
-    const { data: temps } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).in('nome_meta', TOQUES.map(t => t.tpl))
-    const tplBy = new Map((temps || []).map(t => [t.nome_meta, t]))
-
-    const lote = due.slice(0, limit)
+    const lote = planos.slice(0, limit)
     const previews: any[] = []
-    let enviados = 0, demitidos = 0, falhas = 0, falhasSeguidas = 0
+    let enviados = 0, avancados = 0, demitidos = 0, falhas = 0, falhasSeguidas = 0
 
-    for (const l of lote) {
-      const o = toquesDe[l.id] || { n: 0, ultimo: 0 }
-      const toque = TOQUES[o.n]
-      const tpl = tplBy.get(toque.tpl)
-      if (!tpl) { previews.push({ lead: l.nome, erro: `template ${toque.tpl} não encontrado` }); falhas++; continue }
-      const valores: Record<string, string> = { nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoDe(l.codigo_turma), cidade: cidadePorTurma.get(l.turma_id || '') || 'sua região' }
-      const ordem = (tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
-      const textoRender = (tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
+    for (const p of lote) {
+      const l = p.lead
+      if (p.acao === 'avancar') {
+        if (!dryRun) { const ag = new Date().toISOString(); await sb.from('leads').update({ etapa: p.proxEtapa, atualizado_em: ag }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: p.proxEtapa, observacao: `🤖 IA — cadência de ${l.etapa} esgotada sem resposta → avança pra ${p.proxEtapa}.` }) }
+        avancados++; previews.push({ lead: l.nome, acao: `avança ${l.etapa} → ${p.proxEtapa}` }); continue
+      }
+      const fam = familia(l.codigo_turma)
+      const valores: Record<string, string> = { nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam), cidade: '' }
+      if (l.turma_id) { const { data: t } = await sb.from('turmas').select('cidades(nome)').eq('id', l.turma_id).maybeSingle(); valores.cidade = (t as any)?.cidades?.nome || 'sua região' } else valores.cidade = 'sua região'
+      const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
+      const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
       const to = foneOficial(l.whatsapp || '')
       if (!to) { falhas++; continue }
 
-      if (dryRun) { previews.push({ lead: l.nome, etapa: l.etapa, toque: o.n + 1, template: toque.tpl, demite: toque.demite, texto: textoRender }); continue }
+      if (dryRun) { previews.push({ lead: l.nome, etapa: l.etapa, toque: p.chave, template: p.tpl.nome_meta, demite: p.demite, texto: textoRender }); continue }
 
       const parametros = ordem.map((k: string) => ({ type: 'text', text: valores[k] ?? k }))
-      const r = await enviarTemplate(to, toque.tpl, 'pt_BR', parametros.length ? [{ type: 'body', parameters: parametros }] : undefined)
-      if (!r.ok) {
-        falhas++; falhasSeguidas++; previews.push({ lead: l.nome, erro: r.error })
-        if (enviados === 0 && falhasSeguidas >= 5) return NextResponse.json({ ok: false, abortado: true, error: 'Abortado: 5 falhas seguidas.', falhas: previews }, { status: 200 })
-        continue
-      }
+      const r = await enviarTemplate(to, p.tpl.nome_meta, 'pt_BR', parametros.length ? [{ type: 'body', parameters: parametros }] : undefined)
+      if (!r.ok) { falhas++; falhasSeguidas++; previews.push({ lead: l.nome, erro: r.error }); if (enviados === 0 && falhasSeguidas >= 5) return NextResponse.json({ ok: false, abortado: true, error: 'Abortado: 5 falhas seguidas.', falhas: previews }, { status: 200 }); continue }
       falhasSeguidas = 0; enviados++
 
-      // marca IA (aparece na Qualidade IA) + grava a mensagem na conversa oficial
       await sb.from('leads').update({ atendido_por: 'ia', atualizado_em: new Date().toISOString() }).eq('id', l.id)
+      // frio é da IA → cancela tarefas do time (a IA gerencia; volta pro time quando responder)
+      await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).eq('lead_id', l.id).eq('concluida', false).eq('cancelada', false)
       let conv: any = (await sb.from('wa_conversas').select('id').eq('org_id', org).eq('lead_id', l.id).eq('canal', 'oficial').limit(1).maybeSingle()).data
       if (!conv) { const c = await sb.from('wa_conversas').insert({ org_id: org, telefone: to, nome: l.nome, lead_id: l.id, canal: 'oficial' }).select('id').single(); conv = c.data }
-      if (conv) {
-        await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conv.id, zapi_id: r.wamid || null, direcao: 'enviada', tipo: 'texto', texto: textoRender, status: 'enviada', canal: 'oficial' })
-        await sb.from('wa_conversas').update({ ultima_msg: textoRender.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conv.id)
-      }
-      await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'ia_followup', observacao: `🤖 IA (Esteira 1) — toque ${o.n + 1}/${TOQUES.length}: ${toque.tpl}` })
+      if (conv) { await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conv.id, zapi_id: r.wamid || null, direcao: 'enviada', tipo: 'texto', texto: textoRender, status: 'enviada', canal: 'oficial' }); await sb.from('wa_conversas').update({ ultima_msg: textoRender.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conv.id) }
+      await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'ia_followup', observacao: `🤖 IA (fluxo) — ${l.etapa}/${p.chave}: ${p.tpl.nome_meta}` })
 
-      // último toque → demite (perda)
-      if (toque.demite) {
-        await sb.from('leads').update({ etapa: 'perda', data_perda: new Date().toISOString(), motivo_perda_id: 'f972b270-691a-4e24-bd79-3b7583970a51', atualizado_em: new Date().toISOString() }).eq('id', l.id)
-        await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).eq('lead_id', l.id).eq('concluida', false).eq('cancelada', false)
-        await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_nova: 'perda', observacao: '🤖 IA — cadência esgotada sem resposta → demissão (perda).' })
+      if (p.demite) {
+        await sb.from('leads').update({ etapa: 'perda', data_perda: new Date().toISOString(), motivo_perda_id: MOTIVO_SEM_RESPOSTA, atualizado_em: new Date().toISOString() }).eq('id', l.id)
+        await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_nova: 'perda', observacao: '🤖 IA — encerramento (demissão) enviado → perda.' })
         demitidos++
       }
     }
 
     return NextResponse.json({
-      ok: true, dryRun, etapas: ETAPAS, frios: frios.length, due: due.length, processados: lote.length,
-      enviados, demitidos, falhas, restantes: Math.max(0, due.length - (dryRun ? 0 : (enviados + falhas))),
-      amostra: dryRun ? previews.slice(0, 8) : undefined, erros: !dryRun && previews.length ? previews : undefined,
+      ok: true, dryRun, frios: frios.length, planejados: planos.length, processados: lote.length,
+      enviados, avancados, demitidos, falhas,
+      amostra: dryRun ? previews.slice(0, 10) : undefined, erros: !dryRun && previews.filter((p: any) => p.erro).length ? previews.filter((p: any) => p.erro) : undefined,
     })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
