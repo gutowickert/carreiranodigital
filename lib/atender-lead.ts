@@ -32,10 +32,18 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
   if (lead.handoff_em) return { ok: false, motivo: 'escalado (handoff pendente) — time atende' }
   if (!seco && await killAtivo(org)) return { ok: false, motivo: 'automação desligada (kill switch)' }
 
-  // ANTI-DUPLICADO: se já respondemos nos últimos 60s (lead mandou 2 msgs seguidas), não responde de novo
-  if (!seco && opts.conversaId) {
-    const { data: ult } = await sb.from('wa_mensagens').select('direcao, criado_em').eq('conversa_id', opts.conversaId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
-    if (ult && ult.direcao === 'enviada' && (Date.now() - +new Date(ult.criado_em)) < 60000) return { ok: false, motivo: 'já respondido há pouco (anti-duplicado)' }
+  if (opts.conversaId) {
+    const { data: ult } = await sb.from('wa_mensagens').select('direcao, status, tipo, criado_em').eq('conversa_id', opts.conversaId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
+    const inbound = ult && (ult.direcao === 'recebida' || ult.status === 'recebida')
+    // ANTI-DUPLICADO: já respondemos nos últimos 60s (lead mandou 2 msgs seguidas) → não responde de novo
+    if (!seco && ult && !inbound && (Date.now() - +new Date(ult.criado_em)) < 60000) return { ok: false, motivo: 'já respondido há pouco (anti-duplicado)' }
+    // MÍDIA: a IA não interpreta áudio/imagem/vídeo/documento com segurança → ESCALA pro time (responder no WhatsApp, com áudio se for áudio)
+    if (inbound && ['audio', 'imagem', 'video', 'documento'].includes(ult.tipo)) {
+      if (seco) return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo}) — passa pro time` }
+      await sb.from('leads').update({ atendido_por: 'humano', handoff_motivo: `Cliente mandou ${ult.tipo} — responder no WhatsApp${ult.tipo === 'audio' ? ' (com áudio)' : ''}`, handoff_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('id', lead.id)
+      await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `${ult.tipo === 'audio' ? '🎤' : '🖼️'} Cliente mandou ${ult.tipo} → IA passou pro time (não interpreta mídia).` })
+      return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo})` }
+    }
   }
 
   const r: any = await sugerirAtendimento({ leadId: lead.id })
@@ -77,5 +85,10 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
     await sb.from('tarefas_lead').insert({ lead_id: lead.id, tipo: 'ligar_agendado', titulo: `Ligar (pedido no WhatsApp) — ${lead.nome}`, descricao: s.proximo_passo || 'Lead pediu ligação no atendimento da IA.' })
   }
   await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_followup', observacao: `🤖 IA respondeu (${s.acao_sugerida}): ${resposta.slice(0, 120)}` })
+  // RESOLVE as tarefas de follow-up do time (a IA fez) — mantém ligação (time liga) e pagamento/agendado
+  const etapaFinal = (s.etapa_sugerida && s.etapa_sugerida !== 'manter') ? s.etapa_sugerida : lead.etapa
+  if (!['aguardando_pagamento', 'agendado', 'proxima_turma'].includes(etapaFinal)) {
+    await sb.from('tarefas_lead').update({ concluida: true, atualizado_em: new Date().toISOString() }).eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false).neq('tipo', 'ligar_agendado')
+  }
   return { ok: true, acao: s.acao_sugerida, decisao, resposta, etapa: s.etapa_sugerida }
 }
