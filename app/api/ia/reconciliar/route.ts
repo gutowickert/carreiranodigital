@@ -34,7 +34,8 @@ export async function POST(req: NextRequest) {
     for (const l of leads || []) {
       const d = dossies.get(l.id); if (!d) continue
       if (!d.engajado) continue // frio segue com a IA (motor cuida), não mexe na posse
-      const ultimo = d.ultimoContatoEm ? +new Date(d.ultimoContatoEm) : 0
+      // silêncio medido pela última atividade DO CLIENTE (não pelo nosso envio) — senão um envio da IA "esquentaria" o lead
+      const ultimo = d.ultimoEngajamentoEm ? +new Date(d.ultimoEngajamentoEm) : 0
       const frioHaDias = ultimo ? (now - ultimo) >= dias * DIA : true
       if (frioHaDias && l.atendido_por !== 'ia') {
         reinscrever.push({ lead: l, diasSilencio: ultimo ? Math.floor((now - ultimo) / DIA) : null })

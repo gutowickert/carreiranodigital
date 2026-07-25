@@ -15,7 +15,8 @@ export type Dossie = {
   engajado: boolean              // teve contato humano real: respondeu msg OU ligação atendida OU nota humana
   ultimoInboundEm: string | null
   ultimoOutboundEm: string | null
-  ultimoContatoEm: string | null   // último movimento de qualquer tipo
+  ultimoContatoEm: string | null       // último movimento de QUALQUER tipo (inclui nossos envios)
+  ultimoEngajamentoEm: string | null   // última atividade DO CLIENTE (resposta / ligação atendida / nota humana) — mede o silêncio real
 }
 
 const ATENDIDA_MIN_SEG = 60      // ligação só conta como atendida com MAIS de 1 minuto
@@ -28,7 +29,7 @@ const AND_AUTO = new Set(['tarefa_criada', 'mudanca_etapa', 'criado', 'webhook_c
 // Monta o dossiê de VÁRIOS leads de uma vez (batch — evita N+1 no motor).
 export async function dossiesLote(sb: any, org: string, leads: LeadRef[]): Promise<Map<string, Dossie>> {
   const out = new Map<string, Dossie>()
-  for (const l of leads) out.set(l.id, { mensagens: [], andamentos: [], ligacoes: [], temInbound: false, temLigacaoAtendida: false, engajado: false, ultimoInboundEm: null, ultimoOutboundEm: null, ultimoContatoEm: null })
+  for (const l of leads) out.set(l.id, { mensagens: [], andamentos: [], ligacoes: [], temInbound: false, temLigacaoAtendida: false, engajado: false, ultimoInboundEm: null, ultimoOutboundEm: null, ultimoContatoEm: null, ultimoEngajamentoEm: null })
   if (!leads.length) return out
   const leadIds = leads.map(l => l.id)
 
@@ -85,10 +86,13 @@ export async function dossiesLote(sb: any, org: string, leads: LeadRef[]): Promi
     d.ligacoes.sort((a, b) => +new Date(a.em) - +new Date(b.em))
     // engajado = teve conversa DE VERDADE: respondeu mensagem OU ligação ATENDIDA (>1min) OU nota humana.
     // Ligação curta (não atendida) NÃO conta — é justamente o alvo da Esteira IA ("não atenderam ligação").
-    const temNotaHumana = d.andamentos.some(a => !AND_AUTO.has(a.tipo) && a.tipo !== 'ligacao' && (a.observacao || '').trim())
-    d.engajado = d.temInbound || d.temLigacaoAtendida || temNotaHumana
+    const notasHumanas = d.andamentos.filter(a => !AND_AUTO.has(a.tipo) && a.tipo !== 'ligacao' && (a.observacao || '').trim())
+    d.engajado = d.temInbound || d.temLigacaoAtendida || notasHumanas.length > 0
     const datas = [d.ultimoInboundEm, d.ultimoOutboundEm, ...d.andamentos.map(a => a.em), ...d.ligacoes.map(g => g.em)].filter(Boolean) as string[]
     d.ultimoContatoEm = datas.length ? datas.sort().slice(-1)[0] : null
+    // atividade DO CLIENTE: resposta (inbound) OU ligação atendida (>60s) OU nota humana do vendedor — mede o silêncio real
+    const engaj = [d.ultimoInboundEm, ...d.ligacoes.filter(g => g.atendida).map(g => g.em), ...notasHumanas.map(a => a.em)].filter(Boolean) as string[]
+    d.ultimoEngajamentoEm = engaj.length ? engaj.sort().slice(-1)[0] : null
   }
   return out
 }
