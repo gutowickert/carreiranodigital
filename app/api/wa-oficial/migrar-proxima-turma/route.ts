@@ -126,7 +126,7 @@ export async function POST(req: NextRequest) {
       // tarefa pro Mateus se não tiver
       const { data: pend } = await sb.from('tarefas_lead').select('id').eq('lead_id', l.id).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
       if (!pend) {
-        const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
+        const amanha = new Date(); amanha.setUTCDate(amanha.getUTCDate() + 1); amanha.setUTCHours(12, 0, 0, 0) // 9h BRT
         await sb.from('tarefas_lead').insert({ lead_id: l.id, vendedor_id: null, tipo: 'seguir_followup', titulo: `Retomar (próxima turma) — ${l.nome || 'lead'}`, descricao: 'Avisamos da mudança de número + próxima turma da cidade. Se responder, conversa abre no card.', data_vencimento: amanha.toISOString() })
       }
       await sb.from('lead_andamentos').insert({ lead_id: l.id, vendedor_id: null, tipo: 'migracao_num', observacao: `Migração (próxima turma): ${templateNome}${datasStr ? ' — ' + datasStr : ''} (${v.cidade})` })

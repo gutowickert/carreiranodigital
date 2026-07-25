@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
       // tarefa pro Mateus (só se o lead não tiver tarefa pendente) — dono do follow-up
       const { data: pend } = await sb.from('tarefas_lead').select('id').eq('lead_id', l.id).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
       if (!pend) {
-        const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
+        const amanha = new Date(); amanha.setUTCDate(amanha.getUTCDate() + 1); amanha.setUTCHours(12, 0, 0, 0) // 9h BRT
         await sb.from('tarefas_lead').insert({
           lead_id: l.id, vendedor_id: null, tipo: 'seguir_followup',
           titulo: `Retomar (migração de número) — ${l.nome || 'lead'}`,

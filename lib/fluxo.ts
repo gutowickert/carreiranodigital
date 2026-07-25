@@ -103,7 +103,8 @@ export async function garantirTarefa(supabase: any, leadId: string, etapa: strin
     if (!ETAPAS_ATIVAS.includes(etapa)) return
     const { data: pend } = await supabase.from('tarefas_lead').select('id').eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).limit(1).maybeSingle()
     if (pend) return
-    const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
+    // 9h BRT = 12:00 UTC (o servidor roda em UTC; setHours daria 9h UTC = 6h BRT, 3h errado)
+    const amanha = new Date(); amanha.setUTCDate(amanha.getUTCDate() + 1); amanha.setUTCHours(12, 0, 0, 0)
     await supabase.from('tarefas_lead').insert({ lead_id: leadId, vendedor_id: vendedorId ?? null, tipo: 'seguir_followup', titulo: `Continuar o follow-up — ${leadNome}`, descricao: 'Seguir a conversa: veja a leitura da IA e conduza pra próxima etapa.', data_vencimento: amanha.toISOString() })
   } catch { /* não quebra */ }
 }
