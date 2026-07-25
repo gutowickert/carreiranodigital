@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
       }
       var linhasDe = (l: any) => {
         const ids = porLead[l.id] || []
-        return mensagens.filter(m => ids.includes(m.conversa_id)).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em)).slice(-14)
+        return mensagens.filter(m => ids.includes(m.conversa_id) && (m.texto || '').trim()).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em)).slice(-14)
           .map(m => ({ quem: (m.direcao === 'recebida' || m.status === 'recebida') ? 'cliente' : 'nos', texto: (m.texto || '').slice(0, 400), em: m.criado_em }))
       }
     }
