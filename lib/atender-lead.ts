@@ -44,6 +44,20 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
       await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `${ult.tipo === 'audio' ? '🎤' : '🖼️'} Cliente mandou ${ult.tipo} → IA passou pro time (não interpreta mídia).` })
       return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo})` }
     }
+    // PADRÃO: LIGAÇÃO DO TIME PRIMEIRO. A IA só CONTINUA conversa ATIVA (mandamos algo < 18h).
+    // Lead novo OU que re-engajou depois de sumido → o time LIGA primeiro; a IA não responde na hora.
+    if (inbound) {
+      const { data: ultOut } = await sb.from('wa_mensagens').select('criado_em').eq('conversa_id', opts.conversaId).eq('direcao', 'enviada').neq('status', 'falha').order('criado_em', { ascending: false }).limit(1).maybeSingle()
+      const ativa = ultOut && (Date.now() - +new Date(ultOut.criado_em)) < 18 * 3600e3
+      if (!ativa) {
+        if (seco) return { ok: true, decisao: 'time_liga', motivo: 'fresh/frio — time liga primeiro' }
+        await sb.from('leads').update({ atendido_por: 'humano', atualizado_em: new Date().toISOString() }).eq('id', lead.id)
+        const { data: jaLig } = await sb.from('tarefas_lead').select('id').eq('lead_id', lead.id).in('tipo', ['ligar', 'ligar_1', 'ligar_agendado']).eq('concluida', false).eq('cancelada', false).limit(1)
+        if (!jaLig?.length) await sb.from('tarefas_lead').insert({ lead_id: lead.id, tipo: 'ligar_1', titulo: `Ligar (lead escreveu) — ${lead.nome}`, descricao: 'Lead escreveu/re-engajou no WhatsApp — padrão: ligação do time primeiro.' })
+        await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'observacao', observacao: '📞 Lead escreveu (fresh/frio) → time LIGA primeiro (padrão).' })
+        return { ok: true, decisao: 'time_liga', motivo: 'ligação do time primeiro' }
+      }
+    }
   }
 
   const r: any = await sugerirAtendimento({ leadId: lead.id })
