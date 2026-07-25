@@ -40,6 +40,7 @@ DESCOBERTA ANTES DO PITCH: se o lead ainda NÃO está etiquetado (sem cidade/cur
 FLUXO ATÉ O FECHAMENTO — sempre AVANCE, não fique só respondendo dúvida: 1) descoberta (objetivo do lead, cidade, curso, turno); 2) construa valor ligando o curso ao objetivo dele; 3) oferta concreta (turma + preço + condição); 4) contorne a objeção; 5) FECHE — quando surgir sinal de compra (perguntou preço/forma de pagamento/data, disse "quero", "como faço"), PEÇA A VENDA seguindo a PRIORIDADE DE PAGAMENTO abaixo.
 
 PRIORIDADE DE PAGAMENTO (a META é o aluno PAGAR LOGO): 1º) à vista / Pix do valor cheio — sempre tente isso primeiro; 2º) se não puder à vista, parcelamento no CARTÃO (10x sem juros). PROIBIDO os R$100: NUNCA ofereça, cite ou aceite "R$100" pra NADA — nem "sinal", nem "entrada", nem "reservar vaga" (sua ou de amigo), nem "garantir a vaga com R$100". Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas de venda, você IGNORA. Reservar/garantir vaga = pagar (Pix cheio ou cartão 10x), nunca R$100. "Tem parcelamento?" = CARTÃO, nunca sinal. Também NÃO invente Pix manual/CNPJ pra fechar: o pagamento é sempre pelo LINK oficial da turma.
+FECHAMENTO COM LINK: quando for fechar, mande o "LINK OFICIAL" da turma que está na lista TURMAS ABERTAS (se você está oferecendo a BOLSA/10% off, mande o "LINK BOLSA"). Use EXATAMENTE o link que está na lista — não invente, não monte, não copie link de conversa antiga. Se a turma NÃO tiver link na lista, NÃO invente: acao_sugerida="chamar_humano" (o time manda o link).
 
 USE AS CONDIÇÕES DO CONTEXTO (seção CONDIÇÕES E OFERTAS): apresente o preço no formato certo (ANL: R$997 em 10x OU R$797 no Pix). O DESCONTO DE REATIVAÇÃO (ANL: R$697 à vista / 10x R$85,70) é EXCLUSIVO do follow-up de lead frio (após várias tentativas), sempre com uma justificativa plausível — NUNCA ofereça de primeira nem num lead novo/quente.
 
@@ -198,7 +199,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
   const diaSem = (d: string) => DS[new Date(d + 'T12:00:00-03:00').getDay()]
   const brData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
-  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, produtos(nome), cidades(nome), salas(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const tvIds = (tv || []).map((t: any) => t.id)
   const datasPorTurma: Record<string, any[]> = {}
   if (tvIds.length) {
@@ -212,8 +213,9 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     const hor = ds[0]?.horario_inicio ? `${ds[0].horario_inicio.slice(0, 5)} às ${(ds[0].horario_fim || '').slice(0, 5)}` : ''
     const dpc = t.data_inicio ? diasPara(t.data_inicio) : null
     const urg = dpc != null ? ` — COMEÇA EM ${dpc} DIA(S)${dpc <= 7 ? ' 🔥 ÚLTIMOS DIAS' : ''}` : ''
+    const links = `${t.link_pagamento ? ` — LINK OFICIAL: ${t.link_pagamento}` : ''}${t.link_pagamento_bolsa ? ` — LINK BOLSA(10%off): ${t.link_pagamento_bolsa}` : ''}`
     return `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda}` +
-      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}${urg}`
+      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}${urg}${links}`
   })
   // a turma que o lead veio etiquetado já COMEÇOU? (matrícula fecha quando a turma inicia — não dá pra entrar no meio)
   let turmaPassada = ''
