@@ -50,14 +50,19 @@ export async function POST(req: NextRequest) {
     const cidsDe = (l: any) => [...new Set([...(cdl[l.id] || []), ...(cpt[suf(l.whatsapp)] || [])])]
     // quem TEM inbound (respondeu) — esses NÃO são Esteira IA
     const allc = [...new Set((leads || []).flatMap(cidsDe))]
-    const temInbound = new Set<string>() // conversa_id
+    const temInbound = new Set<string>() // conversa_id (respondeu alguma vez)
     const lastOutConv: Record<string, number> = {} // último enviado por conversa
-    for (let i = 0; i < allc.length; i += 200) {
-      const { data } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', allc.slice(i, i + 200)).limit(8000)
-      for (const m of data || []) {
-        const inb = (m.direcao === 'recebida' || m.status === 'recebida')
-        if (inb) temInbound.add(m.conversa_id)
-        else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t }
+    for (let i = 0; i < allc.length; i += 150) {
+      const chunk = allc.slice(i, i + 150); let mf = 0
+      for (; ;) {
+        const { data } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', chunk).range(mf, mf + 999)
+        if (!data || !data.length) break
+        for (const m of data) {
+          const inb = (m.direcao === 'recebida' || m.status === 'recebida')
+          if (inb) temInbound.add(m.conversa_id)
+          else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t }
+        }
+        if (data.length < 1000) break; mf += 1000
       }
     }
     const frios = (leads || []).filter(l => { const cs = cidsDe(l); return cs.every(c => !temInbound.has(c)) })
