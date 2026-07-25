@@ -19,10 +19,17 @@ export async function GET(req: NextRequest) {
       .select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).eq('atendido_por', 'ia').limit(60)
     const alvo = leads || []
 
-    // conversas dos leads da IA
+    // conversas dos leads da IA — ESCOPADO aos leads (a org tem milhares de conversas; buscar tudo cortava em 1000 e sumia com as novas)
     let mensagens: any[] = []
     if (alvo.length) {
-      const { data: convs } = await supabase.from('wa_conversas').select('id, telefone, lead_id').eq('org_id', org)
+      const alvoIds = alvo.map(l => l.id)
+      const convsPorLead: any[] = []
+      for (let i = 0; i < alvoIds.length; i += 200) { const { data } = await supabase.from('wa_conversas').select('id, telefone, lead_id').in('lead_id', alvoIds.slice(i, i + 200)); convsPorLead.push(...(data || [])) }
+      // + conversas casadas pelo telefone (histórico antigo sem lead_id)
+      const fones = [...new Set(alvo.map(l => suf(l.whatsapp)).filter(s => s.length === 8))]
+      const convsPorFone: any[] = []
+      for (const f of fones) { const { data } = await supabase.from('wa_conversas').select('id, telefone, lead_id').eq('org_id', org).ilike('telefone', `%${f}`); convsPorFone.push(...(data || [])) }
+      const convs = [...convsPorLead, ...convsPorFone.filter(c => !convsPorLead.some(x => x.id === c.id))]
       const byLead: Record<string, string[]> = {}, telConv: Record<string, string[]> = {}
       for (const c of (convs || [])) { if (c.lead_id) (byLead[c.lead_id] = byLead[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (telConv[s] = telConv[s] || []).push(c.id) }
       const idsDe = (l: any) => [...new Set([...(byLead[l.id] || []), ...(telConv[suf(l.whatsapp)] || [])])]
