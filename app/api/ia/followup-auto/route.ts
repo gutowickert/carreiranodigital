@@ -43,8 +43,10 @@ export async function POST(req: NextRequest) {
 
     // leads das 3 etapas
     const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
-    // conversas -> por lead + telefone
-    const { data: convs } = await sb.from('wa_conversas').select('id, lead_id, telefone').eq('org_id', org).limit(20000)
+    // conversas SÓ desses leads (escopado — evita truncar as 20k+ conversas gerais)
+    const leadIds = (leads || []).map(l => l.id)
+    const convs: any[] = []
+    for (let i = 0; i < leadIds.length; i += 300) { const { data } = await sb.from('wa_conversas').select('id, lead_id, telefone').eq('org_id', org).in('lead_id', leadIds.slice(i, i + 300)); convs.push(...(data || [])) }
     const cdl: Record<string, string[]> = {}, cpt: Record<string, string[]> = {}
     for (const c of convs || []) { if (c.lead_id) (cdl[c.lead_id] = cdl[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (cpt[s] = cpt[s] || []).push(c.id) }
     const cidsDe = (l: any) => [...new Set([...(cdl[l.id] || []), ...(cpt[suf(l.whatsapp)] || [])])]
