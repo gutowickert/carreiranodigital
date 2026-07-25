@@ -96,6 +96,8 @@ export default function DetalheTurma() {
   const [edCodigo, setEdCodigo] = useState('')
   const [edPreco, setEdPreco] = useState('')
   const [edVagas, setEdVagas] = useState('')
+  const [edLink, setEdLink] = useState('')
+  const [edLinkBolsa, setEdLinkBolsa] = useState('')
   const [edMeta, setEdMeta] = useState('')
   const [edCidadeId, setEdCidadeId] = useState('')
 
@@ -335,6 +337,8 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
     setEdVagas(String(turma.vagas ?? ''))
     setEdMeta(String(turma.meta_matriculas ?? ''))
     setEdCidadeId((turma as any).cidade_id || '')
+    setEdLink((turma as any).link_pagamento || '')
+    setEdLinkBolsa((turma as any).link_pagamento_bolsa || '')
     setEditandoTurma(true)
   }
 
@@ -345,6 +349,8 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
       vagas: parseInt(edVagas) || 0,
       meta_matriculas: parseInt(edMeta) || 0,
       cidade_id: edCidadeId || null,
+      link_pagamento: edLink.trim() || null,
+      link_pagamento_bolsa: edLinkBolsa.trim() || null,
     }).eq('id', id)
     if (error) { alert('Erro ao salvar: ' + error.message); return }
     setEditandoTurma(false)
@@ -569,6 +575,16 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
             <div>
               <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Mínimo p/ não cancelar</label>
               <input value={edMeta} onChange={e => setEdMeta(e.target.value)} type="number" style={input} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>🔗 Link de pagamento (oficial)</label>
+              <input value={edLink} onChange={e => setEdLink(e.target.value)} placeholder="https://pay.herospark.com/..." style={input} />
+            </div>
+            <div>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>🎓 Link da bolsa (10% desconto)</label>
+              <input value={edLinkBolsa} onChange={e => setEdLinkBolsa(e.target.value)} placeholder="https://pay.herospark.com/..." style={input} />
             </div>
           </div>
           <p style={{ fontSize: '11px', color: 'var(--amber)', margin: '0 0 12px' }}>
