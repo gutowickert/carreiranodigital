@@ -51,11 +51,17 @@ export async function POST(req: NextRequest) {
     // quem TEM inbound (respondeu) — esses NÃO são Esteira IA
     const allc = [...new Set((leads || []).flatMap(cidsDe))]
     const temInbound = new Set<string>() // conversa_id
+    const lastOutConv: Record<string, number> = {} // último enviado por conversa
     for (let i = 0; i < allc.length; i += 200) {
-      const { data } = await sb.from('wa_mensagens').select('conversa_id').in('conversa_id', allc.slice(i, i + 200)).eq('direcao', 'recebida').limit(5000)
-      for (const m of data || []) temInbound.add(m.conversa_id)
+      const { data } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', allc.slice(i, i + 200)).limit(8000)
+      for (const m of data || []) {
+        const inb = (m.direcao === 'recebida' || m.status === 'recebida')
+        if (inb) temInbound.add(m.conversa_id)
+        else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t }
+      }
     }
     const frios = (leads || []).filter(l => { const cs = cidsDe(l); return cs.every(c => !temInbound.has(c)) })
+    const lastOutDe = (l: any) => Math.max(0, ...cidsDe(l).map((c: string) => lastOutConv[c] || 0))
 
     // toques já dados (lead_andamentos tipo 'ia_followup') — pra saber o próximo e o espaçamento
     const ids = frios.map(l => l.id)
@@ -65,13 +71,13 @@ export async function POST(req: NextRequest) {
       for (const a of am || []) { const o = toquesDe[a.lead_id] = toquesDe[a.lead_id] || { n: 0, ultimo: 0 }; o.n++; const t = +new Date(a.criado_em); if (t > o.ultimo) o.ultimo = t }
     }
 
-    // due: nunca tocado OU último toque há >= SPACING dias; e ainda tem toque na sequência
+    // due: ainda tem toque na sequência E não mandamos NADA (qualquer template/msg) nos últimos SPACING dias.
+    // (respeita migração/recuperação recentes — não manda por cima)
     const now = Date.now()
     const due = frios.filter(l => {
       const o = toquesDe[l.id] || { n: 0, ultimo: 0 }
       if (o.n >= TOQUES.length) return false
-      if (o.n === 0) return true
-      return now - o.ultimo >= SPACING_DIAS * DIA
+      return now - lastOutDe(l) >= SPACING_DIAS * DIA
     })
 
     // cidade por turma
