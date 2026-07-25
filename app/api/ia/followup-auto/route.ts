@@ -138,12 +138,14 @@ export async function POST(req: NextRequest) {
       }
       const fam = familia(l.codigo_turma)
       const ti = turmaInfo.get(l.turma_id || '')
-      const preco = ti?.preco || (fam === 'ANL' ? 797 : fam === 'FC' ? 2697 : 0)
+      // preço FIXO por produto (FC sempre 2397 pix / 2697 cartão 10x; ANL 797 pix) — cravado no corpo dos templates
+      const precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
       const valores: Record<string, string> = {
         nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
         cidade: ti?.cidade || 'sua região',
-        preco_pix: money(preco), preco: money(preco), preco_parcelado: `10x de ${money(preco / 10)}`,
-        condicao_bolsa: `${money(preco * 0.9)} (10% de desconto)`, prazo: prazoLote,
+        preco_pix: money(precoPix), preco: money(precoPix),
+        preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
+        condicao_bolsa: `${money(precoPix * 0.9)} no Pix (10% de desconto)`, prazo: prazoLote,
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
