@@ -1,6 +1,10 @@
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { enviarTexto, foneOficial } from '@/lib/whatsapp-oficial'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
+import { entenderMidia } from '@/lib/entender-midia'
+
+// amanhã 9h BRT (12:00 UTC) — vencimento padrão das tarefas de ligação (data_vencimento é obrigatório)
+function amanha9BRT(): string { const d = new Date(); d.setUTCDate(d.getUTCDate() + 1); d.setUTCHours(12, 0, 0, 0); return d.toISOString() }
 
 // ATENDER UM LEAD — o cérebro autônomo, reusado pelo WEBHOOK (tempo real) e pelo CRON (rede de segurança).
 // A IA lê o dossiê (via copiloto), gera a resposta e decide: responder / agendar ligação / escalar (chamar_humano).
@@ -37,16 +41,19 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
   if ((lig && lig.length) || lead.etapa === 'aguardando_atendimento') return { ok: false, motivo: 'ligação pendente / aguardando — time atende' }
 
   if (opts.conversaId) {
+    // ENTENDE a mídia: transcreve áudio + descreve imagem → texto (a IA passa a entender o conteúdo no contexto)
+    if (!seco) await entenderMidia(opts.conversaId)
     const { data: ult } = await sb.from('wa_mensagens').select('direcao, status, tipo, criado_em').eq('conversa_id', opts.conversaId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
     const inbound = ult && (ult.direcao === 'recebida' || ult.status === 'recebida')
     // ANTI-DUPLICADO: já respondemos nos últimos 60s (lead mandou 2 msgs seguidas) → não responde de novo
     if (!seco && ult && !inbound && (Date.now() - +new Date(ult.criado_em)) < 60000) return { ok: false, motivo: 'já respondido há pouco (anti-duplicado)' }
-    // MÍDIA: a IA não interpreta áudio/imagem/vídeo/documento com segurança → ESCALA pro time (responder no WhatsApp, com áudio se for áudio)
-    if (inbound && ['audio', 'imagem', 'video', 'documento'].includes(ult.tipo)) {
-      if (seco) return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo}) — passa pro time` }
+    // ÁUDIO/VÍDEO/DOCUMENTO → o TIME responde (com áudio se for áudio). A IA entende o conteúdo pelo contexto, mas não responde.
+    // IMAGEM a IA LÊ (já foi descrita pelo entenderMidia) e responde normal.
+    if (inbound && ['audio', 'video', 'documento'].includes(ult.tipo)) {
+      if (seco) return { ok: true, decisao: 'escala', motivo: `${ult.tipo} — passa pro time` }
       await sb.from('leads').update({ atendido_por: 'humano', handoff_motivo: `Cliente mandou ${ult.tipo} — responder no WhatsApp${ult.tipo === 'audio' ? ' (com áudio)' : ''}`, handoff_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('id', lead.id)
-      await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `${ult.tipo === 'audio' ? '🎤' : '🖼️'} Cliente mandou ${ult.tipo} → IA passou pro time (não interpreta mídia).` })
-      return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo})` }
+      await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `${ult.tipo === 'audio' ? '🎤' : '📎'} Cliente mandou ${ult.tipo} → IA passou pro time.` })
+      return { ok: true, decisao: 'escala', motivo: ult.tipo }
     }
     // PADRÃO: LIGAÇÃO DO TIME PRIMEIRO — mas só pra lead NOVO ou que RE-ENGAJOU depois de sumido (dias).
     // Conversa ATIVA (cliente responde em até 72h à nossa última mensagem) → a IA CONTINUA (não interrompe uma venda em andamento).
@@ -57,7 +64,7 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
         if (seco) return { ok: true, decisao: 'time_liga', motivo: 'fresh/frio — time liga primeiro' }
         await sb.from('leads').update({ atendido_por: 'humano', atualizado_em: new Date().toISOString() }).eq('id', lead.id)
         const { data: jaLig } = await sb.from('tarefas_lead').select('id').eq('lead_id', lead.id).in('tipo', ['ligar', 'ligar_1', 'ligar_agendado']).eq('concluida', false).eq('cancelada', false).limit(1)
-        if (!jaLig?.length) await sb.from('tarefas_lead').insert({ lead_id: lead.id, tipo: 'ligar_1', titulo: `Ligar (lead escreveu) — ${lead.nome}`, descricao: 'Lead escreveu/re-engajou no WhatsApp — padrão: ligação do time primeiro.' })
+        if (!jaLig?.length) await sb.from('tarefas_lead').insert({ org_id: org, lead_id: lead.id, tipo: 'ligar_agendado', titulo: `Ligar (lead escreveu) — ${lead.nome}`, descricao: 'Lead escreveu/re-engajou no WhatsApp — padrão: ligação do time primeiro.', data_vencimento: amanha9BRT() })
         await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'observacao', observacao: '📞 Lead escreveu (fresh/frio) → time LIGA primeiro (padrão).' })
         return { ok: true, decisao: 'time_liga', motivo: 'ligação do time primeiro' }
       }
@@ -100,7 +107,8 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
   }
   // AGENDAMENTO automático: lead pediu ligação → cria na Fila de Ligações
   if (agenda) {
-    await sb.from('tarefas_lead').insert({ lead_id: lead.id, tipo: 'ligar_agendado', titulo: `Ligar (pedido no WhatsApp) — ${lead.nome}`, descricao: s.proximo_passo || 'Lead pediu ligação no atendimento da IA.' })
+    await sb.from('tarefas_lead').insert({ org_id: org, lead_id: lead.id, tipo: 'ligar_agendado', titulo: `Ligar (pedido no WhatsApp) — ${lead.nome}`, descricao: s.proximo_passo || 'Lead pediu ligação no atendimento da IA.', data_vencimento: amanha9BRT() })
+    await sb.from('leads').update({ atendido_por: 'humano' }).eq('id', lead.id) // agendou ligação → é do time (a IA não fala mais em cima)
   }
   await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_followup', observacao: `🤖 IA respondeu (${s.acao_sugerida}): ${resposta.slice(0, 120)}` })
   // RESOLVE as tarefas de follow-up do time (a IA fez) — mantém ligação (time liga) e pagamento/agendado
