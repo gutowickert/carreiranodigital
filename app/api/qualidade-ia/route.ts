@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { dossiesLote, timelineDossie } from '@/lib/historico-lead'
 
 // Controle de Qualidade dos atendimentos da IA (Nando + Guto + Rick).
 //  GET ?email= -> atendimentos da IA (leads atendido_por='ia') + conversa + última revisão + métricas
 //  POST { email, lead_id, nota, status, comentario } -> salva a revisão (webhook_logs origem='qc-ia')
 const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
-const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 
 export async function GET(req: NextRequest) {
   try {
@@ -19,32 +19,9 @@ export async function GET(req: NextRequest) {
       .select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).eq('atendido_por', 'ia').limit(60)
     const alvo = leads || []
 
-    // conversas dos leads da IA — ESCOPADO aos leads (a org tem milhares de conversas; buscar tudo cortava em 1000 e sumia com as novas)
-    let mensagens: any[] = []
-    if (alvo.length) {
-      const alvoIds = alvo.map(l => l.id)
-      const convsPorLead: any[] = []
-      for (let i = 0; i < alvoIds.length; i += 200) { const { data } = await supabase.from('wa_conversas').select('id, telefone, lead_id').in('lead_id', alvoIds.slice(i, i + 200)); convsPorLead.push(...(data || [])) }
-      // + conversas casadas pelo telefone (histórico antigo sem lead_id)
-      const fones = [...new Set(alvo.map(l => suf(l.whatsapp)).filter(s => s.length === 8))]
-      const convsPorFone: any[] = []
-      for (const f of fones) { const { data } = await supabase.from('wa_conversas').select('id, telefone, lead_id').eq('org_id', org).ilike('telefone', `%${f}`); convsPorFone.push(...(data || [])) }
-      const convs = [...convsPorLead, ...convsPorFone.filter(c => !convsPorLead.some(x => x.id === c.id))]
-      const byLead: Record<string, string[]> = {}, telConv: Record<string, string[]> = {}
-      for (const c of (convs || [])) { if (c.lead_id) (byLead[c.lead_id] = byLead[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (telConv[s] = telConv[s] || []).push(c.id) }
-      const idsDe = (l: any) => [...new Set([...(byLead[l.id] || []), ...(telConv[suf(l.whatsapp)] || [])])]
-      const todos = [...new Set(alvo.flatMap(idsDe))]
-      const porLead: Record<string, string[]> = Object.fromEntries(alvo.map(l => [l.id, idsDe(l)]))
-      if (todos.length) {
-        const { data } = await supabase.from('wa_mensagens').select('conversa_id, direcao, status, texto, criado_em').eq('org_id', org).in('conversa_id', todos).order('criado_em', { ascending: false }).limit(2000)
-        mensagens = data || []
-      }
-      var linhasDe = (l: any) => {
-        const ids = porLead[l.id] || []
-        return mensagens.filter(m => ids.includes(m.conversa_id) && (m.texto || '').trim()).sort((a, b) => +new Date(a.criado_em) - +new Date(b.criado_em)).slice(-14)
-          .map(m => ({ quem: (m.direcao === 'recebida' || m.status === 'recebida') ? 'cliente' : 'nos', texto: (m.texto || '').slice(0, 400), em: m.criado_em }))
-      }
-    }
+    // DOSSIÊ ÚNICO (mesma lib do motor e do copiloto): mensagens dos 2 canais + ligações + áudios + todos os andamentos.
+    const dossies = await dossiesLote(supabase, org, alvo)
+    const linhasDe = (l: any) => timelineDossie(dossies.get(l.id)!, 20).map(t => ({ quem: t.quem, texto: (t.texto || '').slice(0, 400), em: t.em }))
 
     // revisões salvas
     const { data: revs } = await supabase.from('webhook_logs').select('payload, recebido_em').eq('org_id', org).eq('origem', 'qc-ia').order('recebido_em', { ascending: false })
@@ -53,7 +30,7 @@ export async function GET(req: NextRequest) {
 
     const atendimentos = alvo.map(l => ({
       lead_id: l.id, nome: l.nome, etapa: l.etapa, turma: l.codigo_turma, whatsapp: l.whatsapp,
-      mensagens: typeof linhasDe === 'function' ? linhasDe(l) : [], revisao: ultimaPorLead[l.id] || null,
+      mensagens: linhasDe(l), revisao: ultimaPorLead[l.id] || null,
     }))
 
     // métricas (todas as revisões)

@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
+import { dossiesLote } from '@/lib/historico-lead'
 
 export const maxDuration = 60
 
@@ -20,7 +21,6 @@ const VENDEDOR = 'Mateus'
 const MOTIVO_SEM_RESPOSTA = 'f972b270-691a-4e24-bd79-3b7583970a51'
 const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
 const cursoNome = (fam: string) => fam === 'FC' ? 'Formação Completa em Marketing Digital' : fam === 'ANL' ? 'Anúncios para Negócios Locais' : 'nossos cursos'
-const suf = (s: string) => (s || '').replace(/\D/g, '').slice(-8)
 const DIA = 864e5
 
 export async function POST(req: NextRequest) {
@@ -56,28 +56,13 @@ export async function POST(req: NextRequest) {
     // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
     const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
-    const leadIds = (leads || []).map(l => l.id)
-    const convs: any[] = []
-    for (let i = 0; i < leadIds.length; i += 300) { const { data } = await sb.from('wa_conversas').select('id, lead_id, telefone').eq('org_id', org).in('lead_id', leadIds.slice(i, i + 300)); convs.push(...(data || [])) }
-    const cdl: Record<string, string[]> = {}, cpt: Record<string, string[]> = {}
-    for (const c of convs) { if (c.lead_id) (cdl[c.lead_id] = cdl[c.lead_id] || []).push(c.id); const s = suf(c.telefone); if (s.length === 8) (cpt[s] = cpt[s] || []).push(c.id) }
-    const cidsDe = (l: any) => [...new Set([...(cdl[l.id] || []), ...(cpt[suf(l.whatsapp)] || [])])]
-    const allc = [...new Set((leads || []).flatMap(cidsDe))]
 
-    // inbound (respondeu? não é Esteira IA) + último enviado por conversa
-    const temInbound = new Set<string>()
-    const lastOutConv: Record<string, number> = {}
-    for (let i = 0; i < allc.length; i += 150) {
-      const chunk = allc.slice(i, i + 150); let mf = 0
-      for (; ;) {
-        const { data } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', chunk).range(mf, mf + 999)
-        if (!data || !data.length) break
-        for (const m of data) { const inb = (m.direcao === 'recebida' || m.status === 'recebida'); if (inb) temInbound.add(m.conversa_id); else { const t = +new Date(m.criado_em); if (t > (lastOutConv[m.conversa_id] || 0)) lastOutConv[m.conversa_id] = t } }
-        if (data.length < 1000) break; mf += 1000
-      }
-    }
-    const frios = (leads || []).filter(l => { const cs = cidsDe(l); return cs.length ? cs.every(c => !temInbound.has(c)) : true })
-    const lastOutDe = (l: any) => Math.max(0, ...cidsDe(l).map((c: string) => lastOutConv[c] || 0))
+    // DOSSIÊ ÚNICO (fonte de verdade): mensagens dos 2 canais (zapi+oficial, inclusive conversas só por telefone
+    // que a busca por lead_id perdia) + ligações + TODOS os andamentos. Mesma lib da tela e do copiloto.
+    const dossies = await dossiesLote(sb, org, leads)
+    // Esteira IA = SÓ frio de verdade: nunca respondeu mensagem E sem nota humana de conversa. Engajado → é do time.
+    const frios = (leads || []).filter(l => !dossies.get(l.id)?.engajado)
+    const lastOutDe = (l: any) => { const e = dossies.get(l.id)?.ultimoOutboundEm; return e ? +new Date(e) : 0 }
 
     // entrada na etapa atual + toques da IA já dados NESSA etapa
     const ids = frios.map(l => l.id)
