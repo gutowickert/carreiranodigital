@@ -32,6 +32,10 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
   if (lead.handoff_em) return { ok: false, motivo: 'escalado (handoff pendente) — time atende' }
   if (!seco && await killAtivo(org)) return { ok: false, motivo: 'automação desligada (kill switch)' }
 
+  // LIGAÇÃO PENDENTE / lead aguardando ligação → a IA NÃO fala (o time tem a ligação; ela não atropela nem alucina em cima).
+  const { data: lig } = await sb.from('tarefas_lead').select('id').eq('lead_id', lead.id).in('tipo', ['ligar_agendado', 'ligar', 'ligar_1']).eq('concluida', false).eq('cancelada', false).limit(1)
+  if ((lig && lig.length) || lead.etapa === 'aguardando_atendimento') return { ok: false, motivo: 'ligação pendente / aguardando — time atende' }
+
   if (opts.conversaId) {
     const { data: ult } = await sb.from('wa_mensagens').select('direcao, status, tipo, criado_em').eq('conversa_id', opts.conversaId).order('criado_em', { ascending: false }).limit(1).maybeSingle()
     const inbound = ult && (ult.direcao === 'recebida' || ult.status === 'recebida')
@@ -44,11 +48,11 @@ export async function atenderLead(org: string, leadId: string, opts: { dryRun?: 
       await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `${ult.tipo === 'audio' ? '🎤' : '🖼️'} Cliente mandou ${ult.tipo} → IA passou pro time (não interpreta mídia).` })
       return { ok: true, decisao: 'escala', motivo: `mídia (${ult.tipo})` }
     }
-    // PADRÃO: LIGAÇÃO DO TIME PRIMEIRO. A IA só CONTINUA conversa ATIVA (mandamos algo < 18h).
-    // Lead novo OU que re-engajou depois de sumido → o time LIGA primeiro; a IA não responde na hora.
+    // PADRÃO: LIGAÇÃO DO TIME PRIMEIRO — mas só pra lead NOVO ou que RE-ENGAJOU depois de sumido (dias).
+    // Conversa ATIVA (cliente responde em até 72h à nossa última mensagem) → a IA CONTINUA (não interrompe uma venda em andamento).
     if (inbound) {
       const { data: ultOut } = await sb.from('wa_mensagens').select('criado_em').eq('conversa_id', opts.conversaId).eq('direcao', 'enviada').neq('status', 'falha').order('criado_em', { ascending: false }).limit(1).maybeSingle()
-      const ativa = ultOut && (Date.now() - +new Date(ultOut.criado_em)) < 18 * 3600e3
+      const ativa = ultOut && (Date.now() - +new Date(ultOut.criado_em)) < 72 * 3600e3
       if (!ativa) {
         if (seco) return { ok: true, decisao: 'time_liga', motivo: 'fresh/frio — time liga primeiro' }
         await sb.from('leads').update({ atendido_por: 'humano', atualizado_em: new Date().toISOString() }).eq('id', lead.id)

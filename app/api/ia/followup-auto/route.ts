@@ -69,9 +69,10 @@ export async function POST(req: NextRequest) {
     const ids = frios.map(l => l.id)
     const entradaEtapa: Record<string, number> = {}
     const toquesIA: Record<string, { n: number; ultimo: number }> = {}
+    const enviadosTpl: Record<string, Set<string>> = {} // templates (cnd_*) que o lead JÁ recebeu (qualquer fonte) → não repetir
     for (let i = 0; i < ids.length; i += 200) {
       const chunk = ids.slice(i, i + 200)
-      const { data: ands } = await sb.from('lead_andamentos').select('lead_id, tipo, etapa_nova, criado_em').in('lead_id', chunk).order('criado_em', { ascending: true })
+      const { data: ands } = await sb.from('lead_andamentos').select('lead_id, tipo, etapa_nova, observacao, criado_em').in('lead_id', chunk).order('criado_em', { ascending: true })
       const byLead: Record<string, any[]> = {}
       for (const a of ands || []) (byLead[a.lead_id] = byLead[a.lead_id] || []).push(a)
       for (const l of frios) {
@@ -82,6 +83,10 @@ export async function POST(req: NextRequest) {
         entradaEtapa[l.id] = ent
         const toques = as.filter(a => a.tipo === 'ia_followup' && +new Date(a.criado_em) >= ent)
         toquesIA[l.id] = { n: toques.length, ultimo: toques.length ? +new Date(toques[toques.length - 1].criado_em) : 0 }
+        // coleta TODO template já enviado (ia_followup, recuperacao_falha, migracao_num…) pra não repetir a mesma mensagem
+        const set = new Set<string>()
+        for (const a of as) { const m = (a.observacao || '').match(/cnd_[a-z0-9_]+/gi); if (m) m.forEach((x: string) => set.add(x.toLowerCase())) }
+        enviadosTpl[l.id] = set
       }
     }
 
@@ -91,23 +96,30 @@ export async function POST(req: NextRequest) {
     for (const l of frios) {
       const cad = (fluxo.cadencia[l.etapa] || [])
       const o = toquesIA[l.id] || { n: 0, ultimo: 0 }
-      if (o.n >= cad.length) {
-        // esgotou a etapa → avança pra próxima (a próxima rodada toca a nova etapa)
+      const fam = familia(l.codigo_turma)
+      const jaEnv = enviadosTpl[l.id] || new Set<string>()
+      // acha o próximo toque cujo template AINDA NÃO foi enviado a esse lead (não repete a mesma mensagem)
+      // e que não seja reabridor/apresentação frio pra engajado.
+      let idx = o.n, toque: any = null, tpl: any = null
+      while (idx < cad.length) {
+        const tq = cad[idx]
+        const t = pickTpl(l.etapa, tq.chave, fam)
+        const jaFoi = t && jaEnv.has((t.nome_meta || '').toLowerCase())
+        const engBloq = t && dossies.get(l.id)?.engajado && /retomar|apresentacao/i.test(t.nome_meta)
+        if (t && !jaFoi && !engBloq) { toque = tq; tpl = t; break }
+        idx++
+      }
+      if (!tpl) {
+        // esgotou os toques da etapa (todos já enviados / sem template / bloqueados) → avança pra próxima
         const prox = PROX_ETAPA[l.etapa]
         if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
         continue
       }
-      const toque = cad[o.n]
-      const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
+      // timing: espaça a partir do último CONTATO (qualquer envio nosso) e nunca 2x no mesmo dia
+      const ref = Math.max(o.ultimo || 0, lastOutDe(l) || 0, idx === 0 ? (entradaEtapa[l.id] || 0) : 0)
       const due = now - ref >= (toque.dias || 0) * DIA
       const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
-      if (!due || jaHoje) continue // segue o fluxo (dias) + não manda 2x no mesmo dia
-      const fam = familia(l.codigo_turma)
-      const tpl = pickTpl(l.etapa, toque.chave, fam)
-      if (!tpl) continue // sem template mapeado pra esse toque
-      // TRAVA: lead ENGAJADO (já respondeu/atendeu ligação) NUNCA recebe reabridor/apresentação frios
-      // ("me conta qual é teu negócio" pra quem já conversou). Só toques que não assumem 1º contato (lote/bolsa).
-      if (dossies.get(l.id)?.engajado && /retomar|apresentacao/i.test(tpl.nome_meta)) continue
+      if (!due || jaHoje) continue
       planos.push({ lead: l, acao: 'enviar', chave: toque.chave, tpl, demite: /demiss|encerr/i.test(toque.chave) })
     }
 
