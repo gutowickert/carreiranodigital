@@ -52,7 +52,10 @@ export async function POST(req: NextRequest) {
     }
 
     // leads das 3 etapas + conversas escopadas
-    const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
+    const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
+    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
     const leadIds = (leads || []).map(l => l.id)
     const convs: any[] = []
     for (let i = 0; i < leadIds.length; i += 300) { const { data } = await sb.from('wa_conversas').select('id, lead_id, telefone').eq('org_id', org).in('lead_id', leadIds.slice(i, i + 300)); convs.push(...(data || [])) }
