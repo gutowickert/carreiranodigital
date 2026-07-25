@@ -43,6 +43,7 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Atender Agora', href: '/dashboard/atender' },
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
+      { nome: 'IA pediu ajuda', href: '/dashboard/ia-ajuda' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'Recuperar Histórico', href: '/dashboard/recuperar-historico' },
       { nome: 'CRM', href: '/dashboard/crm' },
