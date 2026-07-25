@@ -5,16 +5,20 @@
 type LeadRef = { id: string; whatsapp?: string | null }
 export type MsgLinha = { quem: 'cliente' | 'nos'; texto: string; canal: string; status: string; em: string }
 export type AndLinha = { tipo: string; observacao: string; em: string }
+export type LigLinha = { duracao: number; atendida: boolean; transcricao: string; direcao: string; em: string }
 export type Dossie = {
   mensagens: MsgLinha[]
   andamentos: AndLinha[]
-  temInbound: boolean          // alguma mensagem RECEBIDA (qualquer canal)
-  temLigacao: boolean          // alguma ligação registrada
-  engajado: boolean            // já teve contato humano de verdade (inbound OU ligação OU observação humana)
+  ligacoes: LigLinha[]
+  temInbound: boolean            // alguma mensagem RECEBIDA (qualquer canal)
+  temLigacaoAtendida: boolean    // ligação ATENDIDA (> 60s — a regra da escola: < 1min não foi atendida)
+  engajado: boolean              // teve contato humano real: respondeu msg OU ligação atendida OU nota humana
   ultimoInboundEm: string | null
   ultimoOutboundEm: string | null
   ultimoContatoEm: string | null   // último movimento de qualquer tipo
 }
+
+const ATENDIDA_MIN_SEG = 60      // ligação só conta como atendida com MAIS de 1 minuto
 
 const suf = (t: string | null | undefined) => (t || '').replace(/\D/g, '').slice(-8)
 const RECEBIDA = (m: any) => m.direcao === 'recebida' || m.status === 'recebida'
@@ -24,7 +28,7 @@ const AND_AUTO = new Set(['tarefa_criada', 'mudanca_etapa', 'criado', 'webhook_c
 // Monta o dossiê de VÁRIOS leads de uma vez (batch — evita N+1 no motor).
 export async function dossiesLote(sb: any, org: string, leads: LeadRef[]): Promise<Map<string, Dossie>> {
   const out = new Map<string, Dossie>()
-  for (const l of leads) out.set(l.id, { mensagens: [], andamentos: [], temInbound: false, temLigacao: false, engajado: false, ultimoInboundEm: null, ultimoOutboundEm: null, ultimoContatoEm: null })
+  for (const l of leads) out.set(l.id, { mensagens: [], andamentos: [], ligacoes: [], temInbound: false, temLigacaoAtendida: false, engajado: false, ultimoInboundEm: null, ultimoOutboundEm: null, ultimoContatoEm: null })
   if (!leads.length) return out
   const leadIds = leads.map(l => l.id)
 
@@ -55,24 +59,35 @@ export async function dossiesLote(sb: any, org: string, leads: LeadRef[]): Promi
     else if (m.status !== 'falha') { if (!d.ultimoOutboundEm || em > d.ultimoOutboundEm) d.ultimoOutboundEm = em }
   }
 
-  // 3) TODOS os andamentos do card (ligações, áudios, observações, etapa, tarefas)
+  // 3) TODOS os andamentos do card (áudios, observações, etapa, tarefas)
   const ands: any[] = []
   for (let i = 0; i < leadIds.length; i += 200) { const { data } = await sb.from('lead_andamentos').select('lead_id, tipo, observacao, criado_em').in('lead_id', leadIds.slice(i, i + 200)); ands.push(...(data || [])) }
   for (const a of ands) {
     const d = out.get(a.lead_id); if (!d) continue
     d.andamentos.push({ tipo: a.tipo, observacao: a.observacao || '', em: a.criado_em })
-    if (a.tipo === 'ligacao') d.temLigacao = true
   }
 
-  // 4) fecha os sinais
+  // 4) LIGAÇÕES (tabela ligacoes, API4COM) — com duração; atendida = > 60s
+  const ligs: any[] = []
+  for (let i = 0; i < leadIds.length; i += 200) { const { data } = await sb.from('ligacoes').select('lead_id, duracao, direcao, metadata, criado_em, atendida_em').in('lead_id', leadIds.slice(i, i + 200)); ligs.push(...(data || [])) }
+  for (const g of ligs) {
+    const d = out.get(g.lead_id); if (!d) continue
+    const dur = Number(g.duracao) || 0
+    const atendida = dur > ATENDIDA_MIN_SEG
+    d.ligacoes.push({ duracao: dur, atendida, transcricao: (g.metadata?.transcricao || '').toString(), direcao: g.direcao || '', em: g.criado_em })
+    if (atendida) d.temLigacaoAtendida = true
+  }
+
+  // 5) fecha os sinais
   for (const d of out.values()) {
     d.mensagens.sort((a, b) => +new Date(a.em) - +new Date(b.em))
     d.andamentos.sort((a, b) => +new Date(a.em) - +new Date(b.em))
-    // engajado = teve conversa DE VERDADE: respondeu mensagem OU tem nota humana (ligação atendida vira observação).
-    // Ligação só "iniciada" (sem retorno/nota) NÃO conta — é justamente o alvo da Esteira IA ("não atenderam").
+    d.ligacoes.sort((a, b) => +new Date(a.em) - +new Date(b.em))
+    // engajado = teve conversa DE VERDADE: respondeu mensagem OU ligação ATENDIDA (>1min) OU nota humana.
+    // Ligação curta (não atendida) NÃO conta — é justamente o alvo da Esteira IA ("não atenderam ligação").
     const temNotaHumana = d.andamentos.some(a => !AND_AUTO.has(a.tipo) && a.tipo !== 'ligacao' && (a.observacao || '').trim())
-    d.engajado = d.temInbound || temNotaHumana
-    const datas = [d.ultimoInboundEm, d.ultimoOutboundEm, ...d.andamentos.map(a => a.em)].filter(Boolean) as string[]
+    d.engajado = d.temInbound || d.temLigacaoAtendida || temNotaHumana
+    const datas = [d.ultimoInboundEm, d.ultimoOutboundEm, ...d.andamentos.map(a => a.em), ...d.ligacoes.map(g => g.em)].filter(Boolean) as string[]
     d.ultimoContatoEm = datas.length ? datas.sort().slice(-1)[0] : null
   }
   return out
@@ -83,12 +98,16 @@ export async function dossieLead(sb: any, org: string, lead: LeadRef): Promise<D
   return (await dossiesLote(sb, org, [lead])).get(lead.id)!
 }
 
-// Linha do tempo unificada (mensagens + andamentos) pronta pra exibir/mandar pro modelo.
+// duração humana: 628 -> "10min28s", 20 -> "20s"
+export const durHumana = (s: number) => s >= 60 ? `${Math.floor(s / 60)}min${s % 60 ? (s % 60) + 's' : ''}` : `${s}s`
+
+// Linha do tempo unificada (mensagens + ligações com tempo + notas) pronta pra exibir/mandar pro modelo.
 export function timelineDossie(d: Dossie, max = 30): { quem: string; texto: string; em: string }[] {
   const linhas = [
     ...d.mensagens.map(m => ({ quem: m.quem === 'cliente' ? 'cliente' : 'nos', texto: m.texto, em: m.em })),
-    ...d.andamentos.filter(a => a.tipo === 'ligacao' || (!AND_AUTO.has(a.tipo) && (a.observacao || '').trim()))
-      .map(a => ({ quem: 'evento', texto: a.tipo === 'ligacao' ? `📞 ligação${a.observacao ? ' — ' + a.observacao : ''}` : a.observacao, em: a.em })),
+    ...d.ligacoes.map(g => ({ quem: 'evento', texto: `📞 ligação ${g.atendida ? 'ATENDIDA' : 'não atendida'} — ${durHumana(g.duracao)}${g.transcricao ? ' (transcrita)' : ''}`, em: g.em })),
+    ...d.andamentos.filter(a => a.tipo !== 'ligacao' && !AND_AUTO.has(a.tipo) && (a.observacao || '').trim())
+      .map(a => ({ quem: 'evento', texto: '📝 ' + a.observacao, em: a.em })),
   ]
   return linhas.sort((a, b) => +new Date(a.em) - +new Date(b.em)).slice(-max)
 }

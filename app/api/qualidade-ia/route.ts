@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
     const org = await orgDaRequest(req.headers.get('authorization'))
 
     const { data: leads } = await supabase.from('leads')
-      .select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).eq('atendido_por', 'ia').limit(60)
+      .select('id, nome, whatsapp, etapa, codigo_turma, resumo_ia, resumo_ia_em').eq('org_id', org).eq('atendido_por', 'ia').limit(60)
     const alvo = leads || []
 
     // DOSSIÊ ÚNICO (mesma lib do motor e do copiloto): mensagens dos 2 canais + ligações + áudios + todos os andamentos.
@@ -28,10 +28,16 @@ export async function GET(req: NextRequest) {
     const ultimaPorLead: Record<string, any> = {}
     for (const r of (revs || [])) { const p: any = r.payload; if (p?.lead_id && !ultimaPorLead[p.lead_id]) ultimaPorLead[p.lead_id] = { ...p, em: r.recebido_em } }
 
-    const atendimentos = alvo.map(l => ({
-      lead_id: l.id, nome: l.nome, etapa: l.etapa, turma: l.codigo_turma, whatsapp: l.whatsapp,
-      mensagens: linhasDe(l), revisao: ultimaPorLead[l.id] || null,
-    }))
+    const atendimentos = alvo.map(l => {
+      const dos = dossies.get(l.id)
+      const ligs = (dos?.ligacoes || []).map(g => ({ duracao: g.duracao, atendida: g.atendida, tem_transcricao: !!g.transcricao, em: g.em }))
+      return {
+        lead_id: l.id, nome: l.nome, etapa: l.etapa, turma: l.codigo_turma, whatsapp: l.whatsapp,
+        mensagens: linhasDe(l), revisao: ultimaPorLead[l.id] || null,
+        resumo: (l as any).resumo_ia || null, resumo_em: (l as any).resumo_ia_em || null,
+        ligacoes: ligs, engajado: !!dos?.engajado,
+      }
+    })
 
     // métricas (todas as revisões)
     const todasRev = (revs || []).map((r: any) => r.payload).filter(Boolean)

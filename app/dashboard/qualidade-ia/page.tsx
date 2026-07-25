@@ -95,10 +95,40 @@ export default function QualidadeIA() {
                   <a href={`/dashboard/crm?lead=${a.lead_id}`} style={{ fontSize: 12, color: 'var(--accent-soft)' }}>abrir no CRM ↗</a>
                 </div>
 
+                {/* resumo do lead (mesmo que geramos no atender/copiloto) */}
+                {a.resumo && (
+                  <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
+                      {a.resumo.temperatura && <span style={{ fontWeight: 700, color: a.resumo.temperatura === 'quente' ? '#e0533d' : a.resumo.temperatura === 'morno' ? '#d98a2b' : 'var(--text-faint)' }}>🌡️ {a.resumo.temperatura}</span>}
+                      {a.resumo.jaExplicouCurso && <span style={{ color: 'var(--text-faint)' }}>curso explicado: {a.resumo.jaExplicouCurso}</span>}
+                      {a.engajado && <span style={{ color: '#2b8a3e', fontWeight: 600 }}>· engajado</span>}
+                    </div>
+                    {a.resumo.ondeParou && <div style={{ marginBottom: 4 }}><b>Onde parou:</b> {a.resumo.ondeParou}</div>}
+                    {Array.isArray(a.resumo.resumo) && a.resumo.resumo.length > 0 && (
+                      <ul style={{ margin: '4px 0', paddingLeft: 16 }}>{a.resumo.resumo.map((b: string, i: number) => <li key={i}>{b}</li>)}</ul>
+                    )}
+                    {a.resumo.objecoes && a.resumo.objecoes !== 'nenhuma' && <div><b>Objeções:</b> {a.resumo.objecoes}</div>}
+                    {a.resumo.proximoPasso && <div style={{ marginTop: 4, color: 'var(--text)' }}><b>Próximo passo:</b> {a.resumo.proximoPasso}</div>}
+                  </div>
+                )}
+
+                {/* ligações (com tempo — atendida só > 1min) */}
+                {(a.ligacoes || []).length > 0 && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                    {a.ligacoes.map((g: any, i: number) => (
+                      <span key={i} style={{ fontSize: 11.5, padding: '3px 8px', borderRadius: 20, border: '1px solid var(--border)', background: g.atendida ? 'rgba(43,138,62,.12)' : 'var(--surface-2)', color: g.atendida ? '#2b8a3e' : 'var(--text-faint)', fontWeight: 600 }}>
+                        📞 {g.atendida ? 'atendida' : 'não atendida'} · {g.duracao >= 60 ? `${Math.floor(g.duracao / 60)}min${g.duracao % 60 ? (g.duracao % 60) + 's' : ''}` : `${g.duracao}s`}{g.tem_transcricao ? ' · 📄' : ''}
+                      </span>
+                    ))}
+                  </div>
+                )}
+
                 {/* conversa */}
                 <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 10, maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 12 }}>
                   {a.mensagens.length === 0 ? <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Sem mensagens.</span> :
-                    a.mensagens.map((msg: any, i: number) => (
+                    a.mensagens.map((msg: any, i: number) => msg.quem === 'evento' ? (
+                      <div key={i} style={{ alignSelf: 'center', maxWidth: '92%', fontSize: 11.5, padding: '3px 10px', borderRadius: 20, background: 'var(--surface-2)', color: 'var(--text-faint)', border: '1px dashed var(--border)' }}>{msg.texto}</div>
+                    ) : (
                       <div key={i} style={{ alignSelf: msg.quem === 'cliente' ? 'flex-start' : 'flex-end', maxWidth: '85%', fontSize: 13, padding: '6px 10px', borderRadius: 8, background: msg.quem === 'cliente' ? 'var(--surface)' : 'var(--accent)', color: msg.quem === 'cliente' ? 'var(--text)' : 'var(--on-accent)', border: msg.quem === 'cliente' ? '1px solid var(--border)' : 'none' }}>{msg.texto}</div>
                     ))}
                 </div>
