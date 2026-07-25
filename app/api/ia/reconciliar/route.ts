@@ -11,6 +11,9 @@ export const maxDuration = 60
 //  • frio (nunca respondeu / ligação não atendida) → segue com a IA (o motor já trabalha, não mexe).
 // dryRun (padrão) só simula. Aplicar: { dryRun:false, confirm:true }. Kill switch: ia-automacao {ligado:false}.
 const ETAPAS = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+// só re-inscreve engajado-frio nestas etapas (têm toque que NÃO assume 1º contato — lote/bolsa).
+// atendimento_inicial engajado fica com o time (o reabridor frio "me conta teu negócio" não serve pra quem já conversou).
+const REINSCRIVEL = new Set(['lote_preco_ok', 'oferecer_bolsa'])
 const DIA = 864e5
 
 export async function POST(req: NextRequest) {
@@ -37,7 +40,7 @@ export async function POST(req: NextRequest) {
       // silêncio medido pela última atividade DO CLIENTE (não pelo nosso envio) — senão um envio da IA "esquentaria" o lead
       const ultimo = d.ultimoEngajamentoEm ? +new Date(d.ultimoEngajamentoEm) : 0
       const frioHaDias = ultimo ? (now - ultimo) >= dias * DIA : true
-      if (frioHaDias && l.atendido_por !== 'ia') {
+      if (frioHaDias && l.atendido_por !== 'ia' && REINSCRIVEL.has(l.etapa)) {
         reinscrever.push({ lead: l, diasSilencio: ultimo ? Math.floor((now - ultimo) / DIA) : null })
       } else if (!frioHaDias && l.atendido_por === 'ia') {
         devolver.push({ lead: l })

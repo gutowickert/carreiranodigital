@@ -105,6 +105,9 @@ export async function POST(req: NextRequest) {
       const fam = familia(l.codigo_turma)
       const tpl = pickTpl(l.etapa, toque.chave, fam)
       if (!tpl) continue // sem template mapeado pra esse toque
+      // TRAVA: lead ENGAJADO (já respondeu/atendeu ligação) NUNCA recebe reabridor/apresentação frios
+      // ("me conta qual é teu negócio" pra quem já conversou). Só toques que não assumem 1º contato (lote/bolsa).
+      if (dossies.get(l.id)?.engajado && /retomar|apresentacao/i.test(tpl.nome_meta)) continue
       planos.push({ lead: l, acao: 'enviar', chave: toque.chave, tpl, demite: /demiss|encerr/i.test(toque.chave) })
     }
 
