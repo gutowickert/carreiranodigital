@@ -58,11 +58,11 @@ export async function POST(req: NextRequest) {
 
       let r: any = null, modo = ''
       if (meta?.id) {
-        // edita conteúdo + categoria do template existente
+        // edita SÓ o conteúdo (Meta rejeita mudança de categoria em template aprovado)
         modo = 'editado'
         r = await fetch(`${GRAPH}/${meta.id}`, {
           method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ category: (t.categoria || 'marketing').toUpperCase(), components }),
+          body: JSON.stringify({ components }),
         }).then(x => x.json()).catch(() => null)
       } else {
         // não existe no Meta → cria
