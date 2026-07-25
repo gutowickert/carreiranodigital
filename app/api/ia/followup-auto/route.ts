@@ -60,9 +60,15 @@ export async function POST(req: NextRequest) {
     // DOSSIÊ ÚNICO (fonte de verdade): mensagens dos 2 canais (zapi+oficial, inclusive conversas só por telefone
     // que a busca por lead_id perdia) + ligações + TODOS os andamentos. Mesma lib da tela e do copiloto.
     const dossies = await dossiesLote(sb, org, leads)
-    // Esteira IA = frio de verdade (nunca respondeu, sem nota humana) OU já é da IA (re-inscrito pelo reconciliador).
-    // Engajado sem ser da IA → é do time.
-    const frios = (leads || []).filter(l => (l as any).atendido_por === 'ia' || !dossies.get(l.id)?.engajado)
+    // QUEM ENTRA NA CADÊNCIA:
+    //  • frio de verdade (nunca respondeu) → cadência completa;
+    //  • já é da IA (re-inscrito) → segue;
+    //  • DE "lote e preço ok" PRA FRENTE (lote_preco_ok / oferecer_bolsa): TODOS entram — o time deu preço+lote
+    //    (com os 3 dias pra virada), então a cadência do lote virando cobre engajado E frio.
+    // Só o atendimento_inicial ENGAJADO fica de fora (é "time liga primeiro"). A trava de template já impede
+    // reabridor/apresentação frios pra engajado; lote/bolsa não são bloqueados.
+    const CADENCIA_TODOS = new Set(['lote_preco_ok', 'oferecer_bolsa'])
+    const frios = (leads || []).filter(l => (l as any).atendido_por === 'ia' || !dossies.get(l.id)?.engajado || CADENCIA_TODOS.has(l.etapa))
     const lastOutDe = (l: any) => { const e = dossies.get(l.id)?.ultimoOutboundEm; return e ? +new Date(e) : 0 }
 
     // entrada na etapa atual + toques da IA já dados NESSA etapa
