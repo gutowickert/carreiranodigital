@@ -120,6 +120,13 @@ export async function POST(req: NextRequest) {
     }
 
     const lote = planos.slice(0, limit)
+    // turma (cidade + preço) por lead + prazo do lote (hoje+3, fim de semana → segunda)
+    const turmaIds = [...new Set(lote.map(p => p.lead.turma_id).filter(Boolean))] as string[]
+    const turmaInfo = new Map<string, { cidade: string; preco: number }>()
+    if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0 }) }
+    const _pl = new Date(hojeBR + 'T15:00:00Z'); _pl.setUTCDate(_pl.getUTCDate() + 3); while (_pl.getUTCDay() === 0 || _pl.getUTCDay() === 6) _pl.setUTCDate(_pl.getUTCDate() + 1)
+    const prazoLote = `${_pl.toISOString().slice(8, 10)}/${_pl.toISOString().slice(5, 7)}`
+    const money = (n: number) => 'R$' + n.toFixed(2).replace('.', ',').replace(/,00$/, '')
     const previews: any[] = []
     let enviados = 0, avancados = 0, demitidos = 0, falhas = 0, falhasSeguidas = 0
 
@@ -130,8 +137,14 @@ export async function POST(req: NextRequest) {
         avancados++; previews.push({ lead: l.nome, acao: `avança ${l.etapa} → ${p.proxEtapa}` }); continue
       }
       const fam = familia(l.codigo_turma)
-      const valores: Record<string, string> = { nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam), cidade: '' }
-      if (l.turma_id) { const { data: t } = await sb.from('turmas').select('cidades(nome)').eq('id', l.turma_id).maybeSingle(); valores.cidade = (t as any)?.cidades?.nome || 'sua região' } else valores.cidade = 'sua região'
+      const ti = turmaInfo.get(l.turma_id || '')
+      const preco = ti?.preco || (fam === 'ANL' ? 797 : fam === 'FC' ? 2697 : 0)
+      const valores: Record<string, string> = {
+        nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
+        cidade: ti?.cidade || 'sua região',
+        preco_pix: money(preco), preco: money(preco), preco_parcelado: `10x de ${money(preco / 10)}`,
+        condicao_bolsa: `${money(preco * 0.9)} (10% de desconto)`, prazo: prazoLote,
+      }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
       const to = foneOficial(l.whatsapp || '')
