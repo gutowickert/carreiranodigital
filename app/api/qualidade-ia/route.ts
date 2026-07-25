@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { dossiesLote, timelineDossie } from '@/lib/historico-lead'
+import { gerarResumo } from '@/lib/resumo-lead'
+
+export const maxDuration = 60
 
 // Controle de Qualidade dos atendimentos da IA (Nando + Guto + Rick).
 //  GET ?email= -> atendimentos da IA (leads atendido_por='ia') + conversa + última revisão + métricas
@@ -22,6 +25,12 @@ export async function GET(req: NextRequest) {
     // DOSSIÊ ÚNICO (mesma lib do motor e do copiloto): mensagens dos 2 canais + ligações + áudios + todos os andamentos.
     const dossies = await dossiesLote(supabase, org, alvo)
     const linhasDe = (l: any) => timelineDossie(dossies.get(l.id)!, 20).map(t => ({ quem: t.quem, texto: (t.texto || '').slice(0, 400), em: t.em }))
+
+    // gera o resumo que falta (usa o dossiê que já temos — inclui transcrição das ligações). Cacheia; só a 1ª vez custa.
+    const paraResumir = alvo.filter(l => !(l as any).resumo_ia).slice(0, 10)
+    if (paraResumir.length) {
+      await Promise.all(paraResumir.map(async l => { try { const novo = await gerarResumo(supabase, org, l, dossies.get(l.id)); if (novo) (l as any).resumo_ia = novo } catch { /* segue sem resumo */ } }))
+    }
 
     // revisões salvas
     const { data: revs } = await supabase.from('webhook_logs').select('payload, recebido_em').eq('org_id', org).eq('origem', 'qc-ia').order('recebido_em', { ascending: false })
