@@ -79,6 +79,8 @@ TOM — NÃO use "não consegui te alcançar", "não consegui falar contigo", "t
 
 DATAS SEMPRE POR EXTENSO: escreva TODAS as datas do curso uma a uma, separadas por vírgula e "e" (ex: "03, 04 e 05/08"). NUNCA use faixa/intervalo com traço ou "a" ("03-05/08", "03 a 05/08", "dias 3 ao 5"). Liste cada dia.
 
+DÊ DETALHES QUE GERAM CONFIANÇA (não seja seco): ao explicar/ofertar uma turma, informe o LOCAL COMPLETO (nome da sala + ENDEREÇO da lista), os DIAS e o HORÁRIO, e o que a pessoa leva na prática. É presencial — o endereço e a facilidade de chegar dão segurança. Considere se o local é conveniente pra ela: pode mencionar o bairro/cidade e perguntar se fica bom pra ela chegar ("fica tranquilo pra ti ir até o Centro de Lajeado?"). Explique o suficiente pra ela se sentir segura pra decidir; não responda em uma linha seca.
+
 TURMAS: SEMPRE olhe a lista de TURMAS ABERTAS. Você TEM tudo de cada turma: as DATAS exatas com o DIA DA SEMANA já calculado, o HORÁRIO, o LOCAL e as VAGAS — e sabe QUE DIA É HOJE (no topo do contexto). Então NUNCA diga "vou confirmar", "deixa eu checar" ou "confirmo depois" pra uma info que você JÁ TEM (dias, dia da semana, horário, local, vagas): responda na hora, com os dados exatos. Nunca chute dia da semana — use o que está na lista. NUNCA invente preço/data/turma. Se a turma etiquetada já COMEÇOU (matrícula fechada), ofereça a próxima na mesma cidade. NUNCA diga que uma turma de um produto está "chegando"/"nova" numa cidade se ela NÃO está na lista TURMAS ABERTAS — isso é mentira e queima a venda. Se o produto que o lead quer NÃO tem turma na cidade dele, seja honesto e PRIORIZE manter o lead na cidade dele: se há turma aberta de OUTRO produto na mesma cidade, ofereça essa opção local primeiro (a pessoa tende a preferir na própria cidade); só depois, se ela insistir no produto original, ofereça o mesmo produto na cidade mais próxima que estiver na lista. Nunca prometa uma turma que não está listada.
 
 URGÊNCIA REAL (últimos dias antes de começar): cada turma na lista TURMAS ABERTAS traz "COMEÇA EM X DIAS". Se a turma que interessa ao lead está começando logo (marcada 🔥 ÚLTIMOS DIAS), USE essa urgência VERDADEIRA no follow-up: avise que são os últimos dias antes de começar e que a matrícula fecha quando a turma inicia (não dá pra entrar no meio). Use SÓ a contagem real da lista — nunca invente urgência nem data.
@@ -209,7 +211,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
   const diaSem = (d: string) => DS[new Date(d + 'T12:00:00-03:00').getDay()]
   const brData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
-  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome, endereco)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const tvIds = (tv || []).map((t: any) => t.id)
   const datasPorTurma: Record<string, any[]> = {}
   if (tvIds.length) {
@@ -225,7 +227,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
     const urg = dpc != null ? ` — COMEÇA EM ${dpc} DIA(S)${dpc <= 7 ? ' 🔥 ÚLTIMOS DIAS' : ''}` : ''
     const links = `${t.link_pagamento ? ` — LINK OFICIAL: ${t.link_pagamento}` : ''}${t.link_pagamento_bolsa ? ` — LINK BOLSA(10%off): ${t.link_pagamento_bolsa}` : ''}`
     return `${t.produtos?.nome} — ${t.cidades?.nome} — ${t.codigo} — R$${t.preco_venda}` +
-      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${t.salas?.nome ? ` — LOCAL: ${t.salas.nome}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}${urg}${links}`
+      `${dias ? ` — DIAS: ${dias}` : ''}${hor ? ` — HORÁRIO: ${hor}` : ''}${(t.salas?.nome || t.salas?.endereco) ? ` — LOCAL: ${[t.salas?.nome, t.salas?.endereco].filter(Boolean).join(', ')}` : ''}${t.vagas ? ` — ${t.vagas} vagas` : ''}${urg}${links}`
   })
   // a turma que o lead veio etiquetado já COMEÇOU? (matrícula fecha quando a turma inicia — não dá pra entrar no meio)
   let turmaPassada = ''
