@@ -1,9 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { foneOficial } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
 import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
 import { classificarTemperatura } from '@/lib/temperatura'
+import { atenderLead } from '@/lib/atender-lead'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -101,13 +102,19 @@ async function registrarRecebida(m: any, value: any) {
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.
   const leadId = leadMatch?.id || conv.lead_id
   if (leadId) {
-    const { data: ld } = await supabase.from('leads').select('handoff_em, atendido_por').eq('id', leadId).maybeSingle()
+    const { data: ld } = await supabase.from('leads').select('org_id, handoff_em, atendido_por').eq('id', leadId).maybeSingle()
     // se NÃO está escalado (sem handoff pendente), o lead é da IA — o respondedor vai atender.
     // se ESTÁ escalado, o time está no caso: não re-inscreve na IA.
     if (!ld?.handoff_em && ld?.atendido_por !== 'ia') {
       await supabase.from('leads').update({ atendido_por: 'ia', atualizado_em: new Date().toISOString() }).eq('id', leadId)
     }
     try { await classificarTemperatura(leadId, conv.id) } catch { /* não quebra */ }
+    // RESPOSTA AUTÔNOMA em background (depois de devolver 200 pra Meta — não trava/duplica o webhook).
+    // Só se NÃO escalado. Respeita o kill switch dentro do atenderLead. Texto do cliente = tem 24h de janela livre.
+    if (ld && !ld.handoff_em && ld.org_id) {
+      const orgId = ld.org_id, cid = conv.id
+      after(() => atenderLead(orgId, leadId, { dryRun: false, conversaId: cid }).catch(() => { }))
+    }
   }
 }
 

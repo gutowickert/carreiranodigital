@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
-import { enviarTexto, foneOficial } from '@/lib/whatsapp-oficial'
-import { sugerirAtendimento } from '@/lib/atendimento-ia'
+import { atenderLead } from '@/lib/atender-lead'
 
 export const maxDuration = 300
 
@@ -51,61 +50,32 @@ export async function POST(req: NextRequest) {
     const vistos = new Set<string>()
     const fila = esperando.filter(e => e.leadId && !vistos.has(e.leadId) && vistos.add(e.leadId)).slice(0, limit)
 
+    // nomes pros previews
+    const nomes = new Map<string, string>()
+    { const { data } = await sb.from('leads').select('id, nome').in('id', fila.map(f => f.leadId)); for (const l of data || []) nomes.set(l.id, l.nome) }
+
     const previews: any[] = []
-    let respondidos = 0, escalados = 0, agendados = 0, avancados = 0, falhas = 0
+    let respondidos = 0, escalados = 0, agendados = 0, avancados = 0, falhas = 0, pulados = 0
 
     for (const e of fila) {
-      const { data: lead } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id').eq('id', e.leadId).maybeSingle()
-      if (!lead) { falhas++; continue }
-      const r: any = await sugerirAtendimento({ leadId: lead.id })
-      if (!r?.ok || !r.sugestao) { falhas++; previews.push({ lead: lead.nome, erro: r?.error || 'sem sugestão' }); continue }
-      const s = r.sugestao
-      const escala = s.acao_sugerida === 'chamar_humano' || String(s.confianca).toLowerCase() === 'baixa'
-      const agenda = s.acao_sugerida === 'agendar_ligacao'
-      const resposta = (s.resposta || '').trim()
-
-      if (dryRun) {
-        previews.push({ lead: lead.nome, etapa: lead.etapa, ultimaFala: e.ultimaFala, acao: s.acao_sugerida, confianca: s.confianca, decisao: escala ? '🙋 ESCALA (humano)' : agenda ? '📞 AGENDA LIGAÇÃO' : '🤖 RESPONDE', etapaSugerida: s.etapa_sugerida, resposta })
+      const res = await atenderLead(org, e.leadId, { dryRun, conversaId: e.conversaId })
+      const nome = nomes.get(e.leadId) || e.leadId
+      if (!res.ok) {
+        if (res.erro) { falhas++; previews.push({ lead: nome, erro: res.erro }) }
+        else { pulados++; previews.push({ lead: nome, pulado: res.motivo }) }
         continue
       }
-
-      const to = foneOficial(lead.whatsapp || '')
-      if (!to) { falhas++; continue }
-
-      if (escala) {
-        await sb.from('leads').update({ atendido_por: 'humano', handoff_motivo: s.objecao && s.objecao !== 'nenhuma' ? s.objecao : (s.situacao || 'IA pediu ajuda'), handoff_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('id', lead.id)
-        await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_handoff', observacao: `🙋 IA pediu ajuda — ${s.acao_sugerida}/${s.confianca}: ${(s.situacao || '').slice(0, 140)}` })
-        if (resposta) { const rr = await enviarTexto(to, resposta); if (rr.ok) await registrarSaida(org, lead, e.conversaId, resposta, to) }
-        escalados++; continue
+      const decisao = res.decisao === 'escala' ? '🙋 ESCALA (humano)' : res.decisao === 'agenda_ligacao' ? '📞 AGENDA LIGAÇÃO' : '🤖 RESPONDE'
+      previews.push({ lead: nome, ultimaFala: e.ultimaFala, decisao, acao: res.acao, etapaSugerida: res.etapa, resposta: res.resposta })
+      if (!dryRun) {
+        if (res.decisao === 'escala') escalados++
+        else { respondidos++; if (res.decisao === 'agenda_ligacao') agendados++ }
+        if (res.etapa && res.etapa !== 'manter') avancados++
       }
-
-      // responde normal (ou agenda ligação — a mensagem já pede o horário)
-      const rr = await enviarTexto(to, resposta)
-      if (!rr.ok) { falhas++; previews.push({ lead: lead.nome, erro: rr.error }); continue }
-      await registrarSaida(org, lead, e.conversaId, resposta, to)
-      await sb.from('leads').update({ atendido_por: 'ia', atualizado_em: new Date().toISOString() }).eq('id', lead.id)
-      if (s.etapa_sugerida && s.etapa_sugerida !== 'manter' && s.etapa_sugerida !== lead.etapa) {
-        await sb.from('leads').update({ etapa: s.etapa_sugerida }).eq('id', lead.id)
-        await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: s.etapa_sugerida, observacao: `🤖 IA (atendimento) — ${s.acao_sugerida}` })
-        avancados++
-      }
-      if (agenda) { await sb.from('tarefas_lead').insert({ lead_id: lead.id, tipo: 'ligar_agendado', titulo: `Ligar (pedido no WhatsApp) — ${lead.nome}`, descricao: s.proximo_passo || 'Lead pediu ligação no atendimento da IA.' }); agendados++ }
-      await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'ia_followup', observacao: `🤖 IA respondeu (${s.acao_sugerida}): ${resposta.slice(0, 120)}` })
-      respondidos++
     }
 
-    return NextResponse.json({ ok: true, dryRun, esperando: fila.length, respondidos, escalados, agendados, avancados, falhas, amostra: previews })
+    return NextResponse.json({ ok: true, dryRun, esperando: fila.length, respondidos, escalados, agendados, avancados, falhas, pulados, amostra: previews })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
-  }
-}
-
-async function registrarSaida(org: string, lead: any, conversaId: string, texto: string, to: string) {
-  let conv: any = conversaId
-  if (!conv) { const c = (await sb.from('wa_conversas').select('id').eq('org_id', org).eq('lead_id', lead.id).eq('canal', 'oficial').limit(1).maybeSingle()).data; conv = c?.id }
-  if (!conv) { const c = await sb.from('wa_conversas').insert({ org_id: org, telefone: to, nome: lead.nome, lead_id: lead.id, canal: 'oficial' }).select('id').single(); conv = c.data?.id }
-  if (conv) {
-    await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conv, direcao: 'enviada', tipo: 'texto', texto, status: 'enviada', canal: 'oficial' })
-    await sb.from('wa_conversas').update({ ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conv)
   }
 }
