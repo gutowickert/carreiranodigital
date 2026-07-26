@@ -5,7 +5,7 @@ import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
 import { dossiesLote } from '@/lib/historico-lead'
-import { sugerirAtendimento } from '@/lib/atendimento-ia'
+import { interpretarFollowup } from '@/lib/interpretar-followup'
 
 export const maxDuration = 60
 
@@ -156,18 +156,16 @@ export async function POST(req: NextRequest) {
         avancados++; previews.push({ lead: l.nome, acao: `avança ${l.etapa} → ${p.proxEtapa}` }); continue
       }
 
-      // ═══ INTERPRETAÇÃO: lê TODO o histórico + fluxo antes de mandar (não dispara cego pela etapa gravada) ═══
-      const interp: any = await sugerirAtendimento({ leadId: l.id }).catch(() => null)
-      const etapaReal = interp?.ok ? interp.sugestao?.etapa_sugerida : null
-      const situacao = (interp?.sugestao?.situacao || '').slice(0, 140)
-      const acaoIA = interp?.sugestao?.acao_sugerida || ''
+      // ═══ INTERPRETAÇÃO: lê o histórico antes de mandar (não dispara cego pela etapa gravada) ═══
+      const interp = await interpretarFollowup(dossies.get(l.id)!, l)
+      const etapaReal = interp?.etapa
+      const situacao = (interp?.motivo || '').slice(0, 140)
       const mover = async (novaEtapa: string, motivo: string) => { if (!dryRun) { await sb.from('leads').update({ etapa: novaEtapa, atualizado_em: new Date().toISOString() }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: novaEtapa, observacao: `🤖 IA (interpretou o histórico) — ${motivo}` }) } }
-      if (etapaReal && etapaReal !== 'manter') {
+      if (etapaReal && etapaReal !== l.etapa) {
         if (etapaReal === 'perda') { await mover('perda', `declinou / sem interesse: ${situacao}`); demitidos++; previews.push({ lead: l.nome, acao: '→ PERDA (declinou)', motivo: situacao }); continue }
         if (['agendado', 'aguardando_pagamento', 'proxima_turma', 'ganho'].includes(etapaReal)) { await mover(etapaReal, `situação real: ${situacao}`); previews.push({ lead: l.nome, acao: `→ ${etapaReal} (é do time)`, motivo: situacao }); continue }
-        if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal) && etapaReal !== l.etapa) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
+        if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal)) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
       }
-      if (acaoIA === 'chamar_humano') { previews.push({ lead: l.nome, pulado: `escala pro humano: ${situacao}` }); continue }
 
       const fam = familia(l.codigo_turma)
       const ti = turmaInfo.get(l.turma_id || '')
