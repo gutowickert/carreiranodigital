@@ -5,6 +5,7 @@ import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
 import { dossiesLote } from '@/lib/historico-lead'
+import { sugerirAtendimento } from '@/lib/atendimento-ia'
 
 export const maxDuration = 60
 
@@ -154,6 +155,20 @@ export async function POST(req: NextRequest) {
         if (!dryRun) { const ag = new Date().toISOString(); await sb.from('leads').update({ etapa: p.proxEtapa, atualizado_em: ag }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: p.proxEtapa, observacao: `🤖 IA — cadência de ${l.etapa} esgotada sem resposta → avança pra ${p.proxEtapa}.` }) }
         avancados++; previews.push({ lead: l.nome, acao: `avança ${l.etapa} → ${p.proxEtapa}` }); continue
       }
+
+      // ═══ INTERPRETAÇÃO: lê TODO o histórico + fluxo antes de mandar (não dispara cego pela etapa gravada) ═══
+      const interp: any = await sugerirAtendimento({ leadId: l.id }).catch(() => null)
+      const etapaReal = interp?.ok ? interp.sugestao?.etapa_sugerida : null
+      const situacao = (interp?.sugestao?.situacao || '').slice(0, 140)
+      const acaoIA = interp?.sugestao?.acao_sugerida || ''
+      const mover = async (novaEtapa: string, motivo: string) => { if (!dryRun) { await sb.from('leads').update({ etapa: novaEtapa, atualizado_em: new Date().toISOString() }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: novaEtapa, observacao: `🤖 IA (interpretou o histórico) — ${motivo}` }) } }
+      if (etapaReal && etapaReal !== 'manter') {
+        if (etapaReal === 'perda') { await mover('perda', `declinou / sem interesse: ${situacao}`); demitidos++; previews.push({ lead: l.nome, acao: '→ PERDA (declinou)', motivo: situacao }); continue }
+        if (['agendado', 'aguardando_pagamento', 'proxima_turma', 'ganho'].includes(etapaReal)) { await mover(etapaReal, `situação real: ${situacao}`); previews.push({ lead: l.nome, acao: `→ ${etapaReal} (é do time)`, motivo: situacao }); continue }
+        if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal) && etapaReal !== l.etapa) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
+      }
+      if (acaoIA === 'chamar_humano') { previews.push({ lead: l.nome, pulado: `escala pro humano: ${situacao}` }); continue }
+
       const fam = familia(l.codigo_turma)
       const ti = turmaInfo.get(l.turma_id || '')
       // preço FIXO por produto (FC sempre 2397 pix / 2697 cartão 10x; ANL 797 pix) — cravado no corpo dos templates
