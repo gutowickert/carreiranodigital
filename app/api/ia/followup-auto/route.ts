@@ -148,6 +148,7 @@ export async function POST(req: NextRequest) {
     const money = (n: number) => 'R$' + n.toFixed(2).replace('.', ',').replace(/,00$/, '')
     const previews: any[] = []
     let enviados = 0, avancados = 0, demitidos = 0, falhas = 0, falhasSeguidas = 0
+    let geradas = 0; const TETO_GERAR = 8 // no máx 8 resumos gerados por rodada (evita timeout); o resto usa cache ou adia
 
     for (const p of lote) {
       const l = p.lead
@@ -157,7 +158,10 @@ export async function POST(req: NextRequest) {
       }
 
       // ═══ INTERPRETAÇÃO: lê o histórico (resumo cacheado) antes de mandar — não dispara cego pela etapa gravada ═══
-      const interp = await interpretarFollowup(sb, org, dossies.get(l.id)!, l)
+      const interp = await interpretarFollowup(sb, org, dossies.get(l.id)!, l, geradas < TETO_GERAR)
+      if (interp?.fonte === 'gerado') geradas++
+      // sem interpretação disponível (resumo será gerado numa próxima rodada) → NÃO manda template cego; adia
+      if (!interp) { previews.push({ lead: l.nome, pulado: 'sem interpretação ainda (resumo pendente) — adiado' }); continue }
       const etapaReal = interp?.etapa
       const situacao = (interp?.motivo || '').slice(0, 140)
       const mover = async (novaEtapa: string, motivo: string) => { if (!dryRun) { await sb.from('leads').update({ etapa: novaEtapa, atualizado_em: new Date().toISOString() }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: novaEtapa, observacao: `🤖 IA (interpretou o histórico) — ${motivo}` }) } }
