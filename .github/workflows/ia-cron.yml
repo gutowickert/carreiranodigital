@@ -1,0 +1,23 @@
+name: Follow-up IA (9h BRT)
+
+# Cron confiável do follow-up automático (independe do limite de cron do plano Vercel).
+# Roda todo dia 12:00 UTC = 09:00 de Brasília: reconcilia a posse e dispara o motor de follow-up.
+on:
+  schedule:
+    - cron: '0 12 * * *' # 12:00 UTC = 09:00 BRT
+  workflow_dispatch: {} # permite rodar manualmente pelo GitHub (aba Actions)
+
+jobs:
+  followup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Reconciliar posse (esfriou->IA, quente->time)
+        run: |
+          curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/reconciliar" \
+            -H "Content-Type: application/json" \
+            -d '{"dryRun":false,"confirm":true,"dias":3}'
+      - name: Motor de follow-up (cadencia + templates)
+        run: |
+          curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/followup-auto" \
+            -H "Content-Type: application/json" \
+            -d '{"dryRun":false,"confirm":true,"limit":120}'
