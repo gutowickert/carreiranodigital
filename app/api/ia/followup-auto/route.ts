@@ -76,9 +76,16 @@ export async function POST(req: NextRequest) {
     const entradaEtapa: Record<string, number> = {}
     const toquesIA: Record<string, { n: number; ultimo: number }> = {}
     const enviadosTpl: Record<string, Set<string>> = {} // templates (cnd_*) que o lead JÁ recebeu (qualquer fonte) → não repetir
-    for (let i = 0; i < ids.length; i += 200) {
-      const chunk = ids.slice(i, i + 200)
-      const { data: ands } = await sb.from('lead_andamentos').select('lead_id, tipo, etapa_nova, observacao, criado_em').in('lead_id', chunk).order('criado_em', { ascending: true })
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100)
+      // PAGINADO — o Supabase corta em 1000 linhas; com muitos andamentos por lead isso truncava e cegava o dedup (repetia template)
+      const ands: any[] = []
+      for (let from = 0; ; from += 1000) {
+        const { data } = await sb.from('lead_andamentos').select('lead_id, tipo, etapa_nova, observacao, criado_em').in('lead_id', chunk).order('criado_em', { ascending: true }).range(from, from + 999)
+        if (!data?.length) break
+        ands.push(...data)
+        if (data.length < 1000) break
+      }
       const byLead: Record<string, any[]> = {}
       for (const a of ands || []) (byLead[a.lead_id] = byLead[a.lead_id] || []).push(a)
       for (const l of frios) {
