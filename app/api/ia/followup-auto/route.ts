@@ -53,7 +53,7 @@ export async function POST(req: NextRequest) {
     }
 
     // leads das 3 etapas + conversas escopadas
-    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
     // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
     const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
@@ -156,8 +156,8 @@ export async function POST(req: NextRequest) {
         avancados++; previews.push({ lead: l.nome, acao: `avança ${l.etapa} → ${p.proxEtapa}` }); continue
       }
 
-      // ═══ INTERPRETAÇÃO: lê o histórico antes de mandar (não dispara cego pela etapa gravada) ═══
-      const interp = await interpretarFollowup(dossies.get(l.id)!, l)
+      // ═══ INTERPRETAÇÃO: lê o histórico (resumo cacheado) antes de mandar — não dispara cego pela etapa gravada ═══
+      const interp = await interpretarFollowup(sb, org, dossies.get(l.id)!, l)
       const etapaReal = interp?.etapa
       const situacao = (interp?.motivo || '').slice(0, 140)
       const mover = async (novaEtapa: string, motivo: string) => { if (!dryRun) { await sb.from('leads').update({ etapa: novaEtapa, atualizado_em: new Date().toISOString() }).eq('id', l.id); await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: novaEtapa, observacao: `🤖 IA (interpretou o histórico) — ${motivo}` }) } }

@@ -15,9 +15,10 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatament
  "ondeParou":"1 frase: qual foi a última interação e o que está pendente agora",
  "resumo":["3 a 6 bullets curtos com o essencial: objetivo/negócio do cliente, cidade/turma de interesse, o que já foi oferecido (formato, valor, condição), sinais de interesse"],
  "objecoes":"objeções levantadas e se foram resolvidas — ou 'nenhuma'",
- "proximoPasso":"o que o vendedor deve fazer AGORA pra avançar"
+ "proximoPasso":"o que o vendedor deve fazer AGORA pra avançar",
+ "etapaReal":"<onde o lead REALMENTE está no fluxo, pela conversa — uma de: atendimento_inicial (não recebeu preço/curso) | lote_preco_ok (já recebeu preço/lote, decidindo) | oferecer_bolsa (demonstrou interesse OU time já fez oferta/condição especial) | agendado (pediu retorno/pagamento numa data futura, ou 'vou pensar' com retorno) | aguardando_pagamento (decidiu/recebeu link) | proxima_turma (quer só turma futura) | perda (disse que NÃO quer/não vai fazer) | ganho (já pagou)>"
 }
-Regras: jaExplicouCurso = 'sim' só se oferta/formato E preço já foram apresentados; 'parcial' se parte; 'nao' se nada. temperatura pela intenção de compra demonstrada. Considere as LIGAÇÕES atendidas tanto quanto as mensagens. Português, direto, tom da escola.`
+Regras: jaExplicouCurso = 'sim' só se oferta/formato E preço já foram apresentados; 'parcial' se parte; 'nao' se nada. temperatura pela intenção de compra demonstrada. Considere as LIGAÇÕES atendidas tanto quanto as mensagens. etapaReal = a situação REAL pela conversa (não a etapa gravada). Português, direto, tom da escola.`
 
 type LeadInfo = { id: string; nome?: string | null; whatsapp?: string | null; etapa?: string | null; codigo_turma?: string | null }
 
