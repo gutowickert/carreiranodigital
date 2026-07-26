@@ -11,12 +11,19 @@ jobs:
   followup:
     runs-on: ubuntu-latest
     steps:
+      - name: Warming dos resumos (gera etapaReal dos leads sem resumo, aos poucos)
+        run: |
+          for i in $(seq 1 25); do
+            REST=$(curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/resumos" -H "Content-Type: application/json" -d '{"limit":8}' | sed -n 's/.*"restantes":\([0-9]*\).*/\1/p')
+            echo "warming rodada $i -> restantes: ${REST:-?}"
+            [ "$REST" = "0" ] && break
+          done
       - name: Reconciliar posse (esfriou->IA, quente->time)
         run: |
           curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/reconciliar" \
             -H "Content-Type: application/json" \
             -d '{"dryRun":false,"confirm":true,"dias":3}'
-      - name: Motor de follow-up (cadencia + templates)
+      - name: Motor de follow-up (le o cache + interpreta + manda)
         run: |
           curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/followup-auto" \
             -H "Content-Type: application/json" \
