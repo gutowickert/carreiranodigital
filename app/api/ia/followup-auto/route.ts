@@ -121,8 +121,9 @@ export async function POST(req: NextRequest) {
         if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
         continue
       }
-      // timing: espaça a partir do último CONTATO (qualquer envio nosso) e nunca 2x no mesmo dia
-      const ref = Math.max(o.ultimo || 0, lastOutDe(l) || 0, idx === 0 ? (entradaEtapa[l.id] || 0) : 0)
+      // timing do toque: 1º toque da etapa conta da ENTRADA na etapa; toques seguintes, do último toque da IA.
+      // (NÃO usa "último envio qualquer" — migração/recuperação não fazem parte da cadência e bloqueariam o lote_virando.)
+      const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
       const due = now - ref >= (toque.dias || 0) * DIA
       const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
       if (!due || jaHoje) continue
