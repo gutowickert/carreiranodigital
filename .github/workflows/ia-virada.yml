@@ -1,0 +1,24 @@
+name: Virada da noite (23:30 BRT)
+
+# Processa quem RESPONDEU hoje: a IA lê a conversa, reposiciona o lead no fluxo,
+# devolve pro time e garante a tarefa da etapa. Roda antes da meia-noite de Brasília
+# pra pegar o dia inteiro (o app calcula "hoje" em fuso de Brasília).
+on:
+  schedule:
+    - cron: '30 2 * * *' # 02:30 UTC = 23:30 BRT
+  workflow_dispatch: {} # permite rodar manual pela aba Actions
+
+jobs:
+  virada:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Virada da noite (interpreta -> reposiciona -> tarefa)
+        run: |
+          for i in $(seq 1 30); do
+            REST=$(curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/virada" \
+              -H "Content-Type: application/json" \
+              -d '{"dryRun":false,"confirm":true,"limit":10}' | sed -n 's/.*"restantes":\([0-9]*\).*/\1/p')
+            echo "virada rodada $i -> restantes: ${REST:-?}"
+            [ "$REST" = "0" ] && break
+            sleep 2
+          done

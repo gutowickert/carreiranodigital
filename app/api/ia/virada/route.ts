@@ -15,7 +15,10 @@ export const maxDuration = 60
 // NÃO envia mensagem — é reposicionamento interno; por isso NÃO depende do kill switch de envio.
 
 const ATIVAS = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'agendado', 'aguardando_pagamento', 'proxima_turma']
-const VALIDAS = new Set(['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'agendado', 'aguardando_pagamento', 'proxima_turma', 'perda'])
+// destinos VÁLIDOS de move. NÃO inclui atendimento_inicial: rebaixar quem respondeu pro começo do funil é quase
+// sempre erro de leitura (foi o caso da Deise — pediu retorno na semana, virou "atendimento"). Se a leitura disser
+// atendimento, o lead FICA onde está (não volta pro começo).
+const VALIDAS = new Set(['lote_preco_ok', 'oferecer_bolsa', 'agendado', 'aguardando_pagamento', 'proxima_turma', 'perda'])
 
 export async function POST(req: NextRequest) {
   try {
