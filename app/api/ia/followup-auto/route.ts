@@ -18,6 +18,8 @@ export const maxDuration = 60
 
 const ETAPAS = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
 const PROX_ETAPA: Record<string, string | null> = { atendimento_inicial: 'lote_preco_ok', lote_preco_ok: 'oferecer_bolsa', oferecer_bolsa: null }
+// etapas válidas pra onde a interpretação pode MOVER um lead com a cadência esgotada (evita avanço cego/ping-pong)
+const MOVE_VALIDO = new Set(['lote_preco_ok', 'oferecer_bolsa', 'agendado', 'aguardando_pagamento', 'proxima_turma', 'perda'])
 const VENDEDOR = 'Mateus'
 const MOTIVO_SEM_RESPOSTA = 'f972b270-691a-4e24-bd79-3b7583970a51'
 const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
@@ -139,9 +141,13 @@ export async function POST(req: NextRequest) {
         idx++
       }
       if (!tpl) {
-        // esgotou os toques da etapa (todos já enviados / sem template / bloqueados) → avança pra próxima
-        const prox = PROX_ETAPA[l.etapa]
-        if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
+        // esgotou os toques da etapa. NÃO avança CEGO pra próxima (gera ping-pong: a cadência empurra e a
+        // interpretação corrige de volta, em loop). Consulta a interpretação (cache): se ela diz OUTRA etapa,
+        // move pra LÁ; se diz a MESMA etapa (ou não há leitura), DEIXA PARADO — lead totalmente tocado, aguardando.
+        const it = await interpretarFollowup(sb, org, dossies.get(l.id)!, l, false)
+        const alvo = it?.etapa
+        if (alvo && alvo !== l.etapa && MOVE_VALIDO.has(alvo)) planos.push({ lead: l, acao: 'avancar', proxEtapa: alvo })
+        // senão: nada a fazer (não fica avançando à toa) — quebra o ping-pong
         continue
       }
       // timing do toque CONFORME O FLUXO: 1º toque conta da ENTRADA na etapa (D+X do fluxo); toques seguintes,
