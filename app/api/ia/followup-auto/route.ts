@@ -143,8 +143,13 @@ export async function POST(req: NextRequest) {
     const turmaIds = [...new Set(lote.map(p => p.lead.turma_id).filter(Boolean))] as string[]
     const turmaInfo = new Map<string, { cidade: string; preco: number }>()
     if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0 }) }
-    const _pl = new Date(hojeBR + 'T15:00:00Z'); _pl.setUTCDate(_pl.getUTCDate() + 3); while (_pl.getUTCDay() === 0 || _pl.getUTCDay() === 6) _pl.setUTCDate(_pl.getUTCDate() + 1)
-    const prazoLote = `${_pl.toISOString().slice(8, 10)}/${_pl.toISOString().slice(5, 7)}`
+    // prazo do lote FIXO POR LEAD = entrada no lote + 4 dias úteis (o dia do "último dia") — assim o "lote virando"
+    // e o "último dia" batem a mesma data pro mesmo lead (não recalcula hoje+3 a cada mensagem).
+    const prazoDe = (entMs: number) => {
+      const base = entMs ? new Date(entMs) : new Date(hojeBR + 'T15:00:00Z')
+      const d = new Date(base); d.setUTCDate(d.getUTCDate() + 4); while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 1)
+      return `${d.toISOString().slice(8, 10)}/${d.toISOString().slice(5, 7)}`
+    }
     const money = (n: number) => 'R$' + n.toFixed(2).replace('.', ',').replace(/,00$/, '')
     const previews: any[] = []
     let enviados = 0, avancados = 0, demitidos = 0, falhas = 0, falhasSeguidas = 0
@@ -178,7 +183,7 @@ export async function POST(req: NextRequest) {
         cidade: ti?.cidade || 'sua região',
         preco_pix: money(precoPix), preco: money(precoPix),
         preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
-        condicao_bolsa: `${money(precoPix * 0.9)} no Pix (10% de desconto)`, prazo: prazoLote,
+        condicao_bolsa: `${money(precoPix * 0.9)} no Pix (10% de desconto)`, prazo: prazoDe(entradaEtapa[l.id] || 0),
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)

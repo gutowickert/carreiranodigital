@@ -23,9 +23,12 @@ export function ehEmpresa(nome: string | null): boolean {
   return false
 }
 
-// nome pro template: primeiro nome se for pessoa; "tudo bem" se for empresa/genérico.
+// nome pro template: usa o PRIMEIRO NOME se ele for de pessoa; "tudo bem" se o PRIMEIRO nome for empresa/cargo/genérico.
+// (checa só o 1º nome — "Zenaide -Terapeuta Integrativa" usa "Zenaide"; o descritor depois não importa.)
 export function nomeSaudacao(nome: string | null): string {
-  return ehEmpresa(nome) ? 'tudo bem' : cap((nome || '').trim().split(/\s+/)[0].toLowerCase())
+  const p = (nome || '').trim().split(/\s+/)[0] || ''
+  if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p) || /^(dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i.test(p)) return 'tudo bem'
+  return cap(p.toLowerCase())
 }
 
 // lista de datas compacta pro template: até 3 lista ("11, 12 e 13/08"); mais que isso, "a partir de DD/MM".
