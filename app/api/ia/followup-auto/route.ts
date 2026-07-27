@@ -30,7 +30,8 @@ export async function POST(req: NextRequest) {
     const b = await req.json().catch(() => ({} as any))
     const dryRun = b?.dryRun !== false
     const confirm = b?.confirm === true
-    const limit = Math.min(Math.max(Number(b?.limit) || 20, 1), 60)
+    // no dryRun deixa ver TUDO (análise); no envio real, teto de 60 por rodada (segurança)
+    const limit = Math.min(Math.max(Number(b?.limit) || 20, 1), dryRun ? 400 : 60)
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra enviar: dryRun=false E confirm=true' }, { status: 200 })
 
     // KILL SWITCH
@@ -239,10 +240,24 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // categoriza o que o dryRun faria (pro time entender o disparo: quantos são ENVIO real vs move/pulo)
+    const cat = { envio_real: 0, corrige_etapa: 0, avanca_etapa: 0, vira_perda: 0, vai_pro_time: 0, pulado_sem_preco: 0, pulado_sem_resumo: 0, pulado_outro: 0 }
+    for (const p of previews as any[]) {
+      if (p.texto || p.template) cat.envio_real++
+      else if (p.pulado?.includes('preço')) cat.pulado_sem_preco++
+      else if (p.pulado?.includes('resumo')) cat.pulado_sem_resumo++
+      else if (p.pulado) cat.pulado_outro++
+      else if (/PERDA/.test(p.acao || '')) cat.vira_perda++
+      else if (/corrige/.test(p.acao || '')) cat.corrige_etapa++
+      else if (/avança/.test(p.acao || '')) cat.avanca_etapa++
+      else if (/é do time/.test(p.acao || '')) cat.vai_pro_time++
+    }
     return NextResponse.json({
       ok: true, dryRun, frios: frios.length, planejados: planos.length, processados: lote.length,
       enviados, avancados, demitidos, falhas,
-      amostra: dryRun ? previews.slice(0, 10) : undefined, erros: !dryRun && previews.filter((p: any) => p.erro).length ? previews.filter((p: any) => p.erro) : undefined,
+      resumo: dryRun ? cat : undefined,
+      amostra: dryRun ? previews.filter((p: any) => p.texto).slice(0, 8) : undefined,
+      erros: !dryRun && previews.filter((p: any) => p.erro).length ? previews.filter((p: any) => p.erro) : undefined,
     })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
