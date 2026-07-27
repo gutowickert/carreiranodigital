@@ -1,11 +1,11 @@
-name: Virada da noite (23:30 BRT)
+name: Virada da noite (23:00 BRT)
 
 # Processa quem RESPONDEU hoje: a IA lê a conversa, reposiciona o lead no fluxo,
 # devolve pro time e garante a tarefa da etapa. Roda antes da meia-noite de Brasília
 # pra pegar o dia inteiro (o app calcula "hoje" em fuso de Brasília).
 on:
   schedule:
-    - cron: '30 2 * * *' # 02:30 UTC = 23:30 BRT
+    - cron: '0 2 * * *' # 02:00 UTC = 23:00 BRT
   workflow_dispatch: {} # permite rodar manual pela aba Actions
 
 jobs:
