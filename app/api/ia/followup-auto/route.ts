@@ -68,12 +68,18 @@ export async function POST(req: NextRequest) {
     //    (com os 3 dias pra virada), então a cadência do lote virando cobre engajado E frio.
     // Só o atendimento_inicial ENGAJADO fica de fora (é "time liga primeiro"). A trava de template já impede
     // reabridor/apresentação frios pra engajado; lote/bolsa não são bloqueados.
-    const CADENCIA_TODOS = new Set(['lote_preco_ok', 'oferecer_bolsa'])
     // TAREFAS DE MENSAGEM vencidas — o time NÃO faz mais follow-up; a IA trabalha esses leads (guiado pela TAREFA do CRM).
     const MSG_TASK = ['seguir_followup', 'triagem_mensagem', 'lote_virando', 'pos_virada_lote', 'msg_horario', 'apresentacao_completa', 'bolsa_1', 'bolsa_2', 'seguir_whatsapp', 'followup']
     const tarefaDeLead = new Map<string, string>() // leadId -> taskId (a concluir quando a IA atender)
     { const { data: tks } = await sb.from('tarefas_lead').select('id, lead_id, data_vencimento').eq('org_id', org).in('tipo', MSG_TASK).eq('concluida', false).eq('cancelada', false).limit(2000); const nowMs = Date.now(); for (const t of tks || []) { const venc = t.data_vencimento ? +new Date(t.data_vencimento) : 0; if ((!venc || venc <= nowMs) && !tarefaDeLead.has(t.lead_id)) tarefaDeLead.set(t.lead_id, t.id) } }
-    const frios = (leads || []).filter(l => (l as any).atendido_por === 'ia' || !dossies.get(l.id)?.engajado || CADENCIA_TODOS.has(l.etapa) || tarefaDeLead.has(l.id))
+    // ÚLTIMA COMUNICAÇÃO REAL (mensagem enviada/recebida ou ligação) — NÃO conta andamento de sistema (mudança de etapa,
+    // ia_followup marcador). É a régua de silêncio robusta: não reseta quando a interpretação/reconciliador corrige a etapa.
+    const ultRealDe = (l: any) => { const d = dossies.get(l.id); return Math.max(d?.ultimoOutboundEm ? +new Date(d.ultimoOutboundEm) : 0, d?.ultimoInboundEm ? +new Date(d.ultimoInboundEm) : 0, ...((d?.ligacoes || []).map((g: any) => +new Date(g.em)))) }
+    // O CLIENTE se mexeu nas últimas 24h (respondeu / ligação atendida / nota humana) → é a vez do TIME responder, IA não toca.
+    const engajadoRecente = (l: any) => { const e = dossies.get(l.id)?.ultimoEngajamentoEm; return e ? (now - +new Date(e) < DIA) : false }
+    // IA faz o follow-up de TODOS os leads do funil que ESFRIARAM — fica de fora só quem o cliente movimentou nas últimas 24h.
+    // (A interpretação adiante ainda roteia p/ o time quem está em negociação real: agendado / aguardando_pagamento.)
+    const frios = (leads || []).filter(l => !engajadoRecente(l))
     const lastOutDe = (l: any) => { const e = dossies.get(l.id)?.ultimoOutboundEm; return e ? +new Date(e) : 0 }
 
     // entrada na etapa atual + toques da IA já dados NESSA etapa
@@ -123,7 +129,9 @@ export async function POST(req: NextRequest) {
         const tq = cad[idx]
         const t = pickTpl(l.etapa, tq.chave, fam)
         const jaFoi = t && jaEnv.has((t.nome_meta || '').toLowerCase())
-        const engBloq = t && dossies.get(l.id)?.engajado && /retomar|apresentacao/i.test(t.nome_meta)
+        // só bloqueia reabridor/apresentação se o cliente respondeu nas últimas 24h (esses já estão fora de `frios`,
+        // mas mantém a trava). Quem ESFRIOU (respondeu há dias e sumiu) PODE receber reengajamento — é o objetivo.
+        const engBloq = t && engajadoRecente(l) && /retomar|apresentacao/i.test(t.nome_meta)
         if (t && !jaFoi && !engBloq) { toque = tq; tpl = t; break }
         idx++
       }
@@ -133,16 +141,19 @@ export async function POST(req: NextRequest) {
         if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
         continue
       }
-      // timing do toque: 1º toque da etapa conta da ENTRADA na etapa; toques seguintes, do último toque da IA.
-      // (NÃO usa "último envio qualquer" — migração/recuperação não fazem parte da cadência e bloqueariam o lote_virando.)
-      const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
-      // due = chegou o dia da cadência OU tem TAREFA de mensagem vencida (o time não faz mais; a IA faz)
+      // timing do toque = SILÊNCIO desde a última comunicação REAL (mensagem/ligação). Vale pro 1º toque e pros
+      // seguintes: se a gente falou com o lead há >= `dias`, está na hora do próximo toque. NÃO usa entrada-na-etapa
+      // (reseta a cada correção de etapa da interpretação → travava o lead pra sempre em "não due").
+      const ref = ultRealDe(l) || (entradaEtapa[l.id] || 0)
+      // due = passou o silêncio da cadência OU tem TAREFA de mensagem vencida (o time não faz mais; a IA faz)
       const due = (now - ref >= (toque.dias || 0) * DIA) || tarefaDeLead.has(l.id)
       const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
       if (!due || jaHoje) continue
       planos.push({ lead: l, acao: 'enviar', chave: toque.chave, tpl, demite: /demiss|encerr/i.test(toque.chave) })
     }
 
+    // mais FRIO primeiro (maior silêncio) — assim o limite por rodada ataca os mais atrasados
+    planos.sort((a, b) => (ultRealDe(a.lead) || 0) - (ultRealDe(b.lead) || 0))
     const lote = planos.slice(0, limit)
     // turma (cidade + preço) por lead + prazo do lote (hoje+3, fim de semana → segunda)
     const turmaIds = [...new Set(lote.map(p => p.lead.turma_id).filter(Boolean))] as string[]
