@@ -103,7 +103,9 @@ export async function POST(req: NextRequest) {
         if (!chunk.includes(l.id)) continue
         const as = byLead[l.id] || []
         let ent = l.criado_em ? +new Date(l.criado_em) : 0
-        for (const a of as) if (a.tipo === 'mudanca_etapa' && a.etapa_nova === l.etapa) ent = +new Date(a.criado_em)
+        // entrada na etapa = última mudança GENUÍNA pra essa etapa. Ignora correção da própria IA ('🤖 IA (interpretou…')
+        // que resetava o relógio do fluxo a cada rodada e travava o lead em "não due" pra sempre.
+        for (const a of as) if (a.tipo === 'mudanca_etapa' && a.etapa_nova === l.etapa && !/^🤖/.test(a.observacao || '')) ent = +new Date(a.criado_em)
         entradaEtapa[l.id] = ent
         const toques = as.filter(a => a.tipo === 'ia_followup' && +new Date(a.criado_em) >= ent)
         toquesIA[l.id] = { n: toques.length, ultimo: toques.length ? +new Date(toques[toques.length - 1].criado_em) : 0 }
@@ -141,11 +143,10 @@ export async function POST(req: NextRequest) {
         if (prox) planos.push({ lead: l, acao: 'avancar', proxEtapa: prox })
         continue
       }
-      // timing do toque = SILÊNCIO desde a última comunicação REAL (mensagem/ligação). Vale pro 1º toque e pros
-      // seguintes: se a gente falou com o lead há >= `dias`, está na hora do próximo toque. NÃO usa entrada-na-etapa
-      // (reseta a cada correção de etapa da interpretação → travava o lead pra sempre em "não due").
-      const ref = ultRealDe(l) || (entradaEtapa[l.id] || 0)
-      // due = passou o silêncio da cadência OU tem TAREFA de mensagem vencida (o time não faz mais; a IA faz)
+      // timing do toque CONFORME O FLUXO: 1º toque conta da ENTRADA na etapa (D+X do fluxo); toques seguintes,
+      // do último toque da IA. A entrada agora ignora correção da IA (não reseta), então o D+X é confiável.
+      const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
+      // due = chegou o dia da cadência do fluxo OU tem TAREFA de mensagem vencida (o time não faz mais; a IA faz)
       const due = (now - ref >= (toque.dias || 0) * DIA) || tarefaDeLead.has(l.id)
       const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
       if (!due || jaHoje) continue
@@ -157,8 +158,8 @@ export async function POST(req: NextRequest) {
     const lote = planos.slice(0, limit)
     // turma (cidade + preço) por lead + prazo do lote (hoje+3, fim de semana → segunda)
     const turmaIds = [...new Set(lote.map(p => p.lead.turma_id).filter(Boolean))] as string[]
-    const turmaInfo = new Map<string, { cidade: string; preco: number }>()
-    if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0 }) }
+    const turmaInfo = new Map<string, { cidade: string; preco: number; codigo: string }>()
+    if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, codigo, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '' }) }
     // prazo do lote FIXO POR LEAD = entrada no lote + 4 dias úteis (o dia do "último dia") — assim o "lote virando"
     // e o "último dia" batem a mesma data pro mesmo lead (não recalcula hoje+3 a cada mensagem).
     const prazoDe = (entMs: number) => {
@@ -190,10 +191,16 @@ export async function POST(req: NextRequest) {
         if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal)) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
       }
 
-      const fam = familia(l.codigo_turma)
       const ti = turmaInfo.get(l.turma_id || '')
-      // preço FIXO por produto (FC sempre 2397 pix / 2697 cartão 10x; ANL 797 pix) — cravado no corpo dos templates
-      const precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
+      // produto (FC/ANL): do código do lead; se vazio (bug da Helena), deriva do CÓDIGO DA TURMA.
+      const fam = familia(l.codigo_turma) || familia(ti?.codigo || null)
+      // preço FIXO por produto (FC sempre 2397 pix / 2697 cartão 10x; ANL 797 pix). Fallback: preço real da turma.
+      let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
+      if (!precoPix && ti?.preco && ti.preco > 0) precoPix = ti.preco
+      // ⛔ BLINDAGEM R$0 (bug grave da Helena 26/07): se o template PRECISA de preço e não temos preço confiável (>0),
+      // NÃO manda — o produto/preço não foi resolvido (fam vazia + turma sem preço). Fica pro time.
+      const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao|condicao_bolsa)\s*\}\}/.test(p.tpl.corpo || '')
+      if (precisaPreco && precoPix <= 0) { previews.push({ lead: l.nome, pulado: '⛔ sem preço confiável — NÃO manda (blindagem R$0), fica pro time' }); continue }
       const valores: Record<string, string> = {
         nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
         cidade: ti?.cidade || 'sua região',
@@ -203,6 +210,10 @@ export async function POST(req: NextRequest) {
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
+      // ⛔ TRAVA FINAL: qualquer "R$0" (preço zerado) no texto renderizado aborta o envio, seja qual for a origem.
+      if (/R\$\s?0(?![0-9.,])/.test(textoRender)) { previews.push({ lead: l.nome, pulado: '⛔ render deu R$0 — abortado (trava final de preço)' }); continue }
+      // variável de template ainda não resolvida ({{algo}}) também não pode ir pro cliente
+      if (/\{\{\w+\}\}/.test(textoRender)) { previews.push({ lead: l.nome, pulado: '⛔ variável não resolvida no texto — abortado' }); continue }
       const to = foneOficial(l.whatsapp || '')
       if (!to) { falhas++; continue }
 
