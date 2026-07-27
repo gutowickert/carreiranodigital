@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
     const limit = Math.min(Math.max(Number(b?.limit) || 8, 1), 12)
     const dryRun = b?.dryRun === true
 
-    // leads do funil SEM resumo ainda (null) — os que mais precisam. (o refresh de stale vem depois)
-    const { data: pend } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).in('etapa', ETAPAS).is('resumo_ia', null).limit(200)
+    // leads do funil que PRECISAM de leitura: sem resumo (null) OU com resumo ANTIGO sem o campo etapaReal
+    // (esses ficavam presos em "sem resumo" no motor porque o warming só olhava os nulos).
+    const { data: pend } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma').eq('org_id', org).in('etapa', ETAPAS).or('resumo_ia.is.null,resumo_ia->>etapaReal.is.null').limit(200)
     const total = (pend || []).length
     if (dryRun) return NextResponse.json({ ok: true, dryRun: true, semResumo: total })
 
