@@ -22,3 +22,13 @@ jobs:
             [ "$REST" = "0" ] && break
             sleep 2
           done
+      - name: Sync leads -> pool de disparo (todo lead novo entra; categoria segue o estado)
+        run: |
+          for i in $(seq 1 10); do
+            REST=$(curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/sync-pool" \
+              -H "Content-Type: application/json" \
+              -d '{"dryRun":false,"confirm":true,"limit":800}' | sed -n 's/.*"restantes":\([0-9]*\).*/\1/p')
+            echo "sync-pool rodada $i -> restantes: ${REST:-?}"
+            [ "$REST" = "0" ] && break
+            sleep 2
+          done
