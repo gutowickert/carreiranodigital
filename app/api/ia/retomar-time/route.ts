@@ -33,15 +33,18 @@ export async function POST(req: NextRequest) {
     const dryRun = b?.dryRun !== false
     const confirm = b?.confirm === true
     const limit = Math.min(Math.max(Number(b?.limit) || 8, 1), 12) // leitura LLM por lead — lotes pequenos
+    const tplOverride = (b?.template || '').toString().trim() // usa ESTE template pra todos (ex.: cnd_retomada_sem_pressa)
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra enviar: dryRun=false E confirm=true' }, { status: 200 })
 
     const now = Date.now()
     const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
 
-    // templates reabridores
-    const { data: tpls } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').in('nome_meta', Object.values(TPL_ETAPA)).eq('org_id', org)
+    // templates reabridores (os cnd_mudanca_* por etapa, ou um template ÚNICO se veio `template`)
+    const nomesTpl = tplOverride ? [tplOverride] : Object.values(TPL_ETAPA)
+    const { data: tpls } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').in('nome_meta', nomesTpl).eq('org_id', org)
     const tplPorNome = new Map((tpls || []).map((t: any) => [t.nome_meta, t]))
+    if (tplOverride && !tplPorNome.has(tplOverride)) return NextResponse.json({ ok: false, error: `template ${tplOverride} não encontrado` }, { status: 200 })
 
     // tarefas VENCIDAS abertas → leads
     const { data: tks } = await sb.from('tarefas_lead').select('id, lead_id').eq('org_id', org).eq('concluida', false).eq('cancelada', false).lt('data_vencimento', new Date().toISOString()).limit(1000)
@@ -62,13 +65,14 @@ export async function POST(req: NextRequest) {
     const vendNome = new Map<string, string>()
     if (vendIds.length) { const { data: us } = await sb.from('usuarios_perfil').select('id, nome').in('id', vendIds); for (const u of us || []) vendNome.set(u.id, (u.nome || '').split(' ')[0] || 'Mateus') }
 
-    // dedup: quem já recebeu o reabridor de mudança
+    // dedup: quem já recebeu ESTE reabridor (o override, se houver; senão os cnd_mudanca_*)
+    const dedupRe = tplOverride ? new RegExp(tplOverride.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i') : /cnd_mudanca_(agendado|pagamento|proxima)/i
     const jaReabriu = new Set<string>()
     for (let i = 0; i < leads.length; i += 100) {
       const chunk = leads.slice(i, i + 100).map(l => l.id)
       const ands: any[] = []
       for (let from = 0; ; from += 1000) { const { data } = await sb.from('lead_andamentos').select('lead_id, observacao').in('lead_id', chunk).range(from, from + 999); if (!data?.length) break; ands.push(...data); if (data.length < 1000) break }
-      for (const a of ands) if (/cnd_mudanca_(agendado|pagamento|proxima)/i.test(a.observacao || '')) jaReabriu.add(a.lead_id)
+      for (const a of ands) if (dedupRe.test(a.observacao || '')) jaReabriu.add(a.lead_id)
     }
 
     const resumoStale = (l: any) => { const em = l.resumo_ia_em, ult = dossies.get(l.id)?.ultimoContatoEm; return !l.resumo_ia?.etapaReal || !em || (ult && em < ult) }
@@ -88,9 +92,8 @@ export async function POST(req: NextRequest) {
       if (precisaReler) budget--
       const et = interp?.etapa
       if (et && RESOLVIDO.has(et)) { pulados++; previews.push({ lead: l.nome, avaliacao: et, pulado: `avaliação: ${et} (resolvido/voltou pro funil)` }); continue }
-      // a etapa do TEMPLATE = a etapa gravada do time (agendado/pagamento/proxima). (a interpretação já confirmou que
-      // não saiu do estado; se ela apontar outro estado do time, mantemos o template da etapa atual do lead.)
-      const tplNome = TPL_ETAPA[l.etapa]
+      // template: o override (um só pra todos) ou o cnd_mudanca_* da etapa do time
+      const tplNome = tplOverride || TPL_ETAPA[l.etapa]
       const tpl: any = tplPorNome.get(tplNome)
       if (!tpl) { pulados++; previews.push({ lead: l.nome, pulado: `sem template ${tplNome}` }); continue }
 
