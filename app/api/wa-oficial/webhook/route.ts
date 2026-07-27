@@ -42,6 +42,16 @@ async function registrarRecebida(m: any, value: any) {
   else if (m.type === 'sticker') { tipo = 'imagem'; midiaMime = 'image/webp'; if (m.sticker?.id) midiaUrl = proxy(m.sticker.id) }
   else if (m.type === 'button') texto = m.button?.text || ''
   else if (m.type === 'interactive') texto = m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || ''
+  else if (m.type === 'contacts') {
+    // contato (vCard) enviado pelo cliente — mostra nome + telefone, não "(contacts)"
+    tipo = 'contato'
+    texto = (m.contacts || []).map((c: any) => {
+      const nome = c?.name?.formatted_name || [c?.name?.first_name, c?.name?.last_name].filter(Boolean).join(' ') || 'Contato'
+      const fone = c?.phones?.[0]?.phone || c?.phones?.[0]?.wa_id || ''
+      return `👤 ${nome}${fone ? ' — ' + fone : ''}`
+    }).join('\n') || '👤 Contato'
+  }
+  else if (m.type === 'location') { tipo = 'localizacao'; const lo = m.location || {}; texto = `📍 ${lo.name || 'Localização'}${lo.address ? ' — ' + lo.address : (lo.latitude ? ` (${lo.latitude}, ${lo.longitude})` : '')}` }
   else texto = `(${m.type || 'mensagem'})`
 
   // dedup por wamid (guardado em zapi_id)

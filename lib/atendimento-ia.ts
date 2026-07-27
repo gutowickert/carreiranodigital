@@ -2,6 +2,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { contextoCentral } from '@/lib/contexto-central'
 import { transcreverLigacao } from '@/lib/transcrever-ligacao'
+import { entenderMidia } from '@/lib/entender-midia'
 import { logIaUso } from '@/lib/ia-uso'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
@@ -178,6 +179,9 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   if (won.length < 4) won = wonAll || [] // sem match de produto, usa todos
   won = won.slice(0, 22)
   const convAtual = convIdsDe(lead)
+  // TRANSCREVE áudio / DESCREVE imagem PENDENTE da conversa atual ANTES de ler (o Sugerir não fazia isso —
+  // era por isso que "a IA não lia os áudios"). Idempotente: só toca no que ainda não tem texto.
+  if (!simul) { for (const cid of convAtual) { try { await entenderMidia(cid) } catch { /* não trava a sugestão */ } } }
   const convWon = won.map(l => ({ l, ids: convIdsDe(l) }))
   const todosIds = [...new Set([...convAtual, ...convWon.flatMap(x => x.ids)])]
   const msgs = await carregarMensagens(todosIds)
