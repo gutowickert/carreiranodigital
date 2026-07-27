@@ -41,8 +41,16 @@ export async function GET(req: NextRequest) {
     const serie: { dia: string; envios: number }[] = []
     for (let i = 6; i >= 0; i--) { const d = diaBR(new Date(Date.now() - i * 864e5).toISOString()); serie.push({ dia: d.slice(5), envios: envios.filter(a => diaBR(a.criado_em) === d).length }) }
 
-    // 2) RESPONDERAM (hand-off: saiu da Esteira IA hoje)
-    const responderamHoje = A.filter(a => a.tipo === 'reconciliacao' && /respondeu/i.test(a.observacao || '') && diaBR(a.criado_em) === hoje).length
+    // 2) RESPONDERAM hoje = clientes que MANDARAM mensagem de verdade hoje (inbound real), contados por LEAD.
+    // (antes contava o hand-off do reconciliador — não refletia a resposta real do cliente.)
+    const { data: msgIn } = await sb.from('wa_mensagens').select('conversa_id').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', hoje + 'T03:00:00Z').limit(10000)
+    let responderamHoje = 0
+    if (msgIn?.length) {
+      const convIds = [...new Set(msgIn.map(m => m.conversa_id).filter(Boolean))]
+      const leadSet = new Set<string>()
+      for (let i = 0; i < convIds.length; i += 300) { const { data: cv } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 300)); for (const c of cv || []) leadSet.add(c.lead_id || ('c:' + c.id)) }
+      responderamHoje = leadSet.size
+    }
     // 3) GANHOS / PERDAS hoje (mudança de etapa)
     const ganhosHoje = A.filter(a => a.tipo === 'mudanca_etapa' && a.etapa_nova === 'ganho' && diaBR(a.criado_em) === hoje)
     const perdasHoje = A.filter(a => a.tipo === 'mudanca_etapa' && a.etapa_nova === 'perda' && diaBR(a.criado_em) === hoje).length
