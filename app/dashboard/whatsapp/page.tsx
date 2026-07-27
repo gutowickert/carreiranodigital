@@ -179,12 +179,22 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
   const [sugeridoOrig, setSugeridoOrig] = useState('')
   const [foraJanela, setForaJanela] = useState(false)
   const [reabrindo, setReabrindo] = useState(false)
+  const [templates, setTemplates] = useState<any[]>([])
+  const [tplEscolhido, setTplEscolhido] = useState('')
+
+  useEffect(() => {
+    fetchAuth('/api/followup-templates').then(r => r.json()).then(j => {
+      const arr = (j?.templates || j || []).filter((t: any) => (t.status || '').toLowerCase() === 'aprovado')
+      setTemplates(arr)
+    }).catch(() => { })
+  }, [])
 
   async function reabrirTemplate() {
+    if (!tplEscolhido) { setErro('Escolha um template'); return }
     setReabrindo(true); setErro('')
     try {
-      const r = await fetchAuth('/api/wa-oficial/enviar-template', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, conversaId: conversa.id }) }).then(r => r.json())
-      if (r.ok) { setForaJanela(false); carregar() } else setErro(r.error || 'falha ao enviar template')
+      const r = await fetchAuth('/api/wa-oficial/enviar-template', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: conversa.lead_id, conversaId: conversa.id, template: tplEscolhido }) }).then(r => r.json())
+      if (r.ok) { setForaJanela(false); setTplEscolhido(''); carregar() } else setErro(r.error || 'falha ao enviar template')
     } catch (e: any) { setErro((e && e.message) || 'erro ao reabrir') }
     finally { setReabrindo(false) }
   }
@@ -435,8 +445,13 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
       )}
       {foraJanela && (
         <div style={{ margin: '0 12px 8px', padding: '10px 12px', borderRadius: 8, background: 'var(--amber-bg)', border: '1px solid var(--amber)', fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
-          ⏳ <b>Passou de 24h</b> sem resposta do cliente — o WhatsApp bloqueia mensagem livre. Reabra com um <b>template aprovado</b>; quando ele responder, o campo livre volta (e o ✨ personaliza).
-          <button onClick={reabrirTemplate} disabled={reabrindo} style={{ display: 'block', marginTop: 8, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: reabrindo ? 0.6 : 1 }}>{reabrindo ? 'Reabrindo…' : '📨 Reabrir com template'}</button>
+          ⏳ <b>Passou de 24h</b> sem resposta do cliente — o WhatsApp bloqueia mensagem livre. <b>Escolha o template</b> pra reabrir; quando ele responder, o campo livre volta (e o ✨ personaliza).
+          <select value={tplEscolhido} onChange={e => setTplEscolhido(e.target.value)} style={{ display: 'block', width: '100%', marginTop: 8, background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: 'var(--text)' }}>
+            <option value="">— escolha o template —</option>
+            {templates.map((t: any) => <option key={t.nome_meta} value={t.nome_meta}>{(t.nome_meta || '').replace(/^cnd_/, '').replace(/_/g, ' ')}</option>)}
+          </select>
+          {tplEscolhido && (() => { const t = templates.find((x: any) => x.nome_meta === tplEscolhido); return t?.corpo ? <div style={{ marginTop: 6, padding: '6px 10px', background: 'var(--surface)', border: '1px dashed var(--border)', borderRadius: 6, fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'pre-wrap' }}>{t.corpo}</div> : null })()}
+          <button onClick={reabrirTemplate} disabled={reabrindo || !tplEscolhido} style={{ display: 'block', marginTop: 8, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: reabrindo || !tplEscolhido ? 'default' : 'pointer', opacity: reabrindo || !tplEscolhido ? 0.5 : 1 }}>{reabrindo ? 'Enviando…' : '📨 Enviar template escolhido'}</button>
         </div>
       )}
       <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)', alignItems: 'flex-end' }}>
