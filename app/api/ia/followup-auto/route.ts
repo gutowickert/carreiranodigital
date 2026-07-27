@@ -201,19 +201,23 @@ export async function POST(req: NextRequest) {
       const ti = turmaInfo.get(l.turma_id || '')
       // produto (FC/ANL): do código do lead; se vazio (bug da Helena), deriva do CÓDIGO DA TURMA.
       const fam = familia(l.codigo_turma) || familia(ti?.codigo || null)
-      // preço FIXO por produto (FC sempre 2397 pix / 2697 cartão 10x; ANL 797 pix). Fallback: preço real da turma.
+      // preço FIXO por produto (FC 2397 pix / 2697 cartão 10x; ANL 797 pix). Fallback: preço real da turma
+      // (2697 é o valor do CARTÃO, não do Pix — não usa como Pix).
       let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
-      if (!precoPix && ti?.preco && ti.preco > 0) precoPix = ti.preco
-      // ⛔ BLINDAGEM R$0 (bug grave da Helena 26/07): se o template PRECISA de preço e não temos preço confiável (>0),
-      // NÃO manda — o produto/preço não foi resolvido (fam vazia + turma sem preço). Fica pro time.
-      const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao|condicao_bolsa)\s*\}\}/.test(p.tpl.corpo || '')
-      if (precisaPreco && precoPix <= 0) { previews.push({ lead: l.nome, pulado: '⛔ sem preço confiável — NÃO manda (blindagem R$0), fica pro time' }); continue }
+      if (!precoPix && ti?.preco && ti.preco > 0 && ti.preco !== 2697) precoPix = ti.preco
+      // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
+      const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 10x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 10x sem juros' : ''
+      // ⛔ BLINDAGEM R$0 (bug grave da Helena): template que precisa de preço/bolsa sem produto resolvido → NÃO manda.
+      const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(p.tpl.corpo || '')
+      const precisaBolsa = /\{\{\s*condicao_bolsa\s*\}\}/.test(p.tpl.corpo || '')
+      if (precisaPreco && precoPix <= 0) { previews.push({ lead: l.nome, pulado: '⛔ sem preço confiável — NÃO manda (blindagem), fica pro time' }); continue }
+      if (precisaBolsa && !bolsaTxt) { previews.push({ lead: l.nome, pulado: '⛔ produto não resolvido (FC/ANL) — NÃO manda bolsa, fica pro time' }); continue }
       const valores: Record<string, string> = {
         nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
         cidade: ti?.cidade || 'sua região',
         preco_pix: money(precoPix), preco: money(precoPix),
         preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
-        condicao_bolsa: `${money(precoPix * 0.9)} no Pix (10% de desconto)`, prazo: prazoDe(entradaEtapa[l.id] || 0),
+        condicao_bolsa: bolsaTxt, prazo: prazoDe(entradaEtapa[l.id] || 0),
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)

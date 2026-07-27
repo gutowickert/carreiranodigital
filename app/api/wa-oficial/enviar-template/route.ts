@@ -64,11 +64,15 @@ export async function POST(req: NextRequest) {
     // produto/preço com o MESMO tratamento do motor (deriva da turma se o lead não tem código) + blindagem R$0
     const fam = familia(lead.codigo_turma) || familia(turmaCod)
     let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
-    if (!precoPix && precoTurma > 0) precoPix = precoTurma
+    if (!precoPix && precoTurma > 0 && precoTurma !== 2697) precoPix = precoTurma // 2697 = cartão, não Pix
+    // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
+    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 10x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 10x sem juros' : ''
 
-    // ⛔ BLINDAGEM 1: template que PRECISA de preço sem preço confiável → não manda (foi o bug do {{condicao_bolsa}}).
-    const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao|condicao_bolsa)\s*\}\}/.test(tpl.corpo || '')
-    if (precisaPreco && precoPix <= 0) return NextResponse.json({ ok: false, error: 'Esse template usa preço/condição, mas não há preço confiável pra este lead (falta produto/turma no cadastro). Escolha outro template ou complete o cadastro.' }, { status: 200 })
+    // ⛔ BLINDAGEM 1: template que PRECISA de preço/bolsa sem produto resolvido → não manda (bug do {{condicao_bolsa}}).
+    const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(tpl.corpo || '')
+    const precisaBolsa = /\{\{\s*condicao_bolsa\s*\}\}/.test(tpl.corpo || '')
+    if (precisaPreco && precoPix <= 0) return NextResponse.json({ ok: false, error: 'Esse template usa preço, mas não há preço confiável pra este lead (falta produto/turma no cadastro). Escolha outro template ou complete o cadastro.' }, { status: 200 })
+    if (precisaBolsa && !bolsaTxt) return NextResponse.json({ ok: false, error: 'Esse template usa a condição de bolsa, mas o produto (FC/ANL) não está definido pra este lead. Complete o cadastro.' }, { status: 200 })
 
     const valores: Record<string, string> = {
       nome: nomeSaudacao(lead.nome), vendedor: vendedorNome,
@@ -76,7 +80,7 @@ export async function POST(req: NextRequest) {
       cidade, datas, prazo: 'esta semana',
       preco_pix: money(precoPix), preco: money(precoPix),
       preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
-      condicao_bolsa: `${money(precoPix * 0.9)} no Pix (10% de desconto)`, condicao: '',
+      condicao_bolsa: bolsaTxt, condicao: '',
     }
     const ordem = (tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
     const textoRender = (tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
