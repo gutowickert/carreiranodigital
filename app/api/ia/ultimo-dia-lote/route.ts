@@ -26,6 +26,8 @@ export async function POST(req: NextRequest) {
     const dryRun = b?.dryRun !== false
     const confirm = b?.confirm === true
     const padroes: string[] = Array.isArray(b?.datas) && b.datas.length ? b.datas : ['27/07', '27/7', 'dia 27', '27 de julho']
+    // quantas LEITURAS COMPLETAS (LLM) por chamada — o resto usa cache fresco. O cron chama em loop até restantes=0.
+    const limitLeitura = Math.min(Math.max(Number(b?.limit) || 10, 1), 15)
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra enviar: dryRun=false E confirm=true' }, { status: 200 })
 
     const now = Date.now()
@@ -70,6 +72,10 @@ export async function POST(req: NextRequest) {
     const turmaInfo = new Map<string, { cidade: string; codigo: string }>()
     if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, codigo, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', codigo: t.codigo || '' }) }
 
+    // AVALIAÇÃO COMPLETA por lead: lê a conversa (fresca) e decide. resumo STALE = tem atividade nova depois do
+    // último resumo → precisa reler. Faz até `limitLeitura` leituras-LLM por chamada; o resto usa o cache fresco.
+    const resumoStale = (l: any) => { const em = l.resumo_ia_em, ult = dossies.get(l.id)?.ultimoContatoEm; return !l.resumo_ia?.etapaReal || !em || (ult && em < ult) }
+    let budget = limitLeitura, adiadosPorLeitura = 0
     const previews: any[] = []
     let enviados = 0, pulados = 0, falhas = 0, falhasSeguidas = 0
 
@@ -80,9 +86,16 @@ export async function POST(req: NextRequest) {
       // respondeu hoje → vez do time
       const eng = d.ultimoEngajamentoEm
       if (eng && new Date(eng).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR) { pulados++; previews.push({ lead: l.nome, pulado: 'respondeu hoje — é do time' }); continue }
-      // interpretação (cache): saiu do jogo?
-      const interp = await interpretarFollowup(sb, org, d, l, false)
-      if (interp?.etapa && FORA.has(interp.etapa)) { pulados++; previews.push({ lead: l.nome, pulado: `interpretação: ${interp.etapa}` }); continue }
+
+      // LEITURA COMPLETA: relê quando o resumo está velho (gasta orçamento LLM); senão usa o resumo fresco.
+      const precisaReler = resumoStale(l)
+      if (precisaReler && budget <= 0) { adiadosPorLeitura++; previews.push({ lead: l.nome, pulado: 'aguardando leitura completa (próxima rodada)' }); continue }
+      const interp = await interpretarFollowup(sb, org, d, l, precisaReler)
+      if (precisaReler) budget--
+      // avaliação diz que saiu do jogo → não manda, motivo à mostra
+      if (interp?.etapa && FORA.has(interp.etapa)) { pulados++; previews.push({ lead: l.nome, avaliacao: interp.etapa, ondeParou: (interp.motivo || '').slice(0, 120), pulado: `avaliação: ${interp.etapa}` }); continue }
+      // sem resumo nenhum (nunca deu pra ler) → não arrisca template cego
+      if (!interp) { adiadosPorLeitura++; previews.push({ lead: l.nome, pulado: 'sem histórico pra avaliar — adiado' }); continue }
 
       const ti = turmaInfo.get(l.turma_id || '')
       const fam = familia(l.codigo_turma) || familia(ti?.codigo || null)
@@ -93,7 +106,7 @@ export async function POST(req: NextRequest) {
       const to = foneOficial(l.whatsapp || '')
       if (!to) { falhas++; continue }
 
-      if (dryRun) { previews.push({ lead: l.nome, texto: textoRender }); continue }
+      if (dryRun) { previews.push({ lead: l.nome, avaliacao: interp.etapa, ondeParou: (interp.motivo || '').slice(0, 130), fonte: interp.fonte, texto: textoRender }); continue }
 
       const parametros = ordem.map((k: string) => ({ type: 'text', text: valores[k] ?? k }))
       const r = await enviarTemplate(to, tpl.nome_meta, 'pt_BR', parametros.length ? [{ type: 'body', parameters: parametros }] : undefined)
@@ -109,8 +122,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       ok: true, dryRun, emLotePrecoOk: leads.length, comDataDoLote: alvo.length,
       enviados: dryRun ? previews.filter(p => p.texto).length : enviados, pulados, falhas,
-      amostra: dryRun ? previews.filter(p => p.texto).slice(0, 12) : undefined,
-      pulos: dryRun ? previews.filter(p => p.pulado).slice(0, 15) : undefined,
+      restantes: adiadosPorLeitura, // leads ainda sem leitura completa (chame de novo até 0)
+      amostra: dryRun ? previews.filter(p => p.texto).slice(0, 15) : undefined,
+      pulos: dryRun ? previews.filter(p => p.pulado || p.avaliacao).slice(0, 20) : undefined,
       erros: !dryRun ? previews.filter(p => p.erro) : undefined,
     })
   } catch (e: any) {
