@@ -14,8 +14,12 @@ export const maxDuration = 60
 //   • segue no mesmo estado do time (data ainda válida / negociando) → NÃO mexe (é tarefa real do time)
 // Roda em lotes (LLM por lead). dryRun (padrão) simula. Aplicar: { dryRun:false, confirm:true }. Não envia mensagem.
 const TIME = ['agendado', 'aguardando_pagamento', 'proxima_turma', 'aguardando_atendimento']
-const FUNIL = new Set(['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'])
+// destinos de move (o lead voltou pro funil). NÃO inclui atendimento_inicial: rebaixar quem já foi agendado/
+// negociado pro começo do funil é quase sempre erro de resumo velho (foi o caso da Kiany — agendada pras 14h,
+// a limpeza leu resumo desatualizado e rebaixou). Só move pra frente (lote/bolsa) ou pros terminais.
+const FUNIL = new Set(['lote_preco_ok', 'oferecer_bolsa'])
 const MOTIVO_SEM_RESPOSTA = 'f972b270-691a-4e24-bd79-3b7583970a51'
+const DIA = 864e5
 
 export async function POST(req: NextRequest) {
   try {
@@ -26,9 +30,10 @@ export async function POST(req: NextRequest) {
     const limit = Math.min(Math.max(Number(b?.limit) || 10, 1), 15)
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra aplicar: dryRun=false E confirm=true' }, { status: 200 })
 
-    const agora = new Date().toISOString()
-    // tarefas VENCIDAS abertas
-    const { data: tks } = await sb.from('tarefas_lead').select('id, lead_id, tipo, data_vencimento').eq('org_id', org).eq('concluida', false).eq('cancelada', false).lt('data_vencimento', agora).limit(1000)
+    // só tarefas atrasadas de VERDADE: vencidas há MAIS DE 1 DIA. Tarefa de hoje (mesmo já passada uns minutos)
+    // é do time trabalhando HOJE — a limpeza NÃO toca (bug da Kiany: cancelou tarefa vencida há 3 min).
+    const corte = new Date(Date.now() - DIA).toISOString()
+    const { data: tks } = await sb.from('tarefas_lead').select('id, lead_id, tipo, data_vencimento').eq('org_id', org).eq('concluida', false).eq('cancelada', false).lt('data_vencimento', corte).limit(1000)
     const tarefasDe = new Map<string, string[]>()
     for (const t of tks || []) { const a = tarefasDe.get(t.lead_id) || []; a.push(t.id); tarefasDe.set(t.lead_id, a) }
     const lids = [...tarefasDe.keys()]
