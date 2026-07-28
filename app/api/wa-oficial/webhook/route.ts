@@ -111,11 +111,14 @@ async function registrarRecebida(m: any, value: any) {
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.
   const leadId = leadMatch?.id || conv.lead_id
   if (leadId) {
-    // MODELO: IA faz os follow-ups; o TIME atende quem responde. Lead RESPONDEU → sai da Esteira IA e vai pro inbox do time.
+    // MODELO: IA faz os follow-ups; o TIME atende quem responde. Lead RESPONDEU → as tarefas de CADÊNCIA da IA
+    // não fazem mais sentido (ex.: "Seguir no WhatsApp / D2 se não respondeu"). Cancela SEMPRE (qualquer dono),
+    // pra não poluir a fila de Tarefas do time — antes só cancelava se o lead fosse da IA e só o tipo seguir_followup.
+    const CADENCIA = ['seguir_followup', 'triagem_mensagem', 'lote_virando', 'pos_virada_lote', 'msg_horario', 'apresentacao_completa', 'bolsa_1', 'bolsa_2', 'seguir_whatsapp', 'followup']
+    await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).in('tipo', CADENCIA)
+    // se estava com a IA, devolve pro time (inbox)
     const { data: flip } = await supabase.from('leads').update({ atendido_por: 'humano', atualizado_em: new Date().toISOString() }).eq('id', leadId).eq('atendido_por', 'ia').select('id')
     if (flip && flip.length) {
-      // para os follow-ups automáticos pendentes (a IA parou; o time assume na caixa de entrada)
-      await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).eq('lead_id', leadId).eq('concluida', false).eq('cancelada', false).eq('tipo', 'seguir_followup')
       await supabase.from('lead_andamentos').insert({ lead_id: leadId, tipo: 'reconciliacao', observacao: '🤖 Cliente respondeu → saiu da Esteira IA; atendimento com o time na caixa de entrada.' })
     }
     try { await classificarTemperatura(leadId, conv.id) } catch { /* não quebra */ }
