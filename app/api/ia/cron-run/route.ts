@@ -36,7 +36,8 @@ export async function POST(req: NextRequest) {
       if (restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 8, data: ontemUTC() })
       if (restam() > 8000) { const r = await post('/api/ia/reconciliar', { dryRun: false, confirm: true, dias: 3 }); log.push('reconciliar → ' + (r?.ok ? 'ok' : 'erro')) }
       if (restam() > 12000) await emLote('followup', '/api/ia/followup-auto', { dryRun: false, confirm: true, limit: 60 }, 'planejados', 6)
-      if (restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA') }
+      if (restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA, ' + (r?.tarefasCadenciaCanceladas ?? '?') + ' tarefas limpas') }
+      if (restam() > 6000) { const r = await post('/api/ia/garantir-tarefas', { dryRun: false, confirm: true }); log.push('garantir-tarefas → ' + (r?.criadas ?? '?') + ' órfãos do time') }
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     } else { // noite
       await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 10 })

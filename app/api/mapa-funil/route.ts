@@ -16,11 +16,12 @@ export async function GET(req: NextRequest) {
     const L = leads || []
     const ids = L.map(l => l.id)
 
-    const inb = new Set<string>(), atend = new Set<string>(), comTarefa = new Set<string>()
+    const inb = new Set<string>(), recente = new Set<string>(), atend = new Set<string>(), comTarefa = new Set<string>()
+    const corte48 = new Date(Date.now() - 2 * 864e5).toISOString()
     for (let i = 0; i < ids.length; i += 200) {
       const { data: cv } = await sb.from('wa_conversas').select('id, lead_id').in('lead_id', ids.slice(i, i + 200))
       const cToL = new Map((cv || []).map((c: any) => [c.id, c.lead_id])); const cids = [...cToL.keys()]
-      for (let k = 0; k < cids.length; k += 150) { const { data: ms } = await sb.from('wa_mensagens').select('conversa_id, direcao, status').in('conversa_id', cids.slice(k, k + 150)); for (const m of ms || []) if (m.direcao === 'recebida' || m.status === 'recebida') inb.add(cToL.get(m.conversa_id) as string) }
+      for (let k = 0; k < cids.length; k += 150) { const { data: ms } = await sb.from('wa_mensagens').select('conversa_id, direcao, status, criado_em').in('conversa_id', cids.slice(k, k + 150)); for (const m of ms || []) if (m.direcao === 'recebida' || m.status === 'recebida') { const lid = cToL.get(m.conversa_id) as string; inb.add(lid); if (m.criado_em > corte48) recente.add(lid) } }
     }
     const { data: lg } = await sb.from('ligacoes').select('lead_id, duracao').in('lead_id', ids); for (const g of lg || []) if (Number(g.duracao) > 60) atend.add(g.lead_id)
     for (let i = 0; i < ids.length; i += 300) { const { data: t } = await sb.from('tarefas_lead').select('lead_id').in('lead_id', ids.slice(i, i + 300)).eq('concluida', false).eq('cancelada', false); for (const x of t || []) comTarefa.add(x.lead_id) }
@@ -34,7 +35,8 @@ export async function GET(req: NextRequest) {
       if (ehIA) r.ia++; else r.humano++
       const eng = inb.has(l.id) || atend.has(l.id); if (eng) r.engaj++; else r.frio++
       const temTarefa = comTarefa.has(l.id); if (temTarefa) r.comTarefa++
-      if (!ehIA && !temTarefa) r.paradoTime++    // do time E sem tarefa = precisa de mão
+      // PARADO de verdade = do time, sem tarefa E não respondeu nas últimas 48h (senão está no inbox, sendo atendido)
+      if (!ehIA && !temTarefa && !recente.has(l.id)) r.paradoTime++
       if (!alcanc(l.whatsapp)) r.lid++
     }
     const etapas = ETS.map(et => R[et])
