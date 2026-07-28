@@ -18,6 +18,15 @@ jobs:
             echo "warming rodada $i -> restantes: ${REST:-?}"
             [ "$REST" = "0" ] && break
           done
+      - name: Rede de seguranca — recupera a virada de ONTEM (se o cron das 23h falhou)
+        run: |
+          ONTEM=$(date -u -d 'yesterday' +%F)
+          for i in $(seq 1 20); do
+            REST=$(curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/virada" -H "Content-Type: application/json" -d "{\"dryRun\":false,\"confirm\":true,\"limit\":8,\"data\":\"$ONTEM\"}" | sed -n 's/.*"restantes":\([0-9]*\).*/\1/p')
+            echo "virada($ONTEM) rodada $i -> restantes: ${REST:-?}"
+            [ "$REST" = "0" ] && break
+            sleep 2
+          done
       - name: Reconciliar posse (esfriou->IA, quente->time)
         run: |
           curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/reconciliar" \
@@ -28,3 +37,7 @@ jobs:
           curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/followup-auto" \
             -H "Content-Type: application/json" \
             -d '{"dryRun":false,"confirm":true,"limit":120}'
+      - name: Sync leads -> pool de disparo (catch-up, caso a virada da noite tenha falhado)
+        run: |
+          curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/sync-pool" -H "Content-Type: application/json" -d '{"dryRun":false,"confirm":true,"limit":800}' > /dev/null
+          curl -s -X POST "https://carreiranodigital.vercel.app/api/ia/sync-pool" -H "Content-Type: application/json" -d '{"dryRun":false,"confirm":true,"limit":800}' | sed -n 's/.*"inseridos":\([0-9]*\).*/inseridos: \1/p'
