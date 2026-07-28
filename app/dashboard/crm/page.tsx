@@ -47,6 +47,7 @@ const ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'ganho', label: 'Ganho', cor: 'var(--green-strong)', bg: 'var(--green-bg)' },
@@ -368,6 +369,17 @@ export default function CRM() {
         'verificar_pagamento',
         `Verificar pagamento — ${lead.nome}`,
         'Cliente disse que vai pagar. Confirmar se pagamento foi efetuado.',
+        extras.dataAgendada
+      )
+    } else if (novaEtapa === 'ligacao_boa' && extras?.dataAgendada) {
+      // Ligação Boa: lead QUENTE (o time avaliou na ligação que vai fechar). A IA NÃO toca; atenção especial do time.
+      // Fica aqui até o time tirar na mão. Tarefa criada na data/hora que o vendedor marcou (obrigatório).
+      await criarTarefaComData(
+        lead.id,
+        lead.vendedor_id,
+        'ligacao_boa',
+        `🔥 Ligação Boa — ${lead.nome}`,
+        'Cliente com alto potencial de fechamento (avaliado na ligação). Dar atenção especial no horário marcado — a IA não atende este.',
         extras.dataAgendada
       )
     } else if ((novaEtapa === 'agendado' || novaEtapa === 'proxima_turma') && extras?.dataAgendada) {

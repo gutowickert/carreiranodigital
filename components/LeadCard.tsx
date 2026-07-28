@@ -52,6 +52,7 @@ const ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'ganho', label: 'Ganho', cor: 'var(--green-strong)', bg: 'var(--green-bg)' },
@@ -181,6 +182,8 @@ export default function LeadCardModal({ leadId, onClose }: { leadId: string; onC
       await criarTarefaComData(l.id, l.vendedor_id, 'ligar_agendado', `Ligar (agendado) — ${l.nome}`, 'Cliente pediu ligação nesta data/hora. Ligar no horário combinado.', extras.prazoPrometido)
     } else if (novaEtapa === 'aguardando_pagamento' && extras?.dataAgendada) {
       await criarTarefaComData(l.id, l.vendedor_id, 'verificar_pagamento', `Verificar pagamento — ${l.nome}`, 'Cliente disse que vai pagar. Confirmar se pagamento foi efetuado.', extras.dataAgendada)
+    } else if (novaEtapa === 'ligacao_boa' && extras?.dataAgendada) {
+      await criarTarefaComData(l.id, l.vendedor_id, 'ligacao_boa', `🔥 Ligação Boa — ${l.nome}`, 'Cliente com alto potencial de fechamento (avaliado na ligação). Atenção especial no horário marcado — a IA não atende este.', extras.dataAgendada)
     } else if ((novaEtapa === 'agendado' || novaEtapa === 'proxima_turma') && extras?.dataAgendada) {
       await criarTarefaComData(l.id, l.vendedor_id, novaEtapa, `${novaEtapa === 'agendado' ? 'Contato agendado' : 'Próxima turma'} — ${l.nome}`, novaEtapa === 'agendado' ? 'Retomar contato com o lead (agendado).' : 'Lead para a próxima turma. Retomar contato.', extras.dataAgendada)
     } else {
@@ -256,6 +259,9 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
   const [agendadoHora, setAgendadoHora] = useState('09:00')
   const [mostrarProxTurma, setMostrarProxTurma] = useState(false)
   const [proxTurmaData, setProxTurmaData] = useState('')
+  const [mostrarLigBoa, setMostrarLigBoa] = useState(false)
+  const [ligBoaData, setLigBoaData] = useState('')
+  const [ligBoaHora, setLigBoaHora] = useState('09:00')
   const [proxTurmaHora, setProxTurmaHora] = useState('09:00')
   const [naoLida, setNaoLida] = useState(false)
 
@@ -303,6 +309,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     }
     setMostrarPerda(false); setMostrarGanho(false); setMostrarPrazo(false); setMostrarPag(false)
     setMostrarAgendado(false); setMostrarProxTurma(false); setAgendadoData(''); setProxTurmaData(''); setAgendadoHora('09:00'); setProxTurmaHora('09:00')
+    setMostrarLigBoa(false); setLigBoaData(''); setLigBoaHora('09:00')
     setMotivoSelecionado(''); setPrazoData(''); setPagData('')
   }, [lead, aberto])
 
@@ -427,6 +434,14 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     if (!lead || !agendadoData) return
     const dataIso = new Date(`${agendadoData}T${agendadoHora || '09:00'}:00-03:00`).toISOString()
     await moverEtapa(lead, 'agendado', { dataAgendada: dataIso })
+    onFechar()
+  }
+
+  // Move o lead pra "Ligação Boa" (quente — a IA não toca). Data/hora OBRIGATÓRIA → gera a tarefa nesse horário.
+  async function confirmarLigBoa() {
+    if (!lead || !ligBoaData) return
+    const dataIso = new Date(`${ligBoaData}T${ligBoaHora || '09:00'}:00-03:00`).toISOString()
+    await moverEtapa(lead, 'ligacao_boa', { dataAgendada: dataIso })
     onFechar()
   }
 
@@ -647,9 +662,13 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
                   📅 Agendar contato
                 </button>
-                <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
+                <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarLigBoa(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer' }}>
                   ➡️ Próxima turma
+                </button>
+                <button onClick={() => { setMostrarLigBoa(!mostrarLigBoa); setMostrarAgendado(false); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
+                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  🔥 Ligação Boa
                 </button>
                 <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
@@ -699,6 +718,21 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                   <button onClick={confirmarAgendado} disabled={!agendadoData}
                     style={{ ...btnPrimary, background: 'var(--blue)', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
                     Agendar contato
+                  </button>
+                </div>
+              )}
+
+              {mostrarLigBoa && (
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
+                  <label style={labelStyle}>🔥 Cliente quente (vai fechar) — atenção especial. Chamar em: *</label>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <input type="date" style={{ ...inp, flex: 1 }} value={ligBoaData} onChange={e => setLigBoaData(e.target.value)} />
+                    <input type="time" style={{ ...inp, width: 110 }} value={ligBoaHora} onChange={e => setLigBoaHora(e.target.value)} />
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>A IA não toca neste lead — fica em Ligação Boa até você tirar na mão.</div>
+                  <button onClick={confirmarLigBoa} disabled={!ligBoaData}
+                    style={{ ...btnPrimary, background: 'var(--amber)', marginTop: 8, width: '100%', opacity: ligBoaData ? 1 : 0.5 }}>
+                    Mover pra Ligação Boa
                   </button>
                 </div>
               )}

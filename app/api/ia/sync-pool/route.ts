@@ -17,6 +17,7 @@ const cidCod = (c: string | null) => { const x = (c || '').toLowerCase().replace
 // ao completar 7 dias vira 'perdido' e entra no disparo de reativação sozinha.
 const COOLDOWN_DIAS = 7
 const catDaEtapa = (e: string, dataPerda: string | null) => {
+  if (e === 'ligacao_boa') return 'protegido'      // quente do time — FORA de qualquer disparo (a menos que vire perda)
   if (e === 'ganho') return 'comprador'
   if (e === 'perda') { const dias = dataPerda ? (Date.now() - +new Date(dataPerda)) / 864e5 : 999; return dias < COOLDOWN_DIAS ? 'perdido_recente' : 'perdido' }
   return 'interessado'

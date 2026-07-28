@@ -25,6 +25,7 @@ export const TITULO_ETAPA: Record<string, string> = {
   agendado: 'Agendado',
   proxima_turma: 'Próxima Turma',
   aguardando_pagamento: 'Aguardando Pagamento',
+  ligacao_boa: '🔥 Ligação Boa',
 }
 
 function defaultFluxo(): Fluxo {

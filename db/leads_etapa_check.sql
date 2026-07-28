@@ -11,6 +11,7 @@ alter table public.leads add constraint leads_etapa_check check (etapa in (
   'oferecer_bolsa',
   'pediu_prazo',
   'aguardando_pagamento',
+  'ligacao_boa',
   'agendado',
   'proxima_turma',
   'ganho',
