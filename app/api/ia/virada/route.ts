@@ -29,8 +29,10 @@ export async function POST(req: NextRequest) {
     const limit = Math.min(Math.max(Number(b?.limit) || 8, 1), 12) // interpretação por lead é cara → lotes pequenos
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra aplicar: dryRun=false E confirm=true' }, { status: 200 })
 
+    // dia-alvo em fuso de Brasília: normalmente HOJE; pode vir { data:'YYYY-MM-DD' } pra recuperar um dia que a virada perdeu.
     const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-    const ehHoje = (iso: string | null | undefined) => !!iso && new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
+    const alvoBR = /^\d{4}-\d{2}-\d{2}$/.test(b?.data || '') ? b.data : hojeBR
+    const ehHoje = (iso: string | null | undefined) => !!iso && new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === alvoBR
     const fluxo = await getFluxo()
 
     const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ATIVAS).limit(5000)
