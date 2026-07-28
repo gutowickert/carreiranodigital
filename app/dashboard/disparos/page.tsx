@@ -25,7 +25,7 @@ export default function Disparos() {
   // listas frias (wa_contatos)
   const [cidades, setCidades] = useState<{ cidade: string; interessado: number; comprador: number; perdido: number; total: number }[]>([])
   const [listaCategoria, setListaCategoria] = useState<'interessado' | 'comprador' | 'perdido'>('interessado')
-  const [listaCidade, setListaCidade] = useState('') // '' = todas
+  const [listaCidades, setListaCidades] = useState<string[]>([]) // [] = todas; várias = combina
   const [listaProduto, setListaProduto] = useState('') // '' = todos, ou FC/ANL
   const [descontarCampId, setDescontarCampId] = useState('') // reenvio inteligente: descontar quem já recebeu nessa campanha
   const [contatos, setContatos] = useState<Contato[]>([])
@@ -96,7 +96,7 @@ export default function Disparos() {
         setContatos((data || []).filter((l: any) => l.whatsapp).map((l: any) => ({ telefone: l.whatsapp, nome: l.nome || '', lead_id: l.id })))
       } else if (modo === 'lista') {
         const p = new URLSearchParams({ categoria: listaCategoria, limit: '5000' })
-        if (listaCidade) p.set('cidade', listaCidade)
+        if (listaCidades.length) p.set('cidades', listaCidades.join(','))
         if (listaProduto) p.set('produto', listaProduto)
         const j = await fetchAuth('/api/wa-oficial/contatos?' + p.toString()).then(r => r.json())
         // exclui quem já é opt-out na própria lista (o disparo ainda checa wa_optout)
@@ -204,15 +204,32 @@ export default function Disparos() {
                 <option value="ANL">ANL (Anúncios p/ Negócios Locais)</option>
               </select>
             </div>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <label style={label}>Cidade</label>
-              <select style={inp} value={listaCidade} onChange={e => setListaCidade(e.target.value)}>
-                <option value="">Todas as cidades</option>
-                {cidades.map(c => {
-                  const n = listaCategoria === 'comprador' ? c.comprador : listaCategoria === 'perdido' ? c.perdido : c.interessado
-                  return <option key={c.cidade} value={c.cidade}>{c.cidade} ({n})</option>
-                })}
-              </select>
+            <div style={{ flexBasis: '100%' }}>
+              {(() => {
+                const nDe = (c: any) => listaCategoria === 'comprador' ? c.comprador : listaCategoria === 'perdido' ? c.perdido : c.interessado
+                const comContatos = cidades.filter(c => nDe(c) > 0)
+                const totalSel = comContatos.filter(c => listaCidades.includes(c.cidade)).reduce((s, c) => s + nDe(c), 0)
+                const toggle = (cid: string) => setListaCidades(prev => prev.includes(cid) ? prev.filter(x => x !== cid) : [...prev, cid])
+                return (<>
+                  <label style={label}>
+                    Cidades (marque uma ou mais){listaCidades.length ? ` — ${listaCidades.length} selecionada(s), ${totalSel} contatos` : ' — vazio = todas'}
+                    <span style={{ marginLeft: 10 }}>
+                      <a onClick={() => setListaCidades(comContatos.map(c => c.cidade))} style={{ color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}>marcar todas</a>
+                      {' · '}
+                      <a onClick={() => setListaCidades([])} style={{ color: 'var(--accent)', cursor: 'pointer', fontSize: 11 }}>limpar</a>
+                    </span>
+                  </label>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(180px,1fr))', gap: 6, maxHeight: 190, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+                    {comContatos.map(c => (
+                      <label key={c.cidade} style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <input type="checkbox" checked={listaCidades.includes(c.cidade)} onChange={() => toggle(c.cidade)} />
+                        {c.cidade} <span style={{ color: 'var(--text-faint)' }}>({nDe(c)})</span>
+                      </label>
+                    ))}
+                    {!comContatos.length && <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhuma cidade com contatos nessa categoria.</span>}
+                  </div>
+                </>)
+              })()}
             </div>
             <div style={{ flexBasis: '100%' }}>
               <label style={label}>Reenvio inteligente — descontar quem já recebeu em (opcional)</label>
