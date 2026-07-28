@@ -92,8 +92,8 @@ export default function TarefasLeads() {
       .order('data_vencimento', { ascending: true })
 
     if (filtroAtendido !== 'geral') query = query.eq('leads.atendido_por', filtroAtendido)
-    if (meuPerfil && meuPerfil.papel !== 'admin') query = query.eq('vendedor_id', meuPerfil.id)
-    else if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
+    // TODOS veem TODAS as tarefas (a equipe não usa atribuição por vendedor). O filtro por vendedor é só opcional.
+    if (filtroVendedor) query = query.eq('vendedor_id', filtroVendedor)
     if (filtroStatus === 'pendentes') query = query.eq('concluida', false).eq('cancelada', false)
     if (filtroStatus === 'concluidas') query = query.eq('concluida', true)
     if (filtroStatus === 'canceladas') query = query.eq('cancelada', true)
