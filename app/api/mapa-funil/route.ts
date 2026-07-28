@@ -6,7 +6,7 @@ export const maxDuration = 60
 
 // MAPA DO FUNIL — onde estão TODOS os leads ativos, quem cuida (IA vs time), engajado/frio, com/sem tarefa.
 // Pra bater o olho e entender o fluxo + os buracos.
-const ETS = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'proxima_turma', 'agendado', 'aguardando_pagamento']
+const ETS = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'proxima_turma', 'agendado', 'aguardando_pagamento', 'ligacao_boa']
 const alcanc = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
 
 export async function GET(req: NextRequest) {

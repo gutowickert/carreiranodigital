@@ -90,7 +90,7 @@ export default function Disparos() {
     try {
       if (modo === 'turma') {
         if (!turmaId) { setCarregandoPublico(false); return }
-        let q = supabase.from('leads').select('id, nome, whatsapp').eq('turma_id', turmaId).not('whatsapp', 'is', null)
+        let q = supabase.from('leads').select('id, nome, whatsapp').eq('turma_id', turmaId).not('whatsapp', 'is', null).neq('etapa', 'ligacao_boa') // Ligação Boa fica fora de disparo
         if (turmaEtapa) q = q.eq('etapa', turmaEtapa)
         const { data } = await q
         setContatos((data || []).filter((l: any) => l.whatsapp).map((l: any) => ({ telefone: l.whatsapp, nome: l.nome || '', lead_id: l.id })))

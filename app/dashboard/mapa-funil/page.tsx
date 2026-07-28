@@ -12,6 +12,7 @@ const LABEL: Record<string, { nome: string; emoji: string }> = {
   proxima_turma: { nome: 'Próxima turma', emoji: '⏭️' },
   agendado: { nome: 'Agendado', emoji: '📅' },
   aguardando_pagamento: { nome: 'Aguardando pagamento', emoji: '💰' },
+  ligacao_boa: { nome: 'Ligação Boa', emoji: '🔥' },
 }
 
 export default function MapaFunil() {

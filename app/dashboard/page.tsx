@@ -14,6 +14,7 @@ const FUNIL_ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa' },
   { id: 'aguardando_pagamento', label: 'Aguard. pagamento', cor: '#06b6d4' },
+  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: '#f59e0b' },
   { id: 'agendado', label: 'Agendado', cor: '#22d3ee' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: '#c084fc' },
   { id: 'ganho', label: 'Ganhos', cor: '#4ade80' },

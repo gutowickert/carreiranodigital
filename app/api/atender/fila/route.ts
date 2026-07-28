@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const { data: userData } = await supabaseDoUsuario(auth).auth.getUser().catch(() => ({ data: { user: null } as any }))
   const userId = userData?.user?.id || null
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em', q => q.eq('org_id', org))).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento'].includes(l.etapa))
+  const leads = (await todos('leads', 'id,nome,etapa,whatsapp,codigo_turma,criado_em', q => q.eq('org_id', org))).filter((l: any) => !['ganho', 'perda', 'agendado', 'aguardando_pagamento', 'ligacao_boa'].includes(l.etapa))
   const convs = await todos('wa_conversas', 'id,lead_id,telefone,chat_lid,ultima_msg,ultima_msg_em', q => q.eq('org_id', org))
   const convDeLead: Record<string, string[]> = {}, convPorTel: Record<string, string[]> = {}, convById: Record<string, any> = {}
   for (const c of convs) {
