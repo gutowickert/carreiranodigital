@@ -4,9 +4,9 @@ name: Virada da noite (23:00 BRT)
 # devolve pro time e garante a tarefa da etapa. Roda antes da meia-noite de Brasília
 # pra pegar o dia inteiro (o app calcula "hoje" em fuso de Brasília).
 on:
-  schedule:
-    - cron: '0 2 * * *' # 02:00 UTC = 23:00 BRT
-  workflow_dispatch: {} # permite rodar manual pela aba Actions
+  # ⚠️ AGENDAMENTO MIGRADO pro pg_cron do Supabase (mais confiável — o cron do GitHub pulava/atrasava).
+  # Mantido só o disparo MANUAL. Não reative o schedule aqui senão roda em dobro com o pg_cron.
+  workflow_dispatch: {}
 
 jobs:
   virada:

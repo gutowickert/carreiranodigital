@@ -3,9 +3,9 @@ name: Follow-up IA (9h BRT)
 # Cron confiável do follow-up automático (independe do limite de cron do plano Vercel).
 # Roda todo dia 12:00 UTC = 09:00 de Brasília: reconcilia a posse e dispara o motor de follow-up.
 on:
-  schedule:
-    - cron: '0 12 * * *' # 12:00 UTC = 09:00 BRT
-  workflow_dispatch: {} # permite rodar manualmente pelo GitHub (aba Actions)
+  # ⚠️ AGENDAMENTO MIGRADO pro pg_cron do Supabase (mais confiável). Mantido só o disparo MANUAL.
+  # Não reative o schedule aqui senão roda em dobro com o pg_cron.
+  workflow_dispatch: {}
 
 jobs:
   followup:
