@@ -19,6 +19,12 @@ const ATIVAS = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'agend
 // sempre erro de leitura (foi o caso da Deise — pediu retorno na semana, virou "atendimento"). Se a leitura disser
 // atendimento, o lead FICA onde está (não volta pro começo).
 const VALIDAS = new Set(['lote_preco_ok', 'oferecer_bolsa', 'agendado', 'aguardando_pagamento', 'proxima_turma', 'perda'])
+// DONO depois da conversa: follow-up de WhatsApp (funil) → a IA cuida pela cadência (não sobrecarrega o time).
+// Estado GENUÍNO do time (ligação agendada / pagamento / próxima turma) → fica com o time.
+const FUNIL_IA = new Set(['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'])
+const TIME_ESTADO = new Set(['agendado', 'aguardando_pagamento', 'proxima_turma'])
+// tarefas de cadência (a IA faz por cadência) — canceladas quando o lead volta pra IA
+const MSG_TASK = ['seguir_followup', 'triagem_mensagem', 'lote_virando', 'pos_virada_lote', 'msg_horario', 'apresentacao_completa', 'bolsa_1', 'bolsa_2', 'seguir_whatsapp', 'followup']
 
 export async function POST(req: NextRequest) {
   try {
@@ -59,12 +65,14 @@ export async function POST(req: NextRequest) {
 
     // PENDENTES = quem ainda precisa de trabalho: resumo desatualizado (interpretação nova) OU sem tarefa.
     // Depois de processado (real), o resumo fica fresco e a tarefa passa a existir → sai da fila (restantes cai).
+    // PENDENTE = resposta nova ainda não interpretada (resumo velho). Depois de processado, o resumo fica fresco e
+    // sai da fila. (NÃO usa "sem tarefa" como gatilho — funil→IA fica de propósito sem tarefa, senão o loop nunca drena.)
     const resumoStale = (l: any) => { const em = l.resumo_ia_em, ult = dossies.get(l.id)?.ultimoContatoEm; return !l.resumo_ia?.etapaReal || !em || (ult && em < ult) }
-    const pendentes = respHoje.filter(l => resumoStale(l) || !temTarefa.has(l.id))
+    const pendentes = respHoje.filter(l => resumoStale(l))
     const fila = pendentes.slice(0, limit)
 
     const acoes: any[] = []
-    let movidos = 0, tarefasCriadas = 0, devolvidos = 0
+    let movidos = 0, tarefasCriadas = 0, paraIA = 0, paraTime = 0
     for (const l of fila) {
       const d = dossies.get(l.id)!
       const interp = await interpretarFollowup(sb, org, d, l, true) // FRESCO (regenera se preciso)
@@ -81,14 +89,24 @@ export async function POST(req: NextRequest) {
           await sb.from('lead_andamentos').insert({ lead_id: l.id, tipo: 'mudanca_etapa', etapa_anterior: l.etapa, etapa_nova: etapaReal, observacao: `🌙 Virada da noite — cliente respondeu hoje; leitura da conversa: ${motivo}` })
           movidos++
         }
-        // respondeu = vez do TIME responder
-        if (l.atendido_por !== 'humano' && etapaReal !== 'perda') { await sb.from('leads').update({ atendido_por: 'humano' }).eq('id', l.id); devolvidos++ }
-        // garante a tarefa da etapa (só se o atendente não criou nenhuma)
-        if (t) {
-          const venc = new Date(); venc.setUTCDate(venc.getUTCDate() + (t.dias || 0)); venc.setUTCHours(12, 0, 0, 0)
-          await sb.from('tarefas_lead').insert({ org_id: org, lead_id: l.id, tipo: t.chave, titulo: `${t.titulo} — ${l.nome}`, descricao: t.descricao, data_vencimento: venc.toISOString() })
-          tarefasCriadas++
+        // DONO depois da conversa (o que o Guto pediu): FUNIL = follow-up de WhatsApp → a IA cuida pela cadência
+        // (não sobrecarrega o time). ESTADO DO TIME (ligação agendada / pagamento / próxima turma) → fica com o time.
+        if (FUNIL_IA.has(etapaReal)) {
+          if (l.atendido_por !== 'ia') await sb.from('leads').update({ atendido_por: 'ia' }).eq('id', l.id)
+          // a cadência é da IA → tira as tarefas de follow-up da fila do time
+          await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).eq('lead_id', l.id).in('tipo', MSG_TASK).eq('concluida', false).eq('cancelada', false)
+          paraIA++
+        } else if (TIME_ESTADO.has(etapaReal)) {
+          if (l.atendido_por !== 'humano') await sb.from('leads').update({ atendido_por: 'humano' }).eq('id', l.id)
+          // garante a tarefa do time SÓ pra estado do time (ligar/pagamento/próxima)
+          if (t) {
+            const venc = new Date(); venc.setUTCDate(venc.getUTCDate() + (t.dias || 0)); venc.setUTCHours(12, 0, 0, 0)
+            await sb.from('tarefas_lead').insert({ org_id: org, lead_id: l.id, tipo: t.chave, titulo: `${t.titulo} — ${l.nome}`, descricao: t.descricao, data_vencimento: venc.toISOString() })
+            tarefasCriadas++
+          }
+          paraTime++
         }
+        // perda / ganho: não mexe no dono
       }
       acoes.push(acao)
     }
@@ -97,7 +115,7 @@ export async function POST(req: NextRequest) {
       ok: true, dryRun,
       respHojeTotal: respHoje.length, pendentes: pendentes.length, processados: fila.length,
       restantes: Math.max(0, pendentes.length - fila.length),
-      movidos, devolvidos, tarefasCriadas,
+      movidos, paraIA, paraTime, tarefasCriadas,
       acoes: acoes.slice(0, 20),
     })
   } catch (e: any) {
