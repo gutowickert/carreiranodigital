@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Manual de Operação — Sistema CnD</title>
+<style>
+  :root{
+    --accent:#7c3aed; --accent-soft:#8b5cf6; --ia:#7c3aed; --time:#16a34a; --hot:#d97706; --alert:#dc2626;
+    --bg:#faf9fc; --surface:#ffffff; --surface-2:#f4f1fa; --text:#1a1523; --text-2:#4a4458; --text-faint:#8b8598;
+    --border:#e7e3ef; --border-strong:#d8d2e6;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#131019; --surface:#1c1926; --surface-2:#241f30; --text:#ece9f2; --text-2:#b8b2c6; --text-faint:#807a90;
+      --border:#2c2740; --border-strong:#3a3450; --accent:#a78bfa; --accent-soft:#c4b5fd; --ia:#a78bfa; --time:#4ade80; --hot:#fbbf24; --alert:#f87171; }
+  }
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  body{ background:var(--bg); color:var(--text); font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; line-height:1.6; }
+  .wrap{ max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+  h1{ font-size:34px; font-weight:800; letter-spacing:-.02em; margin:0 0 6px; }
+  h2{ font-size:23px; font-weight:750; letter-spacing:-.01em; margin:44px 0 14px; padding-top:14px; border-top:2px solid var(--border); }
+  h3{ font-size:16px; font-weight:700; margin:22px 0 8px; }
+  p{ margin:0 0 12px; color:var(--text-2); }
+  a{ color:var(--accent); }
+  strong,b{ color:var(--text); font-weight:650; }
+  .lead{ font-size:16px; color:var(--text-2); }
+
+  .hero{ background:linear-gradient(135deg,var(--accent),#5b21b6); color:#fff; border-radius:18px; padding:32px 30px; margin-bottom:8px; }
+  .hero h1{ color:#fff; }
+  .hero p{ color:rgba(255,255,255,.9); margin:0; font-size:15px; }
+  .hero .meta{ margin-top:16px; font-size:13px; color:rgba(255,255,255,.85); display:flex; gap:18px; flex-wrap:wrap; }
+  .hero .tag{ font-size:13px; font-weight:700; letter-spacing:.1em; opacity:.85; margin-bottom:8px; }
+
+  .toc{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px 20px; margin:24px 0; }
+  .toc-title{ font-size:12px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--text-faint); margin-bottom:8px; }
+  .toc ol{ margin:0; padding-left:20px; columns:2; column-gap:28px; }
+  .toc li{ margin:3px 0; }
+  .toc a{ text-decoration:none; color:var(--text-2); font-size:14px; }
+  .toc a:hover{ color:var(--accent); }
+
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin:14px 0; }
+  .grid2{ display:grid; grid-template-columns:1fr 1fr; gap:14px; }
+  @media(max-width:640px){ .grid2{ grid-template-columns:1fr; } .toc ol{ columns:1; } h1{ font-size:27px; } }
+
+  .tablebox{ overflow-x:auto; margin:14px 0; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th,td{ text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:top; }
+  th{ font-size:12px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-faint); font-weight:700; background:var(--surface-2); }
+  td{ color:var(--text-2); }
+  td b{ color:var(--text); }
+
+  .pill{ display:inline-block; font-size:11px; font-weight:700; padding:2px 9px; border-radius:999px; white-space:nowrap; }
+  .p-ia{ background:rgba(124,58,237,.15); color:var(--ia); }
+  .p-time{ background:rgba(22,163,74,.15); color:var(--time); }
+  .p-hot{ background:rgba(217,119,6,.18); color:var(--hot); }
+  .p-end{ background:var(--surface-2); color:var(--text-faint); }
+
+  .callout{ border-radius:12px; padding:14px 18px; margin:16px 0; border:1px solid; font-size:14.5px; color:var(--text-2); }
+  .c-rule{ background:rgba(124,58,237,.08); border-color:rgba(124,58,237,.3); }
+  .c-warn{ background:rgba(220,38,38,.08); border-color:rgba(220,38,38,.3); }
+  .c-ok{ background:rgba(22,163,74,.08); border-color:rgba(22,163,74,.3); }
+  .callout b{ color:var(--text); }
+
+  .tl-item{ display:flex; gap:16px; }
+  .tl-time{ flex:0 0 78px; font-weight:800; color:var(--accent); font-size:15px; padding-top:14px; }
+  .tl-body{ flex:1; border-left:2px solid var(--border); padding:14px 0 14px 20px; position:relative; }
+  .tl-body::before{ content:""; position:absolute; left:-7px; top:20px; width:12px; height:12px; border-radius:50%; background:var(--accent); border:2px solid var(--bg); }
+  .tl-body h3{ margin:0 0 6px; }
+  .tl-body ol{ margin:6px 0 0; padding-left:18px; }
+  .tl-body li{ margin:4px 0; color:var(--text-2); font-size:14px; }
+
+  .stat-row{ display:flex; gap:12px; flex-wrap:wrap; margin:14px 0; }
+  .stat{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; flex:1; min-width:120px; }
+  .stat .n{ font-size:26px; font-weight:800; line-height:1; }
+  .stat .l{ font-size:12px; color:var(--text-faint); margin-top:5px; }
+
+  ul.clean{ margin:8px 0; padding-left:20px; }
+  ul.clean li{ margin:5px 0; color:var(--text-2); }
+  .foot{ margin-top:40px; padding-top:20px; border-top:1px solid var(--border); font-size:13px; color:var(--text-faint); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <div class="tag">CARREIRA NO DIGITAL · MANUAL DE OPERAÇÃO</div>
+    <h1>Como o sistema está rodando</h1>
+    <p>Guia completo pro Nando — o fluxo, a IA, os andamentos, as telas e o que o time usa. Deixado pronto e rodando sozinho.</p>
+    <div class="meta"><span>📅 Julho/2026</span><span>🤖 Automação LIGADA</span><span>⏰ Roda sozinho 9h e 23h</span></div>
+  </div>
+
+  <div class="toc">
+    <div class="toc-title">O que tem aqui</div>
+    <ol>
+      <li><a href="#ideia">A grande ideia</a></li>
+      <li><a href="#funil">O funil (etapas)</a></li>
+      <li><a href="#quemfaz">IA vs Time — quem faz o quê</a></li>
+      <li><a href="#janela">Janela de 24h + virada da noite</a></li>
+      <li><a href="#ligacaoboa">Ligação Boa (os quentes)</a></li>
+      <li><a href="#automatico">O que roda sozinho todo dia</a></li>
+      <li><a href="#telas-nando">Telas que o Nando acompanha</a></li>
+      <li><a href="#telas-time">Telas que o time usa</a></li>
+      <li><a href="#precos">Preços (regras travadas)</a></li>
+      <li><a href="#disparos">Disparos / win-back</a></li>
+      <li><a href="#seguranca">Segurança e blindagens</a></li>
+      <li><a href="#problema">Se algo der errado</a></li>
+      <li><a href="#retrato">Retrato de hoje</a></li>
+    </ol>
+  </div>
+
+  <h2 id="ideia">🎯 A grande ideia</h2>
+  <p class="lead">O sistema é um CRM de WhatsApp que <b>trabalha o funil sozinho</b>. A regra de ouro:</p>
+  <div class="callout c-rule">
+    <b>🤖 A IA faz o follow-up de WhatsApp de TODO o funil</b> (pela cadência do fluxo, sem sobrecarregar ninguém).<br>
+    <b>👥 O time faz só o que é humano:</b> ligação, os leads quentes (Ligação Boa), pagamento, e <b>responder quem responde</b>.
+  </div>
+  <p>Ninguém do time precisa ficar "puxando follow-up" no CRM. A IA lê as conversas, entende onde cada lead está, dispara os toques certos na hora certa, e mantém a fila do time limpa — só com o que exige uma pessoa.</p>
+
+  <h2 id="funil">🧭 O funil — as etapas</h2>
+  <p>Todo lead vive numa etapa. É ela que define o que acontece e quem cuida:</p>
+  <div class="tablebox"><table>
+    <tr><th>Etapa</th><th>O que significa</th><th>Quem cuida</th></tr>
+    <tr><td><b>📞 Ligação (chegada)</b></td><td>Lead novo. O time <b>liga primeiro</b> (2 tentativas). Se não atende, áudio convidando pro WhatsApp.</td><td><span class="pill p-time">Time</span></td></tr>
+    <tr><td><b>💬 Atendimento inicial</b></td><td>Em contato, ainda não recebeu preço/lote. A IA puxa a conversa e faz descoberta.</td><td><span class="pill p-ia">IA</span></td></tr>
+    <tr><td><b>🏷️ Lote e preço ok</b></td><td>Já recebeu preço + prazo do lote. A IA reforça na virada do lote.</td><td><span class="pill p-ia">IA</span></td></tr>
+    <tr><td><b>🎓 Oferecer bolsa</b></td><td>Demonstrou interesse. Hora da condição especial (bolsa).</td><td><span class="pill p-ia">IA</span></td></tr>
+    <tr><td><b>📅 Agendado</b></td><td>Cliente pediu retorno/ligação numa data. O time liga/retoma na hora combinada.</td><td><span class="pill p-time">Time</span></td></tr>
+    <tr><td><b>💰 Aguardando pagamento</b></td><td>Decidiu fechar / recebeu o link. O time confirma o pagamento.</td><td><span class="pill p-time">Time</span></td></tr>
+    <tr><td><b>⏭️ Próxima turma</b></td><td>Quer entrar só numa turma futura. O time avisa quando abrir.</td><td><span class="pill p-time">Time</span></td></tr>
+    <tr><td><b>🔥 Ligação Boa</b></td><td>Quente — o time avaliou na ligação que vai fechar. Atenção especial. <b>A IA nunca toca.</b></td><td><span class="pill p-hot">Time ★</span></td></tr>
+    <tr><td><b>✓ Ganho / ✗ Perda</b></td><td>Fechou (ganho) ou perdeu (perda). Perda ≥ 7 dias entra no win-back de disparo.</td><td><span class="pill p-end">Terminal</span></td></tr>
+  </table></div>
+
+  <h2 id="quemfaz">🤖👥 IA vs Time — quem faz o quê</h2>
+  <div class="grid2">
+    <div class="card">
+      <h3 style="color:var(--ia)">🤖 A IA cuida de</h3>
+      <ul class="clean">
+        <li>Todo o <b>follow-up de WhatsApp do funil</b> (atendimento, lote, bolsa) — pela cadência.</li>
+        <li><b>Ler cada conversa</b> (2 canais de WhatsApp + ligações transcritas + andamentos) e entender onde o lead está.</li>
+        <li><b>Posicionar</b> o lead na etapa certa (à noite).</li>
+        <li><b>Manter as listas de disparo</b> em dia.</li>
+        <li><b>Marcar as ligações</b> que precisam de voz e as tarefas do time.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:var(--time)">👥 O time cuida de</h3>
+      <ul class="clean">
+        <li><b>Ligar</b> — chegada de leads novos + as ligações que a IA marca (a IA só manda pro time o que precisa de voz).</li>
+        <li><b>Responder quem responde</b> (no inbox do WhatsApp, durante o dia).</li>
+        <li><b>🔥 Ligação Boa</b> — os quentes que o time separa.</li>
+        <li><b>Pagamento e agendados</b> nas datas combinadas.</li>
+        <li><b>Registrar as ligações</b> no card (a API4COM já transcreve; as de fora, o time cadastra).</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2 id="janela">⏱️ A janela de 24h + a virada da noite</h2>
+  <p>Dois conceitos que andam juntos — importante entender:</p>
+  <div class="card">
+    <h3>A janela de 24h (regra do WhatsApp)</h3>
+    <p>Quando o <b>cliente manda uma mensagem</b>, abre uma janela de 24h onde a gente responde <b>livre</b> (texto normal, de graça). Cada nova mensagem dele reinicia as 24h. Se some por mais de 24h, a janela fecha → só dá pra falar com <b>template aprovado</b> (e template de marketing tem custo).</p>
+  </div>
+  <div class="card">
+    <h3>O caminho de quem responde</h3>
+    <p><b>Durante o dia:</b> o cliente responde → cai no <b>inbox do time</b> → o time responde na hora (dentro da janela, grátis).</p>
+    <p><b>À noite (virada, 23h):</b> a IA lê a conversa do dia, <b>posiciona o lead no fluxo</b>, e decide o dono:</p>
+    <ul class="clean">
+      <li>Se é <b>funil</b> (atendimento/lote/bolsa) → <b>volta pra IA</b> cuidar do follow-up. <span style="color:var(--text-faint)">Não sobrecarrega o time.</span></li>
+      <li>Se é <b>agendado / pagamento / próxima turma / Ligação Boa</b> → <b>fica com o time</b>.</li>
+    </ul>
+  </div>
+  <div class="callout c-ok">✅ <b>Resultado:</b> o time conversa ao vivo de dia, e à noite a IA reassume os follow-ups de texto. O time só carrega ligação, pagamento, próxima turma e os quentes.</div>
+
+  <h2 id="ligacaoboa">🔥 Ligação Boa — os quentes</h2>
+  <p>Etapa nova, criada pra <b>proteger os leads que vão fechar</b>. Quando o time liga (API4COM ou número externo, e cadastra a ligação no card) e <b>julga que o cliente vai fechar</b>, move o lead pra <b>🔥 Ligação Boa</b>.</p>
+  <ul class="clean">
+    <li>O time abre o card → botão <b>🔥 Ligação Boa</b> → escolhe <b>data + hora</b> (obrigatório) → nasce a tarefa naquele horário.</li>
+    <li><b>A IA nunca toca</b> nesses — fora do follow-up, da virada e do disparo.</li>
+    <li>Fica lá <b>até o time tirar na mão</b>. Se virar perda, aí entra no win-back normal.</li>
+  </ul>
+
+  <h2 id="automatico">⚙️ O que roda sozinho todo dia</h2>
+  <p>Um agendador confiável (pg_cron, dentro do banco) dispara tudo. O time não precisa apertar nada.</p>
+  <div class="tl-item"><div class="tl-time">🌙 23h</div><div class="tl-body">
+    <h3>Virada da noite</h3>
+    <ol>
+      <li><b>Lê quem respondeu hoje</b>, entende a conversa e <b>posiciona no fluxo</b>.</li>
+      <li>Devolve os follow-ups de WhatsApp pra IA; deixa ligação/pagamento/quente com o time.</li>
+      <li>Atualiza o <b>pool de disparo</b> (todo lead novo entra; categoria segue o estado).</li>
+    </ol>
+  </div></div>
+  <div class="tl-item"><div class="tl-time">☀️ 9h</div><div class="tl-body">
+    <h3>Sequência da manhã</h3>
+    <ol>
+      <li><b>Warming</b> — gera a leitura (resumo) dos leads novos.</li>
+      <li><b>Recupera a véspera</b> — se a virada da noite falhar, a manhã conserta.</li>
+      <li><b>Reconcilia posse</b> — esfriou → IA; respondeu recente → time.</li>
+      <li><b>Follow-up</b> — dispara os templates da cadência pros leads no dia do toque.</li>
+      <li><b>Limpa a fila do time</b> — frio do funil vira IA; tarefa de cadência sai da fila.</li>
+      <li><b>Rede de segurança</b> — lead do time sem próximo passo ganha tarefa.</li>
+    </ol>
+  </div></div>
+
+  <h2 id="telas-nando">📊 Telas que o Nando acompanha</h2>
+  <p>Menu <b>Dashboards</b>. É onde você bate o olho e entende a saúde do sistema:</p>
+  <div class="tablebox"><table>
+    <tr><th>Tela</th><th>Pra que serve</th></tr>
+    <tr><td><b>🗺️ Mapa do funil</b></td><td>Onde estão todos os leads ativos, quem cuida (IA vs time), engajado/frio, e os <b>parados de verdade</b> (do time e sem próximo passo). O melhor "raio-x" diário.</td></tr>
+    <tr><td><b>📈 Follow-up automático</b></td><td>Quantos follow-ups a IA mandou hoje, quantos <b>responderam</b>, ganhos/perdas, e o <b>custo do dia</b> (IA + WhatsApp).</td></tr>
+    <tr><td><b>🎧 Qualidade IA</b></td><td>Cada conversa com a leitura da IA — pra auditar se ela está entendendo e respondendo certo.</td></tr>
+  </table></div>
+  <div class="callout c-rule">💡 <b>Dica de leitura do Mapa:</b> ignore o número cheio de "leads ativos" e olhe o <b>⚠️ Time sem tarefa</b> — esses são os que precisam de mão. O resto ou é da IA (cadência) ou já tem tarefa.</div>
+
+  <h2 id="telas-time">🖥️ Telas que o time usa (o dia a dia)</h2>
+  <div class="tablebox"><table>
+    <tr><th>Tela</th><th>O time faz o quê</th></tr>
+    <tr><td><b>Tarefas de Lead</b></td><td>A <b>fila de trabalho do time</b>: as ligações (com hora), pagamentos e retornos. Concluiu → some. É por aqui que o time sabe o que fazer.</td></tr>
+    <tr><td><b>WhatsApp (inbox)</b></td><td>Responder <b>quem respondeu</b>. É a caixa de entrada dos 2 canais.</td></tr>
+    <tr><td><b>CRM (kanban) + Card do lead</b></td><td>Ver o lead, registrar a ligação, mover pra <b>🔥 Ligação Boa</b>, marcar Ganho/Perda, agendar retorno.</td></tr>
+    <tr><td><b>Atender agora</b></td><td>Fila guiada de quem atender primeiro (não mostra Ligação Boa nem quem já respondeu hoje).</td></tr>
+    <tr><td><b>Disparos</b></td><td>Envio em massa por template aprovado — inclusive o <b>win-back de perdidos</b> por cidade e produto.</td></tr>
+  </table></div>
+
+  <h2 id="precos">💵 Preços — regras travadas (nunca inventar)</h2>
+  <div class="tablebox"><table>
+    <tr><th>Produto</th><th>Preço cheio</th><th>Bolsa (condição especial)</th></tr>
+    <tr><td><b>FC</b> (Formação Completa)</td><td>R$ 2.397 no Pix · R$ 2.697 em 10x no cartão</td><td>R$ 2.097 no Pix · R$ 2.497 em 10x</td></tr>
+    <tr><td><b>ANL</b> (Anúncios p/ Negócios Locais)</td><td>R$ 797 no Pix · R$ 997 em 10x</td><td>R$ 697 no Pix · R$ 897 em 10x</td></tr>
+  </table></div>
+  <div class="callout c-warn">⛔ <b>Nunca:</b> preço zerado (R$0), desconto inventado, ou "R$100 de sinal". O sistema tem <b>3 travas</b> que bloqueiam qualquer envio com preço não confiável — mas o time também não deve inventar valor.</div>
+
+  <h2 id="disparos">📣 Disparos / win-back</h2>
+  <p>Existe um <b>pool de contatos</b> (separado dos leads) que alimenta os disparos em massa. Ele é <b>atualizado sozinho todo dia</b>: todo lead entra, e a categoria segue o estado.</p>
+  <ul class="clean">
+    <li><b>Perdidos (win-back):</b> quem virou perda entra na lista de reativação — mas só <b>depois de 7 dias</b> (cooldown, pra não parecer insistência).</li>
+    <li>Na tela <b>Disparos → Listas frias</b>, dá pra escolher <b>Categoria</b> (Interessados / Perdidos / Compradores) + <b>Produto</b> (FC/ANL) + <b>várias Cidades</b> de uma vez.</li>
+    <li>Ex.: <i>Perdidos + FC + Porto Alegre + Lajeado</i> → carrega a lista e dispara o template.</li>
+  </ul>
+
+  <h2 id="seguranca">🛡️ Segurança e blindagens</h2>
+  <div class="grid2">
+    <div class="card"><h3>🔴 Kill switch</h3><p>Desliga TODA a automação na hora, se precisar. A IA para de mandar qualquer coisa até religar.</p></div>
+    <div class="card"><h3>💵 Trava de preço</h3><p>Nenhum envio sai com R$0 ou variável não resolvida. Se o preço não é confiável, o lead vai pro time em vez de mandar errado.</p></div>
+    <div class="card"><h3>🌅 Rede de segurança</h3><p>Se a virada da noite falhar, o cron da manhã recupera a véspera sozinho. E todo lead do time sem próximo passo ganha tarefa.</p></div>
+    <div class="card"><h3>❄️ Cooldown do win-back</h3><p>Quem virou perda só entra na reativação depois de 7 dias — nada de disparo em cima da hora.</p></div>
+  </div>
+
+  <h2 id="problema">🚨 Se algo der errado (enquanto o Guto estiver fora)</h2>
+  <ul class="clean">
+    <li><b>A IA mandou algo estranho?</b> Aciona o <b>kill switch</b> (desliga a automação) e me avisa quando o Guto voltar.</li>
+    <li><b>Um lead sumiu da fila?</b> Provavelmente foi pra IA (cadência) ou pro estado certo. Confere no <b>Mapa do funil</b> ou no card do lead (andamentos contam a história).</li>
+    <li><b>O time só precisa manter o de sempre:</b> ligar, responder quem responde, mover os quentes pra Ligação Boa, e concluir as tarefas. O resto é automático.</li>
+  </ul>
+
+  <h2 id="retrato">📷 Retrato de hoje (referência)</h2>
+  <div class="stat-row">
+    <div class="stat"><div class="n">308</div><div class="l">Leads ativos</div></div>
+    <div class="stat"><div class="n" style="color:var(--ia)">194</div><div class="l">🤖 IA cuida</div></div>
+    <div class="stat"><div class="n" style="color:var(--time)">114</div><div class="l">👥 Time cuida</div></div>
+    <div class="stat"><div class="n">91</div><div class="l">Ganhos (total)</div></div>
+  </div>
+  <div class="stat-row">
+    <div class="stat"><div class="n">121</div><div class="l">Atendimento inicial</div></div>
+    <div class="stat"><div class="n">48</div><div class="l">Lote e preço</div></div>
+    <div class="stat"><div class="n">61</div><div class="l">Oferecer bolsa</div></div>
+    <div class="stat"><div class="n">34</div><div class="l">Agendado</div></div>
+    <div class="stat"><div class="n">16</div><div class="l">Aguard. pagamento</div></div>
+  </div>
+  <p style="font-size:13px;color:var(--text-faint);margin-top:6px;">Pool de disparo: ~4.700 interessados · 320 compradores · 304 perdidos (win-back). 17 templates aprovados.</p>
+
+  <div class="foot">
+    <b>Resumo de uma linha:</b> a IA trabalha o funil de WhatsApp sozinha e mantém tudo em dia; o time só faz ligação, quente e responde quem responde. Roda automático 9h e 23h, com kill switch e rede de segurança. Bom descanso — tá tudo rodando. 🚀
+  </div>
+
+</div>
+</body>
+</html>
