@@ -32,14 +32,22 @@ export async function POST(req: NextRequest) {
     // dia-alvo em fuso de Brasília: normalmente HOJE; pode vir { data:'YYYY-MM-DD' } pra recuperar um dia que a virada perdeu.
     const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
     const alvoBR = /^\d{4}-\d{2}-\d{2}$/.test(b?.data || '') ? b.data : hojeBR
-    const ehHoje = (iso: string | null | undefined) => !!iso && new Date(iso).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === alvoBR
     const fluxo = await getFluxo()
 
     const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ATIVAS).limit(5000)
-    const dossies = await dossiesLote(sb, org, leads || [])
 
-    // quem o CLIENTE movimentou HOJE (última atividade DELE = hoje) — não o nosso envio
-    const respHoje = (leads || []).filter(l => ehHoje(dossies.get(l.id)?.ultimoEngajamentoEm))
+    // QUEM RESPONDEU no dia-alvo (00:00–24:00 BRT = +3h UTC): consulta DIRETA das mensagens recebidas → conversas → leads.
+    // (antes usava ultimoEngajamentoEm do dossiê, que SUB-CONTAVA — deixava ~2/3 dos que responderam passarem batido.)
+    const iniUTC = alvoBR + 'T03:00:00.000Z'
+    const fimUTC = new Date(new Date(iniUTC).getTime() + 864e5).toISOString()
+    const inbMsgs: any[] = []
+    for (let from = 0; ; from += 1000) { const { data } = await sb.from('wa_mensagens').select('conversa_id').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', iniUTC).lt('criado_em', fimUTC).range(from, from + 999); if (!data?.length) break; inbMsgs.push(...data); if (data.length < 1000) break }
+    const convIds = [...new Set(inbMsgs.map((m: any) => m.conversa_id).filter(Boolean))]
+    const respLeadIds = new Set<string>()
+    for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) respLeadIds.add(c.lead_id) }
+    const respHoje = (leads || []).filter(l => respLeadIds.has(l.id))
+    // dossiê só dos que RESPONDERAM (leve/rápido — antes montava de TODOS os ativos)
+    const dossies = await dossiesLote(sb, org, respHoje)
 
     // tarefas pendentes desses leads (1 query) — pra saber quem já tem tarefa (atendente criou)
     const idsResp = respHoje.map(l => l.id)

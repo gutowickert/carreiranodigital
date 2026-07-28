@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   const org = await orgDaRequest(req.headers.get('authorization'))
   const sp = req.nextUrl.searchParams
   const cidade = sp.get('cidade') || ''
-  const cidades = (sp.get('cidades') || '').split(',').map(s => s.trim()).filter(Boolean) // várias cidades de uma vez
+  const cidadesFiltro = (sp.get('cidades') || '').split(',').map(s => s.trim()).filter(Boolean) // várias cidades de uma vez
   const categoria = sp.get('categoria') || ''
   const produto = sp.get('produto') || ''
   const status = sp.get('status') || ''
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 
   const baseFiltrada = () => {
     let query = supabase.from('wa_contatos').select('*').eq('org_id', org).order('criado_em', { ascending: false })
-    if (cidades.length) query = query.in('cidade', cidades)
+    if (cidadesFiltro.length) query = query.in('cidade', cidadesFiltro)
     else if (cidade) query = query.eq('cidade', cidade)
     if (categoria) query = query.eq('categoria', categoria)
     if (produto) query = query.eq('produto', produto)
