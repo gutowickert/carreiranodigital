@@ -25,23 +25,26 @@ export async function GET(req: NextRequest) {
     const { data: lg } = await sb.from('ligacoes').select('lead_id, duracao').in('lead_id', ids); for (const g of lg || []) if (Number(g.duracao) > 60) atend.add(g.lead_id)
     for (let i = 0; i < ids.length; i += 300) { const { data: t } = await sb.from('tarefas_lead').select('lead_id').in('lead_id', ids.slice(i, i + 300)).eq('concluida', false).eq('cancelada', false); for (const x of t || []) comTarefa.add(x.lead_id) }
 
-    const R: Record<string, any> = {}; for (const et of ETS) R[et] = { etapa: et, tot: 0, ia: 0, humano: 0, engaj: 0, frio: 0, tarefa: 0, semtarefa: 0, lid: 0 }
-    for (const l of L) { const r = R[l.etapa]; r.tot++; if (l.atendido_por === 'ia') r.ia++; else r.humano++; const eng = inb.has(l.id) || atend.has(l.id); if (eng) r.engaj++; else r.frio++; if (comTarefa.has(l.id)) r.tarefa++; else r.semtarefa++; if (!alcanc(l.whatsapp)) r.lid++ }
-
-    // quem cuida: cadência IA = frios do atendimento + TODO lote/bolsa; resto = time
-    const CAD_IA = new Set(['lote_preco_ok', 'oferecer_bolsa'])
-    const etapas = ETS.map(et => {
-      const r = R[et]
-      const iaCuida = et === 'atendimento_inicial' ? r.frio : (CAD_IA.has(et) ? r.tot : 0)
-      return { ...r, iaCuida, timeCuida: r.tot - iaCuida }
-    })
+    // usa o DONO REAL (atendido_por). "Parado" de verdade = do TIME e sem tarefa (a IA trabalha por cadência,
+    // não precisa de tarefa — então lead da IA sem tarefa NÃO é "parado").
+    const R: Record<string, any> = {}; for (const et of ETS) R[et] = { etapa: et, tot: 0, ia: 0, humano: 0, engaj: 0, frio: 0, comTarefa: 0, paradoTime: 0, lid: 0 }
+    for (const l of L) {
+      const r = R[l.etapa]; r.tot++
+      const ehIA = l.atendido_por === 'ia'
+      if (ehIA) r.ia++; else r.humano++
+      const eng = inb.has(l.id) || atend.has(l.id); if (eng) r.engaj++; else r.frio++
+      const temTarefa = comTarefa.has(l.id); if (temTarefa) r.comTarefa++
+      if (!ehIA && !temTarefa) r.paradoTime++    // do time E sem tarefa = precisa de mão
+      if (!alcanc(l.whatsapp)) r.lid++
+    }
+    const etapas = ETS.map(et => R[et])
     const total = L.length
-    const totalIA = etapas.reduce((a, e) => a + e.iaCuida, 0)
+    const totalIA = etapas.reduce((a, e) => a + e.ia, 0)
     const totalTime = total - totalIA
-    const semTarefa = etapas.reduce((a, e) => a + e.semtarefa, 0)
+    const paradosTime = etapas.reduce((a, e) => a + e.paradoTime, 0) // "parados" REAIS (time sem tarefa)
     const lid = etapas.reduce((a, e) => a + e.lid, 0)
 
-    return NextResponse.json({ ok: true, total, totalIA, totalTime, semTarefa, lid, etapas })
+    return NextResponse.json({ ok: true, total, totalIA, totalTime, paradosTime, lid, etapas })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

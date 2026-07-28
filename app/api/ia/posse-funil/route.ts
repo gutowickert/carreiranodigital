@@ -10,6 +10,9 @@ export const maxDuration = 60
 // Detecção por CONSULTA DIRETA (mensagem recebida nas últimas 24h), NÃO pelo dossiê (que sub-conta em escala).
 // dryRun (padrão) simula. Aplicar: { dryRun:false, confirm:true }.
 const FUNIL = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+// tarefas de CADÊNCIA (a IA faz por cadência, não por tarefa) — canceladas quando o lead é da IA, pra não
+// poluir a fila do time. NÃO inclui ligacao_boa nem tarefas de estado do time (verificar_pagamento etc.).
+const MSG_TASK = ['seguir_followup', 'triagem_mensagem', 'lote_virando', 'pos_virada_lote', 'msg_horario', 'apresentacao_completa', 'bolsa_1', 'bolsa_2', 'seguir_whatsapp', 'followup']
 const DIA = 864e5
 
 export async function POST(req: NextRequest) {
@@ -29,25 +32,39 @@ export async function POST(req: NextRequest) {
     const respRecente = new Set<string>()
     for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) respRecente.add(c.lead_id) }
 
-    // funil + com o time + NÃO respondeu recente → passa pra IA
-    const { data: leads } = await sb.from('leads').select('id, nome, etapa').eq('org_id', org).in('etapa', FUNIL).eq('atendido_por', 'humano').limit(5000)
-    const passar = (leads || []).filter(l => !respRecente.has(l.id))
+    // TODOS os leads do funil (qualquer dono). Frio = não respondeu nas últimas `horas`.
+    const { data: leads } = await sb.from('leads').select('id, nome, etapa, atendido_por').eq('org_id', org).in('etapa', FUNIL).limit(5000)
+    const frios = (leads || []).filter(l => !respRecente.has(l.id))              // frios do funil (a IA cuida)
+    const passar = frios.filter(l => (l as any).atendido_por === 'humano')       // ainda com o time → flipar pra IA
+    const friosIds = frios.map(l => l.id)
 
+    let tarefasCanceladas = 0
     if (!dryRun) {
+      // 1) flipa os frios que estavam com o time → IA
       for (let i = 0; i < passar.length; i += 100) {
         const chunk = passar.slice(i, i + 100).map(l => l.id)
         await sb.from('leads').update({ atendido_por: 'ia', atualizado_em: new Date().toISOString() }).in('id', chunk)
       }
-      // andamento (1 por lead, em lote)
       const rows = passar.map(l => ({ lead_id: l.id, tipo: 'reconciliacao', observacao: `🤖 Posse — esfriou no funil (${l.etapa}, sem responder há ${horas}h) → passou pra IA cuidar do follow-up.` }))
       for (let i = 0; i < rows.length; i += 200) await sb.from('lead_andamentos').insert(rows.slice(i, i + 200))
+      // 2) CANCELA as tarefas de cadência de TODOS os frios do funil (a IA faz por cadência) → limpa a fila do time
+      for (let i = 0; i < friosIds.length; i += 100) {
+        const { data: c } = await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString() }).in('lead_id', friosIds.slice(i, i + 100)).in('tipo', MSG_TASK).eq('concluida', false).eq('cancelada', false).select('id')
+        tarefasCanceladas += (c || []).length
+      }
+    } else {
+      // dryRun: conta quantas tarefas de cadência seriam canceladas
+      for (let i = 0; i < friosIds.length; i += 100) {
+        const { count } = await sb.from('tarefas_lead').select('id', { count: 'exact', head: true }).in('lead_id', friosIds.slice(i, i + 100)).in('tipo', MSG_TASK).eq('concluida', false).eq('cancelada', false)
+        tarefasCanceladas += count || 0
+      }
     }
 
     const porEtapa: Record<string, number> = {}
     for (const l of passar) porEtapa[l.etapa] = (porEtapa[l.etapa] || 0) + 1
     return NextResponse.json({
-      ok: true, dryRun, funilComTime: (leads || []).length, responderamRecente: (leads || []).length - passar.length,
-      passaramPraIA: passar.length, porEtapa,
+      ok: true, dryRun, friosNoFunil: frios.length, responderamRecente: (leads || []).length - frios.length,
+      passaramPraIA: passar.length, tarefasCadenciaCanceladas: tarefasCanceladas, porEtapa,
       amostra: passar.slice(0, 15).map(l => ({ nome: l.nome, etapa: l.etapa })),
     })
   } catch (e: any) {
