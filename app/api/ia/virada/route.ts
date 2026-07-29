@@ -46,30 +46,34 @@ export async function POST(req: NextRequest) {
     // (antes usava ultimoEngajamentoEm do dossiê, que SUB-CONTAVA — deixava ~2/3 dos que responderam passarem batido.)
     const iniUTC = alvoBR + 'T03:00:00.000Z'
     const fimUTC = new Date(new Date(iniUTC).getTime() + 864e5).toISOString()
+    // Scan das RECEBIDAS do dia, guardando conversa_id + criado_em (o `criado_em` dá o "última resposta do cliente"
+    // DE GRAÇA — sem precisar montar dossiê de todo mundo só pra saber quem tem resposta nova).
     const inbMsgs: any[] = []
-    for (let from = 0; ; from += 1000) { const { data } = await sb.from('wa_mensagens').select('conversa_id').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', iniUTC).lt('criado_em', fimUTC).range(from, from + 999); if (!data?.length) break; inbMsgs.push(...data); if (data.length < 1000) break }
+    for (let from = 0; ; from += 1000) { const { data } = await sb.from('wa_mensagens').select('conversa_id, criado_em').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', iniUTC).lt('criado_em', fimUTC).range(from, from + 999); if (!data?.length) break; inbMsgs.push(...data); if (data.length < 1000) break }
     const convIds = [...new Set(inbMsgs.map((m: any) => m.conversa_id).filter(Boolean))]
-    const respLeadIds = new Set<string>()
-    for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) respLeadIds.add(c.lead_id) }
-    const respHoje = (leads || []).filter(l => respLeadIds.has(l.id))
-    // dossiê só dos que RESPONDERAM (leve/rápido — antes montava de TODOS os ativos)
-    const dossies = await dossiesLote(sb, org, respHoje)
+    const convToLead = new Map<string, string>()
+    for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) convToLead.set(c.id, c.lead_id) }
+    // última resposta do cliente HOJE por lead (max criado_em) — proxy exato de "resposta nova a interpretar"
+    const ultRespPorLead = new Map<string, string>()
+    for (const m of inbMsgs) { const lid = convToLead.get(m.conversa_id); if (!lid) continue; const prev = ultRespPorLead.get(lid); if (!prev || m.criado_em > prev) ultRespPorLead.set(lid, m.criado_em) }
+    const respHoje = (leads || []).filter(l => ultRespPorLead.has(l.id))
 
-    // tarefas pendentes desses leads (1 query) — pra saber quem já tem tarefa (atendente criou)
-    const idsResp = respHoje.map(l => l.id)
-    const temTarefa = new Set<string>()
-    for (let i = 0; i < idsResp.length; i += 200) {
-      const { data: tks } = await sb.from('tarefas_lead').select('lead_id').in('lead_id', idsResp.slice(i, i + 200)).eq('concluida', false).eq('cancelada', false)
-      for (const t of tks || []) temTarefa.add(t.lead_id)
-    }
-
-    // PENDENTES = quem ainda precisa de trabalho: resumo desatualizado (interpretação nova) OU sem tarefa.
-    // Depois de processado (real), o resumo fica fresco e a tarefa passa a existir → sai da fila (restantes cai).
-    // PENDENTE = resposta nova ainda não interpretada (resumo velho). Depois de processado, o resumo fica fresco e
-    // sai da fila. (NÃO usa "sem tarefa" como gatilho — funil→IA fica de propósito sem tarefa, senão o loop nunca drena.)
-    const resumoStale = (l: any) => { const em = l.resumo_ia_em, ult = dossies.get(l.id)?.ultimoContatoEm; return !l.resumo_ia?.etapaReal || !em || (ult && em < ult) }
+    // PENDENTE = resposta nova ainda não interpretada (resumo mais velho que a última resposta do cliente hoje).
+    // Depois de processado (real), o resumo fica fresco → sai da fila (restantes cai). Usa a última resposta do
+    // scan (não o dossiê) pra NÃO montar dossiê de todos os respondentes — era o que estourava o timeout de 60s.
+    // (NÃO usa "sem tarefa" como gatilho — funil→IA fica de propósito sem tarefa, senão o loop nunca drena.)
+    const resumoStale = (l: any) => { const em = l.resumo_ia_em, ult = ultRespPorLead.get(l.id); return !l.resumo_ia?.etapaReal || !em || (!!ult && em < ult) }
     const pendentes = respHoje.filter(l => resumoStale(l))
     const fila = pendentes.slice(0, limit)
+
+    // AGORA sim — dossiê + tarefas SÓ do lote que vai processar (≤ limit), não de todos os respondentes.
+    const dossies = await dossiesLote(sb, org, fila)
+    const idsFila = fila.map(l => l.id)
+    const temTarefa = new Set<string>()
+    for (let i = 0; i < idsFila.length; i += 200) {
+      const { data: tks } = await sb.from('tarefas_lead').select('lead_id').in('lead_id', idsFila.slice(i, i + 200)).eq('concluida', false).eq('cancelada', false)
+      for (const t of tks || []) temTarefa.add(t.lead_id)
+    }
 
     const acoes: any[] = []
     let movidos = 0, tarefasCriadas = 0, paraIA = 0, paraTime = 0
