@@ -18,6 +18,9 @@ type Conversa = {
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
 const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+// tarja "📢 disparo tal" — pro atendimento saber de onde veio quem respondeu um disparo
+const pillDisparo = { fontSize: 10, fontWeight: 700, color: '#d97706', background: 'rgba(217,119,6,0.14)', border: '1px solid rgba(217,119,6,0.35)', borderRadius: 5, padding: '1px 6px', whiteSpace: 'nowrap', display: 'inline-block' } as React.CSSProperties
+const sufTel = (t: string | null | undefined) => (t || '').replace(/\D/g, '').slice(-8)
 const EMOJIS = ['😀', '😁', '😂', '🤣', '😊', '😍', '😘', '😉', '😎', '🤩', '🥳', '🤗', '🙏', '👍', '👏', '🙌', '💪', '🔥', '✅', '✨', '🎉', '💯', '❤️', '🧡', '💛', '💚', '💙', '💜', '🤝', '👋', '😅', '😄', '🙂', '😌', '🤔', '😢', '😭', '😡', '🥺', '😴', '💰', '💸', '📈', '📲', '📅', '⏰', '⚡', '🚀']
 
 export default function CaixaWhatsApp() {
@@ -26,7 +29,10 @@ export default function CaixaWhatsApp() {
   const [ativa, setAtiva] = useState<Conversa | null>(null)
   const [busca, setBusca] = useState('')
   const [naoLidaSet, setNaoLidaSet] = useState<Set<string>>(new Set())
+  const [disparoPorTel, setDisparoPorTel] = useState<Record<string, { nome: string; em: string }>>({})
   const [isMobile, setIsMobile] = useState(false)
+  // qual disparo essa pessoa respondeu (por sufixo do telefone) — null se não veio de disparo
+  const disparoDe = (tel: string | null | undefined) => disparoPorTel[sufTel(tel)] || null
 
   useEffect(() => {
     const f = () => setIsMobile(window.innerWidth < 768)
@@ -42,10 +48,15 @@ export default function CaixaWhatsApp() {
         .select('papel, wa_caixa').eq('id', session.user.id).single()
       const ok = p?.papel === 'admin' || p?.wa_caixa === true
       setAutorizado(ok)
-      if (ok) carregarConversas()
+      if (ok) { carregarConversas(); carregarDisparos() }
     }
     checar()
   }, [])
+
+  // mapa sufixo→disparo respondido (pra tarja) — via API admin; RLS do cliente não cobre essas tabelas
+  async function carregarDisparos() {
+    try { const r = await fetchAuth('/api/wa-oficial/disparo-respondentes').then(r => r.json()); if (r?.ok) setDisparoPorTel(r.map || {}) } catch { /* tarja é opcional */ }
+  }
 
   async function carregarConversas() {
     // inclui o canal OFICIAL (número novo = atendimento principal agora), além do Z-API/antigo.
@@ -61,7 +72,8 @@ export default function CaixaWhatsApp() {
   useEffect(() => {
     if (autorizado !== true) return
     const t = setInterval(carregarConversas, 8000)
-    return () => clearInterval(t)
+    const td = setInterval(carregarDisparos, 60000) // tarja atualiza mais devagar (quem respondeu disparo muda pouco)
+    return () => { clearInterval(t); clearInterval(td) }
   }, [autorizado])
 
   // Espelha as não-lidas reais do WhatsApp (ex: lidas no celular) no sistema
@@ -132,6 +144,11 @@ export default function CaixaWhatsApp() {
                       <span style={{ fontSize: 12, color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 200 }}>{c.ultima_msg || '—'}</span>
                       <span style={{ fontSize: 9, color: t.cor, background: t.bg, borderRadius: 4, padding: '1px 6px' }}>{t.txt}</span>
                     </div>
+                    {disparoDe(c.telefone) && (
+                      <div style={{ marginTop: 5 }}>
+                        <span style={pillDisparo} title={`Respondeu este disparo em ${new Date(disparoDe(c.telefone)!.em).toLocaleDateString('pt-BR')}`}>📢 {disparoDe(c.telefone)!.nome}</span>
+                      </div>
+                    )}
                   </div>
                 )
               })}
@@ -150,7 +167,7 @@ export default function CaixaWhatsApp() {
                     ← Voltar
                   </button>
                 )}
-                <ChatConversa conversa={ativa} onEnviou={carregarConversas} onConversaChange={setAtiva} />
+                <ChatConversa conversa={ativa} disparoInfo={disparoDe(ativa.telefone)} onEnviou={carregarConversas} onConversaChange={setAtiva} />
               </>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
@@ -164,7 +181,7 @@ export default function CaixaWhatsApp() {
     </Layout>
   )
 }
-function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conversa; onEnviou: () => void; onConversaChange: (c: Conversa) => void }) {
+function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange }: { conversa: Conversa; disparoInfo: { nome: string; em: string } | null; onEnviou: () => void; onConversaChange: (c: Conversa) => void }) {
   const [mensagens, setMensagens] = useState<any[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -403,6 +420,11 @@ function ChatConversa({ conversa, onEnviou, onConversaChange }: { conversa: Conv
                   title="Editar nome/telefone do contato"
                   style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✏️ editar</button>
               </div>
+              {disparoInfo && (
+                <div style={{ marginTop: 5 }}>
+                  <span style={pillDisparo} title={`Respondeu este disparo em ${new Date(disparoInfo.em).toLocaleDateString('pt-BR')}`}>📢 Respondeu disparo: {disparoInfo.nome}</span>
+                </div>
+              )}
             </div>
             {conversa.lead_id ? (
               <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
