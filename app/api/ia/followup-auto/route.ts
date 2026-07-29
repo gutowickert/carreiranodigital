@@ -169,8 +169,10 @@ export async function POST(req: NextRequest) {
     if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, codigo, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '' }) }
     // prazo do lote FIXO POR LEAD = entrada no lote + 4 dias úteis (o dia do "último dia") — assim o "lote virando"
     // e o "último dia" batem a mesma data pro mesmo lead (não recalcula hoje+3 a cada mensagem).
-    const prazoDe = (entMs: number) => {
-      const base = entMs ? new Date(entMs) : new Date(hojeBR + 'T15:00:00Z')
+    // prazo ROLANTE a partir de HOJE (+4 dias úteis). Antes ancorava na ENTRADA da etapa — se o lead entrou faz
+    // uma semana, o prazo nascia no PASSADO ("vale até 20/07" saindo dia 27). Ancorado em hoje, nunca vence.
+    const prazoDe = (_entMs: number) => {
+      const base = new Date(hojeBR + 'T15:00:00Z')
       const d = new Date(base); d.setUTCDate(d.getUTCDate() + 4); while (d.getUTCDay() === 0 || d.getUTCDay() === 6) d.setUTCDate(d.getUTCDate() + 1)
       return `${d.toISOString().slice(8, 10)}/${d.toISOString().slice(5, 7)}`
     }
