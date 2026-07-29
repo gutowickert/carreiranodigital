@@ -23,12 +23,29 @@ export function ehEmpresa(nome: string | null): boolean {
   return false
 }
 
-// nome pro template: usa o PRIMEIRO NOME se ele for de pessoa; "tudo bem" se o PRIMEIRO nome for empresa/cargo/genérico.
-// (checa só o 1º nome — "Zenaide -Terapeuta Integrativa" usa "Zenaide"; o descritor depois não importa.)
-export function nomeSaudacao(nome: string | null): string {
-  const p = (nome || '').trim().split(/\s+/)[0] || ''
-  if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p) || /^(dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i.test(p)) return 'tudo bem'
+// tira emojis, símbolos e pontuação decorativa que vêm colados no nome (ex.: "🎀Kamylla🎀", "*João*")
+const limpaNome = (s: string | null): string => (s || '')
+  .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{2BFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, ' ')
+  .replace(/[*_~`|]/g, ' ')
+  .replace(/\s+/g, ' ').trim()
+
+// 1º nome de PESSOA (capitalizado) ou null se o começo for empresa/cargo/genérico
+const primeiroSePessoa = (s: string): string | null => {
+  const p = limpaNome(s).replace(/[^\p{L}\p{N} .'\-]/gu, ' ').trim().split(/\s+/)[0] || ''
+  if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p) || /^(dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i.test(p)) return null
   return cap(p.toLowerCase())
+}
+
+// nome pro template: usa o PRIMEIRO NOME se ele for de pessoa; "tudo bem" se for empresa/cargo/genérico.
+// "Empresa (Pessoa)" (ex.: "Soluzzion (Naor Baierle)") → a pessoa costuma estar nos PARÊNTESES: tenta ela.
+export function nomeSaudacao(nome: string | null): string {
+  const raw = limpaNome(nome)
+  const fora = raw.replace(/\([^)]*\)/g, ' ').replace(/\s+/g, ' ').trim() // nome fora dos parênteses
+  const bomFora = primeiroSePessoa(fora)
+  if (bomFora) return bomFora
+  const paren = raw.match(/\(([^)]+)\)/) // "(Naor Baierle)" — pessoa por trás da empresa
+  if (paren) { const bomDentro = primeiroSePessoa(paren[1]); if (bomDentro) return bomDentro }
+  return 'tudo bem'
 }
 
 // lista de datas compacta pro template: até 3 lista ("11, 12 e 13/08"); mais que isso, "a partir de DD/MM".

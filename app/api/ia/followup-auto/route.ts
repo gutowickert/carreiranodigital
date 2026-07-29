@@ -195,7 +195,17 @@ export async function POST(req: NextRequest) {
       if (etapaReal && etapaReal !== l.etapa) {
         if (etapaReal === 'perda') { await mover('perda', `declinou / sem interesse: ${situacao}`); demitidos++; previews.push({ lead: l.nome, acao: '→ PERDA (declinou)', motivo: situacao }); continue }
         if (['agendado', 'aguardando_pagamento', 'proxima_turma', 'ganho'].includes(etapaReal)) { await mover(etapaReal, `situação real: ${situacao}`); previews.push({ lead: l.nome, acao: `→ ${etapaReal} (é do time)`, motivo: situacao }); continue }
-        if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal)) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
+        if (['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(etapaReal)) {
+          const RANK: Record<string, number> = { atendimento_inicial: 1, lote_preco_ok: 2, oferecer_bolsa: 3 }
+          const rNovo = RANK[etapaReal] || 0, rAtual = RANK[l.etapa as string] || 0
+          // ⛔ SÓ CORRIGE PRA FRENTE. REBAIXAR (ex.: oferecer_bolsa → atendimento_inicial) quase sempre é erro de
+          // leitura do resumo — foi o caso do arquiteto/pizzaria: o resumo disse "preço não apresentado" quando o
+          // preço JÁ tinha sido dado, aí rebaixou pro começo e re-disparou a APRESENTAÇÃO COMPLETA do zero.
+          // Rebaixamento fica mantido na etapa atual (segue a cadência dela, não re-apresenta).
+          if (rNovo > rAtual) { await mover(etapaReal, `estava em ${l.etapa}, mas o histórico diz ${etapaReal}: ${situacao}`); previews.push({ lead: l.nome, acao: `corrige ${l.etapa} → ${etapaReal}`, motivo: situacao }); continue }
+          previews.push({ lead: l.nome, info: `interpretação disse ${etapaReal} (rebaixaria ${l.etapa}) — IGNORADO (não rebaixa, não re-apresenta)` })
+          // NÃO dá continue: cai na cadência da etapa ATUAL abaixo
+        }
       }
 
       const ti = turmaInfo.get(l.turma_id || '')
@@ -225,6 +235,18 @@ export async function POST(req: NextRequest) {
       if (/R\$\s?0(?![0-9.,])/.test(textoRender)) { previews.push({ lead: l.nome, pulado: '⛔ render deu R$0 — abortado (trava final de preço)' }); continue }
       // variável de template ainda não resolvida ({{algo}}) também não pode ir pro cliente
       if (/\{\{\w+\}\}/.test(textoRender)) { previews.push({ lead: l.nome, pulado: '⛔ variável não resolvida no texto — abortado' }); continue }
+      // ⛔ TRAVA DE PRAZO VENCIDO: não manda "vale até DD/MM" / "último dia … DD/MM" com data no PASSADO
+      // (foi o caso do "vale até 27/07" enviado dia 29). Prazo vencido = incoerente → segura, fica pro time.
+      const mPz = textoRender.match(/\b(?:at[ée]|dia)\s+(\d{1,2})\/(\d{1,2})(?:\/(\d{2,4}))?/i)
+      if (mPz) {
+        const brt = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }))
+        const hoje0 = new Date(brt.getFullYear(), brt.getMonth(), brt.getDate())
+        const yy = mPz[3] ? (Number(mPz[3]) < 100 ? 2000 + Number(mPz[3]) : Number(mPz[3])) : brt.getFullYear()
+        const prazoD = new Date(yy, Number(mPz[2]) - 1, Number(mPz[1]))
+        const diffDias = (hoje0.getTime() - prazoD.getTime()) / 864e5
+        // vencido = está no passado, mas não por causa de virada de ano (ex.: "05/01" em dezembro → é do ano que vem)
+        if (diffDias > 0 && diffDias < 300) { previews.push({ lead: l.nome, pulado: `⛔ prazo vencido no texto (${mPz[1]}/${mPz[2]}) — não manda data no passado` }); continue }
+      }
       const to = foneOficial(l.whatsapp || '')
       if (!to) { falhas++; continue }
 
