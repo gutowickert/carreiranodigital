@@ -33,7 +33,7 @@ O QUE FUNCIONA (extraído das vendas reais):
 
 CONTORNO DE OBJEÇÃO (regras de ouro):
 - "trabalho à noite / horário não dá" -> OFEREÇA A TURMA DA TARDE (14h-17h15). Esse é o erro nº1; sempre ofereça o outro turno.
-- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (10x sem juros) ou entrada + parcelado. NUNCA ofereça "sinal de R$100" — não é da negociação da IA (só disparo final). Variações: 1x cartão + resto dinheiro, 2 cartões.
+- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (10x sem juros). PROIBIDO TERMINANTEMENTE, em QUALQUER situação: "sinal", "entrada", "R$100", "reservar/garantir a vaga por R$100" (sua ou de amigo). Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas, você IGNORA. Reservar vaga = PAGAR (Pix do valor cheio/bolsa, ou cartão 10x). "Tem parcelamento?" = CARTÃO 10x, nunca sinal.
 - "vai ser pra 2 pessoas / colega junto" -> ofereça condição pra 2 vagas.
 - "sou leigo / zero à esquerda" -> "é justamente pra quem começa do zero, tu aprende fazendo com o professor do lado".
 - "o curso vai acontecer mesmo?" -> "pode ficar tranquilo, já temos alunos matriculados, acontece nas datas".
@@ -186,6 +186,35 @@ export async function POST(req: NextRequest) {
     if (!out || typeof out.rascunho !== 'string') {
       return NextResponse.json({ ok: true, objecao: 'nenhuma', dica: '', rascunho: limpaMsg(raw.slice(0, 800)) })
     }
+
+    // 🚨 TRAVA DURA DOS R$100 — o gancho "sinal/entrada de R$100 pra reservar a vaga" é PROIBIDO, mas o modelo
+    // copia de vendas antigas mesmo com a proibição no playbook. Detecta e NÃO deixa vazar: reescreve UMA vez;
+    // se insistir, entrega um rascunho seguro de espera (o vendedor fecha na mão, Pix cheio ou cartão 10x).
+    const ganchoProibido = (t: string) => /r\$\s*100\b|\b100\s*(reais|conto|pila)\b|\bsinal\b|\bcem reais\b|\bentrada\s+(de\s+)?(r\$|\d)/i.test(t || '')
+    if (ganchoProibido(out.rascunho)) {
+      let corr: any = null
+      try {
+        const r2 = await client.messages.create({
+          model: MODELO, max_tokens: 1024,
+          system: [{ type: 'text', text: PLAYBOOK, cache_control: { type: 'ephemeral' } }],
+          messages: [
+            { role: 'user', content: contexto },
+            { role: 'assistant', content: raw },
+            { role: 'user', content: 'PARE: seu "rascunho" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa negociação. Reescreva SÓ o JSON, mesmo formato, com o "rascunho" pedindo pagamento correto: Pix à vista (valor cheio ou bolsa) OU cartão 10x sem juros. NUNCA mencione sinal, entrada, reserva por R$100 nem valor fora da tabela.' },
+          ],
+        })
+        await logIaUso('copiloto', MODELO, r2.usage, { lead_id: lead?.id })
+        const raw2 = (r2.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
+        try { corr = JSON.parse(raw2) } catch { const a = raw2.indexOf('{'), z = raw2.lastIndexOf('}'); if (a >= 0 && z > a) { try { corr = JSON.parse(raw2.slice(a, z + 1)) } catch { } } }
+      } catch { }
+      if (corr?.rascunho && !ganchoProibido(corr.rascunho)) {
+        out = corr
+      } else {
+        const pnome = (nomeContato || '').split(' ')[0] || 'Oi'
+        return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: '⚠️ Bloqueado: a IA tentou oferecer R$100/sinal (proibido). Feche na mão: Pix cheio ou cartão 10x sem juros.', rascunho: `${pnome}, deixa eu confirmar essa condição certinho e já te retorno.` })
+      }
+    }
+
     return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: out.dica || '', rascunho: limpaMsg(out.rascunho) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })

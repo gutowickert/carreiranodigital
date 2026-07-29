@@ -342,6 +342,39 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }
   if (!dados) return { ok: false, error: 'IA não retornou JSON' }
+
+  // 🚨 TRAVA DURA DOS R$100 — o gancho "sinal/entrada de R$100 pra reservar a vaga" é PROIBIDO (regra nº1),
+  // mas o modelo copia isso de vendas antigas mesmo com a proibição no prompt. Aqui a gente detecta e NÃO deixa
+  // o texto envenenado sair: reescreve UMA vez com correção explícita; se insistir, joga pro humano.
+  const ganchoProibido = (t: string) => /r\$\s*100\b|\b100\s*(reais|conto|pila)\b|\bsinal\b|\bcem reais\b|\bentrada\s+(de\s+)?(r\$|\d)/i.test(t || '')
+  if (typeof dados.resposta === 'string' && ganchoProibido(dados.resposta)) {
+    let corrigido: any = null
+    try {
+      const r2 = await client.messages.create({
+        model: MODELO, max_tokens: 1200,
+        system: [{ type: 'text', text: SYSTEM, cache_control: { type: 'ephemeral' } }],
+        messages: [
+          { role: 'user', content },
+          { role: 'assistant', content: raw },
+          { role: 'user', content: 'PARE: sua "resposta" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa IA (é gancho de venda antiga). Reescreva SÓ o JSON, no MESMO formato, com a "resposta" pedindo pagamento correto: Pix à vista do valor cheio ou da bolsa, OU cartão em 10x sem juros. NUNCA mencione sinal, entrada, reserva por R$100 nem qualquer valor fora da tabela.' },
+        ],
+      })
+      await logIaUso('atendimento', MODELO, r2.usage)
+      const raw2 = (r2.content || []).map((x: any) => x.type === 'text' ? x.text : '').join('').trim()
+      try { corrigido = JSON.parse(raw2) } catch { const a = raw2.indexOf('{'), z = raw2.lastIndexOf('}'); if (a >= 0 && z > a) { try { corrigido = JSON.parse(raw2.slice(a, z + 1)) } catch { } } }
+    } catch { }
+    if (corrigido?.resposta && !ganchoProibido(corrigido.resposta)) {
+      dados = corrigido
+    } else {
+      // reincidiu (ou falhou) → não arrisca: passa pro time em vez de sugerir o proibido
+      dados.acao_sugerida = 'chamar_humano'
+      dados.confianca = 'baixa'
+      dados.resposta = `${(lead.nome || '').split(' ')[0] || 'Oi'}, deixa eu confirmar essa condição certinho com o time e já te retorno.`
+      dados.proximo_passo = '⚠️ Copiloto tentou oferecer R$100/sinal (bloqueado) — humano assume o fechamento (Pix cheio ou cartão 10x).'
+      dados.travado_r100 = true
+    }
+  }
+
   if (typeof dados.resposta === 'string') dados.resposta = nomesCompletos(semEmoji(dados.resposta)) // sem emoji + nome completo do curso
   return { ok: true, sugestao: dados, baseado_em_n: ganhas.length }
 }
