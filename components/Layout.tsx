@@ -59,7 +59,6 @@ const grupos: Grupo[] = [
       { nome: 'Análise de Conversão', href: '/dashboard/analise-conversao' },
       { nome: 'Tráfego', href: '/dashboard/trafego' },
       { nome: 'Funil do Site', href: '/dashboard/funil-site' },
-      { nome: 'Inteligência de Cliente', href: '/dashboard/inteligencia-cliente' },
       { nome: 'Velocidade de Venda', href: '/dashboard/velocidade-venda' },
       { nome: 'NPS', href: '/dashboard/nps', feat: 'escola' },
     ],
