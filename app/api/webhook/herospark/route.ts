@@ -169,7 +169,7 @@ export async function POST(req: NextRequest) {
     const ehBoletoParc = ((paymentMethod || '').toLowerCase().includes('boleto') || (paymentMethod || '').toLowerCase().includes('slip')) && installments > 1
     const valorFinal = ehBoletoParc ? Math.round(amount * installments * 100) / 100 : (amount > 0 ? amount : 0)
     const { data: matExistente } = await supabase.from('matriculas')
-      .select('id').eq('aluno_id', alunoId).eq('turma_id', turmaId).limit(1).maybeSingle()
+      .select('id, lead_id').eq('aluno_id', alunoId).eq('turma_id', turmaId).limit(1).maybeSingle()
 
     let matricula: any = matExistente
     const jaExistia = !!matExistente
@@ -218,6 +218,22 @@ export async function POST(req: NextRequest) {
         etapa_nova: 'ganho',
         observacao: `Convertido via HeroSpark — R$ ${valorFinal.toFixed(2)}`,
       })
+    } else if (!leadEncontrado && !matricula.lead_id) {
+      // GAP FECHADO (2026-07-30): comprador COM turma mas SEM lead no funil → cria lead JÁ em ganho, espelhando o
+      // caminho SEM-turma. Antes ficava matrícula/aluno sem lead → a venda não aparecia como ganho no CRM/funil.
+      const { data: novoLead } = await supabase.from('leads').insert({
+        nome: buyerName || 'Comprador HeroSpark',
+        whatsapp: (buyerPhone || '').toString().replace(/\D/g, '') || null,
+        email: buyerEmail || null,
+        origem: 'whatsapp', etapa: 'ganho',
+        data_ganho: new Date().toISOString(),
+        valor_venda: valorFinal, turma_id: turmaId, codigo_turma: turmaCodigo,
+        matricula_id: matricula.id, motivo_ganho: 'Convertido via HeroSpark (comprador direto, sem lead prévio)',
+      }).select('id').single()
+      if (novoLead) {
+        await supabase.from('matriculas').update({ lead_id: novoLead.id }).eq('id', matricula.id)
+        await supabase.from('lead_andamentos').insert({ lead_id: novoLead.id, tipo: 'webhook_convertido', etapa_nova: 'ganho', observacao: `Convertido via HeroSpark — R$ ${valorFinal.toFixed(2)} (lead criado no ganho — comprador direto)` })
+      }
     }
 
     // 5/6/7) Financeiro
