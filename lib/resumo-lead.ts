@@ -18,13 +18,17 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatament
  "proximoPasso":"o que o vendedor deve fazer AGORA pra avançar",
  "etapaReal":"<onde o lead REALMENTE está no fluxo, pela conversa — uma de: atendimento_inicial (não recebeu preço/curso) | lote_preco_ok (já recebeu preço/lote, decidindo) | oferecer_bolsa (demonstrou interesse OU time já fez oferta/condição especial) | agendado (pediu retorno/pagamento numa data futura, ou 'vou pensar' com retorno) | aguardando_pagamento (decidiu/recebeu link) | proxima_turma (quer só turma futura) | perda (disse que NÃO quer/não vai fazer) | ganho (já pagou)>"
 }
-Regras: jaExplicouCurso = 'sim' só se oferta/formato E preço já foram apresentados; 'parcial' se parte; 'nao' se nada. temperatura pela intenção de compra demonstrada. Considere as LIGAÇÕES atendidas tanto quanto as mensagens. etapaReal = a situação REAL pela conversa (não a etapa gravada). Português, direto, tom da escola.`
+Regras: jaExplicouCurso = 'sim' se oferta/formato E preço já foram apresentados EM QUALQUER CANAL; 'parcial' se só parte; 'nao' se nada.
+⚠️ A apresentação e o PREÇO podem ter sido passados por: mensagem de texto, ÁUDIO transcrito, LIGAÇÃO ATENDIDA (transcrição) ou ANOTAÇÃO do vendedor no card. NÃO exija que esteja no texto do WhatsApp — se o curso/formato E o valor aparecem em QUALQUER uma dessas fontes (inclusive na transcrição de ligação ou numa nota tipo "liguei e passei o preço/condição"), então jaExplicouCurso='sim' e etapaReal já é 'lote_preco_ok' (ou adiante), NÃO 'atendimento_inicial'. Uma mensagem longa pode trazer o preço no FINAL — leia a mensagem INTEIRA antes de dizer que faltou preço.
+temperatura pela intenção de compra demonstrada. Considere as LIGAÇÕES atendidas tanto quanto as mensagens. etapaReal = a situação REAL pela conversa (não a etapa gravada). Português, direto, tom da escola.`
 
 type LeadInfo = { id: string; nome?: string | null; whatsapp?: string | null; etapa?: string | null; codigo_turma?: string | null }
 
 function montarContexto(lead: LeadInfo, d: Dossie): string {
   const linhas = d.mensagens.filter(m => (m.texto || '').trim()).slice(-50)
-    .map(m => `[${(m.em || '').slice(0, 10)}] ${m.quem === 'cliente' ? 'CLIENTE' : 'VENDEDOR'}: ${(m.texto || '').replace(/\s+/g, ' ').trim().slice(0, 400)}`)
+    // 1500 (era 400): o pitch com PREÇO costuma vir no FINAL de uma mensagem longa — cortar em 400 escondia o
+    // "Investimento: R$2.397..." e o resumo concluía "apresentação parcial/cortada" (caso da Estética).
+    .map(m => `[${(m.em || '').slice(0, 10)}] ${m.quem === 'cliente' ? 'CLIENTE' : 'VENDEDOR'}: ${(m.texto || '').replace(/\s+/g, ' ').trim().slice(0, 1500)}`)
   const andTxt = d.andamentos.filter(a => (a.observacao || '').trim() && !['tarefa_criada', 'criado'].includes(a.tipo))
     .slice(-40).map(a => `[${(a.em || '').slice(0, 10)}] ${a.observacao}`)
   const ligTxt = d.ligacoes.filter(g => g.atendida).map(g =>
