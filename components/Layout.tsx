@@ -43,18 +43,13 @@ const grupos: Grupo[] = [
   {
     titulo: 'CRM',
     itens: [
-      { nome: 'Atender Agora', href: '/dashboard/atender' },
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
-      { nome: 'IA pediu ajuda', href: '/dashboard/ia-ajuda' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
-      { nome: 'Recuperar Histórico', href: '/dashboard/recuperar-historico' },
       { nome: 'CRM', href: '/dashboard/crm' },
       { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
-      { nome: 'Etapas do Funil', href: '/dashboard/etapas' },
-      { nome: 'Fluxo Comercial', href: '/dashboard/fluxo' },
     ],
   },
   {
@@ -77,7 +72,6 @@ const grupos: Grupo[] = [
       { nome: 'Disparos', href: '/dashboard/disparos' },
       { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
       { nome: 'Templates de Follow-up', href: '/dashboard/followup-templates' },
-      { nome: 'Conectar WhatsApp', href: '/dashboard/whatsapp-conectar' },
       { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
       { nome: 'Listas', href: '/dashboard/listas' },
     ],
