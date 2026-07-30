@@ -134,9 +134,14 @@ export async function POST(req: NextRequest) {
         const tq = cad[idx]
         const t = pickTpl(l.etapa, tq.chave, fam)
         const jaFoi = t && jaEnv.has((t.nome_meta || '').toLowerCase())
-        // só bloqueia reabridor/apresentação se o cliente respondeu nas últimas 24h (esses já estão fora de `frios`,
-        // mas mantém a trava). Quem ESFRIOU (respondeu há dias e sumiu) PODE receber reengajamento — é o objetivo.
-        const engBloq = t && engajadoRecente(l) && /retomar|apresentacao/i.test(t.nome_meta)
+        // 🚫 NUNCA manda template de ABERTURA/REINTRODUÇÃO/APRESENTAÇÃO pra quem JÁ ENGAJOU (respondeu alguma vez).
+        // Template fixo não sabe o que o cliente já disse — reabrir com "aqui é o Mateus, qual é teu negócio?" pra
+        // quem já respondeu "Estética" e já viu o pitch soa como se a gente não lembrasse dele. Warm = do time/copiloto
+        // (contexto), não do motor de template. Antes só travava nas últimas 24h → o lead esfriava em 1 dia e levava a
+        // apresentação genérica de novo (caso da Estética). Agora trava por ter engajado ALGUMA VEZ.
+        const jaEngajou = !!dossies.get(l.id)?.ultimoEngajamentoEm
+        const aberturaFria = /retomar|retomada|apresenta|mudanca|nao_atendeu/i.test(t.nome_meta || '')
+        const engBloq = t && aberturaFria && (engajadoRecente(l) || jaEngajou)
         if (t && !jaFoi && !engBloq) { toque = tq; tpl = t; break }
         idx++
       }
