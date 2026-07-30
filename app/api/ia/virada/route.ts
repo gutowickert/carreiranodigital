@@ -42,20 +42,23 @@ export async function POST(req: NextRequest) {
 
     const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ATIVAS).limit(5000)
 
-    // QUEM RESPONDEU no dia-alvo (00:00–24:00 BRT = +3h UTC): consulta DIRETA das mensagens recebidas → conversas → leads.
-    // (antes usava ultimoEngajamentoEm do dossiê, que SUB-CONTAVA — deixava ~2/3 dos que responderam passarem batido.)
+    // QUEM RESPONDEU no dia-alvo (00:00–24:00 BRT = +3h UTC). SCOPED aos leads ATIVOS: parte das CONVERSAS deles
+    // e busca só as recebidas do dia NELAS. Antes varria o firehose do dia inteiro (todas as recebidas da org) e
+    // estourava o timeout de 60s em dia de disparo (milhares de mensagens frias). Agora o custo é O(leads ativos),
+    // não O(volume do dia) — e a maioria das recebidas do dia (disparo frio) nem é de lead do funil.
     const iniUTC = alvoBR + 'T03:00:00.000Z'
     const fimUTC = new Date(new Date(iniUTC).getTime() + 864e5).toISOString()
-    // Scan das RECEBIDAS do dia, guardando conversa_id + criado_em (o `criado_em` dá o "última resposta do cliente"
-    // DE GRAÇA — sem precisar montar dossiê de todo mundo só pra saber quem tem resposta nova).
-    const inbMsgs: any[] = []
-    for (let from = 0; ; from += 1000) { const { data } = await sb.from('wa_mensagens').select('conversa_id, criado_em').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', iniUTC).lt('criado_em', fimUTC).range(from, from + 999); if (!data?.length) break; inbMsgs.push(...data); if (data.length < 1000) break }
-    const convIds = [...new Set(inbMsgs.map((m: any) => m.conversa_id).filter(Boolean))]
+    const ativosIds = (leads || []).map(l => l.id)
+    // conversas dos leads ativos (1-2 por lead) → conv→lead
     const convToLead = new Map<string, string>()
-    for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) convToLead.set(c.id, c.lead_id) }
-    // última resposta do cliente HOJE por lead (max criado_em) — proxy exato de "resposta nova a interpretar"
+    for (let i = 0; i < ativosIds.length; i += 150) { const { data } = await sb.from('wa_conversas').select('id, lead_id').eq('org_id', org).in('lead_id', ativosIds.slice(i, i + 150)); for (const c of data || []) if (c.lead_id) convToLead.set(c.id, c.lead_id) }
+    const convIds = [...convToLead.keys()]
+    // recebidas do dia SÓ nessas conversas → última resposta por lead (max criado_em); proxy de "resposta nova a interpretar"
     const ultRespPorLead = new Map<string, string>()
-    for (const m of inbMsgs) { const lid = convToLead.get(m.conversa_id); if (!lid) continue; const prev = ultRespPorLead.get(lid); if (!prev || m.criado_em > prev) ultRespPorLead.set(lid, m.criado_em) }
+    for (let i = 0; i < convIds.length; i += 150) {
+      const { data } = await sb.from('wa_mensagens').select('conversa_id, criado_em').eq('org_id', org).or('direcao.eq.recebida,status.eq.recebida').gte('criado_em', iniUTC).lt('criado_em', fimUTC).in('conversa_id', convIds.slice(i, i + 150))
+      for (const m of data || []) { const lid = convToLead.get(m.conversa_id); if (!lid) continue; const prev = ultRespPorLead.get(lid); if (!prev || m.criado_em > prev) ultRespPorLead.set(lid, m.criado_em) }
+    }
     const respHoje = (leads || []).filter(l => ultRespPorLead.has(l.id))
 
     // PENDENTE = resposta nova ainda não interpretada (resumo mais velho que a última resposta do cliente hoje).
