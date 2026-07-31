@@ -43,6 +43,7 @@ const grupos: Grupo[] = [
   {
     titulo: 'CRM',
     itens: [
+      { nome: '🎯 Fechamento de Turma', href: '/dashboard/fechamento' },
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'CRM', href: '/dashboard/crm' },
