@@ -43,7 +43,6 @@ const grupos: Grupo[] = [
   {
     titulo: 'CRM',
     itens: [
-      { nome: '🎯 Fechamento de Turma', href: '/dashboard/fechamento' },
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'CRM', href: '/dashboard/crm' },
@@ -51,6 +50,7 @@ const grupos: Grupo[] = [
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
+      { nome: 'Fechamento de Turma', href: '/dashboard/fechamento' },
     ],
   },
   {
