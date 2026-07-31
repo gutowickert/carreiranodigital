@@ -33,14 +33,16 @@ export async function POST(req: NextRequest) {
   try {
     if (fase === 'manha') {
       await emLote('warming', '/api/ia/resumos', { limit: 10 })
-      if (restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 8, data: ontemUTC() })
+      if (restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5, data: ontemUTC() })
       if (restam() > 8000) { const r = await post('/api/ia/reconciliar', { dryRun: false, confirm: true, dias: 3 }); log.push('reconciliar → ' + (r?.ok ? 'ok' : 'erro')) }
       if (restam() > 12000) await emLote('followup', '/api/ia/followup-auto', { dryRun: false, confirm: true, limit: 60 }, 'planejados', 6)
       if (restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA, ' + (r?.tarefasCadenciaCanceladas ?? '?') + ' tarefas limpas') }
       if (restam() > 6000) { const r = await post('/api/ia/garantir-tarefas', { dryRun: false, confirm: true }); log.push('garantir-tarefas → ' + (r?.criadas ?? '?') + ' órfãos do time') }
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     } else { // noite
-      await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 10 })
+      // limit 5 (era 10): 10 interpretações LLM numa chamada estouravam os 60s → morria sem processar.
+      // Com 5 cada chamada completa; o emLote faz várias rodadas e os passes noturnos escalonados drenam o resto.
+      await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5 })
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     }
     return NextResponse.json({ ok: true, fase, gastou_ms: Date.now() - t0, log })
