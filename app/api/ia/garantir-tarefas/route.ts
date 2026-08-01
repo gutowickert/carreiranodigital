@@ -9,7 +9,10 @@ export const maxDuration = 60
 // cliente NÃO respondeu nas últimas 48h (senão está no inbox), cria uma tarefa de retomada pra ~2 dias úteis.
 // Roda no cron. dryRun (padrão) simula. Aplicar: { dryRun:false, confirm:true }.
 const TEAM = ['agendado', 'proxima_turma', 'aguardando_pagamento']
-const TIPO: Record<string, string> = { agendado: 'ligar_agendado', proxima_turma: 'proxima_turma', aguardando_pagamento: 'verificar_pagamento' }
+// agendado → 'retomar_contato' (NÃO 'ligar_agendado'): a rede de segurança é um "não esqueça este lead" genérico,
+// não uma ligação MARCADA. Usar ligar_agendado jogava a rede inteira na Fila de Ligações e afogava as ligações reais.
+// retomar_contato aparece em Tarefas de Leads, fora da fila de ligações e fora do gatilho de envio da IA (não é MSG_TASK).
+const TIPO: Record<string, string> = { agendado: 'retomar_contato', proxima_turma: 'proxima_turma', aguardando_pagamento: 'verificar_pagamento' }
 const TITULO: Record<string, string> = { agendado: 'Retomar contato (agendado)', proxima_turma: 'Avisar da próxima turma', aguardando_pagamento: 'Confirmar pagamento' }
 const DIA = 864e5
 
