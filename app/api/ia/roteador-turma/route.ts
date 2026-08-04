@@ -15,10 +15,14 @@ const DIAS_APOS = 10
 const ETAPAS_LEAD = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'agendado', 'proxima_turma', 'ligacao_boa']
 const TPL = 'cnd_nova_turma'
 
-// "08, 09 e 10/09" (agrupa por mês; trata virada de mês)
+// datas legíveis: até 4 aulas lista ("08, 09 e 10/09"); mais que isso vira faixa ("08/09 a 01/10") pra não poluir.
 function fmtDatas(isos: string[]): string {
+  const s = isos.slice().sort()
+  if (!s.length) return ''
+  const dm = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}`
+  if (s.length > 4) return `${dm(s[0])} a ${dm(s[s.length - 1])}`
   const porMes: { mes: string; dias: string[] }[] = []
-  for (const iso of isos.slice().sort()) { const mes = iso.slice(5, 7), dia = iso.slice(8, 10); const g = porMes.find(x => x.mes === mes); if (g) g.dias.push(dia); else porMes.push({ mes, dias: [dia] }) }
+  for (const iso of s) { const mes = iso.slice(5, 7), dia = iso.slice(8, 10); const g = porMes.find(x => x.mes === mes); if (g) g.dias.push(dia); else porMes.push({ mes, dias: [dia] }) }
   return porMes.map(g => { const d = g.dias; const lista = d.length === 1 ? d[0] : d.slice(0, -1).join(', ') + ' e ' + d[d.length - 1]; return `${lista}/${g.mes}` }).join(', ')
 }
 const cursoNome = (n: string) => (n || '').replace(/^Anúncios.*Locais$/i, 'Anúncios para Negócios Locais').replace(/^Formação.*Digital$/i, 'Formação Completa em Marketing Digital')
