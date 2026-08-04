@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     const amount = parseFloat(pick(payload, ['amount', 'value', 'total', 'data.amount', 'valor'], '0'))
     const paymentMethod = pick(payload, ['payment_method', 'data.payment_method', 'metodo_pagamento'], 'pix')
     const installments = parseInt(pick(payload, ['installments', 'data.installments', 'parcelas'], '1')) || 1
+    const paymentDate = pick(payload, ['payment_date', 'data.payment_date', 'data_pagamento']) // data REAL do pagamento (p/ boleto)
 
     if (!buyerEmail && !buyerCpf) {
       await supabase.from('webhook_logs').update({ status: 'erro', erro: 'Faltam CPF e email do comprador', processado_em: new Date().toISOString() }).eq('id', logId!)
@@ -241,34 +242,43 @@ export async function POST(req: NextRequest) {
 
     if (ehBoletoParc) {
       // BOLETO PARCELADO: a HeroSpark manda 1 webhook por boleto PAGO (valor da parcela).
-      // No 1º boleto provisiona os N (1 pago + resto previsto, mensal). Nos seguintes, confirma o próximo previsto.
-      // Dedup de retry: se já confirmei um boleto desse aluno HOJE, não faz de novo.
-      const { count: jaHoje } = await supabase.from('lancamentos_empresa')
+      // Usa a DATA REAL do pagamento (payment_date do payload), não a data de processamento.
+      const pagDate = (() => { const pd = paymentDate ? new Date(paymentDate) : null; return (pd && !isNaN(+pd)) ? pd.toISOString().split('T')[0] : hoje })()
+      // DEDUP por (aluno + data REAL do pagamento): reenvio do MESMO pagamento tem o mesmo payment_date → não reprocessa.
+      const { count: jaEssePag } = await supabase.from('lancamentos_empresa')
         .select('id', { count: 'exact', head: true })
-        .eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'realizado').eq('data_pagamento', hoje)
+        .eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'realizado').eq('data_pagamento', pagDate)
         .ilike('descricao', `Boleto%${alunoNome}%`)
-      if (!jaHoje) {
+      if (!jaEssePag) {
         const taxaBoleto = Math.round((amount * 0.046 + 3) * 100) / 100 // boleto: 4,6% + R$3 por parcela
         const addMeses = (d: string, n: number) => { const x = new Date(d + 'T12:00:00'); x.setMonth(x.getMonth() + n); return x.toISOString().split('T')[0] }
         const { data: prox } = await supabase.from('lancamentos_empresa')
-          .select('id, descricao').eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'previsto')
+          .select('id, descricao, data_vencimento').eq('turma_id', turmaId).eq('tipo', 'receita').eq('status', 'previsto')
           .ilike('descricao', `Boleto%${alunoNome}%`).order('data_vencimento').limit(1).maybeSingle()
         if (prox) {
-          // confirma o próximo boleto previsto + a tarifa dele
-          await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: hoje }).eq('id', prox.id)
+          // ⛔ ANTI-FANTASMA: sem id de transação, a HeroSpark às vezes reenvia/duplica webhook. Se o próximo boleto
+          // vence MUITO depois do pagamento (>7 dias), é sinal de duplicata (foi o caso do Jhonata: vence 02/08, "pago"
+          // 22/07). NÃO confirma às cegas — marca o log pra revisão manual e NÃO mexe em receita/LTV.
+          const diasAntes = Math.round((+new Date(prox.data_vencimento) - +new Date(pagDate)) / 864e5)
+          if (diasAntes > 7) {
+            await supabase.from('webhook_logs').update({ status: 'processado', erro: `⚠️ Boleto NÃO confirmado automaticamente: pagamento em ${pagDate}, mas o próximo boleto (${prox.descricao}) só vence ${prox.data_vencimento} (${diasAntes}d depois). Possível webhook duplicado/antecipado — CONFERIR na HeroSpark e confirmar manualmente se for real.`, processado_em: new Date().toISOString() }).eq('id', logId!)
+            return NextResponse.json({ ok: true, boletoRevisar: true, lead_id: leadEncontrado?.id || null }, { status: 200 })
+          }
+          // confirma o próximo boleto previsto + a tarifa dele (com a DATA REAL)
+          await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: pagDate }).eq('id', prox.id)
           const num = (prox.descricao.match(/Boleto (\d+)\//) || [])[1]
-          if (num) await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: hoje })
+          if (num) await supabase.from('lancamentos_empresa').update({ status: 'realizado', data_pagamento: pagDate })
             .eq('turma_id', turmaId).eq('tipo', 'custo').eq('status', 'previsto').ilike('descricao', `Tarifa%boleto ${num}/%${alunoNome}%`)
         } else {
-          // 1º boleto de uma matrícula nova: provisiona os N boletos
+          // 1º boleto de uma matrícula nova: provisiona os N boletos (ancorado na data REAL do 1º pagamento)
           for (let i = 0; i < installments; i++) {
-            const d = addMeses(hoje, i); const pago = i === 0
+            const d = addMeses(pagDate, i); const pago = i === 0
             const base = { unidade: 'geral', mes_referencia: d.substring(0, 7) + '-01', data_vencimento: d, data_pagamento: pago ? d : null, status: pago ? 'realizado' : 'previsto', turma_id: turmaId, conta_id: caixaHero?.id || null }
             await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'receita', categoria: 'outro', descricao: `Boleto ${i + 1}/${installments} — ${alunoNome} (HeroSpark)`, valor: amount })
             if (taxaBoleto > 0) await supabase.from('lancamentos_empresa').insert({ ...base, tipo: 'custo', categoria: 'taxa_financeira', descricao: `Tarifa HeroSpark boleto ${i + 1}/${installments} — ${alunoNome}`, valor: taxaBoleto })
           }
         }
-        // LTV e receita da turma sobem pelo valor do boleto pago (amount), a cada boleto
+        // LTV e receita da turma sobem pelo valor do boleto pago (amount) — SÓ quando REALMENTE confirmou
         const { data: alunoB } = await supabase.from('alunos').select('ltv').eq('id', alunoId).single()
         await supabase.from('alunos').update({ ltv: (alunoB?.ltv || 0) + amount }).eq('id', alunoId)
         const { data: finB } = await supabase.from('financeiro_turma').select('receita_realizada').eq('turma_id', turmaId).maybeSingle()
