@@ -257,6 +257,16 @@ export async function POST(req: NextRequest) {
       const to = foneOficial(l.whatsapp || '')
       if (!to) { falhas++; continue }
 
+      // ⛔ ANTI-REPETIÇÃO DURA (banco é autoritativo): NÃO reenvia o MESMO template a este lead em 14 dias.
+      // A régua em memória (jaEnv) às vezes fura — ex.: andamento da véspera não lido no lote → mandou cnd_lote_virando
+      // 2 dias seguidos (caso Claudia). Esta checagem direta no banco fecha o furo, independente do porquê.
+      {
+        const { count: repet } = await sb.from('lead_andamentos').select('id', { count: 'exact', head: true })
+          .eq('lead_id', l.id).eq('tipo', 'ia_followup').ilike('observacao', `%${p.tpl.nome_meta}%`)
+          .gte('criado_em', new Date(Date.now() - 14 * DIA).toISOString())
+        if (repet) { previews.push({ lead: l.nome, pulado: `⛔ ${p.tpl.nome_meta} já foi enviado nos últimos 14 dias — não repete` }); continue }
+      }
+
       if (dryRun) { previews.push({ lead: l.nome, etapa: l.etapa, toque: p.chave, template: p.tpl.nome_meta, demite: p.demite, texto: textoRender }); continue }
 
       const parametros = ordem.map((k: string) => ({ type: 'text', text: valores[k] ?? k }))
