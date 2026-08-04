@@ -38,6 +38,8 @@ export async function POST(req: NextRequest) {
       if (restam() > 12000) await emLote('followup', '/api/ia/followup-auto', { dryRun: false, confirm: true, limit: 60 }, 'planejados', 6)
       if (restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA, ' + (r?.tarefasCadenciaCanceladas ?? '?') + ' tarefas limpas') }
       if (restam() > 6000) { const r = await post('/api/ia/garantir-tarefas', { dryRun: false, confirm: true }); log.push('garantir-tarefas → ' + (r?.criadas ?? '?') + ' órfãos do time') }
+      // roteador de turma: 10d após uma turma começar, rola os órfãos dela pra próxima turma (1 toque de reativação)
+      if (restam() > 6000) { const r = await post('/api/ia/roteador-turma', { dryRun: false, confirm: true }); log.push('roteador-turma → ' + (r?.reativados ?? '?') + ' reativados' + (r?.semProxima?.length ? ` ⚠️ ${r.semProxima.length} turma(s) SEM próxima (decidir)` : '')) }
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     } else { // noite
       // limit 5 (era 10): 10 interpretações LLM numa chamada estouravam os 60s → morria sem processar.
