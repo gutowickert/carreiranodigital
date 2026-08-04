@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
     const entradaEtapa: Record<string, number> = {}
     const toquesIA: Record<string, { n: number; ultimo: number }> = {}
     const enviadosTpl: Record<string, Set<string>> = {} // templates (cnd_*) que o lead JÁ recebeu (qualquer fonte) → não repetir
+    const reativadoRecente = new Set<string>() // lead que o roteador reativou ("nova turma") nos últimos 7d → cooldown da cadência
     for (let i = 0; i < ids.length; i += 100) {
       const chunk = ids.slice(i, i + 100)
       // PAGINADO — o Supabase corta em 1000 linhas; com muitos andamentos por lead isso truncava e cegava o dedup (repetia template)
@@ -116,6 +117,8 @@ export async function POST(req: NextRequest) {
         const set = new Set<string>()
         for (const a of as) { const m = (a.observacao || '').match(/cnd_[a-z0-9_]+/gi); if (m) m.forEach((x: string) => set.add(x.toLowerCase())) }
         enviadosTpl[l.id] = set
+        // reativado pelo roteador nos últimos 7 dias? → entra em cooldown (não deixa a cadência disparar em cima)
+        if (as.some(a => a.tipo === 'ia_followup' && /reativa_nova_turma/.test(a.observacao || '') && (now - +new Date(a.criado_em)) < 7 * DIA)) reativadoRecente.add(l.id)
       }
     }
 
@@ -123,6 +126,10 @@ export async function POST(req: NextRequest) {
     type Plano = { lead: any; acao: 'enviar' | 'avancar'; chave?: string; tpl?: any; demite?: boolean; proxEtapa?: string }
     const planos: Plano[] = []
     for (const l of frios) {
+      // ⛔ COOLDOWN pós-reativação: o roteador acabou de mandar "nova turma abriu" a este lead. A cadência normal
+      // NÃO dispara em cima nos primeiros 7 dias (senão ele levaria, ex., a demissão logo depois da reativação).
+      // Dá tempo dele responder à turma nova; passado o cooldown, a cadência retoma (com a trava anti-repetição).
+      if (reativadoRecente.has(l.id)) continue
       const cad = (fluxo.cadencia[l.etapa] || [])
       const o = toquesIA[l.id] || { n: 0, ultimo: 0 }
       const fam = familia(l.codigo_turma)
