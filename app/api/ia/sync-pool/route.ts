@@ -36,6 +36,11 @@ export async function POST(req: NextRequest) {
     const leads: any[] = []
     for (let from = 0; ; from += 1000) { const { data } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, data_perda').eq('org_id', org).not('etapa', 'is', null).range(from, from + 999); if (!data?.length) break; leads.push(...data); if (data.length < 1000) break }
     const val = leads.filter(l => alcancavel(l.whatsapp))
+    // desempate por ESTADO no dedup por telefone: quando a pessoa tem lead DUPLICADO (ex.: interessado + comprador,
+    // caso Deividi), a categoria do pool tem que refletir o estado MAIS forte. Ordena ganho→perda→resto ANTES do
+    // dedup, pra o comprador vencer o interessado e não ficar preso na lista errada.
+    const prioCat = (e: string) => e === 'ganho' ? 0 : e === 'perda' ? 1 : 2
+    val.sort((a, b) => prioCat(a.etapa) - prioCat(b.etapa))
 
     // turma → cidade
     const tids = [...new Set(val.map(l => l.turma_id).filter(Boolean))] as string[]
