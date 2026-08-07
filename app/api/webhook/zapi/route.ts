@@ -191,12 +191,17 @@ export async function POST(req: NextRequest) {
     const leadTemp = conversa.lead_id || (leadVinc ? leadVinc.id : null)
     if (!fromMe && !ehGrupo && leadTemp) {
       try {
+        // Cancela SÓ a cadência silenciosa de MENSAGEM (os follow-ups que perdem sentido quando o lead volta a falar).
+        // PRESERVA ligação (ligar_agendado/ligar_1/ligar_2_audio/triagem_ligacao) e estado do time (pagamento/agendado):
+        // uma ligação MARCADA continua valendo mesmo que o lead escreva — senão some da Fila de Ligações
+        // (era o bug do Lucas Renck e da Jacqueline: agendavam ligação, mandavam um "oi" e a ligação sumia da fila).
+        const CADENCIA_MSG = ['seguir_followup', 'seguir_whatsapp', 'triagem_mensagem', 'followup', 'followup_pos_triagem', 'msg_horario', 'apresentacao_completa', 'lote_virando', 'pos_virada_lote', 'quer_aproveitar', 'reforco_beneficios', 'ultimo_dia_lote', 'bolsa_1', 'bolsa_2', 'demissao', 'apresentar_curso', 'audio_valor', 'audio_horario', 'msg_preco_validade', 'oferecer_whatsapp', 'lote_fecha_hoje_d3', 'dar_andamento_d4', 'tentar_contato_d4', 'tentar_contato_d6', 'encerrar_lead_d2']
         const { data: pend } = await supabase.from('tarefas_lead').select('id')
-          .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false)
+          .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false).in('tipo', CADENCIA_MSG)
         if (pend && pend.length) {
           const agora = new Date().toISOString()
           await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: agora, atualizado_em: agora })
-            .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false)
+            .eq('lead_id', leadTemp).eq('concluida', false).eq('cancelada', false).in('tipo', CADENCIA_MSG)
           await supabase.from('lead_andamentos').insert({ lead_id: leadTemp, tipo: 'mudanca_etapa', observacao: `🤖 Cliente respondeu — ${pend.length} follow-up(s) automático(s) pausado(s); atendimento assumido.` })
         }
       } catch { /* não quebra o webhook */ }
