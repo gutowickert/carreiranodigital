@@ -939,6 +939,29 @@ function ChatLead({ lead }: { lead: Lead }) {
   // copiloto (sugestão de IA)
   const [sugerindo, setSugerindo] = useState(false)
   const [sugestao, setSugestao] = useState<{ objecao: string; dica: string } | null>(null)
+  // templates aprovados (reabrir conversa fora das 24h)
+  const [templates, setTemplates] = useState<any[]>([])
+  const [mostrarTpl, setMostrarTpl] = useState(false)
+  const [tplEnviando, setTplEnviando] = useState('')
+  useEffect(() => {
+    fetchAuth('/api/followup-templates').then(r => r.json()).then(j => {
+      if (j?.ok) setTemplates((j.templates || []).filter((t: any) => t.status === 'aprovado'))
+    }).catch(() => { })
+  }, [])
+
+  async function enviarTemplateSel(templateId: string) {
+    setTplEnviando(templateId); setErro('')
+    try {
+      const r = await fetchAuth('/api/wa/enviar-template', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ leadId: lead.id, templateId }),
+      })
+      const j = await r.json()
+      if (j.ok) { setMostrarTpl(false); carregar() }
+      else setErro(j.error || 'falha ao enviar template')
+    } catch { setErro('erro de rede ao enviar template') }
+    finally { setTplEnviando('') }
+  }
   // caixa de mensagem cresce conforme o texto (volta ao tamanho ao limpar)
   useEffect(() => { const t = txtRef.current; if (t) { t.style.height = 'auto'; t.style.height = Math.min(Math.max(t.scrollHeight, 76), 160) + 'px' } }, [texto])
 
@@ -1002,6 +1025,7 @@ function ChatLead({ lead }: { lead: Lead }) {
       })
       const json = await res.json()
       if (json.ok) { setTexto(''); carregar() }
+      else if (json.foraJanela) { setErro('Fora das 24h — o cliente não respondeu recentemente, o WhatsApp bloqueia texto livre. Reabra com um template 👇'); setMostrarTpl(true) }
       else setErro(json.error || 'falha ao enviar')
     } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
     finally { setEnviando(false) }
@@ -1130,6 +1154,29 @@ function ChatLead({ lead }: { lead: Lead }) {
         </div>
       )}
 
+      {mostrarTpl && (
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📄 Enviar template</div>
+            <button onClick={() => setMostrarTpl(false)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14 }}>✕</button>
+          </div>
+          <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginBottom: 8 }}>Aprovados pela Meta — reabrem a conversa mesmo fora das 24h. As variáveis (nome, curso, cidade, datas, preço) são preenchidas automaticamente com os dados do lead.</div>
+          {templates.length === 0 ? (
+            <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nenhum template aprovado disponível.</div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
+              {templates.map(t => (
+                <button key={t.id} onClick={() => enviarTemplateSel(t.id)} disabled={!!tplEnviando}
+                  style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: tplEnviando ? 'default' : 'pointer', opacity: tplEnviando && tplEnviando !== t.id ? 0.5 : 1 }}>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{t.titulo || t.nome_meta}{tplEnviando === t.id && <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}> · enviando…</span>}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.corpo}</div>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
@@ -1138,6 +1185,8 @@ function ChatLead({ lead }: { lead: Lead }) {
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
         <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : '✨'}</button>
+        <button onClick={() => { setMostrarTpl(v => !v); setErro('') }} disabled={gravando} title="Enviar template aprovado (reabre fora das 24h)"
+          style={{ ...btnPrimary, background: mostrarTpl ? 'var(--accent)' : 'var(--surface-2)', color: mostrarTpl ? 'var(--on-accent)' : undefined, minWidth: 44, padding: '8px' }}>📄</button>
         <textarea ref={txtRef} rows={3} style={{ ...inp, flex: 1, resize: 'none', minHeight: 76, maxHeight: 160, lineHeight: 1.4, fontFamily: 'inherit' }}
           placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
