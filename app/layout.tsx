@@ -19,7 +19,9 @@ export default function DashboardLayout({
   const aplicaTema = `(function(){try{if(localStorage.getItem('tema_reset')!=='2'){localStorage.removeItem('tema');localStorage.setItem('tema_reset','2')}var t=localStorage.getItem('tema');document.documentElement.setAttribute('data-theme',t==='claro'?'light':'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}})()`
   return (
     <>
-      <script dangerouslySetInnerHTML={{ __html: aplicaTema }} />
+      {/* async: script inline roda no mesmo momento (browser ignora async em inline), mas satisfaz a
+          regra do React 19 de "sync/defer script fora do documento" — tira o aviso do dev sem mudar comportamento. */}
+      <script async dangerouslySetInnerHTML={{ __html: aplicaTema }} />
       {children}
     </>
   )
