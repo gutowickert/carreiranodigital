@@ -1,0 +1,182 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Plano de Migração — CRM por Fase/Lote</title>
+<style>
+  :root{--bg:#f5f4fb;--surface:#fff;--surface-2:#efedf8;--border:#e5e1f2;--border-2:#d3cdea;--text:#1b1830;--text-soft:#4b4667;--text-faint:#7c7699;--accent:#6d4aff;--accent-soft:#ece7ff;--accent-ink:#4b2fd6;--green:#1f7a49;--green-bg:#e6f5ec;--amber:#9a6a08;--amber-bg:#fbf1de;--red:#c0362c;--red-bg:#fceaef;--blue:#2f6ad0;--blue-bg:#e7effc;--mono:ui-monospace,Menlo,Consolas,monospace;--sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+  @media(prefers-color-scheme:dark){:root{--bg:#0f0d17;--surface:#181523;--surface-2:#201b30;--border:#2b2440;--border-2:#3a3157;--text:#eae7f5;--text-soft:#b4adcb;--text-faint:#867fa3;--accent:#a790ff;--accent-soft:#241d3d;--accent-ink:#c9baff;--green:#88d6a6;--green-bg:#12291d;--amber:#e6bb6a;--amber-bg:#2a2011;--red:#f0857a;--red-bg:#2c1614;--blue:#7fb0f0;--blue-bg:#14233d}}
+  :root[data-theme="light"]{--bg:#f5f4fb;--surface:#fff;--surface-2:#efedf8;--border:#e5e1f2;--border-2:#d3cdea;--text:#1b1830;--text-soft:#4b4667;--text-faint:#7c7699;--accent:#6d4aff;--accent-soft:#ece7ff;--accent-ink:#4b2fd6;--green:#1f7a49;--green-bg:#e6f5ec;--amber:#9a6a08;--amber-bg:#fbf1de;--red:#c0362c;--red-bg:#fceaef;--blue:#2f6ad0;--blue-bg:#e7effc}
+  :root[data-theme="dark"]{--bg:#0f0d17;--surface:#181523;--surface-2:#201b30;--border:#2b2440;--border-2:#3a3157;--text:#eae7f5;--text-soft:#b4adcb;--text-faint:#867fa3;--accent:#a790ff;--accent-soft:#241d3d;--accent-ink:#c9baff;--green:#88d6a6;--green-bg:#12291d;--amber:#e6bb6a;--amber-bg:#2a2011;--red:#f0857a;--red-bg:#2c1614;--blue:#7fb0f0;--blue-bg:#14233d}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:960px;margin:0 auto;padding:0 20px 100px}
+  .toolbar{position:fixed;top:13px;right:15px;z-index:9}
+  .toolbar button{background:var(--surface);border:1px solid var(--border-2);color:var(--text-soft);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+  header{padding:46px 0 28px;border-bottom:1px solid var(--border);margin-bottom:20px}
+  .kick{font-size:11.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(25px,4vw,36px);letter-spacing:-.02em;margin:8px 0 8px;font-weight:800;text-wrap:balance}
+  .sub{font-size:15px;color:var(--text-soft);max-width:74ch;margin:0}
+  .stats{display:flex;flex-wrap:wrap;gap:22px;margin-top:20px}
+  .stat .n{font-size:23px;font-weight:800;font-variant-numeric:tabular-nums}
+  .stat .l{font-size:11px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
+  h2{font-size:20px;letter-spacing:-.01em;margin:40px 0 6px;font-weight:800;display:flex;align-items:center;gap:9px}
+  h2 .n{color:var(--accent);font-variant-numeric:tabular-nums}
+  h3{font-size:15px;margin:22px 0 7px;font-weight:700}
+  p,li{color:var(--text-soft);font-size:14.5px} p{max-width:74ch}
+  strong{color:var(--text);font-weight:680}
+  code{font-family:var(--mono);font-size:.85em;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--accent-ink)}
+  ul,ol{padding-left:20px} li{margin:4px 0}
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:14px 0;font-size:12.5px}
+  .flow .box{background:var(--surface);border:1px solid var(--border-2);border-radius:8px;padding:7px 11px;font-weight:600;color:var(--text)}
+  .flow .ar{color:var(--text-faint)}
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:14px 0}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:620px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:700;background:var(--surface-2)}
+  td{color:var(--text-soft)} tbody tr:last-child td{border-bottom:none} tbody tr:hover{background:var(--surface-2)}
+  td.n{font-variant-numeric:tabular-nums;font-weight:700;color:var(--text);white-space:nowrap}
+  td b{color:var(--text)}
+  .pill{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap}
+  .p-keep{background:var(--green-bg);color:var(--green);border:1px solid var(--green)}
+  .p-anchor{background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+  .p-lose{background:var(--red-bg);color:var(--red);border:1px solid var(--red)}
+  .p-tri{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber)}
+  .note{border:1px solid var(--border);border-left:3px solid var(--accent);background:var(--surface);border-radius:0 10px 10px 0;padding:11px 15px;font-size:13.5px;margin:14px 0}
+  .note.warn{border-left-color:var(--amber);background:var(--amber-bg)}
+  .note.warn b{color:var(--amber)}
+  .phase{border:1px solid var(--border);border-radius:12px;padding:15px 18px;margin:11px 0;background:var(--surface)}
+  .phase h3{margin:0 0 6px;display:flex;align-items:center;gap:9px}
+  .phase .badge{font-size:11px;font-weight:800;background:var(--accent);color:#fff;border-radius:6px;padding:2px 8px}
+  .steps{counter-reset:s;list-style:none;padding:0}
+  .steps>li{counter-increment:s;position:relative;padding-left:38px;margin:12px 0}
+  .steps>li::before{content:counter(s);position:absolute;left:0;top:-2px;width:25px;height:25px;background:var(--accent-soft);color:var(--accent-ink);border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .card{border:1px solid var(--border);border-radius:12px;padding:15px 17px;background:var(--surface)}
+  .card h3{margin-top:0}
+  @media(max-width:640px){.two{grid-template-columns:1fr}}
+</style>
+<div class="toolbar"><button id="theme">◐ Tema</button></div>
+<div class="wrap">
+  <header>
+    <div class="kick">Plano de execução · CRM</div>
+    <h1>Migração para o CRM por Fase/Lote</h1>
+    <p class="sub">Virar <b>todas as turmas</b> do funil por etapa (negociação) para o funil por <b>fase da turma</b> (calendário do lote), com a negociação virando etiqueta. Cobre: funil ponta a ponta, cada lead atual, captação e treinamento do time.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">996</div><div class="l">leads no CRM</div></div>
+      <div class="stat"><div class="n">400</div><div class="l">ativos (migram)</div></div>
+      <div class="stat"><div class="n">222 · 90 · 88</div><div class="l">futura · sem turma · passada</div></div>
+    </div>
+  </header>
+
+  <h2><span class="n">1</span> O funil ponta a ponta (modelo final)</h2>
+  <p>O lead percorre <b>dois relógios ao mesmo tempo</b>: a <b>negociação</b> (etiqueta) e a <b>fase da turma</b> (coluna). A captação alimenta, o calendário empurra, e o fim bifurca.</p>
+  <div class="flow">
+    <span class="box">Captação (anúncio/site)</span><span class="ar">→</span>
+    <span class="box">/wa · etiqueta a turma</span><span class="ar">→</span>
+    <span class="box">Relógio A · nutrição + apresentação</span><span class="ar">→</span>
+    <span class="box">Relógio B · fase do lote</span><span class="ar">→</span>
+    <span class="box">Fechou → pós-venda</span><span class="ar">/</span>
+    <span class="box">Não → perda + disparo</span>
+  </div>
+  <ul>
+    <li><b>Colunas do CRM = fase da turma:</b> Vendas abertas → Lote avançado → Último lote → Véspera. O card anda sozinho pela data.</li>
+    <li><b>Etapa de negociação = etiqueta no card</b> (atendimento, preço ok, negociando, aguardando pagamento). O dado continua igual; muda a lente.</li>
+    <li><b>Nutrição</b> (8 ângulos, com cases reais) roda da chegada até 3 dias antes da virada; aí entra a <b>urgência</b> (clímax no dia da virada) → ligação 2 dias antes + condição do Lote 1 no 1-a-1.</li>
+  </ul>
+  <div class="note">Detalhe completo das mensagens: <code>plano-cadencia-lote.html</code>. Das lentes: <code>plano-lentes-crm.html</code>.</div>
+
+  <h2><span class="n">2</span> Migração de cada lead atual (o censo)</h2>
+  <p>Regra de ouro: <b>quente nunca vira perda cega</b> (fica com o time). O resto segue a classe da turma.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Segmento</th><th>Qtd</th><th>O que fazer na migração</th><th></th></tr></thead>
+      <tbody>
+        <tr><td><b>Turma FUTURA</b></td><td class="n">222</td><td>Ancorar no <b>lote vigente</b> da turma; etapa vira etiqueta; entra no board por fase.</td><td><span class="pill p-anchor">ancorar</span></td></tr>
+        <tr><td><b>SEM turma</b></td><td class="n">90</td><td>Triagem: atribuir à <b>próxima turma</b> da cidade/produto de interesse. Sem match → coluna <b>Triagem</b>.</td><td><span class="pill p-tri">triagem</span></td></tr>
+        <tr><td><b>Turma PASSADA · frio</b></td><td class="n">~67</td><td>atendimento / lote / próxima turma / bolsa → <b>vira perda + entra no pool de disparo</b> (win-back em massa).</td><td><span class="pill p-lose">perda + disparo</span></td></tr>
+        <tr><td><b>Turma PASSADA · quente</b></td><td class="n">~21</td><td>aguardando pagamento / ligação boa / agendado → <b>fica com o time</b> (fechando) ou rola pra próxima turma. NÃO vira perda.</td><td><span class="pill p-keep">preservar</span></td></tr>
+        <tr><td><b>PERDA</b> (já perdidos)</td><td class="n">484</td><td>Já vão pro pool de disparo pelo sync. Só confirmar que estão lá (segmentáveis por cidade+produto).</td><td><span class="pill p-lose">no pool</span></td></tr>
+        <tr><td><b>GANHO</b></td><td class="n">112</td><td>Terminal → fluxo de pós-venda (onboarding, certificado, NPS, upsell).</td><td><span class="pill p-keep">pós-venda</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note warn"><b>Trava obrigatória:</b> a migração roda em <b>dryRun</b> primeiro — mostra quantos leads vão pra cada destino, quantos virariam perda, pra onde cada quente vai. <b>Nada é aplicado sem o Guto ver os números.</b> (Já tomamos susto com movimento em massa.)</div>
+
+  <h2><span class="n">3</span> Captação — o lead novo no modelo</h2>
+  <ul>
+    <li><b>Entra etiquetado:</b> anúncio/site → <code>/wa?turma=CODIGO</code> → lead nasce na turma certa, atribuição (UTM/campanha) colada.</li>
+    <li><b>Cai na fase vigente</b> da turma (calendário) e no <b>Relógio A</b> (nutrição da chegada + apresentação com o lote vigente).</li>
+    <li><b>Sem turma na captação</b> (ex.: "quero saber dos cursos") → coluna <b>Triagem</b>: o time/IA descobre cidade+interesse e joga na turma certa.</li>
+    <li>Chegou perto da virada → pula nutrição, entra direto na urgência. Chegou depois → já no Lote 2.</li>
+  </ul>
+
+  <h2><span class="n">4</span> Pré-requisitos (construir antes de virar)</h2>
+  <ol class="steps">
+    <li><b>Lotes de TODAS as turmas ativas/futuras</b> (<code>turma_lotes</code>): preço Pix/cartão + data de virada de cada lote. <span style="color:var(--amber)">← decisão pendente</span></li>
+    <li><b>Motor "fase-driven":</b> a cadência lê a fase do lote (datas reais) por turma, não o D1–D13 fictício. Separar <b>planejar tarefa</b> de <b>enviar</b> (IA em 2 tempos).</li>
+    <li><b>Board por fase</b> no CRM (as colunas viram fase; etapa vira etiqueta) — atrás de uma flag por org.</li>
+    <li><b>Lógica de re-ancoragem</b> (a migração dos 400 ativos) + o passo "passada → perda+disparo".</li>
+    <li><b>Nutrição automática</b> (8 ângulos + cases) e os toques de urgência ligados às datas do lote.</li>
+  </ol>
+
+  <h2><span class="n">5</span> Treinamento do time</h2>
+  <div class="two">
+    <div class="card">
+      <h3>✅ O que MUDA pro vendedor</h3>
+      <ul>
+        <li>O board agora é por <b>fase da turma</b> — o card anda sozinho pela data, <b>ninguém arrasta</b>.</li>
+        <li>O estágio (atendimento, preço ok…) é uma <b>etiqueta</b> no card, não a coluna.</li>
+        <li>A leitura vira: "em que <b>momento da turma</b> esse lead está, e o que ele já negociou?"</li>
+        <li>Em cada fase, a <b>mensagem de urgência é automática</b> — o vendedor foca em <b>responder e fechar</b>, não em cutucar.</li>
+        <li>A <b>ligação de 2 dias antes</b> e a <b>condição do Lote 1 no 1-a-1</b> são a jogada humana do fechamento.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>🔒 O que NÃO muda</h3>
+      <ul>
+        <li>A conversa no WhatsApp, o <b>copiloto</b> (sugestão da IA), o card do lead com o histórico.</li>
+        <li>Os preços e as <b>travas</b> (R$0, não repete, não inventa).</li>
+        <li>O jeito de registrar ligação, andamento, ganho/perda.</li>
+        <li>Quem já é <b>quente</b> segue com o time — nada some.</li>
+      </ul>
+    </div>
+  </div>
+  <h3>Como treinar (formato)</h3>
+  <ul>
+    <li><b>1 sessão ao vivo</b> (~40 min): mostrar as 2 lentes lado a lado (<code>plano-lentes-crm.html</code>) e a Cássia andando sozinha.</li>
+    <li><b>Guia de 1 página</b>: "o que fazer em cada fase" (Vendas abertas = descobrir/nutrir · Lote avançado = reforçar · Último lote/Véspera = fechar/ligar).</li>
+    <li><b>Piloto acompanhado</b>: rodar com as turmas de setembro primeiro, o time trabalhando o board novo com você e o Nando junto os 3 primeiros dias.</li>
+  </ul>
+
+  <h2><span class="n">6</span> Como virar sem quebrar (faseamento)</h2>
+  <ol class="steps">
+    <li><b>Construir</b> (pré-requisitos 1–5) com flag <b>desligada</b> — produção intacta.</li>
+    <li><b>Cadastrar os lotes</b> de todas as turmas.</li>
+    <li><b>dryRun da migração</b> dos 400 ativos → revisar os números com o Guto.</li>
+    <li><b>Ligar em 1 org/grupo de turmas</b> (setembro) → validar board + mensagens com leads reais.</li>
+    <li><b>Treinar o time</b> nesse grupo.</li>
+    <li><b>Estender pras demais turmas.</b> Rollback = desligar a flag (volta pro board por etapa).</li>
+  </ol>
+  <div class="note">Reversível por <b>flag</b>: se algo der errado, desliga e o CRM volta ao formato de etapa — o dado (etapa) nunca foi destruído, só passou a ser etiqueta.</div>
+
+  <h2><span class="n">7</span> Riscos & mitigação</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Risco</th><th>Mitigação</th></tr></thead>
+    <tbody>
+      <tr><td>Movimento/demissão em massa (susto já vivido)</td><td>dryRun obrigatório + quente nunca vira perda + escalonar</td></tr>
+      <tr><td>Time confuso com o board novo</td><td>etapa continua visível como etiqueta + sessão de treino + guia de 1 página</td></tr>
+      <tr><td>Turma sem lotes cadastrados</td><td>a turma sem <code>turma_lotes</code> fica no formato antigo até cadastrar (não quebra)</td></tr>
+      <tr><td>Leads sem turma sem destino</td><td>coluna Triagem — não somem, ficam pra atribuir</td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="n">8</span> Decisões pendentes (pra eu começar)</h2>
+  <ol>
+    <li><b>Lotes por turma:</b> preço (Lote 1/2) e data de virada de <b>cada turma ativa</b> (não só a FC Lajeado 28/08).</li>
+    <li>Confirmar regra <b>passada frio → perda+disparo</b> e <b>passada quente → time</b>.</li>
+    <li>Como tratar os <b>90 sem turma</b>: atribuir por cidade/produto automático, ou revisar na mão?</li>
+  </ol>
+
+  <p style="margin-top:34px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px">Carreira no Digital · Plano de migração · censo real do CRM (996 leads) em 11/08/2026. Executar em dryRun; nada aplicado sem revisão.</p>
+</div>
+<script>(function(){var b=document.getElementById('theme'),r=document.documentElement;b.addEventListener('click',function(){var c=r.getAttribute('data-theme');var d=c?c==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.setAttribute('data-theme',d?'light':'dark')})})();</script>
+
+</body></html>
