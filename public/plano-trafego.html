@@ -1,0 +1,183 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Plano de Tráfego — Turmas 15/08 a 01/10</title>
+<style>
+  :root {
+    --bg:#f5f5fa; --surface:#ffffff; --surface-2:#eeecf7; --border:#e2def0; --border-strong:#cdc6e6;
+    --text:#1b1830; --text-soft:#4a4664; --text-faint:#7a7594;
+    --accent:#6d4aff; --accent-soft:#ece7ff; --accent-ink:#4b2fd6;
+    --red:#c0362c; --red-bg:#fdecea; --red-bd:#f0b8b2;
+    --amber:#9a6a08; --amber-bg:#fcf3e0; --amber-bd:#e6cf9a;
+    --green:#1f7a49; --green-bg:#e6f5ec; --green-bd:#a9d7bd;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  @media (prefers-color-scheme: dark){:root{
+    --bg:#100e18; --surface:#181523; --surface-2:#201b30; --border:#2b2440; --border-strong:#3d3459;
+    --text:#eae7f5; --text-soft:#b3adc8; --text-faint:#837da0;
+    --accent:#a790ff; --accent-soft:#241c3d; --accent-ink:#c9baff;
+    --red:#f0857a; --red-bg:#2c1614; --red-bd:#5a2620;
+    --amber:#e6bb6a; --amber-bg:#2a2011; --amber-bd:#54421f;
+    --green:#88d6a6; --green-bg:#12261a; --green-bd:#27492f;
+  }}
+  :root[data-theme="light"]{--bg:#f5f5fa;--surface:#fff;--surface-2:#eeecf7;--border:#e2def0;--border-strong:#cdc6e6;--text:#1b1830;--text-soft:#4a4664;--text-faint:#7a7594;--accent:#6d4aff;--accent-soft:#ece7ff;--accent-ink:#4b2fd6;--red:#c0362c;--red-bg:#fdecea;--red-bd:#f0b8b2;--amber:#9a6a08;--amber-bg:#fcf3e0;--amber-bd:#e6cf9a;--green:#1f7a49;--green-bg:#e6f5ec;--green-bd:#a9d7bd;}
+  :root[data-theme="dark"]{--bg:#100e18;--surface:#181523;--surface-2:#201b30;--border:#2b2440;--border-strong:#3d3459;--text:#eae7f5;--text-soft:#b3adc8;--text-faint:#837da0;--accent:#a790ff;--accent-soft:#241c3d;--accent-ink:#c9baff;--red:#f0857a;--red-bg:#2c1614;--red-bd:#5a2620;--amber:#e6bb6a;--amber-bg:#2a2011;--amber-bd:#54421f;--green:#88d6a6;--green-bg:#12261a;--green-bd:#27492f;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1040px;margin:0 auto;padding:0 20px 100px}
+  .toolbar{position:fixed;top:14px;right:16px;z-index:9}
+  .toolbar button{background:var(--surface);border:1px solid var(--border-strong);color:var(--text-soft);border-radius:8px;padding:6px 10px;font-size:12.5px;cursor:pointer;font-family:var(--sans)}
+  header{padding:48px 0 30px;border-bottom:1px solid var(--border);margin-bottom:34px}
+  .kicker{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(26px,4vw,38px);letter-spacing:-.02em;margin:8px 0 10px;font-weight:800;text-wrap:balance}
+  .sub{font-size:15.5px;color:var(--text-soft);max-width:70ch;margin:0}
+  .stats{display:flex;flex-wrap:wrap;gap:26px;margin-top:22px}
+  .stat .n{font-size:26px;font-weight:800;color:var(--text);font-variant-numeric:tabular-nums}
+  .stat .l{font-size:12px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.05em}
+  h2{font-size:21px;letter-spacing:-.01em;margin:44px 0 6px;font-weight:800}
+  h2 .num{color:var(--accent);font-variant-numeric:tabular-nums}
+  h3{font-size:15.5px;margin:24px 0 8px;font-weight:700;color:var(--text)}
+  p,li{color:var(--text-soft);font-size:14.5px}
+  p{max-width:74ch}
+  strong{color:var(--text);font-weight:680}
+  code{font-family:var(--mono);font-size:.84em;background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 5px;color:var(--accent-ink);word-break:break-all}
+  ul{padding-left:20px} li{margin:4px 0}
+  .lead-note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:13px 16px;font-size:13.5px;color:var(--text)}
+  .lead-note b{color:var(--accent-ink)}
+  /* baldes */
+  .baldes{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:18px 0}
+  .balde{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface);border-top:3px solid var(--border)}
+  .balde.r{border-top-color:var(--red)} .balde.a{border-top-color:var(--amber)} .balde.g{border-top-color:var(--green)}
+  .balde .t{font-weight:800;font-size:13px;display:flex;align-items:center;gap:7px;margin-bottom:4px}
+  .balde.r .t{color:var(--red)} .balde.a .t{color:var(--amber)} .balde.g .t{color:var(--green)}
+  .balde .d{font-size:12.5px;color:var(--text-soft)} .balde .d b{color:var(--text)}
+  /* table */
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:16px 0}
+  table{border-collapse:collapse;width:100%;font-size:13px;min-width:720px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:700;background:var(--surface-2);position:sticky;top:0}
+  td{color:var(--text-soft)} tbody tr:last-child td{border-bottom:none}
+  tbody tr:hover{background:var(--surface-2)}
+  td.money,td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:999px;white-space:nowrap}
+  .tag.fc{background:var(--accent-soft);color:var(--accent-ink);border:1px solid var(--accent)}
+  .tag.anl{background:var(--surface-2);color:var(--text-soft);border:1px solid var(--border-strong)}
+  .tag.ja{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd)}
+  .cod{font-family:var(--mono);font-size:11px;color:var(--text-faint)}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:12px}
+  .card{border:1px solid var(--border);border-radius:12px;padding:16px 18px;background:var(--surface)}
+  .card h3{margin-top:0}
+  .ang{counter-reset:a;list-style:none;padding:0}
+  .ang li{counter-increment:a;position:relative;padding-left:34px;margin:10px 0}
+  .ang li::before{content:counter(a);position:absolute;left:0;top:-1px;width:22px;height:22px;background:var(--accent-soft);color:var(--accent-ink);border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:12px}
+  @media(max-width:680px){.two{grid-template-columns:1fr}}
+</style>
+
+<div class="toolbar"><button id="theme">◐ Tema</button></div>
+
+<div class="wrap">
+  <header>
+    <div class="kicker">Plano de Mídia · Meta Ads</div>
+    <h1>Plano de Tráfego — Turmas 15/08 a 01/10</h1>
+    <p class="sub">Como rodar anúncios para encher cada turma da janela. Base: agenda + CRM (Carreira no Digital). Verba derivada do 10% de tráfego previsto por turma.</p>
+    <div class="stats">
+      <div class="stat"><div class="n">11</div><div class="l">turmas na janela</div></div>
+      <div class="stat"><div class="n">R$ 16.276</div><div class="l">verba total prevista</div></div>
+      <div class="stat"><div class="n">4 FC · 7 ANL</div><div class="l">por produto</div></div>
+    </div>
+  </header>
+
+  <section>
+    <h2>1 · A realidade do calendário</h2>
+    <p>O tempo até o início manda na estratégia. Três baldes:</p>
+    <div class="baldes">
+      <div class="balde r"><div class="t">🔴 Em cima (&lt;15 dias)</div><div class="d">ANL Caxias (2) <b>19/08</b> · FC PoA noite <b>25/08</b> · ANL NH <b>25/08</b>.<br><b>Tempo curto:</b> aquisição rápida + retarget de quem já está no funil + lote fechando. Caxias (8 dias) é fechamento.</div></div>
+      <div class="balde a"><div class="t">🟡 Runway (~30 dias)</div><div class="d">ANL PoA tarde+noite · FC Lajeado · ANL Santa Cruz — todas <b>08/09</b>.<br><b>Aquisição de verdade:</b> ligar agora, encher no lote 1. <b>08/09 é o grande dia</b> (5 turmas).</div></div>
+      <div class="balde g"><div class="t">🟢 Folga (30+ dias)</div><div class="d">FC PoA tarde <b>15/09</b> · ANL Gravataí <b>15/09</b> · ANL NH <b>29/09</b>.<br>Aquisição tranquila, começa mais leve.</div></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>2 · Cronograma de largada <span class="num">(por turma, com código)</span></h2>
+    <div class="tablewrap">
+      <table>
+        <thead><tr><th>Prod.</th><th>Cidade / turno</th><th>Código da turma</th><th>Início</th><th>Ligar anúncio</th><th>Verba</th><th>~Dia</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag fc">FC</span></td><td>Porto Alegre · noite</td><td class="cod">FCPORTOALEGRE082601</td><td class="num">25/08</td><td><span class="tag ja">JÁ</span> (~14d)</td><td class="money">R$ 2.876</td><td class="money">~R$205</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Caxias do Sul · noite</td><td class="cod">anlcaxiasdosul082601</td><td class="num">19/08</td><td><span class="tag ja">JÁ</span></td><td class="money">R$ 956</td><td class="money">~R$105*</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Caxias do Sul · tarde</td><td class="cod">anlcaxiasdosul082602</td><td class="num">19/08</td><td><span class="tag ja">JÁ</span></td><td class="money">R$ 956</td><td class="money">~R$105*</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Novo Hamburgo · noite</td><td class="cod">anlnovohamburgo082601</td><td class="num">25/08</td><td><span class="tag ja">JÁ</span></td><td class="money">R$ 956</td><td class="money">~R$68</td></tr>
+          <tr><td><span class="tag fc">FC</span></td><td>Lajeado · noite</td><td class="cod">fclajeado092601</td><td class="num">08/09</td><td class="num">~18/08</td><td class="money">R$ 2.876</td><td class="money">~R$135</td></tr>
+          <tr><td><span class="tag fc">FC</span></td><td>Porto Alegre · tarde</td><td class="cod">fcportoalegre092601</td><td class="num">15/09</td><td class="num">~25/08</td><td class="money">R$ 2.876</td><td class="money">~R$135</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Porto Alegre · tarde</td><td class="cod">anlportoalegre092602</td><td class="num">08/09</td><td class="num">~26/08</td><td class="money">R$ 956</td><td class="money">~R$74</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Porto Alegre · noite</td><td class="cod">anlportoalegre092601</td><td class="num">08/09</td><td class="num">~26/08</td><td class="money">R$ 956</td><td class="money">~R$74</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Santa Cruz do Sul · noite</td><td class="cod">anlsantacruz082601</td><td class="num">08/09</td><td class="num">~25/08</td><td class="money">R$ 956</td><td class="money">~R$68</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Gravataí · noite</td><td class="cod">anlgravatai092601</td><td class="num">15/09</td><td class="num">~01/09</td><td class="money">R$ 956</td><td class="money">~R$68</td></tr>
+          <tr><td><span class="tag anl">ANL</span></td><td>Novo Hamburgo · noite</td><td class="cod">anlnovohamburgo092601</td><td class="num">29/09</td><td class="num">~15/09</td><td class="money">R$ 956</td><td class="money">~R$68</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p style="font-size:12.5px;color:var(--text-faint)">*Caxias tem 2 turmas (noite+tarde) — soma ~R$210/dia. FC PoA noite (25/08) e ANL NH (25/08): ~14 dias, dá pra aquisição rápida + retarget. Caxias (19/08, 8 dias) é fechamento.</p>
+  </section>
+
+  <section>
+    <h2>3 · Destino & rastreio (obrigatório)</h2>
+    <div class="lead-note">Cada anúncio aponta para <code>/wa?turma=CODIGO</code> — o lead nasce <b>etiquetado na turma certa</b> e a atribuição (campanha/criativo) cola nele. <b>Nunca</b> mandar para o wa.me direto.</div>
+    <p style="margin-top:12px">Padrão do link (troque <code>CODIGO</code> pelo da turma):</p>
+    <p><code>https://carreiranodigital.vercel.app/wa?turma=CODIGO&utm_source=meta&utm_medium=cpc&utm_campaign=CODIGO</code></p>
+    <p>Ex.: ANL PoA noite → <code>...?turma=anlportoalegre092601&utm_source=meta&utm_medium=cpc&utm_campaign=anlportoalegre092601</code></p>
+  </section>
+
+  <section>
+    <h2>4 · O playbook — ANL vs FC</h2>
+    <p>São jogos diferentes (ticket, ciclo, público).</p>
+    <div class="two">
+      <div class="card">
+        <h3><span class="tag anl">ANL</span> R$797 · 3 dias · dono de negócio local</h3>
+        <ul>
+          <li><b>Objetivo Meta:</b> conversões / mensagens no <b>WhatsApp</b>.</li>
+          <li><b>Público:</b> geo <b>raio 20–40km</b> da cidade + interesses de dono de negócio (empreendedorismo, pequenas empresas, MEI) + <b>lookalike dos compradores</b> (o pool que sincronizamos).</li>
+          <li><b>Cidades externas</b> (Caxias, NH, Gravataí, Santa Cruz): raio menor, ângulo <b>“curso presencial AQUI na sua cidade”</b> (itinerante = escassez real).</li>
+          <li><b>Ciclo curto:</b> ligar ~14 dias antes; o lote 1 barato puxa cedo.</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><span class="tag fc">FC</span> R$2.397 · 4 semanas · premium</h3>
+        <ul>
+          <li><b>Objetivo:</b> mensagens no WhatsApp, com <b>nutrição maior</b> (ticket alto = mais consideração).</li>
+          <li><b>Público:</b> PoA/Lajeado, dono que quer <b>o marketing inteiro</b> + <b>retarget</b> de quem viu ANL.</li>
+          <li><b>Ciclo longo:</b> ligar ~21–25 dias antes; a <b>ligação/copiloto fecha</b> (o mapa de compradores mostrou que FC fecha mais com ligação).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>5 · Criativos — os ângulos que convertem</h2>
+    <p>A batalha <b>não é preço</b> — é essas travas (do mapa de 54 compradores). Cada uma vira um criativo:</p>
+    <ol class="ang">
+      <li><b>“Não precisa de agência pra anunciar teu negócio”</b> — autonomia + fuga de agência.</li>
+      <li><b>“Do zero ao primeiro anúncio — dá pra ti mesmo”</b> — mata o medo do iniciante.</li>
+      <li><b>“Tem turma de tarde e de noite”</b> — resolve o horário, a objeção nº1.</li>
+      <li><b>Prova por nicho:</b> “funciona pra farmácia, restaurante, clínica, loja…” — nichos reais que compraram.</li>
+      <li><b>“Presencial, com o professor do teu lado”</b> — o gatilho que mais fechou.</li>
+      <li><b>Geo/urgência:</b> “Curso presencial em [cidade], turma dia [data] — últimas vagas.”</li>
+    </ol>
+  </section>
+
+  <section>
+    <h2>6 · Estrutura de campanha (Meta Ads)</h2>
+    <ul>
+      <li><b>1 campanha por cidade</b> (objetivo: conversões WhatsApp) → <b>ad sets por turno</b> (tarde/noite) e por <b>público</b> (interesses vs lookalike) → <b>3–4 criativos</b> (os ângulos acima).</li>
+      <li><b>Porto Alegre</b> vira uma <b>campanha guarda-chuva</b> (ANL + FC como ad sets) — concentra 4 turmas.</li>
+      <li><b>Tom da copy:</b> falar de <b>negócio</b> (mais clientes, vender), nunca jargão de tráfego (ROAS/CTR). Linguagem simples, gaúcha, do dono do negócio.</li>
+    </ul>
+  </section>
+
+  <p style="margin-top:40px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:16px">Carreira no Digital · Plano de tráfego gerado a partir do CRM + agenda · verba = meta_matrículas × preço × 10% (perc_trafego por turma) · atualizar a cada ciclo de turmas.</p>
+</div>
+
+<script>
+  (function(){var b=document.getElementById('theme'),r=document.documentElement;b.addEventListener('click',function(){var c=r.getAttribute('data-theme');var d=c?c==='dark':matchMedia('(prefers-color-scheme: dark)').matches;r.setAttribute('data-theme',d?'light':'dark')})})();
+</script>
+
+</body></html>

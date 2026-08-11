@@ -1,0 +1,128 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>Cadência da turma — o lote andando + mensagens</title>
+<style>
+  :root{
+    --bg:#0f0d17;--surface:#181523;--surface-2:#1f1b2e;--card:#221c34;--border:#2c2542;--border-2:#3a3157;
+    --text:#ece9f6;--text-soft:#b4adcb;--text-faint:#867fa3;
+    --accent:#8b6dff;--accent-soft:#241d3d;
+    --green:#54c98a;--green-bg:#12291d;--amber:#e6b053;--amber-bg:#2a2210;--orange:#f08a4b;--orange-bg:#2c1c10;--red:#f0657a;--red-bg:#2c1420;--wa:#25d366;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  :root[data-theme="light"]{--bg:#f4f3fa;--surface:#fff;--surface-2:#efedf8;--card:#fff;--border:#e6e3f2;--border-2:#d3cdea;--text:#1c1830;--text-soft:#524c6c;--text-faint:#7d769a;--accent:#6d4aff;--accent-soft:#ece7ff;--green-bg:#e6f5ec;--amber-bg:#fbf1de;--orange-bg:#fceadd;--red-bg:#fceaef;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:820px;margin:0 auto;padding:34px 20px 90px}
+  .toolbar{position:fixed;top:12px;right:14px;z-index:9}
+  .toolbar button{background:var(--surface);border:1px solid var(--border-2);color:var(--text-soft);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+  .kick{font-size:11.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(23px,3.3vw,30px);letter-spacing:-.02em;margin:7px 0 8px;font-weight:800}
+  .sub{font-size:14.5px;color:var(--text-soft);margin:0 0 6px}
+  .chip{display:inline-block;font-size:11.5px;font-family:var(--mono);color:var(--accent);background:var(--accent-soft);border:1px solid var(--accent);border-radius:6px;padding:2px 9px;margin-top:8px}
+  h2{font-size:16px;font-weight:800;margin:34px 0 4px;letter-spacing:-.01em;display:flex;align-items:center;gap:8px}
+  .hint{font-size:12.5px;color:var(--text-faint);margin:0 0 14px}
+  /* relógio A box */
+  .boxA{border:1px solid var(--border);background:var(--surface);border-radius:12px;padding:14px 16px;margin-bottom:8px}
+  .boxA .step{display:flex;gap:10px;padding:6px 0;font-size:13px;color:var(--text-soft)}
+  .boxA .d{font-family:var(--mono);font-size:11px;color:var(--accent);font-weight:700;flex:0 0 30px}
+  /* timeline */
+  .tl{position:relative;margin-left:8px;padding-left:26px;border-left:2px solid var(--border-2)}
+  .node{position:relative;padding:4px 0 22px}
+  .node::before{content:'';position:absolute;left:-33px;top:4px;width:12px;height:12px;border-radius:50%;background:var(--accent);border:3px solid var(--bg)}
+  .node.g::before{background:var(--green)} .node.a::before{background:var(--amber)} .node.o::before{background:var(--orange)} .node.r::before{background:var(--red)}
+  .when{font-family:var(--mono);font-size:12px;font-weight:800}
+  .node.g .when{color:var(--green)} .node.a .when{color:var(--amber)} .node.o .when{color:var(--orange)} .node.r .when{color:var(--red)} .node .when{color:var(--accent)}
+  .phase{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:700;margin:2px 0 6px}
+  .msg{background:var(--card);border:1px solid var(--border);border-left:3px solid var(--wa);border-radius:0 10px 10px 0;padding:9px 12px;font-size:13px;color:var(--text);max-width:60ch}
+  .msg .who{font-size:10px;color:var(--wa);font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+  .soft{font-size:12.5px;color:var(--text-faint);font-style:italic}
+  /* bifurcação */
+  .fork{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:10px}
+  .path{border:1px solid var(--border);border-radius:12px;padding:14px 16px;background:var(--surface)}
+  .path.win{border-top:3px solid var(--green)} .path.lose{border-top:3px solid var(--amber)}
+  .path h3{margin:0 0 8px;font-size:14px}
+  .path.win h3{color:var(--green)} .path.lose h3{color:var(--amber)}
+  .path ul{margin:0;padding-left:16px} .path li{font-size:12.5px;color:var(--text-soft);margin:5px 0}
+  .note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);margin:16px 0}
+  .note b{color:var(--accent)}
+  @media(max-width:620px){.fork{grid-template-columns:1fr}}
+  b.price{color:var(--text);font-weight:750}
+</style>
+
+<div class="toolbar"><button id="theme">◐ Tema</button></div>
+<div class="wrap">
+  <div class="kick">Desenho da cadência · exemplo real</div>
+  <h1>O lote andando + as mensagens</h1>
+  <p class="sub">Turma exemplo: <b>FC Lajeado</b> — início <b>08/09</b>, virada do Lote 1 → 2 em <b>28/08</b>.</p>
+  <div class="chip">Lote 1: R$2.097 (Pix) · Lote 2: R$2.397 — valores de exemplo, a confirmar</div>
+
+  <h2>🕐 Relógio A — quando o lead CHEGA <span style="font-weight:600;color:var(--text-faint);font-size:13px">(a qualquer momento)</span></h2>
+  <p class="hint">O primeiro toque é reativo à chegada — não depende do calendário. Termina apresentando o <b>lote vigente</b>.</p>
+  <div class="boxA">
+    <div class="step"><span class="d">D1</span><span>Liga 2× no mesmo dia. Não atendeu → áudio: <i>"qual o melhor horário pra te chamar sobre o curso?"</i></span></div>
+    <div class="step"><span class="d">D2</span><span>Puxa pro WhatsApp + <b>descoberta</b>: <i>"me conta do teu negócio, o que tu vende?"</i></span></div>
+    <div class="step"><span class="d">D3</span><span><b>Apresentação completa</b> com o lote vigente: <i>"…hoje tá no Lote 1: <b class="price">R$2.097 no Pix</b>, e essa condição vale até <b>28/08</b>."</i></span></div>
+  </div>
+  <p class="hint">Feito isso, o lead <b>encaixa no Relógio B</b> no ponto do calendário onde a turma está.</p>
+
+  <h2>📅 Relógio B — o calendário do lote (igual pra todos da turma)</h2>
+  <div class="tl">
+    <div class="node g">
+      <div class="when">até 28/08</div><div class="phase">Vendas abertas · Lote 1</div>
+      <div class="soft">Nutrição leve entre os toques (prova social, "o que tu sai sabendo"). O copiloto/IA responde quem engaja. Ninguém é cutucado todo dia.</div>
+    </div>
+    <div class="node g">
+      <div class="when">25/08 · 3 dias p/ virar</div><div class="phase">Vendas abertas</div>
+      <div class="msg"><div class="who">💬 toque de urgência</div>Oi {nome}, o <b>Lote 1</b> do FC em Lajeado fecha <b>28/08</b> — depois sobe pra <b class="price">R$2.397</b>. Consigo te garantir ainda na condição de agora. Fechamos?</div>
+    </div>
+    <div class="node a">
+      <div class="when">28/08 · A VIRADA</div><div class="phase">→ vira Lote 2</div>
+      <div class="msg"><div class="who">💬 virada do lote</div>{nome}, o lote virou hoje. Agora é <b class="price">R$2.397</b>, e a turma começa <b>08/09</b>. Ainda dá pra garantir tua vaga?</div>
+    </div>
+    <div class="node a">
+      <div class="when">28/08 → 04/09</div><div class="phase">Lote avançado · Lote 2</div>
+      <div class="soft">Quem chega novo agora entra <b>já no Lote 2</b> (R$2.397). Nutrição segue leve.</div>
+    </div>
+    <div class="node o">
+      <div class="when">05/09 · últimas vagas</div><div class="phase">Último lote</div>
+      <div class="msg"><div class="who">💬 escassez real</div>{nome}, estamos no último lote do FC em Lajeado — turma <b>08/09</b>, poucas vagas. Quer que eu segure a tua?</div>
+    </div>
+    <div class="node r">
+      <div class="when">07/09 · véspera</div><div class="phase">Véspera</div>
+      <div class="msg"><div class="who">💬 última chamada</div>{nome}, <b>amanhã começa</b> o FC em Lajeado! Ainda dá tempo de entrar. Garanto tua vaga?</div>
+    </div>
+    <div class="node r">
+      <div class="when">08/09 · turma começa</div><div class="phase">Fim da cadência de venda</div>
+      <div class="soft">Acabou a janela de venda. Cada lead bifurca 👇</div>
+    </div>
+  </div>
+
+  <h2>🔀 Depois do fechamento — as duas saídas</h2>
+  <div class="fork">
+    <div class="path win">
+      <h3>✅ Quem FECHOU (comprou)</h3>
+      <ul>
+        <li><b>Sai da cadência de venda</b> na hora que paga (não recebe mais toque de urgência).</li>
+        <li><b>Boas-vindas + confirmação</b> da matrícula.</li>
+        <li><b>Onboarding:</b> local, datas, horário, o que levar.</li>
+        <li>Lembrete na <b>véspera da 1ª aula</b>.</li>
+        <li>Pós-turma: <b>certificado</b>, <b>NPS</b>, e upsell (aluno de ANL → FC com abatimento).</li>
+      </ul>
+    </div>
+    <div class="path lose">
+      <h3>↻ Quem NÃO fechou</h3>
+      <ul>
+        <li>Turma começou e não comprou → entra no <b>roteador</b>.</li>
+        <li><b>Rola pra próxima turma</b> de FC Lajeado — <b>mantém a etapa</b>, 1 toque: <i>"abriu uma nova turma…"</i></li>
+        <li>Volta pro Relógio B da turma nova, no lote vigente dela.</li>
+        <li><b>Sem próxima turma?</b> → o sistema me pede pra decidir (cadastrar nova) e o lead fica no <b>win-back</b> (pool), não vira perda cega.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="note">🛡️ <b>As travas continuam:</b> nunca preço R$0/inventado; não repete o mesmo toque em 14 dias; quem já engajou não leva "reabridor frio"; data no passado não vai. E a <b>bolsa</b> continua como alavanca individual (só pro hesitante perto da virada/turma, com justificativa) — não é lote público.</div>
+
+  <p style="margin-top:30px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px">Mockup ilustrativo · Carreira no Digital · valores e datas de exemplo (FC Lajeado). Cada turma tem seu próprio calendário de lote; o motor lê as datas reais.</p>
+</div>
+<script>(function(){var b=document.getElementById('theme'),r=document.documentElement;b.addEventListener('click',function(){var c=r.getAttribute('data-theme');var d=c?c==='dark':!matchMedia('(prefers-color-scheme: light)').matches;r.setAttribute('data-theme',d?'light':'dark')})})();</script>
+
+</body></html>

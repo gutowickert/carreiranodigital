@@ -1,0 +1,130 @@
+<!doctype html><html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head><body>
+<title>CRM — duas lentes: por Etapa × por Fase</title>
+<style>
+  :root{
+    --bg:#0f0d17; --surface:#181523; --surface-2:#1f1b2e; --card:#211c33; --border:#2c2542; --border-2:#3a3157;
+    --text:#ece9f6; --text-soft:#b4adcb; --text-faint:#867fa3;
+    --accent:#8b6dff; --accent-soft:#241d3d;
+    --blue:#5b9dff; --blue-bg:#16233d; --teal:#2fd4b5; --teal-bg:#0f2e2a; --amber:#e6b053; --amber-bg:#2c2311;
+    --orange:#f08a4b; --orange-bg:#2e1d10; --red:#f0657a; --red-bg:#2e1420; --green:#54c98a; --green-bg:#12291d;
+    --violet:#b48bff; --violet-bg:#221a3a;
+    --sans:system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; --mono:ui-monospace,Menlo,Consolas,monospace;
+  }
+  :root[data-theme="light"]{
+    --bg:#f4f3fa; --surface:#fff; --surface-2:#efedf8; --card:#fff; --border:#e4e1f2; --border-2:#d3cdea;
+    --text:#1c1830; --text-soft:#514b6b; --text-faint:#7d769a;
+    --accent:#6d4aff; --accent-soft:#ece7ff;
+    --blue-bg:#e7effc; --teal-bg:#e0f5f0; --amber-bg:#fbf1de; --orange-bg:#fceadd; --red-bg:#fceaef; --green-bg:#e6f5ec; --violet-bg:#efe9fc;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 20px 90px}
+  .toolbar{position:fixed;top:12px;right:14px;z-index:9}
+  .toolbar button{background:var(--surface);border:1px solid var(--border-2);color:var(--text-soft);border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;font-family:var(--sans)}
+  .kick{font-size:11.5px;text-transform:uppercase;letter-spacing:.13em;color:var(--accent);font-weight:700}
+  h1{font-size:clamp(24px,3.4vw,32px);letter-spacing:-.02em;margin:7px 0 8px;font-weight:800}
+  .sub{font-size:15px;color:var(--text-soft);max-width:76ch;margin:0}
+  .lens-h{display:flex;align-items:center;gap:10px;margin:40px 0 4px}
+  .lens-h .badge{font-size:11px;font-weight:800;padding:3px 10px;border-radius:6px;letter-spacing:.03em}
+  .badge.etapa{background:var(--surface-2);color:var(--text-soft);border:1px solid var(--border-2)}
+  .badge.fase{background:var(--accent-soft);color:var(--accent);border:1px solid var(--accent)}
+  h2{font-size:18px;font-weight:800;margin:0;letter-spacing:-.01em}
+  .lens-sub{font-size:13px;color:var(--text-faint);margin:2px 0 14px}
+  /* board */
+  .board{display:flex;gap:12px;overflow-x:auto;padding-bottom:8px}
+  .col{flex:0 0 232px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:8px}
+  .col-h{display:flex;align-items:center;justify-content:space-between;padding:6px 8px 10px;border-bottom:1px solid var(--border);margin-bottom:8px}
+  .col-h .t{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+  .col-h .c{font-size:11px;color:var(--text-faint);font-weight:700;background:var(--surface-2);border-radius:20px;padding:1px 8px}
+  .stripe{width:100%;height:3px;border-radius:3px;margin:-4px 0 8px}
+  .cards{display:flex;flex-direction:column;gap:8px;min-height:40px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 10px}
+  .card .nm{font-size:13px;font-weight:650;color:var(--text);display:flex;align-items:center;gap:6px}
+  .card .ph{font-size:11px;color:var(--text-faint);margin-top:2px;font-family:var(--mono)}
+  .row{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px;align-items:center}
+  .tag{font-size:10px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap;border:1px solid transparent}
+  .t-atd{background:var(--blue-bg);color:var(--blue);border-color:var(--blue)}
+  .t-preco{background:var(--teal-bg);color:var(--teal);border-color:var(--teal)}
+  .t-bolsa{background:var(--amber-bg);color:var(--amber);border-color:var(--amber)}
+  .t-pag{background:var(--violet-bg);color:var(--violet);border-color:var(--violet)}
+  .turma{font-size:9.5px;color:var(--text-faint);background:var(--surface-2);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:var(--mono)}
+  .temp{font-size:11px}
+  .ghost{border:1px dashed var(--border-2);border-radius:9px;padding:12px;text-align:center;font-size:11px;color:var(--text-faint)}
+  .note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);margin:14px 0}
+  .note b{color:var(--accent)}
+  /* timeline */
+  .tl{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:14px}
+  .tl .snap{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px}
+  .tl .when{font-size:11px;font-weight:800;color:var(--accent);font-family:var(--mono);margin-bottom:8px}
+  .tl .phase{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:700;margin-bottom:8px}
+  .tl .arrow{text-align:center;color:var(--text-faint);font-size:11px;margin-top:6px}
+  @media(max-width:720px){.tl{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="toolbar"><button id="theme">◐ Tema</button></div>
+<div class="wrap">
+  <div class="kick">Mockup · pré-código</div>
+  <h1>CRM — a mesma turma, duas lentes</h1>
+  <p class="sub">Os <b>mesmos 9 leads</b> das turmas piloto (FC Lajeado, ANL PoA, FC PoA), vistos de dois jeitos. Na lente por <b>Etapa</b> (hoje) as colunas são o estágio da negociação. Na lente por <b>Fase</b> (novo) as colunas são o momento da turma no calendário — e o estágio vira <b>etiqueta</b>.</p>
+
+  <!-- LENTE A -->
+  <div class="lens-h"><span class="badge etapa">LENTE A</span><h2>Por Etapa <span style="color:var(--text-faint);font-weight:600">— como é hoje</span></h2></div>
+  <p class="lens-sub">Colunas = estágio da negociação. O time move o card conforme avança. (Turma aparece como marcador.)</p>
+  <div class="board" id="boardEtapa"></div>
+
+  <!-- LENTE B -->
+  <div class="lens-h"><span class="badge fase">LENTE B</span><h2>Por Fase <span style="color:var(--text-faint);font-weight:600">— o novo (foto de 04/09)</span></h2></div>
+  <p class="lens-sub">Colunas = fase da turma (calendário do lote). O card anda sozinho pela data — ninguém move. O estágio da negociação vira <b>etiqueta</b>.</p>
+  <div class="board" id="boardFase"></div>
+  <div class="note">👀 Repara: são <b>exatamente os mesmos leads</b>. Leads da <b>mesma turma ficam juntos</b> (a fase é da turma) — a distribuição vem de <b>turmas em momentos diferentes</b>: FC PoA ainda no lote avançado, ANL PoA no último lote, FC Lajeado na véspera. A etiqueta (preço ok, atendimento, bolsa…) mostra onde cada um está na conversa.</div>
+
+  <!-- CÁSSIA -->
+  <div class="lens-h"><span class="badge fase">➡️</span><h2>A Cássia andando sozinha</h2></div>
+  <p class="lens-sub">A mesma lead ao longo do calendário da FC Lajeado (início 08/09, virada de lote 28/08). O card <b>desliza pra direita</b> pela data. A etiqueta de estágio <b>não muda</b> — ela segue "preço ok".</p>
+  <div class="tl">
+    <div class="snap"><div class="when">📅 11/08</div><div class="phase">Vendas abertas</div>
+      <div class="card"><div class="nm">Cássia 🔥</div><div class="ph">+55 51 9xxxx-xxxx</div><div class="row"><span class="tag t-preco">preço ok</span></div></div>
+      <div class="arrow">▼ o calendário corre</div></div>
+    <div class="snap"><div class="when">📅 28/08</div><div class="phase">Lote avançado</div>
+      <div class="card"><div class="nm">Cássia 🔥</div><div class="ph">+55 51 9xxxx-xxxx</div><div class="row"><span class="tag t-preco">preço ok</span></div></div>
+      <div class="arrow">▼ virada do lote</div></div>
+    <div class="snap"><div class="when">📅 05/09</div><div class="phase">Último lote</div>
+      <div class="card"><div class="nm">Cássia 🔥</div><div class="ph">+55 51 9xxxx-xxxx</div><div class="row"><span class="tag t-preco">preço ok</span></div></div>
+      <div class="arrow">▼ últimas vagas</div></div>
+    <div class="snap"><div class="when">📅 07/09</div><div class="phase">Véspera</div>
+      <div class="card"><div class="nm">Cássia 🔥</div><div class="ph">+55 51 9xxxx-xxxx</div><div class="row"><span class="tag t-preco">preço ok</span></div></div>
+      <div class="arrow">▼ turma 08/09 → roteador</div></div>
+  </div>
+  <div class="note">Ninguém arrastou a Cássia. Ela andou 4 colunas <b>só porque o calendário correu</b> — e a cada fase ela recebe a mensagem certa de urgência (lote fechando → virada → últimas vagas → véspera). O "preço ok" continua na etiqueta, dizendo pro time/IA onde ela está na conversa.</div>
+
+  <p style="margin-top:36px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px">Mockup ilustrativo · dados fictícios · Carreira no Digital. A lente por Fase liga por uma flag na turma — só nas 3 piloto. O resto do CRM segue por Etapa.</p>
+</div>
+
+<script>
+  var leads=[
+    {nm:'Cássia',turma:'fclajeado092601',etapa:'preco',temp:'🔥',fase:'vespera'},
+    {nm:'Marcos',turma:'fclajeado092601',etapa:'atd',temp:'🌡️',fase:'vespera'},
+    {nm:'Débora',turma:'fclajeado092601',etapa:'bolsa',temp:'❄️',fase:'vespera'},
+    {nm:'Rafael',turma:'anlportoalegre092601',etapa:'preco',temp:'🔥',fase:'ultimo'},
+    {nm:'Juliana',turma:'anlportoalegre092601',etapa:'atd',temp:'🌡️',fase:'ultimo'},
+    {nm:'Anderson',turma:'anlportoalegre092601',etapa:'pag',temp:'🔥',fase:'ultimo'},
+    {nm:'Tiago',turma:'fcportoalegre092601',etapa:'preco',temp:'🌡️',fase:'avancado'},
+    {nm:'Fernanda',turma:'fcportoalegre092601',etapa:'atd',temp:'❄️',fase:'avancado'},
+    {nm:'Bruna',turma:'fcportoalegre092601',etapa:'bolsa',temp:'🌡️',fase:'avancado'}
+  ];
+  var etapaMeta={atd:{lbl:'Atendimento inicial',cls:'t-atd',c:'var(--blue)'},preco:{lbl:'Lote / Preço OK',cls:'t-preco',c:'var(--teal)'},bolsa:{lbl:'Oferecer bolsa',cls:'t-bolsa',c:'var(--amber)'},pag:{lbl:'Aguardando pagamento',cls:'t-pag',c:'var(--violet)'}};
+  var etapaTag={atd:'atendimento',preco:'preço ok',bolsa:'bolsa',pag:'aguard. pagamento'};
+  var faseMeta={abertas:{lbl:'Vendas abertas',c:'var(--green)'},avancado:{lbl:'Lote avançado',c:'var(--amber)'},ultimo:{lbl:'Último lote',c:'var(--orange)'},vespera:{lbl:'Véspera',c:'var(--red)'}};
+  function cardEtapa(l){return '<div class="card"><div class="nm">'+l.nm+' <span class="temp">'+l.temp+'</span></div><div class="row"><span class="turma">'+l.turma+'</span></div></div>';}
+  function cardFase(l){var e=etapaMeta[l.etapa];return '<div class="card"><div class="nm">'+l.nm+' <span class="temp">'+l.temp+'</span></div><div class="row"><span class="tag '+e.cls+'">'+etapaTag[l.etapa]+'</span> <span class="turma">'+l.turma.replace(/\d+$/,'').slice(0,10)+'</span></div></div>';}
+  function col(t,c,inner,ct){return '<div class="col"><div class="stripe" style="background:'+c+'"></div><div class="col-h"><span class="t" style="color:'+c+'">'+t+'</span><span class="c">'+ct+'</span></div><div class="cards">'+inner+'</div></div>';}
+  // board etapa
+  var be='';['atd','preco','bolsa','pag'].forEach(function(k){var m=etapaMeta[k];var ls=leads.filter(function(l){return l.etapa===k});be+=col(m.lbl,m.c,ls.map(cardEtapa).join(''),ls.length);});
+  document.getElementById('boardEtapa').innerHTML=be;
+  // board fase
+  var bf='';['abertas','avancado','ultimo','vespera'].forEach(function(k){var m=faseMeta[k];var ls=leads.filter(function(l){return l.fase===k});var inner=ls.length?ls.map(cardFase).join(''):'<div class="ghost">— vazio —<br><span style="opacity:.7">(uma turma que acabou de abrir entraria aqui)</span></div>';bf+=col(m.lbl,m.c,inner,ls.length);});
+  document.getElementById('boardFase').innerHTML=bf;
+  (function(){var b=document.getElementById('theme'),r=document.documentElement;b.addEventListener('click',function(){var c=r.getAttribute('data-theme');var d=c?c==='dark':!matchMedia('(prefers-color-scheme: light)').matches;r.setAttribute('data-theme',d?'light':'dark')})})();
+</script>
+
+</body></html>
