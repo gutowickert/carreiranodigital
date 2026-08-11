@@ -56,6 +56,12 @@
   .loop{font-size:12px;color:var(--text-faint);font-style:italic;margin:2px 0 0 -18px;padding:8px 12px;border:1px dashed var(--border-2);border-radius:8px;background:var(--surface)}
   @media(max-width:620px){.fork{grid-template-columns:1fr}}
   b.price{color:var(--text);font-weight:750}
+  .tablewrap{overflow-x:auto;border:1px solid var(--border);border-radius:12px;margin:12px 0}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:560px}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+  thead th{font-size:10.5px;text-transform:uppercase;letter-spacing:.04em;color:var(--text-faint);font-weight:700;background:var(--surface-2)}
+  td{color:var(--text-soft)} tbody tr:last-child td{border-bottom:none} tbody tr:hover{background:var(--surface-2)}
+  td b{color:var(--text)}
 </style>
 
 <div class="toolbar"><button id="theme">◐ Tema</button></div>
@@ -136,6 +142,21 @@
     </div>
   </div>
 
+  <h2>🎯 E quem entra em dias diferentes?</h2>
+  <p class="hint">A nutrição conta da <b>chegada</b> (Relógio A); a urgência é <b>fixa no calendário</b> da turma (Relógio B). Então cada lead recebe uma "dose" de nutrição diferente conforme <b>quando entra</b> — e todos convergem nas mesmas datas de urgência. Exemplos (FC Lajeado, virada 28/08, turma 08/09):</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Entra em</th><th>Apresentação</th><th>Nutrição (da chegada)</th><th>Urgência (fixa no calendário)</th></tr></thead>
+      <tbody>
+        <tr><td><b>12/08</b><br>(cedo)</td><td>Lote 1 · R$2.097</td><td>sequência <b>completa</b> — 6 toques (14 → 24/08)</td><td>25 → <b>28⭐</b> → 03 → 06 📞 → 07</td></tr>
+        <tr><td><b>21/08</b><br>(~1 sem. da virada)</td><td>Lote 1 · R$2.097</td><td><b>parcial</b> — pega só 1–2 toques (~23/08), aí entra a urgência</td><td>25 → <b>28⭐</b> → 03 → 06 📞 → 07</td></tr>
+        <tr><td><b>26/08</b><br>(2 dias antes)</td><td>Lote 1 · R$2.097</td><td>— <b>pula</b> (já é janela de urgência)</td><td><b>28⭐</b> → 03 → 06 📞 → 07</td></tr>
+        <tr><td><b>02/09</b><br>(pós-virada)</td><td>Lote 2 · R$2.397</td><td>— <b>pula</b></td><td>03 → 06 📞 → 07</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="note">🧭 <b>A regra que costura tudo:</b> a nutrição roda da chegada <b>até faltarem 3 dias pra virada</b>; daí em diante todo mundo entra na urgência no ponto onde o <b>calendário</b> está. Quem chega tarde recebe menos nutrição e cai direto na urgência — e tá certo: nesse ponto <b>o pitch É a urgência</b> (a data e o preço fazem o trabalho, não dá tempo de nutrir). Quem entra depois da virada já é apresentado no <b>Lote 2</b>. E quem entra depois da turma começar → próxima turma (ou pool de disparo).</div>
+
   <h2>🔀 Depois do fechamento — as duas saídas</h2>
   <div class="fork">
     <div class="path win">
@@ -149,12 +170,12 @@
       </ul>
     </div>
     <div class="path lose">
-      <h3>↻ Quem NÃO fechou</h3>
+      <h3>❌ Quem NÃO fechou → Perda + Disparo</h3>
       <ul>
-        <li>Turma começou e não comprou → entra no <b>roteador</b>.</li>
-        <li><b>Rola pra próxima turma</b> de FC Lajeado — <b>mantém a etapa</b>, 1 toque: <i>"abriu uma nova turma…"</i></li>
-        <li>Volta pro Relógio B da turma nova, no lote vigente dela.</li>
-        <li><b>Sem próxima turma?</b> → o sistema me pede pra decidir (cadastrar nova) e o lead fica no <b>win-back</b> (pool), não vira perda cega.</li>
+        <li>Turma começou e não comprou → <b>vira PERDA</b> (sai da cadência ativa).</li>
+        <li>Entra no <b>pool de disparo</b> (win-back), segmentado por <b>cidade + produto</b>.</li>
+        <li>Quando abrir uma <b>turma nova</b> da região, a reativação é por <b>DISPARO</b> (broadcast pro pool) — não por toque individual.</li>
+        <li>Ou seja: a próxima chance é <b>em massa</b>, na próxima oferta — não fica um a um no roteador.</li>
       </ul>
     </div>
   </div>
