@@ -44,6 +44,16 @@
   .path ul{margin:0;padding-left:16px} .path li{font-size:12.5px;color:var(--text-soft);margin:5px 0}
   .note{background:var(--accent-soft);border:1px solid var(--accent);border-radius:10px;padding:11px 14px;font-size:13px;color:var(--text);margin:16px 0}
   .note b{color:var(--accent)}
+  .offer{background:var(--amber-bg);border:1px dashed var(--amber);border-radius:8px;padding:9px 12px;font-size:12.5px;color:var(--text);margin-top:9px}
+  .offer b{color:var(--amber)}
+  .msg.call{border-left-color:var(--orange)}
+  .msg.call .who{color:var(--orange)}
+  .msg.forte{border-left-color:var(--red)}
+  .msg.forte .who{color:var(--red)}
+  .msg.nut{border-left-color:var(--green)}
+  .msg.nut .who{color:var(--green)}
+  .phase-lbl{font-size:12px;font-weight:800;letter-spacing:.03em;color:var(--text);margin:24px 0 12px;padding:6px 12px;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;display:inline-block}
+  .loop{font-size:12px;color:var(--text-faint);font-style:italic;margin:2px 0 0 -18px;padding:8px 12px;border:1px dashed var(--border-2);border-radius:8px;background:var(--surface)}
   @media(max-width:620px){.fork{grid-template-columns:1fr}}
   b.price{color:var(--text);font-weight:750}
 </style>
@@ -65,34 +75,51 @@
   <p class="hint">Feito isso, o lead <b>encaixa no Relógio B</b> no ponto do calendário onde a turma está.</p>
 
   <h2>📅 Relógio B — o calendário do lote (igual pra todos da turma)</h2>
+  <p class="hint">Dois momentos: <b>nutrição</b> enquanto o lote está aberto (constrói desejo, quebra objeção) e <b>urgência</b> nos dias-chave (mensagens fortes — resultado, dor, problema).</p>
+
+  <div class="phase-lbl">🌱 NUTRIÇÃO — enquanto o lote está aberto (a cada 2–3 dias)</div>
   <div class="tl">
     <div class="node g">
-      <div class="when">até 28/08</div><div class="phase">Vendas abertas · Lote 1</div>
-      <div class="soft">Nutrição leve entre os toques (prova social, "o que tu sai sabendo"). O copiloto/IA responde quem engaja. Ninguém é cutucado todo dia.</div>
+      <div class="when">nut · prova social</div><div class="phase">constrói desejo</div>
+      <div class="msg nut"><div class="who">🌱 nutrição</div>{nome}, deixa eu te mostrar: aluno nosso fechou o primeiro cliente <b>ainda durante o curso</b>. É isso que a Formação faz — tu sai com o marketing do teu negócio <b>rodando</b>, não com teoria.</div>
     </div>
     <div class="node g">
-      <div class="when">25/08 · 3 dias p/ virar</div><div class="phase">Vendas abertas</div>
-      <div class="msg"><div class="who">💬 toque de urgência</div>Oi {nome}, o <b>Lote 1</b> do FC em Lajeado fecha <b>28/08</b> — depois sobe pra <b class="price">R$2.397</b>. Consigo te garantir ainda na condição de agora. Fechamos?</div>
+      <div class="when">nut · quebra objeção</div><div class="phase">"sou iniciante"</div>
+      <div class="msg nut"><div class="who">🌱 nutrição</div>{nome}, muita gente trava achando que é complicado. Não é: começa do <b>ZERO</b>, com o professor do teu lado em cada passo. Tu sai sabendo fazer <b>sozinho</b>.</div>
+    </div>
+    <div class="node g">
+      <div class="when">nut · método + autoridade</div><div class="phase">desejo + prova</div>
+      <div class="msg nut"><div class="who">🌱 nutrição</div>{nome}, na Formação tu constrói <b>tudo</b>: posicionamento, conteúdo, vídeo, design e anúncio — com professores que fazem isso todo dia. Em 4 semanas o marketing do teu negócio tá de pé.</div>
+    </div>
+    <div class="loop">↻ Repete a cada 2–3 dias (variando o ângulo: prova social · objeção · método · nicho) <b>até faltarem 3 dias pra virada</b>. Quem chega perto da virada <b>pula a nutrição</b> e entra direto na urgência.</div>
+  </div>
+
+  <div class="phase-lbl">🔥 URGÊNCIA — os dias-chave (mensagens fortes)</div>
+  <div class="tl">
+    <div class="node a">
+      <div class="when">25/08 · 3 dias p/ virar</div><div class="phase">FORTE — resultado + dor</div>
+      <div class="msg forte"><div class="who">💬 bate no problema</div>{nome}, pergunta sincera: quantos clientes tu perde todo mês por <b>não saber aparecer</b> no digital? Em 4 semanas tu sai com o marketing do teu negócio rodando. O <b>Lote 1 (R$2.097)</b> fecha <b>28/08</b> — depois sobe pra R$2.397. Garanto na condição de agora?</div>
+    </div>
+    <div class="node r">
+      <div class="when">28/08 · MANHÃ CEDO · último dia</div><div class="phase">MAIS FORTE — urgência + concorrente</div>
+      <div class="msg forte"><div class="who">💬 último dia do lote</div>{nome}, <b>hoje é o último dia do Lote 1</b>. Enquanto tu decide, teu concorrente já tá anunciando e levando os clientes que podiam ser teus. Depois de hoje sobe pra R$2.397. Fecha agora e garante a condição + tua vaga na turma de 08/09.</div>
     </div>
     <div class="node a">
-      <div class="when">28/08 · A VIRADA</div><div class="phase">→ vira Lote 2</div>
-      <div class="msg"><div class="who">💬 virada do lote</div>{nome}, o lote virou hoje. Agora é <b class="price">R$2.397</b>, e a turma começa <b>08/09</b>. Ainda dá pra garantir tua vaga?</div>
-    </div>
-    <div class="node a">
-      <div class="when">28/08 → 04/09</div><div class="phase">Lote avançado · Lote 2</div>
-      <div class="soft">Quem chega novo agora entra <b>já no Lote 2</b> (R$2.397). Nutrição segue leve.</div>
+      <div class="when">03/09 · pós-virada</div><div class="phase">"ainda dá tempo" + data chegando</div>
+      <div class="msg"><div class="who">💬 janela ainda aberta</div>{nome}, o Lote 1 virou, mas ó: <b>ainda dá tempo</b> de entrar. A turma começa <b>08/09</b> — em poucos dias tu pode tá com teu primeiro anúncio no ar. Quer que eu garanta tua vaga?</div>
     </div>
     <div class="node o">
-      <div class="when">05/09 · últimas vagas</div><div class="phase">Último lote</div>
-      <div class="msg"><div class="who">💬 escassez real</div>{nome}, estamos no último lote do FC em Lajeado — turma <b>08/09</b>, poucas vagas. Quer que eu segure a tua?</div>
+      <div class="when">06/09 · 2 dias antes · 📞 LIGAÇÃO</div><div class="phase">contato pessoal + condição da direção</div>
+      <div class="msg call"><div class="who">📞 ligação (não mensagem)</div>"Oi {nome}, restam <b>poucas vagas</b> pra turma de segunda. Como tu demonstrou interesse, eu consigo tentar uma <b>condição especial com a direção</b> pra tu conseguir participar. Posso ver isso pra ti?"</div>
+      <div class="offer">🎁 <b>A condição 1-a-1:</b> se as vagas <b>não encheram</b>, oferece o <b>valor do Lote 1 (R$2.097)</b> de volta — individual, "aprovado pela direção". É o gancho de fechamento do fim: não é público, é pessoal, e só entra quando falta encher.</div>
     </div>
     <div class="node r">
-      <div class="when">07/09 · véspera</div><div class="phase">Véspera</div>
-      <div class="msg"><div class="who">💬 última chamada</div>{nome}, <b>amanhã começa</b> o FC em Lajeado! Ainda dá tempo de entrar. Garanto tua vaga?</div>
+      <div class="when">07/09 · véspera</div><div class="phase">última chamada</div>
+      <div class="msg forte"><div class="who">💬 última chance</div>{nome}, <b>amanhã começa</b> o FC em Lajeado! É tua última chance de entrar. Ainda seguro tua vaga — bora?</div>
     </div>
     <div class="node r">
-      <div class="when">08/09 · turma começa</div><div class="phase">Fim da cadência de venda</div>
-      <div class="soft">Acabou a janela de venda. Cada lead bifurca 👇</div>
+      <div class="when">08/09 · turma começa</div><div class="phase">fim da cadência de venda</div>
+      <div class="soft">Acabou a janela. Cada lead bifurca 👇</div>
     </div>
   </div>
 
@@ -119,7 +146,7 @@
     </div>
   </div>
 
-  <div class="note">🛡️ <b>As travas continuam:</b> nunca preço R$0/inventado; não repete o mesmo toque em 14 dias; quem já engajou não leva "reabridor frio"; data no passado não vai. E a <b>bolsa</b> continua como alavanca individual (só pro hesitante perto da virada/turma, com justificativa) — não é lote público.</div>
+  <div class="note">🛡️ <b>As travas continuam:</b> nunca preço R$0/inventado; não repete o mesmo toque em 14 dias; quem já engajou não leva "reabridor frio"; data no passado não vai. E o <b>gancho de fechamento 1-a-1</b> = o valor do <b>Lote 1 (R$2.097)</b> trazido de volta na ligação de 2 dias antes, <b>só quando as vagas não encheram</b>, aprovado pela direção — não é público nem automático.</div>
 
   <p style="margin-top:30px;font-size:12px;color:var(--text-faint);border-top:1px solid var(--border);padding-top:14px">Mockup ilustrativo · Carreira no Digital · valores e datas de exemplo (FC Lajeado). Cada turma tem seu próprio calendário de lote; o motor lê as datas reais.</p>
 </div>
