@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Treinamento — Nova Cadência por Lote Real | Carreira no Digital</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --ink: #16181d; --ink-2: #4b5162; --faint: #8a90a0;
+    --line: #e6e4de; --brand: #2f5de0; --brand-soft: #eaf0ff; --amber: #d9820a; --amber-soft: #fdf1dc;
+    --green: #15864a; --green-soft: #e4f4ea; --red: #c4362f; --red-soft: #fbe9e7; --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1015; --surface: #171a21; --ink: #edeef1; --ink-2: #a9afbd; --faint: #6b7180;
+      --line: #262a33; --brand: #7d9bff; --brand-soft: #1a2338; --amber: #e6a441; --amber-soft: #33270f;
+      --green: #52c98a; --green-soft: #12291d; --red: #f0776e; --red-soft: #2e1512;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    line-height: 1.6; -webkit-font-smoothing: antialiased;
+  }
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 80px; }
+  header.hero {
+    background: linear-gradient(140deg, var(--brand) 0%, #1e3fa8 100%); color: #fff;
+    padding: 56px 20px 60px; text-align: center;
+  }
+  header.hero .inner { max-width: 880px; margin: 0 auto; }
+  .kicker { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 700; opacity: .85; }
+  h1 { font-size: clamp(28px, 5vw, 42px); line-height: 1.12; margin: 12px 0 10px; font-weight: 800; text-wrap: balance; }
+  header.hero p { font-size: 17px; opacity: .92; margin: 0 auto; max-width: 620px; }
+  h2 { font-size: clamp(21px, 3.4vw, 27px); font-weight: 800; margin: 52px 0 6px; letter-spacing: -.01em; }
+  h2 .n { color: var(--brand); font-variant-numeric: tabular-nums; }
+  .sub { color: var(--ink-2); margin: 0 0 20px; font-size: 15px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 640px) { .grid2 { grid-template-columns: 1fr; } }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; letter-spacing: .03em; }
+  .tag.ia { background: var(--brand-soft); color: var(--brand); }
+  .tag.time { background: var(--amber-soft); color: var(--amber); }
+  /* timeline */
+  .flow { display: flex; flex-direction: column; gap: 0; margin-top: 8px; }
+  .step { display: flex; gap: 16px; }
+  .step .rail { display: flex; flex-direction: column; align-items: center; }
+  .step .dot { width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #fff; display: grid; place-items: center; font-weight: 800; font-size: 14px; flex: none; }
+  .step .bar { width: 2px; flex: 1; background: var(--line); min-height: 14px; }
+  .step:last-child .bar { display: none; }
+  .step .body { padding-bottom: 22px; }
+  .step h3 { margin: 4px 0 4px; font-size: 17px; font-weight: 700; }
+  .step p { margin: 0; color: var(--ink-2); font-size: 14.5px; }
+  .msg { background: var(--bg); border: 1px solid var(--line); border-left: 3px solid var(--brand); border-radius: 8px; padding: 12px 14px; font-size: 14px; color: var(--ink-2); margin-top: 10px; }
+  .msg b { color: var(--ink); }
+  ul.clean { list-style: none; padding: 0; margin: 8px 0 0; }
+  ul.clean li { padding: 7px 0 7px 26px; position: relative; font-size: 14.5px; color: var(--ink-2); border-bottom: 1px solid var(--line); }
+  ul.clean li:last-child { border-bottom: none; }
+  ul.clean li::before { content: ""; position: absolute; left: 4px; top: 14px; width: 8px; height: 8px; border-radius: 50%; }
+  ul.clean.ia li::before { background: var(--brand); }
+  ul.clean.time li::before { background: var(--amber); }
+  .rule { background: var(--green-soft); border: 1px solid color-mix(in srgb, var(--green) 30%, transparent); border-radius: var(--radius); padding: 18px 20px; }
+  .rule strong { color: var(--green); }
+  .dont { background: var(--red-soft); border: 1px solid color-mix(in srgb, var(--red) 30%, transparent); border-radius: var(--radius); padding: 18px 20px; }
+  .dont strong { color: var(--red); }
+  .fase-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .fase { flex: 1; min-width: 120px; background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px; text-align: center; }
+  .fase .lbl { font-weight: 700; font-size: 13px; }
+  .fase .d { font-size: 12px; color: var(--faint); margin-top: 2px; }
+  .arrow { color: var(--faint); align-self: center; font-weight: 700; }
+  footer { text-align: center; color: var(--faint); font-size: 13px; margin-top: 60px; }
+  strong.hl { color: var(--brand); }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="inner">
+    <div class="kicker">Carreira no Digital · Comercial</div>
+    <h1>A nova cadência por Lote Real</h1>
+    <p>O que mudou no follow-up, o que a IA faz sozinha e onde entra o teu trabalho. Leitura de 5 minutos.</p>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <h2><span class="n">1.</span> O que mudou</h2>
+  <p class="sub">Saímos do "lote inventado" para o <strong class="hl">lote real de cada turma</strong>.</p>
+  <div class="grid2">
+    <div class="card">
+      <div class="tag time">ANTES</div>
+      <p style="margin:10px 0 0;color:var(--ink-2);font-size:14.5px">Cada lead via um "o lote vira em ~3 dias" <b>inventado</b> e diferente pra cada um. Dois leads da mesma turma ouviam prazos diferentes. Preço fixo no código.</p>
+    </div>
+    <div class="card">
+      <div class="tag ia">AGORA</div>
+      <p style="margin:10px 0 0;color:var(--ink-2);font-size:14.5px">A urgência é a <b>data real do lote da turma</b>, igual pra todos. Preço, prazo e a coluna do quadro saem do lote vigente. Ninguém mais fica parado sem rumo.</p>
+    </div>
+  </div>
+
+  <h2><span class="n">2.</span> A jornada do lead</h2>
+  <p class="sub">Todo lead de turma com lote caminha rumo à data real da virada.</p>
+  <div class="card">
+    <div class="flow">
+      <div class="step"><div class="rail"><div class="dot">1</div><div class="bar"></div></div><div class="body"><h3>Chegada — Ligação</h3><p>O time liga (2× no dia). É teu primeiro contato, humano.</p></div></div>
+      <div class="step"><div class="rail"><div class="dot">2</div><div class="bar"></div></div><div class="body"><h3>Atendimento inicial</h3><p>Apresentação do curso já com o <b>preço e a data reais</b> do lote da turma.</p></div></div>
+      <div class="step"><div class="rail"><div class="dot">3</div><div class="bar"></div></div><div class="body"><h3>Lote / Preço OK · Bolsa</h3><p>A IA reancora (aviso da data), goteja cases de alunos e aperta a urgência conforme a virada chega.</p></div></div>
+      <div class="step"><div class="rail"><div class="dot">4</div><div class="bar"></div></div><div class="body"><h3>A virada</h3><p>3 dias antes: "a condição está encerrando". No dia: "hoje é o último dia". Tudo na data real.</p></div></div>
+      <div class="step"><div class="rail"><div class="dot">5</div><div class="bar"></div></div><div class="body"><h3>Início da turma</h3><p>Quem não fechou é levado para a próxima turma (não se perde).</p></div></div>
+    </div>
+  </div>
+
+  <h2><span class="n">3.</span> Quem faz o quê</h2>
+  <p class="sub">A IA cuida do frio e do ritmo. Você cuida da relação e do fechamento.</p>
+  <div class="grid2">
+    <div class="card">
+      <div class="tag ia">A IA FAZ SOZINHA</div>
+      <ul class="clean ia">
+        <li>Avisa a data certa do lote (reposição)</li>
+        <li>Goteja cases de alunos pra nutrir</li>
+        <li>Manda a urgência 3 dias antes e no dia da virada</li>
+        <li>Corrige preço/prazo sempre pelo lote real</li>
+        <li>Segue quem esfriou (não respondeu)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="tag time">O TIME FAZ</div>
+      <ul class="clean time">
+        <li>Liga (a ligação é sempre humana)</li>
+        <li>Responde <b>na hora</b> quem respondeu</li>
+        <li>Conduz a negociação e fecha</li>
+        <li>Agenda, cobra pagamento, fecha o ganho</li>
+        <li>Marca a temperatura e as notas do lead</li>
+      </ul>
+    </div>
+  </div>
+  <div class="rule" style="margin-top:16px">
+    <strong>Regra de ouro:</strong> quando o cliente <b>responde</b>, ele sai do automático e vira <b>seu</b>. A IA para de tocar e a bola é do time. Responda rápido.
+  </div>
+
+  <h2><span class="n">4.</span> As mensagens que o cliente recebe</h2>
+  <p class="sub">Pra você saber o que o lead já viu antes de falar com ele.</p>
+  <div class="card">
+    <p style="margin:0 0 4px;font-weight:700">📅 Aviso da data (reposição) — quando a virada ainda está longe</p>
+    <div class="msg"><b>Multi-lote:</b> "Oi, novidade boa: consegui <b>estender a condição do lote 1</b> até 27/08 — R$797 no Pix (10x de R$99,70)."</div>
+    <div class="msg"><b>Lote único:</b> "Consegui <b>segurar pra ti o valor do primeiro lote</b>: R$797 no Pix. O curso começa dia 25/08, ainda tenho algumas vagas."</div>
+    <p style="margin:20px 0 4px;font-weight:700">💡 Nutrição — cases de alunos, a cada ~3 dias</p>
+    <div class="msg">"Um aluno com loja de celulares gerou contatos por poucos reais e fechou uma venda de mais de R$10 mil…"</div>
+    <p style="margin:20px 0 4px;font-weight:700">🔥 Urgência — perto da virada</p>
+    <div class="msg"><b>3 dias antes:</b> "a condição está encerrando, valia garantir agora." · <b>No dia:</b> "hoje é o último dia da condição."</div>
+  </div>
+
+  <h2><span class="n">5.</span> O quadro "Por Fase"</h2>
+  <p class="sub">No CRM → Kanban, o botão <b>📅 Por fase</b> mostra os cards pela fase da turma (o calendário), não pela etapa.</p>
+  <div class="card">
+    <div class="fase-row">
+      <div class="fase"><div class="lbl">Vendas abertas</div><div class="d">virada longe</div></div>
+      <span class="arrow">→</span>
+      <div class="fase"><div class="lbl">Lote avançado</div><div class="d">meio</div></div>
+      <span class="arrow">→</span>
+      <div class="fase"><div class="lbl">Último lote</div><div class="d">aperta</div></div>
+      <span class="arrow">→</span>
+      <div class="fase"><div class="lbl">Véspera</div><div class="d">last call</div></div>
+    </div>
+    <p style="margin:16px 0 0;color:var(--ink-2);font-size:14.5px">A <b>etapa de negociação</b> (Atendimento, Lote/Preço…) vira uma <b>etiqueta</b> no card. Os cards não se arrastam entre fases — a fase anda sozinha pela data. Serve pra enxergar a turma inteira avançando junto rumo à virada.</p>
+  </div>
+
+  <h2><span class="n">6.</span> O que NÃO fazer</h2>
+  <div class="dont">
+    <strong>Não repita a mensagem que a IA já mandou.</strong> Antes de escrever, olhe o histórico do lead no card — se a IA já avisou a data ou mandou a urgência, entre por cima com <b>conversa</b>, não com o mesmo texto. E nunca invente preço/data: use sempre o lote real da turma.
+  </div>
+
+  <footer>
+    Carreira no Digital — cadência por lote real · dúvidas com o Guto ou o Nando.
+  </footer>
+</div>
+</body>
+</html>

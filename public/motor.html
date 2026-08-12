@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>O Motor de Cadência — Manual Técnico | Carreira no Digital</title>
+<style>
+  :root {
+    --bg: #f6f5f2; --surface: #ffffff; --ink: #16181d; --ink-2: #4b5162; --faint: #8a90a0;
+    --line: #e6e4de; --brand: #2f5de0; --brand-soft: #eaf0ff; --amber: #d9820a; --amber-soft: #fdf1dc;
+    --green: #15864a; --green-soft: #e4f4ea; --red: #c4362f; --red-soft: #fbe9e7;
+    --code-bg: #1c2029; --code-ink: #e7eaf0; --radius: 14px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1015; --surface: #171a21; --ink: #edeef1; --ink-2: #a9afbd; --faint: #6b7180;
+      --line: #262a33; --brand: #7d9bff; --brand-soft: #1a2338; --amber: #e6a441; --amber-soft: #33270f;
+      --green: #52c98a; --green-soft: #12291d; --red: #f0776e; --red-soft: #2e1512;
+      --code-bg: #0a0c11; --code-ink: #d6dae4;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); line-height: 1.62;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; }
+  .mono { font-family: "SF Mono", ui-monospace, "Cascadia Code", Menlo, Consolas, monospace; }
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px 90px; }
+  header.hero { background: linear-gradient(140deg, #1b2333 0%, #0e1420 100%); color: #fff; padding: 52px 20px 56px; border-bottom: 3px solid var(--brand); }
+  header.hero .inner { max-width: 920px; margin: 0 auto; }
+  .kicker { text-transform: uppercase; letter-spacing: .14em; font-size: 12px; font-weight: 700; color: #7d9bff; }
+  h1 { font-size: clamp(27px, 4.6vw, 40px); line-height: 1.12; margin: 12px 0 10px; font-weight: 800; text-wrap: balance; }
+  header.hero p { font-size: 16px; opacity: .82; margin: 0; max-width: 640px; }
+  h2 { font-size: clamp(20px, 3.2vw, 26px); font-weight: 800; margin: 50px 0 6px; letter-spacing: -.01em; scroll-margin-top: 20px; }
+  h2 .n { color: var(--brand); font-variant-numeric: tabular-nums; }
+  h3 { font-size: 16px; font-weight: 700; margin: 22px 0 6px; }
+  .sub { color: var(--ink-2); margin: 0 0 18px; font-size: 15px; }
+  p { font-size: 15px; color: var(--ink-2); }
+  p b, li b { color: var(--ink); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 20px 22px; margin-top: 14px; }
+  code { font-family: "SF Mono", ui-monospace, Menlo, Consolas, monospace; font-size: .88em; background: var(--brand-soft); color: var(--brand); padding: 1px 6px; border-radius: 5px; }
+  pre { background: var(--code-bg); color: var(--code-ink); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font-size: 13px; line-height: 1.5; margin: 12px 0 0; }
+  pre .c { color: #7f8aa0; }
+  pre .k { color: #7dd3fc; }
+  pre .s { color: #86efac; }
+  .toc { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+  .toc a { font-size: 13px; text-decoration: none; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); padding: 6px 12px; border-radius: 20px; }
+  .toc a:hover { border-color: var(--brand); color: var(--brand); }
+  table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--faint); }
+  td:first-child { white-space: nowrap; }
+  .scroll { overflow-x: auto; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 9px; border-radius: 20px; }
+  .pill.on { background: var(--green-soft); color: var(--green); }
+  .pill.warn { background: var(--amber-soft); color: var(--amber); }
+  .note { border-left: 3px solid var(--amber); background: var(--amber-soft); border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 14px; color: var(--ink-2); }
+  .danger { border-left: 3px solid var(--red); background: var(--red-soft); border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 14px; }
+  .ok { border-left: 3px solid var(--green); background: var(--green-soft); border-radius: 8px; padding: 12px 16px; margin-top: 14px; font-size: 14px; }
+  ul li, ol li { font-size: 15px; color: var(--ink-2); margin: 5px 0; }
+  footer { text-align: center; color: var(--faint); font-size: 13px; margin-top: 64px; }
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="inner">
+    <div class="kicker">Carreira no Digital · Manual Técnico</div>
+    <h1>O Motor de Cadência por Lote Real</h1>
+    <p>Como o motor funciona, os arquivos, a superfície de controle e como validar. Para o Nando e o Claude dele.</p>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="toc">
+    <a href="#visao">1. Visão geral</a>
+    <a href="#arq">2. Arquitetura</a>
+    <a href="#fases">3. As fases</a>
+    <a href="#relogios">4. Os relógios</a>
+    <a href="#lotes">5. turma_lotes</a>
+    <a href="#controle">6. Controlar</a>
+    <a href="#travas">7. Travas</a>
+    <a href="#validar">8. Validar</a>
+  </div>
+
+  <h2 id="visao"><span class="n">1.</span> Visão geral</h2>
+  <p class="sub">O motor conduz o follow-up 100% automático dos leads que esfriaram, ancorado no <b>lote real da turma</b>.</p>
+  <div class="card">
+    <p style="margin:0">Cada turma tem seus lotes reais (tabela <code>turma_lotes</code>: preço + data de virada). O motor calcula, pela data de hoje, o <b>lote vigente</b> e a <b>fase</b> da turma — e disso saem o preço da mensagem, a urgência e a coluna do board.</p>
+    <div class="ok" style="margin-top:14px"><b>Guarda de ouro:</b> turma <b>sem</b> lote cadastrado = comportamento antigo intacto. O modelo novo só age em turma com lote. Zero risco para o resto.</div>
+  </div>
+
+  <h2 id="arq"><span class="n">2.</span> Arquitetura — arquivos e tabelas</h2>
+  <div class="card scroll">
+    <table>
+      <tr><th>Peça</th><th>Onde</th><th>Papel</th></tr>
+      <tr><td class="mono">lote-core.ts</td><td>lib/</td><td>Funções puras: <code>loteVigente</code>, <code>faseTurma</code>, <code>diasAteVirada</code>. Sem banco — usável no client.</td></tr>
+      <tr><td class="mono">lote.ts</td><td>lib/</td><td>Re-exporta o core + consultas (<code>getLotes</code>, <code>contextoLote</code>).</td></tr>
+      <tr><td class="mono">followup-auto</td><td>app/api/ia/</td><td><b>O motor.</b> Decide, por lead: enviar toque / avançar / esperar. Envia templates aprovados.</td></tr>
+      <tr><td class="mono">cron-run</td><td>app/api/ia/</td><td>Orquestrador. O pg_cron chama; roda a sequência da fase (noite/manhã) em lote.</td></tr>
+      <tr><td class="mono">virada</td><td>app/api/ia/</td><td>À noite, interpreta quem RESPONDEU e move de etapa.</td></tr>
+      <tr><td class="mono">fluxo.ts</td><td>lib/</td><td>A cadência editável por etapa (chave, dias, ação). Fallback: <code>sequencia-tarefas.ts</code>.</td></tr>
+      <tr><td class="mono">turma_lotes</td><td>tabela</td><td>Os lotes reais de cada turma (ordem, preços, <code>vale_ate</code>).</td></tr>
+      <tr><td class="mono">followup_templates</td><td>tabela</td><td>Templates da Meta (<code>nome_meta</code>, corpo, <code>status</code>). Só <code>aprovado</code> dispara.</td></tr>
+    </table>
+  </div>
+
+  <h2 id="fases"><span class="n">3.</span> As fases do motor (o que cada uma faz)</h2>
+  <p class="sub">Tudo dentro do <code>followup-auto</code>, em camadas guardadas por <code>dv</code> (dias até a virada).</p>
+  <div class="card scroll">
+    <table>
+      <tr><th>Camada</th><th>Quando</th><th>O quê</th></tr>
+      <tr><td><b>Preço real</b></td><td>sempre (turma c/ lote)</td><td>Preço da mensagem = <code>loteVigente.preco_pix</code> + parcela real.</td></tr>
+      <tr><td><b>Reposição</b></td><td>dv &gt; 3, qualquer etapa ativa</td><td>1× por lead: avisa a data certa. <code>cnd_reposicao_unico</code> (lote único) ou <code>cnd_reposicao_lote</code> (multi-lote).</td></tr>
+      <tr><td><b>Nutrição</b></td><td>dv &gt; 3, pós-preço</td><td>Goteja <code>cnd_nutri_1..8</code> (cases), 1 a cada ~3 dias, cada 1×.</td></tr>
+      <tr><td><b>Urgência</b></td><td>dv 1–3</td><td><code>cnd_lote_virando</code> ("está encerrando"). Vale em <b>qualquer etapa ativa</b>.</td></tr>
+      <tr><td><b>Último dia</b></td><td>dv ≤ 0</td><td><code>cnd_lote_ultimo</code> ("hoje é o último dia").</td></tr>
+      <tr><td><b>Board por fase</b></td><td>UI</td><td>Toggle no CRM: colunas = fase da turma; etapa vira tag; drag desligado.</td></tr>
+    </table>
+    <div class="note">Prioridade no loop: <b>urgência</b> (dv≤3) → reposição → nutrição → cadência normal. Como urgência é dv≤3 e reposição/nutrição são dv&gt;3, nunca colidem.</div>
+  </div>
+
+  <h2 id="relogios"><span class="n">4.</span> Os dois relógios</h2>
+  <div class="card">
+    <h3>Relógio A — chegada (por lead)</h3>
+    <p style="margin:0">Reativo: ligação → puxa WhatsApp → apresentação (com preço/data reais). Conta da entrada na etapa.</p>
+    <h3>Relógio B — turma (por data real)</h3>
+    <p style="margin:0"><code>dv = diasAteVirada(lotes, hoje)</code> e <code>fase = faseTurma(lotes, dataInicio, hoje)</code>. É o que dispara reposição/nutrição/urgência e posiciona o card no board. Converge todos da turma na mesma data.</p>
+    <pre><span class="c">// fases, da mais longe à mais perto da turma</span>
+vendas_abertas → lote_avancado → ultimo_lote → vespera → encerrada</pre>
+  </div>
+
+  <h2 id="lotes"><span class="n">5.</span> Cadastrar uma turma nova (o que mantém tudo vivo)</h2>
+  <p class="sub">Cadastrou a turma + os lotes → o motor assume sozinho. Sem lote = modo antigo.</p>
+  <div class="card">
+    <p style="margin:0 0 4px">Cada linha de <code>turma_lotes</code>:</p>
+    <pre>{ turma_id, ordem, nome, preco_pix, preco_cartao, parcela_cartao, vale_ate }</pre>
+    <ul>
+      <li><code>ordem</code>: 1, 2, 3… (lote 1 é o mais barato)</li>
+      <li><code>vale_ate</code>: <b>a data real</b> em que esse lote fecha (YYYY-MM-DD)</li>
+      <li>Lote único (sem virada de preço): 1 linha só — o <code>vale_ate</code> é o início da turma</li>
+    </ul>
+    <div class="note">O <b>lote vigente</b> = o de menor ordem cujo <code>vale_ate</code> ainda não passou. Passaram todos → o último. A <b>reposição</b> escolhe "estendi o lote 1" (se há próximo lote) ou "segurei o valor" (lote único) sozinha.</div>
+  </div>
+
+  <h2 id="controle"><span class="n">6.</span> Superfície de controle</h2>
+  <p class="sub">Tudo tem <code>dryRun</code>. Base: <code>https://carreiranodigital.vercel.app</code></p>
+
+  <div class="card">
+    <h3>Ver o que o motor FARIA (não envia)</h3>
+    <pre><span class="k">POST</span> /api/ia/followup-auto
+{ <span class="s">"dryRun"</span>: true, <span class="s">"limit"</span>: 400 }
+
+<span class="c">// retorna: resumo { envio_real, vai_pro_time, vira_perda, pulado_sem_preco }</span>
+<span class="c">// + amostra das mensagens renderizadas</span></pre>
+
+    <h3>Enviar de verdade (lote de até 60, mais frio primeiro)</h3>
+    <pre><span class="k">POST</span> /api/ia/followup-auto
+{ <span class="s">"dryRun"</span>: false, <span class="s">"confirm"</span>: true, <span class="s">"limit"</span>: 60 }</pre>
+
+    <h3>Kill switch — ligar/desligar TODOS os envios</h3>
+    <pre><span class="k">POST</span> /api/ia/ia-automacao
+{ <span class="s">"ligado"</span>: false }   <span class="c">// desliga · { "ligado": true } religa</span></pre>
+
+    <h3>Fase de cada turma (o board consome)</h3>
+    <pre><span class="k">GET</span> /api/turmas/fases   <span class="c">// { fases: { turma_id: "ultimo_lote", ... } }</span></pre>
+
+    <h3>Submeter templates novos à Meta</h3>
+    <pre><span class="c">// 1) inserir em followup_templates (status='rascunho')</span>
+<span class="c">// 2) submeter:</span>
+<span class="k">POST</span> /api/wa-oficial/criar-templates
+{ <span class="s">"ids"</span>: [<span class="s">"&lt;id1&gt;"</span>, <span class="s">"&lt;id2&gt;"</span>] }
+<span class="c">// aprovação sincroniza ao abrir a tela de Templates (só 'aprovado' dispara)</span></pre>
+  </div>
+
+  <div class="note">O orquestrador <code>cron-run?fase=manha</code> roda a sequência da manhã (warming → virada de ontem → reconciliar → <b>followup</b> → posse-funil → garantir-tarefas → roteador → sem-cidade-perda → sync-pool). <code>fase=noite</code> roda a virada (quem respondeu) + sync-pool.</div>
+
+  <h2 id="travas"><span class="n">7.</span> Travas de segurança</h2>
+  <div class="card">
+    <ul>
+      <li><b>Preço R$0 / inventado</b> → aborta o envio.</li>
+      <li><b>Prazo no passado</b> (data que já venceu) → não envia.</li>
+      <li><b>Template não aprovado</b> na Meta → nem tenta (só <code>status='aprovado'</code>).</li>
+      <li><b>Não repete</b> o mesmo template em 14 dias (checa <code>lead_andamentos</code>).</li>
+      <li><b>Engajado recente (24h)</b> → é do time, motor não toca.</li>
+      <li><b>Não rebaixa etapa</b>, não re-apresenta quem já viu o pitch.</li>
+      <li><b>Máximo 1 mensagem por lead por dia.</b></li>
+      <li><b>Cooldown de 7 dias</b> pós-reativação do roteador.</li>
+    </ul>
+    <div class="danger"><b>Se responder, é do time.</b> O lead que responde sai da automação e volta pro humano (via webhook). A IA só cuida do frio.</div>
+  </div>
+
+  <h2 id="validar"><span class="n">8.</span> Validar no dia a dia (Nando)</h2>
+  <div class="card">
+    <ol>
+      <li><b>DryRun do motor</b> de manhã → conferir <code>resumo</code> (<code>pulado_sem_preco</code> tem que ser <b>0</b>) e ler a <code>amostra</code> (nome, preço e data certos).</li>
+      <li><b>CRM → 📅 Por fase</b> → agosto em Último lote/Véspera, setembro em Vendas abertas; ninguém quente sumiu.</li>
+      <li><b>Abrir 2–3 leads</b> tocados hoje → ver no histórico a mensagem certa, no momento certo, com o preço do lote certo.</li>
+    </ol>
+    <p style="margin:12px 0 0"><b>Sinais de saúde:</b> <span class="pill on">pulado_sem_preco = 0</span> · reposição 1× por lead · nutrição espaçada · urgência só perto da virada · quem respondeu virou "humano".</p>
+    <p style="margin:8px 0 0"><b>Parar tudo:</b> kill switch <code>{ "ligado": false }</code>. <b>Um lead errado:</b> abra o card, veja os andamentos, chame o Claude com o nome + o esperado.</p>
+  </div>
+
+  <div class="note">Pendências que dependem de decisão (não são bug): <code>cnd_nova_turma</code> (roteador) aguardando Meta; turmas sem próxima turma cadastrada. Próximo passo do SaaS: motor <b>role-driven / por-org</b> — a cadência deixa de ser código e vira dado da turma/cliente.</div>
+
+  <footer>Carreira no Digital — motor de cadência por lote real · manual vivo, atualize conforme evoluir.</footer>
+</div>
+</body>
+</html>
