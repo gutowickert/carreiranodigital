@@ -83,6 +83,23 @@
   </ul>
   <div class="note">Detalhe completo das mensagens: <code>plano-cadencia-lote.html</code>. Das lentes: <code>plano-lentes-crm.html</code>.</div>
 
+  <h2>🏷️ Os lotes &amp; preços (definidos)</h2>
+  <p>O <b>cartão</b> é apresentado sempre como a <b>parcela 10x</b> (menos impactante que o total).</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Produto</th><th>Lote 1</th><th>Lote 2</th></tr></thead>
+    <tbody>
+      <tr><td class="n">FC (Formação)</td><td>R$2.097 Pix · <b>10x R$239,70</b></td><td>R$2.397 Pix · <b>10x R$269,70</b></td></tr>
+      <tr><td class="n">ANL (Anúncios)</td><td>R$797 Pix · <b>10x R$99,70</b></td><td>R$997 Pix · <b>10x R$119,70</b></td></tr>
+    </tbody>
+  </table></div>
+  <h3>Como tratar cada tipo de turma (todas no modelo novo)</h3>
+  <ul>
+    <li><b>Setembro+ (com runway):</b> 2 lotes (Lote 1 → virada → Lote 2). Datas de virada em montagem pelo Guto.</li>
+    <li><b>Agosto (começa esse mês):</b> <b>lote único</b> = corrida final. Nasce na fase "Último lote/Véspera", só urgência. ANL agosto = R$797/997.</li>
+    <li><b>🎯 FC Porto Alegre noite 25/08 (<code>FCPORTOALEGRE082601</code>) — oferta especial:</b> lote único <b>R$1.997 Pix · 10x R$219,70</b>. <b>Todos os leads dessa turma voltam pra jogada</b> com essa condição e seguem o fluxo de urgência.</li>
+  </ul>
+  <div class="note"><b>Todas as turmas entram no modelo novo</b> — inclusive as de agosto (com lote único). O modelo antigo é <b>aposentado</b>. A flag <code>modo</code> é só o <b>interruptor de rollout</b> (liga turma por turma pra virar com segurança), não um formato paralelo permanente.</div>
+
   <h2><span class="n">2</span> Migração de cada lead atual (o censo)</h2>
   <p>Regra de ouro: <b>quente nunca vira perda cega</b> (fica com o time). O resto segue a classe da turma.</p>
   <div class="tablewrap">
@@ -90,7 +107,7 @@
       <thead><tr><th>Segmento</th><th>Qtd</th><th>O que fazer na migração</th><th></th></tr></thead>
       <tbody>
         <tr><td><b>Turma FUTURA</b></td><td class="n">222</td><td>Ancorar no <b>lote vigente</b> da turma; etapa vira etiqueta; entra no board por fase.</td><td><span class="pill p-anchor">ancorar</span></td></tr>
-        <tr><td><b>SEM turma</b></td><td class="n">90</td><td>Triagem: atribuir à <b>próxima turma</b> da cidade/produto de interesse. Sem match → coluna <b>Triagem</b>.</td><td><span class="pill p-tri">triagem</span></td></tr>
+        <tr><td><b>SEM turma</b></td><td class="n">90</td><td><b>42 já etiquetados</b> (cidade achada na conversa). Os <b>48 sem cidade</b> → <b>disparo perguntando a cidade</b> ("te mando as turmas da tua região") → respondeu: etiqueta · sem resposta em ~4 dias: <b>vira perda</b>.</td><td><span class="pill p-tri">disparo → perda</span></td></tr>
         <tr><td><b>Turma PASSADA · frio</b></td><td class="n">~67</td><td>atendimento / lote / próxima turma / bolsa → <b>vira perda + entra no pool de disparo</b> (win-back em massa).</td><td><span class="pill p-lose">perda + disparo</span></td></tr>
         <tr><td><b>Turma PASSADA · quente</b></td><td class="n">~21</td><td>aguardando pagamento / ligação boa / agendado → <b>fica com o time</b> (fechando) ou rola pra próxima turma. NÃO vira perda.</td><td><span class="pill p-keep">preservar</span></td></tr>
         <tr><td><b>PERDA</b> (já perdidos)</td><td class="n">484</td><td>Já vão pro pool de disparo pelo sync. Só confirmar que estão lá (segmentáveis por cidade+produto).</td><td><span class="pill p-lose">no pool</span></td></tr>
