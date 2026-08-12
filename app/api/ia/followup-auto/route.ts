@@ -56,7 +56,8 @@ export async function POST(req: NextRequest) {
       return byFam || arr.find(t => !/_(fc|anl)$/i.test(t.nome_meta)) || arr[0]
     }
     // 🆕 REPOSIÇÃO DE LOTE — templates buscados DIRETO por nome (fora da cadência normal por etapa/chave).
-    const { data: tplsRepo } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true).in('nome_meta', ['cnd_reposicao_unico', 'cnd_reposicao_lote'])
+    // SÓ 'aprovado': enquanto a Meta não aprovar, o toque de reposição não dispara (não tenta enviar template pendente).
+    const { data: tplsRepo } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true).eq('status', 'aprovado').in('nome_meta', ['cnd_reposicao_unico', 'cnd_reposicao_lote'])
     const tplRepoUnico = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_unico') || null  // A: lote único ("segurei o valor")
     const tplRepoMulti = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_lote') || null   // B: multi-lote ("estendi o lote 1")
 
