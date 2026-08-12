@@ -6,6 +6,7 @@ import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
 import { dossiesLote } from '@/lib/historico-lead'
 import { interpretarFollowup } from '@/lib/interpretar-followup'
+import { loteVigente, hojeBRT, type Lote } from '@/lib/lote'
 
 export const maxDuration = 60
 
@@ -177,8 +178,15 @@ export async function POST(req: NextRequest) {
     const lote = planos.slice(0, limit)
     // turma (cidade + preço) por lead + prazo do lote (hoje+3, fim de semana → segunda)
     const turmaIds = [...new Set(lote.map(p => p.lead.turma_id).filter(Boolean))] as string[]
-    const turmaInfo = new Map<string, { cidade: string; preco: number; codigo: string }>()
-    if (turmaIds.length) { const { data: tt } = await sb.from('turmas').select('id, codigo, preco_venda, cidades(nome)').in('id', turmaIds); for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '' }) }
+    const turmaInfo = new Map<string, { cidade: string; preco: number; codigo: string; loteVig: Lote | null }>()
+    if (turmaIds.length) {
+      const { data: tt } = await sb.from('turmas').select('id, codigo, preco_venda, cidades(nome)').in('id', turmaIds)
+      // 🆕 LOTE REAL (modelo novo): o preço do lote VIGENTE de cada turma manda no preço da mensagem.
+      const { data: allLotes } = await sb.from('turma_lotes').select('turma_id, ordem, nome, preco_pix, preco_cartao, parcela_cartao, vale_ate').in('turma_id', turmaIds).order('ordem')
+      const lotesPorTurma = new Map<string, Lote[]>(); for (const l of (allLotes || []) as any[]) { const a = lotesPorTurma.get(l.turma_id) || []; a.push(l); lotesPorTurma.set(l.turma_id, a) }
+      const hoje = hojeBRT()
+      for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '', loteVig: loteVigente(lotesPorTurma.get(t.id) || [], hoje) })
+    }
     // prazo do lote FIXO POR LEAD = entrada no lote + 4 dias úteis (o dia do "último dia") — assim o "lote virando"
     // e o "último dia" batem a mesma data pro mesmo lead (não recalcula hoje+3 a cada mensagem).
     // prazo ROLANTE a partir de HOJE (+4 dias úteis). Antes ancorava na ENTRADA da etapa — se o lead entrou faz
@@ -229,6 +237,8 @@ export async function POST(req: NextRequest) {
       // (2697 é o valor do CARTÃO, não do Pix — não usa como Pix).
       let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
       if (!precoPix && ti?.preco && ti.preco > 0 && ti.preco !== 2697) precoPix = ti.preco
+      // 🆕 LOTE REAL vence o hardcoded: turma com lote cadastrado → usa o preço do lote VIGENTE (Pix).
+      if (ti?.loteVig) precoPix = ti.loteVig.preco_pix
       // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
       const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 10x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 10x sem juros' : ''
       // ⛔ BLINDAGEM R$0 (bug grave da Helena): template que precisa de preço/bolsa sem produto resolvido → NÃO manda.
@@ -240,7 +250,7 @@ export async function POST(req: NextRequest) {
         nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
         cidade: ti?.cidade || 'sua região',
         preco_pix: money(precoPix), preco: money(precoPix),
-        preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
+        preco_cartao: ti?.loteVig ? `10x de ${money(ti.loteVig.parcela_cartao)}` : (fam === 'FC' ? 'R$2697 no cartão em até 10x' : ''),
         condicao_bolsa: bolsaTxt, prazo: prazoDe(entradaEtapa[l.id] || 0),
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
