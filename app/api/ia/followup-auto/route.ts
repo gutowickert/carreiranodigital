@@ -174,11 +174,11 @@ export async function POST(req: NextRequest) {
         const jaHojeU = !!ultOutU && new Date(ultOutU).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
         if (tUrg && !jaEnv.has((tUrg.nome_meta || '').toLowerCase()) && !jaHojeU) { planos.push({ lead: l, acao: 'enviar', chave: chaveUrg, tpl: tUrg }); continue }
       }
-      // 🆕 REPOSIÇÃO DE LOTE: 1 contato AGORA pra reancorar o lead de turma COM lote cuja virada ainda está LONGE
-      // (>3d, fora da janela de urgência da Fase 3) e que NUNCA recebeu reposição. Fecha o silêncio da transição pro
-      // modelo novo (o lead ficava parado até 3 dias antes da virada). Só etapas pós-preço (lote_preco_ok/oferecer_bolsa).
+      // 🆕 REPOSIÇÃO DE LOTE: 1 contato AGORA pra AVISAR A DATA CERTA do lote (que pra muitos foi prorrogada) e reancorar
+      // o lead de turma COM lote cuja virada ainda está LONGE (>3d, fora da urgência) e que NUNCA recebeu reposição.
+      // Cobre TODAS as etapas ativas (inclui atendimento_inicial — os "becos sem saída", que mais precisam da data).
       // Escolhe A (lote único: "segurei o valor") ou B (multi-lote: "estendi o lote 1") sozinho, pela existência de próximo lote.
-      if (dvLead !== null && dvLead > 3 && (l.etapa === 'lote_preco_ok' || l.etapa === 'oferecer_bolsa')) {
+      if (dvLead !== null && dvLead > 3 && ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(l.etapa)) {
         const tRepo = temProximoLote(l.turma_id) ? tplRepoMulti : tplRepoUnico
         if (tRepo && !jaEnv.has((tRepo.nome_meta || '').toLowerCase())) { planos.push({ lead: l, acao: 'enviar', chave: 'reposicao_lote', tpl: tRepo }); continue }
       }
