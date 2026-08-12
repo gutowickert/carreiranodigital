@@ -163,6 +163,17 @@ export async function POST(req: NextRequest) {
       const fam = familia(l.codigo_turma)
       const jaEnv = enviadosTpl[l.id] || new Set<string>()
       const dvLead = dvDaTurma(l.turma_id) // 🆕 dias até a virada real do lote (null = turma sem lote → modo antigo)
+      // 🆕 URGÊNCIA UNIVERSAL (fecha o beco do mudo): turma COM lote e virada PERTO (dv<=3), em QUALQUER etapa ativa —
+      // inclusive atendimento_inicial — recebe o toque de urgência mesmo sem nunca ter chegado em lote_preco_ok.
+      // dv<=0 → pos_virada ("hoje é o último dia"); dv 1..3 → lote_virando ("está encerrando"). Reusa os templates
+      // JÁ APROVADOS do lote_preco_ok. Cada 1x (jaEnv) e no máx 1 por dia. Prioridade sobre reposição/nutrição.
+      if (dvLead !== null && dvLead <= 3) {
+        const chaveUrg = dvLead <= 0 ? 'pos_virada_lote' : 'lote_virando'
+        const tUrg = pickTpl('lote_preco_ok', chaveUrg, fam)
+        const ultOutU = lastOutDe(l)
+        const jaHojeU = !!ultOutU && new Date(ultOutU).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
+        if (tUrg && !jaEnv.has((tUrg.nome_meta || '').toLowerCase()) && !jaHojeU) { planos.push({ lead: l, acao: 'enviar', chave: chaveUrg, tpl: tUrg }); continue }
+      }
       // 🆕 REPOSIÇÃO DE LOTE: 1 contato AGORA pra reancorar o lead de turma COM lote cuja virada ainda está LONGE
       // (>3d, fora da janela de urgência da Fase 3) e que NUNCA recebeu reposição. Fecha o silêncio da transição pro
       // modelo novo (o lead ficava parado até 3 dias antes da virada). Só etapas pós-preço (lote_preco_ok/oferecer_bolsa).
