@@ -454,6 +454,20 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     onFechar()
   }
 
+  // FECHAR SEM SALVAR — 3 caminhos equivalentes: o "x", o "Cancelar" e agora clicar fora / ESC.
+  // ESC: fecha o card. Igual ao Cancelar (descarta as edições do formulário).
+  useEffect(() => {
+    if (!aberto) return
+    const aoTeclar = (e: KeyboardEvent) => { if (e.key === 'Escape') onFechar() }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [aberto, onFechar])
+
+  // Clicar fora: só fecha se o mouse FOI PRESSIONADO no fundo escuro. Sem essa checagem, quem
+  // seleciona texto dentro do card (ex.: Observações) e solta o mouse fora fecharia o card sem
+  // querer, perdendo o que digitou — o clique-fantasma da seleção de texto.
+  const pressionouNoFundo = useRef(false)
+
   if (!aberto) return null
 
   const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
@@ -473,7 +487,10 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
   const tagStyle = { fontSize: 11, color: 'var(--accent-soft)', background: 'var(--accent-bg)', border: '1px solid var(--accent-soft)', borderRadius: 4, padding: '2px 8px' } as React.CSSProperties
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div
+      onMouseDown={e => { pressionouNoFundo.current = e.target === e.currentTarget }}
+      onClick={e => { if (e.target === e.currentTarget && pressionouNoFundo.current) onFechar() }}
+      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
