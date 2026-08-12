@@ -21,6 +21,11 @@ const MIG_ETAPA_LABEL: Record<string, string> = {
 }
 const MIG_ETAPA_ORDEM = ['atendimento_inicial', 'lote_preco_ok', 'agendado', 'aguardando_pagamento', 'oferecer_bolsa']
 const ehMigracao = (t: any) => (t.nome_meta || '').startsWith('cnd_mudanca_')
+// Template de CADÊNCIA = tem etapa entre as 4 do funil (é o que o motor de follow-up usa).
+const ehCadencia = (t: any) => !ehMigracao(t) && ETAPA_ORDEM.includes(t.etapa)
+// Todo o RESTO (etapa vazia ou fora da cadência) — os templates de DISPARO caem aqui.
+// Sem esta seção eles ficavam invisíveis na tela: a listagem só percorria ETAPA_ORDEM.
+const ehOutro = (t: any) => !ehMigracao(t) && !ehCadencia(t)
 const PROD: Record<string, { label: string; cor: string }> = {
   anl: { label: 'ANL', cor: 'var(--blue)' }, fc: { label: 'FC', cor: 'var(--accent-soft)' }, ambos: { label: 'ambos', cor: 'var(--text-muted)' },
 }
@@ -158,6 +163,18 @@ export default function FollowupTemplates() {
               </div>
             </div>
           ))}
+
+          {templates.some(ehOutro) && (
+            <div>
+              <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-faint)', marginTop: 6 }}>Disparo e campanhas (fora da cadência)</div>
+              <div style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '4px 0 10px', lineHeight: 1.55 }}>
+                Templates sem etapa do funil — usados nos <b>disparos por turma/lista</b>, não na cadência automática. O motor de follow-up ignora estes.
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {templates.filter(ehOutro).map(t => <TemplateCard key={t.id} t={t} onSalvo={carregar} />)}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
