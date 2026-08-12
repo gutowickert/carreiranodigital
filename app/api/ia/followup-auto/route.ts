@@ -60,6 +60,11 @@ export async function POST(req: NextRequest) {
     const { data: tplsRepo } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true).eq('status', 'aprovado').in('nome_meta', ['cnd_reposicao_unico', 'cnd_reposicao_lote'])
     const tplRepoUnico = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_unico') || null  // A: lote único ("segurei o valor")
     const tplRepoMulti = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_lote') || null   // B: multi-lote ("estendi o lote 1")
+    // 🆕 NUTRIÇÃO (Fase 4) — gotejar de valor/cases durante a ESPERA (turma com lote, virada longe). Ordem fixa N1→N8.
+    // SÓ 'aprovado' (não dispara pendente). Cada lead recebe 1 por vez, a cada ~3 dias, cada um 1x.
+    const NUTRI_ORDER = ['cnd_nutri_1', 'cnd_nutri_2', 'cnd_nutri_3', 'cnd_nutri_4', 'cnd_nutri_5', 'cnd_nutri_6', 'cnd_nutri_7', 'cnd_nutri_8']
+    const { data: tplsNutri } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true).eq('status', 'aprovado').in('nome_meta', NUTRI_ORDER)
+    const nutriTpls = NUTRI_ORDER.map(n => (tplsNutri || []).find((t: any) => t.nome_meta === n)).filter(Boolean) as any[]
 
     // leads das 3 etapas + conversas escopadas
     const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
@@ -165,6 +170,15 @@ export async function POST(req: NextRequest) {
       if (dvLead !== null && dvLead > 3 && (l.etapa === 'lote_preco_ok' || l.etapa === 'oferecer_bolsa')) {
         const tRepo = temProximoLote(l.turma_id) ? tplRepoMulti : tplRepoUnico
         if (tRepo && !jaEnv.has((tRepo.nome_meta || '').toLowerCase())) { planos.push({ lead: l, acao: 'enviar', chave: 'reposicao_lote', tpl: tRepo }); continue }
+      }
+      // 🆕 NUTRIÇÃO (Fase 4): depois da reposição, GOTEJA valor/cases enquanto a virada está longe (dv>3). 1 a cada ~3
+      // dias, ciclando N1→N8, cada 1x. Preenche a espera até a urgência. Só pós-preço (lote_preco_ok/oferecer_bolsa).
+      if (dvLead !== null && dvLead > 3 && nutriTpls.length && (l.etapa === 'lote_preco_ok' || l.etapa === 'oferecer_bolsa')) {
+        const proxNutri = nutriTpls.find(t => !jaEnv.has((t.nome_meta || '').toLowerCase()))
+        const ultOut = lastOutDe(l)
+        const espacado = !ultOut || (now - ultOut >= 3 * DIA)         // gotejar: ~3 dias entre toques
+        const jaHojeN = !!ultOut && new Date(ultOut).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
+        if (proxNutri && espacado && !jaHojeN) { planos.push({ lead: l, acao: 'enviar', chave: 'nutricao', tpl: proxNutri }); continue }
       }
       // acha o próximo toque cujo template AINDA NÃO foi enviado a esse lead (não repete a mesma mensagem)
       // e que não seja reabridor/apresentação frio pra engajado.
