@@ -6,7 +6,7 @@ import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
 import { dossiesLote } from '@/lib/historico-lead'
 import { interpretarFollowup } from '@/lib/interpretar-followup'
-import { loteVigente, hojeBRT, type Lote } from '@/lib/lote'
+import { loteVigente, diasAteVirada, type Lote } from '@/lib/lote'
 
 export const maxDuration = 60
 
@@ -123,6 +123,21 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // 🆕 FASE 3 — CONTEXTO DE LOTE por turma: quantos dias faltam pra VIRADA do lote vigente. É isso que dirige a
+    // URGÊNCIA pela DATA REAL (turma com lote cadastrado). Sem lote → null → cadência fictícia de sempre (guarda).
+    const frioTurmaIds = [...new Set(frios.map(l => l.turma_id).filter(Boolean))] as string[]
+    const lotesPorTurma = new Map<string, Lote[]>()
+    if (frioTurmaIds.length) {
+      const { data: allLotes } = await sb.from('turma_lotes').select('turma_id, ordem, nome, preco_pix, preco_cartao, parcela_cartao, vale_ate').in('turma_id', frioTurmaIds).order('ordem')
+      for (const x of (allLotes || []) as any[]) { const a = lotesPorTurma.get(x.turma_id) || []; a.push(x); lotesPorTurma.set(x.turma_id, a) }
+    }
+    const dvDaTurma = (tid: string | null): number | null => { const ls = tid ? lotesPorTurma.get(tid) : null; return ls?.length ? diasAteVirada(ls, hojeBR) : null }
+    // Toques de URGÊNCIA guiados pela virada real: lote_virando dispara de 3 dias antes até a véspera (dv 1..3);
+    // pos_virada ("hoje é o último dia") dispara NO dia da virada (dv<=0). Fora dessas janelas, o card ESPERA.
+    const URGENCIA_CHAVE = new Set(['lote_virando', 'pos_virada_lote'])
+    const urgenciaDue = (chave: string, dv: number): boolean =>
+      chave === 'lote_virando' ? (dv >= 1 && dv <= 3) : chave === 'pos_virada_lote' ? (dv <= 0) : false
+
     // decide, por lead: qual a ação (enviar toque X / avançar etapa / esperar / nada)
     type Plano = { lead: any; acao: 'enviar' | 'avancar'; chave?: string; tpl?: any; demite?: boolean; proxEtapa?: string }
     const planos: Plano[] = []
@@ -135,6 +150,7 @@ export async function POST(req: NextRequest) {
       const o = toquesIA[l.id] || { n: 0, ultimo: 0 }
       const fam = familia(l.codigo_turma)
       const jaEnv = enviadosTpl[l.id] || new Set<string>()
+      const dvLead = dvDaTurma(l.turma_id) // 🆕 dias até a virada real do lote (null = turma sem lote → modo antigo)
       // acha o próximo toque cujo template AINDA NÃO foi enviado a esse lead (não repete a mesma mensagem)
       // e que não seja reabridor/apresentação frio pra engajado.
       let idx = o.n, toque: any = null, tpl: any = null
@@ -142,6 +158,9 @@ export async function POST(req: NextRequest) {
         const tq = cad[idx]
         const t = pickTpl(l.etapa, tq.chave, fam)
         const jaFoi = t && jaEnv.has((t.nome_meta || '').toLowerCase())
+        // 🆕 FASE 3: turma com lote — se a JANELA do lote_virando já passou (virada hoje/no passado), PULA esse
+        // toque pra selecionar o pós-virada ("último dia"). Sem lote (dvLead null) → nunca pula.
+        const urgPassou = dvLead !== null && tq.chave === 'lote_virando' && dvLead <= 0
         // 🚫 NUNCA manda template de ABERTURA/REINTRODUÇÃO/APRESENTAÇÃO pra quem JÁ ENGAJOU (respondeu alguma vez).
         // Template fixo não sabe o que o cliente já disse — reabrir com "aqui é o Mateus, qual é teu negócio?" pra
         // quem já respondeu "Estética" e já viu o pitch soa como se a gente não lembrasse dele. Warm = do time/copiloto
@@ -150,7 +169,7 @@ export async function POST(req: NextRequest) {
         const jaEngajou = !!dossies.get(l.id)?.ultimoEngajamentoEm
         const aberturaFria = /retomar|retomada|apresenta|mudanca|nao_atendeu/i.test(t.nome_meta || '')
         const engBloq = t && aberturaFria && (engajadoRecente(l) || jaEngajou)
-        if (t && !jaFoi && !engBloq) { toque = tq; tpl = t; break }
+        if (t && !jaFoi && !engBloq && !urgPassou) { toque = tq; tpl = t; break }
         idx++
       }
       if (!tpl) {
@@ -167,7 +186,11 @@ export async function POST(req: NextRequest) {
       // do último toque da IA. A entrada agora ignora correção da IA (não reseta), então o D+X é confiável.
       const ref = o.n > 0 ? o.ultimo : (entradaEtapa[l.id] || 0)
       // due = chegou o dia da cadência do fluxo OU tem TAREFA de mensagem vencida (o time não faz mais; a IA faz)
-      const due = (now - ref >= (toque.dias || 0) * DIA) || tarefaDeLead.has(l.id)
+      // 🆕 FASE 3: toque de URGÊNCIA em turma COM lote dispara pela DATA REAL da virada (lote_virando 3d antes→véspera;
+      //   pos_virada no dia da virada). Fora da janela SEGURA (o card espera a virada, não cutuca antes). Sem lote = D+X.
+      const due = (URGENCIA_CHAVE.has(toque.chave) && dvLead !== null)
+        ? urgenciaDue(toque.chave, dvLead)
+        : ((now - ref >= (toque.dias || 0) * DIA) || tarefaDeLead.has(l.id))
       const jaHoje = lastOutDe(l) && new Date(lastOutDe(l)).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
       if (!due || jaHoje) continue
       planos.push({ lead: l, acao: 'enviar', chave: toque.chave, tpl, demite: /demiss|encerr/i.test(toque.chave) })
@@ -181,11 +204,8 @@ export async function POST(req: NextRequest) {
     const turmaInfo = new Map<string, { cidade: string; preco: number; codigo: string; loteVig: Lote | null }>()
     if (turmaIds.length) {
       const { data: tt } = await sb.from('turmas').select('id, codigo, preco_venda, cidades(nome)').in('id', turmaIds)
-      // 🆕 LOTE REAL (modelo novo): o preço do lote VIGENTE de cada turma manda no preço da mensagem.
-      const { data: allLotes } = await sb.from('turma_lotes').select('turma_id, ordem, nome, preco_pix, preco_cartao, parcela_cartao, vale_ate').in('turma_id', turmaIds).order('ordem')
-      const lotesPorTurma = new Map<string, Lote[]>(); for (const l of (allLotes || []) as any[]) { const a = lotesPorTurma.get(l.turma_id) || []; a.push(l); lotesPorTurma.set(l.turma_id, a) }
-      const hoje = hojeBRT()
-      for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '', loteVig: loteVigente(lotesPorTurma.get(t.id) || [], hoje) })
+      // 🆕 LOTE REAL: preço do lote VIGENTE manda na mensagem. Reusa o `lotesPorTurma` já carregado (todos os frios).
+      for (const t of (tt || []) as any[]) turmaInfo.set(t.id, { cidade: t.cidades?.nome || '', preco: t.preco_venda || 0, codigo: t.codigo || '', loteVig: loteVigente(lotesPorTurma.get(t.id) || [], hojeBR) })
     }
     // prazo do lote FIXO POR LEAD = entrada no lote + 4 dias úteis (o dia do "último dia") — assim o "lote virando"
     // e o "último dia" batem a mesma data pro mesmo lead (não recalcula hoje+3 a cada mensagem).
