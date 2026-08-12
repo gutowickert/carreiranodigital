@@ -40,6 +40,8 @@ export async function POST(req: NextRequest) {
       if (restam() > 6000) { const r = await post('/api/ia/garantir-tarefas', { dryRun: false, confirm: true }); log.push('garantir-tarefas → ' + (r?.criadas ?? '?') + ' órfãos do time') }
       // roteador de turma: 10d após uma turma começar, rola os órfãos dela pra próxima turma (1 toque de reativação)
       if (restam() > 6000) { const r = await post('/api/ia/roteador-turma', { dryRun: false, confirm: true }); log.push('roteador-turma → ' + (r?.reativados ?? '?') + ' reativados' + (r?.semProxima?.length ? ` ⚠️ ${r.semProxima.length} turma(s) SEM próxima (decidir)` : '')) }
+      // sem-cidade → perda em 2 dias: quem recebeu "qual tua cidade?" e não respondeu vira perda (pool de disparo)
+      if (restam() > 6000) { const r = await post('/api/ia/sem-cidade-perda', { dryRun: false, confirm: true }); log.push('sem-cidade-perda → ' + (r?.perdidos ?? '?') + ' perdidos (de ' + (r?.candidatos ?? '?') + ')') }
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     } else { // noite
       // limit 5 (era 10): 10 interpretações LLM numa chamada estouravam os 60s → morria sem processar.
