@@ -143,8 +143,9 @@ export default function LeadCardModal({ leadId, onClose }: { leadId: string; onC
   }
 
   async function cancelarTarefasPendentes(lid: string) {
+    // preserva ligar_agendado (ligação marcada pelo vendedor = compromisso; não some ao mudar de etapa)
     await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString(), atualizado_em: new Date().toISOString() })
-      .eq('lead_id', lid).eq('concluida', false).eq('cancelada', false)
+      .eq('lead_id', lid).eq('concluida', false).eq('cancelada', false).neq('tipo', 'ligar_agendado')
   }
 
   async function criarPrimeiraTarefaDaEtapa(lid: string, vendedorId: string | null, etapa: string, dataReferencia: Date, leadNome: string) {

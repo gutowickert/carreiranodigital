@@ -256,6 +256,9 @@ export default function CRM() {
 
   // Cancela TODAS as tarefas pendentes do lead (chamado ao mudar de etapa)
   async function cancelarTarefasPendentes(leadId: string) {
+    // PRESERVA ligar_agendado: uma ligação MARCADA pelo vendedor é um compromisso — não pode ser
+    // apagada quando o lead muda de etapa (era o bug da Cris: agendava a ligação e o move pra "Ligação"
+    // cancelava ela na hora, sumindo da Fila de Ligações).
     await supabase.from('tarefas_lead').update({
       cancelada: true,
       cancelada_em: new Date().toISOString(),
@@ -264,6 +267,7 @@ export default function CRM() {
       .eq('lead_id', leadId)
       .eq('concluida', false)
       .eq('cancelada', false)
+      .neq('tipo', 'ligar_agendado')
   }
 
   // Cria a PRIMEIRA tarefa da sequência de uma etapa
