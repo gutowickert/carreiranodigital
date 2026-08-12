@@ -9,8 +9,8 @@ const GRAPH = 'https://graph.facebook.com/v25.0'
 // valores de exemplo pras variáveis (o Meta pede um exemplo por variável)
 const EXEMPLO: Record<string, string> = {
   nome: 'Maria', vendedor: 'Ricardo', cidade: 'Porto Alegre', curso: 'Anúncios para Negócios Locais',
-  datas: '11, 12 e 13/08', preco_pix: 'R$797', preco_parcelado: '10x de R$99,70',
-  prazo: '25/07', condicao_bolsa: 'R$697 à vista',
+  datas: '11, 12 e 13/08', preco_pix: 'R$797', preco_parcelado: '10x de R$99,70', preco_cartao: '10x de R$99,70',
+  prazo: '25/08', condicao_bolsa: 'R$697 à vista',
 }
 
 // {{nome}} {{cidade}} ... -> {{1}} {{2}} ... + lista de exemplos na ordem

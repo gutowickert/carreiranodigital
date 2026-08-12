@@ -55,6 +55,10 @@ export async function POST(req: NextRequest) {
       const byFam = arr.find(t => fam === 'FC' ? /_fc$/i.test(t.nome_meta) : fam === 'ANL' ? /_anl$/i.test(t.nome_meta) : false)
       return byFam || arr.find(t => !/_(fc|anl)$/i.test(t.nome_meta)) || arr[0]
     }
+    // 🆕 REPOSIÇÃO DE LOTE — templates buscados DIRETO por nome (fora da cadência normal por etapa/chave).
+    const { data: tplsRepo } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis').eq('org_id', org).eq('ativo', true).in('nome_meta', ['cnd_reposicao_unico', 'cnd_reposicao_lote'])
+    const tplRepoUnico = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_unico') || null  // A: lote único ("segurei o valor")
+    const tplRepoMulti = (tplsRepo || []).find((t: any) => t.nome_meta === 'cnd_reposicao_lote') || null   // B: multi-lote ("estendi o lote 1")
 
     // leads das 3 etapas + conversas escopadas
     const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
@@ -132,6 +136,8 @@ export async function POST(req: NextRequest) {
       for (const x of (allLotes || []) as any[]) { const a = lotesPorTurma.get(x.turma_id) || []; a.push(x); lotesPorTurma.set(x.turma_id, a) }
     }
     const dvDaTurma = (tid: string | null): number | null => { const ls = tid ? lotesPorTurma.get(tid) : null; return ls?.length ? diasAteVirada(ls, hojeBR) : null }
+    // turma com PRÓXIMO lote (preço vai subir) → reposição B ("estendi o lote 1"); sem próximo (único/último) → A ("segurei o valor").
+    const temProximoLote = (tid: string | null): boolean => { const ls = tid ? lotesPorTurma.get(tid) : null; if (!ls?.length) return false; const vig = loteVigente(ls, hojeBR); return !!vig && ls.some(x => x.ordem > vig.ordem) }
     // Toques de URGÊNCIA guiados pela virada real: lote_virando dispara de 3 dias antes até a véspera (dv 1..3);
     // pos_virada ("hoje é o último dia") dispara NO dia da virada (dv<=0). Fora dessas janelas, o card ESPERA.
     const URGENCIA_CHAVE = new Set(['lote_virando', 'pos_virada_lote'])
@@ -151,6 +157,14 @@ export async function POST(req: NextRequest) {
       const fam = familia(l.codigo_turma)
       const jaEnv = enviadosTpl[l.id] || new Set<string>()
       const dvLead = dvDaTurma(l.turma_id) // 🆕 dias até a virada real do lote (null = turma sem lote → modo antigo)
+      // 🆕 REPOSIÇÃO DE LOTE: 1 contato AGORA pra reancorar o lead de turma COM lote cuja virada ainda está LONGE
+      // (>3d, fora da janela de urgência da Fase 3) e que NUNCA recebeu reposição. Fecha o silêncio da transição pro
+      // modelo novo (o lead ficava parado até 3 dias antes da virada). Só etapas pós-preço (lote_preco_ok/oferecer_bolsa).
+      // Escolhe A (lote único: "segurei o valor") ou B (multi-lote: "estendi o lote 1") sozinho, pela existência de próximo lote.
+      if (dvLead !== null && dvLead > 3 && (l.etapa === 'lote_preco_ok' || l.etapa === 'oferecer_bolsa')) {
+        const tRepo = temProximoLote(l.turma_id) ? tplRepoMulti : tplRepoUnico
+        if (tRepo && !jaEnv.has((tRepo.nome_meta || '').toLowerCase())) { planos.push({ lead: l, acao: 'enviar', chave: 'reposicao_lote', tpl: tRepo }); continue }
+      }
       // acha o próximo toque cujo template AINDA NÃO foi enviado a esse lead (não repete a mesma mensagem)
       // e que não seja reabridor/apresentação frio pra engajado.
       let idx = o.n, toque: any = null, tpl: any = null
@@ -271,7 +285,9 @@ export async function POST(req: NextRequest) {
         cidade: ti?.cidade || 'sua região',
         preco_pix: money(precoPix), preco: money(precoPix),
         preco_cartao: ti?.loteVig ? `10x de ${money(ti.loteVig.parcela_cartao)}` : (fam === 'FC' ? 'R$2697 no cartão em até 10x' : ''),
-        condicao_bolsa: bolsaTxt, prazo: prazoDe(entradaEtapa[l.id] || 0),
+        condicao_bolsa: bolsaTxt,
+        // 🆕 prazo REAL do lote (vale_ate) quando a turma tem lote e a data ainda não passou; senão o prazo rolante de sempre.
+        prazo: (ti?.loteVig && ti.loteVig.vale_ate >= hojeBR) ? `${ti.loteVig.vale_ate.slice(8, 10)}/${ti.loteVig.vale_ate.slice(5, 7)}` : prazoDe(entradaEtapa[l.id] || 0),
       }
       const ordem = (p.tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)
       const textoRender = (p.tpl.corpo || '').replace(/\{\{(\w+)\}\}/g, (_m: string, k: string) => valores[k] ?? `{{${k}}}`)
