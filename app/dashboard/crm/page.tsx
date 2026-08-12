@@ -4,6 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { ModalLead } from '@/components/LeadCard'
+import { LABEL_FASE, ORDEM_FASE } from '@/lib/lote-core'
 
 type Lead = {
   id: string
@@ -83,6 +84,8 @@ export default function CRM() {
   const [vendedores, setVendedores] = useState<Vendedor[]>([])
   const [motivosPerda, setMotivosPerda] = useState<MotivoPerda[]>([])
   const [visao, setVisao] = useState<'kanban' | 'lista'>('kanban')
+  const [verPorFase, setVerPorFase] = useState(false) // board por FASE da turma (ideia do Nando) em vez de por etapa
+  const [fasesPorTurma, setFasesPorTurma] = useState<Record<string, string>>({}) // turma_id -> fase (só turmas com lote)
   const [busca, setBusca] = useState('')
   const [filtroTurma, setFiltroTurma] = useState('')
   const [filtroVendedor, setFiltroVendedor] = useState('')
@@ -100,6 +103,8 @@ export default function CRM() {
     }).catch(() => { })
   }, [])
   const etapasKanban = etapasOrg.filter(e => (e.papel ? (e.papel !== 'ganho' && e.papel !== 'perda') : (e.id !== 'ganho' && e.id !== 'perda')))
+  // fase de cada turma (só as com lote) — pro board "Ver por Fase"
+  useEffect(() => { fetchAuth('/api/turmas/fases').then(r => r.json()).then(j => { if (j?.ok) setFasesPorTurma(j.fases || {}) }).catch(() => { }) }, [])
 
   // abre o card do lead direto quando vem de outra tela (?lead=<id>) — ex.: Fila de Ligações
   const [leadParam, setLeadParam] = useState<string | null>(null)
@@ -435,8 +440,26 @@ export default function CRM() {
     return { color: 'var(--text-muted)', background: 'var(--surface-2)' } // sem resposta, outro, etc.
   }
 
-  const leadsPorEtapa = etapasKanban.map(e => ({
-    etapa: e,
+  // 🆕 BOARD POR FASE (Nando): as colunas viram a FASE da turma (calendário); a etapa de negociação vira tag no card.
+  const faseDoLead = (l: Lead) => fasesPorTurma[l.turma_id] || null
+  const etapaInfo = (id: string) => etapasOrg.find(e => e.id === id) || { id, label: id, cor: 'var(--text-muted)', bg: 'var(--surface-2)' }
+  const FASE_COR: Record<string, { cor: string; bg: string }> = {
+    vendas_abertas: { cor: 'var(--blue)', bg: 'var(--blue-bg)' },
+    lote_avancado: { cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
+    ultimo_lote: { cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+    vespera: { cor: 'var(--red)', bg: 'var(--red-bg)' },
+    encerrada: { cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+    sem_lote: { cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  }
+  const colunasFase = ([...ORDEM_FASE, 'sem_lote'] as string[]).map(f => ({
+    id: f,
+    label: f === 'sem_lote' ? 'Sem lote' : (LABEL_FASE as any)[f],
+    cor: FASE_COR[f].cor, bg: FASE_COR[f].bg, dropEtapa: null as string | null,
+    leads: leadsAtivos.filter(l => (faseDoLead(l) || 'sem_lote') === f),
+  })).filter(c => ['vendas_abertas', 'lote_avancado', 'ultimo_lote', 'vespera'].includes(c.id) || c.leads.length)
+  // fonte unificada das colunas do kanban — por FASE (calendário, drag desligado) ou por ETAPA (de sempre, drag ligado)
+  const colunasKanban = verPorFase ? colunasFase : etapasKanban.map(e => ({
+    id: e.id, label: e.label, cor: e.cor, bg: e.bg, dropEtapa: e.id as string | null,
     leads: leadsAtivos.filter(l => l.etapa === e.id),
   }))
 
@@ -458,6 +481,12 @@ export default function CRM() {
                 Lista
               </button>
             </div>
+            {visao === 'kanban' && (
+              <button onClick={() => setVerPorFase(v => !v)} title="Agrupar por FASE da turma (calendário) em vez de etapa de negociação"
+                style={{ padding: '8px 16px', background: verPorFase ? 'var(--accent)' : 'var(--surface)', color: verPorFase ? 'var(--on-accent)' : 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
+                📅 Por fase
+              </button>
+            )}
             <button onClick={() => { setLeadEditando(null); setNovoLead(true); setModalAberto(true) }} style={btnPrimary}>
               + Novo lead
             </button>
@@ -493,22 +522,24 @@ export default function CRM() {
         {visao === 'kanban' && (
           <>
             <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
-              {leadsPorEtapa.map(({ etapa, leads: leadsEtapa }) => (
-                <div key={etapa.id}
-                  onDragOver={e => { if (dragLeadRef.current) { e.preventDefault(); if (colunaAlvo !== etapa.id) setColunaAlvo(etapa.id) } }}
-                  onDragLeave={() => { if (colunaAlvo === etapa.id) setColunaAlvo(null) }}
+              {colunasKanban.map((col) => {
+                const leadsEtapa = col.leads
+                return (
+                <div key={col.id}
+                  onDragOver={e => { if (dragLeadRef.current && col.dropEtapa) { e.preventDefault(); if (colunaAlvo !== col.id) setColunaAlvo(col.id) } }}
+                  onDragLeave={() => { if (colunaAlvo === col.id) setColunaAlvo(null) }}
                   onDrop={async e => {
                     e.preventDefault()
                     const l = dragLeadRef.current
                     dragLeadRef.current = null
                     setColunaAlvo(null)
-                    if (l && l.etapa !== etapa.id) { await moverEtapa(l, etapa.id) }
+                    if (l && col.dropEtapa && l.etapa !== col.dropEtapa) { await moverEtapa(l, col.dropEtapa) }
                   }}
-                  style={{ flex: '0 0 260px', minHeight: 400, borderRadius: 8, outline: colunaAlvo === etapa.id ? `2px dashed ${etapa.cor}` : '2px dashed transparent', transition: 'outline-color 0.15s' }}>
-                  <div style={{ background: etapa.bg, border: `1px solid ${etapa.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
+                  style={{ flex: '0 0 260px', minHeight: 400, borderRadius: 8, outline: colunaAlvo === col.id ? `2px dashed ${col.cor}` : '2px dashed transparent', transition: 'outline-color 0.15s' }}>
+                  <div style={{ background: col.bg, border: `1px solid ${col.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: etapa.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{etapa.label}</span>
-                      <span style={{ fontSize: 12, color: etapa.cor }}>{leadsEtapa.length}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, color: col.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col.label}</span>
+                      <span style={{ fontSize: 12, color: col.cor }}>{leadsEtapa.length}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 340px)', overflowY: 'auto', paddingRight: 4 }}>
@@ -520,11 +551,11 @@ export default function CRM() {
                       const alerta = cicloEstourou || prazoEstourou || tarefaAtrasada
                       return (
                         <div key={lead.id}
-                          draggable
-                          onDragStart={e => { dragLeadRef.current = lead; e.dataTransfer.effectAllowed = 'move' }}
+                          draggable={!!col.dropEtapa}
+                          onDragStart={e => { if (!col.dropEtapa) return; dragLeadRef.current = lead; e.dataTransfer.effectAllowed = 'move' }}
                           onDragEnd={() => { dragLeadRef.current = null; setColunaAlvo(null) }}
                           onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                          style={{ ...card, padding: 12, cursor: 'grab', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
+                          style={{ ...card, padding: 12, cursor: col.dropEtapa ? 'grab' : 'pointer', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
                             <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle' }} />}{lead.nome}</div>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
@@ -538,6 +569,9 @@ export default function CRM() {
                               {lead.turmas.codigo || lead.turmas.produtos?.nome}
                             </div>
                           )}
+                          {verPorFase && (() => { const ei = etapaInfo(lead.etapa); return (
+                            <div title="Etapa da negociação" style={{ fontSize: 10, color: ei.cor, marginTop: 6, marginLeft: 6, padding: '2px 6px', background: ei.bg, borderRadius: 4, display: 'inline-block' }}>{ei.label}</div>
+                          ) })()}
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
                             <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
                             <div style={{ display: 'flex', gap: 4 }}>
@@ -562,7 +596,7 @@ export default function CRM() {
                     )}
                   </div>
                 </div>
-              ))}
+              ) })}
             </div>
 
             <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
