@@ -25,14 +25,25 @@ export function ehEmpresa(nome: string | null): boolean {
 
 // tira emojis, símbolos e pontuação decorativa que vêm colados no nome (ex.: "🎀Kamylla🎀", "*João*")
 const limpaNome = (s: string | null): string => (s || '')
+  .normalize('NFKC') // funde letras "estilizadas" do WhatsApp (𝐓𝐚𝐧𝐢𝐚 → Tania, 𝕁𝕠ã𝕠 → João)
   .replace(/[\u{1F000}-\u{1FAFF}\u{1F1E6}-\u{1F1FF}\u{2190}-\u{2BFF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, ' ')
   .replace(/[*_~`|]/g, ' ')
   .replace(/\s+/g, ' ').trim()
 
+// RÓTULO de pessoa que vem ANTES do nome (profissão/título): "Arquiteta Cintia", "Dr João", "Corretor Léo".
+// Nesses, o nome real é o PRÓXIMO token — pula o rótulo em vez de cumprimentar pela profissão.
+const ROTULO_PESSOA = /^(arquitet[oa]|advogad[oa]|corretor[a]?|m[ée]dic[oa]|dentista|nutri(cionista)?|personal|coach|psic[óo]log[oa]|fisio(terapeuta)?|contador[a]?|engenheir[oa]|enfermeir[oa]|veterin[áa]ri[oa]|esteticista|cabeleireir[oa]|manicure|designer|consultor[a]?|terapeuta|professor[a]?|pastor[a]?|delegad[oa]|dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i
+const CONECTOR = /^(de|do|da|dos|das|e)$/i
+
 // 1º nome de PESSOA (capitalizado) ou null se o começo for empresa/cargo/genérico
 const primeiroSePessoa = (s: string): string | null => {
-  const p = limpaNome(s).replace(/[^\p{L}\p{N} .'\-]/gu, ' ').trim().split(/\s+/)[0] || ''
-  if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p) || /^(dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i.test(p)) return null
+  const toks = limpaNome(s).replace(/[^\p{L}\p{N} .'\-]/gu, ' ').trim().split(/\s+/).filter(Boolean)
+  // pula rótulos de profissão/título e conectores no começo ("Arquiteta Cintia" → Cintia)
+  let i = 0
+  while (i < toks.length && (ROTULO_PESSOA.test(toks[i]) || CONECTOR.test(toks[i]))) i++
+  const p = toks[i] || ''
+  if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p)) return null
+  if (/^\p{Lu}+$/u.test(p) && p.length <= 2) return null // sigla/iniciais em maiúsculas (ex.: "SW", "AB") → não é primeiro nome
   return cap(p.toLowerCase())
 }
 
