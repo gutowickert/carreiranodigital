@@ -46,6 +46,7 @@ const grupos: Grupo[] = [
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
       { nome: 'CRM', href: '/dashboard/crm' },
+      { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
       { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
@@ -135,7 +136,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
   if (p.papel === 'admin') return true
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
-  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
+  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/lotes', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
   if (baseVendedor.includes(href)) return true
   // CRM interno
   if (p.crm_interno && (href === '/dashboard/crm' || href === '/dashboard/crm/resultados')) return true
