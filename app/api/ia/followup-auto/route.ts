@@ -102,6 +102,7 @@ export async function POST(req: NextRequest) {
     const toquesIA: Record<string, { n: number; ultimo: number }> = {}
     const enviadosTpl: Record<string, Set<string>> = {} // templates (cnd_*) que o lead JÁ recebeu (qualquer fonte) → não repetir
     const reativadoRecente = new Set<string>() // lead que o roteador reativou ("nova turma") nos últimos 7d → cooldown da cadência
+    const tocadoHoje = new Set<string>() // 🆕 lead que JÁ recebeu um ia_followup HOJE → trava dura de 1 msg/dia (robusta entre rodadas do cron)
     for (let i = 0; i < ids.length; i += 100) {
       const chunk = ids.slice(i, i + 100)
       // PAGINADO — o Supabase corta em 1000 linhas; com muitos andamentos por lead isso truncava e cegava o dedup (repetia template)
@@ -130,6 +131,8 @@ export async function POST(req: NextRequest) {
         enviadosTpl[l.id] = set
         // reativado pelo roteador nos últimos 7 dias? → entra em cooldown (não deixa a cadência disparar em cima)
         if (as.some(a => a.tipo === 'ia_followup' && /reativa_nova_turma/.test(a.observacao || '') && (now - +new Date(a.criado_em)) < 7 * DIA)) reativadoRecente.add(l.id)
+        // 🆕 já recebeu algum toque da IA HOJE? (andamentos são persistentes → funciona entre as várias rodadas do cron)
+        if (as.some(a => a.tipo === 'ia_followup' && new Date(a.criado_em).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR)) tocadoHoje.add(l.id)
       }
     }
 
@@ -158,6 +161,9 @@ export async function POST(req: NextRequest) {
       // NÃO dispara em cima nos primeiros 7 dias (senão ele levaria, ex., a demissão logo depois da reativação).
       // Dá tempo dele responder à turma nova; passado o cooldown, a cadência retoma (com a trava anti-repetição).
       if (reativadoRecente.has(l.id)) continue
+      // ⛔ 1 MENSAGEM POR DIA (trava dura): já recebeu um toque da IA hoje → não manda outro. Fecha o furo do
+      // gotejar em rajada (reposição + várias nutrições no mesmo dia) quando o dossiê não enxerga o envio recente.
+      if (tocadoHoje.has(l.id)) continue
       const cad = (fluxo.cadencia[l.etapa] || [])
       const o = toquesIA[l.id] || { n: 0, ultimo: 0 }
       const fam = familia(l.codigo_turma)
