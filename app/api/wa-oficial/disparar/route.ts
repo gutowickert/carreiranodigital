@@ -43,13 +43,25 @@ export async function POST(req: NextRequest) {
       const { data: outs } = await supabase.from('wa_optout').select('telefone').eq('org_id', org).in('telefone', fones)
       const optoutSet = new Set((outs || []).map((o: any) => o.telefone))
 
-      let enviados = 0, falhas = 0
+      // 🔒 TRAVA DE PÚBLICO (fixada 2026-08-13): disparo (broadcast) NÃO vai pra lead ATIVO do CRM. Só passa contato
+      // SEM lead (lista fria importada) ou lead em PERDA. Protege negociação em andamento de levar mensagem fria —
+      // já mandamos abertura por engano pra gente agendada/prestes a pagar; esta trava impede que volte a acontecer.
+      const leadIds = contatos.map((c: any) => c.lead_id).filter(Boolean)
+      const bloqueado = new Set<string>()
+      if (leadIds.length) {
+        const { data: lds } = await supabase.from('leads').select('id, etapa').eq('org_id', org).in('id', leadIds)
+        for (const l of (lds || [])) if (l.etapa !== 'perda') bloqueado.add(l.id) // não-perda (ativo/ganho) → bloqueia
+      }
+
+      let enviados = 0, falhas = 0, pulados = 0
       const envios: any[] = []
 
       for (const c of contatos) {
         const tel = foneOficial(c.telefone)
         if (!tel || tel.length < 12) { falhas++; envios.push({ org_id: org, disparo_id: disparoId, telefone: c.telefone, nome: c.nome || null, lead_id: c.lead_id || null, aluno_id: c.aluno_id || null, status: 'falha', erro: 'telefone invalido', atualizado_em: new Date().toISOString() }); continue }
         if (optoutSet.has(tel)) { falhas++; envios.push({ org_id: org, disparo_id: disparoId, telefone: tel, nome: c.nome || null, lead_id: c.lead_id || null, aluno_id: c.aluno_id || null, status: 'falha', erro: 'opt-out', atualizado_em: new Date().toISOString() }); continue }
+        // 🔒 trava: lead ativo do CRM (não-perda) → não recebe disparo frio
+        if (c.lead_id && bloqueado.has(c.lead_id)) { pulados++; envios.push({ org_id: org, disparo_id: disparoId, telefone: tel, nome: c.nome || null, lead_id: c.lead_id, aluno_id: c.aluno_id || null, status: 'pulado', erro: 'lead ativo no CRM (trava de publico)', atualizado_em: new Date().toISOString() }); continue }
 
         // monta componentes do template
         const componentes: any[] = []
@@ -91,7 +103,7 @@ export async function POST(req: NextRequest) {
           .eq('org_id', org).in('telefone', enviadosFones).eq('status', 'novo')
       }
 
-      return NextResponse.json({ ok: true, enviados, falhas })
+      return NextResponse.json({ ok: true, enviados, falhas, pulados })
     }
 
     // 3) Finaliza a campanha
