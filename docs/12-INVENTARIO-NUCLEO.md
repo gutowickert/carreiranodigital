@@ -86,13 +86,13 @@
 
 ---
 
-## 5. Zonas cinza pra tua conferência
+## 5. Zonas cinza — DECIDIDAS (Guto, 17/08)
 
-1. **`sem-cidade-perda`** (motor) — é regra de escola (lead sem cidade da turma → perda). Generaliza ou tira?
-2. **`prospeccoes_externas` / `indicacoes`** — prospecção ativa e indicação. Genérico (todo negócio) ou escola? (recomendo manter genérico)
-3. **`metricas_campanha`** — métricas de anúncio. Fica (é do tracking) — confirmar.
-4. **`vendedores` vs solo** — no modo invisível (dono solo) não tem vendedores; a tela fica, só vazia. Ok?
-5. **`agenda`** (aulas) sai, mas a **clínica com sessões** vai querer agenda de sessões depois — deixamos a porta (DORM) ou tiramos limpo?
+1. **`sem-cidade-perda`** → **SAI** (regra de escola/turma).
+2. **`prospeccoes_externas` / `indicacoes`** → **FICA** (genérico).
+3. **`metricas_campanha`** → **FICA** (tracking).
+4. **`vendedores`** → **FICA** (serve o modo time; vazia no solo).
+5. **Agenda de sessões** → **SAI limpo** no v1 (re-adiciona quando um cliente precisar).
 
 ---
 
