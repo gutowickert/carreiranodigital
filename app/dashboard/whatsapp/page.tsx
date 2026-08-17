@@ -167,7 +167,7 @@ export default function CaixaWhatsApp() {
                     ← Voltar
                   </button>
                 )}
-                <ChatConversa conversa={ativa} disparoInfo={disparoDe(ativa.telefone)} onEnviou={carregarConversas} onConversaChange={setAtiva} />
+                <ChatConversa conversa={ativa} disparoInfo={disparoDe(ativa.telefone)} onEnviou={carregarConversas} onConversaChange={setAtiva} onFechar={() => setAtiva(null)} />
               </>
             ) : (
               <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)', fontSize: 14 }}>
@@ -181,7 +181,7 @@ export default function CaixaWhatsApp() {
     </Layout>
   )
 }
-function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange }: { conversa: Conversa; disparoInfo: { nome: string; em: string } | null; onEnviou: () => void; onConversaChange: (c: Conversa) => void }) {
+function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFechar }: { conversa: Conversa; disparoInfo: { nome: string; em: string } | null; onEnviou: () => void; onConversaChange: (c: Conversa) => void; onFechar: () => void }) {
   const [mensagens, setMensagens] = useState<any[]>([])
   const [texto, setTexto] = useState('')
   const [enviando, setEnviando] = useState(false)
@@ -221,6 +221,20 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange }: { c
   const [nomeEd, setNomeEd] = useState('')
   const [foneEd, setFoneEd] = useState('')
   const router = useRouter()
+
+  // Devolve a conversa pro estado "não lida" (o balãozinho verde da lista) — pra quando alguém
+  // abre sem querer e não quer perder o rastro. É uma marca TEMPORÁRIA de propósito: ao reabrir a
+  // conversa, o abrir() zera de novo, igual ao WhatsApp. Vale pra qualquer conversa, com ou sem lead.
+  // (O sync-lidas só espelha o canal 'zapi'; o atendimento hoje é 'oficial', então não sobrescreve.)
+  const [marcandoNaoLida, setMarcandoNaoLida] = useState(false)
+  async function marcarNaoLida() {
+    setMarcandoNaoLida(true)
+    const { error } = await supabase.from('wa_conversas').update({ nao_lidas: 1 }).eq('id', conversa.id)
+    setMarcandoNaoLida(false)
+    if (error) { setErro('Não foi possível marcar como não lida: ' + error.message); return }
+    onEnviou()  // recarrega a lista pra o balãozinho aparecer
+    onFechar()  // sai da conversa: se ficasse aberta, o próximo clique já limparia a marca
+  }
 
   async function salvarInfo() {
     const novoFone = foneEd.replace(/\D/g, '')
@@ -426,17 +440,25 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange }: { c
                 </div>
               )}
             </div>
-            {conversa.lead_id ? (
-              <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
-                style={{ background: 'var(--accent-bg)', color: 'var(--accent-soft)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
-                Abrir card
-              </a>
-            ) : (!conversa.aluno_id && !conversa.eh_grupo) ? (
-              <button onClick={criarLead} disabled={criandoLead}
-                style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
-                {criandoLead ? '...' : '+ Criar lead'}
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              {/* Marcar não lida: vale pra QUALQUER conversa (com card, sem card, aluno ou grupo) */}
+              <button onClick={marcarNaoLida} disabled={marcandoNaoLida}
+                title="Devolve a conversa pra lista como não lida (some ao reabrir)"
+                style={{ background: 'var(--surface-2)', color: 'var(--text-muted)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: marcandoNaoLida ? 0.6 : 1 }}>
+                {marcandoNaoLida ? '...' : '○ Não lida'}
               </button>
-            ) : null}
+              {conversa.lead_id ? (
+                <a href={`/dashboard/crm?lead=${conversa.lead_id}`}
+                  style={{ background: 'var(--accent-bg)', color: 'var(--accent-soft)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, textDecoration: 'none', whiteSpace: 'nowrap' }}>
+                  Abrir card
+                </a>
+              ) : (!conversa.aluno_id && !conversa.eh_grupo) ? (
+                <button onClick={criarLead} disabled={criandoLead}
+                  style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 12px', fontSize: 13, fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap', opacity: criandoLead ? 0.6 : 1 }}>
+                  {criandoLead ? '...' : '+ Criar lead'}
+                </button>
+              ) : null}
+            </div>
           </>
         )}
       </div>
