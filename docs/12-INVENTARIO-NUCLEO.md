@@ -81,7 +81,8 @@
 - `prospeccoes_externas` + `prospeccao_andamentos` → opcional (prospecção ativa, se genérico)
 
 ### SAI (escola)
-`alunos` · `turmas` · `turma_lotes`\* · `turma_datas` · `turma_presencas` · `turma_professores` · `briefings_turma` · `disparos_turma` · `financeiro_turma` · `salas` · `professores` · `professor_cidades` · `pagamentos_professores` · `presenca_diaria` · `escala_escolhas` · `agenda_aulas` · `agenda_eventos` · `materiais_curso` · `produto_modulos` · `produto_tarefas_template` · `pipeline_produtos` · `recomendacoes_produto` · `recomendacoes` · `comissoes` · `contas_financeiras` · `lancamentos_empresa` · `lancamentos_financeiros` · `naturezas_financeiras` · `transferencias` · `transferencias_caixa` · `custos_fixos` · `cidades` · `equipamentos` · `alocacoes_equipamento` · `calendario_editorial` · `entregas_marketing` · `entregas_servico` · `contratos_servico` · `indicacoes`
+`alunos` · `turmas` · `turma_lotes`\* · `turma_datas` · `turma_presencas` · `turma_professores` · `briefings_turma` · `disparos_turma` · `financeiro_turma` · `salas` · `professores` · `professor_cidades` · `pagamentos_professores` · `presenca_diaria` · `escala_escolhas` · `agenda_aulas` · `agenda_eventos` · `materiais_curso` · `produto_modulos` · `produto_tarefas_template` · `pipeline_produtos` · `recomendacoes_produto` · `recomendacoes` · `comissoes` · `contas_financeiras` · `lancamentos_empresa` · `lancamentos_financeiros` · `naturezas_financeiras` · `transferencias` · `transferencias_caixa` · `custos_fixos` · `cidades` · `equipamentos` · `alocacoes_equipamento` · `calendario_editorial` · `entregas_marketing` · `entregas_servico` · `contratos_servico`
+> *`indicacoes` e `prospeccoes_externas`/`prospeccao_andamentos` = **FICA** (zona cinza 2, decidido). O `01-drop-escola.sql` já não as dropa.*
 *\*`turma_lotes` fica no schema (DORM) pro motor por lote não quebrar; só não é usada sem turmas.*
 
 ---
