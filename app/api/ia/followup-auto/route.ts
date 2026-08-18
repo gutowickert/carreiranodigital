@@ -70,7 +70,11 @@ export async function POST(req: NextRequest) {
     const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
     // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
-    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
+    // 🆕 OPT-OUT: quem pediu pra parar (wa_optout) NÃO recebe followup — mesmo bloqueio do disparo, agora TAMBÉM no motor.
+    // Match por sufixo de 8 dígitos (robusto a formato). Sem filtro de org: o webhook grava optout sem org_id.
+    const { data: optRows } = await sb.from('wa_optout').select('telefone')
+    const optoutSuf = new Set((optRows || []).map((o: any) => String(o.telefone).replace(/\D/g, '').slice(-8)))
+    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp) && !optoutSuf.has(String(l.whatsapp).replace(/\D/g, '').slice(-8)))
 
     // DOSSIÊ ÚNICO (fonte de verdade): mensagens dos 2 canais (zapi+oficial, inclusive conversas só por telefone
     // que a busca por lead_id perdia) + ligações + TODOS os andamentos. Mesma lib da tela e do copiloto.

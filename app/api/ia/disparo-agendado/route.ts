@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
       const { data: leads } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', org).eq('turma_id', turma.id).eq('etapa', 'perda').limit(5000)
       contatos = (leads || []).filter(l => alcancavel(l.whatsapp)).map(l => ({ telefone: l.whatsapp, nome: nomeSaudacao(l.nome), lead_id: l.id }))
     } else if (publico === 'fria') {
-      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').limit(8000)
+      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').neq('status', 'optout').limit(8000)
       contatos = (wc || []).filter(x => alcancavel(x.telefone)).map(x => ({ telefone: x.telefone, nome: nomeSaudacao(x.nome) }))
     } else {
       return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda ou fria)` }, { status: 200 })
