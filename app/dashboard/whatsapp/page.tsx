@@ -28,11 +28,29 @@ export default function CaixaWhatsApp() {
   const [conversas, setConversas] = useState<Conversa[]>([])
   const [ativa, setAtiva] = useState<Conversa | null>(null)
   const [busca, setBusca] = useState('')
+  const [achados, setAchados] = useState<Conversa[]>([])
   const [naoLidaSet, setNaoLidaSet] = useState<Set<string>>(new Set())
   const [disparoPorTel, setDisparoPorTel] = useState<Record<string, { nome: string; em: string }>>({})
   const [isMobile, setIsMobile] = useState(false)
   // qual disparo essa pessoa respondeu (por sufixo do telefone) — null se não veio de disparo
   const disparoDe = (tel: string | null | undefined) => disparoPorTel[sufTel(tel)] || null
+
+  // Busca no BANCO (com atraso curto pra não consultar a cada tecla). Sem isto, procurar por
+  // alguém que não está entre as conversas carregadas simplesmente não acha nada.
+  useEffect(() => {
+    const termo = busca.trim()
+    if (termo.length < 2) { setAchados([]); return }
+    const t = setTimeout(async () => {
+      const digitos = termo.replace(/\D/g, '')
+      const alvo = digitos.length >= 4 ? digitos : termo
+      const { data } = await supabase.from('wa_conversas')
+        .select('*').or(`nome.ilike.%${alvo}%,telefone.ilike.%${alvo}%`)
+        .order('ultima_msg_em', { ascending: false, nullsFirst: false })
+        .limit(50)
+      setAchados(data || [])
+    }, 300)
+    return () => clearTimeout(t)
+  }, [busca])
 
   useEffect(() => {
     const f = () => setIsMobile(window.innerWidth < 768)
@@ -48,7 +66,7 @@ export default function CaixaWhatsApp() {
         .select('papel, wa_caixa').eq('id', session.user.id).single()
       const ok = p?.papel === 'admin' || p?.wa_caixa === true
       setAutorizado(ok)
-      if (ok) { carregarConversas(); carregarDisparos() }
+      if (ok) { carregarConversas(true); carregarDisparos() }
     }
     checar()
   }, [])
@@ -58,12 +76,38 @@ export default function CaixaWhatsApp() {
     try { const r = await fetchAuth('/api/wa-oficial/disparo-respondentes').then(r => r.json()); if (r?.ok) setDisparoPorTel(r.map || {}) } catch { /* tarja é opcional */ }
   }
 
-  async function carregarConversas() {
-    // inclui o canal OFICIAL (número novo = atendimento principal agora), além do Z-API/antigo.
-    const { data } = await supabase.from('wa_conversas')
-      .select('*').or('canal.eq.zapi,canal.is.null,canal.eq.oficial')
-      .order('ultima_msg_em', { ascending: false, nullsFirst: false })
-    setConversas(data || [])
+  // Uma página da listagem. O Supabase devolve no MÁXIMO 1000 linhas por requisição — e o
+  // `.limit()` não passa desse teto (é config de servidor). Por isso pagina-se com `range`.
+  const paginaConversas = (de: number, ate: number) => supabase.from('wa_conversas')
+    .select('*').or('canal.eq.zapi,canal.is.null,canal.eq.oficial')
+    .order('ultima_msg_em', { ascending: false, nullsFirst: false })
+    .range(de, ate)
+
+  // completo=true: puxa TODAS as páginas (1ª carga). completo=false: só a 1ª página, que é o
+  // que muda no dia a dia — usado no polling de 8s, pra não refazer 3 requisições toda vez.
+  //
+  // ⚠️ Sem paginar, a caixa mostrava só as 1000 conversas mais recentes e o resto sumia — da
+  // lista E da busca (que filtrava só o que já tinha vindo). Com ~3 mil conversas, quem estava
+  // ~3 semanas sem mensagem desaparecia. Foi o caso do lead Juan, 4h fora do corte.
+  async function carregarConversas(completo = false) {
+    const { data: pag1 } = await paginaConversas(0, 999)
+    let lista = pag1 || []
+    if (completo) {
+      for (let de = 1000; ; de += 1000) {
+        const { data: p } = await paginaConversas(de, de + 999)
+        if (!p?.length) break
+        lista = lista.concat(p)
+        if (p.length < 1000) break
+      }
+      setConversas(lista)
+    } else {
+      // mescla a 1ª página no que já existe, preservando as antigas já carregadas
+      setConversas(prev => {
+        const novas = new Map(lista.map(c => [c.id, c]))
+        const resto = prev.filter(c => !novas.has(c.id))
+        return [...lista, ...resto]
+      })
+    }
     // leads marcados como "não lida" (marcador manual do CRM) pra mostrar na lista
     const { data: nl } = await supabase.from('leads').select('id').eq('nao_lida', true)
     setNaoLidaSet(new Set((nl || []).map((l: any) => l.id)))
@@ -99,9 +143,13 @@ export default function CaixaWhatsApp() {
   if (autorizado === null) return <Layout><div style={{ padding: 40, color: 'var(--text-faint)' }}>Carregando...</div></Layout>
   if (!autorizado) return <Layout><div style={{ padding: 40, color: 'var(--red)' }}>Sem acesso à caixa de entrada.</div></Layout>
 
-  const conversasFiltradas = conversas.filter(c =>
+  // A busca combina o que já está carregado (resposta instantânea) com o que vem do BANCO
+  // (achaResultado), pra alcançar conversa antiga que não coube na listagem.
+  const naLista = conversas.filter(c =>
     !busca || (c.nome || '').toLowerCase().includes(busca.toLowerCase()) || (c.telefone || '').includes(busca)
   )
+  const jaTem = new Set(naLista.map(c => c.id))
+  const conversasFiltradas = busca ? [...naLista, ...achados.filter(c => !jaTem.has(c.id))] : naLista
 
   function tag(c: Conversa) {
     if (c.eh_grupo) return { txt: 'Grupo', cor: 'var(--blue)', bg: 'var(--blue-bg)' }
