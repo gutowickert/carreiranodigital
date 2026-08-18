@@ -11,7 +11,6 @@ export const maxDuration = 60
 //   publico='perda' → leads em PERDA da turma (win-back)
 //   publico='fria'  → lista fria importada (wa_contatos sem lead) da cidade+produto da turma
 // dryRun (padrão true) só conta. Disparar: { dryRun:false, confirm:true }.
-const familia = (c: string) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
 const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
 
 export async function POST(req: NextRequest) {
@@ -29,7 +28,6 @@ export async function POST(req: NextRequest) {
     const { data: turma } = await sb.from('turmas').select('id, codigo, cidades(nome)').eq('org_id', org).eq('codigo', codigo).maybeSingle()
     if (!turma) return NextResponse.json({ ok: false, error: `turma ${codigo} não encontrada` }, { status: 200 })
     const cidade = (turma as any).cidades?.nome || ''
-    const fam = familia(codigo)
 
     // monta o público
     let contatos: any[] = []
@@ -37,8 +35,8 @@ export async function POST(req: NextRequest) {
       const { data: leads } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', org).eq('turma_id', turma.id).eq('etapa', 'perda').limit(3000)
       contatos = (leads || []).filter(l => alcancavel(l.whatsapp)).map(l => ({ telefone: l.whatsapp, nome: nomeSaudacao(l.nome), lead_id: l.id }))
     } else if (publico === 'fria') {
-      // lista fria importada (sem lead) da cidade+produto, que ainda não respondeu
-      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').eq('produto', fam).neq('status', 'respondeu').limit(5000)
+      // lista fria importada (sem lead, produto null = imports kommo/sleekflow) da cidade, que ainda não respondeu
+      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').limit(5000)
       contatos = (wc || []).filter(x => alcancavel(x.telefone)).map(x => ({ telefone: x.telefone, nome: nomeSaudacao(x.nome) }))
     } else {
       return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (use perda ou fria)` }, { status: 200 })
