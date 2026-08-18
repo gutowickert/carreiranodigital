@@ -174,7 +174,11 @@ export async function POST(req: NextRequest) {
       // dv<=0 → pos_virada ("hoje é o último dia"); dv 1..3 → lote_virando ("está encerrando"). Reusa os templates
       // JÁ APROVADOS do lote_preco_ok. Cada 1x (jaEnv) e no máx 1 por dia. Prioridade sobre reposição/nutrição.
       if (dvLead !== null && dvLead <= 3) {
-        const chaveUrg = dvLead <= 0 ? 'pos_virada_lote' : 'lote_virando'
+        // 🆕 ÚLTIMO LOTE (sem próximo — ex.: lote único cujo vale_ate = INÍCIO da turma): o "último dia" pra MATRICULAR
+        // é a VÉSPERA do início, não o dia que a turma começa. Então dispara pos_virada já em dv<=1 (senão o
+        // "hoje é o último dia" só sairia no dia da abertura, tarde demais). Lote com próximo → segue dv<=0 (virada real).
+        const ultimoLote = !temProximoLote(l.turma_id)
+        const chaveUrg = (dvLead <= 0 || (ultimoLote && dvLead <= 1)) ? 'pos_virada_lote' : 'lote_virando'
         const tUrg = pickTpl('lote_preco_ok', chaveUrg, fam)
         const ultOutU = lastOutDe(l)
         const jaHojeU = !!ultOutU && new Date(ultOutU).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === hojeBR
