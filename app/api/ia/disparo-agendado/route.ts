@@ -63,7 +63,8 @@ export async function POST(req: NextRequest) {
 
     const pend = contatos.filter(c => !jaSet.has(suf(c.telefone)))
     const lote = pend.slice(0, limit)
-    const bodyParams: string[] = Array.isArray(b?.bodyParams) && b.bodyParams.length ? b.bodyParams : ['{nome}', cidade]
+    // bodyParams EXPLÍCITO (inclusive []) é respeitado — template sem variável manda []. Só cai no default se não vier array.
+    const bodyParams: string[] = Array.isArray(b?.bodyParams) ? b.bodyParams : ['{nome}', cidade]
 
     const now = new Date().toISOString()
     const envios: any[] = []
