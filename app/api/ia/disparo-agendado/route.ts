@@ -41,8 +41,26 @@ export async function POST(req: NextRequest) {
     } else if (publico === 'fria') {
       const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').neq('status', 'optout').limit(8000)
       contatos = (wc || []).filter(x => alcancavel(x.telefone)).map(x => ({ telefone: x.telefone, nome: nomeSaudacao(x.nome) }))
+    } else if (publico === 'ativos') {
+      // ATIVOS FRIOS: leads nas etapas do motor (atend/lote/bolsa) da turma, EXCETO quem respondeu nas últimas 24h
+      // (engajado = é a vez do time). Não inclui negociação (agendado/pagamento/ligação/próxima) — essas etapas ficam de fora.
+      const MOTOR = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+      const { data: leads } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', org).eq('turma_id', turma.id).in('etapa', MOTOR).limit(5000)
+      const ids = (leads || []).map((l: any) => l.id)
+      const engaj = new Set<string>()
+      if (ids.length) {
+        const { data: cvs } = await sb.from('wa_conversas').select('id, lead_id').eq('org_id', org).in('lead_id', ids)
+        const cvMap = new Map((cvs || []).map((v: any) => [v.id, v.lead_id]))
+        const cvIds = (cvs || []).map((v: any) => v.id)
+        if (cvIds.length) {
+          const desde = new Date(Date.now() - 24 * 3600 * 1000).toISOString()
+          const { data: msgs } = await sb.from('wa_mensagens').select('conversa_id').eq('direcao', 'recebida').in('conversa_id', cvIds).gte('criado_em', desde)
+          for (const m of msgs || []) { const lid = cvMap.get((m as any).conversa_id); if (lid) engaj.add(lid as string) }
+        }
+      }
+      contatos = (leads || []).filter((l: any) => alcancavel(l.whatsapp) && !engaj.has(l.id)).map((l: any) => ({ telefone: l.whatsapp, nome: nomeSaudacao(l.nome), lead_id: l.id }))
     } else {
-      return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda ou fria)` }, { status: 200 })
+      return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda, fria ou ativos)` }, { status: 200 })
     }
     const total = contatos.length
     if (dryRun) return NextResponse.json({ ok: true, dryRun: true, codigo, cidade, publico, total })
@@ -80,6 +98,11 @@ export async function POST(req: NextRequest) {
     }
     if (envios.length) await sb.from('wa_disparo_envios').insert(envios)
     await sb.from('wa_disparos').update({ enviados: (camp.enviados || 0) + enviados, falhas: (camp.falhas || 0) + falhas }).eq('id', dispId)
+    // ATIVOS: registra ia_followup HOJE pra o motor NÃO tocar em cima (a trava de 1 msg/dia lê os andamentos)
+    if (publico === 'ativos' && envios.length) {
+      const ands = envios.filter(e => e.status === 'enviado' && e.lead_id).map(e => ({ org_id: org, lead_id: e.lead_id, tipo: 'ia_followup', observacao: `disparo ${template}`, criado_em: now }))
+      if (ands.length) await sb.from('lead_andamentos').insert(ands)
+    }
     const restantes = pend.length - lote.length
     if (restantes <= 0) await sb.from('wa_disparos').update({ status: 'concluido' }).eq('id', dispId)
     return NextResponse.json({ ok: true, codigo, publico, total, enviados, falhas, restantes })
