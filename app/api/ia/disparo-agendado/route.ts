@@ -32,6 +32,8 @@ export async function POST(req: NextRequest) {
     const { data: turma } = await sb.from('turmas').select('id, cidades(nome)').eq('org_id', org).eq('codigo', codigo).maybeSingle()
     if (!turma) return NextResponse.json({ ok: false, error: `turma ${codigo} não encontrada` }, { status: 200 })
     const cidade = (turma as any).cidades?.nome || ''
+    // cidade ALVO da lista fria — por padrão a da turma, mas aceita override (ex.: mandar pra cidade vizinha convidar pra essa turma)
+    const cidadeAlvo = String(b?.cidade || '').trim() || cidade
 
     // público completo
     let contatos: { telefone: string; nome: string; lead_id?: string }[] = []
@@ -39,7 +41,7 @@ export async function POST(req: NextRequest) {
       const { data: leads } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', org).eq('turma_id', turma.id).eq('etapa', 'perda').limit(5000)
       contatos = (leads || []).filter(l => alcancavel(l.whatsapp)).map(l => ({ telefone: l.whatsapp, nome: nomeSaudacao(l.nome), lead_id: l.id }))
     } else if (publico === 'fria') {
-      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidade).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').neq('status', 'optout').limit(8000)
+      const { data: wc } = await sb.from('wa_contatos').select('telefone, nome').eq('org_id', org).eq('cidade', cidadeAlvo).is('lead_id', null).eq('categoria', 'interessado').is('produto', null).neq('status', 'respondeu').neq('status', 'optout').limit(8000)
       contatos = (wc || []).filter(x => alcancavel(x.telefone)).map(x => ({ telefone: x.telefone, nome: nomeSaudacao(x.nome) }))
     } else if (publico === 'ativos') {
       // ATIVOS FRIOS: leads nas etapas do motor (atend/lote/bolsa) da turma, EXCETO quem respondeu nas últimas 24h
@@ -68,7 +70,7 @@ export async function POST(req: NextRequest) {
 
     // campanha ESTÁVEL do dia (find-or-create) — pra dedup entre as várias chamadas do cron
     const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-    const campNome = `Agendado ${template} ${codigo} ${publico} ${hoje}`
+    const campNome = `Agendado ${template} ${codigo} ${publico} ${cidadeAlvo} ${hoje}`
     let camp = (await sb.from('wa_disparos').select('id, enviados, falhas').eq('org_id', org).eq('nome', campNome).maybeSingle()).data as any
     if (!camp) camp = (await sb.from('wa_disparos').insert({ org_id: org, nome: campNome, template_nome: template, template_idioma: 'pt_BR', categoria: 'marketing', status: 'enviando', total }).select('id, enviados, falhas').single()).data
     const dispId = camp.id
