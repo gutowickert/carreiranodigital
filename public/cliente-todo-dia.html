@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<!-- Meta Pixel (conta da escola — confirmar content_ids do Cliente Todo Dia) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Cliente Todo Dia'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cliente Todo Dia — sua máquina de captação com IA | CarreiraNoDigital</title>
+<meta name="description" content="Em 6 dias você monta sua máquina de captação dentro do Claude (sem código) e sobe tráfego pago na Meta. Sai com anúncios rodando e leads no WhatsApp. Presencial e online.">
+<meta property="og:title" content="Cliente Todo Dia — sua máquina de captação com IA">
+<meta property="og:description" content="Monte sua captação no Claude + tráfego na Meta em 6 dias. Saia com leads chegando no WhatsApp.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700;800;900&family=Barlow+Condensed:wght@600;700;900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0b12;--bg2:#10101a;--surface:#14141f;--surface2:#1c1c2e;
+  --border:#2a2a42;--border-l:#343455;
+  --purple:#7B2FBE;--purple-l:#b87af0;--purple-d:#4e1a80;
+  --blue:#2563eb;--blue-l:#93c5fd;--green:#22d3a0;--green-l:#86efda;
+  --wa:#25d366;
+  --text:#f0f0fc;--body:#c8c8e8;--muted:#9090b8;--hint:#5a5a80;
+  --r:6px;--r-lg:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:'Barlow',sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.6;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+.container{max-width:1100px;margin:0 auto;padding:0 40px}
+@media(max-width:640px){.container{padding:0 22px}}
+.label{font-size:10px;font-weight:800;letter-spacing:.2em;text-transform:uppercase;color:var(--purple-l);display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.label::before{content:'';width:24px;height:2px;background:var(--purple-l);flex-shrink:0}
+.title{font-family:'Bebas Neue',sans-serif;line-height:1.0;letter-spacing:.02em}
+.t-lg{font-size:clamp(2.1rem,5vw,3.8rem)}.t-md{font-size:clamp(1.6rem,3.4vw,2.6rem)}
+.green{color:var(--green)}.purple{color:var(--purple-l)}.blue{color:var(--blue-l)}
+.body-text{font-size:16px;line-height:1.75;color:var(--body)}
+.section{padding:84px 0}.section-alt{background:var(--bg2)}
+.center{text-align:center}
+.sec-head{max-width:680px;margin:0 auto 12px}.sec-head.center{text-align:center}.sec-head.center .label{justify-content:center}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:'Barlow',sans-serif;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:14px 30px;border-radius:var(--r);cursor:pointer;transition:.2s;border:none}
+.btn-primary{background:var(--purple);color:#fff;box-shadow:0 8px 26px rgba(123,47,190,.35)}.btn-primary:hover{background:var(--purple-d);transform:translateY(-2px)}
+.btn-wa{background:var(--wa);color:#04210f}.btn-wa:hover{filter:brightness(1.08);transform:translateY(-2px)}
+.btn-secondary{background:transparent;color:var(--text);border:1px solid var(--border-l)}.btn-secondary:hover{border-color:var(--purple-l);color:var(--purple-l)}
+.btn-lg{font-size:15px;padding:17px 40px}.btn-full{width:100%}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 40px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:20px}
+.nav-logo img{height:34px;width:auto}
+@media(max-width:640px){.nav-inner{padding:0 18px}.nav-logo img{height:28px}.nav .btn{padding:11px 18px;font-size:11px}}
+
+/* HERO */
+.hero{position:relative;padding:120px 0 60px;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-20%;right:-10%;width:640px;height:640px;background:radial-gradient(circle,rgba(123,47,190,.28),transparent 62%);z-index:0}
+.hero::after{content:'';position:absolute;bottom:-30%;left:-15%;width:560px;height:560px;background:radial-gradient(circle,rgba(37,99,235,.16),transparent 60%);z-index:0}
+.hero-grid{position:relative;z-index:1;display:grid;grid-template-columns:1.15fr .85fr;gap:52px;align-items:center}
+@media(max-width:900px){.hero-grid{grid-template-columns:1fr;gap:40px}}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-l);border:1px solid rgba(184,122,240,.3);background:rgba(123,47,190,.15);padding:7px 16px;border-radius:40px;margin-bottom:22px}
+.hero-badge .dot{width:7px;height:7px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green)}
+.hero-h1{font-family:'Bebas Neue',sans-serif;font-size:clamp(3rem,7.5vw,6rem);line-height:.92;letter-spacing:.01em;margin-bottom:22px}
+.hero-h1 .hl{color:var(--purple-l)}
+.hero-sub{font-size:17px;line-height:1.7;color:var(--body);max-width:520px;margin-bottom:30px}
+.hero-sub b{color:var(--text);font-weight:700}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:30px}
+.hero-pills{display:flex;flex-wrap:wrap;gap:9px}
+.hero-pill{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--border);padding:8px 13px;border-radius:40px}
+.hero-pill .ic{color:var(--green);display:flex}
+
+/* PHONE MOCK */
+.phone{width:290px;max-width:100%;margin:0 auto;background:#0d0d14;border:9px solid #1c1c28;border-radius:34px;box-shadow:0 30px 70px rgba(0,0,0,.55),0 0 0 1px rgba(184,122,240,.14);overflow:hidden}
+.phone .wa-top{background:#1f2c34;padding:13px 15px;display:flex;align-items:center;gap:10px}
+.phone .wa-av{width:34px;height:34px;border-radius:50%;background:var(--purple);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.phone .wa-av svg{width:17px;height:17px;stroke:#fff;fill:none;stroke-width:2.4}
+.phone .wa-name{font-size:13.5px;font-weight:700;color:#fff;line-height:1.2}
+.phone .wa-name small{display:block;font-size:10.5px;font-weight:500;color:var(--green)}
+.phone .wa-body{background:#0b141a;padding:16px 13px;min-height:340px;display:flex;flex-direction:column;gap:9px;background-image:linear-gradient(rgba(11,20,26,.94),rgba(11,20,26,.94))}
+.bub{max-width:82%;padding:8px 11px;border-radius:9px;font-size:12.5px;line-height:1.45;opacity:0;transform:translateY(8px);animation:pop .5s forwards}
+.bub.in{align-self:flex-start;background:#202c33;color:#e9edef;border-top-left-radius:2px}
+.bub.out{align-self:flex-end;background:#005c4b;color:#e9ffe9;border-top-right-radius:2px}
+.bub .lead-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--green-l);margin-bottom:2px}
+.on .bub:nth-child(1){animation-delay:.2s}.on .bub:nth-child(2){animation-delay:.9s}.on .bub:nth-child(3){animation-delay:1.5s}.on .bub:nth-child(4){animation-delay:2.2s}.on .bub:nth-child(5){animation-delay:2.9s}
+@keyframes pop{to{opacity:1;transform:none}}
+.phone-cap{text-align:center;font-size:12px;color:var(--hint);margin-top:14px}
+
+/* RESULTADOS */
+.res-strip{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:44px 0}
+.res-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:820px){.res-grid{grid-template-columns:1fr 1fr}}
+.res-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 18px;text-align:center;position:relative;overflow:hidden}
+.res-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px}
+.res-card:nth-child(1)::before{background:var(--green)}.res-card:nth-child(2)::before{background:var(--purple)}.res-card:nth-child(3)::before{background:var(--blue)}.res-card:nth-child(4)::before{background:var(--purple-l)}
+.res-invest{font-size:11px;color:var(--hint);margin-bottom:8px}
+.res-valor{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,4vw,2.8rem);color:var(--text);line-height:1}
+.res-arrow{font-size:12px;color:var(--green);font-weight:700;margin:4px 0 6px}
+.res-seg{font-size:12px;color:var(--muted)}
+.res-note{text-align:center;font-size:11.5px;color:var(--hint);margin-top:18px;max-width:640px;margin-left:auto;margin-right:auto}
+
+/* PROB/SOL */
+.ps-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:44px}
+@media(max-width:760px){.ps-grid{grid-template-columns:1fr}}
+.ps-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:26px}
+.ps-box.bad{border-top:3px solid #ef4444}.ps-box.good{border-top:3px solid var(--green)}
+.ps-t{font-family:'Bebas Neue',sans-serif;font-size:1.35rem;letter-spacing:.04em;margin-bottom:16px}
+.ps-box.bad .ps-t{color:#ff8070}.ps-box.good .ps-t{color:var(--green)}
+.ps-i{display:flex;align-items:flex-start;gap:10px;font-size:14px;line-height:1.5;padding:9px 0;border-bottom:1px solid var(--border)}
+.ps-i:last-child{border-bottom:none;padding-bottom:0}
+.ps-box.bad .ps-i{color:var(--muted)}.ps-box.good .ps-i{color:var(--body)}
+.mk{flex-shrink:0;font-weight:800}.xi{color:#ef4444}.ci{color:var(--green)}
+
+/* MÁQUINA / PIPELINE */
+.pipe{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+@media(max-width:820px){.pipe{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.pipe{grid-template-columns:1fr}}
+.step{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;position:relative;transition:.2s}
+.step:hover{border-color:var(--purple);transform:translateY(-3px)}
+.step .num{font-family:'Bebas Neue',sans-serif;font-size:1.1rem;color:var(--purple-l);position:absolute;top:14px;right:16px;opacity:.5}
+.step .ic{width:42px;height:42px;border-radius:10px;background:rgba(123,47,190,.15);border:1px solid rgba(123,47,190,.3);display:flex;align-items:center;justify-content:center;margin-bottom:13px}
+.step .ic svg{width:21px;height:21px;stroke:var(--purple-l);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.step h4{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.03em;color:var(--text);margin-bottom:7px}
+.step p{font-size:13px;color:var(--muted);line-height:1.55}
+.step .claude{font-size:11px;font-weight:700;color:var(--green);margin-top:9px;display:flex;align-items:center;gap:6px}
+
+/* CLAUDE WEB MOCK */
+.claude-grid{display:grid;grid-template-columns:1fr 1fr;gap:44px;align-items:center;margin-top:12px}
+@media(max-width:860px){.claude-grid{grid-template-columns:1fr;gap:32px}}
+.chat{background:#0f0f18;border:1px solid var(--border-l);border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(0,0,0,.5)}
+.chat-top{background:#161622;padding:11px 15px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.chat-top .dot3{display:flex;gap:6px}.chat-top .dot3 i{width:10px;height:10px;border-radius:50%;background:#33334d}
+.chat-top .url{margin-left:8px;font-size:11px;color:var(--hint);font-family:'Barlow Condensed',sans-serif;letter-spacing:.03em}
+.chat-body{padding:18px 16px;display:flex;flex-direction:column;gap:12px}
+.cmsg{max-width:88%;font-size:13px;line-height:1.55;padding:11px 14px;border-radius:11px;opacity:0;transform:translateY(10px);animation:pop .5s forwards}
+.cmsg.user{align-self:flex-end;background:var(--purple);color:#fff;border-bottom-right-radius:3px}
+.cmsg.ai{align-self:flex-start;background:var(--surface2);color:var(--body);border:1px solid var(--border);border-bottom-left-radius:3px}
+.cmsg.ai b{color:var(--text)}
+.on .cmsg:nth-child(1){animation-delay:.2s}.on .cmsg:nth-child(2){animation-delay:1s}.on .cmsg:nth-child(3){animation-delay:2s}
+.cmsg .arte{margin-top:9px;background:linear-gradient(135deg,#3a1668,#1e2b6b);border:1px solid rgba(184,122,240,.3);border-radius:8px;padding:14px;text-align:center}
+.cmsg .arte .k{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--purple-l)}
+.cmsg .arte .big{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:#fff;line-height:1;margin:5px 0}
+.cmsg .arte .sm{font-size:10px;color:var(--blue-l)}
+
+/* PRESENCIAL PHOTOS */
+.photos{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
+@media(max-width:700px){.photos{grid-template-columns:1fr}}
+.photo{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);position:relative;aspect-ratio:4/5}
+.photo img{width:100%;height:100%;object-fit:cover}
+.photo .cap{position:absolute;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(transparent,rgba(11,11,18,.85));font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+
+/* PANEL / METRICS MOCK */
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
+@media(max-width:760px){.panels{grid-template-columns:1fr}}
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.panel .ph{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;background:var(--surface2)}
+.panel .ph .pd{width:9px;height:9px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green)}
+.panel .ph .tag{margin-left:auto;font-size:10px;font-weight:800;text-transform:uppercase;color:var(--purple-l);background:rgba(123,47,190,.15);border:1px solid rgba(123,47,190,.3);padding:2px 8px;border-radius:10px}
+.panel .pb{padding:18px 16px}
+.mrow{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--border)}
+.mrow:last-child{border-bottom:none}
+.mrow .ml{font-size:12.5px;color:var(--muted)}
+.mrow .mv{font-family:'Bebas Neue',sans-serif;font-size:1.5rem;color:var(--text);letter-spacing:.02em}
+.mrow .mv.g{color:var(--green)}
+.bars{display:flex;align-items:flex-end;gap:7px;height:110px;margin-top:8px}
+.bcol{flex:1;background:linear-gradient(180deg,var(--purple-l),var(--purple));border-radius:4px 4px 0 0;height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+.on .bcol{height:var(--h)}
+.blabel{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);margin-top:6px;font-family:'Barlow Condensed',sans-serif}
+
+/* ENTREGÁVEIS */
+.deliv{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:44px}
+@media(max-width:820px){.deliv{grid-template-columns:1fr 1fr}}
+.dv{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:11px}
+.dv svg{width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:2.2;flex-shrink:0}
+.dv span{font-size:13.5px;color:var(--body);font-weight:600}
+
+/* DOCENTE */
+.docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
+@media(max-width:640px){.docs{grid-template-columns:1fr}}
+.doc{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;display:flex;gap:16px;align-items:center}
+.doc:hover{border-color:var(--purple)}
+.doc .av{width:58px;height:58px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:1.4rem;color:#fff;background:linear-gradient(135deg,var(--purple),var(--blue));border:2px solid rgba(184,122,240,.4)}
+.doc .area{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--purple-l);margin-bottom:4px}
+.doc .nm{font-family:'Bebas Neue',sans-serif;font-size:1.25rem;letter-spacing:.03em;color:var(--text)}
+
+/* TURMAS */
+.turmas{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+@media(max-width:820px){.turmas{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.turmas{grid-template-columns:1fr}}
+.tt{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px;transition:.2s}
+.tt:hover{border-color:var(--purple)}
+.tt.on-line{border:1px solid var(--green-line,rgba(34,211,160,.4));background:linear-gradient(180deg,rgba(34,211,160,.06),transparent)}
+.tt .cid{font-family:'Bebas Neue',sans-serif;font-size:1.7rem;color:var(--text);line-height:1}
+.tt .uf{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--purple-l);margin:3px 0 14px}
+.tt.on-line .uf{color:var(--green)}
+.tt .ti{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);margin-bottom:7px}
+.tt .ti svg{width:15px;height:15px;stroke:var(--purple-l);fill:none;stroke-width:2;flex-shrink:0}
+
+/* INVEST */
+.inv-grid{display:grid;grid-template-columns:1.1fr .9fr;gap:16px;margin-top:44px}
+@media(max-width:760px){.inv-grid{grid-template-columns:1fr}}
+.inv{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:30px}
+.inv.dest{border:2px solid var(--purple);background:rgba(123,47,190,.07);position:relative}
+.inv .badge{position:absolute;top:-11px;left:24px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#fff;background:var(--purple);padding:5px 12px;border-radius:20px}
+.inv .lbl{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.inv.dest .lbl{color:var(--purple-l)}
+.inv .price{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.6rem,5vw,3.6rem);color:var(--text);line-height:1}
+.inv .price small{display:block;font-family:'Barlow',sans-serif;font-size:13px;font-weight:600;color:var(--hint);letter-spacing:0;margin-top:4px}
+.inv .avista{font-size:13px;color:var(--green);font-weight:700;margin-top:6px}
+.inv ul{list-style:none;margin:20px 0 24px;display:flex;flex-direction:column;gap:10px}
+.inv li{display:flex;align-items:flex-start;gap:9px;font-size:13.5px;color:var(--body)}
+.inv li svg{width:17px;height:17px;stroke:var(--purple-l);fill:none;stroke-width:2.4;flex-shrink:0;margin-top:2px}
+.inv.dest li svg{stroke:var(--green)}
+
+/* FAQ */
+.faq{max-width:760px;margin:44px auto 0}
+.qa{border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:10px;overflow:hidden;background:var(--surface)}
+.qa summary{padding:18px 22px;font-weight:700;font-size:15px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:14px;align-items:center}
+.qa summary::-webkit-details-marker{display:none}
+.qa summary::after{content:'+';font-size:22px;color:var(--purple-l);font-weight:400;flex-shrink:0}
+.qa[open] summary::after{content:'–'}
+.qa .a{padding:0 22px 20px;font-size:14px;color:var(--muted);line-height:1.65}
+
+/* CTA FINAL */
+.final{position:relative;overflow:hidden;text-align:center}
+.final::before{content:'';position:absolute;inset:0;background:radial-gradient(700px 340px at 50% 0%,rgba(123,47,190,.25),transparent 65%);z-index:0}
+.final .container{position:relative;z-index:1}
+.final h2{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.4rem,6vw,4.4rem);line-height:.95;margin-bottom:18px}
+.final p{font-size:17px;color:var(--body);max-width:520px;margin:0 auto 30px}
+
+/* FOOT */
+footer{border-top:1px solid var(--border);padding:36px 0;text-align:center;color:var(--hint);font-size:12.5px}
+footer img{height:26px;margin:0 auto 14px;opacity:.85}
+
+.rv{opacity:0;transform:translateY(22px);transition:.7s cubic-bezier(.2,.7,.2,1)}.rv.on{opacity:1;transform:none}
+@media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.bub,.cmsg{animation:none;opacity:1;transform:none}}
+</style>
+</head>
+<body>
+
+<nav><div class="nav-inner">
+  <a class="nav-logo" href="#topo"><img src="/img/ctd/logo.png" alt="Carreira no Digital"></a>
+  <a class="btn btn-primary" href="#turmas">Garantir vaga</a>
+</div></nav>
+
+<header class="hero" id="topo"><div class="container">
+  <div class="hero-grid">
+    <div class="rv on">
+      <div class="hero-badge"><span class="dot"></span>Captação com IA · presencial e online</div>
+      <h1 class="hero-h1">Tenha <span class="hl">cliente<br>chegando</span><br>todo dia.</h1>
+      <p class="hero-sub">Em <b>6 dias</b> você monta a sua máquina de captação — dentro do <b>Claude</b>, no navegador, <b>sem código</b> — e sobe <b>tráfego pago na Meta</b>. Sai do curso com anúncios rodando e <b>leads caindo no teu WhatsApp</b>.</p>
+      <div class="hero-ctas">
+        <a class="btn btn-primary btn-lg" href="#turmas">Quero minha vaga</a>
+        <a class="btn btn-secondary btn-lg" href="#maquina">Ver como funciona</a>
+      </div>
+      <div class="hero-pills">
+        <span class="hero-pill"><span class="ic">✓</span>6 dias (4 + 2)</span>
+        <span class="hero-pill"><span class="ic">✓</span>presencial e online</span>
+        <span class="hero-pill"><span class="ic">✓</span>sem código, no navegador</span>
+        <span class="hero-pill"><span class="ic">✓</span>leads no WhatsApp</span>
+      </div>
+    </div>
+    <div class="rv on">
+      <div class="phone">
+        <div class="wa-top"><span class="wa-av"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span><div class="wa-name">Seu WhatsApp<small>3 novas conversas</small></div></div>
+        <div class="wa-body" id="wa">
+          <div class="bub in"><div class="lead-tag">novo lead · anúncio</div>Oi! Vi o anúncio de vocês, ainda tem vaga essa semana?</div>
+          <div class="bub in"><div class="lead-tag">novo lead · anúncio</div>Bom dia, quanto fica o serviço? consigo hoje?</div>
+          <div class="bub out">Oi! Consigo sim 👍 te explico rapidinho…</div>
+          <div class="bub in"><div class="lead-tag">novo lead · anúncio</div>Vi no Instagram, quero um orçamento</div>
+          <div class="bub out">Fechado, me manda o que você precisa 🙌</div>
+        </div>
+      </div>
+      <p class="phone-cap">Leads reais chegando de campanha — todo dia.</p>
+    </div>
+  </div>
+</div></header>
+
+<!-- RESULTADOS -->
+<div class="res-strip"><div class="container rv">
+  <div class="res-grid">
+    <div class="res-card"><div class="res-invest">investiu R$ 8,53</div><div class="res-valor">R$ 4.600</div><div class="res-arrow">↑ em vendas</div><div class="res-seg">loja de pneus</div></div>
+    <div class="res-card"><div class="res-invest">investiu R$ 40</div><div class="res-valor">R$ 12mil</div><div class="res-arrow">↑ em vendas</div><div class="res-seg">loja de celular</div></div>
+    <div class="res-card"><div class="res-invest">2º dia de campanha</div><div class="res-valor">R$ 65mil</div><div class="res-arrow">↑ em vendas</div><div class="res-seg">loja de carros</div></div>
+    <div class="res-card"><div class="res-invest">17min de campanha</div><div class="res-valor">R$ 6.700</div><div class="res-arrow">↑ em vendas</div><div class="res-seg">empresa de brindes</div></div>
+  </div>
+  <p class="res-note">Resultados reais de alunos com anúncios feitos no método. Cada negócio é um caso — não é promessa de ganho, é o que a captação bem-feita destrava.</p>
+</div></div>
+
+<!-- PROBLEMA / VIRADA -->
+<section class="section"><div class="container rv">
+  <div class="sec-head"><div class="label">O jogo virou</div><h2 class="title t-md">Você não precisa de sorte. Precisa de uma máquina.</h2></div>
+  <div class="ps-grid">
+    <div class="ps-box bad"><div class="ps-t">Como é pra maioria</div>
+      <div class="ps-i"><span class="mk xi">✕</span>Depende de indicação e da sorte do mês.</div>
+      <div class="ps-i"><span class="mk xi">✕</span>Posta e ninguém vê. Some no feed.</div>
+      <div class="ps-i"><span class="mk xi">✕</span>Já "impulsionou" um anúncio e não deu em nada.</div>
+      <div class="ps-i"><span class="mk xi">✕</span>Não sabe o que falar, nem pra quem.</div>
+      <div class="ps-i"><span class="mk xi">✕</span>Parou de postar, parou de vender.</div>
+    </div>
+    <div class="ps-box good"><div class="ps-t">Com o Cliente Todo Dia</div>
+      <div class="ps-i"><span class="mk ci">✓</span>Anúncios no ar todo dia, atraindo quem quer comprar.</div>
+      <div class="ps-i"><span class="mk ci">✓</span>Leads chegando no WhatsApp — sem depender de indicação.</div>
+      <div class="ps-i"><span class="mk ci">✓</span>Você sabe quanto entra pra cada real investido.</div>
+      <div class="ps-i"><span class="mk ci">✓</span>A IA cria a peça e o texto; você decide e aprova.</div>
+      <div class="ps-i"><span class="mk ci">✓</span>Roda mesmo quando você não está grudado nela.</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- A MÁQUINA / PIPELINE -->
+<section class="section section-alt" id="maquina"><div class="container rv">
+  <div class="sec-head"><div class="label">O que você constrói</div><h2 class="title t-md">A sua máquina de captação, montada peça por peça.</h2><p class="body-text" style="margin-top:14px">Cada etapa é uma skill que você opera <b class="purple">dentro do Claude</b>. Você conversa, a IA entrega pronto, você decide. No fim dos 6 dias, está tudo rodando no seu negócio.</p></div>
+  <div class="pipe">
+    <div class="step"><span class="num">01</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9L12 3z"/><path d="M12 12l8-4.5M12 12v9M12 12L4 7.5"/></svg></div><h4>Contexto do negócio</h4><p>A IA entende o seu negócio, o público e o que você vende.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">02</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M20.6 8.5 12 3 3.4 8.5 12 14z"/><path d="M3.4 12 12 17.5 20.6 12"/></svg></div><h4>A oferta</h4><p>Monta uma oferta que faz o cliente querer te chamar agora.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">03</span><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 9h18M8 4v5"/></svg></div><h4>Conteúdo orgânico</h4><p>Calendário, ideias e legendas prontas pra postar todo dia.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">04</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 11l18-7-7 18-2-8-9-3z"/></svg></div><h4>Anúncios</h4><p>Copy e ideias de anúncio que fazem a pessoa parar e clicar.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">05</span><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="M4 18l5-4 4 3 3-2 4 3"/></svg></div><h4>Artes da marca</h4><p>As peças no padrão visual da sua empresa, geradas em lote.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">06</span><div class="ic"><svg viewBox="0 0 24 24"><rect x="2" y="6" width="14" height="12" rx="2"/><path d="M16 10l6-3v10l-6-3z"/></svg></div><h4>Vídeo</h4><p>Roteiro e orientação pra você gravar do celular, do seu jeito.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">07</span><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18M7 21h10"/></svg></div><h4>Site rastreado</h4><p>Uma página pronta e com o pixel medindo cada visita.</p><div class="claude">↳ no Claude</div></div>
+    <div class="step"><span class="num">08</span><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>Campanha na Meta</h4><p>Você sobe o tráfego pago pro WhatsApp e pro site.</p><div class="claude">↳ Meta + Claude</div></div>
+    <div class="step"><span class="num">09</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div><h4>Métricas & remarketing</h4><p>Lê os números, ajusta e reimpacta quem não comprou ainda.</p><div class="claude">↳ Meta + Claude</div></div>
+  </div>
+</div></section>
+
+<!-- CLAUDE WEB -->
+<section class="section"><div class="container rv">
+  <div class="sec-head"><div class="label">Sem código, no navegador</div><h2 class="title t-md">Você conversa. A IA entrega. Você decide.</h2></div>
+  <div class="claude-grid">
+    <div>
+      <p class="body-text">É tudo no <b class="purple">Claude, na versão web</b> — a mesma tela que você abre no navegador. Você não programa nada. Você pede em português, a IA devolve a copy, a arte, o roteiro, o site. <b>Quem manda é você:</b> aprova, ajusta, publica.</p>
+      <p class="body-text" style="margin-top:14px">E o <b class="blue">tráfego</b>? Você sobe a campanha na <b>Meta</b> e a IA te guia na leitura das métricas — o que está funcionando, onde mexer, quando escalar. Sem achismo.</p>
+      <div class="deliv" style="margin-top:26px;grid-template-columns:1fr 1fr">
+        <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Se você usa WhatsApp, você consegue.</span></div>
+        <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Do seu próprio negócio, na prática.</span></div>
+      </div>
+    </div>
+    <div class="chat">
+      <div class="chat-top"><span class="dot3"><i></i><i></i><i></i></span><span class="url">claude.ai — captação · loja de pneus</span></div>
+      <div class="chat-body" id="chat">
+        <div class="cmsg user">Cria um anúncio pra minha loja de pneus, promoção de alinhamento.</div>
+        <div class="cmsg ai"><b>Prontinho.</b> Fiz a copy e a arte no padrão da tua marca:
+          <div class="arte"><div class="k">Loja de Pneus · Anúncio</div><div class="big">ALINHOU, GANHOU</div><div class="sm">Alinhamento + balanceamento a partir de R$ 90 · chama no zap</div></div>
+        </div>
+        <div class="cmsg user">Perfeito. Sobe pra campanha de WhatsApp 👍</div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<!-- PRESENCIAL / FOTOS -->
+<section class="section section-alt"><div class="container rv">
+  <div class="sec-head"><div class="label">Do seu lado, na prática</div><h2 class="title t-md">6 dias com professor por perto — mexendo no seu negócio de verdade.</h2><p class="body-text" style="margin-top:14px">Não é aula pra assistir e esquecer. É <b>implementação guiada</b>: você chega com o seu negócio e sai com a captação montada. <b>4 dias numa semana, 2 na seguinte</b> — o intervalo é de propósito, pra rodar e ler os primeiros resultados.</p></div>
+  <div class="photos">
+    <div class="photo"><img src="/img/ctd/turma-caxias-1.jpg" alt="Turma presencial em Caxias do Sul" loading="lazy"><div class="cap">Turma presencial · Caxias do Sul</div></div>
+    <div class="photo"><img src="/img/ctd/turma-lajeado-1.jpg" alt="Turma presencial em Lajeado" loading="lazy"><div class="cap">Do seu lado, na prática · Lajeado</div></div>
+  </div>
+  <p class="body-text center" style="margin-top:24px;color:var(--muted)">Prefere no seu tempo? Tem a <b class="green">versão online</b> — as mesmas skills, de qualquer lugar.</p>
+</div></section>
+
+<!-- VEJA FUNCIONANDO / PAINÉIS -->
+<section class="section"><div class="container rv">
+  <div class="sec-head"><div class="label">Veja funcionando</div><h2 class="title t-md">Campanha no ar, números na tela.</h2></div>
+  <div class="panels">
+    <div class="panel"><div class="ph"><span class="pd"></span>Campanha · WhatsApp<span class="tag">Meta Ads</span></div><div class="pb">
+      <div class="mrow"><span class="ml">Investido</span><span class="mv">R$ 8,53</span></div>
+      <div class="mrow"><span class="ml">Leads no WhatsApp</span><span class="mv g">37</span></div>
+      <div class="mrow"><span class="ml">Custo por lead</span><span class="mv">R$ 0,23</span></div>
+      <div class="mrow"><span class="ml">Vendas geradas</span><span class="mv g">R$ 4.600</span></div>
+    </div></div>
+    <div class="panel"><div class="ph"><span class="pd"></span>Leads por dia<span class="tag">últimos 7 dias</span></div><div class="pb">
+      <div class="bars"><div class="bcol" style="--h:38%"></div><div class="bcol" style="--h:54%"></div><div class="bcol" style="--h:47%"></div><div class="bcol" style="--h:72%"></div><div class="bcol" style="--h:66%"></div><div class="bcol" style="--h:88%"></div><div class="bcol" style="--h:100%"></div></div>
+      <div class="blabel"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span></div>
+      <p style="font-size:12px;color:var(--hint);margin-top:12px">Quanto mais a campanha roda, mais a máquina aprende — e mais barato fica o lead.</p>
+    </div></div>
+  </div>
+</div></section>
+
+<!-- VOCÊ SAI COM -->
+<section class="section section-alt"><div class="container rv">
+  <div class="sec-head"><div class="label">No fim dos 6 dias</div><h2 class="title t-md">Você não sai com anotações. Sai com tudo pronto.</h2></div>
+  <div class="deliv">
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Oferta pronta</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Conteúdo do mês</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Anúncios no ar</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Artes da marca</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Vídeo editado</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Site rastreado</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Campanha rodando</span></div>
+    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Métricas lidas</span></div>
+  </div>
+</div></section>
+
+<!-- DOCENTE -->
+<section class="section"><div class="container rv">
+  <div class="sec-head"><div class="label">Quem ensina</div><h2 class="title t-md">Um time que vive de fazer isso — não só de dar aula.</h2></div>
+  <div class="docs">
+    <div class="doc"><div class="av">BF</div><div><div class="area">Estratégia & Oferta</div><div class="nm">Barbara Corrêa & Felipe Lenhard</div></div></div>
+    <div class="doc"><div class="av">AT</div><div><div class="area">Vídeo Mobile</div><div class="nm">Aleks Tizon</div></div></div>
+    <div class="doc"><div class="av">CV</div><div><div class="area">Design & Artes</div><div class="nm">Carlos Viana</div></div></div>
+    <div class="doc"><div class="av">DC</div><div><div class="area">Tráfego Pago</div><div class="nm">Douglas Conceição</div></div></div>
+  </div>
+</div></section>
+
+<!-- TURMAS -->
+<section class="section section-alt" id="turmas"><div class="container rv">
+  <div class="sec-head"><div class="label">Próximas turmas</div><h2 class="title t-md">Escolha como você quer aprender.</h2></div>
+  <div class="turmas">
+    <div class="tt"><div class="cid">Porto Alegre</div><div class="uf">Rio Grande do Sul</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Datas a confirmar</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Presencial · 6 dias</div>
+    </div>
+    <div class="tt"><div class="cid">Novo Hamburgo</div><div class="uf">Rio Grande do Sul</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Datas a confirmar</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Presencial · 6 dias</div>
+    </div>
+    <div class="tt on-line"><div class="cid">Online</div><div class="uf">De qualquer lugar</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 0 1 0 18M12 3a15 15 0 0 0 0 18"/></svg>Comece quando quiser</div>
+      <div class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>As mesmas skills, no seu tempo</div>
+    </div>
+  </div>
+</div></section>
+
+<!-- INVESTIMENTO -->
+<section class="section"><div class="container rv">
+  <div class="sec-head center"><div class="label">Investimento</div><h2 class="title t-md">Menos que uma campanha malfeita — e você leva a máquina inteira.</h2></div>
+  <div class="inv-grid">
+    <div class="inv dest"><span class="badge">Mais escolhido</span>
+      <div class="lbl">Presencial · na sua cidade</div>
+      <div class="price">R$ 1.197<small>ou 10x de R$ 119,70</small></div>
+      <div class="avista">à vista no Pix</div>
+      <ul>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>6 dias presenciais (4 + 2), mão na massa</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Todas as skills de captação no Claude</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Professor por perto, no seu negócio</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Você sai com a máquina rodando</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Tráfego na Meta configurado com você</li>
+      </ul>
+      <a class="btn btn-primary btn-full btn-lg" href="#topo">Garantir vaga presencial</a>
+    </div>
+    <div class="inv">
+      <div class="lbl">Online · de qualquer lugar</div>
+      <div class="price">R$ 497<small>ou 10x de R$ 49,70</small></div>
+      <div class="avista">à vista no Pix</div>
+      <ul>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>As mesmas skills de captação</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>No seu tempo, de qualquer lugar</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Passo a passo pra montar tudo</li>
+        <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Tráfego na Meta explicado</li>
+      </ul>
+      <a class="btn btn-secondary btn-full btn-lg" href="#topo">Quero a versão online</a>
+    </div>
+  </div>
+  <p class="res-note" style="margin-top:22px">A verba de anúncio é à parte e você define quanto investir — dá pra começar com pouco. Tem case que começou com <b class="green">R$ 8,53</b>.</p>
+</div></section>
+
+<!-- FAQ -->
+<section class="section section-alt"><div class="container rv">
+  <div class="sec-head center"><div class="label">Dúvidas</div><h2 class="title t-md">O que todo mundo pergunta.</h2></div>
+  <div class="faq">
+    <details class="qa"><summary>Preciso entender de tecnologia ou saber programar?</summary><div class="a">Não. É tudo no navegador, conversando em português. A IA faz o trabalho pesado e você decide. Se você usa WhatsApp, você consegue.</div></details>
+    <details class="qa"><summary>Ainda não tenho um negócio. Serve pra mim?</summary><div class="a">Serve. Você já monta a captação pro seu projeto, pra uma ideia que quer testar, ou pra prestar esse serviço pra outras empresas — que é um mercado enorme.</div></details>
+    <details class="qa"><summary>Presencial ou online: qual escolher?</summary><div class="a">Presencial se você quer sair com tudo pronto, mão na massa e com professor do seu lado nos 6 dias. Online se prefere no seu tempo e de qualquer lugar. O conteúdo de captação é o mesmo.</div></details>
+    <details class="qa"><summary>Em quanto tempo eu vejo resultado?</summary><div class="a">Muita gente sai com anúncios rodando e os primeiros leads no WhatsApp ainda durante o curso. O intervalo entre a 1ª e a 2ª semana existe justamente pra você rodar e já ler os números.</div></details>
+    <details class="qa"><summary>Preciso pagar tráfego? Quanto?</summary><div class="a">Sim, a verba de anúncio é à parte e você define quanto colocar. Dá pra começar com pouco — tem aluno que fez venda com menos de R$ 10 investidos. O que a gente ensina é a fazer cada real render.</div></details>
+    <details class="qa"><summary>A ferramenta de IA tem algum custo?</summary><div class="a">A IA é simples de ligar e a gente te mostra como, passo a passo, na primeira aula. É uma ferramenta acessível — nada de estrutura complicada.</div></details>
+  </div>
+</div></section>
+
+<!-- CTA FINAL -->
+<section class="section final"><div class="container">
+  <h2 class="title">Comece a ter cliente<br>todo dia.</h2>
+  <p>Seu concorrente já está anunciando. Em 6 dias, a máquina de captação pode estar rodando no <b style="color:#fff">seu</b> negócio.</p>
+  <a class="btn btn-primary btn-lg" href="#turmas">Garantir minha vaga</a>
+</div></section>
+
+<footer><div class="container">
+  <img src="/img/ctd/logo.png" alt="Carreira no Digital">
+  <div>CarreiraNoDigital · Cliente Todo Dia · captação com IA · presencial e online</div>
+</div></footer>
+
+<script>
+(function(){
+  var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  function act(el){el.classList.add('on')}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){act(e.target);io.unobserve(e.target)}})},{threshold:.12});
+  document.querySelectorAll('.rv:not(.on)').forEach(function(el){if(rm){act(el)}else{io.observe(el)}});
+  // hero mocks já visíveis
+  ['wa','chat'].forEach(function(id){var e=document.getElementById(id);if(e)e.parentNode.classList.add('on')});
+})();
+</script>
+</body>
+</html>
