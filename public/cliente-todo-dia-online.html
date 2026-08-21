@@ -172,6 +172,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .photo{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);position:relative;aspect-ratio:4/5}
 .photo img{width:100%;height:100%;object-fit:cover}
 .photo .cap{position:absolute;left:0;right:0;bottom:0;padding:16px;background:linear-gradient(transparent,rgba(11,11,18,.85));font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff}
+/* O QUE PRODUZ */
+.produz-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
+.pz{margin:0;border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);background:var(--surface)}
+.pz img{width:100%;display:block;aspect-ratio:4/5;object-fit:cover}
+.pz figcaption{padding:11px 14px;font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);border-top:1px solid var(--border)}
+@media(max-width:760px){.produz-grid{grid-template-columns:1fr 1fr;gap:12px}}
+@media(max-width:460px){.produz-grid{grid-template-columns:1fr}}
 
 /* PANEL / METRICS MOCK */
 .panels{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:44px}
@@ -342,6 +349,16 @@ footer img{height:26px;margin:0 auto 14px;opacity:.85}
     <div class="step"><span class="num">07</span><div class="ic"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 8h18M7 21h10"/></svg></div><h4>Site rastreado</h4><p>Uma página pronta e com o pixel medindo cada visita.</p><div class="claude">↳ no Claude</div></div>
     <div class="step"><span class="num">08</span><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div><h4>Campanha na Meta</h4><p>Você sobe o tráfego pago pro WhatsApp e pro site.</p><div class="claude">↳ Meta + Claude</div></div>
     <div class="step"><span class="num">09</span><div class="ic"><svg viewBox="0 0 24 24"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></div><h4>Métricas & remarketing</h4><p>Lê os números, ajusta e reimpacta quem não comprou ainda.</p><div class="claude">↳ Meta + Claude</div></div>
+  </div>
+</div></section>
+
+<!-- O QUE PRODUZ -->
+<section class="section" id="produz"><div class="container rv">
+  <div class="sec-head"><div class="label">Não é teoria</div><h2 class="title t-md">Olha o que a máquina produz.</h2><p class="body-text" style="margin-top:14px">Anúncios, carrossel, conteúdo — <b>cada negócio com a sua cara</b>, no padrão da marca. Tudo gerado no Claude. Estas peças são de negócios reais que passaram pelo método.</p></div>
+  <div class="produz-grid">
+    <figure class="pz"><img src="/img/ctd/produz-pneus.jpg" alt="Carrossel gerado para loja de pneus" loading="lazy"><figcaption>Loja de pneus · carrossel</figcaption></figure>
+    <figure class="pz"><img src="/img/ctd/produz-marcenaria.jpg" alt="Anúncio gerado para marcenaria" loading="lazy"><figcaption>Marcenaria · anúncio</figcaption></figure>
+    <figure class="pz"><img src="/img/ctd/produz-camila.jpg" alt="Anúncio gerado para nutricionista" loading="lazy"><figcaption>Nutricionista · anúncio</figcaption></figure>
   </div>
 </div></section>
 
