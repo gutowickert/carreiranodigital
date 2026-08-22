@@ -212,6 +212,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .dv{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:11px}
 .dv svg{width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:2.2;flex-shrink:0}
 .dv span{font-size:13.5px;color:var(--body);font-weight:600}
+.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+@media(max-width:820px){.dgrid{grid-template-columns:1fr 1fr}}
+.dcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
+.dcard .im{aspect-ratio:4/3;overflow:hidden;background:var(--surface2);border-bottom:1px solid var(--border)}
+.dcard .im img{width:100%;height:100%;object-fit:cover;display:block}
+.dcard .lb{display:flex;align-items:center;gap:9px;padding:12px 14px;font-size:13.5px;font-weight:700;color:var(--body)}
+.dcard .lb svg{width:17px;height:17px;stroke:var(--green);fill:none;stroke-width:2.4;flex-shrink:0}
 
 /* DOCENTE */
 .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
@@ -437,15 +444,15 @@ html{overflow-x:hidden}
 <!-- VOCÊ SAI COM -->
 <section class="section section-alt"><div class="container rv">
   <div class="sec-head"><div class="label">No fim dos 6 dias</div><h2 class="title t-md">Você não sai com anotações. Sai com tudo pronto.</h2></div>
-  <div class="deliv">
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Oferta pronta</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Conteúdo do mês</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Anúncios no ar</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Artes da marca</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Vídeo editado</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Site rastreado</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Campanha rodando</span></div>
-    <div class="dv"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg><span>Métricas lidas</span></div>
+  <div class="dgrid">
+    <div class="dcard"><div class="im"><img src="/img/ctd/ent-oferta.jpg" alt="Oferta pronta" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Oferta pronta</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/produz-pneus.jpg" alt="Conteúdo do mês" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Conteúdo do mês</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/anuncio-pneus.jpg" alt="Anúncios no ar" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Anúncios no ar</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/produz-marcenaria.jpg" alt="Artes da marca" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Artes da marca</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/ent-roteiro.jpg" alt="Roteiro de vídeo" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Roteiro de vídeo</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/site-pneus.jpg" alt="Site rastreado" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Site rastreado</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/ent-campanha.jpg" alt="Campanha rodando" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Campanha rodando</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/ent-metricas.jpg" alt="Métricas lidas" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Métricas lidas</div></div>
   </div>
 </div></section>
 
