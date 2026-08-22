@@ -197,6 +197,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .bcol{flex:1;background:linear-gradient(180deg,var(--purple-l),var(--purple));border-radius:4px 4px 0 0;height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
 .on .bcol{height:var(--h)}
 .blabel{display:flex;justify-content:space-between;font-size:10px;color:var(--hint);margin-top:6px;font-family:'Barlow Condensed',sans-serif}
+.ads-shot{margin-top:44px;border:1px solid var(--border-l);border-radius:var(--r-lg);overflow:hidden;box-shadow:0 22px 55px rgba(0,0,0,.45)}
+.ads-bar{display:flex;align-items:center;gap:7px;padding:11px 15px;background:#f0f2f5;border-bottom:1px solid #dadde1}
+.ads-bar .ads-dot{width:11px;height:11px;border-radius:50%;background:#c9ccd1}
+.ads-bar .ads-t{margin-left:10px;font-size:12.5px;color:#65676b;font-weight:600}
+.ads-shot img{width:100%;display:block;background:#fff}
 
 /* ENTREGÁVEIS */
 .deliv{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:44px}
@@ -400,19 +405,11 @@ footer img{height:26px;margin:0 auto 14px;opacity:.85}
 <!-- VEJA FUNCIONANDO / PAINÉIS -->
 <section class="section"><div class="container rv">
   <div class="sec-head"><div class="label">Veja funcionando</div><h2 class="title t-md">Campanha no ar, números na tela.</h2></div>
-  <div class="panels">
-    <div class="panel"><div class="ph"><span class="pd"></span>Campanha · WhatsApp<span class="tag">Meta Ads</span></div><div class="pb">
-      <div class="mrow"><span class="ml">Investido</span><span class="mv">R$ 8,53</span></div>
-      <div class="mrow"><span class="ml">Leads no WhatsApp</span><span class="mv g">9</span></div>
-      <div class="mrow"><span class="ml">Custo por lead</span><span class="mv">R$ 0,95</span></div>
-      <div class="mrow"><span class="ml">Vendas geradas</span><span class="mv g">R$ 4.600</span></div>
-    </div></div>
-    <div class="panel"><div class="ph"><span class="pd"></span>Leads por dia<span class="tag">últimos 7 dias</span></div><div class="pb">
-      <div class="bars"><div class="bcol" style="--h:38%"></div><div class="bcol" style="--h:54%"></div><div class="bcol" style="--h:47%"></div><div class="bcol" style="--h:72%"></div><div class="bcol" style="--h:66%"></div><div class="bcol" style="--h:88%"></div><div class="bcol" style="--h:100%"></div></div>
-      <div class="blabel"><span>seg</span><span>ter</span><span>qua</span><span>qui</span><span>sex</span><span>sáb</span><span>dom</span></div>
-      <p style="font-size:12px;color:var(--hint);margin-top:12px">Quanto mais a campanha roda, mais a máquina aprende — e mais barato fica o lead.</p>
-    </div></div>
+  <div class="ads-shot">
+    <div class="ads-bar"><span class="ads-dot"></span><span class="ads-dot"></span><span class="ads-dot"></span><span class="ads-t">Gerenciador de Anúncios · Meta</span></div>
+    <img src="/img/ctd/ads-real.png" alt="Campanha real de captação no Gerenciador de Anúncios: R$ 7.456 investidos, R$ 48.912 em conversão, 507 leads" loading="lazy">
   </div>
+  <p class="disc">Campanha real de captação rodando na Meta — R$ 7.456 investidos, <b style="color:var(--green)">R$ 48.912 em conversão</b> e 507 leads. Não é banco de imagem: é resultado de verdade.</p>
 </div></section>
 
 <!-- VOCÊ SAI COM -->
