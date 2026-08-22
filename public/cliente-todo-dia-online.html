@@ -212,8 +212,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .dv{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;display:flex;align-items:center;gap:11px}
 .dv svg{width:20px;height:20px;stroke:var(--green);fill:none;stroke-width:2.2;flex-shrink:0}
 .dv span{font-size:13.5px;color:var(--body);font-weight:600}
-.dgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:44px}
+.dgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:44px}
 @media(max-width:820px){.dgrid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.dgrid{grid-template-columns:1fr}}
 .dcard{background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden}
 .dcard .im{aspect-ratio:4/3;overflow:hidden;background:var(--surface2);border-bottom:1px solid var(--border)}
 .dcard .im img{width:100%;height:100%;object-fit:cover;display:block}
@@ -446,9 +447,9 @@ html{overflow-x:hidden}
   <div class="sec-head"><div class="label">No fim dos 6 dias</div><h2 class="title t-md">Você não sai com anotações. Sai com tudo pronto.</h2></div>
   <div class="dgrid">
     <div class="dcard"><div class="im"><img src="/img/ctd/ent-oferta.jpg" alt="Oferta pronta" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Oferta pronta</div></div>
-    <div class="dcard"><div class="im"><img src="/img/ctd/produz-pneus.jpg" alt="Conteúdo do mês" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Conteúdo do mês</div></div>
-    <div class="dcard"><div class="im"><img src="/img/ctd/anuncio-pneus.jpg" alt="Anúncios no ar" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Anúncios no ar</div></div>
-    <div class="dcard"><div class="im"><img src="/img/ctd/produz-marcenaria.jpg" alt="Artes da marca" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Artes da marca</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/produz-pneus-t.jpg" alt="Conteúdo do mês" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Conteúdo do mês</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/anuncio-pneus-t.jpg" alt="Anúncios no ar" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Anúncios no ar</div></div>
+    <div class="dcard"><div class="im"><img src="/img/ctd/produz-marcenaria-t.jpg" alt="Artes da marca" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Artes da marca</div></div>
     <div class="dcard"><div class="im"><img src="/img/ctd/ent-roteiro.jpg" alt="Roteiro de vídeo" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Roteiro de vídeo</div></div>
     <div class="dcard"><div class="im"><img src="/img/ctd/site-pneus.jpg" alt="Site rastreado" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Site rastreado</div></div>
     <div class="dcard"><div class="im"><img src="/img/ctd/ent-campanha.jpg" alt="Campanha rodando" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Campanha rodando</div></div>
@@ -471,10 +472,10 @@ html{overflow-x:hidden}
 <section class="section" id="investimento"><div class="container rv">
   <div class="sec-head center"><div class="label">Investimento</div><h2 class="title t-md">Menos que uma campanha malfeita — e você leva a máquina inteira.</h2></div>
   <div style="max-width:480px;margin:44px auto 0">
-    <div class="inv dest"><span class="badge">Acesso online</span>
+    <div class="inv dest"><span class="badge">🔥 Pré-lançamento · 50 vagas</span>
       <div class="lbl">Online · de qualquer lugar</div>
-      <div class="price">10x R$ 79,90<small>sem juros no cartão · total R$ 799</small></div>
-      <div class="avista">ou R$ 597 à vista no Pix</div>
+      <div class="price"><span style="font-size:.5em;color:var(--hint);text-decoration:line-through;font-family:'Barlow',sans-serif;font-weight:700;display:block;letter-spacing:0">de R$ 1.497</span>R$ 797<small>ou 10x de R$ 79,90 no cartão</small></div>
+      <div class="avista">só os <b style="color:var(--green)">primeiros 50 inscritos</b></div>
       <ul>
         <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Todas as skills de captação no Claude</li>
         <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>No seu tempo, de qualquer lugar</li>
