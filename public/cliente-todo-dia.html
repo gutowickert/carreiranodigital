@@ -273,13 +273,28 @@ footer img{height:26px;margin:0 auto 14px;opacity:.85}
 
 .rv{opacity:0;transform:translateY(22px);transition:.7s cubic-bezier(.2,.7,.2,1)}.rv.on{opacity:1;transform:none}
 @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}.bub,.cmsg{animation:none;opacity:1;transform:none}}
+/* MOBILE / anti-overflow */
+html{overflow-x:hidden}
+.hero-grid>div,.res-card,.kpi,.step,.tt,.inv,.dv,.pz,.ps-box,.crmid,.mile,.doc{min-width:0}
+.res-valor,.hero-sub{overflow-wrap:break-word}
+.nav-short{display:none}
+@media(max-width:600px){
+  .nav-full{display:none}.nav-short{display:inline}
+  .nav .btn{padding:10px 15px;font-size:11px}
+  .nav-inner{padding:0 16px;gap:10px}
+  .hero{padding:96px 0 42px}
+  .hero-h1{font-size:clamp(2.4rem,12vw,3.4rem)}
+  .hero-sub{max-width:100%}
+  .container{padding:0 18px}
+  .res-grid{gap:10px}
+}
 </style>
 </head>
 <body>
 
 <nav><div class="nav-inner">
   <div class="nav-brand"><a class="nav-logo" href="#topo"><img src="/img/ctd/logo.png" alt="Carreira no Digital"></a><span class="nav-course">Cliente Todo Dia</span></div>
-  <a class="btn btn-primary" href="https://wa.me/5551990000000?text=Ol%C3%A1!%20Quero%20saber%20do%20Cliente%20Todo%20Dia" target="_blank" rel="noopener">Conversar no WhatsApp</a>
+  <a class="btn btn-primary" href="https://wa.me/5551990000000?text=Ol%C3%A1!%20Quero%20saber%20do%20Cliente%20Todo%20Dia" target="_blank" rel="noopener"><span class="nav-full">Conversar no WhatsApp</span><span class="nav-short">WhatsApp</span></a>
 </div></nav>
 
 <header class="hero" id="topo"><div class="container">
@@ -456,8 +471,8 @@ footer img{height:26px;margin:0 auto 14px;opacity:.85}
   <div style="max-width:480px;margin:44px auto 0">
     <div class="inv dest"><span class="badge">Turma presencial</span>
       <div class="lbl">Presencial · Porto Alegre ou Lajeado</div>
-      <div class="price">R$ 1.197<small>ou 10x de R$ 119,70 no cartão</small></div>
-      <div class="avista">à vista no Pix</div>
+      <div class="price">10x R$ 149,70<small>sem juros no cartão · total R$ 1.497</small></div>
+      <div class="avista">ou R$ 1.297 à vista no Pix</div>
       <ul>
         <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>6 dias presenciais (4 + 2), mão na massa</li>
         <li><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Todas as skills de captação no Claude</li>
