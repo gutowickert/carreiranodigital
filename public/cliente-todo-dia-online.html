@@ -239,12 +239,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .man-stats .l{font-size:13px;color:var(--muted);margin-top:4px}
 .man-close{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.4rem,3.4vw,2.1rem);color:#fff;letter-spacing:.02em;max-width:22ch}
 .man-close b{color:var(--purple-l)}
-.man-photos{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin:30px 0 36px}
-@media(max-width:820px){.man-photos{grid-template-columns:repeat(3,1fr)}}
-@media(max-width:520px){.man-photos{grid-template-columns:1fr 1fr}}
-.man-photos figure{margin:0}
-.man-photos img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:10px;border:1px solid var(--border-l);display:block}
-.man-photos figcaption{font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-top:7px;text-align:center}
+.man-foto{margin:28px 0 34px;border-radius:14px;overflow:hidden;border:1px solid var(--border-l);position:relative;max-width:780px}
+.man-foto img{width:100%;display:block}
+.man-foto figcaption{position:absolute;left:0;right:0;bottom:0;padding:16px 18px;background:linear-gradient(transparent,rgba(11,11,18,.92));font-size:12.5px;font-weight:600;color:#fff}
 
 /* DOCENTE */
 .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
@@ -397,13 +394,7 @@ html{overflow-x:hidden}
 <section class="section manifesto"><div class="container rv">
   <div class="man-badge">🎂 1 ano de escola</div>
   <h2 class="title t-md">Um ano. Mais de 500 alunos. E uma certeza.</h2>
-  <div class="man-photos">
-    <figure><img src="/img/ctd/turmas/turma-porto-alegre.jpg" alt="Turma em Porto Alegre" loading="lazy"><figcaption>Porto Alegre</figcaption></figure>
-    <figure><img src="/img/ctd/turmas/turma-caxias-do-sul.jpg" alt="Turma em Caxias do Sul" loading="lazy"><figcaption>Caxias do Sul</figcaption></figure>
-    <figure><img src="/img/ctd/turmas/turma-novo-hamburgo.jpg" alt="Turma em Novo Hamburgo" loading="lazy"><figcaption>Novo Hamburgo</figcaption></figure>
-    <figure><img src="/img/ctd/turmas/turma-gravatai.jpg" alt="Turma em Gravataí" loading="lazy"><figcaption>Gravataí</figcaption></figure>
-    <figure><img src="/img/ctd/turmas/turma-santa-cruz-do-sul.jpg" alt="Turma em Santa Cruz do Sul" loading="lazy"><figcaption>Santa Cruz do Sul</figcaption></figure>
-  </div>
+  <figure class="man-foto"><img src="/img/ctd/turmas/turma-porto-alegre.jpg" alt="Turma formada segurando os certificados" loading="lazy"><figcaption>Uma das nossas turmas presenciais — no dia da entrega dos certificados.</figcaption></figure>
   <div class="man-body">
     <p>Treinamos <b>mais de 500 alunos</b> presencialmente no Rio Grande do Sul e ajudamos <b>centenas de empreendedores</b> a rodar campanhas, gerar leads e abrir um novo canal de vendas pro negócio.</p>
     <p>E confirmamos o que a gente sempre imaginou: a empresa <b>precisa de ajuda pra colocar isso pra rodar de verdade</b>. Que a essência do negócio — o que vem de dentro — junto de um <b>método de conversão</b> num canal tão grande quanto a internet, funciona mesmo.</p>
