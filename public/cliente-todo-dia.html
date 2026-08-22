@@ -220,6 +220,25 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .dcard .im img{width:100%;height:100%;object-fit:cover;display:block}
 .dcard .lb{display:flex;align-items:center;gap:9px;padding:12px 14px;font-size:13.5px;font-weight:700;color:var(--body)}
 .dcard .lb svg{width:17px;height:17px;stroke:var(--green);fill:none;stroke-width:2.4;flex-shrink:0}
+.bonus{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+@media(max-width:600px){.bonus{grid-template-columns:1fr}}
+.bcard{display:flex;align-items:center;gap:14px;background:var(--green-bg);border:1px solid var(--green-line);border-radius:var(--r-lg);padding:17px 20px}
+.bcard .bi{width:42px;height:42px;border-radius:11px;background:var(--wa);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bcard .bi svg{width:22px;height:22px;stroke:#04210f;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.bcard b{color:#fff;font-size:14.5px;display:block;margin-bottom:2px}
+.bcard span{font-size:12.5px;color:var(--muted);line-height:1.4}
+.manifesto{position:relative;overflow:hidden;background:linear-gradient(180deg,#0e0a18,#130d22)}
+.manifesto::before{content:'';position:absolute;top:-25%;left:50%;transform:translateX(-50%);width:900px;max-width:130%;height:640px;background:radial-gradient(circle,rgba(123,47,190,.22),transparent 62%);z-index:0}
+.manifesto .container{position:relative;z-index:1}
+.man-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--purple-l);border:1px solid rgba(184,122,240,.3);background:rgba(123,47,190,.15);padding:8px 16px;border-radius:40px;margin-bottom:22px}
+.man-body{max-width:62ch;margin-top:18px}
+.man-body p{font-size:16.5px;line-height:1.75;color:var(--body);margin:0 0 16px}
+.man-body p:last-child{margin-bottom:0}.man-body b{color:#fff}
+.man-stats{display:flex;flex-wrap:wrap;gap:34px;margin:38px 0 30px;padding:26px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.man-stats .n{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,5vw,3rem);color:var(--purple-l);line-height:1}
+.man-stats .l{font-size:13px;color:var(--muted);margin-top:4px}
+.man-close{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.4rem,3.4vw,2.1rem);color:#fff;letter-spacing:.02em;max-width:22ch}
+.man-close b{color:var(--purple-l)}
 
 /* DOCENTE */
 .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
@@ -368,6 +387,24 @@ html{overflow-x:hidden}
 </div></section>
 
 <!-- A MÁQUINA / PIPELINE -->
+<!-- MANIFESTO 1 ANO -->
+<section class="section manifesto"><div class="container rv">
+  <div class="man-badge">🎂 1 ano de escola</div>
+  <h2 class="title t-md" style="max-width:18ch">Em um ano, a gente aprendeu exatamente o que faltava.</h2>
+  <div class="man-body">
+    <p>Treinamos <b>mais de 500 alunos</b> presencialmente no Rio Grande do Sul e ajudamos <b>centenas de empreendedores</b> a rodar campanhas, gerar leads e abrir um novo canal de vendas pro negócio.</p>
+    <p>E confirmamos o que a gente sempre imaginou: a empresa <b>precisa de ajuda pra colocar isso pra rodar de verdade</b>. Que a essência do negócio — o que vem de dentro — junto de um <b>método de conversão</b> num canal tão grande quanto a internet, funciona mesmo.</p>
+    <p>Só que o dono tem uma vida corrida, com mil atribuições. Então pegamos toda a evolução que a IA já entrega, juntamos o <b>método de conversão que usamos nos nossos próprios negócios</b> — inclusive na escola — e passamos os últimos meses <b>criando e testando uma solução que automatiza no ponto certo</b>: tira o trabalho grosso e <b>mantém a decisão com você</b>.</p>
+    <p>Um método que não foi pensado pra fazer marketing bonitinho. Foi pensado pra <b>acertar a oferta, trazer cliente, gerar venda e acelerar as oportunidades de quem tem um negócio local.</b></p>
+  </div>
+  <div class="man-stats">
+    <div class="ms"><div class="n">1 ano</div><div class="l">de escola presencial no RS</div></div>
+    <div class="ms"><div class="n">+500</div><div class="l">alunos treinados</div></div>
+    <div class="ms"><div class="n">centenas</div><div class="l">de campanhas no ar</div></div>
+  </div>
+  <p class="man-close">É isso que a gente coloca na tua mão no <b>Cliente Todo Dia</b>.</p>
+</div></section>
+
 <section class="section section-alt" id="maquina"><div class="container rv">
   <div class="sec-head"><div class="label">O que você constrói</div><h2 class="title t-md">A sua máquina de captação, montada peça por peça.</h2><p class="body-text" style="margin-top:14px">Cada etapa é uma skill que você opera <b class="purple">dentro do Claude</b>. Você conversa, a IA entrega pronto, você decide. No fim dos 6 dias, está tudo rodando no seu negócio.</p></div>
   <div class="pipe">
@@ -454,6 +491,10 @@ html{overflow-x:hidden}
     <div class="dcard"><div class="im"><img src="/img/ctd/site-pneus.jpg" alt="Site rastreado" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Site rastreado</div></div>
     <div class="dcard"><div class="im"><img src="/img/ctd/ent-campanha.jpg" alt="Campanha rodando" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Campanha rodando</div></div>
     <div class="dcard"><div class="im"><img src="/img/ctd/ent-metricas.jpg" alt="Métricas lidas" loading="lazy"></div><div class="lb"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Métricas lidas</div></div>
+  </div>
+  <div class="bonus">
+    <div class="bcard"><span class="bi"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M2.5 20c0-3.3 3-5.5 6.5-5.5"/><circle cx="17" cy="9" r="2.4"/><path d="M14.5 14.2c3.2.1 6 1.9 6 4.8"/></svg></span><div><b>Grupo da turma no WhatsApp</b><span>troca com quem está fazendo junto</span></div></div>
+    <div class="bcard"><span class="bi"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 9h8M8 13h5"/></svg></span><div><b>Suporte exclusivo no WhatsApp</b><span>tira tuas dúvidas por 30 dias</span></div></div>
   </div>
 </div></section>
 
