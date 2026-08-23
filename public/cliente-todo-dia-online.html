@@ -229,24 +229,25 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 .bcard span{font-size:12.5px;color:var(--muted);line-height:1.4}
 .manifesto{position:relative;overflow:hidden;background:linear-gradient(180deg,#0e0a18,#130d22)}
 .manifesto::before{content:'';position:absolute;top:-25%;left:50%;transform:translateX(-50%);width:900px;max-width:130%;height:640px;background:radial-gradient(circle,rgba(123,47,190,.22),transparent 62%);z-index:0}
-.manifesto .container{position:relative;z-index:1;text-align:center}
+.manifesto .container{position:relative;z-index:1;display:grid;grid-template-columns:1.02fr .98fr;gap:46px;align-items:center}
+@media(max-width:880px){.manifesto .container{grid-template-columns:1fr;gap:30px}}
 .man-badge{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--purple-l);border:1px solid rgba(184,122,240,.3);background:rgba(123,47,190,.15);padding:8px 16px;border-radius:40px;margin-bottom:22px}
-.manifesto h2{max-width:20ch;margin:0 auto}
-.man-body{max-width:60ch;margin:24px auto 0}
-.man-body p{font-size:17px;line-height:1.7;color:var(--body);margin:0 0 15px}
+.manifesto h2{margin:0}
+.man-body{margin-top:22px}
+.man-body p{font-size:16px;line-height:1.7;color:var(--body);margin:0 0 14px}
 .man-body p:last-child{margin-bottom:0}.man-body b{color:#fff}
-.man-stats{display:flex;flex-wrap:wrap;justify-content:center;gap:40px;margin:36px auto 30px;padding:26px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border);max-width:640px}
-.man-stats .n{font-family:'Bebas Neue',sans-serif;font-size:clamp(2.2rem,5vw,3rem);color:var(--purple-l);line-height:1}
-.man-stats .l{font-size:13px;color:var(--muted);margin-top:4px}
-.man-close{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.5rem,3.6vw,2.2rem);color:#fff;letter-spacing:.02em;max-width:24ch;margin:0 auto}
+.man-stats{display:flex;flex-wrap:wrap;gap:32px;margin:30px 0 0;padding:24px 0 0;border-top:1px solid var(--border)}
+.man-stats .n{font-family:'Bebas Neue',sans-serif;font-size:clamp(2rem,4.5vw,2.8rem);color:var(--purple-l);line-height:1}
+.man-stats .l{font-size:12.5px;color:var(--muted);margin-top:4px}
+.man-close{font-family:'Bebas Neue',sans-serif;font-size:clamp(1.3rem,2.6vw,1.7rem);color:#fff;letter-spacing:.02em;margin:22px 0 0}
 .man-close b{color:var(--purple-l)}
-.man-carousel{margin-top:40px;overflow:hidden;position:relative;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(90deg,transparent,#000 7%,#000 93%,transparent)}
-.man-track{display:flex;gap:16px;width:max-content;animation:marq 48s linear infinite}
-.man-track img{height:240px;width:auto;border-radius:12px;border:1px solid var(--border-l);display:block}
-@keyframes marq{from{transform:translateX(0)}to{transform:translateX(-50%)}}
-.man-carousel:hover .man-track{animation-play-state:paused}
-@media(prefers-reduced-motion:reduce){.man-track{animation:none}}
-@media(max-width:600px){.man-track img{height:170px}}
+.man-gallery{position:relative;overflow:hidden;height:520px;-webkit-mask-image:linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent);mask-image:linear-gradient(180deg,transparent,#000 7%,#000 93%,transparent)}
+@media(max-width:880px){.man-gallery{height:360px}}
+.man-vtrack{display:flex;flex-direction:column;gap:14px;animation:marqv 26s linear infinite}
+.man-vtrack img{width:100%;border-radius:12px;border:1px solid var(--border-l);display:block}
+@keyframes marqv{from{transform:translateY(0)}to{transform:translateY(-50%)}}
+.man-gallery:hover .man-vtrack{animation-play-state:paused}
+@media(prefers-reduced-motion:reduce){.man-vtrack{animation:none}}
 
 /* DOCENTE */
 .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
@@ -397,6 +398,7 @@ html{overflow-x:hidden}
 <!-- A MÁQUINA / PIPELINE -->
 <!-- MANIFESTO 1 ANO -->
 <section class="section manifesto"><div class="container rv">
+  <div class="man-text">
   <div class="man-badge">🎂 1 ano de escola</div>
   <h2 class="title t-md">Um ano. Mais de 500 alunos. E uma certeza.</h2>
   <div class="man-body">
@@ -412,7 +414,7 @@ html{overflow-x:hidden}
   </div>
   <p class="man-close">É isso que a gente coloca na tua mão no <b>Cliente Todo Dia</b>.</p>
   </div>
-  <div class="man-carousel"><div class="man-track">
+  <div class="man-gallery"><div class="man-vtrack">
     <img src="/img/ctd/turmas/turma-porto-alegre.jpg" alt="Turma com os certificados">
     <img src="/img/ctd/turma-caxias-1.jpg" alt="Aula presencial">
     <img src="/img/ctd/sede-lajeado.jpg" alt="Sala de aula">
@@ -424,7 +426,7 @@ html{overflow-x:hidden}
     <img src="/img/ctd/turma-lajeado-1.jpg" alt="" aria-hidden="true">
     <img src="/img/ctd/sede-poa.jpg" alt="" aria-hidden="true">
   </div></div>
-</section>
+</div></section>
 
 <section class="section section-alt" id="maquina"><div class="container rv">
   <div class="sec-head"><div class="label">O que você constrói</div><h2 class="title t-md">A sua máquina de captação, montada peça por peça.</h2><p class="body-text" style="margin-top:14px">Cada etapa é uma skill que você opera <b class="purple">dentro do Claude</b>. Você conversa, a IA entrega pronto, você decide. No fim dos 6 dias, está tudo rodando no seu negócio.</p></div>
