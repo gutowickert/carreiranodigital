@@ -248,6 +248,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(11,11,18,.9)
 @keyframes marqv{from{transform:translateY(0)}to{transform:translateY(-50%)}}
 .man-gallery:hover .man-vtrack{animation-play-state:paused}
 @media(prefers-reduced-motion:reduce){.man-vtrack{animation:none}}
+.depo-grid{columns:3 290px;column-gap:16px;margin-top:44px}
+.depo-card{break-inside:avoid;margin-bottom:16px;border:1px solid var(--border);border-radius:14px;overflow:hidden;background:var(--surface)}
+.depo-card img{width:100%;display:block}
+.depo-card .cap{padding:12px 15px;font-size:13px;font-weight:700;color:var(--body);border-top:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;line-height:1.4}
+.depo-card .cap svg{width:16px;height:16px;stroke:var(--green);fill:none;stroke-width:2.4;flex-shrink:0;margin-top:1px}
 
 /* DOCENTE */
 .docs{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-top:44px}
@@ -544,6 +549,17 @@ html{overflow-x:hidden}
       <div class="ti"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18M8 2v4M16 2v4"/></svg>Datas a confirmar</div>
       <div class="ti"><svg viewBox="0 0 24 24"><path d="M12 21s-7-5.7-7-11a7 7 0 0 1 14 0c0 5.3-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>Presencial · 6 dias (4 + 2)</div>
     </div>
+  </div>
+</div></section>
+
+<!-- DEPOIMENTOS -->
+<section class="section"><div class="container rv">
+  <div class="sec-head center"><div class="label">Não é a gente que diz</div><h2 class="title t-md">São os alunos — direto do WhatsApp.</h2><p class="body-text" style="margin-top:14px">Prints reais de quem rodou o método. Nomes e telefones preservados.</p></div>
+  <div class="depo-grid">
+    <div class="depo-card"><img src="/img/ctd/depo/depo3.jpg" alt="Depoimento de aluno: primeiro carro vendido" loading="lazy"><div class="cap"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>Loja de veículos — 1º carro vendido com R$ 40/dia</div></div>
+    <div class="depo-card"><img src="/img/ctd/depo/depo1.jpg" alt="Depoimento de aluno: 12 contatos, 5 vendas" loading="lazy"><div class="cap"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>12 contatos e 5 vendas confirmadas</div></div>
+    <div class="depo-card"><img src="/img/ctd/depo/depo4.jpg" alt="Depoimento de aluno: 17 vendas numa campanha" loading="lazy"><div class="cap"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>17 vendas numa campanha só</div></div>
+    <div class="depo-card"><img src="/img/ctd/depo/depo2.jpg" alt="Depoimento de aluno: mais de 100 vendas" loading="lazy"><div class="cap"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg>+100 vendidos — "surreal"</div></div>
   </div>
 </div></section>
 
