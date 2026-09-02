@@ -864,5 +864,58 @@ footer strong{color:var(--body)}
 })();
 </script>
 
+<!-- === Tracking CRM (site_eventos + /wa) — padrão Carreira no Digital === -->
+<script>
+(function(){
+  var TRACK='/api/track', WA='/wa', CAMP='deu-venda';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+  var vid,sid;
+  try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
+  try{sid=sessionStorage.getItem('cnd_sid');if(!sid){sid=uid();sessionStorage.setItem('cnd_sid',sid);}}catch(e){sid=uid();}
+  var qs=new URLSearchParams(location.search);
+  var fbclid=qs.get('fbclid');
+  try{if(fbclid){localStorage.setItem('cnd_fbclid',fbclid);}else{fbclid=localStorage.getItem('cnd_fbclid');}}catch(e){}
+  var utm={source:qs.get('utm_source')||'',medium:qs.get('utm_medium')||'',campaign:qs.get('utm_campaign')||CAMP,content:qs.get('utm_content')||''};
+  function track(evento,meta){
+    try{
+      var payload=JSON.stringify({visitor_id:vid,sessao_id:sid,evento:evento,url:location.href,referrer:document.referrer,
+        utm_source:utm.source,utm_medium:utm.medium,utm_campaign:utm.campaign,utm_content:utm.content,fbclid:fbclid,meta:meta||null});
+      if(navigator.sendBeacon){navigator.sendBeacon(TRACK,new Blob([payload],{type:'text/plain'}));}
+      else{fetch(TRACK,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}
+    }catch(e){}
+  }
+  track('page_view');
+  var hit={};
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement,max=(h.scrollHeight-h.clientHeight)||1,pct=(h.scrollTop||document.body.scrollTop)/max*100;
+    if(pct>=50&&!hit[50]){hit[50]=1;track('scroll_50');}
+    if(pct>=90&&!hit[90]){hit[90]=1;track('scroll_90');}
+  },{passive:true});
+  function waLink(msg){
+    var p=new URLSearchParams();
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);
+    if(fbclid)p.set('fbclid',fbclid);
+    if(utm.source)p.set('utm_source',utm.source);
+    if(utm.medium)p.set('utm_medium',utm.medium);
+    p.set('utm_campaign',utm.campaign||CAMP);
+    if(utm.content)p.set('utm_content',utm.content);
+    return WA+'?'+p.toString();
+  }
+  function wire(){
+    var btns=document.querySelectorAll('a[href="#"]');
+    for(var i=0;i<btns.length;i++){
+      (function(b){
+        var t=(b.textContent||'').trim();
+        var msg=/neg[aoó]cio/i.test(t)?'Olá! Vim pela página do Deu Venda e quero falar sobre o meu negócio.':'Olá! Vim pela página do Deu Venda e quero falar com a escola.';
+        b.setAttribute('href',waLink(msg));
+        b.setAttribute('target','_blank');b.setAttribute('rel','noopener');
+        b.addEventListener('click',function(){track('clique_wa',{botao:t.slice(0,40)});});
+      })(btns[i]);
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',wire);}else{wire();}
+})();
+</script>
+
 </body>
 </html>
