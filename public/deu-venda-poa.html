@@ -676,6 +676,25 @@ footer strong{color:var(--body)}
   .orb2{display:none}
 }
 
+
+/* A comparacao vira UMA COLUNA abaixo de 860px e o cabecalho some — sem rotulo
+   em cada celula nao dava pra saber qual texto era o curso online e qual era o
+   Deu Venda. Aqui cada celula passa a se identificar sozinha. */
+@media (max-width:859px){
+  .cmp .um,.cmp .dois{border-left:3px solid var(--border-l);padding-top:13px;padding-bottom:15px}
+  .cmp .dois{border-left-color:var(--purple)}
+  .cmp .um::before,.cmp .dois::before{
+    display:block;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+    font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:6px}
+  .cmp .um::before{content:'curso online comum';color:var(--hint)}
+  .cmp .dois::before{content:'aqui, no Deu Venda';color:var(--purple-l)}
+  .cmp .crit{padding-bottom:2px}
+}
+/* No desktop a coluna do Deu Venda ganha borda propria, pra vista correr por
+   ela sem voltar no cabecalho a cada linha. */
+@media (min-width:860px){
+  .cmp .dois,.cmp .cab .dois{border-left:2px solid rgba(123,47,190,.55)}
+}
 </style>
 
 <nav>
