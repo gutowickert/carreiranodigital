@@ -670,16 +670,18 @@ footer strong{color:var(--body)}
   /* MOBILE: a foto deixa de ser fundo de tudo e vira uma faixa no topo.
      O overlay original e um degrade diagonal (escuro so na esquerda) — no
      celular o texto ocupa a largura toda e caia na parte clara, virando borrao.
-     Agora a foto aparece inteira em cima e o texto fica sobre o fundo solido. */
-  .hero{padding-top:0}
-  .hero-bg{height:236px;bottom:auto}
-  .hero-bg img{opacity:1;object-position:center 46%}
-  .hero-overlay{height:236px;bottom:auto;
-    background:linear-gradient(to bottom,rgba(11,11,18,.74) 0%,rgba(11,11,18,.26) 44%,rgba(11,11,18,.88) 84%,#0b0b12 100%)}
-  .hero-content{padding-top:256px}
-  /* a linha mais longa do titulo encostava na borda a 390px */
+     Faixa de 300px: a barra fixa cobre ~64px, entao os notebooks (25%-58% da
+     altura da foto) aparecem INTEIROS logo abaixo dela.
+     O hero mantem fundo proprio (roxo escuro) pra nao se confundir com a
+     secao seguinte, que e chapada. */
+  .hero{padding-top:0;background:linear-gradient(180deg,#130e24 0px,#130e24 300px,#0b0b12 640px)}
+  .hero-bg{height:300px;bottom:auto}
+  .hero-bg img{opacity:1;object-position:center 52%}
+  .hero-overlay{height:300px;bottom:auto;
+    background:linear-gradient(to bottom,rgba(11,11,18,.66) 0%,rgba(11,11,18,.10) 34%,rgba(19,14,36,.72) 84%,#130e24 100%)}
+  .hero-content{padding-top:320px}
   .hero-h1{font-size:clamp(1.9rem,8vw,2.3rem);letter-spacing:.01em}
-  .orb1{width:300px;height:300px;right:-120px;top:-60px;opacity:.28}
+  .orb1{width:340px;height:340px;right:-140px;top:300px;opacity:.38}
   .orb2{display:none}
 }
 
