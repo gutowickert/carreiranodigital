@@ -1,6 +1,13 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<!-- Meta Pixel (conta da escola) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',content_category:'Porto Alegre'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
 <meta charset="utf-8">
 <title data-cidade="Porto Alegre">Deu Venda</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1099,7 +1106,7 @@ footer strong{color:var(--body)}
 <!-- === Tracking CRM (site_eventos + /wa) — padrão Carreira no Digital === -->
 <script>
 (function(){
-  var TRACK='/api/track', WA='/wa', CAMP='deu-venda-porto-alegre';
+  var TRACK='/api/track', WA='/wa', CAMP='deu-venda-porto-alegre', TURMA='deuvendaportoalegre';
   function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
   var vid,sid;
   try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
@@ -1125,7 +1132,7 @@ footer strong{color:var(--body)}
   },{passive:true});
   function waLink(msg){
     var p=new URLSearchParams();
-    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);p.set('turma',TURMA);
     if(fbclid)p.set('fbclid',fbclid);
     if(utm.source)p.set('utm_source',utm.source);
     if(utm.medium)p.set('utm_medium',utm.medium);

@@ -50,6 +50,8 @@ export async function POST(req: NextRequest) {
     // turmas que COMEÇARAM há >= `dias` (e não canceladas)
     const { data: turmas } = await sb.from('turmas')
       .select('id, codigo, produto_id, cidade_id, data_inicio, produtos(nome), cidades(nome)')
+      // só turmas regidas pela cadência de curso (Deu Venda tem motor_cadencia='nenhum')
+      .eq('motor_cadencia', 'turma')
       .eq('org_id', org).lte('data_inicio', limite).gte('data_inicio', minData).neq('status', 'cancelada').order('data_inicio')
 
     let reativados = 0
