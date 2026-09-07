@@ -13,7 +13,7 @@ s.parentNode.insertBefore(t,s)}(window,document,'script',
 'https://connect.facebook.net/en_US/fbevents.js');
 fbq('init', '3968641693466078');
 fbq('track', 'PageView');
-fbq('track', 'ViewContent', {content_ids: ['fcportoalegre092601'], content_type: 'product'});
+fbq('track', 'ViewContent', {content_ids: ['formacao-completa'], content_type: 'product'});
 </script>
 <noscript><img height="1" width="1" style="display:none"
 src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"
@@ -264,6 +264,12 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
 .vt-parc{font-size:12px;color:var(--hint);margin-top:4px}
 .vt-cta{margin-top:16px;font-size:13px;font-weight:700;color:var(--purple-l)}
 /* fim vt */.vt-2t{display:inline-block;margin-left:8px;font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--purple-l);border:1px solid var(--purple-d);border-radius:100px;padding:2px 8px}
+
+.sem-turma{max-width:660px;margin:34px auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:36px 28px}
+.sem-turma-selo{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--purple-l);border:1px solid rgba(123,47,190,.35);background:rgba(123,47,190,.14);padding:6px 14px;border-radius:3px;margin-bottom:20px}
+.sem-turma-txt{font-size:16.5px;line-height:1.7;color:var(--body);margin-bottom:24px}
+.sem-turma-txt strong{color:var(--text);font-weight:600}
+.sem-turma-nota{font-size:13.5px;color:var(--muted);margin-top:18px;line-height:1.6}
 </style>
 </head>
 <body>
@@ -275,7 +281,7 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
     </a>
     <div class="nav-cta">
       <a href="#turmas" class="btn btn-secondary btn-sm">Ver turmas</a>
-      <a href="#" data-cnd="cta" data-turma="fcportoalegre092601" class="btn btn-primary btn-sm"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> WhatsApp</a>
+      <a href="#" data-cnd="cta" data-turma="site" class="btn btn-primary btn-sm"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> WhatsApp</a>
     </div>
   </div>
 </nav>
@@ -501,15 +507,14 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
 <!-- TURMAS -->
 <section class="section section-alt" id="turmas"><div class="container">
       <div class="fade-up" style="text-align:center"><div class="label">Próximas turmas</div>
-      <h2 class="title t-lg">Escolha a cidade<br><span class="purple">mais perto de você.</span></h2></div>
-      <div class="vitrine-grid"><a class="vitrine-card" href="#" data-turma="fcportoalegre092601" data-content="vitrine-fc-poa" data-grupo='[{"turma_inicio": "2026-09-15", "lotes": [{"nome": "Lote 1", "pix": 2097, "parc": "10x R$ 239,70", "ate": "2026-09-07"}, {"nome": "Lote 2", "pix": 2397, "parc": "10x R$ 269,70", "ate": "2026-09-15"}]}]'>
-      <div class="vt-top"><span class="vt-cidade">Porto Alegre</span><span class="vt-lote" data-vt-selo>Lote 1</span></div>
-      <div class="vt-turno">Noite · 19h</div>
-      <div class="vt-info" data-vt-info>Início em 15/09</div>
-      <div class="vt-preco"><span class="vt-ap" data-vt-ap>preço atual</span> <span data-vt-valor>R$ 2.097</span><span class="vt-pix">Pix</span></div>
-      <div class="vt-parc" data-vt-parc>ou 10x R$ 239,70</div>
-      <div class="vt-cta">Falar no WhatsApp →</div>
-    </a></div></div></section>
+      <h2 class="title t-lg">A próxima turma<br><span class="purple">pode ser na sua cidade.</span></h2></div>
+      <div class="sem-turma fade-up">
+<div class="sem-turma-selo">Sem turma com data aberta</div>
+<p class="sem-turma-txt">A escola abre turma onde tem gente esperando. <strong>Quanto mais pessoas confirmam interesse numa cidade, mais rápido a próxima acontece por lá.</strong></p>
+<a href="#" data-turma="site" data-content="lista-espera-fc" class="btn btn-primary">Quero ser avisado da próxima turma</a>
+<p class="sem-turma-nota">Me diga qual é a sua cidade — a escola avisa assim que a data sair.</p>
+</div>
+</div></div></section>
 
 <div class="divider"></div>
 
@@ -538,7 +543,7 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
     </div>
     <div class="invest-nota fade-up">Agência básica cobra a partir de R$ 1.000/mês — R$ 12.000/ano. Aqui você investe uma fração disso e passa a ter o controle.</div>
     <div style="margin-top:28px" class="fade-up">
-      <a href="#" data-cnd="cta" data-turma="fcportoalegre092601" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> Garantir minha vaga</a>
+      <a href="#" data-cnd="cta" data-turma="site" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> Garantir minha vaga</a>
     </div>
   </div>
 </section>
@@ -589,7 +594,7 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
     <div class="label" style="justify-content:center">Próximo passo</div>
     <h2 class="title t-lg" style="margin-bottom:20px">Poucas vagas.<br><span class="purple">Garanta a sua<br>antes de fechar.</span></h2>
     <p class="body-text" style="margin-bottom:32px;color:var(--muted)">Com a estratégia certa, o conteúdo certo e atingindo as pessoas certas — seu negócio gera oportunidades todos os dias.</p>
-    <a href="#" data-cnd="cta" data-turma="fcportoalegre092601" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> Quero saber sobre a Formação Completa</a>
+    <a href="#" data-cnd="cta" data-turma="site" class="btn btn-primary"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg> Quero saber sobre a Formação Completa</a>
   </div>
 </section>
 
@@ -603,7 +608,7 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
         <div class="footer-social">
           <a href="#" class="social-btn"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
           <a href="#" class="social-btn"><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22.54 6.42a2.78 2.78 0 0 0-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 0 0-1.95 1.96A29 29 0 0 0 1 12a29 29 0 0 0 .46 5.58A2.78 2.78 0 0 0 3.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 0 0 1.95-1.96A29 29 0 0 0 23 12a29 29 0 0 0-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg></a>
-          <a href="#" data-cnd="cta" data-turma="fcportoalegre092601" class="social-btn"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg></a>
+          <a href="#" data-cnd="cta" data-turma="site" class="social-btn"><svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/><path d="M9 10c0 .55.45 1 1 1h.01"/><path d="M14 10c0 .55.45 1 1 1h.01"/><path d="M9.5 15c1.5 1 3.5 1 5 0"/></svg></a>
         </div>
       </div>
       <div class="footer-col">
@@ -618,7 +623,7 @@ footer{background:#070710;border-top:1px solid var(--border);padding:48px 0 28px
       <div class="footer-col">
         <h4>Contato</h4>
         <ul>
-          <li><a href="#" data-cnd="cta" data-turma="fcportoalegre092601">WhatsApp +55 51 9505-4548</a></li>
+          <li><a href="#" data-cnd="cta" data-turma="site">WhatsApp +55 51 9505-4548</a></li>
           <li><a href="https://carreiranodigital.com">carreiranodigital.com</a></li>
           <li style="color:var(--text);font-weight:700;margin-top:4px">Lajeado</li>
           <li><a href="#">R. Alberto Torres, 526</a></li>
@@ -685,7 +690,7 @@ window.addEventListener('scroll', () => {
     btn.href = BASE + '?' + p.toString();
     btn.addEventListener('click', function(){
       if (typeof fbq === 'function') {
-        fbq('track','Lead',{content_ids: ['fcportoalegre092601'],content_type:'product'},{eventID:eventId});
+        fbq('track','Lead',{content_ids: ['formacao-completa'],content_type:'product'},{eventID:eventId});
       }
     });
   });
