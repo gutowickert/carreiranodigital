@@ -10,6 +10,7 @@ const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--borde
 // Etapas reais do funil (ordem + cor) — antes usava novo/sdr/closer que não existem
 const FUNIL_ETAPAS = [
   { id: 'aguardando_atendimento', label: 'Ligação', cor: '#9ca3af' },
+  { id: 'deu_venda', label: 'Deu Venda', cor: '#b87af0' },
   { id: 'atendimento_inicial', label: 'Atendimento', cor: '#60a5fa' },
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa' },

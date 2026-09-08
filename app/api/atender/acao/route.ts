@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
   const { data: lead } = await sb.from('leads').select('etapa, vendedor_id, nome').eq('org_id', org).eq('id', leadId).maybeSingle()
   if (!lead) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
   const now = new Date().toISOString()
-  const ETAPAS_VALIDAS = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'aguardando_pagamento', 'agendado', 'proxima_turma']
+  const ETAPAS_VALIDAS = ['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'aguardando_pagamento', 'agendado', 'proxima_turma']
 
   if (acao === 'mover') {
     const etapa = (b.etapa || '').toString().trim()

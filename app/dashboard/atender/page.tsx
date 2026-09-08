@@ -82,7 +82,7 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
 }
 
 const ETAPAS_MOVER: [string, string][] = [
-  ['aguardando_atendimento', 'Aguardando atendimento'], ['atendimento_inicial', 'Atendimento inicial'],
+  ['aguardando_atendimento', 'Aguardando atendimento'], ['deu_venda', 'Deu Venda'], ['atendimento_inicial', 'Atendimento inicial'],
   ['lote_preco_ok', 'Lote e preço ok'], ['oferecer_bolsa', 'Oferecer bolsa'],
   ['aguardando_pagamento', 'Aguardando pagamento'], ['agendado', 'Agendado'], ['proxima_turma', 'Próxima turma'],
 ]
@@ -130,7 +130,7 @@ const TIPO_LABEL: Record<string, string> = {
   quer_aproveitar: 'Quer aproveitar', reforco: 'Reforço', despedida: 'Despedida',
 }
 const ETAPA_LABEL: Record<string, string> = {
-  aguardando_atendimento: 'Ligação', atendimento_inicial: 'Atendimento inicial', lote_preco_ok: 'Lote e preço ok',
+  aguardando_atendimento: 'Ligação', deu_venda: 'Deu Venda', atendimento_inicial: 'Atendimento inicial', lote_preco_ok: 'Lote e preço ok',
   oferecer_bolsa: 'Oferecer bolsa', proxima_turma: 'Próxima turma',
 }
 const DOWS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']

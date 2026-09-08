@@ -10,7 +10,7 @@ const ETAPA_LABEL: Record<string, string> = {
   lote_preco_ok: '🔥 Lote e preço ok (virada do lote)',
   oferecer_bolsa: '🎁 Oferecer bolsa (D11–D13)',
 }
-const ETAPA_ORDEM = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+const ETAPA_ORDEM = ['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
 // rótulos das etapas cobertas pela migração de número (inclui as que não estão na cadência)
 const MIG_ETAPA_LABEL: Record<string, string> = {
   atendimento_inicial: '💬 Em atendimento',

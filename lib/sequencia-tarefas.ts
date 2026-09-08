@@ -104,6 +104,9 @@ export const SEQUENCIA_POR_ETAPA: Record<string, SequenciaTarefa[]> = {
     },
   ],
 
+  // Deu Venda: implantação 1 a 1. Cadência própria ainda não definida — o time conduz na mão.
+  deu_venda: [],
+
   // Estacionamentos e terminais: sem cadência automática (data/gatilho manual ou retorno ao fluxo).
   aguardando_pagamento: [],
   proxima_turma: [],
