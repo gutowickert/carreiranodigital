@@ -44,6 +44,7 @@ type MotivoPerda = { id: string; nome: string }
 
 const ETAPAS = [
   { id: 'aguardando_atendimento', label: 'Ligação', cor: 'var(--text-muted)', bg: 'var(--surface-2)' },
+  { id: 'deu_venda', label: 'Deu Venda', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'atendimento_inicial', label: 'Atendimento inicial', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },

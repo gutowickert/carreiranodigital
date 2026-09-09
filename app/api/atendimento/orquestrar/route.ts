@@ -3,6 +3,8 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { getConfigIA } from '@/lib/ia-config'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
 import { gerarProxima } from '@/lib/fluxo'
+import { ORG_CND } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 
 export const maxDuration = 300
 
@@ -21,15 +23,20 @@ export async function GET(req: NextRequest) {
   const agora = new Date().toISOString()
   // follow-ups vencidos SÓ dos leads da IA
   const { data: tarefas } = await supabase.from('tarefas_lead')
-    .select('id, lead_id, tipo, leads!inner(id, nome, whatsapp, etapa, atendido_por)')
+    .select('id, lead_id, tipo, leads!inner(id, nome, whatsapp, etapa, atendido_por, codigo_turma, turma_id)')
     .eq('concluida', false).eq('cancelada', false).lte('data_vencimento', agora)
     .eq('leads.atendido_por', 'ia').limit(15)
 
   const origin = req.nextUrl.origin
   let enviados = 0
   const feitos: any[] = []
+  // 🚫 Cinto e suspensório: turma com motor_cadencia != 'turma' (Deu Venda) não é atendida
+  // pela IA nem se algo flipar o lead pra atendido_por='ia'. O time atende na mão.
+  const foraMotor = await turmasForaDoMotor(supabase, ORG_CND)
+
   for (const t of (tarefas || [])) {
     const lead: any = (t as any).leads
+    if (leadForaDoMotor(lead, foraMotor)) { feitos.push({ lead: lead?.nome, skip: 'fora do motor de turma (time atende)' }); continue }
     try {
       const r = await sugerirAtendimento({ leadId: lead.id })
       if (!r.ok || !r.sugestao?.resposta) { feitos.push({ lead: lead.nome, skip: r.error || 'sem sugestão' }); continue }

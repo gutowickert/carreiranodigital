@@ -6,6 +6,7 @@ import { fetchAuth } from '@/lib/api'
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const LABEL: Record<string, { nome: string; emoji: string }> = {
   aguardando_atendimento: { nome: 'Ligação (chegada)', emoji: '📞' },
+  deu_venda: { nome: 'Deu Venda', emoji: '🎯' },
   atendimento_inicial: { nome: 'Atendimento inicial', emoji: '💬' },
   lote_preco_ok: { nome: 'Lote e preço ok', emoji: '🏷️' },
   oferecer_bolsa: { nome: 'Oferecer bolsa', emoji: '🎓' },

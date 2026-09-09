@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
 import { getFluxo } from '@/lib/fluxo'
@@ -67,10 +68,18 @@ export async function POST(req: NextRequest) {
     const nutriTpls = NUTRI_ORDER.map(n => (tplsNutri || []).find((t: any) => t.nome_meta === n)).filter(Boolean) as any[]
 
     // leads das 3 etapas + conversas escopadas
-    const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    const { data: leadsMotorTodos } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, criado_em, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const leadsRaw = (leadsMotorTodos || []).filter((l: any) => !leadForaDoMotor(l, foraMotor))
     // exclui inalcançáveis: @lid/@g.us/@broadcast (identificador interno, sem número real) ou dígitos demais (LID)
     const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
-    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
+    // 🆕 OPT-OUT: quem pediu pra parar (wa_optout) NÃO recebe followup — mesmo bloqueio do disparo, agora TAMBÉM no motor.
+    // Match por sufixo de 8 dígitos (robusto a formato). Sem filtro de org: o webhook grava optout sem org_id.
+    const { data: optRows } = await sb.from('wa_optout').select('telefone')
+    const optoutSuf = new Set((optRows || []).map((o: any) => String(o.telefone).replace(/\D/g, '').slice(-8)))
+    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp) && !optoutSuf.has(String(l.whatsapp).replace(/\D/g, '').slice(-8)))
 
     // DOSSIÊ ÚNICO (fonte de verdade): mensagens dos 2 canais (zapi+oficial, inclusive conversas só por telefone
     // que a busca por lead_id perdia) + ligações + TODOS os andamentos. Mesma lib da tela e do copiloto.

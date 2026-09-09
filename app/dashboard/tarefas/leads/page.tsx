@@ -161,7 +161,7 @@ export default function TarefasLeads() {
 
         setMensagem(`Tarefa concluída. Próxima criada: ${proxima.titulo}`)
         setTimeout(() => setMensagem(''), 3000)
-      } else if (['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(lead.etapa)) {
+      } else if (['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa'].includes(lead.etapa)) {
         // rede de segurança: etapa ativa sem próxima na cadência (ex.: tipo antigo) → não deixa o lead órfão
         const amanha = new Date(); amanha.setDate(amanha.getDate() + 1); amanha.setHours(9, 0, 0, 0)
         await supabase.from('tarefas_lead').insert({

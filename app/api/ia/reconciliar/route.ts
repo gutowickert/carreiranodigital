@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 import { dossiesLote } from '@/lib/historico-lead'
 
 export const maxDuration = 60
@@ -28,7 +29,11 @@ export async function POST(req: NextRequest) {
     const { data: cfg } = await sb.from('webhook_logs').select('payload').eq('org_id', org).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
     if ((cfg?.payload as any)?.ligado === false && !dryRun) return NextResponse.json({ ok: false, killed: true, error: 'Automação DESLIGADA (kill switch).' }, { status: 200 })
 
-    const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, atendido_por').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    const { data: leadsRecTodos } = await sb.from('leads').select('id, nome, whatsapp, etapa, atendido_por, codigo_turma, turma_id').eq('org_id', org).in('etapa', ETAPAS).limit(5000)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const leads = (leadsRecTodos || []).filter((l: any) => !leadForaDoMotor(l, foraMotor))
     const dossies = await dossiesLote(sb, org, leads || [])
     const now = Date.now()
 

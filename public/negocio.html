@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>O Negócio · Carreira no Digital</title>
+<meta name="description" content="A visão do negócio: escola (2 cursos) + Deu Venda B2B, com projeção de 24 meses e custos reais.">
+<style>
+  :root{
+    --bg:#0c0b12; --surface:#15131d; --surface-2:#1c1927; --card:#1a1725; --card-2:#221d30;
+    --border:#282340; --border-2:#372f52;
+    --text:#ece9f6; --text-soft:#aca5c2; --text-faint:#7c7699;
+    --violet:#9b7bff; --violet-strong:#bda4ff; --violet-bg:#1e1836; --violet-line:#3a2f66;
+    --green:#2fe68a; --green-strong:#57f2a4; --green-bg:#0c2a1b; --green-line:#1c5e3f;
+    --gold:#f2b84a; --gold-bg:#271e0d; --gold-line:#5c4519;
+    --red:#f0657a;
+    --sans:'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji',sans-serif;
+    --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--sans);-webkit-font-smoothing:antialiased;line-height:1.55;
+    background-image:radial-gradient(1000px 480px at 12% -6%,rgba(155,123,255,.11),transparent 60%),radial-gradient(900px 440px at 94% 3%,rgba(47,230,138,.07),transparent 58%)}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 22px}
+  /* nav */
+  .nav{position:sticky;top:0;z-index:50;background:rgba(12,11,18,.82);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--border)}
+  .nav .inner{max-width:1060px;margin:0 auto;padding:12px 22px;display:flex;align-items:center;gap:22px}
+  .nav .brand{font-weight:800;font-size:15px;letter-spacing:-.015em;margin-right:auto;display:flex;align-items:center;gap:9px;color:#fff}
+  .nav .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--violet);box-shadow:0 0 10px var(--violet);flex:none}
+  .nav a.lnk{font-size:13px;font-weight:600;color:var(--text-soft);text-decoration:none;transition:color .2s;white-space:nowrap}
+  .nav a.lnk:hover{color:#fff}
+  @media(max-width:760px){.nav .inner{gap:15px;overflow-x:auto;-webkit-overflow-scrolling:touch} .nav .brand{margin-right:6px}}
+  section[id]{scroll-margin-top:66px}
+  .kick{font-size:11px;text-transform:uppercase;letter-spacing:.16em;font-weight:800;color:var(--violet-strong)}
+  .kick.g{color:var(--green)} .kick.gold{color:var(--gold)}
+  h1{font-size:clamp(30px,5.6vw,54px);line-height:1.02;letter-spacing:-.035em;margin:16px 0 0;font-weight:800;text-wrap:balance}
+  h2{font-size:clamp(22px,3.4vw,32px);letter-spacing:-.026em;margin:0;font-weight:800;text-wrap:balance}
+  h3{font-size:17px;letter-spacing:-.01em;margin:0;font-weight:750}
+  p{margin:11px 0}
+  .lead{font-size:clamp(16px,2.05vw,20px);color:var(--text-soft);max-width:64ch}
+  b,strong{font-weight:750;color:#fff}
+  .muted{color:var(--text-soft)} .faint{color:var(--text-faint)}
+  .vio{color:var(--violet-strong)} .grn{color:var(--green)} .gld{color:var(--gold)}
+  section{padding:56px 0;border-top:1px solid var(--border)}
+  .sec-k{margin-bottom:22px}
+  .rv{opacity:0;transform:translateY(18px);transition:.7s cubic-bezier(.2,.7,.2,1)} .rv.on{opacity:1;transform:none}
+  @media(prefers-reduced-motion:reduce){.rv{opacity:1;transform:none}}
+  .hero{padding:64px 0 24px}
+  .badges{margin-top:24px;display:flex;gap:9px;flex-wrap:wrap}
+  .chip{font-size:12.5px;font-weight:700;padding:6px 13px;border-radius:22px;border:1px solid var(--border-2);background:var(--surface);color:var(--text-soft)}
+  .chip.v{color:var(--violet-strong);border-color:var(--violet-line);background:var(--violet-bg)}
+  .chip.g{color:var(--green);border-color:var(--green-line);background:var(--green-bg)}
+  .map{margin-top:24px;border:1px solid var(--border-2);border-radius:18px;padding:24px;background:var(--surface)}
+  .motor{text-align:center;background:linear-gradient(180deg,var(--card-2),var(--surface));border:1px solid var(--border-2);border-radius:14px;padding:15px;max-width:440px;margin:0 auto}
+  .motor .t{font-weight:800;font-size:15.5px} .motor .s{font-size:12px;color:var(--text-faint);margin-top:3px}
+  .down{text-align:center;color:var(--text-faint);font-size:13px;margin:12px 0}
+  .arms{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  @media(max-width:720px){.arms{grid-template-columns:1fr}}
+  .arm{border-radius:14px;padding:18px;border:1px solid}
+  .arm.esc{border-color:var(--violet-line);background:linear-gradient(180deg,var(--violet-bg),transparent)}
+  .arm.dv{border-color:var(--green-line);background:linear-gradient(180deg,var(--green-bg),transparent)}
+  .arm .lbl{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.07em}
+  .arm.esc .lbl{color:var(--violet-strong)} .arm.dv .lbl{color:var(--green)}
+  .arm h3{margin:6px 0 3px;font-size:19px} .arm .pr{font-size:12.5px;color:var(--text-faint);margin-bottom:12px}
+  .arm .mode{margin-top:13px;font-size:12.5px;font-weight:700;padding:9px 12px;border-radius:10px;display:flex;align-items:center;gap:8px;line-height:1.35}
+  .arm .mode .mi{font-size:15px;flex:none} .arm .mode b{color:#fff}
+  .arm.esc .mode{background:var(--violet-bg);color:var(--violet-strong);border:1px solid var(--violet-line)}
+  .arm.dv .mode{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+  .arm .item{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .arm .item b{color:#fff} .arm .item .meta{font-size:11px;color:var(--text-faint);font-family:var(--mono)}
+  .pill{display:inline-block;font-size:10px;font-weight:800;padding:2px 7px;border-radius:6px;text-transform:uppercase;letter-spacing:.03em}
+  .pill.v{background:var(--violet-bg);color:var(--violet-strong);border:1px solid var(--violet-line)}
+  .pill.g{background:var(--green-bg);color:var(--green);border:1px solid var(--green-line)}
+  .tbl-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:14px;margin-top:8px}
+  table{width:100%;border-collapse:collapse;font-size:14px;min-width:620px}
+  th,td{text-align:left;padding:13px 15px;border-bottom:1px solid var(--border)}
+  thead th{background:var(--surface-2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);font-weight:800}
+  tbody tr:last-child td{border-bottom:none}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--mono)}
+  tr.grp td{background:var(--surface-2);font-weight:800;color:#fff;font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  tr.tot td{background:var(--gold-bg);font-weight:800;color:#fff}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:8px}
+  @media(max-width:820px){.kpis{grid-template-columns:1fr 1fr}}
+  .kpi{background:linear-gradient(180deg,var(--card-2),var(--card));border:1px solid var(--border);border-radius:14px;padding:18px}
+  .kpi .v{font-size:26px;font-weight:800;letter-spacing:-.03em;font-variant-numeric:tabular-nums;line-height:1}
+  .kpi .v.g{color:var(--green-strong)} .kpi .v.gold{color:var(--gold)} .kpi .v.v{color:var(--violet-strong)}
+  .kpi .l{font-size:12px;color:var(--text-faint);margin-top:6px;line-height:1.35}
+  .chart{margin-top:22px;border:1px solid var(--border);border-radius:16px;padding:22px 20px 14px;background:var(--surface)}
+  .chart .ct{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px;flex-wrap:wrap;gap:8px}
+  .chart .ct h3{font-size:15px} .chart .ct .leg{font-size:11.5px;color:var(--text-faint);display:flex;gap:14px;flex-wrap:wrap}
+  .chart .ct .leg span{display:inline-flex;align-items:center;gap:5px} .chart .ct .leg i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .bars{display:flex;align-items:flex-end;gap:3px;height:230px}
+  .bar{flex:1;display:flex;flex-direction:column;justify-content:flex-end;border-radius:4px 4px 0 0;overflow:hidden;position:relative;min-height:2px}
+  .bar .seg{width:100%;height:0;transition:height 1s cubic-bezier(.2,.8,.2,1)}
+  .on .bar .seg{height:var(--h)}
+  .bar .cur{background:var(--violet)} .bar .mrr{background:var(--green)} .bar .setup{background:var(--gold)}
+  .xaxis{display:flex;justify-content:space-between;margin-top:8px;font-size:10.5px;color:var(--text-faint);font-family:var(--mono)}
+  .miles{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+  @media(max-width:820px){.miles{grid-template-columns:1fr 1fr}}
+  .mile{border:1px solid var(--border);border-radius:12px;padding:15px;background:var(--card)}
+  .mile .m{font-family:var(--mono);font-size:12px;font-weight:800;color:var(--violet-strong)}
+  .mile .r{font-size:19px;font-weight:800;margin:6px 0 1px;font-variant-numeric:tabular-nums}
+  .mile .d{font-size:11.5px;color:var(--text-faint)}
+  .costs{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  @media(max-width:760px){.costs{grid-template-columns:1fr}}
+  .clist{border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+  .clist .chd{padding:11px 16px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--text-faint);background:var(--surface-2);border-bottom:1px solid var(--border)}
+  .clist .crow{display:flex;justify-content:space-between;padding:11px 16px;border-bottom:1px solid var(--border);font-size:13.5px}
+  .clist .crow:last-child{border-bottom:none}
+  .clist .crow .cv{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--text-soft)}
+  .clist .crow.t{background:var(--gold-bg);font-weight:800;color:#fff}
+  .callout{border-radius:14px;padding:16px 18px;font-size:14px;margin-top:16px;border:1px solid var(--gold-line);background:linear-gradient(180deg,var(--gold-bg),transparent)}
+  .callout b{color:var(--gold)}
+  .princ{border-left:3px solid var(--violet);padding:3px 0 3px 18px;margin:16px 0}
+  .princ.g{border-color:var(--green)}
+  .princ h3{color:#fff;font-size:16px} .princ p{font-size:14px;color:var(--text-soft);margin:5px 0 0}
+  .foot{padding:32px 0 58px;color:var(--text-faint);font-size:12.5px;text-align:center;border-top:1px solid var(--border)}
+  .disc{font-size:12px;color:var(--text-faint);font-style:italic;margin-top:10px}
+</style>
+</head>
+<body>
+
+<nav class="nav"><div class="inner">
+  <span class="brand"><span class="dot"></span>O Negócio</span>
+  <a class="lnk" href="#estrutura">Estrutura</a>
+  <a class="lnk" href="#produtos">Produtos</a>
+  <a class="lnk" href="#projecao">Projeção</a>
+  <a class="lnk" href="#custos">Custos</a>
+  <a class="lnk" href="#porque">Por quê</a>
+</div></nav>
+
+<header class="hero"><div class="wrap rv on">
+  <div class="kick">O negócio inteiro · visão pros sócios</div>
+  <h1>Uma empresa, <span class="vio">dois braços</span>, <span class="grn">um motor</span>.</h1>
+  <p class="lead" style="margin-top:20px">Na <b class="vio">escola</b>, ensinamos o dono a operar a IA no Claude — <b>ele pilota e decide</b>. No <b class="grn">Deu Venda</b>, instalamos a máquina na empresa e <b>operamos tudo por ela</b>. Por baixo, o mesmo motor. A escola gira caixa estável; o Deu Venda constrói recorrência que <b>compõe todo mês</b>.</p>
+  <div class="badges">
+    <span class="chip v">Escola · 2 cursos · presencial + online</span>
+    <span class="chip g">Deu Venda · B2B · recorrente</span>
+    <span class="chip">Custos reais da planilha</span>
+  </div>
+</div></header>
+
+<section id="estrutura"><div class="wrap rv">
+  <div class="sec-k"><div class="kick gold">A estrutura</div><h2 style="margin-top:8px">Como tudo se encaixa.</h2></div>
+  <div class="map">
+    <div class="motor"><div class="t">🛠️ O MOTOR — o sistema de IA</div><div class="s">os mesmos agentes por trás de tudo (marketing + vendas)</div></div>
+    <div class="down">▼ alimenta os dois braços ▼</div>
+    <div class="arms">
+      <div class="arm esc"><div class="lbl">Braço 1 · Escola (ensina)</div><h3>Cursos</h3><div class="pr">o dono aprende a captar e a vender usando IA</div>
+        <div class="item"><div><b>Cliente Todo Dia</b><div class="meta">captação · 5 dias</div></div><span class="pill v">R$ 1.197 / 497</span></div>
+        <div class="item"><div><b>Processo Comercial</b><div class="meta">conversão · 3 dias</div></div><span class="pill v">R$ 897 / 397</span></div>
+        <div class="mode"><span class="mi">👤</span><div>Ensinamos as <b>skills no Claude</b>. O <b>aluno opera</b> e toma as decisões.</div></div>
+      </div>
+      <div class="arm dv"><div class="lbl">Braço 2 · Deu Venda (faz)</div><h3>Implantação B2B</h3><div class="pr">a máquina instalada na estrutura da empresa</div>
+        <div class="item"><div><b>Implantação</b><div class="meta">setup, uma vez</div></div><span class="pill g">R$ 10.000</span></div>
+        <div class="item"><div><b>Mensalidade</b><div class="meta">operação + evolução</div></div><span class="pill g">R$ 2.500/mês</span></div>
+        <div class="mode"><span class="mi">🤖</span><div><b>Nós operamos</b> e automatizamos tudo. A empresa só colhe o resultado.</div></div>
+      </div>
+    </div>
+  </div>
+</div></section>
+
+<section id="produtos"><div class="wrap rv">
+  <div class="sec-k"><div class="kick">Os produtos e a operação mensal</div><h2 style="margin-top:8px">O que a máquina vende.</h2></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Produto</th><th class="num">Preço</th><th class="num">Vendas/mês</th><th class="num">Receita/mês</th></tr></thead>
+    <tbody>
+      <tr class="grp"><td colspan="4">🎓 Escola — presencial</td></tr>
+      <tr><td>Cliente Todo Dia <span class="faint">(3 turmas)</span></td><td class="num">1.197</td><td class="num">45</td><td class="num">53.865</td></tr>
+      <tr><td>Processo Comercial <span class="faint">(2 turmas)</span></td><td class="num">897</td><td class="num">30</td><td class="num">26.910</td></tr>
+      <tr class="grp"><td colspan="4">💻 Escola — online</td></tr>
+      <tr><td>Cliente Todo Dia</td><td class="num">497</td><td class="num">30</td><td class="num">14.910</td></tr>
+      <tr><td>Processo Comercial</td><td class="num">397</td><td class="num">15</td><td class="num">5.955</td></tr>
+      <tr class="grp"><td colspan="4">✅ Deu Venda — B2B <span class="faint">(rampa: 2/mês → 13/mês)</span></td></tr>
+      <tr><td>Implantação <span class="faint">(setup, uma vez)</span></td><td class="num">10.000</td><td class="num">2 → 13</td><td class="num">20k → 130k</td></tr>
+      <tr><td>Mensalidade <span class="faint">(acumula, churn 5%/mês)</span></td><td class="num">2.500</td><td class="num">~124 no M24</td><td class="num">até ~309k</td></tr>
+      <tr class="tot"><td>Receita mês 1</td><td class="num"></td><td class="num"></td><td class="num">R$ 126.640</td></tr>
+    </tbody>
+  </table></div>
+  <p class="disc">Cursos = caixa estável por mês. Deu Venda B2B começa com <b>2 implantações/mês</b> e sobe <b>+1 a cada 2 meses</b> — a mensalidade acumula e vira o motor de recorrência.</p>
+</div></section>
+
+<section id="projecao"><div class="wrap rv">
+  <div class="sec-k"><div class="kick gold">Projeção · 24 meses</div><h2 style="margin-top:8px">O caixa cresce porque o recorrente compõe.</h2></div>
+  <div class="kpis">
+    <div class="kpi"><div class="v v" id="k-r1">—</div><div class="l">receita no mês 1</div></div>
+    <div class="kpi"><div class="v g" id="k-r24">—</div><div class="l">receita no mês 24</div></div>
+    <div class="kpi"><div class="v gold" id="k-mrr">—</div><div class="l" id="k-mrr-l">recorrente Deu Venda no mês 24</div></div>
+    <div class="kpi"><div class="v gold" id="k-lucro">—</div><div class="l">lucro acumulado em 24 meses</div></div>
+  </div>
+  <div class="chart">
+    <div class="ct"><h3>Receita mensal ao longo de 24 meses</h3>
+      <div class="leg"><span><i style="background:var(--violet)"></i>Cursos</span><span><i style="background:var(--gold)"></i>Deu Venda setup</span><span><i style="background:var(--green)"></i>Deu Venda recorrente</span></div>
+    </div>
+    <div class="bars" id="bars"></div>
+    <div class="xaxis"><span>mês 1</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+  </div>
+  <div class="miles" id="miles"></div>
+</div></section>
+
+<section id="custos"><div class="wrap rv">
+  <div class="sec-k"><div class="kick gold">Custos & lucro <span class="faint" style="font-weight:600;text-transform:none;letter-spacing:0">— números reais da planilha</span></div><h2 style="margin-top:8px">O que sai — e o que sobra.</h2></div>
+  <div class="costs">
+    <div class="clist">
+      <div class="chd">Custo fixo / mês</div>
+      <div class="crow"><span>Pró-labore</span><span class="cv">R$ 30.000</span></div>
+      <div class="crow"><span>Time professores / operadores</span><span class="cv">R$ 16.000</span></div>
+      <div class="crow"><span>Aluguéis (2 sedes)</span><span class="cv">R$ 15.000</span></div>
+      <div class="crow"><span>Time comercial</span><span class="cv">R$ 8.000</span></div>
+      <div class="crow"><span>Produção de agentes</span><span class="cv">R$ 3.000</span></div>
+      <div class="crow"><span>Ferramentas + CRM / infra</span><span class="cv">R$ 3.000</span></div>
+      <div class="crow"><span>Contador / jurídico</span><span class="cv">R$ 800</span></div>
+      <div class="crow t"><span>Total fixo/mês</span><span class="cv">R$ 75.800</span></div>
+    </div>
+    <div class="clist">
+      <div class="chd">Custo variável (% e por cliente)</div>
+      <div class="crow"><span>Imposto</span><span class="cv">10% até 200k · 16% acima</span></div>
+      <div class="crow"><span>Plataforma / checkout</span><span class="cv">10% dos cursos</span></div>
+      <div class="crow"><span>Tráfego cursos — presencial</span><span class="cv">15%</span></div>
+      <div class="crow"><span>Tráfego cursos — online</span><span class="cv">30%</span></div>
+      <div class="crow"><span>Deu Venda · gestor de tráfego</span><span class="cv">R$ 300 / cliente</span></div>
+      <div class="crow"><span>Deu Venda · infra + tokens + imagens</span><span class="cv">~R$ 200 / cliente</span></div>
+      <div class="crow t"><span>Custo do mês 1</span><span class="cv" id="c-m1">—</span></div>
+    </div>
+  </div>
+  <div class="miles" id="lucro-miles" style="margin-top:16px"></div>
+  <div class="callout">📌 <b>Tudo já embutido no lucro:</b> fixo R$ 75.800/mês, imposto (10%/16%), plataforma e tráfego dos cursos, e <b>~R$ 500/mês por empresa</b> do Deu Venda (gestor de tráfego + infra + tokens + imagens). Já contando <b>churn de 5%/mês</b> a partir do 6º mês. Mesmo conservador, o lucro cresce forte — a recorrência (~R$ 309 mil/mês no M24) sobe mais rápido que o custo.</div>
+</div></section>
+
+<section id="porque"><div class="wrap rv">
+  <div class="sec-k"><div class="kick">Por que esse desenho vence</div><h2 style="margin-top:8px">A escola paga a conta hoje. O Deu Venda constrói o amanhã.</h2></div>
+  <div class="princ"><h3>Dois motores de caixa</h3><p>A escola dá <b>caixa estável e imediato</b> (~R$ 100 mil/mês). O Deu Venda dá <b>recorrência que compõe</b> — cada empresa nova soma pra sempre.</p></div>
+  <div class="princ g"><h3>Um motor, custo marginal baixo</h3><p>O mesmo sistema serve os dois braços. Melhorou uma vez, melhora em tudo. Uma máquina, dois jeitos de vender.</p></div>
+  <div class="princ"><h3>A escola alimenta o Deu Venda</h3><p>Cases (3%→17%), credibilidade e os próprios alunos que crescem são o topo do funil que dá confiança pra fechar empresa.</p></div>
+  <div class="princ g"><h3>Escala sem trocar de negócio</h3><p>Online escala o alcance sem sala; o B2B escala o ticket sem multiplicar aquisição. Crescer é repetir, não reinventar.</p></div>
+</div></section>
+
+<div class="foot"><div class="wrap">
+  <b style="color:var(--text-soft)">O Negócio</b> · Escola + Deu Venda · projeção 24 meses<br>
+  Receita = meta (rampa 2→13/mês) · custos reais da planilha · agosto/2026
+</div></div>
+
+<script>
+(function(){
+  var rm=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var cursosPres=45*1197+30*897, cursosOn=30*497+15*397, cursos=cursosPres+cursosOn;
+  var setupP=10000, mrrP=2500, fixo=75800, plat=0.10, tPres=0.15, tOn=0.30, oper=500; /* 300 gestor tráfego + ~200 infra/tokens/imagens (conservador) por cliente */
+  var churn=0.05; /* 5%/mês a partir do M6 */
+  var acc=0, data=[], accReceita=0, accLucro=0;
+  for(var m=1;m<=24;m++){
+    var v=2+Math.floor((m-1)/2);
+    if(m>=6){acc=acc*(1-churn);}
+    acc+=v;
+    var setup=v*setupP, mrr=acc*mrrP, receita=cursos+setup+mrr;
+    var imposto=0.10*Math.min(receita,200000)+0.16*Math.max(0,receita-200000); /* 10% até 200k, 16% acima */
+    var custo=fixo + imposto + cursos*plat + (cursosPres*tPres+cursosOn*tOn) + acc*oper;
+    var lucro=receita-custo;
+    accReceita+=receita; accLucro+=lucro;
+    data.push({m:m,cur:cursos,setup:setup,mrr:mrr,receita:receita,custo:custo,lucro:lucro,cli:acc});
+  }
+  var max=data[23].receita;
+  var brl=function(n){return 'R$ '+Math.round(n).toLocaleString('pt-BR')};
+  var mil=function(n){return 'R$ '+(n/1e6).toFixed(1).replace('.',',')+' mi'};
+  var k=function(n){return 'R$ '+Math.round(n/1000)+' mil'};
+  var bars=document.getElementById('bars');
+  data.forEach(function(d){var b=document.createElement('div');b.className='bar';
+    b.innerHTML='<div class="seg mrr" style="--h:'+(d.mrr/max*100).toFixed(1)+'%"></div><div class="seg setup" style="--h:'+(d.setup/max*100).toFixed(1)+'%"></div><div class="seg cur" style="--h:'+(d.cur/max*100).toFixed(1)+'%"></div>';
+    bars.appendChild(b);});
+  document.getElementById('k-r1').textContent=k(data[0].receita);
+  document.getElementById('k-r24').textContent=k(data[23].receita)+'/mês';
+  document.getElementById('k-mrr').textContent=k(data[23].mrr)+'/mês';
+  document.getElementById('k-mrr-l').textContent='recorrente Deu Venda no mês 24 · '+Math.round(data[23].cli)+' empresas';
+  document.getElementById('k-lucro').textContent=mil(accLucro);
+  document.getElementById('c-m1').textContent=brl(data[0].custo);
+  var mi=document.getElementById('miles'), ml=document.getElementById('lucro-miles');
+  [[1,'MÊS 1'],[6,'MÊS 6'],[12,'MÊS 12'],[24,'MÊS 24']].forEach(function(x,i){
+    var d=data[x[0]-1];
+    mi.innerHTML+='<div class="mile"'+(i==3?' style="border-color:var(--green-line)"':'')+'><div class="m"'+(i==3?' style="color:var(--green)"':'')+'>'+x[1]+'</div><div class="r">'+k(d.receita)+'</div><div class="d">'+Math.round(d.cli)+' empresas · '+k(d.mrr)+' recorrente</div></div>';
+    ml.innerHTML+='<div class="mile"'+(i==3?' style="border-color:var(--gold-line)"':'')+'><div class="m" style="color:var(--gold)">LUCRO '+x[1]+'</div><div class="r">'+k(d.lucro)+'</div><div class="d">margem '+Math.round(d.lucro/d.receita*100)+'%</div></div>';
+  });
+  function act(el){el.classList.add('on')}
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){act(e.target);io.unobserve(e.target)}})},{threshold:.1});
+  document.querySelectorAll('.rv:not(.on)').forEach(function(el){if(rm){act(el)}else{io.observe(el)}});
+})();
+</script>
+</body>
+</html>

@@ -7,7 +7,7 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 10px', fontSize: 13, color: 'var(--text)', outline: 'none', width: '100%', fontFamily: 'inherit' }
 
 // ordem de exibição das etapas com cadência
-const ORDEM = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+const ORDEM = ['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
 const ACOES = ['mensagem', 'ligacao', 'audio', 'decisao']
 
 type Tarefa = { chave: string; titulo: string; dias: number; acao: string; descricao: string }

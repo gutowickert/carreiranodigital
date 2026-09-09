@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
 import { dossiesLote } from '@/lib/historico-lead'
@@ -40,7 +41,10 @@ export async function POST(req: NextRequest) {
 
     // leads em lote_preco_ok alcançáveis
     const { data: leadsRaw } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma, turma_id, resumo_ia, resumo_ia_em, etapa').eq('org_id', org).eq('etapa', 'lote_preco_ok').limit(5000)
-    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp))
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const leads = (leadsRaw || []).filter(l => alcancavel(l.whatsapp) && !leadForaDoMotor(l, foraMotor))
 
     // conversas desses leads → mensagens que mencionam a data do lote (27/07)
     const leadIds = leads.map(l => l.id)

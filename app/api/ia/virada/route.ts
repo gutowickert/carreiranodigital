@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 import { dossiesLote } from '@/lib/historico-lead'
 import { interpretarFollowup } from '@/lib/interpretar-followup'
 import { getFluxo, primeiraTarefaFluxo } from '@/lib/fluxo'
@@ -40,7 +41,11 @@ export async function POST(req: NextRequest) {
     const alvoBR = /^\d{4}-\d{2}-\d{2}$/.test(b?.data || '') ? b.data : hojeBR
     const fluxo = await getFluxo()
 
-    const { data: leads } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ATIVAS).limit(5000)
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    const { data: leadsViradaTodos } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, atendido_por, resumo_ia, resumo_ia_em').eq('org_id', org).in('etapa', ATIVAS).limit(5000)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const leads = (leadsViradaTodos || []).filter((l: any) => !leadForaDoMotor(l, foraMotor))
 
     // QUEM RESPONDEU no dia-alvo (00:00–24:00 BRT = +3h UTC). SCOPED aos leads ATIVOS: parte das CONVERSAS deles
     // e busca só as recebidas do dia NELAS. Antes varria o firehose do dia inteiro (todas as recebidas da org) e

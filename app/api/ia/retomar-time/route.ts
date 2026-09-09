@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao, datasCurtas } from '@/lib/saudacao'
 import { dossiesLote } from '@/lib/historico-lead'
@@ -54,7 +55,10 @@ export async function POST(req: NextRequest) {
     if (!idsComTarefa.length) return NextResponse.json({ ok: true, dryRun, alvo: 0, nada: true })
 
     const { data: leadsAll } = await sb.from('leads').select('id, nome, whatsapp, etapa, codigo_turma, turma_id, vendedor_id, resumo_ia, resumo_ia_em').in('id', idsComTarefa)
-    const leads = (leadsAll || []).filter(l => TIME.includes(l.etapa) && alcancavel(l.whatsapp))
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const leads = (leadsAll || []).filter(l => TIME.includes(l.etapa) && alcancavel(l.whatsapp) && !leadForaDoMotor(l, foraMotor))
     const dossies = await dossiesLote(sb, org, leads)
 
     // turma (cidade, codigo, preço, datas) + vendedor

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
 
 export const maxDuration = 60
 
@@ -33,8 +34,11 @@ export async function POST(req: NextRequest) {
     for (let i = 0; i < convIds.length; i += 200) { const { data } = await sb.from('wa_conversas').select('id, lead_id').in('id', convIds.slice(i, i + 200)); for (const c of data || []) if (c.lead_id) respRecente.add(c.lead_id) }
 
     // TODOS os leads do funil (qualquer dono). Frio = não respondeu nas últimas `horas`.
-    const { data: leads } = await sb.from('leads').select('id, nome, etapa, atendido_por').eq('org_id', org).in('etapa', FUNIL).limit(5000)
-    const frios = (leads || []).filter(l => !respRecente.has(l.id))              // frios do funil (a IA cuida)
+    const foraMotor = await turmasForaDoMotor(sb, org)
+    const { data: leads } = await sb.from('leads').select('id, nome, etapa, atendido_por, codigo_turma, turma_id').eq('org_id', org).in('etapa', FUNIL).limit(5000)
+    // 🚫 Turmas com motor_cadencia != 'turma' (Deu Venda: implantação 1 a 1) ficam FORA
+    // da cadência dos cursos e do atendimento por IA — o time atende na mão.
+    const frios = (leads || []).filter(l => !respRecente.has(l.id) && !leadForaDoMotor(l, foraMotor))              // frios do funil (a IA cuida)
     const passar = frios.filter(l => (l as any).atendido_por === 'humano')       // ainda com o time → flipar pra IA
     const friosIds = frios.map(l => l.id)
 

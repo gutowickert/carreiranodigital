@@ -19,6 +19,7 @@ export const PRIORIDADE_PADRAO: Prioridade = { followupDias: 13, ordemQuente: 'r
 
 export const TITULO_ETAPA: Record<string, string> = {
   aguardando_atendimento: 'Ligação (Chegada)',
+  deu_venda: 'Deu Venda',
   atendimento_inicial: 'Atendimento Inicial',
   lote_preco_ok: 'Lote e Preço OK',
   oferecer_bolsa: 'Oferecer Bolsa',
@@ -98,7 +99,7 @@ export async function gerarProxima(supabase: any, leadId: string, etapa: string,
 // REDE DE SEGURANÇA: nenhum lead em etapa ATIVA fica sem tarefa depois de uma ação.
 // Se sobrou sem tarefa (ex.: concluiu tarefa de chave antiga que não encadeia, ou fim de etapa),
 // cria um follow-up genérico pra amanhã — o lead volta pra fila e a IA sugere a próxima etapa.
-const ETAPAS_ATIVAS = ['aguardando_atendimento', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
+const ETAPAS_ATIVAS = ['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
 export async function garantirTarefa(supabase: any, leadId: string, etapa: string, leadNome: string, vendedorId?: string | null) {
   try {
     if (!ETAPAS_ATIVAS.includes(etapa)) return
