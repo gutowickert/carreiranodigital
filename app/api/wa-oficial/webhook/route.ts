@@ -40,6 +40,22 @@ async function registrarRecebida(m: any, value: any) {
   else if (m.type === 'video') { tipo = 'video'; texto = m.video?.caption || null; midiaMime = m.video?.mime_type || 'video/mp4'; if (m.video?.id) midiaUrl = proxy(m.video.id) }
   else if (m.type === 'document') { tipo = 'documento'; texto = m.document?.filename || 'documento'; midiaMime = m.document?.mime_type || null; if (m.document?.id) midiaUrl = proxy(m.document.id) }
   else if (m.type === 'sticker') { tipo = 'imagem'; midiaMime = 'image/webp'; if (m.sticker?.id) midiaUrl = proxy(m.sticker.id) }
+  // REAÇÃO — o cliente responde com um emoji EM CIMA da mensagem, em vez de escrever.
+  //
+  // ⚠️ Isto caía no `else` genérico lá embaixo e virava o texto literal "(reaction)": o time via
+  // isso na conversa e o emoji sumia. Aconteceu 22 vezes nas últimas 1.500 mensagens recebidas.
+  // Não é detalhe — muita gente responde 👍 em vez de escrever "ok", e esse sinal estava sendo
+  // perdido.
+  //
+  // A Meta manda { reaction: { emoji, message_id } }. `message_id` diz a QUAL mensagem a pessoa
+  // reagiu — aqui a gente ignora e mostra a reação como uma mensagem comum. Pra grudar na mensagem
+  // original, como no WhatsApp, seria preciso uma coluna nova e mudança na tela.
+  //
+  // Emoji VAZIO quer dizer que a pessoa REMOVEU a reação que tinha posto.
+  else if (m.type === 'reaction') {
+    const emo = (m.reaction?.emoji || '').trim()
+    texto = emo || '↩️ removeu a reação'
+  }
   else if (m.type === 'button') texto = m.button?.text || ''
   else if (m.type === 'interactive') texto = m.interactive?.button_reply?.title || m.interactive?.list_reply?.title || ''
   else if (m.type === 'contacts') {
