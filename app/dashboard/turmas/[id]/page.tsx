@@ -111,7 +111,7 @@ export default function DetalheTurma() {
   const [novoEmail, setNovoEmail] = useState('')
   const [modoAluno, setModoAluno] = useState<'buscar' | 'novo'>('buscar')
   const [valor, setValor] = useState('')
-  const [formaPagamento, setFormaPagamento] = useState<'pix' | 'boleto' | 'cartao'>('pix')
+  const [formaPagamento, setFormaPagamento] = useState<'pix' | 'boleto' | 'cartao' | 'dinheiro' | 'transferencia'>('pix')
   const [parcelas, setParcelas] = useState('1')
   const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0])
   const [leadVinculado, setLeadVinculado] = useState('')
@@ -764,9 +764,14 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                       <div>
                         <label style={{ display: 'block', fontSize: '11px', color: 'var(--text-muted)', marginBottom: '4px' }}>Forma</label>
                         <select value={formaPagamento} onChange={e => setFormaPagamento(e.target.value as any)} style={{ ...select, width: '100%' }}>
+                          {/* Mesma lista da tela de Alunos, que já tinha as cinco. Esta ficou pra
+                              trás e oferecia 3 — mas o banco já registrava dinheiro e transferência
+                              lançados por lá, então quem vendia em dinheiro por aqui não tinha opção. */}
                           <option value="pix">PIX</option>
-                          <option value="boleto">Boleto</option>
+                          <option value="dinheiro">Dinheiro</option>
                           <option value="cartao">Cartão (à vista)</option>
+                          <option value="boleto">Boleto</option>
+                          <option value="transferencia">Transferência</option>
                         </select>
                       </div>
                       <div>
