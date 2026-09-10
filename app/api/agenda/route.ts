@@ -40,6 +40,7 @@ type Item = {
   prioridade?: string | null
   ajudaDe?: string | null
   ajudaNota?: string | null
+  participantes?: string[]
 }
 
 export async function GET(req: Request) {
@@ -62,8 +63,10 @@ export async function GET(req: Request) {
     // Só o que está EM ABERTO, e sem corte pra trás: um compromisso de junho que ninguém concluiu
     // continua sendo notícia hoje. (A escola tem 10 assim, de junho e julho — some todos se o
     // período começar em -30 dias.) O corte pra frente evita puxar agenda de daqui a um ano.
+    // ⚠️ `participantes` vem do 21-participantes-na-agenda.sql. Sem a coluna no banco, esta
+    // consulta inteira falha e a agenda perde TODOS os compromissos — não só os com participante.
     sb.from('agenda_eventos')
-      .select('id,titulo,descricao,tipo,inicio,fim,dia_todo,publico,concluido,usuario_id,lead_id,ajuda_de,ajuda_nota')
+      .select('id,titulo,descricao,tipo,inicio,fim,dia_todo,publico,concluido,usuario_id,lead_id,ajuda_de,ajuda_nota,participantes')
       .eq('org_id', org).eq('concluido', false).lte('inicio', ate).order('inicio').limit(1000),
     // Vencida é notícia mais importante que futura, então tarefa aberta entra inteira, sem recorte
     // de período. São 90 hoje; se um dia virarem milhares, aí sim entra paginação.
@@ -75,21 +78,23 @@ export async function GET(req: Request) {
       .eq('org_id', org).eq('concluida', false).eq('cancelada', false).order('data_vencimento').limit(1000),
   ])
 
-  const podeVer = (dono: string | null, publico: boolean, ajudaDe?: string | null) =>
+  const podeVer = (dono: string | null, publico: boolean, ajudaDe?: string | null, participantes?: string[] | null) =>
     !dono                       // sem dono = do grupo, todo mundo vê
     || publico                  // o chefe abriu de propósito
     || visiveis.has(dono)       // meu, ou de quem responde a mim
     || ajudaDe === eu.id        // me chamaram pra ajudar neste
+    || (participantes || []).includes(eu.id)   // me chamaram pra reunião
 
   const itens: Item[] = []
 
   for (const e of evs.data || []) {
-    if (!podeVer(e.usuario_id, !!e.publico, e.ajuda_de)) continue
+    if (!podeVer(e.usuario_id, !!e.publico, e.ajuda_de, e.participantes)) continue
     itens.push({
       id: e.id, fonte: 'agenda', titulo: e.titulo, subtitulo: e.descricao,
       inicio: e.inicio, fim: e.fim, diaTodo: !!e.dia_todo, tipo: e.tipo,
       donoId: e.usuario_id, publico: !!e.publico, concluido: !!e.concluido,
       leadId: e.lead_id, ajudaDe: e.ajuda_de, ajudaNota: e.ajuda_nota,
+      participantes: e.participantes || [],
     })
   }
 
@@ -121,9 +126,10 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     eu: { id: eu.id, nome: eu.nome, papel: eu.papel, setor: eu.setor, souDono },
-    // Só devolvo o nome de quem eu posso enxergar — a lista de pessoas da tela não pode
-    // virar um atalho pra descobrir a estrutura que a agenda esconde.
-    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor })),
+    // Só devolvo o nome de quem eu posso enxergar — a lista de pessoas da tela não pode virar um
+    // atalho pra descobrir a estrutura que a agenda esconde. O `ativo` vai junto porque o nome de
+    // quem saiu ainda é preciso pra rotular item antigo, mas não pode aparecer pra ser escolhido.
+    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo })),
     tenhoTime: abaixo.size > 0 || souDono,
     itens,
   })

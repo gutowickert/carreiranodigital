@@ -40,8 +40,9 @@ type Item = {
   setor?: string | null
   ajudaDe?: string | null
   ajudaNota?: string | null
+  participantes?: string[]
 }
-type Pessoa = { id: string; nome: string; papel: string; setor: string }
+type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean }
 type Eu = { id: string; nome: string; papel: string; setor: string; souDono: boolean }
 
 // Rótulos por NATUREZA, não por ramo: "Turma" só faz sentido em escola. Compromisso, tarefa e
@@ -78,6 +79,11 @@ function rotuloDia(chave: string) {
   return `${DIAS[dt.getDay()]}, ${d} de ${MESES[m - 1]}`.replace(/^./, c => c.toUpperCase())
 }
 
+// É "meu" o que eu tenho de fazer: o que é meu, aquilo em que me pediram ajuda, e a reunião pra
+// qual me chamaram. Sem o último, quem é convidado teria que caçar a reunião no "Tudo".
+const ehMeu = (i: Item, euId?: string) =>
+  !!euId && (i.donoId === euId || i.ajudaDe === euId || !!i.participantes?.includes(euId))
+
 export default function Agenda() {
   const [eu, setEu] = useState<Eu | null>(null)
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
@@ -106,7 +112,10 @@ export default function Agenda() {
   }
   useEffect(() => { carregar() }, [])
 
+  // `nomeDe` olha TODO mundo, inclusive quem saiu — item antigo ainda precisa do nome de quem era.
+  // `ativos` é só quem pode ser escolhido agora: gente desativada não entra em lista de escolha.
   const nomeDe = (id: string | null) => (id ? pessoas.find(p => p.id === id)?.nome || 'outra pessoa' : null)
+  const ativos = useMemo(() => pessoas.filter(p => p.ativo !== false), [pessoas])
   const hj = chaveDia(new Date())
 
   // ── AÇÕES ───────────────────────────────────────────────────────────────────
@@ -145,7 +154,7 @@ export default function Agenda() {
   // ── SEPARAÇÃO ───────────────────────────────────────────────────────────────
   const visiveis = useMemo(() => {
     const abertos = itens.filter(i => !i.concluido)
-    if (filtro === 'meu') return abertos.filter(i => i.donoId === eu?.id || i.ajudaDe === eu?.id)
+    if (filtro === 'meu') return abertos.filter(i => ehMeu(i, eu?.id))
     if (filtro === 'grupo') return abertos.filter(i => !i.donoId)
     if (filtro === 'time') return abertos.filter(i => i.donoId && i.donoId !== eu?.id)
     return abertos
@@ -193,7 +202,7 @@ export default function Agenda() {
     const abertos = itens.filter(i => !i.concluido)
     return {
       hoje: abertos.filter(i => chaveDia(paraData(i.inicio)) === hj).length,
-      meus: abertos.filter(i => i.donoId === eu?.id || i.ajudaDe === eu?.id).length,
+      meus: abertos.filter(i => ehMeu(i, eu?.id)).length,
       semDono: abertos.filter(i => !i.donoId).length,
       atrasados: abertos.filter(i => chaveDia(paraData(i.inicio)) < hj).length,
     }
@@ -339,12 +348,12 @@ export default function Agenda() {
         </>}
 
         {detalhe && eu && (
-          <ModalDetalhe it={detalhe} eu={eu} pessoas={pessoas} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
+          <ModalDetalhe it={detalhe} eu={eu} ativos={ativos} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
             onFechar={() => setDetalhe(null)}
             onPegar={q => pegar(detalhe, q)} onConcluir={() => { concluir(detalhe); setDetalhe(null) }}
             onPublico={p => abrirPublico(detalhe, p)} onAjuda={(q, n) => pedirAjuda(detalhe, q, n)} />
         )}
-        {novo && eu && <ModalNovo eu={eu} pessoas={pessoas} diaSugerido={diaAberto} onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
+        {novo && eu && <ModalNovo eu={eu} ativos={ativos} diaSugerido={diaAberto} onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
       </div>
     </Layout>
   )
@@ -371,12 +380,15 @@ function Linha({ it, eu, nomeDe, ocupado, onConcluir, onAbrir }: {
   const f = FONTES[it.fonte]
   const meu = it.donoId === eu?.id
   const chamado = it.ajudaDe === eu?.id
+  // convidado = me chamaram pra reunião de outra pessoa (a minha própria não é "convite")
+  const convidado = !!eu && !meu && !!it.participantes?.includes(eu.id)
+  const outros = (it.participantes || []).length
   const hora = horaDe(it)
   return (
     <div onClick={onAbrir} style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', cursor: 'pointer',
       background: 'var(--surface)', borderRadius: 8,
-      border: '1px solid ' + (chamado ? 'var(--amber)' : 'var(--border)'),
+      border: '1px solid ' + (chamado ? 'var(--amber)' : convidado ? 'var(--accent)' : 'var(--border)'),
     }}>
       <button title="Concluir" disabled={ocupado} onClick={e => { e.stopPropagation(); onConcluir() }}
         style={{ width: 17, height: 17, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--text-faint)', background: 'transparent', cursor: 'pointer', padding: 0 }} />
@@ -384,21 +396,21 @@ function Linha({ it, eu, nomeDe, ocupado, onConcluir, onAbrir }: {
       <span style={{ width: 3, height: 16, borderRadius: 2, background: f.cor, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.titulo}</div>
-        {(it.subtitulo || chamado) && (
-          <div style={{ fontSize: 11.5, color: chamado ? 'var(--amber)' : 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {chamado ? 'pediram tua ajuda' : it.subtitulo}
+        {(it.subtitulo || chamado || convidado) && (
+          <div style={{ fontSize: 11.5, color: chamado ? 'var(--amber)' : convidado ? 'var(--accent-soft)' : 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {chamado ? 'pediram tua ajuda' : convidado ? `você foi chamado · ${nomeDe(it.donoId) || 'grupo'} organiza` : it.subtitulo}
           </div>
         )}
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
-        {!it.donoId ? 'sem dono' : meu ? 'seu' : nomeDe(it.donoId)}
+        {!it.donoId ? 'sem dono' : meu ? 'seu' : nomeDe(it.donoId)}{outros > 0 ? ` +${outros}` : ''}
       </span>
     </div>
   )
 }
 
-function ModalDetalhe({ it, eu, pessoas, nomeDe, ocupado, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
-  it: Item; eu: Eu; pessoas: Pessoa[]; nomeDe: (id: string | null) => string | null; ocupado: boolean
+function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
+  it: Item; eu: Eu; ativos: Pessoa[]; nomeDe: (id: string | null) => string | null; ocupado: boolean
   onFechar: () => void; onPegar: (quem: string | null) => void; onConcluir: () => void
   onPublico: (p: boolean) => void; onAjuda: (quem: string, nota: string) => void
 }) {
@@ -408,6 +420,7 @@ function ModalDetalhe({ it, eu, pessoas, nomeDe, ocupado, onFechar, onPegar, onC
   const f = FONTES[it.fonte]
   const meu = it.donoId === eu.id
   const d = paraData(it.inicio)
+  const participantes = it.participantes || []
 
   return (
     <Modal titulo={it.titulo} onFechar={onFechar}>
@@ -420,6 +433,11 @@ function ModalDetalhe({ it, eu, pessoas, nomeDe, ocupado, onFechar, onPegar, onC
         {it.publico && <span>· público</span>}
       </div>
       {it.subtitulo && <p style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5 }}>{it.subtitulo}</p>}
+      {participantes.length > 0 && (
+        <div style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+          <b style={{ color: 'var(--text-2)' }}>Participam:</b> {participantes.map(id => id === eu.id ? 'você' : nomeDe(id)).join(', ')}
+        </div>
+      )}
       {it.ajudaDe && (
         <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, color: 'var(--amber)' }}>
           {nomeDe(it.ajudaDe)} foi chamado pra ajudar{it.ajudaNota ? `: "${it.ajudaNota}"` : ''}. O item continua de quem sempre foi.
@@ -433,7 +451,7 @@ function ModalDetalhe({ it, eu, pessoas, nomeDe, ocupado, onFechar, onPegar, onC
           </p>
           <select value={quem} onChange={e => setQuem(e.target.value)} style={inp}>
             <option value="">Chamar quem...</option>
-            {pessoas.filter(p => p.id !== eu.id).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+            {ativos.filter(p => p.id !== eu.id).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
           </select>
           <input value={nota} onChange={e => setNota(e.target.value)} style={inp} placeholder="O que você precisa (opcional)" />
           <div style={{ display: 'flex', gap: 8 }}>
@@ -456,8 +474,8 @@ function ModalDetalhe({ it, eu, pessoas, nomeDe, ocupado, onFechar, onPegar, onC
   )
 }
 
-function ModalNovo({ eu, pessoas, diaSugerido, onFechar, onSalvo }: {
-  eu: Eu; pessoas: Pessoa[]; diaSugerido: string | null; onFechar: () => void; onSalvo: () => void
+function ModalNovo({ eu, ativos, diaSugerido, onFechar, onSalvo }: {
+  eu: Eu; ativos: Pessoa[]; diaSugerido: string | null; onFechar: () => void; onSalvo: () => void
 }) {
   const base = new Date()
   if (diaSugerido) { const [a, m, d] = diaSugerido.split('-').map(Number); base.setFullYear(a, m - 1, d) }
@@ -471,9 +489,20 @@ function ModalNovo({ eu, pessoas, diaSugerido, onFechar, onSalvo }: {
   const [inicio, setInicio] = useState(fmt(base))
   const [fim, setFim] = useState(fmt(new Date(base.getTime() + 36e5)))
   const [dono, setDono] = useState<string>(eu.id)
+  // Quem foi chamado. Não vira dono — quem manda no compromisso é `dono`. Participante enxerga,
+  // inclusive se o compromisso for privado de alguém acima dele (21-participantes-na-agenda.sql).
+  const [participantes, setParticipantes] = useState<string[]>([])
   const [publico, setPublico] = useState(false)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
+
+  // O dono não aparece como participante de si mesmo: se trocar o dono pra alguém que estava
+  // marcado, tira a marcação.
+  function trocarDono(novo: string) {
+    setDono(novo)
+    setParticipantes(c => c.filter(x => x !== novo))
+  }
+  const alternar = (id: string) => setParticipantes(c => c.includes(id) ? c.filter(x => x !== id) : [...c, id])
 
   async function salvar() {
     if (!titulo.trim()) { setErro('Falta o título.'); return }
@@ -486,11 +515,16 @@ function ModalNovo({ eu, pessoas, diaSugerido, onFechar, onSalvo }: {
       titulo, descricao: descricao || null, tipo,
       inicio: dIni.toISOString(), fim: dFim.toISOString(),
       usuario_id: dono || null, publico, criado_por: eu.id,
+      // Só manda a lista quando há alguém marcado: compromisso sem convidado continua salvando
+      // mesmo numa instalação que ainda não rodou o 21 e não tem a coluna.
+      ...(participantes.length ? { participantes } : {}),
     })
     setSalvando(false)
     if (error) { setErro(error.message); return }
     onSalvo()
   }
+
+  const escolhiveis = ativos.filter(p => p.id !== dono)
 
   return (
     <Modal titulo="Novo compromisso" onFechar={onFechar}>
@@ -505,12 +539,29 @@ function ModalNovo({ eu, pessoas, diaSugerido, onFechar, onSalvo }: {
           <option value="ligacao">Ligação</option>
           <option value="tarefa">Tarefa</option>
         </select>
-        <select value={dono} onChange={e => setDono(e.target.value)} style={inp}>
-          <option value={eu.id}>Meu</option>
+        <select value={dono} onChange={e => trocarDono(e.target.value)} style={inp} title="Quem organiza — é o dono do compromisso">
+          <option value={eu.id}>Organizo eu</option>
           <option value="">Do grupo</option>
-          {pessoas.filter(p => p.id !== eu.id).map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}
+          {ativos.filter(p => p.id !== eu.id).map(p => <option key={p.id} value={p.id}>Organiza: {p.nome}</option>)}
         </select>
       </div>
+
+      <div>
+        <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 7 }}>
+          Quem participa{participantes.length > 0 ? ` · ${participantes.length} marcado${participantes.length > 1 ? 's' : ''}` : ' — clique pra marcar'}
+        </div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {escolhiveis.map(p => {
+            const on = participantes.includes(p.id)
+            return (
+              <button key={p.id} type="button" onClick={() => alternar(p.id)} style={{ ...chip(on), padding: '5px 11px', fontSize: 12 }}>
+                {on ? '✓ ' : ''}{p.id === eu.id ? 'Eu' : p.nome}
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       <input value={descricao} onChange={e => setDescricao(e.target.value)} style={inp} placeholder="Detalhe (opcional)" />
       <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-muted)', cursor: 'pointer' }}>
         <input type="checkbox" checked={publico} onChange={e => setPublico(e.target.checked)} />
