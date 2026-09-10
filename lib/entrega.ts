@@ -221,7 +221,7 @@ export function situacaoMarco(m: { estado: string; data_combinada?: string | nul
  * Devolve os deslocamentos a aplicar e um aviso se algo bater na âncora.
  */
 export function empurrarPosteriores(
-  marcos: { id: string; ordem: number; ancora: boolean; estado: string; data_prevista: string | null }[],
+  marcos: { id: string; ordem: number; ancora: boolean; estado: string; data_prevista: string | null; natureza?: string }[],
   ordemRemarcado: number,
   diasDeslocados: number,
 ) {
@@ -230,9 +230,17 @@ export function empurrarPosteriores(
   const mover: { id: string; data_prevista: string }[] = []
   let esbarrouNaAncora = false
 
+  // Só ATRASO empurra. Trazer um encontro pra mais cedo não puxa o resto junto —
+  // foi assim que um erro de digitação (01/09 no lugar de 21/09) arrastou o
+  // calendário inteiro do Jhones três semanas pra trás.
+  if (diasDeslocados <= 0) return { mover, esbarrouNaAncora }
+
   for (const m of marcos) {
     if (m.ordem <= ordemRemarcado) continue
     if (m.ancora) continue                       // a âncora nunca anda
+    // só encontros formam a corrente: mês de tráfego e fase do CRM seguem o
+    // calendário do contrato, não a agenda do cliente
+    if (m.natureza && m.natureza !== 'encontro') continue
     if (m.estado === 'concluido' || m.estado === 'cancelado') continue
     if (!m.data_prevista) continue
     const nova = somaDias(m.data_prevista, diasDeslocados)

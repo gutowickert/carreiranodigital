@@ -46,6 +46,11 @@ export async function POST(req: Request) {
       if (isNaN(nova.getTime())) return erro('data inválida')
 
       const novaData = nova.toISOString().slice(0, 10)
+      // data antes do início do projeto é erro de digitação, não agenda
+      const inicio = String(projeto?.data_inicio || '').slice(0, 10)
+      if (inicio && novaData < inicio) {
+        return erro(`Essa data (${novaData.split('-').reverse().join('/')}) é antes do início do projeto (${inicio.split('-').reverse().join('/')}). Confere o dia.`)
+      }
       const antes = (marco.data_combinada || marco.data_prevista || '').slice(0, 10)
       const desloc = antes ? diasAte(novaData, antes) : 0
 
@@ -93,6 +98,15 @@ export async function POST(req: Request) {
         return erro('Antes de fechar, marca o próximo encontro com o cliente.', {
           precisa_proximo: { id: proximoEncontro.id, titulo: proximoEncontro.titulo, data_prevista: proximoEncontro.data_prevista },
         })
+      }
+
+      if (b.proxima_data_hora) {
+        const px = new Date(b.proxima_data_hora.toString())
+        const inicio = String(projeto?.data_inicio || '').slice(0, 10)
+        if (isNaN(px.getTime())) return erro('data do próximo encontro inválida')
+        if (inicio && px.toISOString().slice(0, 10) < inicio) {
+          return erro(`A data do próximo encontro é antes do início do projeto (${inicio.split('-').reverse().join('/')}). Confere o dia.`)
+        }
       }
 
       await sb.from('projeto_marcos').update({
