@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { ROTEIROS, situacaoMarco, type Produto } from '@/lib/entrega'
+import { quemEuVejo } from '@/lib/quem-eu-vejo'
 
 // Agenda de entregas. Devolve os marcos de um período com o estado de cada um —
 // é o estado que define o peso visual: previsto (sombra, sem hora), combinado
@@ -9,7 +10,15 @@ import { ROTEIROS, situacaoMarco, type Produto } from '@/lib/entrega'
 
 export async function GET(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    const auth = req.headers.get('authorization')
+    const org = await orgDaRequest(auth)
+
+    // QUEM PEDIU. Sem isto a rota respondia pra qualquer um — inclusive sem login: sem token,
+    // `orgDaRequest` cai na empresa padrão e a lista vinha inteira. E com a hierarquia valendo,
+    // era por aqui que o subordinado leria a agenda de quem está acima, que a agenda geral esconde.
+    // A regra é a mesma da agenda geral (lib/quem-eu-vejo.ts), pra as duas não divergirem.
+    const quem = await quemEuVejo(auth, org)
+    if (!quem) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
     const sp = new URL(req.url).searchParams
     const de = (sp.get('de') || '').slice(0, 10)
     const ate = (sp.get('ate') || '').slice(0, 10)
@@ -51,7 +60,10 @@ export async function GET(req: Request) {
         duracao_min: m.duracao_min,
         responsavel_id: m.responsavel_id,
       }
-    }).filter(i => !!i.data)
+    })
+      .filter(i => !!i.data)
+      // Marco sem responsável é do time e todos veem; com responsável, só quem enxerga essa pessoa.
+      .filter(i => !i.responsavel_id || quem.visiveis.has(i.responsavel_id))
 
     return NextResponse.json({ ok: true, itens })
   } catch (e: any) {

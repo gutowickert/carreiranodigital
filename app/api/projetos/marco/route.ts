@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { temSessao } from '@/lib/quem-eu-vejo'
 import { diasAte, empurrarPosteriores, ROTEIROS, type Produto } from '@/lib/entrega'
 
 // A máquina de estados do compromisso.
@@ -14,7 +15,11 @@ const erro = (m: string, extra?: any) => NextResponse.json({ ok: false, error: m
 
 export async function POST(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota gravava
+    // como se fosse gente de dentro. A tela da ficha já manda o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const b = await req.json().catch(() => ({} as any))
     const acao = (b.acao || '').toString()
     const marcoId = (b.id || '').toString()

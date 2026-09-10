@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { temSessao } from '@/lib/quem-eu-vejo'
 import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, type Produto } from '@/lib/entrega'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
@@ -8,7 +9,11 @@ import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, type Produto
 
 export async function GET(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
+    // (e gravava) como se fosse gente de dentro. Todas as telas de entregas já mandam o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
 
@@ -74,7 +79,11 @@ function vazio() { return { atrasados: 0, a_confirmar: 0, sem_proximo: 0, vencen
 
 export async function POST(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
+    // (e gravava) como se fosse gente de dentro. Todas as telas de entregas já mandam o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const b = await req.json().catch(() => ({} as any))
 
     const cliente = (b.cliente || '').toString().trim()

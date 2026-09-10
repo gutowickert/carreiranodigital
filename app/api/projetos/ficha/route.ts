@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { temSessao } from '@/lib/quem-eu-vejo'
 import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/entrega'
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
@@ -9,7 +10,11 @@ import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/en
 
 export async function GET(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
+    // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const id = new URL(req.url).searchParams.get('id')
     if (!id) return NextResponse.json({ ok: false, error: 'falta id' }, { status: 200 })
 
@@ -39,7 +44,11 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
+    // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const b = await req.json().catch(() => ({} as any))
     const id = (b.id || '').toString()
     if (!id) return NextResponse.json({ ok: false, error: 'falta id' }, { status: 200 })
@@ -82,7 +91,11 @@ export async function PATCH(req: Request) {
 // pendências com o cliente + anotação solta na ficha
 export async function POST(req: Request) {
   try {
-    const org = await orgDaRequest(req.headers.get('authorization'))
+    // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
+    // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
     const b = await req.json().catch(() => ({} as any))
     const acao = (b.acao || '').toString()
     const projetoId = (b.projeto_id || '').toString()
