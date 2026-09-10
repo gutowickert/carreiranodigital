@@ -646,6 +646,50 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
           </div>
         )}
 
+        {/* VENDA FECHADA — o card do lead ganho ficava MUDO.
+            O bloco "Mover etapa" logo abaixo só aparece pra quem não está em ganho nem perda, e
+            perda tinha o seu "Reabrir". Ganho não tinha nada: abria o card e não havia ação
+            nenhuma, o que parecia tela quebrada. Pior, o Resumo IA velho continuava dizendo
+            "ligar pra confirmar o pagamento" — e ligaram três vezes numa cliente que já tinha pago.
+
+            Reabrir só é oferecido quando NÃO existe matrícula lançada. Com matrícula, desfazer
+            aqui deixaria a matrícula e a receita de pé com o lead de volta no funil — venda
+            fantasma nos relatórios. Nesse caso o caminho é cancelar a matrícula em Turmas. */}
+        {!novoLead && lead && lead.etapa === 'ganho' && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>✅ Venda fechada</div>
+            <div style={{ background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'var(--text)' }}>
+              {(lead as any).valor_venda != null && (
+                <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)' }}>
+                  R$ {Number((lead as any).valor_venda).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </div>
+              )}
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>
+                {(lead as any).data_ganho && new Date((lead as any).data_ganho).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                {(lead as any).motivo_ganho && ` · ${(lead as any).motivo_ganho}`}
+              </div>
+              <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 8 }}>
+                Não há mais nada a fazer aqui — o cliente já comprou. Se alguém mandou ligar, o aviso está velho.
+              </div>
+            </div>
+
+            {(lead as any).matricula_id ? (
+              <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>
+                Matrícula já lançada. Para desfazer esta venda, cancele a matrícula em <b>Turmas</b> — desfazer só aqui
+                deixaria a matrícula e a receita de pé, com o lead de volta no funil.
+              </p>
+            ) : (
+              <>
+                <button onClick={() => moverEtapa(lead, 'atendimento_inicial').then(onFechar)}
+                  style={{ marginTop: 10, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+                  🔄 Reabrir negociação
+                </button>
+                <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Volta o lead pra "Atendimento inicial". Use se a venda foi marcada por engano.</p>
+              </>
+            )}
+          </div>
+        )}
+
         {!novoLead && lead && lead.etapa === 'perda' && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
             <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Lead perdido</div>
@@ -898,7 +942,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
         <button onClick={() => setAberto(a => !a)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
           <span style={{ color: 'var(--text-faint)' }}>{aberto ? '▾' : '▸'}</span> 🧠 Resumo IA
         </button>
-        {stale && dados && <span style={{ fontSize: 10, color: 'var(--amber)' }}>• desatualizado</span>}
+        {stale && dados && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--amber)', background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 20, padding: '1px 8px' }}>desatualizado</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           {em && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{emFmt}</span>}
           <button onClick={gerar} disabled={gerando} title="Atualizar resumo"
@@ -931,7 +975,22 @@ function ResumoIA({ leadId }: { leadId: string }) {
                 </ul>
               )}
               {dados.objecoes && !/^nenhuma$/i.test(dados.objecoes) && <div style={{ fontSize: 12, color: 'var(--text-2)' }}><b style={{ color: 'var(--amber)' }}>Objeções:</b> {dados.objecoes}</div>}
-              {dados.proximoPasso && <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--surface-2)', borderLeft: '3px solid var(--green)', borderRadius: 6, padding: '6px 10px' }}><b style={{ color: 'var(--green)' }}>Próximo passo:</b> {dados.proximoPasso}</div>}
+              {/* O "Próximo passo" de um resumo VELHO é uma ordem errada com cara de ordem certa.
+                  Foi assim que ligaram três vezes pra uma cliente que já tinha pago: o resumo era
+                  de antes do pagamento e mandava "ligar pra confirmar". Verde e afirmativo, igual
+                  ao de um resumo fresco. Quando está velho, vira aviso e diz de quando é. */}
+              {dados.proximoPasso && (
+                <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--surface-2)', borderLeft: `3px solid ${stale ? 'var(--amber)' : 'var(--green)'}`, borderRadius: 6, padding: '6px 10px' }}>
+                  <b style={{ color: stale ? 'var(--amber)' : 'var(--green)' }}>
+                    {stale ? `Próximo passo (de ${emFmt} — desatualizado):` : 'Próximo passo:'}
+                  </b> {dados.proximoPasso}
+                  {stale && (
+                    <div style={{ fontSize: 11, color: 'var(--amber)', marginTop: 5 }}>
+                      O lead teve atividade depois disto. Atualize o resumo antes de agir.
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
