@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 
 type UsuarioPerfil = {
   id: string
@@ -17,6 +18,17 @@ const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--bo
 const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
 const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
 const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+
+// PAPEL — o nível de acesso. Diferente de SETOR, que é a área em que a pessoa trabalha.
+//
+// O sistema tinha só admin e vendedor: quem precisava trabalhar de verdade virava admin, e admin
+// vê tudo por definição — inclusive a agenda de quem está acima. `gestor` é o meio que faltava.
+const papeis = [
+  { value: 'admin',    label: 'Dono / Sócio', desc: 'Vê tudo, inclusive financeiro, cadastros e a agenda de todos' },
+  { value: 'gestor',   label: 'Gestor',       desc: 'Coordena o time: comercial e atendimento. Não vê financeiro, cadastros, nem a agenda de quem está acima' },
+  { value: 'vendedor', label: 'Vendedor',     desc: 'Trabalha os próprios leads' },
+  { value: 'professor', label: 'Professor',   desc: 'Acesso restrito' },
+]
 
 const setores = [
   { value: 'admin', label: 'Administrador', desc: 'Acesso total ao sistema', bg: 'var(--accent-bg)', color: 'var(--accent-soft)' },
@@ -36,6 +48,10 @@ export default function Usuarios() {
   const [erro, setErro] = useState('')
   const [editando, setEditando] = useState<string | null>(null)
   const [setorEdit, setSetorEdit] = useState('')
+  const [papelEdit, setPapelEdit] = useState('')
+  // Uma pessoa pode responder a MAIS DE UMA — por isso lista, e não um valor só.
+  const [chefesEdit, setChefesEdit] = useState<string[]>([])
+  const [vinculos, setVinculos] = useState<{ usuario_id: string; gestor_id: string }[]>([])
 
   const [uEmail, setUEmail] = useState('')
   const [uSenha, setUSenha] = useState('')
@@ -47,29 +63,26 @@ export default function Usuarios() {
   async function carregarUsuarios() {
     const { data } = await supabase.from('usuarios_perfil').select('*').order('criado_em', { ascending: false })
     if (data) setUsuarios(data)
+    const { data: v } = await supabase.from('usuarios_gestores').select('usuario_id, gestor_id')
+    setVinculos(v || [])
   }
+
+  const chefesDe = (id: string) => vinculos.filter(v => v.usuario_id === id).map(v => v.gestor_id)
 
   async function criarUsuario(e: React.FormEvent) {
     e.preventDefault()
     setSalvando(true); setErro(''); setMensagem('')
 
-    const { data, error } = await supabase.auth.signUp({
-      email: uEmail,
-      password: uSenha,
-      options: { data: { nome: uNome, setor: uSetor } }
+    // Vai pelo servidor (ver app/api/usuarios/criar). O `supabase.auth.signUp` daqui do navegador
+    // TROCAVA A SESSÃO pela do usuário recém-criado: quem clicava era deslogado e virava o novato,
+    // sem aviso. E o perfil acabava sendo gravado por ele, que não é dono.
+    const r = await fetchAuth('/api/usuarios/criar', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: uEmail, senha: uSenha, nome: uNome, setor: uSetor, papel: 'vendedor' }),
     })
-
-    if (error) { setErro('Erro ao criar usuario: ' + error.message); setSalvando(false); return }
-
-    if (data.user?.id) {
-      const { error: errPerfil } = await supabase.from('usuarios_perfil').insert({
-        id: data.user.id, nome: uNome, email: uEmail, setor: uSetor, ativo: true,
-      })
-      if (errPerfil) {
-        setErro('Usuario criado no Auth, mas erro ao salvar perfil: ' + errPerfil.message)
-        setSalvando(false); return
-      }
-    }
+    const res = await r.json().catch(() => ({ ok: false, error: 'resposta inválida' }))
+    if (!res.ok) { setErro('Erro ao criar usuário: ' + res.error); setSalvando(false); return }
 
     setMensagem('Usuario ' + uEmail + ' criado com sucesso!')
     setUEmail(''); setUSenha(''); setUNome(''); setUSetor('operacoes')
@@ -80,8 +93,31 @@ export default function Usuarios() {
 
   async function trocarSetor(usuarioId: string) {
     if (!setorEdit) { setEditando(null); return }
-    await supabase.from('usuarios_perfil').update({ setor: setorEdit }).eq('id', usuarioId)
-    setEditando(null); setSetorEdit('')
+    setErro('')
+
+    const { error: errPerfil } = await supabase.from('usuarios_perfil').update({
+      setor: setorEdit,
+      papel: papelEdit || undefined,
+    }).eq('id', usuarioId)
+    if (errPerfil) { setErro('Não deu pra salvar o acesso: ' + errPerfil.message); return }
+
+    // Ninguém acima = pessoa no topo (dono/sócio). Quem enxerga a agenda de quem sai daqui —
+    // mas a regra em si vive no banco, não nesta tela.
+    const atuais = chefesDe(usuarioId)
+    const tirar = atuais.filter(g => !chefesEdit.includes(g))
+    const pôr   = chefesEdit.filter(g => !atuais.includes(g))
+
+    if (tirar.length) {
+      const { error } = await supabase.from('usuarios_gestores').delete().eq('usuario_id', usuarioId).in('gestor_id', tirar)
+      if (error) { setErro('Não deu pra tirar quem estava acima: ' + error.message); return }
+    }
+    if (pôr.length) {
+      // org_id vem do gatilho da empresa; não mando daqui.
+      const { error } = await supabase.from('usuarios_gestores').insert(pôr.map(g => ({ usuario_id: usuarioId, gestor_id: g })))
+      if (error) { setErro('Não deu pra salvar quem está acima: ' + error.message); return }
+    }
+
+    setEditando(null); setSetorEdit(''); setPapelEdit(''); setChefesEdit([])
     carregarUsuarios()
   }
 
@@ -184,37 +220,77 @@ export default function Usuarios() {
             {usuarios.map(u => {
               const info = setorInfo(u.setor)
               return (
-                <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', opacity: u.ativo ? 1 : 0.5 }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{u.nome || '-'}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{u.email}</div>
+                <div key={u.id} style={{ padding: '14px 24px', borderBottom: '1px solid var(--border)', opacity: u.ativo ? 1 : 0.5 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{u.nome || '-'}</div>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '2px' }}>{u.email}</div>
+                      {editando !== u.id && (
+                        <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>
+                          {chefesDe(u.id).length === 0
+                            ? 'não responde a ninguém'
+                            : 'responde a ' + chefesDe(u.id).map(g => usuarios.find(x => x.id === g)?.nome || '?').join(' e ')}
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                      {editando === u.id ? (
+                        <>
+                          <select value={papelEdit} onChange={e => setPapelEdit(e.target.value)} title="Nível de acesso" style={{ ...select, width: 'auto' }}>
+                            {papeis.map(x => <option key={x.value} value={x.value}>{x.label}</option>)}
+                          </select>
+                          <select value={setorEdit} onChange={e => setSetorEdit(e.target.value)} title="Área em que trabalha" style={{ ...select, width: 'auto' }}>
+                            {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
+                          </select>
+                          <button onClick={() => trocarSetor(u.id)} style={{ ...btnPrimary, fontSize: '12px', padding: '6px 12px' }}>Salvar</button>
+                          <button onClick={() => { setEditando(null); setSetorEdit(''); setChefesEdit([]); setErro('') }} style={{ ...btnSecondary, fontSize: '12px', padding: '6px 12px' }}>x</button>
+                        </>
+                      ) : (
+                        <>
+                          <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '20px', backgroundColor: info.bg, color: info.color, fontWeight: '500' }}>
+                            {info.label}
+                          </span>
+                          <button onClick={() => { setEditando(u.id); setSetorEdit(u.setor); setPapelEdit((u as any).papel || 'vendedor'); setChefesEdit(chefesDe(u.id)); setErro('') }}
+                            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
+                            Editar acesso
+                          </button>
+                          <button onClick={() => alternarAtivo(u.id, u.ativo)}
+                            style={{ background: 'none', border: 'none', color: u.ativo ? 'var(--text-muted)' : 'var(--green-strong)', fontSize: '12px', cursor: 'pointer' }}>
+                            {u.ativo ? 'Desativar' : 'Ativar'}
+                          </button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                    {editando === u.id ? (
-                      <>
-                        <select value={setorEdit} onChange={e => setSetorEdit(e.target.value)} style={{ ...select, width: 'auto' }}>
-                          {setores.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
-                        </select>
-                        <button onClick={() => trocarSetor(u.id)} style={{ ...btnPrimary, fontSize: '12px', padding: '6px 12px' }}>Salvar</button>
-                        <button onClick={() => { setEditando(null); setSetorEdit('') }} style={{ ...btnSecondary, fontSize: '12px', padding: '6px 12px' }}>x</button>
-                      </>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: '12px', padding: '4px 10px', borderRadius: '20px', backgroundColor: info.bg, color: info.color, fontWeight: '500' }}>
-                          {info.label}
-                        </span>
-                        <button onClick={() => { setEditando(u.id); setSetorEdit(u.setor) }}
-                          style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '12px', cursor: 'pointer' }}>
-                          Trocar setor
-                        </button>
-                        <button onClick={() => alternarAtivo(u.id, u.ativo)}
-                          style={{ background: 'none', border: 'none', color: u.ativo ? 'var(--text-muted)' : 'var(--green-strong)', fontSize: '12px', cursor: 'pointer' }}>
-                          {u.ativo ? 'Desativar' : 'Ativar'}
-                        </button>
-                      </>
-                    )}
-                  </div>
+                  {editando === u.id && (
+                    <div style={{ marginTop: '12px', padding: '12px 14px', backgroundColor: 'var(--surface-2)', borderRadius: '10px' }}>
+                      <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginBottom: '8px' }}>
+                        Responde a — pode marcar mais de um. Quem está marcado enxerga a agenda desta pessoa.
+                        Ninguém marcado = está no topo.
+                      </div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+                        {usuarios.filter(o => o.id !== u.id && o.ativo).map(o => {
+                          const marcado = chefesEdit.includes(o.id)
+                          return (
+                            <label key={o.id} style={{
+                              display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer',
+                              fontSize: '13px', padding: '5px 10px', borderRadius: '20px',
+                              backgroundColor: marcado ? 'var(--accent-bg)' : 'var(--surface)',
+                              color: marcado ? 'var(--accent-soft)' : 'var(--text-2)',
+                              border: '1px solid ' + (marcado ? 'var(--accent)' : 'var(--border)'),
+                            }}>
+                              <input type="checkbox" checked={marcado}
+                                onChange={e => setChefesEdit(c => e.target.checked ? [...c, o.id] : c.filter(x => x !== o.id))} />
+                              {o.nome || o.email}
+                            </label>
+                          )
+                        })}
+                      </div>
+                      {erro && <p style={{ marginTop: '10px', fontSize: '12px', color: 'var(--red)' }}>{erro}</p>}
+                    </div>
+                  )}
                 </div>
               )
             })}

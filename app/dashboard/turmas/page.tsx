@@ -497,20 +497,21 @@ export default function Turmas() {
       })
     }
 
-    const { data: tarefasInseridas } = await supabase.from('tarefas').insert(tarefasParaInserir).select()
+    // sem `.select()`: as linhas de volta só serviam pra montar o espelho na agenda, que saiu
+    await supabase.from('tarefas').insert(tarefasParaInserir)
 
-    if (tarefasInseridas) {
-      const eventosAgenda = tarefasInseridas
-        .filter((t: any) => t.usuario_id && t.setor !== 'financeiro')
-        .map((t: any) => ({
-          usuario_id: t.usuario_id, titulo: t.titulo, tipo: 'tarefa',
-          inicio: `${t.data_prazo}T09:00:00`, fim: `${t.data_prazo}T10:00:00`,
-          descricao: `Tarefa automática da turma ${produto.nome}`,
-        }))
-      if (eventosAgenda.length > 0) {
-        await supabase.from('agenda_eventos').insert(eventosAgenda)
-      }
-    }
+    // Aqui existia um segundo INSERT, copiando cada tarefa recém-criada pra `agenda_eventos`, pra
+    // que ela aparecesse na agenda. Saiu por dois motivos:
+    //
+    //   1. DUPLICAVA. A agenda agora lê a tabela `tarefas` direto (app/api/agenda), então a cópia
+    //      fazia o mesmo compromisso aparecer duas vezes na tela. Os 10 eventos que a escola tem
+    //      hoje são exatamente isso: espelho de 10 das 90 tarefas.
+    //   2. IA QUEBRAR CALADO. O espelho era gravado com o usuario_id de OUTRA pessoa (o
+    //      responsável do setor). Com a regra nova da agenda, quem não é dono nem chefe daquela
+    //      pessoa tem o insert recusado — e este `await` não olhava erro nenhum. A turma seria
+    //      criada, as tarefas também, e a agenda ficaria pela metade sem ninguém saber.
+    //
+    // A tarefa em si continua sendo criada acima, com prazo e responsável. É ela que a agenda lê.
 
     const aulasParaAgenda = datasValidas.map(d => {
       const profDoDia = modulos.length > 0

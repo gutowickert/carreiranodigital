@@ -27,6 +27,9 @@ const grupos: Grupo[] = [
     titulo: '',
     itens: [
       { nome: 'Painel', href: '/dashboard' },
+      // Fica no topo, fora de qualquer grupo, porque é a tela pra abrir todo dia. A rota existia
+      // desde agosto e nunca esteve no menu — dava pra chegar nela só digitando o endereço.
+      { nome: 'Agenda', href: '/dashboard/agenda' },
     ],
   },
   {
@@ -135,6 +138,27 @@ function itemPermitido(href: string, p: Perfil): boolean {
   if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
   if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   if (p.papel === 'admin') return true
+
+  // GESTOR — o degrau que faltava entre "vê tudo" e "vê quase nada".
+  //
+  // Antes só existia admin e vendedor: quem precisava trabalhar de verdade virava admin, e admin
+  // enxerga financeiro, cadastros e a agenda de todo mundo. Esta lista NÃO é um chute — é o que o
+  // Mateus respondeu que usa no dia a dia, tela por tela. Fora daqui: financeiro, cadastros,
+  // comissões, usuários e as telas de IA.
+  if (p.papel === 'gestor') {
+    const doGestor = [
+      '/dashboard', '/dashboard/agenda', '/dashboard/agenda/aulas',
+      '/dashboard/crm', '/dashboard/crm/resultados',
+      '/dashboard/ligacoes', '/dashboard/whatsapp',
+      '/dashboard/lotes', '/dashboard/produtos',
+      '/dashboard/turmas-mensagens', '/dashboard/tarefas/leads', '/dashboard/fechamento',
+      '/dashboard/analise-conversao',
+      '/dashboard/turmas', '/dashboard/chamada', '/dashboard/alunos',
+    ]
+    if (href === '/dashboard/whatsapp') return p.wa_caixa === true
+    return doGestor.includes(href)
+  }
+
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
   const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/lotes', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
@@ -382,7 +406,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <div style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : 'Vendedor'}</div>
+                  <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : perfil.papel === 'gestor' ? 'Gestor' : 'Vendedor'}</div>
                 </div>
               </div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
