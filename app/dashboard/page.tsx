@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
+import VendasDoMes from '@/components/VendasDoMes'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', boxShadow: 'var(--shadow-md)' }
@@ -220,6 +221,8 @@ export default function Dashboard() {
           </>
         ) : (
           <>
+            {/* quanto eu vendi no mês e quanto a empresa vendeu (components/VendasDoMes.tsx) */}
+            <VendasDoMes card={card} />
             <div style={{ ...card, padding: '20px' }}>
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Meus leads ativos</div>
               <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{meusLeadsAtivos}</div>
