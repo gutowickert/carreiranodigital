@@ -23,6 +23,12 @@ import { fetchAuth } from '@/lib/api'
 // O item sem dono é do GRUPO e aparece pra todos: hoje quase nada tem dono (1196 clientes sem
 // responsável), então uma agenda que só mostrasse "o que é meu" abriria vazia pra quase todo mundo.
 // Pegar pra mim é o que transforma o mural em trabalho de alguém.
+//
+// O BALÃO: o que é meu e ainda não vi acende um ponto vermelho no dia e na linha, e soma no balão
+// do menu. Clicar no dia marca aquele dia como visto; abrir o item marca o item; "Marcar como não
+// lido" acende de novo. A regra de o que acende mora no servidor (lib/agenda-balao.ts) — aqui só se
+// mostra e se avisa o que foi visto. Só o que está NA TELA é marcado: com o filtro "Do grupo" os
+// meus itens nem aparecem, e clicar no dia não pode apagá-los.
 
 type Item = {
   id: string
@@ -68,6 +74,8 @@ function paraData(s: string) {
 }
 const chaveDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 const horaDe = (i: Item) => i.diaTodo ? '' : paraData(i.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+// A mesma chave que o servidor usa pro balão (lib/agenda-balao.ts): `fonte:id`
+const chaveDe = (i: Item) => `${i.fonte}:${i.id}`
 
 function rotuloDia(chave: string) {
   const hoje = new Date(), amanha = new Date(); amanha.setDate(hoje.getDate() + 1)
@@ -84,6 +92,9 @@ function rotuloDia(chave: string) {
 const ehMeu = (i: Item, euId?: string) =>
   !!euId && (i.donoId === euId || i.ajudaDe === euId || !!i.participantes?.includes(euId))
 
+// Avisa o menu (components/Layout.tsx) do número novo do balão, sem esperar o próximo minuto.
+const avisarMenu = (total: number) => window.dispatchEvent(new CustomEvent('agenda:balao', { detail: { total } }))
+
 export default function Agenda() {
   const [eu, setEu] = useState<Eu | null>(null)
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
@@ -98,19 +109,49 @@ export default function Agenda() {
   const [detalhe, setDetalhe] = useState<Item | null>(null)
   const [novo, setNovo] = useState(false)
   const [ocupado, setOcupado] = useState<string | null>(null)
+  // O que está aceso no balão pra mim. `balaoPronto` falso = a instalação ainda não tem a tabela
+  // de leituras: aí não aparece ponto nem "Marcar como não lido".
+  const [balao, setBalao] = useState<Set<string>>(new Set())
+  const [balaoPronto, setBalaoPronto] = useState(false)
 
   async function carregar() {
     setErro('')
     try {
-      const ate = new Date(); ate.setMonth(ate.getMonth() + 6)
-      const r = await fetchAuth(`/api/agenda?ate=${ate.toISOString()}`)
+      // Sem `ate`: o servidor usa o mesmo horizonte do balão, pra os dois nunca discordarem.
+      const r = await fetchAuth('/api/agenda')
       if (!r.ok) { setErro(r.status === 401 ? 'Sessão expirada — recarregue a página.' : 'Não deu pra carregar a agenda.'); setCarregando(false); return }
       const d = await r.json()
       setEu(d.eu); setPessoas(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
+      const b = new Set<string>(d.balao || [])
+      setBalao(b); setBalaoPronto(!!d.balaoPronto)
+      // concluir, pegar ou devolver também mexem no balão — o menu acompanha a cada recarga
+      avisarMenu(d.balaoPronto ? b.size : 0)
     } catch { setErro('Não deu pra carregar a agenda.') }
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
+
+  // Marca como visto (ou não lido) — só pra mim. Some da tela na hora; depois vale o que o servidor
+  // devolver. Se falhar, a próxima recarga acerta: não vale travar a tela por uma leitura.
+  async function marcar(chaves: string[], como: 'lido' | 'nao_lido') {
+    if (!balaoPronto || !chaves.length) return
+    const local = new Set(balao)
+    for (const k of chaves) { if (como === 'lido') local.delete(k); else local.add(k) }
+    setBalao(local); avisarMenu(local.size)
+    const r = await fetchAuth('/api/agenda/leituras', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ como, chaves }),
+    }).catch(() => null)
+    const j = r ? await r.json().catch(() => null) : null
+    if (j?.ok) { const s = new Set<string>(j.chaves || []); setBalao(s); avisarMenu(s.size) }
+  }
+  const acesas = (lista: Item[]) => lista.map(chaveDe).filter(k => balao.has(k))
+
+  // Abrir um item é ver o item.
+  function abrir(i: Item) {
+    setDetalhe(i)
+    if (balao.has(chaveDe(i))) marcar([chaveDe(i)], 'lido')
+  }
 
   // `nomeDe` olha TODO mundo, inclusive quem saiu — item antigo ainda precisa do nome de quem era.
   // `ativos` é só quem pode ser escolhido agora: gente desativada não entra em lista de escolha.
@@ -217,6 +258,7 @@ export default function Agenda() {
 
   const mesmoMes = (d: Date) => d.getMonth() === mes.getMonth()
   const irPara = (n: number) => { setMes(new Date(mes.getFullYear(), mes.getMonth() + n, 1)); setDiaAberto(null) }
+  const atrasadosAcesos = acesas(atrasados).length
 
   return (
     <Layout>
@@ -233,6 +275,11 @@ export default function Agenda() {
             <button onClick={() => { setMes(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setDiaAberto(null) }} style={{ ...btnIcone, width: 'auto', padding: '0 12px' }}>Hoje</button>
             <button onClick={() => irPara(1)} style={btnIcone}>›</button>
           </div>
+          {balaoPronto && balao.size > 0 && (
+            <span style={{ fontSize: 12, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={pontoVermelho} /> {balao.size} {balao.size > 1 ? 'coisas' : 'coisa'} tua{balao.size > 1 ? 's' : ''} pra ver — clica no dia marcado
+            </span>
+          )}
           <div style={{ flex: 1 }} />
           <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
             {filtros.map(f => (
@@ -261,8 +308,11 @@ export default function Agenda() {
                 const doDia = porDiaCalendario.get(k) || []
                 const hoje = k === hj
                 const sel = k === diaAberto
+                const acesos = acesas(doDia)
                 return (
-                  <div key={n} onClick={() => setDiaAberto(sel ? null : k)}
+                  // Clicar no dia (pra abrir) é ver o dia: marca como visto o que está aceso NELE,
+                  // e só o que está na tela com o filtro atual.
+                  <div key={n} onClick={() => { if (!sel) marcar(acesos, 'lido'); setDiaAberto(sel ? null : k) }}
                     style={{
                       minHeight: 74, padding: '5px 5px 3px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
                       borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--border)',
@@ -275,11 +325,14 @@ export default function Agenda() {
                       color: hoje ? 'var(--accent-soft)' : 'var(--text-muted)',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     }}>
-                      <span>{d.getDate()}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {d.getDate()}
+                        {acesos.length > 0 && <span title={`${acesos.length} pra ver`} style={pontoVermelho} />}
+                      </span>
                       {doDia.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{doDia.length}</span>}
                     </div>
                     {doDia.slice(0, 3).map(i => (
-                      <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); setDetalhe(i) }}
+                      <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); abrir(i) }}
                         title={i.titulo}
                         style={{
                           fontSize: 10.5, lineHeight: '14px', marginBottom: 2, padding: '1px 4px', borderRadius: 3,
@@ -287,6 +340,7 @@ export default function Agenda() {
                           color: k < hj ? 'var(--red)' : FONTES[i.fonte].cor,
                           borderLeft: `2px solid ${k < hj ? 'var(--red)' : FONTES[i.fonte].cor}`,
                           whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
+                          fontWeight: balao.has(chaveDe(i)) ? 700 : 400,
                         }}>
                         {horaDe(i) && <span style={{ opacity: 0.75 }}>{horaDe(i)} </span>}{i.titulo}
                       </div>
@@ -300,13 +354,16 @@ export default function Agenda() {
             </div>
           </div>
 
-          {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia de hoje */}
+          {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia de hoje.
+              Abrir a faixa (clique de propósito) é ver os atrasados: marca os acesos. Só aparecer
+              não marca — senão bastaria abrir a agenda pra o balão dos atrasados sumir sem ninguém ver. */}
           {atrasados.length > 0 && !diaAberto && (
-            <div onClick={() => setVerAtrasados(v => !v)}
+            <div onClick={() => { if (!verAtrasados) marcar(acesas(atrasados), 'lido'); setVerAtrasados(v => !v) }}
               style={{ marginTop: 16, background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              {atrasadosAcesos > 0 && <span style={pontoVermelho} />}
               <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>{atrasados.length} atrasado{atrasados.length > 1 ? 's' : ''}</span>
               <span style={{ fontSize: 12, color: 'var(--red)', opacity: 0.85 }}>
-                {verAtrasados ? 'aparecendo na lista abaixo' : 'fora da lista, pra não atrapalhar o dia'}
+                {verAtrasados ? 'aparecendo na lista abaixo' : atrasadosAcesos > 0 ? `${atrasadosAcesos} teu${atrasadosAcesos > 1 ? 's' : ''} ainda não vist${atrasadosAcesos > 1 ? 'os' : 'o'}` : 'fora da lista, pra não atrapalhar o dia'}
               </span>
               <div style={{ flex: 1 }} />
               <span style={{ fontSize: 12, color: 'var(--red)' }}>{verAtrasados ? 'esconder' : 'mostrar'}</span>
@@ -336,8 +393,8 @@ export default function Agenda() {
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {lista.map(i => (
-                        <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe}
-                          ocupado={ocupado === i.id} onConcluir={() => concluir(i)} onAbrir={() => setDetalhe(i)} />
+                        <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                          ocupado={ocupado === i.id} onConcluir={() => concluir(i)} onAbrir={() => abrir(i)} />
                       ))}
                     </div>
                   </div>
@@ -349,8 +406,14 @@ export default function Agenda() {
 
         {detalhe && eu && (
           <ModalDetalhe it={detalhe} eu={eu} ativos={ativos} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
+            // Só pro que é meu e já está apagado: acender de novo um item que nem é meu não faria sentido.
+            podeNaoLido={balaoPronto && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
+            onNaoLido={() => { marcar([chaveDe(detalhe)], 'nao_lido'); setDetalhe(null) }}
             onFechar={() => setDetalhe(null)}
-            onPegar={q => pegar(detalhe, q)} onConcluir={() => { concluir(detalhe); setDetalhe(null) }}
+            // Pegar um item do grupo que outra pessoa criou faria ele acender como "novidade" pra mim
+            // — mas fui eu que peguei, não é novidade. Marca como visto na hora.
+            onPegar={async q => { const ok = await pegar(detalhe, q); if (ok && q) marcar([chaveDe(detalhe)], 'lido') }}
+            onConcluir={() => { concluir(detalhe); setDetalhe(null) }}
             onPublico={p => abrirPublico(detalhe, p)} onAjuda={(q, n) => pedirAjuda(detalhe, q, n)} />
         )}
         {novo && eu && <ModalNovo eu={eu} ativos={ativos} diaSugerido={diaAberto} onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
@@ -363,6 +426,7 @@ export default function Agenda() {
 const btnPri = { padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
 const btnSec = { padding: '9px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, cursor: 'pointer' } as React.CSSProperties
 const btnIcone = { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 15, cursor: 'pointer', lineHeight: 1 } as React.CSSProperties
+const pontoVermelho = { width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, display: 'inline-block' } as React.CSSProperties
 const chip = (ativo: boolean) => ({
   padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer',
   border: '1px solid ' + (ativo ? 'var(--accent)' : 'var(--border)'),
@@ -373,8 +437,8 @@ const chip = (ativo: boolean) => ({
 const inp = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' } as React.CSSProperties
 
 // A linha: bolinha pra concluir, e o resto abre ao clicar. Sem fileira de botões.
-function Linha({ it, eu, nomeDe, ocupado, onConcluir, onAbrir }: {
-  it: Item; eu: Eu | null; nomeDe: (id: string | null) => string | null
+function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
+  it: Item; eu: Eu | null; nomeDe: (id: string | null) => string | null; naoLido: boolean
   ocupado: boolean; onConcluir: () => void; onAbrir: () => void
 }) {
   const f = FONTES[it.fonte]
@@ -395,7 +459,10 @@ function Linha({ it, eu, nomeDe, ocupado, onConcluir, onAbrir }: {
       <span style={{ fontSize: 12, color: 'var(--text-faint)', width: 42, flexShrink: 0 }}>{hora || '—'}</span>
       <span style={{ width: 3, height: 16, borderRadius: 2, background: f.cor, flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.titulo}</div>
+        <div style={{ fontSize: 13.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6, fontWeight: naoLido ? 700 : 400 }}>
+          {naoLido && <span title="Ainda não visto" style={pontoVermelho} />}
+          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.titulo}</span>
+        </div>
         {(it.subtitulo || chamado || convidado) && (
           <div style={{ fontSize: 11.5, color: chamado ? 'var(--amber)' : convidado ? 'var(--accent-soft)' : 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {chamado ? 'pediram tua ajuda' : convidado ? `você foi chamado · ${nomeDe(it.donoId) || 'grupo'} organiza` : it.subtitulo}
@@ -409,8 +476,9 @@ function Linha({ it, eu, nomeDe, ocupado, onConcluir, onAbrir }: {
   )
 }
 
-function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
+function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
   it: Item; eu: Eu; ativos: Pessoa[]; nomeDe: (id: string | null) => string | null; ocupado: boolean
+  podeNaoLido: boolean; onNaoLido: () => void
   onFechar: () => void; onPegar: (quem: string | null) => void; onConcluir: () => void
   onPublico: (p: boolean) => void; onAjuda: (quem: string, nota: string) => void
 }) {
@@ -466,6 +534,7 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, onFechar, onPegar, onCo
           {(meu || !it.donoId) && <button onClick={() => setPedindo(true)} style={btnSec}>Pedir ajuda</button>}
           {meu && it.fonte === 'agenda' && <button disabled={ocupado} onClick={() => onPublico(!it.publico)} style={btnSec}>{it.publico ? 'Tornar privado' : 'Tornar público'}</button>}
           {it.leadId && <a href={`/dashboard/crm?lead=${it.leadId}`} style={{ ...btnSec, textDecoration: 'none' }}>Abrir cliente</a>}
+          {podeNaoLido && <button onClick={onNaoLido} style={{ ...btnSec, color: 'var(--red)', borderColor: 'var(--red)' }}>Marcar como não lido</button>}
           <div style={{ flex: 1 }} />
           <button disabled={ocupado} onClick={onConcluir} style={{ ...btnSec, borderColor: 'var(--green)', color: 'var(--green)' }}>Concluir</button>
         </div>

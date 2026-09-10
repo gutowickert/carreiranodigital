@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
 
 export const maxDuration = 60
 
@@ -54,15 +55,16 @@ export async function GET(req: Request) {
   if (!quem) return NextResponse.json({ erro: 'sem sessao' }, { status: 401 })
   const { eu, souDono, abaixo, visiveis, pessoas } = quem
 
-  // Não existe corte pra trás: nada aberto é velho demais pra sumir da vista. O único limite é
-  // pra frente, e serve só pra não puxar compromisso marcado pra daqui a um ano.
+  // Não existe corte pra trás: nada aberto é velho demais pra sumir da vista. O limite pra frente é
+  // o mesmo do balão (lib/agenda-balao.ts) — se o balão contasse algo que a tela não mostra, a
+  // pessoa não teria como apagar.
   const url = new URL(req.url)
-  const ate = url.searchParams.get('ate') || new Date(Date.now() + 90 * 864e5).toISOString()
+  const ate = url.searchParams.get('ate') || horizonteISO()
 
-  const [evs, tars, tlds] = await Promise.all([
+  const [evs, tars, tlds, balao] = await Promise.all([
     // Só o que está EM ABERTO, e sem corte pra trás: um compromisso de junho que ninguém concluiu
     // continua sendo notícia hoje. (A escola tem 10 assim, de junho e julho — some todos se o
-    // período começar em -30 dias.) O corte pra frente evita puxar agenda de daqui a um ano.
+    // período começar em -30 dias.)
     // ⚠️ `participantes` vem do 21-participantes-na-agenda.sql. Sem a coluna no banco, esta
     // consulta inteira falha e a agenda perde TODOS os compromissos — não só os com participante.
     sb.from('agenda_eventos')
@@ -76,6 +78,9 @@ export async function GET(req: Request) {
     sb.from('tarefas_lead')
       .select('id,titulo,tipo,data_vencimento,lead_id,vendedor_id,leads(nome,etapa)')
       .eq('org_id', org).eq('concluida', false).eq('cancelada', false).order('data_vencimento').limit(1000),
+    // O que acende o balão pra mim — a mesma regra do número no menu (lib/agenda-balao.ts), pra o
+    // ponto vermelho na tela e o número do menu nunca discordarem.
+    balaoDe(org, eu.id),
   ])
 
   const podeVer = (dono: string | null, publico: boolean, ajudaDe?: string | null, participantes?: string[] | null) =>
@@ -132,5 +137,7 @@ export async function GET(req: Request) {
     pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo })),
     tenhoTime: abaixo.size > 0 || souDono,
     itens,
+    balao: balao.chaves,
+    balaoPronto: balao.pronto,
   })
 }

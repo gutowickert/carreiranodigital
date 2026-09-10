@@ -49,12 +49,18 @@ function descendentes(de: string, vinculos: { usuario_id: string; gestor_id: str
 // pra quem não se identificou. Sem isto, um pedido sem token cai em `orgDaRequest`, que devolve a
 // empresa padrão — e a rota entrega (ou grava) como se fosse gente de dentro.
 export async function temSessao(authorization: string | null): Promise<boolean> {
-  if (!authorization) return false
+  return !!(await meuPerfil(authorization))
+}
+
+// Só "quem sou eu" — o perfil de quem pediu, sem carregar a hierarquia. Para o que é pessoal (o
+// balão da agenda, por exemplo), onde a pergunta é "o que é meu", e não "o que eu enxergo".
+export async function meuPerfil(authorization: string | null): Promise<{ id: string; org_id: string } | null> {
+  if (!authorization) return null
   const { data: u } = await supabaseDoUsuario(authorization).auth.getUser().catch(() => ({ data: { user: null } as any }))
   const uid = u?.user?.id
-  if (!uid) return false
-  const { data } = await sb.from('usuarios_perfil').select('id').or(`auth_id.eq.${uid},id.eq.${uid}`).limit(1).maybeSingle()
-  return !!data
+  if (!uid) return null
+  const { data } = await sb.from('usuarios_perfil').select('id,org_id').or(`auth_id.eq.${uid},id.eq.${uid}`).limit(1).maybeSingle()
+  return data || null
 }
 
 export async function quemEuVejo(authorization: string | null, org: string): Promise<QuemEuVejo | null> {

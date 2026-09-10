@@ -192,6 +192,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [checando, setChecando] = useState(true)
   const [waUnread, setWaUnread] = useState(0)
   const [dispUnread, setDispUnread] = useState(0)
+  // Balão vermelho da Agenda: o que é MEU e ainda não vi (regra em lib/agenda-balao.ts)
+  const [agendaBalao, setAgendaBalao] = useState(0)
   const waPrevRef = useRef(-1)
 
   useEffect(() => {
@@ -257,6 +259,41 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     return () => { ativo = false; clearInterval(t) }
   }, [perfil])
 
+  // Balão da Agenda. Pergunta ao servidor a cada minuto (agenda muda devagar — o WhatsApp é que
+  // precisa de 12s), ao voltar pra aba, e na hora em que a própria agenda avisa que algo foi lido,
+  // concluído ou pego (evento `agenda:balao`). Com a aba escondida não pergunta.
+  // `seq` descarta resposta velha: um poll lento não pode sobrescrever o número que a agenda acabou
+  // de mandar.
+  useEffect(() => {
+    if (!perfil) return
+    let ativo = true
+    let seq = 0
+    async function checar() {
+      if (document.hidden) return
+      const meu = ++seq
+      const j = await fetchAuth('/api/agenda/balao').then(r => r.json()).catch(() => null)
+      if (!ativo || meu !== seq) return
+      // sem a tabela de leituras (instalação que não rodou o 22), o balão fica escondido
+      setAgendaBalao(j?.ok && j.pronto ? j.total || 0 : 0)
+    }
+    function daAgenda(e: Event) {
+      const total = (e as CustomEvent).detail?.total
+      if (typeof total === 'number') { seq++; setAgendaBalao(total) } else checar()
+    }
+    const aoVoltar = () => { if (!document.hidden) checar() }
+    checar()
+    const t = setInterval(checar, 60000)
+    window.addEventListener('agenda:balao', daAgenda)
+    window.addEventListener('focus', aoVoltar)
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => {
+      ativo = false; clearInterval(t)
+      window.removeEventListener('agenda:balao', daAgenda)
+      window.removeEventListener('focus', aoVoltar)
+      document.removeEventListener('visibilitychange', aoVoltar)
+    }
+  }, [perfil])
+
   // Fecha menu ao trocar de página no mobile
   useEffect(() => { setMenuMobileAberto(false) }, [pathname])
 
@@ -301,6 +338,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             lineHeight: 1,
           }}>
           {menuMobileAberto ? '×' : '☰'}
+          {/* no celular o menu fica escondido — sem este ponto, o balão da agenda nunca apareceria */}
+          {!menuMobileAberto && agendaBalao > 0 && (
+            <span style={{ position: 'absolute', top: 4, right: 4, width: 9, height: 9, borderRadius: '50%', background: 'var(--red)' }} />
+          )}
         </button>
       )}
 
@@ -388,6 +429,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                             {m.href === '/dashboard/whatsapp-disparos' && dispUnread > 0 && (
                               <span style={{ background: '#25D366', color: '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                                 {dispUnread > 99 ? '99+' : dispUnread}
+                              </span>
+                            )}
+                            {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
+                            {m.href === '/dashboard/agenda' && agendaBalao > 0 && (
+                              <span title="Coisas tuas na agenda que você ainda não viu" style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
+                                {agendaBalao > 99 ? '99+' : agendaBalao}
                               </span>
                             )}
                           </Link>
