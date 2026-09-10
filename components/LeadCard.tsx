@@ -255,6 +255,48 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
   const [mostrarGanho, setMostrarGanho] = useState(false)
   const [mostrarPrazo, setMostrarPrazo] = useState(false)
   const [mostrarPag, setMostrarPag] = useState(false)
+  const [criandoUpsell, setCriandoUpsell] = useState(false)
+  const [erroUpsell, setErroUpsell] = useState('')
+
+  // UPSELL: vender de novo pro mesmo cliente, sem encostar na venda que já aconteceu.
+  // Nasce em "Atendimento inicial", com o contato copiado e SEM turma — a turma é a nova escolha.
+  // Os dois lados ficam registrados: o ganho anterior aponta pra frente, o novo aponta pra trás.
+  async function novaNegociacao() {
+    if (!lead) return
+    setCriandoUpsell(true); setErroUpsell('')
+    const l = lead as any
+    const quando = l.data_ganho ? new Date(l.data_ganho).toLocaleDateString('pt-BR') : 'antes'
+    const quanto = l.valor_venda != null ? `R$ ${Number(l.valor_venda).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'sem valor registrado'
+
+    const { data: novo, error } = await supabase.from('leads').insert({
+      nome: l.nome, whatsapp: l.whatsapp, email: l.email,
+      etapa: 'atendimento_inicial',
+      // `manual`, não `upsell`: o banco tem uma trava (`leads_origem_check`) que só aceita
+      // whatsapp, manual, herospark, disparo, formulario e outro — `upsell` era recusado e o botão
+      // falhava na mão do vendedor (pego em teste antes de publicar). E `manual` é o verdadeiro: foi
+      // alguém do time que abriu. Que é upsell fica registrado nas observações e no histórico.
+      origem: 'manual',
+      vendedor_id: l.vendedor_id || meuPerfil?.id || null,
+      observacoes: `Upsell. Já comprou em ${quando} (${quanto}).${l.observacoes ? '\n\n' + l.observacoes : ''}`,
+      negocio: l.negocio, qualificacao: l.qualificacao, maior_problema: l.maior_problema,
+    }).select('id').single()
+
+    if (error || !novo) { setErroUpsell('Não deu pra criar: ' + (error?.message || 'erro')); setCriandoUpsell(false); return }
+
+    // Os dois registros com EXATAMENTE os mesmos campos: gravação em lote exige isso, e com um
+    // campo a menos num deles o lote inteiro era recusado — o upsell parecia ter dado certo e o
+    // histórico sumia calado. Por isso o `etapa_nova: null` aqui, que não muda nada no registro.
+    await supabase.from('lead_andamentos').insert([
+      { lead_id: l.id, vendedor_id: l.vendedor_id, tipo: 'upsell', etapa_nova: null,
+        observacao: `🔼 Nova negociação aberta com este cliente (upsell). Esta venda de ${quanto} continua valendo.` },
+      { lead_id: novo.id, vendedor_id: l.vendedor_id || meuPerfil?.id || null, tipo: 'criado', etapa_nova: 'atendimento_inicial',
+        observacao: `🔼 Upsell — cliente já comprou em ${quando} (${quanto}).` },
+    ])
+
+    setCriandoUpsell(false)
+    onFechar()
+  }
+
   const [mostrarAgendado, setMostrarAgendado] = useState(false)
   const [agendadoData, setAgendadoData] = useState('')
   const [agendadoHora, setAgendadoHora] = useState('09:00')
@@ -673,20 +715,35 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               </div>
             </div>
 
-            {(lead as any).matricula_id ? (
-              <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>
-                Matrícula já lançada. Para desfazer esta venda, cancele a matrícula em <b>Turmas</b> — desfazer só aqui
-                deixaria a matrícula e a receita de pé, com o lead de volta no funil.
-              </p>
-            ) : (
-              <>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+              {/* UPSELL — vender de novo pro mesmo cliente.
+                  NÃO mexe neste lead: cria um NOVO. Motivo concreto: o relatório de Resultados CRM
+                  conta venda por `etapa = ganho`. Se a gente tirasse este lead de ganho pra
+                  "reabrir", a venda de R$ X sumiria da taxa de conversão — o time faria upsell e
+                  veria o próprio resultado encolher. (A receita não corre esse risco: ela vem de
+                  `matriculas`.)
+                  E não é invenção: já existem clientes com dois leads no mesmo telefone, os dois
+                  em ganho. O upsell já era feito na mão assim; aqui vira um botão. */}
+              <button onClick={novaNegociacao} disabled={criandoUpsell}
+                style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--green)', background: 'var(--green-bg)', color: 'var(--green)', fontSize: 13, fontWeight: 600, cursor: criandoUpsell ? 'default' : 'pointer' }}>
+                {criandoUpsell ? 'Criando...' : '🔼 Nova negociação (upsell)'}
+              </button>
+
+              {/* Desfazer só existe quando NÃO há matrícula: com matrícula lançada, mexer aqui
+                  deixaria matrícula e receita de pé com o lead de volta no funil. */}
+              {!(lead as any).matricula_id && (
                 <button onClick={() => moverEtapa(lead, 'atendimento_inicial').then(onFechar)}
-                  style={{ marginTop: 10, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-                  🔄 Reabrir negociação
+                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>
+                  Marquei por engano — desfazer
                 </button>
-                <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Volta o lead pra "Atendimento inicial". Use se a venda foi marcada por engano.</p>
-              </>
-            )}
+              )}
+            </div>
+
+            <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>
+              O upsell abre uma negociação nova e <b>mantém esta venda intacta</b> — no relatório, na comissão e na matrícula.
+              {(lead as any).matricula_id && ' Para desfazer esta venda, cancele a matrícula em Turmas.'}
+            </p>
+            {erroUpsell && <p style={{ fontSize: 12, color: 'var(--red)', marginTop: 6 }}>{erroUpsell}</p>}
           </div>
         )}
 
