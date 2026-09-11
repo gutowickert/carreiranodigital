@@ -1,79 +1,108 @@
-/* Fonte do sistema (profissional, com fallback do SO). @import deve vir primeiro. */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap');
+/* Fontes: Manrope fala (texto e interface), Bricolage Grotesque grita (títulos e números grandes,
+   condensada — eco do wordmark do logo). @import tem que vir primeiro. */
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap');
 
 /* ============================================================
    TEMA (claro/escuro) — tokens de cor
    Use SEMPRE var(--token) nos estilos, nunca hex fixo.
    Escuro é o padrão (:root); claro entra com [data-theme="light"].
+
+   DIREÇÃO VISUAL (11/09/2026): neutros com tinta de roxo, não cinza de iPhone. Os NOMES dos tokens
+   são os mesmos de sempre — é isso que faz as 3.500 telas escritas à mão mudarem de cara sem abrir
+   nenhuma. Só os VALORES mudaram. O roxo do logo entra como gradiente em pouquíssimos lugares
+   (botão principal, avatar, marca, login); no resto é cor de clique.
    ============================================================ */
 /* Tokens em seletor de ATRIBUTO (não :root) pra permitir ilha escura
    (ex: menu lateral data-theme="dark") dentro do tema claro. */
 :root, [data-theme="dark"] {
-  /* superfícies (ESCURO) */
-  --bg: #1c1c1e;
-  --surface: #2c2c2e;
-  --surface-2: #3a3a3c;
-  --surface-sel: #1c1c1e;
-  --border: #3a3a3c;
-  --border-strong: #48484a;
-  --text: #ffffff;
-  --text-2: #d1d1d1;
-  --text-muted: #9ca3af;
-  --text-faint: #6b7280;
+  /* superfícies (ESCURO) — todas com um fio de roxo */
+  --bg: #0f0c17;
+  --surface: #171320;
+  --surface-2: #1f1a2b;
+  --surface-sel: #1a1526;
+  --border: #261f36;
+  --border-strong: #372e4c;
+  --text: #f4f1fb;
+  --text-2: #c9c2da;
+  --text-muted: #9a93ae;
+  --text-faint: #736c88;
   --on-accent: #ffffff;
-  --accent: #7c3aed;
-  --accent-soft: #a78bfa;
-  --accent-bg: #2e1065;
-  --green: #34d399;  --green-strong: #4ade80;  --green-bg: #052e16;
-  --red: #f87171;    --red-bg: #450a0a;
-  --amber: #fbbf24;  --amber-bg: #431407;
-  --blue: #60a5fa;   --blue-bg: #172554;
+  --accent: #8b5cf6;
+  --accent-soft: #b39bff;
+  --accent-bg: #2a1b4d;
+  --green: #34d399;  --green-strong: #4ade80;  --green-bg: #0b2e24;
+  --red: #fb7185;    --red-bg: #3b1520;
+  --amber: #fbbf24;  --amber-bg: #3a2a0a;
+  --blue: #60a5fa;   --blue-bg: #14243f;
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
   --shadow-sm: 0 1px 2px rgba(0,0,0,.30);
   --shadow-md: 0 2px 10px rgba(0,0,0,.34);
   --shadow-lg: 0 12px 32px rgba(0,0,0,.46);
-  --ring: rgba(124, 58, 237, 0.35);
+  --ring: rgba(139, 92, 246, 0.35);
   /* sidebar (escuro) */
-  --nav-active-bg: rgba(124,58,237,.16);
-  --nav-active-text: #b79bff;
+  --nav-active-bg: rgba(139,92,246,.16);
+  --nav-active-text: #c4b0ff;
+  /* o gradiente do logo — só onde a marca fala */
+  --grad: linear-gradient(135deg, #7c3aed, #c026d3);
+  --glow: rgba(139,92,246,.35);
+  /* VIDRO (ver .vidro abaixo) */
+  --glass: linear-gradient(180deg, rgba(255,255,255,.10), rgba(255,255,255,.035));
+  --glass-border: rgba(255,255,255,.14);
+  --glass-hi: rgba(255,255,255,.26);
+  --glass-sheen: rgba(255,255,255,.09);
+  --glass-shadow: 0 18px 50px rgba(0,0,0,.55);
+  --glass-field: rgba(255,255,255,.06);
+  --blob-1: rgba(139,92,246,.60); --blob-2: rgba(217,70,239,.42); --blob-3: rgba(56,189,248,.26);
+  --grid: rgba(255,255,255,.03);
 }
-/* escala de raios (igual nos 2 temas) */
-:root { --r-sm: 9px; --r: 13px; --r-lg: 18px; }
+/* escala de raios (igual nos 2 temas) — SÓ estes quatro */
+:root { --r-sm: 6px; --r: 10px; --r-lg: 16px; --r-pill: 999px; }
 
 [data-theme="light"] {
-  /* TEMA CLARO — fundo cinza p/ os cards brancos SALTAREM, bordas definidas, cores vivas */
-  --bg: #eceef1;
+  /* TEMA CLARO — não é inversão: fundo lavanda claríssimo, cards brancos, cores vivas */
+  --bg: #f6f4fb;
   --surface: #ffffff;
-  --surface-2: #f1f3f5;
-  --surface-sel: #efe9fd;
-  --border: #d8dde3;
-  --border-strong: #c3cad3;
-  --text: #16191f;
-  --text-2: #3a414c;
-  --text-muted: #687180;
-  --text-faint: #9aa2af;
+  --surface-2: #f1eef8;
+  --surface-sel: #ede7fb;
+  --border: #e4dff0;
+  --border-strong: #cfc8e3;
+  --text: #17122a;
+  --text-2: #3d3654;
+  --text-muted: #6e6885;
+  --text-faint: #9891ad;
   --on-accent: #ffffff;
-  --accent: #7c3aed;
+  --accent: #6d28d9;
   --accent-soft: #6d28d9;
-  --accent-bg: #ede9fe;
+  --accent-bg: #ede7fb;
   --green: #15a34a;  --green-strong: #15803d;  --green-bg: #d6f5e0;
   --red: #dc2626;    --red-bg: #fde7e7;
   --amber: #c2680c;  --amber-bg: #fdeecb;
   --blue: #2563eb;   --blue-bg: #dce9fe;
-  --shadow: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .10);
-  --shadow-sm: 0 1px 2px rgba(16,24,40,.06);
-  --shadow-md: 0 4px 12px rgba(16,24,40,.08), 0 1px 3px rgba(16,24,40,.05);
-  --shadow-lg: 0 16px 40px rgba(16,24,40,.13);
-  --ring: rgba(124, 58, 237, 0.28);
+  --shadow: 0 1px 2px rgba(23, 18, 42, .06), 0 1px 3px rgba(23, 18, 42, .10);
+  --shadow-sm: 0 1px 2px rgba(23,18,42,.06);
+  --shadow-md: 0 4px 12px rgba(23,18,42,.08), 0 1px 3px rgba(23,18,42,.05);
+  --shadow-lg: 0 16px 40px rgba(23,18,42,.13);
+  --ring: rgba(109, 40, 217, 0.28);
   /* sidebar (claro) */
-  --nav-active-bg: #ede9fe;
+  --nav-active-bg: #ede7fb;
   --nav-active-text: #6d28d9;
+  --grad: linear-gradient(135deg, #7c3aed, #c026d3);
+  --glow: rgba(109,40,217,.22);
+  --glass: linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.50));
+  --glass-border: rgba(255,255,255,.92);
+  --glass-hi: rgba(255,255,255,1);
+  --glass-sheen: rgba(255,255,255,.5);
+  --glass-shadow: 0 14px 40px rgba(76,29,149,.13);
+  --glass-field: rgba(255,255,255,.6);
+  --blob-1: rgba(139,92,246,.42); --blob-2: rgba(217,70,239,.30); --blob-3: rgba(56,189,248,.22);
+  --grid: rgba(76,29,149,.05);
 }
 
 html, body { background: var(--bg); color: var(--text); }
 body {
   transition: background-color .2s ease, color .2s ease;
   font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+  font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
@@ -81,11 +110,59 @@ body {
 input, textarea, select { color: var(--text); font-family: inherit; }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
 
+/* A fonte que grita: títulos de página e números grandes. Condensada (wdth) pra ecoar o logo. */
+.display { font-family: 'Bricolage Grotesque', 'Manrope', system-ui, sans-serif; font-variation-settings: 'opsz' 96, 'wdth' 85; letter-spacing: -0.025em; }
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* ============================================================
+   A LUZ E O VIDRO
+   O vidro só funciona com algo atrás pra desfocar. `.luz-de-fundo` é uma camada fixa atrás de
+   tudo com três manchas de cor e um grão de circuito (eco do cérebro do logo). Fixa = não rola =
+   o navegador desenha uma vez. `.vidro` é a superfície translúcida.
+
+   ⚠️ REGRA "NÃO PODE TRAVAR NUNCA" (Nando, 11/09): .vidro só em peça que fica PARADA na tela —
+   menu, cabeçalho fixo, cards de número, painéis do painel, modais. NUNCA em lista que rola, nem
+   em card de lead, nem nas colunas do CRM: desfoque em centenas de elementos engasga qualquer
+   notebook. Se uma tela engasgar, o vidro sai dela antes de publicar.
+   ============================================================ */
+.luz-de-fundo {
+  position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  background:
+    radial-gradient(40% 44% at 14% 6%, var(--blob-1), transparent 70%),
+    radial-gradient(30% 34% at 90% 92%, var(--blob-2), transparent 70%),
+    radial-gradient(26% 30% at 64% 42%, var(--blob-3), transparent 70%),
+    repeating-linear-gradient(90deg, var(--grid) 0 1px, transparent 1px 44px),
+    repeating-linear-gradient(0deg, var(--grid) 0 1px, transparent 1px 44px);
+}
+.vidro {
+  position: relative;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--r-lg);
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+}
+/* o reflexo: uma faixa de luz diagonal no canto de cima, como numa placa de vidro */
+.vidro::after {
+  content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(135deg, var(--glass-sheen) 0%, transparent 38%);
+}
+/* variante pro menu lateral: sem reflexo (ele rola por dentro) e sem raio */
+.vidro-menu {
+  background: var(--glass);
+  backdrop-filter: blur(26px) saturate(1.4);
+  -webkit-backdrop-filter: blur(26px) saturate(1.4);
+}
+@media (prefers-reduced-transparency: reduce) {
+  .vidro, .vidro-menu { backdrop-filter: none; -webkit-backdrop-filter: none; background: var(--surface); }
+}
+
 /* ============================================================
    POLISH GLOBAL — vale pra qualquer tela (não depende de tokens)
    ============================================================ */
 /* Títulos com leve aperto de letra (cara mais "desenhada") */
-h1, h2, h3, h4 { letter-spacing: -0.018em; }
+h1, h2, h3, h4 { letter-spacing: -0.018em; text-wrap: balance; }
 h1 { line-height: 1.15; }
 
 /* Botões: cursor, transição suave, hover que ilumina e clique que afunda */
@@ -115,8 +192,8 @@ button:focus-visible, a:focus-visible {
    Elementos que definem box-shadow inline (nav ativo, botões) sobrescrevem esta regra. */
 [style*="1px solid var(--border)"][style*="border-radius"] { box-shadow: var(--shadow-sm); }
 
-/* Card reutilizável — superfície + borda + raio + sombra em camada (cara de SaaS moderno) */
-.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-md); }
+/* Card reutilizável — superfície + borda + raio + sombra em camada */
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); box-shadow: var(--shadow-md); }
 .card-pad { padding: 20px; }
 .card-hover { transition: box-shadow .16s ease, transform .16s ease, border-color .16s ease; }
 .card-hover:hover { box-shadow: var(--shadow-lg); transform: translateY(-2px); border-color: var(--border-strong); }
@@ -133,6 +210,11 @@ button:focus-visible, a:focus-visible {
 
 /* Imagens/SVG não estouram o container */
 img, svg { max-width: 100%; }
+
+/* Esqueleto de carregamento: um brilho que passa. Usar no lugar de "Carregando..." */
+.esqueleto { background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%); background-size: 200% 100%; border-radius: var(--r-sm); animation: esqueleto 1.4s ease infinite; }
+@keyframes esqueleto { from { background-position: 200% 0 } to { background-position: -200% 0 } }
+@media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } .card-hover { transition: none; } }
 
 /* Adaptações mobile */
 @media (max-width: 768px) {

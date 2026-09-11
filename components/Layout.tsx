@@ -8,8 +8,39 @@ import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import NotifCelular from '@/components/NotifCelular'
 import ThemeToggle from '@/components/ThemeToggle'
+import {
+  LayoutDashboard, CalendarDays, Bot, Sparkles, Map, BadgeCheck, Workflow, Coins, Phone, MessageCircle, Columns3,
+  Layers, Package, Trophy, CalendarClock, ListChecks, ClipboardCheck, PackageCheck, Megaphone, TrendingUp, Activity,
+  Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
+  ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
+  RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake,
+  type LucideIcon,
+} from 'lucide-react'
 
 const CND_ID = '00000000-0000-0000-0000-0000000000cd'
+
+// Um ícone por tela (Lucide). Tela sem ícone aqui recebe um ponto — e é sinal pra cadastrar.
+const ICONES: Record<string, LucideIcon> = {
+  '/dashboard': LayoutDashboard, '/dashboard/agenda': CalendarDays,
+  '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
+  '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
+  '/dashboard/ligacoes': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
+  '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
+  '/dashboard/tarefas/leads': ListChecks, '/dashboard/fechamento': ClipboardCheck, '/dashboard/entregas': PackageCheck,
+  '/dashboard/captacao': Megaphone, '/dashboard/analise-conversao': TrendingUp, '/dashboard/trafego': Activity,
+  '/dashboard/entregas/trafego': Activity, '/dashboard/funil-site': Globe, '/dashboard/velocidade-venda': Gauge, '/dashboard/nps': Smile,
+  '/dashboard/turmas': GraduationCap, '/dashboard/chamada': UserCheck, '/dashboard/disparos': Send,
+  '/dashboard/agenda-disparos': CalendarRange, '/dashboard/followup-templates': MessageSquareText,
+  '/dashboard/disparos/relatorios': FileText, '/dashboard/listas': List,
+  '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight,
+  '/dashboard/financeiro/custos': Receipt, '/dashboard/financeiro/naturezas': Tags, '/dashboard/comissoes': Percent,
+  '/dashboard/vendedores': Handshake,
+  '/dashboard/crm/config': Settings2, '/dashboard/matriculas-orfas': UserX, '/dashboard/motivos-perda': ThumbsDown,
+  '/dashboard/tarefas/templates': ListTodo, '/dashboard/salas': DoorOpen, '/dashboard/cidades': MapPin, '/dashboard/modulos': Blocks,
+  '/dashboard/financeiro/caixas': PiggyBank, '/dashboard/financeiro/recalcular-trafego': RefreshCw,
+  '/dashboard/alunos': Users, '/dashboard/professores': UserCog, '/dashboard/usuarios': Users,
+  '/dashboard/configuracoes': Settings, '/dashboard/admin/orgs': Building2, '/dashboard/webhook-logs': Webhook,
+}
 
 // Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
 // dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
@@ -329,16 +360,17 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const menuVisivel = !isMobile || menuMobileAberto
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: 'var(--bg)', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
+    <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
+      {/* A luz atrás de tudo — é o que o vidro do menu e dos painéis desfoca. Fixa, desenhada uma vez. */}
+      <div className="luz-de-fundo" aria-hidden="true" />
       {isMobile && (
-        <button onClick={() => setMenuMobileAberto(!menuMobileAberto)}
+        <button onClick={() => setMenuMobileAberto(!menuMobileAberto)} aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'}
+          className="vidro"
           style={{
-            position: 'fixed', top: 12, left: 12, zIndex: 60,
-            background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8,
-            padding: '8px 12px', fontSize: 22, color: 'var(--text)', cursor: 'pointer',
-            lineHeight: 1,
+            position: 'fixed', top: 12, left: 12, zIndex: 60, borderRadius: 'var(--r)',
+            padding: 9, color: 'var(--text)', cursor: 'pointer', lineHeight: 0,
           }}>
-          {menuMobileAberto ? '×' : '☰'}
+          {menuMobileAberto ? <X size={20} /> : <Menu size={20} />}
           {/* no celular o menu fica escondido — sem este ponto, o balão da agenda nunca apareceria */}
           {!menuMobileAberto && agendaBalao > 0 && (
             <span style={{ position: 'absolute', top: 4, right: 4, width: 9, height: 9, borderRadius: '50%', background: 'var(--red)' }} />
@@ -352,11 +384,14 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       )}
 
       {menuVisivel && (
-        <div style={{ flexShrink: 0, width: '220px' }}>
-          <div data-theme="dark" style={{
-            width: '220px',
-            backgroundColor: 'var(--surface)',
-            borderRight: '1px solid var(--border)',
+        <div style={{ flexShrink: 0, width: 236 }}>
+          {/* Menu de vidro: fica parado, o que está atrás dele (a luz) também — o navegador desfoca uma
+              vez e guarda. Segue o tema (antes era ilha escura); a marca ganha um prato escuro pra o
+              logo de letras brancas ler nos dois. */}
+          <div className="vidro-menu" style={{
+            width: 236,
+            borderRight: '1px solid var(--glass-border)',
+            boxShadow: 'inset -1px 0 0 var(--glass-hi)',
             height: '100vh',
             position: 'fixed',
             top: 0,
@@ -366,12 +401,14 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             overflowY: 'auto',
             zIndex: 50,
           }}>
-            <div style={{ padding: '20px 16px', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              {marca?.logo_url
-                ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 48, maxWidth: 184, objectFit: 'contain' }} />
-                : (marca && marca.id !== CND_ID)
-                  ? <div style={{ fontSize: 19, fontWeight: 800, color: 'var(--text)' }}>{marca.nome}</div>
-                  : <Image src="/logo.png" alt="CarreiraNoDigital" width={160} height={48} style={{ objectFit: 'contain' }} />}
+            <div style={{ padding: '14px 12px 10px', flexShrink: 0 }}>
+              <div style={{ background: '#150a2b', borderRadius: 'var(--r)', padding: '12px 14px', boxShadow: '0 8px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', minHeight: 60 }}>
+                {marca?.logo_url
+                  ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 40, maxWidth: 180, objectFit: 'contain' }} />
+                  : (marca && marca.id !== CND_ID)
+                    ? <div className="display" style={{ fontSize: 17, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1.1 }}>{marca.nome}</div>
+                    : <Image src="/logo.png" alt="CarreiraNoDigital" width={180} height={54} style={{ objectFit: 'contain' }} />}
+              </div>
             </div>
 
             <nav style={{ flex: 1, padding: '12px 12px', display: 'flex', flexDirection: 'column' }}>
@@ -388,40 +425,42 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       border: 'none',
                       cursor: 'pointer',
                       color: 'var(--text-faint)',
-                      fontSize: '10px',
-                      fontWeight: 600,
+                      fontSize: '10.5px',
+                      fontWeight: 800,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.08em',
+                      letterSpacing: '0.1em',
                       marginTop: idx > 1 ? 4 : 0,
                     }}>
                       <span>{grupo.titulo}</span>
-                      <span style={{ fontSize: 9, transform: abertos[grupo.titulo] ? 'rotate(0deg)' : 'rotate(-90deg)' }}>▼</span>
+                      <ChevronDown size={12} style={{ transform: abertos[grupo.titulo] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s ease' }} />
                     </button>
                   )}
                   {(abertos[grupo.titulo] || !grupo.titulo) && (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                       {grupo.itens.map((m, mi) => {
                         if (!m.href) return (
-                          <div key={'lbl-' + mi} style={{ fontSize: 9.5, fontWeight: 700, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.06em', padding: '10px 10px 2px 18px', opacity: .65 }}>{m.nome}</div>
+                          <div key={'lbl-' + mi} style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '10px 10px 2px 12px', opacity: .7 }}>{m.nome}</div>
                         )
                         const ativo = pathname === m.href
+                        const Icone = ICONES[m.href] || Circle
                         return (
                           <Link key={m.href} href={m.href} className={'navItem' + (ativo ? ' ativo' : '')} style={{
                             display: 'flex',
-                            justifyContent: 'space-between',
                             alignItems: 'center',
-                            gap: 6,
-                            padding: grupo.titulo ? '8px 12px 8px 18px' : '10px 14px',
-                            borderRadius: 'var(--r-sm)',
-                            fontSize: '13px',
-                            fontWeight: ativo ? 600 : 400,
+                            gap: 10,
+                            padding: '8px 10px',
+                            borderRadius: 'var(--r)',
+                            fontSize: '13.5px',
+                            fontWeight: ativo ? 700 : 500,
                             textDecoration: 'none',
                             backgroundColor: ativo ? 'var(--nav-active-bg)' : 'transparent',
-                            color: ativo ? 'var(--nav-active-text)' : 'var(--text-muted)',
-                            boxShadow: 'none',
+                            color: ativo ? 'var(--nav-active-text)' : 'var(--text-2)',
+                            // a barrinha na cor da marca é o que diz "você está aqui"
+                            boxShadow: ativo ? 'inset 2px 0 0 var(--accent)' : 'none',
                             transition: 'background-color .15s ease, color .15s ease',
                           }}>
-                            <span>{m.nome}</span>
+                            <Icone size={17} strokeWidth={1.75} style={{ flexShrink: 0, opacity: ativo ? 1 : .8 }} />
+                            <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.nome}</span>
                             {m.href === '/dashboard/whatsapp' && waUnread > 0 && (
                               <span style={{ background: '#25D366', color: '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                                 {waUnread > 99 ? '99+' : waUnread}
@@ -447,27 +486,28 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
               ))}
             </nav>
 
-            <div style={{ padding: '14px 16px', borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'linear-gradient(135deg, var(--accent), var(--accent-soft))', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 700, flexShrink: 0 }}>
+            <div style={{ padding: '12px 12px 14px', borderTop: '1px solid var(--glass-border)', flexShrink: 0 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '4px 4px 10px' }}>
+                {/* o avatar é um dos poucos lugares do gradiente do logo */}
+                <div style={{ width: 34, height: 34, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, fontWeight: 800, flexShrink: 0, boxShadow: '0 4px 12px var(--glow)' }}>
                   {(perfil.nome || '?').trim().charAt(0).toUpperCase()}
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '12.5px', color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
-                  <div style={{ fontSize: '10px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : perfil.papel === 'gestor' ? 'Gestor' : 'Vendedor'}</div>
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <div style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
+                  <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : perfil.papel === 'gestor' ? 'Gestor' : 'Vendedor'}</div>
                 </div>
+                <ThemeToggle compacto />
               </div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
-              <div style={{ marginTop: 8 }}><ThemeToggle /></div>
-              <button onClick={sair} style={{ marginTop: 8, width: '100%', background: 'var(--surface-2)', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: 'var(--text-2)', cursor: 'pointer' }}>
-                Sair
+              <button onClick={sair} style={{ marginTop: 6, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: 'var(--r)', padding: '8px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <LogOut size={14} /> Sair
               </button>
             </div>
           </div>
         </div>
       )}
 
-      <div style={{ flex: 1, minWidth: 0, backgroundColor: 'var(--bg)', paddingTop: isMobile ? 50 : 0 }}>
+      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, paddingTop: isMobile ? 50 : 0 }}>
         {children}
       </div>
     </div>

@@ -22,10 +22,13 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', padding: 20 }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
       <form onSubmit={entrar} style={{ width: '100%', maxWidth: 380, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 28, display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div style={{ textAlign: 'center', marginBottom: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-          <Image src="/logo.png" alt="CarreiraNoDigital" width={220} height={66} style={{ objectFit: 'contain' }} priority />
+          {/* prato escuro: o logo tem letras brancas e sumia no tema claro */}
+          <div style={{ background: '#150a2b', borderRadius: 'var(--r)', padding: '14px 22px', boxShadow: '0 10px 28px var(--glow), inset 0 1px 0 rgba(255,255,255,.08)' }}>
+            <Image src="/logo.png" alt="CarreiraNoDigital" width={220} height={66} style={{ objectFit: 'contain', display: 'block' }} priority />
+          </div>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: 0 }}>Entrar no sistema</p>
         </div>
         <div>

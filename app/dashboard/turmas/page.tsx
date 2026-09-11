@@ -541,7 +541,7 @@ export default function Turmas() {
   const diasPorModulo = modulos.length > 0 ? modulos.map(mod => ({ modulo: mod, dias: diasAula.map((d, i) => ({ ...d, index: i })).filter(d => d.modulo_id === mod.id) })) : null
 
   return (
-    <div style={{ padding: 'clamp(16px, 4vw, 40px)', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
+    <div style={{ padding: 'clamp(16px, 4vw, 40px)', minHeight: '100vh' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '32px', flexWrap: 'wrap', gap: 12 }}>
         <div>
           <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Turmas</h1>

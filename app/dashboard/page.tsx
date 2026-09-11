@@ -191,13 +191,13 @@ export default function Dashboard() {
   const pTot = leadsRaw.filter(l => l.etapa === 'perda').length
   const conversaoGeral = (gTot + pTot) > 0 ? (gTot / (gTot + pTot) * 100) : 0
   if (carregando) return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Carregando dashboard...</p>
     </div>
   )
 
   return (
-    <div style={{ padding: '32px clamp(16px, 4vw, 48px)', minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
+    <div style={{ padding: '32px clamp(16px, 4vw, 48px)', minHeight: '100vh' }}>
       <div style={{ marginBottom: '28px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Painel</h1>
         <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginTop: '4px' }}>

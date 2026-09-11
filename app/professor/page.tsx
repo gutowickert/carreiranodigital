@@ -68,10 +68,10 @@ export default function PortalProfessor() {
 
   async function sair() { await supabase.auth.signOut(); router.replace('/login') }
 
-  if (carregando) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--bg)', color: 'var(--text-faint)' }}>Carregando...</div>
+  if (carregando) return <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-faint)' }}>Carregando...</div>
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh' }}>
       {/* topo */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 20px', borderBottom: '1px solid var(--border)', background: 'var(--surface)' }}>
         <Image src="/logo.png" alt="CarreiraNoDigital" width={150} height={44} style={{ objectFit: 'contain' }} />

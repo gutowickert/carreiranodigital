@@ -505,13 +505,13 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
   const trafegoPorDia = trafegoPendente.length > 0 ? trafegoPendente[0].valor : 0
 
   if (carregando) return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Carregando...</p>
     </div>
   )
 
   if (!turma) return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Turma não encontrada.</p>
     </div>
   )
@@ -519,7 +519,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
   const s = statusCor[turma.status] || statusCor.planejada
 
   return (
-    <div style={{ minHeight: '100vh', backgroundColor: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh' }}>
       <header style={{ padding: '20px 32px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
           <Link href="/dashboard/turmas" style={{ color: 'var(--text-muted)', fontSize: '13px', textDecoration: 'none' }}>← Turmas</Link>
