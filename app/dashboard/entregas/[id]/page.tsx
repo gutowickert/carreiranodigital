@@ -25,6 +25,43 @@ const paraInput = (d?: string | null) => {
   return new Date(base.getTime() - off * 60000).toISOString().slice(0, 16)
 }
 
+// o link da área do cliente: ele vê o próprio projeto, sem login
+function LinkCliente({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }) {
+  const [aviso, setAviso] = useState('')
+  const url = projeto.portal_chave && typeof window !== 'undefined' ? `${window.location.origin}/cliente?k=${projeto.portal_chave}` : ''
+
+  async function gerar(acao: 'portal_link' | 'portal_trocar') {
+    if (acao === 'portal_trocar' && !confirm('O link atual para de funcionar. O cliente vai precisar do novo. Trocar?')) return
+    const j = await fetchAuth('/api/projetos/ficha', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao, projeto_id: projeto.id }) })
+      .then(r => r.json()).catch(() => null)
+    if (j?.ok) aoMudar(); else setAviso('⚠️ ' + (j?.error || 'falha'))
+  }
+  async function copiar() {
+    try { await navigator.clipboard.writeText(url); setAviso('Link copiado ✓') } catch { setAviso('Não deu pra copiar — seleciona o link e copia.') }
+    setTimeout(() => setAviso(''), 3000)
+  }
+
+  return (
+    <div style={{ ...card, padding: '10px 12px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>🔗 Área do cliente</span>
+      {url ? (
+        <>
+          <input readOnly value={url} onFocus={e => e.currentTarget.select()} style={{ ...inp, flex: 1, minWidth: 200, fontSize: 12 }} aria-label="Link da área do cliente" />
+          <button onClick={copiar} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Copiar</button>
+          <a href={url} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>Abrir</a>
+          <button onClick={() => gerar('portal_trocar')} style={{ ...btn, background: 'none', color: 'var(--text-faint)', fontWeight: 400 }}>trocar link</button>
+        </>
+      ) : (
+        <>
+          <span style={{ flex: 1, fontSize: 12.5, color: 'var(--text-faint)' }}>O cliente acompanha a meta, o tráfego, os fechamentos e os encontros. Sem login, só com o link.</span>
+          <button onClick={() => gerar('portal_link')} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Criar link</button>
+        </>
+      )}
+      {aviso && <span style={{ fontSize: 12, color: 'var(--text-2)', width: '100%' }}>{aviso}</span>}
+    </div>
+  )
+}
+
 export default function FichaEntrega() {
   const { id } = useParams<{ id: string }>()
   const [d, setD] = useState<any>(null)
@@ -90,6 +127,8 @@ export default function FichaEntrega() {
           {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>👤 Lead de origem</Link>}
         </div>
       </div>
+
+      <LinkCliente projeto={p} aoMudar={carregar} />
 
       {msg && <div style={{ ...card, padding: '10px 12px', marginTop: 12, fontSize: 13, color: 'var(--text-2)' }}>{msg}</div>}
 

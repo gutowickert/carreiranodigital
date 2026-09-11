@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { randomBytes } from 'crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
@@ -158,6 +159,17 @@ export async function POST(req: Request) {
     if (!dono) return NextResponse.json({ ok: false, error: 'projeto não encontrado' }, { status: 200 })
 
     // ── PLACAR: foto dos números numa data. O ponto A é a base de antes do trabalho.
+    // ── ÁREA DO CLIENTE: o link com chave. "trocar" invalida o antigo (link vazou)
+    if (acao === 'portal_link' || acao === 'portal_trocar') {
+      const { data: atual } = await sb.from('projetos').select('portal_chave').eq('id', projetoId).maybeSingle()
+      let chave = atual?.portal_chave as string | null
+      if (!chave || acao === 'portal_trocar') {
+        chave = randomBytes(12).toString('base64url')
+        await sb.from('projetos').update({ portal_chave: chave, atualizado_em: new Date().toISOString() }).eq('id', projetoId)
+      }
+      return NextResponse.json({ ok: true, chave })
+    }
+
     if (acao === 'placar_novo') {
       // fechamento do mês (mes = 'AAAA-MM') ou o ponto A (com data)
       const pontoA = !!b.ponto_a
