@@ -123,6 +123,8 @@ export default function Agenda() {
   const [verAtrasados, setVerAtrasados] = useState(false)
   const [detalhe, setDetalhe] = useState<Item | null>(null)
   const [novo, setNovo] = useState(false)
+  // O compromisso sendo editado — abre o mesmo formulário do "+ Novo", já preenchido.
+  const [editar, setEditar] = useState<Item | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
   // O que está aceso no balão pra mim. `balaoPronto` falso = a instalação ainda não tem a tabela
   // de leituras: aí não aparece ponto nem "Marcar como não lido".
@@ -210,6 +212,12 @@ export default function Agenda() {
     })
     if (ok) setDetalhe(null)
   }
+
+  // Editar compromisso: quem organiza (dono), compromisso do grupo, o dono da empresa, ou quem tem
+  // gente abaixo (o banco confere se aquele dono responde a mim). Quem só foi CHAMADO pra reunião
+  // não edita — o banco recusaria, e o botão nem aparece pra não prometer o que não entrega.
+  const podeEditar = (i: Item) => !!eu && i.fonte === 'agenda'
+    && (i.donoId === eu.id || !i.donoId || eu.souDono || (tenhoTime && i.donoId !== eu.id && !i.participantes?.includes(eu.id)))
 
   // ── SEPARAÇÃO ───────────────────────────────────────────────────────────────
   const visiveis = useMemo(() => {
@@ -434,6 +442,8 @@ export default function Agenda() {
             // Só pro que é meu e já está apagado: acender de novo um item que nem é meu não faria sentido.
             podeNaoLido={balaoPronto && detalhe.fonte !== 'entrega' && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
             onNaoLido={() => { marcar([chaveDe(detalhe)], 'nao_lido'); setDetalhe(null) }}
+            podeEditar={podeEditar(detalhe)}
+            onEditar={() => { setEditar(detalhe); setDetalhe(null) }}
             onFechar={() => setDetalhe(null)}
             // Pegar um item do grupo que outra pessoa criou faria ele acender como "novidade" pra mim
             // — mas fui eu que peguei, não é novidade. Marca como visto na hora.
@@ -441,7 +451,11 @@ export default function Agenda() {
             onConcluir={() => { concluir(detalhe); setDetalhe(null) }}
             onPublico={p => abrirPublico(detalhe, p)} onAjuda={(q, n) => pedirAjuda(detalhe, q, n)} />
         )}
-        {novo && eu && <ModalNovo eu={eu} ativos={ativos} diaSugerido={diaAberto} onFechar={() => setNovo(false)} onSalvo={() => { setNovo(false); carregar() }} />}
+        {(novo || editar) && eu && (
+          <ModalCompromisso eu={eu} ativos={ativos} diaSugerido={diaAberto} inicial={editar}
+            onFechar={() => { setNovo(false); setEditar(null) }}
+            onSalvo={() => { setNovo(false); setEditar(null); carregar() }} />
+        )}
       </div>
     </Layout>
   )
@@ -512,9 +526,10 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
   )
 }
 
-function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
+function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido, podeEditar, onEditar, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
   it: Item; eu: Eu; ativos: Pessoa[]; nomeDe: (id: string | null) => string | null; ocupado: boolean
   podeNaoLido: boolean; onNaoLido: () => void
+  podeEditar: boolean; onEditar: () => void
   onFechar: () => void; onPegar: (quem: string | null) => void; onConcluir: () => void
   onPublico: (p: boolean) => void; onAjuda: (quem: string, nota: string) => void
 }) {
@@ -598,6 +613,7 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
         </>
       ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {podeEditar && <button onClick={onEditar} style={{ ...btnSec, borderColor: 'var(--accent)', color: 'var(--accent-soft)' }}>✏️ Editar</button>}
           {!it.donoId && <button disabled={ocupado} onClick={() => onPegar(eu.id)} style={btnPri}>Pegar pra mim</button>}
           {meu && <button disabled={ocupado} onClick={() => onPegar(null)} style={btnSec}>Devolver ao grupo</button>}
           {(meu || !it.donoId) && <button onClick={() => setPedindo(true)} style={btnSec}>Pedir ajuda</button>}
@@ -612,25 +628,30 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
   )
 }
 
-function ModalNovo({ eu, ativos, diaSugerido, onFechar, onSalvo }: {
-  eu: Eu; ativos: Pessoa[]; diaSugerido: string | null; onFechar: () => void; onSalvo: () => void
+// Criar E editar compromisso — o mesmo formulário. Com `inicial`, abre preenchido e salva por cima.
+function ModalCompromisso({ eu, ativos, diaSugerido, inicial, onFechar, onSalvo }: {
+  eu: Eu; ativos: Pessoa[]; diaSugerido: string | null; inicial?: Item | null; onFechar: () => void; onSalvo: () => void
 }) {
   const base = new Date()
   if (diaSugerido) { const [a, m, d] = diaSugerido.split('-').map(Number); base.setFullYear(a, m - 1, d) }
   base.setMinutes(0, 0, 0); base.setHours(base.getHours() + 1)
-  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:00`
-  const [titulo, setTitulo] = useState('')
-  const [descricao, setDescricao] = useState('')
+  // Com os minutos: editar um compromisso das 8h30 não pode devolver 8h00.
+  const fmt = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}T${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+  const iniDe = inicial ? new Date(inicial.inicio) : base
+  const fimDe = inicial?.fim ? new Date(inicial.fim) : new Date(iniDe.getTime() + 36e5)
   // ⚠️ SÓ estes três: a tabela tem uma trava (`agenda_eventos_tipo_check`) herdada da agenda antiga,
   // e qualquer outro valor é recusado na hora de salvar. Achado testando, não lendo o código.
-  const [tipo, setTipo] = useState('reuniao')
-  const [inicio, setInicio] = useState(fmt(base))
-  const [fim, setFim] = useState(fmt(new Date(base.getTime() + 36e5)))
-  const [dono, setDono] = useState<string>(eu.id)
+  const TIPOS = ['reuniao', 'ligacao', 'tarefa']
+  const [titulo, setTitulo] = useState(inicial?.titulo || '')
+  const [descricao, setDescricao] = useState(inicial?.subtitulo || '')
+  const [tipo, setTipo] = useState(inicial?.tipo && TIPOS.includes(inicial.tipo) ? inicial.tipo : 'reuniao')
+  const [inicio, setInicio] = useState(fmt(iniDe))
+  const [fim, setFim] = useState(fmt(fimDe))
+  const [dono, setDono] = useState<string>(inicial ? (inicial.donoId || '') : eu.id)
   // Quem foi chamado. Não vira dono — quem manda no compromisso é `dono`. Participante enxerga,
   // inclusive se o compromisso for privado de alguém acima dele (21-participantes-na-agenda.sql).
-  const [participantes, setParticipantes] = useState<string[]>([])
-  const [publico, setPublico] = useState(false)
+  const [participantes, setParticipantes] = useState<string[]>(inicial?.participantes || [])
+  const [publico, setPublico] = useState(!!inicial?.publico)
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
 
@@ -649,10 +670,27 @@ function ModalNovo({ eu, ativos, diaSugerido, onFechar, onSalvo }: {
     if (isNaN(+dIni) || isNaN(+dFim)) { setErro('Confira as datas.'); return }
     if (dFim <= dIni) { setErro('O fim precisa ser depois do início.'); return }
     setSalvando(true); setErro('')
-    const { error } = await supabase.from('agenda_eventos').insert({
+    const dados = {
       titulo, descricao: descricao || null, tipo,
       inicio: dIni.toISOString(), fim: dFim.toISOString(),
-      usuario_id: dono || null, publico, criado_por: eu.id,
+      usuario_id: dono || null, publico,
+    }
+
+    if (inicial) {
+      // ⚠️ Edição recusada pela regra do banco NÃO dá erro: volta "ok" com zero linhas alteradas, e a
+      // tela acharia que salvou. Por isso o `.select` — sem linha de volta, não salvou.
+      // Aqui a lista de participantes vai sempre, mesmo vazia: tirar todo mundo também é editar.
+      const { data, error } = await supabase.from('agenda_eventos')
+        .update({ ...dados, participantes, atualizado_em: new Date().toISOString() })
+        .eq('id', inicial.id).select('id')
+      setSalvando(false)
+      if (error) { setErro(error.message); return }
+      if (!data?.length) { setErro('Não deu pra salvar: só quem organiza este compromisso, ou quem está acima dele, pode editar.'); return }
+      onSalvo(); return
+    }
+
+    const { error } = await supabase.from('agenda_eventos').insert({
+      ...dados, criado_por: eu.id,
       // Só manda a lista quando há alguém marcado: compromisso sem convidado continua salvando
       // mesmo numa instalação que ainda não rodou o 21 e não tem a coluna.
       ...(participantes.length ? { participantes } : {}),
@@ -665,7 +703,7 @@ function ModalNovo({ eu, ativos, diaSugerido, onFechar, onSalvo }: {
   const escolhiveis = ativos.filter(p => p.id !== dono)
 
   return (
-    <Modal titulo="Novo compromisso" onFechar={onFechar}>
+    <Modal titulo={inicial ? 'Editar compromisso' : 'Novo compromisso'} onFechar={onFechar}>
       <input value={titulo} onChange={e => setTitulo(e.target.value)} style={inp} placeholder="O que é?" autoFocus />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <input type="datetime-local" value={inicio} onChange={e => setInicio(e.target.value)} style={inp} />
@@ -708,7 +746,7 @@ function ModalNovo({ eu, ativos, diaSugerido, onFechar, onSalvo }: {
       {erro && <p style={{ fontSize: 12, color: 'var(--red)' }}>{erro}</p>}
       <div style={{ display: 'flex', gap: 8 }}>
         <button onClick={onFechar} style={{ ...btnSec, flex: 1 }}>Cancelar</button>
-        <button onClick={salvar} disabled={salvando} style={{ ...btnPri, flex: 1 }}>{salvando ? 'Salvando...' : 'Salvar'}</button>
+        <button onClick={salvar} disabled={salvando} style={{ ...btnPri, flex: 1 }}>{salvando ? 'Salvando...' : inicial ? 'Salvar alterações' : 'Salvar'}</button>
       </div>
     </Modal>
   )
