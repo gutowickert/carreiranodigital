@@ -8,12 +8,14 @@ import { fetchAuth } from '@/lib/api'
 import NotifCelular from '@/components/NotifCelular'
 import ThemeToggle from '@/components/ThemeToggle'
 import Logo3D from '@/components/Logo3D'
+import VidroToggle from '@/components/VidroToggle'
+import Paleta, { type Tela } from '@/components/Paleta'
 import {
   LayoutDashboard, CalendarDays, Bot, Sparkles, Map, BadgeCheck, Workflow, Coins, Phone, MessageCircle, Columns3,
   Layers, Package, Trophy, CalendarClock, ListChecks, ClipboardCheck, PackageCheck, Megaphone, TrendingUp, Activity,
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
-  RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake,
+  RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -53,14 +55,68 @@ type Perfil = { id: string; nome: string; email: string; papel: string; setor: s
 // Agente Interno: só estes 3 (Guto, Nando, Rick), mesmo os outros sendo admin.
 const AGENTE_PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 
+// OS GRUPOS DO MENU — por TRABALHO, não por módulo (direção visual de 11/09/2026).
+// Antes: "CRM", "Dashboards", "Operações", "Cadastros" — nomes de módulo, com "CRM" dentro de "CRM".
+// Agora: o que a pessoa faz. Quem vende abre Vendas; quem dá aula abre Alunos; quem olha número
+// abre Números. Os hrefs são os mesmos (as permissões em itemPermitido são por href, não por grupo).
 const grupos: Grupo[] = [
   {
     titulo: '',
     itens: [
       { nome: 'Painel', href: '/dashboard' },
-      // Fica no topo, fora de qualquer grupo, porque é a tela pra abrir todo dia. A rota existia
-      // desde agosto e nunca esteve no menu — dava pra chegar nela só digitando o endereço.
       { nome: 'Agenda', href: '/dashboard/agenda' },
+    ],
+  },
+  {
+    titulo: 'Vendas',
+    itens: [
+      { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
+      { nome: 'Funil', href: '/dashboard/crm' },
+      { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
+      { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
+      { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
+      { nome: 'Produtos', href: '/dashboard/produtos' },
+      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
+      { nome: 'Fechamento de Turma', href: '/dashboard/fechamento' },
+      { nome: 'Resultados', href: '/dashboard/crm/resultados' },
+      { nome: 'Entregas', href: '/dashboard/entregas' },
+    ],
+  },
+  {
+    titulo: 'Alunos',
+    itens: [
+      { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
+      { nome: 'Chamada', href: '/dashboard/chamada', feat: 'escola' },
+      { nome: 'Alunos', href: '/dashboard/alunos', feat: 'escola' },
+      { nome: 'Professores', href: '/dashboard/professores', feat: 'escola' },
+      { nome: 'Salas', href: '/dashboard/salas', feat: 'escola' },
+      { nome: 'Módulos', href: '/dashboard/modulos', feat: 'escola' },
+    ],
+  },
+  {
+    titulo: 'Marketing',
+    itens: [
+      { nome: 'Disparos', href: '/dashboard/disparos' },
+      { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
+      { nome: 'Templates de Follow-up', href: '/dashboard/followup-templates' },
+      { nome: 'Relatório de Disparos', href: '/dashboard/disparos/relatorios' },
+      { nome: 'Listas', href: '/dashboard/listas' },
+      { nome: 'Captação', href: '/dashboard/captacao' },
+      { nome: 'Tráfego', href: '/dashboard/trafego' },
+      { nome: 'Tráfego dos Clientes', href: '/dashboard/entregas/trafego' },
+      { nome: 'Funil do Site', href: '/dashboard/funil-site' },
+    ],
+  },
+  {
+    titulo: 'Números',
+    itens: [
+      { nome: 'Análise de Conversão', href: '/dashboard/analise-conversao' },
+      { nome: 'Velocidade de Venda', href: '/dashboard/velocidade-venda' },
+      { nome: 'NPS', href: '/dashboard/nps', feat: 'escola' },
+      { nome: 'Lançamentos', href: '/dashboard/financeiro' },
+      { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
+      { nome: 'Relatório de Custos', href: '/dashboard/financeiro/custos' },
+      { nome: 'Transferências entre Contas', href: '/dashboard/transferencias' },
     ],
   },
   {
@@ -75,74 +131,20 @@ const grupos: Grupo[] = [
     ],
   },
   {
-    titulo: 'CRM',
-    itens: [
-      { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
-      { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
-      { nome: 'CRM', href: '/dashboard/crm' },
-      { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
-      { nome: 'Produtos', href: '/dashboard/produtos' },
-      { nome: 'Resultados CRM', href: '/dashboard/crm/resultados' },
-      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
-      { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
-      { nome: 'Fechamento de Turma', href: '/dashboard/fechamento' },
-      { nome: 'Entregas', href: '/dashboard/entregas' },
-    ],
-  },
-  {
-    titulo: 'Dashboards',
-    itens: [
-      { nome: 'Captação', href: '/dashboard/captacao' },
-      { nome: 'Análise de Conversão', href: '/dashboard/analise-conversao' },
-      { nome: 'Tráfego', href: '/dashboard/trafego' },
-      { nome: 'Tráfego dos Clientes', href: '/dashboard/entregas/trafego' },
-      { nome: 'Funil do Site', href: '/dashboard/funil-site' },
-      { nome: 'Velocidade de Venda', href: '/dashboard/velocidade-venda' },
-      { nome: 'NPS', href: '/dashboard/nps', feat: 'escola' },
-    ],
-  },
-  {
-    titulo: 'Operações',
-    itens: [
-      { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
-      { nome: 'Chamada', href: '/dashboard/chamada', feat: 'escola' },
-      { nome: 'Disparos', href: '/dashboard/disparos' },
-      { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
-      { nome: 'Templates de Follow-up', href: '/dashboard/followup-templates' },
-      { nome: 'Relatório Disparos', href: '/dashboard/disparos/relatorios' },
-      { nome: 'Listas', href: '/dashboard/listas' },
-    ],
-  },
-  {
-    titulo: 'Financeiro',
-    itens: [
-      { nome: 'Lançamentos', href: '/dashboard/financeiro' },
-      { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Transferências entre Contas', href: '/dashboard/transferencias' },
-      { nome: 'Relatório de Custos', href: '/dashboard/financeiro/custos' },
-      { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
-    ],
-  },
-  {
-    titulo: 'Cadastros',
+    titulo: 'Ajustes',
     itens: [
       { nome: 'Comercial', href: '' },
       { nome: 'Config CRM', href: '/dashboard/crm/config' },
-      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
       { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
       { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
-      { nome: 'Operações', href: '' },
-      { nome: 'Salas', href: '/dashboard/salas', feat: 'escola' },
+      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
       { nome: 'Cidades', href: '/dashboard/cidades' },
-      { nome: 'Módulos', href: '/dashboard/modulos', feat: 'escola' },
       { nome: 'Financeiro', href: '' },
+      { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
       { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
       { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
-      { nome: 'Pessoas', href: '' },
-      { nome: 'Alunos', href: '/dashboard/alunos', feat: 'escola' },
-      { nome: 'Professores', href: '/dashboard/professores', feat: 'escola' },
-      { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Sistema', href: '' },
+      { nome: 'Usuários', href: '/dashboard/usuarios' },
       { nome: 'Configurações', href: '/dashboard/configuracoes' },
       { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs', feat: 'superadmin' },
       { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
@@ -220,6 +222,15 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   )
   const [menuMobileAberto, setMenuMobileAberto] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  // a busca ⌘K (components/Paleta.tsx) — abre pelo teclado ou pela caixa no menu
+  const [paletaAberta, setPaletaAberta] = useState(false)
+  useEffect(() => {
+    const aoTeclar = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); setPaletaAberta(v => !v) }
+    }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [])
   const [perfil, setPerfil] = useState<Perfil | null>(null)
   const [checando, setChecando] = useState(true)
   const [waUnread, setWaUnread] = useState(0)
@@ -410,7 +421,17 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                   : <Logo3D src="/logo.png" largura={160} />}
             </div>
 
-            <nav style={{ flex: 1, padding: '12px 12px', display: 'flex', flexDirection: 'column' }}>
+            {/* a caixa de busca: só abre a paleta (⌘K) — a busca de verdade acontece lá */}
+            <div style={{ padding: '0 12px 6px', flexShrink: 0 }}>
+              <button onClick={() => setPaletaAberta(true)} aria-label="Buscar tela ou lead (⌘K)"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, background: 'var(--glass-field)', border: '1px solid var(--glass-border)', borderRadius: 'var(--r)', padding: '8px 10px', fontSize: 12.5, color: 'var(--text-faint)', cursor: 'pointer', font: 'inherit', textAlign: 'left' }}>
+                <Search size={14} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Buscar tela ou lead…</span>
+                <kbd style={{ fontFamily: 'inherit', fontSize: 10.5, border: '1px solid var(--glass-border)', borderRadius: 5, padding: '0 5px', flexShrink: 0 }}>⌘K</kbd>
+              </button>
+            </div>
+
+            <nav style={{ flex: 1, padding: '6px 12px 12px', display: 'flex', flexDirection: 'column' }}>
               {gruposVisiveis.map((grupo, idx) => (
                 <div key={idx} style={{ marginBottom: grupo.titulo ? 8 : 4 }}>
                   {grupo.titulo && (
@@ -495,6 +516,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                   <div style={{ fontSize: '13px', color: 'var(--text)', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : perfil.papel === 'gestor' ? 'Gestor' : 'Vendedor'}</div>
                 </div>
+                <VidroToggle compacto />
                 <ThemeToggle compacto />
               </div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
@@ -509,6 +531,10 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, paddingTop: isMobile ? 50 : 0 }}>
         {children}
       </div>
+      {paletaAberta && (
+        <Paleta onFechar={() => setPaletaAberta(false)}
+          telas={gruposVisiveis.flatMap(g => g.itens.filter(i => i.href).map((i): Tela => ({ nome: i.nome, href: i.href, grupo: g.titulo, icone: ICONES[i.href] })))} />
+      )}
     </div>
   )
 }

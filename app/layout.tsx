@@ -21,7 +21,8 @@ export const viewport = {
 
 // Aplica o tema salvo ANTES de pintar (sem flash). Padrão: escuro.
 // reset-once ('tema_reset'): zera a escolha antiga uma vez (tira quem ficou preso no claro v1).
-const aplicaTema = `(function(){try{if(localStorage.getItem('tema_reset')!=='2'){localStorage.removeItem('tema');localStorage.setItem('tema_reset','2')}var t=localStorage.getItem('tema');document.documentElement.setAttribute('data-theme',t==='claro'?'light':'dark')}catch(e){document.documentElement.setAttribute('data-theme','dark')}})()`
+// Também lê o interruptor de vidro desta máquina ('vidro' = 'off' → sem desfoque; components/VidroToggle.tsx).
+const aplicaTema = `(function(){try{if(localStorage.getItem('tema_reset')!=='2'){localStorage.removeItem('tema');localStorage.setItem('tema_reset','2')}var t=localStorage.getItem('tema');document.documentElement.setAttribute('data-theme',t==='claro'?'light':'dark');if(localStorage.getItem('vidro')==='off'){document.documentElement.setAttribute('data-vidro','off')}}catch(e){document.documentElement.setAttribute('data-theme','dark')}})()`
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
