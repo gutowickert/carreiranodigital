@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
+import { PERIODOS, intervalo, hojeBR } from '@/lib/periodos'
 
 // Os blocos que medem se o trabalho está dando resultado:
 //   MetaBloco  → o topo do funil, automático, lido da conta de anúncio do cliente
@@ -30,31 +31,6 @@ async function post(corpo: any) {
 }
 
 // ─────────────────────────────────────────────────────────── Meta (automático)
-
-// períodos no fuso de Brasília — "hoje" do servidor (UTC) vira amanhã depois das 21h
-const hojeBR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-const menosDias = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10) }
-
-const PERIODOS: [string, string][] = [
-  ['inicio', 'Desde o início'], ['hoje', 'Hoje'], ['ontem', 'Ontem'], ['7d', 'Últimos 7 dias'],
-  ['30d', 'Últimos 30 dias'], ['mes', 'Este mês'], ['mes_passado', 'Mês passado'], ['custom', 'Personalizado'],
-]
-
-function intervalo(p: string, inicio: string): [string, string] {
-  const h = hojeBR()
-  if (p === 'hoje') return [h, h]
-  if (p === 'ontem') { const o = menosDias(h, 1); return [o, o] }
-  if (p === '7d') return [menosDias(h, 6), h]
-  if (p === '30d') return [menosDias(h, 29), h]
-  if (p === 'mes') return [h.slice(0, 8) + '01', h]
-  if (p === 'mes_passado') {
-    const primeiroDeste = new Date(h.slice(0, 8) + '01T12:00:00Z')
-    const ultimo = new Date(primeiroDeste); ultimo.setUTCDate(0)
-    const iso = ultimo.toISOString().slice(0, 10)
-    return [iso.slice(0, 8) + '01', iso]
-  }
-  return [inicio, h]
-}
 
 export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }) {
   const inicio = String(projeto.data_inicio || '').slice(0, 10)

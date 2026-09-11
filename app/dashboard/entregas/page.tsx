@@ -69,6 +69,7 @@ export default function Entregas() {
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Os clientes que já compraram e estão sendo entregues. O CRM termina no ganho — aqui começa o depois.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
+          <Link href="/dashboard/entregas/trafego" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>📈 Tráfego</Link>
           <Link href="/dashboard/entregas/agenda" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>📅 Agenda</Link>
           <button onClick={() => setNovo(v => !v)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Novo projeto</button>
         </div>
