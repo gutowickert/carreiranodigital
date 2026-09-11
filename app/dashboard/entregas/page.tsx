@@ -8,7 +8,7 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)', width: '100%' }
 const lbl: React.CSSProperties = { fontSize: 11, color: 'var(--text-faint)', display: 'block', marginBottom: 3 }
 
-const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'CRM'], ['combo', 'Deu Venda + CRM + Tráfego']]
+const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'CRM'], ['combo', 'Deu Venda + CRM + Tráfego'], ['crm_trafego', 'CRM + Tráfego']]
 const FINS: [string, string][] = [['encerra', 'Encerra ao fim'], ['renegocia', 'Renegocia ao fim'], ['manutencao', 'Vira manutenção']]
 
 const br = (d?: string | null) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—')

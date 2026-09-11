@@ -11,11 +11,13 @@ import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/en
 
 const BUCKET = 'provas'   // privado: print de venda tem nome e valor do cliente do cliente
 const MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf']
-// "1.500,50" (digitado à brasileira) e "1500.50" (campo numérico) valem o mesmo
+// "1.500,50" (digitado à brasileira) e "1500.50" (campo numérico) valem o mesmo;
+// "40.000" sem vírgula é milhar, não 40
 const num = (v: any) => {
   if (v === '' || v == null) return null
-  const s = String(v).trim()
-  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
+  const s = String(v).trim().replace(/^R\$\s*/i, '')
+  const milhar = /^\d{1,3}(\.\d{3})+$/.test(s)
+  const n = Number(s.includes(',') || milhar ? s.replace(/\./g, '').replace(',', '.') : s)
   return Number.isFinite(n) ? n : null
 }
 
@@ -89,6 +91,11 @@ export async function PATCH(req: Request) {
     if (b.mensalidade_valor !== undefined) p.mensalidade_valor = b.mensalidade_valor === '' || b.mensalidade_valor == null ? null : Number(b.mensalidade_valor)
     if (b.observacoes !== undefined) p.observacoes = (b.observacoes || '').toString().slice(0, 2000) || null
     if (b.ad_account_id !== undefined) p.ad_account_id = (b.ad_account_id || '').toString().replace(/\D/g, '') || null
+    // a meta do contrato: onde o cliente quer estar no fim (o ponto B do placar)
+    if (b.meta_objetivo !== undefined) p.meta_objetivo = (b.meta_objetivo || '').toString().slice(0, 1000) || null
+    if (b.meta_leads !== undefined) p.meta_leads = num(b.meta_leads)
+    if (b.meta_vendas !== undefined) p.meta_vendas = num(b.meta_vendas)
+    if (b.meta_faturamento !== undefined) p.meta_faturamento = num(b.meta_faturamento)
     if (b.fase) p.fase = b.fase
     if (b.status && ['ativo', 'manutencao', 'concluido', 'cancelado'].includes(b.status)) p.status = b.status
 

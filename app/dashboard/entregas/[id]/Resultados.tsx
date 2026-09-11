@@ -164,6 +164,8 @@ export function Placar({ projeto, linhas, aoMudar }: { projeto: any; linhas: any
         <button onClick={() => { setAberto(v => !v); setF({ ...vazioForm(), ponto_a: !temPontoA }) }} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>+ Atualizar números</button>
       </div>
 
+      <MetaContrato projeto={projeto} atual={atual || pontoA} aoMudar={aoMudar} />
+
       {!temPontoA && (
         <div style={{ background: 'var(--amber-bg)', borderRadius: 8, padding: '9px 11px', marginTop: 10, fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55 }}>
           <b style={{ color: 'var(--text)' }}>Falta o ponto A</b> — onde o cliente estava antes do trabalho começar. Sem ele, nenhum número depois tem com o que comparar, e a renegociação vira opinião contra opinião.
@@ -230,6 +232,88 @@ export function Placar({ projeto, linhas, aoMudar }: { projeto: any; linhas: any
               <span style={{ color: 'var(--text-faint)' }}> Proporção de propostas por lead e de vendas por proposta ao lado de cada número.</span>
             </div>
           )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// A meta do contrato — onde o cliente quer estar no fim. Fica no projeto (não é uma
+// linha do placar) e cada número do placar é lido contra ela.
+const METRICAS_META: { k: string; col: string; l: string; fmt: (v: any) => string }[] = [
+  { k: 'meta_leads', col: 'leads', l: 'leads', fmt: int },
+  { k: 'meta_vendas', col: 'vendas', l: 'vendas', fmt: int },
+  { k: 'meta_faturamento', col: 'comissao', l: 'faturamento', fmt: brl },
+]
+
+function MetaContrato({ projeto, atual, aoMudar }: { projeto: any; atual: any; aoMudar: () => void }) {
+  const [editando, setEditando] = useState(false)
+  const [msg, setMsg] = useState('')
+  const deProjeto = () => ({
+    meta_objetivo: projeto.meta_objetivo || '',
+    meta_leads: projeto.meta_leads ?? '', meta_vendas: projeto.meta_vendas ?? '', meta_faturamento: projeto.meta_faturamento ?? '',
+  })
+  const [f, setF] = useState<any>(deProjeto())
+  const temMeta = !!projeto.meta_objetivo || METRICAS_META.some(m => projeto[m.k] != null)
+
+  async function salvar() {
+    const j = await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: projeto.id, ...f }) })
+      .then(r => r.json()).catch(() => ({ ok: false, error: 'falha de rede' }))
+    if (j.ok) { setEditando(false); setMsg(''); aoMudar() } else setMsg('⚠️ ' + (j.error || 'falha'))
+  }
+
+  if (editando) return (
+    <div style={{ marginTop: 12, padding: 12, borderRadius: 8, background: 'var(--surface-2)' }}>
+      <label style={lbl}>Objetivo do cliente pro contrato, nas palavras dele</label>
+      <textarea style={{ ...inp, minHeight: 54, resize: 'vertical', fontFamily: 'inherit' }} value={f.meta_objetivo} onChange={e => setF({ ...f, meta_objetivo: e.target.value })}
+        placeholder="ex: 8 Restaures por mês e o financeiro organizado" />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(120px,1fr))', gap: 8, marginTop: 8 }}>
+        <div><label style={lbl}>Leads</label><input style={inp} value={f.meta_leads} onChange={e => setF({ ...f, meta_leads: e.target.value })} /></div>
+        <div><label style={lbl}>Vendas</label><input style={inp} value={f.meta_vendas} onChange={e => setF({ ...f, meta_vendas: e.target.value })} /></div>
+        <div><label style={lbl}>Faturamento</label><input style={inp} value={f.meta_faturamento} onChange={e => setF({ ...f, meta_faturamento: e.target.value })} placeholder="R$" /></div>
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+        <button onClick={salvar} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Salvar meta</button>
+        <button onClick={() => { setEditando(false); setF(deProjeto()) }} style={{ ...btn, background: 'var(--surface)', color: 'var(--text-2)' }}>Cancelar</button>
+        <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>Mesma medida do placar (acumulado desde o início). Deixa em branco o número que não fizer sentido.</span>
+      </div>
+      {msg && <div style={{ fontSize: 12.5, color: 'var(--amber)', marginTop: 8 }}>{msg}</div>}
+    </div>
+  )
+
+  if (!temMeta) return (
+    <div style={{ background: 'var(--amber-bg)', borderRadius: 8, padding: '9px 11px', marginTop: 10, fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.55, display: 'flex', gap: 10, alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap' }}>
+      <span><b style={{ color: 'var(--text)' }}>Falta a meta</b> — onde o cliente quer estar no fim do contrato. É o que diz, na renegociação, se o trabalho entregou.</span>
+      <button onClick={() => { setF(deProjeto()); setEditando(true) }} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Definir meta</button>
+    </div>
+  )
+
+  const numeros = METRICAS_META.filter(m => projeto[m.k] != null)
+  return (
+    <div style={{ marginTop: 12, padding: '11px 12px', borderRadius: 8, background: 'var(--surface-2)' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>🎯 Meta até {br(projeto.data_fim)}</div>
+        <button onClick={() => { setF(deProjeto()); setEditando(true) }} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '2px 5px', fontWeight: 400 }}>editar</button>
+      </div>
+      {projeto.meta_objetivo && <div style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 4, lineHeight: 1.5 }}>{projeto.meta_objetivo}</div>}
+      {!!numeros.length && (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginTop: 10 }}>
+          {numeros.map(m => {
+            const alvo = Number(projeto[m.k])
+            const agora = atual?.[m.col] != null ? Number(atual[m.col]) : null
+            const p = agora != null && alvo > 0 ? Math.round((agora / alvo) * 100) : null
+            return (
+              <div key={m.k}>
+                <div style={{ fontSize: 12, color: 'var(--text-2)', fontVariantNumeric: 'tabular-nums' }}>
+                  <b style={{ color: 'var(--text)' }}>{agora != null ? m.fmt(agora) : '—'}</b> de {m.fmt(alvo)} {m.l}
+                </div>
+                <div style={{ height: 6, borderRadius: 4, background: 'var(--border)', marginTop: 5, overflow: 'hidden' }}>
+                  <div style={{ width: Math.min(100, p || 0) + '%', height: '100%', background: p != null && p >= 100 ? 'var(--green)' : 'var(--accent)' }} />
+                </div>
+                <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 3 }}>{p != null ? `${p}% da meta` : 'sem número no placar ainda'}</div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
