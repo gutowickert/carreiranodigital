@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { ResponsiveContainer, BarChart, Bar, AreaChart, Area, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { CardNumero } from '@/components/ui'
 
 type Conta = { id: string; nome: string; tipo: string; unidade: string; saldo_inicial: number; ativo: boolean }
 type Lanc = { id: string; tipo: string; categoria: string; descricao: string; valor: number; status: string; data_vencimento: string; data_pagamento: string | null; conta_id: string | null }
@@ -222,26 +223,15 @@ export default function FluxoCaixa() {
         <p style={{ fontSize: '13px', color: 'var(--text-faint)' }}>Carregando...</p>
       ) : (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo inicial do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoInicial >= 0 ? 'var(--text)' : 'var(--red)' }}>{fmt(resumo.saldoInicial)}</div>
-            </div>
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Entradas</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--green)' }}>{fmt(resumo.entradas)}</div>
-              {entradasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>previstas: {fmt(entradasPrev)}</div>}
-            </div>
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saídas</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--red)' }}>{fmt(resumo.saidas)}</div>
-              {saidasPrev > 0 && !filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>previstas: {fmt(saidasPrev)}</div>}
-            </div>
-            <div style={{ ...card, padding: '20px', borderColor: 'var(--accent)' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Saldo final do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: resumo.saldoFinal >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(resumo.saldoFinal)}</div>
-              {!filtroConta && <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>projetado (c/ previstos): {fmt(saldoProjetado)}</div>}
-            </div>
+          {/* os mesmos cards de número do Painel; o saldo final é o principal, em relevo */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
+            <CardNumero vidro destaque rotulo="Saldo final do mês" prefixo="R$" valor={Math.round(resumo.saldoFinal).toLocaleString('pt-BR')} cor={resumo.saldoFinal >= 0 ? 'var(--green-strong)' : 'var(--red)'}
+              rodape={!filtroConta ? <span>projetado com previstos: {fmt(saldoProjetado)}</span> : undefined} />
+            <CardNumero vidro rotulo="Saldo inicial do mês" prefixo="R$" valor={Math.round(resumo.saldoInicial).toLocaleString('pt-BR')} cor={resumo.saldoInicial >= 0 ? undefined : 'var(--red)'} />
+            <CardNumero vidro rotulo="Entradas" prefixo="R$" valor={Math.round(resumo.entradas).toLocaleString('pt-BR')} cor="var(--green)"
+              rodape={entradasPrev > 0 && !filtroConta ? <span>previstas: {fmt(entradasPrev)}</span> : undefined} />
+            <CardNumero vidro rotulo="Saídas" prefixo="R$" valor={Math.round(resumo.saidas).toLocaleString('pt-BR')} cor="var(--red)"
+              rodape={saidasPrev > 0 && !filtroConta ? <span>previstas: {fmt(saidasPrev)}</span> : undefined} />
           </div>
 
           {/* Panorama 12 meses */}
@@ -263,19 +253,16 @@ export default function FluxoCaixa() {
             <div style={{ ...card, padding: 18 }}>
               <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Saldo acumulado — 12 meses</div>
               <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
-                  <defs>
-                    <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                  <XAxis dataKey="mes" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
-                  <Tooltip {...tipProps} formatter={(v: any) => fmt(v)} />
-                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="var(--accent-soft)" strokeWidth={2.5} fill="url(#gSaldo)" />
-                </AreaChart>
+                <BarChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" vertical={false} />
+                  <XAxis dataKey="mes" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
+                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
+                  <Tooltip cursor={{ fill: 'var(--surface-2)', opacity: .5 }} {...tipProps} formatter={(v: any) => fmt(v)} />
+                  {/* saldo positivo na cor da marca, negativo em vermelho */}
+                  <Bar dataKey="saldo" name="Saldo" radius={[3, 3, 0, 0]}>
+                    {serie12.map((m: any, i: number) => <Cell key={i} fill={m.saldo >= 0 ? 'var(--accent)' : 'var(--red)'} />)}
+                  </Bar>
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </div>

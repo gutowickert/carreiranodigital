@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { CardNumero } from '@/components/ui'
 import { fetchAuth } from '@/lib/api'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
@@ -84,13 +85,8 @@ export default function FunilSite() {
 }
 
 // ---------- helpers de UI compartilhados ----------
-const KPI = ({ label, valor, cor, sub }: any) => (
-  <div style={{ ...card, padding: 16 }}>
-    <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-    <div style={{ fontSize: 22, fontWeight: 700, color: cor || 'var(--text)', marginTop: 6 }}>{valor}</div>
-    {sub && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{sub}</div>}
-  </div>
-)
+// o mesmo card de número do Painel (components/ui)
+const KPI = ({ label, valor, cor, sub }: any) => <CardNumero vidro rotulo={label} valor={valor} cor={cor} rodape={sub ? <span>{sub}</span> : undefined} />
 const th = (h: string, i: number) => <th key={i} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 14px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500, whiteSpace: 'nowrap' }}>{h}</th>
 const tdNum = (v: any, cor?: string) => <td style={{ padding: '9px 14px', textAlign: 'right', fontSize: 13, color: cor || 'var(--text-2)', whiteSpace: 'nowrap' }}>{v}</td>
 const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
@@ -168,16 +164,16 @@ function AbaFunil({ de, ate }: { de: string; ate: string }) {
           <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 6 }}>Tendência por dia</div>
           {(!d.tendencia || d.tendencia.length === 0) ? <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Sem dados no período.</p> : (
             <ResponsiveContainer width="100%" height={230}>
-              <LineChart data={d.tendencia} margin={{ left: -18, right: 8, top: 8, bottom: 4 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="dia" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} />
-                <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} allowDecimals={false} />
-                <Tooltip {...tipProps} />
+              <BarChart data={d.tendencia} margin={{ left: -18, right: 8, top: 8, bottom: 4 }} barGap={2}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" vertical={false} />
+                <XAxis dataKey="dia" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} tickFormatter={(v: string) => v.slice(5)} axisLine={false} tickLine={false} />
+                <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} allowDecimals={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)', opacity: .5 }} {...tipProps} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="visitantes" name="Visitantes" stroke="var(--accent-soft)" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="cliquesWa" name="Cliques /wa" stroke="#0ea5e9" strokeWidth={2} dot={false} />
-                <Line type="monotone" dataKey="leads" name="Leads" stroke="#10b981" strokeWidth={2} dot={false} />
-              </LineChart>
+                <Bar dataKey="visitantes" name="Visitantes" fill="var(--accent)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="cliquesWa" name="Cliques /wa" fill="var(--blue)" radius={[3, 3, 0, 0]} />
+                <Bar dataKey="leads" name="Leads" fill="var(--green)" radius={[3, 3, 0, 0]} />
+              </BarChart>
             </ResponsiveContainer>
           )}
         </div>

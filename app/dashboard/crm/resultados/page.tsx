@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { CardNumero } from '@/components/ui'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -82,23 +83,12 @@ export default function Resultados() {
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 16, marginBottom: 24 }}>
-          <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Ganhos</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--green)' }}>{ganhos.length}</div>
-          </div>
-          <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Perdidos</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--red)' }}>{perdidos.length}</div>
-          </div>
-          <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Total vendido</div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: 'var(--green)' }}>{fmt(totalVendido)}</div>
-          </div>
-          <div style={{ ...card, padding: 20 }}>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Conversão</div>
-            <div style={{ fontSize: 26, fontWeight: 700, color: 'var(--accent-soft)' }}>{taxaConversao.toFixed(1)}%</div>
-          </div>
+        {/* os mesmos cards de número do Painel; o total vendido é o principal, em relevo */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
+          <CardNumero vidro destaque rotulo="Total vendido" prefixo="R$" valor={Math.round(totalVendido).toLocaleString('pt-BR')} cor="var(--green-strong)" rodape={<span>{ganhos.length} venda{ganhos.length === 1 ? '' : 's'} no mês</span>} />
+          <CardNumero vidro rotulo="Ganhos" valor={ganhos.length} cor="var(--green)" />
+          <CardNumero vidro rotulo="Perdidos" valor={perdidos.length} cor="var(--red)" />
+          <CardNumero vidro rotulo="Conversão" valor={taxaConversao.toFixed(1)} sufixo="%" cor="var(--accent-soft)" rodape={<><span>{ganhos.length} ganhos</span><span>{perdidos.length} perdas</span></>} />
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 16, marginBottom: 24 }}>

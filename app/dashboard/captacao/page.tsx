@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
+import { CardNumero } from '@/components/ui'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -421,14 +422,9 @@ function Pill({ a }: { a: Acao }) {
     </div>
   )
 }
+// o mesmo card de número do Painel (components/ui)
 function KpiCard({ label, valor, cor, sub }: { label: string; valor: string; cor?: string; sub?: string }) {
-  return (
-    <div style={{ ...card, padding: 16 }}>
-      <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</div>
-      <div style={{ fontSize: 22, fontWeight: 700, color: cor || 'var(--text)', marginTop: 6 }}>{valor}</div>
-      {sub && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{sub}</div>}
-    </div>
-  )
+  return <CardNumero vidro rotulo={label} valor={valor} cor={cor} rodape={sub ? <span>{sub}</span> : undefined} />
 }
 function Mini({ label, valor, cor }: { label: string; valor: string; cor?: string }) {
   return (

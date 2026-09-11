@@ -125,7 +125,7 @@ export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, se
   delta?: ReactNode; deltaBom?: boolean | null
   serie?: number[]; rodape?: ReactNode; alerta?: boolean; vidro?: boolean; cor?: string; destaque?: boolean
 }) {
-  const linha = serie && serie.length > 1 ? caminho(serie, 200, 34) : null
+  const barras = serie && serie.length > 1 ? alturas(serie, 34) : null
   const corLinha = cor || 'var(--accent)'
   return (
     <Card vidro={vidro} pad="18px 18px 14px" style={{ display: 'grid', gap: 6, alignContent: 'start', overflow: 'hidden', ...(alerta ? { borderColor: 'var(--red)' } : {}) }}>
@@ -144,24 +144,20 @@ export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, se
         {valor}
         {sufixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--f-manrope)', letterSpacing: 0, marginLeft: 2 }}>{sufixo}</span>}
       </div>
-      {linha ? (
-        <svg viewBox="0 0 200 34" preserveAspectRatio="none" style={{ width: '100%', height: 34, display: 'block' }} aria-hidden="true">
-          <path d={`${linha.d} L200,34 L0,34 Z`} fill={corLinha} opacity=".14" />
-          <path d={linha.d} fill="none" stroke={corLinha} strokeWidth="2" vectorEffect="non-scaling-stroke" />
-          <circle cx={linha.fx} cy={linha.fy} r="3" fill={corLinha} />
+      {barras ? (
+        // barras, não linha (pedido do Nando, 11/09): a última é a de hoje, cheia; as outras, apagadas
+        <svg viewBox={`0 0 ${barras.length * 6 - 2} 34`} preserveAspectRatio="none" style={{ width: '100%', height: 34, display: 'block' }} aria-hidden="true">
+          {barras.map((h, i) => <rect key={i} x={i * 6} y={34 - h} width={4} height={h} rx={1} fill={corLinha} opacity={i === barras.length - 1 ? 1 : 0.42} />)}
         </svg>
       ) : <div style={{ height: serie === undefined ? 0 : 34 }} />}
       {rodape && <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, fontSize: 12, color: 'var(--text-muted)' }}>{rodape}</div>}
     </Card>
   )
 }
-// série → caminho SVG (com 3px de folga em cima e embaixo pra bolinha não cortar)
-function caminho(s: number[], w: number, h: number) {
-  const min = Math.min(...s), max = Math.max(...s), span = max - min || 1
-  const pts = s.map((v, i) => [i * (w / (s.length - 1)), 3 + (1 - (v - min) / span) * (h - 6)] as const)
-  const d = pts.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)},${p[1].toFixed(1)}`).join(' ')
-  const [fx, fy] = pts[pts.length - 1]
-  return { d, fx, fy }
+// série → altura de cada barra (mínimo 2px, pra dia zerado ainda aparecer como um traço)
+function alturas(s: number[], h: number) {
+  const max = Math.max(...s, 0) || 1
+  return s.map(v => Math.max(2, Math.round((v / max) * h)))
 }
 
 // ─── Estado vazio ──────────────────────────────────────────────────────────────
