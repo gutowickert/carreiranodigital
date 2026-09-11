@@ -31,30 +31,85 @@ async function post(corpo: any) {
 
 // ─────────────────────────────────────────────────────────── Meta (automático)
 
+// períodos no fuso de Brasília — "hoje" do servidor (UTC) vira amanhã depois das 21h
+const hojeBR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+const menosDias = (iso: string, n: number) => { const d = new Date(iso + 'T12:00:00Z'); d.setUTCDate(d.getUTCDate() - n); return d.toISOString().slice(0, 10) }
+
+const PERIODOS: [string, string][] = [
+  ['inicio', 'Desde o início'], ['hoje', 'Hoje'], ['ontem', 'Ontem'], ['7d', 'Últimos 7 dias'],
+  ['30d', 'Últimos 30 dias'], ['mes', 'Este mês'], ['mes_passado', 'Mês passado'], ['custom', 'Personalizado'],
+]
+
+function intervalo(p: string, inicio: string): [string, string] {
+  const h = hojeBR()
+  if (p === 'hoje') return [h, h]
+  if (p === 'ontem') { const o = menosDias(h, 1); return [o, o] }
+  if (p === '7d') return [menosDias(h, 6), h]
+  if (p === '30d') return [menosDias(h, 29), h]
+  if (p === 'mes') return [h.slice(0, 8) + '01', h]
+  if (p === 'mes_passado') {
+    const primeiroDeste = new Date(h.slice(0, 8) + '01T12:00:00Z')
+    const ultimo = new Date(primeiroDeste); ultimo.setUTCDate(0)
+    const iso = ultimo.toISOString().slice(0, 10)
+    return [iso.slice(0, 8) + '01', iso]
+  }
+  return [inicio, h]
+}
+
 export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }) {
+  const inicio = String(projeto.data_inicio || '').slice(0, 10)
+  const chave = `cnd_meta_periodo_${projeto.id}`
+  const [periodo, setPeriodo] = useState<string>(() => { try { return localStorage.getItem(chave) || 'inicio' } catch { return 'inicio' } })
+  const [custom, setCustom] = useState<[string, string]>(() => [inicio, hojeBR()])
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
   const [conta, setConta] = useState(projeto.ad_account_id || '')
   const [editando, setEditando] = useState(false)
 
+  const [de, ate] = periodo === 'custom' ? custom : intervalo(periodo, inicio)
+
   async function carregar() {
+    if (!projeto.ad_account_id) { setCarregando(false); return }
     setCarregando(true)
-    const j = await fetchAuth(`/api/projetos/meta?id=${projeto.id}`).then(r => r.json()).catch(() => null)
+    const j = await fetchAuth(`/api/projetos/meta?id=${projeto.id}&de=${de}&ate=${ate}`).then(r => r.json()).catch(() => null)
     setD(j); setCarregando(false)
   }
-  useEffect(() => { carregar() }, [projeto.id, projeto.ad_account_id])
+  useEffect(() => { carregar() }, [projeto.id, projeto.ad_account_id, de, ate])
+
+  function escolher(p: string) {
+    setPeriodo(p)
+    try { localStorage.setItem(chave, p) } catch { /* sem armazenamento: só não lembra */ }
+  }
 
   async function salvarConta() {
     await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: projeto.id, ad_account_id: conta }) })
     setEditando(false); aoMudar()
   }
 
+  // o período pode começar antes do projeto — avisa, porque aí o número não é só do trabalho
+  const antesDoInicio = !!inicio && de < inicio
   const semConta = !projeto.ad_account_id || editando
+  const maxDia = Math.max(1, ...((d?.porDia || []).map((x: any) => x.gasto)))
+
   return (
     <div style={{ ...card, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>📣 Conta de anúncio {d?.conta?.nome ? <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>· {d.conta.nome}</span> : null}</div>
-        {!semConta && <button onClick={() => setEditando(true)} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '3px 6px', fontWeight: 400 }}>trocar conta</button>}
+        {!semConta && (
+          <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
+            <select style={{ ...inp, width: 'auto', padding: '5px 8px', fontSize: 12.5 }} value={periodo} onChange={e => escolher(e.target.value)}>
+              {PERIODOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+            </select>
+            {periodo === 'custom' && (
+              <>
+                <input type="date" style={{ ...inp, width: 'auto', padding: '4px 7px', fontSize: 12.5 }} value={custom[0]} max={hojeBR()} onChange={e => setCustom([e.target.value, custom[1]])} />
+                <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>até</span>
+                <input type="date" style={{ ...inp, width: 'auto', padding: '4px 7px', fontSize: 12.5 }} value={custom[1]} max={hojeBR()} onChange={e => setCustom([custom[0], e.target.value])} />
+              </>
+            )}
+            <button onClick={() => setEditando(true)} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '3px 6px', fontWeight: 400 }}>trocar conta</button>
+          </div>
+        )}
       </div>
 
       {semConta ? (
@@ -62,12 +117,12 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
           <input style={inp} placeholder="número da conta de anúncio (ex: 2194662637340244)" value={conta} onChange={e => setConta(e.target.value)} />
           <button onClick={salvarConta} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Ligar</button>
         </div>
-      ) : carregando ? (
+      ) : carregando && !d ? (
         <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 10 }}>Lendo a Meta…</div>
       ) : !d?.ok ? (
         <div style={{ fontSize: 12.5, color: 'var(--amber)', marginTop: 10, lineHeight: 1.55 }}>⚠️ {d?.error || 'não consegui ler a conta'}</div>
       ) : (
-        <>
+        <div style={{ opacity: carregando ? .55 : 1, transition: 'opacity .15s' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 8, marginTop: 12 }}>
             {[
               { l: 'investido', v: brl(d.total.gasto) },
@@ -82,8 +137,28 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
               </div>
             ))}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>de {br(d.desde)} até hoje · lido direto da Meta</div>
-        </>
+
+          {/* o dia a dia do período: barra = investido, número = conversas */}
+          {(d.porDia || []).length > 1 && (
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 3, height: 54, marginTop: 12, overflowX: 'auto' }}>
+              {d.porDia.map((x: any) => (
+                <div key={x.data} title={`${br(x.data)} · ${brl(x.gasto)} · ${x.conversas} conversas`} style={{ flex: '1 0 10px', maxWidth: 28, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                  <span style={{ fontSize: 9, color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums' }}>{x.conversas || ''}</span>
+                  <div style={{ width: '100%', height: Math.max(2, (x.gasto / maxDia) * 36), background: projeto.cor || 'var(--accent)', borderRadius: '3px 3px 0 0', opacity: .8 }} />
+                </div>
+              ))}
+            </div>
+          )}
+
+          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 8 }}>
+            {de === ate ? br(de) : `de ${br(de)} até ${br(ate)}`} · lido direto da Meta{(d.porDia || []).length > 1 ? ' · barra = investido no dia, número = conversas' : ''}
+          </div>
+          {antesDoInicio && (
+            <div style={{ fontSize: 11.5, color: 'var(--amber)', marginTop: 5 }}>
+              O período começa antes do projeto ({br(inicio)}) — parte desse número não é do trabalho de vocês.
+            </div>
+          )}
+        </div>
       )}
     </div>
   )
