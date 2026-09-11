@@ -5,6 +5,8 @@ import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { ModalLead } from '@/components/LeadCard'
 import { LABEL_FASE, ORDEM_FASE } from '@/lib/lote-core'
+import { Chip } from '@/components/ui'
+import { Plus, Search, Columns3, List, CalendarRange, Flame, Thermometer, Snowflake, Clock, AlertTriangle, ChevronDown, ChevronRight } from 'lucide-react'
 
 type Lead = {
   id: string
@@ -64,11 +66,13 @@ const ORIGEM_LABEL: Record<string, string> = {
 
 const PRAZO_CICLO = 6
 
-const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
-const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
-const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+// ⚠️ O CRM NÃO TEM VIDRO. Centenas de cards em colunas que rolam: desfoque aqui trava qualquer
+// notebook ("não pode travar nunca" — Nando, 11/09). Card sólido, coluna sólida, só o modal é de vidro.
+const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', boxShadow: 'var(--shadow-sm)' }
+const inp = { backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const sel = { backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+const btnPrimary = { background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties
 
 function diaDoCiclo(criadoEm: string): number {
   const inicio = new Date(criadoEm)
@@ -468,34 +472,36 @@ export default function CRM() {
       <div style={{ padding: '24px clamp(12px, 4vw, 40px)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
           <div>
-            <h1 style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', margin: 0 }}>CRM</h1>
-            <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 4 }}>{leadsAtivos.length} lead(s) ativos no funil</p>
+            <h1 className="display relevo-titulo" style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', margin: 0, lineHeight: 1.05 }}>Funil</h1>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 5 }}><b className="tnum" style={{ color: 'var(--text)' }}>{leadsAtivos.length}</b> lead{leadsAtivos.length === 1 ? '' : 's'} ativo{leadsAtivos.length === 1 ? '' : 's'} no funil</p>
           </div>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center' }}>
-            <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, overflow: 'hidden' }}>
-              <button onClick={() => setVisao('kanban')}
-                style={{ padding: '8px 16px', background: visao === 'kanban' ? 'var(--accent)' : 'transparent', color: visao === 'kanban' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                Kanban
-              </button>
-              <button onClick={() => setVisao('lista')}
-                style={{ padding: '8px 16px', background: visao === 'lista' ? 'var(--accent)' : 'transparent', color: visao === 'lista' ? 'var(--on-accent)' : 'var(--text-muted)', border: 'none', fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                Lista
-              </button>
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* kanban × lista: um controle segmentado */}
+            <div style={{ display: 'flex', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: 3, gap: 2 }}>
+              {([['kanban', 'Colunas', Columns3], ['lista', 'Lista', List]] as const).map(([v, nome, Icone]) => (
+                <button key={v} onClick={() => setVisao(v)}
+                  style={{ padding: '6px 13px', background: visao === v ? 'var(--accent-bg)' : 'transparent', color: visao === v ? 'var(--accent-soft)' : 'var(--text-muted)', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: visao === v ? 700 : 500, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                  <Icone size={14} /> {nome}
+                </button>
+              ))}
             </div>
             {visao === 'kanban' && (
               <button onClick={() => setVerPorFase(v => !v)} title="Agrupar por FASE da turma (calendário) em vez de etapa de negociação"
-                style={{ padding: '8px 16px', background: verPorFase ? 'var(--accent)' : 'var(--surface)', color: verPorFase ? 'var(--on-accent)' : 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, fontWeight: 500, cursor: 'pointer' }}>
-                📅 Por fase
+                style={{ ...btnSecondary, background: verPorFase ? 'var(--accent-bg)' : 'var(--surface)', color: verPorFase ? 'var(--accent-soft)' : 'var(--text-2)', borderColor: verPorFase ? 'var(--accent)' : 'var(--border-strong)' }}>
+                <CalendarRange size={14} /> Por fase
               </button>
             )}
-            <button onClick={() => { setLeadEditando(null); setNovoLead(true); setModalAberto(true) }} style={btnPrimary}>
-              + Novo lead
+            <button onClick={() => { setLeadEditando(null); setNovoLead(true); setModalAberto(true) }} className="btn-afunda" style={btnPrimary}>
+              <Plus size={15} strokeWidth={2.4} /> Novo lead
             </button>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: 12, marginBottom: 20, flexWrap: 'wrap' }}>
-          <input style={{ ...inp, minWidth: 220, flex: '0 1 280px' }} placeholder="🔎 Buscar por nome ou telefone..." value={busca} onChange={e => setBusca(e.target.value)} />
+        <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+          <div style={{ position: 'relative', minWidth: 220, flex: '0 1 300px' }}>
+            <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', pointerEvents: 'none' }} />
+            <input style={{ ...inp, paddingLeft: 34 }} placeholder="Buscar por nome ou telefone" value={busca} onChange={e => setBusca(e.target.value)} />
+          </div>
           <select style={sel} value={filtroTurma} onChange={e => setFiltroTurma(e.target.value)}>
             <option value="">Todas as turmas</option>
             {turmas.map(t => (
@@ -512,8 +518,8 @@ export default function CRM() {
           )}
           <select style={sel} value={filtroAtendido} onChange={e => setFiltroAtendido(e.target.value as any)} title="Quem atende o lead">
             <option value="geral">Geral (IA + humano)</option>
-            <option value="humano">👤 Só humano</option>
-            <option value="ia">🤖 Só IA</option>
+            <option value="humano">Só humano</option>
+            <option value="ia">Só IA</option>
           </select>
           {(busca || filtroTurma || filtroVendedor || filtroAtendido !== 'geral') && (
             <button onClick={() => { setBusca(''); setFiltroTurma(''); setFiltroVendedor(''); setFiltroAtendido('geral') }} style={btnSecondary}>Limpar</button>
@@ -536,11 +542,12 @@ export default function CRM() {
                     setColunaAlvo(null)
                     if (l && col.dropEtapa && l.etapa !== col.dropEtapa) { await moverEtapa(l, col.dropEtapa) }
                   }}
-                  style={{ flex: '0 0 260px', minHeight: 400, borderRadius: 8, outline: colunaAlvo === col.id ? `2px dashed ${col.cor}` : '2px dashed transparent', transition: 'outline-color 0.15s' }}>
-                  <div style={{ background: col.bg, border: `1px solid ${col.cor}40`, borderRadius: 8, padding: '8px 12px', marginBottom: 8 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: 11, fontWeight: 600, color: col.cor, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{col.label}</span>
-                      <span style={{ fontSize: 12, color: col.cor }}>{leadsEtapa.length}</span>
+                  style={{ flex: '0 0 268px', minHeight: 400, borderRadius: 'var(--r-lg)', padding: 4, background: colunaAlvo === col.id ? 'var(--surface-2)' : 'transparent', outline: colunaAlvo === col.id ? `2px dashed ${col.cor}` : '2px dashed transparent', transition: 'outline-color 0.15s, background 0.15s' }}>
+                  {/* o cabeçalho da coluna: a cor da etapa numa barrinha em cima, e a conta na fonte de números */}
+                  <div style={{ background: col.bg, borderRadius: 'var(--r)', padding: '9px 12px', marginBottom: 8, boxShadow: `inset 0 3px 0 ${col.cor}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 800, color: col.cor, textTransform: 'uppercase', letterSpacing: '0.08em', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{col.label}</span>
+                      <span className="display tnum" style={{ fontSize: 16, fontWeight: 800, color: col.cor }}>{leadsEtapa.length}</span>
                     </div>
                   </div>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 340px)', overflowY: 'auto', paddingRight: 4 }}>
@@ -556,43 +563,34 @@ export default function CRM() {
                           onDragStart={e => { if (!col.dropEtapa) return; dragLeadRef.current = lead; e.dataTransfer.effectAllowed = 'move' }}
                           onDragEnd={() => { dragLeadRef.current = null; setColunaAlvo(null) }}
                           onClick={() => { setLeadEditando(lead); setNovoLead(false); setModalAberto(true) }}
-                          style={{ ...card, padding: 12, cursor: col.dropEtapa ? 'grab' : 'pointer', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)' }}>
+                          className="card-hover"
+                          style={{ ...card, padding: '11px 12px', cursor: col.dropEtapa ? 'grab' : 'pointer', border: alerta ? '1px solid var(--red)' : '1px solid var(--border)', boxShadow: alerta ? 'inset 3px 0 0 var(--red)' : 'var(--shadow-sm)' }}>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 6 }}>
-                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--text)', flex: 1 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle' }} />}{lead.nome}</div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-                              {(lead as any).temperatura && (() => { const t = (lead as any).temperatura; const tc = t === 'quente' ? { c: '#ef4444', e: '🔥' } : t === 'morno' ? { c: 'var(--amber)', e: '🌡️' } : { c: '#60a5fa', e: '❄️' }; return <span title={`Temperatura: ${t}`} style={{ fontSize: 9, fontWeight: 700, color: tc.c, border: `1px solid ${tc.c}`, borderRadius: 20, padding: '1px 6px', whiteSpace: 'nowrap' }}>{tc.e} {t}</span> })()}
-                              <div style={{ fontSize: 9, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 600 }}>D{dia}</div>
-                            </div>
+                            <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)', flex: 1, minWidth: 0, lineHeight: 1.3 }}>{lead.nao_lida && <span title="Não lida" style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: 'var(--green)', marginRight: 6, verticalAlign: 'middle', boxShadow: '0 0 0 3px var(--green-bg)' }} />}{lead.nome}</div>
+                            <span className="tnum" title={`Dia ${dia} do ciclo`} style={{ fontSize: 10.5, color: alerta ? 'var(--red)' : 'var(--text-faint)', fontWeight: 700, flexShrink: 0 }}>D{dia}</span>
                           </div>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 4 }}>{lead.whatsapp || '-'}</div>
-                          {lead.turmas && (
-                            <div style={{ fontSize: 10, color: 'var(--accent-soft)', marginTop: 6, padding: '2px 6px', background: 'var(--accent-bg)', borderRadius: 4, display: 'inline-block' }}>
-                              {lead.turmas.codigo || lead.turmas.produtos?.nome}
+                          <div className="tnum" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{lead.whatsapp || '—'}</div>
+                          {/* os estados em chips: cor pelo significado, ícone de traço, nunca emoji */}
+                          {((lead as any).temperatura || lead.turmas || verPorFase || tarefaAtrasada || cicloEstourou || prazoEstourou) && (
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
+                              {(lead as any).temperatura && (() => { const t = (lead as any).temperatura; return t === 'quente'
+                                ? <Chip tom="atencao" icone={Flame} pequeno title="Temperatura: quente">quente</Chip>
+                                : t === 'morno' ? <Chip tom="neutro" icone={Thermometer} pequeno title="Temperatura: morno">morno</Chip>
+                                : <Chip tom="info" icone={Snowflake} pequeno title="Temperatura: frio">frio</Chip> })()}
+                              {lead.turmas && <Chip tom="marca" pequeno>{lead.turmas.codigo || lead.turmas.produtos?.nome}</Chip>}
+                              {verPorFase && (() => { const ei = etapaInfo(lead.etapa); return <span title="Etapa da negociação" style={{ fontSize: 11, fontWeight: 700, color: ei.cor, padding: '1px 7px', background: ei.bg, borderRadius: 'var(--r-pill)' }}>{ei.label}</span> })()}
+                              {tarefaAtrasada && <Chip tom="ruim" icone={Clock} pequeno>tarefa atrasada</Chip>}
+                              {cicloEstourou && <Chip tom="ruim" icone={AlertTriangle} pequeno>ciclo estourou</Chip>}
+                              {prazoEstourou && <Chip tom="ruim" icone={AlertTriangle} pequeno>prazo venceu</Chip>}
                             </div>
                           )}
-                          {verPorFase && (() => { const ei = etapaInfo(lead.etapa); return (
-                            <div title="Etapa da negociação" style={{ fontSize: 10, color: ei.cor, marginTop: 6, marginLeft: 6, padding: '2px 6px', background: ei.bg, borderRadius: 4, display: 'inline-block' }}>{ei.label}</div>
-                          ) })()}
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
-                            <div style={{ fontSize: 10, color: 'var(--text-faint)' }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
-                            <div style={{ display: 'flex', gap: 4 }}>
-                              {tarefaAtrasada && (
-                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ tarefa</div>
-                              )}
-                              {cicloEstourou && (
-                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ ciclo</div>
-                              )}
-                              {prazoEstourou && (
-                                <div style={{ fontSize: 9, color: 'var(--red)', fontWeight: 600 }}>⚠ prazo</div>
-                              )}
-                            </div>
-                          </div>
+                          <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 7 }}>{ORIGEM_LABEL[lead.origem] || lead.origem}</div>
                         </div>
                       )
                     })}
                     {leadsEtapa.length === 0 && (
-                      <div style={{ padding: '20px 12px', textAlign: 'center', fontSize: 11, color: 'var(--text-faint)', border: '1px dashed var(--border)', borderRadius: 8 }}>
-                        Vazio
+                      <div style={{ padding: '22px 12px', textAlign: 'center', fontSize: 12, color: 'var(--text-faint)', border: '1px dashed var(--border-strong)', borderRadius: 'var(--r)' }}>
+                        Nenhum lead aqui
                       </div>
                     )}
                   </div>
@@ -603,11 +601,11 @@ export default function CRM() {
             <div style={{ marginTop: 20, borderTop: '1px solid var(--border)', paddingTop: 16 }}>
               <div style={{ display: 'flex', gap: 12, marginBottom: 12 }}>
                 <button onClick={() => setVerFinalizados(!verFinalizados)} style={btnSecondary}>
-                  {verFinalizados ? '▾ Esconder' : '▸ Mostrar'} finalizados
+                  {verFinalizados ? <ChevronDown size={14} /> : <ChevronRight size={14} />} {verFinalizados ? 'Esconder' : 'Mostrar'} finalizados
                 </button>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 16, fontSize: 13 }}>
-                  <span style={{ color: 'var(--green-strong)', fontWeight: 600 }}>Ganho: {leadsGanho.length}</span>
-                  <span style={{ color: 'var(--red)', fontWeight: 600 }}>Perda: {leadsPerda.length}</span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <Chip tom="bom">Ganho · {leadsGanho.length}</Chip>
+                  <Chip tom="ruim">Perda · {leadsPerda.length}</Chip>
                 </div>
               </div>
               {verFinalizados && (
@@ -653,9 +651,9 @@ export default function CRM() {
             ) : (
               <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
                 <thead>
-                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--bg)' }}>
+                  <tr style={{ borderBottom: '1px solid var(--border)', background: 'var(--surface-2)' }}>
                     {['Nome', 'WhatsApp', 'Turma', 'Etapa', 'Dia', 'Origem', 'Criado em'].map(h => (
-                      <th key={h} style={{ textAlign: 'left', padding: '12px 16px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 500, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{h}</th>
+                      <th key={h} style={{ textAlign: 'left', padding: '11px 16px', fontSize: 11, color: 'var(--text-muted)', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
