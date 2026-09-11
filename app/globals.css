@@ -1,6 +1,7 @@
 /* Fontes: Manrope fala (texto e interface), Bricolage Grotesque grita (títulos e números grandes,
-   condensada — eco do wordmark do logo). @import tem que vir primeiro. */
-@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap');
+   condensada — eco do wordmark do logo). As duas entram pelo next/font no app/layout.tsx, que
+   define --f-manrope e --f-bricolage. (O @import do Google que ficava aqui nunca chegou ao
+   navegador — o sistema abria na fonte do sistema operacional sem ninguém notar.) */
 
 /* ============================================================
    TEMA (claro/escuro) — tokens de cor
@@ -101,7 +102,7 @@
 html, body { background: var(--bg); color: var(--text); }
 body {
   transition: background-color .2s ease, color .2s ease;
-  font-family: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
+  font-family: var(--f-manrope, 'Manrope'), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji', sans-serif;
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -111,7 +112,7 @@ input, textarea, select { color: var(--text); font-family: inherit; }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
 
 /* A fonte que grita: títulos de página e números grandes. Condensada (wdth) pra ecoar o logo. */
-.display { font-family: 'Bricolage Grotesque', 'Manrope', system-ui, sans-serif; font-variation-settings: 'opsz' 96, 'wdth' 85; letter-spacing: -0.025em; }
+.display { font-family: var(--f-bricolage, 'Bricolage Grotesque'), var(--f-manrope, 'Manrope'), system-ui, sans-serif; font-variation-settings: 'opsz' 96, 'wdth' 85; letter-spacing: -0.025em; }
 .tnum { font-variant-numeric: tabular-nums; }
 
 /* ============================================================

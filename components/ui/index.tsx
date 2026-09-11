@@ -140,9 +140,9 @@ export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, se
         )}
       </div>
       <div className={'display tnum' + (destaque && !alerta ? ' relevo-numero' : '')} style={{ fontSize: destaque ? 38 : 34, fontWeight: destaque ? 800 : 700, lineHeight: 1, color: alerta ? 'var(--red)' : cor || 'var(--text)' }}>
-        {prefixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'Manrope', letterSpacing: 0, marginRight: 4 }}>{prefixo}</span>}
+        {prefixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--f-manrope)', letterSpacing: 0, marginRight: 4 }}>{prefixo}</span>}
         {valor}
-        {sufixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'Manrope', letterSpacing: 0, marginLeft: 2 }}>{sufixo}</span>}
+        {sufixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'var(--f-manrope)', letterSpacing: 0, marginLeft: 2 }}>{sufixo}</span>}
       </div>
       {linha ? (
         <svg viewBox="0 0 200 34" preserveAspectRatio="none" style={{ width: '100%', height: 34, display: 'block' }} aria-hidden="true">
