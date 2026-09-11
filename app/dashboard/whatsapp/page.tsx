@@ -450,8 +450,8 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
     if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
     if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
-    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
-    if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>{m.texto || 'documento'}</a>
+    if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>Áudio</span>
     return null
   }
 
@@ -480,7 +480,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
                 {conversa.telefone}
                 <button onClick={() => { setNomeEd(conversa.nome || ''); setFoneEd(conversa.telefone || ''); setEditInfo(true) }}
                   title="Editar nome/telefone do contato"
-                  style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 12, padding: 0 }}>✏️ editar</button>
+                  style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 12, padding: 0 }}>editar</button>
               </div>
               {disparoInfo && (
                 <div style={{ marginTop: 5 }}>
@@ -529,9 +529,9 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
       </div>
       {sugestao && (
         <div style={{ margin: '0 12px', padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
-          <span style={{ color: '#a78bfa', fontWeight: 700 }}>✨ Copiloto</span>
+          <span style={{ color: '#a78bfa', fontWeight: 700 }}>Copiloto</span>
           {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
-          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
+          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>{sugestao.dica}</div>}
           <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
         </div>
       )}
@@ -553,7 +553,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
           style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
         <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta com a IA (Copiloto)"
-          style={{ ...btnPrimary, background: 'rgba(167,139,250,.16)', border: '1px solid #a78bfa', color: '#a78bfa', fontWeight: 700, padding: '8px 14px', whiteSpace: 'nowrap' }}>{sugerindo ? '… gerando' : '✨ Sugerir'}</button>
+          style={{ ...btnPrimary, background: 'rgba(167,139,250,.16)', border: '1px solid #a78bfa', color: '#a78bfa', fontWeight: 700, padding: '8px 14px', whiteSpace: 'nowrap' }}>{sugerindo ? '… gerando' : 'Sugerir'}</button>
         <div style={{ position: 'relative' }}>
           {showEmoji && (
             <div style={{ position: 'absolute', bottom: '110%', left: 0, zIndex: 30, width: 268, maxHeight: 180, overflowY: 'auto', background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 10, padding: 8, boxShadow: 'var(--shadow)', display: 'grid', gridTemplateColumns: 'repeat(8, 1fr)', gap: 2 }}>
@@ -575,7 +575,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
       </div>
       {pendenteAudio && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', margin: '0 12px 8px', background: 'rgba(245,158,11,.14)', border: '1px solid #f59e0b', borderRadius: 10, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 13, color: 'var(--text)', flex: 1, minWidth: 160 }}>🎤 Áudio pronto — enviando em <b>{restante}s</b>… dá pra cancelar antes de sair.</span>
+          <span style={{ fontSize: 13, color: 'var(--text)', flex: 1, minWidth: 160 }}>Áudio pronto — enviando em <b>{restante}s</b>… dá pra cancelar antes de sair.</span>
           <button onClick={cancelarEnvioAudio} style={{ background: 'var(--red)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>✖ Cancelar</button>
           <button onClick={enviarAudioAgora} style={{ background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>Enviar agora</button>
         </div>

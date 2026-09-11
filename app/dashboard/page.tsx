@@ -288,8 +288,8 @@ export default function Dashboard() {
         </Card>
       )}
 
-      {/* O QUE PRECISA DE TI — antes dos gráficos */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+      {/* O QUE PRECISA DE TI — antes dos gráficos. alignItems start: um painel vazio não estica até a altura do outro */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14, alignItems: 'start' }}>
         {ehAdmin && (
           <Painel titulo="Precisa de ti" href="/dashboard/agenda" hrefTexto="Abrir agenda →">
             {tarefasUrgentes.length === 0

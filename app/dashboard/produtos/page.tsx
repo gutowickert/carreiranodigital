@@ -73,7 +73,7 @@ export default function Produtos() {
                 <div key={p.id} style={{ ...card, padding: 14, display: 'flex', alignItems: 'center', gap: 12, opacity: p.ativo ? 1 : .5 }}>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{p.nome} {!p.ativo && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>(inativo)</span>}</div>
-                    <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{[p.tipo, p.modalidade, p.agendavel ? '📅 agendável' : ''].filter(Boolean).join(' · ')}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{[p.tipo, p.modalidade, p.agendavel ? 'agendável' : ''].filter(Boolean).join(' · ')}</div>
                   </div>
                   {p.preco_venda != null && <div style={{ fontSize: 14, fontWeight: 700, color: 'var(--green-strong)' }}>R$ {Number(p.preco_venda).toLocaleString('pt-BR')}</div>}
                   <button onClick={() => { setF({ id: p.id, nome: p.nome, tipo: p.tipo || 'Serviço', modalidade: p.modalidade || '', preco_venda: p.preco_venda ?? '', agendavel: !!p.agendavel, descricao: p.descricao || '', ativo: p.ativo }); window.scrollTo({ top: 0, behavior: 'smooth' }) }} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>Editar</button>

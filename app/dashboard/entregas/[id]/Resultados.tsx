@@ -70,7 +70,7 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
   return (
     <div style={{ ...card, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>📣 Conta de anúncio {d?.conta?.nome ? <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>· {d.conta.nome}</span> : null}</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Conta de anúncio {d?.conta?.nome ? <span style={{ fontWeight: 400, color: 'var(--text-faint)' }}>· {d.conta.nome}</span> : null}</div>
         {!semConta && (
           <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexWrap: 'wrap' }}>
             <select style={{ ...inp, width: 'auto', padding: '5px 8px', fontSize: 12.5 }} value={periodo} onChange={e => escolher(e.target.value)}>
@@ -96,7 +96,7 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
       ) : carregando && !d ? (
         <div style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 10 }}>Lendo a Meta…</div>
       ) : !d?.ok ? (
-        <div style={{ fontSize: 12.5, color: 'var(--amber)', marginTop: 10, lineHeight: 1.55 }}>⚠️ {d?.error || 'não consegui ler a conta'}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--amber)', marginTop: 10, lineHeight: 1.55 }}>{d?.error || 'não consegui ler a conta'}</div>
       ) : (
         <div style={{ opacity: carregando ? .55 : 1, transition: 'opacity .15s' }}>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(110px,1fr))', gap: 8, marginTop: 12 }}>
@@ -184,7 +184,7 @@ export function Placar({ projeto, linhas, aoMudar }: { projeto: any; linhas: any
     const [de, ate] = limitesMes(mes)
     const j = await fetchAuth(`/api/projetos/meta?id=${projeto.id}&de=${de}&ate=${ate}`).then(r => r.json()).catch(() => null)
     setLendo(false)
-    if (!j?.ok) { setMsg('⚠️ Não consegui ler a Meta: ' + (j?.error || 'falha') + ' — preenche à mão.'); return }
+    if (!j?.ok) { setMsg('Não consegui ler a Meta: ' + (j?.error || 'falha') + ' — preenche à mão.'); return }
     setF({ ...base, verba: j.total.gasto.toFixed(2), conversas: String(j.total.conversas ?? ''), imposto_pct: j.total.impostoPct ?? null,
       leads: base.leads !== '' && base.leads != null ? base.leads : String(j.total.conversas ?? '') })
   }
@@ -210,7 +210,7 @@ export function Placar({ projeto, linhas, aoMudar }: { projeto: any; linhas: any
       ? { acao: 'placar_novo', projeto_id: projeto.id, ponto_a: true, ...f }
       : { acao: 'placar_novo', projeto_id: projeto.id, ponto_a: false, ...f }
     const j = await post(corpo)
-    if (j.ok) { setAberto(null); setMsg(''); aoMudar() } else setMsg('⚠️ ' + (j.error || 'falha'))
+    if (j.ok) { setAberto(null); setMsg(''); aoMudar() } else setMsg('' + (j.error || 'falha'))
   }
 
   // o mês que faz sentido fechar agora: o anterior, se ainda não foi fechado
@@ -247,7 +247,7 @@ export function Placar({ projeto, linhas, aoMudar }: { projeto: any; linhas: any
   return (
     <div style={{ ...card, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>📊 Fechamento do mês</div>
+        <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Fechamento do mês</div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={abrirPontoA} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{pontoA ? 'Ponto A' : '+ Ponto A'}</button>
           <button onClick={() => abrirMes(sugerido)} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>+ Fechar mês</button>
@@ -357,7 +357,7 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
   async function salvar() {
     const j = await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: projeto.id, ...f }) })
       .then(r => r.json()).catch(() => ({ ok: false, error: 'falha de rede' }))
-    if (j.ok) { setEditando(false); setMsg(''); aoMudar() } else setMsg('⚠️ ' + (j.error || 'falha'))
+    if (j.ok) { setEditando(false); setMsg(''); aoMudar() } else setMsg('' + (j.error || 'falha'))
   }
 
   if (editando) return (
@@ -390,7 +390,7 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
   return (
     <div style={{ marginTop: 12, padding: '11px 12px', borderRadius: 8, background: 'var(--surface-2)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8, alignItems: 'baseline', flexWrap: 'wrap' }}>
-        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>🎯 Meta por mês até {br(projeto.data_fim)}</div>
+        <div style={{ fontSize: 10.5, fontWeight: 700, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Meta por mês até {br(projeto.data_fim)}</div>
         <button onClick={() => { setF(deProjeto()); setEditando(true) }} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '2px 5px', fontWeight: 400 }}>editar</button>
       </div>
       {projeto.meta_objetivo && <div style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 4, lineHeight: 1.5 }}>{projeto.meta_objetivo}</div>}
@@ -445,17 +445,17 @@ export function Registros({ projeto, itens, aoMudar }: { projeto: any; itens: an
   const [f, setF] = useState<any>(vazioForm())
 
   async function salvar() {
-    if (!f.titulo.trim()) { setMsg('⚠️ dá um título'); return }
+    if (!f.titulo.trim()) { setMsg('dá um título'); return }
     setEnviando(true); setMsg('')
     let arquivo: any = {}
     if (f.arquivo) {
-      if (f.arquivo.type === 'application/pdf' && f.arquivo.size > 3 * 1024 * 1024) { setMsg('⚠️ PDF acima de 3 MB — manda um print no lugar'); setEnviando(false); return }
+      if (f.arquivo.type === 'application/pdf' && f.arquivo.size > 3 * 1024 * 1024) { setMsg('PDF acima de 3 MB — manda um print no lugar'); setEnviando(false); return }
       try { const c = await comprimir(f.arquivo); arquivo = { arquivo_base64: c.base64, arquivo_mime: c.mime } }
-      catch { setMsg('⚠️ não consegui ler o arquivo'); setEnviando(false); return }
+      catch { setMsg('não consegui ler o arquivo'); setEnviando(false); return }
     }
     const j = await post({ acao: 'registro_novo', projeto_id: projeto.id, tipo: f.arquivo ? 'prova' : f.tipo, frente: f.frente, titulo: f.titulo, descricao: f.descricao, data: f.data, autorizado_uso: f.autorizado_uso, dados_ocultos: f.dados_ocultos, ...arquivo })
     setEnviando(false)
-    if (j.ok) { setAberto(false); setF(vazioForm()); aoMudar() } else setMsg('⚠️ ' + (j.error || 'falha'))
+    if (j.ok) { setAberto(false); setF(vazioForm()); aoMudar() } else setMsg('' + (j.error || 'falha'))
   }
 
   const liberadas = itens.filter(x => x.tipo === 'prova' && x.autorizado_uso === 'sim' && x.dados_ocultos).length
@@ -465,7 +465,7 @@ export function Registros({ projeto, itens, aoMudar }: { projeto: any; itens: an
     <div style={{ ...card, padding: 14 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
         <div>
-          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>🏆 Resultados e provas</div>
+          <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>Resultados e provas</div>
           {provas > 0 && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 2 }}>{liberadas} de {provas} {provas === 1 ? 'prova liberada' : 'provas liberadas'} pra uso público</div>}
         </div>
         <button onClick={() => setAberto(v => !v)} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>+ Registrar</button>

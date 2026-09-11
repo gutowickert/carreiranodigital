@@ -71,7 +71,7 @@ export default function AgenteInterno() {
     const files = Array.from(e.target.files || []); e.target.value = ''
     setAnexando(true)
     for (const f of files) {
-      if (f.size > 12 * 1024 * 1024) { setAviso('⚠️ arquivo acima de 12MB'); continue }
+      if (f.size > 12 * 1024 * 1024) { setAviso('arquivo acima de 12MB'); continue }
       const data = await lerBase64(f)
       const tipo = f.type === 'application/pdf' ? 'document' : 'image'
       setPendentes(p => [...p, { tipo, media_type: f.type, data, nome: f.name }])
@@ -81,11 +81,11 @@ export default function AgenteInterno() {
   async function onAudio(e: React.ChangeEvent<HTMLInputElement>) {
     const f = (e.target.files || [])[0]; e.target.value = ''
     if (!f) return
-    setAnexando(true); setAviso('🎤 transcrevendo…')
+    setAnexando(true); setAviso('transcrevendo…')
     try {
       const data = await lerBase64(f)
       const j = await fetch('/api/agente/transcrever', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: data, mime: f.type }) }).then(r => r.json())
-      if (j.ok) { setInput(i => (i ? i + ' ' : '') + j.texto); setAviso('') } else setAviso(`⚠️ ${j.error}`)
+      if (j.ok) { setInput(i => (i ? i + ' ' : '') + j.texto); setAviso('') } else setAviso(`${j.error}`)
     } finally { setAnexando(false) }
   }
 
@@ -96,9 +96,9 @@ export default function AgenteInterno() {
     setMsgs(novo); setInput(''); setPendentes([]); setPensando(true)
     try {
       const j = await fetch('/api/agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, mensagens: novo }) }).then(r => r.json())
-      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `⚠️ ${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias.map((p: any, i: number) => ({ ...p, _uid: `${m.length}-${i}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}` })) : undefined }])
+      setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias.map((p: any, i: number) => ({ ...p, _uid: `${m.length}-${i}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}` })) : undefined }])
     } catch {
-      setMsgs(m => [...m, { role: 'assistant', content: '⚠️ falha de conexão' }])
+      setMsgs(m => [...m, { role: 'assistant', content: 'falha de conexão' }])
     } finally { setPensando(false) }
   }
 
@@ -108,8 +108,8 @@ export default function AgenteInterno() {
     if (j.ok) {
       const r = j.resultado || {}
       const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : pend.tipo === 'fluxo' ? (r.fluxo_atualizado || 'fluxo atualizado') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
-      setFeitas(f => ({ ...f, [pend._uid]: '✅ ' + txt }))
-    } else setFeitas(f => ({ ...f, [pend._uid]: '⚠️ ' + (j.error || 'falhou') }))
+      setFeitas(f => ({ ...f, [pend._uid]: '' + txt }))
+    } else setFeitas(f => ({ ...f, [pend._uid]: '' + (j.error || 'falhou') }))
   }
 
   async function salvar() {
@@ -118,7 +118,7 @@ export default function AgenteInterno() {
     const titulo = window.prompt('Dê um nome pra essa conversa (pra achar depois):', sugestao)
     if (titulo === null) return
     const j = await fetch('/api/agente/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, titulo, mensagens: msgs }) }).then(r => r.json())
-    setAviso(j.ok ? '💾 Salva!' : `⚠️ ${j.error}`)
+    setAviso(j.ok ? '💾 Salva!' : `${j.error}`)
     setTimeout(() => setAviso(''), 3000)
   }
   async function carregarSalvas() {
@@ -147,10 +147,10 @@ export default function AgenteInterno() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', maxWidth: 820, margin: '0 auto', padding: '20px 20px 0' }}>
       <div style={{ marginBottom: 12 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, flexWrap: 'wrap' }}>
-          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🧠 Agente Interno</h1>
+          <h1 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Agente Interno</h1>
           <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
             {aviso && <span style={{ fontSize: 12, color: 'var(--green)' }}>{aviso}</span>}
-            <button onClick={() => setModo(m => m === 'agente' ? 'simular' : 'agente')} style={{ ...btnTop, borderColor: 'var(--accent)', color: 'var(--accent-soft)', fontWeight: 600 }}>{modo === 'agente' ? '🎭 Simular atendimento' : '🧠 Voltar ao agente'}</button>
+            <button onClick={() => setModo(m => m === 'agente' ? 'simular' : 'agente')} style={{ ...btnTop, borderColor: 'var(--accent)', color: 'var(--accent-soft)', fontWeight: 600 }}>{modo === 'agente' ? '🎭 Simular atendimento' : 'Voltar ao agente'}</button>
             {modo === 'agente' && <>
               <button onClick={() => { setMsgs([]); setMostrarSalvas(false) }} style={btnTop}>➕ Nova</button>
               <button onClick={salvar} style={btnTop}>💾 Salvar</button>
@@ -192,13 +192,13 @@ export default function AgenteInterno() {
             <div style={{ maxWidth: m.role === 'user' ? '85%' : '96%', fontSize: 14, lineHeight: 1.5, padding: '10px 14px', borderRadius: 12, background: m.role === 'user' ? 'var(--accent)' : 'var(--surface)', color: m.role === 'user' ? 'var(--on-accent)' : 'var(--text)', border: m.role === 'user' ? 'none' : '1px solid var(--border)', whiteSpace: m.role === 'user' ? 'pre-wrap' : 'normal' }}>
               {(m.anexos || []).map((a, j) => a.tipo === 'image'
                 ? <img key={j} src={`data:${a.media_type};base64,${a.data}`} style={{ maxWidth: 220, borderRadius: 8, display: 'block', marginBottom: 6 }} />
-                : <div key={j} style={{ fontSize: 12, opacity: 0.9, marginBottom: 6 }}>📎 {a.nome}</div>)}
+                : <div key={j} style={{ fontSize: 12, opacity: 0.9, marginBottom: 6 }}>{a.nome}</div>)}
               {m.role === 'assistant' ? <Md>{m.content}</Md> : m.content}
             </div>
             {(m.pendencias || []).map((p: any) => (
               <div key={p._uid} style={{ width: '96%', marginTop: 8, background: 'var(--surface)', border: '1px solid var(--accent)', borderRadius: 12, padding: 14 }}>
                 <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)', marginBottom: 8 }}>
-                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? '🧩 Remover ajuste da IA de vendas' : '🧩 Novo ajuste no treinamento da IA') : p.tipo === 'fluxo' ? '🔄 Ajuste no fluxo comercial' : (p.acao === 'criar' ? '👤 Criar lead' : '✏️ Atualizar lead')}
+                  {p.tipo === 'despesas' ? `💸 Cadastrar ${p.itens.length} despesa(s) — ${brl(p.itens.reduce((s: number, d: any) => s + d.valor, 0))}` : p.tipo === 'regra_ia' ? (p.acao === 'remover' ? 'Remover ajuste da IA de vendas' : 'Novo ajuste no treinamento da IA') : p.tipo === 'fluxo' ? '🔄 Ajuste no fluxo comercial' : (p.acao === 'criar' ? 'Criar lead' : 'Atualizar lead')}
                 </div>
                 {p.tipo === 'despesas' ? (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 10 }}>
@@ -220,7 +220,7 @@ export default function AgenteInterno() {
                   <div style={{ fontSize: 13, fontWeight: 600, color: feitas[p._uid].startsWith('⚠️') ? 'var(--red)' : 'var(--green)' }}>{feitas[p._uid]}</div>
                 ) : (
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={() => confirmar(p)} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>✅ Confirmar</button>
+                    <button onClick={() => confirmar(p)} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Confirmar</button>
                     <button onClick={() => setFeitas(f => ({ ...f, [p._uid]: '✖ descartado' }))} style={{ background: 'var(--surface-2)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}>Descartar</button>
                   </div>
                 )}
@@ -276,8 +276,8 @@ function SimAtendimento() {
     setMsgs(dialog); setInput(''); setPensando(true)
     try {
       const j = await fetch('/api/atendimento/simular-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dialog: dialog.map(m => ({ de: m.de, texto: m.texto })), produto, cidade }) }).then(r => r.json())
-      setMsgs(m => [...m, j.ok ? { de: 'vendedor', texto: j.resposta, meta: j.meta } : { de: 'vendedor', texto: '⚠️ ' + j.error }])
-    } catch { setMsgs(m => [...m, { de: 'vendedor', texto: '⚠️ falha de conexão' }]) }
+      setMsgs(m => [...m, j.ok ? { de: 'vendedor', texto: j.resposta, meta: j.meta } : { de: 'vendedor', texto: '' + j.error }])
+    } catch { setMsgs(m => [...m, { de: 'vendedor', texto: 'falha de conexão' }]) }
     finally { setPensando(false) }
   }
 
@@ -297,7 +297,7 @@ function SimAtendimento() {
               {m.de === 'vendedor' && <div style={{ fontSize: 10, color: 'var(--accent-soft)', fontWeight: 700, marginBottom: 3 }}>VENDEDOR IA</div>}
               {m.texto}
             </div>
-            {m.meta && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 3 }}>🎯 {m.meta.etapa} · ação: {m.meta.acao}{m.meta.etiqueta?.turma_alvo && m.meta.etiqueta.turma_alvo !== 'indefinido' ? ' · ' + m.meta.etiqueta.turma_alvo : ''}</div>}
+            {m.meta && <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 3 }}>{m.meta.etapa} · ação: {m.meta.acao}{m.meta.etiqueta?.turma_alvo && m.meta.etiqueta.turma_alvo !== 'indefinido' ? ' · ' + m.meta.etiqueta.turma_alvo : ''}</div>}
           </div>
         ))}
         {pensando && <div style={{ fontSize: 13, color: 'var(--text-faint)' }}>o vendedor está pensando…</div>}

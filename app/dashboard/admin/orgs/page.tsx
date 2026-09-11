@@ -45,7 +45,7 @@ function Marca({ o, onAcao }: { o: any; onAcao: (ac: string, extra?: any) => Pro
         <input type="color" style={{ ...inp, width: 44, padding: 2, height: 32 }} value={cor} onChange={e => setCor(e.target.value)} title="Cor da marca" />
         {logo && <img src={logo} alt="" style={{ height: 30, maxWidth: 90, objectFit: 'contain', background: '#fff', borderRadius: 4, padding: 2 }} />}
         <label style={{ ...inp, cursor: 'pointer', background: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>
-          {subindo ? 'enviando…' : '📎 Anexar logo'}
+          {subindo ? 'enviando…' : 'Anexar logo'}
           <input type="file" accept="image/png,image/jpeg,image/webp,image/svg+xml" style={{ display: 'none' }} onChange={e => { const f = e.target.files?.[0]; if (f) anexar(f) }} />
         </label>
         <button disabled={salvando} onClick={async () => { setSalvando(true); await onAcao('branding', { nome, cor, logo_url: logo }); setSalvando(false); setAberto(false) }} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '6px 12px', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{salvando ? '…' : 'Salvar marca'}</button>
@@ -106,7 +106,7 @@ export default function AdminOrgs() {
     return j
   }
 
-  if (semAcesso) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>🔒 Painel restrito ao administrador da Carreira no Digital.</div>
+  if (semAcesso) return <div style={{ padding: 40, color: 'var(--text-faint)' }}>Painel restrito ao administrador da Carreira no Digital.</div>
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
@@ -134,8 +134,8 @@ export default function AdminOrgs() {
             <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Senha inicial * (mín. 6)</label><input style={inp} value={f.adminSenha} onChange={e => setF({ ...f, adminSenha: e.target.value })} placeholder="senha123" /></div>
           </div>
           <button onClick={criarOrg} disabled={criando} style={{ marginTop: 14, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: criando ? .6 : 1 }}>{criando ? 'Criando…' : 'Criar cliente'}</button>
-          {resultado?.erro && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--red)' }}>⚠️ {resultado.erro}</div>}
-          {resultado?.email && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--green-strong)', background: 'var(--green-bg)', borderRadius: 8, padding: 10 }}>✅ <b>{resultado.nome}</b> criada! Login: <b>{resultado.email}</b> · senha: <b>{resultado.senha}</b> — passa isso pro cliente (ele troca a senha depois).</div>}
+          {resultado?.erro && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--red)' }}>{resultado.erro}</div>}
+          {resultado?.email && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--green-strong)', background: 'var(--green-bg)', borderRadius: 8, padding: 10 }}><b>{resultado.nome}</b> criada! Login: <b>{resultado.email}</b> · senha: <b>{resultado.senha}</b> — passa isso pro cliente (ele troca a senha depois).</div>}
         </div>
       )}
 

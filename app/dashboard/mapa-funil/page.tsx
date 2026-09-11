@@ -51,13 +51,13 @@ export default function MapaFunil() {
 
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
         <KPI label="Leads ativos" valor={d.total} sub="em etapa ativa (fora de ganho/perda)" />
-        <KPI label="🤖 IA cuida" valor={d.totalIA} cor={IA} sub="follow-up automático pela cadência — não precisa de tarefa" />
+        <KPI label="IA cuida" valor={d.totalIA} cor={IA} sub="follow-up automático pela cadência — não precisa de tarefa" />
         <KPI label="👥 Time cuida" valor={d.totalTime} cor={TIME} sub="respondeu recente, agendado, pagamento, chegada, Ligação Boa" />
-        <KPI label="⚠️ Time sem tarefa" valor={d.paradosTime} cor={RED} sub="do time E sem próximo passo — os PARADOS de verdade" />
+        <KPI label="Time sem tarefa" valor={d.paradosTime} cor={RED} sub="do time E sem próximo passo — os PARADOS de verdade" />
         <KPI label="@lid inválido" valor={d.lid} cor="var(--amber)" sub="sem número real — inalcançável" />
       </div>
       <div style={{ ...card, padding: '10px 14px', marginBottom: 24, fontSize: 12, color: 'var(--text-2)', background: 'var(--surface-2)' }}>
-        💡 Lead da <b style={{ color: IA }}>IA</b> sem tarefa <b>não é "parado"</b> — a cadência cuida sozinha. Por isso o "parado" que importa é só o <b style={{ color: RED }}>⚠️ Time sem tarefa ({d.paradosTime})</b>.
+        💡 Lead da <b style={{ color: IA }}>IA</b> sem tarefa <b>não é "parado"</b> — a cadência cuida sozinha. Por isso o "parado" que importa é só o <b style={{ color: RED }}>Time sem tarefa ({d.paradosTime})</b>.
       </div>
 
       <h2 style={{ fontSize: 13, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '0 0 12px' }}>Por etapa</h2>
@@ -93,13 +93,13 @@ export default function MapaFunil() {
       <div style={{ ...card, padding: 16, marginTop: 20, fontSize: 12.5, color: 'var(--text-2)', display: 'flex', flexDirection: 'column', gap: 8 }}>
         <div style={{ fontWeight: 700, color: 'var(--text)' }}>Como ler</div>
         <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-          <Chip cor={IA} txt="🤖 IA — cadência automática" />
+          <Chip cor={IA} txt="IA — cadência automática" />
           <Chip cor={TIME} txt="👥 Time — atende quem responde" />
           <Chip cor={FRIO} txt="frio — nunca respondeu" />
           <Chip cor={ENG} txt="engajado — respondeu / atendeu ligação" />
-          <Chip cor={RED} txt="⚠️ parado — time, sem tarefa" />
+          <Chip cor={RED} txt="parado — time, sem tarefa" />
         </div>
-        <div style={{ color: 'var(--text-faint)', lineHeight: 1.5 }}>Cada etapa tem 2 barras: <b>Dono</b> (quem cuida) e <b>Engajamento</b> (respondeu ou não). Passe o mouse pra ver os números. A <b style={{ color: '#f59e0b' }}>🔥 Ligação Boa</b> é onde o time guarda quem vai fechar — a IA não toca.</div>
+        <div style={{ color: 'var(--text-faint)', lineHeight: 1.5 }}>Cada etapa tem 2 barras: <b>Dono</b> (quem cuida) e <b>Engajamento</b> (respondeu ou não). Passe o mouse pra ver os números. A <b style={{ color: '#f59e0b' }}>Ligação Boa</b> é onde o time guarda quem vai fechar — a IA não toca.</div>
       </div>
     </div>
   )

@@ -197,6 +197,41 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 @media (prefers-reduced-motion: reduce) { .logo3d-obj { animation: none; } }
 
 /* ============================================================
+   VESTIR AS TELAS ANTIGAS — sem abrir cada uma.
+   Há ~70 títulos, ~40 cards e ~30 botões escritos à mão, um por tela. Estas regras pegam pelo
+   PADRÃO do estilo inline (é o que o React escreve no atributo style) e vestem todos de uma vez:
+   título na fonte de gritar, card antigo vira vidro LEVE (a translucidez sem o desfoque — custo
+   zero), botão principal ganha o gradiente, campo e select ganham o raio e a seta da casa.
+   Tela nova NÃO precisa disto: usa components/ui. Isto é a ponte enquanto as antigas migram.
+   `.conteudo` é o miolo do Layout (menu fora).
+   ============================================================ */
+.conteudo h1 { font-family: var(--f-bricolage, 'Bricolage Grotesque'), var(--f-manrope, 'Manrope'), system-ui, sans-serif; font-variation-settings: 'opsz' 96, 'wdth' 85; letter-spacing: -0.025em; text-shadow: 1px 1px 0 var(--accent-bg), 2px 2px 0 var(--accent-bg), 0 8px 16px rgba(0,0,0,.18); }
+.conteudo h2 { font-family: var(--f-bricolage, 'Bricolage Grotesque'), var(--f-manrope, 'Manrope'), system-ui, sans-serif; font-variation-settings: 'opsz' 40, 'wdth' 90; letter-spacing: -0.015em; }
+/* card antigo (borda suave + raio) → vidro leve. Só div: input, chip e botão com a mesma borda ficam como estão. */
+.conteudo div[style*="1px solid var(--border)"][style*="border-radius"]:not([style*="var(--red-bg)"]):not([style*="var(--green-bg)"]):not([style*="var(--amber-bg)"]):not([style*="var(--blue-bg)"]):not([style*="var(--accent-bg)"]) {
+  background: var(--glass) !important; border-color: var(--glass-border) !important;
+  box-shadow: inset 0 1px 0 var(--glass-hi), var(--glass-shadow) !important;
+}
+/* botão principal antigo (fundo na cor da marca, sem gradiente) → o gradiente, e afunda no clique */
+.conteudo button[style*="background-color: var(--accent)"], .conteudo a[style*="background-color: var(--accent)"] {
+  background: var(--grad) !important; border-radius: var(--r) !important; font-weight: 700 !important;
+  box-shadow: 0 3px 0 var(--grad-escuro), 0 12px 20px -8px var(--glow) !important;
+}
+.conteudo button[style*="background-color: var(--accent)"]:active:not(:disabled) { transform: translateY(3px) !important; box-shadow: 0 0 0 var(--grad-escuro) !important; }
+/* campos: mesmo raio em toda tela; select com a seta da casa e SEM crescer além do lugar
+   (um select não encolhe abaixo da opção mais longa sozinho — era o que passava por cima da busca) */
+.conteudo input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), .conteudo select, .conteudo textarea { border-radius: var(--r) !important; min-width: 0; max-width: 100%; }
+.conteudo select {
+  -webkit-appearance: none; appearance: none;
+  background-image: var(--seta-select); background-repeat: no-repeat; background-position: right 10px center; background-size: 14px;
+  padding-right: 30px !important;
+}
+:root, [data-theme="dark"] { --seta-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239a93ae' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); --grad-escuro: #4c1d95; }
+[data-theme="light"] { --seta-select: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e6885' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); --grad-escuro: #3b1a7a; }
+/* tabela: cabeçalho em caixa alta miúda, como nas telas novas */
+.conteudo th { font-size: 11px !important; font-weight: 800 !important; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted) !important; }
+
+/* ============================================================
    POLISH GLOBAL — vale pra qualquer tela (não depende de tokens)
    ============================================================ */
 /* Títulos com leve aperto de letra (cara mais "desenhada") */

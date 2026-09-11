@@ -287,7 +287,7 @@ export default function Disparos() {
                     onChange={e => { const f = e.target.files?.[0]; if (f) subirHeaderMidia(f); e.target.value = '' }} />
                   <button type="button" onClick={() => headerFileRef.current?.click()} disabled={subindoMidia}
                     style={{ ...btn, background: 'var(--surface-2)', opacity: subindoMidia ? 0.6 : 1 }}>
-                    {subindoMidia ? 'Enviando...' : '📎 Escolher arquivo'}
+                    {subindoMidia ? 'Enviando...' : 'Escolher arquivo'}
                   </button>
                   {headerArquivo && <span style={{ fontSize: 12, color: 'var(--green)' }}>✓ {headerArquivo}</span>}
                 </div>
@@ -322,7 +322,7 @@ export default function Disparos() {
         )}
 
         <button onClick={disparar} disabled={rodando || !tpl || contatos.length === 0} style={{ ...btn, background: '#25D366', opacity: (rodando || !tpl || contatos.length === 0) ? 0.5 : 1 }}>
-          {rodando ? `Enviando... ${progresso.feitos}/${progresso.total}` : '🚀 Disparar'}
+          {rodando ? `Enviando... ${progresso.feitos}/${progresso.total}` : 'Disparar'}
         </button>
 
         {rodando && (

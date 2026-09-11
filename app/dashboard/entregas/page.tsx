@@ -47,13 +47,13 @@ export default function Entregas() {
   useEffect(() => { carregar() }, [])
 
   async function criar() {
-    if (!f.cliente || !f.data_inicio) { setMsg('⚠️ cliente e data de início são obrigatórios'); return }
+    if (!f.cliente || !f.data_inicio) { setMsg('cliente e data de início são obrigatórios'); return }
     const j = await fetchAuth('/api/projetos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) }).then(r => r.json()).catch(() => null)
     if (j?.ok) {
-      setMsg(`✅ Projeto criado com ${j.marcos} marcos no roteiro.`)
+      setMsg(`Projeto criado com ${j.marcos} marcos no roteiro.`)
       setNovo(false); setF({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
       carregar()
-    } else setMsg('⚠️ ' + (j?.error || 'falha'))
+    } else setMsg('' + (j?.error || 'falha'))
     setTimeout(() => setMsg(''), 4000)
   }
 
@@ -66,12 +66,12 @@ export default function Entregas() {
     <div style={{ padding: '28px 32px', maxWidth: 1080, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📦 Entregas</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Entregas</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Os clientes que já compraram e estão sendo entregues. O CRM termina no ganho — aqui começa o depois.</p>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <Link href="/dashboard/entregas/trafego" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>📈 Tráfego</Link>
-          <Link href="/dashboard/entregas/agenda" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>📅 Agenda</Link>
+          <Link href="/dashboard/entregas/trafego" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>Tráfego</Link>
+          <Link href="/dashboard/entregas/agenda" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>Agenda</Link>
           <button onClick={() => setNovo(v => !v)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Novo projeto</button>
         </div>
       </div>
@@ -116,7 +116,7 @@ export default function Entregas() {
         </div>
       )}
 
-      <input style={{ ...inp, marginTop: 14, maxWidth: 320 }} placeholder="🔎 buscar cliente…" value={filtro} onChange={e => setFiltro(e.target.value)} />
+      <input style={{ ...inp, marginTop: 14, maxWidth: 320 }} placeholder="buscar cliente…" value={filtro} onChange={e => setFiltro(e.target.value)} />
 
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 24 }}>Carregando…</div> : (
         <>

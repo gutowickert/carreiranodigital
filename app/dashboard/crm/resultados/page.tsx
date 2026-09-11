@@ -145,7 +145,7 @@ export default function Resultados() {
                   <XAxis type="number" hide />
                   <YAxis type="category" dataKey="nome" width={130} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                   <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} formatter={(v: any) => fmt(v)} />
-                  <Bar dataKey="val" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={15} />
+                  <Bar dataKey="val" fill="var(--accent)" radius={[0, 4, 4, 0]} barSize={15} />
                 </BarChart>
               </ResponsiveContainer>
             )}

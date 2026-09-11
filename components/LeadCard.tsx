@@ -53,7 +53,7 @@ const ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
-  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  { id: 'ligacao_boa', label: 'Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'ganho', label: 'Ganho', cor: 'var(--green-strong)', bg: 'var(--green-bg)' },
@@ -185,7 +185,7 @@ export default function LeadCardModal({ leadId, onClose }: { leadId: string; onC
     } else if (novaEtapa === 'aguardando_pagamento' && extras?.dataAgendada) {
       await criarTarefaComData(l.id, l.vendedor_id, 'verificar_pagamento', `Verificar pagamento — ${l.nome}`, 'Cliente disse que vai pagar. Confirmar se pagamento foi efetuado.', extras.dataAgendada)
     } else if (novaEtapa === 'ligacao_boa' && extras?.dataAgendada) {
-      await criarTarefaComData(l.id, l.vendedor_id, 'ligacao_boa', `🔥 Ligação Boa — ${l.nome}`, 'Cliente com alto potencial de fechamento (avaliado na ligação). Atenção especial no horário marcado — a IA não atende este.', extras.dataAgendada)
+      await criarTarefaComData(l.id, l.vendedor_id, 'ligacao_boa', `Ligação Boa — ${l.nome}`, 'Cliente com alto potencial de fechamento (avaliado na ligação). Atenção especial no horário marcado — a IA não atende este.', extras.dataAgendada)
     } else if ((novaEtapa === 'agendado' || novaEtapa === 'proxima_turma') && extras?.dataAgendada) {
       await criarTarefaComData(l.id, l.vendedor_id, novaEtapa, `${novaEtapa === 'agendado' ? 'Contato agendado' : 'Próxima turma'} — ${l.nome}`, novaEtapa === 'agendado' ? 'Retomar contato com o lead (agendado).' : 'Lead para a próxima turma. Retomar contato.', extras.dataAgendada)
     } else {
@@ -446,7 +446,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     if (!p.length) return
     await supabase.from('lead_andamentos').insert({
       lead_id: lead.id, vendedor_id: meuPerfil?.id || lead.vendedor_id,
-      tipo: 'ligacao', observacao: '📞 ' + p.join(' · '),
+      tipo: 'ligacao', observacao: '' + p.join(' · '),
     })
     setLig({ entendeu: false, explicou: false, passouPreco: false, preco: '', loteprazo: '', situacao: '', proximo: '' })
     setMostrarLig(false)
@@ -701,7 +701,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
             fantasma nos relatórios. Nesse caso o caminho é cancelar a matrícula em Turmas. */}
         {!novoLead && lead && lead.etapa === 'ganho' && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>✅ Venda fechada</div>
+            <div style={{ fontSize: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Venda fechada</div>
             <div style={{ background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'var(--text)' }}>
               {(lead as any).valor_venda != null && (
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)' }}>
@@ -831,7 +831,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
               {mostrarAgendado && (
                 <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 8, border: '1px solid var(--blue)' }}>
-                  <label style={labelStyle}>📅 Chamar o lead em: *</label>
+                  <label style={labelStyle}>Chamar o lead em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
                     <input type="time" style={{ ...inp, width: 110 }} value={agendadoHora} onChange={e => setAgendadoHora(e.target.value)} />
@@ -845,7 +845,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
               {mostrarLigBoa && (
                 <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
-                  <label style={labelStyle}>🔥 Cliente quente (vai fechar) — atenção especial. Chamar em: *</label>
+                  <label style={labelStyle}>Cliente quente (vai fechar) — atenção especial. Chamar em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={ligBoaData} onChange={e => setLigBoaData(e.target.value)} />
                     <input type="time" style={{ ...inp, width: 110 }} value={ligBoaHora} onChange={e => setLigBoaHora(e.target.value)} />
@@ -896,7 +896,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
               {/* Registro ESTRUTURADO de ligação — pra IA saber o que já foi feito */}
               {!mostrarLig
-                ? <button onClick={() => setMostrarLig(true)} style={{ ...btnPrimary, background: 'var(--accent-bg)', color: 'var(--accent-soft)', marginBottom: 10 }}>📞 Registrar ligação/atendimento</button>
+                ? <button onClick={() => setMostrarLig(true)} style={{ ...btnPrimary, background: 'var(--accent-bg)', color: 'var(--accent-soft)', marginBottom: 10 }}>Registrar ligação/atendimento</button>
                 : (
                   <div style={{ background: 'var(--bg)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>O que rolou na ligação?</div>
@@ -931,7 +931,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                     <div style={{ color: 'var(--text-2)' }}>{a.observacao}</div>
                     <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
                       {a.tipo && a.tipo !== 'observacao' && <span style={{ color: 'var(--accent-soft)', marginRight: 6 }}>[{a.tipo}]</span>}
-                      {a.vendedor_id && nomeUsuario(a.vendedor_id) && <span style={{ color: 'var(--text-muted)', marginRight: 6 }}>👤 {nomeUsuario(a.vendedor_id)}</span>}
+                      {a.vendedor_id && nomeUsuario(a.vendedor_id) && <span style={{ color: 'var(--text-muted)', marginRight: 6 }}>{nomeUsuario(a.vendedor_id)}</span>}
                       {new Date(a.criado_em).toLocaleString('pt-BR')}
                     </div>
                   </div>
@@ -947,7 +947,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
             {!novoLead && lead && podeExcluir && (
               <button onClick={excluir} disabled={excluindo}
                 style={{ background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
-                {excluindo ? 'Excluindo...' : '🗑 Excluir lead'}
+                {excluindo ? 'Excluindo...' : 'Excluir lead'}
               </button>
             )}
           </div>
@@ -1006,7 +1006,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
           {em && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{emFmt}</span>}
           <button onClick={gerar} disabled={gerando} title="Atualizar resumo"
             style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: stale ? 'var(--amber)' : 'var(--text-muted)', fontSize: 11, padding: '3px 8px', cursor: gerando ? 'default' : 'pointer' }}>
-            {gerando ? '...' : dados ? '🔄 Atualizar' : '✨ Gerar'}
+            {gerando ? '...' : dados ? '🔄 Atualizar' : 'Gerar'}
           </button>
         </div>
       </div>
@@ -1024,7 +1024,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
           {!gerando && dados && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {dados.temperatura && <Chip txt={`🔥 ${dados.temperatura}`} cor={corTemp(dados.temperatura)} />}
+                {dados.temperatura && <Chip txt={`${dados.temperatura}`} cor={corTemp(dados.temperatura)} />}
                 {dados.jaExplicouCurso && <Chip txt={lblCurso(dados.jaExplicouCurso)} cor={corCurso(dados.jaExplicouCurso)} />}
               </div>
               {dados.ondeParou && <div style={{ fontSize: 12, color: 'var(--text)' }}><b style={{ color: 'var(--text-muted)' }}>Onde parou:</b> {dados.ondeParou}</div>}
@@ -1226,8 +1226,8 @@ function ChatLead({ lead }: { lead: Lead }) {
     if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
     if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
-    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
-    if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>{m.texto || 'documento'}</a>
+    if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>Áudio</span>
     return null
   }
 
@@ -1283,9 +1283,9 @@ function ChatLead({ lead }: { lead: Lead }) {
 
       {sugestao && (
         <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
-          <span style={{ color: '#a78bfa', fontWeight: 700 }}>✨ Copiloto</span>
+          <span style={{ color: '#a78bfa', fontWeight: 700 }}>Copiloto</span>
           {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
-          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
+          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>{sugestao.dica}</div>}
           <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
         </div>
       )}

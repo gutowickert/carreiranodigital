@@ -120,7 +120,7 @@ function Cartao({ l, aoDica }: { l: any; aoDica: (d: Dica) => void }) {
       </div>
 
       {!l.ok ? (
-        <div style={{ fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.55 }}>⚠️ {l.erro}</div>
+        <div style={{ fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.55 }}>{l.erro}</div>
       ) : (
         <>
           <div style={{ display: 'grid', gridTemplateColumns: '1.1fr 1fr 1fr', gap: 10 }}>
@@ -177,7 +177,7 @@ export default function TrafegoClientes() {
       {/* filtros numa linha só, acima de tudo */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📈 Tráfego dos clientes</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Tráfego dos clientes</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Todos os clientes com conta de anúncio ligada, lidos direto da Meta. O investido já inclui o imposto que a Meta cobra ({d?.linhas?.find((l: any) => l.atual?.impostoPct != null)?.atual?.impostoPct?.toString().replace(".", ",") ?? "12,15"}%).</p>
         </div>
         <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -206,10 +206,10 @@ export default function TrafegoClientes() {
       )}
 
       {carregando && !d ? <div style={{ color: 'var(--text-faint)', padding: 24 }}>Lendo a Meta de cada cliente…</div>
-        : !d?.ok ? <div style={{ ...card, padding: 16, marginTop: 16, fontSize: 13, color: 'var(--amber)' }}>⚠️ {d?.error || 'não consegui carregar'}</div>
+        : !d?.ok ? <div style={{ ...card, padding: 16, marginTop: 16, fontSize: 13, color: 'var(--amber)' }}>{d?.error || 'não consegui carregar'}</div>
         : !linhas.length ? (
           <div style={{ ...card, padding: 18, marginTop: 16, fontSize: 13, color: 'var(--text-faint)' }}>
-            Nenhum cliente com conta de anúncio ligada. Liga na ficha do cliente, no bloco <b>📣 Conta de anúncio</b>.
+            Nenhum cliente com conta de anúncio ligada. Liga na ficha do cliente, no bloco <b>Conta de anúncio</b>.
           </div>
         ) : (
           <div style={{ opacity: carregando ? .55 : 1, transition: 'opacity .15s' }}>
@@ -260,7 +260,7 @@ export default function TrafegoClientes() {
                         </div>
                       </td>
                       {!l.ok ? (
-                        <td colSpan={4} style={{ ...td, textAlign: 'left', fontSize: 12, color: 'var(--amber)' }}>⚠️ {l.erro}</td>
+                        <td colSpan={4} style={{ ...td, textAlign: 'left', fontSize: 12, color: 'var(--amber)' }}>{l.erro}</td>
                       ) : (
                         <>
                           <td style={td}>

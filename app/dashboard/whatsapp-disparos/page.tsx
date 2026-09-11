@@ -195,8 +195,8 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
     if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
     if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
-    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>📎 {m.texto || 'documento'}</a>
-    if (m.tipo === 'audio') return <span style={{ fontSize: 12, opacity: 0.8 }}>🎤 Áudio</span>
+    if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>{m.texto || 'documento'}</a>
+    if (m.tipo === 'audio') return <span style={{ fontSize: 12, opacity: 0.8 }}>Áudio</span>
     if (m.tipo === 'imagem') return <span style={{ fontSize: 12, opacity: 0.8 }}>📷 Imagem</span>
     return null
   }
@@ -289,7 +289,7 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
       </div>
       {dispCtx && (
         <div style={{ padding: '8px 16px', borderBottom: '1px solid var(--border)', background: 'var(--blue-bg)', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase' }}>📣 Respondeu ao disparo</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--blue)', textTransform: 'uppercase' }}>Respondeu ao disparo</span>
           <span style={{ fontSize: 13, color: 'var(--text)', fontWeight: 600 }}>{dispCtx.nome}</span>
           <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>· {dispCtx.template}{dispCtx.enviado_em ? ` · ${new Date(dispCtx.enviado_em).toLocaleDateString('pt-BR')}` : ''}</span>
         </div>
@@ -319,9 +319,9 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
       )}
       {sugestao && (
         <div style={{ margin: '0 12px', padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
-          <span style={{ color: '#a78bfa', fontWeight: 700 }}>✨ Copiloto</span>
+          <span style={{ color: '#a78bfa', fontWeight: 700 }}>Copiloto</span>
           {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
-          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>💡 {sugestao.dica}</div>}
+          {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>{sugestao.dica}</div>}
           <div style={{ color: '#6b7280', marginTop: 2, fontSize: 11 }}>Rascunho na caixa abaixo — revise e envie.</div>
         </div>
       )}

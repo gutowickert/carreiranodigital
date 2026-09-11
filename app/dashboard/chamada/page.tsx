@@ -109,12 +109,12 @@ export default function Chamada() {
 
             {/* Certificados — você escolhe quem gerar */}
             <div style={{ marginBottom: 16 }}>
-              <button onClick={carregarCerts} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>🎓 Gerar certificados {certs ? '▾' : '▸'}</button>
+              <button onClick={carregarCerts} style={{ ...inp, cursor: 'pointer', fontWeight: 600 }}>Gerar certificados {certs ? '▾' : '▸'}</button>
               {certs && (
                 <div style={{ ...card, padding: 14, marginTop: 8 }}>
                   <div style={{ fontSize: 12, color: 'var(--text-faint)', marginBottom: 10 }}>Escolha quem quer gerar. <b style={{ color: 'var(--text-muted)' }}>Baixar PNG</b> gera o arquivo pra mandar imprimir; <b style={{ color: 'var(--text-muted)' }}>abrir</b> mostra a prévia.</div>
                   {certs.length > 0 && (
-                    <a href={`/api/certificado/zip?turma=${turmaId}`} style={{ display: 'inline-block', fontSize: 13, color: '#fff', background: 'var(--accent)', textDecoration: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 700, marginBottom: 12 }}>📦 Baixar todos (ZIP) — {certs.length} certificados</a>
+                    <a href={`/api/certificado/zip?turma=${turmaId}`} style={{ display: 'inline-block', fontSize: 13, color: '#fff', background: 'var(--accent)', textDecoration: 'none', borderRadius: 6, padding: '8px 16px', fontWeight: 700, marginBottom: 12 }}>Baixar todos (ZIP) — {certs.length} certificados</a>
                   )}
                   {certs.length === 0 ? <span style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nenhum aluno na turma.</span> : (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

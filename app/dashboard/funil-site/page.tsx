@@ -32,8 +32,8 @@ type EventoRow = { visitor_id: string; sessao_id: string; evento: string; url: s
 
 const EVENTO_LABEL: Record<string, string> = {
   page_view: '👁 viu a página', scroll_50: '📜 rolou 50%', scroll_90: '📜 rolou 90%',
-  video_play: '▶️ deu play', video_50: '▶️ viu metade do vídeo', viu_oferta: '🎯 viu a oferta',
-  viu_preco: '💰 viu o preço', cta_view: '🔘 CTA na tela', cta_click: '👉 clicou no CTA',
+  video_play: '▶️ deu play', video_50: '▶️ viu metade do vídeo', viu_oferta: 'viu a oferta',
+  viu_preco: 'viu o preço', cta_view: '🔘 CTA na tela', cta_click: '👉 clicou no CTA',
 }
 const labelEv = (e: string) => EVENTO_LABEL[e] || e
 
@@ -116,7 +116,7 @@ function AbaFunil({ de, ate }: { de: string; ate: string }) {
   // As duas últimas são CASADAS por pessoa (mesmo visitor_id) — não o total de
   // cliques de todas as origens.
   const etapas = [
-    { label: 'Visitantes', n: f.visitantes, cor: '#7c3aed', desc: 'entraram no site' },
+    { label: 'Visitantes', n: f.visitantes, cor: 'var(--accent)', desc: 'entraram no site' },
     { label: 'Viram o CTA', n: f.viuCta, cor: '#5b21b6', desc: 'o botão apareceu na tela (no load)' },
     { label: 'Engajaram', n: f.engajaram, cor: '#4f46e5', desc: 'rolaram / viram oferta / vídeo' },
     { label: 'Clicaram no CTA', n: f.clicouCta, cor: '#2563eb', desc: 'clicaram no botão de WhatsApp' },
@@ -127,7 +127,7 @@ function AbaFunil({ de, ate }: { de: string; ate: string }) {
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))', gap: 12, marginBottom: 24 }}>
-        <KPI label="Visitantes" valor={f.visitantes.toLocaleString('pt-BR')} cor="#a78bfa" />
+        <KPI label="Visitantes" valor={f.visitantes.toLocaleString('pt-BR')} cor="var(--accent-soft)" />
         <KPI label="Engajaram" valor={f.engajaram.toLocaleString('pt-BR')} sub={`${pctN(f.engajaram, topo)}% dos visitantes`} />
         <KPI label="Viram o CTA" valor={f.viuCta.toLocaleString('pt-BR')} sub={`${pctN(f.viuCta, topo)}% dos visitantes`} />
         <KPI label="Clicaram no CTA" valor={f.clicouCta.toLocaleString('pt-BR')} cor="#60a5fa" sub={`${pctN(f.clicouCta, topo)}% dos visitantes`} />
@@ -174,7 +174,7 @@ function AbaFunil({ de, ate }: { de: string; ate: string }) {
                 <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} allowDecimals={false} />
                 <Tooltip {...tipProps} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
-                <Line type="monotone" dataKey="visitantes" name="Visitantes" stroke="#a78bfa" strokeWidth={2} dot={false} />
+                <Line type="monotone" dataKey="visitantes" name="Visitantes" stroke="var(--accent-soft)" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="cliquesWa" name="Cliques /wa" stroke="#0ea5e9" strokeWidth={2} dot={false} />
                 <Line type="monotone" dataKey="leads" name="Leads" stroke="#10b981" strokeWidth={2} dot={false} />
               </LineChart>
@@ -274,7 +274,7 @@ function AbaJornadas({ de, ate }: { de: string; ate: string }) {
                 </span>
                 <span style={{ fontSize: 11, color: 'var(--text-faint)', fontFamily: 'monospace' }}>{j.visitor_id.slice(0, 12)}</span>
                 {j.turma && <Tag>{j.turma}</Tag>}
-                {j.campanha && <Tag c="#a78bfa">{j.campanha}</Tag>}
+                {j.campanha && <Tag c="var(--accent-soft)">{j.campanha}</Tag>}
                 <span style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-faint)' }}>
                   {j.nEventos} eventos · {j.paginas.length} pág · {dataHora(j.inicio)}
                 </span>
@@ -497,7 +497,7 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
                   {tdNum(r.impressions ? r.impressions.toLocaleString('pt-BR') : '—')}
                   {tdNum(r.clicks ? r.clicks.toLocaleString('pt-BR') : '—', '#f59e0b')}
                   {tdNum(r.impressions ? ((r.clicks / r.impressions) * 100).toFixed(1) + '%' : '—')}
-                  {tdNum(r.visitou, '#a78bfa')}
+                  {tdNum(r.visitou, 'var(--accent-soft)')}
                   {tdNum(cv == null ? '—' : cv + '%', cv == null ? 'var(--text-faint)' : cv >= 60 ? 'var(--green)' : cv >= 30 ? 'var(--amber)' : 'var(--red)')}
                   {tdNum(r.engajou)}{tdNum(r.clicou, '#60a5fa')}{tdNum(r.whats)}{tdNum(r.leads, 'var(--green)')}
                   {tdNum(r.leads && r.spend ? fmt(r.spend / r.leads) : '—')}

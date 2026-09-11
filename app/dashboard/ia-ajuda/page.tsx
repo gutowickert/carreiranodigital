@@ -26,7 +26,7 @@ export default function IAAjuda() {
   }
   async function resolver(leadId: string) {
     const j = await fetchAuth('/api/ia/ajuda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId, acao: 'resolver' }) }).then(r => r.json())
-    setAviso(j.ok ? '✅ Handoff resolvido' : `⚠️ ${j.error}`)
+    setAviso(j.ok ? 'Handoff resolvido' : `${j.error}`)
     setTimeout(() => setAviso(''), 2500)
     if (j.ok) carregar()
   }

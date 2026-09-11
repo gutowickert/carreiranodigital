@@ -25,7 +25,7 @@ export default function FollowupIA() {
 
   return (
     <div style={{ padding: '32px 40px', maxWidth: 1040, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>📊 Follow-up automático</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Follow-up automático</h1>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 22px' }}>Resultados de hoje ({d.hoje}) e custo da automação — pra decidir. A IA roda os follow-ups; o time atende quem responde.</p>
 
       {/* KPIs do dia */}
@@ -41,7 +41,7 @@ export default function FollowupIA() {
         {/* custos */}
         <div style={{ ...card, padding: 18 }}>
           <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 14px' }}>💸 Custo de hoje</h3>
-          <Linha label="🤖 IA (Claude)" valor={d.custos?.ia_fmt} />
+          <Linha label="IA (Claude)" valor={d.custos?.ia_fmt} />
           <Linha label="🟢 WhatsApp (templates)" valor={d.custos?.wa_fmt} />
           <div style={{ height: 1, background: 'var(--border)', margin: '10px 0' }} />
           <Linha label="Total do dia" valor={d.custos?.total_fmt} forte />
@@ -51,7 +51,7 @@ export default function FollowupIA() {
 
         {/* funil */}
         <div style={{ ...card, padding: 18 }}>
-          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 14px' }}>📍 Onde estão os frios da IA</h3>
+          <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 14px' }}>Onde estão os frios da IA</h3>
           {Object.entries(d.funil || {}).map(([et, n]: any) => (
             <div key={et} style={{ marginBottom: 10 }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, color: 'var(--text-2)', marginBottom: 4 }}><span>{ETAPA_LABEL[et] || et}</span><b>{n}</b></div>
@@ -64,7 +64,7 @@ export default function FollowupIA() {
 
       {/* série 7 dias */}
       <div style={{ ...card, padding: 18, marginTop: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 14px' }}>📈 Follow-ups por dia (7 dias)</h3>
+        <h3 style={{ fontSize: 14, fontWeight: 700, color: 'var(--text-2)', margin: '0 0 14px' }}>Follow-ups por dia (7 dias)</h3>
         <div style={{ display: 'flex', alignItems: 'flex-end', gap: 10, height: 120 }}>
           {(d.followups?.serie || []).map((s: any, i: number) => (
             <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6 }}>

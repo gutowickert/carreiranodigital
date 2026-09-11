@@ -18,17 +18,17 @@ const area: React.CSSProperties = { width: '100%', background: 'var(--surface-2)
 const btn = (bg: string): React.CSSProperties => ({ background: bg, color: '#fff', border: 'none', borderRadius: 10, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer' })
 
 function Tag({ p }: { p: 'quente' | 'followup' }) {
-  return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: p === 'quente' ? 'rgba(239,68,68,.15)' : 'rgba(34,197,94,.15)', color: p === 'quente' ? '#ef4444' : '#16a34a' }}>{p === 'quente' ? '🔥 respondeu' : '🌱 follow-up'}</span>
+  return <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: p === 'quente' ? 'rgba(239,68,68,.15)' : 'rgba(34,197,94,.15)', color: p === 'quente' ? '#ef4444' : '#16a34a' }}>{p === 'quente' ? 'respondeu' : '🌱 follow-up'}</span>
 }
 
 // Resumo pra DECIDIR: contexto do lead (funil/chegada/ligação/andamentos) + última fala do cliente + leitura da IA.
 function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
   const info = [
-    `📍 ${item.etapa}`,
+    `${item.etapa}`,
     item.chegouDias != null ? `chegou há ${item.chegouDias}d` : null,
     item.dSC != null ? `silêncio ${item.dSC}d` : null,
-    item.temLigacao ? `📞 ${item.temLigacao} ligação${item.temLigacao > 1 ? 'es' : ''} (IA leu)` : '📞 sem ligação',
-    item.qtdAndamentos ? `📝 ${item.qtdAndamentos} andamento${item.qtdAndamentos > 1 ? 's' : ''}` : '📝 sem andamento',
+    item.temLigacao ? `${item.temLigacao} ligação${item.temLigacao > 1 ? 'es' : ''} (IA leu)` : 'sem ligação',
+    item.qtdAndamentos ? `${item.qtdAndamentos} andamento${item.qtdAndamentos > 1 ? 's' : ''}` : 'sem andamento',
   ].filter(Boolean).join('   ·   ')
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -36,10 +36,10 @@ function Resumo({ item, sug }: { item: Item; sug: Sug | null }) {
       {item.ultimoAndamento
         ? <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '0 4px' }}>último andamento: “{item.ultimoAndamento}”</div> : null}
       {item.ultimaCliente
-        ? <div style={{ fontSize: 13.5, color: 'var(--text)', padding: '9px 12px', background: 'rgba(239,68,68,.08)', borderRadius: 8, borderLeft: '3px solid #ef4444' }}>👤 <b>Cliente:</b> “{item.ultimaCliente}”</div>
+        ? <div style={{ fontSize: 13.5, color: 'var(--text)', padding: '9px 12px', background: 'rgba(239,68,68,.08)', borderRadius: 8, borderLeft: '3px solid #ef4444' }}><b>Cliente:</b> “{item.ultimaCliente}”</div>
         : <div style={{ fontSize: 12, color: 'var(--text-faint)', padding: '7px 10px', background: 'var(--surface-2)', borderRadius: 8 }}>o cliente ainda não respondeu — este é um follow-up de reativação</div>}
       {sug?.situacao
-        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}>🤖 <b>Leitura da IA:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{(() => {
+        ? <div style={{ fontSize: 12.5, color: 'var(--text-2)', padding: '9px 12px', background: 'rgba(124,58,190,.08)', borderRadius: 8 }}><b>Leitura da IA:</b> {sug.situacao}{sug.objecao && sug.objecao !== 'nenhuma' ? ` · objeção: ${sug.objecao}` : ''}{(() => {
           const es = sug.etapa_sugerida
           if (!es || es === 'manter' || es === item.etapa) return ''
           const lbl = ETAPAS_MOVER.find(([id]) => id === es)?.[1] || (es === 'ganho' ? 'Ganho' : es === 'perda' ? 'Perda' : '')
@@ -72,7 +72,7 @@ function Thread({ msgs, carregando }: { msgs: Msg[]; carregando?: boolean }) {
     <div style={{ maxHeight: 300, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6, padding: 12, background: 'var(--surface-2)', borderRadius: 10 }}>
       {msgs.map((m, i) => (
         <div key={i} style={{ alignSelf: m.de === 'cliente' ? 'flex-start' : 'flex-end', maxWidth: '80%', background: m.de === 'cliente' ? 'var(--surface)' : 'var(--accent-bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '6px 11px', fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap' }}>
-          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>{m.de === 'cliente' ? '👤 cliente' : '💚 nós'} · {quando(m.em)}</div>
+          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginBottom: 1 }}>{m.de === 'cliente' ? 'cliente' : '💚 nós'} · {quando(m.em)}</div>
           {m.texto}
         </div>
       ))}
@@ -172,7 +172,7 @@ function ResumoPainel({ r }: { r: any }) {
   const maxDia = Math.max(1, ...(r.porDia || []).map((x: any) => x.n))
   return (
     <div style={{ ...card, padding: 16, marginTop: 16 }}>
-      <div style={{ ...secStyle, marginBottom: 10 }}>📊 Resumo de hoje</div>
+      <div style={{ ...secStyle, marginBottom: 10 }}>Resumo de hoje</div>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
         <Kpi emoji="🔥" n={r.responderam} label="responderam" cor="var(--red)" />
         <Kpi emoji="💬" n={r.followups} label="follow-ups frios" />
@@ -272,7 +272,7 @@ export default function AtenderPage() {
     <div style={{ padding: '28px 32px', maxWidth: 980, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🎯 Atender Agora</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Atender Agora</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>{carregando ? 'Carregando fila…' : `${nq} responderam · ${nf} follow-ups · 📋 ${lote.length} com tarefa · 🚩 ${parados.length} sem tarefa`}</p>
         </div>
         <button onClick={carregar} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>↻ Atualizar</button>
@@ -281,7 +281,7 @@ export default function AtenderPage() {
       {!carregando && resumo && <ResumoPainel r={resumo} />}
 
       <div style={{ display: 'flex', gap: 6, margin: '18px 0 20px', borderBottom: '1px solid var(--border)' }}>
-        {([['agora', '⚡ Atender Agora'], ['copiloto', '💬 Copiloto'], ['lote', '📋 Follow-up com tarefa'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
+        {([['agora', '⚡ Atender Agora'], ['copiloto', 'Copiloto'], ['lote', 'Follow-up com tarefa'], ['parados', '🚩 Sem tarefa']] as const).map(([k, t]) => (
           <button key={k} onClick={() => setAba(k)} style={{ background: 'none', border: 'none', borderBottom: `2px solid ${aba === k ? 'var(--accent)' : 'transparent'}`, color: aba === k ? 'var(--text)' : 'var(--text-faint)', fontSize: 14, fontWeight: 700, padding: '8px 12px', cursor: 'pointer', marginBottom: -1 }}>{t}</button>
         ))}
       </div>
@@ -289,7 +289,7 @@ export default function AtenderPage() {
       {(() => {
         if (carregando) return <div style={{ color: 'var(--text-faint)', padding: 40 }}>Montando a fila…</div>
         const dados = aba === 'lote' ? lote : aba === 'parados' ? parados : fila
-        if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? '🎉 Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : aba === 'parados' ? '🎉 Nenhum lead parado! Todos têm tarefa ou já foram movidos.' : '🎉 Fila zerada! Ninguém esperando resposta.'}</div>
+        if (dados.length === 0) return <div style={{ ...card, padding: 40, textAlign: 'center', color: 'var(--text-faint)' }}>{aba === 'lote' ? 'Sem follow-up pra hoje! Nenhuma tarefa vencendo.' : aba === 'parados' ? 'Nenhum lead parado! Todos têm tarefa ou já foram movidos.' : 'Fila zerada! Ninguém esperando resposta.'}</div>
         return aba === 'agora' ? <Agora fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
           : aba === 'copiloto' ? <Copiloto fila={dados} sugerir={sugerir} enviar={enviar} onFeito={feito} abrirCard={setCardLead} />
             : <Lote key={aba} fila={dados} sugerir={sugerir} enviar={enviar} abrirCard={setCardLead} semTarefa={aba === 'parados'} />
@@ -347,7 +347,7 @@ function Agora({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[]; su
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-faint)', marginBottom: 8 }}><span>Lead {idx + 1} de {fila.length}</span><span>✅ {feitos} enviados</span></div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-faint)', marginBottom: 8 }}><span>Lead {idx + 1} de {fila.length}</span><span>{feitos} enviados</span></div>
       <div style={{ ...card, padding: 20 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <Tag p={item.prioridade} />
@@ -361,19 +361,19 @@ function Agora({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[]; su
           <div style={{ marginTop: 8 }}><Thread msgs={msgs} carregando={carregandoConv} /></div>
         </details>
 
-        <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)' }}>💬 SUGESTÃO DA IA — revise e aprove {pensando && '· pensando…'}</div>
+        <div style={{ marginTop: 14, fontSize: 12, fontWeight: 700, color: 'var(--text-faint)' }}>SUGESTÃO DA IA — revise e aprove {pensando && '· pensando…'}</div>
         {pensando ? <div style={{ ...area, color: 'var(--text-faint)', display: 'flex', alignItems: 'center' }}>montando a melhor resposta…</div>
           : <textarea value={texto} onChange={e => setTexto(e.target.value)} style={{ ...area, marginTop: 6 }} />}
         {sug?.baseado_em && <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>base: {sug.baseado_em}</div>}
-        {erro && <div style={{ fontSize: 13, color: 'var(--red)', marginTop: 8 }}>⚠️ {erro}</div>}
+        {erro && <div style={{ fontSize: 13, color: 'var(--red)', marginTop: 8 }}>{erro}</div>}
 
         <div style={{ display: 'flex', gap: 10, marginTop: 16, flexWrap: 'wrap' }}>
           {(() => {
             const mv = moverSugerido(sug, item.etapa)
             if (!mv) return null
-            return <button onClick={() => aprovarEMover(mv[0])} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
+            return <button onClick={() => aprovarEMover(mv[0])} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `Enviar e mover → ${mv[1]}`}</button>
           })()}
-          <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : '✅ Enviar & Próximo'}</button>
+          <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : 'Enviar & Próximo'}</button>
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
           <button onClick={() => abrirCard(item.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
@@ -407,7 +407,7 @@ function Copiloto({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[];
       <div style={{ ...card, padding: 6, maxHeight: 560, overflowY: 'auto' }}>
         {fila.map(it => (
           <button key={it.leadId} onClick={() => setSel(it)} style={{ display: 'block', width: '100%', textAlign: 'left', background: sel?.leadId === it.leadId ? 'var(--accent-bg)' : 'transparent', border: 'none', borderRadius: 8, padding: '9px 10px', cursor: 'pointer', marginBottom: 2 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{feito[it.leadId] ? '✅ ' : ''}{it.nome}</span></div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{feito[it.leadId] ? '' : ''}{it.nome}</span></div>
             <div style={{ fontSize: 11, color: 'var(--text-faint)' }}>{it.prioridade === 'quente' ? '🔥' : '🌱'} {it.etapa} · {it.dSC}d</div>
           </button>
         ))}
@@ -426,9 +426,9 @@ function Copiloto({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[];
             {(() => {
               const mv = moverSugerido(sug, sel.etapa)
               if (!mv || feito[sel.leadId]) return null
-              return <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta, false); if (r.ok) { await moverLead(sel.leadId, mv[0]); setFeito(f => ({ ...f, [sel.leadId]: true })); onFeito(sel.leadId); setSel(null) } setEnviando(false) }} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `✅ Enviar e mover → ${mv[1]}`}</button>
+              return <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta, false); if (r.ok) { await moverLead(sel.leadId, mv[0]); setFeito(f => ({ ...f, [sel.leadId]: true })); onFeito(sel.leadId); setSel(null) } setEnviando(false) }} style={{ ...btn('var(--accent)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : `Enviar e mover → ${mv[1]}`}</button>
             })()}
-            <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? '✅ Enviado' : '✅ Enviar'}</button>
+            <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? 'Enviado' : 'Enviar'}</button>
             <button onClick={() => abrirCard(sel.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
           </div>
           <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
@@ -452,9 +452,9 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover, abrirCard }: { l: { ite
   return (
     <div style={{ ...card, padding: 12, opacity: l.enviado ? .7 : 1 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.enviado ? '✅ ' : ''}{l.item.nome}</span>
+        <span style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>{l.enviado ? '' : ''}{l.item.nome}</span>
         {l.item.tarefa
-          ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>📋 {l.item.tarefa.titulo.split(' — ')[0]}</span>
+          ? <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, background: 'rgba(124,58,190,.15)', color: 'var(--accent)' }}>{l.item.tarefa.titulo.split(' — ')[0]}</span>
           : <Tag p={l.item.prioridade} />}
         <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{l.item.produto || '—'}{l.item.dSC != null ? ` · silêncio ${l.item.dSC}d` : ''}</span>
         <button onClick={() => abrirCard(l.item.leadId)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 12, cursor: 'pointer' }}>📇 card</button>
@@ -462,11 +462,11 @@ function LoteRow({ l, onTexto, onEnviar, onEnviarEMover, abrirCard }: { l: { ite
       </div>
       <Resumo item={l.item} sug={l.sug || null} />
       {aberto && <div style={{ margin: '8px 0' }}><Thread msgs={msgs} carregando={carr} /></div>}
-      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>💬 mensagem:</div>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-faint)', margin: '8px 0 4px' }}>mensagem:</div>
       <textarea value={l.texto} disabled={l.enviado} onChange={e => onTexto(e.target.value)} style={{ ...area, minHeight: 60 }} />
       <div style={{ marginTop: 6, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        {mv && !l.enviado && <button disabled={env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviarEMover(mv[0]); setEnv(false) }} style={{ ...btn('var(--accent)'), padding: '8px 16px', fontSize: 13, opacity: (env || !l.texto.trim()) ? .6 : 1 }}>{env ? 'Enviando…' : `📤 Enviar e mover → ${mv[1]}`}</button>}
-        <button disabled={l.enviado || env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviar(); setEnv(false) }} style={{ ...btn('var(--green)'), padding: '8px 16px', fontSize: 13, opacity: (l.enviado || env || !l.texto.trim()) ? .6 : 1 }}>{l.enviado ? '✅ Enviada' : env ? 'Enviando…' : '📤 Enviar mensagem'}</button>
+        {mv && !l.enviado && <button disabled={env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviarEMover(mv[0]); setEnv(false) }} style={{ ...btn('var(--accent)'), padding: '8px 16px', fontSize: 13, opacity: (env || !l.texto.trim()) ? .6 : 1 }}>{env ? 'Enviando…' : `Enviar e mover → ${mv[1]}`}</button>}
+        <button disabled={l.enviado || env || !l.texto.trim()} onClick={async () => { setEnv(true); await onEnviar(); setEnv(false) }} style={{ ...btn('var(--green)'), padding: '8px 16px', fontSize: 13, opacity: (l.enviado || env || !l.texto.trim()) ? .6 : 1 }}>{l.enviado ? 'Enviada' : env ? 'Enviando…' : 'Enviar mensagem'}</button>
       </div>
       <Acoes item={l.item} />
     </div>
@@ -514,7 +514,7 @@ function Lote({ fila, sugerir, enviar, abrirCard, semTarefa }: { fila: Item[]; s
       {!linhas.length ? (
         <div style={{ ...card, padding: 24, textAlign: 'center' }}>
           <div style={{ fontSize: 14, color: 'var(--text-2)', marginBottom: 12 }}>{fila.length} lead(s) na fila. Gera as sugestões pra revisar, <b>enviar uma a uma</b> e já marcar o andamento (mover etapa / ✓ feito) na hora.</div>
-          <button onClick={gerarMais} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `✨ Gerar ${Math.min(N, fila.length)} sugestões`}</button>
+          <button onClick={gerarMais} disabled={gerando} style={btn('var(--accent)')}>{gerando ? 'Gerando…' : `Gerar ${Math.min(N, fila.length)} sugestões`}</button>
         </div>
       ) : (
         <>

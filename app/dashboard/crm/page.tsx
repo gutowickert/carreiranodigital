@@ -51,7 +51,7 @@ const ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: 'var(--green)', bg: 'var(--green-bg)' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'aguardando_pagamento', label: 'Aguardando pagamento', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
-  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  { id: 'ligacao_boa', label: 'Ligação Boa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   { id: 'agendado', label: 'Agendado', cor: 'var(--blue)', bg: 'var(--blue-bg)' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: 'var(--accent-soft)', bg: 'var(--accent-bg)' },
   { id: 'ganho', label: 'Ganho', cor: 'var(--green-strong)', bg: 'var(--green-bg)' },
@@ -70,7 +70,9 @@ const PRAZO_CICLO = 6
 // notebook ("não pode travar nunca" — Nando, 11/09). Card sólido, coluna sólida, só o modal é de vidro.
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', boxShadow: 'var(--shadow-sm)' }
 const inp = { backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
-const sel = { backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
+// minWidth 0 + maxWidth: um <select> não encolhe abaixo da opção mais longa por conta própria, e
+// "Formação Completa em Marketing Digital — Porto Alegre (CÓDIGO)" empurrava ele por cima da busca.
+const sel = { backgroundColor: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', minWidth: 0, maxWidth: 300, flex: '0 1 260px' } as React.CSSProperties
 const btnPrimary = { background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties
 const btnSecondary = { backgroundColor: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: 6 } as React.CSSProperties
 
@@ -392,7 +394,7 @@ export default function CRM() {
         lead.id,
         lead.vendedor_id,
         'ligacao_boa',
-        `🔥 Ligação Boa — ${lead.nome}`,
+        `Ligação Boa — ${lead.nome}`,
         'Cliente com alto potencial de fechamento (avaliado na ligação). Dar atenção especial no horário marcado — a IA não atende este.',
         extras.dataAgendada
       )
@@ -498,7 +500,7 @@ export default function CRM() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', minWidth: 220, flex: '0 1 300px' }}>
+          <div style={{ position: 'relative', minWidth: 220, flex: '1 1 260px', maxWidth: 360 }}>
             <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', pointerEvents: 'none' }} />
             <input style={{ ...inp, paddingLeft: 34 }} placeholder="Buscar por nome ou telefone" value={busca} onChange={e => setBusca(e.target.value)} />
           </div>

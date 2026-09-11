@@ -290,7 +290,7 @@ export default function Trafego() {
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="campanha" width={150} tick={{ fontSize: 10, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
-                <Bar dataKey="leads" name="Leads" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
+                <Bar dataKey="leads" name="Leads" fill="var(--accent)" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
               </BarChart>
             </ResponsiveContainer>
           )}

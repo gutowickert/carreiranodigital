@@ -64,7 +64,7 @@ export default function WhatsAppConectar() {
         body: JSON.stringify({ code, phoneNumberId: sessao.current.phone_number_id, wabaId: sessao.current.waba_id, rotulo: 'Coexistência (atendimento)' }),
       }).then(r => r.json()).catch(() => null)
       setOcupado(false)
-      if (r?.ok) { setStatus(`✅ Conectado! Número ${r.phoneNumberId || ''} pronto. ${r.inscrito ? 'Webhook inscrito.' : ''}`); carregarContas() }
+      if (r?.ok) { setStatus(`Conectado! Número ${r.phoneNumberId || ''} pronto. ${r.inscrito ? 'Webhook inscrito.' : ''}`); carregarContas() }
       else setStatus('Falha: ' + (r?.error || '?'))
     }
     try {
@@ -81,7 +81,7 @@ export default function WhatsAppConectar() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 760, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>🔗 Conectar WhatsApp (Coexistência)</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Conectar WhatsApp (Coexistência)</h1>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Conecta o número que já está no app WhatsApp Business à API oficial, SEM tirar ele do celular. Depois o follow-up frio vai por template e a conversa segue livre quando o lead responde.</p>
 
       <div style={{ ...card, padding: 16, marginTop: 18 }}>

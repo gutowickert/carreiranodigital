@@ -18,14 +18,14 @@ export default function RecuperarHistorico() {
     const acc = { conv: 0, msgs: 0, leads: 0, vinc: 0 }
     while (seguir && page <= 40) {
       const j = await fetchAuth('/api/wa/sincronizar-historico', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dias, page, pageSize: 20 }) }).then(r => r.json()).catch(() => null)
-      if (!j?.ok) { setLog(l => [...l, `❌ Página ${page}: ${j?.error || 'falha'}`]); break }
+      if (!j?.ok) { setLog(l => [...l, `Página ${page}: ${j?.error || 'falha'}`]); break }
       acc.conv += j.convProcessadas; acc.msgs += j.msgsNovas; acc.leads += j.leadsCriados; acc.vinc += j.leadsVinculados
       setTot({ ...acc })
       setLog(l => [...l, `Página ${page}: ${j.convProcessadas} conversas · ${j.msgsNovas} mensagens novas · ${j.leadsCriados} leads criados`])
       seguir = !!j.temMais
       page++
     }
-    setLog(l => [...l, '✅ Recuperação concluída.'])
+    setLog(l => [...l, 'Recuperação concluída.'])
     setRodando(false)
   }
 

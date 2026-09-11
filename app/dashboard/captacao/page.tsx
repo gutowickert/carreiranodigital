@@ -165,11 +165,11 @@ export default function Captacao() {
   const totDisparo = leadsPeriodo.filter(l => canalDoLead(l) === 'disparo').length
   const totOrganico = leadsPeriodo.filter(l => canalDoLead(l) === 'organico').length
   const canaisData = [
-    { name: 'Anúncio', value: totAnuncio, cor: '#a78bfa' },
+    { name: 'Anúncio', value: totAnuncio, cor: 'var(--accent-soft)' },
     { name: 'Disparo', value: totDisparo, cor: '#60a5fa' },
     { name: 'Orgânico', value: totOrganico, cor: '#9ca3af' },
   ].filter(c => c.value > 0)
-  const funilChart = funil.filter(f => f.count > 0).map(f => ({ etapa: labelEtapa(f.etapa), count: f.count, cor: f.etapa === 'ganho' ? '#4ade80' : (f.etapa === 'perda' || f.etapa === 'perdido') ? '#f87171' : '#7c3aed' }))
+  const funilChart = funil.filter(f => f.count > 0).map(f => ({ etapa: labelEtapa(f.etapa), count: f.count, cor: f.etapa === 'ganho' ? '#4ade80' : (f.etapa === 'perda' || f.etapa === 'perdido') ? '#f87171' : 'var(--accent)' }))
   const vendedorChart = linhasVendedor.map(v => ({ nome: v.nome, total: v.total })).sort((a, b) => b.total - a.total).slice(0, 10)
   const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
 
@@ -268,7 +268,7 @@ export default function Captacao() {
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="nome" width={120} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
                 <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
-                <Bar dataKey="total" fill="#7c3aed" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
+                <Bar dataKey="total" fill="var(--accent)" radius={[0, 4, 4, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }} />
               </BarChart>
             </ResponsiveContainer>
           )}

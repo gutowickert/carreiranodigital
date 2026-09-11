@@ -36,8 +36,8 @@ export default function Transferencias() {
     setSalvando(true)
     const r = await fetchAuth('/api/transferencias', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...form, valor }) }).then(r => r.json()).catch(() => ({ ok: false, error: 'erro de rede' }))
     setSalvando(false)
-    if (r.ok) { setForm({ origem: '', destino: '', valor: '', data: hojeISO(), observacao: '' }); setMsg('✅ transferência registrada'); carregar() }
-    else setMsg('⚠️ ' + (r.error || 'falha'))
+    if (r.ok) { setForm({ origem: '', destino: '', valor: '', data: hojeISO(), observacao: '' }); setMsg('transferência registrada'); carregar() }
+    else setMsg('' + (r.error || 'falha'))
   }
 
   return (

@@ -52,7 +52,7 @@ export default function RelatorioDisparos() {
     { etapa: 'Enviados', valor: tot.enviados, cor: '#9ca3af' },
     { etapa: 'Entregues', valor: tot.entregues, cor: '#60a5fa' },
     { etapa: 'Lidos', valor: tot.lidos, cor: '#34d399' },
-    { etapa: 'Respostas', valor: tot.respostas, cor: '#7c3aed' },
+    { etapa: 'Respostas', valor: tot.respostas, cor: 'var(--accent)' },
   ]
   const campanhaData = campanhas.slice(0, 10).map(c => ({ nome: (c.nome || '').length > 20 ? c.nome.slice(0, 20) + '…' : (c.nome || '(sem nome)'), Lidos: c.lidos || 0, Respostas: c.respostas || 0 }))
   const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
@@ -133,7 +133,7 @@ export default function RelatorioDisparos() {
                 <Tooltip cursor={{ fill: 'var(--surface-2)' }} {...tipProps} />
                 <Legend wrapperStyle={{ fontSize: 11 }} />
                 <Bar dataKey="Lidos" fill="#34d399" radius={[0, 3, 3, 0]} barSize={8} />
-                <Bar dataKey="Respostas" fill="#7c3aed" radius={[0, 3, 3, 0]} barSize={8} />
+                <Bar dataKey="Respostas" fill="var(--accent)" radius={[0, 3, 3, 0]} barSize={8} />
               </BarChart>
             </ResponsiveContainer>
           )}

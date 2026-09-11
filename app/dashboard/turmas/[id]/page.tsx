@@ -579,11 +579,11 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
           </div>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }}>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>🔗 Link de pagamento (oficial)</label>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Link de pagamento (oficial)</label>
               <input value={edLink} onChange={e => setEdLink(e.target.value)} placeholder="https://pay.herospark.com/..." style={input} />
             </div>
             <div>
-              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>🎓 Link da bolsa (10% desconto)</label>
+              <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Link da bolsa (10% desconto)</label>
               <input value={edLinkBolsa} onChange={e => setEdLinkBolsa(e.target.value)} placeholder="https://pay.herospark.com/..." style={input} />
             </div>
           </div>
@@ -862,7 +862,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
 
               {trafegoPorDia > 0 && (
                 <div style={{ backgroundColor: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: '10px', padding: '14px 18px', marginBottom: '20px' }}>
-                  <div style={{ fontSize: '12px', color: 'var(--blue)', fontWeight: '600', marginBottom: '4px' }}>📊 Investimento diário sugerido de tráfego</div>
+                  <div style={{ fontSize: '12px', color: 'var(--blue)', fontWeight: '600', marginBottom: '4px' }}>Investimento diário sugerido de tráfego</div>
                   <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--text)' }}>{fmt(trafegoPorDia)} / dia</div>
                   <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{trafegoPendente.length} dia(s) restante(s) de provisão</div>
                 </div>

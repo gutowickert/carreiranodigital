@@ -224,7 +224,7 @@ export default function TarefasLeads() {
                 {tipo.label}
               </span>
               {t.leads?.atendido_por === 'ia' && (
-                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontWeight: 700 }}>🤖 IA</span>
+                <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontWeight: 700 }}>IA</span>
               )}
               {atrasada && (
                 <span style={{ fontSize: 10, padding: '2px 8px', borderRadius: 4, background: 'var(--red-bg)', color: 'var(--red)', fontWeight: 600 }}>
@@ -247,7 +247,7 @@ export default function TarefasLeads() {
             {t.leads && (
               <div style={{ fontSize: 11, color: 'var(--accent-soft)', marginTop: 6 }}>
                 Lead: <Link href={`/dashboard/crm?lead=${t.leads.id}`} style={{ color: 'var(--text)', fontWeight: 700, textDecoration: 'underline' }}>{t.leads.nome}</Link>
-                {t.leads.whatsapp && (() => { const n = t.leads.whatsapp.replace(/\D/g, ''); const wa = n ? `https://wa.me/${n.startsWith('55') ? n : '55' + n}` : null; return wa ? <a href={wa} target="_blank" rel="noreferrer" style={{ marginLeft: 6, color: 'var(--green-strong)', textDecoration: 'none', fontWeight: 600 }}>📞 {t.leads.whatsapp}</a> : <span> · {t.leads.whatsapp}</span> })()}
+                {t.leads.whatsapp && (() => { const n = t.leads.whatsapp.replace(/\D/g, ''); const wa = n ? `https://wa.me/${n.startsWith('55') ? n : '55' + n}` : null; return wa ? <a href={wa} target="_blank" rel="noreferrer" style={{ marginLeft: 6, color: 'var(--green-strong)', textDecoration: 'none', fontWeight: 600 }}>{t.leads.whatsapp}</a> : <span> · {t.leads.whatsapp}</span> })()}
                 {t.leads.turmas?.codigo && <span style={{ marginLeft: 6, padding: '1px 6px', background: 'var(--accent-bg)', borderRadius: 4 }}>{t.leads.turmas.codigo}</span>}
               </div>
             )}
@@ -308,8 +308,8 @@ export default function TarefasLeads() {
           </select>
           <select style={sel} value={filtroAtendido} onChange={e => setFiltroAtendido(e.target.value as any)} title="Quem atende o lead">
             <option value="geral">Geral (IA + humano)</option>
-            <option value="humano">👤 Só humano</option>
-            <option value="ia">🤖 Só IA</option>
+            <option value="humano">Só humano</option>
+            <option value="ia">Só IA</option>
           </select>
           <input type="date" style={sel} value={filtroDia} onChange={e => setFiltroDia(e.target.value)} title="Filtrar por dia de vencimento" />
           {filtroDia && <button onClick={() => setFiltroDia('')} style={btnSecondary}>Limpar dia</button>}

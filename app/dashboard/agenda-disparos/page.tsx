@@ -68,7 +68,7 @@ export default function AgendaDisparos() {
     setGerando(true); setMsg('')
     const j = await fetchAuth('/api/wa-oficial/agenda', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'gerar' }) }).then(r => r.json()).catch(() => null)
     setGerando(false)
-    if (j?.ok) { setMsg(`✅ ${j.criados} disparo(s) planejados · ${j.turmasPuladas} turma(s) já tinham agenda.`); carregar() }
+    if (j?.ok) { setMsg(`${j.criados} disparo(s) planejados · ${j.turmasPuladas} turma(s) já tinham agenda.`); carregar() }
     else setMsg('Falha ao gerar: ' + (j?.error || '?'))
   }
 
@@ -84,10 +84,10 @@ export default function AgendaDisparos() {
     <div style={{ padding: '28px 32px', maxWidth: 980, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📣 Agenda de Disparos</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Agenda de Disparos</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>3 toques por turma: 🎓 abertura (D-10) · ⏳ últimas vagas (D-5) · 🚨 última chamada (último dia útil). Fim de semana puxa pra sexta. Nada sai sem você confirmar.</p>
         </div>
-        <button onClick={gerar} disabled={gerando} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: gerando ? 0.6 : 1 }}>{gerando ? 'Gerando…' : '✨ Gerar agenda'}</button>
+        <button onClick={gerar} disabled={gerando} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: gerando ? 0.6 : 1 }}>{gerando ? 'Gerando…' : 'Gerar agenda'}</button>
       </div>
       {msg && <div style={{ marginTop: 12, fontSize: 13, color: 'var(--text-2)' }}>{msg}</div>}
 

@@ -5,19 +5,19 @@ import { fetchAuth } from '@/lib/api'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const ETAPA_LABEL: Record<string, string> = {
-  aguardando_atendimento: '📞 Ligação / Chegada (D1)',
-  atendimento_inicial: '💬 Atendimento inicial (D2–D3)',
-  lote_preco_ok: '🔥 Lote e preço ok (virada do lote)',
-  oferecer_bolsa: '🎁 Oferecer bolsa (D11–D13)',
+  aguardando_atendimento: 'Ligação / Chegada (D1)',
+  atendimento_inicial: 'Atendimento inicial (D2–D3)',
+  lote_preco_ok: 'Lote e preço ok (virada do lote)',
+  oferecer_bolsa: 'Oferecer bolsa (D11–D13)',
 }
 const ETAPA_ORDEM = ['aguardando_atendimento', 'deu_venda', 'atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa']
 // rótulos das etapas cobertas pela migração de número (inclui as que não estão na cadência)
 const MIG_ETAPA_LABEL: Record<string, string> = {
-  atendimento_inicial: '💬 Em atendimento',
-  lote_preco_ok: '🔥 Lote e preço',
-  agendado: '📅 Agendados',
-  aguardando_pagamento: '💳 Aguardando pagamento',
-  oferecer_bolsa: '🎁 Oferta de bolsa',
+  atendimento_inicial: 'Em atendimento',
+  lote_preco_ok: 'Lote e preço',
+  agendado: 'Agendados',
+  aguardando_pagamento: 'Aguardando pagamento',
+  oferecer_bolsa: 'Oferta de bolsa',
 }
 const MIG_ETAPA_ORDEM = ['atendimento_inicial', 'lote_preco_ok', 'agendado', 'aguardando_pagamento', 'oferecer_bolsa']
 const ehMigracao = (t: any) => (t.nome_meta || '').startsWith('cnd_mudanca_')
@@ -69,7 +69,7 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', marginBottom: 8 }}>
         <input value={nome} onChange={e => setNome(e.target.value)} style={{ fontFamily: 'monospace', fontSize: 13, fontWeight: 700, color: 'var(--text)', background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '4px 8px', minWidth: 200 }} />
         <span style={{ fontSize: 11, fontWeight: 700, padding: '2px 9px', borderRadius: 20, color: prod.cor, background: 'var(--surface-2)', border: `1px solid ${prod.cor}` }}>{prod.label}</span>
-        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t.categoria === 'marketing' ? '📣 marketing' : '🔧 utilidade'}</span>
+        <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{t.categoria === 'marketing' ? 'marketing' : '🔧 utilidade'}</span>
         {t.tipo_janela === 'template' ? null : <span style={{ fontSize: 11, color: 'var(--green)' }}>⏱ livre (24h)</span>}
         <select value={status} onChange={e => setStatus(e.target.value)} style={{ marginLeft: 'auto', fontSize: 11, background: (STATUS[status] || STATUS.rascunho).bg, color: (STATUS[status] || STATUS.rascunho).cor, border: 'none', borderRadius: 6, padding: '4px 8px', cursor: 'pointer' }}>
           <option value="rascunho">Rascunho</option>
@@ -83,7 +83,7 @@ function TemplateCard({ t, onSalvo }: { t: any; onSalvo: () => void }) {
         {vars.length > 0 && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>variáveis: {vars.map((v: string) => <code key={v} style={{ background: 'var(--surface-2)', padding: '1px 5px', borderRadius: 4, marginRight: 4 }}>{`{{${v}}}`}</code>)}</span>}
         {msg && <span style={{ fontSize: 12, color: msg.includes('✓') ? 'var(--green)' : 'var(--red)' }}>{msg}</span>}
         <button onClick={salvar} disabled={!mudou || salvando} style={{ marginLeft: 'auto', background: mudou ? 'var(--accent)' : 'var(--surface-2)', color: mudou ? 'var(--on-accent)' : 'var(--text-faint)', border: 'none', borderRadius: 8, padding: '7px 16px', fontSize: 13, fontWeight: 700, cursor: mudou ? 'pointer' : 'default' }}>{salvando ? 'Salvando…' : 'Salvar'}</button>
-        <button onClick={enviarMeta} disabled={enviando} title="Envia só este template ao Meta" style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: enviando ? 0.6 : 1 }}>{enviando ? 'Enviando…' : (status === 'rascunho' ? '🚀 Enviar ao Meta' : '↻ Reenviar')}</button>
+        <button onClick={enviarMeta} disabled={enviando} title="Envia só este template ao Meta" style={{ background: 'transparent', color: 'var(--accent)', border: '1px solid var(--accent)', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: enviando ? 0.6 : 1 }}>{enviando ? 'Enviando…' : (status === 'rascunho' ? 'Enviar ao Meta' : '↻ Reenviar')}</button>
       </div>
     </div>
   )
@@ -115,15 +115,15 @@ export default function FollowupTemplates() {
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📝 Templates de Follow-up</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Templates de Follow-up</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>As mensagens de reabertura da cadência do CRM, na WhatsApp API oficial. Edite aqui e submeta ao Meta com 1 clique.</p>
         </div>
-        <button onClick={submeterMeta} disabled={submetendo} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: submetendo ? 0.6 : 1 }}>{submetendo ? 'Submetendo…' : '🚀 Criar todos no Meta'}</button>
+        <button onClick={submeterMeta} disabled={submetendo} style={{ background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: submetendo ? 0.6 : 1 }}>{submetendo ? 'Submetendo…' : 'Criar todos no Meta'}</button>
       </div>
       {resultado && (
         <div style={{ ...card, padding: 12, marginTop: 12 }}>
           {resultado.ok
-            ? <div style={{ fontSize: 13, color: 'var(--text-2)' }}>✅ {resultado.criados}/{resultado.total} enviados ao Meta.{(resultado.resultados || []).filter((r: any) => !r.ok).length > 0 && <span style={{ color: 'var(--red)' }}> Falhas: {(resultado.resultados || []).filter((r: any) => !r.ok).map((r: any) => `${r.nome} (${r.erro})`).join('; ')}</span>}</div>
+            ? <div style={{ fontSize: 13, color: 'var(--text-2)' }}>{resultado.criados}/{resultado.total} enviados ao Meta.{(resultado.resultados || []).filter((r: any) => !r.ok).length > 0 && <span style={{ color: 'var(--red)' }}> Falhas: {(resultado.resultados || []).filter((r: any) => !r.ok).map((r: any) => `${r.nome} (${r.erro})`).join('; ')}</span>}</div>
             : <div style={{ fontSize: 13, color: 'var(--red)' }}>Falha: {resultado.error || '?'}</div>}
         </div>
       )}

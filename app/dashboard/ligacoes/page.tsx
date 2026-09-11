@@ -25,7 +25,7 @@ function Linha({ nome, telefone, sub, cor, leadId, onCard }: { nome: string; tel
     setLigando(true); setRes('')
     const r = await fetchAuth('/api/ligacao', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId }) }).then(r => r.json()).catch(() => ({ ok: false }))
     setLigando(false)
-    setRes(r.ok ? '📞 chamando…' : (r.error || 'falha'))
+    setRes(r.ok ? 'chamando…' : (r.error || 'falha'))
   }
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 14px', borderTop: '1px solid var(--border)' }}>
@@ -36,7 +36,7 @@ function Linha({ nome, telefone, sub, cor, leadId, onCard }: { nome: string; tel
       {res ? <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{res}</span> : null}
       <button onClick={() => onCard(leadId)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 11px', fontSize: 12, cursor: 'pointer' }}>📇 Card</button>
       <a href={`/dashboard/atender?lead=${leadId}`} style={{ background: 'var(--accent-bg)', color: 'var(--accent-soft)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: '7px 11px', fontSize: 12, cursor: 'pointer', textDecoration: 'none' }}>⚡ Atender</a>
-      <button onClick={ligar} disabled={ligando} style={{ background: 'var(--green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ligando ? .6 : 1 }}>{ligando ? '…' : '📞 Ligar'}</button>
+      <button onClick={ligar} disabled={ligando} style={{ background: 'var(--green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ligando ? .6 : 1 }}>{ligando ? '…' : 'Ligar'}</button>
     </div>
   )
 }
@@ -65,7 +65,7 @@ export default function FilaLigacoes() {
     <div style={{ padding: '28px 32px', maxWidth: 820, margin: '0 auto' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
         <div>
-          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📞 Fila de Ligações</h1>
+          <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Fila de Ligações</h1>
           <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Agendadas na hora vêm primeiro. Sem agendada, priorize velocidade nos novos leads.</p>
         </div>
         <button onClick={carregar} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>↻ Atualizar</button>
@@ -77,7 +77,7 @@ export default function FilaLigacoes() {
           <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
             <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>🕐 Ligações agendadas — AGORA <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({agora.length})</span></div>
             {agora.length === 0 ? <div style={{ padding: 16, fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma ligação agendada pra agora. Vá pros novos leads abaixo. 👇</div>
-              : agora.map((a: any) => <Linha key={a.leadId} leadId={a.leadId} onCard={setCardLead} nome={a.nome} telefone={a.telefone} sub={a.atrasada ? `⚠️ atrasada · ${horaBR(a.quando)}` : `agendada ${horaBR(a.quando)}`} cor={a.atrasada ? 'var(--red)' : 'var(--amber)'} />)}
+              : agora.map((a: any) => <Linha key={a.leadId} leadId={a.leadId} onCard={setCardLead} nome={a.nome} telefone={a.telefone} sub={a.atrasada ? `atrasada · ${horaBR(a.quando)}` : `agendada ${horaBR(a.quando)}`} cor={a.atrasada ? 'var(--red)' : 'var(--amber)'} />)}
           </div>
 
           {/* 2) NOVOS LEADS (velocidade) */}
@@ -90,7 +90,7 @@ export default function FilaLigacoes() {
           {/* A LIGAR (sem horário marcado) */}
           {aLigar.length > 0 && (
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>📞 A ligar — sem horário marcado <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({aLigar.length})</span></div>
+              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>A ligar — sem horário marcado <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({aLigar.length})</span></div>
               {aLigar.map((n: any) => <Linha key={n.leadId} leadId={n.leadId} onCard={setCardLead} nome={n.nome} telefone={n.telefone} sub={n.etapa || 'a ligar'} cor={'var(--text-muted)'} />)}
             </div>
           )}
@@ -98,7 +98,7 @@ export default function FilaLigacoes() {
           {/* agendadas futuras (contexto) */}
           {futuras.length > 0 && (
             <div style={{ ...card, padding: 0, overflow: 'hidden', opacity: .8 }}>
-              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>📅 Agendadas mais tarde <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({futuras.length})</span></div>
+              <div style={{ padding: '12px 14px', fontSize: 13, fontWeight: 800, color: 'var(--text)', background: 'var(--surface-2)' }}>Agendadas mais tarde <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>({futuras.length})</span></div>
               {futuras.map((a: any) => <Linha key={a.leadId} leadId={a.leadId} onCard={setCardLead} nome={a.nome} telefone={a.telefone} sub={`agendada ${horaBR(a.quando)}`} cor={'var(--text-muted)'} />)}
             </div>
           )}

@@ -35,7 +35,7 @@ export default function FluxoComercial() {
     const fluxo = { cadencia: cad, regrasGerais: regras, prioridade }
     const j = await fetchAuth('/api/fluxo', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ fluxo }) }).then(r => r.json()).catch(() => ({ ok: false }))
     setSalvando(false)
-    setMsg(j.ok ? '✅ Fluxo salvo! A IA e as tarefas já usam as novas regras.' : ('⚠️ ' + (j.error || 'falha ao salvar')))
+    setMsg(j.ok ? 'Fluxo salvo! A IA e as tarefas já usam as novas regras.' : ('' + (j.error || 'falha ao salvar')))
     setTimeout(() => setMsg(''), 4000)
   }
 

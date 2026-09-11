@@ -69,7 +69,7 @@ export default function InteligenciaCliente() {
               </div>
               <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
                 {dossie && <button onClick={copiar} style={btn}>{copiado ? '✓ copiado' : 'copiar JSON'}</button>}
-                <button onClick={() => gerar(sel)} disabled={gerando} style={{ ...btn, background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' }}>{gerando ? 'destilando...' : dossie ? '🔄 Regenerar' : '✨ Gerar dossiê'}</button>
+                <button onClick={() => gerar(sel)} disabled={gerando} style={{ ...btn, background: 'var(--accent)', borderColor: 'var(--accent)', color: 'var(--on-accent)' }}>{gerando ? 'destilando...' : dossie ? '🔄 Regenerar' : 'Gerar dossiê'}</button>
               </div>
             </div>
             {erro && <div style={{ fontSize: 12, color: 'var(--red)', marginBottom: 10 }}>{erro}</div>}

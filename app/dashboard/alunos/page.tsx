@@ -183,8 +183,8 @@ export default function Alunos() {
                         )}
                       </div>
                       <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px', display: 'flex', gap: '12px' }}>
-                        {a.whatsapp && <span>📱 {a.whatsapp}</span>}
-                        {a.cidade && <span>📍 {a.cidade}</span>}
+                        {a.whatsapp && <span>{a.whatsapp}</span>}
+                        {a.cidade && <span>{a.cidade}</span>}
                       </div>
                     </div>
                     <div style={{ textAlign: 'right' }}>
@@ -206,13 +206,13 @@ export default function Alunos() {
                 <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {selecionado.whatsapp && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>📱 {selecionado.whatsapp}</span>
+                      <span>{selecionado.whatsapp}</span>
                       <a href={`https://wa.me/55${selecionado.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
                         style={{ fontSize: '11px', color: 'var(--green-strong)', textDecoration: 'none' }}>WhatsApp ↗</a>
                     </div>
                   )}
                   {selecionado.email && <div>✉️ {selecionado.email}</div>}
-                  {selecionado.cidade && <div>📍 {selecionado.cidade}{selecionado.estado ? `, ${selecionado.estado}` : ''}</div>}
+                  {selecionado.cidade && <div>{selecionado.cidade}{selecionado.estado ? `, ${selecionado.estado}` : ''}</div>}
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginTop: '12px' }}>
                   <div style={{ backgroundColor: 'var(--green-bg)', borderRadius: '8px', padding: '10px', textAlign: 'center' }}>

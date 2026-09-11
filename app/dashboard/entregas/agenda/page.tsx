@@ -51,7 +51,7 @@ export default function AgendaEntregas() {
       <Link href="/dashboard/entregas" style={{ fontSize: 12.5, color: 'var(--text-faint)', textDecoration: 'none' }}>← Entregas</Link>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📅 Agenda de entregas</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Agenda de entregas</h1>
         <div style={{ display: 'flex', gap: 7, alignItems: 'center' }}>
           <button style={btn} onClick={() => { const d = new Date(semana); d.setDate(d.getDate() - 7); setSemana(d) }}>←</button>
           <button style={btn} onClick={() => setSemana(inicioDaSemana(new Date()))}>Hoje</button>

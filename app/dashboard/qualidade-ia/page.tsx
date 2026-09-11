@@ -7,8 +7,8 @@ import { fetchAuth } from '@/lib/api'
 const PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const STATUS: Record<string, { label: string; cor: string }> = {
-  ok: { label: '✅ OK', cor: 'var(--green)' },
-  corrigir: { label: '⚠️ Corrigir', cor: 'var(--amber)' },
+  ok: { label: 'OK', cor: 'var(--green)' },
+  corrigir: { label: 'Corrigir', cor: 'var(--amber)' },
   assumir: { label: '✋ Assumir (humano)', cor: 'var(--red)' },
 }
 
@@ -40,7 +40,7 @@ export default function QualidadeIA() {
     const r = rasc[leadId] || {}
     if (!r.status) { setAviso('Escolha OK / Corrigir / Assumir'); return }
     const j = await fetchAuth('/api/qualidade-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, lead_id: leadId, nota: r.nota, status: r.status, comentario: r.comentario }) }).then(r => r.json())
-    setAviso(j.ok ? '💾 Revisão salva!' : `⚠️ ${j.error}`)
+    setAviso(j.ok ? '💾 Revisão salva!' : `${j.error}`)
     setTimeout(() => setAviso(''), 3000)
     if (j.ok) { setRasc(x => ({ ...x, [leadId]: {} })); carregar() }
   }
@@ -60,7 +60,7 @@ export default function QualidadeIA() {
   return (
     <div style={{ padding: '32px 40px', maxWidth: 960, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🔎 Qualidade IA</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Qualidade IA</h1>
         {aviso && <span style={{ fontSize: 13, color: 'var(--green)' }}>{aviso}</span>}
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 20px' }}>Revisão dos atendimentos conduzidos pela IA. Dê nota, marque OK/Corrigir/Assumir e comente. (Nando + Guto + Rick)</p>
@@ -99,7 +99,7 @@ export default function QualidadeIA() {
                 {a.resumo && (
                   <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: 10, marginBottom: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 6 }}>
-                      {a.resumo.temperatura && <span style={{ fontWeight: 700, color: a.resumo.temperatura === 'quente' ? '#e0533d' : a.resumo.temperatura === 'morno' ? '#d98a2b' : 'var(--text-faint)' }}>🌡️ {a.resumo.temperatura}</span>}
+                      {a.resumo.temperatura && <span style={{ fontWeight: 700, color: a.resumo.temperatura === 'quente' ? '#e0533d' : a.resumo.temperatura === 'morno' ? '#d98a2b' : 'var(--text-faint)' }}>{a.resumo.temperatura}</span>}
                       {a.resumo.jaExplicouCurso && <span style={{ color: 'var(--text-faint)' }}>curso explicado: {a.resumo.jaExplicouCurso}</span>}
                       {a.engajado && <span style={{ color: '#2b8a3e', fontWeight: 600 }}>· engajado</span>}
                     </div>

@@ -55,11 +55,11 @@ function Placar({ p }: { p: any }) {
   )
   return (
     <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 16 }}>
-      <h2 style={{ fontSize: 18, color: 'var(--text)', margin: '0 0 2px' }}>📊 Placar — o que as vendas têm que as perdas não têm</h2>
+      <h2 style={{ fontSize: 18, color: 'var(--text)', margin: '0 0 2px' }}>Placar — o que as vendas têm que as perdas não têm</h2>
       <p style={{ fontSize: 12, color: '#6b7280', marginTop: 0, marginBottom: 14 }}>{g.total} vendas × {pe.total} perdas</p>
-      <Barra label="📞 Tiveram ligação" g={g.comLigacao} p={pe.comLigacao} gtot={g.total} ptot={pe.total} />
-      <Barra label="🎤 Tiveram áudio" g={g.comAudio} p={pe.comAudio} gtot={g.total} ptot={pe.total} />
-      <Barra label="💬 Só texto (sem ligação nem áudio)" g={g.soTexto} p={pe.soTexto} gtot={g.total} ptot={pe.total} />
+      <Barra label="Tiveram ligação" g={g.comLigacao} p={pe.comLigacao} gtot={g.total} ptot={pe.total} />
+      <Barra label="Tiveram áudio" g={g.comAudio} p={pe.comAudio} gtot={g.total} ptot={pe.total} />
+      <Barra label="Só texto (sem ligação nem áudio)" g={g.soTexto} p={pe.soTexto} gtot={g.total} ptot={pe.total} />
       <div style={{ display: 'flex', gap: 12, marginTop: 10 }}>
         {mini('Média de mensagens por VENDA', g.mediaMsgs, '#4ade80')}
         {mini('Média de mensagens por PERDA', pe.mediaMsgs, '#f87171')}
@@ -118,7 +118,7 @@ export default function AnaliseConversao() {
 
         {semTabela && (
           <div style={{ ...card, marginBottom: 16 }}>
-            <p style={{ fontSize: 14, color: 'var(--text)', marginTop: 0 }}>⚙️ Falta criar a tabela. Rode este SQL no Supabase (SQL Editor) uma vez:</p>
+            <p style={{ fontSize: 14, color: 'var(--text)', marginTop: 0 }}>Falta criar a tabela. Rode este SQL no Supabase (SQL Editor) uma vez:</p>
             <pre style={{ background: 'var(--surface-2)', padding: 12, borderRadius: 8, fontSize: 12, color: 'var(--text-2)', overflow: 'auto' }}>{SQL}</pre>
             <p style={{ fontSize: 12, color: '#6b7280' }}>Depois clique em “Atualizar análise”.</p>
           </div>
@@ -134,7 +134,7 @@ export default function AnaliseConversao() {
             {d.resumo && <div style={{ ...card, background: 'var(--surface-2)' }}><div style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.5 }}>{d.resumo}</div></div>}
 
             <div>
-              <h2 style={{ fontSize: 18, color: '#4ade80', margin: '0 0 10px' }}>✅ O que funciona</h2>
+              <h2 style={{ fontSize: 18, color: '#4ade80', margin: '0 0 10px' }}>O que funciona</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
                 {(d.o_que_funciona || []).map((x: any, i: number) => (
                   <div key={i} style={card}>
@@ -160,7 +160,7 @@ export default function AnaliseConversao() {
             </div>
 
             <div>
-              <h2 style={{ fontSize: 18, color: '#60a5fa', margin: '0 0 10px' }}>🎯 Melhor fluxo de conversão</h2>
+              <h2 style={{ fontSize: 18, color: '#60a5fa', margin: '0 0 10px' }}>Melhor fluxo de conversão</h2>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {(d.melhor_fluxo || []).map((p: any, i: number) => (
                   <div key={i} style={{ ...card, display: 'flex', gap: 12, alignItems: 'flex-start' }}>
@@ -176,7 +176,7 @@ export default function AnaliseConversao() {
 
             {(d.frases || []).length > 0 && (
               <div>
-                <h2 style={{ fontSize: 18, color: '#fbbf24', margin: '0 0 10px' }}>💬 Frases que fecham</h2>
+                <h2 style={{ fontSize: 18, color: '#fbbf24', margin: '0 0 10px' }}>Frases que fecham</h2>
                 <div style={{ ...card, display: 'flex', flexDirection: 'column', gap: 8 }}>
                   {(d.frases || []).map((f: string, i: number) => (
                     <div key={i} style={{ fontSize: 13, color: 'var(--text-2)', paddingLeft: 12, borderLeft: '2px solid #fbbf24' }}>“{f}”</div>

@@ -33,7 +33,7 @@ export default function AutomacaoIA() {
   return (
     <div style={{ padding: '32px 40px', maxWidth: 720, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>🤖 Automação da IA de Atendimento</h1>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: 'var(--text)', margin: 0 }}>Automação da IA de Atendimento</h1>
         {aviso && <span style={{ fontSize: 13, color: 'var(--green)' }}>{aviso}</span>}
       </div>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 24px' }}>Liga/desliga e configura a IA de vendas. Segue o pipeline de 9 dias.</p>
@@ -56,7 +56,7 @@ export default function AutomacaoIA() {
       <div style={{ ...card, padding: 18, marginBottom: 14 }}>
         <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)', marginBottom: 10 }}>Modo</div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {[{ v: 'semi', t: '✍️ Semi-automático', d: 'IA rascunha, humano revisa e envia (seguro)' }, { v: 'auto', t: '🚀 Automático', d: 'IA envia sozinha (só depois de validar)' }].map(o => (
+          {[{ v: 'semi', t: '✍️ Semi-automático', d: 'IA rascunha, humano revisa e envia (seguro)' }, { v: 'auto', t: 'Automático', d: 'IA envia sozinha (só depois de validar)' }].map(o => (
             <button key={o.v} onClick={() => salvar({ modo: o.v })} style={{ flex: '1 1 240px', textAlign: 'left', border: `1px solid ${c.modo === o.v ? 'var(--accent)' : 'var(--border-strong)'}`, background: c.modo === o.v ? 'var(--accent-bg)' : 'var(--surface-2)', borderRadius: 10, padding: 12, cursor: 'pointer' }}>
               <div style={{ fontSize: 14, fontWeight: 700, color: c.modo === o.v ? 'var(--accent-soft)' : 'var(--text)' }}>{o.t}</div>
               <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 3 }}>{o.d}</div>

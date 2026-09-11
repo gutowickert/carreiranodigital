@@ -32,14 +32,14 @@ export default function Etapas() {
     const visiveis = lista.map((e, i) => ({ ...e, ordem: i, ativo: true }))
     const j = await fetchAuth('/api/etapas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ etapas: visiveis }) }).then(r => r.json()).catch(() => ({ ok: false }))
     setSalvando(false)
-    setMsg(j.ok ? '✅ Etapas salvas!' : '⚠️ ' + (j.error || 'falha'))
+    setMsg(j.ok ? 'Etapas salvas!' : '' + (j.error || 'falha'))
     setTimeout(() => setMsg(''), 3000)
     carregar()
   }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📊 Etapas do Funil</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Etapas do Funil</h1>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 18px' }}>As colunas do seu funil, na ordem. Cada negócio tem as suas — arraste com as setas, edite nome e cor.</p>
 
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 20 }}>Carregando…</div> : (

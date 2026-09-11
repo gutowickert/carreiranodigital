@@ -681,7 +681,7 @@ export default function Turmas() {
 
             {conflitos.length > 0 && (
               <div style={{ backgroundColor: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: '10px', padding: '14px 18px', marginBottom: '16px' }}>
-                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--red)', marginBottom: '6px' }}>⚠ Conflitos detectados:</div>
+                <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--red)', marginBottom: '6px' }}>Conflitos detectados:</div>
                 {conflitos.map((c, i) => <div key={i} style={{ fontSize: '12px', color: 'var(--red)', marginTop: '4px' }}>• {c}</div>)}
               </div>
             )}

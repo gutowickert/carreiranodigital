@@ -413,7 +413,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             zIndex: 50,
           }}>
             {/* a marca em 3D, na chapa de vidro grosso (components/Logo3D.tsx) */}
-            <div style={{ padding: '8px 0 4px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+            <div style={{ padding: '8px 0 12px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
               {marca?.logo_url
                 ? <Logo3D src={marca.logo_url} largura={160} />
                 : (marca && marca.id !== CND_ID)
@@ -528,7 +528,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
         </div>
       )}
 
-      <div style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, paddingTop: isMobile ? 50 : 0 }}>
+      {/* .conteudo: as regras do globals.css que vestem as telas antigas valem só aqui dentro */}
+      <div className="conteudo" style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, paddingTop: isMobile ? 50 : 0 }}>
         {children}
       </div>
       {paletaAberta && (

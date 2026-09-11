@@ -247,10 +247,10 @@ export default function Leads() {
                           {turno && <span style={{ fontSize: '11px', backgroundColor: turno.bg, color: turno.color, padding: '2px 8px', borderRadius: '20px' }}>{l.melhor_turno}</span>}
                         </div>
                         <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px', display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                          {l.whatsapp && <span>📱 {l.whatsapp}</span>}
-                          {l.cidade && <span>📍 {l.cidade}</span>}
+                          {l.whatsapp && <span>{l.whatsapp}</span>}
+                          {l.cidade && <span>{l.cidade}</span>}
                           {l.negocio && <span>🏢 {l.negocio}</span>}
-                          {l.produtos && <span style={{ color: 'var(--accent-soft)' }}>📚 {l.produtos.nome}</span>}
+                          {l.produtos && <span style={{ color: 'var(--accent-soft)' }}>{l.produtos.nome}</span>}
                         </div>
                       </div>
                       {info && (
@@ -275,16 +275,16 @@ export default function Leads() {
                 <div style={{ marginTop: '10px', fontSize: '12px', color: 'var(--text-muted)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
                   {selecionado.whatsapp && (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span>📱 {selecionado.whatsapp}</span>
+                      <span>{selecionado.whatsapp}</span>
                       <a href={`https://wa.me/55${selecionado.whatsapp.replace(/\D/g, '')}`} target="_blank" rel="noreferrer"
                         style={{ fontSize: '11px', color: 'var(--green-strong)', textDecoration: 'none' }}>Abrir ↗</a>
                     </div>
                   )}
                   {selecionado.email && <div>✉️ {selecionado.email}</div>}
-                  {selecionado.cidade && <div>📍 {selecionado.cidade}</div>}
+                  {selecionado.cidade && <div>{selecionado.cidade}</div>}
                   {selecionado.negocio && <div>🏢 {selecionado.negocio}</div>}
                   {selecionado.tamanho_equipe && <div>👥 Equipe: {selecionado.tamanho_equipe}</div>}
-                  {selecionado.investimento_marketing && <div>💰 {selecionado.investimento_marketing}</div>}
+                  {selecionado.investimento_marketing && <div>{selecionado.investimento_marketing}</div>}
                 </div>
                 {selecionado.problema_principal && (
                   <div style={{ marginTop: '10px', backgroundColor: 'var(--surface-2)', borderRadius: '8px', padding: '10px' }}>

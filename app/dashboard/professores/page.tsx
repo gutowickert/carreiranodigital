@@ -78,7 +78,7 @@ export default function Professores() {
     }).then(r => r.json()).catch(() => null)
     setAcSalvando(false)
     if (!j?.ok) { setAcMsg('Erro: ' + (j?.error || 'falhou')); return }
-    setAcMsg(`✅ Acesso criado! Login: ${j.email} · Senha: ${j.senha} — mande pro professor.`)
+    setAcMsg(`Acesso criado! Login: ${j.email} · Senha: ${j.senha} — mande pro professor.`)
     carregar(); carregarAcessos()
   }
 

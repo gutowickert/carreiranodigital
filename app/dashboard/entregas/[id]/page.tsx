@@ -34,7 +34,7 @@ function LinkCliente({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }
     if (acao === 'portal_trocar' && !confirm('O link atual para de funcionar. O cliente vai precisar do novo. Trocar?')) return
     const j = await fetchAuth('/api/projetos/ficha', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao, projeto_id: projeto.id }) })
       .then(r => r.json()).catch(() => null)
-    if (j?.ok) aoMudar(); else setAviso('⚠️ ' + (j?.error || 'falha'))
+    if (j?.ok) aoMudar(); else setAviso('' + (j?.error || 'falha'))
   }
   async function copiar() {
     try { await navigator.clipboard.writeText(url); setAviso('Link copiado ✓') } catch { setAviso('Não deu pra copiar — seleciona o link e copia.') }
@@ -43,7 +43,7 @@ function LinkCliente({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }
 
   return (
     <div style={{ ...card, padding: '10px 12px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>🔗 Área do cliente</span>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>Área do cliente</span>
       {url ? (
         <>
           <input readOnly value={url} onFocus={e => e.currentTarget.select()} style={{ ...inp, flex: 1, minWidth: 200, fontSize: 12 }} aria-label="Link da área do cliente" />
@@ -74,7 +74,7 @@ export default function FichaEntrega() {
   async function carregar() {
     const j = await fetchAuth(`/api/projetos/ficha?id=${id}`).then(r => r.json()).catch(() => null)
     if (j?.ok) setD(j)
-    else setMsg('⚠️ ' + (j?.error || 'não consegui carregar'))
+    else setMsg('' + (j?.error || 'não consegui carregar'))
     setCarregando(false)
   }
   useEffect(() => { if (id) carregar() }, [id])
@@ -83,14 +83,14 @@ export default function FichaEntrega() {
     const j = await fetchAuth('/api/projetos/marco', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }).then(r => r.json()).catch(() => null)
     if (j?.ok) {
       setAgindo(null); setForm({})
-      if (j.aviso) { setMsg('⚠️ ' + j.aviso); setTimeout(() => setMsg(''), 6000) }
+      if (j.aviso) { setMsg('' + j.aviso); setTimeout(() => setMsg(''), 6000) }
       carregar()
     } else {
       // a regra de ouro: não fecha encontro sem marcar o próximo
       if (j?.precisa_proximo) {
         setForm((f: any) => ({ ...f, exigeProximo: j.precisa_proximo, proxima_data_hora: paraInput(j.precisa_proximo.data_prevista + 'T14:00:00') }))
-        setMsg('🔒 ' + j.error)
-      } else { setMsg('⚠️ ' + (j?.error || 'falha')); setTimeout(() => setMsg(''), 5000) }
+        setMsg('' + j.error)
+      } else { setMsg('' + (j?.error || 'falha')); setTimeout(() => setMsg(''), 5000) }
     }
   }
 
@@ -156,8 +156,8 @@ export default function FichaEntrega() {
               {pessoas.filter(x => x.id !== p.responsavel_id && !juntos.includes(x.id)).map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
             </select>
           )}
-          {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>💬 WhatsApp</a>}
-          {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>👤 Lead de origem</Link>}
+          {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>}
+          {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>Lead de origem</Link>}
         </div>
       </div>
 
@@ -201,7 +201,7 @@ export default function FichaEntrega() {
                     {m.ancora && !feito && <> · <b style={{ color: 'var(--text-2)' }}>âncora: não empurra</b></>}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 7 }}>
-                    <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>👤 na agenda de</span>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>na agenda de</span>
                     <select value={m.responsavel_id || ''} onChange={e => acao({ acao: 'responsavel', id: m.id, responsavel_id: e.target.value })} aria-label={'Dono de ' + m.titulo}
                       style={{ ...inp, padding: '3px 6px', fontSize: 12, color: !m.responsavel_id && !donoProjeto ? 'var(--amber)' : 'var(--text)' }}>
                       <option value="">{donoProjeto ? [donoProjeto.nome, ...juntos.map(id => pessoas.find(x => x.id === id)?.nome).filter(Boolean)].join(' e ') + ' (do projeto)' : 'ninguém — o grupo todo vê'}</option>
@@ -243,7 +243,7 @@ export default function FichaEntrega() {
                       <textarea style={{ ...inp, minHeight: 66, width: '100%' }} placeholder="O que aconteceu? (fica na ficha pra quem pegar esse cliente depois)" value={form.registro || ''} onChange={e => setForm({ ...form, registro: e.target.value })} />
                       {form.exigeProximo && (
                         <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: 11 }}>
-                          <div style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 600 }}>🔒 Marca o próximo antes de fechar</div>
+                          <div style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 600 }}>Marca o próximo antes de fechar</div>
                           <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '3px 0 8px' }}>{form.exigeProximo.titulo} — a data se combina agora, com o cliente na frente.</div>
                           <input type="datetime-local" style={inp} value={form.proxima_data_hora || ''} onChange={e => setForm({ ...form, proxima_data_hora: e.target.value })} />
                         </div>

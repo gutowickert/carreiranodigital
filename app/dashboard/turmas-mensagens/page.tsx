@@ -23,7 +23,7 @@ export default function TurmasMensagens() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 820, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📅 Datas das Turmas</h1>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Datas das Turmas</h1>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 18px' }}>Mensagens prontas com as datas de cada turma em vendas — é só copiar e colar no WhatsApp.</p>
 
       <div style={{ display: 'flex', gap: 8, marginBottom: 18 }}>
@@ -44,7 +44,7 @@ export default function TurmasMensagens() {
                       <span style={{ fontSize: 12, color: 'var(--text-faint)', marginLeft: 8 }}>{t.tipo === 'FC' ? 'Formação Completa' : 'ANL'} · início {brData(t.inicio)} · {t.codigo}</span>
                     </div>
                     <button onClick={() => copiar(t)} style={{ background: copiado === t.codigo ? 'var(--green)' : 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 16px', fontSize: 13, fontWeight: 700, cursor: 'pointer' }}>
-                      {copiado === t.codigo ? '✅ Copiado!' : '📋 Copiar'}
+                      {copiado === t.codigo ? 'Copiado!' : 'Copiar'}
                     </button>
                   </div>
                   <pre style={{ margin: 0, padding: 12, background: 'var(--surface-2)', borderRadius: 8, fontSize: 13, color: 'var(--text)', whiteSpace: 'pre-wrap', fontFamily: 'inherit', lineHeight: 1.5 }}>{t.mensagem}</pre>

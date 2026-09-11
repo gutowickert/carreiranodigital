@@ -266,15 +266,15 @@ export default function FluxoCaixa() {
                 <AreaChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
                   <defs>
                     <linearGradient id="gSaldo" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.4} />
-                      <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                      <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.4} />
+                      <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
                   <XAxis dataKey="mes" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
                   <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
                   <Tooltip {...tipProps} formatter={(v: any) => fmt(v)} />
-                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="#a78bfa" strokeWidth={2.5} fill="url(#gSaldo)" />
+                  <Area type="monotone" dataKey="saldo" name="Saldo" stroke="var(--accent-soft)" strokeWidth={2.5} fill="url(#gSaldo)" />
                 </AreaChart>
               </ResponsiveContainer>
             </div>

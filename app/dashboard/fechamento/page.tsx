@@ -11,18 +11,18 @@ type Lead = {
 type Dados = { turma: { nome: string; codigo: string; inicio: string; preco: string; bolsa: string }; leads: Lead[] }
 
 const ETAPA: Record<string, { lbl: string; cor: string }> = {
-  aguardando_pagamento: { lbl: '💰 Aguardando pagamento', cor: '#16a34a' },
-  ligacao_boa: { lbl: '🔥 Ligação boa', cor: '#dc2626' },
-  oferecer_bolsa: { lbl: '🎓 Oferecer bolsa', cor: '#d97706' },
-  agendado: { lbl: '📅 Agendado', cor: '#2563eb' },
+  aguardando_pagamento: { lbl: 'Aguardando pagamento', cor: '#16a34a' },
+  ligacao_boa: { lbl: 'Ligação boa', cor: '#dc2626' },
+  oferecer_bolsa: { lbl: 'Oferecer bolsa', cor: '#d97706' },
+  agendado: { lbl: 'Agendado', cor: '#2563eb' },
   proxima_turma: { lbl: '⏭️ Próxima turma', cor: '#7c3aed' },
-  lote_preco_ok: { lbl: '🏷️ Lote e preço', cor: '#0891b2' },
-  atendimento_inicial: { lbl: '💬 Atendimento inicial', cor: '#64748b' },
+  lote_preco_ok: { lbl: 'Lote e preço', cor: '#0891b2' },
+  atendimento_inicial: { lbl: 'Atendimento inicial', cor: '#64748b' },
 }
 // tiers de prioridade (mais perto de fechar primeiro)
 const TIERS = [
-  { key: 'fechar', titulo: '🎯 FECHAR — quase lá', etapas: ['aguardando_pagamento', 'ligacao_boa'], cor: '#16a34a' },
-  { key: 'converter', titulo: '🔥 CONVERTER — quente', etapas: ['oferecer_bolsa', 'agendado', 'proxima_turma'], cor: '#d97706' },
+  { key: 'fechar', titulo: 'FECHAR — quase lá', etapas: ['aguardando_pagamento', 'ligacao_boa'], cor: '#16a34a' },
+  { key: 'converter', titulo: 'CONVERTER — quente', etapas: ['oferecer_bolsa', 'agendado', 'proxima_turma'], cor: '#d97706' },
   { key: 'aquecer', titulo: '🌱 AQUECER — construir', etapas: ['lote_preco_ok', 'atendimento_inicial'], cor: '#64748b' },
 ]
 const TEMP: Record<string, { bg: string; cor: string }> = {
@@ -39,7 +39,7 @@ function jogada(etapa: string, d: Dados['turma']): string {
     case 'ligacao_boa': return `Já está quente: LIGAR e fechar agora, garantir a matrícula antes de ${ini}.`
     case 'oferecer_bolsa': return `Oferecer a BOLSA (${d.bolsa}) como última condição — a turma começa ${ini}.`
     case 'agendado': return `Retomar no combinado e puxar a decisão: a turma começa ${ini}, dá pra garantir a vaga?`
-    case 'proxima_turma': return `🎯 A turma que ele esperava está COMEÇANDO (${ini})! Avisar na hora e converter.`
+    case 'proxima_turma': return `A turma que ele esperava está COMEÇANDO (${ini})! Avisar na hora e converter.`
     case 'lote_preco_ok': return `Já tem o preço. Reforçar o valor e pedir o fechamento — turma começa ${ini}.`
     case 'atendimento_inicial': return `Apresentar rápido o curso + preço (${d.preco}) + urgência: turma começa ${ini}.`
     default: return `Turma começa ${ini}.`
@@ -73,7 +73,7 @@ export default function Fechamento() {
 
   return (
     <div style={{ maxWidth: 760, margin: '0 auto', padding: '18px 14px 60px' }}>
-      <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px' }}>🎯 Fechamento de Turma</h1>
+      <h1 style={{ fontSize: 22, fontWeight: 800, margin: '0 0 4px' }}>Fechamento de Turma</h1>
       <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '0 0 16px' }}>Escolha a turma e ataque as oportunidades por prioridade. Inclui leads presos em turmas antigas do mesmo produto/cidade.</p>
 
       <select value={sel} onChange={e => setSel(e.target.value)}
@@ -136,8 +136,8 @@ function Card({ l, turma }: { l: Lead; turma: Dados['turma'] }) {
 
       <div style={{ display: 'flex', gap: 12, fontSize: 12, color: 'var(--text-2)', margin: '8px 0' }}>
         <span>⏳ parado {l.parado}d</span>
-        {l.vence && <span>📌 tarefa vence {new Date(l.vence + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>}
-        <span style={{ color: 'var(--text-faint)' }}>{l.dono === 'ia' ? '🤖 IA' : '👤 time'}</span>
+        {l.vence && <span>tarefa vence {new Date(l.vence + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</span>}
+        <span style={{ color: 'var(--text-faint)' }}>{l.dono === 'ia' ? 'IA' : 'time'}</span>
       </div>
 
       <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: '9px 11px', fontSize: 13.5, color: 'var(--text)', lineHeight: 1.45 }}>
@@ -147,9 +147,9 @@ function Card({ l, turma }: { l: Lead; turma: Dados['turma'] }) {
 
       <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
         <a href={`https://wa.me/${l.fone}?text=${waMsg}`} target="_blank" rel="noreferrer"
-          style={{ flex: 1, textAlign: 'center', background: '#25D366', color: '#053d1c', fontWeight: 700, fontSize: 13, padding: '8px', borderRadius: 8, textDecoration: 'none' }}>💬 WhatsApp</a>
+          style={{ flex: 1, textAlign: 'center', background: '#25D366', color: '#053d1c', fontWeight: 700, fontSize: 13, padding: '8px', borderRadius: 8, textDecoration: 'none' }}>WhatsApp</a>
         <a href={`tel:+${l.fone}`}
-          style={{ flex: 1, textAlign: 'center', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700, fontSize: 13, padding: '8px', borderRadius: 8, textDecoration: 'none', border: '1px solid var(--border)' }}>📞 Ligar</a>
+          style={{ flex: 1, textAlign: 'center', background: 'var(--surface-2)', color: 'var(--text)', fontWeight: 700, fontSize: 13, padding: '8px', borderRadius: 8, textDecoration: 'none', border: '1px solid var(--border)' }}>Ligar</a>
         {(l.ondeParou || l.passo || l.objec) && (
           <button onClick={() => setAberto(a => !a)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, padding: '8px 12px', cursor: 'pointer' }}>{aberto ? '▲' : '📋'}</button>
         )}

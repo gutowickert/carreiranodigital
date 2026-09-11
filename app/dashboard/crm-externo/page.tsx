@@ -166,7 +166,7 @@ export default function CRMExterno() {
 
         {vendedores.length === 0 && (
           <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: '14px 18px', marginBottom: 20 }}>
-            <div style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 600 }}>⚠ Nenhum vendedor externo cadastrado</div>
+            <div style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 600 }}>Nenhum vendedor externo cadastrado</div>
             <div style={{ fontSize: 12, color: 'var(--amber)', marginTop: 4 }}>
               Cadastre usuários com setor "comercial_externo" em /dashboard/usuarios.
             </div>
@@ -196,7 +196,7 @@ export default function CRMExterno() {
                         </div>
                       )}
                       {p.usuarios_perfil && (
-                        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 6 }}>👤 {p.usuarios_perfil.nome}</div>
+                        <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 6 }}>{p.usuarios_perfil.nome}</div>
                       )}
                     </div>
                   ))}
