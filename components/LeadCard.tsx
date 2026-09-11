@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
+import { X, Phone, MessageCircle, Circle, CircleDot } from 'lucide-react'
 
 type Lead = {
   id: string
@@ -60,9 +61,9 @@ const ETAPAS = [
 ]
 
 const PRAZO_CICLO = 6
-const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
-const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
-const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
+const inp = { backgroundColor: 'var(--glass-field)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
+const btnPrimary = { background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 700, cursor: 'pointer' } as React.CSSProperties
+const btnSecondary = { backgroundColor: 'var(--glass-field)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '9px 16px', fontSize: '13.5px', fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
 
 function diaDoCiclo(criadoEm: string): number {
   const inicio = new Date(criadoEm)
@@ -195,8 +196,8 @@ export default function LeadCardModal({ leadId, onClose }: { leadId: string; onC
 
   if (carregando && !lead) {
     return (
-      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <div style={{ color: 'var(--text-faint)', fontSize: 14 }}>Carregando card…</div>
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(8,4,20,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div className="esqueleto" style={{ width: 'min(600px, 94vw)', height: 420, borderRadius: 'var(--r-lg)' }} />
       </div>
     )
   }
@@ -532,33 +533,34 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     <div
       onMouseDown={e => { pressionouNoFundo.current = e.target === e.currentTarget }}
       onClick={e => { if (e.target === e.currentTarget && pressionouNoFundo.current) onFechar() }}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h2 style={{ fontSize: 17, fontWeight: 600, color: 'var(--text)', margin: 0 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
+      // fundo escurecido e desfocado: o modal é o único vidro do CRM (fica parado por cima de tudo)
+      style={{ position: 'fixed', inset: 0, background: 'rgba(8,4,20,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="vidro" style={{ background: 'var(--surface)', padding: 'clamp(16px, 3vw, 24px)', width: 'min(600px, 94vw)', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div style={{ minWidth: 0 }}>
+            <h2 className="display" style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: 0, lineHeight: 1.15 }}>{novoLead ? 'Novo lead' : form.nome}</h2>
             {!novoLead && lead && (
-              <div style={{ fontSize: 11, color: cicloEstourou ? 'var(--red)' : 'var(--text-muted)', marginTop: 4 }}>
-                Dia {dia} do ciclo {cicloEstourou && '⚠ ciclo terminou'}
+              <div className="tnum" style={{ fontSize: 12, color: cicloEstourou ? 'var(--red)' : 'var(--text-muted)', marginTop: 4, fontWeight: 600 }}>
+                Dia {dia} do ciclo{cicloEstourou && ' · ciclo terminou'}
               </div>
             )}
           </div>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 22, cursor: 'pointer' }}>x</button>
+          <button onClick={onFechar} aria-label="Fechar" style={{ background: 'var(--glass-field)', border: '1px solid var(--glass-border)', borderRadius: '50%', width: 30, height: 30, color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><X size={15} /></button>
         </div>
 
         {!novoLead && lead && (
           <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <button onClick={ligar} disabled={ligando || !form.whatsapp}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 13, fontWeight: 600, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
-              📞 {ligando ? 'Discando...' : 'Ligar'}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 13, fontWeight: 700, cursor: (ligando || !form.whatsapp) ? 'default' : 'pointer', opacity: (ligando || !form.whatsapp) ? 0.6 : 1 }}>
+              <Phone size={14} /> {ligando ? 'Discando...' : 'Ligar'}
             </button>
             <button onClick={() => setChatAberto(v => !v)} disabled={!form.whatsapp}
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid #25D36640', background: chatAberto ? '#25D366' : '#0b2e1a', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 600, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
-              💬 WhatsApp
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid #25D36640', background: chatAberto ? '#25D366' : 'rgba(37,211,102,.12)', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 700, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
+              <MessageCircle size={14} /> WhatsApp
             </button>
             <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
-              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 8, border: '1px solid ' + (naoLida ? 'var(--green)' : 'var(--border-strong)'), background: naoLida ? 'var(--green-bg)' : 'var(--surface-2)', color: naoLida ? 'var(--green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              {naoLida ? '● Não lida' : '○ Marcar não lida'}
+              style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid ' + (naoLida ? 'var(--green)' : 'var(--border-strong)'), background: naoLida ? 'var(--green-bg)' : 'var(--glass-field)', color: naoLida ? 'var(--green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              {naoLida ? <CircleDot size={14} /> : <Circle size={14} />} {naoLida ? 'Não lida' : 'Marcar não lida'}
             </button>
             {msgLigacao && <span style={{ fontSize: 12, color: (msgLigacao.includes('Erro') || msgLigacao.includes('Falha')) ? 'var(--red)' : 'var(--text-muted)' }}>{msgLigacao}</span>}
           </div>
