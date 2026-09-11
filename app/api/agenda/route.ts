@@ -3,10 +3,11 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
+import { ROTEIROS, situacaoMarco, type Produto } from '@/lib/entrega'
 
 export const maxDuration = 60
 
-// A AGENDA — três fontes num lugar só, com a hierarquia valendo.
+// A AGENDA — quatro fontes num lugar só, com a hierarquia valendo.
 //
 // POR QUE ISTO É UMA ROTA DE SERVIDOR E NÃO CONSULTA DIRETA DA TELA
 // `agenda_eventos` tem regra de linha no banco (16-hierarquia-e-agenda.sql): o subordinado não lê
@@ -22,10 +23,14 @@ export const maxDuration = 60
 // Ou seja: quase todo o trabalho real hoje não tem dono. Uma agenda que só mostrasse "o que é meu"
 // abriria vazia pra quase todo mundo. Por isso item sem dono é do GRUPO e aparece pra todos — é o
 // mural de onde se pega trabalho, e é o coração da tela.
+//
+// A QUARTA FONTE: os marcos de ENTREGA (projeto_marcos, módulo de Entregas). Entram só pra LEITURA:
+// quem conclui, combina e remarca é a ficha da entrega, porque lá vale a regra de ouro — encontro
+// não fecha sem marcar o próximo com o cliente. Um botão de concluir aqui pularia essa regra.
 
 type Item = {
   id: string
-  fonte: 'agenda' | 'turma' | 'lead'
+  fonte: 'agenda' | 'turma' | 'lead' | 'entrega'
   titulo: string
   subtitulo?: string | null
   inicio: string
@@ -42,6 +47,11 @@ type Item = {
   ajudaDe?: string | null
   ajudaNota?: string | null
   participantes?: string[]
+  // só entrega
+  projetoId?: string | null
+  estado?: string | null
+  situacao?: string | null
+  cor?: string | null
 }
 
 export async function GET(req: Request) {
@@ -61,7 +71,7 @@ export async function GET(req: Request) {
   const url = new URL(req.url)
   const ate = url.searchParams.get('ate') || horizonteISO()
 
-  const [evs, tars, tlds, balao] = await Promise.all([
+  const [evs, tars, tlds, balao, marcos] = await Promise.all([
     // Só o que está EM ABERTO, e sem corte pra trás: um compromisso de junho que ninguém concluiu
     // continua sendo notícia hoje. (A escola tem 10 assim, de junho e julho — some todos se o
     // período começar em -30 dias.)
@@ -81,6 +91,12 @@ export async function GET(req: Request) {
     // O que acende o balão pra mim — a mesma regra do número no menu (lib/agenda-balao.ts), pra o
     // ponto vermelho na tela e o número do menu nunca discordarem.
     balaoDe(org, eu.id),
+    // Marcos de entrega em aberto. A data combinada sempre acompanha a prevista (a ficha grava as
+    // duas juntas), então o corte pra frente pela prevista não perde nada.
+    sb.from('projeto_marcos')
+      .select('id,projeto_id,titulo,natureza,estado,data_prevista,data_combinada,duracao_min,responsavel_id')
+      .eq('org_id', org).not('estado', 'in', '(concluido,cancelado)').lte('data_prevista', ate.slice(0, 10))
+      .order('data_prevista').limit(1000),
   ])
 
   const podeVer = (dono: string | null, publico: boolean, ajudaDe?: string | null, participantes?: string[] | null) =>
@@ -125,6 +141,36 @@ export async function GET(req: Request) {
       donoId: t.vendedor_id, publico: false, concluido: false,
       leadId: t.lead_id,
     })
+  }
+
+  // ENTREGAS. O cliente e o roteiro vêm do projeto; projeto encerrado ou cancelado não entra.
+  // Dono do marco é o responsável dele, e na falta, o do projeto — sem nenhum dos dois, é do grupo.
+  const listaMarcos = (marcos.data || []) as any[]
+  if (listaMarcos.length) {
+    const ids = [...new Set(listaMarcos.map(m => m.projeto_id))]
+    const { data: projetos } = await sb.from('projetos')
+      .select('id,cliente,produto,status,responsavel_id').in('id', ids)
+    const porId = new Map((projetos || []).map((p: any) => [p.id, p]))
+    for (const m of listaMarcos) {
+      const p: any = porId.get(m.projeto_id)
+      if (!p || p.status === 'cancelado' || p.status === 'concluido') continue
+      const dono = m.responsavel_id || p.responsavel_id || null
+      if (!podeVer(dono, false)) continue
+      const quando = m.data_combinada || m.data_prevista
+      if (!quando) continue
+      const r = ROTEIROS[p.produto as Produto]
+      const fimCombinado = m.data_combinada && m.duracao_min
+        ? new Date(new Date(m.data_combinada).getTime() + m.duracao_min * 60000).toISOString() : null
+      itens.push({
+        id: m.id, fonte: 'entrega', titulo: `${p.cliente} — ${m.titulo}`,
+        subtitulo: r?.nome || p.produto,
+        // Previsto = o roteiro calculou, ninguém combinou: vai como dia inteiro, sem hora — é
+        // sombra na agenda, não reunião marcada.
+        inicio: quando, fim: fimCombinado, diaTodo: !m.data_combinada, tipo: m.natureza,
+        donoId: dono, publico: false, concluido: false,
+        projetoId: m.projeto_id, estado: m.estado, situacao: situacaoMarco(m), cor: r?.cor || null,
+      })
+    }
   }
 
   itens.sort((a, b) => a.inicio.localeCompare(b.inicio))

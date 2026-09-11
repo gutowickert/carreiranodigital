@@ -7,9 +7,9 @@ import { fetchAuth } from '@/lib/api'
 
 // A AGENDA — calendário em cima, próximos dias embaixo.
 //
-// Três fontes num lugar só: compromissos (agenda_eventos), tarefas (tarefas) e follow-ups de
-// cliente (tarefas_lead). Quem enxerga o quê é decidido no servidor (app/api/agenda), porque duas
-// dessas três tabelas são antigas e continuam abertas pra empresa inteira no banco.
+// Quatro fontes num lugar só: compromissos (agenda_eventos), tarefas (tarefas), follow-ups de
+// cliente (tarefas_lead) e marcos de entrega (projeto_marcos). Quem enxerga o quê é decidido no
+// servidor (app/api/agenda), porque várias dessas tabelas continuam abertas pra empresa inteira.
 //
 // DUAS DECISÕES DE TELA QUE VALEM PRA QUALQUER NEGÓCIO, NÃO SÓ PRA ESCOLA:
 //
@@ -29,10 +29,15 @@ import { fetchAuth } from '@/lib/api'
 // lido" acende de novo. A regra de o que acende mora no servidor (lib/agenda-balao.ts) — aqui só se
 // mostra e se avisa o que foi visto. Só o que está NA TELA é marcado: com o filtro "Do grupo" os
 // meus itens nem aparecem, e clicar no dia não pode apagá-los.
+//
+// ENTREGA É SÓ LEITURA AQUI. O marco de entrega se conclui, combina e remarca na ficha da entrega,
+// onde vale a regra de ouro: encontro não fecha sem marcar o próximo com o cliente. Por isso a linha
+// dele não tem bolinha de concluir, e o detalhe só leva pra ficha. Marco PREVISTO (o roteiro
+// calculou, ninguém combinou) aparece tracejado e sem hora — é sombra, não reunião marcada.
 
 type Item = {
   id: string
-  fonte: 'agenda' | 'turma' | 'lead'
+  fonte: 'agenda' | 'turma' | 'lead' | 'entrega'
   titulo: string
   subtitulo?: string | null
   inicio: string
@@ -47,17 +52,27 @@ type Item = {
   ajudaDe?: string | null
   ajudaNota?: string | null
   participantes?: string[]
+  projetoId?: string | null
+  estado?: string | null
+  situacao?: string | null
+  cor?: string | null
 }
 type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean }
 type Eu = { id: string; nome: string; papel: string; setor: string; souDono: boolean }
 
-// Rótulos por NATUREZA, não por ramo: "Turma" só faz sentido em escola. Compromisso, tarefa e
-// follow-up existem em qualquer negócio, que é onde este sistema vai parar.
+// Rótulos por NATUREZA, não por ramo: "Turma" só faz sentido em escola. Compromisso, tarefa,
+// follow-up e entrega existem em qualquer negócio, que é onde este sistema vai parar.
 const FONTES: Record<Item['fonte'], { rotulo: string; cor: string }> = {
   agenda: { rotulo: 'Compromisso', cor: 'var(--accent)' },
   turma: { rotulo: 'Tarefa', cor: 'var(--amber)' },
   lead: { rotulo: 'Follow-up', cor: 'var(--blue)' },
+  entrega: { rotulo: 'Entrega', cor: 'var(--green)' },
 }
+// Cor da linha: entrega usa a do roteiro (a mesma da agenda de entregas); o resto, a da fonte.
+const corDe = (i: Item) => (i.fonte === 'entrega' && i.cor) || FONTES[i.fonte].cor
+const ehPrevisto = (i: Item) => i.fonte === 'entrega' && i.estado === 'previsto'
+// O que a entrega precisa de ti agora (situacaoMarco, em lib/entrega.ts)
+const AVISO_ENTREGA: Record<string, string> = { confirmar: 'reconfirmar com o cliente', a_remarcar: 'remarcar', atrasado: 'atrasado' }
 
 const DIAS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
@@ -171,13 +186,17 @@ export default function Agenda() {
   const pegar = (it: Item, quem: string | null) => acao(it.id, async () => {
     if (it.fonte === 'agenda') return supabase.from('agenda_eventos').update({ usuario_id: quem }).eq('id', it.id)
     if (it.fonte === 'turma') return supabase.from('tarefas').update({ usuario_id: quem }).eq('id', it.id)
-    return supabase.from('tarefas_lead').update({ vendedor_id: quem }).eq('id', it.id)
+    if (it.fonte === 'lead') return supabase.from('tarefas_lead').update({ vendedor_id: quem }).eq('id', it.id)
+    return { error: { message: 'Entrega se resolve na ficha da entrega.' } } as any
   })
   const concluir = (it: Item) => acao(it.id, async () => {
     const agora = new Date().toISOString()
     if (it.fonte === 'agenda') return supabase.from('agenda_eventos').update({ concluido: true, concluido_em: agora }).eq('id', it.id)
     if (it.fonte === 'turma') return supabase.from('tarefas').update({ status: 'concluida', concluida_em: agora }).eq('id', it.id)
-    return supabase.from('tarefas_lead').update({ concluida: true, concluida_em: agora, atualizado_em: agora }).eq('id', it.id)
+    if (it.fonte === 'lead') return supabase.from('tarefas_lead').update({ concluida: true, concluida_em: agora, atualizado_em: agora }).eq('id', it.id)
+    // Nunca chega aqui pela tela (a linha de entrega não tem bolinha), mas se chegar, não conclui:
+    // a ficha é que sabe pedir o próximo encontro antes de fechar este.
+    return { error: { message: 'Encontro de entrega se conclui na ficha da entrega.' } } as any
   })
   const abrirPublico = (it: Item, publico: boolean) =>
     acao(it.id, async () => supabase.from('agenda_eventos').update({ publico }).eq('id', it.id))
@@ -331,20 +350,26 @@ export default function Agenda() {
                       </span>
                       {doDia.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{doDia.length}</span>}
                     </div>
-                    {doDia.slice(0, 3).map(i => (
-                      <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); abrir(i) }}
-                        title={i.titulo}
-                        style={{
-                          fontSize: 10.5, lineHeight: '14px', marginBottom: 2, padding: '1px 4px', borderRadius: 3,
-                          background: k < hj ? 'var(--red-bg)' : 'var(--surface-2)',
-                          color: k < hj ? 'var(--red)' : FONTES[i.fonte].cor,
-                          borderLeft: `2px solid ${k < hj ? 'var(--red)' : FONTES[i.fonte].cor}`,
-                          whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
-                          fontWeight: balao.has(chaveDe(i)) ? 700 : 400,
-                        }}>
-                        {horaDe(i) && <span style={{ opacity: 0.75 }}>{horaDe(i)} </span>}{i.titulo}
-                      </div>
-                    ))}
+                    {doDia.slice(0, 3).map(i => {
+                      const atras = k < hj, prev = ehPrevisto(i), cor = atras ? 'var(--red)' : corDe(i)
+                      return (
+                        <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); abrir(i) }}
+                          title={prev ? `${i.titulo} (previsto — ainda não combinado)` : i.titulo}
+                          style={{
+                            fontSize: 10.5, lineHeight: '14px', marginBottom: 2, padding: '1px 4px', borderRadius: 3,
+                            // previsto = sombra tracejada, sem fundo: está no calendário do contrato,
+                            // mas ninguém combinou com o cliente ainda
+                            background: prev ? 'transparent' : atras ? 'var(--red-bg)' : 'var(--surface-2)',
+                            color: cor,
+                            borderLeft: `2px ${prev ? 'dashed' : 'solid'} ${cor}`,
+                            opacity: prev ? 0.75 : 1,
+                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
+                            fontWeight: balao.has(chaveDe(i)) ? 700 : 400,
+                          }}>
+                          {horaDe(i) && <span style={{ opacity: 0.75 }}>{horaDe(i)} </span>}{i.titulo}
+                        </div>
+                      )
+                    })}
                     {doDia.length > 3 && (
                       <div style={{ fontSize: 10, color: 'var(--text-faint)', paddingLeft: 5 }}>+{doDia.length - 3} mais</div>
                     )}
@@ -407,7 +432,7 @@ export default function Agenda() {
         {detalhe && eu && (
           <ModalDetalhe it={detalhe} eu={eu} ativos={ativos} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
             // Só pro que é meu e já está apagado: acender de novo um item que nem é meu não faria sentido.
-            podeNaoLido={balaoPronto && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
+            podeNaoLido={balaoPronto && detalhe.fonte !== 'entrega' && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
             onNaoLido={() => { marcar([chaveDe(detalhe)], 'nao_lido'); setDetalhe(null) }}
             onFechar={() => setDetalhe(null)}
             // Pegar um item do grupo que outra pessoa criou faria ele acender como "novidade" pra mim
@@ -448,29 +473,40 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
   const convidado = !!eu && !meu && !!it.participantes?.includes(eu.id)
   const outros = (it.participantes || []).length
   const hora = horaDe(it)
+  const entrega = it.fonte === 'entrega'
+  const prev = ehPrevisto(it)
+  const aviso = entrega && it.situacao ? AVISO_ENTREGA[it.situacao] : null
+  const sub = chamado ? 'pediram tua ajuda'
+    : convidado ? `você foi chamado · ${nomeDe(it.donoId) || 'grupo'} organiza`
+    : entrega ? `${it.subtitulo || 'Entrega'}${prev ? ' · previsto, ainda não combinado' : ''}${aviso ? ' · ' + aviso : ''}`
+    : it.subtitulo
   return (
     <div onClick={onAbrir} style={{
       display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', cursor: 'pointer',
-      background: 'var(--surface)', borderRadius: 8,
-      border: '1px solid ' + (chamado ? 'var(--amber)' : convidado ? 'var(--accent)' : 'var(--border)'),
+      background: prev ? 'transparent' : 'var(--surface)', borderRadius: 8,
+      border: `1px ${prev ? 'dashed' : 'solid'} ` + (chamado ? 'var(--amber)' : convidado ? 'var(--accent)' : 'var(--border)'),
+      opacity: prev ? 0.8 : 1,
     }}>
-      <button title="Concluir" disabled={ocupado} onClick={e => { e.stopPropagation(); onConcluir() }}
-        style={{ width: 17, height: 17, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--text-faint)', background: 'transparent', cursor: 'pointer', padding: 0 }} />
+      {/* Entrega não tem bolinha de concluir: fecha na ficha, que pede o próximo encontro. */}
+      {entrega
+        ? <span title="Conclui na ficha da entrega" style={{ width: 17, height: 17, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: corDe(it) }}>◆</span>
+        : <button title="Concluir" disabled={ocupado} onClick={e => { e.stopPropagation(); onConcluir() }}
+            style={{ width: 17, height: 17, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--text-faint)', background: 'transparent', cursor: 'pointer', padding: 0 }} />}
       <span style={{ fontSize: 12, color: 'var(--text-faint)', width: 42, flexShrink: 0 }}>{hora || '—'}</span>
-      <span style={{ width: 3, height: 16, borderRadius: 2, background: f.cor, flexShrink: 0 }} />
+      <span style={{ width: 3, height: 16, borderRadius: 2, background: corDe(it), flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 13.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6, fontWeight: naoLido ? 700 : 400 }}>
           {naoLido && <span title="Ainda não visto" style={pontoVermelho} />}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.titulo}</span>
         </div>
-        {(it.subtitulo || chamado || convidado) && (
-          <div style={{ fontSize: 11.5, color: chamado ? 'var(--amber)' : convidado ? 'var(--accent-soft)' : 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {chamado ? 'pediram tua ajuda' : convidado ? `você foi chamado · ${nomeDe(it.donoId) || 'grupo'} organiza` : it.subtitulo}
+        {sub && (
+          <div style={{ fontSize: 11.5, color: chamado || aviso ? 'var(--amber)' : convidado ? 'var(--accent-soft)' : 'var(--text-faint)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            {sub}
           </div>
         )}
       </div>
       <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
-        {!it.donoId ? 'sem dono' : meu ? 'seu' : nomeDe(it.donoId)}{outros > 0 ? ` +${outros}` : ''}
+        {!it.donoId ? (entrega ? 'entrega' : 'sem dono') : meu ? 'seu' : nomeDe(it.donoId)}{outros > 0 ? ` +${outros}` : ''}
       </span>
     </div>
   )
@@ -489,6 +525,39 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
   const meu = it.donoId === eu.id
   const d = paraData(it.inicio)
   const participantes = it.participantes || []
+
+  // ENTREGA: só mostra e leva pra ficha. Concluir, combinar e remarcar são da ficha, onde a regra
+  // de não fechar encontro sem marcar o próximo está implementada.
+  if (it.fonte === 'entrega') {
+    const aviso = it.situacao ? AVISO_ENTREGA[it.situacao] : null
+    return (
+      <Modal titulo={it.titulo} onFechar={onFechar}>
+        <div style={{ fontSize: 12.5, color: 'var(--text-muted)', display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <span style={{ color: corDe(it) }}>Entrega · {it.subtitulo}</span>
+          <span>· {d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })}</span>
+          {!it.diaTodo && <span>· {horaDe(it)}</span>}
+          <span>· {it.donoId ? (meu ? 'seu' : `de ${nomeDe(it.donoId)}`) : 'sem responsável'}</span>
+        </div>
+        {ehPrevisto(it) && (
+          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
+            <b style={{ color: 'var(--text-2)' }}>Previsto:</b> o roteiro calculou esta data, mas ainda não foi combinada com o cliente.
+          </p>
+        )}
+        {aviso && (
+          <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, color: 'var(--amber)' }}>
+            Precisa de ti: {aviso}.
+          </div>
+        )}
+        <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+          Combinar, remarcar e concluir se faz na ficha da entrega — lá, antes de fechar um encontro, o sistema pede o próximo.
+        </p>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onFechar} style={{ ...btnSec, flex: 1 }}>Fechar</button>
+          <a href={`/dashboard/entregas/${it.projetoId}`} style={{ ...btnPri, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Abrir a entrega</a>
+        </div>
+      </Modal>
+    )
+  }
 
   return (
     <Modal titulo={it.titulo} onFechar={onFechar}>
