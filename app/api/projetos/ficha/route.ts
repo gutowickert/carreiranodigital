@@ -95,6 +95,11 @@ export async function PATCH(req: Request) {
     if (b.mensalidade_valor !== undefined) p.mensalidade_valor = b.mensalidade_valor === '' || b.mensalidade_valor == null ? null : Number(b.mensalidade_valor)
     if (b.observacoes !== undefined) p.observacoes = (b.observacoes || '').toString().slice(0, 2000) || null
     if (b.ad_account_id !== undefined) p.ad_account_id = (b.ad_account_id || '').toString().replace(/\D/g, '') || null
+    // quem mais responde pelo projeto: aparece na agenda dessas pessoas junto com o responsável
+    if (Array.isArray(b.participantes)) {
+      const validos = new Set((await pessoasAtivas(org)).map(x => x.id))
+      p.participantes = [...new Set(b.participantes.map((x: any) => String(x)))].filter(x => validos.has(x as string))
+    }
     // a meta do contrato: onde o cliente quer estar no fim (o ponto B do placar)
     if (b.meta_objetivo !== undefined) p.meta_objetivo = (b.meta_objetivo || '').toString().slice(0, 1000) || null
     if (b.meta_leads !== undefined) p.meta_leads = num(b.meta_leads)

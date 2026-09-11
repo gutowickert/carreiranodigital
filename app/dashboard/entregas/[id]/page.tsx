@@ -108,6 +108,12 @@ export default function FichaEntrega() {
   const donoProjeto = pessoas.find(x => x.id === p.responsavel_id)
   const semDono = marcos.filter((m: any) => m.estado !== 'concluido' && !m.responsavel_id && !p.responsavel_id).length
 
+  const juntos: string[] = (p.participantes || []).filter((x: string) => x !== p.responsavel_id)
+  async function trocarJuntos(lista: string[]) {
+    await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, participantes: lista }) })
+    carregar()
+  }
+
   async function trocarResponsavel(v: string) {
     await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, responsavel_id: v || null }) })
     carregar()
@@ -138,6 +144,18 @@ export default function FichaEntrega() {
               {pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
             </select>
           </label>
+          {juntos.map(id => (
+            <span key={id} style={{ ...card, padding: '5px 6px 5px 10px', fontSize: 12.5, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              + {pessoas.find(x => x.id === id)?.nome || 'alguém'}
+              <button onClick={() => trocarJuntos(juntos.filter(x => x !== id))} aria-label="tirar" style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '0 4px', fontWeight: 400 }}>✕</button>
+            </span>
+          ))}
+          {p.responsavel_id && (
+            <select value="" onChange={e => e.target.value && trocarJuntos([...juntos, e.target.value])} aria-label="Também responsável" style={{ ...inp, padding: '5px 6px', fontSize: 12.5 }}>
+              <option value="">+ também responsável</option>
+              {pessoas.filter(x => x.id !== p.responsavel_id && !juntos.includes(x.id)).map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
+            </select>
+          )}
           {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>💬 WhatsApp</a>}
           {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>👤 Lead de origem</Link>}
         </div>
@@ -186,7 +204,7 @@ export default function FichaEntrega() {
                     <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>👤 na agenda de</span>
                     <select value={m.responsavel_id || ''} onChange={e => acao({ acao: 'responsavel', id: m.id, responsavel_id: e.target.value })} aria-label={'Dono de ' + m.titulo}
                       style={{ ...inp, padding: '3px 6px', fontSize: 12, color: !m.responsavel_id && !donoProjeto ? 'var(--amber)' : 'var(--text)' }}>
-                      <option value="">{donoProjeto ? donoProjeto.nome + ' (responsável do projeto)' : 'ninguém — o grupo todo vê'}</option>
+                      <option value="">{donoProjeto ? [donoProjeto.nome, ...juntos.map(id => pessoas.find(x => x.id === id)?.nome).filter(Boolean)].join(' e ') + ' (do projeto)' : 'ninguém — o grupo todo vê'}</option>
                       {pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
                     </select>
                   </div>
