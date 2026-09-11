@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
+import { Vazio } from '@/components/ui'
+import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide-react'
 
 // A AGENDA — calendário em cima, próximos dias embaixo.
 //
@@ -297,13 +299,13 @@ export default function Agenda() {
         {/* CABEÇALHO */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
           {/* sem textTransform: capitalize — ele maiusculiza CADA palavra e vira "Setembro De 2026" */}
-          <h1 style={{ fontSize: 20, fontWeight: 700, color: 'var(--text)', minWidth: 180 }}>
-            {MESES[mes.getMonth()].replace(/^./, c => c.toUpperCase())} de {mes.getFullYear()}
+          <h1 className="display relevo-titulo" style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', minWidth: 200, margin: 0 }}>
+            {MESES[mes.getMonth()].replace(/^./, c => c.toUpperCase())} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>de {mes.getFullYear()}</span>
           </h1>
           <div style={{ display: 'flex', gap: 4 }}>
-            <button onClick={() => irPara(-1)} style={btnIcone}>‹</button>
-            <button onClick={() => { setMes(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setDiaAberto(null) }} style={{ ...btnIcone, width: 'auto', padding: '0 12px' }}>Hoje</button>
-            <button onClick={() => irPara(1)} style={btnIcone}>›</button>
+            <button onClick={() => irPara(-1)} style={btnIcone} aria-label="Mês anterior"><ChevronLeft size={16} /></button>
+            <button onClick={() => { setMes(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setDiaAberto(null) }} style={{ ...btnIcone, width: 'auto', padding: '0 12px', fontWeight: 600 }}>Hoje</button>
+            <button onClick={() => irPara(1)} style={btnIcone} aria-label="Próximo mês"><ChevronRight size={16} /></button>
           </div>
           {balaoPronto && balao.size > 0 && (
             <span style={{ fontSize: 12, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -316,22 +318,28 @@ export default function Agenda() {
               <button key={f.id} onClick={() => { setFiltro(f.id); setDiaAberto(null) }} style={chip(filtro === f.id)}>{f.nome}</button>
             ))}
           </div>
-          <button onClick={() => setNovo(true)} style={btnPri}>+ Novo</button>
+          <button onClick={() => setNovo(true)} className="btn-afunda" style={btnPri}><Plus size={15} strokeWidth={2.4} /> Novo</button>
         </div>
 
-        {erro && <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 10, padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--red)' }}>{erro}</div>}
+        {erro && <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--red)' }}>{erro}</div>}
 
-        {carregando ? <p style={{ fontSize: 14, color: 'var(--text-faint)' }}>Carregando...</p> : <>
+        {carregando ? (
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div className="esqueleto" style={{ height: 380, borderRadius: 'var(--r-lg)' }} />
+            <div className="esqueleto" style={{ height: 46, borderRadius: 'var(--r)' }} />
+            <div className="esqueleto" style={{ height: 46, borderRadius: 'var(--r)' }} />
+          </div>
+        ) : <>
 
-          {/* CALENDÁRIO */}
-          <div style={{ border: '1px solid var(--border)', borderRadius: 12, overflow: 'hidden', background: 'var(--surface)' }}>
+          {/* CALENDÁRIO — de vidro: é um elemento só, parado, com a luz atrás */}
+          <div className="vidro" style={{ overflow: 'hidden' }}>
             {/* ⚠️ minmax(0, 1fr), não 1fr. Em CSS grid o mínimo de `1fr` é o tamanho do CONTEÚDO:
                 com títulos longos e nowrap, cada coluna cresce até caber o texto e a grade
                 inteira estoura pra fora da tela — foi o que aconteceu na primeira versão, só
                 quatro dias apareciam. `minmax(0, ...)` deixa a coluna encolher e o texto cortar. */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
               {DIAS.map(d => (
-                <div key={d} style={{ padding: '8px 0', textAlign: 'center', fontSize: 11, fontWeight: 600, color: 'var(--text-faint)', textTransform: 'uppercase', borderBottom: '1px solid var(--border)' }}>{d}</div>
+                <div key={d} style={{ padding: '9px 0', textAlign: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', color: 'var(--text-faint)', textTransform: 'uppercase', borderBottom: '1px solid var(--glass-border)' }}>{d}</div>
               ))}
               {grade.map((d, n) => {
                 const k = chaveDia(d)
@@ -344,19 +352,21 @@ export default function Agenda() {
                   // e só o que está na tela com o filtro atual.
                   <div key={n} onClick={() => { if (!sel) marcar(acesos, 'lido'); setDiaAberto(sel ? null : k) }}
                     style={{
-                      minHeight: 74, padding: '5px 5px 3px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
-                      borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--border)',
-                      borderBottom: n < grade.length - 7 ? '1px solid var(--border)' : 'none',
-                      background: sel ? 'var(--accent-bg)' : hoje ? 'var(--surface-2)' : 'transparent',
+                      minHeight: 78, padding: '5px 5px 3px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
+                      borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--glass-border)',
+                      borderBottom: n < grade.length - 7 ? '1px solid var(--glass-border)' : 'none',
+                      background: sel ? 'var(--accent-bg)' : hoje ? 'var(--glass-field)' : 'transparent',
                       opacity: mesmoMes(d) ? 1 : 0.35,
                     }}>
                     <div style={{
-                      fontSize: 12, fontWeight: hoje ? 700 : 500, marginBottom: 4,
+                      fontSize: 12.5, fontWeight: hoje ? 800 : 500, marginBottom: 4,
                       color: hoje ? 'var(--accent-soft)' : 'var(--text-muted)',
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {d.getDate()}
+                      <span className="tnum" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                        {hoje
+                          ? <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'inline-grid', placeItems: 'center', fontSize: 11.5, fontWeight: 800, boxShadow: '0 3px 8px var(--glow)' }}>{d.getDate()}</span>
+                          : d.getDate()}
                         {acesos.length > 0 && <span title={`${acesos.length} pra ver`} style={pontoVermelho} />}
                       </span>
                       {doDia.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{doDia.length}</span>}
@@ -395,7 +405,7 @@ export default function Agenda() {
               não marca — senão bastaria abrir a agenda pra o balão dos atrasados sumir sem ninguém ver. */}
           {atrasados.length > 0 && !diaAberto && (
             <div onClick={() => { if (!verAtrasados) marcar(acesas(atrasados), 'lido'); setVerAtrasados(v => !v) }}
-              style={{ marginTop: 16, background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 10, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+              style={{ marginTop: 16, background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
               {atrasadosAcesos > 0 && <span style={pontoVermelho} />}
               <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>{atrasados.length} atrasado{atrasados.length > 1 ? 's' : ''}</span>
               <span style={{ fontSize: 12, color: 'var(--red)', opacity: 0.85 }}>
@@ -409,22 +419,20 @@ export default function Agenda() {
           {/* LISTA */}
           <div style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <h2 style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>
+              <h2 className="display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
                 {diaAberto ? rotuloDia(diaAberto) : 'Próximos dias'}
               </h2>
               {diaAberto && <button onClick={() => setDiaAberto(null)} style={{ ...chip(false), padding: '3px 10px' }}>ver todos</button>}
-              <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
             </div>
 
             {listaDeBaixo.length === 0 ? (
-              <p style={{ fontSize: 14, color: 'var(--text-faint)', padding: '24px 0' }}>
-                {diaAberto ? 'Nada neste dia.' : 'Nada pela frente. Bom sinal — ou hora de pegar algo do grupo.'}
-              </p>
+              <Vazio icone={CalendarDays} titulo={diaAberto ? 'Nada neste dia' : 'Nada pela frente'} texto={diaAberto ? undefined : 'Bom sinal — ou hora de pegar algo do grupo.'} />
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
                 {listaDeBaixo.map(([dia, lista]) => (
                   <div key={dia}>
-                    <div style={{ fontSize: 12, fontWeight: 600, marginBottom: 6, color: dia < hj ? 'var(--red)' : dia === hj ? 'var(--accent-soft)' : 'var(--text-muted)' }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6, color: dia < hj ? 'var(--red)' : dia === hj ? 'var(--accent-soft)' : 'var(--text-faint)' }}>
                       {dia < hj ? 'Atrasado · ' : ''}{rotuloDia(dia)}
                     </div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
@@ -479,18 +487,19 @@ export default function Agenda() {
 }
 
 // ── PEÇAS ─────────────────────────────────────────────────────────────────────
-const btnPri = { padding: '8px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
-const btnSec = { padding: '9px 16px', background: 'transparent', color: 'var(--text-muted)', border: '1px solid var(--border)', borderRadius: 8, fontSize: 13, cursor: 'pointer' } as React.CSSProperties
-const btnIcone = { width: 32, height: 32, borderRadius: 8, border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', fontSize: 15, cursor: 'pointer', lineHeight: 1 } as React.CSSProperties
+// o principal é o único com o gradiente do logo (e afunda no clique via .btn-afunda)
+const btnPri = { padding: '9px 16px', background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 } as React.CSSProperties
+const btnSec = { padding: '9px 16px', background: 'transparent', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 } as React.CSSProperties
+const btnIcone = { width: 34, height: 34, borderRadius: 'var(--r)', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties
 const pontoVermelho = { width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, display: 'inline-block' } as React.CSSProperties
 const chip = (ativo: boolean) => ({
-  padding: '6px 13px', borderRadius: 20, fontSize: 12.5, cursor: 'pointer',
-  border: '1px solid ' + (ativo ? 'var(--accent)' : 'var(--border)'),
+  padding: '6px 13px', borderRadius: 'var(--r-pill)', fontSize: 12.5, cursor: 'pointer',
+  border: '1px solid ' + (ativo ? 'var(--accent)' : 'var(--border-strong)'),
   background: ativo ? 'var(--accent-bg)' : 'transparent',
   color: ativo ? 'var(--accent-soft)' : 'var(--text-muted)',
-  fontWeight: ativo ? 600 : 400,
+  fontWeight: ativo ? 700 : 500,
 }) as React.CSSProperties
-const inp = { background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' } as React.CSSProperties
+const inp = { background: 'var(--glass-field)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '10px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' } as React.CSSProperties
 
 // A linha: bolinha pra concluir, e o resto abre ao clicar. Sem fileira de botões.
 function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
@@ -512,9 +521,10 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
     : entrega ? `${it.subtitulo || 'Entrega'}${prev ? ' · previsto, ainda não combinado' : ''}${aviso ? ' · ' + aviso : ''}`
     : it.subtitulo
   return (
-    <div onClick={onAbrir} style={{
-      display: 'flex', alignItems: 'center', gap: 10, padding: '9px 12px', cursor: 'pointer',
-      background: prev ? 'transparent' : 'var(--surface)', borderRadius: 8,
+    // Linha SÓLIDA, de propósito: a lista rola, e vidro em lista que rola trava.
+    <div onClick={onAbrir} className="card-hover" style={{
+      display: 'flex', alignItems: 'center', gap: 10, padding: '10px 12px', cursor: 'pointer',
+      background: prev ? 'transparent' : 'var(--surface)', borderRadius: 'var(--r)',
       border: `1px ${prev ? 'dashed' : 'solid'} ` + (chamado ? 'var(--amber)' : convidado ? 'var(--accent)' : 'var(--border)'),
       opacity: prev ? 0.8 : 1,
     }}>
@@ -523,10 +533,10 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
         ? <span title="Conclui na ficha da entrega" style={{ width: 17, height: 17, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: corDe(it) }}>◆</span>
         : <button title="Concluir" disabled={ocupado} onClick={e => { e.stopPropagation(); onConcluir() }}
             style={{ width: 17, height: 17, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--text-faint)', background: 'transparent', cursor: 'pointer', padding: 0 }} />}
-      <span style={{ fontSize: 12, color: 'var(--text-faint)', width: 42, flexShrink: 0 }}>{hora || '—'}</span>
-      <span style={{ width: 3, height: 16, borderRadius: 2, background: corDe(it), flexShrink: 0 }} />
+      <span className="tnum" style={{ fontSize: 12, color: 'var(--text-muted)', width: 42, flexShrink: 0, fontWeight: 600 }}>{hora || '—'}</span>
+      <span style={{ width: 3, height: 18, borderRadius: 2, background: corDe(it), flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ fontSize: 13.5, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6, fontWeight: naoLido ? 700 : 400 }}>
+        <div style={{ fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6, fontWeight: naoLido ? 700 : 500 }}>
           {naoLido && <span title="Ainda não visto" style={pontoVermelho} />}
           <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{it.titulo}</span>
         </div>
@@ -630,7 +640,7 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
         </>
       ) : (
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {podeEditar && <button onClick={onEditar} style={{ ...btnSec, borderColor: 'var(--accent)', color: 'var(--accent-soft)' }}>✏️ Editar</button>}
+          {podeEditar && <button onClick={onEditar} style={{ ...btnSec, borderColor: 'var(--accent)', color: 'var(--accent-soft)' }}><Pencil size={13} /> Editar</button>}
           {!it.donoId && <button disabled={ocupado} onClick={() => onPegar(eu.id)} style={btnPri}>Pegar pra mim</button>}
           {meu && <button disabled={ocupado} onClick={() => onPegar(null)} style={btnSec}>Devolver ao grupo</button>}
           {(meu || !it.donoId) && <button onClick={() => setPedindo(true)} style={btnSec}>Pedir ajuda</button>}
@@ -771,11 +781,12 @@ function ModalCompromisso({ eu, ativos, diaSugerido, inicial, onFechar, onSalvo 
 
 function Modal({ titulo, onFechar, children }: { titulo: string; onFechar: () => void; children: React.ReactNode }) {
   return (
-    <div onClick={onFechar} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12, padding: 22, width: 470, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13 }}>
+    // Modal de vidro: fica parado, e o fundo escurecido + desfocado atrás é o que dá a profundidade.
+    <div onClick={onFechar} style={{ position: 'fixed', inset: 0, background: 'rgba(8,4,20,0.55)', backdropFilter: 'blur(6px)', WebkitBackdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} className="vidro" style={{ padding: 22, width: 470, maxWidth: '100%', maxHeight: '90vh', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 13, background: 'var(--surface)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-          <h2 style={{ fontSize: 15.5, fontWeight: 600, color: 'var(--text)', lineHeight: 1.35 }}>{titulo}</h2>
-          <button onClick={onFechar} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+          <h2 className="display" style={{ fontSize: 19, fontWeight: 700, color: 'var(--text)', lineHeight: 1.25, margin: 0 }}>{titulo}</h2>
+          <button onClick={onFechar} aria-label="Fechar" style={{ background: 'var(--glass-field)', border: '1px solid var(--glass-border)', borderRadius: '50%', width: 30, height: 30, color: 'var(--text-muted)', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}><X size={15} /></button>
         </div>
         {children}
       </div>
