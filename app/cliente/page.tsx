@@ -18,6 +18,7 @@ const brl = (v: any, casas = 0) => (v == null || v === '' ? '—' : 'R$ ' + Numb
 const int = (v: any) => (v == null || v === '' ? '—' : Number(v).toLocaleString('pt-BR'))
 const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
 const nomeMes = (m?: string | null) => (m ? `${MESES[Number(m.slice(5, 7)) - 1]} de ${m.slice(0, 4)}` : '')
+const maiuscula = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 const dataHora = (d?: string | null) => {
   if (!d) return ''
   const dt = new Date(d)
@@ -86,7 +87,7 @@ export default function AreaDoCliente() {
               <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{proximo.titulo}</div>
               <div style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 4 }}>
                 {proximo.data_combinada && proximo.estado !== 'previsto' && proximo.estado !== 'a_remarcar'
-                  ? <span style={{ textTransform: 'capitalize' }}>{dataHora(proximo.data_combinada)}</span>
+                  ? <span>{maiuscula(dataHora(proximo.data_combinada))}</span>
                   : <>por volta de {br(proximo.data_prevista)} — a data a gente combina no encontro anterior</>}
               </div>
               {proximo.descricao && <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>{proximo.descricao}</div>}
@@ -255,7 +256,7 @@ function Delta({ atual, anterior, bom }: { atual: number | null | undefined; ant
 }
 
 function Trafego({ k, inicio }: { k: string; inicio: string }) {
-  const [periodo, setPeriodo] = useState('30d')
+  const [periodo, setPeriodo] = useState(() => (inicio && inicio > intervalo('30d')[0] ? 'inicio' : '30d'))
   const [metrica, setMetrica] = useState<'conversas' | 'gasto'>('conversas')
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
