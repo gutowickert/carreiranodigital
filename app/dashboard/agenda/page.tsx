@@ -125,6 +125,9 @@ export default function Agenda() {
   const [novo, setNovo] = useState(false)
   // O compromisso sendo editado — abre o mesmo formulário do "+ Novo", já preenchido.
   const [editar, setEditar] = useState<Item | null>(null)
+  // A bolinha da lista não conclui direto: pergunta antes. Um clique sem querer sumia com o
+  // compromisso da agenda, sem jeito de desfazer pela tela.
+  const [confirmarConcluir, setConfirmarConcluir] = useState<Item | null>(null)
   const [ocupado, setOcupado] = useState<string | null>(null)
   // O que está aceso no balão pra mim. `balaoPronto` falso = a instalação ainda não tem a tabela
   // de leituras: aí não aparece ponto nem "Marcar como não lido".
@@ -427,7 +430,7 @@ export default function Agenda() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
                       {lista.map(i => (
                         <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
-                          ocupado={ocupado === i.id} onConcluir={() => concluir(i)} onAbrir={() => abrir(i)} />
+                          ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
                       ))}
                     </div>
                   </div>
@@ -455,6 +458,20 @@ export default function Agenda() {
           <ModalCompromisso eu={eu} ativos={ativos} diaSugerido={diaAberto} inicial={editar}
             onFechar={() => { setNovo(false); setEditar(null) }}
             onSalvo={() => { setNovo(false); setEditar(null); carregar() }} />
+        )}
+        {confirmarConcluir && (
+          <Modal titulo="Concluir este item?" onFechar={() => setConfirmarConcluir(null)}>
+            <p style={{ fontSize: 13.5, color: 'var(--text)', lineHeight: 1.5 }}>
+              <b>{confirmarConcluir.titulo}</b>
+              {' · '}{rotuloDia(chaveDia(paraData(confirmarConcluir.inicio)))}{horaDe(confirmarConcluir) ? `, ${horaDe(confirmarConcluir)}` : ''}
+            </p>
+            <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>Concluído, ele sai da agenda.</p>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setConfirmarConcluir(null)} style={{ ...btnSec, flex: 1 }}>Cancelar</button>
+              <button autoFocus onClick={() => { concluir(confirmarConcluir); setConfirmarConcluir(null) }}
+                style={{ ...btnPri, flex: 1, background: 'var(--green)' }}>Sim, concluir</button>
+            </div>
+          </Modal>
         )}
       </div>
     </Layout>
