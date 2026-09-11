@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
+import { MetaBloco, Placar, Registros, Nota } from './Resultados'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)' }
@@ -91,6 +92,14 @@ export default function FichaEntrega() {
       </div>
 
       {msg && <div style={{ ...card, padding: '10px 12px', marginTop: 12, fontSize: 13, color: 'var(--text-2)' }}>{msg}</div>}
+
+      {/* ───────── resultado: o placar do contrato vem antes da operação */}
+      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '24px 0 10px' }}>O resultado</div>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <MetaBloco projeto={p} aoMudar={carregar} />
+        <Placar projeto={p} linhas={d.placar || []} aoMudar={carregar} />
+        <Registros projeto={p} itens={d.registros || []} aoMudar={carregar} />
+      </div>
 
       {/* ───────── linha do tempo */}
       <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '24px 0 10px' }}>A entrega</div>
@@ -187,6 +196,7 @@ export default function FichaEntrega() {
 
       {/* ───────── andamentos */}
       <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '26px 0 10px' }}>Andamentos</div>
+      <Nota projeto={p} aoMudar={carregar} />
       <div style={{ ...card, padding: 4 }}>
         {(d.andamentos || []).map((a: any) => (
           <div key={a.id} style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', fontSize: 13, color: 'var(--text-2)' }}>

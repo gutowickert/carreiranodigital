@@ -6,7 +6,18 @@ import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/en
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
 // que está pendente COM O CLIENTE. GET lê, PATCH edita o cadastro, POST mexe nas
-// pendências (que é o que mais atrasa implantação e hoje fica solto no WhatsApp).
+// pendências (que é o que mais atrasa implantação e hoje fica solto no WhatsApp),
+// no PLACAR (os números do contrato) e nos RESULTADOS e PROVAS.
+
+const BUCKET = 'provas'   // privado: print de venda tem nome e valor do cliente do cliente
+const MIMES = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'application/pdf']
+// "1.500,50" (digitado à brasileira) e "1500.50" (campo numérico) valem o mesmo
+const num = (v: any) => {
+  if (v === '' || v == null) return null
+  const s = String(v).trim()
+  const n = Number(s.includes(',') ? s.replace(/\./g, '').replace(',', '.') : s)
+  return Number.isFinite(n) ? n : null
+}
 
 export async function GET(req: Request) {
   try {
@@ -21,14 +32,23 @@ export async function GET(req: Request) {
     const { data: projeto } = await sb.from('projetos').select('*').eq('org_id', org).eq('id', id).maybeSingle()
     if (!projeto) return NextResponse.json({ ok: false, error: 'projeto não encontrado' }, { status: 200 })
 
-    const [{ data: marcos }, { data: andamentos }, { data: pendencias }] = await Promise.all([
+    const [{ data: marcos }, { data: andamentos }, { data: pendencias }, { data: placar }, { data: registros }] = await Promise.all([
       sb.from('projeto_marcos').select('*').eq('projeto_id', id).order('ordem'),
       sb.from('projeto_andamentos').select('*').eq('projeto_id', id).order('criado_em', { ascending: false }).limit(100),
       sb.from('projeto_pendencias').select('*').eq('projeto_id', id).order('criado_em'),
+      sb.from('projeto_placar').select('*').eq('projeto_id', id).order('data', { ascending: true }),
+      sb.from('projeto_registros').select('*').eq('projeto_id', id).order('data', { ascending: false }),
     ])
 
     const r = ROTEIROS[projeto.produto as Produto]
     const comSituacao = (marcos || []).map(m => ({ ...m, situacao: situacaoMarco(m) }))
+
+    // prova fica em bucket PRIVADO (tem dado do cliente do cliente) — link assinado de 1h
+    const comLink = await Promise.all((registros || []).map(async x => {
+      if (!x.arquivo_path) return x
+      const { data: s } = await sb.storage.from(BUCKET).createSignedUrl(x.arquivo_path, 3600)
+      return { ...x, arquivo_url: s?.signedUrl || null }
+    }))
 
     return NextResponse.json({
       ok: true,
@@ -36,6 +56,8 @@ export async function GET(req: Request) {
       marcos: comSituacao,
       andamentos: andamentos || [],
       pendencias: pendencias || [],
+      placar: placar || [],
+      registros: comLink,
     })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
@@ -66,6 +88,7 @@ export async function PATCH(req: Request) {
     if (b.mensalidade_dia !== undefined) p.mensalidade_dia = b.mensalidade_dia === '' || b.mensalidade_dia == null ? null : Number(b.mensalidade_dia)
     if (b.mensalidade_valor !== undefined) p.mensalidade_valor = b.mensalidade_valor === '' || b.mensalidade_valor == null ? null : Number(b.mensalidade_valor)
     if (b.observacoes !== undefined) p.observacoes = (b.observacoes || '').toString().slice(0, 2000) || null
+    if (b.ad_account_id !== undefined) p.ad_account_id = (b.ad_account_id || '').toString().replace(/\D/g, '') || null
     if (b.fase) p.fase = b.fase
     if (b.status && ['ativo', 'manutencao', 'concluido', 'cancelado'].includes(b.status)) p.status = b.status
 
@@ -120,6 +143,81 @@ export async function POST(req: Request) {
       const t = (b.texto || '').toString().trim()
       if (!t) return NextResponse.json({ ok: false, error: 'escreva a nota' }, { status: 200 })
       await sb.from('projeto_andamentos').insert({ org_id: org, projeto_id: projetoId, tipo: 'nota', observacao: t.slice(0, 2000), autor: (b.autor || '').toString() || null })
+      return NextResponse.json({ ok: true })
+    }
+
+    // ── o projeto é desta empresa? (tudo abaixo grava em tabela nova)
+    const { data: dono } = await sb.from('projetos').select('id').eq('org_id', org).eq('id', projetoId).maybeSingle()
+    if (!dono) return NextResponse.json({ ok: false, error: 'projeto não encontrado' }, { status: 200 })
+
+    // ── PLACAR: foto dos números numa data. O ponto A é a base de antes do trabalho.
+    if (acao === 'placar_novo') {
+      const data = (b.data || '').toString().slice(0, 10)
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return NextResponse.json({ ok: false, error: 'informe a data' }, { status: 200 })
+      const linha = {
+        org_id: org, projeto_id: projetoId, data, ponto_a: !!b.ponto_a,
+        verba: num(b.verba), leads: num(b.leads), propostas: num(b.propostas), vendas: num(b.vendas), comissao: num(b.comissao),
+        observacao: (b.observacao || '').toString().slice(0, 500) || null, autor: (b.autor || '').toString() || null,
+      }
+      if ([linha.verba, linha.leads, linha.propostas, linha.vendas, linha.comissao].every(v => v == null)) {
+        return NextResponse.json({ ok: false, error: 'preencha pelo menos um número' }, { status: 200 })
+      }
+      // ponto A é um só: gravar outro substitui
+      if (linha.ponto_a) await sb.from('projeto_placar').delete().eq('projeto_id', projetoId).eq('ponto_a', true)
+      await sb.from('projeto_placar').insert(linha)
+      return NextResponse.json({ ok: true })
+    }
+    if (acao === 'placar_remover') {
+      await sb.from('projeto_placar').delete().eq('org_id', org).eq('projeto_id', projetoId).eq('id', b.id)
+      return NextResponse.json({ ok: true })
+    }
+
+    // ── RESULTADOS e PROVAS
+    if (acao === 'registro_novo') {
+      const titulo = (b.titulo || '').toString().trim()
+      const tipo = b.tipo === 'prova' ? 'prova' : 'marco'
+      if (!titulo) return NextResponse.json({ ok: false, error: 'dá um título' }, { status: 200 })
+
+      let arquivo_path: string | null = null, arquivo_mime: string | null = null
+      if (b.arquivo_base64) {
+        const mime = (b.arquivo_mime || '').toString()
+        if (!MIMES.includes(mime)) return NextResponse.json({ ok: false, error: 'formato não aceito — use imagem ou PDF' }, { status: 200 })
+        const buf = Buffer.from(String(b.arquivo_base64).replace(/^data:[^;]+;base64,/, ''), 'base64')
+        if (buf.length > 10 * 1024 * 1024) return NextResponse.json({ ok: false, error: 'arquivo acima de 10 MB' }, { status: 200 })
+        const ext = mime === 'application/pdf' ? 'pdf' : mime.split('/')[1]
+        arquivo_path = `${org}/${projetoId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`
+        const { error: eUp } = await sb.storage.from(BUCKET).upload(arquivo_path, buf, { contentType: mime, upsert: false })
+        if (eUp) return NextResponse.json({ ok: false, error: 'falha ao guardar o arquivo: ' + eUp.message }, { status: 200 })
+        arquivo_mime = mime
+      }
+
+      const frente = ['trafego', 'estrategia', 'crm', 'deu_venda'].includes(b.frente) ? b.frente : null
+      await sb.from('projeto_registros').insert({
+        org_id: org, projeto_id: projetoId, tipo, frente, titulo: titulo.slice(0, 160),
+        descricao: (b.descricao || '').toString().slice(0, 2000) || null,
+        data: /^\d{4}-\d{2}-\d{2}$/.test(String(b.data || '')) ? b.data : new Date().toISOString().slice(0, 10),
+        arquivo_path, arquivo_mime,
+        autorizado_uso: ['sim', 'nao', 'pendente'].includes(b.autorizado_uso) ? b.autorizado_uso : 'pendente',
+        dados_ocultos: !!b.dados_ocultos,
+        autor: (b.autor || '').toString() || null,
+      })
+      await sb.from('projeto_andamentos').insert({
+        org_id: org, projeto_id: projetoId, tipo: tipo === 'prova' ? 'prova' : 'resultado',
+        observacao: `${tipo === 'prova' ? '📎 Prova' : '🏆 Resultado'}: ${titulo}`,
+      })
+      return NextResponse.json({ ok: true })
+    }
+    if (acao === 'registro_atualizar') {
+      const patch: any = {}
+      if (['sim', 'nao', 'pendente'].includes(b.autorizado_uso)) patch.autorizado_uso = b.autorizado_uso
+      if (b.dados_ocultos !== undefined) patch.dados_ocultos = !!b.dados_ocultos
+      await sb.from('projeto_registros').update(patch).eq('org_id', org).eq('projeto_id', projetoId).eq('id', b.id)
+      return NextResponse.json({ ok: true })
+    }
+    if (acao === 'registro_remover') {
+      const { data: x } = await sb.from('projeto_registros').select('arquivo_path').eq('org_id', org).eq('projeto_id', projetoId).eq('id', b.id).maybeSingle()
+      if (x?.arquivo_path) await sb.storage.from(BUCKET).remove([x.arquivo_path])
+      await sb.from('projeto_registros').delete().eq('org_id', org).eq('projeto_id', projetoId).eq('id', b.id)
       return NextResponse.json({ ok: true })
     }
     return NextResponse.json({ ok: false, error: 'ação inválida' }, { status: 200 })
