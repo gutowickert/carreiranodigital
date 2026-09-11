@@ -1,12 +1,19 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import VendasDoMes from '@/components/VendasDoMes'
+import { Card, CardNumero, Chip, Botao, CabecalhoPagina, Vazio } from '@/components/ui'
+import { CalendarDays, Columns3, AlertTriangle, Clock, GraduationCap, Trophy, Megaphone, Sparkles } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
 
-const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', boxShadow: 'var(--shadow-md)' }
+// O PAINEL — a tela que abre todo dia.
+//
+// ORDEM (direção visual de 11/09): primeiro o que PRECISA DE TI (atrasado, urgente), depois quanto
+// vendeu, depois o resto. Os painéis são de vidro (ficam parados; a página rola por baixo); as
+// listas dentro deles são curtas, de propósito. O único número em relevo é o principal da tela.
+// A lógica de dados é a mesma de sempre — só o visual mudou.
 
 // Etapas reais do funil (ordem + cor) — antes usava novo/sdr/closer que não existem
 const FUNIL_ETAPAS = [
@@ -16,26 +23,41 @@ const FUNIL_ETAPAS = [
   { id: 'lote_preco_ok', label: 'Lote e preço ok', cor: '#34d399' },
   { id: 'oferecer_bolsa', label: 'Oferecer bolsa', cor: '#a78bfa' },
   { id: 'aguardando_pagamento', label: 'Aguard. pagamento', cor: '#06b6d4' },
-  { id: 'ligacao_boa', label: '🔥 Ligação Boa', cor: '#f59e0b' },
+  { id: 'ligacao_boa', label: 'Ligação boa', cor: '#f59e0b' },
   { id: 'agendado', label: 'Agendado', cor: '#22d3ee' },
   { id: 'proxima_turma', label: 'Próxima turma', cor: '#c084fc' },
   { id: 'ganho', label: 'Ganhos', cor: '#4ade80' },
   { id: 'perda', label: 'Perdas', cor: '#f87171' },
 ]
 const fmtBRL = (v: number) => (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+const num0 = (v: number) => Math.round(v || 0).toLocaleString('pt-BR')
 
 // Tooltip dos gráficos no estilo do tema
 function TipChart({ active, payload, label, money }: any) {
   if (!active || !payload?.length) return null
   return (
-    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '8px 10px', fontSize: 12, color: 'var(--text)', boxShadow: 'var(--shadow)' }}>
+    <div style={{ background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '8px 10px', fontSize: 12, color: 'var(--text)', boxShadow: 'var(--shadow-md)' }}>
       <div style={{ color: 'var(--text-faint)', marginBottom: 2 }}>{label}</div>
       {payload.map((p: any, i: number) => (
-        <div key={i} style={{ fontWeight: 700, color: p.color || 'var(--text)' }}>{money ? fmtBRL(p.value) : p.value}</div>
+        <div key={i} className="tnum" style={{ fontWeight: 700, color: p.color || 'var(--text)' }}>{money ? fmtBRL(p.value) : p.value}</div>
       ))}
     </div>
   )
 }
+
+// Um painel: vidro, cabeçalho com título e um link, conteúdo por baixo.
+function Painel({ titulo, href, hrefTexto = 'Ver todos →', children, pad = 0 }: { titulo: ReactNode; href?: string; hrefTexto?: string; children: ReactNode; pad?: number | string }) {
+  return (
+    <Card vidro pad={0} style={{ overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '12px 16px', borderBottom: '1px solid var(--glass-border)', fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>
+        <span>{titulo}</span>
+        {href && <Link href={href} style={{ fontSize: 12, fontWeight: 600, color: 'var(--accent-soft)', textDecoration: 'none' }}>{hrefTexto}</Link>}
+      </div>
+      <div style={{ padding: pad, position: 'relative', zIndex: 1 }}>{children}</div>
+    </Card>
+  )
+}
+const linha: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--glass-border)', textDecoration: 'none', color: 'inherit' }
 
 export default function Dashboard() {
   const [carregando, setCarregando] = useState(true)
@@ -63,7 +85,7 @@ export default function Dashboard() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) return
       const { data: p } = await supabase.from('usuarios_perfil')
-        .select('id, papel, leads_escopo, crm_interno, crm_externo').eq('id', session.user.id).single()
+        .select('id, nome, papel, leads_escopo, crm_interno, crm_externo').eq('id', session.user.id).single()
       if (!p) return
       setPerfil(p)
       if (p.papel !== 'admin') {
@@ -160,24 +182,8 @@ export default function Dashboard() {
     setCarregando(false)
   }
 
-  function fmt(v: number) {
-    return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  }
-
   function diaSemana(d: string) {
     return new Date(d).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
-  }
-
-  const setorCor: Record<string, string> = {
-    operacoes: 'var(--amber)', marketing: 'var(--red)', comercial: 'var(--blue)',
-    financeiro: 'var(--green)', pos_venda: 'var(--green-strong)',
-  }
-
-  const etapaLabel: Record<string, string> = {
-    novo: 'Novos', sdr: 'SDR', closer: 'Closer', ganho: 'Ganhos', perdido: 'Perdidos',
-  }
-  const etapaCor: Record<string, string> = {
-    novo: 'var(--text-muted)', sdr: 'var(--blue)', closer: 'var(--accent-soft)', ganho: 'var(--green-strong)', perdido: 'var(--red)',
   }
 
   const ehAdmin = perfil?.papel === 'admin'
@@ -190,234 +196,208 @@ export default function Dashboard() {
   const gTot = leadsRaw.filter(l => l.etapa === 'ganho').length
   const pTot = leadsRaw.filter(l => l.etapa === 'perda').length
   const conversaoGeral = (gTot + pTot) > 0 ? (gTot / (gTot + pTot) * 100) : 0
+  const receita30 = serie30.reduce((s, d) => s + d.receita, 0)
+  const serieReceita = serie30.map(d => d.receita)
+
+  // Saudação pela hora, com o primeiro nome — a tela fala com a pessoa, não com "Painel".
+  const h = new Date().getHours()
+  const saudacao = h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite'
+  const primeiroNome = (perfil?.nome || '').trim().split(' ')[0]
+  const hojeLongo = new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long' })
+  // o que precisa de ti agora, em uma frase
+  const pendencias: string[] = []
+  if (ehAdmin && stats.tarefasAtrasadas) pendencias.push(`${stats.tarefasAtrasadas} tarefa${stats.tarefasAtrasadas > 1 ? 's' : ''} atrasada${stats.tarefasAtrasadas > 1 ? 's' : ''}`)
+  if (ehAdmin && stats.tarefasUrgentes) pendencias.push(`${stats.tarefasUrgentes} urgente${stats.tarefasUrgentes > 1 ? 's' : ''}`)
+  if (!ehAdmin && tarefasLeadAtrasadas) pendencias.push(`${tarefasLeadAtrasadas} follow-up${tarefasLeadAtrasadas > 1 ? 's' : ''} atrasado${tarefasLeadAtrasadas > 1 ? 's' : ''}`)
+
   if (carregando) return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: 'var(--text-faint)', fontSize: '14px' }}>Carregando dashboard...</p>
+    <div style={{ padding: '32px clamp(16px, 4vw, 48px)', display: 'grid', gap: 18 }}>
+      <div className="esqueleto" style={{ height: 34, width: 260 }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
+        {[0, 1, 2, 3].map(i => <div key={i} className="esqueleto" style={{ height: 118, borderRadius: 'var(--r-lg)' }} />)}
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+        {[0, 1].map(i => <div key={i} className="esqueleto" style={{ height: 260, borderRadius: 'var(--r-lg)' }} />)}
+      </div>
     </div>
   )
 
   return (
-    <div style={{ padding: '32px clamp(16px, 4vw, 48px)', minHeight: '100vh' }}>
-      <div style={{ marginBottom: '28px' }}>
-        <h1 style={{ fontSize: '28px', fontWeight: '700', color: 'var(--text)', margin: 0 }}>Painel</h1>
-        <p style={{ fontSize: '14px', color: 'var(--text-faint)', marginTop: '4px' }}>
-          {new Date().toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: 'long', year: 'numeric' })}
-        </p>
-      </div>
+    <div style={{ padding: '28px clamp(16px, 4vw, 48px) 40px', minHeight: '100vh', display: 'grid', gap: 18, alignContent: 'start' }}>
+      <CabecalhoPagina
+        titulo={primeiroNome ? `${saudacao}, ${primeiroNome}.` : `${saudacao}.`}
+        sub={<>{hojeLongo.replace(/^./, c => c.toUpperCase())}{pendencias.length ? <> · <b style={{ color: 'var(--red)' }}>{pendencias.join(' · ')}</b></> : ' · nada atrasado'}</>}
+        acoes={<>
+          <Link href="/dashboard/agenda" style={{ textDecoration: 'none' }}><Botao tom="secundario" icone={CalendarDays}>Agenda</Botao></Link>
+          <Link href="/dashboard/crm" style={{ textDecoration: 'none' }}><Botao tom="principal" icone={Columns3}>Abrir CRM</Botao></Link>
+        </>}
+      />
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '18px', marginBottom: '28px' }}>
+      {/* OS NÚMEROS — o principal em relevo; o que precisa de ti em vermelho */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12 }}>
         {ehAdmin ? (
           <>
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--green-strong)' }}>{fmt(stats.receitaRealizadaMes)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>Prevista: {fmt(stats.receitaPrevistaMes)}</div>
-            </div>
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Margem do mês</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: stats.margemRealizadaMes >= 0 ? 'var(--green-strong)' : 'var(--red)' }}>{fmt(stats.margemRealizadaMes)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>Prevista: {fmt(stats.margemPrevistaMes)}</div>
-            </div>
+            <CardNumero vidro destaque rotulo="Receita do mês" prefixo="R$" valor={num0(stats.receitaRealizadaMes)} cor="var(--green-strong)"
+              serie={serieReceita} rodape={<><span>Prevista: {fmtBRL(stats.receitaPrevistaMes)}</span><span>30 dias</span></>} />
+            <CardNumero vidro rotulo="Margem do mês" prefixo="R$" valor={num0(stats.margemRealizadaMes)} cor={stats.margemRealizadaMes >= 0 ? 'var(--green-strong)' : 'var(--red)'}
+              rodape={<span>Prevista: {fmtBRL(stats.margemPrevistaMes)}</span>} />
+            <CardNumero vidro rotulo="Conversão" valor={conversaoGeral.toFixed(0)} sufixo="%" cor="var(--accent-soft)"
+              rodape={<><span>{gTot} ganhos</span><span>{pTot} perdas</span></>} />
           </>
         ) : (
           <>
-            {/* quanto eu vendi no mês e quanto a empresa vendeu (components/VendasDoMes.tsx) */}
-            <VendasDoMes card={card} />
-            <div style={{ ...card, padding: '20px' }}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Meus leads ativos</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{meusLeadsAtivos}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>no funil agora</div>
-            </div>
-            <div style={{ ...card, padding: '20px', backgroundColor: tarefasLeadAtrasadas > 0 ? 'var(--red-bg)' : 'var(--surface)', borderColor: tarefasLeadAtrasadas > 0 ? 'var(--red)' : 'var(--border)' }}>
-              <div style={{ fontSize: '11px', color: tarefasLeadAtrasadas > 0 ? 'var(--red)' : 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Tarefas de leads</div>
-              <div style={{ fontSize: '22px', fontWeight: '700', color: tarefasLeadAtrasadas > 0 ? 'var(--red)' : 'var(--text)' }}>{tarefasLead.length}</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{tarefasLeadAtrasadas} atrasada(s)</div>
-            </div>
+            <VendasDoMes />
+            <CardNumero vidro rotulo="Meus leads ativos" valor={num0(meusLeadsAtivos)} rodape={<span>no funil agora</span>} />
+            <CardNumero vidro alerta={tarefasLeadAtrasadas > 0} rotulo="Tarefas de leads" valor={num0(tarefasLead.length)}
+              rodape={<span>{tarefasLeadAtrasadas ? `${tarefasLeadAtrasadas} atrasada${tarefasLeadAtrasadas > 1 ? 's' : ''} — precisa de ti` : 'nenhuma atrasada'}</span>} />
           </>
         )}
-        <div style={{ ...card, padding: '20px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Turmas ativas</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{stats.turmasAtivas}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{stats.totalMatriculas} matrículas em 30 dias</div>
-        </div>
-        <div style={{ ...card, padding: '20px' }}>
-          <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Leads ativos</div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{leadsAtivos}</div>
-          <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>no funil agora</div>
-        </div>
+        <CardNumero vidro rotulo="Turmas ativas" valor={num0(stats.turmasAtivas)} rodape={<span>{stats.totalMatriculas} matrículas em 30 dias</span>} />
+        <CardNumero vidro rotulo="Leads ativos" valor={num0(leadsAtivos)} rodape={<span>no funil agora</span>} />
         {ehAdmin && (
-          <div style={{ ...card, padding: '20px' }}>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Conversão</div>
-            <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--accent-soft)' }}>{conversaoGeral.toFixed(0)}%</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{gTot} ganhos · {pTot} perdas</div>
-          </div>
+          <CardNumero vidro alerta={stats.tarefasAtrasadas > 0} rotulo="Tarefas atrasadas" valor={num0(stats.tarefasAtrasadas)}
+            rodape={<span>{stats.tarefasUrgentes ? `${stats.tarefasUrgentes} urgente${stats.tarefasUrgentes > 1 ? 's' : ''}` : 'nenhuma urgente'}</span>} />
         )}
       </div>
 
       {ehAdmin && stats.trafegoHoje > 0 && (
-        <div style={{ backgroundColor: 'var(--blue-bg)', border: '1px solid var(--blue)', borderRadius: '12px', padding: '16px 20px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <div style={{ fontSize: '12px', color: 'var(--blue)', fontWeight: '600' }}>📊 Investimento de tráfego previsto para hoje</div>
-            <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>Soma de todas as turmas com tráfego rodando</div>
-          </div>
-          <div style={{ fontSize: '22px', fontWeight: '700', color: 'var(--text)' }}>{fmt(stats.trafegoHoje)}</div>
-        </div>
+        <Card vidro pad="12px 16px" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+          <Chip tom="info" icone={Megaphone}>Tráfego hoje</Chip>
+          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>Investimento previsto pra hoje, somando todas as turmas com tráfego rodando</span>
+          <span className="display tnum" style={{ marginLeft: 'auto', fontSize: 22, fontWeight: 700 }}>{fmtBRL(stats.trafegoHoje)}</span>
+        </Card>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Turmas em andamento</span>
-            <Link href="/dashboard/turmas" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver todas →</Link>
-          </div>
-          {turmasAndamento.length === 0 ? (
-            <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Nenhuma turma em andamento.</p>
-          ) : (
-            turmasAndamento.map((t: any) => (
-              <Link key={t.id} href={`/dashboard/turmas/${t.id}`} style={{ display: 'block', padding: '14px 20px', borderBottom: '1px solid var(--border)', textDecoration: 'none', color: 'inherit' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '600', color: 'var(--text)' }}>{t.produtos?.nome}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {t.cidades?.nome} · {new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR')}
+      {/* O QUE PRECISA DE TI — antes dos gráficos */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+        {ehAdmin && (
+          <Painel titulo="Precisa de ti" href="/dashboard/agenda" hrefTexto="Abrir agenda →">
+            {tarefasUrgentes.length === 0
+              ? <Vazio icone={Sparkles} titulo="Nada atrasado nem urgente" texto="Quando uma tarefa vencer ou virar urgente, ela aparece aqui." />
+              : tarefasUrgentes.map((t: any) => {
+                const atrasada = new Date(t.data_prazo + 'T23:59:59') < new Date()
+                return (
+                  <div key={t.id} style={linha}>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.titulo}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{t.setor}{t.turmas?.produtos?.nome ? ` · ${t.turmas.produtos.nome}` : ''}</div>
                     </div>
+                    {atrasada
+                      ? <Chip tom="ruim" icone={Clock} pequeno>venceu {new Date(t.data_prazo + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })}</Chip>
+                      : <Chip tom="atencao" icone={AlertTriangle} pequeno>urgente</Chip>}
                   </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', backgroundColor: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>
-                      {t.status.replace('_', ' ')}
-                    </span>
-                    <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>{t.vagas} vagas</div>
+                )
+              })}
+          </Painel>
+        )}
+        {!ehAdmin && (
+          <Painel titulo="Minhas tarefas de leads" href="/dashboard/tarefas/leads" hrefTexto="Ver todas →">
+            {tarefasLead.length === 0
+              ? <Vazio icone={Sparkles} titulo="Nenhuma tarefa de lead pendente" />
+              : tarefasLead.map((t: any) => {
+                const atrasada = new Date(t.data_vencimento) < new Date()
+                return (
+                  <div key={t.id} style={linha}>
+                    <div style={{ flex: 1, fontSize: 13.5, fontWeight: 600, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.titulo}</div>
+                    <Chip tom={atrasada ? 'ruim' : 'neutro'} icone={Clock} pequeno>
+                      {new Date(t.data_vencimento).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    </Chip>
                   </div>
+                )
+              })}
+          </Painel>
+        )}
+        <Painel titulo="Próximas aulas · 7 dias" href="/dashboard/agenda/aulas" hrefTexto="Ver agenda →">
+          {proximasAulas.length === 0
+            ? <Vazio icone={CalendarDays} titulo="Nenhuma aula nos próximos 7 dias" />
+            : proximasAulas.map((a: any) => (
+              <div key={a.id} style={linha}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.titulo}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{a.professores?.nome || '—'} · {a.salas?.nome || '—'}</div>
                 </div>
-              </Link>
-            ))
-          )}
-        </div>
-
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Próximas aulas (7 dias)</span>
-            <Link href="/dashboard/agenda/aulas" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver agenda →</Link>
-          </div>
-          {proximasAulas.length === 0 ? (
-            <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Nenhuma aula nos próximos 7 dias.</p>
-          ) : (
-            proximasAulas.map((a: any) => (
-              <div key={a.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <div style={{ fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>{a.titulo}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '2px' }}>
-                      {a.professores?.nome || '—'} · {a.salas?.nome || '—'}
-                    </div>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '12px', color: 'var(--accent-soft)', fontWeight: '500' }}>{diaSemana(a.inicio)}</div>
-                    <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>
-                      {new Date(a.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </div>
+                <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                  <div style={{ fontSize: 12, color: 'var(--accent-soft)', fontWeight: 700 }}>{diaSemana(a.inicio)}</div>
+                  <div className="tnum" style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{new Date(a.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            ))}
+        </Painel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        {!ehAdmin && (
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Minhas tarefas de leads</span>
-            <Link href="/dashboard/tarefas/leads" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver todas →</Link>
-          </div>
-          {tarefasLead.length === 0 ? (
-            <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Nenhuma tarefa de lead pendente. 🎉</p>
-          ) : (
-            tarefasLead.map((t: any) => {
-              const atrasada = new Date(t.data_vencimento) < new Date()
-              return (
-                <div key={t.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', backgroundColor: atrasada ? 'var(--red-bg)' : 'transparent' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ flex: 1, fontSize: '13px', fontWeight: '500', color: 'var(--text)' }}>{t.titulo}</div>
-                    <span style={{ fontSize: '11px', color: atrasada ? 'var(--red)' : 'var(--text-faint)', fontWeight: atrasada ? '600' : '400' }}>
-                      {new Date(t.data_vencimento).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
-                    </span>
-                  </div>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 14 }}>
+        <Painel titulo="Turmas em andamento" href="/dashboard/turmas" hrefTexto="Ver todas →">
+          {turmasAndamento.length === 0
+            ? <Vazio icone={GraduationCap} titulo="Nenhuma turma em andamento" texto="Criando uma turma, ela aparece aqui com vagas e status." />
+            : turmasAndamento.map((t: any) => (
+              <Link key={t.id} href={`/dashboard/turmas/${t.id}`} style={linha}>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t.produtos?.nome}</div>
+                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{t.cidades?.nome} · {new Date(t.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
                 </div>
-              )
-            })
-          )}
-        </div>
-        )}
+                <div style={{ textAlign: 'right', flexShrink: 0, display: 'grid', gap: 3, justifyItems: 'end' }}>
+                  <Chip tom="marca" pequeno>{String(t.status).replace('_', ' ')}</Chip>
+                  <span className="tnum" style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{t.vagas} vagas</span>
+                </div>
+              </Link>
+            ))}
+        </Painel>
 
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Funil de leads ({stats.leadsTotal})</span>
-            <Link href="/dashboard/crm" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>Ver CRM →</Link>
-          </div>
-          <div style={{ padding: '12px 12px 12px 0' }}>
-            {funilLeads.every((f: any) => f.count === 0) ? (
-              <p style={{ fontSize: '13px', color: 'var(--text-faint)', padding: 16 }}>Nenhum lead cadastrado ainda.</p>
-            ) : (
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={funilLeads} layout="vertical" margin={{ left: 8, right: 28, top: 4, bottom: 4 }}>
-                  <XAxis type="number" hide />
-                  <YAxis type="category" dataKey="etapa" width={120} tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
-                  <Tooltip cursor={{ fill: 'var(--surface-2)' }} content={<TipChart />} />
-                  <Bar dataKey="count" radius={[0, 4, 4, 0]} barSize={15} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 11, fontWeight: 600 }}>
-                    {funilLeads.map((f: any, i: number) => <Cell key={i} fill={f.cor} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            )}
-          </div>
-        </div>
+        <Painel titulo={<>Funil de leads <span className="tnum" style={{ color: 'var(--text-muted)', fontWeight: 600 }}>· {stats.leadsTotal}</span></>} href="/dashboard/crm" hrefTexto="Ver CRM →" pad="12px 12px 8px 0">
+          {funilLeads.every((f: any) => f.count === 0) ? (
+            <Vazio icone={Columns3} titulo="Nenhum lead cadastrado ainda" />
+          ) : (
+            <ResponsiveContainer width="100%" height={310}>
+              <BarChart data={funilLeads} layout="vertical" margin={{ left: 8, right: 32, top: 4, bottom: 4 }}>
+                <XAxis type="number" hide />
+                <YAxis type="category" dataKey="etapa" width={118} tick={{ fontSize: 12, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} />
+                <Tooltip cursor={{ fill: 'var(--surface-2)', opacity: .5 }} content={<TipChart />} />
+                <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={14} label={{ position: 'right', fill: 'var(--text-2)', fontSize: 12, fontWeight: 700 }}>
+                  {funilLeads.map((f: any, i: number) => <Cell key={i} fill={f.cor} />)}
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          )}
+        </Painel>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px' }}>
-        <div style={{ ...card, padding: '20px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 12, flexWrap: 'wrap', gap: 6 }}>
-            <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Receita — últimos 30 dias</div>
-            <div style={{ fontSize: 15, color: 'var(--green-strong)', fontWeight: 700 }}>{fmtBRL(serie30.reduce((s, d) => s + d.receita, 0))}</div>
+      <div style={{ display: 'grid', gridTemplateColumns: ehAdmin ? '2fr 1fr' : '1fr', gap: 14 }}>
+        <Card vidro pad="18px 18px 10px">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: 10, flexWrap: 'wrap', gap: 6 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700 }}>Receita · últimos 30 dias</div>
+            <div className="display tnum" style={{ fontSize: 22, fontWeight: 700, color: 'var(--green-strong)' }}>{fmtBRL(receita30)}</div>
           </div>
           <ResponsiveContainer width="100%" height={210}>
             <AreaChart data={serie30} margin={{ left: -10, right: 8, top: 4, bottom: 0 }}>
               <defs>
                 <linearGradient id="gReceita" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor="#7c3aed" stopOpacity={0.45} />
-                  <stop offset="100%" stopColor="#7c3aed" stopOpacity={0} />
+                  <stop offset="0%" stopColor="var(--accent)" stopOpacity={0.45} />
+                  <stop offset="100%" stopColor="var(--accent)" stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="dia" tick={{ fontSize: 10, fill: 'var(--text-faint)' }} interval={6} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={46} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" vertical={false} />
+              <XAxis dataKey="dia" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} interval={6} axisLine={false} tickLine={false} />
+              <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={46} tickFormatter={(v: number) => v >= 1000 ? `${(v / 1000).toFixed(0)}k` : `${v}`} />
               <Tooltip content={<TipChart money />} />
-              <Area type="monotone" dataKey="receita" stroke="#a78bfa" strokeWidth={2.5} fill="url(#gReceita)" />
+              <Area type="monotone" dataKey="receita" stroke="var(--accent-soft)" strokeWidth={2.5} fill="url(#gReceita)" />
             </AreaChart>
           </ResponsiveContainer>
-        </div>
+        </Card>
 
         {ehAdmin && (
-        <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text-2)' }}>Top alunos por LTV</span>
-            <Link href="/dashboard/alunos" style={{ fontSize: '12px', color: 'var(--accent-soft)', textDecoration: 'none' }}>→</Link>
-          </div>
-          {topAlunos.length === 0 ? (
-            <p style={{ padding: '20px', fontSize: '13px', color: 'var(--text-faint)' }}>Nenhum aluno ainda.</p>
-          ) : (
-            topAlunos.map((a: any, i) => (
-              <div key={a.id} style={{ padding: '12px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flex: 1, minWidth: 0 }}>
-                  <span style={{ fontSize: '11px', color: 'var(--text-faint)', width: '16px' }}>#{i + 1}</span>
-                  <span style={{ fontSize: '13px', color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.nome}</span>
+          <Painel titulo="Top alunos por LTV" href="/dashboard/alunos" hrefTexto="Ver alunos →">
+            {topAlunos.length === 0
+              ? <Vazio icone={Trophy} titulo="Nenhum aluno ainda" />
+              : topAlunos.map((a: any, i) => (
+                <div key={a.id} style={linha}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, flex: 1, minWidth: 0 }}>
+                    <span className="display tnum" style={{ fontSize: 15, fontWeight: 800, color: i === 0 ? 'var(--accent-soft)' : 'var(--text-faint)', width: 22 }}>{i + 1}</span>
+                    <span style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.nome}</span>
+                  </div>
+                  <span className="tnum" style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--green-strong)' }}>{fmtBRL(a.ltv)}</span>
                 </div>
-                <span style={{ fontSize: '12px', fontWeight: '600', color: 'var(--green-strong)' }}>{fmt(a.ltv)}</span>
-              </div>
-            ))
-          )}
-        </div>
+              ))}
+          </Painel>
         )}
       </div>
     </div>
