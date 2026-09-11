@@ -2,6 +2,7 @@
 
 import { useEffect, useState, type ReactNode } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 import Link from 'next/link'
 import VendasDoMes from '@/components/VendasDoMes'
 import { Card, CardNumero, Chip, Botao, CabecalhoPagina, Vazio } from '@/components/ui'
@@ -59,6 +60,21 @@ function Painel({ titulo, href, hrefTexto = 'Ver todos →', children, pad = 0 }
 }
 const linha: React.CSSProperties = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, padding: '11px 16px', borderBottom: '1px solid var(--glass-border)', textDecoration: 'none', color: 'inherit' }
 
+// A SEMANA — os mesmos itens da tela Agenda (/api/agenda: compromissos, tarefas, follow-ups e
+// entregas, já filtrados por quem enxerga o quê), só os dos próximos 7 dias.
+type ItemAgenda = { id: string; fonte: 'agenda' | 'turma' | 'lead' | 'entrega'; titulo: string; inicio: string; diaTodo: boolean; donoId: string | null; concluido: boolean; participantes?: string[]; ajudaDe?: string | null }
+const COR_FONTE: Record<ItemAgenda['fonte'], string> = { agenda: 'var(--accent)', turma: 'var(--amber)', lead: 'var(--blue)', entrega: 'var(--green)' }
+// data sem hora ("2026-09-16") é dia LOCAL — `new Date()` leria como UTC e cairia no dia anterior
+const paraData = (s: string) => /^\d{4}-\d{2}-\d{2}$/.test(s) ? new Date(+s.slice(0, 4), +s.slice(5, 7) - 1, +s.slice(8, 10), 9) : new Date(s)
+const chaveDia = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+function rotuloDia(k: string) {
+  const hoje = new Date(), amanha = new Date(); amanha.setDate(hoje.getDate() + 1)
+  if (k === chaveDia(hoje)) return 'Hoje'
+  if (k === chaveDia(amanha)) return 'Amanhã'
+  const d = paraData(k)
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit' }).replace(/^./, c => c.toUpperCase())
+}
+
 export default function Dashboard() {
   const [carregando, setCarregando] = useState(true)
   const [stats, setStats] = useState({
@@ -69,7 +85,7 @@ export default function Dashboard() {
     trafegoHoje: 0, alunosTotal: 0, leadsTotal: 0,
   })
   const [turmasAndamento, setTurmasAndamento] = useState<any[]>([])
-  const [proximasAulas, setProximasAulas] = useState<any[]>([])
+  const [semana, setSemana] = useState<{ eu: string | null; itens: ItemAgenda[]; nomes: Record<string, string> }>({ eu: null, itens: [], nomes: {} })
   const [tarefasUrgentes, setTarefasUrgentes] = useState<any[]>([])
   const [funilLeads, setFunilLeads] = useState<any[]>([])
   const [topAlunos, setTopAlunos] = useState<any[]>([])
@@ -79,6 +95,19 @@ export default function Dashboard() {
   const [leadsRaw, setLeadsRaw] = useState<any[]>([])
 
   useEffect(() => { carregar() }, [])
+
+  // a semana vem da rota da agenda — separada do resto pra não segurar o painel se ela demorar
+  useEffect(() => {
+    const ate = new Date(); ate.setDate(ate.getDate() + 7)
+    fetchAuth(`/api/agenda?ate=${encodeURIComponent(ate.toISOString())}`).then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) return
+      const hoje = chaveDia(new Date()), fim = chaveDia(ate)
+      const itens = (d.itens as ItemAgenda[] || []).filter(i => { const k = chaveDia(paraData(i.inicio)); return !i.concluido && k >= hoje && k <= fim })
+      const nomes: Record<string, string> = {}
+      for (const p of d.pessoas || []) nomes[p.id] = p.nome
+      setSemana({ eu: d.eu?.id || null, itens: itens.slice(0, 12), nomes })
+    }).catch(() => {})
+  }, [])
 
   useEffect(() => {
     async function carregarPerfil() {
@@ -110,11 +139,9 @@ export default function Dashboard() {
     const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(ultimoDiaMes).padStart(2, '0')}`
     const data30Atras = new Date(hoje); data30Atras.setDate(data30Atras.getDate() - 30)
     const data30Str = data30Atras.toISOString().split('T')[0]
-    const data7Frente = new Date(hoje); data7Frente.setDate(data7Frente.getDate() + 7)
-    const data7Str = data7Frente.toISOString().split('T')[0]
 
     const [
-      lancMes, turmasResp, turmasProgressoResp, aulasResp,
+      lancMes, turmasResp, turmasProgressoResp,
       tarefasResp, leadsResp, alunosResp, lancTrafegoHoje,
       matriculasResp,
     ] = await Promise.all([
@@ -123,8 +150,6 @@ export default function Dashboard() {
       supabase.from('turmas').select('id, status').in('status', ['planejada', 'em_vendas', 'confirmada']),
       supabase.from('turmas').select('id, data_inicio, data_fim, meta_matriculas, vagas, status, produtos(nome), cidades(nome)')
         .in('status', ['em_vendas', 'confirmada', 'planejada']).order('data_inicio', { ascending: true }).limit(5),
-      supabase.from('agenda_aulas').select('id, titulo, inicio, fim, turmas(produtos(nome)), professores(nome), salas(nome)')
-        .gte('inicio', hojeStr).lte('inicio', data7Str).order('inicio').limit(8),
       supabase.from('tarefas').select('id, titulo, setor, data_prazo, prioridade, status, turmas(produtos(nome))')
         .neq('status', 'concluida').order('data_prazo', { ascending: true }).limit(50),
       supabase.from('leads').select('id, etapa, vendedor_id'),
@@ -174,16 +199,11 @@ export default function Dashboard() {
       alunosTotal: 0, leadsTotal: leadsData.length,
     })
     setTurmasAndamento(turmasProgressoResp.data || [])
-    setProximasAulas(aulasResp.data || [])
     setTarefasUrgentes(tarefas.filter((t: any) => new Date(t.data_prazo + 'T23:59:59') < new Date() || t.prioridade === 'urgente').slice(0, 5))
     setFunilLeads(funil)
     setTopAlunos(alunosResp.data || [])
     setSerie30(serie)
     setCarregando(false)
-  }
-
-  function diaSemana(d: string) {
-    return new Date(d).toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: 'short' })
   }
 
   const ehAdmin = perfil?.papel === 'admin'
@@ -307,21 +327,32 @@ export default function Dashboard() {
               })}
           </Painel>
         )}
-        <Painel titulo="Próximas aulas · 7 dias" href="/dashboard/agenda/aulas" hrefTexto="Ver agenda →">
-          {proximasAulas.length === 0
-            ? <Vazio icone={CalendarDays} titulo="Nenhuma aula nos próximos 7 dias" />
-            : proximasAulas.map((a: any) => (
-              <div key={a.id} style={linha}>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{a.titulo}</div>
-                  <div style={{ fontSize: 11.5, color: 'var(--text-muted)', marginTop: 2 }}>{a.professores?.nome || '—'} · {a.salas?.nome || '—'}</div>
+        <Painel titulo="Compromissos da semana" href="/dashboard/agenda" hrefTexto="Abrir agenda →">
+          {semana.itens.length === 0
+            ? <Vazio icone={CalendarDays} titulo="Nada marcado nos próximos 7 dias" texto="Compromissos, tarefas, follow-ups e entregas da semana aparecem aqui." />
+            : (() => {
+              // agrupa por dia; o rótulo do dia é uma linha fina entre os itens
+              const porDia = new Map<string, ItemAgenda[]>()
+              for (const i of semana.itens) { const k = chaveDia(paraData(i.inicio)); porDia.set(k, [...(porDia.get(k) || []), i]) }
+              return [...porDia.entries()].sort((a, b) => a[0].localeCompare(b[0])).map(([dia, lista]) => (
+                <div key={dia}>
+                  <div style={{ padding: '8px 16px 2px', fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: dia === chaveDia(new Date()) ? 'var(--accent-soft)' : 'var(--text-faint)' }}>{rotuloDia(dia)}</div>
+                  {lista.map(i => {
+                    const meu = i.donoId === semana.eu
+                    const quem = !i.donoId ? (i.fonte === 'entrega' ? 'entrega' : 'do grupo') : meu ? 'seu' : (semana.nomes[i.donoId] || 'outra pessoa')
+                    const chamado = !!semana.eu && !meu && (i.ajudaDe === semana.eu || i.participantes?.includes(semana.eu))
+                    return (
+                      <div key={i.fonte + i.id} style={{ ...linha, padding: '9px 16px', gap: 10 }}>
+                        <span className="tnum" style={{ fontSize: 12, color: 'var(--text-muted)', width: 42, flexShrink: 0 }}>{i.diaTodo ? 'dia' : paraData(i.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span style={{ width: 3, height: 18, borderRadius: 2, background: COR_FONTE[i.fonte], flexShrink: 0 }} />
+                        <span style={{ flex: 1, minWidth: 0, fontSize: 13.5, fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.titulo}</span>
+                        <span style={{ fontSize: 11.5, color: chamado ? 'var(--accent-soft)' : 'var(--text-faint)', flexShrink: 0, fontWeight: chamado ? 700 : 500 }}>{chamado ? 'te chamaram' : quem}</span>
+                      </div>
+                    )
+                  })}
                 </div>
-                <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                  <div style={{ fontSize: 12, color: 'var(--accent-soft)', fontWeight: 700 }}>{diaSemana(a.inicio)}</div>
-                  <div className="tnum" style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{new Date(a.inicio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
-                </div>
-              </div>
-            ))}
+              ))
+            })()}
         </Painel>
       </div>
 
