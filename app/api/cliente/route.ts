@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { ROTEIROS, type Produto } from '@/lib/entrega'
 import { getInsightsConta, comImposto } from '@/lib/meta-ads'
 import { impostoMetaPct } from '@/lib/imposto-meta'
+import { periodoAnterior } from '@/lib/periodos'
 
 // ÁREA DO CLIENTE — o que o assinante vê do próprio projeto (/cliente?k=…).
 // Sem login: a chave do link (projetos.portal_chave) abre UM projeto, e só ele.
@@ -33,9 +34,15 @@ export async function GET(req: Request) {
       let ate = ehData(sp.get('ate')) ? sp.get('ate')! : hoje
       if (ate > hoje) ate = hoje
       if (de > ate) [de, ate] = [ate, de]
-      const [bruto, pct] = await Promise.all([getInsightsConta(p.ad_account_id, de, ate), impostoMetaPct(p.org_id)])
+      // o período de mesmo tamanho logo antes, pra comparação nos cartões
+      const [deAnt, ateAnt] = periodoAnterior(de, ate)
+      const [bruto, brutoAnt, pct] = await Promise.all([
+        getInsightsConta(p.ad_account_id, de, ate), getInsightsConta(p.ad_account_id, deAnt, ateAnt), impostoMetaPct(p.org_id),
+      ])
       const r = comImposto(bruto, pct)
-      return NextResponse.json({ ok: r.ok, error: r.error, total: r.total, porDia: r.porDia, de, ate })
+      const ant = comImposto(brutoAnt, pct)
+      return NextResponse.json({ ok: r.ok, error: r.error, total: r.total, porDia: r.porDia, de, ate,
+        anterior: ant.ok ? ant.total : null, de_anterior: deAnt, ate_anterior: ateAnt })
     }
 
     const [{ data: marcos }, { data: pendencias }, { data: placar }, { data: registros }] = await Promise.all([
