@@ -149,13 +149,16 @@ export async function GET(req: Request) {
   if (listaMarcos.length) {
     const ids = [...new Set(listaMarcos.map(m => m.projeto_id))]
     const { data: projetos } = await sb.from('projetos')
-      .select('id,cliente,produto,status,responsavel_id').in('id', ids)
+      .select('id,cliente,produto,status,responsavel_id,participantes').in('id', ids)
     const porId = new Map((projetos || []).map((p: any) => [p.id, p]))
     for (const m of listaMarcos) {
       const p: any = porId.get(m.projeto_id)
       if (!p || p.status === 'cancelado' || p.status === 'concluido') continue
       const dono = m.responsavel_id || p.responsavel_id || null
-      if (!podeVer(dono, false)) continue
+      // quem também responde pelo projeto (projetos.participantes) entra como participante de
+      // cada marco — pra ele, o marco conta como "meu", igual reunião em que foi chamado
+      const juntos = ((p.participantes || []) as string[]).filter(id => id !== dono)
+      if (!podeVer(dono, false, null, juntos)) continue
       const quando = m.data_combinada || m.data_prevista
       if (!quando) continue
       const r = ROTEIROS[p.produto as Produto]
@@ -169,6 +172,7 @@ export async function GET(req: Request) {
         inicio: quando, fim: fimCombinado, diaTodo: !m.data_combinada, tipo: m.natureza,
         donoId: dono, publico: false, concluido: false,
         projetoId: m.projeto_id, estado: m.estado, situacao: situacaoMarco(m), cor: r?.cor || null,
+        participantes: juntos,
       })
     }
   }

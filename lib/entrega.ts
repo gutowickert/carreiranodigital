@@ -17,7 +17,7 @@
 
 export type Natureza = 'encontro' | 'interno' | 'marco'
 export type EstadoMarco = 'previsto' | 'combinado' | 'confirmado' | 'concluido' | 'a_remarcar' | 'cancelado'
-export type Produto = 'deu_venda' | 'crm' | 'combo'
+export type Produto = 'deu_venda' | 'crm' | 'combo' | 'crm_trafego'
 export type FimTipo = 'encerra' | 'renegocia' | 'manutencao'
 
 export type MarcoTpl = {
@@ -41,7 +41,7 @@ export type RoteiroProduto = {
   marcos: MarcoTpl[]
 }
 
-// ───────────────────────────────────────────────────────────── os três roteiros
+// ───────────────────────────────────────────────────────────── os roteiros
 
 export const ROTEIROS: Record<Produto, RoteiroProduto> = {
   deu_venda: {
@@ -132,6 +132,45 @@ export const ROTEIROS: Record<Produto, RoteiroProduto> = {
       { chave: 'trafego_m5', titulo: 'Tráfego — mês 5', natureza: 'interno', dias: 150, descricao: 'Gestão da campanha do mês.' },
       { chave: 'renegociacao', titulo: 'Renegociação — o placar dos 6 meses', natureza: 'encontro', dias: 180, duracao: 90, ancora: true,
         descricao: 'Senta com o número na mesa: do ponto A ao ponto B, e renegocia o valor.' },
+    ],
+  },
+
+  // Cliente que já tem o tráfego rodando e entra pro CRM — sem o Deu Venda (sem a
+  // máquina de captação). Um encontro presencial a cada 3 semanas, CRM e tráfego
+  // na mesma mesa, e a renegociação antes do fim dos 6 meses.
+  crm_trafego: {
+    nome: 'CRM + Tráfego',
+    cor: '#f59e0b',
+    prazoMeses: 6,
+    fimTipo: 'renegocia',
+    avisoFimDias: 30,
+    fases: [
+      { chave: 'implantacao', label: 'Implantação' },
+      { chave: 'crm_config', label: 'CRM — configuração' },
+      { chave: 'crm_no_ar', label: 'CRM — no ar' },
+      { chave: 'acompanhamento', label: 'Acompanhamento' },
+      { chave: 'renegociacao', label: 'Renegociação' },
+    ],
+    marcos: [
+      { chave: 'implantacao', titulo: 'Reunião de implantação — oferta e entrevista do CRM', natureza: 'encontro', dias: 0, duracao: 180, jaCombinado: true,
+        descricao: 'Fecha a oferta nova e faz a entrevista do CRM: etapas, follow-ups, agenda, IA e caixa.' },
+      { chave: 'configuracao', titulo: 'CRM configurado e testado', natureza: 'interno', dias: 18,
+        descricao: 'Funil, follow-ups, templates aprovados, IA treinada e testada antes do encontro.' },
+      { chave: 'crm_no_ar', titulo: 'CRM no ar', natureza: 'marco', dias: 21,
+        descricao: 'Recebendo lead de verdade, com a IA e os follow-ups rodando.' },
+      { chave: 'encontro_2', titulo: 'Encontro 2 — CRM no ar', natureza: 'encontro', dias: 21, duracao: 120,
+        descricao: 'Entrega o CRM rodando, treina quem vai usar e lê o tráfego.' },
+      { chave: 'encontro_3', titulo: 'Encontro 3 — o ponto A', natureza: 'encontro', dias: 42, duracao: 90,
+        descricao: 'As 3 primeiras semanas de CRM rodando viram a base de comparação, quando o antes não tem número.' },
+      { chave: 'encontro_4', titulo: 'Encontro 4 — CRM e tráfego', natureza: 'encontro', dias: 63, duracao: 90, descricao: 'Leitura do CRM e do tráfego; ajuste de oferta e de follow-up.' },
+      { chave: 'encontro_5', titulo: 'Encontro 5 — CRM e tráfego', natureza: 'encontro', dias: 84, duracao: 90, descricao: 'Leitura do CRM e do tráfego; ajuste de oferta e de follow-up.' },
+      { chave: 'encontro_6', titulo: 'Encontro 6 — CRM e tráfego', natureza: 'encontro', dias: 105, duracao: 90, descricao: 'Leitura do CRM e do tráfego; ajuste de oferta e de follow-up.' },
+      { chave: 'encontro_7', titulo: 'Encontro 7 — CRM e tráfego', natureza: 'encontro', dias: 126, duracao: 90, descricao: 'Leitura do CRM e do tráfego; ajuste de oferta e de follow-up.' },
+      { chave: 'encontro_8', titulo: 'Encontro 8 — CRM e tráfego', natureza: 'encontro', dias: 147, duracao: 90, descricao: 'Leitura do CRM e do tráfego; ajuste de oferta e de follow-up.' },
+      { chave: 'renegociacao', titulo: 'Renegociação — o placar dos 6 meses', natureza: 'encontro', dias: 168, duracao: 90,
+        descricao: 'Senta com o número na mesa: do ponto A até a meta, e renegocia antes do contrato acabar.' },
+      { chave: 'fim', titulo: 'Fim dos 6 meses', natureza: 'marco', dias: 181, ancora: true,
+        descricao: 'Fim do contrato. Daqui pra frente, o que foi renegociado.' },
     ],
   },
 }

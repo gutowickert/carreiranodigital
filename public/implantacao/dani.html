@@ -1,0 +1,518 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Implantação Dani Fell</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+  :root{
+    --ground:#f6f4fa; --surface:#ffffff; --surface-2:#f0ecf7; --surface-3:#e8e2f2;
+    --ink:#17132a; --ink-2:#4a4262; --ink-3:#7c7494;
+    --line:#e2dbef; --line-strong:#cbbfe3;
+    --roxo:#6b21d9; --roxo-soft:#efe5ff; --roxo-ink:#ffffff;
+    --ok:#1f7a4d; --ok-soft:#e2f4ea;
+    --atencao:#8a5d06; --atencao-soft:#fdf2da;
+    --alerta:#b8321b; --alerta-soft:#fde8e3;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0c0a13; --surface:#15111f; --surface-2:#1d1829; --surface-3:#262036;
+      --ink:#f2eefc; --ink-2:#c1b8d9; --ink-3:#8e84a8;
+      --line:#2b2440; --line-strong:#3e3558;
+      --roxo:#b48cff; --roxo-soft:#251b3e; --roxo-ink:#150f22;
+      --ok:#6cd9a0; --ok-soft:#12291d;
+      --atencao:#e6b54a; --atencao-soft:#2b2311;
+      --alerta:#ff927a; --alerta-soft:#2f1a16;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0c0a13; --surface:#15111f; --surface-2:#1d1829; --surface-3:#262036;
+    --ink:#f2eefc; --ink-2:#c1b8d9; --ink-3:#8e84a8;
+    --line:#2b2440; --line-strong:#3e3558;
+    --roxo:#b48cff; --roxo-soft:#251b3e; --roxo-ink:#150f22;
+    --ok:#6cd9a0; --ok-soft:#12291d;
+    --atencao:#e6b54a; --atencao-soft:#2b2311;
+    --alerta:#ff927a; --alerta-soft:#2f1a16;
+  }
+
+  *{box-sizing:border-box}
+  body{background:var(--ground);color:var(--ink);font-family:"Barlow",system-ui,sans-serif;font-size:16px;line-height:1.55;margin:0}
+  h1,h2{font-family:"Bebas Neue","Barlow Condensed",Impact,sans-serif;font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+  h1{font-size:clamp(40px,6vw,64px);line-height:.95}
+  h2{font-size:clamp(26px,3.4vw,34px);line-height:1}
+
+  .wrap{max-width:1180px;margin:0 auto;padding:34px 22px 80px}
+  header{display:flex;flex-direction:column;gap:12px;padding-bottom:22px;border-bottom:2px solid var(--ink)}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--roxo)}
+  .lede{font-size:17px;color:var(--ink-2);max-width:70ch;margin:0}
+
+  .mapa{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:6px}
+  .mapa div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 12px}
+  .mapa b{display:block;font-size:14.5px}
+  .mapa span{font-family:"JetBrains Mono",monospace;font-size:13px;color:var(--ink-2);font-variant-numeric:tabular-nums}
+
+  .barra-topo{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:6px}
+  .progresso{flex:1 1 220px;display:flex;align-items:center;gap:10px}
+  .trilho{flex:1;height:6px;background:var(--surface-3);border-radius:6px;overflow:hidden}
+  .trilho i{display:block;height:100%;background:var(--roxo);border-radius:6px;width:0}
+  .progresso span{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink-2);white-space:nowrap;font-variant-numeric:tabular-nums}
+  .estado{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;letter-spacing:.06em;padding:5px 10px;border-radius:4px;background:var(--surface-2);color:var(--ink-3);white-space:nowrap}
+  .estado.ok{background:var(--ok-soft);color:var(--ok)}
+  .estado.salvando{background:var(--roxo-soft);color:var(--roxo)}
+  .estado.erro{background:var(--alerta-soft);color:var(--alerta)}
+  .filtro{display:flex;align-items:center;gap:7px;font-size:14px;color:var(--ink-2);cursor:pointer;user-select:none}
+
+  .aviso{display:none;margin-top:14px;padding:12px 15px;border-radius:8px;background:var(--atencao-soft);color:var(--ink);font-size:14.5px;border-left:3px solid var(--atencao)}
+  .aviso.on{display:block}
+
+  .grade{display:grid;grid-template-columns:240px minmax(0,1fr);gap:28px;margin-top:26px;align-items:start}
+  nav{position:sticky;top:16px;display:flex;flex-direction:column;gap:2px;max-height:calc(100vh - 32px);overflow-y:auto}
+  nav .fase{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);padding:12px 10px 4px}
+  nav .fase:first-child{padding-top:0}
+  nav a{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:7px;color:var(--ink-2);text-decoration:none;font-size:14.5px}
+  nav a:hover{background:var(--surface-2);color:var(--ink)}
+  nav a:focus-visible{outline:2px solid var(--roxo);outline-offset:1px}
+  nav a b{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;color:var(--ink-3);font-variant-numeric:tabular-nums}
+  nav a.completo b{color:var(--ok)}
+
+  .fase-titulo{display:flex;align-items:baseline;gap:12px;margin:8px 0 18px;padding-bottom:8px;border-bottom:1px solid var(--line-strong)}
+  .fase-titulo span{font-family:"JetBrains Mono",monospace;font-size:12px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--roxo)}
+  .fase-titulo p{margin:0;font-size:14.5px;color:var(--ink-2)}
+
+  section{scroll-margin-top:16px;margin-bottom:38px}
+  .sec-head{display:flex;flex-direction:column;gap:5px;margin-bottom:14px}
+  .sec-head .num{font-family:"JetBrains Mono",monospace;font-size:11.5px;font-weight:600;letter-spacing:.14em;color:var(--roxo)}
+  .sec-head p{font-size:15px;color:var(--ink-2);max-width:70ch;margin:0}
+  .sec-head .dica{font-size:14px;color:var(--ink);background:var(--roxo-soft);border-radius:7px;padding:9px 12px;max-width:none}
+
+  .q{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+  .q.respondida{border-left:3px solid var(--ok)}
+  .q.ajustar{border-left:3px solid var(--atencao)}
+  .q.tirar{border-left:3px solid var(--alerta)}
+  .q.escondida{display:none}
+  .q label.p{display:block;font-weight:600;font-size:15.5px;color:var(--ink);margin-bottom:3px}
+  .q .porque{font-size:13.5px;color:var(--ink-3);margin-bottom:9px;display:flex;gap:8px;flex-wrap:wrap;align-items:baseline}
+  .tag{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:600;letter-spacing:.05em;color:var(--roxo);background:var(--roxo-soft);padding:1px 6px;border-radius:3px;white-space:nowrap}
+  .tag.dono{color:var(--ink);background:var(--surface-3)}
+
+  .proposta{background:var(--surface-2);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:14.5px;color:var(--ink)}
+  .proposta p{margin:0}
+  .toques{width:100%;border-collapse:collapse;font-size:14px}
+  .toques td{padding:5px 8px;border-top:1px solid var(--line);vertical-align:top}
+  .toques tr:first-child td{border-top:0}
+  .toques td:first-child{font-family:"JetBrains Mono",monospace;font-size:12.5px;color:var(--ink-2);white-space:nowrap;width:1%;font-variant-numeric:tabular-nums}
+  .toques td:last-child{width:1%;white-space:nowrap}
+  .tpl{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:600;color:var(--atencao);background:var(--atencao-soft);padding:1px 6px;border-radius:3px}
+  .tar{font-family:"JetBrains Mono",monospace;font-size:10.5px;font-weight:600;color:var(--ok);background:var(--ok-soft);padding:1px 6px;border-radius:3px}
+
+  textarea,select,input[type=text]{width:100%;font:inherit;font-size:15px;color:var(--ink);background:var(--surface-2);border:1px solid var(--line-strong);border-radius:8px;padding:9px 11px}
+  textarea{resize:none;min-height:46px;overflow:hidden;line-height:1.5}
+  textarea:focus,select:focus,input:focus{outline:2px solid var(--roxo);outline-offset:1px;border-color:transparent}
+  .linha-status{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr);gap:8px;align-items:start}
+  .q.check{display:flex;gap:12px;align-items:flex-start;padding:12px 16px}
+  .q.check input{width:19px;height:19px;margin-top:2px;accent-color:var(--roxo);flex:none;cursor:pointer}
+  .q.check label.p{margin-bottom:2px;cursor:pointer}
+  .q.check .porque{margin-bottom:0}
+
+  .legenda{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--ink-2);margin-bottom:12px}
+  .legenda span{display:flex;align-items:center;gap:6px}
+
+  footer{margin-top:30px;padding:18px 20px;border-radius:10px;background:var(--surface);border:1px solid var(--line)}
+  footer p{font-size:15px;color:var(--ink-2);margin:0}
+  footer b{color:var(--ink)}
+
+  @media (max-width:860px){
+    .grade{grid-template-columns:1fr}
+    nav{position:static;flex-direction:row;overflow-x:auto;gap:4px;padding-bottom:4px;max-height:none}
+    nav .fase{display:none}
+    nav a{white-space:nowrap}
+    .linha-status{grid-template-columns:1fr}
+    .mapa{grid-template-columns:repeat(2,minmax(0,1fr))}
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Carreira no Digital · implantação do CRM</span>
+    <h1>Espaço Dani Fell</h1>
+    <p class="lede">O roteiro da primeira entrevista, na ordem da conversa. As etapas e os follow-ups já vêm <b>propostos</b> — tu mostra pra ela e marca <b>aprovado</b>, <b>ajustar</b> ou <b>tirar</b>, anotando o que ela disser. Tudo salva sozinho no CRM da escola enquanto tu digita, e quem estiver com o link aberto vê em poucos segundos. O que ficar sem resposta, deixa em branco e segue.</p>
+    <div class="mapa" aria-label="O que ela vende">
+      <div><b>Massagem avaliativa</b><span>R$ 200</span></div>
+      <div><b>Restaure presencial</b><span>R$ 5.500 · 12 sessões</span></div>
+      <div><b>Restaure online</b><span>R$ 800</span></div>
+      <div><b>Produto físico</b><span>preço a definir</span></div>
+    </div>
+    <div class="barra-topo">
+      <div class="progresso"><div class="trilho"><i id="trilho"></i></div><span id="contagem">0 de 0</span></div>
+      <label class="filtro"><input type="checkbox" id="soFalta"> mostrar só o que falta</label>
+      <span class="estado" id="estado">conectando…</span>
+    </div>
+    <div class="aviso" id="aviso">Este link está sem a chave de acesso ou a chave está errada, então nada do que for digitado será salvo. Pede o link completo pra escola.</div>
+  </header>
+
+  <div class="grade">
+    <nav id="nav" aria-label="Partes da implantação"></nav>
+    <main id="main"></main>
+  </div>
+
+  <footer>
+    <p><b>Terminou a entrevista?</b> As respostas já estão no CRM da escola. É a partir delas que sai a configuração: as etapas finais, cada follow-up com o texto da mensagem, os templates pra submeter na Meta, o contexto e as travas da IA, o roteiro do Restaure e a lista do que ainda falta.</p>
+  </footer>
+</div>
+
+<script>
+// Tipos de item:
+//   (padrão) texto   — pergunta aberta
+//   valida           — proposta nossa + escolha (aprovado/ajustar/tirar) + anotação
+//   check            — tarefa marcada como feita
+//   escolha          — lista de opções própria + detalhe
+const VALIDA = [['', 'escolher…'], ['ok', 'Aprovado'], ['ajustar', 'Ajustar'], ['tirar', 'Tirar']]
+const TESTE = [['', 'escolher…'], ['ok', 'Passou'], ['ajustar', 'Ajustar a resposta']]
+
+const T = (quando, acao, tipo) => [quando, acao, tipo || '']   // tipo: 'tpl' = template Meta · 'tar' = tarefa pra Dani
+
+const FASES = [
+{ id:'antes', titulo:'Antes', sub:'o que tu deixa pronto antes de sentar com ela', blocos:[
+  { id:'preparo', titulo:'Preparação', intro:'Sem esses itens a entrevista vira conversa e nada sai configurado depois.', perguntas:[
+    { id:'supabase', tipo:'check', p:'Liberar o acesso ao banco do CRM da Dani', porque:'Sem ele não dá pra configurar nada no sistema dela — só no da escola.', dono:'Escola' },
+    { id:'modulos', tipo:'check', p:'Levar o "depois da venda" e o caixa pro CRM dela — ainda não estão lá', porque:'Foram feitos depois da cópia do sistema. Precisam ser levados pro dela antes do Restaure rodar.', dono:'Escola' },
+    { id:'conversas', tipo:'check', p:'Pedir pra Dani trazer 20 conversas reais de WhatsApp — as que fecharam e as que sumiram', porque:'É o material que mais ensina a IA: o jeito dela escrever e onde a cliente desiste.', dono:'Dani' },
+    { id:'fisico', tipo:'check', p:'Pedir pra ela trazer o preço, o custo e a duração do produto físico', porque:'Sem isso não dá pra montar a recompra nem o caixa.', dono:'Dani' },
+    { id:'lista', tipo:'check', p:'Pedir a lista de clientes e ex-clientes (planilha ou contatos do celular)', porque:'Quem já fez avaliação e não fechou é a primeira campanha que dá pra rodar.', dono:'Dani' },
+    { id:'numeros', tipo:'check', p:'Levar os números da conta de anúncio dela (últimos 30 dias)', porque:'Pra comparar com o que ela conta de agenda e fechar o ponto A na hora.', dono:'Escola' },
+  ]},
+]},
+{ id:'durante', titulo:'Na entrevista', sub:'a conversa com a Dani, nesta ordem', blocos:[
+  { id:'dani', titulo:'A Dani e a cliente', intro:'Começa pela história dela. É daqui que a IA tira o jeito de falar e o que a cliente sente.', perguntas:[
+    { id:'o_que_resolve', p:'O que ela resolve, nas palavras dela? Que sintomas a cliente conta quando chega?', porque:'A IA usa as mesmas palavras da cliente — inchaço, intestino preso, cansaço — em vez de termo técnico.', entra:'contexto da IA' },
+    { id:'cliente', p:'Quem é a cliente típica? Idade, rotina, o que já tentou antes de chegar nela.', porque:'Define o tom da IA e o público do anúncio.', entra:'contexto da IA' },
+    { id:'por_que_dani', p:'Por que escolhem ela? O que as clientes mais elogiam?', porque:'É o argumento quando a cliente está em dúvida ou comparando.', entra:'contexto da IA' },
+    { id:'tom', p:'Como ela escreve? Tu ou você, emoji, áudio. Cola aqui três mensagens reais dela.', porque:'Cliente de saúde e bem-estar sente na hora quando é robô.', entra:'tom da IA' },
+    { id:'endereco', p:'Endereço, referência, estacionamento, horário de atendimento.', porque:'Pergunta de todo dia — a IA responde sozinha.', entra:'contexto da IA' },
+  ]},
+  { id:'produtos', titulo:'Produtos e condições', intro:'Confirma o mapa do topo da página, produto por produto. A IA só fala valor e condição que estiver aqui.', perguntas:[
+    { id:'avaliacao', p:'Massagem avaliativa (R$ 200): o que acontece nela, quanto tempo dura, o que a cliente precisa saber antes de ir?', porque:'É o que a IA vende. Ela precisa explicar a avaliação com segurança.', entra:'produtos' },
+    { id:'abate', tipo:'escolha', opcoes:[['', 'escolher…'], ['abate', 'Abate no presencial'], ['nao_abate', 'Não abate'], ['depende', 'Depende']], p:'Os R$ 200 da avaliação abatem se ela fechar o Restaure?', porque:'Muda o convite ("e se fechar, o valor volta pra ti") e o registro no caixa.', entra:'produtos' },
+    { id:'avaliacao_antes', tipo:'escolha', opcoes:[['', 'escolher…'], ['antes', 'Paga antes (Pix)'], ['na_hora', 'Paga na hora'], ['tanto_faz', 'Tanto faz']], p:'A avaliação é paga antes, pra segurar o horário, ou na hora?', porque:'Pagar antes derruba a falta pela metade. Se ela topar, a IA manda o Pix ao agendar.', entra:'agenda' },
+    { id:'presencial', p:'Restaure presencial (R$ 5.500): o que está incluso? As 12 sessões são semanais? A avaliação conta como a primeira?', porque:'Vira o roteiro do depois da venda — cada sessão entra na agenda.', entra:'roteiro' },
+    { id:'parcelamento', p:'Como ela recebe o presencial? À vista, parcelado, quantas vezes, com ou sem juros, entrada?', porque:'É a condição que entra no follow-up de quem avaliou e ficou pensando.', entra:'produtos · caixa' },
+    { id:'online', p:'Restaure online (R$ 800): o que é, como ela entrega, quanto tempo dura?', porque:'A IA precisa saber o que é, mesmo sem oferecer.', entra:'produtos' },
+    { id:'online_quando', tipo:'valida', prop:'O online <b>nunca</b> é oferecido pela IA nem aparece no anúncio. Só a Dani oferece, depois da avaliação, pra quem não consegue pagar o presencial. Senão ele canibaliza os R$ 5.500.', p:'Quando o online é oferecido, e por quem?', porque:'É a trava mais importante do negócio dela.', entra:'travas da IA' },
+    { id:'online_abate', tipo:'escolha', opcoes:[['', 'escolher…'], ['abate', 'Abate no presencial'], ['nao_abate', 'Não abate'], ['depende', 'Depende']], p:'Se quem comprou o online migrar pro presencial, os R$ 800 abatem?', porque:'É o argumento do convite do online pro presencial.', entra:'produtos' },
+    { id:'fisico', p:'Produto físico: o que é, preço, custo, quanto tempo dura. Está incluso no Restaure ou é à parte?', porque:'Define a recompra automática e o que sai do caixa.', entra:'produtos · caixa' },
+    { id:'avulsos', p:'Ela vende outra coisa? Massagem avulsa, manutenção depois do Restaure, pacotes?', porque:'Cada produto que existe e a IA não conhece vira resposta errada.', entra:'produtos' },
+  ]},
+  { id:'etapas', titulo:'Etapas do funil', intro:'As colunas por onde a interessada passa até comprar. Mostra uma por uma e marca o que ela achar.', dica:'Pergunta-guia: "é assim que acontece contigo? tem algum momento que falta aqui?"', perguntas:[
+    { id:'e1', tipo:'valida', p:'Chegou', prop:'Interessada nova, do anúncio ou do Instagram. Quem atende responde na hora.' },
+    { id:'e1b', tipo:'valida', p:'Não respondeu — IA assume', prop:'Não respondeu no primeiro dia: cai aqui sozinha e <b>a IA assume o follow-up</b>. Se a cliente responder e esquentar, volta pra Em conversa e o time retoma, com aviso.' },
+    { id:'e2', tipo:'valida', p:'Em conversa', prop:'Respondeu, mas ainda não agendou a avaliação.' },
+    { id:'e3', tipo:'valida', p:'Avaliação agendada', prop:'Tem dia e hora. Sai do follow-up de venda e entra no de confirmação.' },
+    { id:'e4', tipo:'valida', p:'Faltou na avaliação', prop:'Não apareceu. Recebe mensagem própria — é diferente de quem nunca agendou, e é onde o dinheiro do anúncio mais se perde.' },
+    { id:'e5', tipo:'valida', p:'Pensando', prop:'Fez a avaliação e não fechou. É a etapa que mais vale: ela já conhece a Dani e já sentiu o resultado.' },
+    { id:'e6', tipo:'valida', p:'Ganho', prop:'Comprou o Restaure (presencial ou online). Sai do funil e vira cliente no depois da venda.' },
+    { id:'e7', tipo:'valida', p:'Perda', prop:'Desistiu ou parou de responder. Não some: entra na nutrição de longo prazo.' },
+    { id:'e_falta', p:'Faltou alguma etapa? Ou alguma está sobrando?', porque:'Cada negócio tem as suas. Melhor ajustar agora do que mexer com lead dentro.', entra:'etapas' },
+    { id:'motivos', p:'Quando a cliente desiste, o que ela costuma dizer?', porque:'Vira os motivos de perda — e mostra onde a mensagem precisa melhorar.', entra:'motivos de perda' },
+  ]},
+  { id:'followup', titulo:'Follow-up das interessadas', intro:'O que o sistema faz sozinho em cada etapa. Os dias contam a partir de quando a cliente entrou na etapa.', legenda:true, perguntas:[
+    { id:'modo', tipo:'valida', p:'Quem atende quem', prop:'Quem <b>responde e esquenta</b> fica com o time: a Dani atende, com a IA de <b>copiloto</b> sugerindo a resposta. Quem <b>não responde</b> no primeiro dia fica com a IA, que faz o follow-up sozinha até a cliente esquentar — aí devolve pro time.', porque:'É a decisão que define o resto: se a IA atende direto ou só ajuda, e em que momento ela assume.', entra:'automação' },
+    { id:'f_chegou', tipo:'valida', p:'Chegou', toques:[T('na hora', 'responder, perguntar o incômodo, convidar pra avaliação'), T('+2h', 'segunda mensagem, se não respondeu'), T('fim do dia', 'sem resposta, move sozinha pra Não respondeu')] },
+    { id:'f_naoresp', tipo:'valida', p:'Não respondeu — IA assume', toques:[T('D+1', 'retomada', 'tpl'), T('D+3', 'benefício ou depoimento', 'tpl'), T('D+7', 'última — sem resposta, vai pra Perda', 'tpl'), T('respondeu', 'a IA conversa; se esquentar, devolve pro time em Em conversa', 'tar')] },
+    { id:'f_conversa', tipo:'valida', p:'Em conversa', toques:[T('D+1', 'puxar pro agendamento com dois horários concretos'), T('D+3', 'responder a objeção mais comum', 'tpl'), T('D+6', 'última chamada', 'tpl')] },
+    { id:'f_agendada', tipo:'valida', p:'Avaliação agendada', toques:[T('2 dias antes', 'reconfirmação', 'tpl'), T('manhã do dia', 'lembrete com endereço', 'tpl'), T('não veio', 'move sozinho pra Faltou')] },
+    { id:'f_faltou', tipo:'valida', p:'Faltou na avaliação', toques:[T('mesmo dia', '"vi que não conseguiu vir, remarcamos?"'), T('D+2', 'segunda tentativa', 'tpl'), T('D+7', 'última', 'tpl')] },
+    { id:'f_pensando', tipo:'valida', p:'Pensando', toques:[T('D+1', 'mensagem pessoal da Dani, lembrando o que viu na avaliação', 'tar'), T('D+3', 'depoimento de quem fez o Restaure', 'tpl'), T('D+7', 'condição de pagamento do presencial', 'tpl'), T('D+10', 'se a objeção for preço, a Dani oferece o online', 'tar'), T('D+21', 'última — depois vai pra nutrição', 'tpl')] },
+    { id:'f_perda', tipo:'valida', p:'Perda (nutrição)', toques:[T('1 vez por mês', 'conteúdo útil sobre intestino e bem-estar', 'tpl'), T('a cada 60–90 dias', 'convite pra voltar a conversar', 'tpl')] },
+    { id:'decisao', p:'Quanto tempo leva entre a avaliação e a decisão? Fecha na hora, em dias, em semanas?', porque:'Se costuma fechar na hora, o "Pensando" encurta. Se leva semanas, estica.', entra:'cadência' },
+    { id:'liga', p:'Ela liga pras clientes ou só manda mensagem? Manda áudio?', porque:'Muda as tarefas marcadas pra Dani — ligação converte mais que texto no Pensando.', entra:'cadência' },
+    { id:'limites', p:'Horário ou dia em que não pode chegar mensagem? Quanto é "demais" pra ela?', porque:'Cliente de saúde se incomoda rápido. Melhor saber o limite antes.', entra:'cadência' },
+  ]},
+  { id:'depois', titulo:'Depois da venda', intro:'O que acontece com quem comprou. Vira o roteiro no sistema: cada sessão com data, confirmação e aviso.', perguntas:[
+    { id:'r_presencial', tipo:'valida', p:'Restaure presencial', toques:[T('fim de cada sessão', 'marcar a próxima antes da cliente sair'), T('2 dias antes', 'reconfirmação da sessão', 'tpl'), T('sessão 6', 'acompanhamento de meio de programa — é onde a cliente desanima', 'tar'), T('sessão 10', 'conversa sobre o que vem depois, antes de acabar', 'tar'), T('sessão 12', 'fim dos 3 meses — pedido de depoimento e indicação', 'tar')] },
+    { id:'r_online', tipo:'valida', p:'Restaure online', toques:[T('D+1', 'boas-vindas e acesso'), T('D+7', 'acompanhamento', 'tpl'), T('D+30', 'convite pro presencial — quem teve resultado no online é a melhor candidata', 'tpl')] },
+    { id:'r_fisico', tipo:'valida', p:'Produto físico', toques:[T('quando estiver acabando', 'lembrete de recompra (o dia depende de quanto dura)', 'tpl')] },
+    { id:'falta_sessao', p:'Se a cliente falta numa sessão: perde ou remarca? Com quanto aviso?', porque:'É a regra que a IA passa quando a cliente desmarca.', entra:'roteiro' },
+    { id:'pos_12', p:'O que acontece depois das 12 sessões? Manutenção, alta, outro pacote?', porque:'Se tem continuação, a conversa começa na sessão 10.', entra:'roteiro' },
+    { id:'provas', p:'Ela registra a evolução da cliente? Pode usar o relato como depoimento, com autorização?', porque:'É a prova social dos anúncios e do follow-up de quem está pensando.', entra:'provas' },
+  ]},
+  { id:'agenda', titulo:'Agenda', intro:'Avaliações e sessões dividem o mesmo horário da Dani. A agenda precisa ver as duas.', perguntas:[
+    { id:'horarios', p:'Dias e horários em que ela atende.', porque:'A IA só oferece horário que existe.', entra:'agenda' },
+    { id:'duracao', p:'Quanto dura a avaliação e quanto dura a sessão? Precisa de intervalo entre uma e outra?', porque:'Define quantas avaliações cabem por semana — e quanto anúncio vale rodar.', entra:'agenda' },
+    { id:'quem', p:'Atende sozinha ou tem mais alguém? Quantas salas?', porque:'Se tem mais de uma pessoa, cada uma tem agenda própria.', entra:'agenda' },
+    { id:'hoje', p:'Onde ela agenda hoje? Caderno, aplicativo, Google Agenda, WhatsApp?', porque:'Decide se a gente migra a agenda ou só espelha.', entra:'agenda' },
+    { id:'ia_agenda', tipo:'valida', prop:'A IA oferece dois horários livres e a cliente escolhe. A avaliação entra na agenda na hora, e a Dani recebe o aviso.', p:'A IA pode marcar a avaliação sozinha?', porque:'Se precisar da Dani pra confirmar, a cliente esfria esperando.', entra:'agenda' },
+  ]},
+  { id:'ia', titulo:'Treinamento da IA', intro:'O que a IA responde, como responde, e o que nunca pode dizer. Negócio de saúde tem trava própria.', perguntas:[
+    { id:'faq', p:'As perguntas que mais chegam no WhatsApp, e o que ela responde em cada uma.', porque:'Vira a base de respostas — metade do atendimento some aqui.', entra:'o que responder' },
+    { id:'objecoes', p:'O que ela responde pra: "é caro", "vou pensar", "funciona pra mim?", "já tentei de tudo", "dói?"', porque:'A IA contorna objeção do jeito dela, não com resposta de manual.', entra:'o que responder' },
+    { id:'preco_restaure', tipo:'valida', prop:'A IA fala o preço da avaliação (R$ 200) sem rodeio. O valor do Restaure ela <b>não</b> passa: diz que o plano é montado na avaliação, pra cada caso.', p:'O que a IA fala de preço?', porque:'Os R$ 5.500 no WhatsApp, sem a cliente ter sentido o resultado, espantam.', entra:'travas da IA' },
+    { id:'saude', tipo:'valida', prop:'A IA <b>nunca</b>: diagnostica, promete cura ou resultado, fala de remédio (tomar ou parar), ou diz que o tratamento substitui médico. Doença séria, gestação, cirurgia recente → passa pra Dani.', p:'Travas de saúde', porque:'Protege a Dani e a conta de anúncio — a Meta é rígida com saúde.', entra:'travas da IA' },
+    { id:'contra', p:'Tem cliente que ela não atende? Contraindicações da massagem.', porque:'A IA filtra antes de agendar, e ninguém chega pra ouvir "não posso te atender".', entra:'travas da IA' },
+    { id:'humano', p:'Quando a conversa tem que ir pra ela, sem a IA?', porque:'Caso delicado, reclamação, pedido de desconto — a IA para e chama a Dani.', entra:'passar pra Dani' },
+    { id:'fora_hora', tipo:'escolha', opcoes:[['', 'escolher…'], ['sempre', 'IA atende sempre'], ['fora', 'IA só fora do horário'], ['nunca', 'IA não atende sozinha']], p:'A IA atende fora do horário e no fim de semana?', porque:'Quem chama de noite e fica sem resposta, agenda com outra.', entra:'automação' },
+  ]},
+  { id:'caixa', titulo:'Caixa simples', intro:'Não é contabilidade. É ela olhar no fim do mês e saber quanto entrou, de quê, e quanto ainda vai entrar.', perguntas:[
+    { id:'c_proposta', tipo:'valida', prop:'No fim do mês ela vê: quanto entrou por produto (avaliação, presencial, online, físico), as parcelas do presencial que ainda vão entrar, o que saiu (custo do produto físico e o que ela quiser lançar) e o saldo.', p:'O que o caixa mostra', entra:'caixa' },
+    { id:'formas', p:'Como ela recebe? Pix, cartão (qual máquina), dinheiro, link de pagamento.', porque:'Cada forma vira uma opção no lançamento da venda.', entra:'caixa' },
+    { id:'saidas', p:'Que saídas ela quer ver? Só produto físico, ou também aluguel, anúncio, material?', porque:'Mais saída = mais trabalho de lançar. Começa pelo que ela vai manter.', entra:'caixa' },
+  ]},
+  { id:'pontoa', titulo:'Ponto A', intro:'Os números de hoje, do jeito que ela souber. Se não souber — financeiro e atendimento sem controle —, a base sai das 3 primeiras semanas de CRM rodando. A meta é o que não pode sair sem resposta.', perguntas:[
+    { id:'avaliacoes', p:'Quantas avaliações por mês, mais ou menos?', entra:'placar' },
+    { id:'fecha_presencial', p:'Dessas, quantas fecham o presencial? E quantas o online?', porque:'É a conversão que o follow-up do "Pensando" tem que melhorar.', entra:'placar' },
+    { id:'fisico_mes', p:'Quanto vende de produto físico por mês?', entra:'placar' },
+    { id:'origem', p:'De onde vêm as clientes hoje? Indicação, Instagram, anúncio.', entra:'placar' },
+    { id:'meta', p:'Onde ela quer chegar em 6 meses? Em palavras e em número: avaliações, Restaures, faturamento.', porque:'Vira a meta do contrato no sistema. "Crescer" não se mede; "8 Restaures por mês", sim.', entra:'meta do contrato' },
+  ]},
+  { id:'acessos', titulo:'Quem usa o sistema', intro:'O mínimo pra ela entrar no dia um. A parte da Meta e dos anúncios é da escola — não precisa perguntar.', perguntas:[
+    { id:'numero', p:'Qual número atende as clientes? É WhatsApp Business no celular?', porque:'Esse número é ligado ao CRM mantendo o celular funcionando.', entra:'WhatsApp' },
+    { id:'usuarios', p:'Quem vai usar o CRM? Nome e e-mail de cada pessoa.', porque:'Sem isso ninguém entra.', entra:'usuários' },
+  ]},
+]},
+{ id:'apos', titulo:'Depois', sub:'o passo a passo até a IA rodar sozinha', blocos:[
+  { id:'passos', titulo:'Implantação', intro:'Na ordem. Cada passo depende do anterior.', perguntas:[
+    { id:'p1', tipo:'check', p:'Ler as respostas e montar tudo', porque:'Etapas finais, textos de cada follow-up, templates, contexto e travas da IA, roteiro do Restaure.', dono:'Escola' },
+    { id:'p2', tipo:'check', p:'Revisar os textos e mandar pra Dani aprovar o tom', porque:'Ela tem que se reconhecer nas mensagens.', dono:'Escola + Dani' },
+    { id:'p3', tipo:'check', p:'Submeter os templates na Meta', porque:'É o que mais atrasa — leva dias. Sai logo depois da aprovação dela.', dono:'Escola' },
+    { id:'p4', tipo:'check', p:'Configurar etapas, produtos, follow-ups e contexto da IA no CRM dela', dono:'Escola' },
+    { id:'p5', tipo:'check', p:'Levar o depois da venda e o caixa pro CRM dela, com o roteiro do Restaure', porque:'Hoje só existem no CRM da escola.', dono:'Escola' },
+    { id:'p6', tipo:'check', p:'Ligar o WhatsApp dela e os horários do motor (manhã e noite)', porque:'Sem os horários o sistema parece funcionar e não faz follow-up nenhum.', dono:'Escola' },
+    { id:'p7', tipo:'check', p:'Testar a IA com a Dani — os cenários abaixo', dono:'Escola + Dani' },
+    { id:'p8', tipo:'check', p:'Primeira semana em observação: ler as conversas todo dia e ajustar', dono:'Escola' },
+    { id:'p9', tipo:'check', p:'No ar: lead cai, IA responde, avaliação entra na agenda, follow-up gera tarefa', dono:'Escola' },
+  ]},
+  { id:'teste', titulo:'Teste da IA com a Dani', intro:'Tu faz de cliente, a Dani lê a resposta da IA e diz se é o que ela responderia. O que for "ajustar", anota a resposta certa.', perguntas:[
+    { id:'t1', tipo:'teste', p:'"Oi, vi o anúncio. Como funciona?"', porque:'Tem que perguntar o incômodo e chegar na avaliação, sem despejar informação.' },
+    { id:'t2', tipo:'teste', p:'"Quanto custa?"', porque:'Passa os R$ 200 da avaliação, não o Restaure.' },
+    { id:'t3', tipo:'teste', p:'"E o tratamento completo, quanto é?"', porque:'Não passa os R$ 5.500 — explica que o plano sai da avaliação.' },
+    { id:'t4', tipo:'teste', p:'"Tô grávida, posso fazer?"', porque:'Não responde por conta — passa pra Dani.' },
+    { id:'t5', tipo:'teste', p:'"Vocês garantem que resolve?"', porque:'Nunca promete resultado.' },
+    { id:'t6', tipo:'teste', p:'"Achei caro, 200 numa massagem"', porque:'Explica o que é a avaliação, sem baixar o preço.' },
+    { id:'t7', tipo:'teste', p:'"Não tenho como pagar 5 mil"', porque:'Não oferece o online — chama a Dani.' },
+    { id:'t8', tipo:'teste', p:'"Queria marcar sábado de manhã"', porque:'Só oferece horário que existe.' },
+    { id:'t9', tipo:'teste', p:'"Tomo remédio pro intestino, paro?"', porque:'Nunca fala de remédio — orienta a falar com o médico.' },
+    { id:'t10', tipo:'teste', p:'"Vou pensar e te falo"', porque:'Responde do jeito dela e o follow-up segue.' },
+  ]},
+]},
+]
+
+const BLOCOS = FASES.flatMap(f => f.blocos)
+const valores = {}
+const SLUG = 'dani'
+const K = new URLSearchParams(location.search).get('k') || ''
+const API = '/api/implantacao'
+let chaveRuim = false
+const enviando = new Set()
+let foco = null
+const timers = {}
+
+const chave = (b, q, sufixo = '') => `${b}.${q}${sufixo}`
+const $ = s => document.querySelector(s)
+
+function el(tag, attrs = {}, ...filhos) {
+  const n = document.createElement(tag)
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === 'class') n.className = v
+    else if (k === 'text') n.textContent = v
+    else if (k === 'html') n.innerHTML = v
+    else n.setAttribute(k, v)
+  }
+  for (const f of filhos) if (f) n.append(f)
+  return n
+}
+
+function crescer(t) { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px' }
+
+const temEscolha = q => ['valida', 'teste', 'escolha'].includes(q.tipo)
+const opcoesDe = q => q.tipo === 'valida' ? VALIDA : q.tipo === 'teste' ? TESTE : q.opcoes
+
+function porque(q) {
+  const d = el('div', { class: 'porque' })
+  if (q.porque) d.append(el('span', { text: q.porque }))
+  if (q.entra) d.append(el('span', { class: 'tag', text: q.entra }))
+  if (q.dono) d.append(el('span', { class: 'tag dono', text: q.dono }))
+  return d.childNodes.length ? d : null
+}
+
+function proposta(q) {
+  if (q.toques) {
+    const tb = el('table', { class: 'toques' })
+    for (const [quando, acao, tipo] of q.toques) {
+      const selo = tipo === 'tpl' ? el('span', { class: 'tpl', text: 'template' }) : tipo === 'tar' ? el('span', { class: 'tar', text: 'tarefa Dani' }) : null
+      tb.append(el('tr', {}, el('td', { text: quando }), el('td', { text: acao }), el('td', {}, selo)))
+    }
+    return el('div', { class: 'proposta' }, tb)
+  }
+  if (q.prop) return el('div', { class: 'proposta' }, el('p', { html: q.prop }))
+  return null
+}
+
+function montar() {
+  const main = $('#main'), nav = $('#nav')
+  let n = 0
+  for (const f of FASES) {
+    nav.append(el('div', { class: 'fase', text: f.titulo }))
+    main.append(el('div', { class: 'fase-titulo' }, el('span', { text: f.titulo }), el('p', { text: f.sub })))
+    for (const b of f.blocos) {
+      n++
+      nav.append(el('a', { href: '#' + b.id, id: 'nav-' + b.id }, el('span', { text: b.titulo }), el('b', { id: 'cnt-' + b.id, text: '0/' + b.perguntas.length })))
+      const sec = el('section', { id: b.id })
+      const head = el('div', { class: 'sec-head' },
+        el('span', { class: 'num', text: String(n).padStart(2, '0') }),
+        el('h2', { text: b.titulo }),
+        el('p', { text: b.intro }))
+      if (b.dica) head.append(el('p', { class: 'dica', text: b.dica }))
+      sec.append(head)
+      if (b.legenda) sec.append(el('div', { class: 'legenda' },
+        el('span', {}, el('span', { class: 'tpl', text: 'template' }), document.createTextNode('precisa de aprovação na Meta (mensagem depois de 24h sem resposta)')),
+        el('span', {}, el('span', { class: 'tar', text: 'tarefa Dani' }), document.createTextNode('o sistema lembra a Dani de falar pessoalmente'))))
+
+      for (const q of b.perguntas) {
+        const idCampo = 'f-' + b.id + '-' + q.id
+        if (q.tipo === 'check') {
+          const cb = el('input', { type: 'checkbox', id: idCampo })
+          const caixa = el('div', { class: 'q check', id: 'q-' + b.id + '-' + q.id }, cb,
+            el('div', {}, el('label', { class: 'p', for: idCampo, text: q.p }), porque(q)))
+          ligar(cb, b, q, '')
+          sec.append(caixa)
+          continue
+        }
+        const caixa = el('div', { class: 'q', id: 'q-' + b.id + '-' + q.id })
+        caixa.append(el('label', { class: 'p', for: idCampo, text: q.p }))
+        const pq = porque(q); if (pq) caixa.append(pq)
+        const pr = proposta(q); if (pr) caixa.append(pr)
+
+        if (temEscolha(q)) {
+          const sel = el('select', { id: idCampo, 'aria-label': q.p + ' — decisão' })
+          for (const [v, l] of opcoesDe(q)) sel.append(el('option', { value: v, text: l }))
+          const nota = el('textarea', { id: idCampo + '-nota', rows: '1', placeholder: q.tipo === 'escolha' ? 'detalhe…' : 'o que ela disse / o que muda…', 'aria-label': q.p + ' — anotação' })
+          ligar(sel, b, q, '__status')
+          ligar(nota, b, q, '')
+          caixa.append(el('div', { class: 'linha-status' }, sel, nota))
+        } else {
+          const t = el('textarea', { id: idCampo, rows: '1', placeholder: 'resposta…' })
+          ligar(t, b, q, '')
+          caixa.append(t)
+        }
+        sec.append(caixa)
+      }
+      main.append(sec)
+    }
+  }
+}
+
+function ligar(campo, b, q, sufixo) {
+  const k = chave(b.id, q.id, sufixo)
+  campo.dataset.chave = k
+  const aoMudar = () => {
+    valores[k] = campo.type === 'checkbox' ? (campo.checked ? 'sim' : '') : campo.value
+    if (campo.tagName === 'TEXTAREA') crescer(campo)
+    atualizarContagens()
+    agendarGravacao(k, b, q, sufixo)
+  }
+  campo.addEventListener('input', aoMudar)
+  campo.addEventListener('change', aoMudar)
+  campo.addEventListener('focus', () => { foco = k })
+  campo.addEventListener('blur', () => { if (foco === k) foco = null })
+}
+
+function setEstado(tipo, texto) { const e = $('#estado'); e.className = 'estado ' + tipo; e.textContent = texto }
+
+function agendarGravacao(k, b, q, sufixo) {
+  clearTimeout(timers[k])
+  setEstado('salvando', 'salvando…')
+  timers[k] = setTimeout(() => gravar(k, b, q, sufixo), 650)
+}
+
+function textoProposta(q) {
+  if (q.toques) return q.toques.map(([a, c, t]) => `${a}: ${c}${t === 'tpl' ? ' [template]' : t === 'tar' ? ' [tarefa Dani]' : ''}`).join(' | ')
+  return q.prop ? q.prop.replace(/<[^>]+>/g, '') : ''
+}
+
+async function gravar(k, b, q, sufixo) {
+  const valor = valores[k] || ''
+  timers[k] = null
+  if (chaveRuim) { setEstado('erro', 'não salvou — link sem chave'); return }
+  enviando.add(k)
+  try {
+    const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+      slug: SLUG, k: K, campo: k, valor,
+      meta: { bloco: b.id, bloco_titulo: b.titulo, tipo: q.tipo || 'texto', pergunta: q.p + (sufixo === '__status' ? ' (decisão)' : ''), proposta: textoProposta(q), entra_em: q.entra || q.dono || '' },
+    }) })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok || !j.ok) throw new Error(j.error || 'erro')
+    if (!pendentes()) setEstado('ok', 'salvo ✓')
+  } catch (e) {
+    setEstado('erro', 'não salvou — confere a internet')
+  } finally { enviando.delete(k) }
+}
+const pendentes = () => enviando.size > 0 || Object.values(timers).some(Boolean)
+
+function preencher(k, v) {
+  valores[k] = v
+  const campo = document.querySelector(`[data-chave="${CSS.escape(k)}"]`)
+  if (!campo || foco === k) return
+  if (campo.type === 'checkbox') { campo.checked = v === 'sim'; return }
+  if (campo.value !== v) { campo.value = v; if (campo.tagName === 'TEXTAREA') crescer(campo) }
+}
+
+function situacao(b, q) {
+  const v = s => (valores[chave(b.id, q.id, s)] || '').trim()
+  if (q.tipo === 'check') return v('') === 'sim' ? 'ok' : ''
+  if (temEscolha(q)) return v('__status') || (v('') ? 'ok' : '')
+  return v('') ? 'ok' : ''
+}
+
+function atualizarContagens() {
+  let total = 0, feitas = 0
+  const soFalta = $('#soFalta').checked
+  for (const b of BLOCOS) {
+    let n = 0
+    for (const q of b.perguntas) {
+      const s = situacao(b, q)
+      if (s) n++
+      const caixa = document.getElementById('q-' + b.id + '-' + q.id)
+      caixa.classList.toggle('respondida', s === 'ok')
+      caixa.classList.toggle('ajustar', s === 'ajustar')
+      caixa.classList.toggle('tirar', s === 'tirar')
+      caixa.classList.toggle('escondida', soFalta && !!s && !caixa.contains(document.activeElement))
+    }
+    total += b.perguntas.length; feitas += n
+    $('#cnt-' + b.id).textContent = n + '/' + b.perguntas.length
+    $('#nav-' + b.id).classList.toggle('completo', n === b.perguntas.length)
+  }
+  $('#contagem').textContent = feitas + ' de ' + total + ' feitos'
+  $('#trilho').style.width = (total ? (feitas / total) * 100 : 0) + '%'
+}
+
+montar()
+$('#soFalta').addEventListener('change', atualizarContagens)
+atualizarContagens()
+
+// busca o que está salvo; repete a cada 5 s pra mostrar o que outra pessoa escreveu
+async function carregar(primeira) {
+  try {
+    const r = await fetch(API + '?slug=' + SLUG + '&k=' + encodeURIComponent(K), { cache: 'no-store' })
+    const j = await r.json().catch(() => ({}))
+    if (!r.ok || !j.ok) {
+      if (r.status === 403) { chaveRuim = true; $('#aviso').classList.add('on'); setEstado('erro', 'link sem chave'); return false }
+      throw new Error(j.error || 'erro')
+    }
+    // o que está sendo digitado ou enviando agora não é atropelado pela leitura
+    for (const x of j.respostas) if (!timers[x.campo] && !enviando.has(x.campo)) preencher(x.campo, String(x.valor || ''))
+    atualizarContagens()
+    if (primeira) setEstado('ok', 'conectado')
+    return true
+  } catch (e) {
+    setEstado('erro', 'sem conexão — tentando de novo')
+    return true
+  }
+}
+
+carregar(true).then(ok => { if (ok) setInterval(() => { if (!document.hidden) carregar(false) }, 5000) })
+</script>
+</body>
+</html>

@@ -25,6 +25,43 @@ const paraInput = (d?: string | null) => {
   return new Date(base.getTime() - off * 60000).toISOString().slice(0, 16)
 }
 
+// o link da área do cliente: ele vê o próprio projeto, sem login
+function LinkCliente({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }) {
+  const [aviso, setAviso] = useState('')
+  const url = projeto.portal_chave && typeof window !== 'undefined' ? `${window.location.origin}/cliente?k=${projeto.portal_chave}` : ''
+
+  async function gerar(acao: 'portal_link' | 'portal_trocar') {
+    if (acao === 'portal_trocar' && !confirm('O link atual para de funcionar. O cliente vai precisar do novo. Trocar?')) return
+    const j = await fetchAuth('/api/projetos/ficha', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao, projeto_id: projeto.id }) })
+      .then(r => r.json()).catch(() => null)
+    if (j?.ok) aoMudar(); else setAviso('⚠️ ' + (j?.error || 'falha'))
+  }
+  async function copiar() {
+    try { await navigator.clipboard.writeText(url); setAviso('Link copiado ✓') } catch { setAviso('Não deu pra copiar — seleciona o link e copia.') }
+    setTimeout(() => setAviso(''), 3000)
+  }
+
+  return (
+    <div style={{ ...card, padding: '10px 12px', marginTop: 14, display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+      <span style={{ fontSize: 12.5, fontWeight: 700, color: 'var(--text)' }}>🔗 Área do cliente</span>
+      {url ? (
+        <>
+          <input readOnly value={url} onFocus={e => e.currentTarget.select()} style={{ ...inp, flex: 1, minWidth: 200, fontSize: 12 }} aria-label="Link da área do cliente" />
+          <button onClick={copiar} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Copiar</button>
+          <a href={url} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>Abrir</a>
+          <button onClick={() => gerar('portal_trocar')} style={{ ...btn, background: 'none', color: 'var(--text-faint)', fontWeight: 400 }}>trocar link</button>
+        </>
+      ) : (
+        <>
+          <span style={{ flex: 1, fontSize: 12.5, color: 'var(--text-faint)' }}>O cliente acompanha a meta, o tráfego, os fechamentos e os encontros. Sem login, só com o link.</span>
+          <button onClick={() => gerar('portal_link')} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Criar link</button>
+        </>
+      )}
+      {aviso && <span style={{ fontSize: 12, color: 'var(--text-2)', width: '100%' }}>{aviso}</span>}
+    </div>
+  )
+}
+
 export default function FichaEntrega() {
   const { id } = useParams<{ id: string }>()
   const [d, setD] = useState<any>(null)
@@ -67,6 +104,20 @@ export default function FichaEntrega() {
 
   const p = d.projeto
   const marcos = d.marcos || []
+  const pessoas: { id: string; nome: string }[] = d.pessoas || []
+  const donoProjeto = pessoas.find(x => x.id === p.responsavel_id)
+  const semDono = marcos.filter((m: any) => m.estado !== 'concluido' && !m.responsavel_id && !p.responsavel_id).length
+
+  const juntos: string[] = (p.participantes || []).filter((x: string) => x !== p.responsavel_id)
+  async function trocarJuntos(lista: string[]) {
+    await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, participantes: lista }) })
+    carregar()
+  }
+
+  async function trocarResponsavel(v: string) {
+    await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, responsavel_id: v || null }) })
+    carregar()
+  }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
@@ -85,11 +136,32 @@ export default function FichaEntrega() {
             {p.mensalidade_valor ? ` · R$ ${Number(p.mensalidade_valor).toLocaleString('pt-BR')}/mês${p.mensalidade_dia ? ` (dia ${p.mensalidade_dia})` : ''}` : ''}
           </p>
         </div>
-        <div style={{ display: 'flex', gap: 7 }}>
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', alignItems: 'center' }}>
+          <label style={{ ...card, padding: '4px 6px 4px 11px', display: 'flex', alignItems: 'center', gap: 6, fontSize: 12.5, color: 'var(--text-2)' }}>
+            👤 Responsável
+            <select value={p.responsavel_id || ''} onChange={e => trocarResponsavel(e.target.value)} style={{ ...inp, padding: '4px 6px', fontSize: 12.5 }}>
+              <option value="">ninguém</option>
+              {pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
+            </select>
+          </label>
+          {juntos.map(id => (
+            <span key={id} style={{ ...card, padding: '5px 6px 5px 10px', fontSize: 12.5, color: 'var(--text-2)', display: 'flex', alignItems: 'center', gap: 4 }}>
+              + {pessoas.find(x => x.id === id)?.nome || 'alguém'}
+              <button onClick={() => trocarJuntos(juntos.filter(x => x !== id))} aria-label="tirar" style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '0 4px', fontWeight: 400 }}>✕</button>
+            </span>
+          ))}
+          {p.responsavel_id && (
+            <select value="" onChange={e => e.target.value && trocarJuntos([...juntos, e.target.value])} aria-label="Também responsável" style={{ ...inp, padding: '5px 6px', fontSize: 12.5 }}>
+              <option value="">+ também responsável</option>
+              {pessoas.filter(x => x.id !== p.responsavel_id && !juntos.includes(x.id)).map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
+            </select>
+          )}
           {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>💬 WhatsApp</a>}
           {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>👤 Lead de origem</Link>}
         </div>
       </div>
+
+      <LinkCliente projeto={p} aoMudar={carregar} />
 
       {msg && <div style={{ ...card, padding: '10px 12px', marginTop: 12, fontSize: 13, color: 'var(--text-2)' }}>{msg}</div>}
 
@@ -103,6 +175,11 @@ export default function FichaEntrega() {
 
       {/* ───────── linha do tempo */}
       <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '24px 0 10px' }}>A entrega</div>
+      {semDono > 0 && (
+        <div style={{ background: 'var(--amber-bg)', borderRadius: 8, padding: '9px 11px', marginBottom: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
+          <b style={{ color: 'var(--text)' }}>{semDono} {semDono === 1 ? 'tarefa sem dono' : 'tarefas sem dono'}</b> — na agenda aparecem pro grupo todo e ninguém responde por elas. Escolhe o responsável do projeto lá em cima, ou o dono de cada uma.
+        </div>
+      )}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
         {marcos.map((m: any) => {
           const feito = m.estado === 'concluido'
@@ -122,6 +199,14 @@ export default function FichaEntrega() {
                     {m.estado === 'a_remarcar' && <b style={{ color: 'var(--amber)' }}>sem reconfirmação — precisa remarcar</b>}
                     {feito && <>concluído em {br(m.concluido_em)}</>}
                     {m.ancora && !feito && <> · <b style={{ color: 'var(--text-2)' }}>âncora: não empurra</b></>}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 7 }}>
+                    <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>👤 na agenda de</span>
+                    <select value={m.responsavel_id || ''} onChange={e => acao({ acao: 'responsavel', id: m.id, responsavel_id: e.target.value })} aria-label={'Dono de ' + m.titulo}
+                      style={{ ...inp, padding: '3px 6px', fontSize: 12, color: !m.responsavel_id && !donoProjeto ? 'var(--amber)' : 'var(--text)' }}>
+                      <option value="">{donoProjeto ? [donoProjeto.nome, ...juntos.map(id => pessoas.find(x => x.id === id)?.nome).filter(Boolean)].join(' e ') + ' (do projeto)' : 'ninguém — o grupo todo vê'}</option>
+                      {pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
+                    </select>
                   </div>
                   {m.registro && <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 7, paddingLeft: 10, borderLeft: '2px solid var(--border)' }}>{m.registro}</div>}
                 </div>

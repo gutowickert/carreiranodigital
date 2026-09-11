@@ -178,7 +178,7 @@ export default function TrafegoClientes() {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginTop: 10, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>📈 Tráfego dos clientes</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Todos os clientes com conta de anúncio ligada, lidos direto da Meta.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Todos os clientes com conta de anúncio ligada, lidos direto da Meta. O investido já inclui o imposto que a Meta cobra ({d?.linhas?.find((l: any) => l.atual?.impostoPct != null)?.atual?.impostoPct?.toString().replace(".", ",") ?? "12,15"}%).</p>
         </div>
         <div style={{ display: 'flex', gap: 7, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--border-strong)', borderRadius: 8, overflow: 'hidden' }}>

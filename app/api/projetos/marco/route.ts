@@ -39,6 +39,17 @@ export async function POST(req: Request) {
     const fmt = (iso: string) => { const d = new Date(iso); return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }
 
     // ───────────────────────────────────────────── combinar / remarcar
+    // dono do marco: é quem recebe na agenda. Vazio = segue o responsável do projeto.
+    if (acao === 'responsavel') {
+      const novo = (b.responsavel_id || '').toString() || null
+      if (novo) {
+        const { data: pessoa } = await sb.from('usuarios_perfil').select('id, nome').eq('org_id', org).eq('id', novo).eq('ativo', true).maybeSingle()
+        if (!pessoa) return erro('pessoa não encontrada')
+      }
+      await sb.from('projeto_marcos').update({ responsavel_id: novo, atualizado_em: agora }).eq('id', marcoId)
+      return ok({})
+    }
+
     if (acao === 'combinar' || acao === 'remarcar') {
       const dataHora = (b.data_hora || '').toString()
       if (!dataHora) return erro('informe a data e a hora combinadas')
