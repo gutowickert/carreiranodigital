@@ -159,6 +159,31 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
 }
 
 /* ============================================================
+   RELEVO — o "no" do logo, espalhado com cuidado (aprovado 11/09).
+   Extrusão FINA (2px) e uma sombra macia por trás: flutua, não pesa. Só em quem grita:
+   marca, título da tela (um por tela), o número principal, o botão principal.
+   Nunca em texto de leitura, nunca em chip, nunca em card.
+   ============================================================ */
+.relevo-marca  { text-shadow: 1px 1px 0 var(--accent), 2px 2px 0 var(--accent), 0 10px 22px rgba(0,0,0,.28); }
+.relevo-titulo { text-shadow: 1px 1px 0 var(--accent-bg), 2px 2px 0 var(--accent-bg), 0 8px 16px rgba(0,0,0,.18); }
+.relevo-numero { text-shadow: 1px 1px 0 var(--accent), 2px 2px 0 var(--accent), 0 10px 22px rgba(0,0,0,.26); }
+/* o "no": branco, contorno roxo, sombra sólida curta */
+.relevo-no { font-style: normal; color: #fff; -webkit-text-stroke: 1.5px #7c3aed; paint-order: stroke fill; text-shadow: 2px 2px 0 #1a0b33, 0 8px 16px rgba(0,0,0,.3); }
+/* botão que afunda: borda de baixo fina, desce no clique (o global button:active dá 1px; aqui são 3) */
+.btn-afunda { box-shadow: 0 3px 0 #4c1d95, 0 12px 20px -8px var(--glow) !important; transition: transform .06s ease, box-shadow .06s ease, filter .15s ease !important; }
+.btn-afunda:active:not(:disabled) { transform: translateY(3px) !important; box-shadow: 0 0 0 #4c1d95, 0 4px 8px -4px rgba(0,0,0,.3) !important; }
+/* A CHAPA: o logo forjado num tijolo de vidro grosso. Borda de cima clara (a luz bate), borda de
+   baixo escura (a espessura), reflexo diagonal, sombra macia embaixo (flutua). Fundo escuro fixo
+   nos dois temas porque o logo tem letras brancas. */
+.chapa {
+  position: relative; overflow: hidden; border-radius: 14px;
+  background: linear-gradient(160deg, rgba(255,255,255,.16), rgba(255,255,255,.04) 42%, rgba(0,0,0,.18)), #150a2b;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.42), inset 0 -3px 0 rgba(0,0,0,.5), inset 1px 0 0 rgba(255,255,255,.14), inset -1px 0 0 rgba(0,0,0,.35),
+              0 0 0 1px rgba(124,58,237,.45), 0 22px 40px -16px rgba(0,0,0,.65), 0 3px 8px -2px rgba(0,0,0,.35);
+}
+.chapa::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.10) 44%, rgba(255,255,255,.02) 52%, transparent 60%); }
+
+/* ============================================================
    POLISH GLOBAL — vale pra qualquer tela (não depende de tokens)
    ============================================================ */
 /* Títulos com leve aperto de letra (cara mais "desenhada") */

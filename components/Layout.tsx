@@ -402,11 +402,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             zIndex: 50,
           }}>
             <div style={{ padding: '14px 12px 10px', flexShrink: 0 }}>
-              <div style={{ background: '#150a2b', borderRadius: 'var(--r)', padding: '12px 14px', boxShadow: '0 8px 22px var(--glow), inset 0 1px 0 rgba(255,255,255,.08)', display: 'flex', alignItems: 'center', minHeight: 60 }}>
+              <div className="chapa" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', minHeight: 60 }}>
                 {marca?.logo_url
-                  ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 40, maxWidth: 180, objectFit: 'contain' }} />
+                  ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 40, maxWidth: 180, objectFit: 'contain', position: 'relative' }} />
                   : (marca && marca.id !== CND_ID)
-                    ? <div className="display" style={{ fontSize: 17, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1.1 }}>{marca.nome}</div>
+                    ? <div className="display relevo-marca" style={{ fontSize: 17, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1.1 }}>{marca.nome}</div>
                     : <Image src="/logo.png" alt="CarreiraNoDigital" width={180} height={54} style={{ objectFit: 'contain' }} />}
               </div>
             </div>

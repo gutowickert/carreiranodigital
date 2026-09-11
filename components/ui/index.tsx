@@ -37,13 +37,14 @@ export function Botao({ tom = 'secundario', tamanho = 'md', icone: Icone, childr
   const pad = tamanho === 'sm' ? '6px 11px' : tamanho === 'lg' ? '12px 20px' : '9px 15px'
   const fs = tamanho === 'sm' ? 12.5 : tamanho === 'lg' ? 15 : 13.5
   const tons: Record<Tom, CSSProperties> = {
-    principal: { background: 'var(--grad)', color: 'var(--on-accent)', border: '1px solid transparent', boxShadow: '0 6px 16px var(--glow)' },
+    principal: { background: 'var(--grad)', color: 'var(--on-accent)', border: '1px solid transparent' },
     secundario: { background: 'var(--surface)', color: 'var(--text-2)', border: '1px solid var(--border-strong)' },
     fantasma: { background: 'transparent', color: 'var(--text-muted)', border: '1px solid transparent' },
     perigo: { background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)' },
   }
   return (
-    <button {...rest} style={{
+    // o principal afunda no clique (.btn-afunda, globals.css) — o único botão em relevo
+    <button {...rest} className={[tom === 'principal' ? 'btn-afunda' : '', rest.className || ''].join(' ').trim() || undefined} style={{
       display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 7,
       padding: pad, fontSize: fs, fontWeight: 700, borderRadius: 'var(--r)', lineHeight: 1.2, whiteSpace: 'nowrap',
       ...tons[tom], ...style,
@@ -106,7 +107,7 @@ export function CabecalhoPagina({ titulo, sub, acoes, filhos }: { titulo: ReactN
   return (
     <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
       <div style={{ minWidth: 0 }}>
-        <h1 className="display" style={{ fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.05 }}>{titulo}</h1>
+        <h1 className="display relevo-titulo" style={{ fontSize: 28, fontWeight: 700, margin: 0, lineHeight: 1.05 }}>{titulo}</h1>
         {sub && <p style={{ margin: '5px 0 0', fontSize: 13, color: 'var(--text-muted)' }}>{sub}</p>}
         {filhos}
       </div>
@@ -118,10 +119,11 @@ export function CabecalhoPagina({ titulo, sub, acoes, filhos }: { titulo: ReactN
 // ─── Card de número ────────────────────────────────────────────────────────────
 // Número grande e condensado, variação, linha dos últimos dias e uma linha de rodapé. Responde
 // "estamos bem?" antes de a pessoa ler. `alerta` pinta a borda de vermelho: é o que precisa de ti.
-export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, serie, rodape, alerta, vidro, cor }: {
+// `destaque` = o número mais importante da tela: só ele recebe o relevo. Um por tela.
+export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, serie, rodape, alerta, vidro, cor, destaque }: {
   rotulo: ReactNode; valor: ReactNode; prefixo?: string; sufixo?: string
   delta?: ReactNode; deltaBom?: boolean | null
-  serie?: number[]; rodape?: ReactNode; alerta?: boolean; vidro?: boolean; cor?: string
+  serie?: number[]; rodape?: ReactNode; alerta?: boolean; vidro?: boolean; cor?: string; destaque?: boolean
 }) {
   const linha = serie && serie.length > 1 ? caminho(serie, 200, 34) : null
   const corLinha = cor || 'var(--accent)'
@@ -137,7 +139,7 @@ export function CardNumero({ rotulo, valor, prefixo, sufixo, delta, deltaBom, se
           }}>{delta}</span>
         )}
       </div>
-      <div className="display tnum" style={{ fontSize: 34, fontWeight: 700, lineHeight: 1, color: alerta ? 'var(--red)' : cor || 'var(--text)' }}>
+      <div className={'display tnum' + (destaque && !alerta ? ' relevo-numero' : '')} style={{ fontSize: destaque ? 38 : 34, fontWeight: destaque ? 800 : 700, lineHeight: 1, color: alerta ? 'var(--red)' : cor || 'var(--text)' }}>
         {prefixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'Manrope', letterSpacing: 0, marginRight: 4 }}>{prefixo}</span>}
         {valor}
         {sufixo && <span style={{ fontSize: 16, fontWeight: 600, color: 'var(--text-muted)', fontFamily: 'Manrope', letterSpacing: 0, marginLeft: 2 }}>{sufixo}</span>}
