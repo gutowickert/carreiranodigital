@@ -3,11 +3,11 @@
 import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef, createContext, useContext } from 'react'
 import Link from 'next/link'
-import Image from 'next/image'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import NotifCelular from '@/components/NotifCelular'
 import ThemeToggle from '@/components/ThemeToggle'
+import Logo3D from '@/components/Logo3D'
 import {
   LayoutDashboard, CalendarDays, Bot, Sparkles, Map, BadgeCheck, Workflow, Coins, Phone, MessageCircle, Columns3,
   Layers, Package, Trophy, CalendarClock, ListChecks, ClipboardCheck, PackageCheck, Megaphone, TrendingUp, Activity,
@@ -401,14 +401,13 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             overflowY: 'auto',
             zIndex: 50,
           }}>
-            <div style={{ padding: '14px 12px 10px', flexShrink: 0 }}>
-              <div className="chapa" style={{ padding: '12px 14px', display: 'flex', alignItems: 'center', minHeight: 60 }}>
-                {marca?.logo_url
-                  ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ maxHeight: 40, maxWidth: 180, objectFit: 'contain', position: 'relative' }} />
-                  : (marca && marca.id !== CND_ID)
-                    ? <div className="display relevo-marca" style={{ fontSize: 17, fontWeight: 800, color: '#fff', textTransform: 'uppercase', lineHeight: 1.1 }}>{marca.nome}</div>
-                    : <Image src="/logo.png" alt="CarreiraNoDigital" width={180} height={54} style={{ objectFit: 'contain' }} />}
-              </div>
+            {/* a marca em 3D, na chapa de vidro grosso (components/Logo3D.tsx) */}
+            <div style={{ padding: '8px 0 4px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+              {marca?.logo_url
+                ? <Logo3D src={marca.logo_url} largura={160} />
+                : (marca && marca.id !== CND_ID)
+                  ? <Logo3D texto={marca.nome} largura={160} />
+                  : <Logo3D src="/logo.png" largura={160} />}
             </div>
 
             <nav style={{ flex: 1, padding: '12px 12px', display: 'flex', flexDirection: 'column' }}>

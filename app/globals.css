@@ -182,6 +182,11 @@ input::placeholder, textarea::placeholder { color: var(--text-faint); }
               0 0 0 1px rgba(124,58,237,.45), 0 22px 40px -16px rgba(0,0,0,.65), 0 3px 8px -2px rgba(0,0,0,.35);
 }
 .chapa::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, transparent 30%, rgba(255,255,255,.10) 44%, rgba(255,255,255,.02) 52%, transparent 60%); }
+/* o logo 3D (components/Logo3D.tsx) flutua devagar. `translate` separado do `transform` pra a
+   inclinação do mouse não brigar com a animação. */
+@keyframes flutua { 0%, 100% { translate: 0 0; } 50% { translate: 0 -5px; } }
+.logo3d-obj { animation: flutua 5.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .logo3d-obj { animation: none; } }
 
 /* ============================================================
    POLISH GLOBAL — vale pra qualquer tela (não depende de tokens)
