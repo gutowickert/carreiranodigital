@@ -159,19 +159,32 @@ export async function POST(req: Request) {
 
     // ── PLACAR: foto dos números numa data. O ponto A é a base de antes do trabalho.
     if (acao === 'placar_novo') {
-      const data = (b.data || '').toString().slice(0, 10)
+      // fechamento do mês (mes = 'AAAA-MM') ou o ponto A (com data)
+      const pontoA = !!b.ponto_a
+      const mes = pontoA ? null : (b.mes || '').toString().slice(0, 7)
+      let data = (b.data || '').toString().slice(0, 10)
+      if (mes) {
+        if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(mes)) return NextResponse.json({ ok: false, error: 'mês inválido' }, { status: 200 })
+        // a linha do mês fica datada no último dia dele (ou hoje, se o mês não acabou)
+        const fim = new Date(Date.UTC(Number(mes.slice(0, 4)), Number(mes.slice(5, 7)), 0)).toISOString().slice(0, 10)
+        const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+        data = fim > hoje ? hoje : fim
+      }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return NextResponse.json({ ok: false, error: 'informe a data' }, { status: 200 })
       const linha = {
-        org_id: org, projeto_id: projetoId, data, ponto_a: !!b.ponto_a,
-        verba: num(b.verba), leads: num(b.leads), propostas: num(b.propostas), vendas: num(b.vendas), comissao: num(b.comissao),
+        org_id: org, projeto_id: projetoId, data, ponto_a: pontoA, mes,
+        verba: num(b.verba), conversas: num(b.conversas), leads: num(b.leads), propostas: num(b.propostas), vendas: num(b.vendas), comissao: num(b.comissao),
+        fonte: mes ? (b.fonte === 'crm' ? 'crm' : 'cliente') : null, imposto_pct: mes ? num(b.imposto_pct) : null,
         observacao: (b.observacao || '').toString().slice(0, 500) || null, autor: (b.autor || '').toString() || null,
       }
-      if ([linha.verba, linha.leads, linha.propostas, linha.vendas, linha.comissao].every(v => v == null)) {
+      if ([linha.verba, linha.conversas, linha.leads, linha.propostas, linha.vendas, linha.comissao].every(v => v == null)) {
         return NextResponse.json({ ok: false, error: 'preencha pelo menos um número' }, { status: 200 })
       }
-      // ponto A é um só: gravar outro substitui
-      if (linha.ponto_a) await sb.from('projeto_placar').delete().eq('projeto_id', projetoId).eq('ponto_a', true)
-      await sb.from('projeto_placar').insert(linha)
+      // ponto A é um só, e cada mês fecha uma vez: gravar de novo substitui
+      if (pontoA) await sb.from('projeto_placar').delete().eq('projeto_id', projetoId).eq('ponto_a', true)
+      if (mes) await sb.from('projeto_placar').delete().eq('projeto_id', projetoId).eq('mes', mes)
+      const { error } = await sb.from('projeto_placar').insert(linha)
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
       return NextResponse.json({ ok: true })
     }
     if (acao === 'placar_remover') {

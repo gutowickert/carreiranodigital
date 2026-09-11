@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { getInsightsConta } from '@/lib/meta-ads'
+import { getInsightsConta, comImposto } from '@/lib/meta-ads'
+import { impostoMetaPct } from '@/lib/imposto-meta'
 import { ROTEIROS, type Produto } from '@/lib/entrega'
 import { hojeBR, periodoAnterior } from '@/lib/periodos'
 
@@ -29,11 +30,12 @@ export async function GET(req: Request) {
       .eq('org_id', org).in('status', ['ativo', 'manutencao']).not('ad_account_id', 'is', null)
       .order('cliente')
 
+    const pct = await impostoMetaPct(org)
     const linhas = await Promise.all((projetos || []).map(async p => {
-      const [atual, anterior] = await Promise.all([
+      const [atual, anterior] = (await Promise.all([
         getInsightsConta(p.ad_account_id!, de, ate),
         getInsightsConta(p.ad_account_id!, deAnt, ateAnt),
-      ])
+      ])).map(r => comImposto(r, pct))
       return {
         id: p.id,
         cliente: p.cliente,

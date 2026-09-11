@@ -68,8 +68,27 @@ export type InsightsConta = {
   ok: boolean
   error?: string
   conta?: { nome: string; moeda: string; status: number }
-  total: { gasto: number; impressoes: number; cliques: number; conversas: number; leads: number; custoConversa: number | null }
+  total: { gasto: number; impressoes: number; cliques: number; conversas: number; leads: number; custoConversa: number | null
+           gastoSemImposto?: number; impostoPct?: number }
   porDia: { data: string; gasto: number; conversas: number }[]
+}
+
+// A Meta cobra PIS/COFINS + ISS por cima do que o gerenciador mostra como "valor
+// gasto" (no pré-pago, sai do saldo na hora da recarga). O investido de verdade é
+// o gasto + esse %. Fica em Configurações (financeiro) pra ajustar sem código.
+export const IMPOSTO_META_CHAVE = 'financeiro.imposto_meta_ads'
+export const IMPOSTO_META_PADRAO = 12.15
+
+/** Soma o imposto ao gasto (total e dia a dia) e recalcula o custo por conversa. */
+export function comImposto(r: InsightsConta, pct: number): InsightsConta {
+  if (!r.ok || !pct) return { ...r, total: { ...r.total, gastoSemImposto: r.total.gasto, impostoPct: pct || 0 } }
+  const f = 1 + pct / 100
+  const gasto = r.total.gasto * f
+  return {
+    ...r,
+    total: { ...r.total, gasto, gastoSemImposto: r.total.gasto, impostoPct: pct, custoConversa: r.total.conversas ? gasto / r.total.conversas : null },
+    porDia: r.porDia.map(d => ({ ...d, gasto: d.gasto * f })),
+  }
 }
 
 const CONVERSA = ['onsite_conversion.messaging_conversation_started_7d', 'onsite_conversion.total_messaging_connection']

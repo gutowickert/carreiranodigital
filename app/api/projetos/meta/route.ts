@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { getInsightsConta } from '@/lib/meta-ads'
+import { getInsightsConta, comImposto } from '@/lib/meta-ads'
+import { impostoMetaPct } from '@/lib/imposto-meta'
 
 // Números da conta de anúncio do CLIENTE, desde o início do projeto até hoje.
 // É o topo do funil que vem sozinho — o resto (propostas, vendas, comissão) vem
@@ -27,7 +28,8 @@ export async function GET(req: Request) {
     let ate = ehData(sp.get('ate')) ? sp.get('ate')! : hoje
     if (ate > hoje) ate = hoje                     // a Meta não tem o futuro
     if (desde > ate) [desde, ate] = [ate, desde]   // de/até invertidos: desinverte em vez de dar erro
-    const r = await getInsightsConta(p.ad_account_id, desde, ate)
+    const [bruto, pct] = await Promise.all([getInsightsConta(p.ad_account_id, desde, ate), impostoMetaPct(org)])
+    const r = comImposto(bruto, pct)
     return NextResponse.json({ ...r, desde, ate, inicio_projeto: String(p.data_inicio).slice(0, 10) }, { status: 200 })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
