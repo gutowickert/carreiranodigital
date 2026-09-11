@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
+import { pessoasAtivas } from '@/lib/pessoas-org'
 import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, type Produto } from '@/lib/entrega'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
@@ -21,7 +22,8 @@ export async function GET(req: Request) {
     if (status) q = q.eq('status', status)
     else q = q.neq('status', 'cancelado')
     const { data: projetos } = await q.order('data_inicio', { ascending: true })
-    if (!projetos?.length) return NextResponse.json({ ok: true, projetos: [], resumo: vazio() })
+    const pessoas = await pessoasAtivas(org)
+    if (!projetos?.length) return NextResponse.json({ ok: true, projetos: [], resumo: vazio(), pessoas })
 
     const ids = projetos.map(p => p.id)
     const { data: marcos } = await sb.from('projeto_marcos').select('*').in('projeto_id', ids).order('ordem')
@@ -69,7 +71,7 @@ export async function GET(req: Request) {
       }
     })
 
-    return NextResponse.json({ ok: true, projetos: saida, resumo })
+    return NextResponse.json({ ok: true, projetos: saida, resumo, pessoas })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }
@@ -116,7 +118,9 @@ export async function POST(req: Request) {
     }).select('*').single()
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
 
-    const marcos = marcosDoRoteiro(produto, dataInicio).map(m => ({ ...m, org_id: org, projeto_id: proj.id, responsavel_id: b.responsavel_id || null }))
+    // marco nasce sem dono: herda o responsável do projeto (a agenda faz esse fallback), e trocar o
+    // responsável do projeto depois leva todos junto. Dono próprio só quando alguém escolhe na ficha.
+    const marcos = marcosDoRoteiro(produto, dataInicio).map(m => ({ ...m, org_id: org, projeto_id: proj.id, responsavel_id: null }))
     await sb.from('projeto_marcos').insert(marcos)
 
     await sb.from('projeto_andamentos').insert({

@@ -35,12 +35,13 @@ export default function Entregas() {
   const [novo, setNovo] = useState(false)
   const [filtro, setFiltro] = useState('')
   const [msg, setMsg] = useState('')
-  const [f, setF] = useState<any>({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '' })
+  const [pessoas, setPessoas] = useState<{ id: string; nome: string }[]>([])
+  const [f, setF] = useState<any>({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
 
   async function carregar() {
     setCarregando(true)
     const j = await fetchAuth('/api/projetos').then(r => r.json()).catch(() => null)
-    if (j?.ok) { setLista(j.projetos || []); setResumo(j.resumo || {}) }
+    if (j?.ok) { setLista(j.projetos || []); setResumo(j.resumo || {}); setPessoas(j.pessoas || []) }
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
@@ -50,7 +51,7 @@ export default function Entregas() {
     const j = await fetchAuth('/api/projetos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) }).then(r => r.json()).catch(() => null)
     if (j?.ok) {
       setMsg(`✅ Projeto criado com ${j.marcos} marcos no roteiro.`)
-      setNovo(false); setF({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '' })
+      setNovo(false); setF({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
       carregar()
     } else setMsg('⚠️ ' + (j?.error || 'falha'))
     setTimeout(() => setMsg(''), 4000)
@@ -99,6 +100,7 @@ export default function Entregas() {
             <div><label style={lbl}>Cliente *</label><input style={inp} value={f.cliente} onChange={e => setF({ ...f, cliente: e.target.value })} /></div>
             <div><label style={lbl}>WhatsApp</label><input style={inp} value={f.whatsapp} onChange={e => setF({ ...f, whatsapp: e.target.value })} placeholder="5551..." /></div>
             <div><label style={lbl}>Produto *</label><select style={inp} value={f.produto} onChange={e => setF({ ...f, produto: e.target.value })}>{PRODUTOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>
+            <div><label style={lbl}>Responsável (dono na agenda)</label><select style={inp} value={f.responsavel_id} onChange={e => setF({ ...f, responsavel_id: e.target.value })}><option value="">ninguém</option>{pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}</select></div>
             <div><label style={lbl}>Data de início *</label><input type="date" style={inp} value={f.data_inicio} onChange={e => setF({ ...f, data_inicio: e.target.value })} /></div>
             <div><label style={lbl}>Prazo (meses)</label><input style={inp} value={f.prazo_meses} onChange={e => setF({ ...f, prazo_meses: e.target.value })} placeholder="padrão do produto" /></div>
             <div><label style={lbl}>No fim do contrato</label><select style={inp} value={f.fim_tipo} onChange={e => setF({ ...f, fim_tipo: e.target.value })}><option value="">padrão do produto</option>{FINS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}</select></div>

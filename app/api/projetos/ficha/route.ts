@@ -3,6 +3,7 @@ import { randomBytes } from 'crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
+import { pessoasAtivas } from '@/lib/pessoas-org'
 import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/entrega'
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
@@ -35,12 +36,13 @@ export async function GET(req: Request) {
     const { data: projeto } = await sb.from('projetos').select('*').eq('org_id', org).eq('id', id).maybeSingle()
     if (!projeto) return NextResponse.json({ ok: false, error: 'projeto não encontrado' }, { status: 200 })
 
-    const [{ data: marcos }, { data: andamentos }, { data: pendencias }, { data: placar }, { data: registros }] = await Promise.all([
+    const [{ data: marcos }, { data: andamentos }, { data: pendencias }, { data: placar }, { data: registros }, pessoas] = await Promise.all([
       sb.from('projeto_marcos').select('*').eq('projeto_id', id).order('ordem'),
       sb.from('projeto_andamentos').select('*').eq('projeto_id', id).order('criado_em', { ascending: false }).limit(100),
       sb.from('projeto_pendencias').select('*').eq('projeto_id', id).order('criado_em'),
       sb.from('projeto_placar').select('*').eq('projeto_id', id).order('data', { ascending: true }),
       sb.from('projeto_registros').select('*').eq('projeto_id', id).order('data', { ascending: false }),
+      pessoasAtivas(org),
     ])
 
     const r = ROTEIROS[projeto.produto as Produto]
@@ -61,6 +63,7 @@ export async function GET(req: Request) {
       pendencias: pendencias || [],
       placar: placar || [],
       registros: comLink,
+      pessoas,
     })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
