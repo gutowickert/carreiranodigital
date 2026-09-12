@@ -500,7 +500,7 @@ export default function CRM() {
         </div>
 
         <div style={{ display: 'flex', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
-          <div style={{ position: 'relative', minWidth: 220, flex: '1 1 260px', maxWidth: 360 }}>
+          <div style={{ position: 'relative', minWidth: 0, flex: '1 1 220px', maxWidth: 360 }}>
             <Search size={15} style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-faint)', pointerEvents: 'none' }} />
             <input style={{ ...inp, paddingLeft: 34 }} placeholder="Buscar por nome ou telefone" value={busca} onChange={e => setBusca(e.target.value)} />
           </div>

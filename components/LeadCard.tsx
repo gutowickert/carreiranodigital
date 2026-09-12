@@ -8,7 +8,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
-import { X, Phone, MessageCircle, Circle, CircleDot } from 'lucide-react'
+import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
 
 type Lead = {
   id: string
@@ -513,7 +513,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
   if (!aberto) return null
 
-  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12.5, fontWeight: 600, color: 'var(--text-2)', marginBottom: 5, display: 'block' as const }
   const turmaSelecionada = turmas.find(t => t.id === form.turma_id)
   const dia = lead ? diaDoCiclo(lead.criado_em) : 0
   const cicloEstourou = dia > PRAZO_CICLO
@@ -626,7 +626,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
         {!novoLead && lead && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>
               Qualificação (formulário)
             </div>
             {qualLinhas.length > 0 ? (
@@ -660,7 +660,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
         {!novoLead && lead && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Ligações</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>Ligações</div>
               <button onClick={() => carregarLigacoes(lead.id)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, cursor: 'pointer' }}>↻ atualizar</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
@@ -668,7 +668,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                 const s = l.duracao || 0
                 const dur = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
                 return (
-                  <div key={l.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 6, fontSize: 12 }}>
+                  <div key={l.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span style={{ color: 'var(--text-2)' }}>{new Date(l.criado_em).toLocaleString('pt-BR')}</span>
                       <span style={{ color: l.status === 'encerrada' ? 'var(--green)' : 'var(--amber)' }}>
@@ -701,8 +701,8 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
             fantasma nos relatórios. Nesse caso o caminho é cancelar a matrícula em Turmas. */}
         {!novoLead && lead && lead.etapa === 'ganho' && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8, fontWeight: 600 }}>Venda fechada</div>
-            <div style={{ background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 8, padding: '10px 12px', fontSize: 13, color: 'var(--text)' }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--green)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Venda fechada</div>
+            <div style={{ background: 'var(--green-bg)', border: '1px solid var(--green)', borderRadius: 'var(--r)', padding: '10px 12px', fontSize: 13, color: 'var(--text)' }}>
               {(lead as any).valor_venda != null && (
                 <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--green)' }}>
                   R$ {Number((lead as any).valor_venda).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -727,15 +727,15 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                   E não é invenção: já existem clientes com dois leads no mesmo telefone, os dois
                   em ganho. O upsell já era feito na mão assim; aqui vira um botão. */}
               <button onClick={novaNegociacao} disabled={criandoUpsell}
-                style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--green)', background: 'var(--green-bg)', color: 'var(--green)', fontSize: 13, fontWeight: 600, cursor: criandoUpsell ? 'default' : 'pointer' }}>
-                {criandoUpsell ? 'Criando...' : '🔼 Nova negociação (upsell)'}
+                style={{ padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid var(--green)', background: 'var(--green-bg)', color: 'var(--green)', fontSize: 13, fontWeight: 600, cursor: criandoUpsell ? 'default' : 'pointer' }}>
+                {criandoUpsell ? 'Criando...' : 'Nova negociação (upsell)'}
               </button>
 
               {/* Desfazer só existe quando NÃO há matrícula: com matrícula lançada, mexer aqui
                   deixaria matrícula e receita de pé com o lead de volta no funil. */}
               {!(lead as any).matricula_id && (
                 <button onClick={() => moverEtapa(lead, 'atendimento_inicial').then(onFechar)}
-                  style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>
+                  style={{ padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer' }}>
                   Marquei por engano — desfazer
                 </button>
               )}
@@ -751,10 +751,10 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
 
         {!novoLead && lead && lead.etapa === 'perda' && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-            <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Lead perdido</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Lead perdido</div>
             <button onClick={() => moverEtapa(lead, 'atendimento_inicial').then(onFechar)}
-              style={{ padding: '8px 14px', borderRadius: 8, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
-              🔄 Reabrir negociação
+              style={{ padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              <RotateCcw size={14} /> Reabrir negociação
             </button>
             <p style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Volta o lead pra "Atendimento inicial" e limpa a marcação de perda.</p>
           </div>
@@ -763,46 +763,46 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
         {!novoLead && lead && lead.etapa !== 'ganho' && lead.etapa !== 'perda' && (
           <>
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Mover etapa</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Mover etapa</div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                 {(etapas || ETAPAS).filter((e: any) => e.id !== lead.etapa && (e.papel ? e.papel === 'ativa' : (e.id !== 'ganho' && e.id !== 'perda' && e.id !== 'pediu_prazo' && e.id !== 'aguardando_pagamento' && e.id !== 'agendado' && e.id !== 'proxima_turma'))).map((e: any) => (
                   <button key={e.id} onClick={() => moverEtapa(lead, e.id).then(onFechar)}
-                    style={{ padding: '6px 12px', borderRadius: 6, border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
+                    style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: `1px solid ${e.cor}40`, background: e.bg, color: e.cor, fontSize: 11, cursor: 'pointer' }}>
                     → {e.label}
                   </button>
                 ))}
                 <button onClick={() => { setMostrarPrazo(!mostrarPrazo); setMostrarGanho(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer' }}>
-                  📞 Agendar ligação
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer' }}>
+                  <Phone size={14} /> Agendar ligação
                 </button>
                 <button onClick={() => { setMostrarPag(!mostrarPag); setMostrarGanho(false); setMostrarPerda(false); setMostrarPrazo(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
                   → Aguardando pagamento
                 </button>
                 <button onClick={() => { setMostrarAgendado(!mostrarAgendado); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
-                  📅 Agendar contato
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
+                  <CalendarDays size={14} /> Agendar contato
                 </button>
                 <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarLigBoa(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer' }}>
-                  ➡️ Próxima turma
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer' }}>
+                  <ArrowRight size={14} /> Próxima turma
                 </button>
                 <button onClick={() => { setMostrarLigBoa(!mostrarLigBoa); setMostrarAgendado(false); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                  🔥 Ligação Boa
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  <Flame size={14} /> Ligação Boa
                 </button>
                 <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                  ✓ Ganho
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  <Check size={14} /> Ganho
                 </button>
                 <button onClick={() => { setMostrarPerda(!mostrarPerda); setMostrarPrazo(false); setMostrarGanho(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 6, border: '1px solid var(--red)', background: 'var(--red-bg)', color: 'var(--red)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                  ✗ Perda
+                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--red)', background: 'var(--red-bg)', color: 'var(--red)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
+                  <X size={14} /> Perda
                 </button>
               </div>
 
               {mostrarPrazo && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 'var(--r)', border: '1px solid var(--amber)' }}>
                   <label style={labelStyle}>Quando ligar de volta? *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={inp} value={prazoData} onChange={e => setPrazoData(e.target.value)} />
@@ -816,7 +816,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               )}
 
               {mostrarPag && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 8, border: '1px solid var(--blue)' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 'var(--r)', border: '1px solid var(--blue)' }}>
                   <label style={labelStyle}>Quando cliente disse que paga? *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={inp} value={pagData} onChange={e => setPagData(e.target.value)} />
@@ -830,7 +830,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               )}
 
               {mostrarAgendado && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 8, border: '1px solid var(--blue)' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 'var(--r)', border: '1px solid var(--blue)' }}>
                   <label style={labelStyle}>Chamar o lead em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
@@ -844,7 +844,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               )}
 
               {mostrarLigBoa && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 8, border: '1px solid var(--amber)' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 'var(--r)', border: '1px solid var(--amber)' }}>
                   <label style={labelStyle}>Cliente quente (vai fechar) — atenção especial. Chamar em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={ligBoaData} onChange={e => setLigBoaData(e.target.value)} />
@@ -859,8 +859,8 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               )}
 
               {mostrarProxTurma && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--accent-bg)', borderRadius: 8, border: '1px solid var(--accent-soft)' }}>
-                  <label style={labelStyle}>➡️ Próxima turma — chamar em: *</label>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--accent-bg)', borderRadius: 'var(--r)', border: '1px solid var(--accent-soft)' }}>
+                  <label style={labelStyle}>Próxima turma — chamar em: *</label>
                   <div style={{ display: 'flex', gap: 8 }}>
                     <input type="date" style={{ ...inp, flex: 1 }} value={proxTurmaData} onChange={e => setProxTurmaData(e.target.value)} />
                     <input type="time" style={{ ...inp, width: 110 }} value={proxTurmaHora} onChange={e => setProxTurmaHora(e.target.value)} />
@@ -877,7 +877,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               )}
 
               {mostrarPerda && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--red-bg)', borderRadius: 8, border: '1px solid var(--red)' }}>
+                <div style={{ marginTop: 12, padding: 12, background: 'var(--red-bg)', borderRadius: 'var(--r)', border: '1px solid var(--red)' }}>
                   <label style={labelStyle}>Motivo da perda *</label>
                   <select style={{ ...inp, cursor: 'pointer' }} value={motivoSelecionado} onChange={e => setMotivoSelecionado(e.target.value)}>
                     <option value="">Selecione</option>
@@ -892,13 +892,13 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
             </div>
 
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
-              <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>Andamentos</div>
+              <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Andamentos</div>
 
               {/* Registro ESTRUTURADO de ligação — pra IA saber o que já foi feito */}
               {!mostrarLig
                 ? <button onClick={() => setMostrarLig(true)} style={{ ...btnPrimary, background: 'var(--accent-bg)', color: 'var(--accent-soft)', marginBottom: 10 }}>Registrar ligação/atendimento</button>
                 : (
-                  <div style={{ background: 'var(--bg)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: 12, marginBottom: 12 }}>
+                  <div style={{ background: 'var(--bg)', border: '1px solid var(--accent-soft)', borderRadius: 'var(--r)', padding: 12, marginBottom: 12 }}>
                     <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', marginBottom: 10 }}>O que rolou na ligação?</div>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 8, fontSize: 13, color: 'var(--text-2)' }}>
                       <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={lig.entendeu} onChange={e => setLig({ ...lig, entendeu: e.target.checked })} /> Entendi o negócio dela</label>
@@ -927,7 +927,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
                 {andamentos.map(a => (
-                  <div key={a.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 6, fontSize: 12 }}>
+                  <div key={a.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>
                     <div style={{ color: 'var(--text-2)' }}>{a.observacao}</div>
                     <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
                       {a.tipo && a.tipo !== 'observacao' && <span style={{ color: 'var(--accent-soft)', marginRight: 6 }}>[{a.tipo}]</span>}
@@ -946,7 +946,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
           <div>
             {!novoLead && lead && podeExcluir && (
               <button onClick={excluir} disabled={excluindo}
-                style={{ background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
+                style={{ background: 'var(--red-bg)', color: 'var(--red)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '8px 14px', fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: excluindo ? 0.6 : 1 }}>
                 {excluindo ? 'Excluindo...' : 'Excluir lead'}
               </button>
             )}
@@ -999,14 +999,14 @@ function ResumoIA({ leadId }: { leadId: string }) {
     <div style={{ background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 10, padding: '10px 12px', marginBottom: 12 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         <button onClick={() => setAberto(a => !a)} style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 13, fontWeight: 700, cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
-          <span style={{ color: 'var(--text-faint)' }}>{aberto ? '▾' : '▸'}</span> 🧠 Resumo IA
+          <span style={{ color: 'var(--text-faint)' }}>{aberto ? '▾' : '▸'}</span> <Sparkles size={13} /> Resumo IA
         </button>
         {stale && dados && <span style={{ fontSize: 10, fontWeight: 700, color: 'var(--amber)', background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 20, padding: '1px 8px' }}>desatualizado</span>}
         <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8 }}>
           {em && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{emFmt}</span>}
           <button onClick={gerar} disabled={gerando} title="Atualizar resumo"
-            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: stale ? 'var(--amber)' : 'var(--text-muted)', fontSize: 11, padding: '3px 8px', cursor: gerando ? 'default' : 'pointer' }}>
-            {gerando ? '...' : dados ? '🔄 Atualizar' : 'Gerar'}
+            style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: stale ? 'var(--amber)' : 'var(--text-muted)', fontSize: 11, padding: '3px 8px', cursor: gerando ? 'default' : 'pointer' }}>
+            {gerando ? '...' : dados ? 'Atualizar' : 'Gerar'}
           </button>
         </div>
       </div>
@@ -1018,7 +1018,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
           {!gerando && !dados && (
             <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>
               {temMsg ? 'Ainda não há resumo. ' : 'Sem conversa registrada ainda. '}
-              {temMsg && <button onClick={gerar} style={{ background: 'var(--accent)', border: 'none', borderRadius: 6, color: 'var(--on-accent)', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>Gerar resumo</button>}
+              {temMsg && <button onClick={gerar} style={{ background: 'var(--accent)', border: 'none', borderRadius: 'var(--r-sm)', color: 'var(--on-accent)', fontSize: 11, padding: '4px 10px', cursor: 'pointer' }}>Gerar resumo</button>}
             </div>
           )}
           {!gerando && dados && (
@@ -1039,7 +1039,7 @@ function ResumoIA({ leadId }: { leadId: string }) {
                   de antes do pagamento e mandava "ligar pra confirmar". Verde e afirmativo, igual
                   ao de um resumo fresco. Quando está velho, vira aviso e diz de quando é. */}
               {dados.proximoPasso && (
-                <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--surface-2)', borderLeft: `3px solid ${stale ? 'var(--amber)' : 'var(--green)'}`, borderRadius: 6, padding: '6px 10px' }}>
+                <div style={{ fontSize: 12, color: 'var(--text)', background: 'var(--surface-2)', borderLeft: `3px solid ${stale ? 'var(--amber)' : 'var(--green)'}`, borderRadius: 'var(--r-sm)', padding: '6px 10px' }}>
                   <b style={{ color: stale ? 'var(--amber)' : 'var(--green)' }}>
                     {stale ? `Próximo passo (de ${emFmt} — desatualizado):` : 'Próximo passo:'}
                   </b> {dados.proximoPasso}
@@ -1161,7 +1161,7 @@ function ChatLead({ lead }: { lead: Lead }) {
       })
       const json = await res.json()
       if (json.ok) { setTexto(''); carregar() }
-      else if (json.foraJanela) { setErro('Fora das 24h — o cliente não respondeu recentemente, o WhatsApp bloqueia texto livre. Reabra com um template 👇'); setMostrarTpl(true) }
+      else if (json.foraJanela) { setErro('Fora das 24h — o cliente não respondeu recentemente, o WhatsApp bloqueia texto livre. Reabra com um template abaixo'); setMostrarTpl(true) }
       else setErro(json.error || 'falha ao enviar')
     } catch (e: any) { setErro((e && e.message) || 'erro de rede') }
     finally { setEnviando(false) }
@@ -1223,9 +1223,9 @@ function ChatLead({ lead }: { lead: Lead }) {
   }
 
   function renderMidia(m: any) {
-    if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'imagem' && m.midia_url) return <img src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 'var(--r)', marginTop: 4 }} />
     if (m.tipo === 'audio' && m.midia_url) return <audio controls src={m.midia_url} style={{ width: '100%', marginTop: 4, height: 34 }} />
-    if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 8, marginTop: 4 }} />
+    if (m.tipo === 'video' && m.midia_url) return <video controls src={m.midia_url} style={{ maxWidth: '100%', borderRadius: 'var(--r)', marginTop: 4 }} />
     if (m.tipo === 'documento' && m.midia_url) return <a href={m.midia_url} target="_blank" rel="noreferrer" style={{ color: 'var(--blue)', fontSize: 12 }}>{m.texto || 'documento'}</a>
     if (m.tipo === 'audio' && !m.midia_url) return <span style={{ fontSize: 12, opacity: 0.8 }}>Áudio</span>
     return null
@@ -1234,21 +1234,21 @@ function ChatLead({ lead }: { lead: Lead }) {
   return (
     <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-        <div style={{ fontSize: 12, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</div>
+        <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}>WhatsApp</div>
         <button onClick={() => { setMostrarVincular(v => !v); setBuscaConv(''); setConvResultados([]) }}
-          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 6, color: 'var(--text-muted)', fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>
-          🔗 Vincular conversa
+          style={{ background: 'none', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', color: 'var(--text-muted)', fontSize: 11, padding: '4px 8px', cursor: 'pointer' }}>
+          <Link2 size={14} /> Vincular conversa
         </button>
       </div>
       {mostrarVincular && (
-        <div style={{ marginBottom: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 8, padding: 10 }}>
+        <div style={{ marginBottom: 8, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: 10 }}>
           <div style={{ fontSize: 11, color: 'var(--text-faint)', marginBottom: 6 }}>Busca por nome ou telefone e vincula a este lead — útil quando o cliente fala de um número diferente do cadastrado.</div>
           <input style={inp} placeholder="Nome ou telefone..." value={buscaConv}
             onChange={e => { setBuscaConv(e.target.value); buscarConversas(e.target.value) }} />
           <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', gap: 4, maxHeight: 160, overflowY: 'auto' }}>
             {convResultados.map(c => (
               <button key={c.id} onClick={() => vincularConversa(c.id)}
-                style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 6, padding: '6px 8px', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }}>
+                style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-sm)', padding: '6px 8px', color: 'var(--text)', fontSize: 12, cursor: 'pointer' }}>
                 {c.nome || c.telefone} <span style={{ color: 'var(--text-faint)' }}>· {c.telefone}</span>
                 {c.lead_id && <span style={{ color: 'var(--amber)' }}> (já vinculada)</span>}
               </button>
@@ -1257,7 +1257,7 @@ function ChatLead({ lead }: { lead: Lead }) {
           </div>
         </div>
       )}
-      <div style={{ background: 'var(--bg)', borderRadius: 8, padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
+      <div style={{ background: 'var(--bg)', borderRadius: 'var(--r)', padding: 12, maxHeight: 320, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 6 }}>
         {mensagens.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)', textAlign: 'center', margin: '12px 0' }}>Nenhuma mensagem ainda. Manda a primeira!</p>}
         {mensagens.map(m => {
           const eu = m.direcao === 'enviada'
@@ -1282,7 +1282,7 @@ function ChatLead({ lead }: { lead: Lead }) {
       </div>
 
       {sugestao && (
-        <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 8, background: 'var(--surface-2)', border: '1px solid var(--border)', fontSize: 12 }}>
+        <div style={{ marginTop: 10, padding: '8px 10px', borderRadius: 'var(--r)', background: 'var(--glass-field)', border: '1px solid var(--glass-border)', fontSize: 12 }}>
           <span style={{ color: '#a78bfa', fontWeight: 700 }}>Copiloto</span>
           {sugestao.objecao && sugestao.objecao !== 'nenhuma' && <span style={{ color: 'var(--text-2)' }}> · objeção: <b>{sugestao.objecao}</b></span>}
           {sugestao.dica && <div style={{ color: 'var(--text-2)', marginTop: 2 }}>{sugestao.dica}</div>}
@@ -1291,9 +1291,9 @@ function ChatLead({ lead }: { lead: Lead }) {
       )}
 
       {mostrarTpl && (
-        <div style={{ marginTop: 10, padding: 10, borderRadius: 8, background: 'var(--bg)', border: '1px solid var(--border)' }}>
+        <div style={{ marginTop: 10, padding: 10, borderRadius: 'var(--r)', background: 'var(--bg)', border: '1px solid var(--border)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>📄 Enviar template</div>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em' }}><FileText size={12} /> Enviar template</div>
             <button onClick={() => setMostrarTpl(false)} style={{ background: 'none', border: 'none', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 14 }}>✕</button>
           </div>
           <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginBottom: 8 }}>Aprovados pela Meta — reabrem a conversa mesmo fora das 24h. As variáveis (nome, curso, cidade, datas, preço) são preenchidas automaticamente com os dados do lead.</div>
@@ -1303,7 +1303,7 @@ function ChatLead({ lead }: { lead: Lead }) {
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 220, overflowY: 'auto' }}>
               {templates.map(t => (
                 <button key={t.id} onClick={() => enviarTemplateSel(t.id)} disabled={!!tplEnviando}
-                  style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: tplEnviando ? 'default' : 'pointer', opacity: tplEnviando && tplEnviando !== t.id ? 0.5 : 1 }}>
+                  style={{ textAlign: 'left', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r)', padding: '8px 10px', cursor: tplEnviando ? 'default' : 'pointer', opacity: tplEnviando && tplEnviando !== t.id ? 0.5 : 1 }}>
                   <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--text)' }}>{t.titulo || t.nome_meta}{tplEnviando === t.id && <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}> · enviando…</span>}</div>
                   <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, whiteSpace: 'pre-wrap', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{t.corpo}</div>
                 </button>
@@ -1318,11 +1318,11 @@ function ChatLead({ lead }: { lead: Lead }) {
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
-          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>📎</button>
+          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}><Paperclip size={15} /></button>
         <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
-          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : '✨'}</button>
+          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : <Sparkles size={15} />}</button>
         <button onClick={() => { setMostrarTpl(v => !v); setErro('') }} disabled={gravando} title="Enviar template aprovado (reabre fora das 24h)"
-          style={{ ...btnPrimary, background: mostrarTpl ? 'var(--accent)' : 'var(--surface-2)', color: mostrarTpl ? 'var(--on-accent)' : undefined, minWidth: 44, padding: '8px' }}>📄</button>
+          style={{ ...btnPrimary, background: mostrarTpl ? 'var(--accent)' : 'var(--surface-2)', color: mostrarTpl ? 'var(--on-accent)' : undefined, minWidth: 44, padding: '8px' }}><FileText size={15} /></button>
         <textarea ref={txtRef} rows={3} style={{ ...inp, flex: 1, resize: 'none', minHeight: 76, maxHeight: 160, lineHeight: 1.4, fontFamily: 'inherit' }}
           placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
@@ -1340,7 +1340,7 @@ function ChatLead({ lead }: { lead: Lead }) {
         ) : (
           <button onClick={iniciarGravacao} disabled={enviando} title="Gravar áudio"
             style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 70 }}>
-            🎤
+            <Mic size={15} />
           </button>
         )}
       </div>
@@ -1507,10 +1507,10 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
     } catch (e: any) { setMensagem('Erro: ' + (e?.message || '')) } finally { setSalvando(false) }
   }
 
-  const labelStyle = { fontSize: 12, color: 'var(--text-muted)', marginBottom: 4, display: 'block' as const }
+  const labelStyle = { fontSize: 12.5, fontWeight: 600, color: 'var(--text-2)', marginBottom: 5, display: 'block' as const }
 
   return (
-    <div style={{ marginTop: 12, padding: 16, background: 'var(--green-bg)', borderRadius: 8, border: '1px solid var(--green-strong)' }}>
+    <div style={{ marginTop: 12, padding: 16, background: 'var(--green-bg)', borderRadius: 'var(--r)', border: '1px solid var(--green-strong)' }}>
       <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--green-strong)', marginBottom: 12 }}>
         {modoVenda ? 'Cadastrar nova venda (dados do lead)' : 'Marcar ganho'}
       </div>
@@ -1534,7 +1534,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 200, overflowY: 'auto' }}>
                 {matriculas.map(m => (
                   <div key={m.id} onClick={() => setMatriculaSelecionada(m.id)}
-                    style={{ padding: 10, borderRadius: 6, cursor: 'pointer', border: matriculaSelecionada === m.id ? '2px solid var(--green-strong)' : '1px solid var(--border)', background: matriculaSelecionada === m.id ? 'var(--green-bg)' : 'var(--bg)' }}>
+                    style={{ padding: 10, borderRadius: 'var(--r-sm)', cursor: 'pointer', border: matriculaSelecionada === m.id ? '2px solid var(--green-strong)' : '1px solid var(--border)', background: matriculaSelecionada === m.id ? 'var(--green-bg)' : 'var(--bg)' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <div>
                         <div style={{ fontSize: 13, color: 'var(--text)', fontWeight: 500 }}>{m.aluno_nome}</div>
@@ -1592,7 +1592,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button onClick={() => setModoVenda(false)} disabled={salvando} style={{ ...btnSecondary }}>Voltar</button>
             <button onClick={cadastrarVenda} disabled={salvando} style={{ ...btnPrimary, background: 'var(--green)', flex: 1, opacity: salvando ? 0.6 : 1 }}>
-              {salvando ? 'Cadastrando...' : '✓ Cadastrar venda e dar ganho'}
+              {salvando ? 'Cadastrando...' : 'Cadastrar venda e dar ganho'}
             </button>
           </div>
         </>
