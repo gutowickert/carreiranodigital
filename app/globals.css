@@ -109,6 +109,9 @@ body {
   text-rendering: optimizeLegibility;
 }
 input, textarea, select { color: var(--text); font-family: inherit; }
+/* Campo com width: 100% + padding passava da borda do card (era content-box). border-box em todo
+   controle de formulário: a largura inclui padding e borda, em qualquer tela e qualquer modal. */
+input, textarea, select, button { box-sizing: border-box; }
 input::placeholder, textarea::placeholder { color: var(--text-faint); }
 
 /* A fonte que grita: títulos de página e números grandes. Condensada (wdth) pra ecoar o logo. */
