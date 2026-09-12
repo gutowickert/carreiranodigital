@@ -245,3 +245,12 @@ Esqueleto com brilho passando (`.esqueleto`), no formato do que vai aparecer. Nu
 > roxa/magenta/azul; desfoque só em peças paradas; relevo de 2px só na marca, no título e no
 > número principal; gráficos só em barras; cor pelo significado (verde bom, âmbar atenção,
 > vermelho ruim, azul info, roxo marca). Use os tokens CSS do arquivo, com os nomes exatos.
+
+## 11. Os sites da escola (aplicado em 12/09/2026)
+
+As cinco páginas em `public/` (home, /completa, /anuncioslocais, Deu Venda Lajeado e POA) recebem
+este padrão por uma **pele** injetada depois do CSS original de cada uma (`<style id="cnd-skin">`):
+os nomes antigos de token (`--purple`, `--bg2`, `--body`…) passam a apontar pros novos, e o resto
+é re-skin de tipografia, botão, vidro e relevo. Texto, imagens, grids e rastreamento não mudam.
+A pele e o script que a aplica estão em `sites-skin/skin.css` e `sites-skin/aplicar.js`; pra mexer de novo,
+edita a pele e roda `node sites-skin/aplicar.js` — ele é idempotente e refaz as cinco páginas.
