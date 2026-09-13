@@ -1,0 +1,652 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<!-- Meta Pixel (conta da escola) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',content_category:'{{CIDADE}}'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deu Venda — a tua máquina de captação montada em 3 horas</title>
+<meta name="description" content="Deu Venda: em 3 horas, um a um, a tua máquina de captação fica configurada e a primeira campanha entra no ar. Depois, 3 meses de apoio até funcionar. Carreira no Digital, {{CIDADE}}.">
+<meta property="og:title" content="Deu Venda">
+<meta property="og:description" content="3 horas pra rodar a primeira campanha. 3 meses de apoio individual até fazer funcionar.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap">
+<style>
+/* ===== tokens (docs/DESIGN.md) ===== */
+:root{
+  --bg:#0f0c17;--surface:#171320;--surface-2:#1f1a2b;--border:#261f36;--border-strong:#372e4c;
+  --text:#f4f1fb;--text-2:#c9c2da;--text-muted:#9a93ae;--text-faint:#736c88;
+  --accent:#8b5cf6;--accent-soft:#b39bff;--accent-bg:#2a1b4d;
+  --green:#34d399;--green-bg:#0b2e24;--red:#fb7185;--red-bg:#3b1520;--amber:#fbbf24;--amber-bg:#3a2a0a;--blue:#60a5fa;--blue-bg:#14243f;
+  --grad:linear-gradient(135deg,#7c3aed,#c026d3);--grad-escuro:#4c1d95;--glow:rgba(139,92,246,.35);
+  --glass:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035));--glass-border:rgba(255,255,255,.14);
+  --glass-hi:rgba(255,255,255,.26);--glass-sheen:rgba(255,255,255,.09);--glass-shadow:0 18px 50px rgba(0,0,0,.55);--glass-field:rgba(255,255,255,.06);
+  --blob-1:rgba(139,92,246,.60);--blob-2:rgba(217,70,239,.42);--blob-3:rgba(56,189,248,.26);--grid:rgba(255,255,255,.03);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;background:var(--bg)}
+body{font-family:'Manrope',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{max-width:100%;display:block}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.luz{position:fixed;inset:0;z-index:0;pointer-events:none;background:
+  radial-gradient(40% 44% at 14% 6%,var(--blob-1),transparent 70%),
+  radial-gradient(30% 34% at 90% 92%,var(--blob-2),transparent 70%),
+  radial-gradient(26% 30% at 64% 42%,var(--blob-3),transparent 70%),
+  repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px 44px),
+  repeating-linear-gradient(0deg,var(--grid) 0 1px,transparent 1px 44px)}
+body>*:not(.luz):not(script){position:relative;z-index:1}
+.container{max-width:1100px;margin:0 auto;padding:0 clamp(16px,4vw,40px)}
+
+/* ===== tipografia ===== */
+.disp{font-family:'Bricolage Grotesque','Manrope',sans-serif;font-weight:700;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.02em;line-height:1.04;text-wrap:balance}
+h2.disp{font-size:clamp(1.9rem,4.2vw,3rem);margin-bottom:14px}
+h3.disp{font-size:1.25rem;margin-bottom:6px}
+.eyebrow{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-soft);display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.eyebrow::before{content:"";width:22px;height:2px;background:var(--accent);border-radius:2px}
+.roxo{color:var(--accent-soft)}
+.lede{font-size:17px;line-height:1.7;color:var(--text-2);max-width:64ch}
+.lede strong,.txt strong{color:var(--text);font-weight:700}
+.txt{font-size:15px;line-height:1.65;color:var(--text-2)}
+.section{padding:88px 0}
+.section-alt{background:linear-gradient(180deg,rgba(255,255,255,.035),rgba(255,255,255,.012));border-top:1px solid var(--glass-border);border-bottom:1px solid var(--glass-border)}
+.head{max-width:720px;margin-bottom:38px}
+
+/* ===== vidro, chips, botões ===== */
+.vidro{position:relative;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;box-shadow:inset 0 1px 0 var(--glass-hi),0 10px 30px -18px rgba(0,0,0,.5)}
+.vidro-blur{backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);box-shadow:inset 0 1px 0 var(--glass-hi),var(--glass-shadow)}
+.vidro-blur::after{content:"";position:absolute;inset:0;border-radius:inherit;pointer-events:none;background:linear-gradient(135deg,var(--glass-sheen) 0%,transparent 38%)}
+[data-vidro="off"] *{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+@media (prefers-reduced-transparency:reduce){*{backdrop-filter:none!important}.vidro{background:var(--surface)}}
+.chip{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:5px 12px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.chip.marca{background:var(--accent-bg);color:var(--accent-soft)}
+.chip.bom{background:var(--green-bg);color:var(--green)}
+.chip svg{width:13px;height:13px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:13px 20px;border-radius:10px;font-size:15px;font-weight:700;white-space:nowrap;transition:transform .06s,box-shadow .06s}
+.btn svg{width:18px;height:18px;flex:none}
+.btn-primary{background:var(--grad);color:#fff;box-shadow:0 3px 0 var(--grad-escuro),0 12px 20px -8px var(--glow)}
+.btn-primary:active{transform:translateY(3px);box-shadow:0 0 0 var(--grad-escuro),0 4px 8px -4px rgba(0,0,0,.3)}
+.btn-secondary{background:var(--glass-field);color:var(--text-2);border:1px solid var(--border-strong);font-weight:600}
+.btn-secondary:hover{border-color:var(--accent);color:var(--text)}
+.btn-note{display:block;margin-top:10px;font-size:13px;color:var(--text-muted)}
+
+/* ===== nav ===== */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);border-bottom:1px solid var(--glass-border);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:0 clamp(16px,4vw,40px);height:68px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.chapa{display:inline-flex;align-items:center;position:relative;overflow:hidden;border-radius:10px;padding:7px 12px;
+  background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 42%,rgba(0,0,0,.18)),#150a2b;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -2px 0 rgba(0,0,0,.5),inset 1px 0 0 rgba(255,255,255,.14),inset -1px 0 0 rgba(0,0,0,.35),0 0 0 1px rgba(124,58,237,.45),0 14px 26px -14px rgba(0,0,0,.65)}
+.chapa::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.10) 44%,rgba(255,255,255,.02) 52%,transparent 60%)}
+.chapa img{height:26px}
+.nav-preco{font-size:13px;color:var(--text-muted);margin-right:6px}
+.nav-preco b{color:var(--text)}
+
+/* ===== hero ===== */
+.hero{position:relative;overflow:hidden;padding:150px 0 80px;min-height:92vh;display:flex;align-items:center}
+.hero-bg{position:absolute;inset:0;z-index:0}
+.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 52%;opacity:.85}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(100deg,rgba(15,12,23,.93) 0%,rgba(15,12,23,.84) 40%,rgba(42,27,77,.55) 65%,rgba(15,12,23,.78) 100%)}
+.hero .container{position:relative;z-index:1}
+.hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
+.hero h1{font-weight:800;font-variation-settings:'opsz' 96,'wdth' 88;letter-spacing:-.035em;line-height:.98;font-size:clamp(2.3rem,5.2vw,4.3rem);margin:18px 0 20px;
+  text-shadow:1px 1px 0 var(--accent-bg),2px 2px 0 var(--accent-bg),0 8px 16px rgba(0,0,0,.18)}
+.hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
+.hero-sub{font-size:17.5px;line-height:1.65;color:var(--text-2);max-width:54ch;margin-bottom:28px}
+.hero-sub strong{color:var(--text)}
+.hero-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--green)}
+/* o cartão de resumo do hero: o que é, quanto custa, pra quem */
+.resumo{padding:22px 22px 20px;display:grid;gap:14px}
+.resumo .preco{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;letter-spacing:-.03em;font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums;
+  text-shadow:1px 1px 0 var(--accent),2px 2px 0 var(--accent),0 10px 22px rgba(0,0,0,.26)}
+.resumo .preco small{display:block;font-family:'Manrope',sans-serif;font-size:13px;font-weight:600;color:var(--text-muted);letter-spacing:0;text-shadow:none;margin-top:6px}
+.resumo ul{list-style:none;display:grid;gap:9px}
+.resumo li{display:flex;gap:10px;align-items:flex-start;font-size:14.5px;color:var(--text-2)}
+.resumo li svg{width:16px;height:16px;color:var(--green);flex:none;margin-top:3px}
+.resumo li b{color:var(--text)}
+.resumo .rot{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-muted)}
+
+/* ===== problema ===== */
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.frase{padding:22px 22px 20px;border-top:3px solid var(--red)}
+.frase h3{color:var(--red);font-size:1.15rem;margin-bottom:8px}
+.frase p{font-size:14px;color:var(--text-muted);line-height:1.6}
+.ponte{margin-top:26px;padding:22px 26px;border-left:3px solid var(--accent);font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.35;color:var(--text)}
+.ponte em{font-style:normal;color:var(--accent-soft)}
+.ponte small{display:block;margin-top:10px;font:400 14.5px/1.6 'Manrope',sans-serif;color:var(--text-2)}
+
+/* ===== a máquina, visual ===== */
+.tela{position:relative;border-radius:16px;overflow:visible;background:var(--glass);border:1px solid var(--glass-border);box-shadow:inset 0 1px 0 var(--glass-hi),var(--glass-shadow)}
+.tela .barra{display:flex;align-items:center;gap:6px;padding:12px 14px;border-bottom:1px solid var(--glass-border)}
+.tela .barra i{width:10px;height:10px;border-radius:50%;background:var(--border-strong)}
+.tela .barra span{margin-left:8px;font-size:12px;color:var(--text-faint);background:var(--surface);border-radius:6px;padding:3px 10px;flex:1;max-width:340px}
+.tela figure{position:relative;margin:0;padding:14px 14px 16px}
+.tela figure img{width:100%;border-radius:8px;box-shadow:0 20px 40px -20px rgba(0,0,0,.8)}
+.pin{position:absolute;width:28px;height:28px;border-radius:50%;background:var(--grad);color:#fff;font:800 13px/28px 'Manrope',sans-serif;text-align:center;
+  box-shadow:0 0 0 4px rgba(139,92,246,.25),0 6px 14px -4px rgba(0,0,0,.6)}
+.legenda{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.legenda>div{padding:14px 16px;display:flex;gap:12px;align-items:flex-start}
+.legenda .pin{position:static;flex:none}
+.legenda b{display:block;font-size:14.5px;margin-bottom:2px}
+.legenda span{font-size:13.5px;color:var(--text-muted);line-height:1.5}
+
+/* tu pede → ela faz */
+.pede{display:grid;grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);gap:22px;align-items:stretch;margin-top:44px}
+.pedidos{display:grid;gap:8px;align-content:start}
+.pedido{display:flex;align-items:center;gap:12px;text-align:left;padding:13px 14px;border-radius:12px;background:var(--glass-field);border:1px solid var(--glass-border);color:var(--text-2);font-size:14.5px;line-height:1.35;transition:border-color .15s,background .15s}
+.pedido:hover{border-color:var(--border-strong);color:var(--text)}
+.pedido[aria-selected="true"]{background:var(--accent-bg);border-color:var(--accent);color:var(--text)}
+.pedido .n{flex:none;width:26px;height:26px;border-radius:50%;background:var(--surface-2);font:800 12px/26px 'Manrope',sans-serif;text-align:center;color:var(--text-muted)}
+.pedido[aria-selected="true"] .n{background:var(--grad);color:#fff}
+.pedido .seta{margin-left:auto;flex:none;width:16px;height:16px;color:var(--accent-soft);opacity:0}
+.pedido[aria-selected="true"] .seta{opacity:1}
+.resposta{padding:16px;display:flex;flex-direction:column;gap:12px;min-height:520px}
+.resposta .quadro{flex:1;border-radius:12px;background:rgba(9,6,16,.75);display:flex;align-items:center;justify-content:center;padding:16px;position:relative;overflow:hidden;min-height:360px}
+.resposta .quadro::before{content:"";position:absolute;inset:0;background:radial-gradient(80% 60% at 50% 0%,rgba(139,92,246,.18),transparent 70%)}
+.resposta .quadro img{position:relative;max-height:420px;width:auto;max-width:100%;object-fit:contain;border-radius:8px;box-shadow:0 20px 40px -18px #000}
+.resposta .quadro img.paisagem{width:100%;max-height:none}
+.resposta .diz{display:flex;gap:12px;align-items:flex-start}
+.resposta .diz .bolha{flex:1;font-size:14.5px;line-height:1.55;color:var(--text-2)}
+.resposta .diz .bolha b{color:var(--text)}
+.resposta .selo{flex:none}
+.dica{display:none;font-size:12px;color:var(--text-faint);text-align:center;margin-top:8px}
+
+/* o que fica montado: 3 passos */
+.passos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
+.passo{padding:22px 22px 20px}
+.passo .ico{width:42px;height:42px;border-radius:10px;background:var(--accent-bg);color:var(--accent-soft);display:flex;align-items:center;justify-content:center;margin-bottom:14px}
+.passo .ico svg{width:20px;height:20px}
+.passo .quando{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--text-faint);margin-bottom:6px}
+.passo p{font-size:14px;color:var(--text-muted);line-height:1.6}
+.passo.forte{border-color:rgba(139,92,246,.45);background:linear-gradient(160deg,rgba(139,92,246,.16),rgba(255,255,255,.03))}
+
+/* ===== o dia e os 3 meses ===== */
+.reg{padding:26px 24px 24px}
+.reg .top{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.reg .top b{font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-variation-settings:'opsz' 96,'wdth' 85;font-size:1.7rem;letter-spacing:-.02em;line-height:1}
+.reg .top span{font-size:14.5px;color:var(--text-muted)}
+.reg .top em{font-style:normal;color:var(--green);font-weight:700}
+.reg ol{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:0;position:relative}
+.reg li{position:relative;padding:50px 16px 0 0}
+.reg li::before{content:"";position:absolute;left:32px;right:0;top:15px;height:2px;background:var(--border-strong)}
+.reg li:last-child::before{display:none}
+.reg .pt{position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:800 14px 'Manrope',sans-serif;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-2)}
+.reg li.forte .pt{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 3px 0 var(--grad-escuro)}
+.reg .h{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-soft);margin-bottom:4px}
+.reg .n{display:block;font-size:14.5px;color:var(--text-2);line-height:1.45}
+.reg .n b{color:var(--text)}
+.grupo{margin-top:14px;padding:18px 22px;display:flex;gap:14px;align-items:flex-start}
+.grupo .ico{flex:none;width:40px;height:40px;border-radius:10px;background:var(--green-bg);color:var(--green);display:flex;align-items:center;justify-content:center}
+.grupo .ico svg{width:20px;height:20px}
+.grupo p{font-size:14.5px;color:var(--text-2);line-height:1.6}
+
+/* ===== quem conduz ===== */
+.quem{display:grid;grid-template-columns:minmax(0,280px) 1fr;gap:30px;align-items:start}
+.quem-foto{overflow:hidden;position:relative}
+.quem-foto img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.quem-foto figcaption{position:absolute;left:0;right:0;bottom:0;padding:22px 16px 12px;font-size:12px;color:var(--text-2);background:linear-gradient(to top,rgba(15,12,23,.92),transparent)}
+.quem h2{margin-bottom:12px}
+.quem p{font-size:16px;line-height:1.7;color:var(--text-2);margin-bottom:12px}
+.quem p strong{color:var(--text)}
+.nums{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:20px 0 6px}
+.num{padding:20px 16px;text-align:center}
+.num b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;letter-spacing:-.03em;font-size:2.2rem;line-height:1;font-variant-numeric:tabular-nums}
+.num span{display:block;font-size:12.5px;color:var(--text-muted);margin-top:8px;line-height:1.45}
+
+/* ===== preço + serve ===== */
+.oferta{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:22px;align-items:start}
+.price{padding:36px 34px;border-color:rgba(139,92,246,.45)}
+.price .cond{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-soft)}
+.price .parc{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;letter-spacing:-.03em;font-size:clamp(2.4rem,5.6vw,3.6rem);line-height:1;margin:12px 0 6px;font-variant-numeric:tabular-nums;
+  text-shadow:1px 1px 0 var(--accent),2px 2px 0 var(--accent),0 10px 22px rgba(0,0,0,.26)}
+.price .avista{font-size:14.5px;color:var(--text-muted)}
+.price .avista b{color:var(--green)}
+.price ul{list-style:none;margin:22px 0 26px}
+.price li{padding:10px 0 10px 26px;position:relative;font-size:14.5px;color:var(--text-2);border-top:1px solid var(--glass-border)}
+.price li::before{content:"";position:absolute;left:2px;top:17px;width:8px;height:8px;border-radius:50%;background:var(--green)}
+.price li.out{color:var(--text-faint)}
+.price li.out::before{background:var(--border-strong)}
+.serve{display:grid;gap:14px}
+.serve>div{padding:22px 22px 20px}
+.serve h3{font-size:1.1rem;margin-bottom:12px}
+.serve ul{list-style:none;display:grid;gap:9px}
+.serve li{position:relative;padding-left:24px;font-size:14.5px;line-height:1.5;color:var(--text-2)}
+.serve li::before{position:absolute;left:0;top:0;font-weight:800}
+.serve .sim{border-color:rgba(52,211,153,.35)}
+.serve .sim h3{color:var(--green)}.serve .sim li::before{content:"✓";color:var(--green)}
+.serve .nao h3{color:var(--text-muted)}.serve .nao li{color:var(--text-muted)}.serve .nao li::before{content:"—";color:var(--border-strong)}
+
+/* ===== faq ===== */
+.faq{max-width:800px}
+.faq details{border-bottom:1px solid var(--glass-border)}
+.faq summary{cursor:pointer;list-style:none;padding:20px 44px 20px 0;position:relative;font-family:'Bricolage Grotesque',sans-serif;font-weight:700;font-variation-settings:'opsz' 96,'wdth' 85;font-size:1.15rem;letter-spacing:-.02em;line-height:1.25}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";position:absolute;right:8px;top:14px;font-size:1.7rem;color:var(--accent-soft);font-family:'Manrope',sans-serif;font-weight:400}
+.faq details[open] summary::after{content:"–"}
+.faq .a{padding:0 0 22px;color:var(--text-2);font-size:15px;line-height:1.7;max-width:64ch}
+.faq .a strong{color:var(--text)}
+
+/* ===== final ===== */
+.final{padding:96px 0}
+.final .card{max-width:920px;margin:0 auto;padding:52px clamp(20px,4vw,48px);text-align:center}
+.final p{color:var(--text-2);max-width:54ch;margin:0 auto 26px;font-size:16.5px;line-height:1.7}
+.final p strong{color:var(--text)}
+.sede{display:grid;grid-template-columns:minmax(0,250px) 1fr;overflow:hidden;margin:26px auto 28px;max-width:660px;text-align:left}
+.sede-img{position:relative;min-height:190px}
+.sede-img img{width:100%;height:100%;object-fit:cover}
+.sede-body{padding:22px 24px}
+.sede-body h3{margin:6px 0 8px}
+.sede-body p{font-size:13.5px;color:var(--text-muted);line-height:1.6;margin:0 0 12px}
+.addr{display:flex;align-items:flex-start;gap:8px;font-size:13.5px;color:var(--text-2)}
+.addr svg{width:15px;height:15px;color:var(--accent-soft);flex:none;margin-top:2px}
+footer{padding:44px 0 120px;font-size:13.5px;color:var(--text-faint);line-height:1.8;border-top:1px solid var(--glass-border)}
+footer .chapa{margin-bottom:16px}
+footer strong{color:var(--text-2)}
+
+/* ===== barra fixa no celular ===== */
+.fixa{position:fixed;left:0;right:0;bottom:0;z-index:90;padding:10px 14px calc(10px + env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;
+  background:var(--glass);border-top:1px solid var(--glass-border);backdrop-filter:blur(22px) saturate(1.4);-webkit-backdrop-filter:blur(22px) saturate(1.4);transform:translateY(110%);transition:transform .25s}
+.fixa.on{transform:none}
+.fixa .p{font-size:12px;color:var(--text-muted);line-height:1.3}
+.fixa .p b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;font-size:1.25rem;color:var(--text);letter-spacing:-.02em}
+.fixa .btn{flex:1;padding:12px 14px;font-size:14px}
+
+/* ===== responsivo ===== */
+@media (max-width:980px){
+  .hero-grid{grid-template-columns:1fr;gap:26px}
+  .grid3,.legenda,.passos,.nums{grid-template-columns:1fr 1fr}
+  .pede{grid-template-columns:1fr}
+  .pedidos{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .pedidos::-webkit-scrollbar{display:none}
+  .pedido{flex:0 0 auto;max-width:260px}
+  .pedido .seta{display:none}
+  .dica{display:block}
+  .oferta{grid-template-columns:1fr}
+  .oferta>*,.hero-grid>*,.pede>*{min-width:0}
+  .btn{white-space:normal;text-align:center}
+  .quem{grid-template-columns:1fr}
+  .quem-foto{max-width:300px}
+}
+@media (max-width:720px){
+  .section{padding:64px 0}
+  .hero{padding:110px 0 60px;min-height:auto}
+  .hero h1{font-size:clamp(2rem,9vw,2.6rem)}
+  .hero-sub{font-size:16px}
+  .hero-ctas .btn{width:100%}
+  .nav-preco{display:none}
+  .grid3,.legenda,.passos{grid-template-columns:1fr}
+  .nums{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .num{padding:14px 8px}.num b{font-size:1.6rem}
+  .reg ol{grid-template-columns:1fr}
+  .reg li{padding:0 0 20px 46px}
+  .reg li::before{left:15px;right:auto;top:26px;bottom:0;width:2px;height:auto}
+  .reg li:last-child{padding-bottom:0}
+  .sede{grid-template-columns:1fr}.sede-img{min-height:170px}
+  .resposta{min-height:0}
+  .resposta .quadro{min-height:260px}
+  .resposta .quadro img{max-height:330px}
+  .fixa{display:flex}
+  footer{padding-bottom:130px}
+}
+@media (prefers-reduced-motion:reduce){.fixa{transition:none}}
+</style>
+</head>
+<body>
+<div class="luz" aria-hidden="true"></div>
+
+<nav>
+  <div class="nav-inner">
+    <a href="https://carreiranodigital.com" class="chapa" aria-label="Ir para a página inicial da Carreira no Digital"><img src="{{IMG:logo}}" alt="Carreira no Digital"></a>
+    <div style="display:flex;align-items:center;gap:10px">
+      <span class="nav-preco">10× <b>R$ 299,70</b> · 3 meses incluídos</span>
+      <a class="btn btn-primary" href="#" data-cta style="padding:10px 16px;font-size:14px">Falar com a escola</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-bg"><img src="{{IMG:hero}}" alt=""></div>
+  <div class="hero-overlay"></div>
+  <div class="container">
+    <div class="hero-grid">
+      <div>
+        <div class="hero-chips">
+          <span class="chip marca"><span class="pulse"></span>Deu Venda · implementação individual</span>
+          <span class="chip bom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Presencial em <span class="cidade">{{CIDADE}}</span></span>
+        </div>
+        <h1 class="disp">3 horas pra rodar a primeira campanha.<br><span class="grad">3 meses de apoio até funcionar.</span></h1>
+        <p class="hero-sub">Só tu e um especialista da escola, numa sessão. <strong>A tua máquina de captação com IA sai configurada com o teu negócio dentro, e a campanha entra no ar antes de tu sair da sala.</strong> Depois, três meses de acompanhamento até a estratégia acertar.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary" href="#" data-cta>Quero uma conversa sobre o meu negócio</a>
+          <a class="btn btn-secondary" href="#maquina">Ver o que fica montado</a>
+        </div>
+      </div>
+      <aside class="vidro vidro-blur resumo" aria-label="Resumo do Deu Venda">
+        <div>
+          <div class="rot">O investimento</div>
+          <div class="preco">10× R$ 299,70<small>ou R$ 2.797 à vista · os três meses de apoio estão incluídos</small></div>
+        </div>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>1 pra 1, presencial.</b> Três horas só sobre o teu negócio</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>Campanha no ar no mesmo dia</b>, com tu vendo cada botão</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>4 encontros e grupo no WhatsApp</b> ao longo de três meses</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina continua tua</b> depois. Ela gera o que tu pedir</span></li>
+        </ul>
+        <div class="rot" style="color:var(--text-faint)">Conduzido por Guto Wickert · idealizador da escola, 500+ alunos no primeiro ano</div>
+      </aside>
+    </div>
+  </div>
+</header>
+
+<!-- ============ PROBLEMA ============ -->
+<section class="section">
+  <div class="container">
+    <div class="head">
+      <div class="eyebrow">O que a escola escuta</div>
+      <h2 class="disp">Tu já sabe que precisa.<br><span class="roxo">O que falta é o como.</span></h2>
+      <p class="lede">Quem senta contigo compra. O buraco está antes: no dia em que ninguém chega. E quando o assunto é resolver isso, são sempre as mesmas três frases:</p>
+    </div>
+    <div class="grid3">
+      <div class="vidro frase"><h3 class="disp">“Todo mundo já foi pro digital, menos eu”</h3><p>A sensação de estar atrasado, enquanto o concorrente aparece e tu não.</p></div>
+      <div class="vidro frase"><h3 class="disp">“Já paguei por isso e não deu em nada”</h3><p>Esse dinheiro pesa. E a dúvida que sobra é a pior parte: será que o problema fui eu?</p></div>
+      <div class="vidro frase"><h3 class="disp">“Não entendo disso, qualquer um me enrola”</h3><p>Sem entender, tu não consegue cobrar quem trabalha pra ti nem saber pra onde o dinheiro foi.</p></div>
+    </div>
+    <div class="vidro ponte">
+      <p>Depois de quinhentos alunos, o padrão se repete: <em>quem tentou e não deu certo copiou o concorrente</em> e nunca parou pra olhar pra dentro.</p>
+      <small>A IA planeja tudo o que tu pedir. <strong>O que ela não faz é decidir.</strong> Por isso a sessão é com gente, um a um: pra achar a tua estratégia — e só depois montar a máquina em cima dela.</small>
+    </div>
+  </div>
+</section>
+
+<!-- ============ A MÁQUINA ============ -->
+<section class="section section-alt" id="maquina">
+  <div class="container">
+    <div class="head">
+      <div class="eyebrow">O que fica montado</div>
+      <h2 class="disp">A tua máquina de captação,<br><span class="roxo">com o teu negócio dentro.</span></h2>
+      <p class="lede">Não é um curso que termina e te deixa com anotações. Tu sai da sala com <strong>uma máquina configurada dentro do Claude</strong> — e ela continua tua depois, gerando o que tu pedir, sempre no padrão que tu aprovou.</p>
+    </div>
+
+    <div class="tela">
+      <div class="barra"><i></i><i></i><i></i><span>claude.ai · a tua máquina</span></div>
+      <figure>
+        <img src="{{IMG:maquina}}" alt="A máquina de captação: o projeto no Claude, com o negócio guardado à direita e os pedidos à esquerda">
+        <span class="pin" style="left:18%;top:26%" aria-hidden="true">1</span>
+        <span class="pin" style="left:28%;top:62%" aria-hidden="true">2</span>
+        <span class="pin" style="right:21%;top:44%" aria-hidden="true">3</span>
+      </figure>
+    </div>
+    <div class="legenda">
+      <div class="vidro"><span class="pin">1</span><div><b>Tu pede aqui, em português</b><span>“Me dá 10 ideias de post”, “faz a arte com a minha foto”, “lê o resultado da campanha”.</span></div></div>
+      <div class="vidro"><span class="pin">2</span><div><b>O que tu já pediu</b><span>Roteiros, anúncios, ideias — tudo fica guardado e nada se repete.</span></div></div>
+      <div class="vidro"><span class="pin">3</span><div><b>O teu negócio, guardado</b><span>Contexto, estratégia, padrão da marca, o teu jeito de anunciar. É isso que faz ela responder como tu.</span></div></div>
+    </div>
+
+    <!-- tu pede → ela faz -->
+    <div class="head" style="margin-top:64px;margin-bottom:0">
+      <div class="eyebrow">Tu pede — e ela faz</div>
+      <h2 class="disp">Clica num pedido<br><span class="roxo">e vê o que sai.</span></h2>
+      <p class="lede">Peças reais, de negócios reais que passaram pela escola. Em cima das fotos do próprio negócio, tiradas no celular — nunca imagem inventada por IA.</p>
+    </div>
+    <div class="pede">
+      <div class="pedidos" role="tablist" aria-label="Pedidos à máquina" id="pedidos">
+        <button class="pedido" role="tab" aria-selected="true" data-i="0"><span class="n">1</span><span>“Faz a arte do anúncio com a minha foto”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="1"><span class="n">2</span><span>“Agora uma peça pra outro negócio, no padrão dele”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="2"><span class="n">3</span><span>“Me dá 10 ideias de post com a legenda pronta”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="3"><span class="n">4</span><span>“Faz a página pra onde o anúncio manda”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="4"><span class="n">5</span><span>“Sobe a campanha: R$ 10 por dia, aqui na cidade”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="5"><span class="n">6</span><span>“Lê o resultado e me diz o que fazer”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+        <button class="pedido" role="tab" aria-selected="false" data-i="6"><span class="n">7</span><span>“Onde eu parei? O que falta fazer?”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      </div>
+      <div class="vidro resposta" role="tabpanel" id="resposta">
+        <div class="quadro"><img id="resp-img" src="{{IMG:arte}}" alt=""></div>
+        <div class="diz"><span class="chip marca selo">ela faz</span><p class="bolha" id="resp-txt"></p></div>
+      </div>
+    </div>
+    <p class="dica">arrasta os pedidos pro lado</p>
+
+    <!-- os 3 passos do dia -->
+    <div class="passos">
+      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></div><div class="quando">Na sessão · 1ª hora</div><h3 class="disp">A estratégia, decidida contigo</h3><p>O que tu faz diferente e ninguém está dizendo. Essa parte é conversa — e é o que nenhum programa descobre sozinho.</p></div>
+      <div class="vidro passo forte"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="quando">Na sessão · 2ª hora</div><h3 class="disp">A máquina, configurada</h3><p>O teu negócio, a tua marca e o teu padrão de peça entram nela. Tu aprova as primeiras artes ali, na tela.</p></div>
+      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M14 4h6v6"/></svg></div><div class="quando">Na sessão · 3ª hora</div><h3 class="disp">A campanha, no ar</h3><p>O especialista sobe com tu do lado e te mostra cada botão. Tu sai da sala com anúncio rodando.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O DIA E OS 3 MESES ============ -->
+<section class="section">
+  <div class="container">
+    <div class="head">
+      <div class="eyebrow">Depois do dia</div>
+      <h2 class="disp">Campanha que acerta de primeira é exceção.<br><span class="roxo">Por isso existem os três meses.</span></h2>
+      <p class="lede">Funcionou: aumenta a verba. Não funcionou: troca o caminho e roda de novo — <strong>ainda dentro dos três meses, sem custo a mais.</strong></p>
+    </div>
+    <div class="vidro reg">
+      <div class="top"><b>4 encontros presenciais</b><span>· <em>6 horas cara a cara</em> na unidade de <span class="cidade">{{CIDADE}}</span>, ao longo dos três meses</span></div>
+      <ol>
+        <li class="forte"><span class="pt">1</span><span class="h">a sessão · 3 horas</span><span class="n">Estratégia, máquina configurada e <b>a campanha no ar</b></span></li>
+        <li><span class="pt">2</span><span class="h">encontro 1 · 1 hora</span><span class="n">A leitura do que aconteceu, <b>com os teus números</b> e as conversas do WhatsApp</span></li>
+        <li><span class="pt">3</span><span class="h">encontro 2 · 1 hora</span><span class="n">O ajuste que faz <b>a estratégia acertar</b></span></li>
+        <li><span class="pt">4</span><span class="h">encontro 3 · 1 hora</span><span class="n">O fechamento, e <b>o plano dos próximos meses</b> escrito</span></li>
+      </ol>
+    </div>
+    <div class="vidro grupo">
+      <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.65-3.8a9 9 0 1 1 3.4 2.9L3 21"/></svg></div>
+      <p><strong style="color:var(--text)">E entre os encontros, um grupo com o time da escola.</strong> Chegou contato e tu travou na resposta? Manda a conversa ali. A gente te ajuda a responder, não só a captar — <strong style="color:var(--text)">lead mal respondido é verba de anúncio jogada fora.</strong></p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ QUEM CONDUZ ============ -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="quem">
+      <figure class="vidro quem-foto"><img src="{{IMG:guto}}" alt="Guto Wickert na unidade da escola"><figcaption>Guto, na unidade de Lajeado</figcaption></figure>
+      <div>
+        <div class="eyebrow">Quem senta contigo</div>
+        <h2 class="disp">Guto Wickert</h2>
+        <p>Dezesseis anos de empresa física antes do digital — vendeu uma, quebrou outra. É de lá que vem o jeito de olhar um negócio: <strong>pelo caixa, não pelo like.</strong> Nos últimos três anos levou isso pro digital com dinheiro do próprio bolso.</p>
+        <div class="nums">
+          <div class="vidro num"><b>+30</b><span>ofertas criadas, digitais e físicas</span></div>
+          <div class="vidro num"><b>+1.000</b><span>anúncios testados</span></div>
+          <div class="vidro num"><b>R$ 1,5 mi</b><span>investidos em anúncio nos próprios negócios</span></div>
+        </div>
+        <p><strong>Idealizador da escola Carreira no Digital</strong>, por onde passaram mais de 500 alunos no primeiro ano. Quem senta contigo não vive de prestar serviço pros outros: vive de tocar o marketing dos próprios negócios. <strong>As primeiras sessões do Deu Venda são conduzidas por ele.</strong></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PREÇO + SERVE ============ -->
+<section class="section" id="preco">
+  <div class="container">
+    <div class="head">
+      <div class="eyebrow">O investimento</div>
+      <h2 class="disp">Um preço,<br><span class="roxo">e ele cabe no mês.</span></h2>
+    </div>
+    <div class="oferta">
+      <div class="vidro vidro-blur price">
+        <span class="cond">Deu Venda · acompanhamento individual de 3 meses</span>
+        <span class="parc">10× R$ 299,70</span>
+        <span class="avista">no cartão, ou <b>R$ 2.797 à vista</b> · três meses de acompanhamento incluídos</span>
+        <ul>
+          <li>A sessão presencial e individual, de três horas, com um especialista</li>
+          <li>A tua máquina de captação configurada dentro do Claude</li>
+          <li>O padrão de arte e de site aprovado por ti, pra gerar à vontade</li>
+          <li>A campanha no ar na mesma sessão</li>
+          <li>Grupo com o time da escola durante três meses</li>
+          <li>Três encontros presenciais de uma hora</li>
+          <li>As aulas do Gerenciador de Anúncios, no automático e na mão</li>
+          <li class="out">A verba do anúncio é tua e vai direto pra Meta</li>
+        </ul>
+        <a class="btn btn-primary" href="#" data-cta style="width:100%">Quero uma conversa sobre o meu negócio</a>
+        <span class="btn-note">Curta, sem compromisso. A escola diz na hora se serve pra ti — e diz também quando não serve.</span>
+      </div>
+      <div class="serve">
+        <div class="vidro sim"><h3 class="disp">É pra ti se</h3><ul>
+          <li>Tu tem algo pra vender e quer usar a internet pra isso — loja, serviço, indústria ou profissional por conta</li>
+          <li>Tu consegue reservar três horas no começo, e uma hora por encontro depois</li>
+          <li>Tu quer entender o que está acontecendo, não só receber relatório</li>
+        </ul></div>
+        <div class="vidro nao"><h3 class="disp">Não é pra ti se</h3><ul>
+          <li>Tu quer alguém que faça tudo sem te chamar. Aqui se faz contigo</li>
+          <li>Tu ainda não sabe o que vende nem por quanto</li>
+          <li>Tu procura garantia de número de cliente. A escola não dá</li>
+          <li>Tu não tem nenhuma verba pra anúncio neste momento</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FAQ ============ -->
+<section class="section section-alt">
+  <div class="container">
+    <div class="head"><div class="eyebrow">Dúvidas</div><h2 class="disp">O que todo mundo <span class="roxo">pergunta.</span></h2></div>
+    <div class="faq">
+      <details><summary>Não sou da tecnologia. Vou conseguir?</summary><div class="a">Quem consegue salvar um arquivo no computador e usar o navegador consegue aplicar o plano. <strong>Tu não precisa ser de tecnologia, precisa ser de negócios</strong> — e disso tu entende mais do que qualquer professor daqui.</div></details>
+      <details><summary>Funciona pro meu ramo?</summary><div class="a">Funciona pra qualquer negócio, com uma condição: <strong>tu vai testar até achar o teu formato.</strong> Receita de bolo pronta não existe, e quem promete uma está vendendo o que não tem. O que a escola ensina é a testar até achar a tua lacuna, a tua oferta e o teu jeito de aparecer.</div></details>
+      <details><summary>Meu negócio é maior. Ainda serve?</summary><div class="a">Serve. A sessão é individual e a estratégia é montada em cima do que tu vende — <strong>muda o tamanho da verba e a complexidade da oferta, não o método.</strong> Quem tem equipe sai com a máquina montada e com quem opera ela já treinado.</div></details>
+      <details><summary>Já paguei agência e não deu em nada.</summary><div class="a">Acontece muito, e quase sempre pelo mesmo motivo: <strong>quem estava de fora não entendeu a essência do teu negócio.</strong> Aqui a estratégia sai de dentro, contigo na mesa. E se depois tu preferir ter uma agência, tudo bem — aí tu sabe o que pedir e como cobrar.</div></details>
+      <details><summary>E se não funcionar?</summary><div class="a">A gente troca o caminho e testa de novo, <strong>ainda dentro dos três meses.</strong> É pra isso que eles existem. O trabalho de verdade é o ajuste, e ele está incluído no preço.</div></details>
+      <details><summary>Depois dos três meses eu fico sozinho?</summary><div class="a">Tu fica <strong>com a máquina montada e sabendo usar ela</strong> — esse é o objetivo desde a primeira hora. Por isso a escola ensina o Gerenciador na mão além do automático, e por isso tu participa de cada decisão. No último encontro tu sai com o plano dos próximos meses escrito.</div></details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FINAL ============ -->
+<section class="final">
+  <div class="container">
+    <div class="vidro vidro-blur card">
+      <h2 class="disp">Marca <span class="roxo">uma conversa.</span></h2>
+      <p>Curta, sem compromisso. A escola olha o teu negócio e diz na hora se o Deu Venda serve pra ti — <strong>e diz também quando não serve.</strong></p>
+      <div class="vidro sede">
+        <div class="sede-img"><img src="{{IMG:sede}}" alt="Unidade da Carreira no Digital em {{CIDADE}}" loading="lazy"></div>
+        <div class="sede-body">
+          <span class="chip marca">Unidade sede</span>
+          <h3 class="disp">É aqui, em <span class="cidade">{{CIDADE}}</span></h3>
+          <p>As três horas acontecem nesta sala, só tu e o especialista — e os três encontros dos meses seguintes também.</p>
+          <div class="addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>{{ENDERECO}}</span></div>
+        </div>
+      </div>
+      <a class="btn btn-primary" href="#" data-cta>Falar com a escola</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <span class="chapa"><img src="{{IMG:logo}}" alt="Carreira no Digital"></span><br>
+    <strong>Carreira no Digital</strong> · unidades em Lajeado e Porto Alegre, RS<br>
+    Cursos livres de marketing digital para donos de negócio.
+  </div>
+</footer>
+
+<div class="fixa" id="fixa">
+  <div class="p"><b>10× R$ 299,70</b>3 meses de apoio incluídos</div>
+  <a class="btn btn-primary" href="#" data-cta>Falar com a escola</a>
+</div>
+
+<script>
+// tu pede → ela faz: cada pedido mostra a peça real que saiu da máquina
+(function(){
+  var P=[
+    {img:'{{IMG:arte}}', paisagem:false, txt:'<b>A arte do anúncio</b>, em cima das tuas fotos tiradas no celular — não é imagem de banco. Loja de roupa, em Lajeado.'},
+    {img:'{{IMG:outra}}', paisagem:false, txt:'<b>Mesma máquina, outro negócio</b> — aqui, uma construtora. A peça nasce no padrão que o dono aprovou, não no gosto de quem desenhou.'},
+    {img:'{{IMG:pedido}}', paisagem:true,  txt:'<b>Dez ideias novas, com a legenda pronta pra colar</b> — sem repetir nenhuma das que já estão no banco. Cada uma com o que fica na cabeça de quem vê.'},
+    {img:'{{IMG:pagina}}', paisagem:false, txt:'<b>A página pra onde o anúncio manda.</b> Essa saiu da máquina: o site da escola, no celular. Depois tu gera uma por oferta.'},
+    {img:'{{IMG:campanha}}', paisagem:true, txt:'<b>A campanha no ar, no Gerenciador de Anúncios</b>: objetivo, público, raio e verba no teu padrão. Aqui, R$ 10 por dia rodando em Lajeado.'},
+    {img:'{{IMG:leitura}}', paisagem:true, txt:'<b>Ela te explica o número em português</b>, não em métrica solta. Inclusive o “ainda não dá pra ler” — que é a parte que ninguém te diz.'},
+    {img:'{{IMG:painel}}', paisagem:true, txt:'<b>O painel de onde tu está</b>: o que já ficou pronto, o que falta e qual é a ação de hoje. Sem precisar lembrar de nada.'}
+  ];
+  var img=document.getElementById('resp-img'), txt=document.getElementById('resp-txt'), tabs=document.querySelectorAll('.pedido');
+  function mostrar(i){
+    tabs.forEach(function(t){t.setAttribute('aria-selected', String(t.dataset.i==i))});
+    img.src=P[i].img; img.className=P[i].paisagem?'paisagem':''; img.alt=P[i].txt.replace(/<[^>]+>/g,''); txt.innerHTML=P[i].txt;
+  }
+  tabs.forEach(function(t){ t.addEventListener('click',function(){ mostrar(+t.dataset.i); }); });
+  mostrar(0);
+  // barra fixa no celular: aparece depois que o hero sai da tela
+  var fixa=document.getElementById('fixa'), hero=document.querySelector('.hero');
+  if('IntersectionObserver' in window){
+    new IntersectionObserver(function(en){ fixa.classList.toggle('on', !en[0].isIntersecting); },{threshold:0}).observe(hero);
+  } else { fixa.classList.add('on'); }
+})();
+</script>
+
+<!-- === Tracking CRM (site_eventos + /wa) — padrão Carreira no Digital === -->
+<script>
+(function(){
+  var CRM='https://carreiranodigital.vercel.app';
+  var TRACK=CRM+'/api/track', WA=CRM+'/wa', CAMP='{{CAMP}}', TURMA='{{TURMA}}', CIDADE='{{CIDADE}}';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+  var vid,sid;
+  try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
+  try{sid=sessionStorage.getItem('cnd_sid');if(!sid){sid=uid();sessionStorage.setItem('cnd_sid',sid);}}catch(e){sid=uid();}
+  var qs=new URLSearchParams(location.search);
+  var fbclid=qs.get('fbclid');
+  try{if(fbclid){localStorage.setItem('cnd_fbclid',fbclid);}else{fbclid=localStorage.getItem('cnd_fbclid');}}catch(e){}
+  var utm={source:qs.get('utm_source')||'',medium:qs.get('utm_medium')||'',campaign:qs.get('utm_campaign')||CAMP,content:qs.get('utm_content')||''};
+  function track(evento,meta){
+    try{
+      var payload=JSON.stringify({visitor_id:vid,sessao_id:sid,evento:evento,url:location.href,referrer:document.referrer,
+        utm_source:utm.source,utm_medium:utm.medium,utm_campaign:utm.campaign,utm_content:utm.content,fbclid:fbclid,meta:meta||null});
+      if(navigator.sendBeacon){navigator.sendBeacon(TRACK,new Blob([payload],{type:'text/plain'}));}
+      else{fetch(TRACK,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}
+    }catch(e){}
+  }
+  track('page_view');
+  var hit={};
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement,max=(h.scrollHeight-h.clientHeight)||1,pct=(h.scrollTop||document.body.scrollTop)/max*100;
+    if(pct>=50&&!hit[50]){hit[50]=1;track('scroll_50');}
+    if(pct>=90&&!hit[90]){hit[90]=1;track('scroll_90');}
+  },{passive:true});
+  function cookie(n){try{var m=document.cookie.match('(^|;)\\s*'+n+'=([^;]*)');return m?decodeURIComponent(m[2]):null}catch(e){return null}}
+  function waLink(msg){
+    var ev=uid();
+    var p=new URLSearchParams();
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);p.set('turma',TURMA);
+    p.set('event_id',ev);
+    var _fbp=cookie('_fbp'); if(_fbp)p.set('fbp',_fbp);
+    var _fbc=cookie('_fbc'); if(_fbc)p.set('fbc',_fbc);
+    if(fbclid)p.set('fbclid',fbclid);
+    if(utm.source)p.set('utm_source',utm.source);
+    if(utm.medium)p.set('utm_medium',utm.medium);
+    p.set('utm_campaign',utm.campaign||CAMP);
+    if(utm.content)p.set('utm_content',utm.content);
+    return {url:WA+'?'+p.toString(), ev:ev};
+  }
+  function wire(){
+    var btns=document.querySelectorAll('a[data-cta]');
+    for(var i=0;i<btns.length;i++){
+      (function(b){
+        var t=(b.textContent||'').trim();
+        var msg=/neg[aoó]cio/i.test(t)?'Olá! Vim pela página do Deu Venda e quero falar sobre o meu negócio.':'Olá! Vim pela página do Deu Venda e quero falar com a escola.';
+        var l=waLink(msg);
+        b.setAttribute('href',l.url);
+        b.setAttribute('target','_blank');b.setAttribute('rel','noopener');
+        b.addEventListener('click',function(){
+          track('clique_wa',{botao:t.slice(0,40),event_id:l.ev});
+          try{if(window.fbq)fbq('track','Lead',{content_name:'Deu Venda',content_category:CIDADE},{eventID:l.ev});}catch(e){}
+        });
+      })(btns[i]);
+    }
+  }
+  if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',wire);}else{wire();}
+})();
+</script>
+</body>
+</html>
