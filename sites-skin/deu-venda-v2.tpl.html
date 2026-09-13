@@ -105,7 +105,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
 .pulse{width:7px;height:7px;border-radius:50%;background:var(--green)}
-/* o cartão de resumo do hero: o que é, quanto custa, pra quem */
+/* o vídeo do hero */
+.video-wrap{padding:8px;overflow:hidden}
+.video-wrap video{display:block;width:100%;aspect-ratio:16/9;border-radius:12px;background:#0a0712;object-fit:cover}
+.video-rot{display:flex;align-items:center;gap:8px;padding:10px 8px 4px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
+/* o cartão de resumo do hero (não usado no momento) */
 .resumo{padding:22px 22px 20px;display:grid;gap:14px}
 .resumo .preco{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;letter-spacing:-.03em;font-size:2.4rem;line-height:1;font-variant-numeric:tabular-nums;
   text-shadow:1px 1px 0 var(--accent),2px 2px 0 var(--accent),0 10px 22px rgba(0,0,0,.26)}
@@ -124,6 +128,24 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .ponte{margin-top:26px;padding:22px 26px;border-left:3px solid var(--accent);font-size:clamp(1.15rem,2.2vw,1.45rem);line-height:1.35;color:var(--text)}
 .ponte em{font-style:normal;color:var(--accent-soft)}
 .ponte small{display:block;margin-top:10px;font:400 14.5px/1.6 'Manrope',sans-serif;color:var(--text-2)}
+
+/* ===== o que tu leva: 3 pilares, a estratégia maior ===== */
+.pilares{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pilar{padding:26px 26px 24px;position:relative}
+.pilar.grande{grid-column:1/-1;padding:30px 30px 28px;border-color:rgba(139,92,246,.45);background:linear-gradient(160deg,rgba(139,92,246,.18),rgba(255,255,255,.03))}
+.pilar-top{display:flex;gap:20px;align-items:flex-start}
+.pilar-n{display:flex;align-items:center;justify-content:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--surface-2);border:1px solid var(--border-strong);color:var(--text-2);font:800 16px 'Manrope',sans-serif;margin-bottom:14px}
+.pilar.grande .pilar-n{background:var(--grad);border-color:transparent;color:#fff;box-shadow:0 3px 0 var(--grad-escuro)}
+.pilar-rot{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--accent-soft);margin-bottom:8px}
+.pilar h3{font-size:1.5rem;margin-bottom:10px}
+.pilar.grande h3{font-size:clamp(1.6rem,3vw,2.2rem);text-shadow:1px 1px 0 var(--accent-bg),2px 2px 0 var(--accent-bg),0 8px 16px rgba(0,0,0,.18)}
+.pilar-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:22px}
+.pilar-grid>div{padding:16px 18px;border-radius:12px;background:var(--glass-field);border:1px solid var(--glass-border)}
+.pilar-grid b{display:block;font-size:15px;margin-bottom:4px}
+.pilar-grid span{font-size:13.5px;color:var(--text-muted);line-height:1.5}
+.pilar-link{display:inline-block;margin-top:14px;font-size:14px;font-weight:700;color:var(--accent-soft)}
+.pilar-link:hover{color:var(--text)}
+@media (max-width:980px){.pilares{grid-template-columns:1fr}.pilar-grid{grid-template-columns:1fr}.pilar-top{flex-direction:column;gap:6px}}
 
 /* ===== a máquina, visual ===== */
 .tela{position:relative;border-radius:16px;overflow:visible;background:var(--glass);border:1px solid var(--glass-border);box-shadow:inset 0 1px 0 var(--glass-hi),var(--glass-shadow)}
@@ -308,7 +330,7 @@ footer strong{color:var(--text-2)}
   <div class="nav-inner">
     <a href="https://carreiranodigital.com" class="chapa" aria-label="Ir para a página inicial da Carreira no Digital"><img src="{{IMG:logo}}" alt="Carreira no Digital"></a>
     <div style="display:flex;align-items:center;gap:10px">
-      <span class="nav-preco">10× <b>R$ 299,70</b> · 3 meses incluídos</span>
+      <a class="nav-preco" href="#preco" style="cursor:pointer">Ver o investimento</a>
       <a class="btn btn-primary" href="#" data-cta style="padding:10px 16px;font-size:14px">Falar com a escola</a>
     </div>
   </div>
@@ -326,24 +348,17 @@ footer strong{color:var(--text-2)}
           <span class="chip bom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Presencial em <span class="cidade">{{CIDADE}}</span></span>
         </div>
         <h1 class="disp">3 horas pra rodar a primeira campanha.<br><span class="grad">3 meses de apoio até funcionar.</span></h1>
-        <p class="hero-sub">Só tu e um especialista da escola, numa sessão. <strong>A tua máquina de captação com IA sai configurada com o teu negócio dentro, e a campanha entra no ar antes de tu sair da sala.</strong> Depois, três meses de acompanhamento até a estratégia acertar.</p>
+        <p class="hero-sub">Só tu e um especialista da escola, numa sessão. <strong>Primeiro a estratégia, decidida contigo pro teu negócio.</strong> Depois ela entra numa máquina de IA que monta as peças e sobe a campanha antes de tu sair da sala. E três meses de acompanhamento até acertar.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary" href="#" data-cta>Quero uma conversa sobre o meu negócio</a>
-          <a class="btn btn-secondary" href="#maquina">Ver o que fica montado</a>
+          <a class="btn btn-secondary" href="#leva">Ver o que tu leva</a>
         </div>
       </div>
-      <aside class="vidro vidro-blur resumo" aria-label="Resumo do Deu Venda">
-        <div>
-          <div class="rot">O investimento</div>
-          <div class="preco">10× R$ 299,70<small>ou R$ 2.797 à vista · os três meses de apoio estão incluídos</small></div>
-        </div>
-        <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>1 pra 1, presencial.</b> Três horas só sobre o teu negócio</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>Campanha no ar no mesmo dia</b>, com tu vendo cada botão</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>4 encontros e grupo no WhatsApp</b> ao longo de três meses</span></li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina continua tua</b> depois. Ela gera o que tu pedir</span></li>
-        </ul>
-        <div class="rot" style="color:var(--text-faint)">Conduzido por Guto Wickert · idealizador da escola, 500+ alunos no primeiro ano</div>
+      <aside class="vidro vidro-blur video-wrap" aria-label="Como funciona o Deu Venda, em 60 segundos">
+        <video autoplay muted loop playsinline preload="metadata" poster="deu-venda-hero-poster.jpg" aria-label="Deu Venda em 60 segundos: a estratégia, a máquina e os três meses">
+          <source src="deu-venda-hero.mp4" type="video/mp4">
+        </video>
+        <div class="video-rot"><span class="pulse"></span>Como funciona, em 60 segundos</div>
       </aside>
     </div>
   </div>
@@ -363,18 +378,60 @@ footer strong{color:var(--text-2)}
       <div class="vidro frase"><h3 class="disp">“Não entendo disso, qualquer um me enrola”</h3><p>Sem entender, tu não consegue cobrar quem trabalha pra ti nem saber pra onde o dinheiro foi.</p></div>
     </div>
     <div class="vidro ponte">
-      <p>Depois de quinhentos alunos, o padrão se repete: <em>quem tentou e não deu certo copiou o concorrente</em> e nunca parou pra olhar pra dentro.</p>
-      <small>A IA planeja tudo o que tu pedir. <strong>O que ela não faz é decidir.</strong> Por isso a sessão é com gente, um a um: pra achar a tua estratégia — e só depois montar a máquina em cima dela.</small>
+      <p>A IA planeja tudo o que tu pedir. <em>O que ela não faz é decidir.</em></p>
+      <small>Por isso a sessão é com gente, um a um: primeiro se acha a tua estratégia — e só depois se monta a máquina em cima dela.</small>
+    </div>
+  </div>
+</section>
+
+<!-- ============ O QUE TU LEVA ============ -->
+<section class="section section-alt" id="leva">
+  <div class="container">
+    <div class="head">
+      <div class="eyebrow">O que tu leva</div>
+      <h2 class="disp">Três coisas.<br><span class="roxo">E a primeira é a que vale mais.</span></h2>
+      <p class="lede">A máquina chama atenção — mas ela só faz o que a estratégia mandar. Por isso a sessão começa por gente, não por ferramenta.</p>
+    </div>
+    <div class="pilares">
+      <div class="vidro pilar grande">
+        <div class="pilar-top">
+          <span class="pilar-n">1</span>
+          <div>
+            <div class="pilar-rot">A estratégia · decidida contigo, um a um</div>
+            <h3 class="disp">O que nenhuma ferramenta descobre sozinha.</h3>
+            <p class="txt">Depois de quinhentos alunos, o padrão se repete: quem tentou e não deu certo <strong>copiou o concorrente</strong> e nunca parou pra olhar pra dentro. A primeira hora da sessão é só isso — olhar pra dentro, com alguém que vive de tocar o próprio marketing.</p>
+          </div>
+        </div>
+        <div class="pilar-grid">
+          <div><b>O que tu faz diferente</b><span>E ninguém está dizendo. Isso é conversa.</span></div>
+          <div><b>A lacuna do mercado</b><span>O ângulo que os teus concorrentes não estão pegando.</span></div>
+          <div><b>A oferta e o público</b><span>Por onde começar, pra quem falar e o que prometer.</span></div>
+        </div>
+      </div>
+      <div class="vidro pilar">
+        <span class="pilar-n">2</span>
+        <div class="pilar-rot">A máquina · executa a estratégia</div>
+        <h3 class="disp">Configurada com o teu negócio dentro.</h3>
+        <p class="txt">Contexto, estratégia e padrão da marca entram nela. Daí tu pede em português — a arte, o carrossel, a página, a campanha — e ela faz, sempre no padrão que tu aprovou. <strong>Continua tua depois dos três meses.</strong></p>
+        <a class="pilar-link" href="#maquina">Ver a máquina funcionando ↓</a>
+      </div>
+      <div class="vidro pilar">
+        <span class="pilar-n">3</span>
+        <div class="pilar-rot">O acompanhamento · três meses</div>
+        <h3 class="disp">Até a estratégia acertar.</h3>
+        <p class="txt">Campanha que acerta de primeira é exceção. <strong>Quatro encontros presenciais</strong> e um grupo com o time da escola: a gente lê o teu número, ajusta o caminho e te ajuda a responder quem chegou.</p>
+        <a class="pilar-link" href="#depois">Ver os encontros ↓</a>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- ============ A MÁQUINA ============ -->
-<section class="section section-alt" id="maquina">
+<section class="section" id="maquina">
   <div class="container">
     <div class="head">
-      <div class="eyebrow">O que fica montado</div>
-      <h2 class="disp">A tua máquina de captação,<br><span class="roxo">com o teu negócio dentro.</span></h2>
+      <div class="eyebrow">A máquina, de perto</div>
+      <h2 class="disp">A estratégia entra aqui.<br><span class="roxo">Daí tu pede, e ela faz.</span></h2>
       <p class="lede">Não é um curso que termina e te deixa com anotações. Tu sai da sala com <strong>uma máquina configurada dentro do Claude</strong> — e ela continua tua depois, gerando o que tu pedir, sempre no padrão que tu aprovou.</p>
     </div>
 
@@ -426,7 +483,7 @@ footer strong{color:var(--text-2)}
 </section>
 
 <!-- ============ O DIA E OS 3 MESES ============ -->
-<section class="section">
+<section class="section section-alt" id="depois">
   <div class="container">
     <div class="head">
       <div class="eyebrow">Depois do dia</div>
@@ -450,7 +507,7 @@ footer strong{color:var(--text-2)}
 </section>
 
 <!-- ============ QUEM CONDUZ ============ -->
-<section class="section section-alt">
+<section class="section">
   <div class="container">
     <div class="quem">
       <figure class="vidro quem-foto"><img src="{{IMG:guto}}" alt="Guto Wickert na unidade da escola"><figcaption>Guto, na unidade de Lajeado</figcaption></figure>
@@ -470,7 +527,7 @@ footer strong{color:var(--text-2)}
 </section>
 
 <!-- ============ PREÇO + SERVE ============ -->
-<section class="section" id="preco">
+<section class="section section-alt" id="preco">
   <div class="container">
     <div class="head">
       <div class="eyebrow">O investimento</div>
@@ -512,7 +569,7 @@ footer strong{color:var(--text-2)}
 </section>
 
 <!-- ============ FAQ ============ -->
-<section class="section section-alt">
+<section class="section">
   <div class="container">
     <div class="head"><div class="eyebrow">Dúvidas</div><h2 class="disp">O que todo mundo <span class="roxo">pergunta.</span></h2></div>
     <div class="faq">
@@ -555,7 +612,7 @@ footer strong{color:var(--text-2)}
 </footer>
 
 <div class="fixa" id="fixa">
-  <div class="p"><b>10× R$ 299,70</b>3 meses de apoio incluídos</div>
+  <div class="p"><b>Deu Venda</b>3 horas + 3 meses de apoio</div>
   <a class="btn btn-primary" href="#" data-cta>Falar com a escola</a>
 </div>
 
