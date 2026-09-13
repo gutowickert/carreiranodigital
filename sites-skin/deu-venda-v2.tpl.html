@@ -96,7 +96,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 52%;opacity:.85}
 .hero-overlay{position:absolute;inset:0;background:linear-gradient(100deg,rgba(15,12,23,.93) 0%,rgba(15,12,23,.84) 40%,rgba(42,27,77,.55) 65%,rgba(15,12,23,.78) 100%)}
 .hero .container{position:relative;z-index:1}
-.hero-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center}
+.hero-grid{display:grid;grid-template-columns:minmax(0,760px);gap:48px;align-items:center;justify-content:start}
 .hero h1{font-weight:800;font-variation-settings:'opsz' 96,'wdth' 88;letter-spacing:-.035em;line-height:.98;font-size:clamp(2.3rem,5.2vw,4.3rem);margin:18px 0 20px;
   text-shadow:1px 1px 0 var(--accent-bg),2px 2px 0 var(--accent-bg),0 8px 16px rgba(0,0,0,.18)}
 .hero h1 .grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
@@ -182,6 +182,16 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .resposta .diz .bolha b{color:var(--text)}
 .resposta .selo{flex:none}
 .dica{display:none;font-size:12px;color:var(--text-faint);text-align:center;margin-top:8px}
+/* no celular vira carrossel: setas + contador em cima, pontos embaixo, cartão seguinte aparecendo */
+.pede-nav{display:none;align-items:center;justify-content:space-between;gap:10px;margin-bottom:4px}
+.pede-seta{width:40px;height:40px;border-radius:999px;background:var(--glass-field);border:1px solid var(--border-strong);color:var(--text);display:flex;align-items:center;justify-content:center;flex:none}
+.pede-seta svg{width:18px;height:18px}
+.pede-seta:active{background:var(--accent-bg);border-color:var(--accent)}
+.pede-conta{font-size:13px;color:var(--text-muted)}
+.pede-conta b{color:var(--text);font-size:15px}
+.pontos{display:none;gap:6px;justify-content:center;padding-top:2px}
+.pontos i{width:7px;height:7px;border-radius:50%;background:var(--border-strong);transition:width .15s,background .15s}
+.pontos i.on{width:20px;border-radius:4px;background:var(--accent)}
 
 /* o que fica montado: 3 passos */
 .passos{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:44px}
@@ -288,11 +298,14 @@ footer strong{color:var(--text-2)}
   .hero-grid{grid-template-columns:1fr;gap:26px}
   .grid3,.legenda,.passos,.nums{grid-template-columns:1fr 1fr}
   .pede{grid-template-columns:1fr}
-  .pedidos{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none}
+  .pede-nav{display:flex}
+  .pedidos{display:flex;gap:8px;overflow-x:auto;padding:2px 0 6px;scrollbar-width:none;scroll-snap-type:x mandatory;scroll-padding:0 16px}
   .pedidos::-webkit-scrollbar{display:none}
-  .pedido{flex:0 0 auto;max-width:260px}
+  .pedido{flex:0 0 76%;max-width:none;scroll-snap-align:start}
   .pedido .seta{display:none}
+  .pontos{display:flex}
   .dica{display:block}
+  .resposta .quadro{touch-action:pan-y}
   .oferta{grid-template-columns:1fr}
   .oferta>*,.hero-grid>*,.pede>*{min-width:0}
   .btn{white-space:normal;text-align:center}
@@ -354,12 +367,6 @@ footer strong{color:var(--text-2)}
           <a class="btn btn-secondary" href="#leva">Ver o que tu leva</a>
         </div>
       </div>
-      <aside class="vidro vidro-blur video-wrap" aria-label="Como funciona o Deu Venda, em 60 segundos">
-        <video autoplay muted loop playsinline preload="metadata" poster="deu-venda-hero-poster.jpg" aria-label="Deu Venda em 60 segundos: a estratégia, a máquina e os três meses">
-          <source src="deu-venda-hero.mp4" type="video/mp4">
-        </video>
-        <div class="video-rot"><span class="pulse"></span>Como funciona, em 60 segundos</div>
-      </aside>
     </div>
   </div>
 </header>
@@ -457,6 +464,11 @@ footer strong{color:var(--text-2)}
       <p class="lede">Peças reais, de negócios reais que passaram pela escola. Em cima das fotos do próprio negócio, tiradas no celular — nunca imagem inventada por IA.</p>
     </div>
     <div class="pede">
+      <div class="pede-nav" aria-hidden="false">
+        <button type="button" class="pede-seta" id="pede-ant" aria-label="pedido anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <span class="pede-conta"><b id="pede-n">1</b> de 7 pedidos</span>
+        <button type="button" class="pede-seta" id="pede-prox" aria-label="próximo pedido"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
       <div class="pedidos" role="tablist" aria-label="Pedidos à máquina" id="pedidos">
         <button class="pedido" role="tab" aria-selected="true" data-i="0"><span class="n">1</span><span>“Faz a arte do anúncio com a minha foto”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
         <button class="pedido" role="tab" aria-selected="false" data-i="1"><span class="n">2</span><span>“Agora uma peça pra outro negócio, no padrão dele”</span><svg class="seta" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
@@ -469,9 +481,10 @@ footer strong{color:var(--text-2)}
       <div class="vidro resposta" role="tabpanel" id="resposta">
         <div class="quadro"><img id="resp-img" src="{{IMG:arte}}" alt=""></div>
         <div class="diz"><span class="chip marca selo">ela faz</span><p class="bolha" id="resp-txt"></p></div>
+        <div class="pontos" id="pontos" aria-hidden="true"></div>
       </div>
     </div>
-    <p class="dica">arrasta os pedidos pro lado</p>
+    <p class="dica">arrasta a imagem pro lado, ou usa as setas</p>
 
     <!-- os 3 passos do dia -->
     <div class="passos">
@@ -629,11 +642,27 @@ footer strong{color:var(--text-2)}
     {img:'{{IMG:painel}}', paisagem:true, txt:'<b>O painel de onde tu está</b>: o que já ficou pronto, o que falta e qual é a ação de hoje. Sem precisar lembrar de nada.'}
   ];
   var img=document.getElementById('resp-img'), txt=document.getElementById('resp-txt'), tabs=document.querySelectorAll('.pedido');
-  function mostrar(i){
-    tabs.forEach(function(t){t.setAttribute('aria-selected', String(t.dataset.i==i))});
-    img.src=P[i].img; img.className=P[i].paisagem?'paisagem':''; img.alt=P[i].txt.replace(/<[^>]+>/g,''); txt.innerHTML=P[i].txt;
+  var pontos=document.getElementById('pontos'), conta=document.getElementById('pede-n'), atual=0;
+  P.forEach(function(){ pontos.appendChild(document.createElement('i')); });
+  function mostrar(i, rolar){
+    atual=(i+P.length)%P.length;
+    tabs.forEach(function(t){t.setAttribute('aria-selected', String(t.dataset.i==atual))});
+    img.src=P[atual].img; img.className=P[atual].paisagem?'paisagem':''; img.alt=P[atual].txt.replace(/<[^>]+>/g,''); txt.innerHTML=P[atual].txt;
+    conta.textContent=atual+1;
+    pontos.querySelectorAll('i').forEach(function(p,k){ p.className=k===atual?'on':''; });
+    // no celular, traz o cartão do pedido pra vista (os cartões rolam pro lado)
+    if(rolar){ var t=tabs[atual]; if(t && t.scrollIntoView) t.scrollIntoView({block:'nearest',inline:'start',behavior:'smooth'}); }
   }
-  tabs.forEach(function(t){ t.addEventListener('click',function(){ mostrar(+t.dataset.i); }); });
+  tabs.forEach(function(t){ t.addEventListener('click',function(){ mostrar(+t.dataset.i, true); }); });
+  document.getElementById('pede-ant').addEventListener('click',function(){ mostrar(atual-1, true); });
+  document.getElementById('pede-prox').addEventListener('click',function(){ mostrar(atual+1, true); });
+  // arrastar a imagem pro lado também troca o pedido
+  var quadro=document.querySelector('.resposta .quadro'), x0=null;
+  quadro.addEventListener('touchstart',function(e){ x0=e.touches[0].clientX; },{passive:true});
+  quadro.addEventListener('touchend',function(e){
+    if(x0==null) return; var dx=e.changedTouches[0].clientX-x0; x0=null;
+    if(Math.abs(dx)>40) mostrar(atual+(dx<0?1:-1), true);
+  },{passive:true});
   mostrar(0);
   // barra fixa no celular: aparece depois que o hero sai da tela
   var fixa=document.getElementById('fixa'), hero=document.querySelector('.hero');
