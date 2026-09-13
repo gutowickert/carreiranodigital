@@ -1,5 +1,5 @@
 // Monta public/deu-venda-v2.html (e a versão de POA) a partir do modelo
-// deu-venda-v2.tpl.html, puxando as imagens embutidas das páginas atuais — a
+// deu-venda-v2.tpl.html, puxando as imagens embutidas das páginas atuais, a
 // fonte das fotos continua sendo deu-venda.html / deu-venda-poa.html (e a home,
 // pra foto da turma do hero).
 //   node sites-skin/build-v2.js
@@ -10,12 +10,12 @@ const tpl = fs.readFileSync(path.join(__dirname, 'deu-venda-v2.tpl.html'), 'utf8
 
 const VERSOES = [
   { fonte: 'deu-venda.html', saida: 'deu-venda-v2.html', CIDADE: 'Lajeado', CAMP: 'deu-venda-v2', TURMA: 'deuvendalajeado',
-    ENDERECO: 'Rua Alberto Torres, 526 — Centro, Lajeado/RS' },
+    ENDERECO: 'Rua Alberto Torres, 526, Centro, Lajeado/RS' },
   { fonte: 'deu-venda-poa.html', saida: 'deu-venda-poa-v2.html', CIDADE: 'Porto Alegre', CAMP: 'deu-venda-porto-alegre-v2', TURMA: 'deuvendaportoalegre',
-    ENDERECO: 'Av. Carlos Gomes, 1340 — Sala 904, Três Figueiras, Porto Alegre/RS' },
+    ENDERECO: 'Av. Carlos Gomes, 1340, Sala 904, Três Figueiras, Porto Alegre/RS' },
 ]
 
-// as imagens são achadas pelo alt — a ordem muda entre Lajeado e POA
+// as imagens são achadas pelo alt, a ordem muda entre Lajeado e POA
 const ALT = {
   logo: /^Carreira no Digital$/, maquina: /^A máquina de captação/, arte: /^A arte do anúncio/, outra: /^Outra marca/,
   pagina: /^E a página/, pedido: /^Um pedido feito/, campanha: /^A campanha no Gerenciador/, leitura: /^A leitura da campanha/,
