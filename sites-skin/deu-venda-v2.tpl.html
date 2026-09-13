@@ -10,10 +10,10 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',conte
 <noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Deu Venda — a tua máquina de captação montada em 3 horas</title>
-<meta name="description" content="Deu Venda: em 3 horas, um a um, a tua máquina de captação fica configurada e a primeira campanha entra no ar. Depois, 3 meses de apoio até funcionar. Carreira no Digital, {{CIDADE}}.">
+<title>Deu Venda — o marketing do teu negócio montado contigo, e no ar no mesmo dia</title>
+<meta name="description" content="Deu Venda: um especialista da escola senta contigo por um turno, decide a estratégia, configura a tua máquina de IA e coloca a primeira campanha no ar. Depois, 3 meses de acompanhamento até acertar. Carreira no Digital, {{CIDADE}}.">
 <meta property="og:title" content="Deu Venda">
-<meta property="og:description" content="3 horas pra rodar a primeira campanha. 3 meses de apoio individual até fazer funcionar.">
+<meta property="og:description" content="O marketing do teu negócio, montado contigo e no ar no mesmo dia. Depois, 3 meses de acompanhamento até acertar.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -93,8 +93,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 /* ===== hero ===== */
 .hero{position:relative;overflow:hidden;padding:150px 0 80px;min-height:92vh;display:flex;align-items:center}
 .hero-bg{position:absolute;inset:0;z-index:0}
-.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 52%;opacity:.85}
-.hero-overlay{position:absolute;inset:0;background:linear-gradient(100deg,rgba(15,12,23,.93) 0%,rgba(15,12,23,.84) 40%,rgba(42,27,77,.55) 65%,rgba(15,12,23,.78) 100%)}
+.hero-bg img{width:100%;height:100%;object-fit:cover;object-position:center 30%;opacity:.9}
+.hero-overlay{position:absolute;inset:0;background:linear-gradient(100deg,rgba(15,12,23,.95) 0%,rgba(15,12,23,.88) 42%,rgba(42,27,77,.5) 70%,rgba(15,12,23,.6) 100%)}
 .hero .container{position:relative;z-index:1}
 .hero-grid{display:grid;grid-template-columns:minmax(0,760px);gap:48px;align-items:center;justify-content:start}
 .hero h1{font-weight:800;font-variation-settings:'opsz' 96,'wdth' 88;letter-spacing:-.035em;line-height:.98;font-size:clamp(2.3rem,5.2vw,4.3rem);margin:18px 0 20px;
@@ -104,6 +104,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .hero-sub strong{color:var(--text)}
 .hero-ctas{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
 .hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:0}
+.hero-fatos{list-style:none;display:flex;gap:8px 22px;flex-wrap:wrap;margin-top:26px}
+.hero-fatos li{position:relative;padding-left:20px;font-size:14px;font-weight:600;color:var(--text-2)}
+.hero-fatos li::before{content:"";position:absolute;left:0;top:7px;width:9px;height:9px;border-radius:50%;background:var(--green)}
 .pulse{width:7px;height:7px;border-radius:50%;background:var(--green)}
 /* o vídeo do hero */
 .video-wrap{padding:8px;overflow:hidden}
@@ -315,6 +318,9 @@ footer strong{color:var(--text-2)}
 @media (max-width:720px){
   .section{padding:64px 0}
   .hero{padding:110px 0 60px;min-height:auto}
+  /* no celular o texto ocupa a largura toda: a foto fica só no alto e o resto escurece pra dar leitura */
+  .hero-bg img{object-position:center top}
+  .hero-overlay{background:linear-gradient(180deg,rgba(15,12,23,.45) 0,rgba(15,12,23,.9) 32%,rgba(15,12,23,.96) 100%)}
   .hero h1{font-size:clamp(2rem,9vw,2.6rem)}
   .hero-sub{font-size:16px}
   .hero-ctas .btn{width:100%}
@@ -351,21 +357,26 @@ footer strong{color:var(--text-2)}
 
 <!-- ============ HERO ============ -->
 <header class="hero">
-  <div class="hero-bg"><img src="{{IMG:hero}}" alt=""></div>
+  <div class="hero-bg"><img src="{{IMG:turma}}" alt=""></div>
   <div class="hero-overlay"></div>
   <div class="container">
     <div class="hero-grid">
       <div>
         <div class="hero-chips">
-          <span class="chip marca"><span class="pulse"></span>Deu Venda · implementação individual</span>
+          <span class="chip marca"><span class="pulse"></span>Deu Venda · Carreira no Digital</span>
           <span class="chip bom"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 1 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>Presencial em <span class="cidade">{{CIDADE}}</span></span>
         </div>
-        <h1 class="disp">3 horas pra rodar a primeira campanha.<br><span class="grad">3 meses de apoio até funcionar.</span></h1>
-        <p class="hero-sub">Só tu e um especialista da escola, numa sessão. <strong>Primeiro a estratégia, decidida contigo pro teu negócio.</strong> Depois ela entra numa máquina de IA que monta as peças e sobe a campanha antes de tu sair da sala. E três meses de acompanhamento até acertar.</p>
+        <h1 class="disp">O marketing do teu negócio, montado contigo — <span class="grad">e no ar no mesmo dia.</span></h1>
+        <p class="hero-sub">Um especialista da escola senta com tu — só tu — por uma manhã ou uma tarde inteira. <strong>Primeiro decide a estratégia do teu negócio.</strong> Depois configura uma máquina de IA com o teu negócio dentro e coloca a primeira campanha pra rodar antes de tu sair da sala. E segue contigo por três meses, até acertar.</p>
         <div class="hero-ctas">
           <a class="btn btn-primary" href="#" data-cta>Quero uma conversa sobre o meu negócio</a>
           <a class="btn btn-secondary" href="#leva">Ver o que tu leva</a>
         </div>
+        <ul class="hero-fatos">
+          <li>Presencial e individual: só tu e o especialista</li>
+          <li>Campanha no ar no mesmo dia</li>
+          <li>Três meses de acompanhamento</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -406,7 +417,7 @@ footer strong{color:var(--text-2)}
           <div>
             <div class="pilar-rot">A estratégia · decidida contigo, um a um</div>
             <h3 class="disp">O que nenhuma ferramenta descobre sozinha.</h3>
-            <p class="txt">Depois de quinhentos alunos, o padrão se repete: quem tentou e não deu certo <strong>copiou o concorrente</strong> e nunca parou pra olhar pra dentro. A primeira hora da sessão é só isso — olhar pra dentro, com alguém que vive de tocar o próprio marketing.</p>
+            <p class="txt">Depois de quinhentos alunos, o padrão se repete: quem tentou e não deu certo <strong>copiou o concorrente</strong> e nunca parou pra olhar pra dentro. A primeira parte da sessão é só isso — olhar pra dentro, com alguém que vive de tocar o próprio marketing.</p>
           </div>
         </div>
         <div class="pilar-grid">
@@ -488,9 +499,9 @@ footer strong{color:var(--text-2)}
 
     <!-- os 3 passos do dia -->
     <div class="passos">
-      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></div><div class="quando">Na sessão · 1ª hora</div><h3 class="disp">A estratégia, decidida contigo</h3><p>O que tu faz diferente e ninguém está dizendo. Essa parte é conversa — e é o que nenhum programa descobre sozinho.</p></div>
-      <div class="vidro passo forte"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="quando">Na sessão · 2ª hora</div><h3 class="disp">A máquina, configurada</h3><p>O teu negócio, a tua marca e o teu padrão de peça entram nela. Tu aprova as primeiras artes ali, na tela.</p></div>
-      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M14 4h6v6"/></svg></div><div class="quando">Na sessão · 3ª hora</div><h3 class="disp">A campanha, no ar</h3><p>O especialista sobe com tu do lado e te mostra cada botão. Tu sai da sala com anúncio rodando.</p></div>
+      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2"/></svg></div><div class="quando">Na sessão · primeiro</div><h3 class="disp">A estratégia, decidida contigo</h3><p>O que tu faz diferente e ninguém está dizendo. Essa parte é conversa — e é o que nenhum programa descobre sozinho.</p></div>
+      <div class="vidro passo forte"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg></div><div class="quando">Na sessão · depois</div><h3 class="disp">A máquina, configurada</h3><p>O teu negócio, a tua marca e o teu padrão de peça entram nela. Tu aprova as primeiras artes ali, na tela.</p></div>
+      <div class="vidro passo"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20 20 4M14 4h6v6"/></svg></div><div class="quando">Na sessão · antes de tu sair</div><h3 class="disp">A campanha, no ar</h3><p>O especialista sobe com tu do lado e te mostra cada botão. Tu sai da sala com anúncio rodando.</p></div>
     </div>
   </div>
 </section>
@@ -504,12 +515,12 @@ footer strong{color:var(--text-2)}
       <p class="lede">Funcionou: aumenta a verba. Não funcionou: troca o caminho e roda de novo — <strong>ainda dentro dos três meses, sem custo a mais.</strong></p>
     </div>
     <div class="vidro reg">
-      <div class="top"><b>4 encontros presenciais</b><span>· <em>6 horas cara a cara</em> na unidade de <span class="cidade">{{CIDADE}}</span>, ao longo dos três meses</span></div>
+      <div class="top"><b>4 encontros presenciais</b><span>· <em>cara a cara</em>, na unidade de <span class="cidade">{{CIDADE}}</span>, ao longo dos três meses</span></div>
       <ol>
-        <li class="forte"><span class="pt">1</span><span class="h">a sessão · 3 horas</span><span class="n">Estratégia, máquina configurada e <b>a campanha no ar</b></span></li>
-        <li><span class="pt">2</span><span class="h">encontro 1 · 1 hora</span><span class="n">A leitura do que aconteceu, <b>com os teus números</b> e as conversas do WhatsApp</span></li>
-        <li><span class="pt">3</span><span class="h">encontro 2 · 1 hora</span><span class="n">O ajuste que faz <b>a estratégia acertar</b></span></li>
-        <li><span class="pt">4</span><span class="h">encontro 3 · 1 hora</span><span class="n">O fechamento, e <b>o plano dos próximos meses</b> escrito</span></li>
+        <li class="forte"><span class="pt">1</span><span class="h">a sessão · um turno</span><span class="n">Estratégia, máquina configurada e <b>a campanha no ar</b></span></li>
+        <li><span class="pt">2</span><span class="h">encontro 1</span><span class="n">A leitura do que aconteceu, <b>com os teus números</b> e as conversas do WhatsApp</span></li>
+        <li><span class="pt">3</span><span class="h">encontro 2</span><span class="n">O ajuste que faz <b>a estratégia acertar</b></span></li>
+        <li><span class="pt">4</span><span class="h">encontro 3</span><span class="n">O fechamento, e <b>o plano dos próximos meses</b> escrito</span></li>
       </ol>
     </div>
     <div class="vidro grupo">
@@ -552,12 +563,12 @@ footer strong{color:var(--text-2)}
         <span class="parc">10× R$ 299,70</span>
         <span class="avista">no cartão, ou <b>R$ 2.797 à vista</b> · três meses de acompanhamento incluídos</span>
         <ul>
-          <li>A sessão presencial e individual, de três horas, com um especialista</li>
+          <li>A sessão presencial e individual, de um turno inteiro, com um especialista</li>
           <li>A tua máquina de captação configurada dentro do Claude</li>
           <li>O padrão de arte e de site aprovado por ti, pra gerar à vontade</li>
           <li>A campanha no ar na mesma sessão</li>
           <li>Grupo com o time da escola durante três meses</li>
-          <li>Três encontros presenciais de uma hora</li>
+          <li>Três encontros presenciais de acompanhamento</li>
           <li>As aulas do Gerenciador de Anúncios, no automático e na mão</li>
           <li class="out">A verba do anúncio é tua e vai direto pra Meta</li>
         </ul>
@@ -567,7 +578,7 @@ footer strong{color:var(--text-2)}
       <div class="serve">
         <div class="vidro sim"><h3 class="disp">É pra ti se</h3><ul>
           <li>Tu tem algo pra vender e quer usar a internet pra isso — loja, serviço, indústria ou profissional por conta</li>
-          <li>Tu consegue reservar três horas no começo, e uma hora por encontro depois</li>
+          <li>Tu consegue reservar uma manhã ou uma tarde no começo, e um encontro por mês depois</li>
           <li>Tu quer entender o que está acontecendo, não só receber relatório</li>
         </ul></div>
         <div class="vidro nao"><h3 class="disp">Não é pra ti se</h3><ul>
@@ -591,7 +602,7 @@ footer strong{color:var(--text-2)}
       <details><summary>Meu negócio é maior. Ainda serve?</summary><div class="a">Serve. A sessão é individual e a estratégia é montada em cima do que tu vende — <strong>muda o tamanho da verba e a complexidade da oferta, não o método.</strong> Quem tem equipe sai com a máquina montada e com quem opera ela já treinado.</div></details>
       <details><summary>Já paguei agência e não deu em nada.</summary><div class="a">Acontece muito, e quase sempre pelo mesmo motivo: <strong>quem estava de fora não entendeu a essência do teu negócio.</strong> Aqui a estratégia sai de dentro, contigo na mesa. E se depois tu preferir ter uma agência, tudo bem — aí tu sabe o que pedir e como cobrar.</div></details>
       <details><summary>E se não funcionar?</summary><div class="a">A gente troca o caminho e testa de novo, <strong>ainda dentro dos três meses.</strong> É pra isso que eles existem. O trabalho de verdade é o ajuste, e ele está incluído no preço.</div></details>
-      <details><summary>Depois dos três meses eu fico sozinho?</summary><div class="a">Tu fica <strong>com a máquina montada e sabendo usar ela</strong> — esse é o objetivo desde a primeira hora. Por isso a escola ensina o Gerenciador na mão além do automático, e por isso tu participa de cada decisão. No último encontro tu sai com o plano dos próximos meses escrito.</div></details>
+      <details><summary>Depois dos três meses eu fico sozinho?</summary><div class="a">Tu fica <strong>com a máquina montada e sabendo usar ela</strong> — esse é o objetivo desde o começo. Por isso a escola ensina o Gerenciador na mão além do automático, e por isso tu participa de cada decisão. No último encontro tu sai com o plano dos próximos meses escrito.</div></details>
     </div>
   </div>
 </section>
@@ -607,7 +618,7 @@ footer strong{color:var(--text-2)}
         <div class="sede-body">
           <span class="chip marca">Unidade sede</span>
           <h3 class="disp">É aqui, em <span class="cidade">{{CIDADE}}</span></h3>
-          <p>As três horas acontecem nesta sala, só tu e o especialista — e os três encontros dos meses seguintes também.</p>
+          <p>A sessão acontece nesta sala, só tu e o especialista — e os três encontros dos meses seguintes também.</p>
           <div class="addr"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg><span>{{ENDERECO}}</span></div>
         </div>
       </div>
@@ -625,7 +636,7 @@ footer strong{color:var(--text-2)}
 </footer>
 
 <div class="fixa" id="fixa">
-  <div class="p"><b>Deu Venda</b>3 horas + 3 meses de apoio</div>
+  <div class="p"><b>Deu Venda</b>um turno + 3 meses de apoio</div>
   <a class="btn btn-primary" href="#" data-cta>Falar com a escola</a>
 </div>
 
