@@ -48,7 +48,9 @@ async function menor(dataUri) {
       if (!i) throw new Error(`${v.fonte}: sem imagem "${nome}"`)
       return i.src
     }
-    const turma = await menor(acha('turma'))
+    // a foto do hero: a da sessão 1 a 1 (sites-skin/fotos/hero-sessao.jpg), e na falta dela a da turma
+    const propria = path.join(__dirname, 'fotos', 'hero-sessao.jpg')
+    const turma = await menor(fs.existsSync(propria) ? 'data:image/jpeg;base64,' + fs.readFileSync(propria).toString('base64') : acha('turma'))
     const out = tpl
       .replace(/\{\{IMG:([a-z]+)\}\}/g, (_, nome) => (nome === 'turma' ? turma : acha(nome)))
       .replace(/\{\{CIDADE\}\}/g, v.CIDADE).replace(/\{\{CAMP\}\}/g, v.CAMP)
