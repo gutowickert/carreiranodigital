@@ -11,11 +11,12 @@ const f = path.join(__dirname, '..', 'public', 'anuncioslocais-preview.html')
 const CIDADES = [
   {
     cidade: 'Porto Alegre', turno: 'tarde ou noite', dois_turnos: true, link: 'https://carreiranodigital.com/anlportoalegre102601/',
+    codigo: 'anlportoalegre102601', aulas: '06, 07 e 08 de outubro',
     turmas: [{
       turma_inicio: '2026-10-06',
       lotes: [
-        { nome: 'Lote 1', pix: 797, parc: '10x R$ 99,70', ate: '2026-09-29' },
-        { nome: 'Lote 2', pix: 997, parc: '10x R$ 119,70', ate: '2026-10-06' },
+        { nome: 'Lote 1', pix: 797, cartao: 997, parc: '10x R$ 99,70', ate: '2026-09-29' },
+        { nome: 'Lote 2', pix: 997, cartao: 1197, parc: '10x R$ 119,70', ate: '2026-10-06' },
       ],
     }],
   },
@@ -50,6 +51,33 @@ s = s.replace(cabecalho, `<h2 class="title t-lg">${titulo}</h2></div>
 
 // 3. o aviso de "sem turma" vira o convite pras outras cidades
 s = s.replace(/<div class="sem-turma-selo">[^<]*<\/div>/, `<div class="sem-turma-selo">${CIDADES.length ? 'Não é na tua cidade?' : 'Sem turma com data aberta'}</div>`)
+
+// 4. o resto da página acompanha a turma aberta: âncoras, hero, investimento
+s = s.replace(/href="#turma"/g, 'href="#turmas"')                      // a seção chama #turmas; #turma não existia
+const P = CIDADES[0]
+if (P) {
+  const L1 = P.turmas[0].lotes[0], L2 = P.turmas[0].lotes[1]
+  const br = iso => iso.split('-').reverse().slice(0, 2).join('/')
+  // hero: uma linha dizendo qual é a turma aberta
+  s = s.replace(/<p class="hero-prox">[\s\S]*?<\/p>\s*/, '')
+  s = s.replace(/(<div class="hero-ctas">[\s\S]*?<\/div>)/, `$1
+    <p class="hero-prox">Próxima turma: <b>${P.cidade}, ${P.aulas}</b>, ${P.turno}. Lote 1 até ${br(L1.ate)}.</p>`)
+  if (!s.includes('.hero-prox{')) s = s.replace('</style>', '.hero-prox{margin:-26px 0 30px;font-size:14px;color:var(--text-2)}.hero-prox b{color:var(--text)}\n</style>')
+  // investimento: o valor é o do lote vigente, e diz até quando vale
+  s = s.replace(/<div class="invest-op-label">À vista, melhor opção<\/div>\s*<div class="invest-op-valor">R\$ [0-9.,]+<\/div>\s*<div class="invest-op-sub">[^<]*<\/div>/,
+    `<div class="invest-op-label">Lote 1, no Pix, até ${br(L1.ate)}</div>
+        <div class="invest-op-valor">R$ ${L1.pix},00</div>
+        <div class="invest-op-sub">economia de R$ ${L1.cartao - L1.pix} em relação ao cartão</div>`)
+  s = s.replace(/<div class="invest-op-label">Parcelado no cartão<\/div>\s*<div class="invest-op-valor">10x R\$ [0-9,]+<\/div>\s*<div class="invest-op-sub">[^<]*<\/div>/,
+    `<div class="invest-op-label">Parcelado no cartão, Lote 1</div>
+        <div class="invest-op-valor">${L1.parc}</div>
+        <div class="invest-op-sub">cartão R$ ${L1.cartao}</div>`)
+  s = s.replace(/<div class="invest-nota fade-up">[^<]*<\/div>/,
+    `<div class="invest-nota fade-up">Depois de ${br(L1.ate)} entra o Lote 2: R$ ${L2.pix} no Pix ou ${L2.parc}. Agência básica cobra a partir de R$ 1.000/mês, R$ 12.000/ano. Aqui você investe uma fração disso e passa a ter o controle.</div>`)
+  // o botão do investimento leva pra turma aberta, não pro "site" genérico
+  s = s.replace(/(<div style="margin-top:24px" class="fade-up">\s*<a href="#" data-cnd="cta" data-turma=")[a-z0-9]+(" class="btn btn-primary">)(<svg[\s\S]*?<\/svg>)?[^<]*(<\/a>)/,
+    (_, a, b, svg, c) => `${a}${P.codigo}${b}${svg || ''} Quero minha vaga em ${P.cidade}${c}`)
+}
 
 fs.writeFileSync(f, s)
 console.log('vitrine com', CIDADES.length, 'cidade(s) em', f)
