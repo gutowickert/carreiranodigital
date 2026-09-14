@@ -48,11 +48,17 @@ export async function GET(req: NextRequest) {
   if (termo.length < 2) return NextResponse.json({ ok: true, grupos: [] })
   const re = padrao(termo)
   const dig = termo.replace(/\D/g, '')
+  // TELEFONE SEM SER EXIGENTE (14/09/2026): "981260498" tem que achar quem foi salvo sem o 9 da frente
+  // ("5181260498") — e o contrário. Com 8 dígitos ou mais vale só o FINAL de 8 (o número sem o nono
+  // dígito, sem DDD e sem 55); e entre um dígito e outro aceita qualquer coisa, pra achar também
+  // "(51) 8126-0498". Com menos de 8, procura o pedaço digitado.
+  const telefoneBase = dig.length >= 8 ? dig.slice(-8) : dig
+  const telPadrao = [...telefoneBase].join('[^0-9]*')
 
   // cláusula OR: texto por expressão regular nas colunas de nome; telefone/CPF por dígitos (a partir de 4)
   const ou = (texto: string[], numeros: string[] = []) => [
     ...(re ? texto.map((c) => `${c}.imatch."${re}"`) : []),
-    ...(dig.length >= 4 ? numeros.map((c) => `${c}.ilike.*${dig}*`) : []),
+    ...(dig.length >= 4 ? numeros.map((c) => `${c}.imatch."${telPadrao}"`) : []),
   ].join(',')
 
   // A escola tem uma empresa só e nem toda tabela antiga tem org_id: tenta com o filtro da empresa e,
