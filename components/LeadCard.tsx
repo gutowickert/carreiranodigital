@@ -1314,15 +1314,17 @@ function ChatLead({ lead }: { lead: Lead }) {
       )}
 
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'flex-end' }}>
+        {/* ⚠️ Estes botões herdam o estilo do botão principal e trocam só o fundo. Sem cor própria, o ícone
+            saía na cor feita pra ficar SOBRE a marca (branco) e sumia no tema claro (14/09/2026). */}
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />
         <button onClick={() => fileRef.current?.click()} disabled={enviando || gravando} title="Anexar arquivo"
-          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}><Paperclip size={15} /></button>
+          style={{ ...btnPrimary, background: 'var(--surface-2)', color: 'var(--text-2)', minWidth: 44, padding: '8px' }}><Paperclip size={15} /></button>
         <button onClick={sugerirResposta} disabled={sugerindo || gravando} title="Sugerir resposta (Copiloto IA)"
-          style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : <Sparkles size={15} />}</button>
+          style={{ ...btnPrimary, background: 'var(--surface-2)', color: 'var(--text-2)', minWidth: 44, padding: '8px' }}>{sugerindo ? '…' : <Sparkles size={15} />}</button>
         <button onClick={() => { setMostrarTpl(v => !v); setErro('') }} disabled={gravando} title="Enviar template aprovado (reabre fora das 24h)"
-          style={{ ...btnPrimary, background: mostrarTpl ? 'var(--accent)' : 'var(--surface-2)', color: mostrarTpl ? 'var(--on-accent)' : undefined, minWidth: 44, padding: '8px' }}><FileText size={15} /></button>
+          style={{ ...btnPrimary, background: mostrarTpl ? 'var(--accent)' : 'var(--surface-2)', color: mostrarTpl ? 'var(--on-accent)' : 'var(--text-2)', minWidth: 44, padding: '8px' }}><FileText size={15} /></button>
         <textarea ref={txtRef} rows={3} style={{ ...inp, flex: 1, resize: 'none', minHeight: 76, maxHeight: 160, lineHeight: 1.4, fontFamily: 'inherit' }}
           placeholder="Mensagem... (Shift+Enter pula linha)" value={texto} disabled={gravando}
           onChange={e => setTexto(e.target.value)}
@@ -1339,7 +1341,7 @@ function ChatLead({ lead }: { lead: Lead }) {
           </button>
         ) : (
           <button onClick={iniciarGravacao} disabled={enviando} title="Gravar áudio"
-            style={{ ...btnPrimary, background: 'var(--surface-2)', minWidth: 70 }}>
+            style={{ ...btnPrimary, background: 'var(--surface-2)', color: 'var(--text-2)', minWidth: 70 }}>
             <Mic size={15} />
           </button>
         )}
