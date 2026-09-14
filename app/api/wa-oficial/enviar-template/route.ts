@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao, datasCurtas } from '@/lib/saudacao'
+import { variavelVazia } from '@/lib/template-vazio'
 
 const money = (n: number) => 'R$' + n.toFixed(2).replace('.', ',').replace(/,00$/, '')
 const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
@@ -88,6 +89,10 @@ export async function POST(req: NextRequest) {
     // ⛔ BLINDAGEM 2: qualquer variável não resolvida ({{x}}) ou preço zerado (R$0) no texto → não manda.
     if (/\{\{\w+\}\}/.test(textoRender)) return NextResponse.json({ ok: false, error: 'Esse template usa uma variável que não consegui preencher pra este lead. Escolha outro template ou complete o cadastro do lead.' }, { status: 200 })
     if (/R\$\s?0(?![0-9.,])/.test(textoRender)) return NextResponse.json({ ok: false, error: 'Preço ficou R$0 — cadastro do lead/turma incompleto. Não enviei.' }, { status: 200 })
+
+    // ⛔ variável que iria vazia pra Meta: não manda e explica (senão volta o erro #131008 cru)
+    const falta = variavelVazia(ordem, valores)
+    if (falta) return NextResponse.json({ ok: false, error: `Não enviei: faltou ${falta} pra preencher esse template. Complete o cadastro do lead ou escolha outro template.` }, { status: 200 })
 
     const parametros = ordem.map((v: string) => ({ type: 'text', text: valores[v] ?? v }))
 

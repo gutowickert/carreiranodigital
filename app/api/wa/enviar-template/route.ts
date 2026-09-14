@@ -3,6 +3,8 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
+import { meuPerfil } from '@/lib/quem-eu-vejo'
+import { variavelVazia } from '@/lib/template-vazio'
 
 export const maxDuration = 30
 
@@ -31,7 +33,7 @@ export async function POST(req: NextRequest) {
     if (!leadId || !templateId) return NextResponse.json({ ok: false, error: 'faltam leadId/templateId' }, { status: 200 })
 
     // lead + template (só templates APROVADOS pela Meta)
-    const { data: lead } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma, turma_id, etapa').eq('org_id', org).eq('id', leadId).maybeSingle()
+    const { data: lead } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma, turma_id, etapa, vendedor_id').eq('org_id', org).eq('id', leadId).maybeSingle()
     if (!lead) return NextResponse.json({ ok: false, error: 'lead não encontrado' }, { status: 200 })
     const { data: tpl } = await sb.from('followup_templates').select('nome_meta, corpo, variaveis, status').eq('org_id', org).eq('id', templateId).maybeSingle()
     if (!tpl) return NextResponse.json({ ok: false, error: 'template não encontrado' }, { status: 200 })
@@ -58,8 +60,16 @@ export async function POST(req: NextRequest) {
     if (precisaPreco && precoPix <= 0) return NextResponse.json({ ok: false, error: 'esse template precisa de preço, mas o produto (FC/ANL) do lead não está definido. Defina a turma do lead ou escolha outro template.' }, { status: 200 })
     if (precisaBolsa && !bolsaTxt) return NextResponse.json({ ok: false, error: 'esse template precisa de bolsa, mas o produto (FC/ANL) do lead não está definido.' }, { status: 200 })
 
+    // ⚠️ QUEM ASSINA ("aqui é o {{vendedor}}"). O card não manda esse nome e aqui ficava '' — a Meta
+    // recusava todo template enviado pelo card. Mesma regra da tela do WhatsApp: o dono do lead;
+    // sem dono, quem está enviando; sem nenhum dos dois, o padrão.
+    const primeiroNome = async (id: string) => ((await sb.from('usuarios_perfil').select('nome').eq('id', id).maybeSingle()).data?.nome || '').trim().split(/\s+/)[0]
+    let vendedorNome = lead.vendedor_id ? await primeiroNome(lead.vendedor_id) : ''
+    if (!vendedorNome) { const eu = await meuPerfil(req.headers.get('authorization')); if (eu) vendedorNome = await primeiroNome(eu.id) }
+    if (!vendedorNome) vendedorNome = 'Mateus'
+
     const valores: Record<string, string> = {
-      nome: nomeSaudacao(lead.nome), vendedor: enviadoPor || '', curso: cursoNome(fam),
+      nome: nomeSaudacao(lead.nome), vendedor: vendedorNome, curso: cursoNome(fam),
       cidade, datas: datasStr,
       preco_pix: money(precoPix), preco: money(precoPix),
       preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
@@ -70,6 +80,10 @@ export async function POST(req: NextRequest) {
     // trava R$0 + variável não resolvida
     if (/R\$\s?0(?![0-9.,])/.test(textoRender)) return NextResponse.json({ ok: false, error: 'o texto renderizou R$0 — envio abortado (trava de preço).' }, { status: 200 })
     if (/\{\{\w+\}\}/.test(textoRender)) return NextResponse.json({ ok: false, error: 'esse template tem uma variável que não consegui preencher com os dados do lead — escolha outro.' }, { status: 200 })
+
+    // ⛔ variável que iria vazia pra Meta: não manda e explica (senão volta o erro #131008 cru)
+    const falta = variavelVazia(ordem, valores)
+    if (falta) return NextResponse.json({ ok: false, error: `Não enviei: faltou ${falta} pra preencher esse template. Complete o cadastro do lead ou escolha outro template.` }, { status: 200 })
 
     const parametros = ordem.map((k: string) => ({ type: 'text', text: valores[k] ?? k }))
     const r = await enviarTemplate(to, tpl.nome_meta, 'pt_BR', parametros.length ? [{ type: 'body', parameters: parametros }] : undefined)
