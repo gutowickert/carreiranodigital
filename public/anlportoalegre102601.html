@@ -1057,7 +1057,7 @@ window.addEventListener('scroll', () => {
 <script>
 (function () {
   var BASE     = "https://carreiranodigital.vercel.app/wa";
-  var BASE_MSG = "Quero mais informações sobre o curso Anúncios para Negócios Locais, ";
+  var BASE_MSG = "Quero mais informações sobre o curso Anúncios para Negócios Locais em Porto Alegre.";
   function getCookie(n){var m=document.cookie.match('(^|;)\\s*'+n+'\\s*=\\s*([^;]+)');return m?m.pop():'';}
   function getParam(n){return new URLSearchParams(location.search).get(n)||'';}
   function id(store,key){ try{ var v=store.getItem(key); if(!v){ v=Date.now().toString(36)+Math.random().toString(36).slice(2,10); store.setItem(key,v);} return v; }catch(e){ return 'anon'; } }
@@ -1071,7 +1071,7 @@ window.addEventListener('scroll', () => {
     var eventId = 'wa.' + Date.now() + '.' + Math.random().toString(36).slice(2,10);
     var p = new URLSearchParams();
     p.set('turma', turma);
-    p.set('msg', BASE_MSG + ' ' + turma);
+    p.set('msg', BASE_MSG + (turma === 'anlportoalegre102602' ? ' Turma da noite.' : ' Turma da tarde.'));
     p.set('event_id', eventId);
     Object.keys(tracking).forEach(function(k){ p.set(k, tracking[k]); });
     p.set('src', location.href);

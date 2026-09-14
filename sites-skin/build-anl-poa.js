@@ -60,6 +60,10 @@ s = s.replace('</style>', `.lote-btns{display:grid;grid-template-columns:1fr 1fr
 // ── o que sobrou apontando pra turma antiga (CTA final, rodapé, nav) vai pra turma da tarde
 troca(/anlportoalegre092602/g, T.tarde, null)
 
+// ── a mensagem do WhatsApp: em português, com a turma escolhida, sem o código no meio
+troca(/var BASE_MSG = "[^"]*";/g, 'var BASE_MSG = "Quero mais informações sobre o curso Anúncios para Negócios Locais em Porto Alegre.";', 1)
+troca(/p\.set\('msg', BASE_MSG \+ ' ' \+ turma\);/g, "p.set('msg', BASE_MSG + (turma === '" + T.noite + "' ? ' Turma da noite.' : ' Turma da tarde.'));", 1)
+
 // ── sem emoji, sem travessão
 troca(/⚡ Faltam/g, 'Faltam', 1)
 troca(/⚡\s*/g, '', null)
