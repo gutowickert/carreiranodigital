@@ -60,6 +60,13 @@ s = s.replace('</style>', `.lote-btns{display:grid;grid-template-columns:1fr 1fr
 // ── o que sobrou apontando pra turma antiga (CTA final, rodapé, nav) vai pra turma da tarde
 troca(/anlportoalegre092602/g, T.tarde, null)
 
+// ── a foto do hero: a da escola de POA, se existir (sites-skin/fotos/hero-anl-poa.jpg)
+const foto = process.env.HERO_FOTO || path.join(__dirname, 'fotos', 'hero-anl-poa.jpg')
+if (fs.existsSync(foto)) {
+  const uri = 'data:image/jpeg;base64,' + fs.readFileSync(foto).toString('base64')
+  troca(/(<div class="hero-bg">\s*<img src=")data:image\/[^"]+(" alt="Anúncios para Negócios Locais)/g, `$1${uri}$2`, 1)
+}
+
 // ── a mensagem do WhatsApp: em português, com a turma escolhida, sem o código no meio
 troca(/var BASE_MSG = "[^"]*";/g, 'var BASE_MSG = "Quero mais informações sobre o curso Anúncios para Negócios Locais em Porto Alegre.";', 1)
 troca(/p\.set\('msg', BASE_MSG \+ ' ' \+ turma\);/g, "p.set('msg', BASE_MSG + (turma === '" + T.noite + "' ? ' Turma da noite.' : ' Turma da tarde.'));", 1)
