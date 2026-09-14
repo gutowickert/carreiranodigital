@@ -55,6 +55,8 @@ troca(/<a class="lote-btn" data-turma="anlportoalegre092602" data-content="lote-
           </div>`, 2)
 s = s.replace('</style>', `.lote-btns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:22px}.lote-btns .lote-btn{margin-top:0;padding:13px 10px;font-size:12.5px}
 @media(max-width:520px){.lote-btns{grid-template-columns:1fr}}
+/* celular: a foto vira faixa no alto e o texto vem embaixo, em fundo escuro (texto em cima do projetor não dava leitura) */
+@media(max-width:720px){.hero{padding-top:0}.hero-bg{top:0;height:280px;bottom:auto}.hero-bg img{opacity:1;object-position:center 45%}.hero-overlay{top:0;height:280px;bottom:auto}.hero-content{padding-top:300px}}
 </style>`)
 
 // ── o que sobrou apontando pra turma antiga (CTA final, rodapé, nav) vai pra turma da tarde
