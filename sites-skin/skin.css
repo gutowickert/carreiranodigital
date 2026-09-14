@@ -1,6 +1,6 @@
 
 /* ================================================================
-   PADRÃO VISUAL CARREIRA NO DIGITAL — pele dos sites (docs/DESIGN.md)
+   PADRÃO VISUAL CARREIRA NO DIGITAL - pele dos sites (docs/DESIGN.md)
    Entra DEPOIS do CSS original de cada página: os tokens antigos
    (--purple, --bg2, --body…) passam a apontar pros novos, e o resto
    é re-skin de tipografia, botão, vidro e relevo. Conteúdo, grids e
@@ -187,7 +187,7 @@ footer .container>img{height:24px;margin-bottom:18px}
   box-shadow:inset 0 1px 0 var(--glass-hi),var(--glass-shadow)}
 .hero-stat-label{color:var(--text-muted);font-size:10.5px}
 .res-arrow,.res-arrow-new{color:var(--green);font-weight:700}
-/* o número principal da página, em relevo — um por tela */
+/* o número principal da página, em relevo - um por tela */
 .resultados-grid .resultado-item:first-child .res-valor,.res-destaque .res-valor-new,.invest-op.dest .invest-op-valor,.price .parc,.quem .res-card:nth-child(3) .res-num{
   text-shadow:1px 1px 0 var(--accent),2px 2px 0 var(--accent),0 10px 22px rgba(0,0,0,.26)}
 .invest-op.dest{border:1px solid var(--accent);background:var(--glass)}
