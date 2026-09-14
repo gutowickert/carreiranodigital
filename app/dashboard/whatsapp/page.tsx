@@ -52,6 +52,26 @@ export default function CaixaWhatsApp() {
     return () => clearTimeout(t)
   }, [busca])
 
+  // Abre direto a conversa que veio por link (?conversa=<id> ou ?lead=<id>) — a busca do sistema
+  // (⌘K) manda pra cá. Só na chegada: o recarregamento periódico não puxa a pessoa de volta.
+  const abriuPeloLink = useRef(false)
+  useEffect(() => {
+    if (autorizado !== true || abriuPeloLink.current) return
+    const p = new URLSearchParams(window.location.search)
+    const conversaId = p.get('conversa'), leadId = p.get('lead')
+    if (!conversaId && !leadId) return
+    abriuPeloLink.current = true
+    ;(async () => {
+      const naLista = conversas.find(c => (conversaId && c.id === conversaId) || (leadId && c.lead_id === leadId))
+      if (naLista) { setAtiva(naLista); return }
+      // não coube na listagem: busca direto pela conversa (ou pela mais recente do lead)
+      let qb: any = supabase.from('wa_conversas').select('*')
+      qb = conversaId ? qb.eq('id', conversaId) : qb.eq('lead_id', leadId)
+      const { data } = await qb.order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1).maybeSingle()
+      if (data) setAtiva(data)
+    })()
+  }, [autorizado, conversas])
+
   useEffect(() => {
     const f = () => setIsMobile(window.innerWidth < 768)
     f(); window.addEventListener('resize', f)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 
@@ -59,6 +59,15 @@ export default function CRMExterno() {
   const [novoModal, setNovoModal] = useState(false)
 
   useEffect(() => { carregarTudo() }, [])
+  // a busca do sistema (⌘K) chega aqui com ?abrir=<id> — abre o card da prospecção quando a lista chega
+  const abrirPeloLink = useRef<string | null>(typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('abrir') : null)
+  useEffect(() => {
+    const id = abrirPeloLink.current
+    if (!id || !prospeccoes.length) return
+    abrirPeloLink.current = null
+    const p = prospeccoes.find(x => x.id === id)
+    if (p) { setEditando(p); setNovoModal(false); setModalAberto(true) }
+  }, [prospeccoes])
 
   async function carregarTudo() {
     await Promise.all([carregarProspeccoes(), carregarVendedores(), carregarTurmas(), carregarMotivos()])

@@ -40,6 +40,8 @@ export default function Alunos() {
   const [turmas, setTurmas] = useState<Turma[]>([])
   const [selecionado, setSelecionado] = useState<Aluno | null>(null)
   const [busca, setBusca] = useState('')
+  // a busca do sistema (⌘K) chega aqui com ?busca=nome — a lista já abre filtrada
+  useEffect(() => { const b = new URLSearchParams(window.location.search).get('busca'); if (b) setBusca(b) }, [])
   const [carregando, setCarregando] = useState(true)
   const [novoAluno, setNovoAluno] = useState(false)
   const [novaMatricula, setNovaMatricula] = useState(false)
