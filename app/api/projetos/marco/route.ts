@@ -50,6 +50,13 @@ export async function POST(req: Request) {
       return ok({})
     }
 
+    // Só REUNIÃO com o cliente (natureza 'encontro') tem hora combinada. Tarefa interna ("Primeira semana
+    // no grupo") e marco ("CRM no ar") só se concluem. Deixar marcar hora nelas fazia a mesma data virar
+    // duas "reuniões" na agenda (caso da Cristina, 15/09/2026).
+    if (['combinar', 'remarcar', 'confirmar', 'a_remarcar'].includes(acao) && marco.natureza !== 'encontro') {
+      return erro(`"${marco.titulo}" não é reunião com o cliente — não tem hora pra combinar. É só concluir quando for feito.`)
+    }
+
     if (acao === 'combinar' || acao === 'remarcar') {
       const dataHora = (b.data_hora || '').toString()
       if (!dataHora) return erro('informe a data e a hora combinadas')

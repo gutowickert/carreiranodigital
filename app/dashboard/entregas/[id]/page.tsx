@@ -212,8 +212,12 @@ export default function FichaEntrega() {
                 </div>
 
                 {!feito && (
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {(m.estado === 'previsto' || m.estado === 'a_remarcar') && (
+                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {/* combinar / confirmar / remarcar só em REUNIÃO com o cliente; tarefa interna e marco só concluem */}
+                    {m.natureza !== 'encontro' && (
+                      <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{m.natureza === 'marco' ? 'marco' : 'tarefa interna'} · sem hora, conclui quando fizer</span>
+                    )}
+                    {m.natureza === 'encontro' && (m.estado === 'previsto' || m.estado === 'a_remarcar') && (
                       <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'combinar', data_hora: paraInput((m.data_prevista || '') + 'T14:00:00') }) }} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Combinar</button>
                     )}
                     {m.estado === 'combinado' && (
