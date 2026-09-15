@@ -36,7 +36,7 @@ export default function Entregas() {
   const [filtro, setFiltro] = useState('')
   const [msg, setMsg] = useState('')
   const [pessoas, setPessoas] = useState<{ id: string; nome: string }[]>([])
-  const [f, setF] = useState<any>({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
+  const [f, setF] = useState<any>({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '', participantes: [] })
 
   async function carregar() {
     setCarregando(true)
@@ -108,6 +108,26 @@ export default function Entregas() {
             <div><label style={lbl}>Mensalidade — dia</label><input style={inp} value={f.mensalidade_dia} onChange={e => setF({ ...f, mensalidade_dia: e.target.value })} placeholder="ex: 10" /></div>
             <div><label style={lbl}>Mensalidade — valor</label><input style={inp} value={f.mensalidade_valor} onChange={e => setF({ ...f, mensalidade_valor: e.target.value })} placeholder="1500" /></div>
           </div>
+          {/* quem mais responde pelo projeto: as tarefas aparecem na agenda dessas pessoas junto com a do responsável.
+              Antes só dava pra incluir depois, no "+ também responsável" da ficha. */}
+          {pessoas.filter(x => x.id !== f.responsavel_id).length > 0 && (
+            <div style={{ marginTop: 10 }}>
+              <label style={lbl}>Também responsáveis (aparece na agenda de todos)</label>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {pessoas.filter(x => x.id !== f.responsavel_id).map(x => {
+                  const juntos: string[] = f.participantes || []
+                  const on = juntos.includes(x.id)
+                  return (
+                    <button key={x.id} type="button" aria-pressed={on}
+                      onClick={() => setF({ ...f, participantes: on ? juntos.filter(id => id !== x.id) : [...juntos, x.id] })}
+                      style={{ border: `1px solid ${on ? 'var(--accent)' : 'var(--border-strong)'}`, background: on ? 'var(--accent-bg)' : 'var(--surface-2)', color: on ? 'var(--accent-soft)' : 'var(--text-2)', borderRadius: 999, padding: '5px 11px', fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: 'pointer' }}>
+                      {on ? '✓ ' : '+ '}{x.nome}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
           <div style={{ display: 'flex', gap: 8, marginTop: 12, alignItems: 'center' }}>
             <button onClick={criar} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 16px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>Criar e gerar o roteiro</button>
             <button onClick={() => setNovo(false)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '9px 14px', fontSize: 13, cursor: 'pointer' }}>Cancelar</button>

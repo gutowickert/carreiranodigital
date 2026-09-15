@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
     const ids = [...new Set((marcos || []).map(m => m.projeto_id))]
     const { data: projetos } = ids.length
-      ? await sb.from('projetos').select('id, cliente, produto, status, responsavel_id').in('id', ids)
+      ? await sb.from('projetos').select('id, cliente, produto, status, responsavel_id, participantes').in('id', ids)
       : { data: [] as any[] }
     const porId: Record<string, any> = {}
     for (const p of projetos || []) porId[p.id] = p
@@ -59,11 +59,16 @@ export async function GET(req: Request) {
         tem_hora: !!m.data_combinada,
         duracao_min: m.duracao_min,
         responsavel_id: m.responsavel_id,
+        // quem responde pelo projeto — o responsável e os "também responsáveis" — vê as tarefas dele
+        // aqui também, igual à agenda geral (antes esta tela só olhava o dono de cada tarefa)
+        doProjeto: p ? [p.responsavel_id, ...((p.participantes || []) as string[])].filter(Boolean) : [],
       }
     })
       .filter(i => !!i.data)
-      // Marco sem responsável é do time e todos veem; com responsável, só quem enxerga essa pessoa.
-      .filter(i => !i.responsavel_id || quem.visiveis.has(i.responsavel_id))
+      // Marco sem responsável é do time e todos veem; com responsável, só quem enxerga essa pessoa —
+      // e, além disso, quem responde pelo projeto. Só ACRESCENTA: ninguém que via deixa de ver.
+      .filter(i => !i.responsavel_id || quem.visiveis.has(i.responsavel_id) || i.doProjeto.includes(quem.eu.id))
+      .map(({ doProjeto, ...i }) => i)
 
     return NextResponse.json({ ok: true, itens })
   } catch (e: any) {

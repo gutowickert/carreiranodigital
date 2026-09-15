@@ -98,6 +98,15 @@ export async function POST(req: Request) {
     const r = ROTEIROS[produto]
     const prazo = b.prazo_meses != null && b.prazo_meses !== '' ? Number(b.prazo_meses) : r.prazoMeses
 
+    // quem mais responde pelo projeto, já na criação (antes só dava pra incluir depois, na ficha).
+    // Mesma validação do PATCH da ficha: só pessoa ativa da empresa, sem repetir o responsável.
+    let participantes: string[] = []
+    if (Array.isArray(b.participantes) && b.participantes.length) {
+      const validos = new Set((await pessoasAtivas(org)).map(x => x.id))
+      participantes = [...new Set(b.participantes.map((x: any) => String(x)))]
+        .filter(x => validos.has(x as string) && x !== b.responsavel_id) as string[]
+    }
+
     const { data: proj, error } = await sb.from('projetos').insert({
       org_id: org,
       lead_id: b.lead_id || null,
@@ -106,6 +115,7 @@ export async function POST(req: Request) {
       produto,
       data_inicio: dataInicio,
       responsavel_id: b.responsavel_id || null,
+      participantes,
       prazo_meses: prazo,
       fim_tipo: ['encerra', 'renegocia', 'manutencao'].includes(b.fim_tipo) ? b.fim_tipo : r.fimTipo,
       aviso_fim_dias: b.aviso_fim_dias != null ? Number(b.aviso_fim_dias) : r.avisoFimDias,
