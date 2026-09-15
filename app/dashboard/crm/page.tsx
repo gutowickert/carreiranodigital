@@ -552,7 +552,7 @@ export default function CRM() {
                       <span className="display tnum" style={{ fontSize: 16, fontWeight: 800, color: col.cor }}>{leadsEtapa.length}</span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'calc(100vh - 340px)', overflowY: 'auto', paddingRight: 4 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 'max(440px, calc(100dvh - 300px))', overflowY: 'auto', paddingRight: 4 }}>
                     {leadsEtapa.map(lead => {
                       const dia = diaDoCiclo(lead.criado_em)
                       const cicloEstourou = dia > PRAZO_CICLO
