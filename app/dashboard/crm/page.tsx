@@ -182,19 +182,33 @@ export default function CRM() {
   }
 
   async function carregarLeads() {
-    const { data } = await supabase.from('leads')
-      .select('*, turmas(id, codigo, produtos(nome), cidades(nome))')
-      .order('criado_em', { ascending: false })
-    if (!data) return
+    // O banco devolve no máximo 1000 linhas por consulta, e não avisa. Sem paginar, quando a base passou
+    // de 1000 os leads mais antigos sumiam do funil e da busca dele (caso do Adrian, 16/09/2026).
+    // `id` desempata a ordem, pra nenhum lead repetir ou pular entre uma página e outra.
+    const data: any[] = []
+    for (let de = 0; ; de += 1000) {
+      const { data: pagina } = await supabase.from('leads')
+        .select('*, turmas(id, codigo, produtos(nome), cidades(nome))')
+        .order('criado_em', { ascending: false })
+        .order('id', { ascending: true })
+        .range(de, de + 999)
+      if (!pagina) { if (!data.length) return; break }
+      data.push(...pagina)
+      if (pagina.length < 1000) break
+    }
 
-    // Pra cada lead, verifica se tem tarefa atrasada
+    // Pra cada lead, verifica se tem tarefa atrasada — em blocos: a lista inteira de ids não cabe numa consulta
     const leadIds = data.map((l: any) => l.id)
-    const { data: tarefasAtrasadas } = await supabase.from('tarefas_lead')
+    const blocos: string[][] = []
+    for (let i = 0; i < leadIds.length; i += 200) blocos.push(leadIds.slice(i, i + 200))
+    const tarefasAtrasadas = (await Promise.all(blocos.map(ids => supabase.from('tarefas_lead')
       .select('lead_id')
-      .in('lead_id', leadIds)
+      .in('lead_id', ids)
       .eq('concluida', false)
       .eq('cancelada', false)
       .lt('data_vencimento', new Date().toISOString())
+      .then(r => r.data || []))))
+      .flat()
 
     const leadsComTarefaAtrasada = new Set(tarefasAtrasadas?.map((t: any) => t.lead_id) || [])
     const leadsEnriquecidos = data.map((l: any) => ({
