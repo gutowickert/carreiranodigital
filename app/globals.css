@@ -109,6 +109,13 @@ body {
   text-rendering: optimizeLegibility;
 }
 input, textarea, select { color: var(--text); font-family: inherit; }
+/* A lista aberta de um <select> é desenhada pelo navegador, não pela página. Sem avisar o tema, o Chrome
+   no Windows abria a lista com fundo BRANCO e as opções herdavam o texto CLARO do tema escuro: opção
+   invisível (motivo da perda, filtros…). `color-scheme` faz a lista, o calendário e a rolagem seguirem o
+   tema; a cor explícita na opção vale mesmo onde o navegador ignora o aviso. */
+:root, [data-theme="dark"] { color-scheme: dark; }
+[data-theme="light"] { color-scheme: light; }
+select option, select optgroup { background-color: var(--surface); color: var(--text); }
 /* Campo com width: 100% + padding passava da borda do card (era content-box). border-box em todo
    controle de formulário: a largura inclui padding e borda, em qualquer tela e qualquer modal. */
 input, textarea, select, button { box-sizing: border-box; }
