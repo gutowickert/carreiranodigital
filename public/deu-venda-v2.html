@@ -244,6 +244,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .price .cond{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-soft)}
 .price .parc{display:block;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;letter-spacing:-.03em;font-size:clamp(2.4rem,5.6vw,3.6rem);line-height:1;margin:12px 0 6px;font-variant-numeric:tabular-nums;
   text-shadow:1px 1px 0 var(--accent),2px 2px 0 var(--accent),0 10px 22px rgba(0,0,0,.26)}
+.price .parc.sem-valor{font-size:clamp(1.55rem,3.4vw,2.05rem);line-height:1.12;letter-spacing:-.005em;font-variation-settings:'opsz' 48,'wdth' 95;text-shadow:none;text-wrap:balance;margin:14px 0 12px}
 .price .avista{font-size:14.5px;color:var(--text-muted)}
 .price .avista b{color:var(--green)}
 .price ul{list-style:none;margin:22px 0 26px}
@@ -259,7 +260,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:var(--glass);bord
 .serve li::before{position:absolute;left:0;top:0;font-weight:800}
 .serve .sim{border-color:rgba(52,211,153,.35)}
 .serve .sim h3{color:var(--green)}.serve .sim li::before{content:"✓";color:var(--green)}
-.serve .nao h3{color:var(--text-muted)}.serve .nao li{color:var(--text-muted)}.serve .nao li::before{content:", ";color:var(--border-strong)}
+.serve .nao h3{color:var(--text-muted)}.serve .nao li{color:var(--text-muted)}.serve .nao li::before{content:"×";color:var(--border-strong)}
 
 /* ===== faq ===== */
 .faq{max-width:800px}
@@ -555,14 +556,14 @@ footer strong{color:var(--text-2)}
 <section class="section section-alt" id="preco">
   <div class="container">
     <div class="head">
-      <div class="eyebrow">O investimento</div>
-      <h2 class="disp">Um preço,<br><span class="roxo">e ele cabe no mês.</span></h2>
+      <div class="eyebrow">O que está incluso</div>
+      <h2 class="disp">Tudo que vem<br><span class="roxo">no Deu Venda.</span></h2>
     </div>
     <div class="oferta">
       <div class="vidro vidro-blur price">
         <span class="cond">Deu Venda · acompanhamento individual de 3 meses</span>
-        <span class="parc">10× R$ 299,70</span>
-        <span class="avista">no cartão, ou <b>R$ 2.797 à vista</b> · três meses de acompanhamento incluídos</span>
+        <span class="parc sem-valor">Um turno contigo e três meses de acompanhamento</span>
+        <span class="avista">O valor e as formas de pagamento a escola passa na conversa, depois de entender o teu negócio. <b>Dá pra parcelar no cartão.</b></span>
         <ul>
           <li>A sessão presencial e individual, de um turno inteiro, com um especialista</li>
           <li>A tua máquina de captação configurada dentro do Claude</li>
@@ -598,12 +599,13 @@ footer strong{color:var(--text-2)}
   <div class="container">
     <div class="head"><div class="eyebrow">Dúvidas</div><h2 class="disp">O que todo mundo <span class="roxo">pergunta.</span></h2></div>
     <div class="faq">
-      <details><summary>Não sou da tecnologia. Vou conseguir?</summary><div class="a">Quem consegue salvar um arquivo no computador e usar o navegador consegue aplicar o plano. <strong>Tu não precisa ser de tecnologia, precisa ser de negócios</strong>e disso tu entende mais do que qualquer professor daqui.</div></details>
+      <details><summary>Não sou da tecnologia. Vou conseguir?</summary><div class="a">Quem consegue salvar um arquivo no computador e usar o navegador consegue aplicar o plano. <strong>Tu não precisa ser de tecnologia, precisa ser de negócios</strong>, e disso tu entende mais do que qualquer professor daqui.</div></details>
       <details><summary>Funciona pro meu ramo?</summary><div class="a">Funciona pra qualquer negócio, com uma condição: <strong>tu vai testar até achar o teu formato.</strong> Receita de bolo pronta não existe, e quem promete uma está vendendo o que não tem. O que a escola ensina é a testar até achar a tua lacuna, a tua oferta e o teu jeito de aparecer.</div></details>
       <details><summary>Meu negócio é maior. Ainda serve?</summary><div class="a">Serve. A sessão é individual e a estratégia é montada em cima do que tu vende, <strong>muda o tamanho da verba e a complexidade da oferta, não o método.</strong> Quem tem equipe sai com a máquina montada e com quem opera ela já treinado.</div></details>
       <details><summary>Já paguei agência e não deu em nada.</summary><div class="a">Acontece muito, e quase sempre pelo mesmo motivo: <strong>quem estava de fora não entendeu a essência do teu negócio.</strong> Aqui a estratégia sai de dentro, contigo na mesa. E se depois tu preferir ter uma agência, tudo bem, aí tu sabe o que pedir e como cobrar.</div></details>
-      <details><summary>E se não funcionar?</summary><div class="a">A gente troca o caminho e testa de novo, <strong>ainda dentro dos três meses.</strong> É pra isso que eles existem. O trabalho de verdade é o ajuste, e ele está incluído no preço.</div></details>
-      <details><summary>Depois dos três meses eu fico sozinho?</summary><div class="a">Tu fica <strong>com a máquina montada e sabendo usar ela</strong>esse é o objetivo desde o começo. Por isso a escola ensina o Gerenciador na mão além do automático, e por isso tu participa de cada decisão. No último encontro tu sai com o plano dos próximos meses escrito.</div></details>
+      <details><summary>Quanto custa?</summary><div class="a">O valor a escola passa na conversa, junto com as formas de pagamento, e dá pra parcelar no cartão. Primeiro a escola entende o teu negócio e diz se o Deu Venda serve pra ti. <strong>Se não servir, nem faz sentido falar de preço.</strong></div></details>
+      <details><summary>E se não funcionar?</summary><div class="a">A gente troca o caminho e testa de novo, <strong>ainda dentro dos três meses.</strong> É pra isso que eles existem. O trabalho de verdade é o ajuste, e ele já está incluído.</div></details>
+      <details><summary>Depois dos três meses eu fico sozinho?</summary><div class="a">Tu fica <strong>com a máquina montada e sabendo usar ela</strong>, esse é o objetivo desde o começo. Por isso a escola ensina o Gerenciador na mão além do automático, e por isso tu participa de cada decisão. No último encontro tu sai com o plano dos próximos meses escrito.</div></details>
     </div>
   </div>
 </section>
