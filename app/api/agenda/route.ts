@@ -27,6 +27,12 @@ export const maxDuration = 60
 // A QUARTA FONTE: os marcos de ENTREGA (projeto_marcos, módulo de Entregas). Entram só pra LEITURA:
 // quem conclui, combina e remarca é a ficha da entrega, porque lá vale a regra de ouro — encontro
 // não fecha sem marcar o próximo com o cliente. Um botão de concluir aqui pularia essa regra.
+//
+// E entra só o que é COMPROMISSO: natureza 'encontro' (a sessão, os encontros, o treino), ou
+// qualquer marco que alguém tenha combinado data de propósito. Os de natureza 'interno' (trabalho
+// da escola: "Primeira semana no grupo", "Tráfego mês 1") e 'marco' (status do projeto: "CRM no
+// ar") são acompanhados na ficha da entrega — na agenda viravam ruído, escondendo a reunião de
+// verdade no meio de aviso que ninguém marca nem cumpre em hora.
 
 type Item = {
   id: string
@@ -96,6 +102,8 @@ export async function GET(req: Request) {
     sb.from('projeto_marcos')
       .select('id,projeto_id,titulo,natureza,estado,data_prevista,data_combinada,duracao_min,responsavel_id')
       .eq('org_id', org).not('estado', 'in', '(concluido,cancelado)').lte('data_prevista', ate.slice(0, 10))
+      // só compromisso: encontro com o cliente, ou marco que alguém combinou data de propósito
+      .or('natureza.eq.encontro,data_combinada.not.is.null')
       .order('data_prevista').limit(1000),
   ])
 
