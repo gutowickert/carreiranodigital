@@ -8,7 +8,7 @@ const GRAPH = 'https://graph.facebook.com/v25.0'
 
 const EXEMPLO: Record<string, string> = {
   nome: 'Maria', vendedor: 'Ricardo', cidade: 'Porto Alegre', curso: 'Anúncios para Negócios Locais',
-  datas: '11, 12 e 13/08', preco_pix: 'R$797', preco_parcelado: '10x de R$99,70',
+  datas: '11, 12 e 13/08', preco_pix: 'R$797', preco_parcelado: '6x de R$166,17',
   prazo: '28/07', condicao_bolsa: 'R$717,30 no Pix (10% de desconto)',
 }
 

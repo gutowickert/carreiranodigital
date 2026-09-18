@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
     const fam = familia(lead.codigo_turma) || familia(codTurma)
     const precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
-    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 10x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 10x sem juros' : ''
+    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x sem juros' : ''
 
     // BLINDAGEM: template que precisa de preço/bolsa sem produto resolvido → NÃO manda
     const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(tpl.corpo || '')
@@ -72,7 +72,7 @@ export async function POST(req: NextRequest) {
       nome: nomeSaudacao(lead.nome), vendedor: vendedorNome, curso: cursoNome(fam),
       cidade, datas: datasStr,
       preco_pix: money(precoPix), preco: money(precoPix),
-      preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 10x' : '',
+      preco_cartao: fam === 'FC' ? 'R$2697 no cartão em até 6x' : '',
       condicao_bolsa: bolsaTxt,
     }
     const ordem = (tpl.variaveis || '').split(',').map((s: string) => s.trim()).filter(Boolean)

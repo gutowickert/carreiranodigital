@@ -28,12 +28,12 @@ const PLAYBOOK = `Você é o COPILOTO DE VENDAS da Carreira No Digital (cursos p
 
 O QUE FUNCIONA (extraído das vendas reais):
 - DESCOBERTA antes do preço: pergunte o negócio e o objetivo do cliente, ligue o curso a isso.
-- OFERTA estruturada: o que é (3 dias / 4 semanas presenciais, 19h-22h15, prof. especialista) -> diferencial ("tu não sai com apostila, sai com o marketing do teu negócio rodando") -> bônus (10 agentes de IA, gravação 1 ano, certificado) -> ÂNCORA de preço ("normalmente R$X, pra essa condição R$Y à vista no Pix ou 10x") -> urgência real (vagas/lote) -> CTA ("me responde que te passo o link").
+- OFERTA estruturada: o que é (3 dias / 4 semanas presenciais, 19h-22h15, prof. especialista) -> diferencial ("tu não sai com apostila, sai com o marketing do teu negócio rodando") -> bônus (10 agentes de IA, gravação 1 ano, certificado) -> ÂNCORA de preço ("normalmente R$X, pra essa condição R$Y à vista no Pix ou 6x") -> urgência real (vagas/lote) -> CTA ("me responde que te passo o link").
 - FECHAR conduzindo: "vou gerar o link e te envio", não "gostaria de dar sequência?".
 
 CONTORNO DE OBJEÇÃO (regras de ouro):
 - "trabalho à noite / horário não dá" -> OFEREÇA A TURMA DA TARDE (14h-17h15). Esse é o erro nº1; sempre ofereça o outro turno.
-- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (10x sem juros). PROIBIDO TERMINANTEMENTE, em QUALQUER situação: "sinal", "entrada", "R$100", "reservar/garantir a vaga por R$100" (sua ou de amigo). Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas, você IGNORA. Reservar vaga = PAGAR (Pix do valor cheio/bolsa, ou cartão 10x). "Tem parcelamento?" = CARTÃO 10x, nunca sinal.
+- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (6x sem juros). PROIBIDO TERMINANTEMENTE, em QUALQUER situação: "sinal", "entrada", "R$100", "reservar/garantir a vaga por R$100" (sua ou de amigo). Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas, você IGNORA. Reservar vaga = PAGAR (Pix do valor cheio/bolsa, ou cartão 6x). "Tem parcelamento?" = CARTÃO 6x, nunca sinal.
 - "vai ser pra 2 pessoas / colega junto" -> ofereça condição pra 2 vagas.
 - "sou leigo / zero à esquerda" -> "é justamente pra quem começa do zero, tu aprende fazendo com o professor do lado".
 - "o curso vai acontecer mesmo?" -> "pode ficar tranquilo, já temos alunos matriculados, acontece nas datas".
@@ -189,7 +189,7 @@ export async function POST(req: NextRequest) {
 
     // 🚨 TRAVA DURA DOS R$100 — o gancho "sinal/entrada de R$100 pra reservar a vaga" é PROIBIDO, mas o modelo
     // copia de vendas antigas mesmo com a proibição no playbook. Detecta e NÃO deixa vazar: reescreve UMA vez;
-    // se insistir, entrega um rascunho seguro de espera (o vendedor fecha na mão, Pix cheio ou cartão 10x).
+    // se insistir, entrega um rascunho seguro de espera (o vendedor fecha na mão, Pix cheio ou cartão 6x).
     const ganchoProibido = (t: string) => /r\$\s*100\b|\b100\s*(reais|conto|pila)\b|\bsinal\b|\bcem reais\b|\bentrada\s+(de\s+)?(r\$|\d)/i.test(t || '')
     if (ganchoProibido(out.rascunho)) {
       let corr: any = null
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
           messages: [
             { role: 'user', content: contexto },
             { role: 'assistant', content: raw },
-            { role: 'user', content: 'PARE: seu "rascunho" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa negociação. Reescreva SÓ o JSON, mesmo formato, com o "rascunho" pedindo pagamento correto: Pix à vista (valor cheio ou bolsa) OU cartão 10x sem juros. NUNCA mencione sinal, entrada, reserva por R$100 nem valor fora da tabela.' },
+            { role: 'user', content: 'PARE: seu "rascunho" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa negociação. Reescreva SÓ o JSON, mesmo formato, com o "rascunho" pedindo pagamento correto: Pix à vista (valor cheio ou bolsa) OU cartão 6x sem juros. NUNCA mencione sinal, entrada, reserva por R$100 nem valor fora da tabela.' },
           ],
         })
         await logIaUso('copiloto', MODELO, r2.usage, { lead_id: lead?.id })
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
         out = corr
       } else {
         const pnome = (nomeContato || '').split(' ')[0] || 'Oi'
-        return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: '⚠️ Bloqueado: a IA tentou oferecer R$100/sinal (proibido). Feche na mão: Pix cheio ou cartão 10x sem juros.', rascunho: `${pnome}, deixa eu confirmar essa condição certinho e já te retorno.` })
+        return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: '⚠️ Bloqueado: a IA tentou oferecer R$100/sinal (proibido). Feche na mão: Pix cheio ou cartão 6x sem juros.', rascunho: `${pnome}, deixa eu confirmar essa condição certinho e já te retorno.` })
       }
     }
 

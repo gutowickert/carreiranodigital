@@ -929,7 +929,7 @@ footer .footer-col ul li a:hover,.footer-bottom a:hover{color:var(--accent-soft)
           <div class="lote-selo">Lote 1</div>
           <div class="lote-prazo">Válido até 29/09</div>
           <div class="lote-valor">R$ 797<span class="lote-pix">no Pix</span></div>
-          <div class="lote-parc">ou 10x R$ 99,70 <span class="lote-cartao">(cartão R$ 997)</span></div>
+          <div class="lote-parc">ou 6x R$ 166,17 <span class="lote-cartao">(cartão R$ 997)</span></div>
           <div class="lote-btns">
             <a class="lote-btn" data-turma="anlportoalegre102601" data-content="lote-0-tarde" data-inicio="" href="#">Garantir · turma da tarde</a>
             <a class="lote-btn" data-turma="anlportoalegre102602" data-content="lote-0-noite" data-inicio="" href="#">Garantir · turma da noite</a>
@@ -939,7 +939,7 @@ footer .footer-col ul li a:hover,.footer-bottom a:hover{color:var(--accent-soft)
           <div class="lote-selo">Lote 2</div>
           <div class="lote-prazo">Válido até 06/10</div>
           <div class="lote-valor">R$ 997<span class="lote-pix">no Pix</span></div>
-          <div class="lote-parc">ou 10x R$ 119,70 <span class="lote-cartao">(cartão R$ 1.197)</span></div>
+          <div class="lote-parc">ou 6x R$ 199,50 <span class="lote-cartao">(cartão R$ 1.197)</span></div>
           <div class="lote-btns">
             <a class="lote-btn" data-turma="anlportoalegre102601" data-content="lote-1-tarde" data-inicio="30/09" href="#">Garantir · turma da tarde</a>
             <a class="lote-btn" data-turma="anlportoalegre102602" data-content="lote-1-noite" data-inicio="30/09" href="#">Garantir · turma da noite</a>
@@ -1082,7 +1082,7 @@ window.addEventListener('scroll', () => {
     btn.href = BASE + '?' + p.toString();
     btn.addEventListener('click', function(){
       if (typeof fbq === 'function') {
-        fbq('track','Lead',{content_ids: ['anlportoalegre102601'],content_type:'product'},{eventID:eventId});
+        fbq('track','Lead',{content_ids: [turma],content_type:'product'},{eventID:eventId});
       }
     });
   });

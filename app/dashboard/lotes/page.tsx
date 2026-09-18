@@ -60,7 +60,7 @@ export default function LotesAbertos() {
                 <th style={{ padding: '12px 14px' }}>Turma</th>
                 <th style={{ padding: '12px 14px' }}>Fase</th>
                 <th style={{ padding: '12px 14px' }}>Lote vigente</th>
-                <th style={{ padding: '12px 14px' }}>Preço (Pix / 10x)</th>
+                <th style={{ padding: '12px 14px' }}>Preço (Pix / 6x)</th>
                 <th style={{ padding: '12px 14px' }}>Vira em</th>
                 <th style={{ padding: '12px 14px' }}>Depois</th>
                 <th style={{ padding: '12px 14px' }}>Turma começa</th>
@@ -76,7 +76,7 @@ export default function LotesAbertos() {
                   <td style={{ padding: '12px 14px' }}>{badge(l.fase, l.fase_label)}</td>
                   <td style={{ padding: '12px 14px', color: 'var(--text-2)' }}>{l.lote_nome}{l.lote_unico && <span style={{ fontSize: 11, color: 'var(--text-faint)' }}> (único)</span>}</td>
                   <td style={{ padding: '12px 14px', color: 'var(--text)', fontWeight: 600, whiteSpace: 'nowrap' }}>
-                    {money(l.preco_pix)} <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>/ 10x {money(l.parcela_cartao)}</span>
+                    {money(l.preco_pix)} <span style={{ color: 'var(--text-faint)', fontWeight: 400 }}>/ 6x {money(l.parcela_cartao)}</span>
                   </td>
                   <td style={{ padding: '12px 14px', whiteSpace: 'nowrap' }}>
                     <span style={{ fontWeight: 600, color: 'var(--text)' }}>{brData(l.vale_ate)}</span>

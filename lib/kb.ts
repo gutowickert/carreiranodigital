@@ -67,7 +67,7 @@ Campanha no ar (anúncios publicados no Meta Ads com o negócio real dele); lead
 Douglas Conceição — especialista em tráfego pago, 10 anos de experiência em negócios locais. Dono de agência de tráfego, host do DougCast. Ensina o que aplica todo dia em clientes reais.
 
 ## Investimento
-Parcelado no cartão: 10x R$99,70. À vista (melhor opção): R$797,00. Inclui: 3 dias de imersão presencial, campanha no ar ao final, suporte durante o curso.
+Parcelado no cartão: 6x R$166,17. À vista (melhor opção): R$797,00. Inclui: 3 dias de imersão presencial, campanha no ar ao final, suporte durante o curso.
 Âncora de valor: agência básica cobra a partir de R$1.000/mês (R$12.000/ano). Abatimento: o valor do ANL é abatido na Formação Completa (ponte de upsell).
 
 ## Prova social (durante o curso — nunca garantir)
@@ -112,7 +112,7 @@ Diferencial: os agentes aceleram a execução, mas o valor está no PROFESSOR qu
 M1 Estratégia — Barbara Corrêa e Felipe Lenhard (fundadores da Flip Estratégia, Lajeado). M2 Design — Carlos Viana (Doutor em Design e Tecnologia, UFRGS). M3 Vídeo — Aleks Tizon (+10 mil vendas geradas com vídeos próprios). M4 Tráfego — Douglas Conceição (fundador de agência, host do DougCast). "Professores que fazem isso todos os dias."
 
 ## Investimento
-Parcelado no cartão: 10x R$269,70. À vista (melhor opção): R$2.397,00. Inclui: 4 módulos presenciais integrados, 10 agentes de IA (acesso permanente), gravações por 1 ano, certificado oficial.
+Parcelado no cartão: 6x R$449,50. À vista (melhor opção): R$2.397,00. Inclui: 4 módulos presenciais integrados, 10 agentes de IA (acesso permanente), gravações por 1 ano, certificado oficial.
 Âncora: agência básica R$1.000/mês (R$12.000/ano). Abatimento: quem fez o ANL tem o valor abatido na Formação (confirmar condição vigente ao fechar).
 
 ## Prova social (durante o curso — nunca garantir)

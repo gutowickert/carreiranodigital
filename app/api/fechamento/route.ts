@@ -12,8 +12,8 @@ const ATIV = ['atendimento_inicial', 'lote_preco_ok', 'oferecer_bolsa', 'agendad
 // preço/bolsa fixos por produto (mesma tabela travada do motor)
 function precosDe(codigo: string) {
   const c = (codigo || '').toLowerCase()
-  if (c.startsWith('anl')) return { preco: 'R$797 no Pix · R$997 em 10x', bolsa: 'R$697 no Pix · R$897 em 10x' }
-  if (c.startsWith('fc')) return { preco: 'R$2.397 no Pix · R$2.697 em 10x', bolsa: 'R$2.097 no Pix · R$2.497 em 10x' }
+  if (c.startsWith('anl')) return { preco: 'R$797 no Pix · R$997 em 6x', bolsa: 'R$697 no Pix · R$897 em 6x' }
+  if (c.startsWith('fc')) return { preco: 'R$2.397 no Pix · R$2.697 em 6x', bolsa: 'R$2.097 no Pix · R$2.497 em 6x' }
   return { preco: '', bolsa: '' }
 }
 

@@ -15,8 +15,8 @@ const CIDADES = [
     turmas: [{
       turma_inicio: '2026-10-06',
       lotes: [
-        { nome: 'Lote 1', pix: 797, cartao: 997, parc: '10x R$ 99,70', ate: '2026-09-29' },
-        { nome: 'Lote 2', pix: 997, cartao: 1197, parc: '10x R$ 119,70', ate: '2026-10-06' },
+        { nome: 'Lote 1', pix: 797, cartao: 997, parc: '6x R$ 166,17', ate: '2026-09-29' },
+        { nome: 'Lote 2', pix: 997, cartao: 1197, parc: '6x R$ 199,50', ate: '2026-10-06' },
       ],
     }],
   },
@@ -68,7 +68,7 @@ if (P) {
     `<div class="invest-op-label">Lote 1, no Pix, até ${br(L1.ate)}</div>
         <div class="invest-op-valor">R$ ${L1.pix},00</div>
         <div class="invest-op-sub">economia de R$ ${L1.cartao - L1.pix} em relação ao cartão</div>`)
-  s = s.replace(/<div class="invest-op-label">Parcelado no cartão<\/div>\s*<div class="invest-op-valor">10x R\$ [0-9,]+<\/div>\s*<div class="invest-op-sub">[^<]*<\/div>/,
+  s = s.replace(/<div class="invest-op-label">Parcelado no cartão<\/div>\s*<div class="invest-op-valor">6x R\$ [0-9,]+<\/div>\s*<div class="invest-op-sub">[^<]*<\/div>/,
     `<div class="invest-op-label">Parcelado no cartão, Lote 1</div>
         <div class="invest-op-valor">${L1.parc}</div>
         <div class="invest-op-sub">cartão R$ ${L1.cartao}</div>`)

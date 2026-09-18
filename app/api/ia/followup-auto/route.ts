@@ -312,14 +312,14 @@ export async function POST(req: NextRequest) {
       const ti = turmaInfo.get(l.turma_id || '')
       // produto (FC/ANL): do código do lead; se vazio (bug da Helena), deriva do CÓDIGO DA TURMA.
       const fam = familia(l.codigo_turma) || familia(ti?.codigo || null)
-      // preço FIXO por produto (FC 2397 pix / 2697 cartão 10x; ANL 797 pix). Fallback: preço real da turma
+      // preço FIXO por produto (FC 2397 pix / 2697 cartão 6x; ANL 797 pix). Fallback: preço real da turma
       // (2697 é o valor do CARTÃO, não do Pix — não usa como Pix).
       let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
       if (!precoPix && ti?.preco && ti.preco > 0 && ti.preco !== 2697) precoPix = ti.preco
       // 🆕 LOTE REAL vence o hardcoded: turma com lote cadastrado → usa o preço do lote VIGENTE (Pix).
       if (ti?.loteVig) precoPix = ti.loteVig.preco_pix
       // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
-      const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 10x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 10x sem juros' : ''
+      const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x sem juros' : ''
       // ⛔ BLINDAGEM R$0 (bug grave da Helena): template que precisa de preço/bolsa sem produto resolvido → NÃO manda.
       const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(p.tpl.corpo || '')
       const precisaBolsa = /\{\{\s*condicao_bolsa\s*\}\}/.test(p.tpl.corpo || '')
@@ -329,7 +329,7 @@ export async function POST(req: NextRequest) {
         nome: nomeSaudacao(l.nome), vendedor: VENDEDOR, curso: cursoNome(fam),
         cidade: ti?.cidade || 'sua região',
         preco_pix: money(precoPix), preco: money(precoPix),
-        preco_cartao: ti?.loteVig ? `10x de ${money(ti.loteVig.parcela_cartao)}` : (fam === 'FC' ? 'R$2697 no cartão em até 10x' : ''),
+        preco_cartao: ti?.loteVig ? `6x de ${money(ti.loteVig.parcela_cartao)}` : (fam === 'FC' ? 'R$2697 no cartão em até 6x' : ''),
         condicao_bolsa: bolsaTxt,
         // 🆕 prazo REAL do lote (vale_ate) quando a turma tem lote e a data ainda não passou; senão o prazo rolante de sempre.
         prazo: (ti?.loteVig && ti.loteVig.vale_ate >= hojeBR) ? `${ti.loteVig.vale_ate.slice(8, 10)}/${ti.loteVig.vale_ate.slice(5, 7)}` : prazoDe(entradaEtapa[l.id] || 0),
