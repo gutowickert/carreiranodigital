@@ -101,6 +101,9 @@ export default function CRM() {
   const [leadEditando, setLeadEditando] = useState<Lead | null>(null)
   const [novoLead, setNovoLead] = useState(false)
   const [verFinalizados, setVerFinalizados] = useState(false)
+  // propostas publicadas por lead (vem da rota: as tabelas de orçamento são fechadas pro navegador).
+  // Só acende chip no card; se falhar, o funil segue igual — por isso o catch silencioso.
+  const [propostas, setPropostas] = useState<Record<string, any>>({})
   const [meuPerfil, setMeuPerfil] = useState<any>(null)
   // etapas do funil DA ORG (fallback: as hardcoded, pra CnD nunca quebrar)
   const [etapasOrg, setEtapasOrg] = useState<any[]>(ETAPAS)
@@ -112,6 +115,7 @@ export default function CRM() {
   const etapasKanban = etapasOrg.filter(e => (e.papel ? (e.papel !== 'ganho' && e.papel !== 'perda') : (e.id !== 'ganho' && e.id !== 'perda')))
   // fase de cada turma (só as com lote) — pro board "Ver por Fase"
   useEffect(() => { fetchAuth('/api/turmas/fases').then(r => r.json()).then(j => { if (j?.ok) setFasesPorTurma(j.fases || {}) }).catch(() => { }) }, [])
+  useEffect(() => { fetchAuth('/api/orcamentos/por-lead').then(r => r.json()).then(j => { if (j?.ok) setPropostas(j.porLead || {}) }).catch(() => { }) }, [])
 
   // abre o card do lead direto quando vem de outra tela (?lead=<id>) — ex.: Fila de Ligações
   const [leadParam, setLeadParam] = useState<string | null>(null)
@@ -587,7 +591,7 @@ export default function CRM() {
                           </div>
                           <div className="tnum" style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 3 }}>{lead.whatsapp || '—'}</div>
                           {/* os estados em chips: cor pelo significado, ícone de traço, nunca emoji */}
-                          {((lead as any).temperatura || lead.turmas || verPorFase || tarefaAtrasada || cicloEstourou || prazoEstourou) && (
+                          {((lead as any).temperatura || lead.turmas || verPorFase || tarefaAtrasada || cicloEstourou || prazoEstourou || propostas[lead.id]) && (
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 8 }}>
                               {(lead as any).temperatura && (() => { const t = (lead as any).temperatura; return t === 'quente'
                                 ? <Chip tom="atencao" icone={Flame} pequeno title="Temperatura: quente">quente</Chip>
@@ -595,6 +599,10 @@ export default function CRM() {
                                 : <Chip tom="info" icone={Snowflake} pequeno title="Temperatura: frio">frio</Chip> })()}
                               {lead.turmas && <Chip tom="marca" pequeno>{lead.turmas.codigo || lead.turmas.produtos?.nome}</Chip>}
                               {verPorFase && (() => { const ei = etapaInfo(lead.etapa); return <span title="Etapa da negociação" style={{ fontSize: 11, fontWeight: 700, color: ei.cor, padding: '1px 7px', background: ei.bg, borderRadius: 'var(--r-pill)' }}>{ei.label}</span> })()}
+                              {/* proposta: cinza enquanto ninguém abriu, verde quando o cliente abriu o link */}
+                              {propostas[lead.id] && (propostas[lead.id].aberturas > 0
+                                ? <Chip tom="bom" pequeno title={`Abriu ${propostas[lead.id].aberturas}x · última ${new Date(propostas[lead.id].ultima_abertura).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}`}>abriu a proposta</Chip>
+                                : <Chip tom="neutro" pequeno title={`Proposta enviada em ${new Date(propostas[lead.id].publicado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })} · ainda não abriu`}>proposta enviada</Chip>)}
                               {tarefaAtrasada && <Chip tom="ruim" icone={Clock} pequeno>tarefa atrasada</Chip>}
                               {cicloEstourou && <Chip tom="ruim" icone={AlertTriangle} pequeno>ciclo estourou</Chip>}
                               {prazoEstourou && <Chip tom="ruim" icone={AlertTriangle} pequeno>prazo venceu</Chip>}

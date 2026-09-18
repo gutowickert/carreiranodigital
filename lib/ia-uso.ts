@@ -11,9 +11,13 @@ export async function logIaUso(evento: string, model: string, usage: any, extra?
     const cr = usage.cache_read_input_tokens || 0
     const cw = usage.cache_creation_input_tokens || 0
     // custo estimado em USD por modelo (entrada/saída por 1M; cache read ~0.1x, write ~1.25x)
+    // Preço por 1M de tokens (entrada, saída), tabela oficial da Anthropic.
+    // ⚠️ Corrigido em 18/09/2026: o Sonnet 5 estava lançado como 3/15 (preço do Sonnet 4.6) e custa
+    // 2/10. Todo o custo de IA da escola vinha superestimado por causa disso.
     const P: Record<string, [number, number]> = {
-      'claude-sonnet-4-6': [3, 15], 'claude-sonnet-5': [3, 15],
+      'claude-sonnet-4-6': [3, 15], 'claude-sonnet-5': [2, 10],
       'claude-haiku-4-5': [1, 5], 'claude-opus-4-8': [5, 25], 'claude-opus-4-6': [5, 25],
+      'claude-opus-5': [5, 25],
     }
     const [pin, pout] = P[model] || [3, 15]
     const custo = (inp * pin + cw * pin * 1.25 + cr * pin * 0.1 + out * pout) / 1_000_000

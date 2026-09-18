@@ -29,6 +29,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/ligacoes': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
   '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
   '/dashboard/tarefas/leads': ListChecks, '/dashboard/fechamento': ClipboardCheck, '/dashboard/entregas': PackageCheck,
+  '/dashboard/orcamentos': FileText,
   '/dashboard/captacao': Megaphone, '/dashboard/analise-conversao': TrendingUp, '/dashboard/trafego': Activity,
   '/dashboard/entregas/trafego': Activity, '/dashboard/funil-site': Globe, '/dashboard/velocidade-venda': Gauge, '/dashboard/nps': Smile,
   '/dashboard/turmas': GraduationCap, '/dashboard/chamada': UserCheck, '/dashboard/disparos': Send,
@@ -74,6 +75,7 @@ const grupos: Grupo[] = [
       { nome: 'Funil', href: '/dashboard/crm' },
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
+      { nome: 'Gerar orçamento', href: '/dashboard/orcamentos' },
       { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
       { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
@@ -186,6 +188,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
       '/dashboard/ligacoes', '/dashboard/whatsapp',
       '/dashboard/lotes', '/dashboard/produtos',
       '/dashboard/turmas-mensagens', '/dashboard/tarefas/leads', '/dashboard/fechamento',
+      '/dashboard/orcamentos',
       '/dashboard/analise-conversao',
       '/dashboard/turmas', '/dashboard/chamada', '/dashboard/alunos',
     ]
@@ -195,7 +198,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
 
   if (href === '/dashboard/whatsapp' || href === '/dashboard/whatsapp-disparos') return p.wa_caixa === true
   // base do vendedor
-  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/lotes', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos']
+  const baseVendedor = ['/dashboard', '/dashboard/turmas', '/dashboard/lotes', '/dashboard/tarefas/leads', '/dashboard/agenda', '/dashboard/agenda/aulas', '/dashboard/alunos', '/dashboard/orcamentos']
   if (baseVendedor.includes(href)) return true
   // CRM interno
   if (p.crm_interno && (href === '/dashboard/crm' || href === '/dashboard/crm/resultados')) return true
