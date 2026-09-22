@@ -309,6 +309,16 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
   const [proxTurmaHora, setProxTurmaHora] = useState('09:00')
   const [naoLida, setNaoLida] = useState(false)
 
+  // A PROPOSTA DESTE LEAD, dentro do card. O chip no funil diz que existe; aqui o vendedor vê o
+  // estado inteiro sem sair da tela: enviada quando, aberta quantas vezes, e se o cliente aceitou.
+  const [proposta, setProposta] = useState<any>(null)
+  useEffect(() => {
+    if (!lead?.id) { setProposta(null); return }
+    fetchAuth(`/api/orcamentos/por-lead?lead_id=${lead.id}`).then(r => r.json())
+      .then(j => setProposta(j?.ok ? (j.porLead?.[lead.id] || null) : null))
+      .catch(() => setProposta(null))
+  }, [lead?.id])
+
   async function toggleNaoLida() {
     if (!lead) return
     const novo = !naoLida
@@ -656,6 +666,43 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
         )}
 
         {!novoLead && lead && chatAberto && <ChatLead lead={lead} />}
+
+        {/* PROPOSTA — o vendedor precisa ver o aceite aqui, não só o chip no funil */}
+        {!novoLead && lead && proposta && (
+          <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>
+            <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 8 }}>Proposta</div>
+            <div style={{
+              padding: 12, borderRadius: 'var(--r-sm)',
+              background: proposta.aceito_em ? 'var(--green-bg)' : 'var(--bg)',
+              border: `1px solid ${proposta.aceito_em ? 'var(--green)' : 'var(--border)'}`,
+              display: 'flex', flexDirection: 'column', gap: 6,
+            }}>
+              {proposta.aceito_em ? (
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--green-strong)' }}>
+                  ✓ Aceita por {proposta.aceito_nome || 'o cliente'} em {new Date(proposta.aceito_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
+                </div>
+              ) : (
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text)' }}>
+                  {proposta.aberturas > 0 ? `Aberta ${proposta.aberturas}x — ainda sem aceite` : 'Enviada — o cliente ainda não abriu'}
+                </div>
+              )}
+              <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
+                Enviada em {new Date(proposta.publicado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
+                {proposta.ultima_abertura ? ` · última abertura ${new Date(proposta.ultima_abertura).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}` : ''}
+              </div>
+              {proposta.slug && (
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <a href={`/proposta/${proposta.slug}`} target="_blank" rel="noopener"
+                    style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>abrir a proposta ↗</a>
+                  <button type="button" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/proposta/${proposta.slug}`) }}
+                    style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                    copiar o link
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {!novoLead && lead && (
           <div style={{ borderTop: '1px solid var(--border)', paddingTop: 14 }}>

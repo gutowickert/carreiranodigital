@@ -21,11 +21,16 @@ export async function GET(req: Request) {
     const quem = await quemEuVejo(auth, org)
     if (!quem) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
 
+    // o funil pede o mapa inteiro; o card do lead pede um só
+    const umLead = new URL(req.url).searchParams.get('lead_id') || ''
+
     const publicados: any[] = []
     for (let de = 0; ; de += 1000) {
-      const { data } = await sb.from('orcamentos')
+      let q = sb.from('orcamentos')
         .select('id, lead_id, slug, publicado_em, aceito_em, aceito_nome')
         .eq('org_id', org).eq('situacao', 'publicado')
+      if (umLead) q = q.eq('lead_id', umLead)
+      const { data } = await q
         .order('publicado_em', { ascending: false }).order('id').range(de, de + 999)
       publicados.push(...(data || []))
       if (!data || data.length < 1000) break
