@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
 import { MetaBloco, Placar, Registros, Nota } from './Resultados'
+import { BuscarLead, type LeadAchado } from '@/components/BuscarLead'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)' }
@@ -67,6 +68,7 @@ export default function FichaEntrega() {
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
   const [msg, setMsg] = useState('')
+  const [vincular, setVincular] = useState(false)   // painel de ligar esta entrega a um lead
   const [agindo, setAgindo] = useState<string | null>(null)   // marcoId em ação
   const [form, setForm] = useState<any>({})
   const [novaPend, setNovaPend] = useState('')
@@ -114,6 +116,16 @@ export default function FichaEntrega() {
     carregar()
   }
 
+  // Ligar um projeto que já existe ao card do lead. Os projetos criados antes desta busca existir
+  // ficaram todos sem lead — este é o caminho pra recuperar o vínculo, um a um, com alguém olhando.
+  async function vincularLead(l: LeadAchado) {
+    if (l.ja_em_projeto && !confirm(`Este lead já está na entrega de ${l.ja_em_projeto}. Vincular mesmo assim?`)) return
+    const j = await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, lead_id: l.id }) }).then(r => r.json()).catch(() => null)
+    if (j?.ok === false) { setMsg('' + (j.error || 'não deu pra vincular')); setTimeout(() => setMsg(''), 4000); return }
+    setVincular(false)
+    carregar()
+  }
+
   async function trocarResponsavel(v: string) {
     await fetchAuth('/api/projetos/ficha', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: p.id, responsavel_id: v || null }) })
     carregar()
@@ -158,8 +170,23 @@ export default function FichaEntrega() {
           )}
           {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>}
           {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>Lead de origem</Link>}
+          {!p.lead_id && (
+            <button onClick={() => setVincular(v => !v)} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'var(--surface)', cursor: 'pointer' }}>
+              {vincular ? 'cancelar' : '+ vincular lead'}
+            </button>
+          )}
         </div>
       </div>
+
+      {/* Vincular o lead depois: para os projetos que nasceram antes de existir a busca. */}
+      {vincular && !p.lead_id && (
+        <div style={{ ...card, padding: 14, marginTop: 12 }}>
+          <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginBottom: 6 }}>
+            Qual card do CRM deu origem a esta entrega? O nome do cliente aqui pode estar diferente do nome no lead — confere a etapa e a data antes de escolher.
+          </div>
+          <BuscarLead autoFoco onEscolher={vincularLead} />
+        </div>
+      )}
 
       <LinkCliente projeto={p} aoMudar={carregar} />
 

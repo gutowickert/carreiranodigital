@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
+import { BuscarLead, LeadEscolhido, type LeadAchado } from '@/components/BuscarLead'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)', width: '100%' }
@@ -37,6 +38,8 @@ export default function Entregas() {
   const [msg, setMsg] = useState('')
   const [pessoas, setPessoas] = useState<{ id: string; nome: string }[]>([])
   const [f, setF] = useState<any>({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '', participantes: [] })
+  // o lead que deu origem a esta entrega. Opcional: sem ele o projeto nasce igual ao de antes.
+  const [lead, setLead] = useState<LeadAchado | null>(null)
 
   async function carregar() {
     setCarregando(true)
@@ -48,10 +51,10 @@ export default function Entregas() {
 
   async function criar() {
     if (!f.cliente || !f.data_inicio) { setMsg('cliente e data de início são obrigatórios'); return }
-    const j = await fetchAuth('/api/projetos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) }).then(r => r.json()).catch(() => null)
+    const j = await fetchAuth('/api/projetos', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...f, lead_id: lead?.id || null }) }).then(r => r.json()).catch(() => null)
     if (j?.ok) {
       setMsg(`Projeto criado com ${j.marcos} marcos no roteiro.`)
-      setNovo(false); setF({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
+      setNovo(false); setLead(null); setF({ cliente: '', whatsapp: '', produto: 'deu_venda', data_inicio: '', prazo_meses: '', fim_tipo: '', aviso_fim_dias: '', mensalidade_dia: '', mensalidade_valor: '', responsavel_id: '' })
       carregar()
     } else setMsg('' + (j?.error || 'falha'))
     setTimeout(() => setMsg(''), 4000)
@@ -96,6 +99,25 @@ export default function Entregas() {
       {/* ───────── novo projeto */}
       {novo && (
         <div style={{ ...card, padding: 16, marginTop: 14 }}>
+          {/* O LEAD DE ORIGEM, antes de tudo: escolhendo aqui, o cliente e o WhatsApp vêm
+              preenchidos — e continuam editáveis, porque o nome do projeto costuma ser diferente
+              do nome que estava no lead. Deixar em branco cria o projeto como sempre foi. */}
+          <div style={{ marginBottom: 12, paddingBottom: 12, borderBottom: '1px solid var(--border)' }}>
+            <label style={lbl}>Lead de origem (opcional) — liga esta entrega ao card do CRM</label>
+            {lead ? (
+              <LeadEscolhido lead={lead} onTirar={() => setLead(null)} />
+            ) : (
+              <BuscarLead onEscolher={(l) => {
+                setLead(l)
+                // só preenche o que está VAZIO: quem já digitou o nome do jeito que quer não perde
+                setF((v: any) => ({
+                  ...v,
+                  cliente: v.cliente?.trim() ? v.cliente : l.nome,
+                  whatsapp: v.whatsapp?.trim() ? v.whatsapp : (l.whatsapp || ''),
+                }))
+              }} />
+            )}
+          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))', gap: 10 }}>
             <div><label style={lbl}>Cliente *</label><input style={inp} value={f.cliente} onChange={e => setF({ ...f, cliente: e.target.value })} /></div>
             <div><label style={lbl}>WhatsApp</label><input style={inp} value={f.whatsapp} onChange={e => setF({ ...f, whatsapp: e.target.value })} placeholder="5551..." /></div>

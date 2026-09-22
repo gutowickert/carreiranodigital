@@ -95,6 +95,24 @@ export async function PATCH(req: Request) {
     if (b.mensalidade_valor !== undefined) p.mensalidade_valor = b.mensalidade_valor === '' || b.mensalidade_valor == null ? null : Number(b.mensalidade_valor)
     if (b.observacoes !== undefined) p.observacoes = (b.observacoes || '').toString().slice(0, 2000) || null
     if (b.ad_account_id !== undefined) p.ad_account_id = (b.ad_account_id || '').toString().replace(/\D/g, '') || null
+
+    // LIGAR A ENTREGA AO CARD DO LEAD. A criação já fazia isso; aqui é pro projeto que já existe —
+    // todos os que nasceram antes de a busca existir ficaram sem vínculo.
+    //
+    // O lead precisa ser DESTA empresa: sem a conferência, um id qualquer no corpo da requisição
+    // ligaria a entrega a um lead de outra instalação, e a ficha mostraria um "Lead de origem" que
+    // ninguém consegue abrir.
+    let leadVinculado: { id: string; nome: string } | null = null
+    if (b.lead_id !== undefined) {
+      if (!b.lead_id) {
+        p.lead_id = null
+      } else {
+        const { data: lead } = await sb.from('leads').select('id, nome').eq('org_id', org).eq('id', b.lead_id).maybeSingle()
+        if (!lead) return NextResponse.json({ ok: false, error: 'lead não encontrado nesta empresa' }, { status: 200 })
+        p.lead_id = lead.id
+        leadVinculado = lead as any
+      }
+    }
     // quem mais responde pelo projeto: aparece na agenda dessas pessoas junto com o responsável
     if (Array.isArray(b.participantes)) {
       const validos = new Set((await pessoasAtivas(org)).map(x => x.id))
@@ -114,6 +132,23 @@ export async function PATCH(req: Request) {
     }
 
     await sb.from('projetos').update(p).eq('org_id', org).eq('id', id)
+
+    // Os DOIS lados registram o vínculo: quem abrir o lead vê que ele virou entrega, e quem abrir a
+    // entrega vê de onde ela veio. Sem isto, ligar os dois seria uma mudança invisível.
+    if (leadVinculado) {
+      const quando = String(atual.data_inicio || '').split('-').reverse().join('/')
+      try {
+        await sb.from('lead_andamentos').insert({
+          lead_id: leadVinculado.id, tipo: 'entrega',
+          observacao: `📦 Ligado à entrega de ${atual.cliente}${quando ? ` (início ${quando})` : ''}.`,
+        })
+      } catch { /* histórico não pode derrubar o vínculo */ }
+      await sb.from('projeto_andamentos').insert({
+        org_id: org, projeto_id: id, tipo: 'nota',
+        observacao: `🔗 Entrega ligada ao lead "${leadVinculado.nome}" do CRM.`,
+        autor: (b.autor || '').toString() || null,
+      })
+    }
 
     if (b.status === 'cancelado') {
       await sb.from('projeto_andamentos').insert({
