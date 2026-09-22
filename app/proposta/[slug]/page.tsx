@@ -133,17 +133,21 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         .lista li{display:flex;gap:9px;font-size:14.5px;color:var(--tinta-2)}
         .lista li::before{content:"✓";color:var(--verde-tinta);font-weight:800}
         .duas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px 26px}
-        .aceite-caixa{margin-top:26px;padding:20px;border:1px solid var(--linha-forte);border-radius:12px;background:var(--cartao);display:flex;flex-direction:column;gap:10px}
+        /* ⚠️ SÓ AS CORES DESTA PÁGINA. A primeira versão usava --marca, --cartao, --papel e
+           --linha-forte, que são de OUTRA tela: variável que não existe torna a regra inválida, e o
+           botão ficou branco (color:#fff) com fundo transparente sobre papel branco — invisível.
+           As que valem aqui estão no :root logo acima: --accent, --paper, --paper-2, --linha. */
+        .aceite-caixa{margin-top:26px;padding:20px;border:1px solid var(--linha);border-radius:12px;background:var(--paper);display:flex;flex-direction:column;gap:10px}
         .aceite-rot{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-fraca)}
-        .aceite-campo{font:inherit;font-size:15px;color:var(--tinta);background:var(--papel);border:1px solid var(--linha-forte);border-radius:8px;padding:11px 12px;width:100%}
-        .aceite-campo:focus{outline:2px solid var(--marca);outline-offset:1px}
-        .aceite-botao{font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--marca);border:none;border-radius:8px;padding:13px 18px;cursor:pointer}
-        .aceite-botao[disabled]{opacity:.6;cursor:default}
+        .aceite-campo{font:inherit;font-size:15px;color:var(--tinta);background:var(--paper-2);border:1px solid var(--linha);border-radius:8px;padding:11px 12px;width:100%}
+        .aceite-campo:focus{outline:2px solid var(--accent);outline-offset:1px}
+        .aceite-botao{font:inherit;font-size:15.5px;font-weight:700;color:#fff;background:var(--grad);border:none;border-radius:8px;padding:14px 18px;cursor:pointer;box-shadow:0 2px 10px rgba(124,58,237,.28)}
+        .aceite-botao[disabled]{opacity:.6;cursor:default;box-shadow:none}
         .aceite-erro{margin:0;font-size:13px;color:#b42318}
         .aceite-aviso{margin:0;font-size:12px;line-height:1.5;color:var(--tinta-fraca)}
-        .aceite-feito{margin-top:26px;padding:20px;border:1px solid #a9d9bc;border-radius:12px;background:#eaf6ef;display:flex;flex-direction:column;gap:8px}
-        .aceite-selo{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#1f6b45}
-        @media print{.aceite-caixa,.aceite-botao{display:none}}
+        .aceite-feito{margin-top:26px;padding:20px;border:1px solid var(--verde-borda);border-radius:12px;background:var(--verde);display:flex;flex-direction:column;gap:8px}
+        .aceite-selo{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--verde-tinta)}
+        @media print{.aceite-botao{display:none}}
         .rodape{border-top:1px solid var(--linha);padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:var(--tinta-fraca)}
         .imprimir{position:fixed;right:16px;bottom:16px;background:var(--grad);color:#fff;border:0;border-radius:999px;padding:12px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 14px 26px -14px rgba(124,58,237,.8)}
         @media print{
