@@ -62,6 +62,9 @@ export default function GerarOrcamento() {
   const [salvo, setSalvo] = useState('')
   const [link, setLink] = useState('')   // endereço da proposta, depois de publicada
   const [dados, setDados] = useState<any>(null)
+  // o nome que sai NA PROPOSTA (o cadastro do lead segue como está) e o produto escolhido
+  const [clienteNome, setClienteNome] = useState('')
+  const [produtoId, setProdutoId] = useState('')
   const [preparando, setPreparando] = useState(false)
 
   // o que o vendedor escolhe/preenche no passo 2
@@ -98,6 +101,8 @@ export default function GerarOrcamento() {
     for (const c of j.fontes.conversas) marcados['con:' + c.id] = true
     setUsar(marcados)
     setContexto({ o_que_vende: j.contexto.o_que_vende || '', regiao: j.contexto.regiao || '' })
+    setClienteNome(j.lead?.nome || '')
+    setProdutoId(j.produto_sugerido || '')
     // o parcelamento vem sugerido pela convenção da escola (à vista + R$ 200, em 6x); dá pra trocar
     setPreco({
       vista: j.produto?.preco_vista != null ? String(j.produto.preco_vista) : '',
@@ -118,12 +123,32 @@ export default function GerarOrcamento() {
       preco_vista: preco.vista,
       parcelas: preco.parcelas,
       preco_parcelado: preco.parcelado,
+      cliente_nome: clienteNome,
+      produto_id: produtoId || null,
     }
     const j = await fetchAuth('/api/orcamentos/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
       .then(r => r.json()).catch(() => null)
     setGerando(false)
     if (!j?.ok) { setMsg(j?.error || 'não consegui gerar'); return }
     setOrc(j.orcamento); setMedido(j.medido)
+  }
+
+  // REABRIR UM RASCUNHO. O trabalho sempre foi salvo; faltava o caminho de volta — quem saía da tela
+  // gerava outro do zero, e o lead ficava com dois orçamentos do mesmo dia.
+  async function abrirAnterior(id: string) {
+    setMsg(''); setSalvo('')
+    const j = await fetchAuth(`/api/orcamentos/abrir?id=${id}`).then(r => r.json()).catch(() => null)
+    if (!j?.ok) { setMsg(j?.error || 'não consegui abrir'); return }
+    const o = j.orcamento
+    setOrc(o); setMedido(null)
+    setClienteNome(o.cliente_nome || dados?.lead?.nome || '')
+    setProdutoId(o.produto_id || '')
+    setPreco({
+      vista: o.preco_vista != null ? String(o.preco_vista) : '',
+      parcelas: o.parcelas != null ? String(o.parcelas) : '',
+      parcelado: o.preco_parcelado != null ? String(o.preco_parcelado) : '',
+    })
+    setSalvo(o.situacao === 'publicado' ? 'Esta proposta já foi publicada — pra mudar o texto, gera uma nova.' : 'Rascunho reaberto.')
   }
 
   // o texto que vale: o que o vendedor escreveu, e na falta dele o que a IA escreveu
@@ -138,7 +163,7 @@ export default function GerarOrcamento() {
     if (!orc) return
     setSalvando(true); setMsg('')
     // salva antes de publicar: o que está na tela é o que o cliente vai ler
-    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado }) })
+    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome }) })
       .then(r => r.json()).catch(() => null)
     if (!s?.ok) { setSalvando(false); setMsg(s?.error || 'não consegui salvar antes de publicar'); return }
 
@@ -154,7 +179,7 @@ export default function GerarOrcamento() {
   async function salvarRascunho() {
     if (!orc) return
     setSalvando(true)
-    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado }) })
+    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome }) })
       .then(r => r.json()).catch(() => null)
     setSalvando(false)
     if (!j?.ok) { setMsg(j?.error || 'não consegui salvar'); return }
@@ -332,13 +357,38 @@ export default function GerarOrcamento() {
                 {/* produto e preço */}
                 <div style={card}>
                   <div style={rot}>Produto e condição</div>
-                  {dados.produto ? (
+                  {dados.produtos?.length ? (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 10 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, fontSize: 14 }}>
-                        <span style={{ color: 'var(--text-2)' }}>Produto</span><b>{dados.produto.nome}</b>
-                      </div>
+                      {/* O NOME QUE SAI NA PROPOSTA. O cadastro costuma ter o apelido do WhatsApp —
+                          "Jose Poa 2" saiu na capa e no endereço do link. Mudar aqui não mexe no lead. */}
                       <label style={{ display: 'block' }}>
-                        <span style={lbl}>À vista (do cadastro: {dinheiro(dados.produto.preco_vista)} · {dados.produto.origem_preco})</span>
+                        <span style={lbl}>Nome do cliente na proposta (no cadastro: {dados.lead.nome})</span>
+                        <input style={inp} value={clienteNome} onChange={e => setClienteNome(e.target.value)}
+                          placeholder="como o cliente se chama de verdade" />
+                      </label>
+
+                      {/* O PRODUTO. Antes vinha travado na turma do lead — que pode ser o curso que
+                          ele JÁ fez, e foi o que aconteceu. Só aparecem produtos com proposta escrita. */}
+                      <label style={{ display: 'block' }}>
+                        <span style={lbl}>Produto desta proposta</span>
+                        <select style={{ ...inp, cursor: 'pointer' }} value={produtoId}
+                          onChange={e => {
+                            setProdutoId(e.target.value)
+                            const p = dados.produtos.find((x: any) => x.id === e.target.value)
+                            if (p?.preco_venda != null) setPreco(v => ({ ...v, vista: String(p.preco_venda) }))
+                          }}>
+                          <option value="">escolhe o produto…</option>
+                          {dados.produtos.map((p: any) => <option key={p.id} value={p.id}>{p.nome}</option>)}
+                        </select>
+                      </label>
+                      {dados.produto_da_turma && produtoId && dados.produto_da_turma.id !== produtoId && (
+                        <p style={{ fontSize: 12.5, color: 'var(--amber)', margin: 0 }}>
+                          No CRM este lead está ligado a <b>{dados.produto_da_turma.nome}</b>. A proposta vai sair com o produto escolhido acima — confere se é o certo.
+                        </p>
+                      )}
+
+                      <label style={{ display: 'block' }}>
+                        <span style={lbl}>À vista{dados.produto?.preco_vista != null ? ` (do cadastro: ${dinheiro(dados.produto.preco_vista)} · ${dados.produto.origem_preco})` : ''}</span>
                         <input style={inp} value={preco.vista} onChange={e => setPreco(p => ({ ...p, vista: e.target.value }))} inputMode="decimal" />
                       </label>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
@@ -359,11 +409,48 @@ export default function GerarOrcamento() {
                     </div>
                   ) : (
                     <p style={{ fontSize: 13, color: 'var(--amber)', marginTop: 10 }}>
-                      Este lead não está ligado a nenhuma turma ou produto. Ajusta no card dele antes de gerar a proposta.
+                      Nenhum produto tem proposta escrita ainda. Hoje só o Deu Venda tem — pra oferecer outro, o texto dele precisa ser escrito antes.
                     </p>
                   )}
                 </div>
               </div>
+
+              {/* JÁ FEITOS PRA ESTE LEAD. Isto aqui era uma frase solta dizendo "1 orçamento(s)
+                  anterior(es)", sem nada pra clicar: o rascunho ficava salvo e inalcançável, e quem
+                  voltava na tela gerava outro do zero. Agora abre. */}
+              {dados.anteriores?.length > 0 && (
+                <div style={{ ...card, marginTop: 14 }}>
+                  <div style={rot}>Já feitos pra este lead</div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 10 }}>
+                    {dados.anteriores.map((a: any) => (
+                      <div key={a.id} style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', borderBottom: '1px solid var(--border)', paddingBottom: 8 }}>
+                        <Chip tom={a.situacao === 'publicado' ? 'bom' : 'neutro'}>{a.situacao === 'publicado' ? 'publicado' : 'rascunho'}</Chip>
+                        <div style={{ flex: '1 1 220px', minWidth: 0 }}>
+                          <div style={{ fontSize: 13.5, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {a.titulo || 'sem título ainda'}
+                          </div>
+                          <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>
+                            {new Date(a.criado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
+                            {a.produto_nome ? ` · ${a.produto_nome}` : ''}
+                            {a.cliente_nome ? ` · como "${a.cliente_nome}"` : ''}
+                          </div>
+                        </div>
+                        {a.situacao === 'publicado' && a.slug && (
+                          <a href={`/proposta/${a.slug}`} target="_blank" rel="noopener" style={{ ...btnSec, textDecoration: 'none' }}>ver</a>
+                        )}
+                        <button onClick={() => abrirAnterior(a.id)} style={btnSec}>
+                          {a.situacao === 'publicado' ? 'abrir' : 'continuar este rascunho'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  {dados.anteriores.some((a: any) => a.situacao === 'rascunho') && (
+                    <p style={{ fontSize: 12.5, color: 'var(--amber)', margin: '10px 0 0' }}>
+                      Já existe rascunho deste lead. Continua ele em vez de gerar outro — gerar de novo cria mais um e gasta IA à toa.
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* barra de ação */}
               <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginTop: 16 }}>
@@ -374,7 +461,7 @@ export default function GerarOrcamento() {
                 <button onClick={voltar} style={btnSec}>Voltar</button>
                 <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>
                   {marcadas} fonte{marcadas === 1 ? '' : 's'} marcada{marcadas === 1 ? '' : 's'} · {dados.fontes.caracteres.toLocaleString('pt-BR')} caracteres de conversa
-                  {dados.anteriores?.length ? ` · ${dados.anteriores.length} orçamento(s) anterior(es)` : ''}
+
                 </span>
               </div>
               {gerando && <p style={{ fontSize: 12.5, color: 'var(--text-faint)', marginTop: 8 }}>Leva uns 30 segundos numa ligação longa.</p>}

@@ -3,6 +3,13 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 // Baixa a gravação da API4COM (tenta várias estratégias de auth) e transcreve via Deepgram.
 // Cacheia em ligacoes.metadata.transcricao. Não lança — retorna o texto ou null.
 
+// PALAVRAS QUE O TRANSCRITOR NÃO CONHECE. Sem esta lista ele escreve o que parece: "Claude" virava
+// "cloud" nas ligações, e o erro seguia adiante — chegou a sair numa proposta, no título de uma
+// objeção ("não sabe mexer no Claude/cloud"). O Deepgram aceita um reforço por palavra; o número
+// depois dos dois-pontos é o peso.
+const TERMOS = ['Claude:2', 'Hotmart:2', 'Kiwify:2', 'Meta:1', 'Reels:1', 'tráfego:1']
+const REFORCO = TERMOS.map(t => `&keywords=${encodeURIComponent(t)}`).join('')
+
 async function baixar(url: string, token: string) {
   const tentativas: { url?: string; headers?: any }[] = [
     { headers: { Authorization: token } },
@@ -32,7 +39,7 @@ export async function transcreverLigacao(ligacaoId: string): Promise<string | nu
     if (l.metadata && (l.metadata as any).transcrita) return (l.metadata as any).transcricao || null // já processada (mesmo se vazia)
     const b = await baixar(l.gravacao_url, token)
     if (!b.ok) return null
-    const tr = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
+    const tr = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true' + REFORCO, {
       method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': b.ct || 'audio/mpeg' }, body: b.buf,
     })
     const j: any = await tr.json().catch(() => null)

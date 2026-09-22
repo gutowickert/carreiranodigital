@@ -3,6 +3,7 @@ import { headers } from 'next/headers'
 import type { Metadata } from 'next'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import Abertura from './Abertura'
+import Aceite from './Aceite'
 
 // O CARTÃO QUE O WHATSAPP MOSTRA antes de a pessoa clicar: logo da escola, "Proposta para <nome>" e
 // uma linha do que é. Link pelado, com endereço estranho, é o que faz o cliente achar que é golpe —
@@ -62,7 +63,10 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
   if (!orc) notFound()
 
   const { data: lead } = await sb.from('leads').select('nome').eq('id', orc.lead_id).maybeSingle()
-  const cliente = lead?.nome || 'você'
+  // O NOME QUE SAI NA PROPOSTA. O cadastro do lead traz o apelido do WhatsApp — "Jose Poa 2" — e era
+  // isso que aparecia na capa, no topo de toda página e no endereço do link. Quem monta a proposta
+  // escolhe o nome; em branco, cai no do lead, como antes.
+  const cliente = orc.cliente_nome || lead?.nome || 'você'
   const objecoes = ((orc.objecoes as any[]) || []).filter(o => o.situacao !== 'fora')
   const vista = dinheiro(orc.preco_vista)
   const parcela = dinheiro(orc.preco_parcelado)
@@ -129,7 +133,17 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         .lista li{display:flex;gap:9px;font-size:14.5px;color:var(--tinta-2)}
         .lista li::before{content:"✓";color:var(--verde-tinta);font-weight:800}
         .duas{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:12px 26px}
-        .assina{border-top:1px solid var(--tinta-fraca);padding-top:8px;margin-top:26px;font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-fraca)}
+        .aceite-caixa{margin-top:26px;padding:20px;border:1px solid var(--linha-forte);border-radius:12px;background:var(--cartao);display:flex;flex-direction:column;gap:10px}
+        .aceite-rot{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--tinta-fraca)}
+        .aceite-campo{font:inherit;font-size:15px;color:var(--tinta);background:var(--papel);border:1px solid var(--linha-forte);border-radius:8px;padding:11px 12px;width:100%}
+        .aceite-campo:focus{outline:2px solid var(--marca);outline-offset:1px}
+        .aceite-botao{font:inherit;font-size:15px;font-weight:700;color:#fff;background:var(--marca);border:none;border-radius:8px;padding:13px 18px;cursor:pointer}
+        .aceite-botao[disabled]{opacity:.6;cursor:default}
+        .aceite-erro{margin:0;font-size:13px;color:#b42318}
+        .aceite-aviso{margin:0;font-size:12px;line-height:1.5;color:var(--tinta-fraca)}
+        .aceite-feito{margin-top:26px;padding:20px;border:1px solid #a9d9bc;border-radius:12px;background:#eaf6ef;display:flex;flex-direction:column;gap:8px}
+        .aceite-selo{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#1f6b45}
+        @media print{.aceite-caixa,.aceite-botao{display:none}}
         .rodape{border-top:1px solid var(--linha);padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:var(--tinta-fraca)}
         .imprimir{position:fixed;right:16px;bottom:16px;background:var(--grad);color:#fff;border:0;border-radius:999px;padding:12px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 14px 26px -14px rgba(124,58,237,.8)}
         @media print{
@@ -268,7 +282,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       <section className="folha">
         <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O aceite</span></div>
         <h2 className="disp">Fechado?</h2>
-        <p className="corpo">É só assinar abaixo. Depois disso a escola entra em contato pra marcar a data.</p>
+        <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato pra marcar a data.</p>
         <p className="corpo" style={{ fontSize: 13.5 }}>
           {orc.produto_nome || 'Implantação'} com 3 meses de estratégia acompanhada
           {vista ? ` · ${vista} à vista no Pix` : ''}
@@ -276,9 +290,10 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           {' '}· pagamento único, sem mensalidade · verba de anúncio por conta da contratante · a máquina fica com a
           contratante ao final · a escola monta o método e testa junto, e não garante volume de vendas.
         </p>
-        <div className="assina">{cliente} · Contratante</div>
-        <div className="assina">Escola Carreira no Digital · CNPJ 62.512.432/0001-39 · Contratada</div>
-        <div className="assina">Data</div>
+        <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} />
+        <p className="corpo" style={{ fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 14 }}>
+          Escola Carreira no Digital · CNPJ 62.512.432/0001-39
+        </p>
         <p className="corpo" style={{ textAlign: 'center', fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 20 }}>
           Proposta válida por {validade} dias · carreiranodigital.com
         </p>

@@ -599,8 +599,11 @@ export default function CRM() {
                                 : <Chip tom="info" icone={Snowflake} pequeno title="Temperatura: frio">frio</Chip> })()}
                               {lead.turmas && <Chip tom="marca" pequeno>{lead.turmas.codigo || lead.turmas.produtos?.nome}</Chip>}
                               {verPorFase && (() => { const ei = etapaInfo(lead.etapa); return <span title="Etapa da negociação" style={{ fontSize: 11, fontWeight: 700, color: ei.cor, padding: '1px 7px', background: ei.bg, borderRadius: 'var(--r-pill)' }}>{ei.label}</span> })()}
-                              {/* proposta: cinza enquanto ninguém abriu, verde quando o cliente abriu o link */}
-                              {propostas[lead.id] && (propostas[lead.id].aberturas > 0
+                              {/* proposta: cinza enquanto ninguém abriu, verde quando abriu, e o
+                                  aceite na frente dos dois — o card mostra o estágio mais avançado */}
+                              {propostas[lead.id]?.aceito_em
+                                ? <Chip tom="bom" pequeno title={`Aceita por ${propostas[lead.id].aceito_nome || 'o cliente'} em ${new Date(propostas[lead.id].aceito_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}`}>✓ aceitou a proposta</Chip>
+                                : propostas[lead.id] && (propostas[lead.id].aberturas > 0
                                 ? <Chip tom="bom" pequeno title={`Abriu ${propostas[lead.id].aberturas}x · última ${new Date(propostas[lead.id].ultima_abertura).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}`}>abriu a proposta</Chip>
                                 : <Chip tom="neutro" pequeno title={`Proposta enviada em ${new Date(propostas[lead.id].publicado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })} · ainda não abriu`}>proposta enviada</Chip>)}
                               {tarefaAtrasada && <Chip tom="ruim" icone={Clock} pequeno>tarefa atrasada</Chip>}

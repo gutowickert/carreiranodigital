@@ -31,6 +31,11 @@ export async function POST(req: Request) {
 
     const patch: any = { atualizado_em: new Date().toISOString(), editado_por: quem.eu.id, editado_em: new Date().toISOString() }
 
+    // o nome que sai na proposta (o cadastro do lead segue intocado)
+    if (b.cliente_nome !== undefined) {
+      patch.cliente_nome = (b.cliente_nome || '').toString().trim().slice(0, 120) || null
+    }
+
     if (b.capa && typeof b.capa === 'object') {
       patch.capa = {
         titulo: String(b.capa.titulo || '').slice(0, 140),

@@ -2,6 +2,13 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 
 // Transcreve um áudio de mensagem do WhatsApp (wa_mensagens) via Deepgram e guarda no PRÓPRIO `texto`
 // — assim o motor de IA, a fila e a conversa já leem automaticamente, sem outra mudança. Não lança.
+// PALAVRAS QUE O TRANSCRITOR NÃO CONHECE. Sem esta lista ele escreve o que parece: "Claude" virava
+// "cloud" nas ligações, e o erro seguia adiante — chegou a sair numa proposta, no título de uma
+// objeção ("não sabe mexer no Claude/cloud"). O Deepgram aceita um reforço por palavra; o número
+// depois dos dois-pontos é o peso.
+const TERMOS = ['Claude:2', 'Hotmart:2', 'Kiwify:2', 'Meta:1', 'Reels:1', 'tráfego:1']
+const REFORCO = TERMOS.map(t => `&keywords=${encodeURIComponent(t)}`).join('')
+
 export async function transcreverAudioMsg(msgId: string): Promise<string | null> {
   try {
     const dgKey = process.env.DEEPGRAM_API_KEY || ''
@@ -22,7 +29,7 @@ export async function transcreverAudioMsg(msgId: string): Promise<string | null>
       buf = Buffer.from(await dl.arrayBuffer())
     }
     if (!buf.length) return null
-    const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true', {
+    const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true' + REFORCO, {
       method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': ct }, body: buf,
     })
     const j: any = await r.json().catch(() => null)

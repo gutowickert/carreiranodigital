@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { temProposta } from '@/lib/proposta-produtos'
 
 // O rótulo da etapa vem do banco (tabela `etapas`), nunca escrito aqui.
 async function rotulosDasEtapas(org: string): Promise<Record<string, string>> {
@@ -92,9 +93,18 @@ export async function GET(req: Request) {
     const precoVista = turma?.preco_venda ?? produto?.preco_venda ?? null
 
     // ── orçamentos anteriores deste lead
+    // O QUE JÁ FOI FEITO PRA ESTE LEAD. Antes isto voltava e a tela só contava quantos eram, sem
+    // nada pra clicar — o rascunho do José ficou salvo e invisível, e alguém gerou outro do zero.
+    // Agora vem com o que a tela precisa pra reabrir e continuar de onde parou.
     const { data: anteriores } = await sb.from('orcamentos')
-      .select('id, situacao, criado_em, publicado_em, slug')
+      .select('*')
       .eq('org_id', org).eq('lead_id', leadId).order('criado_em', { ascending: false }).limit(5)
+
+    // O QUE DÁ PRA OFERTAR. A turma do lead vira só a SUGESTÃO — no caso do José ela apontava pro
+    // curso que ele já tinha feito. A lista são os produtos com proposta escrita (lib/proposta-produtos).
+    const { data: todos } = await sb.from('produtos')
+      .select('id, nome, preco_venda').eq('ativo', true).order('nome')
+    const ofertaveis = (todos || []).filter(p => temProposta(p.nome))
 
     const rotulo = await rotulosDasEtapas(org)
     const caracteres = ligacoesProntas.reduce((n, l) => n + l.caracteres, 0) + conversasProntas.reduce((n, c) => n + c.caracteres, 0)
@@ -120,7 +130,16 @@ export async function GET(req: Request) {
         parcelas: precoVista != null ? PARCELAS_PADRAO : null,
         preco_parcelado: precoVista != null ? Math.round(((Number(precoVista) + ACRESCIMO_CARTAO) / PARCELAS_PADRAO) * 100) / 100 : null,
       } : null,
-      anteriores: anteriores || [],
+      // a lista pra escolher o produto da proposta, e qual deles a turma do lead sugere
+      produtos: ofertaveis.map(p => ({ id: p.id, nome: p.nome, preco_venda: p.preco_venda })),
+      produto_sugerido: produto && temProposta(produto.nome) ? produto.id : (ofertaveis.length === 1 ? ofertaveis[0].id : null),
+      // ⚠️ o produto da turma do lead pode ser o curso que ele JÁ FEZ: a tela avisa quando for outro
+      produto_da_turma: produto ? { id: produto.id, nome: produto.nome } : null,
+      anteriores: (anteriores || []).map(o => ({
+        id: o.id, situacao: o.situacao, criado_em: o.criado_em, publicado_em: o.publicado_em,
+        slug: o.slug, produto_nome: o.produto_nome, cliente_nome: o.cliente_nome || null,
+        titulo: (o.capa as any)?.titulo || null,
+      })),
     })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })

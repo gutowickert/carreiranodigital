@@ -61,12 +61,15 @@ export async function POST(req: Request) {
     // objeção que o vendedor tirou não vai pra proposta
     const objecoes = (orc.objecoes as any[] || []).filter(o => o.situacao !== 'fora')
 
+    // o endereço leva o nome QUE SAI NA PROPOSTA, não o apelido do cadastro: o lead do José está
+    // como "Jose Poa 2", e o link saía /proposta/jose-2-…
     const { data: dono } = await sb.from('leads').select('nome').eq('id', orc.lead_id).maybeSingle()
-    let slug = enderecoDe(dono?.nome || '')
+    const nomeNaProposta = (orc.cliente_nome || dono?.nome || '').toString()
+    let slug = enderecoDe(nomeNaProposta)
     for (let tentativa = 0; tentativa < 5; tentativa++) {
       const { data: existe } = await sb.from('orcamentos').select('id').eq('slug', slug).maybeSingle()
       if (!existe) break
-      slug = enderecoDe(dono?.nome || '')
+      slug = enderecoDe(nomeNaProposta)
     }
 
     const { data, error } = await sb.from('orcamentos')

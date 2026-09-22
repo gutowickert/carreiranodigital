@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { temProposta } from '@/lib/proposta-produtos'
 import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 60
@@ -36,6 +37,13 @@ REGRAS DURAS:
 - Não inventa detalhe do negócio do cliente que não esteja no material ou no contexto informado.
 - Escreve em português do Brasil, falando com a pessoa por "tu", tom direto e sem jargão. Frases curtas.
 - Reconhece a objeção antes de responder; nada de resposta de manual.
+
+COMO SE ESCREVEM OS NOMES (a transcrição erra estes, e o erro chega até aqui):
+- A ferramenta de IA chama-se **Claude**. No material ela aparece como "cloud", "clod", "cláudio",
+  "claudia" ou "claude" minúsculo — é tudo a mesma coisa, e no TÍTULO e no TEXTO escreve-se Claude.
+- Chama-se **Hotmart**, **Kiwify**, **Meta**, **Instagram**, **WhatsApp**.
+- ⚠️ NA CITAÇÃO NÃO SE CORRIGE NADA. Ela é a frase que a pessoa falou, e é o que prova que a
+  objeção veio da conversa. Fica exatamente como está no material, com erro e tudo.
 
 FORMATO DA RESPOSTA: só um JSON, sem texto em volta:
 {"capa":{"titulo":"...","subtitulo":"..."},"objecoes":[{"titulo":"...","citacao":"...","texto":"..."}]}
@@ -130,9 +138,24 @@ export async function POST(req: Request) {
     const material = pedacos.join('\n\n———\n\n').slice(0, MAX_CARACTERES_MATERIAL)
     const materialNormal = normal(material)
 
-    // ── preço: SEMPRE do que a tela mandou (que veio do cadastro), nunca do que a IA disser
+    // ── O PRODUTO É O QUE A TELA ESCOLHEU. A turma do lead entra só como sugestão.
+    //
+    // ⚠️ POR QUE NÃO PODE SAIR DA TURMA DIRETO: a turma do lead é a última coisa que ele comprou ou
+    // demonstrou interesse — no orçamento do José ela ainda era a Formação Completa, o curso que ele
+    // JÁ TINHA FEITO. A proposta saiu com o nome desse curso enquanto o texto inteiro descrevia o
+    // Deu Venda. Quem sabe o que está sendo vendido é quem está vendendo.
     const turma: any = (lead as any).turmas || null
-    const produto = turma?.produtos || null
+    let produto: any = turma?.produtos || null
+    if (b.produto_id) {
+      const { data: escolhido } = await sb.from('produtos')
+        .select('id, nome, preco_venda').eq('org_id', org).eq('id', b.produto_id).maybeSingle()
+      if (!escolhido) return NextResponse.json({ ok: false, error: 'produto não encontrado' }, { status: 200 })
+      // a trava que impede a contradição: só produto com corpo de proposta escrito
+      if (!temProposta(escolhido.nome)) {
+        return NextResponse.json({ ok: false, error: `ainda não existe proposta escrita para "${escolhido.nome}"` }, { status: 200 })
+      }
+      produto = escolhido
+    }
     const precoVista = b.preco_vista != null && b.preco_vista !== '' ? Number(String(b.preco_vista).replace(',', '.')) : (turma?.preco_venda ?? produto?.preco_venda ?? null)
     const parcelas = b.parcelas ? Number(b.parcelas) : null
     const precoParcelado = b.preco_parcelado ? Number(String(b.preco_parcelado).replace(',', '.')) : null
@@ -142,6 +165,11 @@ export async function POST(req: Request) {
       regiao: (b.regiao || '').toString().slice(0, 200),
     }
 
+    // NOME QUE SAI NA PROPOSTA. O cadastro do lead costuma trazer o apelido do WhatsApp — o do José
+    // está como "Jose Poa 2", e era isso que aparecia na capa e no endereço do link. Aqui vale o que
+    // a tela mandou; em branco, continua sendo o nome do lead.
+    const clienteNome = (b.cliente_nome || '').toString().trim().slice(0, 120) || null
+
     // ── sem material: proposta padrão, sem objeções, sem gastar token
     let capa = { titulo: '', subtitulo: '' }
     let objecoes: any[] = []
@@ -150,7 +178,7 @@ export async function POST(req: Request) {
 
     if (material.length >= 300) {
       const pedido = [
-        `CLIENTE: ${lead.nome}`,
+        `CLIENTE: ${clienteNome || lead.nome}`,
         contexto.o_que_vende ? `O QUE O NEGÓCIO DELE VENDE: ${contexto.o_que_vende}` : 'O NEGÓCIO DELE: não informado — não invente exemplos de produto.',
         contexto.regiao ? `REGIÃO QUE ELE ATENDE: ${contexto.regiao}` : '',
         produto ? `PRODUTO QUE ESTAMOS PROPONDO: ${produto.nome}` : '',
@@ -217,6 +245,7 @@ export async function POST(req: Request) {
       lead_id: leadId,
       produto_id: produto?.id || null,
       produto_nome: produto?.nome || null,
+      cliente_nome: clienteNome,
       preco_vista: precoVista,
       preco_parcelado: precoParcelado,
       parcelas,

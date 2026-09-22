@@ -24,7 +24,7 @@ export async function GET(req: Request) {
     const publicados: any[] = []
     for (let de = 0; ; de += 1000) {
       const { data } = await sb.from('orcamentos')
-        .select('id, lead_id, slug, publicado_em')
+        .select('id, lead_id, slug, publicado_em, aceito_em, aceito_nome')
         .eq('org_id', org).eq('situacao', 'publicado')
         .order('publicado_em', { ascending: false }).order('id').range(de, de + 999)
       publicados.push(...(data || []))
@@ -61,6 +61,9 @@ export async function GET(req: Request) {
         publicado_em: o.publicado_em,
         aberturas: ab?.n || 0,
         ultima_abertura: ab?.ultima || null,
+        // o aceite do cliente: é o que acende o selo verde no card, acima do "abriu"
+        aceito_em: o.aceito_em || null,
+        aceito_nome: o.aceito_nome || null,
       }
     }
 
