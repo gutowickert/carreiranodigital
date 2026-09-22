@@ -8,7 +8,7 @@ import LeadCardModal from '@/components/LeadCard'
 // GERAR ORÇAMENTO — passos 1 e 2: escolher o lead e preparar a proposta.
 // A geração com IA (passo 3) entra depois; o botão já existe e avisa que está por vir.
 //
-// A tela NÃO está no menu de propósito: enquanto está em prova, só abre quem digitar o endereço.
+// A tela está no menu, em Vendas, e liberada pro perfil de vendedor (components/Layout.tsx).
 //
 // De onde vem cada coisa:
 //   /api/orcamentos/candidatos → leads que já falaram (ligação transcrita e/ou WhatsApp)
@@ -198,7 +198,6 @@ export default function GerarOrcamento() {
             A proposta sai do que a pessoa já disse — ligação ou WhatsApp — com o preço do cadastro.
           </p>
         </div>
-        <Chip tom="atencao">Em prova · fora do menu</Chip>
       </div>
 
       {msg && <div style={{ ...card, marginTop: 14, color: 'var(--amber)', fontSize: 13.5 }}>{msg}</div>}
