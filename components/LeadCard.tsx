@@ -319,6 +319,27 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
       .catch(() => setProposta(null))
   }, [lead?.id])
 
+  // CORRIGIR O ACEITE. O do Vinicius foi marcado sem querer, e não havia como voltar atrás: aceite
+  // é do cliente, mas quem responde por ele é a casa. Desfazer não apaga a história — fica no
+  // histórico do lead quem desfez e o que estava registrado antes.
+  const [mexendoAceite, setMexendoAceite] = useState(false)
+  async function mexerNoAceite(acao: 'desfazer' | 'registrar') {
+    if (!proposta?.id || !lead) return
+    const pergunta = acao === 'desfazer'
+      ? `Desfazer o aceite${proposta.aceito_nome ? ` de "${proposta.aceito_nome}"` : ''}? Fica registrado no histórico que tu desfez.`
+      : `Marcar esta proposta como ACEITA por ${lead.nome}? Use quando o cliente aceitou fora do link (telefone, WhatsApp, pessoalmente).`
+    if (!confirm(pergunta)) return
+    setMexendoAceite(true)
+    const j = await fetchAuth('/api/orcamentos/aceite', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: proposta.id, acao, nome: lead.nome }),
+    }).then(r => r.json()).catch(() => null)
+    setMexendoAceite(false)
+    if (!j?.ok) { alert(j?.error || 'não consegui mexer no aceite'); return }
+    setProposta((p: any) => ({ ...p, aceito_em: j.aceito_em || null, aceito_nome: j.aceito_nome || null }))
+    carregarAndamentos(lead.id)
+  }
+
   async function toggleNaoLida() {
     if (!lead) return
     const novo = !naoLida
@@ -690,16 +711,25 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                 Enviada em {new Date(proposta.publicado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}
                 {proposta.ultima_abertura ? ` · última abertura ${new Date(proposta.ultima_abertura).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', dateStyle: 'short', timeStyle: 'short' })}` : ''}
               </div>
-              {proposta.slug && (
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <a href={`/proposta/${proposta.slug}`} target="_blank" rel="noopener"
-                    style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>abrir a proposta ↗</a>
-                  <button type="button" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/proposta/${proposta.slug}`) }}
-                    style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', padding: 0 }}>
-                    copiar o link
-                  </button>
-                </div>
-              )}
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                {proposta.slug && (
+                  <>
+                    <a href={`/proposta/${proposta.slug}`} target="_blank" rel="noopener"
+                      style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>abrir a proposta ↗</a>
+                    <button type="button" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/proposta/${proposta.slug}`) }}
+                      style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', padding: 0 }}>
+                      copiar o link
+                    </button>
+                  </>
+                )}
+                {/* corrigir o aceite: desfazer o que foi marcado sem querer, ou registrar o que o
+                    cliente disse por fora do link */}
+                <button type="button" disabled={mexendoAceite}
+                  onClick={() => mexerNoAceite(proposta.aceito_em ? 'desfazer' : 'registrar')}
+                  style={{ marginLeft: 'auto', background: 'none', border: '1px solid var(--border-strong)', borderRadius: 6, color: 'var(--text-2)', fontSize: 11.5, cursor: mexendoAceite ? 'default' : 'pointer', padding: '3px 9px', opacity: mexendoAceite ? .6 : 1 }}>
+                  {mexendoAceite ? 'um instante…' : proposta.aceito_em ? 'desfazer o aceite' : 'marcar como aceita'}
+                </button>
+              </div>
             </div>
           </div>
         )}

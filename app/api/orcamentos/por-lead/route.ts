@@ -62,6 +62,7 @@ export async function GET(req: Request) {
       if (porLead[o.lead_id]) continue
       const ab = aberturas.get(o.id)
       porLead[o.lead_id] = {
+        id: o.id,
         slug: o.slug,
         publicado_em: o.publicado_em,
         aberturas: ab?.n || 0,
