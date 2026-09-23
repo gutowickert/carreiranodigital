@@ -173,6 +173,11 @@ export default function Agenda() {
   // a reunião de hoje. A aba e a visão em que a pessoa estava ficam lembradas no navegador.
   const [aba, setAba] = useState<string>('meus')
   const [visao, setVisao] = useState<'mes' | 'semana'>('mes')
+  // ⚠️ PREVISTO É SOMBRA, NÃO COMPROMISSO. O roteiro da entrega calcula a data do próximo encontro
+  // sozinho, mas ninguém combinou com o cliente ainda. Hoje são 27 previstos contra 10
+  // compromissos de verdade — misturados, o vendedor olha um dia cheio e não sabe se está livre.
+  // Por isso eles não entram na fila do dia, e dá pra desligar de vez.
+  const [verPrevistos, setVerPrevistos] = useState(true)
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
   const [semana, setSemana] = useState(() => segundaDe(new Date()))
   const [diaAberto, setDiaAberto] = useState<string | null>(null)
@@ -193,7 +198,9 @@ export default function Agenda() {
   useEffect(() => {
     const a = lembrado('aba'); if (a) setAba(a)
     const v = lembrado('visao'); if (v === 'semana' || v === 'mes') setVisao(v)
+    if (lembrado('previstos') === 'nao') setVerPrevistos(false)
   }, [])
+  const trocarPrevistos = () => setVerPrevistos(v => { lembrar('previstos', v ? 'nao' : 'sim'); return !v })
   const trocarAba = (k: string) => { setAba(k); lembrar('aba', k); setDiaAberto(null) }
   const trocarVisao = (v: 'mes' | 'semana') => { setVisao(v); lembrar('visao', v); setDiaAberto(null) }
 
@@ -293,7 +300,12 @@ export default function Agenda() {
   const contagem = useMemo(() => Object.fromEntries(abas.map(a => [a.chave, abertos.filter(i => naAba(i, a, eu?.id)).length])), [abas, abertos, eu])
   const visiveis = useMemo(() => abertos.filter(i => naAba(i, abaAtual, eu?.id)), [abertos, abaAtual, eu])
 
-  const atrasados = useMemo(() => visiveis.filter(i => chaveDia(paraData(i.inicio)) < hj), [visiveis, hj])
+  const totalPrevistos = useMemo(() => visiveis.filter(ehPrevisto).length, [visiveis])
+
+  // ⚠️ PREVISTO NÃO CONTA COMO ATRASADO. A data foi calculada pelo roteiro, não combinada com
+  // ninguém — chamar de atrasado o que nunca foi marcado deixaria a faixa vermelha permanente e
+  // ensinaria o time a ignorá-la.
+  const atrasados = useMemo(() => visiveis.filter(i => chaveDia(paraData(i.inicio)) < hj && !ehPrevisto(i)), [visiveis, hj])
 
   // O calendário mostra tudo, inclusive atrasado: no mês passado a marca vermelha é a informação.
   const porDia = useMemo(() => {
@@ -315,7 +327,9 @@ export default function Agenda() {
     const lista: [string, Item[]][] = []
     for (let n = 1; n <= 7; n++) {
       const k = chaveDia(somaDias(de, n))
-      const l = porDia.get(k); if (l?.length) lista.push([k, l])
+      // "Depois" é o que já tem hora marcada com alguém. Previsto não entra: a pergunta que esta
+      // caixa responde é "o que me espera", não "o que o roteiro calculou".
+      const l = (porDia.get(k) || []).filter(i => !ehPrevisto(i)); if (l.length) lista.push([k, l])
     }
     return lista
   }, [porDia, diaDoPainel])
@@ -411,7 +425,15 @@ export default function Agenda() {
             {(Object.keys(FONTES) as Item['fonte'][]).map(f => (
               <span key={f} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: FONTES[f].cor }} />{FONTES[f].rotulo}</span>
             ))}
-            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, border: '1.5px dashed var(--text-faint)', boxSizing: 'border-box' }} />previsto</span>
+            <button onClick={trocarPrevistos} title="Previsto é a data que o roteiro da entrega calculou — ninguém combinou com o cliente ainda. Não ocupa o dia."
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 5, cursor: 'pointer', fontSize: 11.5,
+                border: `1px ${verPrevistos ? 'dashed' : 'solid'} var(--border-strong)`, borderRadius: 'var(--r-pill)',
+                padding: '3px 10px', background: 'transparent', color: verPrevistos ? 'var(--text-muted)' : 'var(--text-faint)',
+                textDecoration: verPrevistos ? 'none' : 'line-through', fontWeight: 600,
+              }}>
+              <span style={{ fontSize: 8 }}>◌</span>previstos ({totalPrevistos})
+            </button>
           </div>
         </div>
 
@@ -439,6 +461,11 @@ export default function Agenda() {
                       const hoje = k === hj
                       const sel = k === diaAberto
                       const acesos = acesas(doDia)
+                      // ⚠️ PREVISTO NÃO ENTRA NA FILA DO DIA. São 27 previstos contra 10
+                      // compromissos de verdade: misturados, o vendedor olha a quarta-feira e não
+                      // sabe se está livre. Aqui eles viram UMA linha discreta no pé da célula.
+                      const firmes = doDia.filter(i => !ehPrevisto(i))
+                      const previstos = doDia.filter(ehPrevisto)
                       const MAX = 4
                       return (
                         // Clicar no dia (pra abrir) é ver o dia: marca como visto o que está aceso NELE,
@@ -458,19 +485,25 @@ export default function Agenda() {
                                 : d.getDate()}
                               {acesos.length > 0 && <span title={`${acesos.length} pra ver`} style={pontoVermelho} />}
                             </span>
-                            {doDia.length > MAX && <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>{doDia.length}</span>}
+                            {firmes.length > MAX && <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>{firmes.length}</span>}
                           </div>
                           <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                            {doDia.slice(0, MAX).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => abrir(i)} />)}
+                            {firmes.slice(0, MAX).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => abrir(i)} />)}
                           </div>
-                          {doDia.length > MAX && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4, marginTop: 3 }}>+{doDia.length - MAX} mais</div>}
+                          {firmes.length > MAX && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4, marginTop: 3 }}>+{firmes.length - MAX} mais</div>}
+                          {verPrevistos && previstos.length > 0 && (
+                            <div title={previstos.map(p => p.titulo).join(' · ')}
+                              style={{ marginTop: 4, paddingTop: 3, borderTop: '1px dashed var(--border-strong)', display: 'flex', alignItems: 'center', gap: 4, fontSize: 10, color: 'var(--text-faint)' }}>
+                              <span style={{ fontSize: 8 }}>◌</span>{previstos.length} previst{previstos.length > 1 ? 'os' : 'o'}
+                            </div>
+                          )}
                         </div>
                       )
                     })}
                   </div>
                 </div>
               ) : (
-                <Semana dias={diasDaSemana} porDia={porDia} hj={hj} diaAberto={diaAberto} nomeDe={nomeDe} balao={balao}
+                <Semana dias={diasDaSemana} porDia={porDia} hj={hj} diaAberto={diaAberto} nomeDe={nomeDe} balao={balao} verPrevistos={verPrevistos}
                   onDia={k => { const sel = k === diaAberto; if (!sel) marcar(acesas(porDia.get(k) || []), 'lido'); setDiaAberto(sel ? null : k) }}
                   onAbrir={abrir} />
               )}
@@ -483,12 +516,26 @@ export default function Agenda() {
                   <h2 className="display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{rotuloDia(diaDoPainel)}</h2>
                   {diaAberto && diaAberto !== hj && <button onClick={() => setDiaAberto(null)} style={{ ...chip(false), padding: '3px 10px' }}>hoje</button>}
                 </div>
-                {doDiaPainel.length === 0
+                {/* No painel os dois aparecem, mas separados: primeiro o que está combinado, depois,
+                    sob um rótulo, o que o roteiro só calculou. */}
+                {doDiaPainel.filter(i => !ehPrevisto(i)).length === 0 && !doDiaPainel.some(ehPrevisto)
                   ? <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '6px 0 4px' }}>{diaDoPainel === hj ? 'Nada pra hoje nesta aba.' : 'Nada neste dia.'}</div>
-                  : doDiaPainel.map(i => (
+                  : doDiaPainel.filter(i => !ehPrevisto(i)).map(i => (
                     <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
                       ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
                   ))}
+                {verPrevistos && doDiaPainel.some(ehPrevisto) && (
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>◌ Previsto — não combinado</span>
+                      <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+                    </div>
+                    {doDiaPainel.filter(ehPrevisto).map(i => (
+                      <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                        ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
+                    ))}
+                  </>
+                )}
               </div>
 
               {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia.
@@ -593,9 +640,10 @@ function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolea
 // A SEMANA: faixa do dia inteiro em cima (previsto, follow-up, tarefa) e as horas embaixo. Reunião
 // de duas horas ocupa duas horas — é o que responde "como está o meu amanhã?" de relance.
 const H_INI = 7, H_FIM = 20, PX_H = 52
-function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, onDia, onAbrir }: {
+function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDia, onAbrir }: {
   dias: Date[]; porDia: Map<string, Item[]>; hj: string; diaAberto: string | null
-  nomeDe: (id: string | null) => string | null; balao: Set<string>; onDia: (k: string) => void; onAbrir: (i: Item) => void
+  nomeDe: (id: string | null) => string | null; balao: Set<string>; verPrevistos: boolean
+  onDia: (k: string) => void; onAbrir: (i: Item) => void
 }) {
   const agora = new Date()
   const minAgora = agora.getHours() * 60 + agora.getMinutes()
@@ -625,11 +673,21 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, onDia, onAbrir }: 
         <div style={{ padding: '8px 6px', fontSize: 10, fontWeight: 800, letterSpacing: '.08em', color: 'var(--text-faint)', textAlign: 'right' }}>DIA</div>
         {dias.map(d => {
           const k = chaveDia(d)
-          const lista = (porDia.get(k) || []).filter(i => i.diaTodo)
+          // ⚠️ previsto NUNCA entra na grade de horas — ele não tem hora, e desenhar um bloco nela
+          // seria dizer que o horário está ocupado quando ninguém combinou nada.
+          const lista = (porDia.get(k) || []).filter(i => i.diaTodo && !ehPrevisto(i))
+          const previstos = (porDia.get(k) || []).filter(ehPrevisto)
           return (
             <div key={k} style={{ padding: '6px 4px', borderLeft: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, minHeight: 34, background: k === hj ? 'var(--glass-field)' : 'transparent' }}>
               {lista.slice(0, 4).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => onAbrir(i)} />)}
               {lista.length > 4 && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4 }}>+{lista.length - 4} mais</div>}
+              {verPrevistos && previstos.map(i => (
+                <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); onAbrir(i) }} title={`${i.titulo} — previsto, ainda não combinado`}
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 5px', borderRadius: 5, border: '1px dashed var(--border-strong)', fontSize: 10, color: 'var(--text-faint)', minWidth: 0, cursor: 'pointer' }}>
+                  <span style={{ fontSize: 8, flexShrink: 0 }}>◌</span>
+                  <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.titulo}</span>
+                </div>
+              ))}
             </div>
           )
         })}
