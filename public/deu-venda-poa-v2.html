@@ -682,7 +682,7 @@ footer strong{color:var(--text-2)}
   // barra fixa no celular: aparece depois que o hero sai da tela
   var fixa=document.getElementById('fixa'), hero=document.querySelector('.hero');
   if('IntersectionObserver' in window){
-    new IntersectionObserver(function(en){ fixa.classList.toggle('on'!en[0].isIntersecting); },{threshold:0}).observe(hero);
+    new IntersectionObserver(function(en){ fixa.classList.toggle('on', !en[0].isIntersecting); },{threshold:0}).observe(hero);
   } else { fixa.classList.add('on'); }
 })();
 </script>
