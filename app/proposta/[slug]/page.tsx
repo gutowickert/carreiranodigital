@@ -96,9 +96,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px 44px),
           repeating-linear-gradient(0deg,var(--grid) 0 1px,transparent 1px 44px)}
         .capa>*{position:relative;z-index:1}
-        .chapa{align-self:flex-start;border-radius:10px;padding:10px 14px;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 42%,rgba(0,0,0,.18)),#150a2b;
-          box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 0 0 1px rgba(124,58,237,.45);font-family:'Bricolage Grotesque','Manrope',sans-serif;font-weight:800;font-size:15px}
-        .chapa span{color:var(--accent-claro)}
+        .marca{align-self:flex-start;height:clamp(38px,6.5vw,54px);width:auto;display:block}
         .eyebrow{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-claro)}
         h1{font-size:clamp(2rem,5.4vw,3.4rem)}
         .lede{font-size:clamp(15px,1.7vw,17px);line-height:1.7;color:#c9c2da;max-width:56ch;margin:0}
@@ -162,9 +160,12 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       {/* ───── capa */}
       <section className="folha capa">
         <div className="luz" />
-        <div className="chapa">CARREIRA <span>no</span> DIGITAL</div>
+        {/* O LOGO, não o nome escrito. Proposta é documento comercial: a marca aparece como marca.
+            O arquivo é o mesmo que o WhatsApp usa no cartão do link (branco sobre transparente, 69 kB
+            — o de 505 kB alguns aplicativos ignoravam). */}
+        <img src="/logo-proposta.png" alt="Carreira no Digital" className="marca" />
         <div style={{ paddingBlock: 40, display: 'flex', flexDirection: 'column', gap: 18 }}>
-          <div className="eyebrow">Carreira no Digital · Proposta comercial</div>
+          <div className="eyebrow">Proposta comercial</div>
           <h1 className="disp">{orc.capa?.titulo}</h1>
           {orc.capa?.subtitulo && <p className="lede">{orc.capa.subtitulo}</p>}
           <div className="para">
