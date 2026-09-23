@@ -16,6 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
+  Server,
   type LucideIcon,
 } from 'lucide-react'
 
@@ -43,6 +44,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/financeiro/caixas': PiggyBank, '/dashboard/financeiro/recalcular-trafego': RefreshCw,
   '/dashboard/alunos': Users, '/dashboard/professores': UserCog, '/dashboard/usuarios': Users,
   '/dashboard/configuracoes': Settings, '/dashboard/admin/orgs': Building2, '/dashboard/webhook-logs': Webhook,
+  '/dashboard/instalacoes': Server,
 }
 
 // Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
@@ -133,6 +135,16 @@ const grupos: Grupo[] = [
     ],
   },
   {
+    // O software que a gente vende, visto de fora: quem roda um sistema nosso, em que pé está a
+    // implantação de cada um, e quem paga.
+    // Só admin (ver itemPermitido): aqui aparece o endereço do sistema de cada cliente e o valor
+    // do contrato dele.
+    titulo: 'Sistemas',
+    itens: [
+      { nome: 'Clientes do CRM', href: '/dashboard/instalacoes' },
+    ],
+  },
+  {
     titulo: 'Ajustes',
     itens: [
       { nome: 'Comercial', href: '' },
@@ -173,6 +185,9 @@ function bipe() {
 function itemPermitido(href: string, p: Perfil): boolean {
   if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
   if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
+  // Instalações é só de admin, e a rota confere de novo no servidor — menu escondido é decoração
+  // se a rota responde pra qualquer um.
+  if (href === '/dashboard/instalacoes') return p.papel === 'admin'
   if (p.papel === 'admin') return true
 
   // GESTOR — o degrau que faltava entre "vê tudo" e "vê quase nada".
