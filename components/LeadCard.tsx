@@ -714,7 +714,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
                 {proposta.slug && (
                   <>
-                    <a href={`/proposta/${proposta.slug}`} target="_blank" rel="noopener"
+                    <a href={`/proposta/${proposta.slug}?eu=1`} target="_blank" rel="noopener"
                       style={{ fontSize: 12, color: 'var(--accent)', textDecoration: 'none' }}>abrir a proposta ↗</a>
                     <button type="button" onClick={() => { navigator.clipboard?.writeText(`${window.location.origin}/proposta/${proposta.slug}`) }}
                       style={{ background: 'none', border: 'none', color: 'var(--text-2)', fontSize: 12, cursor: 'pointer', padding: 0 }}>

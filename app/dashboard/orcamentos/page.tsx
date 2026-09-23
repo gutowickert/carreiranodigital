@@ -435,7 +435,7 @@ export default function GerarOrcamento() {
                           </div>
                         </div>
                         {a.situacao === 'publicado' && a.slug && (
-                          <a href={`/proposta/${a.slug}`} target="_blank" rel="noopener" style={{ ...btnSec, textDecoration: 'none' }}>ver</a>
+                          <a href={`/proposta/${a.slug}?eu=1`} target="_blank" rel="noopener" style={{ ...btnSec, textDecoration: 'none' }} title="Abre sem contar como abertura do cliente">ver</a>
                         )}
                         <button onClick={() => abrirAnterior(a.id)} style={btnSec}>
                           {a.situacao === 'publicado' ? 'abrir' : 'continuar este rascunho'}
