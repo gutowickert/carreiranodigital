@@ -7,7 +7,7 @@ import { fetchAuth } from '@/lib/api'
 import { Vazio } from '@/components/ui'
 import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide-react'
 
-// A AGENDA — calendário em cima, próximos dias embaixo.
+// A AGENDA — calendário à esquerda, o dia à direita; mês ou semana; abas por área.
 //
 // Quatro fontes num lugar só: compromissos (agenda_eventos), tarefas (tarefas), follow-ups de
 // cliente (tarefas_lead) e marcos de entrega (projeto_marcos). Quem enxerga o quê é decidido no
@@ -22,14 +22,17 @@ import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide
 // 2. A LINHA NÃO TEM BOTÃO. Uma bolinha pra concluir, e o resto abre ao clicar. Sete botões por
 //    linha viram ruído quando a lista tem trinta linhas.
 //
-// O item sem dono é do GRUPO e aparece pra todos: hoje quase nada tem dono (1196 clientes sem
-// responsável), então uma agenda que só mostrasse "o que é meu" abriria vazia pra quase todo mundo.
-// Pegar pra mim é o que transforma o mural em trabalho de alguém.
+// ABRE NO "MEUS", NÃO NO "TUDO" (23/09/2026). Em 09/09 quase nada tinha dono e o "tudo" era o
+// mural; hoje o "tudo" é 4 compromissos + 22 follow-ups + 57 marcos de entrega, e abrir nisso
+// enterrava a reunião do dia. As ABAS POR ÁREA (Comercial, Deu venda, Sistema — vêm do banco,
+// db/agenda-abas.sql) fazem o papel do mural: o que é de alguém da área, mais o que é da fonte da
+// área e ainda não tem dono. "Time" é o antigo "Tudo". Pegar pra mim continua sendo o que
+// transforma mural em trabalho de alguém.
 //
 // O BALÃO: o que é meu e ainda não vi acende um ponto vermelho no dia e na linha, e soma no balão
 // do menu. Clicar no dia marca aquele dia como visto; abrir o item marca o item; "Marcar como não
 // lido" acende de novo. A regra de o que acende mora no servidor (lib/agenda-balao.ts) — aqui só se
-// mostra e se avisa o que foi visto. Só o que está NA TELA é marcado: com o filtro "Do grupo" os
+// mostra e se avisa o que foi visto. Só o que está NA TELA é marcado: com a aba "Comercial" os
 // meus itens nem aparecem, e clicar no dia não pode apagá-los.
 //
 // ENTREGA É SÓ LEITURA AQUI. O marco de entrega se conclui, combina e remarca na ficha da entrega,
@@ -112,15 +115,66 @@ const ehMeu = (i: Item, euId?: string) =>
 // Avisa o menu (components/Layout.tsx) do número novo do balão, sem esperar o próximo minuto.
 const avisarMenu = (total: number) => window.dispatchEvent(new CustomEvent('agenda:balao', { detail: { total } }))
 
+// A ABA. "meus" e "time" são fixas; as de área vêm do banco (configuracoes 'agenda.abas').
+type Aba = { chave: string; nome: string; membros: string[]; fontes: string[] }
+const ABA_MEUS: Aba = { chave: 'meus', nome: 'Meus', membros: [], fontes: [] }
+const ABA_TIME: Aba = { chave: 'time', nome: 'Time', membros: [], fontes: [] }
+
+// O item está na aba se é de alguém da aba (dono, chamado ou participante), ou se é de uma fonte da
+// aba e NÃO tem dono — o mural de onde a área pega trabalho (follow-up sem vendedor → Comercial).
+function naAba(i: Item, aba: Aba, euId?: string) {
+  if (aba.chave === 'time') return true
+  if (aba.chave === 'meus') return ehMeu(i, euId)
+  const m = aba.membros
+  if (i.donoId && m.includes(i.donoId)) return true
+  if (i.ajudaDe && m.includes(i.ajudaDe)) return true
+  if ((i.participantes || []).some(p => m.includes(p))) return true
+  return !i.donoId && aba.fontes.includes(i.fonte)
+}
+
+// A COR DE CADA PESSOA — sai do id, então é a mesma em toda tela e não precisa de cadastro.
+const PALETA = ['#7c3aed', '#0284c7', '#db2777', '#d97706', '#059669', '#dc2626', '#4f46e5', '#0891b2']
+function corPessoa(id: string | null) {
+  if (!id) return '#736c88'
+  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0
+  return PALETA[h % PALETA.length]
+}
+function iniciais(nome: string | null | undefined) {
+  const p = (nome || '').trim().split(/\s+/).filter(Boolean)
+  if (!p.length) return '·'
+  return ((p[0][0] || '') + (p.length > 1 ? p[p.length - 1][0] : '')).toUpperCase()
+}
+function Avatar({ id, nome, tam = 18, borda }: { id: string | null; nome: string | null | undefined; tam?: number; borda?: boolean }) {
+  return (
+    <span title={nome || undefined} style={{
+      width: tam, height: tam, borderRadius: '50%', flexShrink: 0, display: 'inline-grid', placeItems: 'center',
+      background: id ? corPessoa(id) : 'transparent', color: '#fff', fontSize: Math.max(7.5, tam * 0.44), fontWeight: 800,
+      border: borda ? '2px solid var(--bg)' : id ? 'none' : '1.5px dashed var(--text-faint)', boxSizing: 'border-box',
+    }}>{id ? iniciais(nome) : ''}</span>
+  )
+}
+
+// o que o navegador lembra: a aba e a visão em que a pessoa estava
+const lembrar = (k: string, v: string) => { try { localStorage.setItem('agenda.' + k, v) } catch { /* privado/bloqueado: só não lembra */ } }
+const lembrado = (k: string) => { try { return localStorage.getItem('agenda.' + k) } catch { return null } }
+
+const segundaDe = (d: Date) => { const s = new Date(d.getFullYear(), d.getMonth(), d.getDate()); s.setDate(s.getDate() - ((s.getDay() + 6) % 7)); return s }
+const somaDias = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.getDate() + n); return x }
+
 export default function Agenda() {
   const [eu, setEu] = useState<Eu | null>(null)
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
   const [tenhoTime, setTenhoTime] = useState(false)
   const [itens, setItens] = useState<Item[]>([])
+  const [abasDeArea, setAbasDeArea] = useState<Aba[]>([])
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
-  const [filtro, setFiltro] = useState<'tudo' | 'meu' | 'grupo' | 'time'>('tudo')
+  // ABRE NO "MEUS", não no "Tudo": com 57 marcos de entrega e 22 follow-ups abertos, o "tudo" enterrava
+  // a reunião de hoje. A aba e a visão em que a pessoa estava ficam lembradas no navegador.
+  const [aba, setAba] = useState<string>('meus')
+  const [visao, setVisao] = useState<'mes' | 'semana'>('mes')
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
+  const [semana, setSemana] = useState(() => segundaDe(new Date()))
   const [diaAberto, setDiaAberto] = useState<string | null>(null)
   const [verAtrasados, setVerAtrasados] = useState(false)
   const [detalhe, setDetalhe] = useState<Item | null>(null)
@@ -136,6 +190,13 @@ export default function Agenda() {
   const [balao, setBalao] = useState<Set<string>>(new Set())
   const [balaoPronto, setBalaoPronto] = useState(false)
 
+  useEffect(() => {
+    const a = lembrado('aba'); if (a) setAba(a)
+    const v = lembrado('visao'); if (v === 'semana' || v === 'mes') setVisao(v)
+  }, [])
+  const trocarAba = (k: string) => { setAba(k); lembrar('aba', k); setDiaAberto(null) }
+  const trocarVisao = (v: 'mes' | 'semana') => { setVisao(v); lembrar('visao', v); setDiaAberto(null) }
+
   async function carregar() {
     setErro('')
     try {
@@ -144,6 +205,7 @@ export default function Agenda() {
       if (!r.ok) { setErro(r.status === 401 ? 'Sessão expirada — recarregue a página.' : 'Não deu pra carregar a agenda.'); setCarregando(false); return }
       const d = await r.json()
       setEu(d.eu); setPessoas(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
+      setAbasDeArea(Array.isArray(d.abas) ? d.abas : [])
       const b = new Set<string>(d.balao || [])
       setBalao(b); setBalaoPronto(!!d.balaoPronto)
       // concluir, pegar ou devolver também mexem no balão — o menu acompanha a cada recarga
@@ -224,20 +286,17 @@ export default function Agenda() {
   const podeEditar = (i: Item) => !!eu && i.fonte === 'agenda'
     && (i.donoId === eu.id || !i.donoId || eu.souDono || (tenhoTime && i.donoId !== eu.id && !i.participantes?.includes(eu.id)))
 
-  // ── SEPARAÇÃO ───────────────────────────────────────────────────────────────
-  const visiveis = useMemo(() => {
-    const abertos = itens.filter(i => !i.concluido)
-    if (filtro === 'meu') return abertos.filter(i => ehMeu(i, eu?.id))
-    if (filtro === 'grupo') return abertos.filter(i => !i.donoId)
-    if (filtro === 'time') return abertos.filter(i => i.donoId && i.donoId !== eu?.id)
-    return abertos
-  }, [itens, filtro, eu])
+  // ── AS ABAS E A SEPARAÇÃO ───────────────────────────────────────────────────
+  const abas = useMemo<Aba[]>(() => [ABA_MEUS, ...abasDeArea, ABA_TIME], [abasDeArea])
+  const abaAtual = abas.find(a => a.chave === aba) || ABA_MEUS
+  const abertos = useMemo(() => itens.filter(i => !i.concluido), [itens])
+  const contagem = useMemo(() => Object.fromEntries(abas.map(a => [a.chave, abertos.filter(i => naAba(i, a, eu?.id)).length])), [abas, abertos, eu])
+  const visiveis = useMemo(() => abertos.filter(i => naAba(i, abaAtual, eu?.id)), [abertos, abaAtual, eu])
 
   const atrasados = useMemo(() => visiveis.filter(i => chaveDia(paraData(i.inicio)) < hj), [visiveis, hj])
-  const emDia = useMemo(() => visiveis.filter(i => chaveDia(paraData(i.inicio)) >= hj), [visiveis, hj])
 
   // O calendário mostra tudo, inclusive atrasado: no mês passado a marca vermelha é a informação.
-  const porDiaCalendario = useMemo(() => {
+  const porDia = useMemo(() => {
     const m = new Map<string, Item[]>()
     for (const i of visiveis) {
       const k = chaveDia(paraData(i.inicio))
@@ -247,20 +306,21 @@ export default function Agenda() {
     return m
   }, [visiveis])
 
-  const listaDeBaixo = useMemo(() => {
-    const base = diaAberto
-      ? visiveis.filter(i => chaveDia(paraData(i.inicio)) === diaAberto)
-      : (verAtrasados ? [...atrasados, ...emDia] : emDia)
-    const m = new Map<string, Item[]>()
-    for (const i of base) {
-      const k = chaveDia(paraData(i.inicio))
-      const l = m.get(k) || []; l.push(i); m.set(k, l)
+  // O PAINEL DA DIREITA: o dia aberto (ou hoje), e o que vem depois dele nos próximos 7 dias.
+  const diaDoPainel = diaAberto || hj
+  const doDiaPainel = porDia.get(diaDoPainel) || []
+  const proximos = useMemo(() => {
+    const [a, m, d] = diaDoPainel.split('-').map(Number)
+    const de = new Date(a, m - 1, d)
+    const lista: [string, Item[]][] = []
+    for (let n = 1; n <= 7; n++) {
+      const k = chaveDia(somaDias(de, n))
+      const l = porDia.get(k); if (l?.length) lista.push([k, l])
     }
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]))
-  }, [visiveis, emDia, atrasados, verAtrasados, diaAberto])
+    return lista
+  }, [porDia, diaDoPainel])
 
   // Grade do mês: começa no domingo da semana do dia 1 e fecha só as semanas que o mês precisa.
-  // Fixar em 6 linhas sempre deixava uma faixa vazia embaixo empurrando a lista pra fora da tela.
   const grade = useMemo(() => {
     const ini = new Date(mes.getFullYear(), mes.getMonth(), 1)
     ini.setDate(1 - ini.getDay())
@@ -270,42 +330,39 @@ export default function Agenda() {
       const d = new Date(ini); d.setDate(ini.getDate() + n); return d
     })
   }, [mes])
-
-  const contas = useMemo(() => {
-    const abertos = itens.filter(i => !i.concluido)
-    return {
-      hoje: abertos.filter(i => chaveDia(paraData(i.inicio)) === hj).length,
-      meus: abertos.filter(i => ehMeu(i, eu?.id)).length,
-      semDono: abertos.filter(i => !i.donoId).length,
-      atrasados: abertos.filter(i => chaveDia(paraData(i.inicio)) < hj).length,
-    }
-  }, [itens, eu, hj])
-
-  const filtros = [
-    { id: 'tudo' as const, nome: 'Tudo' },
-    { id: 'meu' as const, nome: `Meus (${contas.meus})` },
-    { id: 'grupo' as const, nome: `Do grupo (${contas.semDono})` },
-    ...(tenhoTime ? [{ id: 'time' as const, nome: 'Do time' }] : []),
-  ]
+  const diasDaSemana = useMemo(() => Array.from({ length: 7 }, (_, n) => somaDias(semana, n)), [semana])
 
   const mesmoMes = (d: Date) => d.getMonth() === mes.getMonth()
-  const irPara = (n: number) => { setMes(new Date(mes.getFullYear(), mes.getMonth() + n, 1)); setDiaAberto(null) }
+  const irPara = (n: number) => {
+    if (visao === 'mes') setMes(new Date(mes.getFullYear(), mes.getMonth() + n, 1))
+    else setSemana(somaDias(semana, n * 7))
+    setDiaAberto(null)
+  }
+  const irHoje = () => { const d = new Date(); setMes(new Date(d.getFullYear(), d.getMonth(), 1)); setSemana(segundaDe(d)); setDiaAberto(null) }
   const atrasadosAcesos = acesas(atrasados).length
+  // quem aparece na bolinha de cada aba: só gente que eu posso enxergar e que está ativa
+  const membrosVisiveis = (a: Aba) => a.membros.map(id => pessoas.find(p => p.id === id)).filter((p): p is Pessoa => !!p && p.ativo !== false)
+
+  const tituloPeriodo = visao === 'mes'
+    ? <>{MESES[mes.getMonth()].replace(/^./, c => c.toUpperCase())} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>de {mes.getFullYear()}</span></>
+    : (() => {
+        const a = diasDaSemana[0], b = diasDaSemana[6]
+        const mesmo = a.getMonth() === b.getMonth()
+        return <>{a.getDate()} – {b.getDate()} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>de {MESES[b.getMonth()]}{mesmo ? '' : ` (${MESES[a.getMonth()].slice(0, 3)}–${MESES[b.getMonth()].slice(0, 3)})`}</span></>
+      })()
 
   return (
     <Layout>
-      <div style={{ padding: '20px clamp(12px, 3vw, 32px)', maxWidth: 1240, margin: '0 auto' }}>
+      <div style={{ padding: '20px clamp(12px, 3vw, 32px)', maxWidth: 1400, margin: '0 auto' }}>
 
         {/* CABEÇALHO */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 12 }}>
           {/* sem textTransform: capitalize — ele maiusculiza CADA palavra e vira "Setembro De 2026" */}
-          <h1 className="display relevo-titulo" style={{ fontSize: 26, fontWeight: 700, color: 'var(--text)', minWidth: 200, margin: 0 }}>
-            {MESES[mes.getMonth()].replace(/^./, c => c.toUpperCase())} <span style={{ color: 'var(--text-muted)', fontWeight: 500 }}>de {mes.getFullYear()}</span>
-          </h1>
+          <h1 className="display relevo-titulo" style={{ fontSize: 28, fontWeight: 700, color: 'var(--text)', minWidth: 200, margin: 0 }}>{tituloPeriodo}</h1>
           <div style={{ display: 'flex', gap: 4 }}>
-            <button onClick={() => irPara(-1)} style={btnIcone} aria-label="Mês anterior"><ChevronLeft size={16} /></button>
-            <button onClick={() => { setMes(new Date(new Date().getFullYear(), new Date().getMonth(), 1)); setDiaAberto(null) }} style={{ ...btnIcone, width: 'auto', padding: '0 12px', fontWeight: 600 }}>Hoje</button>
-            <button onClick={() => irPara(1)} style={btnIcone} aria-label="Próximo mês"><ChevronRight size={16} /></button>
+            <button onClick={() => irPara(-1)} style={btnIcone} aria-label={visao === 'mes' ? 'Mês anterior' : 'Semana anterior'}><ChevronLeft size={16} /></button>
+            <button onClick={irHoje} style={{ ...btnIcone, width: 'auto', padding: '0 12px', fontWeight: 600 }}>Hoje</button>
+            <button onClick={() => irPara(1)} style={btnIcone} aria-label={visao === 'mes' ? 'Próximo mês' : 'Próxima semana'}><ChevronRight size={16} /></button>
           </div>
           {balaoPronto && balao.size > 0 && (
             <span style={{ fontSize: 12, color: 'var(--red)', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -313,140 +370,168 @@ export default function Agenda() {
             </span>
           )}
           <div style={{ flex: 1 }} />
-          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-            {filtros.map(f => (
-              <button key={f.id} onClick={() => { setFiltro(f.id); setDiaAberto(null) }} style={chip(filtro === f.id)}>{f.nome}</button>
+          {/* Mês ou semana */}
+          <div style={{ display: 'inline-flex', padding: 3, borderRadius: 'var(--r)', background: 'var(--glass-field)', border: '1px solid var(--glass-border)' }}>
+            {(['mes', 'semana'] as const).map(v => (
+              <button key={v} onClick={() => trocarVisao(v)} style={{
+                height: 30, padding: '0 14px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 13,
+                background: visao === v ? 'var(--accent-bg)' : 'transparent', color: visao === v ? 'var(--accent-soft)' : 'var(--text-muted)', fontWeight: visao === v ? 800 : 600,
+              }}>{v === 'mes' ? 'Mês' : 'Semana'}</button>
             ))}
           </div>
           <button onClick={() => setNovo(true)} className="btn-afunda" style={btnPri}><Plus size={15} strokeWidth={2.4} /> Novo</button>
+        </div>
+
+        {/* AS ABAS — a pessoa, as áreas (do banco), e todo mundo */}
+        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, borderBottom: '1px solid var(--glass-border)', marginBottom: 16, flexWrap: 'wrap' }}>
+          {abas.map(a => {
+            const on = a.chave === aba
+            const gente = a.chave === 'meus' && eu ? [{ id: eu.id, nome: eu.nome } as Pessoa] : membrosVisiveis(a)
+            return (
+              <button key={a.chave} onClick={() => trocarAba(a.chave)} style={{
+                display: 'flex', alignItems: 'center', gap: 8, padding: '9px 14px 11px', marginBottom: -1, cursor: 'pointer',
+                border: 'none', borderBottom: `2px solid ${on ? 'var(--accent-soft)' : 'transparent'}`, background: 'transparent',
+                color: on ? 'var(--text)' : 'var(--text-muted)', fontSize: 13.5, fontWeight: on ? 800 : 600,
+              }}>
+                {gente.length > 0 && (
+                  <span style={{ display: 'inline-flex' }}>
+                    {gente.slice(0, 4).map((p, n) => <span key={p.id} style={{ marginLeft: n ? -7 : 0 }}><Avatar id={p.id} nome={p.nome} tam={22} borda /></span>)}
+                  </span>
+                )}
+                {a.nome}
+                <span style={{
+                  fontSize: 11, fontWeight: on ? 800 : 700, borderRadius: 'var(--r-pill)', padding: '2px 8px',
+                  background: on ? 'var(--accent-bg)' : 'var(--glass-field)', color: on ? 'var(--accent-soft)' : 'var(--text-muted)',
+                }}>{contagem[a.chave] ?? 0}</span>
+              </button>
+            )
+          })}
+          <div style={{ flex: 1 }} />
+          <div style={{ display: 'flex', gap: 12, paddingBottom: 10, fontSize: 11.5, color: 'var(--text-muted)', alignItems: 'center', flexWrap: 'wrap' }}>
+            {(Object.keys(FONTES) as Item['fonte'][]).map(f => (
+              <span key={f} style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, background: FONTES[f].cor }} />{FONTES[f].rotulo}</span>
+            ))}
+            <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}><span style={{ width: 8, height: 8, borderRadius: 2, border: '1.5px dashed var(--text-faint)', boxSizing: 'border-box' }} />previsto</span>
+          </div>
         </div>
 
         {erro && <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '10px 14px', marginBottom: 12, fontSize: 13, color: 'var(--red)' }}>{erro}</div>}
 
         {carregando ? (
           <div style={{ display: 'grid', gap: 14 }}>
-            <div className="esqueleto" style={{ height: 380, borderRadius: 'var(--r-lg)' }} />
-            <div className="esqueleto" style={{ height: 46, borderRadius: 'var(--r)' }} />
-            <div className="esqueleto" style={{ height: 46, borderRadius: 'var(--r)' }} />
+            <div className="esqueleto" style={{ height: 520, borderRadius: 'var(--r-lg)' }} />
           </div>
-        ) : <>
-
-          {/* CALENDÁRIO — de vidro: é um elemento só, parado, com a luz atrás */}
-          <div className="vidro" style={{ overflow: 'hidden' }}>
-            {/* ⚠️ minmax(0, 1fr), não 1fr. Em CSS grid o mínimo de `1fr` é o tamanho do CONTEÚDO:
-                com títulos longos e nowrap, cada coluna cresce até caber o texto e a grade
-                inteira estoura pra fora da tela — foi o que aconteceu na primeira versão, só
-                quatro dias apareciam. `minmax(0, ...)` deixa a coluna encolher e o texto cortar. */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
-              {DIAS.map(d => (
-                <div key={d} style={{ padding: '9px 0', textAlign: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '.1em', color: 'var(--text-faint)', textTransform: 'uppercase', borderBottom: '1px solid var(--glass-border)' }}>{d}</div>
-              ))}
-              {grade.map((d, n) => {
-                const k = chaveDia(d)
-                const doDia = porDiaCalendario.get(k) || []
-                const hoje = k === hj
-                const sel = k === diaAberto
-                const acesos = acesas(doDia)
-                return (
-                  // Clicar no dia (pra abrir) é ver o dia: marca como visto o que está aceso NELE,
-                  // e só o que está na tela com o filtro atual.
-                  <div key={n} onClick={() => { if (!sel) marcar(acesos, 'lido'); setDiaAberto(sel ? null : k) }}
-                    style={{
-                      minHeight: 78, padding: '5px 5px 3px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
-                      borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--glass-border)',
-                      borderBottom: n < grade.length - 7 ? '1px solid var(--glass-border)' : 'none',
-                      background: sel ? 'var(--accent-bg)' : hoje ? 'var(--glass-field)' : 'transparent',
-                      opacity: mesmoMes(d) ? 1 : 0.35,
-                    }}>
-                    <div style={{
-                      fontSize: 12.5, fontWeight: hoje ? 800 : 500, marginBottom: 4,
-                      color: hoje ? 'var(--accent-soft)' : 'var(--text-muted)',
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    }}>
-                      <span className="tnum" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                        {hoje
-                          ? <span style={{ width: 22, height: 22, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'inline-grid', placeItems: 'center', fontSize: 11.5, fontWeight: 800, boxShadow: '0 3px 8px var(--glow)' }}>{d.getDate()}</span>
-                          : d.getDate()}
-                        {acesos.length > 0 && <span title={`${acesos.length} pra ver`} style={pontoVermelho} />}
-                      </span>
-                      {doDia.length > 3 && <span style={{ fontSize: 10, color: 'var(--text-faint)' }}>{doDia.length}</span>}
-                    </div>
-                    {doDia.slice(0, 3).map(i => {
-                      const atras = k < hj, prev = ehPrevisto(i), cor = atras ? 'var(--red)' : corDe(i)
+        ) : (
+          // CALENDÁRIO À ESQUERDA, O DIA À DIREITA. Em tela estreita o painel desce pra baixo.
+          <div style={{ display: 'flex', gap: 16, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 620px', minWidth: 0 }}>
+              {visao === 'mes' ? (
+                /* MÊS — de vidro: é um elemento só, parado, com a luz atrás */
+                <div className="vidro" style={{ overflow: 'hidden' }}>
+                  {/* ⚠️ minmax(0, 1fr), não 1fr: o mínimo de `1fr` é o conteúdo, e com título longo a grade estoura. */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+                    {DIAS.map(d => (
+                      <div key={d} style={{ padding: '10px 0', textAlign: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', color: 'var(--text-faint)', textTransform: 'uppercase', borderBottom: '1px solid var(--glass-border)' }}>{d}</div>
+                    ))}
+                    {grade.map((d, n) => {
+                      const k = chaveDia(d)
+                      const doDia = porDia.get(k) || []
+                      const hoje = k === hj
+                      const sel = k === diaAberto
+                      const acesos = acesas(doDia)
+                      const MAX = 4
                       return (
-                        <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); abrir(i) }}
-                          title={prev ? `${i.titulo} (previsto — ainda não combinado)` : i.titulo}
+                        // Clicar no dia (pra abrir) é ver o dia: marca como visto o que está aceso NELE,
+                        // e só o que está na tela com a aba atual.
+                        <div key={n} onClick={() => { if (!sel) marcar(acesos, 'lido'); setDiaAberto(sel ? null : k) }}
                           style={{
-                            fontSize: 10.5, lineHeight: '14px', marginBottom: 2, padding: '1px 4px', borderRadius: 3,
-                            // previsto = sombra tracejada, sem fundo: está no calendário do contrato,
-                            // mas ninguém combinou com o cliente ainda
-                            background: prev ? 'transparent' : atras ? 'var(--red-bg)' : 'var(--surface-2)',
-                            color: cor,
-                            borderLeft: `2px ${prev ? 'dashed' : 'solid'} ${cor}`,
-                            opacity: prev ? 0.75 : 1,
-                            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0,
-                            fontWeight: balao.has(chaveDe(i)) ? 700 : 400,
+                            minHeight: 112, padding: '7px 6px 5px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
+                            borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--glass-border)',
+                            borderBottom: n < grade.length - 7 ? '1px solid var(--glass-border)' : 'none',
+                            background: sel ? 'var(--accent-bg)' : hoje ? 'var(--glass-field)' : 'transparent',
+                            opacity: mesmoMes(d) ? 1 : 0.35,
                           }}>
-                          {horaDe(i) && <span style={{ opacity: 0.75 }}>{horaDe(i)} </span>}{i.titulo}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
+                            <span className="tnum" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: hoje ? 800 : 600, color: hoje ? 'var(--accent-soft)' : 'var(--text-muted)' }}>
+                              {hoje
+                                ? <span style={{ width: 26, height: 26, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'inline-grid', placeItems: 'center', fontSize: 12.5, fontWeight: 800, boxShadow: '0 3px 10px var(--glow)' }}>{d.getDate()}</span>
+                                : d.getDate()}
+                              {acesos.length > 0 && <span title={`${acesos.length} pra ver`} style={pontoVermelho} />}
+                            </span>
+                            {doDia.length > MAX && <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>{doDia.length}</span>}
+                          </div>
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+                            {doDia.slice(0, MAX).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => abrir(i)} />)}
+                          </div>
+                          {doDia.length > MAX && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4, marginTop: 3 }}>+{doDia.length - MAX} mais</div>}
                         </div>
                       )
                     })}
-                    {doDia.length > 3 && (
-                      <div style={{ fontSize: 10, color: 'var(--text-faint)', paddingLeft: 5 }}>+{doDia.length - 3} mais</div>
-                    )}
                   </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia de hoje.
-              Abrir a faixa (clique de propósito) é ver os atrasados: marca os acesos. Só aparecer
-              não marca — senão bastaria abrir a agenda pra o balão dos atrasados sumir sem ninguém ver. */}
-          {atrasados.length > 0 && !diaAberto && (
-            <div onClick={() => { if (!verAtrasados) marcar(acesas(atrasados), 'lido'); setVerAtrasados(v => !v) }}
-              style={{ marginTop: 16, background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-              {atrasadosAcesos > 0 && <span style={pontoVermelho} />}
-              <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>{atrasados.length} atrasado{atrasados.length > 1 ? 's' : ''}</span>
-              <span style={{ fontSize: 12, color: 'var(--red)', opacity: 0.85 }}>
-                {verAtrasados ? 'aparecendo na lista abaixo' : atrasadosAcesos > 0 ? `${atrasadosAcesos} teu${atrasadosAcesos > 1 ? 's' : ''} ainda não vist${atrasadosAcesos > 1 ? 'os' : 'o'}` : 'fora da lista, pra não atrapalhar o dia'}
-              </span>
-              <div style={{ flex: 1 }} />
-              <span style={{ fontSize: 12, color: 'var(--red)' }}>{verAtrasados ? 'esconder' : 'mostrar'}</span>
-            </div>
-          )}
-
-          {/* LISTA */}
-          <div style={{ marginTop: 20 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
-              <h2 className="display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>
-                {diaAberto ? rotuloDia(diaAberto) : 'Próximos dias'}
-              </h2>
-              {diaAberto && <button onClick={() => setDiaAberto(null)} style={{ ...chip(false), padding: '3px 10px' }}>ver todos</button>}
-              <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+                </div>
+              ) : (
+                <Semana dias={diasDaSemana} porDia={porDia} hj={hj} diaAberto={diaAberto} nomeDe={nomeDe} balao={balao}
+                  onDia={k => { const sel = k === diaAberto; if (!sel) marcar(acesas(porDia.get(k) || []), 'lido'); setDiaAberto(sel ? null : k) }}
+                  onAbrir={abrir} />
+              )}
             </div>
 
-            {listaDeBaixo.length === 0 ? (
-              <Vazio icone={CalendarDays} titulo={diaAberto ? 'Nada neste dia' : 'Nada pela frente'} texto={diaAberto ? undefined : 'Bom sinal — ou hora de pegar algo do grupo.'} />
-            ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-                {listaDeBaixo.map(([dia, lista]) => (
-                  <div key={dia}>
-                    <div style={{ fontSize: 11, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', marginBottom: 6, color: dia < hj ? 'var(--red)' : dia === hj ? 'var(--accent-soft)' : 'var(--text-faint)' }}>
-                      {dia < hj ? 'Atrasado · ' : ''}{rotuloDia(dia)}
-                    </div>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                      {lista.map(i => (
-                        <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+            {/* O PAINEL: o dia, os atrasados recolhidos, e o que vem depois */}
+            <div style={{ flex: '0 1 340px', minWidth: 280, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="vidro" style={{ padding: 16, display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 8, marginBottom: 4 }}>
+                  <h2 className="display" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text)', margin: 0 }}>{rotuloDia(diaDoPainel)}</h2>
+                  {diaAberto && diaAberto !== hj && <button onClick={() => setDiaAberto(null)} style={{ ...chip(false), padding: '3px 10px' }}>hoje</button>}
+                </div>
+                {doDiaPainel.length === 0
+                  ? <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '6px 0 4px' }}>{diaDoPainel === hj ? 'Nada pra hoje nesta aba.' : 'Nada neste dia.'}</div>
+                  : doDiaPainel.map(i => (
+                    <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                      ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
+                  ))}
+              </div>
+
+              {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia.
+                  Abrir a faixa (clique de propósito) é ver os atrasados: marca os acesos. Só aparecer
+                  não marca — senão bastaria abrir a agenda pra o balão dos atrasados sumir sem ninguém ver. */}
+              {atrasados.length > 0 && (
+                <div>
+                  <div onClick={() => { if (!verAtrasados) marcar(acesas(atrasados), 'lido'); setVerAtrasados(v => !v) }}
+                    style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 'var(--r)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    {atrasadosAcesos > 0 && <span style={pontoVermelho} />}
+                    <span style={{ fontSize: 13, color: 'var(--red)', fontWeight: 600 }}>{atrasados.length} atrasado{atrasados.length > 1 ? 's' : ''}</span>
+                    <span style={{ fontSize: 12, color: 'var(--red)', opacity: 0.85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {verAtrasados ? 'abaixo' : atrasadosAcesos > 0 ? `${atrasadosAcesos} teu${atrasadosAcesos > 1 ? 's' : ''} sem ver` : 'fora da lista'}
+                    </span>
+                    <div style={{ flex: 1 }} />
+                    <span style={{ fontSize: 12, color: 'var(--red)' }}>{verAtrasados ? 'esconder' : 'mostrar'}</span>
+                  </div>
+                  {verAtrasados && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 8 }}>
+                      {atrasados.map(i => (
+                        <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} atrasado
                           ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
                       ))}
                     </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  )}
+                </div>
+              )}
+
+              {proximos.length > 0 && (
+                <div style={{ border: '1px solid var(--glass-border)', borderRadius: 'var(--r-lg)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', color: 'var(--text-faint)', textTransform: 'uppercase', marginBottom: 2 }}>Depois</div>
+                  {proximos.flatMap(([dia, lista]) => lista.slice(0, 3).map(i => (
+                    <div key={i.fonte + i.id} onClick={() => abrir(i)} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--text-2)', cursor: 'pointer', minWidth: 0 }}>
+                      <span className="tnum" style={{ fontSize: 11, color: 'var(--text-faint)', width: 46, flexShrink: 0 }}>{rotuloDia(dia).slice(0, 6).replace(',', '')}</span>
+                      <span style={{ width: 3, height: 12, borderRadius: 2, background: corDe(i), flexShrink: 0, opacity: ehPrevisto(i) ? .5 : 1 }} />
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontWeight: balao.has(chaveDe(i)) ? 700 : 500 }}>{horaDe(i) ? horaDe(i) + ' ' : ''}{i.titulo}</span>
+                    </div>
+                  ))).slice(0, 8)}
+                </div>
+              )}
+            </div>
           </div>
-        </>}
+        )}
 
         {detalhe && eu && (
           <ModalDetalhe it={detalhe} eu={eu} ativos={ativos} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
@@ -486,6 +571,125 @@ export default function Agenda() {
   )
 }
 
+// O ITEM NA CÉLULA DO MÊS: a bolinha de quem é o dono, a hora, o título. Previsto tracejado.
+function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolean; nomeDe: (id: string | null) => string | null; naoLido: boolean; onAbrir: () => void }) {
+  const prev = ehPrevisto(it), cor = atras ? 'var(--red)' : corDe(it)
+  return (
+    <div onClick={e => { e.stopPropagation(); onAbrir() }} title={prev ? `${it.titulo} (previsto — ainda não combinado)` : it.titulo}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 5, padding: '3px 6px 3px 5px', borderRadius: 6, minWidth: 0,
+        background: prev ? 'transparent' : atras ? 'var(--red-bg)' : 'var(--surface-2)',
+        border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + '88' : 'transparent'}`, borderLeft: `3px ${prev ? 'dashed' : 'solid'} ${cor}`,
+        opacity: prev ? 0.8 : 1,
+      }}>
+      <Avatar id={it.donoId} nome={nomeDe(it.donoId)} tam={16} />
+      <span style={{ fontSize: 11.5, lineHeight: '15px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+        {horaDe(it) && <b style={{ color: cor, fontWeight: 800 }}>{horaDe(it)} </b>}{it.titulo}
+      </span>
+    </div>
+  )
+}
+
+// A SEMANA: faixa do dia inteiro em cima (previsto, follow-up, tarefa) e as horas embaixo. Reunião
+// de duas horas ocupa duas horas — é o que responde "como está o meu amanhã?" de relance.
+const H_INI = 7, H_FIM = 20, PX_H = 52
+function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, onDia, onAbrir }: {
+  dias: Date[]; porDia: Map<string, Item[]>; hj: string; diaAberto: string | null
+  nomeDe: (id: string | null) => string | null; balao: Set<string>; onDia: (k: string) => void; onAbrir: (i: Item) => void
+}) {
+  const agora = new Date()
+  const minAgora = agora.getHours() * 60 + agora.getMinutes()
+  const temHoje = dias.some(d => chaveDia(d) === hj)
+  const topoDe = (d: Date) => Math.max(0, ((d.getHours() * 60 + d.getMinutes()) - H_INI * 60) / 60 * PX_H)
+  const altura = (H_FIM - H_INI) * PX_H
+  const cols = 'repeat(7, minmax(0, 1fr))'
+  return (
+    <div className="vidro" style={{ overflow: 'hidden' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, borderBottom: '1px solid var(--glass-border)' }}>
+        <div />
+        {dias.map(d => {
+          const k = chaveDia(d), hoje = k === hj, sel = k === diaAberto
+          return (
+            <div key={k} onClick={() => onDia(k)} style={{ padding: '9px 0 7px', textAlign: 'center', cursor: 'pointer', background: sel ? 'var(--accent-bg)' : 'transparent' }}>
+              <div style={{ fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', color: hoje ? 'var(--accent-soft)' : 'var(--text-faint)', textTransform: 'uppercase' }}>{DIAS[d.getDay()]}</div>
+              {hoje
+                ? <span style={{ width: 30, height: 30, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'inline-grid', placeItems: 'center', fontSize: 15, fontWeight: 800, boxShadow: '0 3px 10px var(--glow)' }}>{d.getDate()}</span>
+                : <div className="tnum" style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-2)', lineHeight: '30px' }}>{d.getDate()}</div>}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* dia inteiro */}
+      <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, borderBottom: '1px solid var(--glass-border)', background: 'rgba(0,0,0,.10)' }}>
+        <div style={{ padding: '8px 6px', fontSize: 10, fontWeight: 800, letterSpacing: '.08em', color: 'var(--text-faint)', textAlign: 'right' }}>DIA</div>
+        {dias.map(d => {
+          const k = chaveDia(d)
+          const lista = (porDia.get(k) || []).filter(i => i.diaTodo)
+          return (
+            <div key={k} style={{ padding: '6px 4px', borderLeft: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, minHeight: 34, background: k === hj ? 'var(--glass-field)' : 'transparent' }}>
+              {lista.slice(0, 4).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => onAbrir(i)} />)}
+              {lista.length > 4 && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4 }}>+{lista.length - 4} mais</div>}
+            </div>
+          )
+        })}
+      </div>
+
+      {/* as horas */}
+      <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, position: 'relative' }}>
+        <div style={{ height: altura }}>
+          {Array.from({ length: H_FIM - H_INI }, (_, n) => (
+            <div key={n} className="tnum" style={{ height: PX_H, fontSize: 10.5, color: 'var(--text-faint)', textAlign: 'right', padding: '0 8px', boxSizing: 'border-box' }}>{String(H_INI + n).padStart(2, '0')}:00</div>
+          ))}
+        </div>
+        {dias.map(d => {
+          const k = chaveDia(d)
+          const lista = (porDia.get(k) || []).filter(i => !i.diaTodo)
+          const hoje = k === hj
+          return (
+            <div key={k} onClick={() => onDia(k)} style={{
+              position: 'relative', height: altura, borderLeft: '1px solid var(--glass-border)', cursor: 'pointer',
+              background: `${hoje ? 'var(--glass-field)' : 'transparent'} repeating-linear-gradient(180deg, transparent 0 ${PX_H - 1}px, var(--glass-border) ${PX_H - 1}px ${PX_H}px)`,
+              opacity: d.getDay() === 0 || d.getDay() === 6 ? 0.7 : 1,
+            }}>
+              {lista.map((i, n) => {
+                const ini = paraData(i.inicio), fim = i.fim ? new Date(i.fim) : new Date(ini.getTime() + 36e5)
+                const top = topoDe(ini)
+                const alt = Math.max(30, Math.min(altura - top, (fim.getTime() - ini.getTime()) / 36e5 * PX_H))
+                const cor = k < hj ? 'var(--red)' : corDe(i)
+                const aceso = balao.has(chaveDe(i))
+                return (
+                  <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); onAbrir(i) }} title={i.titulo} style={{
+                    position: 'absolute', left: 3 + (n % 3) * 4, right: 3, top, height: alt, borderRadius: 8, padding: '5px 7px', boxSizing: 'border-box', overflow: 'hidden',
+                    background: 'var(--surface)', borderLeft: `3px solid ${cor}`, border: `1px solid ${aceso ? cor : 'var(--border)'}`, borderLeftWidth: 3, borderLeftColor: cor,
+                    boxShadow: aceso ? `0 6px 18px ${cor}44` : 'var(--shadow-sm)', zIndex: 1 + n,
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 10.5, fontWeight: 800, color: cor }}>
+                      {aceso && <span style={pontoVermelho} />}{horaDe(i)}{alt >= 44 ? ` – ${fim.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}` : ''}
+                    </div>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text)', lineHeight: 1.25, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: alt >= 60 ? 'normal' : 'nowrap' }}>{i.titulo}</div>
+                    {alt >= 72 && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginTop: 5 }}>
+                        <Avatar id={i.donoId} nome={nomeDe(i.donoId)} tam={16} />
+                        {(i.participantes || []).slice(0, 3).map(p => <span key={p} style={{ marginLeft: -5 }}><Avatar id={p} nome={nomeDe(p)} tam={16} borda /></span>)}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+              {hoje && temHoje && minAgora >= H_INI * 60 && minAgora <= H_FIM * 60 && (
+                <div style={{ position: 'absolute', left: 0, right: 0, top: (minAgora - H_INI * 60) / 60 * PX_H, height: 2, background: 'var(--red)', boxShadow: '0 0 8px var(--red)', zIndex: 20, pointerEvents: 'none' }}>
+                  <span style={{ position: 'absolute', left: -5, top: -4, width: 10, height: 10, borderRadius: '50%', background: 'var(--red)' }} />
+                </div>
+              )}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ── PEÇAS ─────────────────────────────────────────────────────────────────────
 // o principal é o único com o gradiente do logo (e afunda no clique via .btn-afunda)
 const btnPri = { padding: '9px 16px', background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 } as React.CSSProperties
@@ -502,9 +706,9 @@ const chip = (ativo: boolean) => ({
 const inp = { background: 'var(--glass-field)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '10px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' } as React.CSSProperties
 
 // A linha: bolinha pra concluir, e o resto abre ao clicar. Sem fileira de botões.
-function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
+function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir, atrasado }: {
   it: Item; eu: Eu | null; nomeDe: (id: string | null) => string | null; naoLido: boolean
-  ocupado: boolean; onConcluir: () => void; onAbrir: () => void
+  ocupado: boolean; onConcluir: () => void; onAbrir: () => void; atrasado?: boolean
 }) {
   const f = FONTES[it.fonte]
   const meu = it.donoId === eu?.id
@@ -533,8 +737,11 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
         ? <span title="Conclui na ficha da entrega" style={{ width: 17, height: 17, flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: corDe(it) }}>◆</span>
         : <button title="Concluir" disabled={ocupado} onClick={e => { e.stopPropagation(); onConcluir() }}
             style={{ width: 17, height: 17, flexShrink: 0, borderRadius: '50%', border: '1.5px solid var(--text-faint)', background: 'transparent', cursor: 'pointer', padding: 0 }} />}
-      <span className="tnum" style={{ fontSize: 12, color: 'var(--text-muted)', width: 42, flexShrink: 0, fontWeight: 600 }}>{hora || '—'}</span>
-      <span style={{ width: 3, height: 18, borderRadius: 2, background: corDe(it), flexShrink: 0 }} />
+      {/* na lista de atrasados a hora não diz nada — o dia, sim */}
+      <span className="tnum" style={{ fontSize: 12, color: atrasado ? 'var(--red)' : 'var(--text-muted)', width: 42, flexShrink: 0, fontWeight: 600 }}>
+        {atrasado ? paraData(it.inicio).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : (hora || '—')}
+      </span>
+      <span style={{ width: 3, height: 18, borderRadius: 2, background: atrasado ? 'var(--red)' : corDe(it), flexShrink: 0 }} />
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ fontSize: 14, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'flex', alignItems: 'center', gap: 6, fontWeight: naoLido ? 700 : 500 }}>
           {naoLido && <span title="Ainda não visto" style={pontoVermelho} />}
@@ -546,8 +753,9 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir }: {
           </div>
         )}
       </div>
-      <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0 }}>
-        {!it.donoId ? (entrega ? 'entrega' : 'sem dono') : meu ? 'seu' : nomeDe(it.donoId)}{outros > 0 ? ` +${outros}` : ''}
+      <span style={{ fontSize: 11, color: 'var(--text-faint)', flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+        <Avatar id={it.donoId} nome={nomeDe(it.donoId)} tam={18} />
+        {!it.donoId ? (entrega ? 'entrega' : 'sem dono') : meu ? 'seu' : ''}{outros > 0 ? ` +${outros}` : ''}
       </span>
     </div>
   )

@@ -187,7 +187,26 @@ export async function GET(req: Request) {
 
   itens.sort((a, b) => a.inicio.localeCompare(b.inicio))
 
+  // AS ABAS POR ÁREA vêm do banco (configuracoes 'agenda.abas', db/agenda-abas.sql): nome, quem está
+  // nela e quais fontes SEM DONO entram. Quem está em cada área muda com o time — não é código.
+  // Sem a configuração, a tela fica só com "Meus" e "Time".
+  let abas: { chave: string; nome: string; membros: string[]; fontes: string[] }[] = []
+  try {
+    const { data: cfg } = await sb.from('configuracoes').select('valor').eq('org_id', org).eq('chave', 'agenda.abas').maybeSingle()
+    const lista = JSON.parse(cfg?.valor || '[]')
+    if (Array.isArray(lista)) {
+      abas = lista
+        .filter((a: any) => a && typeof a.chave === 'string' && typeof a.nome === 'string')
+        .map((a: any) => ({
+          chave: a.chave, nome: a.nome,
+          membros: Array.isArray(a.membros) ? a.membros.filter((x: any) => typeof x === 'string') : [],
+          fontes: Array.isArray(a.fontes) ? a.fontes.filter((x: any) => typeof x === 'string') : [],
+        }))
+    }
+  } catch { /* configuração mal escrita = sem abas de área, e a agenda continua abrindo */ }
+
   return NextResponse.json({
+    abas,
     eu: { id: eu.id, nome: eu.nome, papel: eu.papel, setor: eu.setor, souDono },
     // Só devolvo o nome de quem eu posso enxergar — a lista de pessoas da tela não pode virar um
     // atalho pra descobrir a estrutura que a agenda esconde. O `ativo` vai junto porque o nome de
