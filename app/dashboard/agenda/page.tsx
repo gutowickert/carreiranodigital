@@ -302,6 +302,22 @@ export default function Agenda() {
 
   const totalPrevistos = useMemo(() => visiveis.filter(ehPrevisto).length, [visiveis])
 
+  // ENCONTROS PRA COMBINAR — os previstos dos próximos 30 dias.
+  //
+  // Previsto não é informação: é um cliente com quem ninguém marcou o próximo encontro. Em entrega,
+  // cliente sem data à frente é cliente que some — é a mesma razão da regra de ouro do módulo
+  // ("não se conclui um encontro sem marcar o próximo"). Eram 27 assim, e não apareciam em lista
+  // de tarefa nenhuma: só enfeitavam o calendário.
+  //
+  // O corte de 30 dias é de propósito: o que dá pra resolver esta semana cabe numa faixa; os 27
+  // inteiros viram um mural que ninguém abre.
+  const [verCombinar, setVerCombinar] = useState(false)
+  const aCombinar = useMemo(() => {
+    const limite = chaveDia(somaDias(new Date(), 30))
+    return visiveis.filter(i => ehPrevisto(i) && chaveDia(paraData(i.inicio)) <= limite)
+      .sort((a, b) => a.inicio.localeCompare(b.inicio))
+  }, [visiveis])
+
   // ⚠️ PREVISTO NÃO CONTA COMO ATRASADO. A data foi calculada pelo roteiro, não combinada com
   // ninguém — chamar de atrasado o que nunca foi marcado deixaria a faixa vermelha permanente e
   // ensinaria o time a ignorá-la.
@@ -538,6 +554,37 @@ export default function Agenda() {
                 )}
               </div>
 
+              {/* FAIXA DO QUE FALTA COMBINAR — a sombra virando trabalho com dono. */}
+              {aCombinar.length > 0 && (
+                <div>
+                  <div onClick={() => setVerCombinar(v => !v)}
+                    style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 'var(--r)', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                    <span style={{ fontSize: 13, color: 'var(--amber)', fontWeight: 700 }}>
+                      {aCombinar.length} encontro{aCombinar.length > 1 ? 's' : ''} pra combinar
+                    </span>
+                    <span style={{ fontSize: 12, color: 'var(--amber)', opacity: .85, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {verCombinar ? 'abaixo' : 'nos próximos 30 dias'}
+                    </span>
+                    <div style={{ flex: 1 }} />
+                    <span style={{ fontSize: 12, color: 'var(--amber)' }}>{verCombinar ? 'esconder' : 'mostrar'}</span>
+                  </div>
+                  {verCombinar && (
+                    <>
+                      <p style={{ fontSize: 11.5, color: 'var(--text-faint)', margin: '8px 2px 6px', lineHeight: 1.5 }}>
+                        O roteiro calculou a data, mas ninguém acertou o dia com o cliente. Clica pra combinar —
+                        cliente sem data à frente é cliente que some.
+                      </p>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                        {aCombinar.map(i => (
+                          <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                            ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* FAIXA DE ATRASADOS — recolhida, pra não enterrar o dia.
                   Abrir a faixa (clique de propósito) é ver os atrasados: marca os acesos. Só aparecer
                   não marca — senão bastaria abrir a agenda pra o balão dos atrasados sumir sem ninguém ver. */}
@@ -592,7 +639,8 @@ export default function Agenda() {
             // — mas fui eu que peguei, não é novidade. Marca como visto na hora.
             onPegar={async q => { const ok = await pegar(detalhe, q); if (ok && q) marcar([chaveDe(detalhe)], 'lido') }}
             onConcluir={() => { concluir(detalhe); setDetalhe(null) }}
-            onPublico={p => abrirPublico(detalhe, p)} onAjuda={(q, n) => pedirAjuda(detalhe, q, n)} />
+            onPublico={p => abrirPublico(detalhe, p)} onAjuda={(q, n) => pedirAjuda(detalhe, q, n)}
+            onCombinado={() => { setDetalhe(null); carregar() }} />
         )}
         {(novo || editar) && eu && (
           <ModalCompromisso eu={eu} ativos={ativos} diaSugerido={diaAberto} inicial={editar}
@@ -819,12 +867,63 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir, atrasado
   )
 }
 
-function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido, podeEditar, onEditar, onFechar, onPegar, onConcluir, onPublico, onAjuda }: {
+// COMBINAR O ENCONTRO — o que transforma a sombra em compromisso.
+//
+// Um marco `previsto` é o roteiro dizendo "por volta desta data". O que falta é alguém ligar pro
+// cliente e acertar o dia. Enquanto isso não acontece, o cliente fica sem data à frente — e cliente
+// sem data à frente some. Eram 27 assim, e não apareciam em lista de tarefa nenhuma.
+//
+// A data já vem preenchida com o palpite do roteiro: quase sempre a conversa com o cliente confirma
+// a semana e muda só a hora.
+function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
+  const ini = paraData(it.inicio)
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const [quando, setQuando] = useState(`${ini.getFullYear()}-${pad(ini.getMonth() + 1)}-${pad(ini.getDate())}T09:00`)
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+  const [aviso, setAviso] = useState('')
+
+  async function combinar() {
+    const d = new Date(quando)
+    if (isNaN(+d)) { setErro('Confere a data e a hora.'); return }
+    setSalvando(true); setErro('')
+    const j = await fetchAuth('/api/projetos/marco', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'combinar', id: it.id, data_hora: d.toISOString() }),
+    }).then(r => r.json()).catch(() => null)
+    setSalvando(false)
+    if (!j?.ok) { setErro(j?.error || 'não consegui combinar agora'); return }
+    if (j.aviso) { setAviso(j.aviso); setTimeout(onPronto, 2500); return }
+    onPronto()
+  }
+
+  return (
+    <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '13px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+      <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
+        <b style={{ color: 'var(--text)' }}>Ainda não foi combinado com o cliente.</b> O roteiro calculou esta data — acertou o dia com ele? Marca aqui que vira compromisso de verdade.
+      </div>
+      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <input type="datetime-local" value={quando} onChange={e => setQuando(e.target.value)}
+          style={{ ...inp, flex: '1 1 190px', width: 'auto' }} />
+        <button onClick={combinar} disabled={salvando} style={{ ...btnPri, opacity: salvando ? .6 : 1 }}>
+          {salvando ? 'Combinando…' : 'Combinar'}
+        </button>
+      </div>
+      {erro && <p style={{ fontSize: 12.5, color: 'var(--red)', margin: 0 }}>{erro}</p>}
+      {aviso && <p style={{ fontSize: 12.5, color: 'var(--amber)', margin: 0, lineHeight: 1.5 }}>{aviso}</p>}
+      <p style={{ fontSize: 11.5, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>
+        Os encontros seguintes acompanham o deslocamento; a data de fim do contrato não sai do lugar.
+      </p>
+    </div>
+  )
+}
+
+function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido, podeEditar, onEditar, onFechar, onPegar, onConcluir, onPublico, onAjuda, onCombinado }: {
   it: Item; eu: Eu; ativos: Pessoa[]; nomeDe: (id: string | null) => string | null; ocupado: boolean
   podeNaoLido: boolean; onNaoLido: () => void
   podeEditar: boolean; onEditar: () => void
   onFechar: () => void; onPegar: (quem: string | null) => void; onConcluir: () => void
-  onPublico: (p: boolean) => void; onAjuda: (quem: string, nota: string) => void
+  onPublico: (p: boolean) => void; onAjuda: (quem: string, nota: string) => void; onCombinado: () => void
 }) {
   const [pedindo, setPedindo] = useState(false)
   const [quem, setQuem] = useState('')
@@ -846,9 +945,16 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
           {!it.diaTodo && <span>· {horaDe(it)}</span>}
           <span>· {it.donoId ? (meu ? 'seu' : `de ${nomeDe(it.donoId)}`) : 'sem responsável'}</span>
         </div>
-        {ehPrevisto(it) && (
-          <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.5 }}>
-            <b style={{ color: 'var(--text-2)' }}>Previsto:</b> o roteiro calculou esta data, mas ainda não foi combinada com o cliente.
+        {/* ⚠️ COMBINAR SE FAZ AQUI; CONCLUIR, NÃO. A regra de ouro do módulo de entrega é sobre
+            FECHAR um encontro (não fecha sem marcar o próximo, com o cliente na frente) — e ela
+            continua valendo só na ficha. Combinar é o contrário disso: é o que tira o cliente do
+            limbo. Fazer isso na agenda é o ponto, porque é na agenda que a pessoa VÊ que está
+            faltando. */}
+        {ehPrevisto(it) ? (
+          <Combinar it={it} onPronto={onCombinado} />
+        ) : (
+          <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+            Remarcar e concluir se faz na ficha da entrega — lá, antes de fechar um encontro, o sistema pede o próximo.
           </p>
         )}
         {aviso && (
@@ -856,12 +962,9 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
             Precisa de ti: {aviso}.
           </div>
         )}
-        <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
-          Combinar, remarcar e concluir se faz na ficha da entrega — lá, antes de fechar um encontro, o sistema pede o próximo.
-        </p>
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={onFechar} style={{ ...btnSec, flex: 1 }}>Fechar</button>
-          <a href={`/dashboard/entregas/${it.projetoId}`} style={{ ...btnPri, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Abrir a entrega</a>
+          <a href={`/dashboard/entregas/${it.projetoId}`} style={{ ...btnSec, flex: 1, textAlign: 'center', textDecoration: 'none' }}>Abrir a entrega</a>
         </div>
       </Modal>
     )
