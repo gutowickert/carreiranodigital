@@ -17,7 +17,9 @@ import { nomeDoLocal, diasAte } from '@/lib/entrega'
 // ⚠️ A IA NÃO REMARCA. Ela confirma ou não. Data nova se combina com gente — e quem responde "não
 // vou poder" precisa de uma pessoa, não de um robô oferecendo horário.
 
-const TEMPLATE = 'cnd_reconfirmar_encontro'
+// ⚠️ O NOME DO TEMPLATE NA META SAI DO BANCO, nunca cravado aqui. Estava cravado e teria quebrado
+// calado na primeira vez que o template fosse resubmetido com outro nome — o motor mandaria pra um
+// template que não existe, a Meta recusaria, e o log diria só "falhou".
 const CHAVE = 'reconfirmar_encontro'
 
 type Marco = {
@@ -49,10 +51,11 @@ export async function reconfirmarEncontros(org: string, hojeISO?: string) {
   // Só sai por template aprovado: mensagem 2 dias antes está fora da janela de 24h do WhatsApp.
   // Sem aprovação, o motor não tenta — mandar e falhar calado seria pior que não mandar.
   const { data: tpl } = await sb.from('followup_templates')
-    .select('status, corpo').eq('org_id', org).eq('chave', CHAVE).maybeSingle()
-  if (tpl?.status !== 'aprovado') {
+    .select('status, nome_meta').eq('org_id', org).eq('chave', CHAVE).maybeSingle()
+  if (tpl?.status !== 'aprovado' || !tpl?.nome_meta) {
     return { ok: false, motivo: `template ${CHAVE} ainda não aprovado na Meta (está "${tpl?.status || 'não cadastrado'}")`, enviadas: 0, avisados: 0 }
   }
+  const TEMPLATE = tpl.nome_meta
 
   const { data: marcos } = await sb.from('projeto_marcos')
     .select('id, titulo, projeto_id, local, data_combinada, data_prevista, reconfirmacao_enviada_em, reconfirmacao_2a_em, reconfirmacao_resposta, responsavel_id')
