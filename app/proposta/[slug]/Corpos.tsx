@@ -25,6 +25,29 @@ type Props = {
   turma?: TurmaResumo | null
 }
 
+/**
+ * O BOTÃO DE ACEITAR, DESLIGADO — o que a prévia mostra no lugar do de verdade.
+ *
+ * ⚠️ ANTES EU SUMIA COM ELE e deixava uma frase pequena em itálico explicando. O Nando procurou o
+ * botão duas vezes e não achou; da segunda achou que ele tinha sido apagado do sistema. Esconder
+ * uma coisa e explicar em letra miúda não é explicar — quem está conferindo a proposta quer ver a
+ * proposta INTEIRA, do jeito que o cliente vai ver, e "não dá pra clicar" é diferente de "não
+ * existe".
+ */
+export function AceiteDaPrevia() {
+  return (
+    <div>
+      <button className="aceite-botao" disabled style={{ opacity: .45, cursor: 'not-allowed' }}>
+        Li e aceito esta proposta
+      </button>
+      <p className="corpo" style={{ fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 8 }}>
+        Na prévia o botão fica desligado — pra ninguém aceitar no lugar do cliente. No link que tu
+        manda pra ele, funciona normalmente.
+      </p>
+    </div>
+  )
+}
+
 const ehANL = (nome: string | null) =>
   (nome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().includes('anuncios para negocios locais')
 

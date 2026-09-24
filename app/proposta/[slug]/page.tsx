@@ -4,7 +4,7 @@ import type { Metadata } from 'next'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import Abertura from './Abertura'
 import Aceite from './Aceite'
-import { CorpoDoProduto, NumerosDaCapa, LinhaDoAceite } from './Corpos'
+import { CorpoDoProduto, NumerosDaCapa, LinhaDoAceite, AceiteDaPrevia } from './Corpos'
 import { turmaDoOrcamento } from '@/lib/turma-da-proposta'
 
 // O CARTÃO QUE O WHATSAPP MOSTRA antes de a pessoa clicar: logo da escola, "Proposta para <nome>" e
@@ -242,9 +242,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
         </p>
         {previa
-          ? <p className="corpo" style={{ fontSize: 13, color: 'var(--tinta-fraca)', fontStyle: 'italic' }}>
-              (aqui entra o botão de aceitar — escondido na prévia pra ninguém aceitar no lugar do cliente)
-            </p>
+          ? <AceiteDaPrevia />
           : <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} />}
         <p className="corpo" style={{ fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 14 }}>
           Escola Carreira no Digital · CNPJ 62.512.432/0001-39
