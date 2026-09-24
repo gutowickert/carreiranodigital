@@ -81,3 +81,19 @@ export function resumoDoProduto(nomeDoProduto: string | null | undefined): strin
   const n = semAcento(nomeDoProduto || '')
   return RESUMOS.find(r => n.includes(r.chave))?.texto || ''
 }
+
+// QUEM É VENDIDO POR TURMA.
+//
+// ⚠️ NÃO DÁ PRA DEDUZIR ISSO DA TABELA `turmas`. O Deu Venda TEM uma linha lá, mas ela não é uma
+// turma — é o "container" dos leads de uma cidade, com oferta contínua, e a própria observação da
+// linha diz isso. Deduzir pela existência de turma faria a proposta de implantação individual
+// exigir data de turma pra ser publicada.
+//
+// Produto de turma não pode ser proposto sem data: o cliente precisa saber QUANDO é, e essa data
+// muda todo mês. Por isso o campo é obrigatório — é a diferença entre esquecer e não poder esquecer.
+const POR_TURMA = ['anuncios para negocios locais', 'formacao completa', 'reels para negocios', 'imersao']
+
+export function exigeTurma(nomeDoProduto: string | null | undefined): boolean {
+  const n = semAcento(nomeDoProduto || '')
+  return !!n && POR_TURMA.some(p => n.includes(p))
+}

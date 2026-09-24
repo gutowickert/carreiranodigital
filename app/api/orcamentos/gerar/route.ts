@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
-import { temProposta, resumoDoProduto } from '@/lib/proposta-produtos'
+import { temProposta, resumoDoProduto, exigeTurma } from '@/lib/proposta-produtos'
 import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 60
@@ -159,6 +159,20 @@ export async function POST(req: Request) {
       }
       produto = escolhido
     }
+
+    // ⚠️ PRODUTO DE TURMA NÃO NASCE SEM DATA. A trava é aqui, na criação, e não só na publicação:
+    // rascunho sem turma é uma proposta que alguém vai publicar com pressa, e o cliente recebe um
+    // curso sem saber quando é. A turma também tem que ser DAQUELE produto — escolher a turma de
+    // outro curso imprimiria a data errada com toda a confiança do mundo.
+    let turmaId: string | null = (b.turma_id || '').toString() || null
+    if (produto && exigeTurma(produto.nome)) {
+      if (!turmaId) return NextResponse.json({ ok: false, error: `escolhe a turma do ${produto.nome} antes de gerar` }, { status: 200 })
+      const { data: t } = await sb.from('turmas').select('id, produto_id, status').eq('org_id', org).eq('id', turmaId).maybeSingle()
+      if (!t || t.produto_id !== produto.id) return NextResponse.json({ ok: false, error: 'essa turma não é deste produto' }, { status: 200 })
+      if (t.status !== 'em_vendas') return NextResponse.json({ ok: false, error: 'essa turma não está em vendas' }, { status: 200 })
+    } else {
+      turmaId = null   // produto sem turma não carrega turma de sobra do rascunho anterior
+    }
     const precoVista = b.preco_vista != null && b.preco_vista !== '' ? Number(String(b.preco_vista).replace(',', '.')) : (turma?.preco_venda ?? produto?.preco_venda ?? null)
     const parcelas = b.parcelas ? Number(b.parcelas) : null
     const precoParcelado = b.preco_parcelado ? Number(String(b.preco_parcelado).replace(',', '.')) : null
@@ -251,6 +265,7 @@ export async function POST(req: Request) {
       lead_id: leadId,
       produto_id: produto?.id || null,
       produto_nome: produto?.nome || null,
+      turma_id: turmaId,
       cliente_nome: clienteNome,
       preco_vista: precoVista,
       preco_parcelado: precoParcelado,

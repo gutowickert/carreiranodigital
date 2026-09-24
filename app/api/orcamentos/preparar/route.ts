@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
-import { temProposta } from '@/lib/proposta-produtos'
+import { temProposta, exigeTurma } from '@/lib/proposta-produtos'
+import { turmasDoProduto, rotuloDaTurma } from '@/lib/turma-da-proposta'
 import { transcreverAudiosDoLead } from '@/lib/transcrever-audio'
 
 // O rótulo da etapa vem do banco (tabela `etapas`), nunca escrito aqui.
@@ -119,6 +120,12 @@ export async function GET(req: Request) {
       .select('id, nome, preco_venda').eq('ativo', true).order('nome')
     const ofertaveis = (todos || []).filter(p => temProposta(p.nome))
 
+    // as turmas abertas de cada produto ofertável — só as que ainda não começaram e estão em venda
+    const turmasPorProduto: Record<string, Awaited<ReturnType<typeof turmasDoProduto>>> = {}
+    await Promise.all(ofertaveis.map(async p => {
+      if (exigeTurma(p.nome)) turmasPorProduto[p.id] = await turmasDoProduto(org, p.id)
+    }))
+
     const rotulo = await rotulosDasEtapas(org)
     const caracteres = ligacoesProntas.reduce((n, l) => n + l.caracteres, 0) + conversasProntas.reduce((n, c) => n + c.caracteres, 0)
 
@@ -145,8 +152,14 @@ export async function GET(req: Request) {
         parcelas: precoVista != null ? PARCELAS_PADRAO : null,
         preco_parcelado: precoVista != null ? Math.round(((Number(precoVista) + ACRESCIMO_CARTAO) / PARCELAS_PADRAO) * 100) / 100 : null,
       } : null,
-      // a lista pra escolher o produto da proposta, e qual deles a turma do lead sugere
-      produtos: ofertaveis.map(p => ({ id: p.id, nome: p.nome, preco_venda: p.preco_venda })),
+      // a lista pra escolher o produto da proposta, e qual deles a turma do lead sugere.
+      // `turmas` vem junto porque produto de turma não pode ser proposto sem data — e a tela
+      // precisa saber disso ANTES de deixar gerar, não na hora de publicar.
+      produtos: ofertaveis.map(p => ({
+        id: p.id, nome: p.nome, preco_venda: p.preco_venda,
+        exige_turma: exigeTurma(p.nome),
+        turmas: (turmasPorProduto[p.id] || []).map(t => ({ ...t, rotulo: rotuloDaTurma(t) })),
+      })),
       produto_sugerido: produto && temProposta(produto.nome) ? produto.id : (ofertaveis.length === 1 ? ofertaveis[0].id : null),
       // ⚠️ o produto da turma do lead pode ser o curso que ele JÁ FEZ: a tela avisa quando for outro
       produto_da_turma: produto ? { id: produto.id, nome: produto.nome } : null,
@@ -156,6 +169,7 @@ export async function GET(req: Request) {
         titulo: (o.capa as any)?.titulo || null,
         // a tela precisa saber se o cliente já aceitou: é o que separa "editar" de "só ver"
         aceito_em: o.aceito_em || null,
+        turma_id: o.turma_id || null,
       })),
     })
   } catch (e: any) {

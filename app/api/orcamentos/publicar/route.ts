@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { exigeTurma } from '@/lib/proposta-produtos'
 
 export const maxDuration = 60
 
@@ -56,6 +57,21 @@ export async function POST(req: Request) {
 
     if (!orc.capa?.titulo) {
       return NextResponse.json({ ok: false, error: 'o rascunho está sem título — gera de novo antes de publicar' }, { status: 200 })
+    }
+
+    // ⚠️ CURSO SEM DATA NÃO VAI PRO CLIENTE. A trava já existe na hora de gerar, e existe de novo
+    // aqui porque este é o último portão: rascunho antigo, feito antes de a turma virar campo, ou
+    // proposta cuja turma foi cancelada depois passariam direto. Publicar é o ato que entrega o
+    // documento — é onde não pode haver exceção.
+    if (exigeTurma(orc.produto_nome)) {
+      if (!orc.turma_id) {
+        return NextResponse.json({ ok: false, error: `${orc.produto_nome} é vendido por turma — escolhe a turma antes de publicar` }, { status: 200 })
+      }
+      const { data: t } = await sb.from('turmas').select('status, data_inicio').eq('org_id', org).eq('id', orc.turma_id).maybeSingle()
+      const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+      if (!t || t.status !== 'em_vendas' || String(t.data_inicio) < hoje) {
+        return NextResponse.json({ ok: false, error: 'a turma desta proposta não está mais em vendas — escolhe outra antes de publicar' }, { status: 200 })
+      }
     }
 
     // objeção que o vendedor tirou não vai pra proposta

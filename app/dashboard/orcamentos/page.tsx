@@ -30,6 +30,38 @@ const fone = (t?: string | null) => {
   return d.length >= 10 ? `(${d.slice(0, 2)}) ${d.slice(2, -4)}-${d.slice(-4)}` : t || '—'
 }
 
+/**
+ * A TURMA DA PROPOSTA.
+ *
+ * ⚠️ SÓ APARECE PRA PRODUTO VENDIDO POR TURMA, e aí é OBRIGATÓRIA. Antes a data do curso era
+ * digitada na capa: funciona no dia em que a pessoa lembra, e no dia em que não lembrar o cliente
+ * recebe a data de uma turma que já passou. Quem decide se é obrigatória é o servidor
+ * (lib/proposta-produtos); aqui a tela só mostra o que o servidor mandou.
+ *
+ * A lista já vem filtrada: só turma em vendas e que ainda não começou.
+ */
+function SeletorDeTurma({ produto, valor, onMuda }: { produto: any; valor: string; onMuda: (v: string) => void }) {
+  if (!produto?.exige_turma) return null
+  const turmas = produto.turmas || []
+  return (
+    <label style={{ display: 'block' }}>
+      <span style={lbl}>Turma <b style={{ color: 'var(--red)' }}>*</b> — sai impressa na proposta</span>
+      {turmas.length ? (
+        <select style={{ ...inp, cursor: 'pointer', borderColor: valor ? 'var(--border-strong)' : 'var(--red)' }}
+          value={valor} onChange={e => onMuda(e.target.value)}>
+          <option value="">escolhe a turma…</option>
+          {turmas.map((t: any) => <option key={t.id} value={t.id}>{t.rotulo}</option>)}
+        </select>
+      ) : (
+        <p style={{ fontSize: 12.5, color: 'var(--amber)', margin: '2px 0 0' }}>
+          Não há turma aberta deste curso. Cadastra a turma em Turmas antes de montar a proposta —
+          sem data, ela não pode ser publicada.
+        </p>
+      )}
+    </label>
+  )
+}
+
 function Chip({ tom, children }: { tom: 'marca' | 'bom' | 'info' | 'atencao' | 'neutro'; children: React.ReactNode }) {
   const cores: Record<string, React.CSSProperties> = {
     marca: { background: 'var(--accent-bg)', color: 'var(--accent-soft)' },
@@ -65,6 +97,7 @@ export default function GerarOrcamento() {
   // o nome que sai NA PROPOSTA (o cadastro do lead segue como está) e o produto escolhido
   const [clienteNome, setClienteNome] = useState('')
   const [produtoId, setProdutoId] = useState('')
+  const [turmaId, setTurmaId] = useState('')
   const [preparando, setPreparando] = useState(false)
 
   // o que o vendedor escolhe/preenche no passo 2
@@ -103,6 +136,9 @@ export default function GerarOrcamento() {
     setContexto({ o_que_vende: j.contexto.o_que_vende || '', regiao: j.contexto.regiao || '' })
     setClienteNome(j.lead?.nome || '')
     setProdutoId(j.produto_sugerido || '')
+    // uma turma só? já deixa escolhida — obrigar a clicar no único item não protege ninguém
+    const sug = (j.produtos || []).find((p: any) => p.id === j.produto_sugerido)
+    setTurmaId(sug?.exige_turma && sug.turmas?.length === 1 ? sug.turmas[0].id : '')
     // o parcelamento vem sugerido pela convenção da escola (à vista + R$ 200, em 6x); dá pra trocar
     setPreco({
       vista: j.produto?.preco_vista != null ? String(j.produto.preco_vista) : '',
@@ -125,6 +161,7 @@ export default function GerarOrcamento() {
       preco_parcelado: preco.parcelado,
       cliente_nome: clienteNome,
       produto_id: produtoId || null,
+      turma_id: turmaId || null,
     }
     const j = await fetchAuth('/api/orcamentos/gerar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) })
       .then(r => r.json()).catch(() => null)
@@ -149,6 +186,7 @@ export default function GerarOrcamento() {
     setOrc(o); setMedido(null)
     setClienteNome(o.cliente_nome || dados?.lead?.nome || '')
     setProdutoId(o.produto_id || '')
+    setTurmaId(o.turma_id || '')
     setPreco({
       vista: o.preco_vista != null ? String(o.preco_vista) : '',
       parcelas: o.parcelas != null ? String(o.parcelas) : '',
@@ -167,6 +205,9 @@ export default function GerarOrcamento() {
         : 'Rascunho reaberto.')
   }
 
+  // o produto escolhido agora, com a lista de turmas que o servidor mandou
+  const produtoEscolhido = (dados?.produtos || []).find((p: any) => p.id === produtoId) || null
+
   // o texto que vale: o que o vendedor escreveu, e na falta dele o que a IA escreveu
   const textoDaObjecao = (o: any) => (o.texto_final ?? o.texto_ia ?? '')
 
@@ -179,7 +220,7 @@ export default function GerarOrcamento() {
     if (!orc) return
     setSalvando(true); setMsg('')
     // salva antes de publicar: o que está na tela é o que o cliente vai ler
-    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome }) })
+    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome, turma_id: turmaId || null }) })
       .then(r => r.json()).catch(() => null)
     if (!s?.ok) { setSalvando(false); setMsg(s?.error || 'não consegui salvar antes de publicar'); return }
 
@@ -195,7 +236,7 @@ export default function GerarOrcamento() {
   async function salvarRascunho() {
     if (!orc) return
     setSalvando(true)
-    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome }) })
+    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome, turma_id: turmaId || null }) })
       .then(r => r.json()).catch(() => null)
     setSalvando(false)
     if (!j?.ok) { setMsg(j?.error || 'não consegui salvar'); return }
@@ -390,6 +431,8 @@ export default function GerarOrcamento() {
                           onChange={e => {
                             setProdutoId(e.target.value)
                             const p = dados.produtos.find((x: any) => x.id === e.target.value)
+                            // turma de um curso não vale pro outro: some junto com o produto antigo
+                            setTurmaId(p?.exige_turma && p.turmas?.length === 1 ? p.turmas[0].id : '')
                             if (p?.preco_venda != null) setPreco(v => ({ ...v, vista: String(p.preco_venda) }))
                           }}>
                           <option value="">escolhe o produto…</option>
@@ -401,6 +444,7 @@ export default function GerarOrcamento() {
                           No CRM este lead está ligado a <b>{dados.produto_da_turma.nome}</b>. A proposta vai sair com o produto escolhido acima — confere se é o certo.
                         </p>
                       )}
+                      <SeletorDeTurma produto={produtoEscolhido} valor={turmaId} onMuda={setTurmaId} />
 
                       <label style={{ display: 'block' }}>
                         <span style={lbl}>À vista{dados.produto?.preco_vista != null ? ` (do cadastro: ${dinheiro(dados.produto.preco_vista)} · ${dados.produto.origem_preco})` : ''}</span>
@@ -511,7 +555,10 @@ export default function GerarOrcamento() {
                         mexer. O que é editável precisa estar no lugar onde se edita.
                         É o MESMO estado dos campos de cima — mudar num muda no outro. */}
                     <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                      <div style={rot}>Valor e parcelamento</div>
+                      <div style={rot}>Turma, valor e parcelamento</div>
+                      <div style={{ marginTop: 10 }}>
+                        <SeletorDeTurma produto={produtoEscolhido} valor={turmaId} onMuda={v => { setTurmaId(v); setSalvo('') }} />
+                      </div>
                       <label style={{ display: 'block', marginTop: 10 }}>
                         <span style={lbl}>Nome do cliente na proposta (o cadastro do lead não muda)</span>
                         <input style={inp} value={clienteNome}

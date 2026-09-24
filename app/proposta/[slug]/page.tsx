@@ -5,6 +5,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import Abertura from './Abertura'
 import Aceite from './Aceite'
 import { CorpoDoProduto, NumerosDaCapa, LinhaDoAceite } from './Corpos'
+import { turmaDoOrcamento } from '@/lib/turma-da-proposta'
 
 // O CARTÃO QUE O WHATSAPP MOSTRA antes de a pessoa clicar: logo da escola, "Proposta para <nome>" e
 // uma linha do que é. Link pelado, com endereço estranho, é o que faz o cliente achar que é golpe —
@@ -91,6 +92,8 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
   const vista = dinheiro(orc.preco_vista)
   const parcela = dinheiro(orc.preco_parcelado)
   const validade = orc.validade_dias || 15
+  // a turma vem do cadastro, não do texto: se ela mudar, a proposta muda junto
+  const turma = await turmaDoOrcamento(orc.turma_id || null)
 
   return (
     <div className="folhas">
@@ -228,7 +231,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       {/* ───── o miolo do PRODUTO: o que é, como funciona e o investimento.
              Mora em Corpos.tsx porque é um corpo por produto — com um só, vender outra coisa
              significava mandar um documento que se contradiz: capa de um produto, texto de outro. */}
-      <CorpoDoProduto cliente={cliente} produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} />
+      <CorpoDoProduto cliente={cliente} produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
 
       {/* ───── aceite */}
       <section className="folha">
@@ -236,7 +239,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         <h2 className="disp">Fechado?</h2>
         <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato pra marcar a data.</p>
         <p className="corpo" style={{ fontSize: 13.5 }}>
-          <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} />
+          <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
         </p>
         {previa
           ? <p className="corpo" style={{ fontSize: 13, color: 'var(--tinta-fraca)', fontStyle: 'italic' }}>

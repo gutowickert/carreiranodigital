@@ -13,12 +13,16 @@
 // PRA INCLUIR UM PRODUTO NOVO: escreve o corpo dele aqui e registra o nome em lib/proposta-produtos.
 // A lista de lá não faz a proposta existir — ela só impede de oferecer uma que ainda não foi escrita.
 
+import type { TurmaResumo } from '@/lib/turma-da-proposta'
+import { datasDaTurma } from '@/lib/turma-da-proposta'
+
 type Props = {
   cliente: string
   produtoNome: string | null
   vista: string | null
   parcela: string | null
   parcelas: number | null
+  turma?: TurmaResumo | null
 }
 
 const ehANL = (nome: string | null) =>
@@ -55,12 +59,14 @@ export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | nu
  * com a contratante ao final" em qualquer proposta. Numa turma de 3 dias isso não é um texto
  * desatualizado, é um compromisso que a escola não assumiu — e fica registrado com o aceite.
  */
-export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas }: Omit<Props, 'cliente'>) {
+export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma }: Omit<Props, 'cliente'>) {
   const valores = `${vista ? ` · ${vista} à vista no Pix` : ''}${parcela && parcelas ? ` ou ${parcelas}x de ${parcela}` : ''}`
   if (ehANL(produtoNome)) {
+    // a DATA entra no que a pessoa confirma: aceitar um curso sem saber quando é não é aceite
+    const quando = turma ? ` · ${datasDaTurma(turma.data_inicio, turma.data_fim)}, em ${turma.cidade}${turma.turno ? ` (${turma.turno})` : ''}` : ''
     return (
       <>
-        {produtoNome || 'Anúncios para Negócios Locais'} · 3 dias de treinamento presencial{valores}
+        {produtoNome || 'Anúncios para Negócios Locais'} · 3 dias de treinamento presencial{quando}{valores}
         {' '}· valor por inscrição, pagamento único · verba de anúncio por conta do aluno · a conta de anúncios
         é do aluno e continua com ele · a escola ensina e acompanha a execução durante o curso, e não garante
         volume de vendas.
@@ -80,10 +86,37 @@ export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas }: Omit<Pr
 //
 // Conteúdo tirado da página de vendas (carreiranodigital.com/anuncioslocais).
 //
-// ⚠️ SEM DATA DE TURMA AQUI. Data de turma e lote mudam a cada mês; cravadas no corpo fixo, a
-// proposta do mês que vem sai mentindo sozinha. A turma combinada com o cliente vai na CAPA, que
-// quem monta escreve e pode corrigir depois.
-function CorpoANL({ cliente, produtoNome, vista, parcela, parcelas }: Props) {
+// ⚠️ NADA DE DATA ESCRITA À MÃO AQUI. Data de turma muda todo mês; cravada no texto fixo, a
+// proposta do mês que vem mentiria sozinha. Ela vem do CADASTRO DA TURMA escolhida na tela
+// (`turma`), que é obrigatória pra este produto — o texto não sabe nem precisa saber a data.
+/**
+ * QUANDO E ONDE — a folha que faltava.
+ *
+ * ⚠️ NÃO É DETALHE: é a pergunta que o cliente faz antes do preço. A data vinha digitada na capa
+ * pelo vendedor, ou simplesmente não vinha. Agora sai do cadastro da turma escolhida, então não
+ * tem como estar desatualizada — se a turma mudar, a proposta muda junto.
+ */
+function QuandoEOnde({ turma }: { turma: TurmaResumo }) {
+  const horario = turma.turno
+    ? `${turma.turno.charAt(0).toUpperCase()}${turma.turno.slice(1)}${turma.horario ? `, das ${turma.horario}` : ''}`
+    : null
+  return (
+    <div className="destaque verde">
+      <div className="rot">Quando e onde</div>
+      <p className="corpo">
+        <strong>{datasDaTurma(turma.data_inicio, turma.data_fim)}</strong>, em {turma.cidade}.
+        {horario ? ` ${horario}.` : ''}
+        {/* ⚠️ SÓ O ENDEREÇO. O nome interno da sala ("Sala 1") não diz nada pro cliente, e hoje a
+            sala de Porto Alegre está sem endereço no cadastro — imprimir o nome no lugar seria
+            trocar uma informação que falta por uma que não serve. */}
+        {turma.endereco ? ` ${turma.endereco}.` : ''}
+        {' '}Turma pequena — o endereço exato e os detalhes chegam por WhatsApp na confirmação.
+      </p>
+    </div>
+  )
+}
+
+function CorpoANL({ cliente, produtoNome, vista, parcela, parcelas, turma }: Props) {
   return (
     <>
       <section className="folha">
@@ -121,6 +154,7 @@ function CorpoANL({ cliente, produtoNome, vista, parcela, parcelas }: Props) {
             <p className="corpo">Leitura de métricas: o que importa e o que ignorar. Otimização ao vivo das campanhas que já estão rodando, e como escalar o que funcionou.</p>
           </div>
         </div>
+        {turma && <QuandoEOnde turma={turma} />}
         <div className="destaque verde">
           <div className="rot">O que alunos fizeram durante o próprio curso</div>
           <p className="corpo">

@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { exigeTurma } from '@/lib/proposta-produtos'
+import { turmaDoOrcamento, rotuloDaTurma } from '@/lib/turma-da-proposta'
 
 export const maxDuration = 60
 
@@ -71,6 +73,15 @@ export async function POST(req: Request) {
       })
     }
 
+    // a turma: só troca por outra DO MESMO PRODUTO e em vendas — a data da proposta é a do cadastro
+    if (b.turma_id !== undefined && exigeTurma(orc.produto_nome)) {
+      const novo = (b.turma_id || '').toString()
+      if (!novo) return NextResponse.json({ ok: false, error: `${orc.produto_nome} é vendido por turma — escolhe a turma` }, { status: 200 })
+      const { data: t } = await sb.from('turmas').select('id, produto_id, status').eq('org_id', org).eq('id', novo).maybeSingle()
+      if (!t || (orc.produto_id && t.produto_id !== orc.produto_id)) return NextResponse.json({ ok: false, error: 'essa turma não é deste produto' }, { status: 200 })
+      patch.turma_id = novo
+    }
+
     // condição de pagamento: o vendedor pode ajustar, e fica registrado que foi ele
     if (b.preco_vista !== undefined) patch.preco_vista = b.preco_vista === '' || b.preco_vista == null ? null : Number(String(b.preco_vista).replace(',', '.'))
     if (b.parcelas !== undefined) patch.parcelas = b.parcelas === '' || b.parcelas == null ? null : Number(b.parcelas)
@@ -94,6 +105,11 @@ export async function POST(req: Request) {
       if (patch.capa && JSON.stringify(patch.capa) !== JSON.stringify(orc.capa)) mudou.push('texto da capa')
       if (patch.objecoes && JSON.stringify(patch.objecoes) !== JSON.stringify(orc.objecoes)) mudou.push('objeções')
       if (patch.cliente_nome !== undefined && patch.cliente_nome !== orc.cliente_nome) mudou.push(`nome do cliente → ${patch.cliente_nome}`)
+      // trocar a turma muda a DATA que o cliente já leu — é a alteração que mais precisa de dono
+      if (patch.turma_id && patch.turma_id !== orc.turma_id) {
+        const t = await turmaDoOrcamento(patch.turma_id)
+        mudou.push(`turma → ${t ? rotuloDaTurma(t) : patch.turma_id}`)
+      }
 
       if (mudou.length && orc.lead_id) {
         await sb.from('lead_andamentos').insert({
