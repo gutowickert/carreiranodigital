@@ -67,7 +67,7 @@ export async function POST(req: NextRequest) {
     let precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
     if (!precoPix && precoTurma > 0 && precoTurma !== 2697) precoPix = precoTurma // 2697 = cartão, não Pix
     // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
-    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x sem juros' : ''
+    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x no cartão' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x no cartão' : ''
 
     // ⛔ BLINDAGEM 1: template que PRECISA de preço/bolsa sem produto resolvido → não manda (bug do {{condicao_bolsa}}).
     const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(tpl.corpo || '')

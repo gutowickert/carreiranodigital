@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { temProposta, exigeTurma } from '@/lib/proposta-produtos'
+import { turmasDoProduto, rotuloDaTurma } from '@/lib/turma-da-proposta'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 
 export const maxDuration = 60
@@ -31,6 +33,23 @@ const LIGACAO_BASTA = 1200           // com uma transcrição desse tamanho, a c
 async function rotulosDasEtapas(org: string): Promise<Record<string, string>> {
   const { data } = await sb.from('etapas').select('chave, label').eq('org_id', org)
   return Object.fromEntries((data || []).map((e: any) => [e.chave, e.label]))
+}
+
+// O QUE DÁ PRA VENDER — vem JUNTO com a lista de leads, e não depois de escolher um.
+//
+// ⚠️ ANTES O PRODUTO SÓ APARECIA DEPOIS DO LEAD. Quem abria "Gerar orçamento" via uma lista de
+// nomes e mais nada: não havia como saber que a tela vende dois produtos, nem qual. O Nando abriu
+// procurando o Anúncios para Negócios Locais e não achou — ele existia, escondido um passo adiante.
+async function produtosOfertaveis(org: string) {
+  const { data: todos } = await sb.from('produtos').select('id, nome, preco_venda').eq('org_id', org).eq('ativo', true).order('nome')
+  const ofertaveis = (todos || []).filter(p => temProposta(p.nome))
+  return Promise.all(ofertaveis.map(async p => ({
+    id: p.id, nome: p.nome, preco_venda: p.preco_venda,
+    exige_turma: exigeTurma(p.nome),
+    turmas: exigeTurma(p.nome)
+      ? (await turmasDoProduto(org, p.id)).map(t => ({ ...t, rotulo: rotuloDaTurma(t) }))
+      : [],
+  })))
 }
 
 export async function GET(req: Request) {
@@ -74,7 +93,7 @@ export async function GET(req: Request) {
 
     // ── 3) os leads dessas fontes, e a permissão, ANTES de contar qualquer mensagem
     const idsLead = [...new Set([...ligacaoDoLead.keys(), ...(conversas || []).map(c => c.lead_id as string)])]
-    if (!idsLead.length) return NextResponse.json({ ok: true, itens: [] })
+    if (!idsLead.length) return NextResponse.json({ ok: true, itens: [], produtos: await produtosOfertaveis(org) })
 
     const leads: any[] = []
     for (let i = 0; i < idsLead.length; i += 200) {
@@ -95,7 +114,7 @@ export async function GET(req: Request) {
         return achaNome || achaFone
       })
     const idsVisiveis = new Set(visiveis.map(l => l.id))
-    if (!visiveis.length) return NextResponse.json({ ok: true, itens: [] })
+    if (!visiveis.length) return NextResponse.json({ ok: true, itens: [], produtos: await produtosOfertaveis(org) })
 
     // ── 4) agora sim, contar mensagens — só das conversas dos leads que vão aparecer
     const conversasParaContar = (conversas || [])
@@ -167,7 +186,7 @@ export async function GET(req: Request) {
       })
       .slice(0, 40)
 
-    return NextResponse.json({ ok: true, itens, so_meus: soMeus })
+    return NextResponse.json({ ok: true, itens, so_meus: soMeus, produtos: await produtosOfertaveis(org) })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

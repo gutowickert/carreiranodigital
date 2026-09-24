@@ -80,6 +80,8 @@ function Chip({ tom, children }: { tom: 'marca' | 'bom' | 'info' | 'atencao' | '
 export default function GerarOrcamento() {
   const [busca, setBusca] = useState('')
   const [itens, setItens] = useState<any[]>([])
+  // os produtos que a escola vende COM proposta escrita — vêm junto da lista de leads
+  const [produtosDaCasa, setProdutosDaCasa] = useState<any[]>([])
   const [carregando, setCarregando] = useState(true)
   const [msg, setMsg] = useState('')
 
@@ -108,7 +110,7 @@ export default function GerarOrcamento() {
   async function carregar(q = '') {
     setCarregando(true)
     const j = await fetchAuth('/api/orcamentos/candidatos' + (q ? `?q=${encodeURIComponent(q)}` : '')).then(r => r.json()).catch(() => null)
-    if (j?.ok) { setItens(j.itens || []); setMsg('') }
+    if (j?.ok) { setItens(j.itens || []); setProdutosDaCasa(j.produtos || []); setMsg('') }
     // erro cru não ajuda ninguém: "sem sessao" quer dizer que o login caiu, e o caminho é entrar de novo
     else if (j?.error === 'sem sessao') { setItens([]); setMsg('Teu login caiu. Entra de novo pra continuar.') }
     else setMsg(j?.error || 'não consegui carregar os leads')
@@ -135,13 +137,21 @@ export default function GerarOrcamento() {
     setUsar(marcados)
     setContexto({ o_que_vende: j.contexto.o_que_vende || '', regiao: j.contexto.regiao || '' })
     setClienteNome(j.lead?.nome || '')
-    setProdutoId(j.produto_sugerido || '')
+    // ⚠️ A ESCOLHA DO PASSO 1 MANDA. A sugestão vem da turma do lead, que pode ser o curso que ele
+    // JÁ fez — e se ela sobrescrevesse o que a pessoa acabou de escolher, o passo 1 seria enfeite.
+    // Só cai na sugestão quem não escolheu nada.
+    const jaEscolhido = produtoId && (j.produtos || []).some((p: any) => p.id === produtoId)
+    const alvo = jaEscolhido ? produtoId : (j.produto_sugerido || '')
+    setProdutoId(alvo)
+    const sug = (j.produtos || []).find((p: any) => p.id === alvo)
     // uma turma só? já deixa escolhida — obrigar a clicar no único item não protege ninguém
-    const sug = (j.produtos || []).find((p: any) => p.id === j.produto_sugerido)
-    setTurmaId(sug?.exige_turma && sug.turmas?.length === 1 ? sug.turmas[0].id : '')
+    if (!(jaEscolhido && turmaId)) setTurmaId(sug?.exige_turma && sug.turmas?.length === 1 ? sug.turmas[0].id : '')
     // o parcelamento vem sugerido pela convenção da escola (à vista + R$ 200, em 6x); dá pra trocar
+    const pEscolhido = (j.produtos || []).find((p: any) => p.id === alvo)
     setPreco({
-      vista: j.produto?.preco_vista != null ? String(j.produto.preco_vista) : '',
+      // o preço segue o PRODUTO escolhido; só cai no da turma do lead quando é o mesmo produto
+      vista: pEscolhido?.preco_venda != null ? String(pEscolhido.preco_venda)
+        : j.produto?.preco_vista != null ? String(j.produto.preco_vista) : '',
       parcelas: j.produto?.parcelas != null ? String(j.produto.parcelas) : '',
       parcelado: j.produto?.preco_parcelado != null ? String(j.produto.preco_parcelado) : '',
     })
@@ -262,10 +272,48 @@ export default function GerarOrcamento() {
       {/* o card do lead por cima da tela: confere, fecha, e segue de onde parou */}
       {cardAberto && <LeadCardModal leadId={cardAberto} onClose={() => setCardAberto(null)} />}
 
-      {/* ─────────── passo 1: escolher o lead */}
+      {/* ─────────── passo 1: O QUE está sendo vendido.
+           Ficava depois do lead, e quem abria a tela via só uma lista de nomes: não dava pra
+           saber que a escola vende dois produtos com proposta, nem qual. Agora é a primeira
+           pergunta, que é a ordem em que a venda acontece — primeiro o que, depois pra quem. */}
+      {!leadId && produtosDaCasa.length > 1 && (
+        <div style={{ ...card, marginTop: 16 }}>
+          <div style={rot}>Passo 1 · o que tu vai propor</div>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 12 }}>
+            {produtosDaCasa.map((p: any) => {
+              const escolhido = produtoId === p.id
+              return (
+                <button key={p.id} onClick={() => { setProdutoId(escolhido ? '' : p.id); setTurmaId(p.exige_turma && p.turmas?.length === 1 ? p.turmas[0].id : '') }}
+                  style={{
+                    flex: '1 1 260px', textAlign: 'left', cursor: 'pointer', padding: '14px 16px',
+                    background: escolhido ? 'var(--accent-bg)' : 'var(--surface-2)',
+                    border: `1.5px solid ${escolhido ? 'var(--accent)' : 'var(--border)'}`,
+                    borderRadius: 'var(--r)', color: 'var(--text)',
+                  }}>
+                  <div style={{ fontSize: 14.5, fontWeight: 800 }}>{p.nome}</div>
+                  <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 3 }}>
+                    {p.preco_venda != null ? `${dinheiro(p.preco_venda)} à vista` : 'preço no cadastro'}
+                    {p.exige_turma ? ` · ${p.turmas.length} turma${p.turmas.length === 1 ? '' : 's'} aberta${p.turmas.length === 1 ? '' : 's'}` : ' · implantação individual'}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+          {produtoId && (
+            <div style={{ marginTop: 12 }}>
+              <SeletorDeTurma produto={produtosDaCasa.find((p: any) => p.id === produtoId)} valor={turmaId} onMuda={setTurmaId} />
+            </div>
+          )}
+          <p style={{ fontSize: 12.5, color: 'var(--text-faint)', margin: '12px 0 0' }}>
+            Dá pra trocar depois de escolher a pessoa — isto é só pra já começar no produto certo.
+          </p>
+        </div>
+      )}
+
+      {/* ─────────── passo 2: escolher o lead */}
       {!leadId && (
         <div style={{ ...card, marginTop: 16 }}>
-          <div style={rot}>Passo 1 · quem vai receber</div>
+          <div style={rot}>{produtosDaCasa.length > 1 ? 'Passo 2' : 'Passo 1'} · quem vai receber</div>
           <input
             style={{ ...inp, marginTop: 10 }}
             placeholder="Buscar por nome ou telefone"

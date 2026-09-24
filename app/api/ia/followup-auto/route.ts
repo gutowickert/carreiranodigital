@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
       // 🆕 LOTE REAL vence o hardcoded: turma com lote cadastrado → usa o preço do lote VIGENTE (Pix).
       if (ti?.loteVig) precoPix = ti.loteVig.preco_pix
       // BOLSA fixa por produto (sem 10%, valores cravados pelo time em 27/07)
-      const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x sem juros' : ''
+      const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x no cartão' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x no cartão' : ''
       // ⛔ BLINDAGEM R$0 (bug grave da Helena): template que precisa de preço/bolsa sem produto resolvido → NÃO manda.
       const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(p.tpl.corpo || '')
       const precisaBolsa = /\{\{\s*condicao_bolsa\s*\}\}/.test(p.tpl.corpo || '')

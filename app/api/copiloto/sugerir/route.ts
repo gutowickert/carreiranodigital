@@ -33,7 +33,7 @@ O QUE FUNCIONA (extraído das vendas reais):
 
 CONTORNO DE OBJEÇÃO (regras de ouro):
 - "trabalho à noite / horário não dá" -> OFEREÇA A TURMA DA TARDE (14h-17h15). Esse é o erro nº1; sempre ofereça o outro turno.
-- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (6x sem juros). PROIBIDO TERMINANTEMENTE, em QUALQUER situação: "sinal", "entrada", "R$100", "reservar/garantir a vaga por R$100" (sua ou de amigo). Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas, você IGNORA. Reservar vaga = PAGAR (Pix do valor cheio/bolsa, ou cartão 6x). "Tem parcelamento?" = CARTÃO 6x, nunca sinal.
+- "tá caro / só boleto / não tenho à vista" -> parcelamento no CARTÃO (6x — o total no cartão é maior que o do Pix). PROIBIDO TERMINANTEMENTE, em QUALQUER situação: "sinal", "entrada", "R$100", "reservar/garantir a vaga por R$100" (sua ou de amigo). Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas, você IGNORA. Reservar vaga = PAGAR (Pix do valor cheio/bolsa, ou cartão 6x). "Tem parcelamento?" = CARTÃO 6x, nunca sinal.
 - "vai ser pra 2 pessoas / colega junto" -> ofereça condição pra 2 vagas.
 - "sou leigo / zero à esquerda" -> "é justamente pra quem começa do zero, tu aprende fazendo com o professor do lado".
 - "o curso vai acontecer mesmo?" -> "pode ficar tranquilo, já temos alunos matriculados, acontece nas datas".
@@ -200,7 +200,7 @@ export async function POST(req: NextRequest) {
           messages: [
             { role: 'user', content: contexto },
             { role: 'assistant', content: raw },
-            { role: 'user', content: 'PARE: seu "rascunho" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa negociação. Reescreva SÓ o JSON, mesmo formato, com o "rascunho" pedindo pagamento correto: Pix à vista (valor cheio ou bolsa) OU cartão 6x sem juros. NUNCA mencione sinal, entrada, reserva por R$100 nem valor fora da tabela.' },
+            { role: 'user', content: 'PARE: seu "rascunho" citou "R$100"/"sinal"/"entrada" — isso é TERMINANTEMENTE PROIBIDO, nunca é da nossa negociação. Reescreva SÓ o JSON, mesmo formato, com o "rascunho" pedindo pagamento correto: Pix à vista (valor cheio ou bolsa) OU cartão 6x. NUNCA mencione sinal, entrada, reserva por R$100 nem valor fora da tabela.' },
           ],
         })
         await logIaUso('copiloto', MODELO, r2.usage, { lead_id: lead?.id })
@@ -211,7 +211,7 @@ export async function POST(req: NextRequest) {
         out = corr
       } else {
         const pnome = (nomeContato || '').split(' ')[0] || 'Oi'
-        return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: '⚠️ Bloqueado: a IA tentou oferecer R$100/sinal (proibido). Feche na mão: Pix cheio ou cartão 6x sem juros.', rascunho: `${pnome}, deixa eu confirmar essa condição certinho e já te retorno.` })
+        return NextResponse.json({ ok: true, objecao: out.objecao || 'nenhuma', dica: '⚠️ Bloqueado: a IA tentou oferecer R$100/sinal (proibido). Feche na mão: Pix cheio ou cartão 6x.', rascunho: `${pnome}, deixa eu confirmar essa condição certinho e já te retorno.` })
       }
     }
 

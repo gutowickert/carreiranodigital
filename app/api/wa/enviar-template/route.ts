@@ -52,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
     const fam = familia(lead.codigo_turma) || familia(codTurma)
     const precoPix = fam === 'ANL' ? 797 : fam === 'FC' ? 2397 : 0
-    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x sem juros' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x sem juros' : ''
+    const bolsaTxt = fam === 'FC' ? 'R$2.097 no Pix ou R$2.497 em 6x no cartão' : fam === 'ANL' ? 'R$697 no Pix ou R$897 em 6x no cartão' : ''
 
     // BLINDAGEM: template que precisa de preço/bolsa sem produto resolvido → NÃO manda
     const precisaPreco = /\{\{\s*(preco|preco_pix|preco_cartao)\s*\}\}/.test(tpl.corpo || '')
