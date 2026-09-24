@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
-import { temProposta, exigeTurma } from '@/lib/proposta-produtos'
+import { temProposta, exigeTurma, parcelasDoProduto, parcelaDoProduto } from '@/lib/proposta-produtos'
 import { turmasDoProduto, rotuloDaTurma } from '@/lib/turma-da-proposta'
 import { transcreverAudiosDoLead } from '@/lib/transcrever-audio'
 
@@ -25,8 +25,6 @@ export const maxDuration = 60
 
 const MIN_CARACTERES_LIGACAO = 400
 const TRECHOS = 4   // amostra que a tela mostra pra pessoa reconhecer a conversa
-const PARCELAS_PADRAO = 6        // a escola passou de 10x para 6x em 18/09/2026
-const ACRESCIMO_CARTAO = 200     // no cartão é o valor à vista + R$ 200 (mesma conta em todos os produtos)
 
 export async function GET(req: Request) {
   try {
@@ -146,11 +144,11 @@ export async function GET(req: Request) {
         id: produto.id, nome: produto.nome,
         preco_vista: precoVista,
         origem_preco: turma?.preco_venda != null ? `turma ${turma.codigo}` : 'cadastro do produto',
-        // Sugestão de parcelamento pela convenção da escola: no cartão é o valor à vista + R$ 200,
-        // dividido em 6x (797→997, 2.397→2.697, 2.797→2.997). Passou de 10x para 6x em 18/09/2026
-        // (commit 02ee983). É sugestão: o vendedor troca na tela, e fica registrado quem trocou.
-        parcelas: precoVista != null ? PARCELAS_PADRAO : null,
-        preco_parcelado: precoVista != null ? Math.round(((Number(precoVista) + ACRESCIMO_CARTAO) / PARCELAS_PADRAO) * 100) / 100 : null,
+        // Sugestão pela convenção da escola: no cartão é o valor à vista + R$ 200, dividido pelas
+        // parcelas DAQUELE produto (Deu Venda 10x, ANL 6x — lib/proposta-produtos). É sugestão: o
+        // vendedor troca na tela, e fica registrado quem trocou.
+        parcelas: precoVista != null ? parcelasDoProduto(produto?.nome) : null,
+        preco_parcelado: parcelaDoProduto(produto?.nome, precoVista),
       } : null,
       // a lista pra escolher o produto da proposta, e qual deles a turma do lead sugere.
       // `turmas` vem junto porque produto de turma não pode ser proposto sem data — e a tela
@@ -158,6 +156,9 @@ export async function GET(req: Request) {
       produtos: ofertaveis.map(p => ({
         id: p.id, nome: p.nome, preco_venda: p.preco_venda,
         exige_turma: exigeTurma(p.nome),
+        // cada produto leva o SEU parcelamento: a tela troca junto quando o produto muda
+        parcelas: parcelasDoProduto(p.nome),
+        preco_parcelado: parcelaDoProduto(p.nome, p.preco_venda),
         turmas: (turmasPorProduto[p.id] || []).map(t => ({ ...t, rotulo: rotuloDaTurma(t) })),
       })),
       produto_sugerido: produto && temProposta(produto.nome) ? produto.id : (ofertaveis.length === 1 ? ofertaveis[0].id : null),

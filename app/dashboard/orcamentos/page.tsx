@@ -149,11 +149,12 @@ export default function GerarOrcamento() {
     // o parcelamento vem sugerido pela convenção da escola (à vista + R$ 200, em 6x); dá pra trocar
     const pEscolhido = (j.produtos || []).find((p: any) => p.id === alvo)
     setPreco({
-      // o preço segue o PRODUTO escolhido; só cai no da turma do lead quando é o mesmo produto
+      // o preço e o PARCELAMENTO seguem o produto escolhido; só caem no da turma do lead quando é
+      // o mesmo produto. Cada um parcela em vezes diferentes (Deu Venda 10x, ANL 6x).
       vista: pEscolhido?.preco_venda != null ? String(pEscolhido.preco_venda)
         : j.produto?.preco_vista != null ? String(j.produto.preco_vista) : '',
-      parcelas: j.produto?.parcelas != null ? String(j.produto.parcelas) : '',
-      parcelado: j.produto?.preco_parcelado != null ? String(j.produto.preco_parcelado) : '',
+      parcelas: String(pEscolhido?.parcelas ?? j.produto?.parcelas ?? ''),
+      parcelado: String(pEscolhido?.preco_parcelado ?? j.produto?.preco_parcelado ?? ''),
     })
   }
 
@@ -294,7 +295,15 @@ export default function GerarOrcamento() {
             {produtosDaCasa.map((p: any) => {
               const escolhido = produtoId === p.id
               return (
-                <button key={p.id} onClick={() => { setProdutoId(escolhido ? '' : p.id); setTurmaId(p.exige_turma && p.turmas?.length === 1 ? p.turmas[0].id : '') }}
+                <button key={p.id} onClick={() => {
+                  setProdutoId(escolhido ? '' : p.id)
+                  setTurmaId(p.exige_turma && p.turmas?.length === 1 ? p.turmas[0].id : '')
+                  if (!escolhido) setPreco({
+                    vista: p.preco_venda != null ? String(p.preco_venda) : '',
+                    parcelas: p.parcelas != null ? String(p.parcelas) : '',
+                    parcelado: p.preco_parcelado != null ? String(p.preco_parcelado) : '',
+                  })
+                }}
                   style={{
                     flex: '1 1 260px', textAlign: 'left', cursor: 'pointer', padding: '14px 16px',
                     background: escolhido ? 'var(--accent-bg)' : 'var(--surface-2)',
@@ -512,12 +521,12 @@ export default function GerarOrcamento() {
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <label style={{ flex: '1 1 110px' }}>
                           <span style={lbl}>Parcelas</span>
-                          <input style={inp} value={preco.parcelas} placeholder="ex.: 6" inputMode="numeric"
+                          <input style={inp} value={preco.parcelas} placeholder="quantas vezes" inputMode="numeric"
                             onChange={e => setPreco(p => ({ ...p, parcelas: e.target.value }))} />
                         </label>
                         <label style={{ flex: '1 1 140px' }}>
                           <span style={lbl}>Valor da parcela</span>
-                          <input style={inp} value={preco.parcelado} placeholder="ex.: 499,50" inputMode="decimal"
+                          <input style={inp} value={preco.parcelado} placeholder="valor de cada parcela" inputMode="decimal"
                             onChange={e => setPreco(p => ({ ...p, parcelado: e.target.value }))} />
                         </label>
                       </div>
@@ -641,12 +650,12 @@ export default function GerarOrcamento() {
                         </label>
                         <label style={{ flex: '0 1 90px' }}>
                           <span style={lbl}>Parcelas</span>
-                          <input style={inp} value={preco.parcelas} placeholder="ex.: 6" inputMode="numeric"
+                          <input style={inp} value={preco.parcelas} placeholder="quantas vezes" inputMode="numeric"
                             onChange={e => { setPreco(p => ({ ...p, parcelas: e.target.value })); setSalvo('') }} />
                         </label>
                         <label style={{ flex: '1 1 130px' }}>
                           <span style={lbl}>Valor da parcela</span>
-                          <input style={inp} value={preco.parcelado} placeholder="ex.: 499,50" inputMode="decimal"
+                          <input style={inp} value={preco.parcelado} placeholder="valor de cada parcela" inputMode="decimal"
                             onChange={e => { setPreco(p => ({ ...p, parcelado: e.target.value })); setSalvo('') }} />
                         </label>
                       </div>

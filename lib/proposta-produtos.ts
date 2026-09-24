@@ -97,3 +97,32 @@ export function exigeTurma(nomeDoProduto: string | null | undefined): boolean {
   const n = semAcento(nomeDoProduto || '')
   return !!n && POR_TURMA.some(p => n.includes(p))
 }
+
+// EM QUANTAS VEZES CADA PRODUTO PARCELA.
+//
+// ⚠️ ERA UM NÚMERO SÓ PRA TUDO (6x, "a escola passou de 10x para 6x em 18/09"). Mas a mudança foi
+// do ANL, não da escola: o Deu Venda parcela em 10x. A tela vinha sugerindo 6x pro Deu Venda, e só
+// não saiu proposta errada porque o vendedor corrigia na mão toda vez — o que é o mesmo que dizer
+// que um dia sairia.
+//
+// A CONTA DO CARTÃO é a mesma nos dois: à vista + R$ 200, dividido pelas parcelas do produto.
+//   Deu Venda  2.797 + 200 = 2.997 → 10x de 299,70
+//   ANL          797 + 200 =   997 →  6x de 166,17
+const PARCELAS: { chave: string; vezes: number }[] = [
+  { chave: 'deu venda', vezes: 10 },
+  { chave: 'anuncios para negocios locais', vezes: 6 },
+]
+const PARCELAS_PADRAO = 6
+export const ACRESCIMO_CARTAO = 200
+
+export function parcelasDoProduto(nomeDoProduto: string | null | undefined): number {
+  const n = semAcento(nomeDoProduto || '')
+  return PARCELAS.find(p => n.includes(p.chave))?.vezes || PARCELAS_PADRAO
+}
+
+/** O valor de cada parcela no cartão, pelo número de vezes daquele produto. */
+export function parcelaDoProduto(nomeDoProduto: string | null | undefined, precoVista: number | null): number | null {
+  if (precoVista == null) return null
+  const vezes = parcelasDoProduto(nomeDoProduto)
+  return Math.round(((Number(precoVista) + ACRESCIMO_CARTAO) / vezes) * 100) / 100
+}
