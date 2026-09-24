@@ -65,7 +65,7 @@ type Item = {
   local?: string | null
   regiao?: 'lajeado' | 'poa' | null
 }
-type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean; criado_em?: string }
+type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean; ordem?: number }
 type Eu = { id: string; nome: string; papel: string; setor: string; souDono: boolean }
 
 // Rótulos por NATUREZA, não por ramo: "Turma" só faz sentido em escola. Compromisso, tarefa,
@@ -154,19 +154,49 @@ function naAba(i: Item, aba: Aba, euId?: string) {
 // o Rick e o Guto em dois azuis que ninguém distinguia. Sorteio não garante cor diferente — com 8
 // cores e 7 pessoas, a chance de colisão é alta (é o paradoxo do aniversário).
 //
-// Agora a cor sai da ORDEM DE ENTRADA na empresa: a primeira pessoa pega a primeira cor, e assim
-// por diante. Ninguém repete enquanto couber na paleta, e a cor de quem já está NUNCA muda quando
-// alguém novo entra — porque o novo só pode entrar no fim da fila.
+// Agora a cor sai da ORDEM DE ENTRADA na empresa (o `ordem` que o servidor manda): a primeira
+// pessoa pega a primeira cor, e assim por diante. Ninguém repete enquanto couber na paleta, e a cor
+// de quem já está NUNCA muda quando alguém novo entra — o novo só pode entrar no fim da fila.
 //
-// As 8 cores estão espalhadas no círculo cromático de propósito: dois azuis em tons diferentes,
-// lado a lado numa tela pequena, são a mesma cor.
-const PALETA = ['#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0d9488', '#2563eb']
+// ⚠️ A ORDEM DA PALETA IMPORTA TANTO QUANTO AS CORES. A primeira versão listava as cores dando a
+// volta no círculo cromático, então posições vizinhas eram tons vizinhos — e as posições da frente
+// são justamente do time antigo, que é quem enche a agenda. Deu vermelho e rosa lado a lado.
+//
+// As quatro primeiras posições são as quatro cores mais distantes que cabem aqui — azul, amarelo,
+// verde e rosa, quatro famílias que qualquer um nomeia sem pensar. Elas pegam quem aparece o dia
+// inteiro na tela. As outras quatro preenchem os buracos que sobraram do círculo.
+//
+// ⚠️ O AMARELO NÃO PODE VIRAR LARANJA. Ele está na posição 2 e o rosa na 5 — as duas pessoas que
+// mais dividem tela. Um laranja aqui ficaria a um passo do rosa e voltaríamos ao problema de
+// origem; o amarelo abre esse espaço. Pelo mesmo motivo não existe laranja na paleta.
+const PALETA = [
+  '#2563eb', // azul
+  '#ca8a04', // amarelo
+  '#16a34a', // verde
+  '#0d9488', // petróleo
+  '#db2777', // rosa
+  '#7c3aed', // roxo
+  '#4d7c0f', // oliva
+  '#dc2626', // vermelho
+]
+
+// Iniciais brancas somem em cima do amarelo (contraste 2.9 — a letra some no disco de 18px). A
+// letra segue o fundo, em vez de o fundo ter que ser sempre escuro: assim a paleta pode usar um
+// tom claro quando ele é a cor certa, em vez de ficar presa a tons fechados só pra caber branco.
+//
+// O corte é alto de propósito. Só o amarelo passa dele — todo o resto continua com a letra branca
+// que sempre teve. Um corte mais baixo deixaria metade dos crachás com letra escura e a outra
+// metade com letra branca, e a tela ficaria remendada pra corrigir um problema que era de um só.
+function letraSobre(hex: string) {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255)
+    .map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b > 0.28 ? '#1a1626' : '#fff'
+}
 
 // o mapa é construído uma vez, quando as pessoas chegam do servidor
 let CORES: Record<string, string> = {}
 function montarCores(pessoas: Pessoa[]) {
-  const ordem = [...pessoas].sort((a, b) => String(a.criado_em || '').localeCompare(String(b.criado_em || '')) || a.id.localeCompare(b.id))
-  CORES = Object.fromEntries(ordem.map((p, i) => [p.id, PALETA[i % PALETA.length]]))
+  CORES = Object.fromEntries(pessoas.filter(p => p.ordem != null).map(p => [p.id, PALETA[p.ordem! % PALETA.length]]))
 }
 function corPessoa(id: string | null) {
   if (!id) return '#736c88'
@@ -184,7 +214,7 @@ function Avatar({ id, nome, tam = 18, borda }: { id: string | null; nome: string
   return (
     <span title={nome || undefined} style={{
       width: tam, height: tam, borderRadius: '50%', flexShrink: 0, display: 'inline-grid', placeItems: 'center',
-      background: id ? corPessoa(id) : 'transparent', color: '#fff', fontSize: Math.max(7.5, tam * 0.44), fontWeight: 800,
+      background: id ? corPessoa(id) : 'transparent', color: id ? letraSobre(corPessoa(id)) : '#fff', fontSize: Math.max(7.5, tam * 0.44), fontWeight: 800,
       border: borda ? '2px solid var(--bg)' : id ? 'none' : '1.5px dashed var(--text-faint)', boxSizing: 'border-box',
     }}>{id ? iniciais(nome) : ''}</span>
   )

@@ -75,6 +75,13 @@ export async function GET(req: Request) {
   if (!quem) return NextResponse.json({ erro: 'sem sessao' }, { status: 401 })
   const { eu, souDono, abaixo, visiveis, pessoas } = quem
 
+  // A FILA DE CORES: a empresa inteira, por ordem de entrada. A cor de cada pessoa sai da posição
+  // dela aqui, então é a mesma pra todo mundo que abre a agenda e não muda quando alguém novo
+  // entra — o novo só pode entrar no fim da fila.
+  const filaDeCores = (pessoas || []).filter(p => p.ativo)
+    .sort((a, b) => String(a.criado_em || '').localeCompare(String(b.criado_em || '')) || a.id.localeCompare(b.id))
+    .map(p => p.id)
+
   // Não existe corte pra trás: nada aberto é velho demais pra sumir da vista. O limite pra frente é
   // o mesmo do balão (lib/agenda-balao.ts) — se o balão contasse algo que a tela não mostra, a
   // pessoa não teria como apagar.
@@ -220,9 +227,18 @@ export async function GET(req: Request) {
     // Só devolvo o nome de quem eu posso enxergar — a lista de pessoas da tela não pode virar um
     // atalho pra descobrir a estrutura que a agenda esconde. O `ativo` vai junto porque o nome de
     // quem saiu ainda é preciso pra rotular item antigo, mas não pode aparecer pra ser escolhido.
-    // `criado_em` vai junto porque é ele que dá a COR de cada pessoa na tela, por ordem de
-    // entrada: quem chega depois pega a próxima cor livre, e a cor de quem já está nunca muda.
-    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo, criado_em: p.criado_em })),
+    // `ordem` é a POSIÇÃO NA FILA DE CORES, e ela é calculada AQUI, sobre a empresa inteira, de
+    // propósito. Se o cliente calculasse a fila com a lista que recebe, a fila mudaria conforme
+    // quem está olhando — quem enxerga menos gente veria as mesmas cores em pessoas diferentes, e
+    // dois colegas falando "o verde" estariam falando de gente diferente. A cor é do time, não de
+    // quem abriu a tela.
+    //
+    // Quem saiu não entra na fila: cor é recurso escasso (são 8), e guardar uma pra quem não
+    // trabalha mais aqui faria a 9ª pessoa repetir a cor da 1ª.
+    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({
+      id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo,
+      ordem: filaDeCores.indexOf(p.id) >= 0 ? filaDeCores.indexOf(p.id) : undefined,
+    })),
     tenhoTime: abaixo.size > 0 || souDono,
     itens,
     balao: balao.chaves,
