@@ -128,10 +128,23 @@ const ABA_TIME: Aba = { chave: 'time', nome: 'Time', membros: [], fontes: [] }
 function naAba(i: Item, aba: Aba, euId?: string) {
   if (aba.chave === 'time') return true
   if (aba.chave === 'meus') return ehMeu(i, euId)
+
+  // ⚠️ A ABA É UMA ÁREA DE TRABALHO, NÃO UMA LISTA DE PESSOAS.
+  //
+  // Antes bastava o item ser de alguém da aba pra aparecer nela — e o Mateus está no Comercial E
+  // no Deu venda. Resultado: os follow-ups comerciais dele vazavam pra dentro do Deu venda, que
+  // virou uma lista de 48 itens onde só uma parte era entrega. `fontes` passou a valer também pro
+  // que TEM dono: a aba mostra o trabalho DAQUELE TIPO feito por aquelas pessoas.
+  //
+  // `fontes` vazio = a aba não filtra por tipo (é o caso do Sistema, que é de uma pessoa só e
+  // mostra tudo dela).
+  if (aba.fontes.length && !aba.fontes.includes(i.fonte)) return false
+
   const m = aba.membros
   if (i.donoId && m.includes(i.donoId)) return true
   if (i.ajudaDe && m.includes(i.ajudaDe)) return true
   if ((i.participantes || []).some(p => m.includes(p))) return true
+  // sem dono, do tipo da área: é o mural de onde a área pega trabalho
   return !i.donoId && aba.fontes.includes(i.fonte)
 }
 
