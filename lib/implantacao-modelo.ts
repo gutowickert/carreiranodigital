@@ -38,10 +38,35 @@ export const MODELO: Bloco[] = [
   { id: 'empresa', titulo: 'Você e a empresa', intro: 'Quem atende, de onde, e por qual número. Define quem entra no sistema e como o WhatsApp é ligado.', perguntas: [
     { id: 'empresa', p: 'Nome da empresa', tipo: 'texto', req: true, entra: 'marca' },
     { id: 'seu_nome', p: 'Seu nome e o que você faz nela', tipo: 'texto', req: true, ph: 'Ex.: Ana, sócia, cuido do comercial', entra: 'usuários' },
-    { id: 'equipe', p: 'Quem mais atende cliente, e o que cada um faz', porque: 'Uma pessoa por linha, com o e-mail. É isso que vira usuário do sistema.', ph: 'João — cota e emite — joao@…\nMaria — atende WhatsApp — maria@…', entra: 'usuários' },
+    // ⚠️ ERA "quem mais ATENDE cliente". Enquadrava todo mundo como comercial, e quem não atende
+    // cliente respondia uma palavra só. Na GAJA voltou "Eliana — Administrativa" e foi tudo —
+    // o que ela faz de verdade só apareceu quando a gente perguntou de novo, por fora. O bloco
+    // "Quem faz o quê" logo abaixo existe por causa dessa resposta curta.
+    { id: 'equipe', p: 'Quem mais trabalha na empresa, e o que cada um faz', porque: 'Uma pessoa por linha, com o e-mail. É isso que vira usuário do sistema — inclusive quem nunca fala com cliente.', ph: 'João — cota e emite — joao@…\nMaria — administrativo, emissão e cobrança — maria@…', entra: 'usuários' },
     { id: 'cidade_horario', p: 'Cidade, endereço e horário de atendimento', tipo: 'texto', porque: 'Pergunta de todo dia — a IA responde sozinha.', entra: 'contexto da IA' },
     { id: 'whatsapp', p: 'O WhatsApp que os clientes usam hoje é…', tipo: 'escolha', porque: 'O sistema usa a API oficial da Meta. O número que entra nela não pode continuar no WhatsApp Business do celular.', o: ['O mesmo número do celular pessoal', 'Um chip só da empresa', 'Um número em cada pessoa', 'Ainda não tem WhatsApp comercial'], entra: 'WhatsApp' },
     { id: 'email', p: 'E-mail da empresa (o que recebe os avisos)', tipo: 'texto', entra: 'marca' },
+  ]},
+
+  // QUEM FAZ O QUÊ — o bloco que nasceu de uma resposta curta.
+  //
+  // A tela de trabalho do sistema tem duas áreas: comercial (quem fala com cliente) e
+  // administrativo (o que vem depois do sim). Quem monta a implantação precisa saber o que entra
+  // em cada uma — e isso NÃO se descobre perguntando "o que cada um faz" junto com o e-mail:
+  // vem "Fulano — Administrativa" e acabou. Aqui a pergunta é sobre o DIA da pessoa, não sobre o
+  // cargo dela.
+  //
+  // ⚠️ O TRABALHO SEM CLIENTE COBRANDO É O QUE MAIS ATRASA. Emitir, cobrar documento, postar,
+  // criar anúncio: ninguém do outro lado reclama, então fica pra "quando sobrar tempo". É
+  // exatamente esse trabalho que o sistema precisa transformar em lembrete — e por isso ele
+  // precisa ser dito aqui, antes de existir tela.
+  { id: 'areas', titulo: 'Quem faz o quê', intro: 'O sistema separa o trabalho em duas áreas: falar com cliente, e tudo que vem depois do sim. Estas respostas decidem o que aparece na tela de cada pessoa.', perguntas: [
+    { id: 'depois_venda_quem', p: 'Depois que o cliente diz sim, quem toca o resto?', tipo: 'escolha', porque: 'Se é outra pessoa, ela precisa de uma área própria na tela — senão o trabalho dela fica invisível e some.', o: ['A mesma pessoa que vendeu', 'Outra pessoa cuida disso', 'Depende do produto', 'Ninguém, fica solto'], entra: 'áreas' },
+    { id: 'admin_dia', p: 'Se tem alguém na parte administrativa: o que essa pessoa faz num dia normal?', porque: 'Do jeito que acontece, não o cargo. É o que vira a tela de trabalho dela — sem isso a gente adivinha, e adivinhar aqui dá tela vazia.', ph: 'Ex.: de manhã confere o que entrou, emite as apólices do dia, corre atrás de documento que faltou, e no fim do dia vê quem não pagou', entra: 'áreas' },
+    { id: 'admin_o_que', p: 'O que já acontece hoje, depois da venda?', tipo: 'multi', porque: 'Cada um destes vira um bloco na tela dela — e alguns o sistema já consegue cobrar sozinho.', o: ['Emitir o contrato / a apólice', 'Correr atrás de documento que faltou', 'Conferir documento que o cliente mandou', 'Cobrança e quem não pagou', 'Pós-venda e acompanhamento', 'Nada estruturado — cada um faz o que dá'], entra: 'áreas' },
+    { id: 'marketing_quem', p: 'Quem cuida de anúncio e das redes?', tipo: 'escolha', porque: 'Se é alguém de dentro, o sistema lembra sozinho — é o trabalho que ninguém cobra e que por isso atrasa.', o: ['Eu mesmo', 'Alguém de dentro da empresa', 'Agência ou freelancer', 'Ninguém por enquanto'], entra: 'áreas · marketing' },
+    { id: 'marketing_ritmo', p: 'Com que frequência deveria sair anúncio novo e post?', tipo: 'texto', porque: 'Vira lembrete automático, no ritmo de vocês. "Não sei" também serve — a gente começa com um ritmo e ajusta.', ph: 'Ex.: anúncio novo a cada 15 dias, post 2x por semana', entra: 'marketing' },
+    { id: 'pedidos_internos', p: 'O que uma pessoa pede pra outra no dia a dia — e por onde esse pedido chega hoje?', porque: 'Quase sempre a resposta é "no WhatsApp", e quase sempre alguma coisa some na rolagem. Isso vira tarefa dentro do sistema.', ph: 'Ex.: "emite a do Cristiano", "liga pra esse cliente", "manda o boleto"', entra: 'áreas' },
   ]},
 
   { id: 'hoje', titulo: 'O que vocês já usam hoje', intro: 'Sistema, planilha, agenda — tudo que já guarda cliente. É o que decide o que precisa se integrar e o que precisa ser importado, antes de qualquer tela ser montada.', perguntas: [
