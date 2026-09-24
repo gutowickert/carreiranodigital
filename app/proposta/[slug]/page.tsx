@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import Abertura from './Abertura'
 import Aceite from './Aceite'
+import { CorpoDoProduto, NumerosDaCapa, LinhaDoAceite } from './Corpos'
 
 // O CARTÃO QUE O WHATSAPP MOSTRA antes de a pessoa clicar: logo da escola, "Proposta para <nome>" e
 // uma linha do que é. Link pelado, com endereço estranho, é o que faz o cliente achar que é golpe —
@@ -43,8 +44,14 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 // Página de servidor: busca o orçamento aqui dentro e manda o HTML pronto. Não existe rota pública de
 // leitura, então não dá pra varrer a tabela por fora.
 //
-// ⚠️ O MIOLO FIXO É DO "DEU VENDA". "O que é", "Como funciona" e o que está incluso descrevem esse
-// produto. Publicar proposta de outro produto com este modelo sai errado — falta um modelo por produto.
+// O MIOLO É POR PRODUTO (app/proposta/[slug]/Corpos.tsx): "o que é", "como funciona", o
+// investimento, os números da capa e a linha miúda do aceite mudam conforme o que está sendo
+// vendido. O que fica aqui é o que vale pra qualquer proposta — a capa escrita pela IA, as
+// objeções e o aceite.
+//
+// ⚠️ PRODUTO SEM CORPO ESCRITO NÃO PODE SER OFERTADO. Quem segura isso é lib/proposta-produtos; se
+// um produto novo passar sem corpo, ele cai no do Deu Venda e o cliente lê um documento que
+// descreve outra coisa.
 
 export const dynamic = 'force-dynamic'
 
@@ -197,12 +204,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
             <div className="nome">{cliente}</div>
           </div>
         </div>
-        <div className="numeros">
-          <div className="num"><b>2</b><span>Encontros de implantação</span></div>
-          <div className="num"><b>3</b><span>Meses acompanhado</span></div>
-          <div className="num"><b>1</b><span>Pagamento único</span></div>
-          {vista && <div className="num"><b style={{ color: 'var(--accent-claro)' }}>{vista}</b><span>À vista</span></div>}
-        </div>
+        <NumerosDaCapa produtoNome={orc.produto_nome} vista={vista} />
       </section>
 
       {/* ───── objeções: a parte escrita a partir da conversa */}
@@ -223,89 +225,10 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         </section>
       )}
 
-      {/* ───── o que é (modelo fixo) */}
-      <section className="folha">
-        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O que é</span></div>
-        <h2 className="disp">Uma máquina de marketing montada dentro do teu negócio.</h2>
-        <p className="corpo">
-          Um especialista da escola senta contigo em dois encontros de um turno, em dias diferentes, e monta, com tu do lado, a máquina que
-          escreve teus anúncios, tuas respostas e tuas páginas — configurada com o que tu vende, teu prazo
-          e tua condição. A conta é tua, e continua tua depois.
-        </p>
-        <div className="destaque azul">
-          <div className="rot">O que ela não faz</div>
-          <p className="corpo">Ela não atende sozinha e não vende sozinha. Prepara o anúncio, a resposta e a página; quem fala com o cliente continua sendo tu.</p>
-        </div>
-        <div className="rodape"><span>Carreira no Digital</span><span>02</span></div>
-      </section>
-
-      {/* ───── como funciona (modelo fixo) */}
-      <section className="folha">
-        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">Como funciona</span></div>
-        <h2 className="disp">A implantação, e os 3 meses depois.</h2>
-        <div className="passos">
-          <div className="passo"><div className="n">1 · A estratégia</div><p className="corpo">O que vale anunciar, pra quem e em qual raio de quilômetros. Decidido contigo.</p></div>
-          <div className="passo"><div className="n">2 · A máquina</div><p className="corpo">Configurada com o que tu vende, teu prazo e o que responder nas perguntas que mais chegam.</p></div>
-          <div className="passo"><div className="n">3 · A campanha</div><p className="corpo">No ar antes de o especialista ir embora, com tu autorizando.</p></div>
-        </div>
-        <div className="destaque verde">
-          <div className="rot">E esta é a parte que mais vale</div>
-          <p className="corpo">
-            Campanha que acerta de primeira é exceção. Por isso existem os 3 meses: a cada encontro a gente lê
-            os teus números e as conversas que chegaram, e decide o próximo teste. Funcionou, aumenta a verba.
-            Não funcionou, troca o caminho e roda de novo, ainda dentro dos 3 meses e sem custo a mais.
-          </p>
-        </div>
-        <div className="duas">
-          <ul className="lista">
-            <li>São 5 encontros: dois na implantação e um por mês, nos 3 meses</li>
-            <li>Grupo de WhatsApp com o time da escola entre eles</li>
-          </ul>
-          <ul className="lista">
-            <li>Os encontros seguintes podem ser por vídeo</li>
-            <li>A máquina fica contigo ao final</li>
-          </ul>
-        </div>
-        <div className="rodape"><span>Carreira no Digital</span><span>03</span></div>
-      </section>
-
-      {/* ───── investimento */}
-      <section className="folha">
-        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O investimento</span></div>
-        <h2 className="disp">O que custa.</h2>
-        <div className="preco">
-          <div className="topo" style={{ borderBottom: 0, paddingBottom: 0 }}>
-            <span>{orc.produto_nome || 'Implantação'} · com 3 meses de acompanhamento</span>
-          </div>
-          <div className="preco-linha">
-            {vista && <div className="valor"><b>{vista}</b><span>À vista, no Pix</span></div>}
-            {parcela && orc.parcelas && (
-              <div className="valor alt"><b>{parcela}</b><span>{orc.parcelas}x sem juros</span></div>
-            )}
-          </div>
-          <p className="corpo"><strong>Pagamento único.</strong> Sem mensalidade, e a máquina continua tua depois.</p>
-          <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
-            <ul className="lista">
-              <li>Os dois encontros presenciais de implantação</li>
-              <li>A campanha e a página no ar já na implantação</li>
-              <li>Grupo de WhatsApp com a escola</li>
-            </ul>
-            <ul className="lista">
-              <li>A máquina montada na tua conta</li>
-              <li>Mais 3 encontros com o estrategista, um por mês</li>
-              <li>Troca de caminho quantas vezes precisar nos 3 meses</li>
-            </ul>
-          </div>
-        </div>
-        <div className="destaque azul">
-          <div className="rot">Fora do valor</div>
-          <p className="corpo">
-            <strong>A verba de anúncio.</strong> É o dinheiro que o Facebook cobra pra mostrar o anúncio: é teu e
-            vai direto pra lá. Começa baixo e sobe só no que estiver dando retorno.
-          </p>
-        </div>
-        <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
-      </section>
+      {/* ───── o miolo do PRODUTO: o que é, como funciona e o investimento.
+             Mora em Corpos.tsx porque é um corpo por produto — com um só, vender outra coisa
+             significava mandar um documento que se contradiz: capa de um produto, texto de outro. */}
+      <CorpoDoProduto cliente={cliente} produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} />
 
       {/* ───── aceite */}
       <section className="folha">
@@ -313,11 +236,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         <h2 className="disp">Fechado?</h2>
         <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato pra marcar a data.</p>
         <p className="corpo" style={{ fontSize: 13.5 }}>
-          {orc.produto_nome || 'Implantação'} com 3 meses de estratégia acompanhada
-          {vista ? ` · ${vista} à vista no Pix` : ''}
-          {parcela && orc.parcelas ? ` ou ${orc.parcelas}x de ${parcela}` : ''}
-          {' '}· pagamento único, sem mensalidade · verba de anúncio por conta da contratante · a máquina fica com a
-          contratante ao final · a escola monta o método e testa junto, e não garante volume de vendas.
+          <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} />
         </p>
         {previa
           ? <p className="corpo" style={{ fontSize: 13, color: 'var(--tinta-fraca)', fontStyle: 'italic' }}>

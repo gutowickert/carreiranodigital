@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
-import { temProposta } from '@/lib/proposta-produtos'
+import { temProposta, resumoDoProduto } from '@/lib/proposta-produtos'
 import { logIaUso } from '@/lib/ia-uso'
 
 export const maxDuration = 60
@@ -25,7 +25,10 @@ const MODELO = 'claude-sonnet-5'
 const MAX_OBJECOES = 4
 const MAX_CARACTERES_MATERIAL = 60_000   // teto de material lido: ligação de 40 min dá ~35 mil
 
-const SYSTEM = `Tu escreves parte de uma proposta comercial brasileira, para uma escola de marketing digital que vende implantação com acompanhamento.
+// ⚠️ NÃO DIZ MAIS "vende implantação com acompanhamento". Dizia, e isso era o Deu Venda descrito
+// como se fosse a escola inteira: com o segundo produto no ar, a IA escrevia capa de implantação
+// pra uma turma de 3 dias. O que a escola vende NAQUELA proposta vai no pedido, por produto.
+const SYSTEM = `Tu escreves parte de uma proposta comercial brasileira, para uma escola de marketing digital presencial.
 
 O QUE TU ESCREVE: só a capa e as respostas às objeções que a pessoa levantou. O resto da proposta já existe pronto.
 
@@ -182,6 +185,9 @@ export async function POST(req: Request) {
         contexto.o_que_vende ? `O QUE O NEGÓCIO DELE VENDE: ${contexto.o_que_vende}` : 'O NEGÓCIO DELE: não informado — não invente exemplos de produto.',
         contexto.regiao ? `REGIÃO QUE ELE ATENDE: ${contexto.regiao}` : '',
         produto ? `PRODUTO QUE ESTAMOS PROPONDO: ${produto.nome}` : '',
+        // o que ESTE produto é, com as respostas que a escola já usa — senão a IA escreve uma
+        // proposta plausível do produto errado, e o cliente ouve três versões da mesma escola
+        produto ? resumoDoProduto(produto.nome) : '',
         '',
         'MATERIAL (o que a pessoa já disse):',
         material,
