@@ -25,9 +25,19 @@ export async function POST(req: Request) {
 
     const { data: orc } = await sb.from('orcamentos').select('*').eq('org_id', org).eq('id', id).maybeSingle()
     if (!orc) return NextResponse.json({ ok: false, error: 'orçamento não encontrado' }, { status: 200 })
-    if (orc.situacao === 'publicado') {
-      return NextResponse.json({ ok: false, error: 'este orçamento já foi publicado — gere um novo pra mudar o texto' }, { status: 200 })
+
+    // ⚠️ PUBLICADO AGORA SE EDITA. Antes travava aqui, e a única saída era gerar outro — mas gerar
+    // outro passa o material pela IA de novo, e a proposta volta escrita diferente. O vendedor que
+    // só queria acrescentar o parcelamento perdia o texto que tinha aprovado. (Aconteceu de
+    // verdade: a proposta do Pires saiu sem parcelamento e não teve como consertar.)
+    //
+    // ⚠️ ACEITO NÃO SE EDITA. Quando o cliente clica em aceitar, aquela página deixa de ser uma
+    // oferta e vira o registro do que foi combinado — com nome, data e dispositivo. Mudar preço
+    // depois disso é reescrever o que a pessoa aceitou. Aí sim, gera outro.
+    if (orc.aceito_em) {
+      return NextResponse.json({ ok: false, error: 'o cliente já aceitou esta proposta — ela virou o registro do combinado. Pra mudar, gera uma nova.' }, { status: 200 })
     }
+    const jaPublicado = orc.situacao === 'publicado'
 
     const patch: any = { atualizado_em: new Date().toISOString(), editado_por: quem.eu.id, editado_em: new Date().toISOString() }
 
@@ -69,7 +79,31 @@ export async function POST(req: Request) {
     const { data, error } = await sb.from('orcamentos').update(patch).eq('org_id', org).eq('id', id).select('*').single()
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
 
-    return NextResponse.json({ ok: true, orcamento: data })
+    // ⚠️ MEXER NO QUE JÁ ESTÁ NO AR FICA REGISTRADO. O link é o mesmo e o cliente pode já ter
+    // aberto a página — então a mudança precisa ter dono e hora no histórico do lead, senão vira
+    // a discussão impossível de "o valor mudou e eu não fui avisado".
+    if (jaPublicado) {
+      const dinheiro = (n: any) => (n == null ? '—' : Number(n).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }))
+      const mudou: string[] = []
+      if (patch.preco_vista !== undefined && patch.preco_vista !== orc.preco_vista) mudou.push(`à vista ${dinheiro(orc.preco_vista)} → ${dinheiro(patch.preco_vista)}`)
+      if ((patch.parcelas !== undefined && patch.parcelas !== orc.parcelas) || (patch.preco_parcelado !== undefined && patch.preco_parcelado !== orc.preco_parcelado)) {
+        const antes = orc.parcelas ? `${orc.parcelas}x ${dinheiro(orc.preco_parcelado)}` : 'sem parcelamento'
+        const agora = (patch.parcelas ?? orc.parcelas) ? `${patch.parcelas ?? orc.parcelas}x ${dinheiro(patch.preco_parcelado ?? orc.preco_parcelado)}` : 'sem parcelamento'
+        mudou.push(`parcelado ${antes} → ${agora}`)
+      }
+      if (patch.capa && JSON.stringify(patch.capa) !== JSON.stringify(orc.capa)) mudou.push('texto da capa')
+      if (patch.objecoes && JSON.stringify(patch.objecoes) !== JSON.stringify(orc.objecoes)) mudou.push('objeções')
+      if (patch.cliente_nome !== undefined && patch.cliente_nome !== orc.cliente_nome) mudou.push(`nome do cliente → ${patch.cliente_nome}`)
+
+      if (mudou.length && orc.lead_id) {
+        await sb.from('lead_andamentos').insert({
+          lead_id: orc.lead_id, tipo: 'orcamento_editado',
+          observacao: `✏️ ${quem.eu.nome} alterou a proposta que já estava no ar (${orc.slug}): ${mudou.join(' · ')}`,
+        }).then(() => null, () => null)   // o registro não pode derrubar o salvamento
+      }
+    }
+
+    return NextResponse.json({ ok: true, orcamento: data, jaPublicado })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

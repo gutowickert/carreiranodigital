@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { temProposta } from '@/lib/proposta-produtos'
+import { transcreverAudiosDoLead } from '@/lib/transcrever-audio'
 
 // O rótulo da etapa vem do banco (tabela `etapas`), nunca escrito aqui.
 async function rotulosDasEtapas(org: string): Promise<Record<string, string>> {
@@ -62,6 +63,18 @@ export async function GET(req: Request) {
         trecho: texto.slice(0, 300),
       }))
 
+    // ⚠️ OS ÁUDIOS VIRAM TEXTO ANTES DE CONTAR O MATERIAL — e é aqui, não em outro lugar.
+    //
+    // A transcrição só rodava quando a IA atendia a conversa. Lead atendido na mão chegava nesta
+    // tela com os áudios mudos: a tela dizia "pouco material" e a IA escrevia a proposta em cima
+    // das poucas mensagens de texto. No Patrick Rosa eram 6 áudios e 4 textos — a conversa inteira
+    // estava em áudio, e a proposta foi escrita sem ela.
+    //
+    // Sim, isto GRAVA (a rota era só leitura). Grava no lugar certo: a transcrição vai pro `texto`
+    // da própria mensagem, então a conversa, a fila e o gerador passam a enxergar — não é um
+    // cache desta tela.
+    const audios = await transcreverAudiosDoLead(org, leadId).catch(() => ({ transcritos: 0, pendentes: 0 }))
+
     // ── conversas de WhatsApp
     const { data: conversas } = await sb.from('wa_conversas')
       .select('id, canal, ultima_msg_em').eq('org_id', org).eq('lead_id', leadId).order('ultima_msg_em', { ascending: false }).limit(5)
@@ -117,7 +130,9 @@ export async function GET(req: Request) {
         origem: lead.origem, campanha: lead.utm_campaign,
         observacoes: lead.observacoes,
       },
-      fontes: { ligacoes: ligacoesProntas, conversas: conversasProntas, caracteres, material: caracteres >= 1200 ? 'suficiente' : 'curto' },
+      // `audios` conta o que acabou de virar texto nesta chamada — a tela avisa, senão a pessoa vê
+      // o material engordar do nada e não sabe de onde veio.
+      fontes: { ligacoes: ligacoesProntas, conversas: conversasProntas, caracteres, material: caracteres >= 1200 ? 'suficiente' : 'curto', audios },
       // o que a IA não tem como saber — a tela pergunta, e o que estiver em branco ela não inventa
       contexto: { o_que_vende: lead.negocio || '', regiao: '', problema: lead.maior_problema || '' },
       produto: produto ? {

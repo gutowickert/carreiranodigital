@@ -148,7 +148,11 @@ export default function GerarOrcamento() {
       parcelas: o.parcelas != null ? String(o.parcelas) : '',
       parcelado: o.preco_parcelado != null ? String(o.preco_parcelado) : '',
     })
-    setSalvo(o.situacao === 'publicado' ? 'Esta proposta já foi publicada — pra mudar o texto, gera uma nova.' : 'Rascunho reaberto.')
+    setSalvo(o.aceito_em
+      ? 'O cliente já aceitou esta proposta — ela virou o registro do combinado. Pra mudar, gera uma nova.'
+      : o.situacao === 'publicado'
+        ? 'Esta proposta já está no ar. O que tu salvar aqui muda a página do cliente na hora, no mesmo link — e fica registrado no histórico do lead.'
+        : 'Rascunho reaberto.')
   }
 
   // o texto que vale: o que o vendedor escreveu, e na falta dele o que a IA escreveu
@@ -550,8 +554,10 @@ export default function GerarOrcamento() {
                     </div>
 
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                      <button onClick={salvarRascunho} disabled={salvando} style={{ ...btnPrimario, opacity: salvando ? .6 : 1 }}>
-                        {salvando ? 'Salvando…' : 'Salvar rascunho'}
+                      {/* O botão diz o que vai acontecer. Em rascunho, guarda; no ar, publica a
+                          mudança na hora, no mesmo link — e quem clica precisa saber disso antes. */}
+                      <button onClick={salvarRascunho} disabled={salvando || !!orc.aceito_em} style={{ ...btnPrimario, opacity: salvando || orc.aceito_em ? .6 : 1 }}>
+                        {salvando ? 'Salvando…' : orc.situacao === 'publicado' ? 'Salvar e atualizar a página do cliente' : 'Salvar rascunho'}
                       </button>
                       <button onClick={publicar} disabled={salvando || orc.situacao === 'publicado'}
                         style={{ ...btnSec, opacity: salvando || orc.situacao === 'publicado' ? .55 : 1 }}>
