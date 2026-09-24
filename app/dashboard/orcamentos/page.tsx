@@ -441,8 +441,11 @@ export default function GerarOrcamento() {
                         {a.situacao === 'publicado' && a.slug && (
                           <a href={`/proposta/${a.slug}?eu=1`} target="_blank" rel="noopener" style={{ ...btnSec, textDecoration: 'none' }} title="Abre sem contar como abertura do cliente">ver</a>
                         )}
-                        <button onClick={() => abrirAnterior(a.id)} style={btnSec}>
-                          {a.situacao === 'publicado' ? 'abrir' : 'continuar este rascunho'}
+                        {/* O botão diz o que ele FAZ. Enquanto publicado não se editava, "abrir"
+                            era honesto; agora edita, e ninguém procura edição atrás de "abrir" —
+                            o Rick não achou onde mexer na proposta do Pires. */}
+                        <button onClick={() => abrirAnterior(a.id)} style={a.situacao === 'publicado' && !a.aceito_em ? btnPrimario : btnSec}>
+                          {a.situacao === 'publicado' ? (a.aceito_em ? 'ver (aceita)' : 'editar') : 'continuar este rascunho'}
                         </button>
                       </div>
                     ))}

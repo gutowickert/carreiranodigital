@@ -154,6 +154,8 @@ export async function GET(req: Request) {
         id: o.id, situacao: o.situacao, criado_em: o.criado_em, publicado_em: o.publicado_em,
         slug: o.slug, produto_nome: o.produto_nome, cliente_nome: o.cliente_nome || null,
         titulo: (o.capa as any)?.titulo || null,
+        // a tela precisa saber se o cliente já aceitou: é o que separa "editar" de "só ver"
+        aceito_em: o.aceito_em || null,
       })),
     })
   } catch (e: any) {

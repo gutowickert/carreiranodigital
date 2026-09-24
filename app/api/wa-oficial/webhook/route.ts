@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { after } from 'next/server'
+import { transcreverAudioMsg } from '@/lib/transcrever-audio'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { foneOficial } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
@@ -96,10 +98,22 @@ async function registrarRecebida(m: any, value: any) {
   }
   if (!conv) return
 
-  await supabase.from('wa_mensagens').insert({
+  const { data: msgIns } = await supabase.from('wa_mensagens').insert({
     conversa_id: conv.id, zapi_id: m.id || null, direcao: 'recebida',
     tipo, texto, midia_url: midiaUrl, midia_mime: midiaMime, status: 'recebida', canal: 'oficial',
-  })
+  }).select('id').single()
+
+  // ⚠️ O ÁUDIO VIRA TEXTO NA CHEGADA, não quando alguém precisa dele.
+  //
+  // Antes, quem transcrevia era só o caminho da IA (lib/atendimento-ia, lib/atender-lead). Lead
+  // atendido na mão nunca passava por lá: 77 áudios do sistema estão mudos até hoje, e o Patrick
+  // Rosa chegou na hora da proposta com a conversa inteira em áudio e nada pra IA ler.
+  //
+  // Vai no `after()` porque a Meta espera resposta rápida deste webhook — transcrever leva
+  // segundos, e um webhook lento a Meta reenvia, o que duplicaria a mensagem na conversa.
+  if (tipo === 'audio' && msgIns?.id) {
+    after(async () => { try { await transcreverAudioMsg(msgIns.id) } catch { /* melhor esforço */ } })
+  }
   const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : tipo === 'documento' ? '📎 Documento' : '')
   await supabase.from('wa_conversas').update({
     ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),
