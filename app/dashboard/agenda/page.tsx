@@ -65,7 +65,7 @@ type Item = {
   local?: string | null
   regiao?: 'lajeado' | 'poa' | null
 }
-type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean }
+type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean; criado_em?: string }
 type Eu = { id: string; nome: string; papel: string; setor: string; souDono: boolean }
 
 // Rótulos por NATUREZA, não por ramo: "Turma" só faz sentido em escola. Compromisso, tarefa,
@@ -148,12 +148,32 @@ function naAba(i: Item, aba: Aba, euId?: string) {
   return !i.donoId && aba.fontes.includes(i.fonte)
 }
 
-// A COR DE CADA PESSOA — sai do id, então é a mesma em toda tela e não precisa de cadastro.
-const PALETA = ['#7c3aed', '#0284c7', '#db2777', '#d97706', '#059669', '#dc2626', '#4f46e5', '#0891b2']
+// A COR DE CADA PESSOA.
+//
+// ⚠️ ERA SORTEADA PELO ID, e duas pessoas caíam na mesma cor: o Julio e o Guto ficaram idênticos, e
+// o Rick e o Guto em dois azuis que ninguém distinguia. Sorteio não garante cor diferente — com 8
+// cores e 7 pessoas, a chance de colisão é alta (é o paradoxo do aniversário).
+//
+// Agora a cor sai da ORDEM DE ENTRADA na empresa: a primeira pessoa pega a primeira cor, e assim
+// por diante. Ninguém repete enquanto couber na paleta, e a cor de quem já está NUNCA muda quando
+// alguém novo entra — porque o novo só pode entrar no fim da fila.
+//
+// As 8 cores estão espalhadas no círculo cromático de propósito: dois azuis em tons diferentes,
+// lado a lado numa tela pequena, são a mesma cor.
+const PALETA = ['#7c3aed', '#db2777', '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0d9488', '#2563eb']
+
+// o mapa é construído uma vez, quando as pessoas chegam do servidor
+let CORES: Record<string, string> = {}
+function montarCores(pessoas: Pessoa[]) {
+  const ordem = [...pessoas].sort((a, b) => String(a.criado_em || '').localeCompare(String(b.criado_em || '')) || a.id.localeCompare(b.id))
+  CORES = Object.fromEntries(ordem.map((p, i) => [p.id, PALETA[i % PALETA.length]]))
+}
 function corPessoa(id: string | null) {
   if (!id) return '#736c88'
-  let h = 0; for (const c of id) h = (h * 31 + c.charCodeAt(0)) >>> 0
-  return PALETA[h % PALETA.length]
+  if (CORES[id]) return CORES[id]
+  // quem não está na lista (saiu da empresa, item antigo): cinza, em vez de uma cor que pode
+  // colidir com a de quem está
+  return '#736c88'
 }
 function iniciais(nome: string | null | undefined) {
   const p = (nome || '').trim().split(/\s+/).filter(Boolean)
@@ -227,7 +247,7 @@ export default function Agenda() {
       const r = await fetchAuth('/api/agenda')
       if (!r.ok) { setErro(r.status === 401 ? 'Sessão expirada — recarregue a página.' : 'Não deu pra carregar a agenda.'); setCarregando(false); return }
       const d = await r.json()
-      setEu(d.eu); setPessoas(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
+      setEu(d.eu); setPessoas(d.pessoas || []); montarCores(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
       setAbasDeArea(Array.isArray(d.abas) ? d.abas : [])
       const b = new Set<string>(d.balao || [])
       setBalao(b); setBalaoPronto(!!d.balaoPronto)
@@ -557,10 +577,38 @@ export default function Agenda() {
                     sob um rótulo, o que o roteiro só calculou. */}
                 {doDiaPainel.filter(i => !ehPrevisto(i)).length === 0 && !doDiaPainel.some(ehPrevisto)
                   ? <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '6px 0 4px' }}>{diaDoPainel === hj ? 'Nada pra hoje nesta aba.' : 'Nada neste dia.'}</div>
-                  : doDiaPainel.filter(i => !ehPrevisto(i)).map(i => (
-                    <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
-                      ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
-                  ))}
+                  : (() => {
+                    // O DIA PARTIDO EM TURNOS. Seis compromissos numa lista é uma lista; os mesmos
+                    // seis partidos em manhã/tarde/noite respondem "tenho a tarde livre?" sem
+                    // ninguém ler hora por hora. Turno sem nada não aparece.
+                    const { turnos, semHora } = porTurno(doDiaPainel.filter(i => !ehPrevisto(i)))
+                    return (<>
+                      {turnos.map(t => (
+                        <div key={t.chave} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>{t.nome}</span>
+                            <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+                          </div>
+                          {t.itens.map(i => (
+                            <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                              ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
+                          ))}
+                        </div>
+                      ))}
+                      {semHora.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)' }}>Sem hora</span>
+                            <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
+                          </div>
+                          {semHora.map(i => (
+                            <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
+                              ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
+                          ))}
+                        </div>
+                      )}
+                    </>)
+                  })()}
                 {verPrevistos && doDiaPainel.some(ehPrevisto) && (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
@@ -690,21 +738,53 @@ export default function Agenda() {
 // O ITEM NA CÉLULA DO MÊS: a bolinha de quem é o dono, a hora, o título. Previsto tracejado.
 function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolean; nomeDe: (id: string | null) => string | null; naoLido: boolean; onAbrir: () => void }) {
   const prev = ehPrevisto(it), cor = atras ? 'var(--red)' : corDe(it)
+  const dono = nomeDe(it.donoId)
+  // ⚠️ O QUE SAI DAQUI É TÃO IMPORTANTE QUANTO O QUE FICA. Numa célula de ~140px cabiam avatar,
+  // etiqueta de região, hora e título — e o título, que é a única coisa que responde "o que é
+  // isso?", virava "LW POA 08:…". Saíram os dois primeiros:
+  //   • a REGIÃO já está no topo do dia, uma vez. Repetir em cada linha é dizer o mesmo três vezes.
+  //   • o DONO virou um risco de cor na borda. Quem precisa do nome abre o item ou passa o mouse.
+  // Sobra hora e nome do cliente, em corpo maior. É o que se lê de relance.
   return (
-    <div onClick={e => { e.stopPropagation(); onAbrir() }} title={prev ? `${it.titulo} (previsto — ainda não combinado)` : it.titulo}
+    <div onClick={e => { e.stopPropagation(); onAbrir() }}
+      title={`${it.titulo}${dono ? ' · ' + dono : ''}${prev ? ' (previsto — ainda não combinado)' : ''}`}
       style={{
-        display: 'flex', alignItems: 'center', gap: 5, padding: '3px 6px 3px 5px', borderRadius: 6, minWidth: 0,
+        display: 'flex', alignItems: 'baseline', gap: 5, padding: '4px 7px', borderRadius: 6, minWidth: 0,
         background: prev ? 'transparent' : atras ? 'var(--red-bg)' : 'var(--surface-2)',
-        border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + '88' : 'transparent'}`, borderLeft: `3px ${prev ? 'dashed' : 'solid'} ${cor}`,
+        border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + '88' : 'transparent'}`,
+        borderLeft: `3px ${prev ? 'dashed' : 'solid'} ${corPessoa(it.donoId)}`,
         opacity: prev ? 0.8 : 1,
       }}>
-      <Avatar id={it.donoId} nome={nomeDe(it.donoId)} tam={16} />
-      {it.regiao && <span style={selo(it.regiao)}>{REGIOES[it.regiao].curto}</span>}
-      <span style={{ fontSize: 11.5, lineHeight: '15px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
-        {horaDe(it) && <b style={{ color: cor, fontWeight: 800 }}>{horaDe(it)} </b>}{it.titulo}
+      {horaDe(it) && <b className="tnum" style={{ fontSize: 11.5, color: cor, fontWeight: 800, flexShrink: 0 }}>{horaDe(it)}</b>}
+      <span style={{ fontSize: 12.5, lineHeight: '17px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+        {it.titulo}
       </span>
     </div>
   )
+}
+
+// OS TURNOS — manhã, tarde, noite.
+//
+// Um dia com seis compromissos é uma lista; o mesmo dia partido em turnos é uma agenda. A divisão
+// responde a pergunta que o time faz de verdade ("tenho a tarde livre?") sem ninguém ler hora por
+// hora. Item sem hora (previsto, tarefa, follow-up) não pertence a turno nenhum e fica por último.
+const TURNOS = [
+  { chave: 'manha', nome: 'Manhã', de: 0, ate: 12 },
+  { chave: 'tarde', nome: 'Tarde', de: 12, ate: 18 },
+  { chave: 'noite', nome: 'Noite', de: 18, ate: 24 },
+] as const
+
+function turnoDe(i: Item): 'manha' | 'tarde' | 'noite' | 'sem_hora' {
+  if (i.diaTodo || !horaDe(i)) return 'sem_hora'
+  const h = paraData(i.inicio).getHours()
+  return h < 12 ? 'manha' : h < 18 ? 'tarde' : 'noite'
+}
+
+/** Os itens do dia agrupados por turno, só com os turnos que têm algo. */
+function porTurno(itens: Item[]) {
+  const g = TURNOS.map(t => ({ ...t, itens: itens.filter(i => turnoDe(i) === t.chave) })).filter(t => t.itens.length)
+  const semHora = itens.filter(i => turnoDe(i) === 'sem_hora')
+  return { turnos: g, semHora }
 }
 
 // A SEMANA: faixa do dia inteiro em cima (previsto, follow-up, tarefa) e as horas embaixo. Reunião
@@ -766,9 +846,19 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
       {/* as horas */}
       <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, position: 'relative' }}>
         <div style={{ height: altura }}>
-          {Array.from({ length: H_FIM - H_INI }, (_, n) => (
-            <div key={n} className="tnum" style={{ height: PX_H, fontSize: 10.5, color: 'var(--text-faint)', textAlign: 'right', padding: '0 8px', boxSizing: 'border-box' }}>{String(H_INI + n).padStart(2, '0')}:00</div>
-          ))}
+          {Array.from({ length: H_FIM - H_INI }, (_, n) => {
+            const h = H_INI + n
+            // o nome do turno aparece UMA vez, na hora em que ele começa — é o que dá a divisão
+            // sem desenhar uma régua a mais
+            const abre = h === H_INI || h === 12 || h === 18
+            const nome = h < 12 ? 'Manhã' : h < 18 ? 'Tarde' : 'Noite'
+            return (
+              <div key={n} style={{ height: PX_H, padding: '0 8px', boxSizing: 'border-box', textAlign: 'right', borderTop: abre && h !== H_INI ? '1px solid var(--border-strong)' : 'none' }}>
+                {abre && <div style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--accent-soft)', lineHeight: '13px' }}>{nome}</div>}
+                <div className="tnum" style={{ fontSize: 10.5, color: 'var(--text-faint)', lineHeight: abre ? '14px' : '17px' }}>{String(h).padStart(2, '0')}:00</div>
+              </div>
+            )
+          })}
         </div>
         {dias.map(d => {
           const k = chaveDia(d)
@@ -777,9 +867,14 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
           return (
             <div key={k} onClick={() => onDia(k)} style={{
               position: 'relative', height: altura, borderLeft: '1px solid var(--glass-border)', cursor: 'pointer',
+              // o risco de cada hora, mais um MAIS FORTE onde vira o turno (meio-dia e 18h):
+              // é o que deixa "a tarde está livre?" visível sem contar linha
               background: `${hoje ? 'var(--glass-field)' : 'transparent'} repeating-linear-gradient(180deg, transparent 0 ${PX_H - 1}px, var(--glass-border) ${PX_H - 1}px ${PX_H}px)`,
               opacity: d.getDay() === 0 || d.getDay() === 6 ? 0.7 : 1,
             }}>
+              {[12, 18].filter(h => h > H_INI && h < H_FIM).map(h => (
+                <div key={h} style={{ position: 'absolute', left: 0, right: 0, top: (h - H_INI) * PX_H, height: 1, background: 'var(--border-strong)', pointerEvents: 'none' }} />
+              ))}
               {lista.map((i, n) => {
                 const ini = paraData(i.inicio), fim = i.fim ? new Date(i.fim) : new Date(ini.getTime() + 36e5)
                 const top = topoDe(ini)

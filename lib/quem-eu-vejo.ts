@@ -19,7 +19,7 @@ export type QuemEuVejo = {
   souDono: boolean
   abaixo: Set<string>
   visiveis: Set<string>
-  pessoas: { id: string; nome: string; papel: string; setor: string; ativo: boolean }[]
+  pessoas: { id: string; nome: string; papel: string; setor: string; ativo: boolean; criado_em?: string }[]
 }
 
 // Com vários chefes por pessoa isto é um grafo, não uma árvore: `vistos` impede que um caminho
@@ -75,7 +75,7 @@ export async function quemEuVejo(authorization: string | null, org: string): Pro
   if (!eu) return null
 
   const [{ data: pessoas }, { data: vinculos }] = await Promise.all([
-    sb.from('usuarios_perfil').select('id,nome,papel,setor,ativo').eq('org_id', org).order('nome'),
+    sb.from('usuarios_perfil').select('id,nome,papel,setor,ativo,criado_em').eq('org_id', org).order('nome'),
     sb.from('usuarios_gestores').select('usuario_id,gestor_id').eq('org_id', org),
   ])
 

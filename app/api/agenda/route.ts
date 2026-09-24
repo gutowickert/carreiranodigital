@@ -220,7 +220,9 @@ export async function GET(req: Request) {
     // Só devolvo o nome de quem eu posso enxergar — a lista de pessoas da tela não pode virar um
     // atalho pra descobrir a estrutura que a agenda esconde. O `ativo` vai junto porque o nome de
     // quem saiu ainda é preciso pra rotular item antigo, mas não pode aparecer pra ser escolhido.
-    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo })),
+    // `criado_em` vai junto porque é ele que dá a COR de cada pessoa na tela, por ordem de
+    // entrada: quem chega depois pega a próxima cor livre, e a cor de quem já está nunca muda.
+    pessoas: pessoas.filter(p => visiveis.has(p.id)).map(p => ({ id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo, criado_em: p.criado_em })),
     tenhoTime: abaixo.size > 0 || souDono,
     itens,
     balao: balao.chaves,
