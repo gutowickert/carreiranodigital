@@ -504,6 +504,41 @@ export default function GerarOrcamento() {
                         onChange={e => { setOrc((o: any) => ({ ...o, capa: { ...o.capa, subtitulo: e.target.value } })); setSalvo('') }} />
                     </label>
 
+                    {/* ⚠️ O VALOR SE EDITA AQUI, ONDE SE EDITA O RESTO.
+                        Estes campos já existiam — lá em cima, no passo 2, que é a parte de GERAR.
+                        Quem abria uma proposta publicada caía direto no passo 3 e via só capa e
+                        objeções: concluía, com razão, que preço e parcelamento não davam pra
+                        mexer. O que é editável precisa estar no lugar onde se edita.
+                        É o MESMO estado dos campos de cima — mudar num muda no outro. */}
+                    <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
+                      <div style={rot}>Valor e parcelamento</div>
+                      <label style={{ display: 'block', marginTop: 10 }}>
+                        <span style={lbl}>Nome do cliente na proposta (o cadastro do lead não muda)</span>
+                        <input style={inp} value={clienteNome}
+                          onChange={e => { setClienteNome(e.target.value); setSalvo('') }} />
+                      </label>
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
+                        <label style={{ flex: '1 1 130px' }}>
+                          <span style={lbl}>À vista</span>
+                          <input style={inp} value={preco.vista} inputMode="decimal"
+                            onChange={e => { setPreco(p => ({ ...p, vista: e.target.value })); setSalvo('') }} />
+                        </label>
+                        <label style={{ flex: '0 1 90px' }}>
+                          <span style={lbl}>Parcelas</span>
+                          <input style={inp} value={preco.parcelas} placeholder="ex.: 6" inputMode="numeric"
+                            onChange={e => { setPreco(p => ({ ...p, parcelas: e.target.value })); setSalvo('') }} />
+                        </label>
+                        <label style={{ flex: '1 1 130px' }}>
+                          <span style={lbl}>Valor da parcela</span>
+                          <input style={inp} value={preco.parcelado} placeholder="ex.: 499,50" inputMode="decimal"
+                            onChange={e => { setPreco(p => ({ ...p, parcelado: e.target.value })); setSalvo('') }} />
+                        </label>
+                      </div>
+                      <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '9px 0 0' }}>
+                        Deixa parcelas e valor da parcela em branco pra proposta sair só com o à vista.
+                      </p>
+                    </div>
+
                     {medido && (
                       <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                         <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>
