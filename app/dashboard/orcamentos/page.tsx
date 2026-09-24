@@ -138,7 +138,13 @@ export default function GerarOrcamento() {
   async function abrirAnterior(id: string) {
     setMsg(''); setSalvo('')
     const j = await fetchAuth(`/api/orcamentos/abrir?id=${id}`).then(r => r.json()).catch(() => null)
-    if (!j?.ok) { setMsg(j?.error || 'não consegui abrir'); return }
+    // o aviso de erro mora no topo da página, longe do botão: sem levar a pessoa até ele, uma
+    // falha fica tão silenciosa quanto o sucesso ficava
+    if (!j?.ok) {
+      setMsg(j?.error || 'não consegui abrir')
+      setTimeout(() => window.scrollTo({ top: 0, behavior: 'smooth' }), 60)
+      return
+    }
     const o = j.orcamento
     setOrc(o); setMedido(null)
     setClienteNome(o.cliente_nome || dados?.lead?.nome || '')
@@ -148,6 +154,12 @@ export default function GerarOrcamento() {
       parcelas: o.parcelas != null ? String(o.parcelas) : '',
       parcelado: o.preco_parcelado != null ? String(o.preco_parcelado) : '',
     })
+    // ⚠️ LEVA A PESSOA ATÉ O QUE ABRIU. O editor nasce bem abaixo desta lista, fora da tela: quem
+    // clicava em "editar" via a página parada e concluía que o botão não funcionava. Funcionava —
+    // só tinha aberto onde ninguém estava olhando.
+    setTimeout(() => {
+      document.getElementById('editor-proposta')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 60)
     setSalvo(o.aceito_em
       ? 'O cliente já aceitou esta proposta — ela virou o registro do combinado. Pra mudar, gera uma nova.'
       : o.situacao === 'publicado'
@@ -474,7 +486,7 @@ export default function GerarOrcamento() {
 
               {/* ─────────── passo 3: revisar, editar e aprovar */}
               {orc && (
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14, marginTop: 16 }}>
+                <div id="editor-proposta" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: 14, marginTop: 16 }}>
                   {/* capa */}
                   <div style={card}>
                     <div style={rot}>Passo 3 · a capa da proposta</div>
