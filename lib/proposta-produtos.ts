@@ -3,8 +3,8 @@
 // A proposta tem duas partes: o que a IA escreve pra cada cliente (a capa e as objeções) e o CORPO
 // FIXO — as páginas que explicam o que é, como funciona, o que está incluído e o que fica de fora.
 // Esse corpo está escrito em `app/proposta/[slug]/page.tsx` e descreve o Deu Venda: implantação
-// presencial, IA configurada com o negócio da pessoa, 3 meses de acompanhamento, verba de anúncio
-// por fora.
+// presencial em 2 encontros de um turno (dias diferentes), IA configurada com o negócio da pessoa,
+// 3 meses de acompanhamento com 1 encontro por mês (5 no total), verba de anúncio por fora.
 //
 // ⚠️ POR QUE ISTO EXISTE. O produto da proposta vinha da turma do lead, sem escolha. No orçamento do
 // José a turma dele ainda era a Formação Completa — o curso que ele JÁ TINHA FEITO — então a

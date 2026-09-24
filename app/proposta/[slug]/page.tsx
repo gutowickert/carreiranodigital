@@ -174,7 +174,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           </div>
         </div>
         <div className="numeros">
-          <div className="num"><b>1</b><span>Sessão presencial</span></div>
+          <div className="num"><b>2</b><span>Encontros de implantação</span></div>
           <div className="num"><b>3</b><span>Meses acompanhado</span></div>
           <div className="num"><b>1</b><span>Pagamento único</span></div>
           {vista && <div className="num"><b style={{ color: 'var(--accent-claro)' }}>{vista}</b><span>À vista</span></div>}
@@ -204,7 +204,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O que é</span></div>
         <h2 className="disp">Uma máquina de marketing montada dentro do teu negócio.</h2>
         <p className="corpo">
-          Um especialista da escola senta contigo por um turno e monta, com tu do lado, a máquina que
+          Um especialista da escola senta contigo em dois encontros de um turno, em dias diferentes, e monta, com tu do lado, a máquina que
           escreve teus anúncios, tuas respostas e tuas páginas — configurada com o que tu vende, teu prazo
           e tua condição. A conta é tua, e continua tua depois.
         </p>
@@ -218,7 +218,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       {/* ───── como funciona (modelo fixo) */}
       <section className="folha">
         <div className="topo"><span>{cliente} · Proposta</span><span className="secao">Como funciona</span></div>
-        <h2 className="disp">O dia da implantação, e os 3 meses depois.</h2>
+        <h2 className="disp">A implantação, e os 3 meses depois.</h2>
         <div className="passos">
           <div className="passo"><div className="n">1 · A estratégia</div><p className="corpo">O que vale anunciar, pra quem e em qual raio de quilômetros. Decidido contigo.</p></div>
           <div className="passo"><div className="n">2 · A máquina</div><p className="corpo">Configurada com o que tu vende, teu prazo e o que responder nas perguntas que mais chegam.</p></div>
@@ -234,7 +234,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         </div>
         <div className="duas">
           <ul className="lista">
-            <li>São 4 encontros: a implantação e mais três nos 3 meses</li>
+            <li>São 5 encontros: dois na implantação e um por mês, nos 3 meses</li>
             <li>Grupo de WhatsApp com o time da escola entre eles</li>
           </ul>
           <ul className="lista">
@@ -262,13 +262,13 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           <p className="corpo"><strong>Pagamento único.</strong> Sem mensalidade, e a máquina continua tua depois.</p>
           <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
             <ul className="lista">
-              <li>A sessão presencial de implantação</li>
-              <li>A campanha e a página no ar no mesmo dia</li>
+              <li>Os dois encontros presenciais de implantação</li>
+              <li>A campanha e a página no ar já na implantação</li>
               <li>Grupo de WhatsApp com a escola</li>
             </ul>
             <ul className="lista">
               <li>A máquina montada na tua conta</li>
-              <li>Mais 3 encontros com o estrategista</li>
+              <li>Mais 3 encontros com o estrategista, um por mês</li>
               <li>Troca de caminho quantas vezes precisar nos 3 meses</li>
             </ul>
           </div>

@@ -393,12 +393,12 @@ export default function GerarOrcamento() {
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <label style={{ flex: '1 1 110px' }}>
                           <span style={lbl}>Parcelas</span>
-                          <input style={inp} value={preco.parcelas} placeholder="ex.: 10" inputMode="numeric"
+                          <input style={inp} value={preco.parcelas} placeholder="ex.: 6" inputMode="numeric"
                             onChange={e => setPreco(p => ({ ...p, parcelas: e.target.value }))} />
                         </label>
                         <label style={{ flex: '1 1 140px' }}>
                           <span style={lbl}>Valor da parcela</span>
-                          <input style={inp} value={preco.parcelado} placeholder="ex.: 299,70" inputMode="decimal"
+                          <input style={inp} value={preco.parcelado} placeholder="ex.: 499,50" inputMode="decimal"
                             onChange={e => setPreco(p => ({ ...p, parcelado: e.target.value }))} />
                         </label>
                       </div>
