@@ -85,13 +85,37 @@ export default function NotifCelular() {
     if (j?.recadastrar) setEstado('inicial')
   }
 
+  // ⚠️ DESLIGA NO NAVEGADOR PRIMEIRO, no servidor depois. A tela se reapresenta ao servidor a cada
+  // carga: apagar só a linha faria a inscrição voltar sozinha no próximo F5. Um botão de desligar
+  // que não desliga é pior que não ter botão.
+  async function desativar() {
+    setTeste('desligando…')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub && !(await sub.unsubscribe())) { setTeste('o navegador não deixou desligar'); return }
+      await fetchAuth('/api/push/desinscrever', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ endpoint: endereco || sub?.endpoint }),
+      }).catch(() => null)
+      setEndereco(''); setTeste(''); setEstado('inicial')
+    } catch { setTeste('não consegui desligar') }
+  }
+
   if (estado === 'indisponivel') return null
   if (estado === 'ok') return (
     <div style={{ marginTop: 8 }}>
       <div style={{ fontSize: 11, color: 'var(--green)' }}>🔔 Notificações ativas neste aparelho</div>
-      <button onClick={testar} style={{ marginTop: 5, width: '100%', background: 'transparent', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '5px', fontSize: 11, color: 'var(--text-2)', cursor: 'pointer' }}>
-        testar agora
-      </button>
+      <div style={{ display: 'flex', gap: 6, alignItems: 'center', marginTop: 5 }}>
+        <button onClick={desativar} style={{ flex: 1, background: 'transparent', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '5px', fontSize: 11, color: 'var(--text-2)', cursor: 'pointer' }}>
+          Desativar
+        </button>
+        {/* O teste fica, pequeno: foi ele que achou em 5 segundos o que custou semanas de palpite. */}
+        <button onClick={testar} title="Manda um aviso de teste só pra este aparelho"
+          style={{ background: 'none', border: 'none', padding: '5px 2px', fontSize: 10.5, color: 'var(--text-faint)', cursor: 'pointer', textDecoration: 'underline' }}>
+          testar
+        </button>
+      </div>
       {teste && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 5, lineHeight: 1.4 }}>{teste}</div>}
     </div>
   )
