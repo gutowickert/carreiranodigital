@@ -12,12 +12,15 @@ export const maxDuration = 60
 // O resto da proposta (o que é, como funciona, investimento, aceite) é modelo fixo — não passa pela
 // IA, não custa token e não varia de proposta pra proposta.
 //
-// AS TRÊS TRAVAS, todas aqui no servidor e não no texto do pedido:
+// AS QUATRO TRAVAS, todas aqui no servidor e não no texto do pedido:
 //  1. PREÇO NÃO VEM DA IA. O que ela escrever sobre valor é ignorado; o preço é o que a tela mandou,
 //     que por sua vez veio do cadastro.
 //  2. CITAÇÃO TEM QUE EXISTIR. Cada objeção precisa citar uma frase que esteja no material. O que não
 //     casar é descartado — é o que impede proposta inventada.
 //  3. SEM MATERIAL, SEM OBJEÇÃO. Material curto gera proposta padrão, com a lista vazia.
+//  4. A CAPA NÃO FALA DA MECÂNICA DO OUTRO PRODUTO. Capa de implantação não cita turma nem dias de
+//     curso; capa de curso não cita implantação nem meses de acompanhamento. Pedir isso no texto do
+//     pedido não basta — o pedido é conselho, isto é porta.
 //
 // Modelo: Sonnet 5, escolhido pelo custo (é o mais barato que dá conta deste texto).
 
@@ -41,6 +44,13 @@ REGRAS DURAS:
 - Escreve em português do Brasil, falando com a pessoa por "tu", tom direto e sem jargão. Frases curtas.
 - Reconhece a objeção antes de responder; nada de resposta de manual.
 
+⚠️ NÃO DESCREVA A MECÂNICA DO PRODUTO. Nada de quantos encontros, quantos dias, quantos meses,
+quantas aulas, o que está incluído ou como é a entrega. Isso JÁ está escrito nas páginas seguintes
+da proposta, que não passam por ti e não mudam. Se tu reescrever a estrutura com tuas palavras,
+ela vai sair diferente a cada geração — e um dia vai sair errada, com o número de um produto
+dentro da proposta do outro. Tu escreve sobre O NEGÓCIO DA PESSOA e sobre o que ela ganha; a
+estrutura do que a escola entrega não é tua.
+
 COMO SE ESCREVEM OS NOMES (a transcrição erra estes, e o erro chega até aqui):
 - A ferramenta de IA chama-se **Claude**. No material ela aparece como "cloud", "clod", "cláudio",
   "claudia" ou "claude" minúsculo — é tudo a mesma coisa, e no TÍTULO e no TEXTO escreve-se Claude.
@@ -51,10 +61,50 @@ COMO SE ESCREVEM OS NOMES (a transcrição erra estes, e o erro chega até aqui)
 FORMATO DA RESPOSTA: só um JSON, sem texto em volta:
 {"capa":{"titulo":"...","subtitulo":"..."},"objecoes":[{"titulo":"...","citacao":"...","texto":"..."}]}
 - titulo da capa: até 90 caracteres, dizendo o que a pessoa ganha, no vocabulário do negócio dela.
-- subtitulo: 2 ou 3 frases explicando o que acontece na prática.
+- subtitulo: 2 ou 3 frases sobre o que MUDA NO NEGÓCIO DELA — a situação dela hoje e onde ela chega.
 - objecoes: no máximo ${MAX_OBJECOES}, da mais importante para a menos.
 - titulo da objeção: como o vendedor descreveria o ponto, em até 60 caracteres.
 - texto: 2 a 5 frases respondendo aquela objeção.`
+
+// A MECÂNICA DE CADA PRODUTO, e o que ela NÃO pode encostar.
+//
+// ⚠️ POR QUE ISTO EXISTE. A proposta tem duas partes: o corpo fixo, que descreve o produto e nunca
+// muda, e a capa, que a IA escreve pra cada cliente. O pedido mandava a capa "explicar o que
+// acontece na prática" — ou seja, reescrever a mecânica do produto com palavras novas a cada
+// geração. Duas gerações seguidas pro mesmo lead saíram "durante 3 meses" e "em mais três
+// encontros mensais": as duas certas, por sorte. A terceira podia sair com o número do outro
+// produto, e aí o documento se contradiz na página seguinte — com o cliente lendo.
+//
+// Isto não é análise de texto: é uma lista curta do que é INCONFUNDIVELMENTE do outro lado. O
+// Deu Venda não tem dias de curso nem turma; o ANL não tem implantação nem acompanhamento mensal.
+const MECANICA_ALHEIA: { chave: string; proibido: [RegExp, string][] }[] = [
+  {
+    chave: 'anuncios para negocios locais',   // é turma; não tem implantação nem mês de acompanhamento
+    proibido: [
+      [/implanta[çc][ãa]o/i, 'implantação'],
+      [/acompanhamento\s+mensal/i, 'acompanhamento mensal'],
+      [/encontros?\s+mensa/i, 'encontros mensais'],
+      [/(\d+|tr[êe]s)\s*meses/i, 'meses de acompanhamento'],
+    ],
+  },
+  {
+    chave: 'deu venda',                        // é 1 a 1; não tem turma nem dias de aula
+    proibido: [
+      [/\bturmas?\b/i, 'turma'],
+      [/(\d+|tr[êe]s)\s*dias?\s+(presenciais|de\s+(curso|treinamento|imers[ãa]o|aula))/i, 'dias de curso'],
+      [/\baulas?\b/i, 'aulas'],
+    ],
+  },
+]
+
+/** Devolve o termo proibido encontrado, ou null. */
+function mecanicaDoOutroProduto(produtoNome: string | null, texto: string): string | null {
+  const n = (produtoNome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  const regra = MECANICA_ALHEIA.find(r => n.includes(r.chave))
+  if (!regra) return null
+  for (const [re, nome] of regra.proibido) if (re.test(texto)) return nome
+  return null
+}
 
 // normaliza pra comparar citação com o material: sem acento, sem pontuação, espaços colapsados
 const normal = (s: string) =>
@@ -191,6 +241,7 @@ export async function POST(req: Request) {
     let capa = { titulo: '', subtitulo: '' }
     let objecoes: any[] = []
     let usoIA: any = null
+    let contaminado: string | null = null
     let descartadas = 0
 
     if (material.length >= 300) {
@@ -236,6 +287,30 @@ export async function POST(req: Request) {
         capa = {
           titulo: String(out.capa.titulo || '').slice(0, 140),
           subtitulo: String(out.capa.subtitulo || '').slice(0, 700),
+        }
+        // ⚠️ A QUARTA TRAVA: a capa não pode falar da mecânica do OUTRO produto.
+        contaminado = mecanicaDoOutroProduto(produto?.nome || null, `${capa.titulo} ${capa.subtitulo}`)
+        if (contaminado) {
+          const correcao = await client.messages.create({
+            model: MODELO, max_tokens: 900, system: SYSTEM,
+            messages: [
+              { role: 'user', content: pedido },
+              { role: 'assistant', content: raw },
+              { role: 'user', content: `PARE: a tua capa citou "${contaminado}", que é a mecânica de OUTRO produto da escola — não do ${produto?.nome}. Isso vira um documento que se contradiz na página seguinte. Reescreve SÓ o JSON da capa, no mesmo formato {"capa":{"titulo":"...","subtitulo":"..."},"objecoes":[]}, falando do NEGÓCIO da pessoa e do que ela ganha, sem citar quantidade de encontros, dias, meses ou aulas.` },
+            ],
+          })
+          const outC = jsonDaResposta((correcao.content || []).map((c: any) => (c.type === 'text' ? c.text : '')).join('').trim())
+          const nova = outC?.capa
+            ? { titulo: String(outC.capa.titulo || '').slice(0, 140), subtitulo: String(outC.capa.subtitulo || '').slice(0, 700) }
+            : null
+          // só aceita a correção se ela veio limpa; senão fica o título e a capa perde o subtítulo,
+          // que o vendedor escreve. Texto em branco ele percebe; texto errado, não.
+          if (nova && !mecanicaDoOutroProduto(produto?.nome || null, `${nova.titulo} ${nova.subtitulo}`)) {
+            capa = nova
+          } else {
+            capa = { titulo: capa.titulo, subtitulo: '' }
+          }
+          await logIaUso('orcamento-capa-corrigida', MODELO, correcao.usage, { lead_id: leadId, termo: contaminado, produto: produto?.nome })
         }
       }
       const cruas = Array.isArray(out?.objecoes) ? out.objecoes.slice(0, MAX_OBJECOES) : []

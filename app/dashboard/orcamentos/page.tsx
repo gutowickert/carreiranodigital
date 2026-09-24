@@ -253,6 +253,17 @@ export default function GerarOrcamento() {
     setOrc(j.orcamento); setSalvo('Rascunho salvo.')
   }
 
+  async function apagarRascunho(a: any) {
+    if (!confirm(`Apagar este rascunho${a.titulo ? ` ("${a.titulo.slice(0, 50)}…")` : ''}? Não dá pra desfazer.`)) return
+    setMsg('')
+    const j = await fetchAuth('/api/orcamentos/apagar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: a.id }) })
+      .then(r => r.json()).catch(() => null)
+    if (!j?.ok) { setMsg(j?.error || 'não consegui apagar'); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    // some da lista sem recarregar a tela inteira: quem apagou está no meio de um trabalho
+    setDados((d: any) => ({ ...d, anteriores: (d.anteriores || []).filter((x: any) => x.id !== a.id) }))
+    if (orc?.id === a.id) { setOrc(null); setMedido(null) }
+  }
+
   const voltar = () => { setLeadId(null); setDados(null); setUsar({}); setOrc(null); setMedido(null); setMsg(''); setSalvo('') }
   const marcadas = Object.values(usar).filter(Boolean).length
 
@@ -551,6 +562,12 @@ export default function GerarOrcamento() {
                         <button onClick={() => abrirAnterior(a.id)} style={a.situacao === 'publicado' && !a.aceito_em ? btnPrimario : btnSec}>
                           {a.situacao === 'publicado' ? (a.aceito_em ? 'ver (aceita)' : 'editar') : 'continuar este rascunho'}
                         </button>
+                        {/* Só rascunho. Publicado o cliente pode já ter o link — apagar deixaria a
+                            página dele em branco, e ele não tem como saber por quê. */}
+                        {a.situacao !== 'publicado' && (
+                          <button onClick={() => apagarRascunho(a)} title="Apagar este rascunho"
+                            style={{ ...btnSec, color: 'var(--red)', padding: '10px 12px' }}>apagar</button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -603,7 +620,11 @@ export default function GerarOrcamento() {
                         mexer. O que é editável precisa estar no lugar onde se edita.
                         É o MESMO estado dos campos de cima — mudar num muda no outro. */}
                     <div style={{ marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
-                      <div style={rot}>Turma, valor e parcelamento</div>
+                      {/* ⚠️ O TÍTULO SEGUE O PRODUTO. Fixo em "Turma, valor e parcelamento", ele
+                          escrevia "turma" numa proposta de implantação individual, que não tem
+                          turma nenhuma — e ler "turma" ali é exatamente onde alguém troca os
+                          produtos na cabeça. */}
+                      <div style={rot}>{produtoEscolhido?.exige_turma ? 'Turma, valor e parcelamento' : 'Valor e parcelamento'}</div>
                       <div style={{ marginTop: 10 }}>
                         <SeletorDeTurma produto={produtoEscolhido} valor={turmaId} onMuda={v => { setTurmaId(v); setSalvo('') }} />
                       </div>
