@@ -60,7 +60,7 @@ export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | nu
  * desatualizado, é um compromisso que a escola não assumiu — e fica registrado com o aceite.
  */
 export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma }: Omit<Props, 'cliente'>) {
-  const valores = `${vista ? ` · ${vista} à vista no Pix` : ''}${parcela && parcelas ? ` ou ${parcelas}x de ${parcela}` : ''}`
+  const valores = `${vista ? ` · ${vista} à vista no Pix` : ''}${parcela && parcelas ? ` ou ${parcelas}x de ${parcela} no cartão de crédito` : ''}`
   if (ehANL(produtoNome)) {
     // a DATA entra no que a pessoa confirma: aceitar um curso sem saber quando é não é aceite
     const quando = turma ? ` · ${datasDaTurma(turma.data_inicio, turma.data_fim)}, em ${turma.cidade}${turma.turno ? ` (${turma.turno})` : ''}` : ''
@@ -189,7 +189,7 @@ function CorpoANL({ cliente, produtoNome, vista, parcela, parcelas, turma }: Pro
           </div>
           <div className="preco-linha">
             {vista && <div className="valor"><b>{vista}</b><span>À vista, no Pix</span></div>}
-            {parcela && parcelas && <div className="valor alt"><b>{parcela}</b><span>{parcelas}x sem juros</span></div>}
+            {parcela && parcelas && <div className="valor alt"><b>{parcela}</b><span>{parcelas}x no cartão de crédito</span></div>}
           </div>
           <p className="corpo"><strong>Por inscrição.</strong> Pagamento único, sem mensalidade.</p>
           <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
@@ -279,7 +279,7 @@ function CorpoDeuVenda({ cliente, produtoNome, vista, parcela, parcelas }: Props
           </div>
           <div className="preco-linha">
             {vista && <div className="valor"><b>{vista}</b><span>À vista, no Pix</span></div>}
-            {parcela && parcelas && <div className="valor alt"><b>{parcela}</b><span>{parcelas}x sem juros</span></div>}
+            {parcela && parcelas && <div className="valor alt"><b>{parcela}</b><span>{parcelas}x no cartão de crédito</span></div>}
           </div>
           <p className="corpo"><strong>Pagamento único.</strong> Sem mensalidade, e a máquina continua tua depois.</p>
           <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
