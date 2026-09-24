@@ -164,8 +164,12 @@ export async function POST(req: Request) {
           const novaData = nova.toISOString().slice(0, 10)
           const antes = (proximoEncontro.data_prevista || '').slice(0, 10)
           const desloc = antes ? diasAte(novaData, antes) : 0
+          // o próximo nasce COM lugar quando quem fechou informou — senão entraria na agenda sem
+          // região, e o problema que isto resolve voltaria pela porta dos fundos
+          const proxLocal = (b.proxima_local || '').toString()
           await sb.from('projeto_marcos').update({
             data_combinada: nova.toISOString(), data_prevista: novaData, estado: 'combinado', atualizado_em: agora,
+            ...(LOCAIS.some(l => l.chave === proxLocal) ? { local: proxLocal } : {}),
           }).eq('id', proximoEncontro.id)
           if (desloc !== 0 && irmaos?.length) {
             const { mover } = empurrarPosteriores(irmaos as any, proximoEncontro.ordem, desloc)

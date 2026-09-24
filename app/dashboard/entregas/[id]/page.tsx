@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
 import { MetaBloco, Placar, Registros, Nota } from './Resultados'
 import { BuscarLead, type LeadAchado } from '@/components/BuscarLead'
+import { LOCAIS } from '@/lib/entrega'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)' }
@@ -88,6 +89,8 @@ export default function FichaEntrega() {
       if (j.aviso) { setMsg('' + j.aviso); setTimeout(() => setMsg(''), 6000) }
       carregar()
     } else {
+      // o dia já tem a outra região: mostra o aviso e deixa marcar de propósito — avisa, não proíbe
+      if (j?.precisa_confirmar_regiao) { setForm((f: any) => ({ ...f, conflito: j.error })); return }
       // a regra de ouro: não fecha encontro sem marcar o próximo
       if (j?.precisa_proximo) {
         setForm((f: any) => ({ ...f, exigeProximo: j.precisa_proximo, proxima_data_hora: paraInput(j.precisa_proximo.data_prevista + 'T14:00:00') }))
@@ -262,11 +265,29 @@ export default function FichaEntrega() {
               {agindo === m.id && (
                 <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--border)' }}>
                   {(form.tipo === 'combinar' || form.tipo === 'remarcar') && (
-                    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                      <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{form.tipo === 'combinar' ? 'Combinado com o cliente para' : 'Nova data'}:</span>
-                      <input type="datetime-local" style={inp} value={form.data_hora || ''} onChange={e => setForm({ ...form, data_hora: e.target.value })} />
-                      <button onClick={() => acao({ acao: form.tipo, id: m.id, data_hora: new Date(form.data_hora).toISOString() })} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Salvar</button>
-                      <button onClick={() => { setAgindo(null); setForm({}) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+                      <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{form.tipo === 'combinar' ? 'Combinado com o cliente para' : 'Nova data'}:</span>
+                        <input type="datetime-local" style={inp} value={form.data_hora || ''} onChange={e => setForm({ ...form, data_hora: e.target.value, conflito: '' })} />
+                        {/* ⚠️ ONDE É — obrigatório. Dois atendimentos no mesmo dia só cabem na MESMA
+                            região; é isto que deixa o time ver se o dia já está comprometido. */}
+                        <select style={inp} value={form.local || m.local || ''} onChange={e => setForm({ ...form, local: e.target.value, conflito: '' })}>
+                          <option value="">Onde vai ser?</option>
+                          {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
+                        </select>
+                      </div>
+                      {form.conflito && (
+                        <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: 11, fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.5 }}>
+                          {form.conflito}
+                          <div style={{ marginTop: 8 }}>
+                            <button onClick={() => acao({ acao: form.tipo, id: m.id, data_hora: new Date(form.data_hora).toISOString(), local: form.local || m.local, mesmo_assim: true })} style={{ ...btn, background: 'transparent', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Marcar mesmo assim</button>
+                          </div>
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button onClick={() => acao({ acao: form.tipo, id: m.id, data_hora: new Date(form.data_hora).toISOString(), local: form.local || m.local })} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Salvar</button>
+                        <button onClick={() => { setAgindo(null); setForm({}) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
+                      </div>
                     </div>
                   )}
                   {form.tipo === 'concluir' && (
@@ -277,10 +298,16 @@ export default function FichaEntrega() {
                           <div style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 600 }}>Marca o próximo antes de fechar</div>
                           <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '3px 0 8px' }}>{form.exigeProximo.titulo} — a data se combina agora, com o cliente na frente.</div>
                           <input type="datetime-local" style={inp} value={form.proxima_data_hora || ''} onChange={e => setForm({ ...form, proxima_data_hora: e.target.value })} />
+                          {/* o próximo encontro nasce com lugar: sem isto ele entraria na agenda
+                              sem região, e o problema que a gente acabou de resolver voltaria */}
+                          <select style={{ ...inp, marginTop: 7 }} value={form.proxima_local || ''} onChange={e => setForm({ ...form, proxima_local: e.target.value })}>
+                            <option value="">Onde vai ser o próximo?</option>
+                            {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
+                          </select>
                         </div>
                       )}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => acao({ acao: 'concluir', id: m.id, registro: form.registro, proxima_data_hora: form.proxima_data_hora ? new Date(form.proxima_data_hora).toISOString() : undefined })} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Concluir</button>
+                        <button onClick={() => acao({ acao: 'concluir', id: m.id, registro: form.registro, proxima_data_hora: form.proxima_data_hora ? new Date(form.proxima_data_hora).toISOString() : undefined, proxima_local: form.proxima_local || undefined })} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Concluir</button>
                         <button onClick={() => { setAgindo(null); setForm({}); setMsg('') }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
                       </div>
                     </div>
