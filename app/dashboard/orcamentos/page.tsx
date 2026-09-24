@@ -609,6 +609,20 @@ export default function GerarOrcamento() {
                       <button onClick={salvarRascunho} disabled={salvando || !!orc.aceito_em} style={{ ...btnPrimario, opacity: salvando || orc.aceito_em ? .6 : 1 }}>
                         {salvando ? 'Salvando…' : orc.situacao === 'publicado' ? 'Salvar e atualizar a página do cliente' : 'Salvar rascunho'}
                       </button>
+                      {/* VER COMO FICOU, SEM PUBLICAR. Publicar é caminho sem volta — dali em
+                          diante existe uma proposta no ar, pronta pra ser mandada. Conferir o
+                          resultado não podia custar isso. Salva antes de abrir, senão a prévia
+                          mostraria a versão anterior e a pessoa conferiria a proposta errada. */}
+                      <button onClick={async () => {
+                        // ⚠️ A ABA ABRE ANTES DO SALVAR. `window.open` depois de um `await` perde o
+                        // vínculo com o clique e o navegador bloqueia como pop-up — o botão
+                        // pareceria quebrado sem nenhum erro na tela.
+                        const aba = window.open('', '_blank')
+                        if (!orc.aceito_em) await salvarRascunho()
+                        if (aba) aba.location.href = `/proposta/${orc.id}`
+                      }} disabled={salvando} style={{ ...btnSec, opacity: salvando ? .55 : 1 }}>
+                        👁️ Ver como ficou
+                      </button>
                       <button onClick={publicar} disabled={salvando || orc.situacao === 'publicado'}
                         style={{ ...btnSec, opacity: salvando || orc.situacao === 'publicado' ? .55 : 1 }}>
                         {orc.situacao === 'publicado' ? 'Publicada' : 'Publicar e copiar link'}

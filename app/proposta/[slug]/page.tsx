@@ -57,10 +57,23 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
   // ⚠️ Nada de junção embutida aqui (`select('*, leads(nome)')`): não existe ligação declarada entre
   // `orcamentos` e `leads`, e junção que não resolve derruba a consulta INTEIRA — a proposta virava
   // 404 com o link certo (18/09/2026). Duas consultas simples, e o nome do lead é opcional.
-  const { data: orc } = await sb.from('orcamentos')
-    .select('*')
-    .eq('slug', slug).eq('situacao', 'publicado').maybeSingle()
+  // A PRÉVIA. Quem monta a proposta precisava publicar pra descobrir como ela ficou — e publicar
+  // é um caminho sem volta de verdade: o link já pode ser mandado, a partir dali existe uma
+  // proposta no ar. Conferir antes não devia custar isso.
+  //
+  // O endereço da prévia é o ID do orçamento (um UUID). O link publicado continua sendo o slug de
+  // 10 caracteres, e só abre publicado — este caminho não afrouxa nada do que já existia: o UUID
+  // é MAIS difícil de adivinhar que o slug, e a regra da casa pra proposta já é "quem tem o
+  // endereço, lê" (decisão do Nando em 18/09/2026).
+  //
+  // O que a prévia NÃO faz: não conta abertura e não mostra o botão de aceitar. Ninguém aceita
+  // uma proposta que o cliente ainda nem recebeu.
+  const ehId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(slug)
+  const { data: orc } = ehId
+    ? await sb.from('orcamentos').select('*').eq('id', slug).maybeSingle()
+    : await sb.from('orcamentos').select('*').eq('slug', slug).eq('situacao', 'publicado').maybeSingle()
   if (!orc) notFound()
+  const previa = ehId
 
   const { data: lead } = await sb.from('leads').select('nome').eq('id', orc.lead_id).maybeSingle()
   // O NOME QUE SAI NA PROPOSTA. O cadastro do lead traz o apelido do WhatsApp — "Jose Poa 2" — e era
@@ -74,7 +87,18 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
 
   return (
     <div className="folhas">
-      <Abertura slug={slug} />
+      {previa ? null : <Abertura slug={slug} />}
+      {previa && (
+        <div style={{
+          width: '100%', maxWidth: 860, background: '#fff7ed', border: '1px solid #fdba74',
+          borderRadius: 12, padding: '12px 16px', color: '#9a3412', fontSize: 13.5, fontWeight: 600,
+          fontFamily: "'Manrope',system-ui,sans-serif", lineHeight: 1.5,
+        }}>
+          👁️ Prévia — é assim que o cliente vai ver. {orc.situacao === 'publicado'
+            ? 'Esta proposta já está no ar; o link do cliente é o outro.'
+            : 'Ela ainda NÃO está publicada, e este endereço não é o que se manda pro cliente.'}
+        </div>
+      )}
       <style>{`
         :root{
           --ink:#0f0c17;--paper:#f5f4f9;--paper-2:#ffffff;
@@ -295,7 +319,11 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
           {' '}· pagamento único, sem mensalidade · verba de anúncio por conta da contratante · a máquina fica com a
           contratante ao final · a escola monta o método e testa junto, e não garante volume de vendas.
         </p>
-        <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} />
+        {previa
+          ? <p className="corpo" style={{ fontSize: 13, color: 'var(--tinta-fraca)', fontStyle: 'italic' }}>
+              (aqui entra o botão de aceitar — escondido na prévia pra ninguém aceitar no lugar do cliente)
+            </p>
+          : <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} />}
         <p className="corpo" style={{ fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 14 }}>
           Escola Carreira no Digital · CNPJ 62.512.432/0001-39
         </p>
