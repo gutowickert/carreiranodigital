@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { Vazio } from '@/components/ui'
+import { LOCAIS, REGIOES } from '@/lib/entrega'
 import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide-react'
 
 // A AGENDA — calendário à esquerda, o dia à direita; mês ou semana; abas por área.
@@ -61,6 +62,8 @@ type Item = {
   estado?: string | null
   situacao?: string | null
   cor?: string | null
+  local?: string | null
+  regiao?: 'lajeado' | 'poa' | null
 }
 type Pessoa = { id: string; nome: string; papel: string; setor: string; ativo?: boolean }
 type Eu = { id: string; nome: string; papel: string; setor: string; souDono: boolean }
@@ -494,6 +497,11 @@ export default function Agenda() {
                             background: sel ? 'var(--accent-bg)' : hoje ? 'var(--glass-field)' : 'transparent',
                             opacity: mesmoMes(d) ? 1 : 0.35,
                           }}>
+                          {regioesDoDia(doDia).length > 0 && (
+                            <div style={{ display: 'flex', gap: 3, marginBottom: 3 }}>
+                              {regioesDoDia(doDia).map(r => <span key={r} style={{ ...selo(r), fontSize: 9 }}>{REGIOES[r].nome}</span>)}
+                            </div>
+                          )}
                           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 5 }}>
                             <span className="tnum" style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 13, fontWeight: hoje ? 800 : 600, color: hoje ? 'var(--accent-soft)' : 'var(--text-muted)' }}>
                               {hoje
@@ -678,6 +686,7 @@ function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolea
         opacity: prev ? 0.8 : 1,
       }}>
       <Avatar id={it.donoId} nome={nomeDe(it.donoId)} tam={16} />
+      {it.regiao && <span style={selo(it.regiao)}>{REGIOES[it.regiao].curto}</span>}
       <span style={{ fontSize: 11.5, lineHeight: '15px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
         {horaDe(it) && <b style={{ color: cor, fontWeight: 800 }}>{horaDe(it)} </b>}{it.titulo}
       </span>
@@ -801,6 +810,20 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
 const btnPri = { padding: '9px 16px', background: 'var(--grad)', color: 'var(--on-accent)', border: 'none', borderRadius: 'var(--r)', fontSize: 13.5, fontWeight: 700, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 } as React.CSSProperties
 const btnSec = { padding: '9px 16px', background: 'transparent', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', fontSize: 13.5, fontWeight: 600, cursor: 'pointer', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6 } as React.CSSProperties
 const btnIcone = { width: 34, height: 34, borderRadius: 'var(--r)', border: '1px solid var(--border-strong)', background: 'transparent', color: 'var(--text-2)', fontSize: 13, cursor: 'pointer', lineHeight: 1, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' } as React.CSSProperties
+// A REGIÃO, em cor. É o que responde "esse dia já está comprometido?" sem abrir nada — dois
+// atendimentos no mesmo dia só cabem na MESMA região, o deslocamento come o resto.
+const CORES_REGIAO: Record<string, { cor: string; bg: string }> = {
+  lajeado: { cor: '#7cc5fb', bg: 'rgba(56,132,255,.18)' },
+  poa: { cor: '#f0a6f5', bg: 'rgba(217,70,239,.18)' },
+}
+const selo = (r: string): React.CSSProperties => ({
+  fontSize: 9.5, fontWeight: 800, letterSpacing: '.04em', borderRadius: 4, padding: '1px 5px', flexShrink: 0,
+  color: CORES_REGIAO[r]?.cor, background: CORES_REGIAO[r]?.bg,
+})
+// duas regiões no mesmo dia = o conflito que custa o dia. Aparecem as duas, e o time vê o problema.
+const regioesDoDia = (itens: Item[]): ('lajeado' | 'poa')[] =>
+  [...new Set(itens.map(i => i.regiao).filter(Boolean))] as ('lajeado' | 'poa')[]
+
 const pontoVermelho = { width: 7, height: 7, borderRadius: '50%', background: 'var(--red)', flexShrink: 0, display: 'inline-block' } as React.CSSProperties
 const chip = (ativo: boolean) => ({
   padding: '6px 13px', borderRadius: 'var(--r-pill)', fontSize: 12.5, cursor: 'pointer',
@@ -879,19 +902,24 @@ function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
   const ini = paraData(it.inicio)
   const pad = (n: number) => String(n).padStart(2, '0')
   const [quando, setQuando] = useState(`${ini.getFullYear()}-${pad(ini.getMonth() + 1)}-${pad(ini.getDate())}T09:00`)
+  const [local, setLocal] = useState(it.local || '')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
   const [aviso, setAviso] = useState('')
+  // o conflito de região não bloqueia: mostra e pede pra confirmar de propósito
+  const [conflito, setConflito] = useState('')
 
-  async function combinar() {
+  async function combinar(mesmoAssim = false) {
     const d = new Date(quando)
     if (isNaN(+d)) { setErro('Confere a data e a hora.'); return }
+    if (!local) { setErro('Escolhe onde vai ser — é o que diz pro time se o dia já está comprometido.'); return }
     setSalvando(true); setErro('')
     const j = await fetchAuth('/api/projetos/marco', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao: 'combinar', id: it.id, data_hora: d.toISOString() }),
+      body: JSON.stringify({ acao: 'combinar', id: it.id, data_hora: d.toISOString(), local, mesmo_assim: mesmoAssim }),
     }).then(r => r.json()).catch(() => null)
     setSalvando(false)
+    if (j?.precisa_confirmar_regiao) { setConflito(j.error); return }
     if (!j?.ok) { setErro(j?.error || 'não consegui combinar agora'); return }
     if (j.aviso) { setAviso(j.aviso); setTimeout(onPronto, 2500); return }
     onPronto()
@@ -902,17 +930,32 @@ function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
       <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
         <b style={{ color: 'var(--text)' }}>Ainda não foi combinado com o cliente.</b> O roteiro calculou esta data — acertou o dia com ele? Marca aqui que vira compromisso de verdade.
       </div>
-      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-        <input type="datetime-local" value={quando} onChange={e => setQuando(e.target.value)}
-          style={{ ...inp, flex: '1 1 190px', width: 'auto' }} />
-        <button onClick={combinar} disabled={salvando} style={{ ...btnPri, opacity: salvando ? .6 : 1 }}>
+      <input type="datetime-local" value={quando} onChange={e => { setQuando(e.target.value); setConflito('') }} style={{ ...inp, width: '100%' }} />
+      {/* ⚠️ ONDE É — obrigatório. Dois atendimentos no mesmo dia só cabem na MESMA região; é isto
+          que deixa o time ver, de relance, se o dia já está comprometido com a outra. */}
+      <select value={local} onChange={e => { setLocal(e.target.value); setConflito('') }} style={{ ...inp, width: '100%', cursor: 'pointer' }}>
+        <option value="">Onde vai ser?</option>
+        {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
+      </select>
+
+      {conflito ? (
+        <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 'var(--r)', padding: '11px 13px' }}>
+          <div style={{ fontSize: 12.5, color: 'var(--amber)', fontWeight: 700, lineHeight: 1.5 }}>{conflito}</div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 9, flexWrap: 'wrap' }}>
+            <button onClick={() => setConflito('')} style={{ ...btnSec, flex: 1 }}>Escolher outro dia</button>
+            <button onClick={() => combinar(true)} disabled={salvando} style={{ ...btnSec, borderColor: 'var(--amber)', color: 'var(--amber)' }}>Marcar mesmo assim</button>
+          </div>
+        </div>
+      ) : (
+        <button onClick={() => combinar(false)} disabled={salvando} style={{ ...btnPri, opacity: salvando ? .6 : 1 }}>
           {salvando ? 'Combinando…' : 'Combinar'}
         </button>
-      </div>
+      )}
+
       {erro && <p style={{ fontSize: 12.5, color: 'var(--red)', margin: 0 }}>{erro}</p>}
       {aviso && <p style={{ fontSize: 12.5, color: 'var(--amber)', margin: 0, lineHeight: 1.5 }}>{aviso}</p>}
       <p style={{ fontSize: 11.5, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>
-        Os encontros seguintes acompanham o deslocamento; a data de fim do contrato não sai do lugar.
+        Combinado, a IA reconfirma com o cliente 2 dias antes — e te avisa se ele não responder.
       </p>
     </div>
   )

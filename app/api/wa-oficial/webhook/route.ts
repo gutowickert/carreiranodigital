@@ -4,6 +4,8 @@ import { foneOficial } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
 import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
 import { classificarTemperatura } from '@/lib/temperatura'
+import { lerRespostaDeReconfirmacao } from '@/lib/reconfirmar'
+import { ORG_CND } from '@/lib/org'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -122,6 +124,15 @@ async function registrarRecebida(m: any, value: any) {
     const { data: ult } = await supabase.from('wa_disparo_envios').select('id').ilike('telefone', `%${sufixo}`).is('respondeu_em', null).order('enviado_em', { ascending: false }).limit(1).maybeSingle()
     if (ult) await supabase.from('wa_disparo_envios').update({ respondeu_em: agora }).eq('id', ult.id)
   }
+
+  // ⚠️ É A RESPOSTA DE UMA RECONFIRMAÇÃO DE ENCONTRO? Isso vem ANTES de qualquer tratamento de
+  // lead: quem responde aqui é CLIENTE EM ENTREGA, que muitas vezes nem está no funil. O clique no
+  // botão volta como texto ("Sim, confirmado" / "Não vou poder"), e quem trata é lib/reconfirmar.
+  // Tratada, a mensagem não precisa de mais nada — a IA de atendimento não tem o que responder a
+  // um "sim" de confirmação, e responder viraria conversa onde já estava resolvido.
+  try {
+    if (texto && await lerRespostaDeReconfirmacao(ORG_CND, tel, texto)) return
+  } catch { /* se falhar, segue o fluxo normal — melhor responder duas vezes que não responder */ }
 
   // LEAD respondeu no canal oficial. MODELO AUTÔNOMO: a IA ATENDE quem responde — NÃO tira o lead da IA.
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.

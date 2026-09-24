@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { diasAte, empurrarPosteriores, ROTEIROS, type Produto } from '@/lib/entrega'
+import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, REGIOES, conflitoDeRegiao, nomeDoLocal, type Produto } from '@/lib/entrega'
 
 // A máquina de estados do compromisso.
 //   combinar  → data e hora acertadas com o cliente (na sessão anterior)
@@ -72,7 +72,32 @@ export async function POST(req: Request) {
       const antes = (marco.data_combinada || marco.data_prevista || '').slice(0, 10)
       const desloc = antes ? diasAte(novaData, antes) : 0
 
+      // ⚠️ ONDE É O ENCONTRO — obrigatório. Se fosse opcional, metade ficaria sem lugar e a agenda
+      // passaria a mentir PARECENDO que sabe, que é pior que a situação de hoje. É o que permite o
+      // time ver, de relance, se o dia já está comprometido com a outra região.
+      const local = (b.local || '').toString()
+      if (!LOCAIS.some(l => l.chave === local)) {
+        return erro('escolhe onde vai ser o encontro — é o que diz pro time se o dia já está comprometido com a outra região')
+      }
+
+      // O CONFLITO DE REGIÃO: avisa, não proíbe. Quem chamou já viu o aviso e mandou `mesmo_assim`.
+      // Exceção legítima existe (9h em Lajeado e 19h em Porto Alegre pode caber num dia), e trava
+      // que não deixa exceção passar é trava que o time contorna por fora do sistema.
+      const { data: doDia } = await sb.from('projeto_marcos')
+        .select('id, local, estado').eq('org_id', org).eq('data_prevista', novaData).neq('id', marcoId)
+      const conf = conflitoDeRegiao(local, (doDia || []) as any)
+      if (conf.conflito && !b.mesmo_assim) {
+        return NextResponse.json({
+          ok: false, precisa_confirmar_regiao: true,
+          error: `Nesse dia já tem ${conf.quantos} atendimento${conf.quantos > 1 ? 's' : ''} em ${REGIOES[conf.outra!].nome}. Não dá tempo do deslocamento pra ${REGIOES[conf.regiao!].nome} no mesmo dia.`,
+        }, { status: 200 })
+      }
+
       await sb.from('projeto_marcos').update({
+        local,
+        // data nova = combinação nova: a reconfirmação anterior não vale mais
+        reconfirmacao_enviada_em: null, reconfirmacao_2a_em: null,
+        reconfirmacao_resposta: null, reconfirmacao_resposta_em: null,
         data_combinada: nova.toISOString(), data_prevista: novaData,
         estado: 'combinado', confirmado_em: null, atualizado_em: agora,
       }).eq('id', marcoId)
@@ -85,7 +110,7 @@ export async function POST(req: Request) {
         if (esbarrouNaAncora) aviso = 'Um dos próximos passos bateu na data de fim do contrato e não foi empurrado. Vale olhar o prazo.'
       }
 
-      await registrar(acao, `${acao === 'combinar' ? '📅 Combinado' : '🔄 Remarcado'}: ${marco.titulo} para ${fmt(nova.toISOString())}${desloc ? ` (${desloc > 0 ? '+' : ''}${desloc} dias)` : ''}.`)
+      await registrar(acao, `${acao === 'combinar' ? '📅 Combinado' : '🔄 Remarcado'}: ${marco.titulo} para ${fmt(nova.toISOString())} — ${nomeDoLocal(local)}${desloc ? ` (${desloc > 0 ? '+' : ''}${desloc} dias)` : ''}.`)
       return ok({ aviso })
     }
 

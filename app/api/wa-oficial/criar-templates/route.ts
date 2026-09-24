@@ -44,15 +44,33 @@ export async function POST(req: NextRequest) {
     const resultados: any[] = []
     for (const t of temps) {
       const { texto, exemplos } = paraMeta(t.corpo || '')
+
+      // BOTÕES DE RESPOSTA RÁPIDA, quando o template pedir (coluna `botoes`, separados por |).
+      //
+      // Serve pra pergunta cuja resposta precisa ser SEM AMBIGUIDADE — a reconfirmação de um
+      // encontro é o caso: com texto livre o cliente responde "acho que sim" ou "só se for de
+      // manhã", e alguém tem que adivinhar. Numa decisão que custa uma viagem, adivinhar é caro.
+      //
+      // O clique volta pro webhook como uma mensagem cujo texto é exatamente o rótulo do botão —
+      // é assim que o motor sabe o que ele respondeu, sem interpretar nada.
+      const botoes = String(t.botoes || '').split('|').map(s => s.trim()).filter(Boolean).slice(0, 3)
+      const componentes: any[] = [{
+        type: 'BODY',
+        text: texto,
+        ...(exemplos.length ? { example: { body_text: [exemplos] } } : {}),
+      }]
+      if (botoes.length) {
+        componentes.push({
+          type: 'BUTTONS',
+          buttons: botoes.map(b => ({ type: 'QUICK_REPLY', text: b.slice(0, 25) })),
+        })
+      }
+
       const body: any = {
         name: t.nome_meta,
         language: 'pt_BR',
         category: (t.categoria || 'marketing').toUpperCase(), // MARKETING | UTILITY
-        components: [{
-          type: 'BODY',
-          text: texto,
-          ...(exemplos.length ? { example: { body_text: [exemplos] } } : {}),
-        }],
+        components: componentes,
       }
       const r = await fetch(`${GRAPH}/${WABA}/message_templates`, {
         method: 'POST', headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },

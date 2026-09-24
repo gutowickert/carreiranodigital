@@ -42,6 +42,10 @@ export async function POST(req: NextRequest) {
       if (restam() > 6000) { const r = await post('/api/ia/roteador-turma', { dryRun: false, confirm: true }); log.push('roteador-turma → ' + (r?.reativados ?? '?') + ' reativados' + (r?.semProxima?.length ? ` ⚠️ ${r.semProxima.length} turma(s) SEM próxima (decidir)` : '')) }
       // sem-cidade → perda em 2 dias: quem recebeu "qual tua cidade?" e não respondeu vira perda (pool de disparo)
       if (restam() > 6000) { const r = await post('/api/ia/sem-cidade-perda', { dryRun: false, confirm: true }); log.push('sem-cidade-perda → ' + (r?.perdidos ?? '?') + ' perdidos (de ' + (r?.candidatos ?? '?') + ')') }
+      // RECONFIRMAR OS ENCONTROS DE ENTREGA — 2 dias antes pergunta pro cliente, 1 dia antes
+      // insiste e avisa quem atende. Sem isso, quem lembra em cima da hora avisa com o time já na
+      // estrada, e o dia se perde. Vai na manhã: mensagem de noite rende menos resposta.
+      if (restam() > 6000) { const r = await post('/api/entregas/reconfirmar', {}); log.push('reconfirmar → ' + (r?.ok ? `${r.enviadas ?? 0} enviadas, ${r.avisados ?? 0} sem resposta` : (r?.motivo || 'erro'))) }
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     } else { // noite
       // limit 5 (era 10): 10 interpretações LLM numa chamada estouravam os 60s → morria sem processar.

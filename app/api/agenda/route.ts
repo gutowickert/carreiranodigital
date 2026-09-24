@@ -3,7 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
-import { ROTEIROS, situacaoMarco, type Produto } from '@/lib/entrega'
+import { ROTEIROS, situacaoMarco, regiaoDoLocal, type Produto } from '@/lib/entrega'
 
 export const maxDuration = 60
 
@@ -58,6 +58,10 @@ type Item = {
   estado?: string | null
   situacao?: string | null
   cor?: string | null
+  local?: string | null
+  regiao?: 'lajeado' | 'poa' | null
+  reconfirmada?: boolean
+  respostaCliente?: string | null
 }
 
 export async function GET(req: Request) {
@@ -100,7 +104,7 @@ export async function GET(req: Request) {
     // Marcos de entrega em aberto. A data combinada sempre acompanha a prevista (a ficha grava as
     // duas juntas), então o corte pra frente pela prevista não perde nada.
     sb.from('projeto_marcos')
-      .select('id,projeto_id,titulo,natureza,estado,data_prevista,data_combinada,duracao_min,responsavel_id')
+      .select('id,projeto_id,titulo,natureza,estado,data_prevista,data_combinada,duracao_min,responsavel_id,local,reconfirmacao_enviada_em,reconfirmacao_resposta')
       .eq('org_id', org).not('estado', 'in', '(concluido,cancelado)').lte('data_prevista', ate.slice(0, 10))
       // só compromisso: encontro com o cliente, ou marco que alguém combinou data de propósito
       .or('natureza.eq.encontro,data_combinada.not.is.null')
@@ -180,6 +184,11 @@ export async function GET(req: Request) {
         inicio: quando, fim: fimCombinado, diaTodo: !m.data_combinada, tipo: m.natureza,
         donoId: dono, publico: false, concluido: false,
         projetoId: m.projeto_id, estado: m.estado, situacao: situacaoMarco(m), cor: r?.cor || null,
+        // ONDE É O ENCONTRO: é o que responde "esse dia já está comprometido?" sem abrir nada.
+        // Dois atendimentos no mesmo dia só cabem na MESMA região — o deslocamento come o resto.
+        local: m.local || null, regiao: regiaoDoLocal(m.local),
+        // o que a IA já perguntou pro cliente, pra tela não pedir o que já foi feito
+        reconfirmada: !!m.reconfirmacao_enviada_em, respostaCliente: m.reconfirmacao_resposta || null,
         participantes: juntos,
       })
     }

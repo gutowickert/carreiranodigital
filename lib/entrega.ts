@@ -222,6 +222,54 @@ export function dataFimContrato(produto: Produto, dataInicio: string, prazoMeses
 export const DIAS_AVISO_CONFIRMAR = 3   // o aviso de reconfirmar aparece 3 dias antes
 export const DIAS_PRAZO_CONFIRMAR = 2   // e o prazo de reconfirmar é até 2 dias antes
 
+// ─────────────────────────────────────────────────── ONDE O ENCONTRO ACONTECE
+//
+// São quatro lugares, mas o que trava o dia são DUAS regiões: dá pra fazer dois atendimentos no
+// mesmo dia na mesma região; em regiões diferentes, não dá tempo do deslocamento.
+//
+// ⚠️ O LUGAR É DO ENCONTRO, NÃO DO CLIENTE. Varia — às vezes a equipe vai até a empresa do cliente
+// pra captar imagens dos produtos pro anúncio.
+
+export type Local = 'sede_lajeado' | 'regiao_lajeado' | 'sede_poa' | 'regiao_poa'
+export type Regiao = 'lajeado' | 'poa'
+
+export const LOCAIS: { chave: Local; nome: string; regiao: Regiao }[] = [
+  { chave: 'sede_lajeado',   nome: 'Nossa sede, em Lajeado',                  regiao: 'lajeado' },
+  { chave: 'regiao_lajeado', nome: 'Na empresa do cliente, região de Lajeado', regiao: 'lajeado' },
+  { chave: 'sede_poa',       nome: 'Nossa sede, em Porto Alegre',             regiao: 'poa' },
+  { chave: 'regiao_poa',     nome: 'Na empresa do cliente, região de POA',     regiao: 'poa' },
+]
+
+export const REGIOES: Record<Regiao, { nome: string; curto: string }> = {
+  lajeado: { nome: 'Lajeado', curto: 'LAJ' },
+  poa: { nome: 'Porto Alegre', curto: 'POA' },
+}
+
+export const regiaoDoLocal = (l?: string | null): Regiao | null =>
+  LOCAIS.find(x => x.chave === l)?.regiao ?? null
+export const nomeDoLocal = (l?: string | null): string | null =>
+  LOCAIS.find(x => x.chave === l)?.nome ?? null
+
+/**
+ * O dia já tem compromisso em OUTRA região?
+ *
+ * ⚠️ AVISA, NÃO PROÍBE — quem chama decide. Exceção legítima sempre aparece (um às 9h em Lajeado e
+ * um às 19h em Porto Alegre pode caber num dia específico), e trava que não deixa exceção passar é
+ * trava que o time aprende a contornar por fora do sistema. O que não pode é marcar sem saber.
+ */
+export function conflitoDeRegiao(
+  local: string | null | undefined,
+  outrosDoDia: { local?: string | null; estado?: string }[],
+): { conflito: boolean; regiao: Regiao | null; outra: Regiao | null; quantos: number } {
+  const regiao = regiaoDoLocal(local)
+  if (!regiao) return { conflito: false, regiao: null, outra: null, quantos: 0 }
+  const outras = outrosDoDia
+    .filter(m => m.estado !== 'cancelado' && m.estado !== 'concluido')
+    .map(m => regiaoDoLocal(m.local))
+    .filter((r): r is Regiao => !!r && r !== regiao)
+  return { conflito: outras.length > 0, regiao, outra: outras[0] ?? null, quantos: outras.length }
+}
+
 /** Quantos dias faltam para a data (negativo = já passou). */
 export function diasAte(dataISO: string, hojeISO?: string): number {
   const hoje = new Date((hojeISO || soData(new Date())) + 'T12:00:00Z').getTime()
