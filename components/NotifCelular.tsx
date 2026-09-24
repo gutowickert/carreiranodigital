@@ -32,6 +32,8 @@ function urlB64ToUint8(base64String: string) {
  */
 export default function NotifCelular() {
   const [estado, setEstado] = useState<'inicial' | 'ok' | 'erro' | 'indisponivel'>('inicial')
+  const [endereco, setEndereco] = useState('')      // o endereço DESTE aparelho, pro teste
+  const [teste, setTeste] = useState('')
 
   // ⚠️ VAI COM O LOGIN. Sem ele o servidor não sabe de QUEM é o aparelho — as três inscrições que
   // existiam estavam todas com o dono em branco, e não havia como responder "o Rick está inscrito?".
@@ -50,6 +52,7 @@ export default function NotifCelular() {
     navigator.serviceWorker.register('/sw.js').then(async (reg) => {
       const sub = await reg.pushManager.getSubscription()
       if (!sub) return                      // nunca ativou: fica o botão
+      setEndereco(sub.endpoint)
       setEstado(await registrar(sub) ? 'ok' : 'inicial')
     }).catch(() => { })
   }, [])
@@ -62,12 +65,36 @@ export default function NotifCelular() {
       // pode já existir (permissão dada, cadastro perdido): reaproveita em vez de criar outra
       const sub = (await reg.pushManager.getSubscription())
         || (await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: urlB64ToUint8(PUB) }))
+      setEndereco(sub.endpoint)
       setEstado(await registrar(sub) ? 'ok' : 'erro')
     } catch { setEstado('erro') }
   }
 
+  // ⚠️ O TESTE É O QUE FALTAVA. "Notificações ativas" sem nada pra clicar deixa quem não recebe
+  // sem saída: não dá pra saber se o problema é o cadastro, o envio ou o aparelho, e não dá nem
+  // pra tentar. Com o botão, a resposta vem em cinco segundos e o aparelho se recadastra sozinho
+  // se o cadastro estiver vencido.
+  async function testar() {
+    setTeste('mandando…')
+    const j = await fetchAuth('/api/push/testar', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ endpoint: endereco }),
+    }).then(r => r.json()).catch(() => null)
+    if (j?.ok) { setTeste('mandei — se não chegar em alguns segundos, o bloqueio é do aparelho'); return }
+    setTeste(j?.error || 'não consegui mandar')
+    if (j?.recadastrar) setEstado('inicial')
+  }
+
   if (estado === 'indisponivel') return null
-  if (estado === 'ok') return <div style={{ fontSize: 11, color: 'var(--green)', marginTop: 8 }}>🔔 Notificações ativas neste aparelho</div>
+  if (estado === 'ok') return (
+    <div style={{ marginTop: 8 }}>
+      <div style={{ fontSize: 11, color: 'var(--green)' }}>🔔 Notificações ativas neste aparelho</div>
+      <button onClick={testar} style={{ marginTop: 5, width: '100%', background: 'transparent', border: '1px solid var(--border-strong)', borderRadius: 6, padding: '5px', fontSize: 11, color: 'var(--text-2)', cursor: 'pointer' }}>
+        testar agora
+      </button>
+      {teste && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 5, lineHeight: 1.4 }}>{teste}</div>}
+    </div>
+  )
   return (
     <>
       <button onClick={ativar} style={{ marginTop: 8, width: '100%', background: '#25D366', border: 'none', borderRadius: 6, padding: '7px', fontSize: 12, color: '#063', fontWeight: 600, cursor: 'pointer' }}>
