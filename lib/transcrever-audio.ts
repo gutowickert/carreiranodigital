@@ -66,7 +66,7 @@ export async function transcreverAudioMsg(msgId: string): Promise<string | null>
  * da proposta com os áudios mudos, e a IA escrevia em cima de quatro mensagens de texto soltas.
  * Era o caso do Patrick Rosa: 6 áudios, nenhum transcrito.
  */
-export async function transcreverAudiosDoLead(org: string, leadId: string, limite = 40): Promise<{ transcritos: number; pendentes: number }> {
+export async function transcreverAudiosDoLead(org: string, leadId: string, limite = 6, segundos = 25): Promise<{ transcritos: number; pendentes: number }> {
   const { data: convs } = await sb.from('wa_conversas').select('id').eq('org_id', org).eq('lead_id', leadId)
   const ids = (convs || []).map((c: any) => c.id)
   if (!ids.length) return { transcritos: 0, pendentes: 0 }
@@ -76,7 +76,20 @@ export async function transcreverAudiosDoLead(org: string, leadId: string, limit
     .order('criado_em', { ascending: false }).limit(limite)
 
   const mudos = (msgs || []).filter((m: any) => !(m.texto || '').trim())
+
+  // ⚠️ TEM RELÓGIO, E O RELÓGIO MANDA. Esta função é chamada de dentro de uma tela que a pessoa
+  // está esperando carregar. Cada áudio é uma ida ao transcritor, de alguns segundos; uma conversa
+  // toda em áudio estoura o tempo da rota, e aí não carrega NADA — nem o material, nem o
+  // orçamento anterior, nem o botão de editar. Melhor devolver a tela com metade dos áudios
+  // transcritos do que não devolver tela.
+  //
+  // O que sobrar não se perde: os áudios novos já viram texto na chegada (webhook), e na próxima
+  // vez que a tela abrir ela pega os que faltaram.
+  const ate = Date.now() + segundos * 1000
   let transcritos = 0
-  for (const m of mudos) if (await transcreverAudioMsg(m.id)) transcritos++
+  for (const m of mudos) {
+    if (Date.now() > ate) break
+    if (await transcreverAudioMsg(m.id)) transcritos++
+  }
   return { transcritos, pendentes: mudos.length - transcritos }
 }
