@@ -106,11 +106,15 @@ function QuandoEOnde({ turma }: { turma: TurmaResumo }) {
       <p className="corpo">
         <strong>{datasDaTurma(turma.data_inicio, turma.data_fim)}</strong>, em {turma.cidade}.
         {horario ? ` ${horario}.` : ''}
-        {/* ⚠️ SÓ O ENDEREÇO. O nome interno da sala ("Sala 1") não diz nada pro cliente, e hoje a
-            sala de Porto Alegre está sem endereço no cadastro — imprimir o nome no lugar seria
-            trocar uma informação que falta por uma que não serve. */}
+        {/* ⚠️ SÓ O ENDEREÇO, NUNCA O NOME DA SALA. "Sala 1" é nome interno e não diz nada a quem
+            vai se deslocar — imprimir isso no lugar do endereço seria trocar uma informação que
+            falta por uma que não serve.
+            E a frase do fim muda conforme o que temos: prometer que "o endereço chega depois"
+            logo abaixo do endereço completo faz o cliente duvidar do que acabou de ler. */}
         {turma.endereco ? ` ${turma.endereco}.` : ''}
-        {' '}Turma pequena — o endereço exato e os detalhes chegam por WhatsApp na confirmação.
+        {turma.endereco
+          ? ' Turma pequena — os detalhes finais chegam por WhatsApp na confirmação.'
+          : ' Turma pequena — o endereço e os detalhes chegam por WhatsApp na confirmação.'}
       </p>
     </div>
   )
