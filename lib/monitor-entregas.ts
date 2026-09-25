@@ -230,3 +230,33 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
 }
 
 export type { Painel, AnuncioPainel }
+
+// ═══════════════════════════════════════════════════════════ o resumo pro WhatsApp
+//
+// O mesmo monitor, em texto curto pra ler no celular: uma linha por cliente com campanha,
+// depois só o que pede atenção e quem contatar. É o relatório de segunda do assistente e
+// a resposta de "como estão meus clientes".
+
+export async function textoResumoMonitor(org: string, dias = LIMITES.janelaDias): Promise<string> {
+  const m = await montarMonitor(org, dias)
+  const brl = (v: number) => 'R$ ' + v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  const pct = (a: number, b: number | null | undefined) => (b ? ` (${a >= b ? '+' : ''}${Math.round(((a - b) / b) * 100)}%)` : '')
+  const linhas: string[] = [`Tráfego dos clientes, últimos ${dias} dias:`]
+  for (const c of m.cards) {
+    if (!c.painel || (c.painel.total.gasto === 0 && c.painel.total.resultados === 0)) continue
+    const t = c.painel.total, a = c.painel.anterior
+    const puxa = c.painel.anuncios.find(x => x.situacao === 'puxando')
+    linhas.push(`• ${c.cliente}: ${t.resultados} ${t.resultados === 1 ? c.painel.nome.um : c.painel.nome.varios}${t.custo != null ? ` a ${brl(t.custo)}` : ''}${pct(t.resultados, a?.resultados)}, ${brl(t.gasto)} investidos${puxa ? `. Puxando: ${puxa.nome}` : ''}${c.anuncios_ativos === 0 ? '. Tudo pausado agora' : ''}.`)
+  }
+  const atencao = m.cards.flatMap(c => c.alertas.filter(a => !['sem_portal', 'sem_valor_cliente'].includes(a.chave)).map(a => ({ c: c.cliente, a })))
+  const verm = atencao.filter(x => x.a.nivel === 'vermelho'), amar = atencao.filter(x => x.a.nivel === 'amarelo')
+  if (verm.length || amar.length) {
+    linhas.push('', 'Atenção:')
+    for (const x of verm) linhas.push(`!! ${x.c}: ${x.a.titulo}${x.a.acao ? `. ${x.a.acao}` : ''}`)
+    for (const x of amar.slice(0, 6)) linhas.push(`• ${x.c}: ${x.a.titulo}`)
+  }
+  if (m.contatar.length) linhas.push('', 'Contatar hoje: ' + [...new Set(m.contatar.map(x => x.cliente))].join(', ') + '.')
+  const enc = m.encontros.slice(0, 5)
+  if (enc.length) linhas.push('', 'Encontros da semana:', ...enc.map(e => `• ${new Date(e.quando).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace('.', '')} ${e.cliente}: ${e.titulo}${e.estado === 'confirmado' ? '' : e.estado === 'combinado' ? (e.reconfirmado ? '' : ' (falta reconfirmar)') : ' (previsto, sem data)'}`))
+  return linhas.join('\n').replace(/—/g, ',')
+}

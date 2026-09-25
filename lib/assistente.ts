@@ -2,7 +2,9 @@ import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { TOOLS, runTool } from '@/lib/agente-tools'
 import { contextoCentral } from '@/lib/contexto-central'
-import { enviarTexto, enviarTemplate, baixarMidia, foneOficial } from '@/lib/whatsapp-oficial'
+import { enviarTexto, enviarTemplate, baixarMidia, foneOficial, uploadMidia, enviarMidia } from '@/lib/whatsapp-oficial'
+import { imagemAgenda, imagemTrafego } from '@/lib/assistente-imagem'
+import { montarMonitor, textoResumoMonitor } from '@/lib/monitor-entregas'
 import { hojeBR, menosDias } from '@/lib/periodos'
 import { LOCAIS } from '@/lib/entrega'
 import { lerPainel } from '@/lib/trafego-cliente'
@@ -60,6 +62,16 @@ export async function enviarAoTime(u: Usuario, texto: string, template?: { nome:
   const r = await enviarTemplate(u.whatsapp, template.nome, 'pt_BR', [{ type: 'body', parameters: template.params.map(t => ({ type: 'text', text: t })) }])
   if (r.ok) await guardar(u, 'assistente', `[template ${template.nome}] ${template.params.join(' · ')}`)
   return { ok: r.ok, via: 'template', error: r.error }
+}
+
+// Imagem (card) com legenda. Só dentro da janela: fora dela a Meta só aceita template.
+export async function enviarImagemAoTime(u: Usuario, png: Buffer, legenda: string) {
+  if (!janelaAberta(u)) return { ok: false, error: 'janela de 24h fechada' }
+  const up = await uploadMidia(png, 'image/png', 'card.png')
+  if (!up.ok || !up.id) return { ok: false, error: up.error || 'upload falhou' }
+  const r = await enviarMidia(u.whatsapp, 'image', up.id, legenda.slice(0, 1024))
+  if (r.ok) await guardar(u, 'assistente', '[card] ' + legenda.slice(0, 300))
+  return { ok: r.ok, via: 'imagem', error: r.error }
 }
 
 async function guardar(u: Usuario, papel: 'usuario' | 'assistente' | 'sistema', texto: string, wamid?: string) {
@@ -130,10 +142,43 @@ export async function bomDia(u: Usuario) {
   partes.push('Me manda o que precisar por aqui, texto ou áudio.')
   const texto = partes.join('\n\n')
 
+  // janela aberta: o card de imagem com a agenda, e o texto vai na legenda (a legenda cabe 1024)
+  if (janelaAberta(u)) {
+    try {
+      const atencao = [...pend.semReconfirmar.map(x => 'Amanhã sem reconfirmação: ' + x), ...pend.atrasados.map(x => 'Sem data marcada: ' + x)]
+      const png = await imagemAgenda({ nome: chamar(u), data: hoje, itens, atencao })
+      const r = await enviarImagemAoTime(u, png, texto.length <= 1000 ? texto : `Bom dia, ${chamar(u)}. Tua agenda de hoje está no card. Me manda o que precisar por aqui.`)
+      if (r.ok) return { ...r, compromissos: itens.length }
+    } catch { /* sem card, vai o texto */ }
+  }
   // fora da janela vai o template curto; a resposta dele abre a janela e aí a agenda completa vai livre
   const primeiro = itens[0] ? `${itens[0].hora} ${itens[0].titulo}` : 'nada marcado'
   const r = await enviarAoTime(u, texto, { nome: TEMPLATE_BOM_DIA, params: [chamar(u), String(itens.length), primeiro.slice(0, 120)] })
   return { ...r, compromissos: itens.length }
+}
+
+// ═══════════════════════════════════════════════════════════ o relatório de tráfego
+
+// O monitor das entregas como card + texto. Só dentro da janela (imagem e texto livre não
+// passam fora dela); fora, fica pro dia em que ele responder o bom dia.
+export async function relatorioTrafego(u: Usuario) {
+  if (!janelaAberta(u)) return { ok: false, error: 'janela de 24h fechada: vai depois que ele responder o bom dia' }
+  const m = await montarMonitor(u.org_id)
+  const linhas = m.cards.filter(c => c.painel && (c.painel.total.gasto > 0 || c.painel.total.resultados > 0)).map(c => {
+    const t = c.painel!.total, a = c.painel!.anterior
+    return { cliente: c.cliente, nivel: c.nivel, fase: c.faseLabel, resultados: t.resultados, custo: t.custo, gasto: t.gasto,
+      delta: a && a.resultados ? Math.round(((t.resultados - a.resultados) / a.resultados) * 100) : null, tipo: c.painel!.nome.varios,
+      puxando: c.painel!.anuncios.find(x => x.situacao === 'puxando')?.nome || null, parado: c.anuncios_ativos === 0 && t.gasto > 0 }
+  })
+  const atencao = m.cards.flatMap(c => c.alertas.filter(a => !['sem_portal', 'sem_valor_cliente'].includes(a.chave)).map(a => ({ nivel: a.nivel, texto: `${c.cliente}: ${a.titulo}` })))
+    .sort((a, b) => (a.nivel === 'vermelho' ? 0 : 1) - (b.nivel === 'vermelho' ? 0 : 1))
+  const texto = await textoResumoMonitor(u.org_id)
+  try {
+    const png = await imagemTrafego({ dias: m.dias, de: m.de, ate: m.ate, resumo: m.resumo, linhas, atencao, contatar: [...new Set(m.contatar.map(x => x.cliente))] })
+    const r = await enviarImagemAoTime(u, png, texto.length <= 1000 ? texto : texto.slice(0, 990) + '…')
+    if (r.ok) return r
+  } catch { /* sem card, vai o texto */ }
+  return enviarAoTime(u, texto)
 }
 
 // ═══════════════════════════════════════════════════════════ responder
