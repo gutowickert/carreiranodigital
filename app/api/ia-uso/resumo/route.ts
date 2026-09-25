@@ -21,6 +21,11 @@ export async function GET(req: Request) {
 
   const porEvento: Record<string, { chamadas: number; custo: number; input: number; output: number; cache_read: number }> = {}
   const porDia: Record<string, number> = {}
+  // ⚠️ A MÁQUINA É A ÚNICA IA QUE UMA PESSOA OPERA À MÃO — e é a que mais custa por chamada.
+  // "Quanto o Rick gastou hoje?" não tinha resposta: o registro dizia o quê, não quem. Agora a
+  // rota grava `quem` (e-mail) em cada chamada, e aqui vira a tabela por pessoa. Só pra ela: os
+  // motores automáticos não têm dono.
+  const porPessoa: Record<string, { chamadas: number; custo: number; ultimo: string }> = {}
   let custoTotal = 0, chamadasTotal = 0
   for (const l of linhas) {
     const p = l.payload || {}
@@ -31,6 +36,11 @@ export async function GET(req: Request) {
     custoTotal += c; chamadasTotal++
     const dia = (l.recebido_em || '').slice(0, 10)
     porDia[dia] = (porDia[dia] || 0) + c
+    if (ev === 'maquina') {
+      const q = String(p.quem || '(antes de registrar quem)')
+      const pp = porPessoa[q] = porPessoa[q] || { chamadas: 0, custo: 0, ultimo: '' }
+      pp.chamadas++; pp.custo += c; if (!pp.ultimo || l.recebido_em > pp.ultimo) pp.ultimo = l.recebido_em
+    }
   }
 
   const dias = Object.keys(porDia).length || 1
@@ -48,6 +58,9 @@ export async function GET(req: Request) {
     custo_dia_usd: Math.round((custoTotal / dias) * 100) / 100,
     projecao_mes_usd: Math.round((custoTotal / dias) * 30 * 100) / 100,
     por_evento: eventos,
+    por_pessoa: Object.entries(porPessoa)
+      .map(([quem, v]) => ({ quem, chamadas: v.chamadas, custo_usd: Math.round(v.custo * 100) / 100, ultimo: v.ultimo }))
+      .sort((a, b) => b.custo_usd - a.custo_usd),
     dias_com_dado: Object.keys(porDia).length,
   })
 }

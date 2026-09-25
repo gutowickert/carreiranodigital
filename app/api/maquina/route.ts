@@ -67,7 +67,10 @@ export async function POST(req: NextRequest) {
             // "medium": pensa o bastante pra uma peça boa sem levar o tempo de um problema de
             // matemática. "high" levou quase três minutos numa página.
             output_config: { effort: 'medium' },
-            system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral' } }],
+            // ⚠️ CACHE DE 1 HORA, NÃO DE 5 MINUTOS. Numa conversa de 42 min o Rick pagou o "acordar"
+            // 6 vezes (US$ 0,85) porque parava mais de 5 min entre mensagens. Gravar por 1h custa o
+            // dobro por gravação e acontece uma vez — pra uso humano, que tem pausa, sai mais barato.
+            system: [{ type: 'text', text: sys, cache_control: { type: 'ephemeral', ttl: '1h' } }],
             tools: FERRAMENTAS_MAQUINA as any,
             messages,
           })
@@ -77,7 +80,7 @@ export async function POST(req: NextRequest) {
             if (b.type === 'server_tool_use' && b.name === 'web_search') manda('pesquisando', { q: b.input?.query || '' })
           })
           const resp = await stream.finalMessage()
-          await logIaUso('maquina', MODELO, resp.usage).catch(() => null)
+          await logIaUso('maquina', MODELO, resp.usage, { quem: perfil.email || perfil.nome }).catch(() => null)
           console.log(`[maquina] volta ${passo + 1}: ${resp.stop_reason} | ${(resp.content as any[]).map(b => b.type + (b.name ? ':' + b.name : '')).join(', ')} | in ${resp.usage.input_tokens} out ${resp.usage.output_tokens}`)
 
           for (const b of resp.content as any[]) {

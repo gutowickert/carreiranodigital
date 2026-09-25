@@ -61,7 +61,28 @@ export default function IaUso() {
                   </tbody>
                 </table>
               </div>
-              <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 12 }}>* Custo estimado pelos preços dos modelos (Sonnet $3/$15, Haiku $1/$5, Opus $5/$25 por 1M tokens). R$ ~5,50/USD. {d.dias_com_dado} dia(s) com dado.</p>
+              {d.por_pessoa?.length ? (
+                <div style={{ ...card, padding: 0, overflow: 'hidden', marginTop: 16 }}>
+                  <div style={{ padding: '12px 16px', fontSize: 13, fontWeight: 700, color: 'var(--text)', borderBottom: '1px solid var(--border)' }}>A Máquina, por pessoa</div>
+                  <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <thead><tr style={{ color: 'var(--text-faint)', textAlign: 'left' }}>
+                      {['Quem', 'Chamadas', 'Custo', 'Último uso'].map(h => <th key={h} style={{ padding: '8px 16px', fontWeight: 600 }}>{h}</th>)}
+                    </tr></thead>
+                    <tbody>
+                      {d.por_pessoa.map((p: any) => (
+                        <tr key={p.quem} style={{ borderTop: '1px solid var(--border)', color: 'var(--text)' }}>
+                          <td style={{ padding: '8px 16px', fontWeight: 600 }}>{p.quem}</td>
+                          <td style={{ padding: '8px 16px' }}>{p.chamadas.toLocaleString('pt-BR')}</td>
+                          <td style={{ padding: '8px 16px' }}>{usd(p.custo_usd)} <span style={{ color: 'var(--text-faint)' }}>· {brl(p.custo_usd)}</span></td>
+                          <td style={{ padding: '8px 16px', color: 'var(--text-2)' }}>{p.ultimo ? new Date(p.ultimo).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : ''}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '10px 16px' }}>Uma chamada é uma volta da máquina (uma mensagem pode ter várias, quando ela consulta o sistema ou pesquisa). "Antes de registrar quem" é o uso de antes desta tela existir.</p>
+                </div>
+              ) : null}
+              <p style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 12 }}>* Custo estimado pelos preços dos modelos (Opus 5 $5/$25, Sonnet 5 $2/$10, Sonnet 4.6 $3/$15, Haiku $1/$5 por 1M tokens). R$ ~5,50/USD. {d.dias_com_dado} dia(s) com dado.</p>
             </>
           )}
     </div>
