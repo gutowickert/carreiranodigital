@@ -51,5 +51,5 @@ export async function combinarMarco(org: string, marcoId: string, dataHora: stri
 
   const fmt = nova.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
   await sb.from('projeto_andamentos').insert({ org_id: org, projeto_id: marco.projeto_id, marco_id: marcoId, tipo: acao, observacao: `${acao === 'combinar' ? '📅 Combinado' : '🔄 Remarcado'}: ${marco.titulo} para ${fmt} — ${nomeDoLocal(local as Local)}${desloc ? ` (${desloc > 0 ? '+' : ''}${desloc} dias)` : ''}.`, autor: opts.autor || null })
-  return { ok: true, aviso, quando: nova.toISOString(), local: nomeDoLocal(local as Local) }
+  return { ok: true, aviso, quando: nova.toISOString(), local: nomeDoLocal(local as Local) || local }
 }

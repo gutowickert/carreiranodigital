@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { ROTEIROS, type Produto } from '@/lib/entrega'
+import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, type Produto } from '@/lib/entrega'
 import { combinarMarco } from '@/lib/marco-acoes'
 
 // A máquina de estados do compromisso.
