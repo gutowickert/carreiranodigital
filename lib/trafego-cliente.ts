@@ -274,9 +274,11 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   const anuncios = Object.values(pa).map(x => ({ ...x, custo: x.resultados ? x.gasto / x.resultados : null, ctr: x.impressoes ? (x.cliques / x.impressoes) * 100 : null }))
   const media = total.custo
   for (const x of anuncios) {
+    // "puxando" pede pelo menos 3 resultados: com 1 conversa e R$ 7 gastos o custo unitário
+    // sai baixo por acaso, e o selo viraria mentira. "queimando" pede ter gastado de verdade
+    // (10% do total) pra não condenar anúncio que acabou de entrar no ar.
     if (x.gasto === 0) x.situacao = 'parado'
     else if (media != null && x.resultados >= 3 && x.custo! <= media * 1.15) x.situacao = 'puxando'
-    else if (media != null && x.resultados >= 1 && x.custo! <= media * 0.8) x.situacao = 'puxando'
     else if (x.gasto >= total.gasto * 0.1 && (x.resultados === 0 || (media != null && x.custo! >= media * 2))) x.situacao = 'queimando'
   }
   anuncios.sort((a, b) => b.resultados - a.resultados || b.gasto - a.gasto)
