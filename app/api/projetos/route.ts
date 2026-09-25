@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
+import { criarProjeto } from '@/lib/criar-projeto'
 import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, type Produto } from '@/lib/entrega'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
@@ -87,69 +88,16 @@ export async function POST(req: Request) {
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
     const org = await orgDaRequest(auth)
     const b = await req.json().catch(() => ({} as any))
-
-    const cliente = (b.cliente || '').toString().trim()
-    const produto = (b.produto || '').toString() as Produto
-    const dataInicio = (b.data_inicio || '').toString().slice(0, 10)
-    if (!cliente) return NextResponse.json({ ok: false, error: 'informe o cliente' }, { status: 200 })
-    if (!ROTEIROS[produto]) return NextResponse.json({ ok: false, error: 'produto inválido' }, { status: 200 })
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(dataInicio)) return NextResponse.json({ ok: false, error: 'informe a data de início' }, { status: 200 })
-
-    const r = ROTEIROS[produto]
-    const prazo = b.prazo_meses != null && b.prazo_meses !== '' ? Number(b.prazo_meses) : r.prazoMeses
-
-    // quem mais responde pelo projeto, já na criação (antes só dava pra incluir depois, na ficha).
-    // Mesma validação do PATCH da ficha: só pessoa ativa da empresa, sem repetir o responsável.
-    let participantes: string[] = []
-    if (Array.isArray(b.participantes) && b.participantes.length) {
-      const validos = new Set((await pessoasAtivas(org)).map(x => x.id))
-      participantes = [...new Set(b.participantes.map((x: any) => String(x)))]
-        .filter(x => validos.has(x as string) && x !== b.responsavel_id) as string[]
-    }
-
-    const { data: proj, error } = await sb.from('projetos').insert({
-      org_id: org,
-      lead_id: b.lead_id || null,
-      cliente: cliente.slice(0, 120),
-      whatsapp: (b.whatsapp || '').toString().replace(/\D/g, '') || null,
-      produto,
-      data_inicio: dataInicio,
-      responsavel_id: b.responsavel_id || null,
-      participantes,
-      prazo_meses: prazo,
-      fim_tipo: ['encerra', 'renegocia', 'manutencao'].includes(b.fim_tipo) ? b.fim_tipo : r.fimTipo,
-      aviso_fim_dias: b.aviso_fim_dias != null ? Number(b.aviso_fim_dias) : r.avisoFimDias,
-      data_fim: dataFimContrato(produto, dataInicio, prazo),
-      mensalidade_dia: b.mensalidade_dia != null && b.mensalidade_dia !== '' ? Number(b.mensalidade_dia) : null,
-      mensalidade_valor: b.mensalidade_valor != null && b.mensalidade_valor !== '' ? Number(b.mensalidade_valor) : null,
-      fase: r.fases[0]?.chave || null,
-      status: 'ativo',
-      observacoes: (b.observacoes || '').toString().slice(0, 2000) || null,
-    }).select('*').single()
-    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
-
-    // marco nasce sem dono: herda o responsável do projeto (a agenda faz esse fallback), e trocar o
-    // responsável do projeto depois leva todos junto. Dono próprio só quando alguém escolhe na ficha.
-    const marcos = marcosDoRoteiro(produto, dataInicio).map(m => ({ ...m, org_id: org, projeto_id: proj.id, responsavel_id: null }))
-    await sb.from('projeto_marcos').insert(marcos)
-
-    await sb.from('projeto_andamentos').insert({
-      org_id: org, projeto_id: proj.id, tipo: 'criado',
-      observacao: `Projeto de ${r.nome} criado — início em ${dataInicio.split('-').reverse().join('/')}, ${marcos.length} marcos no roteiro.`,
-      autor: (b.autor || '').toString() || null,
+    const num = (v: any) => (v == null || v === '' ? null : Number(v))
+    // a criação em si vive em lib/criar-projeto.ts: é o mesmo caminho do assistente do WhatsApp
+    const r = await criarProjeto(org, {
+      cliente: (b.cliente || '').toString(), produto: (b.produto || '').toString() as Produto, data_inicio: (b.data_inicio || '').toString(),
+      whatsapp: b.whatsapp, lead_id: b.lead_id || null, responsavel_id: b.responsavel_id || null, participantes: Array.isArray(b.participantes) ? b.participantes : [],
+      prazo_meses: num(b.prazo_meses), fim_tipo: b.fim_tipo || null, aviso_fim_dias: num(b.aviso_fim_dias),
+      mensalidade_dia: num(b.mensalidade_dia), mensalidade_valor: num(b.mensalidade_valor), observacoes: b.observacoes || null, autor: (b.autor || '').toString() || null,
     })
-
-    // marca no lead que ele virou entrega (não quebra se a coluna não existir)
-    if (b.lead_id) {
-      try {
-        await sb.from('lead_andamentos').insert({
-          lead_id: b.lead_id, tipo: 'entrega',
-          observacao: `📦 Entrou em entrega: ${r.nome}, início ${dataInicio.split('-').reverse().join('/')}.`,
-        })
-      } catch { /* segue */ }
-    }
-
-    return NextResponse.json({ ok: true, id: proj.id, marcos: marcos.length })
+    if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 200 })
+    return NextResponse.json({ ok: true, id: r.id, marcos: r.marcos })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

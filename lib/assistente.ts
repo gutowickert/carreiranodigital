@@ -6,7 +6,8 @@ import { enviarTexto, enviarTemplate, baixarMidia, foneOficial, uploadMidia, env
 import { imagemAgenda, imagemTrafego } from '@/lib/assistente-imagem'
 import { montarMonitor, textoResumoMonitor } from '@/lib/monitor-entregas'
 import { hojeBR, menosDias } from '@/lib/periodos'
-import { LOCAIS } from '@/lib/entrega'
+import { LOCAIS, ROTEIROS, type Produto, type Local } from '@/lib/entrega'
+import { criarProjeto } from '@/lib/criar-projeto'
 import { lerPainel } from '@/lib/trafego-cliente'
 import { impostoMetaPct } from '@/lib/imposto-meta'
 
@@ -65,12 +66,13 @@ export async function enviarAoTime(u: Usuario, texto: string, template?: { nome:
 }
 
 // Imagem (card) com legenda. Só dentro da janela: fora dela a Meta só aceita template.
-export async function enviarImagemAoTime(u: Usuario, png: Buffer, legenda: string) {
+export async function enviarImagemAoTime(u: Usuario, png: Buffer, legenda?: string) {
   if (!janelaAberta(u)) return { ok: false, error: 'janela de 24h fechada' }
   const up = await uploadMidia(png, 'image/png', 'card.png')
   if (!up.ok || !up.id) return { ok: false, error: up.error || 'upload falhou' }
-  const r = await enviarMidia(u.whatsapp, 'image', up.id, legenda.slice(0, 1024))
-  if (r.ok) await guardar(u, 'assistente', '[card] ' + legenda.slice(0, 300))
+  // o Guto pediu: quando vem card, vem só o card, sem texto embaixo
+  const r = await enviarMidia(u.whatsapp, 'image', up.id, legenda ? legenda.slice(0, 1024) : undefined)
+  if (r.ok) await guardar(u, 'assistente', '[card] ' + (legenda || '').slice(0, 300))
   return { ok: r.ok, via: 'imagem', error: r.error }
 }
 
@@ -147,7 +149,7 @@ export async function bomDia(u: Usuario) {
     try {
       const atencao = [...pend.semReconfirmar.map(x => 'Amanhã sem reconfirmação: ' + x), ...pend.atrasados.map(x => 'Sem data marcada: ' + x)]
       const png = await imagemAgenda({ nome: chamar(u), data: hoje, itens, atencao })
-      const r = await enviarImagemAoTime(u, png, texto.length <= 1000 ? texto : `Bom dia, ${chamar(u)}. Tua agenda de hoje está no card. Me manda o que precisar por aqui.`)
+      const r = await enviarImagemAoTime(u, png)
       if (r.ok) return { ...r, compromissos: itens.length }
     } catch { /* sem card, vai o texto */ }
   }
@@ -175,7 +177,7 @@ export async function relatorioTrafego(u: Usuario) {
   const texto = await textoResumoMonitor(u.org_id)
   try {
     const png = await imagemTrafego({ dias: m.dias, de: m.de, ate: m.ate, resumo: m.resumo, linhas, atencao, contatar: [...new Set(m.contatar.map(x => x.cliente))] })
-    const r = await enviarImagemAoTime(u, png, texto.length <= 1000 ? texto : texto.slice(0, 990) + '…')
+    const r = await enviarImagemAoTime(u, png)
     if (r.ok) return r
   } catch { /* sem card, vai o texto */ }
   return enviarAoTime(u, texto)
@@ -206,6 +208,7 @@ const TOOLS_AGENDA = [
   { name: 'anotar_lead', description: 'GRAVA uma nota no histórico de um lead ("anota no lead da Jessica que..."). Grava direto.', input_schema: { type: 'object', properties: { nome: { type: 'string' }, texto: { type: 'string' } }, required: ['nome', 'texto'] } },
   { name: 'trafego_clientes', description: 'RESUMO do tráfego de TODOS os clientes das entregas (Deu Venda, CRM) num período, lido do painel de cada um: investido, conversas, custo por conversa, melhor anúncio e a análise escrita. Use pra "como estão meus clientes", "resumo do tráfego dos clientes". Default: últimos 7 dias.', input_schema: { type: 'object', properties: { de: { type: 'string', description: 'YYYY-MM-DD' }, ate: { type: 'string', description: 'YYYY-MM-DD' } } } },
   { name: 'trafego_cliente', description: 'O painel completo de UM cliente das entregas: totais, comparação com o período anterior, cada anúncio (puxando/queimando), o que foi feito, conquistas. Use pra "como tá o tráfego da Dani".', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, de: { type: 'string' }, ate: { type: 'string' } }, required: ['cliente'] } },
+  { name: 'criar_entrega', description: 'CADASTRA um cliente novo nas ENTREGAS (cria o projeto com todos os marcos do roteiro e já põe a sessão de implantação na agenda). Use quando ele fechar uma venda: "cadastra o Fulano no Deu Venda, sessão terça às 14h na sede de POA". Grava direto. Se faltar a data/hora da sessão ou o lugar, pergunte antes.', input_schema: { type: 'object', properties: { cliente: { type: 'string', description: 'nome do cliente ou da empresa' }, whatsapp: { type: 'string' }, produto: { type: 'string', description: 'deu_venda (padrão), crm, combo (Deu Venda + CRM + Tráfego) ou crm_trafego' }, sessao: { type: 'string', description: 'data e hora da sessão de implantação, YYYY-MM-DDTHH:MM (Brasília). É a data de início do contrato.' }, local: { type: 'string', description: 'sede_lajeado | regiao_lajeado (na empresa do cliente, região de Lajeado) | sede_poa | regiao_poa' }, lead: { type: 'string', description: 'nome do lead de origem no CRM, se houver (liga a entrega ao card)' }, mensalidade_valor: { type: 'number' }, observacoes: { type: 'string' } }, required: ['cliente', 'sessao', 'local'] } },
   { name: 'registrar_vendas_cliente', description: 'GRAVA no placar de um cliente do Deu Venda/CRM as vendas e o faturamento de um mês ("a Dani fechou 3 vendas esse mês"). Grava direto; o painel do cliente atualiza.', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, mes: { type: 'string', description: 'YYYY-MM, default mês atual' }, vendas: { type: 'number' }, faturamento: { type: 'number' }, observacao: { type: 'string' } }, required: ['cliente'] } },
 ]
 
@@ -239,6 +242,27 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     const { error } = await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'nota', observacao: `📝 ${chamar(u)} (pelo WhatsApp): ${input.texto}` })
     if (error) return { erro: error.message }
     return { ok: true, lead: lead.nome }
+  }
+  if (name === 'criar_entrega') {
+    const produto = (String(input.produto || 'deu_venda') as Produto)
+    if (!ROTEIROS[produto]) return { erro: 'produto inválido: use deu_venda, crm, combo ou crm_trafego' }
+    const local = String(input.local || '') as Local
+    if (!LOCAIS.some(l => l.chave === local)) return { erro: 'local inválido: sede_lajeado, regiao_lajeado, sede_poa ou regiao_poa' }
+    const sessao = new Date(String(input.sessao).length <= 16 ? `${input.sessao}:00-03:00` : String(input.sessao))
+    if (isNaN(sessao.getTime())) return { erro: 'data/hora da sessão inválida' }
+    let lead_id: string | null = null
+    if (input.lead) {
+      const { data } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', u.org_id).ilike('nome', `%${input.lead}%`).order('atualizado_em', { ascending: false }).limit(2)
+      if (data?.length === 1 || data?.find(l => l.nome.toLowerCase() === String(input.lead).toLowerCase())) { const l = data.find(x => x.nome.toLowerCase() === String(input.lead).toLowerCase()) || data[0]; lead_id = l.id; if (!input.whatsapp) input.whatsapp = l.whatsapp }
+      else if (data && data.length > 1) return { erro: 'achei mais de um lead: ' + data.map(l => l.nome).join(' | ') + '. Qual?' }
+    }
+    const r = await criarProjeto(u.org_id, {
+      cliente: String(input.cliente), produto, data_inicio: sessao.toLocaleDateString('en-CA', { timeZone: TZ }),
+      whatsapp: input.whatsapp || null, lead_id, responsavel_id: u.id, sessao_em: sessao.toISOString(), local,
+      mensalidade_valor: input.mensalidade_valor != null ? Number(input.mensalidade_valor) : null, observacoes: input.observacoes || null, autor: chamar(u) + ' (WhatsApp)',
+    })
+    if (!r.ok) return { erro: r.error }
+    return { ok: true, id: r.id, cliente: r.cliente, produto: ROTEIROS[produto].nome, marcos: r.marcos, sessao: sessao.toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }), local: LOCAIS.find(l => l.chave === local)?.nome, lead_ligado: !!lead_id, ficha: `${origin}/dashboard/entregas/${r.id}` }
   }
   if (name === 'registrar_vendas_cliente') {
     const { data } = await sb.from('projetos').select('id, cliente').eq('org_id', u.org_id).in('status', ['ativo', 'manutencao']).ilike('cliente', `%${input.cliente}%`).limit(2)
@@ -282,7 +306,7 @@ COMO FALAR: é WhatsApp. Respostas curtas, diretas, em português, sem markdown 
 O QUE VOCÊ FAZ:
 1. Responde perguntas sobre a empresa com as ferramentas de dados (vendas, leads, financeiro, tráfego, clientes das entregas, turmas). Nunca invente número: se a ferramenta não trouxe, diga que não achou.
 2. Agenda: 'minha_agenda' pra ver; 'marcar' pra gravar reunião/lembrete; 'desmarcar' pra tirar. Você GRAVA DIRETO e confirma em uma linha ("Marcado: quinta 02/10, 14h, reunião com o Moacir, sede de POA."). Se ele disser que errou, use 'desmarcar' e grave de novo. Interprete datas relativas ("quinta", "amanhã", "semana que vem") a partir de hoje; sem horário, pergunte. Encontros com CLIENTES das entregas (projeto_marcos) você só lê; marcar esses é pela ficha do sistema.
-3. Tráfego dos clientes das entregas: 'trafego_clientes' (todos, resumo) e 'trafego_cliente' (um, completo). Ao resumir vários, uma linha por cliente: nome, investido, conversas, custo, melhor anúncio; depois só o que pede atenção. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
+3. 'criar_entrega' cadastra um cliente novo nas entregas (cria o projeto, os marcos e a sessão na agenda). Precisa de cliente, data/hora da sessão e lugar (sede ou região, Lajeado ou POA); sem isso, pergunte. Produto padrão Deu Venda. Confirme em uma linha com a data da sessão e diga que a ficha está no sistema. Tráfego dos clientes das entregas: 'trafego_clientes' (todos, resumo) e 'trafego_cliente' (um, completo). Ao resumir vários, uma linha por cliente: nome, investido, conversas, custo, melhor anúncio; depois só o que pede atenção. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
 4. Ferramentas 'propor_*' do agente interno NÃO servem aqui (não há cartão pra confirmar no WhatsApp): se ele pedir despesa, mudança de fluxo ou regra da IA de vendas, diga que isso se faz pela tela do sistema.
 
 Quando gravar algo, a resposta é só a confirmação do que foi gravado. Quando responder pergunta, vá direto ao número. Se a mensagem veio de áudio transcrito e ficou ambígua, pergunte em vez de adivinhar.`
