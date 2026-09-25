@@ -245,3 +245,22 @@ export async function getAlcanceTotal(conta: string, since: string, until: strin
     return v != null ? parseInt(v, 10) : null
   } catch { return null }
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// O ESTADO DA CONTA: ativa ou não, e quanto tem de saldo (pré-pago). É o primeiro
+// alerta do monitor das entregas: "conta sem verba" é o que mais para uma campanha
+// sem ninguém perceber. Uma chamada leve por cliente.
+
+export type StatusConta = { ok: boolean; error?: string; nome?: string; moeda?: string; status?: number; ativa?: boolean; prepago?: boolean; saldo?: number | null; saldo_texto?: string | null }
+
+export async function getStatusConta(conta: string): Promise<StatusConta> {
+  if (!TOKEN) return { ok: false, error: 'Falta FB_ADS_TOKEN' }
+  const acct = 'act_' + String(conta || '').replace(/\D/g, '')
+  try {
+    const j: any = await fetch(`${GRAPH}/${acct}?fields=name,currency,account_status,balance,is_prepay_account,funding_source_details&access_token=${encodeURIComponent(TOKEN)}`).then(r => r.json())
+    if (j?.error) return { ok: false, error: traduzErroMeta(j.error) }
+    // `balance` vem em centavos. No pré-pago é o que sobra pra gastar; no pós-pago é o que está devendo.
+    const saldo = j.balance != null ? Number(j.balance) / 100 : null
+    return { ok: true, nome: j.name, moeda: j.currency, status: j.account_status, ativa: j.account_status === 1, prepago: !!j.is_prepay_account, saldo, saldo_texto: j.funding_source_details?.display_string || null }
+  } catch (e: any) { return { ok: false, error: e?.message || 'falha ao ler a Meta' } }
+}
