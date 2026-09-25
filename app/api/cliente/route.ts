@@ -3,7 +3,8 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { ROTEIROS, type Produto } from '@/lib/entrega'
 import { getInsightsConta, comImposto } from '@/lib/meta-ads'
 import { impostoMetaPct } from '@/lib/imposto-meta'
-import { periodoAnterior } from '@/lib/periodos'
+import { periodoAnterior, menosDias } from '@/lib/periodos'
+import { sincronizarProjeto, lerPainel } from '@/lib/trafego-cliente'
 
 // ÁREA DO CLIENTE — o que o assinante vê do próprio projeto (/cliente?k=…).
 // Sem login: a chave do link (projetos.portal_chave) abre UM projeto, e só ele.
@@ -25,6 +26,22 @@ export async function GET(req: Request) {
     const sp = new URL(req.url).searchParams
     const p = await projetoDaChave(sp.get('k'))
     if (!p) return NextResponse.json({ ok: false, error: 'link inválido ou desativado' }, { status: 403 })
+
+    // O PAINEL: veredito, funil, anúncios, o que a gente fez, placar. Lê do banco, não da
+    // Meta. Se o projeto nunca foi sincronizado (ou o último dado é de antes de ontem),
+    // sincroniza agora, uma vez, pra primeira abertura não vir vazia antes do cron rodar.
+    if (sp.get('so') === 'painel') {
+      if (!p.ad_account_id) return NextResponse.json({ ok: false, error: 'sem conta de anúncio' })
+      const hoje = hojeBR()
+      let de = ehData(sp.get('de')) ? sp.get('de')! : String(p.data_inicio).slice(0, 10)
+      let ate = ehData(sp.get('ate')) ? sp.get('ate')! : hoje
+      const { data: ult } = await sb.from('trafego_anuncios_dia').select('data').eq('projeto_id', p.id).order('data', { ascending: false }).limit(1)
+      const ultimoDia = ult?.[0]?.data ? String(ult[0].data).slice(0, 10) : null
+      if (!ultimoDia) await sincronizarProjeto(p as any, { completo: true }).catch(() => null)
+      else if (ultimoDia < menosDias(hoje, 1)) await sincronizarProjeto(p as any).catch(() => null)
+      const pct = await impostoMetaPct(p.org_id)
+      return NextResponse.json(await lerPainel(p as any, de, ate, pct))
+    }
 
     // só o tráfego de um período (a tela troca o período sem recarregar o resto)
     if (sp.get('so') === 'meta') {
@@ -71,6 +88,7 @@ export async function GET(req: Request) {
         mensalidade_dia: p.mensalidade_dia, mensalidade_valor: p.mensalidade_valor,
         meta_objetivo: p.meta_objetivo, meta_leads: p.meta_leads, meta_vendas: p.meta_vendas, meta_faturamento: p.meta_faturamento,
         tem_conta_anuncio: !!p.ad_account_id,
+        valor_cliente: p.valor_cliente, alvo_custo_resultado: p.alvo_custo_resultado,
       },
       marcos: (marcos || []).map(({ chave, ...m }) => ({ ...m, descricao: descricao[chave] || '' })),
       pendencias: pendencias || [],

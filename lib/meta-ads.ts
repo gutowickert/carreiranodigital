@@ -153,3 +153,95 @@ function traduzErroMeta(err: any): string {
   if (code === 190) return 'O token da Meta expirou ou foi revogado — precisa gerar outro.'
   return err?.message || 'erro da Meta'
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// POR ANÚNCIO, POR DIA. É o que a rotina diária grava em trafego_anuncios_dia pra
+// área do cliente responder "qual anúncio está funcionando?". Traz também o que a
+// campanha considera resultado (conversa, lead ou compra), porque o painel fala
+// na língua do dono e o número que importa muda com o objetivo.
+
+export type AnuncioDia = {
+  data: string
+  campaign_id: string; campaign_name: string
+  adset_id: string; adset_name: string
+  ad_id: string; ad_name: string
+  objective: string
+  gasto: number; impressoes: number; alcance: number; cliques: number
+  conversas: number; leads: number; compras: number
+}
+
+const LEAD = ['lead', 'onsite_conversion.lead_grouped', 'leadgen_grouped', 'leadgen.other', 'offsite_conversion.fb_pixel_lead']
+const COMPRA = ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase']
+
+export async function getAnunciosDia(conta: string, since: string, until: string): Promise<{ ok: boolean; error?: string; linhas: AnuncioDia[] }> {
+  if (!TOKEN) return { ok: false, error: 'Falta FB_ADS_TOKEN', linhas: [] }
+  const acct = 'act_' + String(conta || '').replace(/\D/g, '')
+  if (acct === 'act_') return { ok: false, error: 'projeto sem conta de anúncio', linhas: [] }
+  const tr = encodeURIComponent(JSON.stringify({ since, until }))
+  const fields = 'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,objective,spend,impressions,reach,clicks,actions'
+  let url: string | null = `${GRAPH}/${acct}/insights?level=ad&fields=${fields}&time_range=${tr}&time_increment=1&limit=500&access_token=${encodeURIComponent(TOKEN)}`
+  const linhas: AnuncioDia[] = []
+  try {
+    // a Meta pagina: segue o `paging.next` até acabar (30 dias × 20 anúncios passa de 500 linhas)
+    for (let pagina = 0; url && pagina < 20; pagina++) {
+      const json: any = await fetch(url).then(r => r.json())
+      if (json?.error) return { ok: false, error: traduzErroMeta(json.error), linhas }
+      for (const r of (json.data || [])) {
+        linhas.push({
+          data: r.date_start,
+          campaign_id: r.campaign_id || '', campaign_name: r.campaign_name || '(sem campanha)',
+          adset_id: r.adset_id || '', adset_name: r.adset_name || '(sem conjunto)',
+          ad_id: r.ad_id || '', ad_name: r.ad_name || '(sem anúncio)',
+          objective: r.objective || '',
+          gasto: parseFloat(r.spend || '0'),
+          impressoes: parseInt(r.impressions || '0', 10),
+          alcance: parseInt(r.reach || '0', 10),
+          cliques: parseInt(r.clicks || '0', 10),
+          conversas: somaAcao(r.actions, CONVERSA),
+          leads: somaAcao(r.actions, LEAD),
+          compras: somaAcao(r.actions, COMPRA),
+        })
+      }
+      url = json?.paging?.next || null
+    }
+    return { ok: true, linhas: linhas.filter(l => l.ad_id) }
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'falha ao ler a Meta', linhas }
+  }
+}
+
+// O anúncio em si: estado e a imagem do criativo. É a imagem que faz o dono reconhecer
+// "ah, aquele anúncio". Em lotes de 50, que é o que a Meta aceita por chamada.
+export type DetalheAnuncio = { ad_id: string; status: string; imagem_url: string | null }
+
+export async function getDetalhesAnuncios(adIds: string[]): Promise<Record<string, DetalheAnuncio>> {
+  const out: Record<string, DetalheAnuncio> = {}
+  if (!TOKEN) return out
+  const ids = [...new Set(adIds.filter(Boolean))]
+  for (let i = 0; i < ids.length; i += 50) {
+    const lote = ids.slice(i, i + 50)
+    try {
+      const json: any = await fetch(`${GRAPH}/?ids=${lote.join(',')}&fields=effective_status,creative{thumbnail_url,image_url}&access_token=${encodeURIComponent(TOKEN)}`).then(r => r.json())
+      if (json?.error) continue
+      for (const id of lote) {
+        const a = json[id]
+        if (!a) continue
+        out[id] = { ad_id: id, status: a.effective_status || '', imagem_url: a.creative?.image_url || a.creative?.thumbnail_url || null }
+      }
+    } catch {}
+  }
+  return out
+}
+
+// Alcance acumulado desde o início do contrato (pessoas únicas). Não dá pra somar o
+// alcance dos dias: a mesma pessoa vê em vários dias. Uma chamada, sem time_increment.
+export async function getAlcanceTotal(conta: string, since: string, until: string): Promise<number | null> {
+  if (!TOKEN) return null
+  const acct = 'act_' + String(conta || '').replace(/\D/g, '')
+  const tr = encodeURIComponent(JSON.stringify({ since, until }))
+  try {
+    const json: any = await fetch(`${GRAPH}/${acct}/insights?fields=reach&time_range=${tr}&access_token=${encodeURIComponent(TOKEN)}`).then(r => r.json())
+    const v = json?.data?.[0]?.reach
+    return v != null ? parseInt(v, 10) : null
+  } catch { return null }
+}

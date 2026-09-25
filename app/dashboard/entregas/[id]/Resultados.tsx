@@ -62,6 +62,17 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
     setEditando(false); aoMudar()
   }
 
+  // grava a Meta por anúncio no banco (é o que a área do cliente lê). O cron faz isso de
+  // manhã; o botão é pra quem acabou de ligar a conta ou mexeu na campanha e quer ver agora.
+  const [sinc, setSinc] = useState<string>('')
+  async function sincronizar(completo = false) {
+    setSinc('lendo…')
+    const j = await fetchAuth('/api/projetos/trafego/sync', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: projeto.id, completo }) })
+      .then(r => r.json()).catch(() => ({ ok: false, error: 'falha de rede' }))
+    const r = j?.resultados?.[0]
+    setSinc(j?.ok ? `ok: ${r?.dias ?? 0} dias, ${r?.anuncios ?? 0} anúncios, ${r?.conquistas ?? 0} conquistas novas` : 'falhou: ' + (j?.error || 'erro'))
+  }
+
   // o período pode começar antes do projeto — avisa, porque aí o número não é só do trabalho
   const antesDoInicio = !!inicio && de < inicio
   const semConta = !projeto.ad_account_id || editando
@@ -84,9 +95,13 @@ export function MetaBloco({ projeto, aoMudar }: { projeto: any; aoMudar: () => v
               </>
             )}
             <button onClick={() => setEditando(true)} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '3px 6px', fontWeight: 400 }}>trocar conta</button>
+            <button onClick={() => sincronizar(false)} title="Lê a Meta por anúncio e grava; é o que a área do cliente mostra. Segura Shift pra refazer desde o início do contrato."
+              onClickCapture={e => { if (e.shiftKey) { e.stopPropagation(); sincronizar(true) } }}
+              style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', padding: '3px 8px' }}>↻ Sincronizar anúncios</button>
           </div>
         )}
       </div>
+      {sinc && <div style={{ fontSize: 12, color: sinc.startsWith('falhou') ? 'var(--amber)' : 'var(--text-faint)', marginTop: 6 }}>{sinc}</div>}
 
       {semConta ? (
         <div style={{ display: 'flex', gap: 7, marginTop: 10 }}>
@@ -350,6 +365,7 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
   const deProjeto = () => ({
     meta_objetivo: projeto.meta_objetivo || '',
     meta_leads: projeto.meta_leads ?? '', meta_vendas: projeto.meta_vendas ?? '', meta_faturamento: projeto.meta_faturamento ?? '',
+    valor_cliente: projeto.valor_cliente ?? '', alvo_custo_resultado: projeto.alvo_custo_resultado ?? '',
   })
   const [f, setF] = useState<any>(deProjeto())
   const temMeta = !!projeto.meta_objetivo || METRICAS_META.some(m => projeto[m.k] != null)
@@ -369,6 +385,11 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
         <div><label style={lbl}>Leads</label><input style={inp} value={f.meta_leads} onChange={e => setF({ ...f, meta_leads: e.target.value })} /></div>
         <div><label style={lbl}>Vendas</label><input style={inp} value={f.meta_vendas} onChange={e => setF({ ...f, meta_vendas: e.target.value })} /></div>
         <div><label style={lbl}>Faturamento</label><input style={inp} value={f.meta_faturamento} onChange={e => setF({ ...f, meta_faturamento: e.target.value })} placeholder="R$" /></div>
+      </div>
+      {/* o que dá sentido ao custo por conversa no painel do cliente: sem isso, R$ 5 por conversa não diz nada */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 8, marginTop: 8 }}>
+        <div><label style={lbl}>Quanto vale um cliente novo (ticket ou pacote)</label><input style={inp} value={f.valor_cliente} onChange={e => setF({ ...f, valor_cliente: e.target.value })} placeholder="R$" /></div>
+        <div><label style={lbl}>Custo por conversa que consideramos bom</label><input style={inp} value={f.alvo_custo_resultado} onChange={e => setF({ ...f, alvo_custo_resultado: e.target.value })} placeholder="R$" /></div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={salvar} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Salvar meta</button>
@@ -394,6 +415,14 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
         <button onClick={() => { setF(deProjeto()); setEditando(true) }} style={{ ...btn, background: 'none', color: 'var(--text-faint)', padding: '2px 5px', fontWeight: 400 }}>editar</button>
       </div>
       {projeto.meta_objetivo && <div style={{ fontSize: 13.5, color: 'var(--text)', marginTop: 4, lineHeight: 1.5 }}>{projeto.meta_objetivo}</div>}
+      {(projeto.valor_cliente != null || projeto.alvo_custo_resultado != null) ? (
+        <div style={{ fontSize: 12, color: 'var(--text-2)', marginTop: 6 }}>
+          {projeto.valor_cliente != null && <>Um cliente novo vale <b>{brl(projeto.valor_cliente)}</b>. </>}
+          {projeto.alvo_custo_resultado != null && <>Custo bom por conversa: <b>{brl(projeto.alvo_custo_resultado)}</b>.</>}
+        </div>
+      ) : (
+        <div style={{ fontSize: 12, color: 'var(--amber)', marginTop: 6 }}>Falta dizer quanto vale um cliente novo: sem isso o painel do cliente mostra custo por conversa, mas não consegue traduzir em vendas.</div>
+      )}
       {!!numeros.length && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 10, marginTop: 10 }}>
           {numeros.map(m => {

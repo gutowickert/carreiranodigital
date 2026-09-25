@@ -123,6 +123,10 @@ export async function PATCH(req: Request) {
     if (b.meta_leads !== undefined) p.meta_leads = num(b.meta_leads)
     if (b.meta_vendas !== undefined) p.meta_vendas = num(b.meta_vendas)
     if (b.meta_faturamento !== undefined) p.meta_faturamento = num(b.meta_faturamento)
+    // o que um cliente novo vale e o custo por resultado que consideramos bom: é o que dá
+    // sentido ao custo por conversa no painel do cliente
+    if (b.valor_cliente !== undefined) p.valor_cliente = num(b.valor_cliente)
+    if (b.alvo_custo_resultado !== undefined) p.alvo_custo_resultado = num(b.alvo_custo_resultado)
     if (b.fase) p.fase = b.fase
     if (b.status && ['ativo', 'manutencao', 'concluido', 'cancelado'].includes(b.status)) p.status = b.status
 
