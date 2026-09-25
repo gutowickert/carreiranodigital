@@ -22,6 +22,7 @@ export const LIMITES = {
   queimaPct: 20,           // um anúncio com mais de N% da verba sem resultado = amarelo
   minResultados: 3,        // abaixo disso não se afirma nada sobre custo
   diasSemSync: 2,          // sem sincronizar há mais de N dias = o dado da tela está velho
+  saldoBaixo: 50,          // conta pré-paga com menos de R$ N = avisar antes que pare
   janelaDias: 7,           // a leitura padrão do monitor
 }
 
@@ -105,11 +106,25 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   const pendentes = (marcos || []).filter((m: any) => m.estado !== 'concluido' && m.estado !== 'cancelado')
   const prox = pendentes.find((m: any) => m.natureza === 'encontro') || pendentes[0]
   if (prox) base.proximo = { titulo: prox.titulo, data: prox.data_combinada || (prox.data_prevista ? String(prox.data_prevista).slice(0, 10) : null), estado: prox.estado, situacao: situacaoMarco(prox), local: LOCAIS.find(l => l.chave === prox.local)?.nome || null }
+  // a sessão de implantação (o primeiro encontro do roteiro) já aconteceu? Decide se "sem campanha" é normal ou é problema
+  const primeiroEncontro = (marcos || []).find((m: any) => m.natureza === 'encontro')
+  const sessaoFeita = primeiroEncontro?.estado === 'concluido'
+  // três atrasos diferentes, três avisos diferentes:
+  //   previsto e a data passou   → ninguém marcou com o cliente: vermelho, ligar
+  //   combinado/confirmado e passou → aconteceu (ou não) e ninguém fechou no sistema: interno, amarelo
+  //   etapa interna e passou     → trabalho nosso atrasado: amarelo
+  const semMarcar: any[] = [], semFechar: any[] = [], internas: any[] = []
   for (const m of pendentes) {
     const s = situacaoMarco(m)
-    if (s === 'atrasado' || s === 'a_remarcar') base.atrasados++
+    if (s !== 'atrasado' && s !== 'a_remarcar') continue
+    base.atrasados++
+    if (m.natureza !== 'encontro') internas.push(m)
+    else if (m.estado === 'previsto' || s === 'a_remarcar') semMarcar.push(m)
+    else semFechar.push(m)
   }
-  if (base.atrasados) base.alertas.push({ nivel: 'vermelho', chave: 'encontro_atrasado', titulo: base.atrasados === 1 ? 'Encontro passou da data e não foi marcado' : `${base.atrasados} encontros passaram da data sem marcar`, acao: 'Ligar e marcar a data', contatar: true })
+  if (semMarcar.length) base.alertas.push({ nivel: 'vermelho', chave: 'encontro_atrasado', titulo: semMarcar.length === 1 ? `"${semMarcar[0].titulo}" passou da data prevista e não foi marcado` : `${semMarcar.length} encontros passaram da data sem marcar`, acao: 'Ligar e marcar a data', contatar: true })
+  if (semFechar.length) base.alertas.push({ nivel: 'amarelo', chave: 'encontro_sem_fechar', titulo: `"${semFechar[0].titulo}" era ${String(semFechar[0].data_combinada).slice(0, 10).split('-').reverse().join('/')} e não foi fechado no sistema`, acao: 'Dar como feito na ficha (ou remarcar)' })
+  if (internas.length) base.alertas.push({ nivel: 'amarelo', chave: 'etapa_interna', titulo: `Etapa nossa atrasada: ${internas[0].titulo}`, acao: 'Concluir ou ajustar o prazo na ficha' })
   const amanha = menosDias(hoje, -1)
   const semReconf = pendentes.find((m: any) => m.estado === 'combinado' && m.data_combinada && new Date(m.data_combinada).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) === amanha && !m.reconfirmacao_resposta)
   if (semReconf) base.alertas.push({ nivel: 'amarelo', chave: 'reconfirmar', titulo: `Encontro amanhã sem reconfirmação: ${semReconf.titulo}`, acao: 'Mandar a reconfirmação', contatar: true })
@@ -151,9 +166,22 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   const media30 = m30.r >= LIMITES.minResultados ? m30.g / m30.r : null
   const nome = painel.nome
 
+  // ── a campanha ainda não começou? Antes da sessão é normal (cinza); depois da sessão é problema
+  const semCampanha = t.gasto === 0 && ativos.length === 0
+  let aguardando = false
+  if (semCampanha && !sessaoFeita) aguardando = true
+  if (semCampanha && sessaoFeita) base.alertas.push({ nivel: 'vermelho', chave: 'sem_campanha', titulo: 'Implantação feita e nenhuma campanha rodando', acao: 'Subir a campanha hoje: o cliente saiu da sessão esperando ela no ar' })
+
+  // ── a conta: acesso, ativa, saldo
+  if (!conta.ok) base.alertas.push({ nivel: 'amarelo', chave: 'conta_sem_acesso', titulo: 'O sistema não consegue ler a conta de anúncio', detalhe: conta.error, acao: 'Dar acesso ao usuário do sistema no Business Manager' })
+  else if (conta.ativa === false) base.alertas.push({ nivel: 'vermelho', chave: 'conta_inativa', titulo: 'Conta de anúncio desativada na Meta', detalhe: `status ${conta.status}`, acao: 'Ver o motivo no Business Manager e avisar o cliente', contatar: true })
+  else if (conta.prepago && conta.saldo != null) {
+    if (conta.saldo <= 0 && ativos.length) base.alertas.push({ nivel: 'vermelho', chave: 'sem_saldo', titulo: 'Conta pré-paga sem saldo, com anúncio ativo', detalhe: conta.saldo_texto || undefined, acao: 'Pedir ao cliente pra colocar verba hoje', contatar: true })
+    else if (conta.saldo <= 0) base.alertas.push({ nivel: 'amarelo', chave: 'sem_saldo', titulo: 'Conta pré-paga sem saldo', acao: 'Combinar com o cliente a verba antes da campanha subir', contatar: true })
+    else if (conta.saldo < LIMITES.saldoBaixo) base.alertas.push({ nivel: 'amarelo', chave: 'saldo_baixo', titulo: `Saldo baixo: ${fmtBRL(conta.saldo)}`, acao: 'Avisar o cliente pra recarregar', contatar: true })
+  }
+
   // ── vermelhos: a campanha parou ou está jogando dinheiro fora
-  if (conta.ok && conta.ativa === false) base.alertas.push({ nivel: 'vermelho', chave: 'conta_inativa', titulo: 'Conta de anúncio desativada na Meta', detalhe: `status ${conta.status}`, acao: 'Ver o motivo no Business Manager e avisar o cliente', contatar: true })
-  else if (conta.ok && conta.prepago && conta.saldo != null && conta.saldo <= 0) base.alertas.push({ nivel: 'vermelho', chave: 'sem_saldo', titulo: 'Conta pré-paga sem saldo', detalhe: conta.saldo_texto || undefined, acao: 'Pedir ao cliente pra colocar verba', contatar: true })
   const ultimos = base.sparkline.slice(-LIMITES.diasSemGasto)
   if (ativos.length && ultimos.every(d => d.gasto === 0) && base.dia_do_contrato > LIMITES.diasSemGasto) base.alertas.push({ nivel: 'vermelho', chave: 'sem_gasto', titulo: `Sem gasto há ${LIMITES.diasSemGasto} dias com ${ativos.length} ${ativos.length === 1 ? 'anúncio ativo' : 'anúncios ativos'}`, acao: 'Conferir saldo, cartão e se a campanha não foi pausada', contatar: true })
   if (t.gasto > 0 && t.resultados === 0 && !ultimos.every(d => d.gasto === 0)) base.alertas.push({ nivel: 'vermelho', chave: 'sem_resultado', titulo: `${fmtBRL(t.gasto)} em ${LIMITES.janelaDias} dias sem nenhum resultado`, acao: 'Trocar criativo ou público hoje' })
@@ -181,7 +209,11 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   if (!rec.length && t.resultados > 0) rec.push('Manter. Nada pede ação esta semana.')
   base.recomendacoes = rec.slice(0, 5)
 
-  base.nivel = base.alertas.some(a => a.nivel === 'vermelho') ? 'vermelho' : base.alertas.some(a => a.nivel === 'amarelo' && !['sem_portal', 'sem_valor_cliente'].includes(a.chave)) ? 'amarelo' : 'verde'
+  // configuração pendente não pinta o card: é lembrete, não leitura da campanha
+  const CONFIG = ['sem_portal', 'sem_valor_cliente']
+  base.nivel = base.alertas.some(a => a.nivel === 'vermelho') ? 'vermelho'
+    : aguardando ? 'cinza'
+    : base.alertas.some(a => a.nivel === 'amarelo' && !CONFIG.includes(a.chave)) ? 'amarelo' : 'verde'
   return base
 }
 

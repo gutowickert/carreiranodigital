@@ -29,7 +29,7 @@ const NIVEL: Record<string, { cor: string; bg: string; rotulo: string }> = {
   verde: { cor: 'var(--green)', bg: 'var(--green-bg)', rotulo: 'Indo bem' },
   amarelo: { cor: 'var(--amber)', bg: 'var(--amber-bg)', rotulo: 'Atenção' },
   vermelho: { cor: 'var(--red)', bg: 'var(--red-bg)', rotulo: 'Agir hoje' },
-  cinza: { cor: 'var(--text-faint)', bg: 'var(--surface-2)', rotulo: 'Sem tráfego' },
+  cinza: { cor: 'var(--text-faint)', bg: 'var(--surface-2)', rotulo: 'Antes da campanha' },
 }
 const SITUACAO: Record<string, string> = { puxando: 'puxando', queimando: 'queimando', normal: 'no meio', parado: 'parado' }
 const SIT_COR: Record<string, string> = { puxando: 'var(--green)', queimando: 'var(--red)', normal: 'var(--text-faint)', parado: 'var(--text-faint)' }
