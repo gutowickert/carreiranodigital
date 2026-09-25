@@ -6,6 +6,6 @@
     { "path": "/api/projetos/trafego/sync", "schedule": "0 9 * * *" },
     { "path": "/api/assistente/bom-dia", "schedule": "0 10 * * *" },
     { "path": "/api/assistente/relatorio", "schedule": "5 10 * * 1" },
-    { "path": "/api/assistente/alertas", "schedule": "30 11-22 * * *" }
+    { "path": "/api/assistente/alertas", "schedule": "0 13 * * *" }
   ]
 }
