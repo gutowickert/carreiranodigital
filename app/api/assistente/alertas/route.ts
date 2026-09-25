@@ -24,11 +24,21 @@ async function rodar(us: Usuario[]) {
   return out
 }
 
+// A Vercel só aceita cron diário no plano da conta (o "de hora em hora" derrubou o deploy).
+// O de hora em hora vem do pg_cron do Supabase, que chama esta rota com ?chave=..., e a chave
+// fica em configuracoes (assistente.cron_chave). O cron diário da Vercel continua valendo.
+async function chaveOk(chave: string | null) {
+  if (!chave || chave.length < 16) return false
+  const { data } = await sb.from('configuracoes').select('valor').eq('chave', 'assistente.cron_chave').eq('valor', chave).limit(1)
+  return !!data?.length
+}
+
 export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || ''
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
-  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
+  const chave = req.nextUrl.searchParams.get('chave')
+  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
   return NextResponse.json({ ok: true, resultados: await rodar(await usuarios()) })
 }
 
