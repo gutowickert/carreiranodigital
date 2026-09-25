@@ -5,6 +5,8 @@ import { contextoCentral } from '@/lib/contexto-central'
 import { enviarTexto, enviarTemplate, baixarMidia, foneOficial } from '@/lib/whatsapp-oficial'
 import { hojeBR, menosDias } from '@/lib/periodos'
 import { LOCAIS } from '@/lib/entrega'
+import { lerPainel } from '@/lib/trafego-cliente'
+import { impostoMetaPct } from '@/lib/imposto-meta'
 
 // O ASSISTENTE DO TIME NO WHATSAPP.
 //
@@ -24,7 +26,9 @@ const MODELO = 'claude-sonnet-4-6'
 const TZ = 'America/Sao_Paulo'
 const TEMPLATE_BOM_DIA = 'cnd_bom_dia_agenda'
 
-export type Usuario = { id: string; org_id: string; nome: string; email: string; whatsapp: string; assistente_ultima_msg_em: string | null; assistente_bom_dia: boolean }
+export type Usuario = { id: string; org_id: string; nome: string; apelido?: string | null; email: string; whatsapp: string; assistente_ultima_msg_em: string | null; assistente_bom_dia: boolean }
+// como a pessoa é chamada de verdade: o cadastro diz "Luis Augusto", ele é o Guto
+export const chamar = (u: Usuario) => (u.apelido || u.nome.split(' ')[0]).trim()
 
 // ═══════════════════════════════════════════════════════════ quem é
 
@@ -32,7 +36,7 @@ export async function usuarioDoNumero(tel: string): Promise<Usuario | null> {
   const d = foneOficial(tel)
   if (d.length < 10) return null
   const sufixo = d.slice(-8)
-  const { data } = await sb.from('usuarios_perfil').select('id, org_id, nome, email, whatsapp, assistente_ultima_msg_em, assistente_bom_dia')
+  const { data } = await sb.from('usuarios_perfil').select('id, org_id, nome, apelido, email, whatsapp, assistente_ultima_msg_em, assistente_bom_dia')
     .eq('ativo', true).not('whatsapp', 'is', null).ilike('whatsapp', `%${sufixo}`).limit(1)
   return (data?.[0] as Usuario) || null
 }
@@ -120,7 +124,7 @@ function textoAgenda(itens: Item[], data: string) {
 export async function bomDia(u: Usuario) {
   const hoje = hojeBR()
   const [itens, pend] = await Promise.all([agendaDoDia(u, hoje), pendenciasDeEntrega(u)])
-  const partes = [`Bom dia, ${u.nome.split(' ')[0]}.`, textoAgenda(itens, hoje)]
+  const partes = [`Bom dia, ${chamar(u)}.`, textoAgenda(itens, hoje)]
   if (pend.semReconfirmar.length) partes.push(`Amanhã sem reconfirmação:\n${pend.semReconfirmar.map(x => '• ' + x).join('\n')}`)
   if (pend.atrasados.length) partes.push(`Encontros que passaram da data prevista e ainda não foram marcados:\n${pend.atrasados.map(x => '• ' + x).join('\n')}`)
   partes.push('Me manda o que precisar por aqui, texto ou áudio.')
@@ -128,7 +132,7 @@ export async function bomDia(u: Usuario) {
 
   // fora da janela vai o template curto; a resposta dele abre a janela e aí a agenda completa vai livre
   const primeiro = itens[0] ? `${itens[0].hora} ${itens[0].titulo}` : 'nada marcado'
-  const r = await enviarAoTime(u, texto, { nome: TEMPLATE_BOM_DIA, params: [u.nome.split(' ')[0], String(itens.length), primeiro.slice(0, 120)] })
+  const r = await enviarAoTime(u, texto, { nome: TEMPLATE_BOM_DIA, params: [chamar(u), String(itens.length), primeiro.slice(0, 120)] })
   return { ...r, compromissos: itens.length }
 }
 
@@ -155,6 +159,8 @@ const TOOLS_AGENDA = [
   { name: 'marcar', description: 'GRAVA um compromisso (reunião) ou lembrete (tarefa) na agenda do usuário. Grava direto. Use quando ele mandar marcar, agendar, lembrar.', input_schema: { type: 'object', properties: { titulo: { type: 'string' }, inicio: { type: 'string', description: 'YYYY-MM-DDTHH:MM no horário de Brasília' }, duracao_min: { type: 'number', description: 'default 60' }, tipo: { type: 'string', description: 'reuniao ou tarefa (default reuniao)' }, descricao: { type: 'string', description: 'lugar, com quem, o que levar' } }, required: ['titulo', 'inicio'] } },
   { name: 'desmarcar', description: 'Apaga da agenda um compromisso criado pelo assistente (pra "desfaz", "cancela a reunião de quinta"). Informe a data e parte do título.', input_schema: { type: 'object', properties: { data: { type: 'string', description: 'YYYY-MM-DD' }, titulo: { type: 'string' } }, required: ['data', 'titulo'] } },
   { name: 'anotar_lead', description: 'GRAVA uma nota no histórico de um lead ("anota no lead da Jessica que..."). Grava direto.', input_schema: { type: 'object', properties: { nome: { type: 'string' }, texto: { type: 'string' } }, required: ['nome', 'texto'] } },
+  { name: 'trafego_clientes', description: 'RESUMO do tráfego de TODOS os clientes das entregas (Deu Venda, CRM) num período, lido do painel de cada um: investido, conversas, custo por conversa, melhor anúncio e a análise escrita. Use pra "como estão meus clientes", "resumo do tráfego dos clientes". Default: últimos 7 dias.', input_schema: { type: 'object', properties: { de: { type: 'string', description: 'YYYY-MM-DD' }, ate: { type: 'string', description: 'YYYY-MM-DD' } } } },
+  { name: 'trafego_cliente', description: 'O painel completo de UM cliente das entregas: totais, comparação com o período anterior, cada anúncio (puxando/queimando), o que foi feito, conquistas. Use pra "como tá o tráfego da Dani".', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, de: { type: 'string' }, ate: { type: 'string' } }, required: ['cliente'] } },
   { name: 'registrar_vendas_cliente', description: 'GRAVA no placar de um cliente do Deu Venda/CRM as vendas e o faturamento de um mês ("a Dani fechou 3 vendas esse mês"). Grava direto; o painel do cliente atualiza.', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, mes: { type: 'string', description: 'YYYY-MM, default mês atual' }, vendas: { type: 'number' }, faturamento: { type: 'number' }, observacao: { type: 'string' } }, required: ['cliente'] } },
 ]
 
@@ -185,7 +191,7 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     if (!data?.length) return { erro: 'lead não encontrado' }
     if (data.length > 1 && !data.find(l => l.nome.toLowerCase() === String(input.nome).toLowerCase())) return { erro: 'achei mais de um: ' + data.map(l => l.nome).join(' | ') + '. Qual?' }
     const lead = data.find(l => l.nome.toLowerCase() === String(input.nome).toLowerCase()) || data[0]
-    const { error } = await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'nota', observacao: `📝 ${u.nome.split(' ')[0]} (pelo WhatsApp): ${input.texto}` })
+    const { error } = await sb.from('lead_andamentos').insert({ lead_id: lead.id, tipo: 'nota', observacao: `📝 ${chamar(u)} (pelo WhatsApp): ${input.texto}` })
     if (error) return { erro: error.message }
     return { ok: true, lead: lead.nome }
   }
@@ -195,7 +201,7 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     if (data.length > 1) return { erro: 'achei mais de um: ' + data.map(p => p.cliente).join(' | ') + '. Qual?' }
     const mes = input.mes || hojeBR().slice(0, 7)
     const { data: ja } = await sb.from('projeto_placar').select('id').eq('projeto_id', data[0].id).eq('mes', mes).is('ponto_a', null).limit(1)
-    const linha: any = { autor: u.nome.split(' ')[0] + ' (WhatsApp)' }
+    const linha: any = { autor: chamar(u) + ' (WhatsApp)' }
     if (input.vendas != null) linha.vendas = Number(input.vendas)
     if (input.faturamento != null) linha.comissao = Number(input.faturamento)
     if (input.observacao) linha.observacao = String(input.observacao).slice(0, 500)
@@ -203,17 +209,35 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     else await sb.from('projeto_placar').insert({ ...linha, org_id: u.org_id, projeto_id: data[0].id, mes, data: hojeBR(), fonte: 'cliente' })
     return { ok: true, cliente: data[0].cliente, mes, ...linha }
   }
+  if (name === 'trafego_clientes' || name === 'trafego_cliente') {
+    const hoje = hojeBR()
+    const de = input.de || menosDias(hoje, 6), ate = input.ate || hoje
+    let q = sb.from('projetos').select('id, org_id, cliente, produto, fase, ad_account_id, data_inicio, valor_cliente, alvo_custo_resultado').eq('org_id', u.org_id).in('status', ['ativo', 'manutencao']).not('ad_account_id', 'is', null)
+    if (name === 'trafego_cliente') q = q.ilike('cliente', `%${input.cliente}%`)
+    const { data: projetos } = await q.order('cliente')
+    if (!projetos?.length) return { erro: name === 'trafego_cliente' ? 'cliente não encontrado (ou sem conta de anúncio ligada)' : 'nenhum cliente com conta de anúncio' }
+    const pct = await impostoMetaPct(u.org_id)
+    const out: any[] = []
+    for (const p of projetos) {
+      const pn = await lerPainel(p as any, de, ate, pct)
+      const melhor = pn.anuncios.find(a => a.situacao === 'puxando') || pn.anuncios[0]
+      const base = { cliente: p.cliente, produto: p.produto, fase: p.fase, periodo: `${pn.de} a ${pn.ate}`, investido: Math.round(pn.total.gasto * 100) / 100, resultados: pn.total.resultados, tipo: pn.nome.varios, custo: pn.total.custo != null ? Math.round(pn.total.custo * 100) / 100 : null,
+        vs_anterior: pn.anterior ? { investido: Math.round(pn.anterior.gasto * 100) / 100, resultados: pn.anterior.resultados } : null, melhor_anuncio: melhor ? `${melhor.nome} (${melhor.resultados} a R$ ${melhor.custo?.toFixed(2) ?? '-'})` : null, analise: pn.analise }
+      out.push(name === 'trafego_cliente' ? { ...base, anuncios: pn.anuncios.map(a => ({ nome: a.nome, situacao: a.situacao, status: a.status, resultados: a.resultados, gasto: Math.round(a.gasto * 100) / 100, custo: a.custo != null ? Math.round(a.custo * 100) / 100 : null })), eventos: pn.eventos.slice(0, 8), conquistas: pn.conquistas.map(c => c.titulo), proximas: pn.proximas } : base)
+    }
+    return { periodo: `${de} a ${ate}`, clientes: out }
+  }
   return runTool(name, input, origin)
 }
 
-const SYSTEM = (u: Usuario) => `Você é o assistente pessoal de ${u.nome.split(' ')[0]}, dono da Carreira no Digital, falando com ele pelo WhatsApp. Hoje é ${hojeBR()} (${nomeDia(hojeBR())}), fuso America/Sao_Paulo.
+const SYSTEM = (u: Usuario) => `Você é o assistente pessoal de ${chamar(u)} (chame-o assim, nunca pelo nome do cadastro), dono da Carreira no Digital, falando com ele pelo WhatsApp. Hoje é ${hojeBR()} (${nomeDia(hojeBR())}), fuso America/Sao_Paulo.
 
 COMO FALAR: é WhatsApp. Respostas curtas, diretas, em português, sem markdown (nada de asteriscos duplos, cabeçalhos ou tabelas; use quebras de linha e o marcador "•" quando listar). Nunca use travessão. Nunca emoji. Trate por "tu".
 
 O QUE VOCÊ FAZ:
 1. Responde perguntas sobre a empresa com as ferramentas de dados (vendas, leads, financeiro, tráfego, clientes das entregas, turmas). Nunca invente número: se a ferramenta não trouxe, diga que não achou.
 2. Agenda: 'minha_agenda' pra ver; 'marcar' pra gravar reunião/lembrete; 'desmarcar' pra tirar. Você GRAVA DIRETO e confirma em uma linha ("Marcado: quinta 02/10, 14h, reunião com o Moacir, sede de POA."). Se ele disser que errou, use 'desmarcar' e grave de novo. Interprete datas relativas ("quinta", "amanhã", "semana que vem") a partir de hoje; sem horário, pergunte. Encontros com CLIENTES das entregas (projeto_marcos) você só lê; marcar esses é pela ficha do sistema.
-3. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
+3. Tráfego dos clientes das entregas: 'trafego_clientes' (todos, resumo) e 'trafego_cliente' (um, completo). Ao resumir vários, uma linha por cliente: nome, investido, conversas, custo, melhor anúncio; depois só o que pede atenção. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
 4. Ferramentas 'propor_*' do agente interno NÃO servem aqui (não há cartão pra confirmar no WhatsApp): se ele pedir despesa, mudança de fluxo ou regra da IA de vendas, diga que isso se faz pela tela do sistema.
 
 Quando gravar algo, a resposta é só a confirmação do que foi gravado. Quando responder pergunta, vá direto ao número. Se a mensagem veio de áudio transcrito e ficou ambígua, pergunte em vez de adivinhar.`

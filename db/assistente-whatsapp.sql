@@ -39,3 +39,9 @@ UPDATE public.usuarios_perfil SET whatsapp = '5551981260653', assistente_bom_dia
  WHERE lower(email) = 'guto.wickert@gmail.com';
 
 COMMIT;
+
+-- ─────────────────────────────────────────────── apelido (25/09, depois do primeiro teste)
+-- O cadastro diz "Luis Augusto Wickert" e o assistente chamou de "Luis". Ele é o Guto.
+ALTER TABLE public.usuarios_perfil ADD COLUMN IF NOT EXISTS apelido text;
+COMMENT ON COLUMN public.usuarios_perfil.apelido IS 'Como a pessoa é chamada de verdade (Guto, Nando). O assistente e o bom dia usam isso, não o nome do cadastro.';
+UPDATE public.usuarios_perfil SET apelido = 'Guto' WHERE lower(email) = 'guto.wickert@gmail.com';
