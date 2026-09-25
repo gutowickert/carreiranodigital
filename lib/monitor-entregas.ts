@@ -23,6 +23,7 @@ export const LIMITES = {
   minResultados: 3,        // abaixo disso não se afirma nada sobre custo
   diasSemSync: 2,          // sem sincronizar há mais de N dias = o dado da tela está velho
   saldoBaixo: 50,          // conta pré-paga com menos de R$ N = avisar antes que pare
+  minGastoLeitura: 80,     // abaixo de R$ N no período não se lê "anúncio queimando": é ruído
   janelaDias: 7,           // a leitura padrão do monitor
 }
 
@@ -167,9 +168,11 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   const nome = painel.nome
 
   // ── a campanha ainda não começou? Antes da sessão é normal (cinza); depois da sessão é problema
-  const semCampanha = t.gasto === 0 && ativos.length === 0
+  // (se a conta não pode ser lida, não dá pra afirmar que não há campanha: fica só o aviso de acesso)
+  const semCampanha = conta.ok && t.gasto === 0 && ativos.length === 0
   let aguardando = false
   if (semCampanha && !sessaoFeita) aguardando = true
+  if (!conta.ok && t.gasto === 0) aguardando = true
   if (semCampanha && sessaoFeita) base.alertas.push({ nivel: 'vermelho', chave: 'sem_campanha', titulo: 'Implantação feita e nenhuma campanha rodando', acao: 'Subir a campanha hoje: o cliente saiu da sessão esperando ela no ar' })
 
   // ── a conta: acesso, ativa, saldo
@@ -184,6 +187,14 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   // ── vermelhos: a campanha parou ou está jogando dinheiro fora
   const ultimos = base.sparkline.slice(-LIMITES.diasSemGasto)
   if (ativos.length && ultimos.every(d => d.gasto === 0) && base.dia_do_contrato > LIMITES.diasSemGasto) base.alertas.push({ nivel: 'vermelho', chave: 'sem_gasto', titulo: `Sem gasto há ${LIMITES.diasSemGasto} dias com ${ativos.length} ${ativos.length === 1 ? 'anúncio ativo' : 'anúncios ativos'}`, acao: 'Conferir saldo, cartão e se a campanha não foi pausada', contatar: true })
+  // rodou e parou: tudo pausado. Três dias pode ser ajuste de propósito (amarelo); o dobro
+  // disso, num cliente que paga pela campanha no ar, é vermelho.
+  else if (!ativos.length && ultimos.every(d => d.gasto === 0) && base.sparkline.some(d => d.gasto > 0)) {
+    let parado = 0
+    for (let i = base.sparkline.length - 1; i >= 0 && base.sparkline[i].gasto === 0; i--) parado++
+    const grave = parado >= LIMITES.diasSemGasto * 2
+    base.alertas.push({ nivel: grave ? 'vermelho' : 'amarelo', chave: 'parou', titulo: `Campanha parada há ${parado} dias: tudo pausado, nenhum anúncio ativo`, acao: grave ? 'Reativar ou subir a próxima campanha hoje' : 'Foi de propósito? Se não, reativar' })
+  }
   if (t.gasto > 0 && t.resultados === 0 && !ultimos.every(d => d.gasto === 0)) base.alertas.push({ nivel: 'vermelho', chave: 'sem_resultado', titulo: `${fmtBRL(t.gasto)} em ${LIMITES.janelaDias} dias sem nenhum resultado`, acao: 'Trocar criativo ou público hoje' })
   if (t.custo != null && t.resultados >= LIMITES.minResultados) {
     if (base.alvo_custo && t.custo > base.alvo_custo * LIMITES.custoVsAlvo) base.alertas.push({ nivel: 'vermelho', chave: 'custo_alvo', titulo: `Custo ${fmtBRL(t.custo)}, mais de ${LIMITES.custoVsAlvo}× o alvo de ${fmtBRL(base.alvo_custo)}`, acao: 'Rever público e oferta' })
@@ -197,7 +208,8 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   }
   if (base.idade_criativo != null && base.idade_criativo > LIMITES.idadeCriativo && puxa) base.alertas.push({ nivel: 'amarelo', chave: 'criativo_velho', titulo: `"${puxa.nome}" puxa há ${base.idade_criativo} dias`, acao: 'Preparar o próximo criativo antes de cansar' })
   if (ativos.length === 1 && t.gasto > 0) base.alertas.push({ nivel: 'amarelo', chave: 'um_anuncio', titulo: 'Só um anúncio ativo, sem teste rodando', acao: 'Subir um segundo anúncio pra comparar' })
-  const queimando = painel.anuncios.filter(a => a.situacao === 'queimando' && !PAUSADO(a.status) && t.gasto > 0 && a.gasto / t.gasto * 100 >= LIMITES.queimaPct)
+  // com pouca verba no período, "32% da verba" são R$ 10: não se afirma nada
+  const queimando = t.gasto >= LIMITES.minGastoLeitura ? painel.anuncios.filter(a => a.situacao === 'queimando' && !PAUSADO(a.status) && a.gasto / t.gasto * 100 >= LIMITES.queimaPct) : []
   for (const q of queimando.slice(0, 2)) base.alertas.push({ nivel: 'amarelo', chave: 'queimando_' + q.ad_id, titulo: `"${q.nome}" levou ${Math.round(q.gasto / t.gasto * 100)}% da verba ${q.resultados ? `a ${fmtBRL(q.custo!)} cada` : 'sem resultado'}`, acao: `Pausar "${q.nome}"` })
   if (painel.sincronizado_em && diasEntre(String(painel.sincronizado_em).slice(0, 10), hoje) - 1 > LIMITES.diasSemSync) base.alertas.push({ nivel: 'amarelo', chave: 'sem_sync', titulo: `Dados da Meta de ${String(painel.sincronizado_em).slice(0, 10).split('-').reverse().join('/')}`, acao: 'Sincronizar' })
 
