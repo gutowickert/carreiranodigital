@@ -7,7 +7,9 @@ import { logIaUso } from '@/lib/ia-uso'
 
 // Motor de resposta do atendimento: ANTES de sugerir, busca conversas REAIS onde a gente
 // FECHOU (mesmo produto/situação) e responde no nosso tom, seguindo o fluxo que converte.
-const MODELO = 'claude-sonnet-4-6'
+// ⚠️ O MODELO PODE SER TROCADO POR VARIÁVEL DE AMBIENTE (ATENDIMENTO_MODELO) sem deploy — é o que
+// permite testar o Sonnet 5 lado a lado com o 4.6 antes de trocar quem fala com o cliente.
+const MODELO = process.env.ATENDIMENTO_MODELO || 'claude-sonnet-4-6'
 const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
 const familia = (cod: string) => { const c = (cod || '').toLowerCase(); return c.startsWith('fc') ? 'FC' : c.startsWith('anl') ? 'ANL' : c.startsWith('anlnovohamburgo') ? 'ANL' : '?' }
 const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Marketing Digital' : f === 'ANL' ? 'Anúncios para Negócios Locais' : ''
@@ -341,7 +343,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const raw = (resp.content || []).map((b: any) => b.type === 'text' ? b.text : '').join('').trim()
   let dados: any = null
   try { dados = JSON.parse(raw) } catch { const a = raw.indexOf('{'), z = raw.lastIndexOf('}'); if (a >= 0 && z > a) { try { dados = JSON.parse(raw.slice(a, z + 1)) } catch { } } }
-  if (!dados) return { ok: false, error: 'IA não retornou JSON' }
+  if (!dados) return { ok: false, error: 'IA não retornou JSON', raw: raw.slice(0, 800) }
 
   // 🚨 TRAVA DURA DOS R$100 — o gancho "sinal/entrada de R$100 pra reservar a vaga" é PROIBIDO (regra nº1),
   // mas o modelo copia isso de vendas antigas mesmo com a proibição no prompt. Aqui a gente detecta e NÃO deixa
