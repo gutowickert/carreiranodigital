@@ -8,6 +8,7 @@ import { montarMonitor, textoResumoMonitor } from '@/lib/monitor-entregas'
 import { hojeBR, menosDias } from '@/lib/periodos'
 import { LOCAIS, ROTEIROS, type Produto, type Local } from '@/lib/entrega'
 import { criarProjeto } from '@/lib/criar-projeto'
+import { dossieLead, timelineDossie } from '@/lib/historico-lead'
 import { lerPainel } from '@/lib/trafego-cliente'
 import { impostoMetaPct } from '@/lib/imposto-meta'
 
@@ -128,6 +129,27 @@ async function pendenciasDeEntrega(u: Usuario) {
   }
 }
 
+// vendas fechadas ontem (o Guto quer saber de manhã, antes de perguntar ao Rick)
+export async function vendasDeOntem(org: string) {
+  const ontem = menosDias(hojeBR(), 1)
+  const { data } = await sb.from('leads').select('nome, valor_venda, codigo_turma, data_ganho').eq('org_id', org).eq('etapa', 'ganho')
+    .gte('data_ganho', ontem + 'T00:00:00-03:00').lte('data_ganho', ontem + 'T23:59:59-03:00').order('data_ganho')
+  const v = data || []
+  const brl = (x: number) => 'R$ ' + x.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  return { n: v.length, total: v.reduce((acc, l) => acc + Number(l.valor_venda || 0), 0), nomes: v.map(l => l.nome + (l.valor_venda ? ' (' + brl(Number(l.valor_venda)) + ')' : '')) }
+}
+
+// leads ativos com mensagem DELES que o time ainda não abriu (a IA não conta: ela responde sozinha)
+export async function leadsEsperando(org: string, horas = 0) {
+  const { data } = await sb.from('wa_conversas').select('id, nome, ultima_msg_em, lead_id, leads!inner(id, nome, etapa, atendido_por)')
+    .eq('org_id', org).gt('nao_lidas', 0).not('lead_id', 'is', null)
+    .lt('ultima_msg_em', new Date(Date.now() - horas * 3600 * 1000).toISOString())
+    .gt('ultima_msg_em', new Date(Date.now() - 48 * 3600 * 1000).toISOString())
+    .order('ultima_msg_em')
+  return (data || []).filter((c: any) => c.leads && !['ganho', 'perda'].includes(c.leads.etapa) && c.leads.atendido_por !== 'ia')
+    .map((c: any) => ({ conversa_id: c.id as string, lead_id: c.leads.id as string, nome: (c.leads.nome || c.nome) as string, desde: c.ultima_msg_em as string }))
+}
+
 function textoAgenda(itens: Item[], data: string) {
   if (!itens.length) return `Agenda de ${nomeDia(data)}, ${fmtDia(data)}: livre.`
   return `Agenda de ${nomeDia(data)}, ${fmtDia(data)}:\n` + itens.map(i => `• ${i.hora} ${i.titulo}${i.detalhe ? ` (${i.detalhe})` : ''}`).join('\n')
@@ -137,8 +159,12 @@ function textoAgenda(itens: Item[], data: string) {
 
 export async function bomDia(u: Usuario) {
   const hoje = hojeBR()
-  const [itens, pend] = await Promise.all([agendaDoDia(u, hoje), pendenciasDeEntrega(u)])
+  const [itens, pend, ontem, esperando] = await Promise.all([agendaDoDia(u, hoje), pendenciasDeEntrega(u), vendasDeOntem(u.org_id), leadsEsperando(u.org_id)])
   const partes = [`Bom dia, ${chamar(u)}.`, textoAgenda(itens, hoje)]
+  const brl0 = (x: number) => 'R$ ' + x.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const linhaOntem = ontem.n ? `Ontem: ${ontem.n} ${ontem.n === 1 ? 'venda' : 'vendas'}, ${brl0(ontem.total)} (${ontem.nomes.slice(0, 4).join(', ')}).` : 'Ontem: nenhuma venda.'
+  const linhaEsp = esperando.length ? `${esperando.length} ${esperando.length === 1 ? 'lead esperando resposta' : 'leads esperando resposta'}: ${esperando.slice(0, 5).map(x => x.nome).join(', ')}.` : ''
+  partes.push([linhaOntem, linhaEsp].filter(Boolean).join('\n'))
   if (pend.semReconfirmar.length) partes.push(`Amanhã sem reconfirmação:\n${pend.semReconfirmar.map(x => '• ' + x).join('\n')}`)
   if (pend.atrasados.length) partes.push(`Encontros que passaram da data prevista e ainda não foram marcados:\n${pend.atrasados.map(x => '• ' + x).join('\n')}`)
   partes.push('Me manda o que precisar por aqui, texto ou áudio.')
@@ -147,7 +173,7 @@ export async function bomDia(u: Usuario) {
   // janela aberta: o card de imagem com a agenda, e o texto vai na legenda (a legenda cabe 1024)
   if (janelaAberta(u)) {
     try {
-      const atencao = [...pend.semReconfirmar.map(x => 'Amanhã sem reconfirmação: ' + x), ...pend.atrasados.map(x => 'Sem data marcada: ' + x)]
+      const atencao = [linhaOntem, ...(linhaEsp ? [linhaEsp] : []), ...pend.semReconfirmar.map(x => 'Amanhã sem reconfirmação: ' + x), ...pend.atrasados.map(x => 'Sem data marcada: ' + x)]
       const png = await imagemAgenda({ nome: chamar(u), data: hoje, itens, atencao })
       const r = await enviarImagemAoTime(u, png)
       if (r.ok) return { ...r, compromissos: itens.length }
@@ -209,6 +235,8 @@ const TOOLS_AGENDA = [
   { name: 'trafego_clientes', description: 'RESUMO do tráfego de TODOS os clientes das entregas (Deu Venda, CRM) num período, lido do painel de cada um: investido, conversas, custo por conversa, melhor anúncio e a análise escrita. Use pra "como estão meus clientes", "resumo do tráfego dos clientes". Default: últimos 7 dias.', input_schema: { type: 'object', properties: { de: { type: 'string', description: 'YYYY-MM-DD' }, ate: { type: 'string', description: 'YYYY-MM-DD' } } } },
   { name: 'trafego_cliente', description: 'O painel completo de UM cliente das entregas: totais, comparação com o período anterior, cada anúncio (puxando/queimando), o que foi feito, conquistas. Use pra "como tá o tráfego da Dani".', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, de: { type: 'string' }, ate: { type: 'string' } }, required: ['cliente'] } },
   { name: 'criar_entrega', description: 'CADASTRA um cliente novo nas ENTREGAS (cria o projeto com todos os marcos do roteiro e já põe a sessão de implantação na agenda). Use quando ele fechar uma venda: "cadastra o Fulano no Deu Venda, sessão terça às 14h na sede de POA". Grava direto. Se faltar a data/hora da sessão ou o lugar, pergunte antes.', input_schema: { type: 'object', properties: { cliente: { type: 'string', description: 'nome do cliente ou da empresa' }, whatsapp: { type: 'string' }, produto: { type: 'string', description: 'deu_venda (padrão), crm, combo (Deu Venda + CRM + Tráfego) ou crm_trafego' }, sessao: { type: 'string', description: 'data e hora da sessão de implantação, YYYY-MM-DDTHH:MM (Brasília). É a data de início do contrato.' }, local: { type: 'string', description: 'sede_lajeado | regiao_lajeado (na empresa do cliente, região de Lajeado) | sede_poa | regiao_poa' }, lead: { type: 'string', description: 'nome do lead de origem no CRM, se houver (liga a entrega ao card)' }, mensalidade_valor: { type: 'number' }, observacoes: { type: 'string' } }, required: ['cliente', 'sessao', 'local'] } },
+  { name: 'resumo_lead', description: 'A conversa inteira com um lead (WhatsApp nos dois canais, ligações, notas do time), em ordem. Use pra "resume a conversa com X", "o que rolou com X", antes de ele ligar pra alguém. Você resume em poucas linhas: situação, o que o lead quer, objeção, último contato, próximo passo.', input_schema: { type: 'object', properties: { nome: { type: 'string' } }, required: ['nome'] } },
+  { name: 'combinado_cliente', description: 'O que foi combinado com um CLIENTE das entregas (Deu Venda/CRM): meta, valores, observações da ficha, notas dos encontros, o que foi registrado e o que falta. Use pra "o que eu combinei com X", "como está a entrega do X".', input_schema: { type: 'object', properties: { cliente: { type: 'string' } }, required: ['cliente'] } },
   { name: 'registrar_vendas_cliente', description: 'GRAVA no placar de um cliente do Deu Venda/CRM as vendas e o faturamento de um mês ("a Dani fechou 3 vendas esse mês"). Grava direto; o painel do cliente atualiza.', input_schema: { type: 'object', properties: { cliente: { type: 'string' }, mes: { type: 'string', description: 'YYYY-MM, default mês atual' }, vendas: { type: 'number' }, faturamento: { type: 'number' }, observacao: { type: 'string' } }, required: ['cliente'] } },
 ]
 
@@ -264,6 +292,38 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     if (!r.ok) return { erro: r.error }
     return { ok: true, id: r.id, cliente: r.cliente, produto: ROTEIROS[produto].nome, marcos: r.marcos, sessao: sessao.toLocaleString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }), local: LOCAIS.find(l => l.chave === local)?.nome, lead_ligado: !!lead_id, ficha: `${origin}/dashboard/entregas/${r.id}` }
   }
+  if (name === 'resumo_lead') {
+    const { data } = await sb.from('leads').select('id, nome, whatsapp, etapa, origem, codigo_turma, valor_venda, negocio, maior_problema, resumo_ia, atendido_por, criado_em').eq('org_id', u.org_id).ilike('nome', '%' + input.nome + '%').order('atualizado_em', { ascending: false }).limit(3)
+    if (!data?.length) return { erro: 'lead não encontrado' }
+    const exato = data.find(l => l.nome.toLowerCase() === String(input.nome).toLowerCase())
+    if (data.length > 1 && !exato) return { erro: 'achei mais de um: ' + data.map(l => l.nome).join(' | ') + '. Qual?' }
+    const lead = exato || data[0]
+    const d = await dossieLead(sb, u.org_id, { id: lead.id, whatsapp: lead.whatsapp })
+    const linha = timelineDossie(d, 40).map(x => '[' + new Date(x.em).toLocaleString('pt-BR', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + '] ' + (x.quem === 'cliente' ? 'LEAD' : x.quem === 'nos' ? 'NÓS' : '') + ': ' + String(x.texto).slice(0, 300))
+    return { lead: { nome: lead.nome, etapa: lead.etapa, origem: lead.origem, turma: lead.codigo_turma, negocio: lead.negocio, problema: lead.maior_problema, atendido_por: lead.atendido_por, desde: lead.criado_em, resumo_anterior: lead.resumo_ia }, ultimo_contato_do_lead: d.ultimoEngajamentoEm, conversa: linha }
+  }
+  if (name === 'combinado_cliente') {
+    const { data } = await sb.from('projetos').select('*').eq('org_id', u.org_id).ilike('cliente', '%' + input.cliente + '%').order('criado_em', { ascending: false }).limit(2)
+    if (!data?.length) return { erro: 'cliente não encontrado nas entregas' }
+    if (data.length > 1) return { erro: 'achei mais de um: ' + data.map(p => p.cliente).join(' | ') + '. Qual?' }
+    const p = data[0]
+    const [{ data: marcos }, { data: and }, { data: reg }, { data: pend }, notas] = await Promise.all([
+      sb.from('projeto_marcos').select('titulo, estado, data_combinada, data_prevista, registro, local').eq('projeto_id', p.id).order('ordem'),
+      sb.from('projeto_andamentos').select('tipo, observacao, autor, criado_em').eq('projeto_id', p.id).order('criado_em', { ascending: false }).limit(20),
+      sb.from('projeto_registros').select('tipo, frente, titulo, descricao, data').eq('projeto_id', p.id).order('data', { ascending: false }).limit(10),
+      sb.from('projeto_pendencias').select('descricao, pedido_em, entregue_em').eq('projeto_id', p.id),
+      p.lead_id ? sb.from('lead_andamentos').select('tipo, observacao, criado_em').eq('lead_id', p.lead_id).order('criado_em', { ascending: false }).limit(15).then(r => r.data || []) : Promise.resolve([] as any[]),
+    ])
+    return {
+      cliente: p.cliente, produto: ROTEIROS[p.produto as Produto]?.nome || p.produto, fase: p.fase, inicio: p.data_inicio, fim: p.data_fim,
+      valores: { implantacao: p.valor_implantacao, mensalidade: p.mensalidade_valor, dia: p.mensalidade_dia, valor_cliente: p.valor_cliente, alvo_custo: p.alvo_custo_resultado },
+      meta: { objetivo: p.meta_objetivo, leads: p.meta_leads, vendas: p.meta_vendas, faturamento: p.meta_faturamento }, observacoes: p.observacoes,
+      encontros: (marcos || []).map((m: any) => ({ titulo: m.titulo, estado: m.estado, quando: m.data_combinada || m.data_prevista, local: m.local, registro: m.registro })),
+      andamentos: (and || []).map((a: any) => ({ em: a.criado_em, tipo: a.tipo, texto: a.observacao, autor: a.autor })),
+      registros: reg || [], pendencias_com_cliente: (pend || []).filter((x: any) => !x.entregue_em).map((x: any) => x.descricao),
+      notas_do_lead: (notas as any[]).filter((x: any) => x.observacao).map((x: any) => ({ em: x.criado_em, texto: x.observacao })),
+    }
+  }
   if (name === 'registrar_vendas_cliente') {
     const { data } = await sb.from('projetos').select('id, cliente').eq('org_id', u.org_id).in('status', ['ativo', 'manutencao']).ilike('cliente', `%${input.cliente}%`).limit(2)
     if (!data?.length) return { erro: 'cliente não encontrado nas entregas' }
@@ -306,7 +366,7 @@ COMO FALAR: é WhatsApp. Respostas curtas, diretas, em português, sem markdown 
 O QUE VOCÊ FAZ:
 1. Responde perguntas sobre a empresa com as ferramentas de dados (vendas, leads, financeiro, tráfego, clientes das entregas, turmas). Nunca invente número: se a ferramenta não trouxe, diga que não achou.
 2. Agenda: 'minha_agenda' pra ver; 'marcar' pra gravar reunião/lembrete; 'desmarcar' pra tirar. Você GRAVA DIRETO e confirma em uma linha ("Marcado: quinta 02/10, 14h, reunião com o Moacir, sede de POA."). Se ele disser que errou, use 'desmarcar' e grave de novo. Interprete datas relativas ("quinta", "amanhã", "semana que vem") a partir de hoje; sem horário, pergunte. Encontros com CLIENTES das entregas (projeto_marcos) você só lê; marcar esses é pela ficha do sistema.
-3. 'criar_entrega' cadastra um cliente novo nas entregas (cria o projeto, os marcos e a sessão na agenda). Precisa de cliente, data/hora da sessão e lugar (sede ou região, Lajeado ou POA); sem isso, pergunte. Produto padrão Deu Venda. Confirme em uma linha com a data da sessão e diga que a ficha está no sistema. Tráfego dos clientes das entregas: 'trafego_clientes' (todos, resumo) e 'trafego_cliente' (um, completo). Ao resumir vários, uma linha por cliente: nome, investido, conversas, custo, melhor anúncio; depois só o que pede atenção. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
+3. 'criar_entrega' cadastra um cliente novo nas entregas (cria o projeto, os marcos e a sessão na agenda). Precisa de cliente, data/hora da sessão e lugar (sede ou região, Lajeado ou POA); sem isso, pergunte. Produto padrão Deu Venda. Confirme em uma linha com a data da sessão e diga que a ficha está no sistema. 'resumo_lead' traz a conversa inteira com um lead: resuma em 4 a 6 linhas (situação, o que quer, objeção, último contato, próximo passo), sem copiar a conversa. 'combinado_cliente' traz a ficha da entrega: responda o que foi combinado (valores, meta, encontros, o que falta). Tráfego dos clientes das entregas: 'trafego_clientes' (todos, resumo) e 'trafego_cliente' (um, completo). Ao resumir vários, uma linha por cliente: nome, investido, conversas, custo, melhor anúncio; depois só o que pede atenção. 'anotar_lead' grava nota no histórico de um lead. 'registrar_vendas_cliente' grava vendas/faturamento do mês de um cliente do Deu Venda ou CRM.
 4. Ferramentas 'propor_*' do agente interno NÃO servem aqui (não há cartão pra confirmar no WhatsApp): se ele pedir despesa, mudança de fluxo ou regra da IA de vendas, diga que isso se faz pela tela do sistema.
 
 Quando gravar algo, a resposta é só a confirmação do que foi gravado. Quando responder pergunta, vá direto ao número. Se a mensagem veio de áudio transcrito e ficou ambígua, pergunte em vez de adivinhar.`
