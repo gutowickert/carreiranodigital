@@ -13,10 +13,12 @@ import { quemUsaMaquina } from '@/lib/maquina-acesso'
 // mais de dois minutos. Ninguém espera isso olhando pra "pensando…" — fecha a aba e conclui que
 // travou. O claude.ai não é mais rápido: ele MOSTRA enquanto escreve. Aqui é igual.
 //
-// ⚠️ O MODELO É O MESMO DO CLAUDE.AI, e o mais forte da família. Economizar centavos numa
-// ferramenta cujo argumento é "tão boa quanto o site" é economizar no lugar errado.
 
-const MODELO = 'claude-opus-5'
+// ⚠️ O MODELO DEPENDE DO QUE A MÁQUINA FAZ, não de "qual é o melhor". Decisão do dono (25/09/2026),
+// depois de US$ 3,70 num dia de uso na escola: pergunta sobre número, lead e funil (modo geral)
+// vai no Sonnet 5 — responde igual e custa 2,5× menos. Escrever anúncio, página e roteiro (modo
+// marketing, a máquina do Deu Venda) fica no Opus 5, porque ali a escrita É o produto.
+const modeloDaMaquina = (modo: 'geral' | 'marketing') => modo === 'marketing' ? 'claude-opus-5' : 'claude-sonnet-5'
 export const maxDuration = 300
 
 const evento = (t: string, d: any) => `data: ${JSON.stringify({ t, ...d })}\n\n`
@@ -49,6 +51,7 @@ export async function POST(req: NextRequest) {
 
   const client = new Anthropic({ apiKey: key })
   const cfg = await configDaMaquina()
+  const MODELO = modeloDaMaquina(cfg.modo)
   const sys = await sistemaDaMaquina(cfg.nome, cfg.modo)
   const enc = new TextEncoder()
 
