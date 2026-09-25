@@ -81,6 +81,14 @@ function aplicaFiltros(q: any, filtros: any[]) {
   return q
 }
 
+// ⚠️ TABELAS QUE A IA NÃO LÊ, mesmo em 'consultar'/'agregar' — regra dura pedida pelo dono
+// (25/09/2026). Não é código que ela poderia estragar (ela não tem mão pra isso); é SEGREDO que
+// ela poderia repetir na conversa: token de WhatsApp, chave de integração, login de usuário,
+// inscrição de push. Quem precisa desse dado abre a tela, não pergunta pra Máquina.
+const TABELAS_FECHADAS = new Set([
+  'organizacoes', 'usuarios_perfil', 'configuracoes', 'wa_oficial_config', 'wa_push_subs',
+])
+
 export async function runTool(name: string, input: any, origin?: string): Promise<any> {
   const { desde, ate } = input || {}
 
@@ -120,6 +128,7 @@ export async function runTool(name: string, input: any, origin?: string): Promis
 
   if (name === 'consultar') {
     if (!input?.tabela) return { erro: 'informe a tabela' }
+    if (TABELAS_FECHADAS.has(String(input.tabela).toLowerCase())) return { erro: `a tabela ${input.tabela} não é aberta pra consulta` }
     let q = supabase.from(input.tabela).select(input.colunas || '*')
     q = aplicaFiltros(q, input.filtros)
     if (input.ordenar) q = q.order(input.ordenar, { ascending: input.ascendente !== false })
@@ -131,6 +140,7 @@ export async function runTool(name: string, input: any, origin?: string): Promis
 
   if (name === 'agregar') {
     if (!input?.tabela) return { erro: 'informe a tabela' }
+    if (TABELAS_FECHADAS.has(String(input.tabela).toLowerCase())) return { erro: `a tabela ${input.tabela} não é aberta pra consulta` }
     const cols = [input.agrupar_por, input.somar].filter(Boolean).join(',') || '*'
     let q = supabase.from(input.tabela).select(cols)
     q = aplicaFiltros(q, input.filtros)

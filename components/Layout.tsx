@@ -25,7 +25,7 @@ const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 // Um ícone por tela (Lucide). Tela sem ícone aqui recebe um ponto — e é sinal pra cadastrar.
 const ICONES: Record<string, LucideIcon> = {
   '/dashboard': LayoutDashboard, '/dashboard/agenda': CalendarDays,
-  '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
+  '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
   '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
   '/dashboard/ligacoes': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
   '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
@@ -126,6 +126,8 @@ const grupos: Grupo[] = [
   {
     titulo: 'Inteligência Artificial',
     itens: [
+      // o nome real vem de organizacoes.config.maquina.nome (Máquina CND / Studio Mkt) — ver rotulo()
+      { nome: 'Máquina CND', href: '/dashboard/maquina', feat: 'maquina' },
       { nome: 'Agente Interno', href: '/dashboard/agente-interno' },
       { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
       { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
@@ -184,6 +186,9 @@ function bipe() {
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
+  // A Máquina lê o sistema inteiro: só admin e comercial (decisão do dono, 25/09/2026). A rota
+  // confere a mesma regra (lib/maquina-acesso) — o menu é só a primeira porta.
+  if (href === '/dashboard/maquina') return p.papel !== 'professor' && p.setor !== 'professor' && (p.papel === 'admin' || p.setor === 'comercial')
   if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   // Instalações é só de admin, e a rota confere de novo no servidor — menu escondido é decoração
   // se a rota responde pra qualquer um.
@@ -380,10 +385,13 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const feats = (marca?.config?.features) || {}
   const featOk = (i: Item) => {
     if (i.feat === 'superadmin') return marca?.id === CND_ID // só a CnD vê o painel do SaaS
+    if (i.feat === 'maquina') return feats.maquina === true // opt-in: gasta dinheiro, só aparece ligada
     return !i.feat || feats[i.feat] !== false // opt-out: só some se explicitamente false
   }
+  // a Máquina se chama como a empresa quiser (Máquina CND aqui, Studio Mkt na GAJA)
+  const rotulo = (i: Item): Item => i.feat === 'maquina' && marca?.config?.maquina?.nome ? { ...i, nome: marca.config.maquina.nome } : i
   const gruposVisiveis = grupos
-    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
+    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i)).map(rotulo)) }))
     .filter(g => g.itens.some(i => i.href))
 
   const menuVisivel = !isMobile || menuMobileAberto
