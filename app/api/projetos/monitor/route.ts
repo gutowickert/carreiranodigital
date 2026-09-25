@@ -13,7 +13,7 @@ export async function GET(req: Request) {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
     const org = await orgDaRequest(auth)
-    const dias = Math.min(90, Math.max(3, Number(new URL(req.url).searchParams.get('dias')) || LIMITES.janelaDias))
+    const dias = Math.min(90, Math.max(1, Number(new URL(req.url).searchParams.get('dias')) || LIMITES.janelaDias))
     return NextResponse.json(await montarMonitor(org, dias))
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })

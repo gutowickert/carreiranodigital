@@ -166,6 +166,9 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
   const m30 = (d30 || []).reduce((a, l) => ({ g: a.g + Number(l.gasto) * (1 + pct / 100), r: a.r + Number(l.resultados) }), { g: 0, r: 0 })
   const media30 = m30.r >= LIMITES.minResultados ? m30.g / m30.r : null
   const nome = painel.nome
+  // janela curta (hoje, 3 dias): só alertas de estado; leitura de custo e de resultado pede dias
+  const janela = diasEntre(de, hoje)
+  const leCusto = janela >= 3
 
   // ── a campanha ainda não começou? Antes da sessão é normal (cinza); depois da sessão é problema
   // (se a conta não pode ser lida, não dá pra afirmar que não há campanha: fica só o aviso de acesso)
@@ -195,21 +198,21 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
     const grave = parado >= LIMITES.diasSemGasto * 2
     base.alertas.push({ nivel: grave ? 'vermelho' : 'amarelo', chave: 'parou', titulo: `Campanha parada há ${parado} dias: tudo pausado, nenhum anúncio ativo`, acao: grave ? 'Reativar ou subir a próxima campanha hoje' : 'Foi de propósito? Se não, reativar' })
   }
-  if (t.gasto > 0 && t.resultados === 0 && !ultimos.every(d => d.gasto === 0)) base.alertas.push({ nivel: 'vermelho', chave: 'sem_resultado', titulo: `${fmtBRL(t.gasto)} em ${LIMITES.janelaDias} dias sem nenhum resultado`, acao: 'Trocar criativo ou público hoje' })
-  if (t.custo != null && t.resultados >= LIMITES.minResultados) {
+  if (leCusto && t.gasto > 0 && t.resultados === 0 && !ultimos.every(d => d.gasto === 0)) base.alertas.push({ nivel: 'vermelho', chave: 'sem_resultado', titulo: `${fmtBRL(t.gasto)} em ${LIMITES.janelaDias} dias sem nenhum resultado`, acao: 'Trocar criativo ou público hoje' })
+  if (leCusto && t.custo != null && t.resultados >= LIMITES.minResultados) {
     if (base.alvo_custo && t.custo > base.alvo_custo * LIMITES.custoVsAlvo) base.alertas.push({ nivel: 'vermelho', chave: 'custo_alvo', titulo: `Custo ${fmtBRL(t.custo)}, mais de ${LIMITES.custoVsAlvo}× o alvo de ${fmtBRL(base.alvo_custo)}`, acao: 'Rever público e oferta' })
     else if (!base.alvo_custo && media30 && t.custo > media30 * LIMITES.custoVsMedia) base.alertas.push({ nivel: 'vermelho', chave: 'custo_media', titulo: `Custo ${fmtBRL(t.custo)}, mais de ${LIMITES.custoVsMedia}× a média de 30 dias (${fmtBRL(media30)})`, acao: 'Rever público e oferta' })
   }
 
   // ── amarelos: sinal de desgaste ou de descuido
-  if (ant && ant.custo && t.custo && t.resultados >= LIMITES.minResultados && ant.resultados >= LIMITES.minResultados) {
+  if (leCusto && ant && ant.custo && t.custo && t.resultados >= LIMITES.minResultados && ant.resultados >= LIMITES.minResultados) {
     const sub = Math.round(((t.custo - ant.custo) / ant.custo) * 100)
     if (sub > LIMITES.altaCustoPct) base.alertas.push({ nivel: 'amarelo', chave: 'custo_subiu', titulo: `Custo subiu ${sub}% contra o período anterior`, acao: 'Ver se é o criativo cansando ou o público saturado' })
   }
   if (base.idade_criativo != null && base.idade_criativo > LIMITES.idadeCriativo && puxa) base.alertas.push({ nivel: 'amarelo', chave: 'criativo_velho', titulo: `"${puxa.nome}" puxa há ${base.idade_criativo} dias`, acao: 'Preparar o próximo criativo antes de cansar' })
   if (ativos.length === 1 && t.gasto > 0) base.alertas.push({ nivel: 'amarelo', chave: 'um_anuncio', titulo: 'Só um anúncio ativo, sem teste rodando', acao: 'Subir um segundo anúncio pra comparar' })
   // com pouca verba no período, "32% da verba" são R$ 10: não se afirma nada
-  const queimando = t.gasto >= LIMITES.minGastoLeitura ? painel.anuncios.filter(a => a.situacao === 'queimando' && !PAUSADO(a.status) && a.gasto / t.gasto * 100 >= LIMITES.queimaPct) : []
+  const queimando = leCusto && t.gasto >= LIMITES.minGastoLeitura ? painel.anuncios.filter(a => a.situacao === 'queimando' && !PAUSADO(a.status) && a.gasto / t.gasto * 100 >= LIMITES.queimaPct) : []
   for (const q of queimando.slice(0, 2)) base.alertas.push({ nivel: 'amarelo', chave: 'queimando_' + q.ad_id, titulo: `"${q.nome}" levou ${Math.round(q.gasto / t.gasto * 100)}% da verba ${q.resultados ? `a ${fmtBRL(q.custo!)} cada` : 'sem resultado'}`, acao: `Pausar "${q.nome}"` })
   if (painel.sincronizado_em && diasEntre(String(painel.sincronizado_em).slice(0, 10), hoje) - 1 > LIMITES.diasSemSync) base.alertas.push({ nivel: 'amarelo', chave: 'sem_sync', titulo: `Dados da Meta de ${String(painel.sincronizado_em).slice(0, 10).split('-').reverse().join('/')}`, acao: 'Sincronizar' })
 

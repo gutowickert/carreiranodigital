@@ -271,12 +271,12 @@ export default function Monitor() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Monitor das entregas</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu nos últimos {dias} dias. Verde em cima, vermelho embaixo. Clica no card pra ver tudo.</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu {dias === 1 ? 'hoje' : `nos últimos ${dias} dias`}. Verde em cima, vermelho embaixo. Clica no card pra ver tudo.{dias < 3 ? ' Em janela curta só entram os alertas de estado (conta, saldo, campanha parada, entrega); leitura de custo pede pelo menos 3 dias.' : ''}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--border-strong)', borderRadius: 8, overflow: 'hidden' }}>
-            {[7, 14, 30].map(n => (
-              <button key={n} onClick={() => escolher(n)} style={{ border: 'none', padding: '6px 12px', fontSize: 12.5, cursor: 'pointer', fontWeight: dias === n ? 700 : 400, background: dias === n ? 'var(--accent)' : 'var(--surface-2)', color: dias === n ? '#fff' : 'var(--text-2)' }}>{n} dias</button>
+            {([[1, 'Hoje'], [3, '3 dias'], [7, '7 dias'], [14, '14 dias'], [30, '30 dias']] as const).map(([n, l]) => (
+              <button key={n} onClick={() => escolher(n)} style={{ border: 'none', padding: '6px 12px', fontSize: 12.5, cursor: 'pointer', fontWeight: dias === n ? 700 : 400, background: dias === n ? 'var(--accent)' : 'var(--surface-2)', color: dias === n ? '#fff' : 'var(--text-2)' }}>{l}</button>
             ))}
           </div>
           <button onClick={async () => { setSincTodos('lendo a Meta de todos…'); await sincronizar(); setSincTodos('') }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{sincTodos || '↻ Sincronizar todos'}</button>
