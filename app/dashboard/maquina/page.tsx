@@ -334,7 +334,7 @@ export default function Maquina() {
               )}
               <textarea ref={campo} value={input} onChange={e => setInput(e.target.value)}
                 onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) enviar() }}
-                placeholder="Fala com ela — pede, pergunta, troca ideia…"
+                placeholder="Fala com ela — pergunta, manda produzir, troca ideia…"
                 style={{ width: '100%', minHeight: 74, resize: 'vertical', background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '10px 12px', fontSize: 14.5, color: 'var(--text)', outline: 'none', fontFamily: 'inherit', lineHeight: 1.5 }} />
               <div style={{ display: 'flex', gap: 8, marginTop: 9, alignItems: 'center', flexWrap: 'wrap' }}>
                 <button onClick={enviar} disabled={pensando || (!input.trim() && !anexos.length)} style={{ ...btnPri, opacity: pensando || (!input.trim() && !anexos.length) ? .5 : 1 }}>
