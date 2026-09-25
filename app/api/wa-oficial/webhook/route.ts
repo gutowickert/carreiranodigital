@@ -8,6 +8,7 @@ import { criarOuAtribuirLeadDoWa } from '@/lib/lead-do-wa'
 import { classificarTemperatura } from '@/lib/temperatura'
 import { lerRespostaDeReconfirmacao } from '@/lib/reconfirmar'
 import { ORG_CND } from '@/lib/org'
+import { usuarioDoNumero, responder as responderAssistente } from '@/lib/assistente'
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -188,7 +189,18 @@ export async function POST(req: NextRequest) {
       for (const ch of (e.changes || [])) {
         // respostas recebidas: guarda na caixa "WhatsApp Disparos" + funil (respondeu/opt-out)
         for (const m of (ch.value?.messages || [])) {
-          if (m.from) await registrarRecebida(m, ch.value)
+          if (!m.from) continue
+          // GENTE DO TIME NÃO É LEAD. Mensagem vinda do WhatsApp de alguém de usuarios_perfil vai
+          // pro assistente pessoal e NÃO passa por registrarRecebida: não cria lead, não cria
+          // conversa, não aparece na caixa de entrada. Responde no after() porque a Meta quer o
+          // 200 rápido e a IA leva segundos.
+          const doTime = await usuarioDoNumero(m.from).catch(() => null)
+          if (doTime) {
+            const origin = req.nextUrl.origin
+            after(async () => { try { await responderAssistente(doTime, m, origin) } catch { /* melhor esforço */ } })
+            continue
+          }
+          await registrarRecebida(m, ch.value)
         }
         const statuses = ch.value?.statuses || []
         for (const st of statuses) {

@@ -11,6 +11,8 @@ const EXEMPLO: Record<string, string> = {
   nome: 'Maria', vendedor: 'Ricardo', cidade: 'Porto Alegre', curso: 'Anúncios para Negócios Locais',
   datas: '11, 12 e 13/08', preco_pix: 'R$797', preco_parcelado: '6x de R$166,17', preco_cartao: '6x de R$166,17',
   prazo: '25/08', condicao_bolsa: 'R$697 à vista',
+  // o bom dia do assistente do time
+  compromissos: '3', primeiro: '14:00 Moacir: Encontro 2 (sede de Porto Alegre)',
 }
 
 // {{nome}} {{cidade}} ... -> {{1}} {{2}} ... + lista de exemplos na ordem
