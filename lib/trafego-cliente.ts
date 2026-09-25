@@ -163,8 +163,14 @@ async function avaliarConquistas(p: Projeto) {
 
   // pessoas alcançadas desde o início (a Meta conta pessoa única; não dá pra somar dias)
   const alcance = p.ad_account_id ? await getAlcanceTotal(p.ad_account_id, inicio, hoje) : null
-  if (alcance) for (const g of DEGRAUS_ALCANCE) if (alcance >= g) {
-    add(`alcance_${g}`, `${fmtInt(g)} pessoas alcançadas`, `${fmtInt(alcance)} pessoas da tua região já viram o teu anúncio.`, alcance, hoje)
+  // cada degrau com a própria frase; o número exato só no maior, senão as três dizem a mesma coisa
+  if (alcance) {
+    const batidos = DEGRAUS_ALCANCE.filter(g => alcance >= g)
+    for (const g of batidos) {
+      const maior = g === batidos[batidos.length - 1]
+      add(`alcance_${g}`, `${fmtInt(g)} pessoas alcançadas`,
+        maior ? `${fmtInt(alcance)} pessoas da tua região já viram o teu anúncio.` : `Mais de ${fmtInt(g)} pessoas da tua região já viram o teu anúncio.`, alcance, hoje)
+    }
   }
 
   // meses: melhor mês e custo no alvo (só mês fechado, pra não destravar e desdestravar)
