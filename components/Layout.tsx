@@ -71,6 +71,15 @@ const grupos: Grupo[] = [
     ],
   },
   {
+    // ÁREA PRÓPRIA, por decisão do dono (25/09/2026): a Máquina não é "mais uma tela de IA", é o
+    // lugar onde se trabalha com o sistema. O título vem de organizacoes.config.maquina.nome
+    // (Máquina CND aqui, Studio Mkt na GAJA) — ver rotulo().
+    titulo: 'Máquina CND',
+    itens: [
+      { nome: 'Trabalhar', href: '/dashboard/maquina', feat: 'maquina' },
+    ],
+  },
+  {
     titulo: 'Vendas',
     itens: [
       { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
@@ -126,8 +135,6 @@ const grupos: Grupo[] = [
   {
     titulo: 'Inteligência Artificial',
     itens: [
-      // o nome real vem de organizacoes.config.maquina.nome (Máquina CND / Studio Mkt) — ver rotulo()
-      { nome: 'Máquina CND', href: '/dashboard/maquina', feat: 'maquina' },
       { nome: 'Agente Interno', href: '/dashboard/agente-interno' },
       { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
       { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
@@ -388,10 +395,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     if (i.feat === 'maquina') return feats.maquina === true // opt-in: gasta dinheiro, só aparece ligada
     return !i.feat || feats[i.feat] !== false // opt-out: só some se explicitamente false
   }
-  // a Máquina se chama como a empresa quiser (Máquina CND aqui, Studio Mkt na GAJA)
-  const rotulo = (i: Item): Item => i.feat === 'maquina' && marca?.config?.maquina?.nome ? { ...i, nome: marca.config.maquina.nome } : i
+  // a área da Máquina se chama como a empresa quiser (Máquina CND aqui, Studio Mkt na GAJA)
+  const nomeMaquina = marca?.config?.maquina?.nome
+  const rotulo = (g: Grupo): Grupo => g.titulo === 'Máquina CND' && nomeMaquina ? { ...g, titulo: nomeMaquina } : g
   const gruposVisiveis = grupos
-    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i)).map(rotulo)) }))
+    .map(rotulo)
+    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
     .filter(g => g.itens.some(i => i.href))
 
   const menuVisivel = !isMobile || menuMobileAberto
