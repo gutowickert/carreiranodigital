@@ -229,7 +229,7 @@ async function transcrever(mediaId: string): Promise<string | null> {
 
 // as ferramentas de ESCRITA, só do assistente (o agente interno da tela continua só leitura)
 const TOOLS_AGENDA = [
-  { name: 'minha_agenda', description: 'A agenda do usuário num dia: reuniões, tarefas, encontros com clientes, aulas. Use pra "o que tenho hoje/amanhã/quinta".', input_schema: { type: 'object', properties: { data: { type: 'string', description: 'YYYY-MM-DD' } }, required: ['data'] } },
+  { name: 'minha_agenda', description: 'A agenda do usuário num dia OU num período (até 14 dias): reuniões, tarefas, encontros com clientes, aulas. Use pra "o que tenho hoje/amanhã/quinta", "minha agenda da semana", "agenda da próxima semana" (segunda a sábado da semana que vem).', input_schema: { type: 'object', properties: { data: { type: 'string', description: 'YYYY-MM-DD (um dia)' }, de: { type: 'string', description: 'YYYY-MM-DD (início do período)' }, ate: { type: 'string', description: 'YYYY-MM-DD (fim do período)' } } } },
   { name: 'marcar', description: 'GRAVA um compromisso (reunião) ou lembrete (tarefa) na agenda do usuário. Grava direto. Use quando ele mandar marcar, agendar, lembrar.', input_schema: { type: 'object', properties: { titulo: { type: 'string' }, inicio: { type: 'string', description: 'YYYY-MM-DDTHH:MM no horário de Brasília' }, duracao_min: { type: 'number', description: 'default 60' }, tipo: { type: 'string', description: 'reuniao ou tarefa (default reuniao)' }, descricao: { type: 'string', description: 'lugar, com quem, o que levar' } }, required: ['titulo', 'inicio'] } },
   { name: 'desmarcar', description: 'Apaga da agenda um compromisso criado pelo assistente (pra "desfaz", "cancela a reunião de quinta"). Informe a data e parte do título.', input_schema: { type: 'object', properties: { data: { type: 'string', description: 'YYYY-MM-DD' }, titulo: { type: 'string' } }, required: ['data', 'titulo'] } },
   { name: 'anotar_lead', description: 'GRAVA uma nota no histórico de um lead ("anota no lead da Jessica que..."). Grava direto.', input_schema: { type: 'object', properties: { nome: { type: 'string' }, texto: { type: 'string' } }, required: ['nome', 'texto'] } },
@@ -245,8 +245,13 @@ const TOOLS_AGENDA = [
 
 async function runToolAssistente(u: Usuario, name: string, input: any, origin: string): Promise<any> {
   if (name === 'minha_agenda') {
-    const itens = await agendaDoDia(u, input.data)
-    return { data: input.data, itens: itens.map(i => ({ hora: i.hora, titulo: i.titulo, detalhe: i.detalhe || null, origem: i.origem })) }
+    const de = input.de || input.data || hojeBR(), ate = input.ate || input.data || de
+    const dias: any[] = []
+    for (let d = de, n = 0; d <= ate && n < 14; d = menosDias(d, -1), n++) {
+      const itens = await agendaDoDia(u, d)
+      dias.push({ data: d, dia: nomeDia(d), itens: itens.map(i => ({ hora: i.hora, titulo: i.titulo, detalhe: i.detalhe || null, origem: i.origem })) })
+    }
+    return dias.length === 1 ? dias[0] : { de, ate, dias }
   }
   if (name === 'marcar') {
     const ini = new Date(String(input.inicio).length <= 16 ? `${input.inicio}:00-03:00` : input.inicio)
@@ -412,6 +417,8 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
 
 const SYSTEM = (u: Usuario) => `Você é o assistente pessoal de ${chamar(u)} (chame-o assim, nunca pelo nome do cadastro), dono da Carreira no Digital, falando com ele pelo WhatsApp. Hoje é ${hojeBR()} (${nomeDia(hojeBR())}), fuso America/Sao_Paulo.
 
+RESPONDA À ÚLTIMA MENSAGEM DELE. O histórico é só contexto: se um pedido antigo ficou sem fechar e ele mudou de assunto, deixe o antigo pra lá e não pergunte de novo sobre ele. Nunca repita a mesma pergunta duas vezes; se a resposta dele não encaixa na tua pergunta, é porque ele quer outra coisa: atenda a outra coisa.
+
 COMO FALAR: é WhatsApp. Respostas curtas, diretas, em português, sem markdown (nada de asteriscos duplos, cabeçalhos ou tabelas; use quebras de linha e o marcador "•" quando listar). Nunca use travessão. Nunca emoji. Trate por "tu".
 
 O QUE VOCÊ FAZ:
@@ -447,7 +454,10 @@ export async function responder(u: Usuario, m: any, origin: string) {
   await guardar(u, 'usuario', (m.type === 'audio' || m.type === 'voice') ? `🎤 ${texto}` : texto, m.id)
 
   // memória curta: o que foi dito nas últimas 24h
-  const { data: hist } = await sb.from('assistente_mensagens').select('papel, texto').eq('usuario_id', u.id).gte('criado_em', new Date(Date.now() - 24 * 3600 * 1000).toISOString()).order('criado_em').limit(30)
+  // memória curta de verdade: 3 horas e 16 mensagens. Com 24h ele revivia um pedido antigo
+  // (o encontro da Natália) e ignorava o que estava sendo pedido agora.
+  const { data: histTodo } = await sb.from('assistente_mensagens').select('papel, texto').eq('usuario_id', u.id).gte('criado_em', new Date(Date.now() - 3 * 3600 * 1000).toISOString()).order('criado_em', { ascending: false }).limit(16)
+  const hist = (histTodo || []).reverse()
   const messages: any[] = []
   for (const h of hist || []) {
     if (h.papel === 'sistema') continue
