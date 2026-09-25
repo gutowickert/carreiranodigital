@@ -24,28 +24,31 @@ type Pendencia = { id: string; tipo: string; acao?: string; [k: string]: any; _f
 type Msg = { role: 'user' | 'assistant'; content: string; anexos?: Anexo[]; fontes?: string[]; salvas?: PecaMini[]; pendencias?: Pendencia[] }
 type PecaMini = { id: string; titulo: string; tipo: string; formato: string; conteudo?: string }
 type Peca = PecaMini & { conteudo: string; situacao: string; criado_em: string; autor: string | null }
-type Atalho = { nome: string; icone: string; abre: string }
+type Atalho = { nome: string; icone: string; faz: string; abre: string }
 
+// ⚠️ CADA ATALHO DIZ O QUE VAI ACONTECER. A primeira versão era só nome + emoji ("Um lead", "A IA
+// de vendas") e o dono não soube dizer o que cada um fazia. Verbo no nome, uma linha embaixo, e a
+// frase que ele coloca no campo já meio pronta — a pessoa só completa.
 const ATALHOS: Record<'geral' | 'marketing', Atalho[]> = {
   geral: [
-    { nome: 'Como foi a semana', icone: '📊', abre: 'Me conta como foi a semana: vendas, leads novos, o que se perdeu e por quê.' },
-    { nome: 'O que mais se perde', icone: '🕳️', abre: 'Quais são os principais motivos de perda dos últimos 30 dias, e o que tu faria a respeito?' },
-    { nome: 'Um lead', icone: '👤', abre: 'Me mostra o lead ' },
-    { nome: 'A IA de vendas', icone: '🤖', abre: 'O que a IA de vendas está fazendo de errado? Simula ' },
-    { nome: 'Anúncio', icone: '📣', abre: 'Quero um anúncio para ' },
-    { nome: 'Página de oferta', icone: '📄', abre: 'Monta uma página de oferta para ' },
-    { nome: 'Pesquisar', icone: '🔎', abre: 'Pesquisa na internet o que ' },
-    { nome: 'Trocar uma ideia', icone: '💭', abre: 'Estou pensando em ' },
+    { nome: 'Resumo da semana', icone: '📊', faz: 'vendas, leads novos, perdas', abre: 'Me conta como foi a semana: vendas, leads novos, o que se perdeu e por quê.' },
+    { nome: 'Por que estamos perdendo', icone: '🕳️', faz: 'motivos de perda e o que fazer', abre: 'Quais os principais motivos de perda dos últimos 30 dias, e o que tu faria a respeito?' },
+    { nome: 'Ver um lead', icone: '👤', faz: 'histórico e situação de alguém', abre: 'Me mostra tudo sobre o lead ' },
+    { nome: 'Testar a IA de vendas', icone: '🤖', faz: 'simula o que ela responderia', abre: 'Simula o que a IA de vendas responderia se um lead dissesse: ' },
+    { nome: 'Escrever um anúncio', icone: '📣', faz: 'texto pronto pra subir', abre: 'Quero um anúncio para ' },
+    { nome: 'Montar uma página', icone: '📄', faz: 'página de oferta que dá pra ver', abre: 'Monta uma página de oferta para ' },
+    { nome: 'Pesquisar na internet', icone: '🔎', faz: 'concorrente, mercado, um dado', abre: 'Pesquisa na internet ' },
+    { nome: 'Pensar junto', icone: '💭', faz: 'trocar ideia antes de decidir', abre: 'Estou pensando em ' },
   ],
   marketing: [
-    { nome: 'Anúncio', icone: '📣', abre: 'Quero um anúncio para ' },
-    { nome: 'Carrossel', icone: '🎠', abre: 'Quero um carrossel sobre ' },
-    { nome: 'Roteiro de vídeo', icone: '🎬', abre: 'Quero um roteiro de vídeo sobre ' },
-    { nome: 'Legenda', icone: '✍️', abre: 'Quero uma legenda para um post sobre ' },
-    { nome: 'Página de oferta', icone: '📄', abre: 'Monta uma página de oferta para ' },
-    { nome: 'Resposta pro WhatsApp', icone: '💬', abre: 'O cliente perguntou: ' },
-    { nome: 'Pesquisar', icone: '🔎', abre: 'Pesquisa na internet o que ' },
-    { nome: 'Trocar uma ideia', icone: '💭', abre: 'Estou pensando em ' },
+    { nome: 'Escrever um anúncio', icone: '📣', faz: 'texto pronto pra subir', abre: 'Quero um anúncio para ' },
+    { nome: 'Fazer um carrossel', icone: '🎠', faz: 'cada tela já escrita', abre: 'Quero um carrossel sobre ' },
+    { nome: 'Roteiro de vídeo', icone: '🎬', faz: 'o que falar em cada parte', abre: 'Quero um roteiro de vídeo sobre ' },
+    { nome: 'Legenda de post', icone: '✍️', faz: 'pronta pra colar', abre: 'Quero uma legenda para um post sobre ' },
+    { nome: 'Montar uma página', icone: '📄', faz: 'página de oferta que dá pra ver', abre: 'Monta uma página de oferta para ' },
+    { nome: 'Responder no WhatsApp', icone: '💬', faz: 'resposta pra um cliente', abre: 'O cliente perguntou: ' },
+    { nome: 'Pesquisar na internet', icone: '🔎', faz: 'concorrente, mercado, um dado', abre: 'Pesquisa na internet ' },
+    { nome: 'Pensar junto', icone: '💭', faz: 'trocar ideia antes de decidir', abre: 'Estou pensando em ' },
   ],
 }
 const NOME_TIPO: Record<string, string> = {
@@ -265,11 +268,13 @@ export default function Maquina() {
           <>
             {!msgs.length && (
               <div style={{ ...card, marginBottom: 14 }}>
-                <div style={rot}>Atalhos — ou escreve o que quiser embaixo</div>
+                <div style={rot}>Clica num pra começar a frase — ou escreve direto embaixo</div>
                 <div className="grade-atalhos" style={{ marginTop: 11 }}>
                   {atalhos.map(a => (
-                    <button key={a.nome} onClick={() => atalho(a)} style={{ textAlign: 'left', cursor: 'pointer', padding: '12px 13px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)', fontSize: 13, fontWeight: 700 }}>
-                      <div style={{ fontSize: 17, marginBottom: 3 }}>{a.icone}</div>{a.nome}
+                    <button key={a.nome} onClick={() => atalho(a)} style={{ textAlign: 'left', cursor: 'pointer', padding: '12px 13px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: 'var(--r)', color: 'var(--text)' }}>
+                      <div style={{ fontSize: 17, marginBottom: 4 }}>{a.icone}</div>
+                      <div style={{ fontSize: 13, fontWeight: 700, lineHeight: 1.3 }}>{a.nome}</div>
+                      <div style={{ fontSize: 11.5, color: 'var(--text-faint)', marginTop: 3, lineHeight: 1.35 }}>{a.faz}</div>
                     </button>
                   ))}
                 </div>
