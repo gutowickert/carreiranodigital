@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, REGIOES, conflitoDeRegiao, nomeDoLocal, type Produto } from '@/lib/entrega'
+import { ROTEIROS, type Produto } from '@/lib/entrega'
+import { combinarMarco } from '@/lib/marco-acoes'
 
 // A máquina de estados do compromisso.
 //   combinar  → data e hora acertadas com o cliente (na sessão anterior)
@@ -58,60 +59,10 @@ export async function POST(req: Request) {
     }
 
     if (acao === 'combinar' || acao === 'remarcar') {
-      const dataHora = (b.data_hora || '').toString()
-      if (!dataHora) return erro('informe a data e a hora combinadas')
-      const nova = new Date(dataHora)
-      if (isNaN(nova.getTime())) return erro('data inválida')
-
-      const novaData = nova.toISOString().slice(0, 10)
-      // data antes do início do projeto é erro de digitação, não agenda
-      const inicio = String(projeto?.data_inicio || '').slice(0, 10)
-      if (inicio && novaData < inicio) {
-        return erro(`Essa data (${novaData.split('-').reverse().join('/')}) é antes do início do projeto (${inicio.split('-').reverse().join('/')}). Confere o dia.`)
-      }
-      const antes = (marco.data_combinada || marco.data_prevista || '').slice(0, 10)
-      const desloc = antes ? diasAte(novaData, antes) : 0
-
-      // ⚠️ ONDE É O ENCONTRO — obrigatório. Se fosse opcional, metade ficaria sem lugar e a agenda
-      // passaria a mentir PARECENDO que sabe, que é pior que a situação de hoje. É o que permite o
-      // time ver, de relance, se o dia já está comprometido com a outra região.
-      const local = (b.local || '').toString()
-      if (!LOCAIS.some(l => l.chave === local)) {
-        return erro('escolhe onde vai ser o encontro — é o que diz pro time se o dia já está comprometido com a outra região')
-      }
-
-      // O CONFLITO DE REGIÃO: avisa, não proíbe. Quem chamou já viu o aviso e mandou `mesmo_assim`.
-      // Exceção legítima existe (9h em Lajeado e 19h em Porto Alegre pode caber num dia), e trava
-      // que não deixa exceção passar é trava que o time contorna por fora do sistema.
-      const { data: doDia } = await sb.from('projeto_marcos')
-        .select('id, local, estado').eq('org_id', org).eq('data_prevista', novaData).neq('id', marcoId)
-      const conf = conflitoDeRegiao(local, (doDia || []) as any)
-      if (conf.conflito && !b.mesmo_assim) {
-        return NextResponse.json({
-          ok: false, precisa_confirmar_regiao: true,
-          error: `Nesse dia já tem ${conf.quantos} atendimento${conf.quantos > 1 ? 's' : ''} em ${REGIOES[conf.outra!].nome}. Não dá tempo do deslocamento pra ${REGIOES[conf.regiao!].nome} no mesmo dia.`,
-        }, { status: 200 })
-      }
-
-      await sb.from('projeto_marcos').update({
-        local,
-        // data nova = combinação nova: a reconfirmação anterior não vale mais
-        reconfirmacao_enviada_em: null, reconfirmacao_2a_em: null,
-        reconfirmacao_resposta: null, reconfirmacao_resposta_em: null,
-        data_combinada: nova.toISOString(), data_prevista: novaData,
-        estado: 'combinado', confirmado_em: null, atualizado_em: agora,
-      }).eq('id', marcoId)
-
-      // os posteriores acompanham o deslocamento; a âncora fica onde está
-      let aviso: string | null = null
-      if (desloc !== 0 && irmaos?.length) {
-        const { mover, esbarrouNaAncora } = empurrarPosteriores(irmaos as any, marco.ordem, desloc)
-        for (const m of mover) await sb.from('projeto_marcos').update({ data_prevista: m.data_prevista, atualizado_em: agora }).eq('id', m.id)
-        if (esbarrouNaAncora) aviso = 'Um dos próximos passos bateu na data de fim do contrato e não foi empurrado. Vale olhar o prazo.'
-      }
-
-      await registrar(acao, `${acao === 'combinar' ? '📅 Combinado' : '🔄 Remarcado'}: ${marco.titulo} para ${fmt(nova.toISOString())} — ${nomeDoLocal(local)}${desloc ? ` (${desloc > 0 ? '+' : ''}${desloc} dias)` : ''}.`)
-      return ok({ aviso })
+      // a lógica vive em lib/marco-acoes.ts: é o mesmo caminho do assistente do WhatsApp
+      const r = await combinarMarco(org, marcoId, (b.data_hora || '').toString(), (b.local || '').toString(), { acao, mesmoAssim: !!b.mesmo_assim, autor: (b.autor || '').toString() || null })
+      if (!r.ok) return NextResponse.json({ ok: false, error: r.error, ...(r.precisa_confirmar_regiao ? { precisa_confirmar_regiao: true } : {}) }, { status: 200 })
+      return ok({ aviso: r.aviso })
     }
 
     // ───────────────────────────────────────────────────── confirmar
