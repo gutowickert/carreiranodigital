@@ -20,6 +20,15 @@ const ICE: RTCIceServer[] = [
 type Sinal = { t: 'pronto' | 'offer' | 'answer' | 'ice' | 'sair'; de: 'host' | 'lead'; sdp?: any; cand?: any }
 type Fase = 'carregando' | 'invalida' | 'antes' | 'conectando' | 'conectado' | 'encerrada' | 'erro'
 
+// o navegador diz o motivo pelo nome do erro; traduzido pra quem está do outro lado da tela
+function motivoMidia(e: any) {
+  const n = e?.name || ''
+  if (n === 'NotAllowedError' || n === 'SecurityError') return 'permissão negada no navegador. Clica no cadeado ao lado do endereço, libera microfone e câmera e recarrega'
+  if (n === 'NotFoundError' || n === 'DevicesNotFoundError') return 'nenhum dispositivo encontrado. Confere se está conectado'
+  if (n === 'NotReadableError' || n === 'TrackStartError') return 'o dispositivo está em uso por outro programa (OBS, Zoom, Teams, NDI). Fecha ele e tenta de novo'
+  if (n === 'OverconstrainedError') return 'o dispositivo não aceitou a configuração pedida'
+  return n || 'erro desconhecido'
+}
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function Chamada({ params }: { params: Promise<{ codigo: string }> }) {
@@ -68,9 +77,17 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
 
   async function entrar() {
     setFase('conectando'); setErro('')
+    // câmera é opcional: se ela falhar (em uso por outro programa, bloqueada), entra só com voz e avisa.
+    // Microfone é obrigatório, e o erro diz o motivo de verdade, não um genérico.
+    const audio = { echoCancellation: true, noiseSuppression: true }
+    let usouVideo = comVideo
     try {
-      local.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: comVideo ? { facingMode: 'user', width: { ideal: 640 } } : false })
-    } catch { setFase('erro'); setErro('Não consegui acessar o microfone. Confere a permissão do navegador e tenta de novo.'); return }
+      if (comVideo) {
+        try { local.current = await navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: 'user', width: { ideal: 640 } } }) }
+        catch (e: any) { usouVideo = false; setComVideo(false); setErro(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
+      } else local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false })
+    } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}.`); return }
+    if (!usouVideo && vLocal.current) vLocal.current.style.display = 'none'
     if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
     remoto.current = new MediaStream()
 
