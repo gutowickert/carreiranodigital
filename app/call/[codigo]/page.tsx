@@ -15,10 +15,9 @@ import { supabase } from '@/lib/supabase'
 // lado que entrou primeiro ficava com o resto de uma tentativa anterior e nunca reofertava:
 // "quem entra antes consegue, quem entra depois não".
 
-// STUN do Google acha o caminho direto na maioria das redes. Quando não dá (4G, rede de
-// empresa), o TURN retransmite: aqui o do Open Relay, gratuito. Pra volume, trocar pelo da
-// Cloudflare (1 TB/mês grátis) ou um coturn próprio.
-const ICE: RTCIceServer[] = [
+// Servidores ICE vêm de /api/chamadas/ice (TURN da Cloudflare com credencial temporária quando
+// configurado; senão STUN do Google + Open Relay). Esta lista é só o reserva se a rota falhar.
+const ICE_RESERVA: RTCIceServer[] = [
   { urls: ['stun:stun.l.google.com:19302', 'stun:stun1.l.google.com:19302'] },
   { urls: ['turn:openrelay.metered.ca:80', 'turn:openrelay.metered.ca:443', 'turns:openrelay.metered.ca:443'], username: 'openrelayproject', credential: 'openrelayproject' },
 ]
@@ -77,7 +76,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const rec = useRef<MediaRecorder | null>(null)
   const ctx = useRef<AudioContext | null>(null)
   const dest = useRef<MediaStreamAudioDestinationNode | null>(null)
-  const seq = useRef(0)
+  const ice = useRef<RTCIceServer[]>(ICE_RESERVA)
   const fila = useRef<any[]>([])
   const timer = useRef<any>(null)
   const pronto = useRef<any>(null)
@@ -108,7 +107,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     fila.current = []
     remoto.current = new MediaStream(); setTemVideoRemoto(false)
     if (vRemoto.current) vRemoto.current.srcObject = remoto.current
-    const p = new RTCPeerConnection({ iceServers: ICE })
+    const p = new RTCPeerConnection({ iceServers: ice.current })
     pc.current = p
     local.current?.getTracks().forEach(t => p.addTrack(t, local.current!))
     p.ontrack = e => {
@@ -155,6 +154,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
 
     sessao.current = Math.random().toString(36).slice(2, 10)
+    try { const j = await fetch('/api/chamadas/ice', { cache: 'no-store' }).then(r => r.json()); if (j?.iceServers?.length) { ice.current = j.iceServers; log('ice', j.origem) } } catch { /* fica o reserva */ }
     novoPc()
 
     // sinalização: um canal por chamada, os dois lados ouvem
@@ -230,7 +230,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       const r = new MediaRecorder(dest.current.stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined)
       r.ondataavailable = async e => {
         if (!e.data || !e.data.size) return
-        const fd = new FormData(); fd.append('acao', 'pedaco'); fd.append('h', h); fd.append('seq', String(seq.current++)); fd.append('mime', r.mimeType || mime); fd.append('arquivo', e.data, 'p.webm')
+        const fd = new FormData(); fd.append('acao', 'pedaco'); fd.append('h', h); fd.append('seq', String(Math.floor(Date.now() / 1000))); fd.append('mime', r.mimeType || mime); fd.append('arquivo', e.data, 'p.webm')
         await fetch(`/api/chamadas/${codigo}`, { method: 'POST', body: fd }).catch(() => null)
       }
       r.start(30000); rec.current = r; setGravando(true)

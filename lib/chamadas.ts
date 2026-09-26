@@ -27,12 +27,15 @@ export async function chamadaPorCodigo(codigo: string) {
 }
 
 // um pedaço da gravação (webm/opus, 30s). O primeiro traz o cabeçalho; concatenados em ordem
-// formam um arquivo válido. Nome com zeros à esquerda pra ordenar certo no Storage.
+// formam um arquivo válido. O nome é o instante (segundos) em que o pedaço fechou: ordena certo
+// no Storage e, se o host recarregar a página no meio, a gravação nova não sobrescreve a antiga.
 export async function guardarPedaco(codigo: string, seq: number, buf: Buffer, mime = 'audio/webm') {
   const path = `${codigo}/${String(seq).padStart(5, '0')}.webm`
   const { error } = await sb.storage.from(BUCKET).upload(path, buf, { contentType: mime, upsert: true })
   if (error) return { ok: false as const, error: error.message }
-  await sb.from('chamadas').update({ pedacos: seq + 1, status: 'em_andamento' }).eq('codigo', codigo).lt('pedacos', seq + 1)
+  const { data: lista } = await sb.storage.from(BUCKET).list(codigo, { limit: 1000 })
+  const pedacos = (lista || []).filter(f => /^\d+\.webm$/.test(f.name)).length
+  await sb.from('chamadas').update({ pedacos, status: 'em_andamento' }).eq('codigo', codigo).lt('pedacos', pedacos)
   return { ok: true as const, path }
 }
 
@@ -42,7 +45,7 @@ export async function finalizarChamada(codigo: string) {
   if (!ch) return { ok: false, error: 'chamada não encontrada' }
   try {
     const { data: lista } = await sb.storage.from(BUCKET).list(codigo, { limit: 1000, sortBy: { column: 'name', order: 'asc' } })
-    const pedacos = (lista || []).filter(f => /^\d{5}\.webm$/.test(f.name))
+    const pedacos = (lista || []).filter(f => /^\d+\.webm$/.test(f.name))
     let transcricao: string | null = null, gravacao_path: string | null = null
     if (pedacos.length) {
       const partes: Buffer[] = []
