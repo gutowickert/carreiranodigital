@@ -69,7 +69,8 @@ export async function finalizarChamada(codigo: string) {
       const min = Math.round(duracao / 60)
       await sb.from('lead_andamentos').insert({ lead_id: ch.lead_id, vendedor_id: ch.criado_por, tipo: 'ligacao', observacao: `📞 Chamada pelo sistema com ${ch.criado_por_nome || 'a escola'}: ${min ? `${min} min` : `${duracao}s`}${transcricao ? '. Transcrita no histórico.' : '.'}` })
     }
-    await sb.from('chamadas').update({ status: transcricao || !pedacos.length ? 'transcrita' : 'encerrada', duracao_seg: duracao, gravacao_path, transcricao, ligacao_id }).eq('id', ch.id)
+    // 'transcrita' = processada (mesmo sem fala detectada: aí transcricao fica nula e a tela diz isso)
+    await sb.from('chamadas').update({ status: 'transcrita', duracao_seg: duracao, gravacao_path, transcricao, ligacao_id }).eq('id', ch.id)
     return { ok: true, duracao, pedacos: pedacos.length, transcrita: !!transcricao }
   } catch (e: any) {
     await sb.from('chamadas').update({ status: 'erro', erro: e?.message || 'falha ao fechar' }).eq('id', ch.id)

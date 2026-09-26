@@ -12,7 +12,7 @@ const btn: React.CSSProperties = { border: 'none', borderRadius: 8, padding: '8p
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)', width: '100%' }
 const br = (d?: string | null) => d ? new Date(d).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '—'
 const dur = (s?: number | null) => s == null ? '—' : s >= 60 ? `${Math.floor(s / 60)}min${s % 60 ? ` ${s % 60}s` : ''}` : `${s}s`
-const STATUS: Record<string, [string, string]> = { aguardando: ['Aguardando', 'var(--text-faint)'], em_andamento: ['Em andamento', 'var(--green)'], encerrada: ['Transcrevendo…', 'var(--amber)'], transcrita: ['Transcrita', 'var(--text-2)'], erro: ['Erro', 'var(--red)'] }
+const STATUS: Record<string, [string, string]> = { aguardando: ['Aguardando', 'var(--text-faint)'], em_andamento: ['Em andamento', 'var(--green)'], encerrada: ['Fechando e transcrevendo…', 'var(--amber)'], transcrita: ['Concluída', 'var(--text-2)'], erro: ['Erro', 'var(--red)'] }
 
 export default function Chamadas() {
   const [lista, setLista] = useState<any[]>([])
@@ -116,6 +116,7 @@ export default function Chamadas() {
                       <a href={c.link_host} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--accent)', color: '#fff', textDecoration: 'none' }}>Entrar</a>
                     </>}
                     {c.gravacao_url && <a href={c.gravacao_url} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>ouvir</a>}
+                    {c.status === 'transcrita' && !c.transcricao && c.pedacos > 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)', alignSelf: 'center' }}>sem fala detectada</span>}
                     {c.transcricao && <button onClick={() => setAberta(abertaEssa ? null : c.id)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{abertaEssa ? 'fechar' : 'transcrição'}</button>}
                     {c.lead_id && <a href={`/dashboard/leads?lead=${c.lead_id}`} style={{ ...btn, background: 'none', color: 'var(--text-faint)', textDecoration: 'none', fontWeight: 400 }}>lead</a>}
                   </div>
