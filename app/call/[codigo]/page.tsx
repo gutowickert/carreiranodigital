@@ -37,7 +37,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const pc = useRef<RTCPeerConnection | null>(null)
   const canal = useRef<any>(null)
   const local = useRef<MediaStream | null>(null)
-  const remoto = useRef<MediaStream>(new MediaStream())
+  // criado só ao entrar: no servidor não existe MediaStream, e um `new` aqui derrubava a renderização (500)
+  const remoto = useRef<MediaStream | null>(null)
   const vLocal = useRef<HTMLVideoElement>(null)
   const vRemoto = useRef<HTMLVideoElement>(null)
   const rec = useRef<MediaRecorder | null>(null)
@@ -71,13 +72,14 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       local.current = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true }, video: comVideo ? { facingMode: 'user', width: { ideal: 640 } } : false })
     } catch { setFase('erro'); setErro('Não consegui acessar o microfone. Confere a permissão do navegador e tenta de novo.'); return }
     if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
+    remoto.current = new MediaStream()
 
     const p = new RTCPeerConnection({ iceServers: ICE })
     pc.current = p
     local.current.getTracks().forEach(t => p.addTrack(t, local.current!))
     p.ontrack = e => {
-      remoto.current.addTrack(e.track)
-      if (vRemoto.current) { vRemoto.current.srcObject = remoto.current; vRemoto.current.play().catch(() => null) }
+      remoto.current?.addTrack(e.track)
+      if (vRemoto.current && remoto.current) { vRemoto.current.srcObject = remoto.current; vRemoto.current.play().catch(() => null) }
       if (papel.current === 'host' && e.track.kind === 'audio') misturarNaGravacao(e.track)
     }
     p.onicecandidate = e => { if (e.candidate) enviar({ t: 'ice', de: papel.current, cand: e.candidate.toJSON() }) }
@@ -135,7 +137,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     try {
       ctx.current = new AudioContext(); dest.current = ctx.current.createMediaStreamDestination()
       ctx.current.createMediaStreamSource(local.current).connect(dest.current)
-      remoto.current.getAudioTracks().forEach(t => misturarNaGravacao(t))
+      remoto.current?.getAudioTracks().forEach(t => misturarNaGravacao(t))
       const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(m => MediaRecorder.isTypeSupported(m)) || ''
       const r = new MediaRecorder(dest.current.stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined)
       r.ondataavailable = async e => {
@@ -217,8 +219,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       </div>
 
       <div style={{ position: 'relative', width: '100%', maxWidth: 720, flex: 1, minHeight: 320, borderRadius: 18, overflow: 'hidden', background: 'var(--surface, #15121F)', border: '1px solid var(--border, #2A2540)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <video ref={vRemoto} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: remoto.current.getVideoTracks().length ? 'block' : 'none' }} />
-        {!remoto.current.getVideoTracks().length && (
+        <video ref={vRemoto} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: remoto.current?.getVideoTracks().length ? 'block' : 'none' }} />
+        {!remoto.current?.getVideoTracks().length && (
           <div style={{ textAlign: 'center', color: 'var(--text-2, #C9C3D9)' }}>
             <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--accent, #6522D6)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, fontWeight: 800, color: '#fff' }}>{(info?.com_quem || '?').trim()[0]?.toUpperCase()}</div>
             <div style={{ fontSize: 15 }}>{fase === 'conectado' ? 'Só voz' : 'Conectando…'}</div>
