@@ -29,6 +29,15 @@ function motivoMidia(e: any) {
   if (n === 'OverconstrainedError') return 'o dispositivo não aceitou a configuração pedida'
   return n || 'erro desconhecido'
 }
+// escolhe uma câmera de verdade: ignora NDI, OBS e outras virtuais; sem rótulo (antes da permissão), fica no padrão
+async function cameraFisica(): Promise<MediaTrackConstraints> {
+  const base: MediaTrackConstraints = { facingMode: 'user', width: { ideal: 640 } }
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
+    const fisica = cams.find(d => d.label && !/ndi|obs|virtual|snap|xsplit|manycam|droidcam|camo/i.test(d.label))
+    return fisica ? { ...base, deviceId: { exact: fisica.deviceId } } : base
+  } catch { return base }
+}
 const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`
 
 export default function Chamada({ params }: { params: Promise<{ codigo: string }> }) {
@@ -83,7 +92,10 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     let usouVideo = comVideo
     try {
       if (comVideo) {
-        try { local.current = await navigator.mediaDevices.getUserMedia({ audio, video: { facingMode: 'user', width: { ideal: 640 } } }) }
+        // O navegador usa a PRIMEIRA câmera da lista, e no PC do Guto ela é uma virtual (NDI, OBS)
+        // que nunca inicia. Pula as virtuais e pede uma câmera física pelo id.
+        const video = await cameraFisica()
+        try { local.current = await navigator.mediaDevices.getUserMedia({ audio, video }) }
         catch (e: any) { usouVideo = false; setComVideo(false); setErro(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
       } else local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false })
     } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}.`); return }
