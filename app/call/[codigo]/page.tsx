@@ -63,6 +63,10 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const [seg, setSeg] = useState(0)
   const [outroEntrou, setOutroEntrou] = useState(false)
   const [gravando, setGravando] = useState(false)
+  const [nivelLocal, setNivelLocal] = useState(0)     // 0 a 1: o que o meu microfone capta
+  const [nivelRemoto, setNivelRemoto] = useState(0)   // 0 a 1: o que chega do outro lado
+  const [somBloqueado, setSomBloqueado] = useState(false)  // o navegador (celular) barrou o áudio até um toque
+  const medidor = useRef<any>(null)
 
   const pc = useRef<RTCPeerConnection | null>(null)
   const canal = useRef<any>(null)
@@ -110,8 +114,9 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     p.ontrack = e => {
       remoto.current?.addTrack(e.track)
       if (e.track.kind === 'video') setTemVideoRemoto(true)
-      if (vRemoto.current && remoto.current) { vRemoto.current.srcObject = remoto.current; vRemoto.current.play().catch(() => null) }
+      if (vRemoto.current && remoto.current) { vRemoto.current.srcObject = remoto.current; vRemoto.current.play().then(() => setSomBloqueado(false)).catch(() => setSomBloqueado(true)) }
       if (papel.current === 'host' && e.track.kind === 'audio') misturarNaGravacao(e.track)
+      if (e.track.kind === 'audio') medirAudio()
     }
     p.onicecandidate = e => { if (e.candidate) enviar({ t: 'ice', cand: e.candidate.toJSON() }) }
     p.onconnectionstatechange = () => {
@@ -121,6 +126,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         if (!timer.current) timer.current = setInterval(() => setSeg(s => s + 1), 1000)
         post({ acao: 'entrou' })
         if (papel.current === 'host') iniciarGravacao()
+        medirAudio()
       }
       // caiu: volta a "esperando" e fica pronto pra renegociar quando o outro voltar
       if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
@@ -230,6 +236,25 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       r.start(30000); rec.current = r; setGravando(true)
     } catch { /* sem gravação, a chamada segue */ }
   }
+  // OS MEDIDORES: mostram se o meu microfone está captando e se está chegando som do outro lado.
+  // Sem isso ninguém sabe se o problema é o mic, a rede ou o alto-falante. Um AudioContext só pra
+  // medir (o da gravação é do host; este roda nos dois lados).
+  function medirAudio() {
+    if (medidor.current) return
+    try {
+      const ac = new AudioContext()
+      const fazer = (stream: MediaStream | null) => { if (!stream || !stream.getAudioTracks().length) return null; const an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(stream).connect(an); return an }
+      let anL = fazer(local.current), anR = fazer(remoto.current)
+      const buf = new Float32Array(512)
+      const pico = (an: AnalyserNode | null) => { if (!an) return 0; an.getFloatTimeDomainData(buf); let m = 0; for (const v of buf) { const a = Math.abs(v); if (a > m) m = a } return m }
+      medidor.current = setInterval(() => {
+        if (!anR && remoto.current?.getAudioTracks().length) anR = fazer(remoto.current)
+        setNivelLocal(Math.min(1, pico(anL) * 4)); setNivelRemoto(Math.min(1, pico(anR) * 4))
+      }, 120)
+    } catch { /* sem medidor, a chamada segue */ }
+  }
+  function liberarSom() { vRemoto.current?.play().then(() => setSomBloqueado(false)).catch(() => null) }
+
   function misturarNaGravacao(track: MediaStreamTrack) {
     if (!ctx.current || !dest.current) return
     try { ctx.current.createMediaStreamSource(new MediaStream([track])).connect(dest.current) } catch { /* já misturado */ }
@@ -238,7 +263,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   async function desligar(avisar = true) {
     if (encerrouEu.current) return
     if (avisar) { encerrouEu.current = true; enviar({ t: 'sair' }) }
-    clearInterval(timer.current); clearInterval(pronto.current); timer.current = null
+    clearInterval(timer.current); clearInterval(pronto.current); clearInterval(medidor.current); timer.current = null; medidor.current = null
     const r = rec.current
     if (r && r.state !== 'inactive') {
       // o último pedaço só chega no ondataavailable depois do stop: espera ele subir
@@ -314,6 +339,17 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         <video ref={vLocal} autoPlay playsInline muted style={{ position: 'absolute', right: 10, bottom: 10, width: 120, height: 160, objectFit: 'cover', borderRadius: 12, border: '2px solid var(--border-strong, #3A3452)', display: temVideoLocal ? 'block' : 'none' }} />
       </div>
 
+      {somBloqueado && <button onClick={liberarSom} style={{ ...S.btn, maxWidth: 720, marginTop: 8, background: 'var(--accent, #6522D6)', color: '#fff' }}>Toque aqui para ouvir o outro lado</button>}
+      {fase === 'conectado' && (
+        <div style={{ width: '100%', maxWidth: 720, display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: 'var(--text-faint, #7E7793)' }}>
+          {[['Teu microfone', nivelLocal, mudo ? 'desligado' : nivelLocal < 0.04 ? 'não capta nada' : 'captando'], ['Som do outro lado', nivelRemoto, nivelRemoto < 0.04 ? 'nada chegando' : 'chegando']].map(([l, v, t]: any) => (
+            <div key={l} style={{ flex: 1 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{l}</span><span style={{ color: (t === 'captando' || t === 'chegando') ? 'var(--green, #22C55E)' : 'var(--amber, #F5B82E)' }}>{t}</span></div>
+              <div style={{ height: 6, borderRadius: 3, background: 'var(--surface-2, #1D1929)', marginTop: 4, overflow: 'hidden' }}><div style={{ width: Math.round(v * 100) + '%', height: '100%', background: v > 0.04 ? 'var(--green, #22C55E)' : 'var(--border-strong, #3A3452)', transition: 'width .1s' }} /></div>
+            </div>
+          ))}
+        </div>
+      )}
       {aviso && <div style={S.aviso}>{aviso}</div>}
       <div style={{ width: '100%', maxWidth: 720, display: 'flex', gap: 10, padding: '12px 0 4px' }}>
         <button onClick={alternarMudo} style={{ ...S.btn2, background: mudo ? 'var(--amber-bg, #3A2E10)' : S.btn2.background, color: mudo ? 'var(--amber, #F5B82E)' : S.btn2.color }}>{mudo ? 'Microfone desligado' : 'Silenciar'}</button>
