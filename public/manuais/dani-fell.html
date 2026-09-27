@@ -480,20 +480,6 @@
     // ao clicar no índice, marca na hora (a rolagem suave demora a cruzar o observador)
     links.forEach(function(a){ a.addEventListener('click', function(){ links.forEach(function(x){ x.classList.remove('ativo'); }); a.classList.add('ativo'); }); });
     marcar();
-
-    // AVISA ONDE ELA ESTÁ. Na apresentação, a versão interna (na escola) pinta o capítulo que ela
-    // está lendo. Vai só o id do capítulo, a cada troca e a cada 20 s enquanto a página está aberta.
-    var ultimo = '';
-    function avisar(secao){
-      if (!secao) return;
-      try {
-        fetch('https://carreiranodigital.vercel.app/api/manual/presenca', { method: 'POST', mode: 'cors', keepalive: true,
-          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente: 'dani-fell', secao: secao }) }).catch(function(){});
-      } catch (e) {}
-    }
-    var marcarOriginal = marcar;
-    marcar = function(){ marcarOriginal(); var a = document.querySelector('nav.indice a.ativo'); var s = a ? a.getAttribute('href').slice(1) : ''; if (s && s !== ultimo) { ultimo = s; avisar(s); } };
-    setInterval(function(){ if (!document.hidden && ultimo) avisar(ultimo); }, 20000);
     marcar();
   })();
 </script>

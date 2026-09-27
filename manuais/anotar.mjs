@@ -34,6 +34,11 @@ const NOTAS = {
 
 const html = readFileSync(origem, 'utf8')
 let saida = html
+// ⚠️ A VERSÃO INTERNA SÓ ESCUTA, NUNCA AVISA. A página dela manda "estou no capítulo X"; a cópia
+// dele herdaria esse aviso e diria que ELA está onde ELE rolou — sobrescrevendo o sinal de verdade.
+// Aconteceu (27/09): "quando eu mexo no interno fica dizendo que ela está nesse mesmo".
+saida = saida.replace(/\n\s*\/\/ AVISA ONDE ELA ESTÁ[\s\S]*?marcar\(\);\n(?=\s*\}\)\(\);\s*<\/script>)/, '\n    marcar();\n')
+if (/api\/manual\/presenca', \{ method: 'POST'/.test(saida)) { console.error('a versão interna ainda avisa presença — o padrão do aviso mudou na página do cliente'); process.exit(1) }
 let n = 0
 for (const [id, nota] of Object.entries(NOTAS)) {
   // depois do bloco de abertura (eyebrow + título + lead) do capítulo, antes do corpo
