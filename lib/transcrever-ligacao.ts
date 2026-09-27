@@ -29,14 +29,24 @@ async function baixar(url: string, token: string) {
   return { ok: false as const }
 }
 
-export async function transcreverLigacao(ligacaoId: string): Promise<string | null> {
+// `forcar` (botão Transcrever): refaz mesmo já processada. Chamada do sistema (metadata.origem =
+// 'chamada_sistema') não está na API4COM: a gravação vem do bucket, via lib/chamadas.
+export async function transcreverLigacao(ligacaoId: string, opts: { forcar?: boolean } = {}): Promise<string | null> {
   try {
-    const token = process.env.API4COM_TOKEN || ''
     const dgKey = process.env.DEEPGRAM_API_KEY || ''
-    if (!token || !dgKey) return null
+    if (!dgKey) return null
     const { data: l } = await sb.from('ligacoes').select('id, gravacao_url, duracao, metadata').eq('id', ligacaoId).maybeSingle()
-    if (!l || !l.gravacao_url || (l.duracao || 0) <= 10) return null
-    if (l.metadata && (l.metadata as any).transcrita) return (l.metadata as any).transcricao || null // já processada (mesmo se vazia)
+    if (!l || !l.gravacao_url) return null
+    const meta: any = l.metadata || {}
+    if (meta.origem === 'chamada_sistema') {
+      if (meta.transcrita && !opts.forcar) return meta.transcricao || null
+      const { retranscreverChamada } = await import('@/lib/chamadas')
+      const r = await retranscreverChamada(meta.codigo)
+      return r.ok ? (r.transcricao || null) : null
+    }
+    const token = process.env.API4COM_TOKEN || ''
+    if (!token || (l.duracao || 0) <= 10) return null
+    if (meta.transcrita && !opts.forcar) return meta.transcricao || null // já processada (mesmo se vazia)
     const b = await baixar(l.gravacao_url, token)
     if (!b.ok) return null
     const tr = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true' + REFORCO, {

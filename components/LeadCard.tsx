@@ -9,6 +9,7 @@ import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 import BotaoChamada from '@/components/BotaoChamada'
+import ItemLigacao from '@/components/ItemLigacao'
 import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
 
 type Lead = {
@@ -743,27 +744,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               <button onClick={() => carregarLigacoes(lead.id)} style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: 11, cursor: 'pointer' }}>↻ atualizar</button>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 240, overflowY: 'auto' }}>
-              {ligacoes.map(l => {
-                const s = l.duracao || 0
-                const dur = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-                return (
-                  <div key={l.id} style={{ padding: 10, background: 'var(--bg)', borderRadius: 'var(--r-sm)', fontSize: 12 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ color: 'var(--text-2)' }}>{new Date(l.criado_em).toLocaleString('pt-BR')}</span>
-                      <span style={{ color: l.status === 'encerrada' ? 'var(--green)' : 'var(--amber)' }}>
-                        {l.status === 'encerrada' ? dur : (l.status || 'iniciada')}
-                      </span>
-                    </div>
-                    {l.gravacao_url ? (
-                      <audio controls src={l.gravacao_url} style={{ width: '100%', marginTop: 6, height: 34 }} />
-                    ) : (
-                      <div style={{ color: 'var(--text-faint)', fontSize: 10, marginTop: 4 }}>
-                        {l.status === 'encerrada' ? 'Sem gravação' : 'Aguardando resultado (clica ↻ após desligar)'}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
+              {ligacoes.map(l => <ItemLigacao key={l.id} l={l} onMudou={() => carregarLigacoes(lead.id)} />)}
               {ligacoes.length === 0 && <p style={{ fontSize: 12, color: 'var(--text-faint)' }}>Nenhuma ligação ainda.</p>}
             </div>
           </div>

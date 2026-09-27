@@ -120,7 +120,8 @@ const grupos: Grupo[] = [
       { nome: 'Captação', href: '/dashboard/captacao' },
       { nome: 'Tráfego', href: '/dashboard/trafego' },
       { nome: 'Monitor das Entregas', href: '/dashboard/entregas/monitor' },
-      { nome: 'Tráfego dos Clientes', href: '/dashboard/entregas/trafego' },
+      // 'Tráfego dos Clientes' saiu do menu em 27/09/2026: o Monitor das Entregas passou a ler a Meta ao vivo e a
+      // substitui (a tela continua em /dashboard/entregas/trafego pra quem tiver o endereço)
       { nome: 'Funil do Site', href: '/dashboard/funil-site' },
     ],
   },

@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao, meuPerfil } from '@/lib/quem-eu-vejo'
-import { criarChamada, urlGravacao } from '@/lib/chamadas'
+import { criarChamada, urlGravacao, vincularChamadaAoLead } from '@/lib/chamadas'
 
 // AS CHAMADAS DO TIME (com login).
 //   GET  → as últimas chamadas da empresa, com o link da gravação (assinado, 1h)
@@ -48,6 +48,21 @@ export async function POST(req: Request) {
     if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 200 })
     const origem = new URL(req.url).origin
     return NextResponse.json({ ok: true, codigo: r.chamada.codigo, lead_nome, telefone, link_lead: `${origem}/call/${r.chamada.codigo}`, link_host: `${origem}/call/${r.chamada.codigo}?h=${r.chamada.chave_host}` })
+  } catch (e: any) {
+    return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
+  }
+}
+
+// PATCH → vincula uma chamada feita sem lead a um lead: { codigo, lead_id }. Passa a contar no histórico dele.
+export async function PATCH(req: Request) {
+  try {
+    const auth = req.headers.get('authorization')
+    if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
+    const org = await orgDaRequest(auth)
+    const b = await req.json().catch(() => ({} as any))
+    if (!b.codigo || !b.lead_id) return NextResponse.json({ ok: false, error: 'falta codigo ou lead_id' }, { status: 200 })
+    const r = await vincularChamadaAoLead(String(b.codigo), String(b.lead_id), org)
+    return NextResponse.json(r, { status: 200 })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

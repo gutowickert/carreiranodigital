@@ -5,7 +5,7 @@
 type LeadRef = { id: string; whatsapp?: string | null }
 export type MsgLinha = { quem: 'cliente' | 'nos'; texto: string; canal: string; status: string; em: string }
 export type AndLinha = { tipo: string; observacao: string; em: string }
-export type LigLinha = { duracao: number; atendida: boolean; transcricao: string; direcao: string; em: string }
+export type LigLinha = { duracao: number; atendida: boolean; transcricao: string; direcao: string; em: string; sistema?: boolean }
 export type Dossie = {
   mensagens: MsgLinha[]
   andamentos: AndLinha[]
@@ -75,7 +75,7 @@ export async function dossiesLote(sb: any, org: string, leads: LeadRef[]): Promi
     const d = out.get(g.lead_id); if (!d) continue
     const dur = Number(g.duracao) || 0
     const atendida = dur > ATENDIDA_MIN_SEG
-    d.ligacoes.push({ duracao: dur, atendida, transcricao: (g.metadata?.transcricao || '').toString(), direcao: g.direcao || '', em: g.criado_em })
+    d.ligacoes.push({ duracao: dur, atendida, transcricao: (g.metadata?.transcricao || '').toString(), direcao: g.direcao || '', em: g.criado_em, sistema: g.metadata?.origem === 'chamada_sistema' })
     if (atendida) d.temLigacaoAtendida = true
   }
 
@@ -109,7 +109,7 @@ export const durHumana = (s: number) => s >= 60 ? `${Math.floor(s / 60)}min${s %
 export function timelineDossie(d: Dossie, max = 30): { quem: string; texto: string; em: string }[] {
   const linhas = [
     ...d.mensagens.map(m => ({ quem: m.quem === 'cliente' ? 'cliente' : 'nos', texto: m.texto, em: m.em })),
-    ...d.ligacoes.map(g => ({ quem: 'evento', texto: `📞 ligação ${g.atendida ? 'ATENDIDA' : 'não atendida'} — ${durHumana(g.duracao)}${g.transcricao ? ' (transcrita)' : ''}`, em: g.em })),
+    ...d.ligacoes.map(g => ({ quem: 'evento', texto: `📞 ${g.sistema ? `chamada pelo sistema${g.direcao === 'video' ? ' (vídeo)' : ''}` : 'ligação'} ${g.atendida ? 'ATENDIDA' : 'não atendida'} — ${durHumana(g.duracao)}${g.transcricao ? ' (transcrita)' : ''}`, em: g.em })),
     ...d.andamentos.filter(a => a.tipo !== 'ligacao' && !AND_AUTO.has(a.tipo) && (a.observacao || '').trim())
       .map(a => ({ quem: 'evento', texto: '📝 ' + a.observacao, em: a.em })),
   ]

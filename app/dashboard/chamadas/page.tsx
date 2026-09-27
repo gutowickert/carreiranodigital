@@ -23,6 +23,8 @@ export default function Chamadas() {
   const [comVideo, setComVideo] = useState(false)
   const [criada, setCriada] = useState<any>(null)
   const [aberta, setAberta] = useState<string | null>(null)
+  const [transcrevendo, setTranscrevendo] = useState<string | null>(null)
+  const [vinculando, setVinculando] = useState<string | null>(null)   // codigo da chamada avulsa que está escolhendo lead
   const [msg, setMsg] = useState('')
 
   async function carregar() {
@@ -43,6 +45,19 @@ export default function Chamadas() {
     if (!j?.ok) { setMsg(j?.error || 'não consegui criar'); return }
     setCriada({ ...j, nome: lead?.nome || semLead.nome, telefone: (lead as any)?.whatsapp || semLead.telefone }); setMsg('')
     carregar()
+  }
+  // TRANSCREVER (de novo): refaz a partir da gravação inteira; atualiza a chamada e a ligação no histórico do lead
+  async function transcrever(codigo: string) {
+    setTranscrevendo(codigo); setMsg('')
+    const j = await fetchAuth('/api/ligacoes/transcrever', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo }) }).then(r => r.json()).catch(() => null)
+    setTranscrevendo(null)
+    if (!j?.ok) { setMsg(j?.error || 'não consegui transcrever'); return }
+    setMsg(j.vazia ? 'Sem fala detectada na gravação.' : 'Transcrita.'); carregar()
+  }
+  // chamada feita só com nome: liga a um lead e ela entra no histórico dele
+  async function vincular(codigo: string, l: LeadAchado) {
+    const j = await fetchAuth('/api/chamadas', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ codigo, lead_id: l.id }) }).then(r => r.json()).catch(() => null)
+    setVinculando(null); setMsg(j?.ok ? `Vinculada a ${l.nome}.` : (j?.error || 'não consegui vincular')); carregar()
   }
   const copiar = (t: string) => { navigator.clipboard?.writeText(t); setMsg('Link copiado.'); setTimeout(() => setMsg(''), 1500) }
   const zap = (tel: string | null, link: string, nome: string) => `https://wa.me/${(tel || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Oi${nome ? ', ' + nome.split(' ')[0] : ''}! Vamos conversar por aqui, é só abrir o link e clicar em Entrar na chamada: ${link}`)}`
@@ -117,10 +132,13 @@ export default function Chamadas() {
                     </>}
                     {c.gravacao_url && <a href={c.gravacao_url} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>ouvir</a>}
                     {c.status === 'transcrita' && !c.transcricao && c.pedacos > 0 && <span style={{ fontSize: 12, color: 'var(--text-faint)', alignSelf: 'center' }}>sem fala detectada</span>}
+                    {c.gravacao_url && ['transcrita', 'erro'].includes(c.status) && <button onClick={() => transcrever(c.codigo)} disabled={transcrevendo === c.codigo} style={{ ...btn, background: c.transcricao ? 'var(--surface-2)' : 'var(--accent-bg)', color: c.transcricao ? 'var(--text-2)' : 'var(--accent-soft)', opacity: transcrevendo === c.codigo ? .6 : 1 }}>{transcrevendo === c.codigo ? 'transcrevendo…' : c.transcricao ? 'transcrever de novo' : 'transcrever'}</button>}
+                    {!c.lead_id && <button onClick={() => setVinculando(vinculando === c.codigo ? null : c.codigo)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{vinculando === c.codigo ? 'cancelar' : 'vincular a um lead'}</button>}
                     {c.transcricao && <button onClick={() => setAberta(abertaEssa ? null : c.id)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{abertaEssa ? 'fechar' : 'transcrição'}</button>}
                     {c.lead_id && <a href={`/dashboard/leads?lead=${c.lead_id}`} style={{ ...btn, background: 'none', color: 'var(--text-faint)', textDecoration: 'none', fontWeight: 400 }}>lead</a>}
                   </div>
                 </div>
+                {vinculando === c.codigo && <div style={{ marginTop: 10, maxWidth: 420 }}><BuscarLead onEscolher={l => vincular(c.codigo, l)} autoFoco /></div>}
                 {abertaEssa && c.transcricao && <pre style={{ whiteSpace: 'pre-wrap', fontFamily: 'inherit', fontSize: 13, color: 'var(--text-2)', lineHeight: 1.6, background: 'var(--surface-2)', borderRadius: 8, padding: 12, marginTop: 10, maxHeight: 420, overflowY: 'auto' }}>{c.transcricao}</pre>}
               </div>
             )
