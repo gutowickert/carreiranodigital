@@ -68,6 +68,9 @@ function GraficoLeads({ dias, aoDica }: { dias: any[]; aoDica: (d: Dica) => void
   const H = 86
   const max = Math.max(1, ...dias.map(d => d.conversas || 0))
   const pico = dias.reduce((a, d) => ((d.conversas || 0) > (a?.conversas || 0) ? d : a), null as any)
+  // O NÚMERO EM CIMA DE CADA COLUNA (pedido do Nando, 27/09/2026): pra ler sem passar o mouse. O pico
+  // em negrito e verde; os outros discretos. Período longo = colunas finas, então a letra encolhe.
+  const fonte = dias.length > 20 ? 8 : dias.length > 12 ? 9 : 10.5
   return (
     <div>
       <div style={{ position: 'relative', height: H + 16 }} onMouseLeave={() => aoDica(null)}>
@@ -82,7 +85,7 @@ function GraficoLeads({ dias, aoDica }: { dias: any[]; aoDica: (d: Dica) => void
               <div key={d.data}
                 onMouseEnter={e => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); aoDica({ x: r.left + r.width / 2, y: r.top + 16, linhas: [br(d.data), `${int(v)} ${v === 1 ? 'lead' : 'leads'}`, `${brl(d.gasto, 2)} investido`] }) }}
                 style={{ flex: '1 1 0', height: H, display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', position: 'relative' }}>
-                {ehPico && <span style={{ position: 'absolute', bottom: h + 3, fontSize: 10.5, fontWeight: 700, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{v}</span>}
+                {v > 0 && <span style={{ position: 'absolute', bottom: h + 3, fontSize: ehPico ? fonte + 1 : fonte, fontWeight: ehPico ? 800 : 500, color: ehPico ? 'var(--green)' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', lineHeight: 1, whiteSpace: 'nowrap' }}>{v}</span>}
                 <div style={{ width: '100%', maxWidth: 26, height: h, background: 'var(--accent)', borderRadius: '4px 4px 0 0', opacity: ehPico ? 1 : .72 }} />
               </div>
             )
