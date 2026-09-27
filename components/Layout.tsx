@@ -153,6 +153,8 @@ const grupos: Grupo[] = [
     titulo: 'Sistemas',
     itens: [
       { nome: 'Clientes do CRM', href: '/dashboard/instalacoes' },
+      // o que o sistema faz, cada cliente, a implantação e o manual do cliente — pros admins
+      { nome: 'Manual', href: '/dashboard/sistemas/manual' },
     ],
   },
   {
@@ -201,7 +203,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
   if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   // Instalações é só de admin, e a rota confere de novo no servidor — menu escondido é decoração
   // se a rota responde pra qualquer um.
-  if (href === '/dashboard/instalacoes') return p.papel === 'admin'
+  if (href === '/dashboard/instalacoes' || href.startsWith('/dashboard/sistemas/')) return p.papel === 'admin'
   if (p.papel === 'admin') return true
 
   // GESTOR — o degrau que faltava entre "vê tudo" e "vê quase nada".
