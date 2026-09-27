@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { fetchAuth } from '@/lib/api'
 
 type Tarefa = {
   id: string
@@ -60,6 +61,12 @@ export default function Tarefas() {
   }
 
   async function atualizarStatus(id: string, novoStatus: string) {
+    // marketing passa pela Minha semana: de quem é acompanhado, vira "esperando aprovação" (lib/acompanhamento.ts)
+    if (novoStatus === 'concluida' && tarefas.find((t: any) => t.id === id)?.setor === 'marketing') {
+      const j = await fetchAuth('/api/minha-semana', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'concluir', id }) }).then(r => r.json()).catch(() => null)
+      if (!j?.ok) alert(j?.error || 'não deu pra concluir')
+      return carregarTarefas()
+    }
     await supabase.from('tarefas').update({ status: novoStatus, concluida_em: novoStatus === 'concluida' ? new Date().toISOString() : null }).eq('id', id)
     carregarTarefas()
   }

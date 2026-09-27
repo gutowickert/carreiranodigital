@@ -352,6 +352,11 @@ export default function Agenda() {
   const concluir = (it: Item) => acao(it.id, async () => {
     const agora = new Date().toISOString()
     if (it.fonte === 'agenda') return supabase.from('agenda_eventos').update({ concluido: true, concluido_em: agora }).eq('id', it.id)
+    // marketing passa pela Minha semana: de quem é acompanhado, vira "esperando aprovação" (lib/acompanhamento.ts)
+    if (it.fonte === 'turma' && it.setor === 'marketing') {
+      const j = await fetchAuth('/api/minha-semana', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'concluir', id: it.id }) }).then(r => r.json()).catch(() => null)
+      return { error: j?.ok ? null : { message: j?.error || 'não deu pra concluir' } }
+    }
     if (it.fonte === 'turma') return supabase.from('tarefas').update({ status: 'concluida', concluida_em: agora }).eq('id', it.id)
     if (it.fonte === 'lead') return supabase.from('tarefas_lead').update({ concluida: true, concluida_em: agora, atualizado_em: agora }).eq('id', it.id)
     // Nunca chega aqui pela tela (a linha de entrega não tem bolinha), mas se chegar, não conclui:

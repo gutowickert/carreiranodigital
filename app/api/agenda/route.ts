@@ -5,6 +5,7 @@ import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
 import { sincronizarAulas } from '@/lib/aulas-na-agenda'
 import { ROTEIROS, situacaoMarco, regiaoDoLocal, type Produto } from '@/lib/entrega'
+import { acompanhada, lerObs, esperando } from '@/lib/acompanhamento'
 
 export const maxDuration = 60
 
@@ -104,7 +105,7 @@ export async function GET(req: Request) {
     // Vencida é notícia mais importante que futura, então tarefa aberta entra inteira, sem recorte
     // de período. São 90 hoje; se um dia virarem milhares, aí sim entra paginação.
     sb.from('tarefas')
-      .select('id,titulo,descricao,tipo,setor,data_prazo,prioridade,status,usuario_id,responsavel_id,turma_id')
+      .select('id,titulo,descricao,tipo,setor,data_prazo,prioridade,status,usuario_id,responsavel_id,turma_id,observacoes')
       .eq('org_id', org).eq('status', 'pendente').order('data_prazo').limit(1000),
     sb.from('tarefas_lead')
       .select('id,titulo,tipo,data_vencimento,lead_id,vendedor_id,leads(nome,etapa)')
@@ -146,6 +147,8 @@ export async function GET(req: Request) {
     const dono = t.usuario_id || t.responsavel_id || null
     if (!podeVer(dono, false)) continue
     if (!t.data_prazo) continue
+    // entregue e esperando um chefe aprovar: da parte do dono está feita (lib/acompanhamento.ts)
+    if (acompanhada(t) && esperando(lerObs(t.observacoes))) continue
     itens.push({
       id: t.id, fonte: 'turma', titulo: t.titulo, subtitulo: t.descricao,
       inicio: t.data_prazo, fim: null, diaTodo: true, tipo: t.tipo,

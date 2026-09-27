@@ -1,4 +1,5 @@
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { ehChefe, acompanhada, lerObs, esperando } from '@/lib/acompanhamento'
 
 // O BALÃO DA AGENDA — a regra de o que acende. Num lugar só: o menu (/api/agenda/balao), a tela
 // (/api/agenda) e a gravação de leituras (/api/agenda/leituras) chamam isto, pra o número do menu e
@@ -45,12 +46,12 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
 
   // Cada consulta de item que falhar vira lista vazia em vez de derrubar a agenda.
   const vazio = { data: [] as any[], error: null }
-  const [evs, tars, tlds, leit, encs] = await Promise.all([
+  const [evs, tars, tlds, leit, encs, entregues] = await Promise.all([
     sb.from('agenda_eventos').select('id,inicio,usuario_id,criado_por,ajuda_de,participantes')
       .eq('org_id', org).eq('concluido', false).lte('inicio', ate)
       .or(`usuario_id.eq.${euId},ajuda_de.eq.${euId},participantes.cs.{${euId}}`).limit(1000)
       .then(r => r.error ? vazio : r),
-    sb.from('tarefas').select('id,data_prazo,usuario_id,responsavel_id')
+    sb.from('tarefas').select('id,data_prazo,usuario_id,responsavel_id,setor,observacoes')
       .eq('org_id', org).eq('status', 'pendente').or(`usuario_id.eq.${euId},responsavel_id.eq.${euId}`).limit(1000)
       .then(r => r.error ? vazio : r),
     sb.from('tarefas_lead').select('id,data_vencimento')
@@ -64,12 +65,22 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
       .eq('org_id', org).eq('natureza', 'encontro').in('estado', ['combinado', 'confirmado'])
       .not('data_combinada', 'is', null).lte('data_combinada', ate).limit(1000)
       .then(r => r.error ? vazio : r),
+    // ENTREGA DE MARKETING ESPERANDO APROVAÇÃO (27/09/2026): acende pros chefes (lib/acompanhamento.ts).
+    ehChefe(euId)
+      ? sb.from('tarefas').select('id,usuario_id,setor,observacoes').eq('org_id', org).eq('setor', 'marketing').eq('status', 'pendente')
+          .not('usuario_id', 'is', null).like('observacoes', '%"entrega":{%').limit(500).then(r => r.error ? vazio : r)
+      : Promise.resolve(vazio),
   ])
 
   if (leit.error) return { pronto: !semTabela(leit.error), chaves: [] }
 
   type Candidato = { dia: string; novidade: boolean }
   const candidatos = new Map<string, Candidato>()
+  // tarefa vista ANTES de uma mudança que importa (devolvida, entregue de novo) conta como nunca vista
+  const tarefaVistaEm = new Map<string, string>()
+  for (const l of leit.data || []) if (l.fonte === 'turma' && l.lido_em) tarefaVistaEm.set(l.item_id, l.lido_em)
+  const mudouDepois = new Set<string>()
+  const vistaAntes = (id: string, quando: string) => { const v = tarefaVistaEm.get(id); return !!v && new Date(v) < new Date(quando) }
 
   for (const e of evs.data || []) {
     if (!e.inicio) continue
@@ -82,7 +93,18 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
   // da rota da agenda. A consulta traz os dois; aqui fica só o que é meu de fato.
   for (const t of tars.data || []) {
     if ((t.usuario_id || t.responsavel_id) !== euId || !t.data_prazo) continue
-    candidatos.set(chaveAgenda('turma', t.id), { dia: diaDoItem(t.data_prazo), novidade: false })
+    // Entregue e esperando aprovação: da parte dele está feita, não acende. Devolvida: acende como novidade.
+    const o = acompanhada(t) ? lerObs(t.observacoes) : {}
+    if (esperando(o)) continue
+    const devolvida = o.devolvida?.em
+    if (devolvida && vistaAntes(t.id, devolvida)) mudouDepois.add(chaveAgenda('turma', t.id))
+    candidatos.set(chaveAgenda('turma', t.id), { dia: diaDoItem(t.data_prazo), novidade: !!devolvida })
+  }
+  for (const t of (entregues.data || []) as any[]) {
+    const o = lerObs(t.observacoes)
+    if (!acompanhada(t) || !esperando(o)) continue
+    if (vistaAntes(t.id, o.entrega!.em)) mudouDepois.add(chaveAgenda('turma', t.id))
+    candidatos.set(chaveAgenda('turma', t.id), { dia: diaSP(new Date(o.entrega!.em)), novidade: true })
   }
   for (const t of tlds.data || []) {
     if (!t.data_vencimento) continue
@@ -92,6 +114,7 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
   // undefined = nunca vi · null = marquei como não lido · 'AAAA-MM-DD' = vi nesse dia
   const leitura = new Map<string, string | null>()
   for (const l of leit.data || []) leitura.set(chaveAgenda(l.fonte, l.item_id), l.lido_em ? diaSP(new Date(l.lido_em)) : null)
+  for (const k of mudouDepois) if (leitura.get(k) !== null) leitura.delete(k)
 
   // Os encontros de entrega: meus se sou o dono do marco (ou, sem dono, do projeto) ou se o projeto
   // me tem como "também responsável". Remarcado DEPOIS que eu vi conta como nunca visto — é assim
