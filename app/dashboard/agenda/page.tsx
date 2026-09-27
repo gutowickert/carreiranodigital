@@ -756,7 +756,7 @@ export default function Agenda() {
         {detalhe && eu && (
           <ModalDetalhe it={detalhe} eu={eu} ativos={ativos} nomeDe={nomeDe} ocupado={ocupado === detalhe.id}
             // Só pro que é meu e já está apagado: acender de novo um item que nem é meu não faria sentido.
-            podeNaoLido={balaoPronto && detalhe.fonte !== 'entrega' && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
+            podeNaoLido={balaoPronto && (detalhe.fonte !== 'entrega' || detalhe.estado !== 'previsto') && ehMeu(detalhe, eu.id) && !balao.has(chaveDe(detalhe))}
             onNaoLido={() => { marcar([chaveDe(detalhe)], 'nao_lido'); setDetalhe(null) }}
             podeEditar={podeEditar(detalhe)}
             onEditar={() => { setEditar(detalhe); setDetalhe(null) }}

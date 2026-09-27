@@ -29,9 +29,9 @@ const diaDoItem = (s: string) => (/^\d{4}-\d{2}-\d{2}$/.test(s) ? s : diaSP(new 
 export const HORIZONTE_DIAS = 183
 export const horizonteISO = () => new Date(Date.now() + HORIZONTE_DIAS * 864e5).toISOString()
 
-export type FonteAgenda = 'agenda' | 'turma' | 'lead'
+export type FonteAgenda = 'agenda' | 'turma' | 'lead' | 'entrega'
 export const chaveAgenda = (fonte: FonteAgenda, id: string) => `${fonte}:${id}`
-export const CHAVE_VALIDA = /^(agenda|turma|lead):[0-9a-f-]{36}$/
+export const CHAVE_VALIDA = /^(agenda|turma|lead|entrega):[0-9a-f-]{36}$/
 
 // Tabela não existe (instalação que ainda não rodou o 22). Aí o balão fica ESCONDIDO em vez de
 // mostrar tudo como não lido — um balão que ninguém consegue apagar é pior que nenhum.
@@ -45,7 +45,7 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
 
   // Cada consulta de item que falhar vira lista vazia em vez de derrubar a agenda.
   const vazio = { data: [] as any[], error: null }
-  const [evs, tars, tlds, leit] = await Promise.all([
+  const [evs, tars, tlds, leit, encs] = await Promise.all([
     sb.from('agenda_eventos').select('id,inicio,usuario_id,criado_por,ajuda_de,participantes')
       .eq('org_id', org).eq('concluido', false).lte('inicio', ate)
       .or(`usuario_id.eq.${euId},ajuda_de.eq.${euId},participantes.cs.{${euId}}`).limit(1000)
@@ -57,6 +57,13 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
       .eq('org_id', org).eq('concluida', false).eq('cancelada', false).eq('vendedor_id', euId).limit(1000)
       .then(r => r.error ? vazio : r),
     sb.from('agenda_leituras').select('fonte,item_id,lido_em').eq('usuario_id', euId),
+    // ENCONTRO DE ENTREGA COMBINADO (decisão do Nando, 27/09/2026): acende quando alguém combina
+    // ou remarca um encontro de projeto em que eu estou, e de novo no dia. Previsto não acende —
+    // são dezenas, e nenhum foi combinado com o cliente.
+    sb.from('projeto_marcos').select('id,projeto_id,data_combinada,responsavel_id,atualizado_em')
+      .eq('org_id', org).eq('natureza', 'encontro').in('estado', ['combinado', 'confirmado'])
+      .not('data_combinada', 'is', null).lte('data_combinada', ate).limit(1000)
+      .then(r => r.error ? vazio : r),
   ])
 
   if (leit.error) return { pronto: !semTabela(leit.error), chaves: [] }
@@ -85,6 +92,27 @@ export async function balaoDe(org: string, euId: string): Promise<Balao> {
   // undefined = nunca vi · null = marquei como não lido · 'AAAA-MM-DD' = vi nesse dia
   const leitura = new Map<string, string | null>()
   for (const l of leit.data || []) leitura.set(chaveAgenda(l.fonte, l.item_id), l.lido_em ? diaSP(new Date(l.lido_em)) : null)
+
+  // Os encontros de entrega: meus se sou o dono do marco (ou, sem dono, do projeto) ou se o projeto
+  // me tem como "também responsável". Remarcado DEPOIS que eu vi conta como nunca visto — é assim
+  // que a remarcação acende de novo.
+  const listaEnc = (encs.data || []) as any[]
+  if (listaEnc.length) {
+    const { data: projs } = await sb.from('projetos').select('id,responsavel_id,participantes,status').in('id', [...new Set(listaEnc.map(m => m.projeto_id))])
+    const porId = new Map((projs || []).map((p: any) => [p.id, p]))
+    const vistoEm = new Map<string, string>()
+    for (const l of leit.data || []) if (l.fonte === 'entrega' && l.lido_em) vistoEm.set(l.item_id, l.lido_em)
+    for (const m of listaEnc) {
+      const p: any = porId.get(m.projeto_id)
+      if (!p || p.status === 'cancelado' || p.status === 'concluido') continue
+      const meu = (m.responsavel_id || p.responsavel_id) === euId || (p.participantes || []).includes(euId)
+      if (!meu) continue
+      const k = chaveAgenda('entrega', m.id)
+      const viu = vistoEm.get(m.id)
+      if (viu && m.atualizado_em && new Date(m.atualizado_em) > new Date(viu)) leitura.delete(k)
+      candidatos.set(k, { dia: diaDoItem(m.data_combinada), novidade: true })
+    }
+  }
 
   const chaves: string[] = []
   for (const [k, c] of candidatos) {
