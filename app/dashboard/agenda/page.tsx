@@ -79,6 +79,19 @@ const FONTES: Record<Item['fonte'], { rotulo: string; cor: string }> = {
 // Cor da linha: entrega usa a do roteiro (a mesma da agenda de entregas); o resto, a da fonte.
 const corDe = (i: Item) => (i.fonte === 'entrega' && i.cor) || FONTES[i.fonte].cor
 const ehPrevisto = (i: Item) => i.fonte === 'entrega' && i.estado === 'previsto'
+// O DIA QUE NÃO É IGUAL AOS OUTROS (pedido do Nando, 27/09/2026): encontro com o cliente e data de
+// entrega têm cor própria, e o dia inteiro fica marcado — mesmo quando a hora ainda não foi
+// combinada. Tarefa interna segue com a cor do roteiro; só estes dois pesam.
+const DESTAQUE = {
+  encontro: { cor: '#f97316', rotulo: 'Encontro', marca: '●' },
+  entrega: { cor: '#db2777', rotulo: 'Entrega', marca: '◆' },
+} as const
+type Peso = keyof typeof DESTAQUE
+const pesoDe = (i: Item): Peso | null =>
+  i.fonte !== 'entrega' ? null : i.tipo === 'encontro' ? 'encontro' : i.tipo === 'marco' ? 'entrega' : null
+// o peso mais forte do dia (entrega vence encontro) — é o que pinta a célula
+const pesoDoDia = (itens: Item[]): Peso | null =>
+  itens.some(i => pesoDe(i) === 'entrega') ? 'entrega' : itens.some(i => pesoDe(i) === 'encontro') ? 'encontro' : null
 // O que a entrega precisa de ti agora (situacaoMarco, em lib/entrega.ts)
 const AVISO_ENTREGA: Record<string, string> = { confirmar: 'reconfirmar com o cliente', a_remarcar: 'remarcar', atrasado: 'atrasado' }
 
@@ -521,6 +534,12 @@ export default function Agenda() {
               }}>
               <span style={{ fontSize: 8 }}>◌</span>previstos ({totalPrevistos})
             </button>
+            {/* a legenda das duas cores que marcam o dia */}
+            {(Object.keys(DESTAQUE) as Peso[]).map(p => (
+              <span key={p} style={{ fontSize: 11, fontWeight: 700, color: DESTAQUE[p].cor, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                <span style={{ fontSize: 9 }}>{DESTAQUE[p].marca}</span>{DESTAQUE[p].rotulo === 'Encontro' ? 'encontro com cliente' : 'data de entrega'}
+              </span>
+            ))}
           </div>
         </div>
 
@@ -562,9 +581,22 @@ export default function Agenda() {
                             minHeight: 112, padding: '7px 6px 5px', cursor: 'pointer', minWidth: 0, overflow: 'hidden',
                             borderRight: (n % 7 === 6) ? 'none' : '1px solid var(--glass-border)',
                             borderBottom: n < grade.length - 7 ? '1px solid var(--glass-border)' : 'none',
-                            background: sel ? 'var(--accent-bg)' : hoje ? 'var(--glass-field)' : 'transparent',
+                            background: sel ? 'var(--accent-bg)' : pesoDoDia(doDia) ? DESTAQUE[pesoDoDia(doDia)!].cor + '14' : hoje ? 'var(--glass-field)' : 'transparent',
+                            boxShadow: pesoDoDia(doDia) ? `inset 0 3px 0 ${DESTAQUE[pesoDoDia(doDia)!].cor}` : 'none',
                             opacity: mesmoMes(d) ? 1 : 0.35,
                           }}>
+                          {pesoDoDia(doDia) && (
+                            <div style={{ display: 'flex', gap: 4, marginBottom: 3, flexWrap: 'wrap' }}>
+                              {(['entrega', 'encontro'] as Peso[]).filter(p => doDia.some(i => pesoDe(i) === p)).map(p => {
+                                const soPrevisto = doDia.filter(i => pesoDe(i) === p).every(ehPrevisto)
+                                return (
+                                  <span key={p} title={soPrevisto ? 'ainda sem hora combinada' : ''} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: DESTAQUE[p].cor, border: `1px ${soPrevisto ? 'dashed' : 'solid'} ${DESTAQUE[p].cor}`, borderRadius: 999, padding: '0 6px', lineHeight: '15px' }}>
+                                    {DESTAQUE[p].marca} {DESTAQUE[p].rotulo}{soPrevisto ? ' · sem hora' : ''}
+                                  </span>
+                                )
+                              })}
+                            </div>
+                          )}
                           {regioesDoDia(doDia).length > 0 && (
                             <div style={{ display: 'flex', gap: 3, marginBottom: 3 }}>
                               {regioesDoDia(doDia).map(r => <span key={r} style={{ ...selo(r), fontSize: 9 }}>{REGIOES[r].nome}</span>)}
@@ -772,7 +804,8 @@ export default function Agenda() {
 
 // O ITEM NA CÉLULA DO MÊS: a bolinha de quem é o dono, a hora, o título. Previsto tracejado.
 function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolean; nomeDe: (id: string | null) => string | null; naoLido: boolean; onAbrir: () => void }) {
-  const prev = ehPrevisto(it), cor = atras ? 'var(--red)' : corDe(it)
+  const peso = pesoDe(it)
+  const prev = ehPrevisto(it), cor = atras ? 'var(--red)' : peso ? DESTAQUE[peso].cor : corDe(it)
   const dono = nomeDe(it.donoId)
   // ⚠️ O QUE SAI DAQUI É TÃO IMPORTANTE QUANTO O QUE FICA. Numa célula de ~140px cabiam avatar,
   // etiqueta de região, hora e título — e o título, que é a única coisa que responde "o que é
@@ -785,11 +818,12 @@ function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolea
       title={`${it.titulo}${dono ? ' · ' + dono : ''}${prev ? ' (previsto — ainda não combinado)' : ''}`}
       style={{
         display: 'flex', alignItems: 'baseline', gap: 5, padding: '4px 7px', borderRadius: 6, minWidth: 0,
-        background: prev ? 'transparent' : atras ? 'var(--red-bg)' : 'var(--surface-2)',
+        background: prev ? 'transparent' : atras ? 'var(--red-bg)' : peso ? DESTAQUE[peso].cor + '26' : 'var(--surface-2)',
         border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + '88' : 'transparent'}`,
         borderLeft: `3px ${prev ? 'dashed' : 'solid'} ${corPessoa(it.donoId)}`,
         opacity: prev ? 0.8 : 1,
       }}>
+      {peso && <span title={DESTAQUE[peso].rotulo} style={{ fontSize: 10, color: DESTAQUE[peso].cor, flexShrink: 0 }}>{DESTAQUE[peso].marca}</span>}
       {horaDe(it) && <b className="tnum" style={{ fontSize: 11.5, color: cor, fontWeight: 800, flexShrink: 0 }}>{horaDe(it)}</b>}
       <span style={{ fontSize: 12.5, lineHeight: '17px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
         {it.titulo}
@@ -868,13 +902,13 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
           const lista = (porDia.get(k) || []).filter(i => i.diaTodo && !ehPrevisto(i))
           const previstos = (porDia.get(k) || []).filter(ehPrevisto)
           return (
-            <div key={k} style={{ padding: '6px 4px', borderLeft: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, minHeight: 34, background: k === hj ? 'var(--glass-field)' : 'transparent' }}>
+            <div key={k} style={{ padding: '6px 4px', borderLeft: '1px solid var(--glass-border)', display: 'flex', flexDirection: 'column', gap: 3, minWidth: 0, minHeight: 34, background: pesoDoDia(porDia.get(k) || []) ? DESTAQUE[pesoDoDia(porDia.get(k) || [])!].cor + '14' : k === hj ? 'var(--glass-field)' : 'transparent', boxShadow: pesoDoDia(porDia.get(k) || []) ? `inset 0 3px 0 ${DESTAQUE[pesoDoDia(porDia.get(k) || [])!].cor}` : 'none' }}>
               {lista.slice(0, 4).map(i => <Chip key={i.fonte + i.id} it={i} atras={k < hj} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))} onAbrir={() => onAbrir(i)} />)}
               {lista.length > 4 && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', paddingLeft: 4 }}>+{lista.length - 4} mais</div>}
               {verPrevistos && previstos.map(i => (
                 <div key={i.fonte + i.id} onClick={e => { e.stopPropagation(); onAbrir(i) }} title={`${i.titulo} — previsto, ainda não combinado`}
-                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 5px', borderRadius: 5, border: '1px dashed var(--border-strong)', fontSize: 10, color: 'var(--text-faint)', minWidth: 0, cursor: 'pointer' }}>
-                  <span style={{ fontSize: 8, flexShrink: 0 }}>◌</span>
+                  style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '2px 5px', borderRadius: 5, border: `1px dashed ${pesoDe(i) ? DESTAQUE[pesoDe(i)!].cor : 'var(--border-strong)'}`, fontSize: 10, color: pesoDe(i) ? DESTAQUE[pesoDe(i)!].cor : 'var(--text-faint)', fontWeight: pesoDe(i) ? 700 : 400, minWidth: 0, cursor: 'pointer' }}>
+                  <span style={{ fontSize: 8, flexShrink: 0 }}>{pesoDe(i) ? DESTAQUE[pesoDe(i)!].marca : '◌'}</span>
                   <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{i.titulo}</span>
                 </div>
               ))}
