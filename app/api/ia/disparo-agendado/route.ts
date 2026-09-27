@@ -64,8 +64,24 @@ export async function POST(req: NextRequest) {
     } else {
       return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda, fria ou ativos)` }, { status: 200 })
     }
+    // excluir_dias: não repete quem JÁ recebeu este mesmo template nos últimos N dias (em qualquer campanha).
+    // Serve pra mandar a segunda metade de uma lista sem acertar de novo quem recebeu na primeira.
+    const excluirDias = Math.max(0, Number(b?.excluir_dias) || 0)
+    let jaRecebeu = 0
+    if (excluirDias > 0) {
+      const desde = new Date(Date.now() - excluirDias * 86400000).toISOString()
+      const { data: camps } = await sb.from('wa_disparos').select('id').eq('org_id', org).eq('template_nome', template).gte('criado_em', desde)
+      const ids = (camps || []).map((x: any) => x.id)
+      if (ids.length) {
+        const { data: env } = await sb.from('wa_disparo_envios').select('telefone').in('disparo_id', ids).eq('status', 'enviado').limit(50000)
+        const recentes = new Set((env || []).map((e: any) => suf(e.telefone)))
+        const antes = contatos.length
+        contatos = contatos.filter(c => !recentes.has(suf(c.telefone)))
+        jaRecebeu = antes - contatos.length
+      }
+    }
     const total = contatos.length
-    if (dryRun) return NextResponse.json({ ok: true, dryRun: true, codigo, cidade, publico, total })
+    if (dryRun) return NextResponse.json({ ok: true, dryRun: true, codigo, cidade, publico, total, ja_recebeu_excluidos: jaRecebeu, excluir_dias: excluirDias })
     if (!total) return NextResponse.json({ ok: true, codigo, publico, total: 0, enviados: 0, restantes: 0 })
 
     // campanha ESTÁVEL do dia (find-or-create) — pra dedup entre as várias chamadas do cron
