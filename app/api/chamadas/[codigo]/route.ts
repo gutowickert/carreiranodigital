@@ -33,14 +33,14 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (!ch) return NextResponse.json({ ok: false, error: 'chamada não encontrada' }, { status: 404 })
 
     const ct = req.headers.get('content-type') || ''
-    let acao = '', h = '', seq = 0, arquivo: File | null = null, mime = 'audio/webm'
+    let acao = '', h = '', seq = 0, arquivo: File | null = null, mime = 'audio/webm', corpo: any = null
     if (ct.includes('multipart/form-data')) {
       const fd = await req.formData()
       acao = String(fd.get('acao') || ''); h = String(fd.get('h') || ''); seq = Number(fd.get('seq') || 0)
       arquivo = fd.get('arquivo') as File | null; mime = String(fd.get('mime') || (arquivo as any)?.type || 'audio/webm')
     } else {
       const b = await req.json().catch(() => ({} as any))
-      acao = String(b.acao || ''); h = String(b.h || '')
+      acao = String(b.acao || ''); h = String(b.h || ''); corpo = b
     }
     const host = !!h && h === ch.chave_host
     const agora = new Date().toISOString()
@@ -48,6 +48,17 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     if (acao === 'entrou') {
       // o começo da conversa: a primeira vez que um dos dois se conecta
       if (!ch.iniciada_em) await sb.from('chamadas').update({ iniciada_em: agora, status: 'em_andamento' }).eq('id', ch.id)
+      return NextResponse.json({ ok: true })
+    }
+    if (acao === 'diag') {
+      // RAIO-X DO ÁUDIO: cada lado manda, a cada 10s, o que o WebRTC está enviando e recebendo (bytes,
+      // nível de som, estado da faixa e do alto-falante). Fica em chamadas.diag (últimos 80) pra ler
+      // depois de um teste que "não funcionou" sem depender do que a pessoa lembra de ter visto.
+      const d = corpo?.d && typeof corpo.d === 'object' ? { ...corpo.d, papel: host ? 'host' : 'lead', em: agora } : null
+      if (d) {
+        const atual = Array.isArray((ch as any).diag) ? (ch as any).diag : []
+        await sb.from('chamadas').update({ diag: [...atual, d].slice(-80) }).eq('id', ch.id)
+      }
       return NextResponse.json({ ok: true })
     }
     if (!host) return NextResponse.json({ ok: false, error: 'só quem convidou pode fazer isso' }, { status: 403 })

@@ -33,3 +33,5 @@ CREATE INDEX IF NOT EXISTS chamadas_org_data ON public.chamadas (org_id, criado_
 
 -- o bucket da gravação: privado; quem ouve pega uma URL assinada
 INSERT INTO storage.buckets (id, name, public) VALUES ('chamadas', 'chamadas', false) ON CONFLICT (id) DO NOTHING;
+-- raio-x do audio da chamada (27/09/2026): a pagina manda a cada 10s o que o WebRTC envia/recebe; lido em chamadas.diag
+alter table chamadas add column if not exists diag jsonb not null default '[]'::jsonb;

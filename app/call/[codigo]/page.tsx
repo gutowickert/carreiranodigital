@@ -66,6 +66,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const [nivelRemoto, setNivelRemoto] = useState(0)   // 0 a 1: o que chega do outro lado
   const [somBloqueado, setSomBloqueado] = useState(false)  // o navegador (celular) barrou o áudio até um toque
   const medidor = useRef<any>(null)
+  const raioX = useRef<any>(null)
+  const raioXn = useRef(0)
 
   const pc = useRef<RTCPeerConnection | null>(null)
   const canal = useRef<any>(null)
@@ -133,6 +135,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         post({ acao: 'entrou' })
         if (papel.current === 'host') iniciarGravacao()
         medirAudio()
+        if (!raioX.current) raioX.current = setInterval(colherRaioX, 5000)
       }
       // caiu: volta a "esperando" e fica pronto pra renegociar quando o outro voltar
       if (p.connectionState === 'failed' || p.connectionState === 'disconnected') {
@@ -272,6 +275,35 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     }
     if (vRemoto.current) { vRemoto.current.srcObject = r; vRemoto.current.play().catch(() => null) }
   }
+  // RAIO-X: o que o WebRTC está de fato mandando e recebendo de áudio. Alimenta os medidores (mais
+  // confiável que o analyser, que depende do AudioContext acordar) e vai pro servidor a cada 10s, pra
+  // ler depois de um teste que "não funcionou" (chamadas.diag).
+  async function colherRaioX() {
+    const p = pc.current; if (!p) return
+    try {
+      const st = await p.getStats()
+      const d: any = { estado: p.connectionState, ice: p.iceConnectionState }
+      st.forEach((s: any) => {
+        if (s.type === 'outbound-rtp' && s.kind === 'audio') Object.assign(d, { envBytes: s.bytesSent, envPacotes: s.packetsSent })
+        if (s.type === 'media-source' && s.kind === 'audio') d.nivelMic = s.audioLevel ?? null
+        if (s.type === 'inbound-rtp' && s.kind === 'audio') Object.assign(d, { recBytes: s.bytesReceived, recPacotes: s.packetsReceived, nivelRec: s.audioLevel ?? null, perdidos: s.packetsLost, ocultos: s.concealedSamples })
+        if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') { const l = st.get(s.localCandidateId); d.via = l?.candidateType + (l?.relayProtocol ? '/' + l.relayProtocol : '') }
+      })
+      const fx = local.current?.getAudioTracks()[0]
+      d.mic = fx ? { label: fx.label, enabled: fx.enabled, muted: fx.muted, estado: fx.readyState } : 'sem faixa local'
+      const rem = remoto.current?.getAudioTracks()[0]
+      d.remota = rem ? { enabled: rem.enabled, muted: rem.muted, estado: rem.readyState } : 'sem faixa remota'
+      d.som = aRemoto.current ? { pausado: aRemoto.current.paused, pronto: aRemoto.current.readyState, mudo: aRemoto.current.muted, volume: aRemoto.current.volume } : null
+      d.ctx = ctxMed.current?.state || null
+      d.envio = p.getSenders().map(s => s.track ? `${s.track.kind}:${s.track.enabled ? 'on' : 'off'}:${s.track.muted ? 'muted' : 'ok'}` : 'vazio').join(' ')
+      // os medidores preferem o nível medido pelo WebRTC quando ele existe
+      if (typeof d.nivelMic === 'number') setNivelLocal(v => Math.max(v, Math.min(1, d.nivelMic * 6)))
+      if (typeof d.nivelRec === 'number') setNivelRemoto(v => Math.max(v, Math.min(1, d.nivelRec * 6)))
+      raioXn.current++
+      if (raioXn.current % 2 === 1) post({ acao: 'diag', d })
+      log('raio-x', JSON.stringify(d).slice(0, 300))
+    } catch (e: any) { log('raio-x falhou', e?.message) }
+  }
   function liberarSom() { tocarRemoto(); try { ctxMed.current?.resume() } catch { /* sem contexto */ } }
 
   function misturarNaGravacao(track: MediaStreamTrack) {
@@ -282,7 +314,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   async function desligar(avisar = true) {
     if (encerrouEu.current) return
     if (avisar) { encerrouEu.current = true; enviar({ t: 'sair' }) }
-    clearInterval(timer.current); clearInterval(pronto.current); clearInterval(medidor.current); timer.current = null; medidor.current = null
+    clearInterval(timer.current); clearInterval(pronto.current); clearInterval(medidor.current); clearInterval(raioX.current); timer.current = null; medidor.current = null; raioX.current = null
     const r = rec.current
     if (r && r.state !== 'inactive') {
       // o último pedaço só chega no ondataavailable depois do stop: espera ele subir
