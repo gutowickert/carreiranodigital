@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
+import BotaoChamada from '@/components/BotaoChamada'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 
 type Conversa = {
@@ -372,6 +373,16 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
     finally { setEnviando(false) }
   }
 
+  // o botão Chamar manda o convite da chamada como mensagem desta conversa
+  async function enviarConvite(t: string): Promise<boolean> {
+    try {
+      const res = await fetchAuth('/api/wa/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto: t }) })
+      const json = await res.json()
+      if (json.ok) { carregar(); onEnviou(); return true }
+      setErro(json.error || 'falha ao enviar o convite'); if (json.foraJanela) setForaJanela(true); return false
+    } catch { return false }
+  }
+
   // Copiloto: lê a conversa + turmas abertas e sugere a próxima mensagem
   async function sugerirResposta() {
     setSugerindo(true); setSugestao(null); setErro('')
@@ -509,6 +520,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
               )}
             </div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexShrink: 0 }}>
+              {!conversa.eh_grupo && <BotaoChamada leadId={conversa.lead_id} nome={conversa.nome} telefone={conversa.telefone} enviarNoChat={enviarConvite} />}
               {/* Marcar não lida: vale pra QUALQUER conversa (com card, sem card, aluno ou grupo) */}
               <button onClick={marcarNaoLida} disabled={marcandoNaoLida}
                 title="Devolve a conversa pra lista como não lida (some ao reabrir)"

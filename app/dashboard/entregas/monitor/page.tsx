@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
+import BotaoChamada from '@/components/BotaoChamada'
 
 // O MONITOR DAS ENTREGAS. Tela interna do Guto e do Mateus pra decidir em grupo: cada
 // cliente é um card com a cor calculada (verde em cima, vermelho embaixo), os números da
@@ -139,6 +140,7 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
           {portal && <a href={portal} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>Ver como o cliente vê</a>}
           {portal && <button onClick={() => { navigator.clipboard?.writeText(portal); setCopiado(true); setTimeout(() => setCopiado(false), 1500) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>{copiado ? 'copiado' : 'copiar link do portal'}</button>}
           {c.whatsapp && <a href={`https://wa.me/${c.whatsapp}`} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>}
+          <BotaoChamada nome={c.cliente} telefone={c.whatsapp} compacto />
           {sinc && <span style={{ fontSize: 12, color: 'var(--text-faint)', alignSelf: 'center' }}>{sinc}</span>}
         </div>
 

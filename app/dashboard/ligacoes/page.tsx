@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
 import LeadCardModal from '@/components/LeadCard'
+import BotaoChamada from '@/components/BotaoChamada'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 
@@ -35,6 +36,7 @@ function Linha({ nome, telefone, sub, cor, leadId, onCard }: { nome: string; tel
       </div>
       {res ? <span style={{ fontSize: 12, color: 'var(--text-2)' }}>{res}</span> : null}
       <button onClick={() => onCard(leadId)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 11px', fontSize: 12, cursor: 'pointer' }}>📇 Card</button>
+      <BotaoChamada leadId={leadId} nome={nome} telefone={telefone} compacto />
       <a href={`/dashboard/atender?lead=${leadId}`} style={{ background: 'var(--accent-bg)', color: 'var(--accent-soft)', border: '1px solid var(--accent-soft)', borderRadius: 8, padding: '7px 11px', fontSize: 12, cursor: 'pointer', textDecoration: 'none' }}>⚡ Atender</a>
       <button onClick={ligar} disabled={ligando} style={{ background: 'var(--green)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', opacity: ligando ? .6 : 1 }}>{ligando ? '…' : 'Ligar'}</button>
     </div>

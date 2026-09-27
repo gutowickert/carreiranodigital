@@ -47,7 +47,7 @@ export async function POST(req: Request) {
     const r = await criarChamada(org, { lead_id: b.lead_id || null, lead_nome, telefone, criado_por: perfil?.id || eu?.id || '', criado_por_nome: nome, com_video: !!b.com_video })
     if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 200 })
     const origem = new URL(req.url).origin
-    return NextResponse.json({ ok: true, codigo: r.chamada.codigo, link_lead: `${origem}/call/${r.chamada.codigo}`, link_host: `${origem}/call/${r.chamada.codigo}?h=${r.chamada.chave_host}` })
+    return NextResponse.json({ ok: true, codigo: r.chamada.codigo, lead_nome, telefone, link_lead: `${origem}/call/${r.chamada.codigo}`, link_host: `${origem}/call/${r.chamada.codigo}?h=${r.chamada.chave_host}` })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }

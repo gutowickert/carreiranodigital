@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
+import BotaoChamada from '@/components/BotaoChamada'
 import { MetaBloco, Placar, Registros, Nota } from './Resultados'
 import { BuscarLead, type LeadAchado } from '@/components/BuscarLead'
 import { LOCAIS } from '@/lib/entrega'
@@ -172,6 +173,7 @@ export default function FichaEntrega() {
             </select>
           )}
           {p.whatsapp && <a href={`https://wa.me/${p.whatsapp}`} target="_blank" rel="noopener" style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>}
+          <BotaoChamada leadId={p.lead_id} nome={p.cliente} telefone={p.whatsapp} compacto />
           {p.lead_id && <Link href={`/dashboard/crm?lead=${p.lead_id}`} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', textDecoration: 'none' }}>Lead de origem</Link>}
           {!p.lead_id && (
             <button onClick={() => setVincular(v => !v)} style={{ ...card, padding: '7px 12px', fontSize: 12.5, color: 'var(--text-2)', background: 'var(--surface)', cursor: 'pointer' }}>

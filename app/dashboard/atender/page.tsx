@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import LeadCardModal from '@/components/LeadCard'
+import BotaoChamada from '@/components/BotaoChamada'
 
 type Item = {
   leadId: string; nome: string; etapa: string; conversaId: string; telefone: string; chatLid: string | null
@@ -376,6 +377,7 @@ function Agora({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[]; su
           <button onClick={aprovar} disabled={enviando || pensando || !texto.trim()} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : 'Enviar & Próximo'}</button>
           <button onClick={proximo} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>⏭️ Pular</button>
           <button onClick={() => abrirCard(item.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
+          <BotaoChamada leadId={item.leadId} nome={item.nome} telefone={item.telefone} />
           <a href={`/dashboard/whatsapp`} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)', textDecoration: 'none' }}>Abrir no WhatsApp</a>
         </div>
         <Acoes item={item} onFeito={onFeito} />
@@ -430,6 +432,7 @@ function Copiloto({ fila, sugerir, enviar, onFeito, abrirCard }: { fila: Item[];
             })()}
             <button disabled={enviando || pensando || !texto.trim()} onClick={async () => { setEnviando(true); const r = await enviar(sel, texto.trim(), sug?.resposta); setEnviando(false); if (r.ok) setFeito(f => ({ ...f, [sel.leadId]: true })) }} style={{ ...btn('var(--green)'), opacity: (enviando || pensando) ? .6 : 1 }}>{enviando ? 'Enviando…' : feito[sel.leadId] ? 'Enviado' : 'Enviar'}</button>
             <button onClick={() => abrirCard(sel.leadId)} style={{ ...btn('var(--surface-2)'), color: 'var(--text-2)' }}>📇 Card</button>
+            <BotaoChamada leadId={sel.leadId} nome={sel.nome} telefone={sel.telefone} />
           </div>
           <Acoes item={sel} onFeito={(id) => { onFeito(id); setSel(null) }} />
         </>}

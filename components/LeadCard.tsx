@@ -8,6 +8,7 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
+import BotaoChamada from '@/components/BotaoChamada'
 import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
 
 type Lead = {
@@ -589,6 +590,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid #25D36640', background: chatAberto ? '#25D366' : 'rgba(37,211,102,.12)', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 700, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
               <MessageCircle size={14} /> WhatsApp
             </button>
+            <BotaoChamada leadId={lead.id} nome={form.nome} telefone={form.whatsapp} />
             <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid ' + (naoLida ? 'var(--green)' : 'var(--border-strong)'), background: naoLida ? 'var(--green-bg)' : 'var(--glass-field)', color: naoLida ? 'var(--green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {naoLida ? <CircleDot size={14} /> : <Circle size={14} />} {naoLida ? 'Não lida' : 'Marcar não lida'}
