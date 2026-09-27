@@ -11,6 +11,8 @@ export const maxDuration = 60
 // (deduplicando por wa_disparo_envios da campanha do dia). O pg_cron chama várias vezes (ex.: todo minuto por 20min)
 // até `restantes=0` — igual o followup drena. Assim disparo agendado grande (700+) é confiável.
 //   publico='perda' → leads em PERDA da turma (win-back) · publico='fria' → lista fria importada (wa_contatos sem lead)
+//   publico='ativos' → leads frios nas etapas do motor · publico='lista' → contatos explícitos no corpo ({telefone, nome})
+//   excluir_dias=N → pula quem já recebeu este template nos últimos N dias (qualquer campanha)
 // dryRun (padrão) só conta. Disparar: { dryRun:false, confirm:true }.
 const alcancavel = (w: string) => { const s = String(w || ''); if (/@lid|@g\.us|@broadcast|@s\.whatsapp/i.test(s)) return false; const d = s.replace(/\D/g, ''); return d.length >= 10 && d.length <= 13 }
 const suf = (t: string) => String(t || '').replace(/\D/g, '').slice(-8)
@@ -61,8 +63,13 @@ export async function POST(req: NextRequest) {
         }
       }
       contatos = (leads || []).filter((l: any) => alcancavel(l.whatsapp) && !engaj.has(l.id)).map((l: any) => ({ telefone: l.whatsapp, nome: nomeSaudacao(l.nome), lead_id: l.id }))
+    } else if (publico === 'lista') {
+      // LISTA EXPLÍCITA: os contatos vêm no corpo ({telefone, nome}), já com a saudação resolvida. É como
+      // agendar a segunda metade de uma lista que o dono aprovou contato a contato, sem refiltrar nada.
+      const lista = Array.isArray(b?.contatos) ? b.contatos : []
+      contatos = lista.filter((x: any) => x && alcancavel(x.telefone)).map((x: any) => ({ telefone: String(x.telefone), nome: String(x.nome || '').trim(), lead_id: x.lead_id || undefined }))
     } else {
-      return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda, fria ou ativos)` }, { status: 200 })
+      return NextResponse.json({ ok: false, error: `publico '${publico}' inválido (perda, fria, ativos ou lista)` }, { status: 200 })
     }
     // excluir_dias: não repete quem JÁ recebeu este mesmo template nos últimos N dias (em qualquer campanha).
     // Serve pra mandar a segunda metade de uma lista sem acertar de novo quem recebeu na primeira.
