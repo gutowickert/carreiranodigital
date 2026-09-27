@@ -570,8 +570,10 @@ export default function Agenda() {
                       // ⚠️ PREVISTO NÃO ENTRA NA FILA DO DIA. São 27 previstos contra 10
                       // compromissos de verdade: misturados, o vendedor olha a quarta-feira e não
                       // sabe se está livre. Aqui eles viram UMA linha discreta no pé da célula.
-                      const firmes = doDia.filter(i => !ehPrevisto(i))
-                      const previstos = doDia.filter(ehPrevisto)
+                      // encontro e entrega aparecem com o NOME mesmo sem hora combinada — o dia
+                      // precisa dizer do que se trata sem abrir nada. Só o resto do previsto vira sombra.
+                      const firmes = doDia.filter(i => !ehPrevisto(i) || pesoDe(i))
+                      const previstos = doDia.filter(i => ehPrevisto(i) && !pesoDe(i))
                       const MAX = 4
                       return (
                         // Clicar no dia (pra abrir) é ver o dia: marca como visto o que está aceso NELE,
@@ -585,18 +587,6 @@ export default function Agenda() {
                             boxShadow: pesoDoDia(doDia) ? `inset 0 3px 0 ${DESTAQUE[pesoDoDia(doDia)!].cor}` : 'none',
                             opacity: mesmoMes(d) ? 1 : 0.35,
                           }}>
-                          {pesoDoDia(doDia) && (
-                            <div style={{ display: 'flex', gap: 4, marginBottom: 3, flexWrap: 'wrap' }}>
-                              {(['entrega', 'encontro'] as Peso[]).filter(p => doDia.some(i => pesoDe(i) === p)).map(p => {
-                                const soPrevisto = doDia.filter(i => pesoDe(i) === p).every(ehPrevisto)
-                                return (
-                                  <span key={p} title={soPrevisto ? 'ainda sem hora combinada' : ''} style={{ fontSize: 9, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: DESTAQUE[p].cor, border: `1px ${soPrevisto ? 'dashed' : 'solid'} ${DESTAQUE[p].cor}`, borderRadius: 999, padding: '0 6px', lineHeight: '15px' }}>
-                                    {DESTAQUE[p].marca} {DESTAQUE[p].rotulo}{soPrevisto ? ' · sem hora' : ''}
-                                  </span>
-                                )
-                              })}
-                            </div>
-                          )}
                           {regioesDoDia(doDia).length > 0 && (
                             <div style={{ display: 'flex', gap: 3, marginBottom: 3 }}>
                               {regioesDoDia(doDia).map(r => <span key={r} style={{ ...selo(r), fontSize: 9 }}>{REGIOES[r].nome}</span>)}
@@ -642,13 +632,13 @@ export default function Agenda() {
                 </div>
                 {/* No painel os dois aparecem, mas separados: primeiro o que está combinado, depois,
                     sob um rótulo, o que o roteiro só calculou. */}
-                {doDiaPainel.filter(i => !ehPrevisto(i)).length === 0 && !doDiaPainel.some(ehPrevisto)
+                {doDiaPainel.filter(i => !ehPrevisto(i) || pesoDe(i)).length === 0 && !doDiaPainel.some(ehPrevisto)
                   ? <div style={{ fontSize: 13, color: 'var(--text-faint)', padding: '6px 0 4px' }}>{diaDoPainel === hj ? 'Nada pra hoje nesta aba.' : 'Nada neste dia.'}</div>
                   : (() => {
                     // O DIA PARTIDO EM TURNOS. Seis compromissos numa lista é uma lista; os mesmos
                     // seis partidos em manhã/tarde/noite respondem "tenho a tarde livre?" sem
                     // ninguém ler hora por hora. Turno sem nada não aparece.
-                    const { turnos, semHora } = porTurno(doDiaPainel.filter(i => !ehPrevisto(i)))
+                    const { turnos, semHora } = porTurno(doDiaPainel.filter(i => !ehPrevisto(i) || pesoDe(i)))
                     return (<>
                       {turnos.map(t => (
                         <div key={t.chave} style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -676,13 +666,13 @@ export default function Agenda() {
                       )}
                     </>)
                   })()}
-                {verPrevistos && doDiaPainel.some(ehPrevisto) && (
+                {verPrevistos && doDiaPainel.some(i => ehPrevisto(i) && !pesoDe(i)) && (
                   <>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 6 }}>
                       <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>◌ Previsto — não combinado</span>
                       <div style={{ flex: 1, height: 1, background: 'var(--glass-border)' }} />
                     </div>
-                    {doDiaPainel.filter(ehPrevisto).map(i => (
+                    {doDiaPainel.filter(i => ehPrevisto(i) && !pesoDe(i)).map(i => (
                       <Linha key={i.fonte + i.id} it={i} eu={eu} nomeDe={nomeDe} naoLido={balao.has(chaveDe(i))}
                         ocupado={ocupado === i.id} onConcluir={() => setConfirmarConcluir(i)} onAbrir={() => abrir(i)} />
                     ))}
@@ -818,14 +808,14 @@ function Chip({ it, atras, nomeDe, naoLido, onAbrir }: { it: Item; atras: boolea
       title={`${it.titulo}${dono ? ' · ' + dono : ''}${prev ? ' (previsto — ainda não combinado)' : ''}`}
       style={{
         display: 'flex', alignItems: 'baseline', gap: 5, padding: '4px 7px', borderRadius: 6, minWidth: 0,
-        background: prev ? 'transparent' : atras ? 'var(--red-bg)' : peso ? DESTAQUE[peso].cor + '26' : 'var(--surface-2)',
-        border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + '88' : 'transparent'}`,
+        background: prev && !peso ? 'transparent' : atras ? 'var(--red-bg)' : peso ? DESTAQUE[peso].cor + (prev ? '14' : '26') : 'var(--surface-2)',
+        border: `1px ${prev ? 'dashed' : 'solid'} ${prev ? cor + (peso ? '' : '88') : 'transparent'}`,
         borderLeft: `3px ${prev ? 'dashed' : 'solid'} ${corPessoa(it.donoId)}`,
-        opacity: prev ? 0.8 : 1,
+        opacity: prev && !peso ? 0.8 : 1,
       }}>
       {peso && <span title={DESTAQUE[peso].rotulo} style={{ fontSize: 10, color: DESTAQUE[peso].cor, flexShrink: 0 }}>{DESTAQUE[peso].marca}</span>}
       {horaDe(it) && <b className="tnum" style={{ fontSize: 11.5, color: cor, fontWeight: 800, flexShrink: 0 }}>{horaDe(it)}</b>}
-      <span style={{ fontSize: 12.5, lineHeight: '17px', color: prev ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido ? 800 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
+      <span style={{ fontSize: 12.5, lineHeight: '17px', color: prev && !peso ? 'var(--text-muted)' : 'var(--text)', fontWeight: naoLido || peso ? 700 : 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', minWidth: 0 }}>
         {it.titulo}
       </span>
     </div>
