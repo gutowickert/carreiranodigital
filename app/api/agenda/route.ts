@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
+import { sincronizarAulas } from '@/lib/aulas-na-agenda'
 import { ROTEIROS, situacaoMarco, regiaoDoLocal, type Produto } from '@/lib/entrega'
 
 export const maxDuration = 60
@@ -74,6 +75,9 @@ export async function GET(req: Request) {
   const quem = await quemEuVejo(auth, org)
   if (!quem) return NextResponse.json({ erro: 'sem sessao' }, { status: 401 })
   const { eu, souDono, abaixo, visiveis, pessoas } = quem
+
+  // as aulas de ANL e Formação entram sozinhas na agenda de quem vai dar (lib/aulas-na-agenda)
+  await sincronizarAulas(org)
 
   // A FILA DE CORES: a empresa inteira, por ordem de entrada. A cor de cada pessoa sai da posição
   // dela aqui, então é a mesma pra todo mundo que abre a agenda e não muda quando alguém novo
