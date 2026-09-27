@@ -24,7 +24,7 @@ const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 
 // Um ícone por tela (Lucide). Tela sem ícone aqui recebe um ponto — e é sinal pra cadastrar.
 const ICONES: Record<string, LucideIcon> = {
-  '/dashboard': LayoutDashboard, '/dashboard/agenda': CalendarDays,
+  '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays,
   '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
   '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
   '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
@@ -67,6 +67,8 @@ const grupos: Grupo[] = [
     titulo: '',
     itens: [
       { nome: 'Painel', href: '/dashboard' },
+      // o que a pessoa tem pra entregar (marketing, clientes, aulas, pedidos) — aberta a todos
+      { nome: 'Minha semana', href: '/dashboard/minha-semana' },
       { nome: 'Agenda', href: '/dashboard/agenda' },
     ],
   },
@@ -197,6 +199,8 @@ function bipe() {
 // Itens que o VENDEDOR pode ver (admin ve tudo). Por href.
 function itemPermitido(href: string, p: Perfil): boolean {
   if (!href) return true // sub-título (rótulo) — visível; labels órfãos são limpos depois
+  // Minha semana é de todo mundo (decisão do Nando, 27/09/2026)
+  if (href === '/dashboard/minha-semana') return true
   // A Máquina lê o sistema inteiro: só admin e comercial (decisão do dono, 25/09/2026). A rota
   // confere a mesma regra (lib/maquina-acesso) — o menu é só a primeira porta.
   if (href === '/dashboard/maquina') return p.papel !== 'professor' && p.setor !== 'professor' && (p.papel === 'admin' || p.setor === 'comercial')
@@ -222,6 +226,8 @@ function itemPermitido(href: string, p: Perfil): boolean {
       '/dashboard/orcamentos',
       '/dashboard/analise-conversao',
       '/dashboard/turmas', '/dashboard/chamada', '/dashboard/alunos',
+      // o Mateus foi pro Deu Venda (27/09/2026): acompanha as entregas dos clientes
+      '/dashboard/entregas',
     ]
     if (href === '/dashboard/whatsapp') return p.wa_caixa === true
     return doGestor.includes(href)
