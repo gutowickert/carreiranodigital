@@ -75,6 +75,12 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const vRemoto = useRef<HTMLVideoElement>(null)
   const rec = useRef<MediaRecorder | null>(null)
   const ctx = useRef<AudioContext | null>(null)
+  // O SOM DO OUTRO LADO sai por um <audio> proprio, nunca pelo <video>. O <video> fica display:none quando
+  // nao ha camera, e o iPhone nao toca som de video escondido; com o <audio> separado o som toca sempre.
+  const aRemoto = useRef<HTMLAudioElement | null>(null)
+  // o AudioContext dos medidores nasce DENTRO do toque em Entrar: criado depois, sem gesto, o navegador
+  // deixa ele suspenso e o medidor diz "nao capta nada" com som passando (visto no teste automatico)
+  const ctxMed = useRef<AudioContext | null>(null)
   const dest = useRef<MediaStreamAudioDestinationNode | null>(null)
   const ice = useRef<RTCIceServer[]>(ICE_RESERVA)
   const fila = useRef<any[]>([])
@@ -107,13 +113,14 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     fila.current = []
     remoto.current = new MediaStream(); setTemVideoRemoto(false)
     if (vRemoto.current) vRemoto.current.srcObject = remoto.current
+    if (aRemoto.current) aRemoto.current.srcObject = remoto.current
     const p = new RTCPeerConnection({ iceServers: ice.current })
     pc.current = p
     local.current?.getTracks().forEach(t => p.addTrack(t, local.current!))
     p.ontrack = e => {
       remoto.current?.addTrack(e.track)
       if (e.track.kind === 'video') setTemVideoRemoto(true)
-      if (vRemoto.current && remoto.current) { vRemoto.current.srcObject = remoto.current; vRemoto.current.play().then(() => setSomBloqueado(false)).catch(() => setSomBloqueado(true)) }
+      tocarRemoto()
       if (papel.current === 'host' && e.track.kind === 'audio') misturarNaGravacao(e.track)
       if (e.track.kind === 'audio') medirAudio()
     }
@@ -139,6 +146,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
 
   async function entrar() {
     setFase('conectando'); setErro(''); setAviso('')
+    try { if (!ctxMed.current) ctxMed.current = new AudioContext(); ctxMed.current.resume().catch(() => null) } catch { /* sem medidor */ }
     // câmera é opcional: se ela falhar (em uso por outro programa, bloqueada), entra só com voz e avisa.
     // Microfone é obrigatório, e o erro diz o motivo de verdade.
     const audio = { echoCancellation: true, noiseSuppression: true }
@@ -242,7 +250,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   function medirAudio() {
     if (medidor.current) return
     try {
-      const ac = new AudioContext()
+      const ac = ctxMed.current || (ctxMed.current = new AudioContext())
+      if (ac.state !== 'running') ac.resume().catch(() => null)
       const fazer = (stream: MediaStream | null) => { if (!stream || !stream.getAudioTracks().length) return null; const an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(stream).connect(an); return an }
       let anL = fazer(local.current), anR = fazer(remoto.current)
       const buf = new Float32Array(512)
@@ -253,7 +262,17 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       }, 120)
     } catch { /* sem medidor, a chamada segue */ }
   }
-  function liberarSom() { vRemoto.current?.play().then(() => setSomBloqueado(false)).catch(() => null) }
+  // (re)liga os elementos ao stream remoto e manda tocar. Safari/iPhone nao percebe faixa nova adicionada a um
+  // stream ja ligado: por isso o srcObject e reatribuido a cada faixa que chega.
+  function tocarRemoto() {
+    const r = remoto.current; if (!r) return
+    if (aRemoto.current) {
+      aRemoto.current.srcObject = r; aRemoto.current.muted = false; aRemoto.current.volume = 1
+      aRemoto.current.play().then(() => setSomBloqueado(false)).catch(() => setSomBloqueado(true))
+    }
+    if (vRemoto.current) { vRemoto.current.srcObject = r; vRemoto.current.play().catch(() => null) }
+  }
+  function liberarSom() { tocarRemoto(); try { ctxMed.current?.resume() } catch { /* sem contexto */ } }
 
   function misturarNaGravacao(track: MediaStreamTrack) {
     if (!ctx.current || !dest.current) return
@@ -329,7 +348,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       </div>
 
       <div style={{ position: 'relative', width: '100%', maxWidth: 720, flex: 1, minHeight: 320, borderRadius: 18, overflow: 'hidden', background: 'var(--surface, #15121F)', border: '1px solid var(--border, #2A2540)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <video ref={vRemoto} autoPlay playsInline style={{ width: '100%', height: '100%', objectFit: 'cover', display: temVideoRemoto ? 'block' : 'none' }} />
+        <video ref={vRemoto} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: temVideoRemoto ? 'block' : 'none' }} />
+        <audio ref={aRemoto} autoPlay style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
         {!temVideoRemoto && (
           <div style={{ textAlign: 'center', color: 'var(--text-2, #C9C3D9)' }}>
             <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--accent, #6522D6)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, fontWeight: 800, color: '#fff' }}>{(info?.com_quem || '?').trim()[0]?.toUpperCase()}</div>
