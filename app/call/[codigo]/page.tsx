@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { Mic, MicOff, Video, VideoOff, Maximize2, Minimize2, PhoneOff, Settings2 } from 'lucide-react'
 
 // A CHAMADA. Uma página só pros dois lados: o lead abre /call/<codigo>; quem convidou abre
 // com ?h=<chave>. WebRTC ponto a ponto (voz, vídeo opcional), sinalização pelo Realtime do
@@ -48,6 +49,11 @@ async function cameraFisica(): Promise<MediaTrackConstraints> {
   } catch { return base }
 }
 
+// MICROFONE VIRTUAL = silêncio. No PC do Guto (27/09) o Chrome escolheu "Webcam 3 (NDI Webcam Audio)" e o outro
+// lado recebia pacotes de silêncio: vídeo passava, voz não. Estes rótulos nunca são a primeira escolha.
+const VIRTUAL_MIC = /ndi|obs|virtual|cable|voicemeeter|stereo mix|mixagem|loopback|what u hear|snap|xsplit|manycam|droidcam|camo/i
+const AUDIO_BASE: MediaTrackConstraints = { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+
 export default function Chamada({ params }: { params: Promise<{ codigo: string }> }) {
   const [codigo, setCodigo] = useState('')
   const [h, setH] = useState('')
@@ -66,6 +72,16 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const [nivelRemoto, setNivelRemoto] = useState(0)   // 0 a 1: o que chega do outro lado
   const [somBloqueado, setSomBloqueado] = useState(false)  // o navegador (celular) barrou o áudio até um toque
   const medidor = useRef<any>(null)
+  const [camOff, setCamOff] = useState(false)
+  const [telaCheia, setTelaCheia] = useState(false)
+  const [imersivo, setImersivo] = useState(false)      // iPhone sem tela cheia de página: esconde o cabeçalho
+  const [micMenu, setMicMenu] = useState(false)
+  const [mics, setMics] = useState<MediaDeviceInfo[]>([])
+  const [micId, setMicId] = useState('')
+  const [micLabel, setMicLabel] = useState('')
+  const [preparado, setPreparado] = useState(false)    // já testou mic/câmera antes de entrar
+  const palco = useRef<HTMLDivElement>(null)
+  const micVersao = useRef(0)                          // muda quando o mic é trocado: o medidor religa
   const raioX = useRef<any>(null)
   const raioXn = useRef(0)
 
@@ -105,6 +121,9 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     })
     return () => { desligar(false) }
   }, [])
+  useEffect(() => { const f = () => setTelaCheia(!!document.fullscreenElement); document.addEventListener('fullscreenchange', f); return () => document.removeEventListener('fullscreenchange', f) }, [])
+  // o <video> da prévia é outro elemento em cada tela (antes/durante): religa o stream quando a tela muda
+  useEffect(() => { if (vLocal.current && local.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true } }, [fase, preparado, temVideoLocal])
 
   const enviar = (s: Omit<Sinal, 'sess' | 'de'>) => canal.current?.send({ type: 'broadcast', event: 'sinal', payload: { ...s, de: papel.current, sess: sessao.current } })
   const post = (body: any) => fetch(`/api/chamadas/${codigo}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, h }) }).catch(() => null)
@@ -147,22 +166,40 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     return p
   }
 
-  async function entrar() {
-    setFase('conectando'); setErro(''); setAviso('')
-    try { if (!ctxMed.current) ctxMed.current = new AudioContext(); ctxMed.current.resume().catch(() => null) } catch { /* sem medidor */ }
-    // câmera é opcional: se ela falhar (em uso por outro programa, bloqueada), entra só com voz e avisa.
-    // Microfone é obrigatório, e o erro diz o motivo de verdade.
-    const audio = { echoCancellation: true, noiseSuppression: true }
+  // PEGAR MIC (+ CÂMERA): câmera é opcional (se falhar, entra só com voz e avisa); microfone é obrigatório e o
+  // erro diz o motivo de verdade. Se o navegador entregar um microfone virtual, troca pelo primeiro físico.
+  async function capturar(): Promise<boolean> {
+    const audio: MediaTrackConstraints = micId ? { ...AUDIO_BASE, deviceId: { exact: micId } } : AUDIO_BASE
     let usouVideo = comVideo
+    let s: MediaStream
     try {
       if (comVideo) {
         const video = await cameraFisica()
-        try { local.current = await navigator.mediaDevices.getUserMedia({ audio, video }) }
-        catch (e: any) { usouVideo = false; setComVideo(false); setAviso(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
-      } else local.current = await navigator.mediaDevices.getUserMedia({ audio, video: false })
-    } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}.`); return }
-    setTemVideoLocal(usouVideo)
-    if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
+        try { s = await navigator.mediaDevices.getUserMedia({ audio, video }) }
+        catch (e: any) { usouVideo = false; setComVideo(false); setAviso(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); s = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
+      } else s = await navigator.mediaDevices.getUserMedia({ audio, video: false })
+    } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}.`); return false }
+    const f = s.getAudioTracks()[0]
+    if (f && !micId && VIRTUAL_MIC.test(f.label)) {
+      try {
+        const reais = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'audioinput' && d.label && !VIRTUAL_MIC.test(d.label) && d.deviceId !== 'default' && d.deviceId !== 'communications')
+        if (reais.length) {
+          const real = await navigator.mediaDevices.getUserMedia({ audio: { ...AUDIO_BASE, deviceId: { exact: reais[0].deviceId } }, video: false })
+          const nf = real.getAudioTracks()[0]
+          if (nf) { s.removeTrack(f); f.stop(); s.addTrack(nf); setMicId(reais[0].deviceId); log('mic virtual trocado:', f.label, '->', nf.label) }
+        } else setAviso(`O navegador só achou microfone virtual (${f.label}). Toca em Áudio e escolhe outro.`)
+      } catch { /* fica com o que veio */ }
+    }
+    local.current = s; micVersao.current++
+    setMicLabel(s.getAudioTracks()[0]?.label || ''); setTemVideoLocal(usouVideo); setCamOff(false)
+    if (vLocal.current) { vLocal.current.srcObject = s; vLocal.current.muted = true }
+    return true
+  }
+
+  async function entrar() {
+    setFase('conectando'); setErro(''); setAviso('')
+    try { if (!ctxMed.current) ctxMed.current = new AudioContext(); ctxMed.current.resume().catch(() => null) } catch { /* sem medidor */ }
+    if (!local.current) { const ok = await capturar(); if (!ok) return }
 
     sessao.current = Math.random().toString(36).slice(2, 10)
     try { const j = await fetch('/api/chamadas/ice', { cache: 'no-store' }).then(r => r.json()); if (j?.iceServers?.length) { ice.current = j.iceServers; log('ice', j.origem) } } catch { /* fica o reserva */ }
@@ -256,10 +293,11 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       const ac = ctxMed.current || (ctxMed.current = new AudioContext())
       if (ac.state !== 'running') ac.resume().catch(() => null)
       const fazer = (stream: MediaStream | null) => { if (!stream || !stream.getAudioTracks().length) return null; const an = ac.createAnalyser(); an.fftSize = 512; ac.createMediaStreamSource(stream).connect(an); return an }
-      let anL = fazer(local.current), anR = fazer(remoto.current)
+      let anL = fazer(local.current), anR = fazer(remoto.current), versaoL = micVersao.current
       const buf = new Float32Array(512)
       const pico = (an: AnalyserNode | null) => { if (!an) return 0; an.getFloatTimeDomainData(buf); let m = 0; for (const v of buf) { const a = Math.abs(v); if (a > m) m = a } return m }
       medidor.current = setInterval(() => {
+        if (versaoL !== micVersao.current) { anL = fazer(local.current); versaoL = micVersao.current }
         if (!anR && remoto.current?.getAudioTracks().length) anR = fazer(remoto.current)
         setNivelLocal(Math.min(1, pico(anL) * 4)); setNivelRemoto(Math.min(1, pico(anR) * 4))
       }, 120)
@@ -335,19 +373,79 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     const on = !mudo; setMudo(on)
     local.current?.getAudioTracks().forEach(t => { t.enabled = !on })
   }
+  function alternarCamera() {
+    const ts = local.current?.getVideoTracks() || []
+    if (!ts.length) { setAviso('Entrou sem câmera. Pra usar vídeo, sai e entra de novo com a câmera marcada.'); return }
+    const off = !camOff; setCamOff(off); ts.forEach(t => { t.enabled = !off })
+  }
+  // TELA CHEIA: no computador e no Android, a página inteira vira tela cheia. O Safari do iPhone não
+  // deixa página em tela cheia: lá o vídeo do outro lado abre em tela cheia nativa; sem vídeo, o modo
+  // imersivo esconde o cabeçalho (toque no palco traz de volta).
+  async function alternarTelaCheia() {
+    const doc: any = document
+    try {
+      if (doc.fullscreenElement) { await doc.exitFullscreen(); return }
+      const el: any = palco.current
+      if (el?.requestFullscreen) { await el.requestFullscreen(); return }
+      const v: any = vRemoto.current
+      if (v?.webkitEnterFullscreen && temVideoRemoto) { v.webkitEnterFullscreen(); return }
+      setImersivo(x => !x)
+    } catch { setImersivo(x => !x) }
+  }
+  async function listarMics() {
+    try { const ds = await navigator.mediaDevices.enumerateDevices(); setMics(ds.filter(d => d.kind === 'audioinput' && d.deviceId && d.deviceId !== 'default' && d.deviceId !== 'communications')) } catch { /* sem lista */ }
+  }
+  // TROCAR DE MICROFONE no meio da chamada: pega o novo, troca a faixa no envio (sem renegociar),
+  // liga ele na gravação e no medidor. Foi o que faltou no teste de 27/09: o Chrome pegou o mic
+  // virtual do NDI e não havia como escolher outro.
+  async function trocarMic(id: string) {
+    try {
+      const novo = await navigator.mediaDevices.getUserMedia({ audio: { ...AUDIO_BASE, deviceId: { exact: id } }, video: false })
+      const faixa = novo.getAudioTracks()[0]; if (!faixa) return
+      faixa.enabled = !mudo
+      const s = pc.current?.getSenders().find(x => x.track?.kind === 'audio'); if (s) await s.replaceTrack(faixa)
+      const antigas = local.current?.getAudioTracks() || []
+      antigas.forEach(t => { t.stop(); local.current?.removeTrack(t) })
+      local.current?.addTrack(faixa)
+      if (ctx.current && dest.current) { try { ctx.current.createMediaStreamSource(new MediaStream([faixa])).connect(dest.current) } catch { /* já misturado */ } }
+      micVersao.current++
+      setMicId(id); setMicLabel(faixa.label); setAviso(''); setMicMenu(false); log('mic trocado', faixa.label)
+    } catch (e: any) { setAviso(`Não consegui usar esse microfone: ${motivoMidia(e)}.`) }
+  }
+  // "Testar antes de entrar": pede a permissão, mostra o nível do microfone e a lista pra escolher.
+  async function preparar() {
+    setErro('')
+    try { if (!ctxMed.current) ctxMed.current = new AudioContext(); ctxMed.current.resume().catch(() => null) } catch { /* sem medidor */ }
+    const ok = await capturar(); if (!ok) return
+    setPreparado(true); listarMics(); medirAudio()
+  }
+  function mudarCamera(ligada: boolean) {
+    setComVideo(ligada)
+    // já tinha testado: solta o que pegou pra pegar de novo do jeito novo
+    if (preparado) { local.current?.getTracks().forEach(t => t.stop()); local.current = null; setPreparado(false); setTemVideoLocal(false); clearInterval(medidor.current); medidor.current = null }
+  }
 
   // ─────────────────────────────────────────────────────────────── a tela
   const host = papel.current === 'host'
   const S: Record<string, React.CSSProperties> = {
     fundo: { minHeight: '100vh', background: 'var(--bg, #0B0A10)', color: 'var(--text, #fff)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '24px 16px', fontFamily: 'inherit' },
-    card: { width: '100%', maxWidth: 520, background: 'var(--surface, #15121F)', border: '1px solid var(--border, #2A2540)', borderRadius: 18, padding: 24 },
-    marca: { fontSize: 11.5, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent, #C9AAFF)' },
-    h1: { fontSize: 26, fontWeight: 800, margin: '8px 0 0', lineHeight: 1.15 },
+    card: { width: '100%', maxWidth: 520, background: 'var(--surface, #15121F)', border: '1px solid var(--border, #2A2540)', borderRadius: 22, padding: 26, boxShadow: '0 30px 80px rgba(0,0,0,.45)' },
+    marca: { fontSize: 11.5, fontWeight: 800, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent-soft, #C9AAFF)' },
+    h1: { fontSize: 27, fontWeight: 800, margin: '8px 0 0', lineHeight: 1.12, letterSpacing: '-.02em' },
     p: { fontSize: 14.5, color: 'var(--text-2, #C9C3D9)', lineHeight: 1.5, margin: '10px 0 0' },
-    btn: { border: 'none', borderRadius: 12, padding: '14px 18px', fontSize: 16, fontWeight: 800, cursor: 'pointer', width: '100%' },
-    btn2: { border: '1px solid var(--border-strong, #3A3452)', background: 'var(--surface-2, #1D1929)', color: 'var(--text, #fff)', borderRadius: 12, padding: '12px 16px', fontSize: 14.5, fontWeight: 700, cursor: 'pointer', flex: 1 },
-    aviso: { width: '100%', maxWidth: 720, marginTop: 8, padding: '9px 12px', borderRadius: 10, background: 'var(--amber-bg, #3A2E10)', color: 'var(--amber, #F5B82E)', fontSize: 13 },
+    btn: { border: 'none', borderRadius: 14, padding: '15px 18px', fontSize: 16, fontWeight: 800, cursor: 'pointer', width: '100%' },
+    btn2: { border: '1px solid var(--border-strong, #3A3452)', background: 'var(--surface-2, #1D1929)', color: 'var(--text, #fff)', borderRadius: 14, padding: '12px 16px', fontSize: 14.5, fontWeight: 700, cursor: 'pointer', width: '100%' },
+    aviso: { width: '100%', maxWidth: 560, padding: '9px 12px', borderRadius: 12, background: 'rgba(245,184,46,.16)', color: '#F5B82E', fontSize: 13, backdropFilter: 'blur(8px)' },
+    sel: { width: '100%', background: 'var(--surface-2, #1D1929)', color: 'var(--text, #fff)', border: '1px solid var(--border-strong, #3A3452)', borderRadius: 12, padding: '11px 12px', fontSize: 14, fontFamily: 'inherit' },
   }
+  const micOk = !mudo && nivelLocal >= 0.04
+  const somOk = nivelRemoto >= 0.04
+  const Medidor = ({ rotulo, nivel, texto, ok }: { rotulo: string; nivel: number; texto: string; ok: boolean }) => (
+    <div style={{ flex: 1, minWidth: 140 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, color: 'var(--text-faint, #9A93AE)' }}><span>{rotulo}</span><span style={{ color: ok ? '#22C55E' : '#F5B82E', fontWeight: 700 }}>{texto}</span></div>
+      <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.10)', marginTop: 5, overflow: 'hidden' }}><div style={{ width: Math.round(Math.min(1, nivel) * 100) + '%', height: '100%', background: ok ? '#22C55E' : '#F5B82E', transition: 'width .1s' }} /></div>
+    </div>
+  )
 
   if (fase === 'carregando') return <div style={S.fundo}><div style={{ color: 'var(--text-faint, #7E7793)' }}>Abrindo a chamada…</div></div>
   if (fase === 'invalida') return <div style={S.fundo}><div style={S.card}><div style={S.marca}>Carreira no Digital</div><h1 style={S.h1}>Esse link não abre uma chamada.</h1><p style={S.p}>Confere se copiou o link inteiro, ou pede um novo pra quem te convidou.</p></div></div>
@@ -358,56 +456,109 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       <div style={S.card}>
         <div style={S.marca}>{info?.empresa}</div>
         <h1 style={S.h1}>{host ? `Chamada com ${info?.com_quem}` : `${info?.com_quem} te convidou pra uma chamada`}</h1>
-        <p style={S.p}>{comVideo ? 'Com vídeo e voz.' : 'Só voz, como uma ligação.'} Funciona aqui no navegador, sem instalar nada. Ao entrar, o navegador pede permissão pro microfone{comVideo ? ' e pra câmera' : ''}.</p>
+        <p style={S.p}>{comVideo ? 'Com vídeo e voz.' : 'Só voz, como uma ligação.'} Funciona aqui no navegador, sem instalar nada.</p>
         {host && <p style={{ ...S.p, fontSize: 13, color: 'var(--text-faint, #7E7793)' }}>A conversa será gravada e transcrita pro histórico do lead. Avise a pessoa.</p>}
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, fontSize: 14, color: 'var(--text-2, #C9C3D9)', cursor: 'pointer' }}>
-          <input type="checkbox" checked={comVideo} onChange={e => setComVideo(e.target.checked)} /> Entrar com a câmera ligada
+        <label style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16, fontSize: 14.5, color: 'var(--text-2, #C9C3D9)', cursor: 'pointer' }}>
+          <input type="checkbox" checked={comVideo} onChange={e => mudarCamera(e.target.checked)} style={{ width: 18, height: 18 }} /> Entrar com a câmera ligada
         </label>
-        {erro && <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 10, background: 'var(--red-bg, #3A1520)', color: 'var(--red, #F0475F)', fontSize: 13.5, lineHeight: 1.45 }}>{erro}</div>}
-        <button onClick={entrar} style={{ ...S.btn, marginTop: 18, background: 'var(--green, #22C55E)', color: '#fff' }}>Entrar na chamada</button>
+
+        {/* o teste antes de entrar: barra do microfone + escolha do aparelho + prévia da câmera */}
+        {preparado ? (
+          <div style={{ marginTop: 16, padding: 14, borderRadius: 16, background: 'var(--surface-2, #1D1929)', border: '1px solid var(--border, #2A2540)', display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <Medidor rotulo="Teu microfone" nivel={nivelLocal} texto={micOk ? 'captando' : 'fala algo…'} ok={micOk} />
+            {mics.length > 0 && (
+              <label style={{ fontSize: 12, color: 'var(--text-faint, #9A93AE)' }}>Microfone
+                <select value={micId || mics.find(m => m.label === micLabel)?.deviceId || ''} onChange={e => trocarMic(e.target.value)} style={{ ...S.sel, marginTop: 5 }}>
+                  {mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label || 'Microfone'}</option>)}
+                </select>
+              </label>
+            )}
+            {micLabel && !mics.length && <div style={{ fontSize: 12, color: 'var(--text-faint, #9A93AE)' }}>Usando: {micLabel}</div>}
+            {temVideoLocal && <video ref={vLocal} autoPlay playsInline muted style={{ width: '100%', aspectRatio: '16/9', objectFit: 'cover', borderRadius: 12, transform: 'scaleX(-1)', background: '#000' }} />}
+          </div>
+        ) : (
+          <button onClick={preparar} style={{ ...S.btn2, marginTop: 16 }}>Testar microfone{comVideo ? ' e câmera' : ''}</button>
+        )}
+        {aviso && <div style={{ ...S.aviso, marginTop: 12 }}>{aviso}</div>}
+        {erro && <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'var(--red-bg, #3A1520)', color: 'var(--red, #F0475F)', fontSize: 13.5, lineHeight: 1.45 }}>{erro}</div>}
+        <button onClick={entrar} style={{ ...S.btn, marginTop: 14, background: '#22C55E', color: '#06220f', boxShadow: '0 12px 30px rgba(34,197,94,.28)' }}>Entrar na chamada</button>
       </div>
     </div>
   )
 
+  // ── A CHAMADA: o outro lado ocupa a tela toda; o resto flutua por cima
+  const statusTexto = fase === 'conectado' ? fmt(seg) : outroEntrou ? 'conectando…' : 'esperando'
+  const statusSub = fase === 'conectado' ? (gravando ? 'gravando' : 'ao vivo') : outroEntrou ? 'o outro lado já entrou' : host ? 'aguardando o convidado abrir o link' : `aguardando ${info?.com_quem}`
   return (
-    <div style={{ ...S.fundo, justifyContent: 'space-between', padding: 12 }}>
-      <div style={{ width: '100%', maxWidth: 720, display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 4px' }}>
-        <div><div style={S.marca}>{info?.empresa}</div><div style={{ fontSize: 16, fontWeight: 800 }}>{info?.com_quem}</div></div>
-        <div style={{ textAlign: 'right', fontVariantNumeric: 'tabular-nums' }}>
-          <div style={{ fontSize: 22, fontWeight: 800 }}>{fase === 'conectado' ? fmt(seg) : outroEntrou ? 'conectando…' : 'esperando'}</div>
-          <div style={{ fontSize: 11.5, color: 'var(--text-faint, #7E7793)' }}>{fase === 'conectado' ? (gravando ? 'gravando' : 'ao vivo') : outroEntrou ? 'o outro lado já entrou' : host ? 'aguardando o convidado abrir o link' : `aguardando ${info?.com_quem}`}</div>
-        </div>
-      </div>
-
-      <div style={{ position: 'relative', width: '100%', maxWidth: 720, flex: 1, minHeight: 320, borderRadius: 18, overflow: 'hidden', background: 'var(--surface, #15121F)', border: '1px solid var(--border, #2A2540)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <video ref={vRemoto} autoPlay playsInline muted style={{ width: '100%', height: '100%', objectFit: 'cover', display: temVideoRemoto ? 'block' : 'none' }} />
-        <audio ref={aRemoto} autoPlay style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
-        {!temVideoRemoto && (
+    <div ref={palco} onClick={() => { if (imersivo) setImersivo(false) }} style={{ position: 'fixed', inset: 0, background: '#07060B', color: '#fff', overflow: 'hidden', fontFamily: 'inherit', userSelect: 'none' }}>
+      <video ref={vRemoto} autoPlay playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', display: temVideoRemoto ? 'block' : 'none' }} />
+      <audio ref={aRemoto} autoPlay style={{ position: 'absolute', width: 1, height: 1, opacity: 0, pointerEvents: 'none' }} />
+      {!temVideoRemoto && (
+        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(60% 50% at 50% 40%, rgba(101,34,214,.35), transparent 70%)' }}>
           <div style={{ textAlign: 'center', color: 'var(--text-2, #C9C3D9)' }}>
-            <div style={{ width: 96, height: 96, borderRadius: '50%', background: 'var(--accent, #6522D6)', margin: '0 auto 14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 38, fontWeight: 800, color: '#fff' }}>{(info?.com_quem || '?').trim()[0]?.toUpperCase()}</div>
-            <div style={{ fontSize: 15 }}>{fase === 'conectado' ? 'Só voz do outro lado' : outroEntrou ? 'Conectando…' : 'Esperando o outro lado entrar'}</div>
+            <div style={{ width: 132, height: 132, borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #c026d3)', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54, fontWeight: 800, color: '#fff', boxShadow: '0 20px 60px rgba(124,58,237,.45)', animation: fase === 'conectado' && somOk ? 'pulsar 1.2s ease-in-out infinite' : 'none' }}>{(info?.com_quem || '?').trim()[0]?.toUpperCase()}</div>
+            <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{info?.com_quem}</div>
+            <div style={{ fontSize: 14, marginTop: 4 }}>{fase === 'conectado' ? 'Só voz do outro lado' : outroEntrou ? 'Conectando…' : 'Esperando o outro lado entrar'}</div>
           </div>
-        )}
-        <video ref={vLocal} autoPlay playsInline muted style={{ position: 'absolute', right: 10, bottom: 10, width: 120, height: 160, objectFit: 'cover', borderRadius: 12, border: '2px solid var(--border-strong, #3A3452)', display: temVideoLocal ? 'block' : 'none' }} />
-      </div>
-
-      {somBloqueado && <button onClick={liberarSom} style={{ ...S.btn, maxWidth: 720, marginTop: 8, background: 'var(--accent, #6522D6)', color: '#fff' }}>Toque aqui para ouvir o outro lado</button>}
-      {fase === 'conectado' && (
-        <div style={{ width: '100%', maxWidth: 720, display: 'flex', gap: 14, marginTop: 8, fontSize: 12, color: 'var(--text-faint, #7E7793)' }}>
-          {[['Teu microfone', nivelLocal, mudo ? 'desligado' : nivelLocal < 0.04 ? 'não capta nada' : 'captando'], ['Som do outro lado', nivelRemoto, nivelRemoto < 0.04 ? 'nada chegando' : 'chegando']].map(([l, v, t]: any) => (
-            <div key={l} style={{ flex: 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}><span>{l}</span><span style={{ color: (t === 'captando' || t === 'chegando') ? 'var(--green, #22C55E)' : 'var(--amber, #F5B82E)' }}>{t}</span></div>
-              <div style={{ height: 6, borderRadius: 3, background: 'var(--surface-2, #1D1929)', marginTop: 4, overflow: 'hidden' }}><div style={{ width: Math.round(v * 100) + '%', height: '100%', background: v > 0.04 ? 'var(--green, #22C55E)' : 'var(--border-strong, #3A3452)', transition: 'width .1s' }} /></div>
-            </div>
-          ))}
         </div>
       )}
-      {aviso && <div style={S.aviso}>{aviso}</div>}
-      <div style={{ width: '100%', maxWidth: 720, display: 'flex', gap: 10, padding: '12px 0 4px' }}>
-        <button onClick={alternarMudo} style={{ ...S.btn2, background: mudo ? 'var(--amber-bg, #3A2E10)' : S.btn2.background, color: mudo ? 'var(--amber, #F5B82E)' : S.btn2.color }}>{mudo ? 'Microfone desligado' : 'Silenciar'}</button>
-        <button onClick={() => desligar(true)} style={{ ...S.btn2, background: 'var(--red, #F0475F)', color: '#fff', border: 'none' }}>{host ? 'Encerrar chamada' : 'Sair'}</button>
+      <style>{`@keyframes pulsar { 0%,100% { transform: scale(1) } 50% { transform: scale(1.06) } }`}</style>
+
+      {/* eu, no cantinho */}
+      <video ref={vLocal} autoPlay playsInline muted style={{ position: 'absolute', top: imersivo ? 'calc(14px + env(safe-area-inset-top))' : 'calc(96px + env(safe-area-inset-top))', right: 14, width: 'min(28vw, 150px)', aspectRatio: '3 / 4', objectFit: 'cover', borderRadius: 16, border: '2px solid rgba(255,255,255,.35)', boxShadow: '0 12px 34px rgba(0,0,0,.55)', transform: 'scaleX(-1)', background: '#000', display: temVideoLocal && !camOff ? 'block' : 'none', transition: 'top .2s' }} />
+
+      {/* cabeçalho flutuante */}
+      {!imersivo && (
+        <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'calc(12px + env(safe-area-inset-top)) 16px 44px', background: 'linear-gradient(180deg, rgba(0,0,0,.62), transparent)', pointerEvents: 'none' }}>
+          <div style={S.marca}>{info?.empresa}</div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+            <div style={{ fontSize: 19, fontWeight: 800 }}>{info?.com_quem}</div>
+            <div style={{ fontSize: 15, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#fff', opacity: .9 }}>{statusTexto}</div>
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginTop: 7, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, background: 'rgba(255,255,255,.14)', backdropFilter: 'blur(8px)', display: 'inline-flex', alignItems: 'center', gap: 6 }}>{gravando && fase === 'conectado' && <span style={{ width: 7, height: 7, borderRadius: 4, background: '#F0475F', boxShadow: '0 0 0 3px rgba(240,71,95,.3)' }} />}{statusSub}</span>
+            {fase === 'conectado' && <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, background: micOk ? 'rgba(34,197,94,.22)' : 'rgba(245,184,46,.22)', color: micOk ? '#86efac' : '#fde68a', backdropFilter: 'blur(8px)' }}>mic {mudo ? 'desligado' : micOk ? 'captando' : 'não capta nada'}</span>}
+            {fase === 'conectado' && <span style={{ fontSize: 11.5, fontWeight: 700, padding: '4px 9px', borderRadius: 999, background: somOk ? 'rgba(34,197,94,.22)' : 'rgba(245,184,46,.22)', color: somOk ? '#86efac' : '#fde68a', backdropFilter: 'blur(8px)' }}>som {somOk ? 'chegando' : 'nada chegando'}</span>}
+          </div>
+        </div>
+      )}
+
+      {/* controles flutuantes */}
+      <div onClick={e => e.stopPropagation()} style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '48px 14px calc(14px + env(safe-area-inset-bottom))', background: 'linear-gradient(0deg, rgba(0,0,0,.66), transparent)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+        {somBloqueado && <button onClick={liberarSom} style={{ ...S.btn, maxWidth: 560, background: '#6522D6', color: '#fff', boxShadow: '0 12px 30px rgba(101,34,214,.4)' }}>Toque aqui para ouvir o outro lado</button>}
+        {aviso && <div style={S.aviso}>{aviso}</div>}
+        {erro && <div style={{ ...S.aviso, background: 'rgba(240,71,95,.18)', color: '#fca5a5' }}>{erro}</div>}
+        {micMenu && (
+          <div style={{ width: '100%', maxWidth: 560, padding: 14, borderRadius: 16, background: 'rgba(20,16,30,.92)', border: '1px solid rgba(255,255,255,.14)', backdropFilter: 'blur(14px)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div style={{ display: 'flex', gap: 14 }}>
+              <Medidor rotulo="Teu microfone" nivel={nivelLocal} texto={mudo ? 'desligado' : micOk ? 'captando' : 'não capta nada'} ok={micOk} />
+              <Medidor rotulo="Som do outro lado" nivel={nivelRemoto} texto={somOk ? 'chegando' : 'nada chegando'} ok={somOk} />
+            </div>
+            <label style={{ fontSize: 12, color: 'var(--text-faint, #9A93AE)' }}>Microfone em uso{micLabel ? `: ${micLabel}` : ''}
+              {mics.length > 0
+                ? <select value={micId || mics.find(m => m.label === micLabel)?.deviceId || ''} onChange={e => trocarMic(e.target.value)} style={{ ...S.sel, marginTop: 5 }}>{mics.map(m => <option key={m.deviceId} value={m.deviceId}>{m.label || 'Microfone'}</option>)}</select>
+                : <div style={{ marginTop: 5, fontSize: 12.5, color: '#fde68a' }}>O navegador não listou outros microfones.</div>}
+            </label>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 18px)', alignItems: 'flex-start', justifyContent: 'center' }}>
+          <Redondo icone={mudo ? MicOff : Mic} rotulo={mudo ? 'Ativar mic' : 'Silenciar'} ativo={mudo} onClick={alternarMudo} />
+          {temVideoLocal && <Redondo icone={camOff ? VideoOff : Video} rotulo={camOff ? 'Ligar câmera' : 'Câmera'} ativo={camOff} onClick={alternarCamera} />}
+          <Redondo icone={telaCheia || imersivo ? Minimize2 : Maximize2} rotulo={telaCheia || imersivo ? 'Sair da tela cheia' : 'Tela cheia'} onClick={alternarTelaCheia} />
+          <Redondo icone={Settings2} rotulo="Áudio" ativo={micMenu} onClick={() => { listarMics(); setMicMenu(v => !v) }} />
+          <Redondo icone={PhoneOff} rotulo={host ? 'Encerrar' : 'Sair'} perigo onClick={() => desligar(true)} />
+        </div>
       </div>
-      {erro && <div style={{ width: '100%', maxWidth: 720, marginTop: 6, fontSize: 13, color: 'var(--red, #F0475F)' }}>{erro}</div>}
     </div>
+  )
+}
+
+// botão redondo dos controles da chamada
+function Redondo({ icone: Icone, rotulo, onClick, ativo, perigo }: { icone: any; rotulo: string; onClick: () => void; ativo?: boolean; perigo?: boolean }) {
+  return (
+    <button onClick={onClick} aria-label={rotulo} title={rotulo} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer', font: 'inherit', padding: 0, width: 'clamp(56px, 16vw, 76px)' }}>
+      <span style={{ width: perigo ? 66 : 56, height: 56, borderRadius: 28, display: 'grid', placeItems: 'center', background: perigo ? '#F0475F' : ativo ? '#F5B82E' : 'rgba(255,255,255,.16)', color: ativo && !perigo ? '#1a1200' : '#fff', backdropFilter: 'blur(10px)', border: '1px solid rgba(255,255,255,.2)', boxShadow: perigo ? '0 10px 26px rgba(240,71,95,.4)' : '0 6px 18px rgba(0,0,0,.35)', transition: 'transform .1s' }}><Icone size={23} strokeWidth={2} /></span>
+      <span style={{ fontSize: 11, fontWeight: 700, opacity: .92, textAlign: 'center', lineHeight: 1.15 }}>{rotulo}</span>
+    </button>
   )
 }
