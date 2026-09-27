@@ -102,6 +102,42 @@ export default function Maquina() {
   const fim = useRef<HTMLDivElement>(null)
   const campo = useRef<HTMLTextAreaElement>(null)
   const arquivo = useRef<HTMLInputElement>(null)
+  // falar em vez de digitar: grava no navegador, transcreve no servidor, e o texto cai no campo
+  const [gravando, setGravando] = useState(false)
+  const [transcrevendo, setTranscrevendo] = useState(false)
+  const gravador = useRef<MediaRecorder | null>(null)
+  const pedacos = useRef<Blob[]>([])
+
+  async function alternarGravacao() {
+    if (gravando) { gravador.current?.stop(); return }
+    setErro('')
+    let stream: MediaStream
+    try { stream = await navigator.mediaDevices.getUserMedia({ audio: true }) }
+    catch { setErro('o navegador não liberou o microfone — confere a permissão no cadeado da barra de endereço'); return }
+    // webm/opus no Chrome e Firefox; mp4 no Safari e no iPhone — a Deepgram lê os dois
+    const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(m => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(m)) || ''
+    const rec = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined)
+    pedacos.current = []
+    rec.ondataavailable = e => { if (e.data.size) pedacos.current.push(e.data) }
+    rec.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop())
+      setGravando(false)
+      const blob = new Blob(pedacos.current, { type: rec.mimeType || mime || 'audio/webm' })
+      if (blob.size < 2000) { setErro('áudio curto demais — clica no microfone, fala, e clica de novo pra parar'); return }
+      setTranscrevendo(true)
+      const data: string = await new Promise(res => { const fr = new FileReader(); fr.onload = () => res(String(fr.result || '').split(',')[1] || ''); fr.readAsDataURL(blob) })
+      const j = await fetchAuth('/api/maquina/transcrever', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: data, mime: blob.type }) })
+        .then(r => r.json()).catch(() => null)
+      setTranscrevendo(false)
+      // ⚠️ O TEXTO CAI NO CAMPO, NÃO VAI DIRETO. Transcrição erra nome, número e preço — a pessoa
+      // lê, corrige se precisar, e manda. Um clique a mais; nenhuma peça com o valor trocado.
+      if (j?.ok) { setInput(v => (v ? v.trimEnd() + ' ' : '') + j.texto); setTimeout(() => campo.current?.focus(), 30) }
+      else setErro(j?.error || 'não consegui transcrever')
+    }
+    gravador.current = rec
+    rec.start()
+    setGravando(true)
+  }
 
   useEffect(() => { carregarPecas() }, [])
   useEffect(() => { fim.current?.scrollIntoView({ behavior: 'smooth' }) }, [msgs, pensando])
@@ -342,6 +378,10 @@ export default function Maquina() {
                 </button>
                 <input ref={arquivo} type="file" accept="image/*,application/pdf" multiple style={{ display: 'none' }} onChange={e => anexar(e.target.files)} />
                 <button onClick={() => arquivo.current?.click()} style={btnSec}>📎 Anexar</button>
+                <button onClick={alternarGravacao} disabled={transcrevendo} title={gravando ? 'clica pra parar' : 'falar em vez de digitar'}
+                  style={{ ...btnSec, ...(gravando ? { background: 'var(--red)', color: '#fff', borderColor: 'var(--red)' } : {}), opacity: transcrevendo ? .6 : 1 }}>
+                  {gravando ? '● gravando… parar' : transcrevendo ? '… transcrevendo' : '🎤 Falar'}
+                </button>
                 {msgs.length > 0 && <button onClick={() => { setMsgs([]); setErro('') }} style={btnSec}>Nova conversa</button>}
                 <span style={{ fontSize: 11.5, color: 'var(--text-faint)', marginLeft: 'auto' }}>⌘/Ctrl + Enter envia</span>
               </div>
