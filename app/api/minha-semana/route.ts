@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { meuPerfil } from '@/lib/quem-eu-vejo'
-import { CHEFES, ehChefe, acompanhada, lerObs, esperando } from '@/lib/acompanhamento'
+import { CHEFES, APELIDO, ehChefe, acompanhada, lerObs, esperando } from '@/lib/acompanhamento'
 
 // MINHA SEMANA — tudo que uma pessoa tem pra entregar, numa tela só.
 //
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
       semana: diasEntre(hoje, t.data_prazo) <= 6 ? 'esta' : 'proxima', resumo: (t.descricao || '').split('\n')[0],
       passos: passos.map((p, i) => ({ texto: p, feito: !!riscados[i] })), minimo: o.minimo || 0,
       acompanhada: acompanhada(t), estado, entregueEm: o.entrega?.em || null,
-      devolvida: estado === 'devolvida' ? { por: nomeDe(o.devolvida!.por), recado: o.devolvida!.recado, em: o.devolvida!.em } : null,
+      devolvida: estado === 'devolvida' ? { por: APELIDO[o.devolvida!.por] || nomeDe(o.devolvida!.por), recado: o.devolvida!.recado, em: o.devolvida!.em } : null,
     }
   })
   const deuVenda = (marcos || []).map((m: any) => ({
@@ -100,7 +100,7 @@ export async function GET(req: Request) {
       if (t.status === 'concluida' && !o.aprovacao) continue   // fechada antes de existir aprovação
       const g = porPessoa.get(t.usuario_id) || { pessoa: t.usuario_id, nome: nomeDe(t.usuario_id), esperando: [], naoEntregou: [], aprovadas: [], placar: { noPrazo: 0, total: 0 } }
       const item = { id: t.id, titulo: t.titulo.replace(/\s*\(até [^)]+\)$/, ''), prazo: t.data_prazo, entregueEm: o.entrega?.em || null,
-        noPrazo: !!o.entrega && diaSP(o.entrega.em) <= t.data_prazo, aprovadoPor: o.aprovacao ? nomeDe(o.aprovacao.por) : null,
+        noPrazo: !!o.entrega && diaSP(o.entrega.em) <= t.data_prazo, aprovadoPor: o.aprovacao ? APELIDO[o.aprovacao.por] || nomeDe(o.aprovacao.por) : null,
         atraso: t.data_prazo < hoje ? diasEntre(t.data_prazo, hoje) : 0, devolvida: o.devolvida?.recado || null }
       if (t.status === 'concluida') g.aprovadas.push(item)
       else if (esperando(o)) g.esperando.push(item)
@@ -113,7 +113,7 @@ export async function GET(req: Request) {
 
   return NextResponse.json({
     ok: true, eu: eu.id, pessoa, nome: nomeDe(pessoa), pessoas: (pessoas || []).map(p => ({ id: p.id, nome: p.nome })), hoje,
-    marketing, deuVenda, aulas, pedidos, chefe: ehChefe(eu.id), chefes: CHEFES.map(id => (nomeDe(id) || '').split(' ')[0]).filter(Boolean), acompanhamento,
+    marketing, deuVenda, aulas, pedidos, chefe: ehChefe(eu.id), chefes: CHEFES.map(id => APELIDO[id]), acompanhamento,
   })
 }
 

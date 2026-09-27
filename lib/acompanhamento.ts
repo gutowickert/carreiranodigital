@@ -18,6 +18,8 @@ export const CHEFES = [
   'f3861b55-9bee-4ffc-ad35-3eebdc1f7cd6', // Guto
 ]
 export const ehChefe = (id: string | null | undefined) => !!id && CHEFES.includes(id)
+// Como aparecem na tela ("acompanhadas pelo Nando, Rick e Guto", "devolvida por Rick").
+export const APELIDO: Record<string, string> = { [CHEFES[0]]: 'Nando', [CHEFES[1]]: 'Rick', [CHEFES[2]]: 'Guto' }
 
 // Acompanhada = tarefa de marketing cujo dono não é chefe.
 export const acompanhada = (t: { setor?: string | null; usuario_id?: string | null }) =>
