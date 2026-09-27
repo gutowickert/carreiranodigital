@@ -80,7 +80,7 @@ function GraficoLeads({ dias, aoDica }: { dias: any[]; aoDica: (d: Dica) => void
           {dias.map(d => {
             const v = d.conversas || 0
             const h = v ? Math.max(3, (v / max) * H) : 0
-            const ehPico = pico && d.data === pico.data && v > 0
+            const ehPico = v > 0 && v === max   // empate no maior: todos em destaque
             return (
               <div key={d.data}
                 onMouseEnter={e => { const r = (e.currentTarget as HTMLElement).getBoundingClientRect(); aoDica({ x: r.left + r.width / 2, y: r.top + 16, linhas: [br(d.data), `${int(v)} ${v === 1 ? 'lead' : 'leads'}`, `${brl(d.gasto, 2)} investido`] }) }}
