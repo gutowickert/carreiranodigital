@@ -11,6 +11,8 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const rot: React.CSSProperties = { fontSize: 11, fontWeight: 800, letterSpacing: '.12em', textTransform: 'uppercase', color: 'var(--text-faint)' }
 const btn: React.CSSProperties = { border: '1px solid var(--border-strong)', background: 'var(--surface-2)', color: 'var(--text-2)', borderRadius: 8, padding: '6px 11px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }
 const ENCONTRO = '#f97316', ENTREGA = '#db2777'
+// o que é novo pra mim: as mesmas chaves do balão da agenda (lib/agenda-balao.ts)
+const Novo = () => <span title="novo pra ti" style={{ width: 8, height: 8, borderRadius: '50%', background: 'var(--red)', display: 'inline-block', flexShrink: 0, marginRight: 6, verticalAlign: 'middle' }} />
 
 const TZ = 'America/Sao_Paulo'
 const dia = (s: string) => {
@@ -23,12 +25,35 @@ export default function MinhaSemana() {
   const [d, setD] = useState<any>(null)
   const [pessoa, setPessoa] = useState('')
   const [aviso, setAviso] = useState('')
+  // o que acendeu no balão quando a tela abriu — fica marcado nesta visita, e o menu apaga
+  const [novos, setNovos] = useState<Set<string>>(new Set())
 
   async function carregar(p = pessoa) {
     const j = await fetchAuth(`/api/minha-semana${p ? `?pessoa=${p}` : ''}`).then(r => r.json()).catch(() => null)
     if (j?.ok) { setD(j); if (!p) setPessoa(j.pessoa) }
   }
   useEffect(() => { carregar('') }, [])
+
+  // ABRIR A TELA É VER O QUE ESTÁ NELA. Guarda o que estava aceso (pra marcar aqui) e, se é a
+  // minha semana, avisa o balão que eu vi — o número do menu apaga.
+  useEffect(() => {
+    if (!d || d.pessoa !== d.eu) return
+    ;(async () => {
+      const b = await fetchAuth('/api/agenda/balao').then(r => r.json()).catch(() => null)
+      if (!b?.ok || !b.pronto) return
+      const acesas = new Set<string>(b.chaves || [])
+      const naTela = [
+        ...d.marketing.map((t: any) => `turma:${t.id}`),
+        ...d.deuVenda.map((m: any) => `entrega:${m.id}`),
+        ...d.pedidos.map((p: any) => `${p.fonte === 'tarefa' ? 'turma' : 'agenda'}:${p.id}`),
+        ...d.aulas.map((a: any) => `agenda:${a.id}`),
+      ].filter(k => acesas.has(k))
+      setNovos(new Set(naTela))
+      if (!naTela.length) return
+      const j = await fetchAuth('/api/agenda/leituras', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ chaves: naTela, como: 'lido' }) }).then(r => r.json()).catch(() => null)
+      if (j?.ok) window.dispatchEvent(new CustomEvent('agenda:balao', { detail: { total: j.total } }))
+    })()
+  }, [d?.pessoa, d?.eu])
 
   async function agir(corpo: any, msg?: string) {
     const j = await fetchAuth('/api/minha-semana', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }).then(r => r.json()).catch(() => null)
@@ -68,7 +93,7 @@ export default function MinhaSemana() {
                 return (
                   <div key={t.id} style={{ border: `1px solid ${t.atrasada ? 'var(--red)' : 'var(--border)'}`, background: t.atrasada ? 'var(--red-bg)' : 'var(--surface-2)', borderRadius: 12, padding: 14, display: 'flex', flexDirection: 'column', gap: 8 }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', gap: 8 }}>
-                      <b style={{ fontSize: 15 }}>{t.titulo.replace(/\s*\(até [^)]+\)$/, '')}</b>
+                      <b style={{ fontSize: 15 }}>{novos.has(`turma:${t.id}`) && <Novo />}{t.titulo.replace(/\s*\(até [^)]+\)$/, '')}</b>
                       <span style={{ fontSize: 12, fontWeight: 700, color: t.atrasada ? 'var(--red)' : 'var(--text-faint)', whiteSpace: 'nowrap' }}>{t.atrasada ? 'atrasada · ' : 'até '}{dia(t.prazo)}</span>
                     </div>
                     <div style={{ fontSize: 12.5, color: 'var(--text-2)' }}>{t.resumo}</div>
@@ -103,7 +128,7 @@ export default function MinhaSemana() {
                 return (
                   <Link key={m.id} href={`/dashboard/entregas/${m.projetoId}`} style={{ display: 'grid', gridTemplateColumns: '78px 1fr', gap: 10, alignItems: 'baseline', padding: '8px 10px', borderRadius: 10, textDecoration: 'none', color: 'var(--text)', background: cor + (m.combinado ? '1f' : '0d'), border: `1px ${m.combinado ? 'solid' : 'dashed'} ${cor}55` }}>
                     <span style={{ fontSize: 12, fontWeight: 700, color: m.atrasado ? 'var(--red)' : cor }}>{dia(m.quando)}<br /><span style={{ fontWeight: 500 }}>{m.combinado ? hora(m.quando) : 'sem hora'}</span></span>
-                    <span style={{ fontSize: 13.5, minWidth: 0 }}><b>{m.cliente}</b><br /><span style={{ color: 'var(--text-2)' }}>{m.natureza === 'encontro' ? '● ' : '◆ '}{m.titulo}</span></span>
+                    <span style={{ fontSize: 13.5, minWidth: 0 }}>{novos.has(`entrega:${m.id}`) && <Novo />}<b>{m.cliente}</b><br /><span style={{ color: 'var(--text-2)' }}>{m.natureza === 'encontro' ? '● ' : '◆ '}{m.titulo}</span></span>
                   </Link>
                 )
               })}
@@ -119,7 +144,7 @@ export default function MinhaSemana() {
               {d.aulas.map((a: any) => (
                 <div key={a.id} style={{ display: 'grid', gridTemplateColumns: '78px 1fr', gap: 10, alignItems: 'baseline', padding: '8px 10px', borderRadius: 10, background: 'var(--surface-2)' }}>
                   <span style={{ fontSize: 12, fontWeight: 700 }}>{dia(a.inicio)}<br /><span style={{ fontWeight: 500, color: 'var(--text-2)' }}>{hora(a.inicio)}{a.fim ? '–' + hora(a.fim) : ''}</span></span>
-                  <span style={{ fontSize: 13.5 }}>{a.titulo}</span>
+                  <span style={{ fontSize: 13.5 }}>{novos.has(`agenda:${a.id}`) && <Novo />}{a.titulo}</span>
                 </div>
               ))}
             </div>
@@ -128,13 +153,13 @@ export default function MinhaSemana() {
 
         {/* PEDIDOS */}
         <section style={card}>
-          <div style={rot}>Pediram pra {minha ? 'ti' : 'ele'}</div>
+          <div style={rot}>Pediram pra {minha ? 'ti' : 'ele'}{d.pedidos.some((p: any) => novos.has(`${p.fonte === 'tarefa' ? 'turma' : 'agenda'}:${p.id}`)) && <span style={{ color: 'var(--red)', marginLeft: 8 }}>· novo</span>}</div>
           {!d.pedidos.length ? <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '10px 0 0' }}>Ninguém pediu nada. Quando o Rick (ou outro) passar algo pela agenda, aparece aqui.</p> : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6, marginTop: 10 }}>
               {d.pedidos.map((p: any) => (
                 <Link key={p.fonte + p.id} href="/dashboard/agenda" style={{ display: 'grid', gridTemplateColumns: '78px 1fr', gap: 10, alignItems: 'baseline', padding: '8px 10px', borderRadius: 10, background: 'var(--surface-2)', textDecoration: 'none', color: 'var(--text)' }}>
                   <span style={{ fontSize: 12, fontWeight: 700 }}>{dia(p.quando)}</span>
-                  <span style={{ fontSize: 13.5 }}>{p.titulo}{p.de ? <span style={{ color: 'var(--text-faint)' }}> · de {p.de}</span> : null}</span>
+                  <span style={{ fontSize: 13.5 }}>{novos.has(`${p.fonte === 'tarefa' ? 'turma' : 'agenda'}:${p.id}`) && <Novo />}{p.titulo}{p.de ? <span style={{ color: 'var(--text-faint)' }}> · de {p.de}</span> : null}</span>
                 </Link>
               ))}
             </div>

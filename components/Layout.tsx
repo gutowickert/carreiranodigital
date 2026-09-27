@@ -428,7 +428,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const abas = ABAS_CANDIDATAS.map(a => permitido(a.href) ? { href: a.href, nome: a.nome } : (a.alternativa && permitido(a.alternativa)) ? { href: a.alternativa, nome: a.nomeAlt! } : null).filter(Boolean) as { href: string; nome: string }[]
   const abaAtiva = (href: string) => href === '/dashboard' ? pathname === '/dashboard' : (pathname === href || pathname.startsWith(href + '/'))
   const naAba = abas.some(a => abaAtiva(a.href))
-  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : href === '/dashboard/agenda' ? agendaBalao : 0
+  // o balão da agenda aparece também na Minha semana: é lá que o que é novo pra ti fica listado
+  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : 0
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
@@ -466,7 +467,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                 <Link key={a.href} href={a.href} className={'app-aba' + (ativo ? ' ativo' : '')}>
                   <span style={{ position: 'relative', lineHeight: 0 }}>
                     <Icone size={23} strokeWidth={ativo ? 2.2 : 1.8} />
-                    {balao > 0 && <span className="app-balao" style={{ background: a.href === '/dashboard/agenda' ? 'var(--red)' : '#25D366', color: a.href === '/dashboard/agenda' ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
+                    {balao > 0 && <span className="app-balao" style={{ background: a.href !== '/dashboard/whatsapp' ? 'var(--red)' : '#25D366', color: a.href !== '/dashboard/whatsapp' ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
                   </span>
                   <span>{a.nome}</span>
                 </Link>
@@ -513,12 +514,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       {reais.map(m => {
                         const Icone = ICONES[m.href] || Circle
                         const ativo = pathname === m.href
-                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : m.href === '/dashboard/agenda' ? agendaBalao : 0
+                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? agendaBalao : 0
                         return (
                           <Link key={m.href} href={m.href} className={'app-tile' + (ativo ? ' ativo' : '')}>
                             <span style={{ position: 'relative', lineHeight: 0 }}>
                               <Icone size={22} strokeWidth={1.75} />
-                              {balao > 0 && <span className="app-balao" style={{ background: m.href === '/dashboard/agenda' ? 'var(--red)' : '#25D366', color: m.href === '/dashboard/agenda' ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
+                              {balao > 0 && <span className="app-balao" style={{ background: (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? 'var(--red)' : '#25D366', color: (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
                             </span>
                             <span>{m.nome}</span>
                           </Link>
@@ -642,7 +643,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                               </span>
                             )}
                             {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
-                            {m.href === '/dashboard/agenda' && agendaBalao > 0 && (
+                            {(m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') && agendaBalao > 0 && (
                               <span title="Coisas tuas na agenda que você ainda não viu" style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                                 {agendaBalao > 99 ? '99+' : agendaBalao}
                               </span>
