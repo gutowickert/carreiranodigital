@@ -256,6 +256,8 @@ export default function Monitor() {
     setD(j); setCarregando(false)
   }
   useEffect(() => { carregar() }, [dias])
+  // AO VIVO: recarrega a cada 5 min enquanto a tela está aberta (a API relê a Meta quando o sync tem mais de 10 min)
+  useEffect(() => { const t = setInterval(() => { if (document.visibilityState === 'visible') carregar() }, 5 * 60000); return () => clearInterval(t) }, [dias])
   function escolher(n: number) { setDias(n); try { localStorage.setItem('cnd_monitor_dias', String(n)) } catch { /* só não lembra */ } }
 
   async function sincronizar(id?: string) {
@@ -273,7 +275,7 @@ export default function Monitor() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Monitor das entregas</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu {dias === 1 ? 'hoje' : `nos últimos ${dias} dias`}. Verde em cima, vermelho embaixo. Clica no card pra ver tudo.{dias < 3 ? ' Em janela curta só entram os alertas de estado (conta, saldo, campanha parada, entrega); leitura de custo pede pelo menos 3 dias.' : ''}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu {dias === 1 ? 'hoje' : `nos últimos ${dias} dias`}. Verde em cima, vermelho embaixo. Clica no card pra ver tudo. Lê a Meta ao vivo ao abrir e a cada 5 minutos{d?.atualizado_em ? ` (última leitura ${new Date(d.atualizado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${d.sincronizados ? `, ${d.sincronizados} conta${d.sincronizados > 1 ? 's' : ''} atualizada${d.sincronizados > 1 ? 's' : ''}` : ''})` : ''}.{dias < 3 ? ' Em janela curta só entram os alertas de estado (conta, saldo, campanha parada, entrega); leitura de custo pede pelo menos 3 dias.' : ''}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--border-strong)', borderRadius: 8, overflow: 'hidden' }}>
