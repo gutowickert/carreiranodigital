@@ -129,6 +129,14 @@
   .tecnico code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;background:rgba(91,107,158,.12);padding:1px 5px;border-radius:5px}
   .tecnico p{margin:0}
   .faixa-interna{position:sticky;top:env(safe-area-inset-top,0px);z-index:10;background:var(--pessoa);color:#fff;font-size:.8rem;font-weight:700;letter-spacing:.06em;text-align:center;padding:7px 12px;margin:0 -20px}
+
+  section.ela{position:relative;background:rgba(254,161,164,.18);outline:2px solid rgba(254,161,164,.55);outline-offset:14px;border-radius:12px;transition:background .3s ease}
+  section.ela::after{content:"ela está aqui";position:absolute;top:-30px;right:0;font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8F3A41;background:var(--coral);padding:4px 10px;border-radius:999px}
+  nav.indice a.ela{box-shadow:inset 0 0 0 2px var(--coral)}
+  nav.indice a.ela::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--coral-deep);margin-left:8px;animation:pulsa 1.2s ease-in-out infinite}
+  @keyframes pulsa{0%,100%{opacity:.35}50%{opacity:1}}
+  .ir-ela{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--coral-deep);color:#fff;border:none;border-radius:999px;padding:12px 18px;font:700 .9rem "Nunito Sans",system-ui,sans-serif;box-shadow:var(--shadow);cursor:pointer;display:none}
+  .ir-ela.on{display:inline-flex;align-items:center;gap:8px}
 </style>
 </head>
 <body>
@@ -472,8 +480,48 @@
     // ao clicar no índice, marca na hora (a rolagem suave demora a cruzar o observador)
     links.forEach(function(a){ a.addEventListener('click', function(){ links.forEach(function(x){ x.classList.remove('ativo'); }); a.classList.add('ativo'); }); });
     marcar();
+
+    // AVISA ONDE ELA ESTÁ. Na apresentação, a versão interna (na escola) pinta o capítulo que ela
+    // está lendo. Vai só o id do capítulo, a cada troca e a cada 20 s enquanto a página está aberta.
+    var ultimo = '';
+    function avisar(secao){
+      if (!secao) return;
+      try {
+        fetch('https://carreiranodigital.vercel.app/api/manual/presenca', { method: 'POST', mode: 'cors', keepalive: true,
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ cliente: 'dani-fell', secao: secao }) }).catch(function(){});
+      } catch (e) {}
+    }
+    var marcarOriginal = marcar;
+    marcar = function(){ marcarOriginal(); var a = document.querySelector('nav.indice a.ativo'); var s = a ? a.getAttribute('href').slice(1) : ''; if (s && s !== ultimo) { ultimo = s; avisar(s); } };
+    setInterval(function(){ if (!document.hidden && ultimo) avisar(ultimo); }, 20000);
+    marcar();
   })();
 </script>
 
+<button class="ir-ela" id="ir-ela" type="button">ir pra onde ela está</button>
+<script>
+  (function(){
+    var cliente = "dani-fell";
+    var botao = document.getElementById('ir-ela');
+    var atualEla = '';
+    function pintar(secao){
+      document.querySelectorAll('section.ela').forEach(function(s){ s.classList.remove('ela'); });
+      document.querySelectorAll('nav.indice a.ela').forEach(function(a){ a.classList.remove('ela'); });
+      atualEla = secao || '';
+      if (!secao) { botao.classList.remove('on'); return; }
+      var s = document.getElementById(secao); if (s) s.classList.add('ela');
+      var a = document.querySelector('nav.indice a[href="#' + secao + '"]'); if (a) a.classList.add('ela');
+      var t = a ? a.textContent.replace(/^d+s*/, '').trim() : secao;
+      botao.textContent = 'ela está em: ' + t + ' — ir pra lá';
+      botao.classList.add('on');
+    }
+    botao.addEventListener('click', function(){ var s = document.getElementById(atualEla); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    function perguntar(){
+      fetch('/api/manual/presenca?cliente=' + encodeURIComponent(cliente), { cache: 'no-store' })
+        .then(function(r){ return r.json(); }).then(function(j){ pintar(j && j.secao ? j.secao : ''); }).catch(function(){});
+    }
+    perguntar(); setInterval(function(){ if (!document.hidden) perguntar(); }, 3000);
+  })();
+</script>
 </body>
 </html>

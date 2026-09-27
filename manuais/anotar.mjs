@@ -55,6 +55,45 @@ saida = saida.replace('</style>', `
 saida = saida.replace('<div class="wrap">', `<div class="wrap">\n  <div class="faixa-interna">VERSÃO INTERNA — os blocos azuis são só teus; a cliente não vê</div>`)
 saida = saida.replace(/<title>[^<]*<\/title>/, `<title>Manual (versão interna) — ${cliente}</title>`)
 
+// ONDE ELA ESTÁ, EM TEMPO REAL. A versão interna pergunta à escola a cada 3 s em que capítulo a
+// leitora está (a página dela avisa) e pinta o capítulo com um véu coral transparente, marca o
+// índice e oferece o pulo pra lá. Passou 60 s sem sinal, some — ela fechou a página.
+saida = saida.replace('</style>', `
+  section.ela{position:relative;background:rgba(254,161,164,.18);outline:2px solid rgba(254,161,164,.55);outline-offset:14px;border-radius:12px;transition:background .3s ease}
+  section.ela::after{content:"ela está aqui";position:absolute;top:-30px;right:0;font-size:.7rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#8F3A41;background:var(--coral);padding:4px 10px;border-radius:999px}
+  nav.indice a.ela{box-shadow:inset 0 0 0 2px var(--coral)}
+  nav.indice a.ela::after{content:"";display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--coral-deep);margin-left:8px;animation:pulsa 1.2s ease-in-out infinite}
+  @keyframes pulsa{0%,100%{opacity:.35}50%{opacity:1}}
+  .ir-ela{position:fixed;right:18px;bottom:calc(18px + env(safe-area-inset-bottom,0px));z-index:20;background:var(--coral-deep);color:#fff;border:none;border-radius:999px;padding:12px 18px;font:700 .9rem "Nunito Sans",system-ui,sans-serif;box-shadow:var(--shadow);cursor:pointer;display:none}
+  .ir-ela.on{display:inline-flex;align-items:center;gap:8px}
+</style>`)
+saida = saida.replace('</body>', `<button class="ir-ela" id="ir-ela" type="button">ir pra onde ela está</button>
+<script>
+  (function(){
+    var cliente = ${JSON.stringify(cliente)};
+    var botao = document.getElementById('ir-ela');
+    var atualEla = '';
+    function pintar(secao){
+      document.querySelectorAll('section.ela').forEach(function(s){ s.classList.remove('ela'); });
+      document.querySelectorAll('nav.indice a.ela').forEach(function(a){ a.classList.remove('ela'); });
+      atualEla = secao || '';
+      if (!secao) { botao.classList.remove('on'); return; }
+      var s = document.getElementById(secao); if (s) s.classList.add('ela');
+      var a = document.querySelector('nav.indice a[href="#' + secao + '"]'); if (a) a.classList.add('ela');
+      var t = a ? a.textContent.replace(/^\d+\s*/, '').trim() : secao;
+      botao.textContent = 'ela está em: ' + t + ' — ir pra lá';
+      botao.classList.add('on');
+    }
+    botao.addEventListener('click', function(){ var s = document.getElementById(atualEla); if (s) s.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    function perguntar(){
+      fetch('/api/manual/presenca?cliente=' + encodeURIComponent(cliente), { cache: 'no-store' })
+        .then(function(r){ return r.json(); }).then(function(j){ pintar(j && j.secao ? j.secao : ''); }).catch(function(){});
+    }
+    perguntar(); setInterval(function(){ if (!document.hidden) perguntar(); }, 3000);
+  })();
+</script>
+</body>`)
+
 const destino = join(dirname(fileURLToPath(import.meta.url)), '..', 'public', 'manuais')
 mkdirSync(destino, { recursive: true })
 writeFileSync(join(destino, `${cliente}.html`), saida)
