@@ -20,7 +20,7 @@ Nutrição — o método Restaure seu Intestino. Contrato CRM + Tráfego, desde 
 - **Funil próprio**: Chegou → Não respondeu (IA) → Em conversa → Avaliação agendada (IA) → Faltou (IA) → Pensando (IA) → Fechando → Retomar depois → Ganho / Perda.
 - **Áudio pronto**: "O método Restaure seu Intestino", na voz da Dani.
 - Usuários: Dani, Bruna e Suporte CND. Máquina CND em modo geral, todos com login entram.
-- ⚠️ Em 27/09 *O que a IA sabe* estava vazio e o WhatsApp oficial não configurado — os dois entram na implantação.
+- *O que a IA sabe* tem 9 seções (quem somos, como atende, o que vende e preço, o que nunca se faz, o método, a avaliativa, quando acha caro, o acompanhamento, o preparo). ⚠️ Em 27/09: conta da Anthropic sem crédito e WhatsApp oficial não configurado.
 
 ## GAJA Corretora de Seguros (crm-gaja)
 
@@ -41,6 +41,6 @@ Loja de skate. **Congelada por decisão do Nando (25/09/2026): nenhuma atualiza�
 | Sistema | Produto | Máquina CND | Chaves de IA | WhatsApp oficial |
 | --- | --- | --- | --- | --- |
 | Escola | — | geral, admin e comercial | sim | sim |
-| Dani Fell | CRM + Tráfego | geral, todos | Anthropic sem crédito em 25/09; Deepgram sim | não configurado |
+| Dani Fell | CRM + Tráfego | geral, todos | Anthropic sem crédito em 27/09; Deepgram sim | não configurado |
 | GAJA | combo | marketing | nenhuma | indefinido |
 | Jamrock | — | não | — | — |
