@@ -566,7 +566,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
           <button onClick={reabrirTemplate} disabled={reabrindo || !tplEscolhido} style={{ display: 'block', marginTop: 8, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: reabrindo || !tplEscolhido ? 'default' : 'pointer', opacity: reabrindo || !tplEscolhido ? 0.5 : 1 }}>{reabrindo ? 'Enviando…' : '📨 Enviar template escolhido'}</button>
         </div>
       )}
-      <div style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)', alignItems: 'flex-end' }}>
+      <div className="wa-compor" style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid var(--border)', alignItems: 'flex-end' }}>
         <input ref={fileRef} type="file" style={{ display: 'none' }}
           accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
           onChange={e => { const f = e.target.files?.[0]; if (f) enviarAnexo(f); e.target.value = '' }} />

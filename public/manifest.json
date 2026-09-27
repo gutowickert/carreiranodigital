@@ -1,12 +1,17 @@
 {
+  "id": "/dashboard",
   "name": "Carreira No Digital",
   "short_name": "CND",
-  "start_url": "/dashboard/whatsapp",
+  "description": "Sistema da escola: WhatsApp, funil, agenda e entregas.",
+  "start_url": "/dashboard",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#1c1c1e",
-  "theme_color": "#1c1c1e",
+  "orientation": "portrait",
+  "background_color": "#0f0c17",
+  "theme_color": "#0f0c17",
   "icons": [
-    { "src": "/logo.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "/logo.png", "sizes": "512x512", "type": "image/png", "purpose": "any" }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ]
 }

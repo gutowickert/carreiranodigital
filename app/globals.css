@@ -55,6 +55,8 @@
   --glass-field: rgba(255,255,255,.06);
   --blob-1: rgba(139,92,246,.60); --blob-2: rgba(217,70,239,.42); --blob-3: rgba(56,189,248,.26);
   --grid: rgba(255,255,255,.03);
+  /* fundo das barras do app no celular: quase opaco, o vidro puro deixava o texto de baixo vazar */
+  --app-barra: rgba(15,12,23,.90);
 }
 /* escala de raios (igual nos 2 temas) — SÓ estes quatro */
 :root { --r-sm: 6px; --r: 10px; --r-lg: 16px; --r-pill: 999px; }
@@ -97,6 +99,7 @@
   --glass-field: rgba(255,255,255,.6);
   --blob-1: rgba(139,92,246,.42); --blob-2: rgba(217,70,239,.30); --blob-3: rgba(56,189,248,.22);
   --grid: rgba(76,29,149,.05);
+  --app-barra: rgba(246,244,251,.92);
 }
 
 html, body { background: var(--bg); color: var(--text); }
@@ -299,38 +302,119 @@ img, svg { max-width: 100%; }
 @keyframes esqueleto { from { background-position: 200% 0 } to { background-position: -200% 0 } }
 @media (prefers-reduced-motion: reduce) { .esqueleto { animation: none; } .card-hover { transition: none; } }
 
-/* Adaptações mobile */
+/* ============================================================
+   CELULAR = APP (27/09/2026)
+   No celular o Layout troca o menu lateral por uma casca de app: barra fixa em cima (.app-topo),
+   abas fixas embaixo (.app-abas) e o menu inteiro em blocos no "Mais" (.app-mais). O miolo
+   (.app-miolo) abre espaço pras duas barras e respeita a área segura do aparelho (notch, barra de
+   gestos). As alturas vivem nas variáveis pra qualquer tela poder descontar (ex.: WhatsApp 100vh).
+   ============================================================ */
+:root { --app-topo: 52px; --app-abas: 60px; }
+.app-topo {
+  background: var(--app-barra) !important;
+  position: fixed; top: 0; left: 0; right: 0; z-index: 55;
+  height: calc(var(--app-topo) + env(safe-area-inset-top));
+  padding: env(safe-area-inset-top) 8px 0 14px;
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  border-bottom: 1px solid var(--glass-border);
+}
+.app-topo-btn { background: transparent; border: none; color: var(--text); padding: 9px; border-radius: var(--r); cursor: pointer; line-height: 0; -webkit-tap-highlight-color: transparent; }
+.app-topo-btn:active { background: var(--surface-2); }
+.app-abas {
+  background: var(--app-barra) !important;
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 55;
+  display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr);
+  padding-bottom: env(safe-area-inset-bottom);
+  border-top: 1px solid var(--glass-border);
+}
+.app-aba {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+  height: var(--app-abas); text-decoration: none; color: var(--text-muted);
+  font: inherit; font-size: 10.5px; font-weight: 600; letter-spacing: .01em;
+  background: transparent; border: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  position: relative; min-width: 0;
+}
+.app-aba > span:last-child { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.app-aba.ativo { color: var(--accent-soft); font-weight: 800; }
+.app-aba.ativo::before { content: ""; position: absolute; top: 0; left: 50%; transform: translateX(-50%); width: 28px; height: 3px; border-radius: 0 0 3px 3px; background: var(--accent); }
+.app-balao { position: absolute; top: -7px; left: 13px; min-width: 17px; height: 17px; padding: 0 5px; border-radius: 9px; font-size: 10px; font-weight: 800; line-height: 17px; text-align: center; box-shadow: 0 0 0 2px var(--bg); }
+.app-mais {
+  position: fixed; inset: 0; z-index: 70; background: var(--bg); overflow-y: auto; -webkit-overflow-scrolling: touch;
+  padding: calc(14px + env(safe-area-inset-top)) 16px calc(28px + env(safe-area-inset-bottom));
+  animation: app-mais-entra .18s ease-out;
+}
+@keyframes app-mais-entra { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+.app-tile {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
+  min-height: 84px; padding: 12px 6px; border-radius: var(--r-lg);
+  background: var(--surface); border: 1px solid var(--border);
+  text-decoration: none; color: var(--text-2); font-size: 11.5px; font-weight: 600; line-height: 1.2; text-align: center;
+  -webkit-tap-highlight-color: transparent;
+}
+.app-tile > span:last-child { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.app-tile:active { background: var(--surface-2); }
+.app-tile.ativo { border-color: var(--accent); color: var(--nav-active-text); background: var(--nav-active-bg); }
+.app-miolo { padding-top: calc(var(--app-topo) + env(safe-area-inset-top)); padding-bottom: calc(var(--app-abas) + env(safe-area-inset-bottom)); }
+@media (prefers-reduced-motion: reduce) { .app-mais { animation: none; } }
+
+/* Adaptações mobile — as telas foram escritas pro desktop com estilo em linha; aqui o CSS
+   reescreve o que não cabe. O React serializa `padding: 24px 32px` (sem aspas nem camelCase):
+   os seletores precisam casar com ESSE texto. */
 @media (max-width: 768px) {
+  html { -webkit-text-size-adjust: 100%; }
+  body { overscroll-behavior-y: none; -webkit-tap-highlight-color: transparent; }
+  /* a luz de fundo pesa no celular: menos manchas, sem grade */
+  .luz-de-fundo { background: radial-gradient(60% 40% at 20% 0%, var(--blob-1), transparent 70%), radial-gradient(50% 40% at 100% 100%, var(--blob-2), transparent 70%); }
+
   /* Tabelas com scroll horizontal */
-  table {
-    display: block;
-    overflow-x: auto;
-    white-space: nowrap;
-    -webkit-overflow-scrolling: touch;
+  table { display: block; overflow-x: auto; white-space: nowrap; -webkit-overflow-scrolling: touch; }
+
+  /* a margem da tela: o que era 24/32/40px vira 14px (só na raiz da página) */
+  .conteudo > div[style*="padding"], .conteudo > main[style*="padding"], .conteudo > div > div[style*="padding: 24px 32px"], .conteudo > div > div[style*="padding: 32px 40px"], .conteudo > div > div[style*="padding: 28px 32px"] { padding: 14px 14px 20px !important; }
+  /* tela que se mede em 100vh (WhatsApp, chat) desconta as duas barras */
+  .app-miolo > div[style*="height: 100vh"], .app-miolo > div > div[style*="height: 100vh"] { box-sizing: border-box; height: calc(100dvh - var(--app-topo) - var(--app-abas) - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important; }
+  /* fileira de abas/filtros que rola de lado no celular (classe posta nas telas) */
+  .rolavel-celular { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
+  .rolavel-celular::-webkit-scrollbar { display: none; }
+  .rolavel-celular > * { flex-shrink: 0; }
+  /* caixa de digitar do WhatsApp: no celular a mensagem fica numa linha inteira, os botões embaixo */
+  .wa-compor { flex-wrap: wrap; align-items: center !important; }
+  .wa-compor > textarea { flex: 1 1 100% !important; order: -1; max-height: 120px !important; }
+  /* colunas do funil: cada uma é uma página que desliza de lado e encaixa */
+  .kanban-colunas { scroll-snap-type: x mandatory; scroll-padding-left: 14px; margin: 0 -14px; padding: 0 14px 12px !important; }
+  .kanban-colunas > div { flex: 0 0 86vw !important; width: 86vw !important; max-width: 86vw !important; min-width: 0 !important; scroll-snap-align: start; }
+  .app-miolo [style*="min-height: 100vh"] { min-height: 0 !important; }
+
+  /* GRIDS: muitos cartões pequenos viram 2 ou 3 colunas; painéis largos viram 1 */
+  [style*="grid-template-columns: repeat(4"], [style*="grid-template-columns: repeat(5"],
+  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"], [style*="grid-template-columns: repeat(auto-fit, minmax(200px"],
+  [style*="grid-template-columns: repeat(auto-fit, minmax(180px"], [style*="grid-template-columns: repeat(auto-fit, minmax(220px"],
+  [style*="grid-template-columns: repeat(auto-fit,minmax(160px"], [style*="grid-template-columns: repeat(auto-fill, minmax(200px"] {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  [style*="grid-template-columns: repeat(6"], [style*="grid-template-columns: repeat(7"], [style*="grid-template-columns: repeat(8"], [style*="grid-template-columns: repeat(9"] {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  }
+  [style*="grid-template-columns: repeat(3, 1fr)"], [style*="grid-template-columns: repeat(2, 1fr)"],
+  [style*="grid-template-columns: 1fr 1fr"], [style*="grid-template-columns: 1fr 1fr 1fr"],
+  [style*="grid-template-columns: 2fr 1fr"], [style*="grid-template-columns: 2fr 1fr 1fr"], [style*="grid-template-columns: 1fr 2fr"],
+  [style*="grid-template-columns: 1.2fr 1fr 1fr"], [style*="grid-template-columns: 280px 1fr"], [style*="grid-template-columns: 300px 1fr"],
+  [style*="grid-template-columns: 320px 1fr"], [style*="grid-template-columns: 1fr 320px"], [style*="grid-template-columns: minmax(0,1fr) 320px"],
+  [style*="grid-template-columns: minmax(0, 1fr) 320px"], [style*="grid-template-columns: 1fr 340px"], [style*="grid-template-columns: 1fr 360px"] {
+    grid-template-columns: minmax(0, 1fr) !important;
   }
 
-  /* Grids viram coluna única */
-  [style*="grid-template-columns: repeat(4"],
-  [style*="grid-template-columns: repeat(3"],
-  [style*="grid-template-columns: repeat(2"],
-  [style*="grid-template-columns: 1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr 1fr"],
-  [style*="grid-template-columns: 1fr 1fr 1fr 1fr"],
-  [style*="grid-template-columns: 2fr 1fr"],
-  [style*="grid-template-columns: 2fr 1fr 1fr"] {
-    grid-template-columns: 1fr !important;
-  }
+  /* cabeçalho da página (título + botões) quebra linha em vez de espremer */
+  .conteudo > div > div[style*="justify-content: space-between"][style*="align-items: center"],
+  .conteudo > div > div > div[style*="justify-content: space-between"][style*="align-items: center"] { flex-wrap: wrap; gap: 8px; }
 
-  /* Padding menor nas telas */
-  [style*="padding: '32px 40px'"],
-  [style*="padding: '24px 32px'"],
-  [style*="padding: '40px'"] {
-    padding: 16px !important;
-  }
-
-  /* Headers que viram coluna */
-  [style*="justifyContent: 'space-between'"][style*="alignItems: 'center'"] {
-    flex-wrap: wrap;
-    gap: 8px;
-  }
+  /* título de página no tamanho do celular; números grandes não estouram o card */
+  .conteudo h1 { font-size: 24px !important; line-height: 1.1; }
+  .conteudo .display { overflow-wrap: anywhere; }
+  /* campo de texto em 16px: abaixo disso o iPhone dá zoom sozinho ao focar */
+  .conteudo input:not([type="checkbox"]):not([type="radio"]):not([type="range"]), .conteudo select, .conteudo textarea { font-size: 16px !important; }
+  /* modal: nunca mais largo nem mais alto que a tela */
+  .conteudo div[style*="position: fixed"][style*="inset: 0"] > div { max-width: calc(100vw - 20px) !important; max-height: calc(100dvh - 20px) !important; overflow-y: auto; }
+  /* menus horizontais (abas, filtros) rolam de lado em vez de quebrar em 4 linhas */
+  .conteudo [role="tablist"] { overflow-x: auto; flex-wrap: nowrap !important; scrollbar-width: none; }
 }

@@ -13,10 +13,18 @@ const bricolage = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth
 export const metadata = {
   title: 'Carreira No Digital',
   manifest: '/manifest.json',
+  // instalado na tela inicial do celular abre sem a barra do navegador, como app (iPhone lê estas
+  // tags; Android lê o manifest.json)
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent' as const, title: 'CND' },
+  icons: { icon: '/icon-192.png', apple: '/apple-touch-icon.png' },
 }
 
 export const viewport = {
   themeColor: '#0f0c17',
+  width: 'device-width',
+  initialScale: 1,
+  // viewport-fit=cover: a página vai até as bordas do aparelho e as barras do app usam env(safe-area-inset-*)
+  viewportFit: 'cover' as const,
 }
 
 // Aplica o tema salvo ANTES de pintar (sem flash). Padrão: escuro.

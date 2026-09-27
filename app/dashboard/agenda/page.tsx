@@ -247,6 +247,9 @@ export default function Agenda() {
   const [mes, setMes] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1) })
   const [semana, setSemana] = useState(() => segundaDe(new Date()))
   const [diaAberto, setDiaAberto] = useState<string | null>(null)
+  // celular: a semana vira um dia por vez (ver Semana/soUmDia)
+  const [celular, setCelular] = useState(false)
+  useEffect(() => { const f = () => setCelular(window.innerWidth < 768); f(); window.addEventListener('resize', f); return () => window.removeEventListener('resize', f) }, [])
   const [verAtrasados, setVerAtrasados] = useState(false)
   const [detalhe, setDetalhe] = useState<Item | null>(null)
   const [novo, setNovo] = useState(false)
@@ -264,6 +267,8 @@ export default function Agenda() {
   useEffect(() => {
     const a = lembrado('aba'); if (a) setAba(a)
     const v = lembrado('visao'); if (v === 'semana' || v === 'mes') setVisao(v)
+    // no celular o mês inteiro não cabe (7 colunas de 50px): abre na semana, a não ser que a pessoa tenha escolhido
+    else if (window.innerWidth < 768) setVisao('semana')
     if (lembrado('previstos') === 'nao') setVerPrevistos(false)
   }, [])
   const trocarPrevistos = () => setVerPrevistos(v => { lembrar('previstos', v ? 'nao' : 'sim'); return !v })
@@ -479,7 +484,7 @@ export default function Agenda() {
         </div>
 
         {/* AS ABAS — a pessoa, as áreas (do banco), e todo mundo */}
-        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, borderBottom: '1px solid var(--glass-border)', marginBottom: 16, flexWrap: 'wrap' }}>
+        <div className="rolavel-celular" style={{ display: 'flex', alignItems: 'flex-end', gap: 2, borderBottom: '1px solid var(--glass-border)', marginBottom: 16, flexWrap: 'wrap' }}>
           {abas.map(a => {
             const on = a.chave === aba
             const gente = a.chave === 'meus' && eu ? [{ id: eu.id, nome: eu.nome } as Pessoa] : membrosVisiveis(a)
@@ -590,7 +595,7 @@ export default function Agenda() {
                   </div>
                 </div>
               ) : (
-                <Semana dias={diasDaSemana} porDia={porDia} hj={hj} diaAberto={diaAberto} nomeDe={nomeDe} balao={balao} verPrevistos={verPrevistos}
+                <Semana dias={diasDaSemana} porDia={porDia} hj={hj} diaAberto={diaAberto} nomeDe={nomeDe} balao={balao} verPrevistos={verPrevistos} soUmDia={celular}
                   onDia={k => { const sel = k === diaAberto; if (!sel) marcar(acesas(porDia.get(k) || []), 'lido'); setDiaAberto(sel ? null : k) }}
                   onAbrir={abrir} />
               )}
@@ -820,8 +825,8 @@ function porTurno(itens: Item[]) {
 // A SEMANA: faixa do dia inteiro em cima (previsto, follow-up, tarefa) e as horas embaixo. Reunião
 // de duas horas ocupa duas horas — é o que responde "como está o meu amanhã?" de relance.
 const H_INI = 7, H_FIM = 20, PX_H = 52
-function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDia, onAbrir }: {
-  dias: Date[]; porDia: Map<string, Item[]>; hj: string; diaAberto: string | null
+function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDia, onAbrir, soUmDia }: {
+  dias: Date[]; porDia: Map<string, Item[]>; hj: string; diaAberto: string | null; soUmDia?: boolean
   nomeDe: (id: string | null) => string | null; balao: Set<string>; verPrevistos: boolean
   onDia: (k: string) => void; onAbrir: (i: Item) => void
 }) {
@@ -830,10 +835,15 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
   const temHoje = dias.some(d => chaveDia(d) === hj)
   const topoDe = (d: Date) => Math.max(0, ((d.getHours() * 60 + d.getMinutes()) - H_INI * 60) / 60 * PX_H)
   const altura = (H_FIM - H_INI) * PX_H
-  const cols = 'repeat(7, minmax(0, 1fr))'
+  // NO CELULAR (soUmDia): a faixa de cima continua com os 7 dias, mas a grade de horas mostra só o dia
+  // escolhido (ou hoje). Sete colunas de 45px não cabem nada; um dia largo cabe tudo.
+  const diaFoco = soUmDia ? (dias.find(d => chaveDia(d) === (diaAberto || hj)) || dias[0]) : null
+  const colunas = diaFoco ? [diaFoco] : dias
+  const cols = `repeat(${colunas.length}, minmax(0, 1fr))`
+  const colsFaixa = `repeat(${dias.length}, minmax(0, 1fr))`
   return (
     <div className="vidro" style={{ overflow: 'hidden' }}>
-      <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, borderBottom: '1px solid var(--glass-border)' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: `${diaFoco ? '0px' : '52px'} ${colsFaixa}`, borderBottom: '1px solid var(--glass-border)' }}>
         <div />
         {dias.map(d => {
           const k = chaveDia(d), hoje = k === hj, sel = k === diaAberto
@@ -851,7 +861,7 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
       {/* dia inteiro */}
       <div style={{ display: 'grid', gridTemplateColumns: `52px ${cols}`, borderBottom: '1px solid var(--glass-border)', background: 'rgba(0,0,0,.10)' }}>
         <div style={{ padding: '8px 6px', fontSize: 10, fontWeight: 800, letterSpacing: '.08em', color: 'var(--text-faint)', textAlign: 'right' }}>DIA</div>
-        {dias.map(d => {
+        {colunas.map(d => {
           const k = chaveDia(d)
           // ⚠️ previsto NUNCA entra na grade de horas — ele não tem hora, e desenhar um bloco nela
           // seria dizer que o horário está ocupado quando ninguém combinou nada.
@@ -890,7 +900,7 @@ function Semana({ dias, porDia, hj, diaAberto, nomeDe, balao, verPrevistos, onDi
             )
           })}
         </div>
-        {dias.map(d => {
+        {colunas.map(d => {
           const k = chaveDia(d)
           const lista = (porDia.get(k) || []).filter(i => !i.diaTodo)
           const hoje = k === hj

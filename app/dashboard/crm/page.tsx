@@ -548,7 +548,7 @@ export default function CRM() {
 
         {visao === 'kanban' && (
           <>
-            <div style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
+            <div className="kanban-colunas" style={{ display: 'flex', gap: 12, overflowX: 'auto', paddingBottom: 12 }}>
               {colunasKanban.map((col) => {
                 const leadsEtapa = col.leads
                 return (

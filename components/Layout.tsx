@@ -407,33 +407,138 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
     .filter(g => g.itens.some(i => i.href))
 
-  const menuVisivel = !isMobile || menuMobileAberto
+  // NO CELULAR O SISTEMA É UM APP (27/09/2026, pedido do Guto: "layout de app super resolutivo").
+  // Nada de menu lateral escondido atrás de um hambúrguer: barra fixa em cima (marca + busca + perfil),
+  // ABAS fixas embaixo com as 4 telas que a pessoa vive (Painel, WhatsApp, Agenda, Funil) e "Mais",
+  // que abre todo o menu em blocos grandes, tocáveis. As abas respeitam a permissão de cada um: quem
+  // não tem caixa do WhatsApp ganha a Fila de Ligações no lugar.
+  const permitido = (href: string) => gruposVisiveis.some(g => g.itens.some(i => i.href === href))
+  const ABAS_CANDIDATAS: { href: string; nome: string; alternativa?: string; nomeAlt?: string }[] = [
+    { href: '/dashboard', nome: 'Painel' },
+    { href: '/dashboard/whatsapp', nome: 'WhatsApp', alternativa: '/dashboard/ligacoes', nomeAlt: 'Ligações' },
+    { href: '/dashboard/agenda', nome: 'Agenda' },
+    { href: '/dashboard/crm', nome: 'Funil', alternativa: '/dashboard/tarefas/leads', nomeAlt: 'Tarefas' },
+  ]
+  const abas = ABAS_CANDIDATAS.map(a => permitido(a.href) ? { href: a.href, nome: a.nome } : (a.alternativa && permitido(a.alternativa)) ? { href: a.alternativa, nome: a.nomeAlt! } : null).filter(Boolean) as { href: string; nome: string }[]
+  const abaAtiva = (href: string) => href === '/dashboard' ? pathname === '/dashboard' : (pathname === href || pathname.startsWith(href + '/'))
+  const naAba = abas.some(a => abaAtiva(a.href))
+  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : href === '/dashboard/agenda' ? agendaBalao : 0
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
       {/* A luz atrás de tudo — é o que o vidro do menu e dos painéis desfoca. Fixa, desenhada uma vez. */}
       <div className="luz-de-fundo" aria-hidden="true" />
+
       {isMobile && (
-        <button onClick={() => setMenuMobileAberto(!menuMobileAberto)} aria-label={menuMobileAberto ? 'Fechar menu' : 'Abrir menu'}
-          className="vidro"
-          style={{
-            position: 'fixed', top: 12, left: 12, zIndex: 60, borderRadius: 'var(--r)',
-            padding: 9, color: 'var(--text)', cursor: 'pointer', lineHeight: 0,
-          }}>
-          {menuMobileAberto ? <X size={20} /> : <Menu size={20} />}
-          {/* no celular o menu fica escondido — sem este ponto, o balão da agenda nunca apareceria */}
-          {!menuMobileAberto && agendaBalao > 0 && (
-            <span style={{ position: 'absolute', top: 4, right: 4, width: 9, height: 9, borderRadius: '50%', background: 'var(--red)' }} />
+        <>
+          {/* a barra de cima: marca à esquerda, busca e perfil à direita */}
+          <header className="app-topo vidro-menu">
+            <Link href="/dashboard" aria-label="Painel" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none', minWidth: 0 }}>
+              {marca?.logo_url
+                ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ height: 24, maxWidth: 150, objectFit: 'contain' }} />
+                : (marca && marca.id !== CND_ID)
+                  ? <span className="display" style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{marca.nome}</span>
+                  : <img src="/logo.png" alt="Carreira no Digital" style={{ height: 22, filter: 'drop-shadow(0 1px 0 rgba(0,0,0,.4))' }} />}
+            </Link>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+              <button onClick={() => setPaletaAberta(true)} aria-label="Buscar tela ou lead" className="app-topo-btn"><Search size={20} strokeWidth={1.9} /></button>
+              <button onClick={() => setMenuMobileAberto(true)} aria-label="Abrir menu" className="app-topo-btn" style={{ padding: 4 }}>
+                <span style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13.5, fontWeight: 800, boxShadow: '0 3px 10px var(--glow)' }}>
+                  {(perfil.nome || '?').trim().charAt(0).toUpperCase()}
+                </span>
+              </button>
+            </div>
+          </header>
+
+          {/* as abas de baixo */}
+          <nav className="app-abas vidro-menu" aria-label="Principal">
+            {abas.map(a => {
+              const Icone = ICONES[a.href] || Circle
+              const ativo = abaAtiva(a.href)
+              const balao = balaoDe(a.href)
+              return (
+                <Link key={a.href} href={a.href} className={'app-aba' + (ativo ? ' ativo' : '')}>
+                  <span style={{ position: 'relative', lineHeight: 0 }}>
+                    <Icone size={23} strokeWidth={ativo ? 2.2 : 1.8} />
+                    {balao > 0 && <span className="app-balao" style={{ background: a.href === '/dashboard/agenda' ? 'var(--red)' : '#25D366', color: a.href === '/dashboard/agenda' ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
+                  </span>
+                  <span>{a.nome}</span>
+                </Link>
+              )
+            })}
+            <button onClick={() => setMenuMobileAberto(true)} className={'app-aba' + (!naAba && !menuMobileAberto ? ' ativo' : '')} aria-label="Mais telas">
+              <span style={{ position: 'relative', lineHeight: 0 }}>
+                <Menu size={23} strokeWidth={1.8} />
+                {dispUnread > 0 && <span className="app-balao" style={{ background: '#25D366', color: '#063' }}>{dispUnread > 99 ? '99+' : dispUnread}</span>}
+              </span>
+              <span>Mais</span>
+            </button>
+          </nav>
+
+          {/* "Mais": o menu inteiro em blocos, tela cheia */}
+          {menuMobileAberto && (
+            <div className="app-mais" role="dialog" aria-label="Menu">
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'var(--grad)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 800, flexShrink: 0, boxShadow: '0 4px 12px var(--glow)' }}>
+                    {(perfil.nome || '?').trim().charAt(0).toUpperCase()}
+                  </div>
+                  <div style={{ minWidth: 0 }}>
+                    <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{perfil.nome}</div>
+                    <div style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{perfil.papel === 'admin' ? 'Administrador' : perfil.papel === 'gestor' ? 'Gestor' : 'Vendedor'}</div>
+                  </div>
+                </div>
+                <button onClick={() => setMenuMobileAberto(false)} aria-label="Fechar menu" className="app-topo-btn"><X size={22} /></button>
+              </div>
+
+              <button onClick={() => { setMenuMobileAberto(false); setPaletaAberta(true) }} aria-label="Buscar tela ou lead"
+                style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 10, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px 14px', fontSize: 15, color: 'var(--text-faint)', cursor: 'pointer', font: 'inherit', textAlign: 'left', margin: '14px 0 4px' }}>
+                <Search size={18} style={{ flexShrink: 0 }} />
+                <span style={{ flex: 1, minWidth: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Buscar tela ou lead…</span>
+              </button>
+
+              {gruposVisiveis.map((grupo, idx) => {
+                const reais = grupo.itens.filter(i => i.href)
+                if (!reais.length) return null
+                return (
+                  <section key={idx} style={{ marginTop: 18 }}>
+                    <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.1em', padding: '0 2px 8px' }}>{grupo.titulo || 'Início'}</div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                      {reais.map(m => {
+                        const Icone = ICONES[m.href] || Circle
+                        const ativo = pathname === m.href
+                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : m.href === '/dashboard/agenda' ? agendaBalao : 0
+                        return (
+                          <Link key={m.href} href={m.href} className={'app-tile' + (ativo ? ' ativo' : '')}>
+                            <span style={{ position: 'relative', lineHeight: 0 }}>
+                              <Icone size={22} strokeWidth={1.75} />
+                              {balao > 0 && <span className="app-balao" style={{ background: m.href === '/dashboard/agenda' ? 'var(--red)' : '#25D366', color: m.href === '/dashboard/agenda' ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
+                            </span>
+                            <span>{m.nome}</span>
+                          </Link>
+                        )
+                      })}
+                    </div>
+                  </section>
+                )
+              })}
+
+              <div style={{ marginTop: 26, paddingTop: 16, borderTop: '1px solid var(--border)', display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>Aparência</span>
+                  <span style={{ display: 'flex', gap: 8 }}><VidroToggle compacto /><ThemeToggle compacto /></span>
+                </div>
+                {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
+                <button onClick={sair} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer', font: 'inherit' }}>
+                  <LogOut size={16} /> Sair da conta
+                </button>
+              </div>
+            </div>
           )}
-        </button>
+        </>
       )}
 
-      {isMobile && menuMobileAberto && (
-        <div onClick={() => setMenuMobileAberto(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 45 }} />
-      )}
-
-      {menuVisivel && (
+      {!isMobile && (
         <div style={{ flexShrink: 0, width: 236 }}>
           {/* Menu de vidro: fica parado, o que está atrás dele (a luz) também — o navegador desfoca uma
               vez e guarda. Segue o tema (antes era ilha escura); a marca ganha um prato escuro pra o
@@ -568,7 +673,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       )}
 
       {/* .conteudo: as regras do globals.css que vestem as telas antigas valem só aqui dentro */}
-      <div className="conteudo" style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1, paddingTop: isMobile ? 50 : 0 }}>
+      <div className={'conteudo' + (isMobile ? ' app-miolo' : '')} style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
         {children}
       </div>
       {paletaAberta && (
