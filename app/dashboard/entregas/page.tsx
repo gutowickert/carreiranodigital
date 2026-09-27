@@ -9,7 +9,11 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)', width: '100%' }
 const lbl: React.CSSProperties = { fontSize: 11, color: 'var(--text-faint)', display: 'block', marginBottom: 3 }
 
-const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'CRM'], ['combo', 'Deu Venda + CRM + Tráfego'], ['crm_trafego', 'CRM + Tráfego']]
+const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'Sistema'], ['combo', 'Deu Venda + CRM + Tráfego'], ['crm_trafego', 'CRM + Tráfego']]
+// as duas abas da tela (decisão do dono, 27/09/2026): o Sistema tem o próprio roteiro de
+// implantação e o Deu Venda tem o dele; misturados, o que precisa de ti hoje some no meio
+type Aba = 'sistema' | 'deu_venda'
+const ABAS: [Aba, string][] = [['sistema', 'Sistema'], ['deu_venda', 'Deu Venda']]
 const FINS: [string, string][] = [['encerra', 'Encerra ao fim'], ['renegocia', 'Renegocia ao fim'], ['manutencao', 'Vira manutenção']]
 
 const br = (d?: string | null) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—')
@@ -31,7 +35,9 @@ function selo(situacao: string, estado: string) {
 
 export default function Entregas() {
   const [lista, setLista] = useState<any[]>([])
-  const [resumo, setResumo] = useState<any>({ atrasados: 0, a_confirmar: 0, sem_proximo: 0, vencendo: 0 })
+  const [aba, setAba] = useState<Aba>('sistema')
+  useEffect(() => { try { const a = localStorage.getItem('entregas.aba'); if (a === 'sistema' || a === 'deu_venda') setAba(a) } catch { } }, [])
+  const trocarAba = (a: Aba) => { setAba(a); try { localStorage.setItem('entregas.aba', a) } catch { } }
   const [carregando, setCarregando] = useState(true)
   const [novo, setNovo] = useState(false)
   const [filtro, setFiltro] = useState('')
@@ -44,7 +50,7 @@ export default function Entregas() {
   async function carregar() {
     setCarregando(true)
     const j = await fetchAuth('/api/projetos').then(r => r.json()).catch(() => null)
-    if (j?.ok) { setLista(j.projetos || []); setResumo(j.resumo || {}); setPessoas(j.pessoas || []) }
+    if (j?.ok) { setLista(j.projetos || []); setPessoas(j.pessoas || []) }
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
@@ -61,9 +67,18 @@ export default function Entregas() {
   }
 
   const busca = (p: any) => !filtro || String(p.cliente).toLowerCase().includes(filtro.toLowerCase())
-  const emEntrega = lista.filter(p => p.status === 'ativo' && busca(p))
-  const emManutencao = lista.filter(p => p.status === 'manutencao' && busca(p))
-  const concluidos = lista.filter(p => p.status === 'concluido' && busca(p))
+  // a aba filtra; o combo aparece nas duas
+  const daAba = lista.filter(p => (p.segmentos || ['sistema', 'deu_venda']).includes(aba))
+  const emEntrega = daAba.filter(p => p.status === 'ativo' && busca(p))
+  const emManutencao = daAba.filter(p => p.status === 'manutencao' && busca(p))
+  const concluidos = daAba.filter(p => p.status === 'concluido' && busca(p))
+  // os contadores do topo contam só a aba aberta
+  const resumo = {
+    atrasados: daAba.reduce((s, p) => s + (p.atrasados || 0), 0),
+    a_confirmar: daAba.reduce((s, p) => s + (p.a_confirmar || 0), 0),
+    sem_proximo: daAba.filter(p => p.sem_proximo).length,
+    vencendo: daAba.filter(p => p.vencendo).length,
+  }
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1080, margin: '0 auto' }}>
@@ -75,11 +90,23 @@ export default function Entregas() {
         <div style={{ display: 'flex', gap: 8 }}>
           <Link href="/dashboard/entregas/trafego" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>Tráfego</Link>
           <Link href="/dashboard/entregas/agenda" style={{ ...card, padding: '8px 14px', fontSize: 13, color: 'var(--text-2)', textDecoration: 'none' }}>Agenda</Link>
-          <button onClick={() => setNovo(v => !v)} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Novo projeto</button>
+          <button onClick={() => { setNovo(v => !v); setF((v: any) => ({ ...v, produto: aba === 'sistema' ? 'crm' : 'deu_venda' })) }} style={{ background: 'var(--accent)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 15px', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>+ Novo projeto</button>
         </div>
       </div>
 
       {msg && <div style={{ ...card, padding: '9px 12px', marginTop: 12, fontSize: 13, color: 'var(--text-2)' }}>{msg}</div>}
+
+      {/* ───────── as duas abas */}
+      <div style={{ display: 'inline-flex', gap: 3, padding: 3, background: 'var(--surface-2)', borderRadius: 10, marginTop: 16 }}>
+        {ABAS.map(([k, t]) => {
+          const n = lista.filter(p => p.status === 'ativo' && (p.segmentos || ['sistema', 'deu_venda']).includes(k)).length
+          return (
+            <button key={k} onClick={() => trocarAba(k)} style={{ background: aba === k ? 'var(--surface)' : 'transparent', border: 'none', borderRadius: 8, color: aba === k ? 'var(--text)' : 'var(--text-faint)', fontSize: 13.5, fontWeight: 700, padding: '7px 16px', cursor: 'pointer' }}>
+              {t} <span style={{ fontWeight: 500, color: 'var(--text-faint)' }}>· {n}</span>
+            </button>
+          )
+        })}
+      </div>
 
       {/* ───────── precisa de ti */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: 8, marginTop: 16 }}>

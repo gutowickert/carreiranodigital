@@ -29,6 +29,7 @@ export type MarcoTpl = {
   ancora?: boolean        // não empurra quando os do meio remarcam — é a data de fim
   jaCombinado?: boolean   // nasce combinado: foi acertado na venda (a 1ª sessão)
   descricao?: string
+  lista?: string[]        // o que fazer neste marco — o padrão de implantação, riscável na ficha
 }
 
 export type RoteiroProduto = {
@@ -72,33 +73,107 @@ export const ROTEIROS: Record<Produto, RoteiroProduto> = {
     ],
   },
 
+  // O SISTEMA — o roteiro de implantação, do jeito que acontece de verdade (Nando, 27/09/2026).
+  //
+  // ⚠️ NEM TODO SISTEMA VEM DO DEU VENDA. Quando vem (o comum: o cliente compra o Deu Venda, percebe
+  // que precisa do sistema), o contexto do negócio e a logo já existem e vão direto pro núcleo. Quando
+  // não vem (Dani Fell), o questionário de implantação entra ANTES da apresentação. A lista do
+  // primeiro marco tem os dois caminhos — quem faz risca o que vale.
+  //
+  // ⚠️ A LISTA DE CADA MARCO É O PADRÃO. É ela que faz a implantação sair igual pra todo cliente sem
+  // ninguém lembrar de cabeça. Mudou o jeito de implantar, muda AQUI — os projetos novos já nascem
+  // com a lista nova; os antigos recebem pelo botão "aplicar a lista padrão" na ficha.
   crm: {
-    nome: 'CRM',
+    nome: 'Sistema',
     cor: '#60a5fa',
     prazoMeses: null,
     fimTipo: 'manutencao',
     avisoFimDias: 30,
     fases: [
-      { chave: 'levantamento', label: 'Levantamento' },
-      { chave: 'configuracao', label: 'Configuração' },
-      { chave: 'no_ar', label: 'No ar' },
-      { chave: 'afinacao', label: 'Afinação' },
-      { chave: 'treino', label: 'Treino' },
+      { chave: 'combinar', label: 'Combinar' },
+      { chave: 'apresentacao', label: 'Apresentação' },
+      { chave: 'modificacoes', label: 'Modificações' },
+      { chave: 'implantacao', label: 'Implantação' },
+      { chave: 'primeiro_uso', label: 'Primeiro uso' },
+      { chave: 'ajustes', label: 'Ajustes' },
+      { chave: 'leituras', label: 'Leituras do mês' },
       { chave: 'manutencao', label: 'Manutenção' },
     ],
     marcos: [
-      { chave: 'levantamento', titulo: 'Reunião de levantamento', natureza: 'encontro', dias: 0, duracao: 240, jaCombinado: true,
-        descricao: 'Como a empresa vende hoje: etapas, prazos, objeções e o que trava.' },
-      { chave: 'configuracao', titulo: 'Configuração — funil, catálogo, API e IA', natureza: 'interno', dias: 25,
-        descricao: 'O grosso do trabalho. Sem hora marcada, mas com prazo.' },
-      { chave: 'no_ar', titulo: 'No ar recebendo lead de verdade', natureza: 'marco', dias: 30,
-        descricao: 'Não é demonstração: a IA atendendo no WhatsApp oficial do cliente.' },
-      { chave: 'afinacao', titulo: 'Afinação com conversa real', natureza: 'interno', dias: 55,
-        descricao: 'Ler o que a IA respondeu e ajustar. Entram as travas da operação dele.' },
-      { chave: 'treino', titulo: 'Treino do time', natureza: 'encontro', dias: 75, duracao: 120,
-        descricao: 'O time opera no sistema real, com as oportunidades reais dele.' },
-      { chave: 'entrega', titulo: 'Entrega — vira manutenção', natureza: 'marco', dias: 90, ancora: true,
-        descricao: 'Fim dos 90 dias. A mensalidade começa e o projeto passa a manutenção.' },
+      { chave: 'combinar', titulo: 'Combinar a apresentação e preparar o núcleo', natureza: 'interno', dias: 0,
+        descricao: 'Marcar a apresentação até o dia 3 e chegar nela com o sistema base já com a cara do cliente.',
+        lista: [
+          'Combinar a data da apresentação (até o dia 3)',
+          'Veio do Deu Venda? Pegar o contexto do negócio e a logo de lá',
+          'Não veio do Deu Venda? Mandar o questionário de implantação e cobrar antes da apresentação',
+          'Instalar o núcleo (setup-nucleo) e ligar a marca: nome, cor, logo',
+          'Cadastrar produtos e preços',
+          'Semear o que a IA sabe com o contexto (nunca deixar vazio)',
+          'Etapas do funil no vocabulário do cliente',
+        ] },
+      { chave: 'apresentacao', titulo: 'Apresentação do sistema base e levantamento do que falta', natureza: 'encontro', dias: 3, duracao: 90,
+        descricao: 'Mostra o sistema com a cara dele e entende as necessidades extras. Sai com a data da implantação combinada.',
+        lista: [
+          'Mostrar o Painel, o Funil, o WhatsApp e a Máquina CND com os dados dele',
+          'Anotar o que falta: telas, regras, integrações',
+          'Decidir o WhatsApp: número, API oficial, quem responde',
+          'Definir quem terá login e com que papel',
+          'Combinar a implantação (dia 10) e a mensalidade (dia e valor)',
+        ] },
+      { chave: 'modificacoes', titulo: 'Primeiras modificações', natureza: 'interno', dias: 7,
+        descricao: 'O que foi levantado na apresentação, feito e testado antes da implantação.',
+        lista: [
+          'Fazer o que foi levantado na apresentação',
+          'Chaves no nome do cliente: Anthropic, Deepgram, Meta',
+          'Domínio com a marca do cliente',
+          'Testar com um lead de verdade (ou uma apólice, um orçamento — o que o negócio tem)',
+          'Manual do usuário pronto (o que tem, o que fazem, como fazem)',
+        ] },
+      { chave: 'implantacao', titulo: 'Implantação', natureza: 'encontro', dias: 10, duracao: 120,
+        descricao: 'Chave da IA, WhatsApp oficial, contrato assinado pelo sistema e os primeiros passos com o manual.',
+        lista: [
+          'Login de cada usuário, na frente dele',
+          'WhatsApp oficial conectado e testado com uma mensagem real',
+          'Contrato assinado pelo sistema',
+          'Primeiros passos com o manual: Painel, Funil, IA pediu ajuda, Máquina CND',
+          'Notificações ligadas no celular de cada um',
+          'Combinar a leitura do mês (dia 30)',
+        ] },
+      { chave: 'primeiro_uso', titulo: 'Primeiro uso — login e tudo mais', natureza: 'interno', dias: 17,
+        descricao: 'A primeira semana de uso de verdade. Onde ele trava, a gente destrava no mesmo dia.',
+        lista: [
+          'Conferir todo dia: alguém sem conseguir entrar? notificação chegando?',
+          'Ler as primeiras conversas da IA e corrigir na fonte (O que a IA sabe / Qualidade IA)',
+          'Primeira venda marcada no funil com valor',
+        ] },
+      { chave: 'ajustes', titulo: 'Ajustes pelo WhatsApp', natureza: 'interno', dias: 30,
+        descricao: 'À disposição no WhatsApp implementando mudanças conforme o uso pede.',
+        lista: [
+          'Registrar cada pedido de mudança na ficha (o que, quando, feito ou não)',
+          'Afinar a cadência de follow-up com o que aconteceu',
+        ] },
+      { chave: 'leitura_1', titulo: 'Leitura do mês 1', natureza: 'encontro', dias: 30, duracao: 45,
+        descricao: 'O que a automação fez e o que deu de lucro. Diferente a cada mês: o que realmente importa, não as mesmas telas.',
+        lista: [
+          'Quantas conversas a IA atendeu e quantas cobranças fez sozinha',
+          'Vendas do mês, de onde vieram, e o que se perdeu',
+          'Custo da IA no mês',
+          'Uma coisa pra mudar no mês que vem',
+        ] },
+      { chave: 'leitura_2', titulo: 'Leitura do mês 2', natureza: 'encontro', dias: 60, duracao: 45,
+        descricao: 'A segunda leitura, comparada com a primeira.',
+        lista: [
+          'O mesmo placar, agora comparado com o mês 1',
+          'O que a mudança combinada no mês 1 deu',
+          'Preparar o placar trimestral',
+        ] },
+      { chave: 'trimestral', titulo: 'Reunião trimestral — vira manutenção', natureza: 'encontro', dias: 90, duracao: 90, ancora: true,
+        descricao: 'Os três meses lidos inteiros, com o número na mesa. Daqui pra frente: manutenção com leitura mensal.',
+        lista: [
+          'Placar dos 90 dias: antes e depois',
+          'O que fica, o que sai, o que entra no sistema',
+          'Combinar a leitura mensal seguinte',
+        ] },
     ],
   },
 
@@ -175,6 +250,14 @@ export const ROTEIROS: Record<Produto, RoteiroProduto> = {
   },
 }
 
+// O SEGMENTO — a tela de Entregas tem duas abas, Sistema e Deu Venda. O combo aparece nas duas.
+export type Segmento = 'sistema' | 'deu_venda'
+export function segmentosDoProduto(p: string): Segmento[] {
+  if (p === 'deu_venda') return ['deu_venda']
+  if (p === 'crm' || p === 'crm_trafego') return ['sistema']
+  return ['sistema', 'deu_venda']
+}
+
 // ─────────────────────────────────────────────────────────────────── utilidades
 
 const DIA = 86400000
@@ -202,6 +285,8 @@ export function marcosDoRoteiro(produto: Produto, dataInicio: string) {
     data_combinada: m.jaCombinado ? dataInicio + 'T12:00:00Z' : null,
     estado: (m.jaCombinado ? 'combinado' : 'previsto') as EstadoMarco,
     registro: null as string | null,
+    // a lista nasce com o projeto, item a item, pra riscar na ficha
+    lista: (m.lista || []).map(item => ({ item, feito: false })),
   }))
 }
 

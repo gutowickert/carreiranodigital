@@ -190,6 +190,23 @@ export async function POST(req: Request) {
       await sb.from('projeto_pendencias').update({ entregue_em: new Date().toISOString().slice(0, 10) }).eq('org_id', org).eq('id', b.id)
       return NextResponse.json({ ok: true })
     }
+    // A LISTA PADRÃO nos projetos que nasceram antes dela existir (ou quando o roteiro mudou):
+    // preenche só os marcos abertos que ainda não têm lista, pela chave do marco no roteiro.
+    if (acao === 'aplicar_padrao') {
+      const { data: proj } = await sb.from('projetos').select('produto').eq('org_id', org).eq('id', projetoId).maybeSingle()
+      const r = proj ? ROTEIROS[proj.produto as Produto] : null
+      if (!r) return NextResponse.json({ ok: false, error: 'roteiro não encontrado' }, { status: 200 })
+      const { data: ms } = await sb.from('projeto_marcos').select('id, chave, lista, estado').eq('projeto_id', projetoId)
+      let n = 0
+      for (const m of ms || []) {
+        if (m.estado === 'concluido' || (Array.isArray(m.lista) && m.lista.length)) continue
+        const tpl = r.marcos.find(x => x.chave === m.chave)
+        if (!tpl?.lista?.length) continue
+        const { error } = await sb.from('projeto_marcos').update({ lista: tpl.lista.map(item => ({ item, feito: false })) }).eq('id', m.id)
+        if (!error) n++
+      }
+      return NextResponse.json({ ok: true, marcos: n })
+    }
     if (acao === 'pendencia_remover') {
       await sb.from('projeto_pendencias').delete().eq('org_id', org).eq('id', b.id)
       return NextResponse.json({ ok: true })

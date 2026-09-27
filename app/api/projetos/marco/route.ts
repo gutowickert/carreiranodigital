@@ -39,6 +39,18 @@ export async function POST(req: Request) {
     const agora = new Date().toISOString()
     const fmt = (iso: string) => { const d = new Date(iso); return d.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) }
 
+    // ───────────────────────────────────────────── a lista do que fazer
+    // riscar um item não conclui o marco: o marco se conclui com o registro do que aconteceu
+    if (acao === 'lista_item') {
+      const lista: any[] = Array.isArray(marco.lista) ? [...marco.lista] : []
+      const i = Number(b.indice)
+      if (!(i >= 0 && i < lista.length)) return erro('item não existe')
+      lista[i] = { ...lista[i], feito: !!b.feito }
+      const { error } = await sb.from('projeto_marcos').update({ lista }).eq('id', marcoId)
+      if (error) return erro(error.message)
+      return NextResponse.json({ ok: true })
+    }
+
     // ───────────────────────────────────────────── combinar / remarcar
     // dono do marco: é quem recebe na agenda. Vazio = segue o responsável do projeto.
     if (acao === 'responsavel') {

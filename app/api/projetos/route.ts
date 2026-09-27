@@ -4,7 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 import { criarProjeto } from '@/lib/criar-projeto'
-import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, type Produto } from '@/lib/entrega'
+import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, segmentosDoProduto, type Produto } from '@/lib/entrega'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
 // de cada um; POST cria o projeto e já gera todos os marcos do roteiro.
@@ -62,6 +62,11 @@ export async function GET(req: Request) {
         ...p,
         roteiro: ROTEIROS[p.produto as Produto]?.nome || p.produto,
         cor: ROTEIROS[p.produto as Produto]?.cor || '#9ca3af',
+        // a tela separa Sistema de Deu Venda; cada projeto diz em que aba(s) aparece, e os
+        // contadores do topo são somados por aba a partir destes campos
+        segmentos: segmentosDoProduto(p.produto),
+        sem_proximo: !pendentes.length && p.status === 'ativo',
+        vencendo: !!(fim && p.status !== 'concluido' && Math.round((new Date(fim + 'T12:00:00Z').getTime() - Date.now()) / 86400000) >= 0 && Math.round((new Date(fim + 'T12:00:00Z').getTime() - Date.now()) / 86400000) <= (p.aviso_fim_dias || 30)),
         total_marcos: ms.length,
         concluidos: ms.filter(m => m.estado === 'concluido').length,
         atrasados, a_confirmar: aConfirmar,

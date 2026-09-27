@@ -204,7 +204,17 @@ export default function FichaEntrega() {
       </div>
 
       {/* ───────── linha do tempo */}
-      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '24px 0 10px' }}>A entrega</div>
+      <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.1em', textTransform: 'uppercase', color: 'var(--text-faint)', margin: '24px 0 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        A entrega
+        {/* projeto criado antes de existir a lista padrão: um clique preenche o que o roteiro tem */}
+        {marcos.some((m: any) => m.estado !== 'concluido' && (!Array.isArray(m.lista) || !m.lista.length)) && (
+          <button onClick={async () => {
+            const j = await fetchAuth('/api/projetos/ficha', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ acao: 'aplicar_padrao', projeto_id: p.id }) }).then(r => r.json()).catch(() => null)
+            setMsg(j?.ok ? `Lista padrão aplicada em ${j.marcos} ${j.marcos === 1 ? 'marco' : 'marcos'}.` : ('' + (j?.error || 'falha')))
+            carregar()
+          }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', letterSpacing: 0, textTransform: 'none', fontWeight: 600 }}>aplicar a lista padrão do roteiro</button>
+        )}
+      </div>
       {semDono > 0 && (
         <div style={{ background: 'var(--amber-bg)', borderRadius: 8, padding: '9px 11px', marginBottom: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
           <b style={{ color: 'var(--text)' }}>{semDono} {semDono === 1 ? 'tarefa sem dono' : 'tarefas sem dono'}</b> — na agenda aparecem pro grupo todo e ninguém responde por elas. Escolhe o responsável do projeto lá em cima, ou o dono de cada uma.
@@ -238,6 +248,19 @@ export default function FichaEntrega() {
                       {pessoas.map(x => <option key={x.id} value={x.id}>{x.nome}</option>)}
                     </select>
                   </div>
+                  {/* A LISTA DO QUE FAZER — o padrão de implantação, riscável. É o que faz a implantação
+                      sair igual pra todo cliente sem ninguém lembrar de cabeça. Riscar não conclui o
+                      marco: o marco se conclui com o registro do que aconteceu, como sempre. */}
+                  {Array.isArray(m.lista) && m.lista.length > 0 && (
+                    <div style={{ marginTop: 9, display: 'flex', flexDirection: 'column', gap: 4 }}>
+                      {m.lista.map((it: any, i: number) => (
+                        <label key={i} style={{ display: 'flex', alignItems: 'flex-start', gap: 7, fontSize: 12.5, color: it.feito ? 'var(--text-faint)' : 'var(--text-2)', cursor: feito ? 'default' : 'pointer', textDecoration: it.feito ? 'line-through' : 'none' }}>
+                          <input type="checkbox" checked={!!it.feito} disabled={feito} onChange={e => acao({ acao: 'lista_item', id: m.id, indice: i, feito: e.target.checked })} style={{ marginTop: 2 }} />
+                          <span>{it.item}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                   {m.registro && <div style={{ fontSize: 12.5, color: 'var(--text-2)', marginTop: 7, paddingLeft: 10, borderLeft: '2px solid var(--border)' }}>{m.registro}</div>}
                 </div>
 
