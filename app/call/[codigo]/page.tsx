@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Mic, MicOff, Video, VideoOff, Maximize2, Minimize2, PhoneOff, Settings2 } from 'lucide-react'
+import AssinaturaCND from '@/components/AssinaturaCND'
 
 // A CHAMADA. Uma página só pros dois lados: o lead abre /call/<codigo>; quem convidou abre
 // com ?h=<chave>. WebRTC ponto a ponto (voz, vídeo opcional), sinalização pelo Realtime do
@@ -465,13 +466,13 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   )
 
   if (fase === 'carregando') return <div style={S.fundo}><div style={{ color: 'var(--text-faint, #7E7793)' }}>Abrindo a chamada…</div></div>
-  if (fase === 'invalida') return <div style={S.fundo}><div style={S.card}><div style={S.marca}>Carreira no Digital</div><h1 style={S.h1}>Esse link não abre uma chamada.</h1><p style={S.p}>Confere se copiou o link inteiro, ou pede um novo pra quem te convidou.</p></div></div>
-  if (fase === 'encerrada') return <div style={S.fundo}><div style={S.card}><div style={S.marca}>Carreira no Digital</div><h1 style={S.h1}>Chamada encerrada.</h1><p style={S.p}>{seg ? `Duração: ${fmt(seg)}. ` : ''}{host ? 'A gravação está sendo transcrita e vai pro histórico do lead em alguns minutos.' : 'Obrigado pela conversa. Se precisar, é só chamar no WhatsApp.'}</p></div></div>
+  if (fase === 'invalida') return <div style={S.fundo}><div style={S.card}><MarcaTopo info={info} estilo={S.marca} /><h1 style={S.h1}>Esse link não abre uma chamada.</h1><p style={S.p}>Confere se copiou o link inteiro, ou pede um novo pra quem te convidou.</p></div><div style={{ opacity: .6, transform: 'scale(.92)' }}><AssinaturaCND escuro /></div></div>
+  if (fase === 'encerrada') return <div style={S.fundo}><div style={S.card}><MarcaTopo info={info} estilo={S.marca} /><h1 style={S.h1}>Chamada encerrada.</h1><p style={S.p}>{seg ? `Duração: ${fmt(seg)}. ` : ''}{host ? 'A gravação está sendo transcrita e vai pro histórico do lead em alguns minutos.' : 'Obrigado pela conversa. Se precisar, é só chamar no WhatsApp.'}</p></div><div style={{ opacity: .6, transform: 'scale(.92)' }}><AssinaturaCND escuro /></div></div>
 
   if (fase === 'antes' || fase === 'erro') return (
     <div style={S.fundo}>
       <div style={S.card}>
-        <div style={S.marca}>{info?.empresa}</div>
+        <MarcaTopo info={info} estilo={S.marca} />
         <h1 style={S.h1}>{host ? `Chamada com ${info?.com_quem}` : `${info?.com_quem} te convidou pra uma chamada`}</h1>
         <p style={S.p}>{comVideo ? 'Com vídeo e voz.' : 'Só voz, como uma ligação.'} Funciona aqui no navegador, sem instalar nada.</p>
         {host && <p style={{ ...S.p, fontSize: 13, color: 'var(--text-faint, #7E7793)' }}>A conversa será gravada e transcrita pro histórico do lead. Avise a pessoa.</p>}
@@ -500,6 +501,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         {erro && <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'var(--red-bg, #3A1520)', color: 'var(--red, #F0475F)', fontSize: 13.5, lineHeight: 1.45 }}>{erro}</div>}
         <button onClick={entrar} style={{ ...S.btn, marginTop: 14, background: '#22C55E', color: '#06220f', boxShadow: '0 12px 30px rgba(34,197,94,.28)' }}>Entrar na chamada</button>
       </div>
+      <div style={{ opacity: .6, transform: 'scale(.92)' }}><AssinaturaCND escuro /></div>
     </div>
   )
 
@@ -527,7 +529,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       {/* cabeçalho flutuante */}
       {!imersivo && (
         <div style={{ position: 'absolute', top: 0, left: 0, right: 0, padding: 'calc(12px + env(safe-area-inset-top)) 16px 44px', background: 'linear-gradient(180deg, rgba(0,0,0,.62), transparent)', pointerEvents: 'none' }}>
-          <div style={S.marca}>{info?.empresa}</div>
+          <MarcaTopo info={info} estilo={S.marca} />
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 19, fontWeight: 800 }}>{info?.com_quem}</div>
             <div style={{ fontSize: 15, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: '#fff', opacity: .9 }}>{statusTexto}</div>
@@ -578,4 +580,11 @@ function Redondo({ icone: Icone, rotulo, onClick, ativo, perigo }: { icone: any;
       <span style={{ fontSize: 11, fontWeight: 700, opacity: .92, textAlign: 'center', lineHeight: 1.15 }}>{rotulo}</span>
     </button>
   )
+}
+
+// o topo da tela: a LOGO da empresa (pedido do Nando, 28/09/2026 — o nome escrito parecia provisório);
+// sem logo cadastrada, o nome em texto
+function MarcaTopo({ info, estilo }: { info: any; estilo: React.CSSProperties }) {
+  if (info?.logo) return <img src={info.logo} alt={info?.empresa || ''} style={{ height: 34, maxWidth: 190, objectFit: 'contain', display: 'block', borderRadius: 6, marginBottom: 4 }} />
+  return <div style={estilo}>{info?.empresa || ''}</div>
 }

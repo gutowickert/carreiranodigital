@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: Ctx) {
     ok: true, codigo: ch.codigo, status: ch.status, com_video: ch.com_video, host,
     // o lead vê quem convidou; quem convidou vê o lead
     com_quem: host ? (ch.lead_nome || 'o convidado') : ch.criado_por_nome || 'a Carreira no Digital',
-    empresa: 'Carreira no Digital',
+    empresa: 'Carreira no Digital', logo: '/logo-menu.png',
   })
 }
 
