@@ -380,7 +380,8 @@ img, svg { max-width: 100%; }
   /* Monitor das Entregas: uma coluna; quem contatar e os encontros vêm antes dos cards e não grudam no topo */
   .monitor-grade { grid-template-columns: minmax(0, 1fr) !important; }
   .monitor-lado { position: static !important; order: -1; }
-  .monitor-gaveta { width: 100vw !important; padding: calc(14px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom)) !important; border-left: none !important; }
+  /* a gaveta fica ENTRE as barras do app (o .conteudo cria um contexto de empilhamento, o z-index dela nao passa por cima da barra) */
+  .monitor-gaveta { width: 100vw !important; top: calc(var(--app-topo) + env(safe-area-inset-top)) !important; bottom: calc(var(--app-abas) + env(safe-area-inset-bottom)) !important; padding: 14px 14px 30px !important; border-left: none !important; }
   /* caixa de digitar do WhatsApp: no celular a mensagem fica numa linha inteira, os botões embaixo */
   .wa-compor { flex-wrap: wrap; align-items: center !important; }
   .wa-compor > textarea { flex: 1 1 100% !important; order: -1; max-height: 120px !important; }
