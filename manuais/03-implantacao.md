@@ -39,16 +39,20 @@ O que o cliente precisa ter antes (pede na apresentação, não no dia):
 2. **Um número** com a decisão tomada: número novo, ou o atual pela coexistência (continua no app **WhatsApp Business** do celular e entra no sistema ao mesmo tempo). O WhatsApp comum não coexiste.
 3. **Forma de pagamento** na conta de WhatsApp Business.
 
-O passo a passo:
+O passo a passo (número novo — o caminho que funcionou na Dani em 28/09/2026, ~1h30 com o cliente):
 
-1. No app Meta do cliente: app do tipo Negócios, produto WhatsApp, configuração de Cadastro Incorporado. Anota `NEXT_PUBLIC_META_APP_ID`, `NEXT_PUBLIC_META_CONFIG_ID`, `META_APP_SECRET`.
-2. Vercel: grava as três e faz deploy — sem elas a tela *Conectar WhatsApp* não deixa conectar.
-3. Com o cliente logado no Facebook dele, *Conectar WhatsApp* no sistema e o fluxo da Meta. O sistema grava `phone_number_id` e `waba_id`.
-4. **Token permanente** de usuário do sistema no Gerenciador de Negócios (`whatsapp_business_messaging` e `whatsapp_business_management`). O token temporário **expira em 24h** — causa nº 1 de "parou de chegar mensagem".
-5. Vercel: `WA_OFICIAL_TOKEN`, `WA_OFICIAL_WABA_ID`, `WA_OFICIAL_PHONE_ID`, `WA_OFICIAL_NUMERO` (só dígitos, com 55), `WA_OFICIAL_VERIFY_TOKEN`. Deploy.
-6. App Meta → WhatsApp → Configuração: webhook `https://<domínio>/api/wa-oficial/webhook`, o mesmo verify token, e **assinar o campo `messages`**.
-7. **Templates**: fora da janela de 24h só sai template aprovado. Submete os de follow-up na conta dele; aprovação leva de minutos a 2 dias.
-8. Teste real de um celular de fora: aparece em *WhatsApp* e a IA responde. Senão, *Webhook Logs*.
+1. **Conferir que o número está livre**: abrir `https://wa.me/55DDDNUMERO` no celular. "Convidar para o WhatsApp" / "não está no WhatsApp" = livre. Se abrir uma conversa, o número está em uso: cadastrar na API tira ele daquele celular.
+2. developers.facebook.com → Criar app → caso de uso **"Conectar-se com clientes pelo WhatsApp"**, no portfólio do cliente. Dentro do caso de uso (lápis → Personalizar) → **Configuração da API** → Continuar (a Meta cria a conta com um número de TESTE +1 555 — ignora).
+3. Mesma tela, no fim: **Adicionar número de telefone** (nome de exibição, categoria, código por SMS/ligação). Depois, no campo "De", o número do cliente → anota a **Identificação do número** e a **da conta do WhatsApp Business** (não são segredo).
+4. **Token permanente**: business.facebook.com → Configurações → Usuários do sistema. A Meta recusa nome que pareça marca ("SuporteCND", "Sistema WhatsApp") e conta não verificada tem limite — **usar o usuário que já existir** (na Dani, o "Conversions API System User"). Atribuir a ele o app e a conta do WhatsApp (a certa: a do ID anotado, não a "Test" nem a "Aplicativo WhatsApp Business") com controle total → Gerar token, validade Nunca, `whatsapp_business_messaging` + `whatsapp_business_management`. **Outro administrador do portfólio precisa aprovar** (Configurações → **Pedidos** → Needs review → Aprovar; a Meta não notifica). Depois de aprovado, gerar de novo no usuário.
+5. Vercel: o token o dono cola no Terminal (`vercel env add WA_OFICIAL_TOKEN production --sensitive`); `WA_OFICIAL_PHONE_ID`, `WA_OFICIAL_WABA_ID`, `WA_OFICIAL_NUMERO` (só dígitos, 55 + DDD + 9 dígitos) e `WA_OFICIAL_VERIFY_TOKEN` (uma palavra qualquer) a gente coloca. Deploy.
+6. Conferir e ligar pelo próprio sistema: `/api/wa-oficial/status` (o número tem que bater com o ID; `status` PENDING = ainda não registrado) → o dono abre `/api/wa-oficial/register?pin=NNNNNN` com um PIN de 6 dígitos que ELE guarda (vira a verificação em duas etapas) → status **CONNECTED** → `/api/wa-oficial/subscribe` (inscreve o app na conta).
+7. App → caso de uso → **Configuração**: webhook `https://<domínio>/api/wa-oficial/webhook`, o mesmo verify token, Verificar e salvar, e **assinar `messages`**.
+8. **Publicar o app** (Configurações do app → Básico: `/politica-privacidade` e `/termos` do sistema, categoria; depois Publicar). Sem publicar, a Meta só manda webhook de teste — nenhuma mensagem real entra.
+9. Teste real de um celular de fora: manda "oi", aparece em *WhatsApp*; responde pelo sistema e o status vira "lido".
+10. **Templates** (fora da janela de 24h só sai template aprovado) e **forma de pagamento** na conta do WhatsApp — só pros disparos de follow-up; responder cliente é grátis.
+
+⚠️ A tela *Conectar WhatsApp* (Cadastro Incorporado, 3 variáveis `META_*`) grava o número em `wa_oficial_config`, que **só o follow-up lê**. A caixa de mensagens, o envio e o webhook usam as variáveis `WA_OFICIAL_*`. Pra coexistência (o número atual continua no app WhatsApp Business) o Cadastro Incorporado é o único caminho — e depois ainda é preciso pôr o token e os IDs nas `WA_OFICIAL_*`.
 
 | Sintoma | Causa quase sempre |
 | --- | --- |

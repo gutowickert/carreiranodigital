@@ -56,6 +56,6 @@ Loja de skate. **Congelada por decisão do Nando (25/09/2026): nenhuma atualiza�
 | Sistema | Endereço | Produto | Máquina CND | Chaves de IA | WhatsApp oficial | Chamadas |
 | --- | --- | --- | --- | --- | --- | --- |
 | Escola | carreiranodigital.vercel.app | — | geral, admin e comercial | sim | sim | sim |
-| Dani Fell | espacodanifell.vercel.app | CRM + Tráfego | geral, todos | Anthropic sem crédito em 27/09; Deepgram sim | não configurado | sim (28/09) |
+| Dani Fell | espacodanifell.vercel.app | CRM + Tráfego | geral, todos | Anthropic sem crédito em 27/09; Deepgram sim | **no ar (28/09)** — (51) 99923-0533, número novo, app "Sistema Dani Fell"; nome em análise na Meta | sim (28/09) |
 | GAJA | gajaseguros.vercel.app | combo | marketing | nenhuma | indefinido | não |
 | Jamrock | jamrockskateboardingco.vercel.app | — | não | — | — | não |
