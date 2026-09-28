@@ -9,6 +9,10 @@ import { classificarTemperatura } from '@/lib/temperatura'
 import { lerRespostaDeReconfirmacao } from '@/lib/reconfirmar'
 import { ORG_CND } from '@/lib/org'
 import { usuarioDoNumero, responder as responderAssistente } from '@/lib/assistente'
+import { processarFds, naJanela } from '@/lib/ia-fds'
+
+// a IA do fim de semana espera ~45s o lead terminar de escrever antes de agir (lib/ia-fds.ts)
+export const maxDuration = 120
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -164,6 +168,9 @@ async function registrarRecebida(m: any, value: any) {
       await supabase.from('lead_andamentos').insert({ lead_id: leadId, tipo: 'reconciliacao', observacao: '🤖 Cliente respondeu → saiu da Esteira IA; atendimento com o time na caixa de entrada.' })
     }
     try { await classificarTemperatura(leadId, conv.id) } catch { /* não quebra */ }
+    // IA DO FIM DE SEMANA (sexta 17h → segunda 5h): tenta marcar a ligação de segunda.
+    // Hoje em modo SOMBRA — só registra o que faria (lib/ia-fds.ts, tela /dashboard/ia-fds).
+    if (msgIns?.id && naJanela()) after(async () => { try { await processarFds(conv.id, msgIns.id) } catch { /* melhor esforço */ } })
   }
 }
 

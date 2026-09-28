@@ -26,7 +26,7 @@ const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 const ICONES: Record<string, LucideIcon> = {
   '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays,
   '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
-  '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
+  '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/ia-fds': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
   '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
   '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
   '/dashboard/tarefas/leads': ListChecks, '/dashboard/fechamento': ClipboardCheck, '/dashboard/entregas': PackageCheck,
@@ -144,6 +144,7 @@ const grupos: Grupo[] = [
       { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
       { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
       { nome: 'Qualidade IA', href: '/dashboard/qualidade-ia' },
+      { nome: 'IA do fim de semana', href: '/dashboard/ia-fds' },
       { nome: 'Automação IA', href: '/dashboard/automacao-ia' },
       { nome: 'Custo da IA', href: '/dashboard/ia-uso' },
     ],
@@ -205,7 +206,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
   // A Máquina lê o sistema inteiro: só admin e comercial (decisão do dono, 25/09/2026). A rota
   // confere a mesma regra (lib/maquina-acesso) — o menu é só a primeira porta.
   if (href === '/dashboard/maquina') return p.papel !== 'professor' && p.setor !== 'professor' && (p.papel === 'admin' || p.setor === 'comercial')
-  if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
+  if (href === '/dashboard/agente-interno' || href === '/dashboard/qualidade-ia' || href === '/dashboard/ia-fds' || href === '/dashboard/automacao-ia' || href === '/dashboard/ia-uso') return AGENTE_PERMITIDOS.includes((p.email || '').toLowerCase())
   // Instalações é só de admin, e a rota confere de novo no servidor — menu escondido é decoração
   // se a rota responde pra qualquer um.
   if (href === '/dashboard/instalacoes' || href.startsWith('/dashboard/sistemas/')) return p.papel === 'admin'
