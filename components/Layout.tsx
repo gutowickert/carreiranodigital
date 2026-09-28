@@ -16,7 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
-  Server,
+  Server, Video,
   type LucideIcon,
 } from 'lucide-react'
 import { CANAL_CAMPAINHA } from '@/lib/campainha'
@@ -28,7 +28,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays,
   '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
   '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/ia-fds': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
-  '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Phone, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
+  '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Video, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
   '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
   '/dashboard/tarefas/leads': ListChecks, '/dashboard/fechamento': ClipboardCheck, '/dashboard/entregas': PackageCheck,
   '/dashboard/orcamentos': FileText,
