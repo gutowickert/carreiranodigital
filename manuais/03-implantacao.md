@@ -57,6 +57,18 @@ Como o follow-up automático se protege (desde 28/09/2026): o motor só usa mode
 
 ⚠️ A tela *Conectar WhatsApp* (Cadastro Incorporado, 3 variáveis `META_*`) grava o número em `wa_oficial_config`, que **só o follow-up lê**. A caixa de mensagens, o envio e o webhook usam as variáveis `WA_OFICIAL_*`. Pra coexistência (o número atual continua no app WhatsApp Business) o Cadastro Incorporado é o único caminho — e depois ainda é preciso pôr o token e os IDs nas `WA_OFICIAL_*`.
 
+## Ligar os anúncios (tela Tráfego)
+
+Feito na Dani em 28/09/2026, no mesmo app do WhatsApp (~30 min, com uma aprovação da equipe do cliente):
+
+1. **ID da conta de anúncios** → `FB_AD_ACCOUNT_ID` (só números; o sistema põe o `act_`). Pedir **digitado**: lido de print, o leitor comeu um dígito e o Gerenciador abria outra conta (a do Nando). A certa é a que tem campanha ativa.
+2. No app (developers.facebook.com): **Casos de uso → Adicionar → "Criar e gerenciar anúncios com a API de Marketing"** — é o que libera `ads_read`.
+3. Contas de anúncios → a do cliente → **Atribuir pessoas** → o mesmo usuário do sistema do WhatsApp.
+4. Usuários do sistema → **Gerar token** (o app, Nunca, `ads_read`; a Meta trava outras marcadas, não tem problema) → **outro admin aprova em Pedidos** → gerar de novo → o dono cola: `vercel env add FB_ADS_TOKEN production --sensitive`. Deploy.
+5. Conferir logado: tela Tráfego mostra o investido. (`/api/meta/spend` pede login desde 28/09 — antes abria pra qualquer um.)
+
+**Pixel / API de Conversões** (`FB_PIXEL_ID`, `FB_CAPI_TOKEN`): só se o anúncio usa pixel. Ver no Gerenciador → anúncio → Editar → **Rastreamento** (e depois *Fechar*, nunca *Publicar*). Anúncio de clique-pro-WhatsApp não usa — foi o caso da Dani, e ficou sem.
+
 | Sintoma | Causa quase sempre |
 | --- | --- |
 | conectou, nenhuma mensagem entra | campo `messages` não assinado, ou verify token diferente |
