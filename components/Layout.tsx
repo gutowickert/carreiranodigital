@@ -230,7 +230,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
       '/dashboard/analise-conversao',
       '/dashboard/turmas', '/dashboard/chamada', '/dashboard/alunos',
       // o Mateus foi pro Deu Venda (27/09/2026): acompanha as entregas dos clientes
-      '/dashboard/entregas',
+      '/dashboard/entregas', '/dashboard/entregas/monitor',
     ]
     if (href === '/dashboard/whatsapp') return p.wa_caixa === true
     return doGestor.includes(href)
