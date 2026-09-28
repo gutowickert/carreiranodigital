@@ -231,6 +231,9 @@ function itemPermitido(href: string, p: Perfil): boolean {
       '/dashboard/turmas', '/dashboard/chamada', '/dashboard/alunos',
       // o Mateus foi pro Deu Venda (27/09/2026): acompanha as entregas dos clientes
       '/dashboard/entregas', '/dashboard/entregas/monitor',
+      // toda a área de Marketing (28/09/2026, pedido do Guto): disparos, listas, captação, tráfego, funil do site
+      '/dashboard/disparos', '/dashboard/agenda-disparos', '/dashboard/followup-templates', '/dashboard/disparos/relatorios',
+      '/dashboard/listas', '/dashboard/captacao', '/dashboard/trafego', '/dashboard/funil-site', '/dashboard/entregas/trafego',
     ]
     if (href === '/dashboard/whatsapp') return p.wa_caixa === true
     return doGestor.includes(href)
