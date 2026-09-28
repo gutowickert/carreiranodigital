@@ -255,7 +255,7 @@
           <h2>WhatsApp e a IA de vendas</h2>
           <p>O WhatsApp do Espaço entra no sistema pela API oficial da Meta. Pra cliente é o mesmo WhatsApp; a diferença é que a conversa aparece na tela WhatsApp, com a IA respondendo e vocês vendo tudo.</p>
         </div>
-        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Como funciona:</b> o número dela entra no sistema pela API oficial da Meta, no cadastro da empresa dela (não no nosso). Cada mensagem que chega é guardada, a IA lê a conversa inteira e decide a resposta. Quando uma pessoa responde por cima, o sistema marca aquela conversa como atendimento humano e a IA cala; ela só volta quando a cliente for movida pra uma etapa em que a IA atende. <b>Regras da Meta que valem saber:</b> responder dentro de 24 horas da última mensagem da cliente é livre; depois disso só sai mensagem de modelo aprovado. Áudio da cliente vira texto por um serviço de transcrição — sem ele, o áudio chega mudo. <b>Se parar de chegar mensagem de um dia pro outro:</b> quase sempre é a chave de acesso da Meta que venceu; troca pela permanente. <b>Coexistência:</b> o número continua no WhatsApp Business do celular e entra aqui ao mesmo tempo.</p></aside>
+        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Como funciona:</b> o número dela entra no sistema pela API oficial da Meta, no cadastro da empresa dela (não no nosso). Cada mensagem que chega é guardada, a IA lê a conversa inteira e decide a resposta. Quando uma pessoa responde por cima, o sistema marca aquela conversa como atendimento humano e a IA cala; ela só volta quando a cliente for movida pra uma etapa em que a IA atende. <b>Regras da Meta que valem saber:</b> responder dentro de 24 horas da última mensagem da cliente é livre; depois disso só sai mensagem de modelo aprovado. Áudio da cliente vira texto por um serviço de transcrição — sem ele, o áudio chega mudo. <b>Se parar de chegar mensagem de um dia pro outro:</b> quase sempre é a chave de acesso da Meta que venceu; troca pela permanente. <b>Coexistência:</b> o número continua no WhatsApp Business do celular e entra aqui ao mesmo tempo. <b>A chamada (Chamar):</b> é voz/vídeo direto entre os dois navegadores, sem telefonia; quem convidou grava em pedaços de 30 segundos, e ao encerrar o sistema junta, manda pro serviço de transcrição (o mesmo do áudio) com o nome de cada lado e grava no histórico da cliente — é esse texto que a IA lê depois. <b>Se não conectar:</b> as duas saem e entram de novo; no 4G ajuda um servidor de apoio (conta grátis na Cloudflare, ainda não configurado). <b>Sem transcrição:</b> o botão Transcrever refaz; se ninguém falou, fica vazio mesmo.</p></aside>
         <div class="bloco">
           <div class="dois">
             <div class="painel">
@@ -279,6 +279,16 @@
           </div>
           <div class="regra"><span class="k">→</span><div><b>Responder por cima dela:</b> em qualquer conversa, escreve e manda. A IA percebe que uma pessoa assumiu e fica quieta ali. Pra devolver pra IA, move a cliente pra uma etapa em que ela atende.</div></div>
           <p>A IA atende em <b>Não respondeu</b>, <b>Avaliação agendada</b>, <b>Faltou na avaliação</b> e <b>Pensando</b>. Em <b>Em conversa</b> e <b>Fechando</b>, quem fala é uma de vocês.</p>
+
+          <h3 style="margin-top:26px">Chamar a cliente por voz ou vídeo</h3>
+          <p>Quando uma conversa pede voz, vocês chamam a cliente pelo próprio sistema. Ela não precisa instalar nada: recebe um link no WhatsApp, toca e entra pelo celular.</p>
+          <ol class="passos">
+            <li><div><b>Tocar em Chamar</b>No cartão da cliente, na conversa do WhatsApp ou no Atender. Se quiser vídeo, marca antes.</div></li>
+            <li><div><b>O convite vai pelo WhatsApp</b>Na conversa, o link sai como mensagem. A cliente vê “Dani te convidou pra uma conversa”, com a logo do Espaço.</div></li>
+            <li><div><b>A tua tela abre numa aba nova</b>Ali tu espera ela entrar. Os botões são os de sempre: silenciar, câmera, encerrar.</div></li>
+            <li><div><b>Encerrou, ficou registrado</b>Em um ou dois minutos a conversa aparece no histórico da cliente: a gravação pra ouvir e o texto de tudo que foi dito, com o nome de quem falou.</div></li>
+          </ol>
+          <p class="muted">Todas as chamadas ficam em <b>Vendas → Chamadas</b>. Se a transcrição não vier, o botão <b>Transcrever</b> refaz. Se a chamada não conectar, as duas saem e entram de novo pelo mesmo link.</p>
         </div>
       </section>
 
@@ -335,7 +345,7 @@
           <h2>A cliente: ficha, jornada e check-in</h2>
           <p>A cliente não tem login. Recebe um link só dela pelo WhatsApp e abre no celular, sem senha.</p>
         </div>
-        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Só existe na Dani.</b> A cliente abre a ficha e a jornada por um link com um código só dela — sem senha, e o código não se adivinha. A jornada é montada a partir do que vocês lançam (sessões, medidas, exames) e do check-in que ela responde; existe uma lista fixa do que nunca aparece pra ela (grau de disbiose, a palavra "alterado", o registro interno da sessão) — isso é regra do sistema, não cuidado de quem digita. No check-in, cada resposta vale a posição dela na lista, e a última é sempre a melhor: por isso subir no gráfico é melhorar. <b>Em outro cliente</b> essa tela não existe — não prometer.</p></aside>
+        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Só existe na Dani.</b> A cliente abre a ficha e a jornada por um link com um código só dela — sem senha, e o código não se adivinha. A jornada é montada a partir do que vocês lançam (sessões, medidas, exames) e do check-in que ela responde; existe uma lista fixa do que nunca aparece pra ela (grau de disbiose, a palavra "alterado", o registro interno da sessão) — isso é regra do sistema, não cuidado de quem digita. No check-in, cada resposta vale a posição dela na lista, e a última é sempre a melhor: por isso subir no gráfico é melhorar. O botão <b>link</b> na lista só copia o link que ela já tem (é o mesmo código); não cria outro. <b>Em outro cliente</b> essa tela não existe — não prometer (na GAJA a área do cliente é outra: os seguros dele).</p></aside>
         <div class="bloco">
           <div class="dois">
             <div class="painel"><h3>A ficha</h3><p class="muted">A anamnese e os exames. Ela preenche em casa, no ritmo dela; vocês veem chegando.</p></div>
@@ -344,6 +354,7 @@
           <ol class="passos">
             <li><div><b>Mandar a ficha</b>No cartão da cliente, toca em enviar ficha. O link vai pelo WhatsApp.</div></li>
             <li><div><b>Acompanhar quem falta</b>A tela Área do cliente lista primeiro quem não abriu, depois quem está preenchendo, por último quem entregou.</div></li>
+            <li><div><b>Mandar o link de novo</b>Na Área do cliente, o botão <b>link</b> do lado de “card” copia o link da ficha da cliente. É só colar no WhatsApp dela.</div></li>
             <li><div><b>Lançar medidas e exames</b>Na tela de exames da cliente. A jornada dela atualiza sozinha.</div></li>
             <li><div><b>Registrar a sessão</b>O que foi feito e a observação interna.</div></li>
           </ol>

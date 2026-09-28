@@ -8,13 +8,19 @@ A regra de tudo: **toda conta é do cliente, no nome dele, paga por ele** (decid
 
 Se faltar, o sistema **não quebra, só finge que funciona**: os motores rodam no horário e não decidem nada.
 
+**O checklist completo dos 11 pré-requisitos** está em `setup-nucleo/SERVICOS-EXTERNOS.md` → "Checklist antes do PRIMEIRO USO" (nasceu dos esquecimentos de 27–28/09/2026: o crédito da Anthropic, a ligação da Dani, o endereço do login). **Passa por ele antes de marcar o primeiro uso, e avisa o dono do que depende dele.**
+
 | Item | Onde | Sem isso |
 | --- | --- | --- |
-| `ANTHROPIC_API_KEY` no nome do cliente, com limite de gasto | Vercel do cliente (`vercel env add ... production --sensitive`) | IA de vendas muda; Máquina responde "chave não instalada" |
+| `ANTHROPIC_API_KEY` no nome do cliente, com limite de gasto **e crédito** | Vercel do cliente (`vercel env add ... production --sensitive`) | IA de vendas muda; Máquina responde "chave não instalada"; chave sem crédito é recusada calada |
 | `DEEPGRAM_API_KEY` | Vercel | áudio do cliente chega mudo; Falar na Máquina não transcreve |
 | WhatsApp oficial (5 variáveis `WA_OFICIAL_*` + 3 `META_*`) | Vercel + app Meta do cliente | nenhuma conversa entra |
-| Domínio com a marca do cliente | Vercel → Domains | o link vai pro cliente final com `crm-x.vercel.app` |
-| Login de cada usuário, com o papel certo; o de suporte se chama "Suporte CND" | Ajustes → Usuários | ninguém entra |
+| Endereço com a marca do cliente | `npx vercel domains add <marca>.vercel.app <projeto>` (grátis, na hora) ou domínio próprio (`sistema.<marca>.com.br`: CNAME → `cname.vercel-dns.com` no registro.br dele) | o link vai pro cliente final com `crm-x.vercel.app` |
+| O endereço novo em 4 lugares | `NEXT_PUBLIC_BASE_URL` (e republicar); os agendamentos (`cron.alter_job`, o `update` direto em `cron.job` é recusado); a escola em Sistemas → Clientes; **Supabase → Authentication → URL Configuration**: Site URL e Redirect URLs (`/**`, o novo e o antigo) | o "esqueci a senha" manda pro endereço errado — já achamos `localhost:3000` na Dani |
+| Ligação | **chamada pelo navegador** (`26-chamadas.sql`, Deepgram) ou API4COM (`API4COM_TOKEN`) | o botão Ligar aparece e não liga |
+| Servidor de apoio das chamadas (TURN) | conta grátis na Cloudflare → `CF_TURN_KEY_ID` e `CF_TURN_API_TOKEN` | a chamada falha às vezes no 4G |
+| Login de cada usuário, com o papel certo; o de suporte se chama "Suporte CND" e é protegido (`25-conta-suporte-protegida.sql`) | Ajustes → Usuários | ninguém entra; o dono pode desativar o suporte sem querer |
+| Cadência de follow-up | Ajustes → Fluxo Comercial | o motor da manhã avisa "cadência não definida" e nenhum follow-up sai |
 | *O que a IA sabe* preenchido | Inteligência Artificial → O que a IA sabe | a IA responde "não sei" pra tudo |
 | Produtos com preço | Vendas → Produtos | a IA não fala valor |
 | Etapas com "IA atende" marcado onde ela conduz | Ajustes → Etapas do Funil | a IA não responde em etapa nenhuma |
@@ -80,6 +86,17 @@ O modelo é o Sonnet 4.6 (o Sonnet 5 escreveu mais longo e estourou o limite no 
 
 Custo em *Custo da IA*, linha `maquina`, por pessoa: geral US$ 0,02–0,10 por pergunta e ~US$ 0,05 pra acordar depois de 1h; marketing US$ 0,37 pra acordar e US$ 0,03–0,10 por volta.
 
+## Chamadas por voz e vídeo (no lugar da telefonia)
+
+A ligação do sistema é **pelo navegador**: o botão **Chamar** (cartão do lead, conversa do WhatsApp, Atender, Fila de ligações) cria um link `/conversa/<codigo>`, que vai pelo WhatsApp com a prévia da marca do cliente ("Dani te convidou pra uma conversa"). O cliente toca e entra, sem instalar nada; voz ou vídeo. Quem convidou grava; ao encerrar, a gravação é juntada, transcrita na Deepgram com o nome de quem falou e vai pra `ligacoes` — o histórico do lead que a IA lê. Não precisa de API4COM nem de número de telefone.
+
+1. `setup-nucleo/26-chamadas.sql` no Supabase do cliente (tabela protegida + pasta de gravações privada).
+2. `DEEPGRAM_API_KEY` (a transcrição). Sem ela, grava e não transcreve.
+3. Recomendado: servidor de apoio da Cloudflare (`CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`), grátis até 1 TB/mês. Sem ele usa um público que falha às vezes no 4G.
+4. Testar com dois aparelhos antes do primeiro uso: Chamar → mandar o link → os dois entram → falar → encerrar → em 1–2 minutos aparece no histórico do lead com a transcrição.
+
+O nome de quem convida vem do login (o Suporte CND aparece como "Suporte" pro cliente — pra teste, tudo bem; no dia a dia quem chama é a pessoa do cliente). A tela da chamada tem a assinatura discreta da CarreiraNoDigital.
+
 ## Notificações no celular
 
 Chaves VAPID geradas na instalação; `db/push.sql`. Cada pessoa liga o próprio aparelho: fim do menu → *Notificações no celular* → Ligar. **iPhone**: só com o sistema adicionado à Tela de Início e **aberto pelo ícone**. Quando não chega: (1) Ligar feito naquele aparelho? (2) iPhone pelo ícone? (3) permissão do navegador? (4) desliga e liga de novo; (5) `VAPID_*` e `push.sql`.
@@ -93,7 +110,7 @@ Chaves VAPID geradas na instalação; `db/push.sql`. Cada pessoa liga o próprio
 | 30–45 | *O que a IA sabe*: ler uma seção, mudar uma linha, ver a IA usar | eles mudam |
 | 45–70 | o tour pelo manual: Painel, IA pediu ajuda, Funil (mover, marcar venda de teste), Tarefas | eles clicam |
 | 70–85 | Máquina CND: "como foi a semana?" e "como faço pra…" | eles perguntam |
-| 85–100 | notificações no celular de cada um | eles |
+| 85–100 | notificações no celular de cada um; uma **chamada de teste** (Chamar → link no celular de alguém) | eles |
 | 100–110 | contrato assinado pelo sistema | ele |
 | 110–120 | combinar a leitura do mês, o canal de suporte, e as 3 coisas de amanhã | tu |
 
@@ -119,6 +136,9 @@ O que não fazer no dia: mexer em código, criar etapa nova na hora, prometer in
 | A Máquina pode estragar alguma coisa? | Não consegue: não tem acesso a código nem configuração, e tudo que muda passa pelo Confirmar. |
 | E se eu quiser sair? | Os dados são teus e o banco é teu. |
 | Quantas pessoas podem usar? | Quantas quiser, sem custo por pessoa. |
+| Preciso de telefonia pra ligar pro cliente? | Não. O Chamar manda um link; o cliente entra pelo navegador, com voz ou vídeo, e a conversa fica gravada e escrita no histórico. |
+| O meu cliente precisa instalar alguma coisa? | Não. Toca no link, libera o microfone e entra. |
+| O sistema muda depois de instalado? | Muda com vocês: cada ajuste que pedirem ganha um número de versão (aparece no rodapé do menu) pra vocês saberem o que mudou. |
 
 ## Quando quebra: onde olhar primeiro
 
@@ -132,6 +152,10 @@ O que não fazer no dia: mexer em código, criar etapa nova na hora, prometer in
 | notificação não chega | botão Ligar no aparelho | iPhone fora do ícone, permissão, inscrição antiga |
 | áudio sem texto | Vercel env | falta `DEEPGRAM_API_KEY` |
 | erro 500 | Vercel Logs | migração SQL não rodada, env faltando |
+| a chamada não conecta | sair e entrar de novo dos dois lados | logo depois de publicar/ligar o servidor falha às vezes; no 4G, falta o servidor de apoio (Cloudflare) |
+| chamada sem transcrição | Vercel env; tela Chamadas → Transcrever | falta `DEEPGRAM_API_KEY`, ou ninguém falou |
+| o motor da manhã não fez follow-up | Supabase: `net._http_response` (o registro do motor) | "parou sem progresso": falta crédito/chave da IA; "cadência não definida": montar o Fluxo Comercial |
+| o "esqueci a senha" abre página errada | Supabase → Authentication → URL Configuration | Site URL velho (`localhost:3000`) |
 
 O que dizer ao cliente: "já vi, é X, volto em N minutos", com o X nomeado. Depois de consertar, uma linha na ficha do projeto.
 
@@ -148,4 +172,4 @@ A leitura do mês (dias 30 e 60) leva o que a automação fez e o que deu de luc
 | onde o funil vaza | Análise de Conversão |
 | quanto a IA custou | Custo da IA |
 
-O jeito rápido: na Máquina, "me conta como foi o mês: vendas, o que a IA atendeu, o que se perdeu, quanto custou". Fecha com **uma mudança** combinada. A trimestral (dia 90) é o placar dos 90 dias, antes e depois, e a mensalidade daqui pra frente — sai com a leitura mensal seguinte marcada.
+O jeito rápido: na Máquina, "me conta como foi o mês: vendas, o que a IA atendeu, o que se perdeu, quanto custou". Fecha com **uma mudança** combinada. Toda mudança depois do primeiro uso sobe a versão (`npm version patch --no-git-tag-version` no mesmo commit) e entra nos manuais na mesma hora. A trimestral (dia 90) é o placar dos 90 dias, antes e depois, e a mensalidade daqui pra frente — sai com a leitura mensal seguinte marcada.
