@@ -6,7 +6,8 @@ import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { temProposta, resumoDoProduto, exigeTurma } from '@/lib/proposta-produtos'
 import { logIaUso } from '@/lib/ia-uso'
 
-export const maxDuration = 60
+// 120 e não 60: se a primeira resposta vier cortada, tenta de novo sozinho (ver abaixo)
+export const maxDuration = 120
 
 // Gera o RASCUNHO do orçamento: a capa e a página de objeções, a partir do que a pessoa já disse.
 // O resto da proposta (o que é, como funciona, investimento, aceite) é modelo fixo — não passa pela
@@ -259,7 +260,7 @@ export async function POST(req: Request) {
       ].filter(Boolean).join('\n')
 
       const client = new Anthropic({ apiKey: key })
-      const resp = await client.messages.create({
+      const pedirIA = () => client.messages.create({
         model: MODELO,
         // 4000 e não 2048: com uma ligação longa a resposta batia no teto, era cortada no meio e o
         // JSON chegava quebrado — a proposta saía vazia sem ninguém entender por quê (18/09/2026).
@@ -267,6 +268,14 @@ export async function POST(req: Request) {
         system: SYSTEM,
         messages: [{ role: 'user', content: pedido }],
       })
+      let resp = await pedirIA()
+      // CORTADA? TENTA DE NOVO SOZINHO (28/09/2026, proposta da Grace Rocha): o MESMO pedido deu 4000
+      // (cortado) às 11h20 e 1996 (inteiro) às 11h22. Não é excesso de material — às vezes a IA só se
+      // alonga. Uma segunda tentativa resolve quase sempre, e a pessoa nem vê o erro.
+      if (resp.stop_reason === 'max_tokens') {
+        await logIaUso('orcamento-falhou', MODELO, resp.usage, { lead_id: leadId, motivo: 'resposta cortada — tentando de novo' })
+        resp = await pedirIA()
+      }
       usoIA = resp.usage
       const raw = (resp.content || []).map((c: any) => (c.type === 'text' ? c.text : '')).join('').trim()
       const out = jsonDaResposta(raw)
@@ -278,7 +287,7 @@ export async function POST(req: Request) {
         return NextResponse.json({
           ok: false,
           error: resp.stop_reason === 'max_tokens'
-            ? 'A IA escreveu demais e a resposta foi cortada. Tenta de novo marcando menos material.'
+            ? 'A IA se estendeu demais duas vezes seguidas e a resposta foi cortada. Tenta de novo.'
             : 'A IA respondeu num formato que eu não consegui ler. Tenta de novo.',
         }, { status: 200 })
       }
