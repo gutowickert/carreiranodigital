@@ -90,6 +90,31 @@ async function registrarNoLead(ch: any): Promise<string | null> {
   return lig?.id || null
 }
 
+// A REDE DE SEGURANÇA (28/09/2026): a chamada só era processada quando quem convidou clicava em
+// Encerrar. Fechou a aba, acabou a bateria, caiu a internet: a gravação ficava no Storage e nunca
+// virava histórico do lead (uma do Rick ficou assim). Aqui fecha as que estão paradas — sem pedaço
+// novo há `minutos` — e as encerradas que não terminaram de processar. Roda ao abrir a tela Chamadas
+// e no motor da manhã/noite. O nome de cada pedaço é o instante (s) em que ele fechou.
+export async function fecharEsquecidas(minutos = 10) {
+  const limite = Date.now() - minutos * 60000
+  const { data } = await sb.from('chamadas').select('codigo, status, encerrada_em, pedacos')
+    .in('status', ['aguardando', 'em_andamento', 'encerrada']).gt('pedacos', 0).limit(50)
+  let fechadas = 0
+  for (const c of data || []) {
+    if (c.status === 'encerrada') {
+      // encerrou mas o processamento não terminou (o servidor caiu no meio): refaz depois de 15 min
+      if (c.encerrada_em && +new Date(c.encerrada_em) < Date.now() - 15 * 60000) { await finalizarChamada(c.codigo); fechadas++ }
+      continue
+    }
+    const { data: lista } = await sb.storage.from(BUCKET).list(c.codigo, { limit: 1000 })
+    const ult = Math.max(0, ...(lista || []).map(f => /^\d+\.webm$/.test(f.name) ? Number(f.name.replace('.webm', '')) : 0))
+    if (!ult || ult * 1000 > limite) continue
+    await sb.from('chamadas').update({ status: 'encerrada', encerrada_em: new Date(ult * 1000).toISOString() }).eq('codigo', c.codigo).in('status', ['aguardando', 'em_andamento'])
+    await finalizarChamada(c.codigo); fechadas++
+  }
+  return fechadas
+}
+
 // VINCULAR a um lead uma chamada feita "avulsa" (só com nome): passa a contar no histórico dele.
 export async function vincularChamadaAoLead(codigo: string, lead_id: string, org: string) {
   const ch = await chamadaPorCodigo(codigo)

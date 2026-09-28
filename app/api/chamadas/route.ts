@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao, meuPerfil } from '@/lib/quem-eu-vejo'
-import { criarChamada, urlGravacao, vincularChamadaAoLead } from '@/lib/chamadas'
+import { fecharEsquecidas, criarChamada, urlGravacao, vincularChamadaAoLead } from '@/lib/chamadas'
 
 // o endereço dos links: domínio próprio da escola quando configurado (LINK_BASE_URL), senão o do sistema.
 // O caminho é /conversa/<codigo> (rewrite pra /call no next.config).
@@ -17,6 +17,7 @@ export async function GET(req: Request) {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
     const org = await orgDaRequest(auth)
+    after(async () => { try { await fecharEsquecidas() } catch { /* fica pro motor */ } })
     const { data } = await sb.from('chamadas').select('id, codigo, chave_host, lead_id, lead_nome, telefone, criado_por_nome, com_video, status, criado_em, iniciada_em, encerrada_em, duracao_seg, pedacos, gravacao_path, transcricao, erro')
       .eq('org_id', org).order('criado_em', { ascending: false }).limit(50)
     const origem = baseLink(req)

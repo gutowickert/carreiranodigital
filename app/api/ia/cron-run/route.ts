@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { fecharEsquecidas } from '@/lib/chamadas'
 
 export const maxDuration = 60
 
@@ -53,6 +54,8 @@ export async function POST(req: NextRequest) {
       await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5 })
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     }
+    // chamada que ninguém encerrou (aba fechada, bateria): fecha, transcreve e manda pro card do lead
+    try { const n = await fecharEsquecidas(); if (n) log.push(`chamadas esquecidas → ${n} fechadas`) } catch { /* não derruba o motor */ }
     return NextResponse.json({ ok: true, fase, gastou_ms: Date.now() - t0, log })
   } catch (e: any) {
     return NextResponse.json({ ok: false, fase, error: e?.message || 'erro', log }, { status: 200 })

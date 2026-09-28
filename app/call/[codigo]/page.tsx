@@ -127,6 +127,18 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   useEffect(() => { if (vLocal.current && local.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true } }, [fase, preparado, temVideoLocal])
 
   const enviar = (s: Omit<Sinal, 'sess' | 'de'>) => canal.current?.send({ type: 'broadcast', event: 'sinal', payload: { ...s, de: papel.current, sess: sessao.current } })
+  // FECHOU A ABA (28/09/2026): sem isto a chamada só era processada no botão Encerrar, e quem fechava
+  // a aba deixava a gravação órfã. sendBeacon é o único envio que o navegador garante na saída.
+  // Só se já estava gravando — senão abrir e fechar o link criaria uma "ligação de 0s" no card.
+  useEffect(() => {
+    const sair = () => {
+      if (papel.current !== 'host' || encerrouEu.current || !rec.current) return
+      try { navigator.sendBeacon(`/api/chamadas/${codigo}`, new Blob([JSON.stringify({ acao: 'encerrar', h })], { type: 'application/json' })) } catch { /* a rede de segurança fecha depois */ }
+    }
+    window.addEventListener('pagehide', sair)
+    return () => window.removeEventListener('pagehide', sair)
+  }, [codigo, h])
+
   const post = (body: any) => fetch(`/api/chamadas/${codigo}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, h }) }).catch(() => null)
 
   // ── a conexão: criada ao entrar e RECRIADA sempre que o outro lado chega com sessão nova
