@@ -10,6 +10,7 @@ import { lerRespostaDeReconfirmacao } from '@/lib/reconfirmar'
 import { ORG_CND } from '@/lib/org'
 import { usuarioDoNumero, responder as responderAssistente } from '@/lib/assistente'
 import { processarFds, naJanela } from '@/lib/ia-fds'
+import { tocarCampainha } from '@/lib/campainha'
 
 // a IA do fim de semana espera ~45s o lead terminar de escrever antes de agir (lib/ia-fds.ts)
 export const maxDuration = 120
@@ -119,6 +120,8 @@ async function registrarRecebida(m: any, value: any) {
   if (tipo === 'audio' && msgIns?.id) {
     after(async () => { try { await transcreverAudioMsg(msgIns.id) } catch { /* melhor esforço */ } })
   }
+  // campainha: as abas abertas do sistema conferem o WhatsApp NA HORA (lib/campainha.ts)
+  after(tocarCampainha)
   const resumo = texto || (tipo === 'imagem' ? '📷 Imagem' : tipo === 'audio' ? '🎤 Áudio' : tipo === 'video' ? '🎬 Vídeo' : tipo === 'documento' ? '📎 Documento' : '')
   await supabase.from('wa_conversas').update({
     ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),

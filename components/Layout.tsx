@@ -19,6 +19,7 @@ import {
   Server,
   type LucideIcon,
 } from 'lucide-react'
+import { CANAL_CAMPAINHA } from '@/lib/campainha'
 
 const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 
@@ -340,8 +341,18 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
       waPrevRef.current = total
     }
     checar()
-    const t = setInterval(checar, 12000)
-    return () => { ativo = false; clearInterval(t) }
+    // CAMPAINHA (28/09/2026): o servidor avisa na hora que chega mensagem (lib/campainha.ts) — o bipe
+    // sai em ~1s em vez de até 12s. Com ela ouvindo, a conferência periódica cai pra 1 min; se ela
+    // não conectar ou cair, volta a conferir a cada 12s como antes. Nunca fica pior.
+    let ouvindo = false, ultima = Date.now()
+    const canal = supabase.channel(CANAL_CAMPAINHA)
+      .on('broadcast', { event: 'nova' }, () => { ultima = Date.now(); checar() })
+      .subscribe(st => { ouvindo = st === 'SUBSCRIBED' })
+    const t = setInterval(() => {
+      if (ouvindo && Date.now() - ultima < 60000) return
+      ultima = Date.now(); checar()
+    }, 12000)
+    return () => { ativo = false; clearInterval(t); supabase.removeChannel(canal) }
   }, [perfil])
 
   // Balão da Agenda. Pergunta ao servidor a cada minuto (agenda muda devagar — o WhatsApp é que
@@ -447,7 +458,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                 ? <img src={marca.logo_url} alt={marca.nome || ''} style={{ height: 24, maxWidth: 150, objectFit: 'contain' }} />
                 : (marca && marca.id !== CND_ID)
                   ? <span className="display" style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{marca.nome}</span>
-                  : <img src="/logo.png" alt="Carreira no Digital" style={{ height: 22, filter: 'drop-shadow(0 1px 0 rgba(0,0,0,.4))' }} />}
+                  : <img src="/logo-menu.png" alt="Carreira no Digital" style={{ height: 22, filter: 'drop-shadow(0 1px 0 rgba(0,0,0,.4))' }} />}
             </Link>
             <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
               <button onClick={() => setPaletaAberta(true)} aria-label="Buscar tela ou lead" className="app-topo-btn"><Search size={20} strokeWidth={1.9} /></button>
@@ -571,7 +582,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                 ? <Logo3D src={marca.logo_url} largura={160} />
                 : (marca && marca.id !== CND_ID)
                   ? <Logo3D texto={marca.nome} largura={160} />
-                  : <Logo3D src="/logo.png" largura={160} />}
+                  : <Logo3D src="/logo-menu.png" largura={160} />}
             </div>
 
             {/* a caixa de busca: só abre a paleta (⌘K) — a busca de verdade acontece lá */}

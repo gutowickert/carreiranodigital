@@ -58,6 +58,11 @@ const ETAPAS = [
   { id: 'perda', label: 'Perda', cor: 'var(--red)', bg: 'var(--red-bg)' },
 ]
 
+// Os campos que o funil e o cartão do lead leem. Tudo de `leads` MENOS resumo_ia (pesado; o cartão
+// busca o dele), resposta_formulario e os cookies fbc/fbp. ⚠️ Coluna nova em `leads` que alguma tela
+// do funil precise ler tem que entrar aqui — senão chega vazia.
+const CAMPOS_LEAD = 'id,nome,whatsapp,email,origem,campanha,utm_source,utm_campaign,utm_medium,utm_content,turma_id,codigo_turma,vendedor_id,etapa,motivo_perda_id,mensagem_inicial,matricula_id,valor_venda,data_ganho,data_perda,observacoes,criado_em,atualizado_em,motivo_ganho,fbclid,prazo_prometido,tamanho_equipe,investimento_marketing,gera_leads_digital,maior_problema,negocio,qualificacao,nao_lida,resumo_ia_em,atendido_por,org_id,handoff_motivo,handoff_em,ajuda_de,ajuda_nota,ajuda_em'
+
 const ETAPAS_KANBAN = ETAPAS.filter(e => e.id !== 'ganho' && e.id !== 'perda')
 
 const ORIGEM_LABEL: Record<string, string> = {
@@ -185,42 +190,60 @@ export default function CRM() {
     await Promise.all([carregarLeads(), carregarTurmas(), carregarVendedores(), carregarMotivos()])
   }
 
+  // Cada carga ganha um número: se o funil recarregar no meio (mudou etapa, salvou lead), a carga
+  // velha que terminar depois não sobrescreve a nova.
+  const cargaAtual = useRef(0)
+
   async function carregarLeads() {
-    // O banco devolve no máximo 1000 linhas por consulta, e não avisa. Sem paginar, quando a base passou
-    // de 1000 os leads mais antigos sumiam do funil e da busca dele (caso do Adrian, 16/09/2026).
-    // `id` desempata a ordem, pra nenhum lead repetir ou pular entre uma página e outra.
-    const data: any[] = []
-    for (let de = 0; ; de += 1000) {
-      const { data: pagina } = await supabase.from('leads')
-        .select('*, turmas(id, codigo, produtos(nome), cidades(nome))')
-        .order('criado_em', { ascending: false })
-        .order('id', { ascending: true })
-        .range(de, de + 999)
-      if (!pagina) { if (!data.length) return; break }
-      data.push(...pagina)
-      if (pagina.length < 1000) break
+    const carga = ++cargaAtual.current
+    // FUNIL LEVE (28/09/2026 — a tela levava 4s e baixava 2,7 MB):
+    //  1. Só os campos que alguma tela lê. Ficam de fora o resumo da IA (877 KB — o cartão busca o
+    //     dele em /api/lead/resumo), as respostas cruas do formulário e os cookies fbc/fbp do
+    //     Facebook (o fbclid fica: o cartão mostra "fbclid ✓").
+    //  2. Em duas levas: primeiro os ATIVOS (as colunas aparecem e o time já trabalha), depois os
+    //     finalizados (ganho/perda, ~3/4 da base) — que só aparecem em "Mostrar finalizados", na busca
+    //     e nos contadores, e chegam um instante depois.
+    const buscar = async (finalizados: boolean) => {
+      // O banco devolve no máximo 1000 linhas por consulta, e não avisa. Sem paginar, quando a base passou
+      // de 1000 os leads mais antigos sumiam do funil e da busca dele (caso do Adrian, 16/09/2026).
+      // `id` desempata a ordem, pra nenhum lead repetir ou pular entre uma página e outra.
+      const data: any[] = []
+      for (let de = 0; ; de += 1000) {
+        let q = supabase.from('leads').select(`${CAMPOS_LEAD}, turmas(id, codigo, produtos(nome), cidades(nome))`)
+        q = finalizados ? q.in('etapa', ['ganho', 'perda']) : q.not('etapa', 'in', '(ganho,perda)')
+        const { data: pagina } = await q.order('criado_em', { ascending: false }).order('id', { ascending: true }).range(de, de + 999)
+        if (!pagina) { if (!data.length) return null; break }
+        data.push(...pagina)
+        if (pagina.length < 1000) break
+      }
+      // Pra cada lead, verifica se tem tarefa atrasada — em blocos: a lista inteira de ids não cabe numa consulta
+      const leadIds = data.map((l: any) => l.id)
+      const blocos: string[][] = []
+      for (let i = 0; i < leadIds.length; i += 200) blocos.push(leadIds.slice(i, i + 200))
+      const tarefasAtrasadas = (await Promise.all(blocos.map(ids => supabase.from('tarefas_lead')
+        .select('lead_id')
+        .in('lead_id', ids)
+        .eq('concluida', false)
+        .eq('cancelada', false)
+        .lt('data_vencimento', new Date().toISOString())
+        .then(r => r.data || []))))
+        .flat()
+      const leadsComTarefaAtrasada = new Set(tarefasAtrasadas?.map((t: any) => t.lead_id) || [])
+      return data.map((l: any) => ({ ...l, temTarefaAtrasada: leadsComTarefaAtrasada.has(l.id) }))
     }
+    const ordem = (a: any, b: any) => (b.criado_em || '').localeCompare(a.criado_em || '') || (a.id < b.id ? -1 : 1)
 
-    // Pra cada lead, verifica se tem tarefa atrasada — em blocos: a lista inteira de ids não cabe numa consulta
-    const leadIds = data.map((l: any) => l.id)
-    const blocos: string[][] = []
-    for (let i = 0; i < leadIds.length; i += 200) blocos.push(leadIds.slice(i, i + 200))
-    const tarefasAtrasadas = (await Promise.all(blocos.map(ids => supabase.from('tarefas_lead')
-      .select('lead_id')
-      .in('lead_id', ids)
-      .eq('concluida', false)
-      .eq('cancelada', false)
-      .lt('data_vencimento', new Date().toISOString())
-      .then(r => r.data || []))))
-      .flat()
-
-    const leadsComTarefaAtrasada = new Set(tarefasAtrasadas?.map((t: any) => t.lead_id) || [])
-    const leadsEnriquecidos = data.map((l: any) => ({
-      ...l,
-      temTarefaAtrasada: leadsComTarefaAtrasada.has(l.id),
-    }))
-
-    setLeads(leadsEnriquecidos as any)
+    const ativos = await buscar(false)
+    if (!ativos || carga !== cargaAtual.current) return
+    setLeads(prev => {
+      // mantém os finalizados que já estavam na tela até a segunda leva chegar (numa recarga, a
+      // coluna "finalizados" não pisca vazia)
+      const fins = prev.filter((l: any) => l.etapa === 'ganho' || l.etapa === 'perda')
+      return [...ativos, ...fins].sort(ordem) as any
+    })
+    const fins = await buscar(true)
+    if (!fins || carga !== cargaAtual.current) return
+    setLeads([...ativos, ...fins].sort(ordem) as any)
   }
 
   async function carregarTurmas() {

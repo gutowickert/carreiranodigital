@@ -42,7 +42,7 @@ export default function Login() {
         }}>
           <Circuito />
           <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', padding: '6px 0' }}>
-            <Logo3D src="/logo.png" largura={250} inclinacao={[12, -20]} />
+            <Logo3D src="/logo-menu.png" largura={250} inclinacao={[12, -20]} />
           </div>
           <div style={{ position: 'relative' }}>
             <h1 className="display" style={{ fontSize: 'clamp(28px, 3.6vw, 40px)', fontWeight: 800, lineHeight: 1, margin: 0, maxWidth: '13ch', textShadow: '0 2px 0 rgba(0,0,0,.25), 0 12px 30px rgba(0,0,0,.35)' }}>
