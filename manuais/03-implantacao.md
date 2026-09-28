@@ -96,7 +96,7 @@ A ligação do sistema é **pelo navegador**: o botão **Chamar** (cartão do le
 4. **Nenhuma chamada se perde**: se quem convidou fechar a aba sem Encerrar, a tela avisa o servidor na saída; e se mesmo assim uma ficar parada (bateria, internet), o sistema fecha, transcreve e manda pro card sozinho depois de 10 minutos sem gravação nova (ao abrir a tela Chamadas e no motor da manhã/noite). O que se perde é só o finalzinho que ainda não tinha subido (até 30 s).
 5. Testar com dois aparelhos antes do primeiro uso: Chamar → mandar o link → os dois entram → falar → encerrar → em 1–2 minutos aparece no histórico do lead com a transcrição.
 
-O nome de quem convida vem do login (o Suporte CND aparece como "Suporte" pro cliente — pra teste, tudo bem; no dia a dia quem chama é a pessoa do cliente). A tela da chamada tem a assinatura discreta da CarreiraNoDigital.
+O nome de quem convida vem do login (o Suporte CND aparece como "Suporte" pro cliente — pra teste, tudo bem; no dia a dia quem chama é a pessoa do cliente). A tela da chamada mostra **a logo da empresa** no topo (do cadastro; sem logo, o nome) e a assinatura discreta da CarreiraNoDigital; a prévia do link no WhatsApp também leva a assinatura, no pé. Na escola, a tela tem a logo da Carreira no Digital e a mesma assinatura.
 
 ## Notificações no celular
 
