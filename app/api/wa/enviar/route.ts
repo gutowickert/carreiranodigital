@@ -7,7 +7,7 @@ import { enviarTexto as enviarTextoOf, enviarMidia as enviarMidiaOf, uploadMidia
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { telefone, texto, audioBase64, anexoBase64, anexoNome, anexoTipo, leadId, chatLid, enviadoPor } = body
+    const { telefone, texto, preview, audioBase64, anexoBase64, anexoNome, anexoTipo, leadId, chatLid, enviadoPor } = body
     const org = await orgDaRequest(req.headers.get('authorization'))
 
     let fone = (telefone || '').toString()
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
       ro = await enviarMidiaOf(to, tipoEnvio, up.id, texto?.trim() || undefined, anexoNome)
       tipoMsg = ehAudio ? 'audio' : (anexoTipo === 'imagem' ? 'imagem' : 'documento')
     } else {
-      ro = await enviarTextoOf(to, (texto || '').trim())
+      ro = await enviarTextoOf(to, (texto || '').trim(), { preview: !!preview })
     }
     if (!ro.ok) return NextResponse.json({ ok: false, error: ro.error || 'falha ao enviar', foraJanela: /131047|131026|131051|re-?engag|template|outside|24\s*hour|janela/i.test(ro.error || '') }, { status: 200 })
 

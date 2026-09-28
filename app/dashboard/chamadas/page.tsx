@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
 import { BuscarLead, type LeadAchado } from '@/components/BuscarLead'
+import { textoConvite } from '@/components/BotaoChamada'
 
 // CHAMADAS: criar o link, mandar pro lead, entrar, e depois ouvir e ler a transcrição.
 // A conversa cai sozinha no histórico do lead (ligacoes), que a IA e o dossiê já leem.
@@ -26,11 +27,12 @@ export default function Chamadas() {
   const [transcrevendo, setTranscrevendo] = useState<string | null>(null)
   const [vinculando, setVinculando] = useState<string | null>(null)   // codigo da chamada avulsa que está escolhendo lead
   const [msg, setMsg] = useState('')
+  const [empresa, setEmpresa] = useState('')
 
   async function carregar() {
     setCarregando(true)
     const j = await fetchAuth('/api/chamadas').then(r => r.json()).catch(() => null)
-    if (j?.ok) setLista(j.chamadas || [])
+    if (j?.ok) { setLista(j.chamadas || []); setEmpresa(j.empresa || '') }
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
@@ -60,7 +62,7 @@ export default function Chamadas() {
     setVinculando(null); setMsg(j?.ok ? `Vinculada a ${l.nome}.` : (j?.error || 'não consegui vincular')); carregar()
   }
   const copiar = (t: string) => { navigator.clipboard?.writeText(t); setMsg('Link copiado.'); setTimeout(() => setMsg(''), 1500) }
-  const zap = (tel: string | null, link: string, nome: string) => `https://wa.me/${(tel || '').replace(/\D/g, '')}?text=${encodeURIComponent(`Oi${nome ? ', ' + nome.split(' ')[0] : ''}! Vamos conversar por aqui, é só abrir o link e clicar em Entrar na chamada: ${link}`)}`
+  const zap = (tel: string | null, link: string, nome: string, quem?: string | null) => `https://wa.me/${(tel || '').replace(/\D/g, '')}?text=${encodeURIComponent(textoConvite(nome, link, quem, empresa))}`
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1100, margin: '0 auto' }}>
@@ -100,7 +102,7 @@ export default function Chamadas() {
               <div style={{ fontSize: 15, fontWeight: 800, color: 'var(--text)' }}>Chamada com {criada.nome} criada.</div>
               <div style={{ fontSize: 13, color: 'var(--text-2)', marginTop: 6, lineHeight: 1.6 }}>1. Manda o link pro lead. 2. Entra na tua ponta. Quando os dois estiverem dentro, conecta sozinho.</div>
               <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap', alignItems: 'center' }}>
-                <a href={zap(criada.telefone, criada.link_lead, criada.nome)} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--green)', color: '#fff', textDecoration: 'none' }}>Mandar no WhatsApp</a>
+                <a href={zap(criada.telefone, criada.link_lead, criada.nome, criada.quem)} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--green)', color: '#fff', textDecoration: 'none' }}>Mandar no WhatsApp</a>
                 <button onClick={() => copiar(criada.link_lead)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Copiar link do lead</button>
                 <a href={criada.link_host} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--accent)', color: '#fff', textDecoration: 'none' }}>Entrar na chamada</a>
                 {msg && <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{msg}</span>}
@@ -126,7 +128,7 @@ export default function Chamadas() {
                   </div>
                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
                     {['aguardando', 'em_andamento'].includes(c.status) && <>
-                      <a href={zap(c.telefone, c.link_lead, c.lead_nome || '')} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>
+                      <a href={zap(c.telefone, c.link_lead, c.lead_nome || '', c.criado_por_nome)} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', textDecoration: 'none' }}>WhatsApp</a>
                       <button onClick={() => copiar(c.link_lead)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>copiar link</button>
                       <a href={c.link_host} target="_blank" rel="noopener" style={{ ...btn, background: 'var(--accent)', color: '#fff', textDecoration: 'none' }}>Entrar</a>
                     </>}

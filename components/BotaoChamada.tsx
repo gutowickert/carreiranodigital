@@ -18,15 +18,16 @@ type Props = {
   style?: React.CSSProperties
 }
 
-export const textoConvite = (nome: string | null | undefined, link: string) =>
-  `Oi${nome ? ', ' + nome.trim().split(' ')[0] : ''}! Vamos conversar por aqui, é só abrir o link e clicar em Entrar na chamada: ${link}`
+// quem chama e de onde vem logo na primeira linha: um link de gente desconhecida parece vírus
+export const textoConvite = (nome: string | null | undefined, link: string, quem?: string | null, empresa?: string | null) =>
+  `Oi${nome ? ', ' + nome.trim().split(' ')[0] : ''}!${quem ? ` Aqui é ${quem.trim().split(' ')[0]}${empresa ? `, da ${empresa}` : ''}.` : ''} Nossa conversa vai ser por uma chamada aqui mesmo no navegador, sem precisar instalar nada. É só tocar no link abaixo e depois em Entrar:\n\n${link}`
 
 export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, compacto, style }: Props) {
   const [aberto, setAberto] = useState(false)
   const [video, setVideo] = useState(false)
   const [criando, setCriando] = useState(false)
   const [erro, setErro] = useState('')
-  const [links, setLinks] = useState<{ lead: string; host: string; telefone: string | null; nome: string | null } | null>(null)
+  const [links, setLinks] = useState<{ lead: string; host: string; telefone: string | null; nome: string | null; quem?: string | null; empresa?: string | null } | null>(null)
   const [copiado, setCopiado] = useState(false)
   const [mandado, setMandado] = useState('')
   const caixa = useRef<HTMLDivElement>(null)
@@ -44,7 +45,7 @@ export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, com
     try {
       const j = await fetchAuth('/api/chamadas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId || undefined, lead_nome: nome || undefined, telefone: telefone || undefined, com_video: video }) }).then(r => r.json())
       if (!j.ok) { setErro(j.error || 'não consegui criar a chamada'); return null }
-      const l = { lead: j.link_lead, host: j.link_host, telefone: j.telefone || telefone || null, nome: j.lead_nome || nome || null }
+      const l = { lead: j.link_lead, host: j.link_host, telefone: j.telefone || telefone || null, nome: j.lead_nome || nome || null, quem: j.quem || null, empresa: j.empresa || null }
       setLinks(l); return l
     } catch (e: any) { setErro(e?.message || 'erro de rede'); return null }
     finally { setCriando(false) }
@@ -58,7 +59,7 @@ export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, com
   async function mandar() {
     const janela = window.open('', '_blank')
     const l = await criar(); if (!l) { janela?.close(); return }
-    const texto = textoConvite(l.nome, l.lead)
+    const texto = textoConvite(l.nome, l.lead, l.quem, l.empresa)
     if (enviarNoChat) {
       const ok = await enviarNoChat(texto)
       setMandado(ok ? 'Convite enviado na conversa.' : 'Não consegui mandar pelo chat: copia o link e manda à mão.')

@@ -110,6 +110,13 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   const sessao = useRef('')          // a minha sessão nesta entrada
   const sessaoRemota = useRef('')    // a sessão do outro lado com quem estou (ou estava) negociando
   const encerrouEu = useRef(false)
+  // A ESPERA (28/09/2026 — o Rick ficou numa tela parada e muda sem saber se o cliente tinha aberto):
+  // som de "chamando", o passo a passo (abriu o link / entrou), o tempo esperando, e o reenvio do link.
+  const [leadAbriu, setLeadAbriu] = useState(false)
+  const [esperaSeg, setEsperaSeg] = useState(0)
+  const [somEspera, setSomEspera] = useState(true)
+  const avisoCanal = useRef<any>(null)
+  const avisouEntrou = useRef(false)
 
   useEffect(() => {
     params.then(async ({ codigo }) => {
@@ -139,6 +146,46 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     window.addEventListener('pagehide', sair)
     return () => window.removeEventListener('pagehide', sair)
   }, [codigo, h])
+
+  // sons curtos feitos na hora (sem arquivo): o "chamando" de telefone e o "plim" de quando algo acontece
+  function tom(freqs: number[], dur: number, vol = 0.07) {
+    const ac = ctxMed.current; if (!ac) return
+    try {
+      ac.resume().catch(() => null)
+      freqs.forEach((f, i) => {
+        const o = ac.createOscillator(), g = ac.createGain(), t0 = ac.currentTime + i * dur
+        o.type = 'sine'; o.frequency.value = f; o.connect(g); g.connect(ac.destination)
+        g.gain.setValueAtTime(0, t0); g.gain.linearRampToValueAtTime(vol, t0 + 0.03); g.gain.setValueAtTime(vol, t0 + dur - 0.05); g.gain.linearRampToValueAtTime(0, t0 + dur)
+        o.start(t0); o.stop(t0 + dur + 0.02)
+      })
+    } catch { /* sem som */ }
+  }
+  const plim = () => tom([880, 1320], 0.14, 0.09)
+  function avisarFora(texto: string) {
+    if (typeof document === 'undefined' || !document.hidden) return
+    document.title = `● ${texto}`
+    try { if ('Notification' in window && Notification.permission === 'granted') new Notification(texto, { body: 'Volta pra aba da chamada.' }) } catch { /* ok */ }
+  }
+  useEffect(() => { const f = () => { if (!document.hidden && info?.empresa) document.title = `Chamada · ${info.empresa}` }; document.addEventListener('visibilitychange', f); return () => document.removeEventListener('visibilitychange', f) }, [info])
+
+  // o CLIENTE avisa que abriu o link (antes mesmo de entrar), num canal leve só de presença
+  useEffect(() => {
+    if (!codigo || papel.current !== 'lead' || fase !== 'antes') return
+    const c = avisoCanal.current || supabase.channel(`chamada-aviso:${codigo}`, { config: { broadcast: { self: false } } })
+    if (!avisoCanal.current) { avisoCanal.current = c; c.subscribe() }
+    const mandar = () => c.send({ type: 'broadcast', event: 'aviso', payload: { t: 'abriu' } }).catch(() => null)
+    const t0 = setTimeout(mandar, 800), t1 = setInterval(mandar, 6000)
+    return () => { clearTimeout(t0); clearInterval(t1) }
+  }, [codigo, fase])
+
+  // enquanto espera: conta o tempo e toca o "chamando" (425 Hz, 1s a cada 4s — o som de chamada no Brasil)
+  useEffect(() => {
+    if (fase !== 'conectando') return
+    const conta = setInterval(() => setEsperaSeg(s => s + 1), 1000)
+    const toca = () => { if (somEspera && !outroEntrou) tom([425], 1, 0.05) }
+    toca(); const chama = setInterval(toca, 4000)
+    return () => { clearInterval(conta); clearInterval(chama) }
+  }, [fase, somEspera, outroEntrou])
 
   const post = (body: any) => fetch(`/api/chamadas/${codigo}`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...body, h }) }).catch(() => null)
 
@@ -215,6 +262,17 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     try { if (!ctxMed.current) ctxMed.current = new AudioContext(); ctxMed.current.resume().catch(() => null) } catch { /* sem medidor */ }
     if (!local.current) { const ok = await capturar(); if (!ok) return }
 
+    // quem convida: pede a permissão de aviso do computador (dentro do toque) e ouve o "abriu o link"
+    if (papel.current === 'host') {
+      try { if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission().catch(() => null) } catch { /* ok */ }
+      if (!avisoCanal.current) {
+        const av = supabase.channel(`chamada-aviso:${codigo}`, { config: { broadcast: { self: false } } })
+        av.on('broadcast', { event: 'aviso' }, ({ payload }: any) => {
+          if (payload?.t === 'abriu') setLeadAbriu(ja => { if (!ja) { plim(); avisarFora(`${info?.com_quem || 'O convidado'} abriu o link`) } return true })
+        })
+        av.subscribe(); avisoCanal.current = av
+      }
+    } else if (avisoCanal.current) { try { supabase.removeChannel(avisoCanal.current) } catch { /* ok */ } avisoCanal.current = null }
     sessao.current = Math.random().toString(36).slice(2, 10)
     try { const j = await fetch('/api/chamadas/ice', { cache: 'no-store' }).then(r => r.json()); if (j?.iceServers?.length) { ice.current = j.iceServers; log('ice', j.origem) } } catch { /* fica o reserva */ }
     novoPc()
@@ -236,7 +294,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     if (!pc.current || s.de === papel.current) return
     try {
       if (s.t === 'pronto') {
-        setOutroEntrou(true)
+        setOutroEntrou(true); setLeadAbriu(true)
+        if (!avisouEntrou.current) { avisouEntrou.current = true; tom([660, 880, 1100], 0.12, 0.09); avisarFora(`${info?.com_quem || 'O outro lado'} entrou na chamada`) }
         if (papel.current === 'host') {
           const p = pc.current
           const sessaoNova = !!sessaoRemota.current && sessaoRemota.current !== s.sess
@@ -507,7 +566,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
 
   // ── A CHAMADA: o outro lado ocupa a tela toda; o resto flutua por cima
   const statusTexto = fase === 'conectado' ? fmt(seg) : outroEntrou ? 'conectando…' : 'esperando'
-  const statusSub = fase === 'conectado' ? (gravando ? 'gravando' : 'ao vivo') : outroEntrou ? 'o outro lado já entrou' : host ? 'aguardando o convidado abrir o link' : `aguardando ${info?.com_quem}`
+  const statusSub = fase === 'conectado' ? (gravando ? 'gravando' : 'ao vivo') : outroEntrou ? 'o outro lado já entrou' : host ? (leadAbriu ? `${info?.com_quem} abriu o link` : 'aguardando o convidado abrir o link') : `aguardando ${info?.com_quem}`
+  const primeiroNome = (info?.com_quem || '').split(' ')[0]
   return (
     <div ref={palco} onClick={() => { if (imersivo) setImersivo(false) }} style={{ position: 'fixed', inset: 0, background: '#07060B', color: '#fff', overflow: 'hidden', fontFamily: 'inherit', userSelect: 'none' }}>
       <video ref={vRemoto} autoPlay playsInline muted style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'contain', background: '#000', display: temVideoRemoto ? 'block' : 'none' }} />
@@ -517,7 +577,24 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
           <div style={{ textAlign: 'center', color: 'var(--text-2, #C9C3D9)' }}>
             <div style={{ width: 132, height: 132, borderRadius: '50%', background: 'linear-gradient(135deg, #7c3aed, #c026d3)', margin: '0 auto 16px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 54, fontWeight: 800, color: '#fff', boxShadow: '0 20px 60px rgba(124,58,237,.45)', animation: fase === 'conectado' && somOk ? 'pulsar 1.2s ease-in-out infinite' : 'none' }}>{(info?.com_quem || '?').trim()[0]?.toUpperCase()}</div>
             <div style={{ fontSize: 20, fontWeight: 800, color: '#fff' }}>{info?.com_quem}</div>
-            <div style={{ fontSize: 14, marginTop: 4 }}>{fase === 'conectado' ? 'Só voz do outro lado' : outroEntrou ? 'Conectando…' : 'Esperando o outro lado entrar'}</div>
+            <div style={{ fontSize: 14, marginTop: 4 }}>{fase === 'conectado' ? 'Só voz do outro lado' : outroEntrou ? 'Conectando…' : host ? 'Chamando…' : `Esperando ${info?.com_quem || 'o outro lado'} entrar`}</div>
+            {fase !== 'conectado' && fase === 'conectando' && (
+              <div onClick={e => e.stopPropagation()} style={{ marginTop: 18, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
+                {host && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 7, textAlign: 'left', fontSize: 13.5, background: 'rgba(255,255,255,.06)', border: '1px solid rgba(255,255,255,.1)', borderRadius: 14, padding: '12px 16px', minWidth: 250 }}>
+                    <Passo feito rotulo={`Convite enviado · esperando há ${fmt(esperaSeg)}`} />
+                    <Passo feito={leadAbriu} rotulo={`${primeiroNome || 'O convidado'} abriu o link`} />
+                    <Passo feito={outroEntrou} rotulo={`${primeiroNome || 'O convidado'} entrou`} />
+                  </div>
+                )}
+                {host && !leadAbriu && esperaSeg >= 180 && (
+                  <div style={{ fontSize: 13, color: '#fde68a', maxWidth: 300, lineHeight: 1.45 }}>
+                    {primeiroNome || 'O convidado'} ainda não abriu o convite. O mesmo convite continua valendo: se precisar, avisa por mensagem que tu já está na chamada esperando.
+                  </div>
+                )}
+                <button onClick={() => setSomEspera(v => !v)} style={{ fontSize: 12, padding: '6px 12px', borderRadius: 999, background: 'rgba(255,255,255,.1)', color: 'rgba(255,255,255,.75)', border: '1px solid rgba(255,255,255,.15)', cursor: 'pointer', font: 'inherit' }}>{somEspera ? 'Som de chamando: ligado' : 'Som de chamando: desligado'}</button>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -587,4 +664,14 @@ function Redondo({ icone: Icone, rotulo, onClick, ativo, perigo }: { icone: any;
 function MarcaTopo({ info, estilo }: { info: any; estilo: React.CSSProperties }) {
   if (info?.logo) return <img src={info.logo} alt={info?.empresa || ''} style={{ height: 34, maxWidth: 190, objectFit: 'contain', display: 'block', borderRadius: 6, marginBottom: 4 }} />
   return <div style={estilo}>{info?.empresa || ''}</div>
+}
+
+// um passo da espera: bolinha verde quando aconteceu
+function Passo({ feito, rotulo }: { feito?: boolean; rotulo: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, color: feito ? '#fff' : 'rgba(255,255,255,.5)' }}>
+      <span style={{ width: 18, height: 18, borderRadius: 9, display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 900, background: feito ? '#22C55E' : 'transparent', border: feito ? 'none' : '1.5px solid rgba(255,255,255,.35)', color: '#06220f', flexShrink: 0 }}>{feito ? '✓' : ''}</span>
+      {rotulo}
+    </div>
+  )
 }

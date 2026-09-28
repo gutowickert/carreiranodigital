@@ -19,7 +19,7 @@ O que entrou em 27–28/09/2026:
 - **Mais leve**: o Funil carrega os ativos primeiro (2,5 MB → 1 MB); o Monitor abre na hora e lê a Meta por trás; a logo do menu caiu de 506 KB pra 71 KB; o aviso de WhatsApp no menu chega em ~0,3 s (campainha).
 - **Tráfego dos clientes**: número em cima de cada coluna, o maior em verde.
 - **Orçamento**: resposta da IA cortada tenta de novo sozinha.
-- **Chamadas por voz e vídeo** (do Guto): link `/conversa/<codigo>` com a prévia da marca, gravação em estéreo e transcrição com o nome de cada lado. Com ícone próprio no menu (vídeo; a Fila de Ligações segue com o telefone). Desde 28/09 a aba fechada também encerra, e a rede de segurança fecha as esquecidas — a primeira foi uma do Rick, que ficou "em andamento" e foi processada sozinha.
+- **Chamadas por voz e vídeo** (do Guto): link `/conversa/<codigo>` com a prévia da marca, gravação em estéreo e transcrição com o nome de cada lado. Com ícone próprio no menu (vídeo; a Fila de Ligações segue com o telefone). Desde 28/09 a aba fechada também encerra, e a rede de segurança fecha as esquecidas — a primeira foi uma do Rick, que ficou "em andamento" e foi processada sozinha. Também desde 28/09: a espera toca "chamando" e mostra "abriu o link" / "entrou", e o convite vai com a capa da escola e o nome de quem chama (o Rick esperou 15 min numa tela muda sem saber que o cliente nem tinha aberto).
 
 ## Espaço Dani Fell (crm-danifell)
 
@@ -30,7 +30,7 @@ Nutrição — o método Restaure seu Intestino. Contrato CRM + Tráfego, desde 
 - **Motor do fim do dia**: a virada noturna de quem respondeu, além do da manhã.
 - **Funil próprio**: Chegou → Não respondeu (IA) → Em conversa → Avaliação agendada (IA) → Faltou (IA) → Pensando (IA) → Fechando → Retomar depois → Ganho / Perda.
 - **Áudio pronto**: "O método Restaure seu Intestino", na voz da Dani.
-- **Chamadas por voz e vídeo** (desde 28/09): o botão Chamar no cartão da cliente, na conversa do WhatsApp e no Atender, no lugar do "Ligar" da API4COM (que ela não tem). Testado no ar: conecta, grava, transcreve com o nome de quem falou. Sem servidor de apoio próprio (Cloudflare), pode falhar no 4G.
+- **Chamadas por voz e vídeo** (desde 28/09): o botão Chamar no cartão da cliente, na conversa do WhatsApp e no Atender, no lugar do "Ligar" da API4COM (que ela não tem). Testado no ar: conecta, grava, transcreve com o nome de quem falou. A espera com som e passo a passo e o convite com capa também. Sem servidor de apoio próprio (Cloudflare), pode falhar no 4G.
 - **Área do cliente**: o botão **link** do lado de "card" copia o link da ficha pra mandar pra cliente.
 - Usuários: Dani, Bruna e Suporte CND (🔒 protegida). ⚠️ Dani e Bruna estão como *vendedor* — se uma delas for a dona, mudar o papel na implantação. Máquina CND em modo geral, todos com login entram.
 - *O que a IA sabe* tem 9 seções (quem somos, como atende, o que vende e preço, o que nunca se faz, o método, a avaliativa, quando acha caro, o acompanhamento, o preparo). ⚠️ Em 27/09: conta da Anthropic sem crédito e WhatsApp oficial não configurado.
