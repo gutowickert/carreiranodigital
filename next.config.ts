@@ -8,6 +8,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   output: 'standalone',
+  // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
+  async rewrites() { return [{ source: '/conversa/:codigo', destination: '/call/:codigo' }] },
 };
 
 export default nextConfig;

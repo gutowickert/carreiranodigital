@@ -4,6 +4,10 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao, meuPerfil } from '@/lib/quem-eu-vejo'
 import { criarChamada, urlGravacao, vincularChamadaAoLead } from '@/lib/chamadas'
 
+// o endereço dos links: domínio próprio da escola quando configurado (LINK_BASE_URL), senão o do sistema.
+// O caminho é /conversa/<codigo> (rewrite pra /call no next.config).
+const baseLink = (req: Request) => (process.env.LINK_BASE_URL || '').replace(/\/$/, '') || new URL(req.url).origin
+
 // AS CHAMADAS DO TIME (com login).
 //   GET  → as últimas chamadas da empresa, com o link da gravação (assinado, 1h)
 //   POST → cria uma chamada: { lead_id?, lead_nome?, telefone?, com_video? } → { codigo, link_lead, link_host }
@@ -15,10 +19,10 @@ export async function GET(req: Request) {
     const org = await orgDaRequest(auth)
     const { data } = await sb.from('chamadas').select('id, codigo, chave_host, lead_id, lead_nome, telefone, criado_por_nome, com_video, status, criado_em, iniciada_em, encerrada_em, duracao_seg, pedacos, gravacao_path, transcricao, erro')
       .eq('org_id', org).order('criado_em', { ascending: false }).limit(50)
-    const origem = new URL(req.url).origin
+    const origem = baseLink(req)
     const lista = await Promise.all((data || []).map(async c => ({
       ...c, gravacao_url: await urlGravacao(c.gravacao_path),
-      link_lead: `${origem}/call/${c.codigo}`, link_host: `${origem}/call/${c.codigo}?h=${c.chave_host}`,
+      link_lead: `${origem}/conversa/${c.codigo}`, link_host: `${origem}/conversa/${c.codigo}?h=${c.chave_host}`,
     })))
     return NextResponse.json({ ok: true, chamadas: lista })
   } catch (e: any) {
@@ -46,8 +50,8 @@ export async function POST(req: Request) {
     }
     const r = await criarChamada(org, { lead_id: b.lead_id || null, lead_nome, telefone, criado_por: perfil?.id || eu?.id || '', criado_por_nome: nome, com_video: !!b.com_video })
     if (!r.ok) return NextResponse.json({ ok: false, error: r.error }, { status: 200 })
-    const origem = new URL(req.url).origin
-    return NextResponse.json({ ok: true, codigo: r.chamada.codigo, lead_nome, telefone, link_lead: `${origem}/call/${r.chamada.codigo}`, link_host: `${origem}/call/${r.chamada.codigo}?h=${r.chamada.chave_host}` })
+    const origem = baseLink(req)
+    return NextResponse.json({ ok: true, codigo: r.chamada.codigo, lead_nome, telefone, link_lead: `${origem}/conversa/${r.chamada.codigo}`, link_host: `${origem}/conversa/${r.chamada.codigo}?h=${r.chamada.chave_host}` })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
   }
