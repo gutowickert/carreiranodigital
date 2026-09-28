@@ -377,6 +377,10 @@ img, svg { max-width: 100%; }
   .rolavel-celular { display: flex !important; flex-wrap: nowrap !important; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; padding-bottom: 2px; }
   .rolavel-celular::-webkit-scrollbar { display: none; }
   .rolavel-celular > * { flex-shrink: 0; }
+  /* Monitor das Entregas: uma coluna; quem contatar e os encontros vêm antes dos cards e não grudam no topo */
+  .monitor-grade { grid-template-columns: minmax(0, 1fr) !important; }
+  .monitor-lado { position: static !important; order: -1; }
+  .monitor-gaveta { width: 100vw !important; padding: calc(14px + env(safe-area-inset-top)) 14px calc(30px + env(safe-area-inset-bottom)) !important; border-left: none !important; }
   /* caixa de digitar do WhatsApp: no celular a mensagem fica numa linha inteira, os botões embaixo */
   .wa-compor { flex-wrap: wrap; align-items: center !important; }
   .wa-compor > textarea { flex: 1 1 100% !important; order: -1; max-height: 120px !important; }
@@ -398,7 +402,7 @@ img, svg { max-width: 100%; }
   [style*="grid-template-columns: repeat(3, 1fr)"], [style*="grid-template-columns: repeat(2, 1fr)"],
   [style*="grid-template-columns: 1fr 1fr"], [style*="grid-template-columns: 1fr 1fr 1fr"],
   [style*="grid-template-columns: 2fr 1fr"], [style*="grid-template-columns: 2fr 1fr 1fr"], [style*="grid-template-columns: 1fr 2fr"],
-  [style*="grid-template-columns: 1.2fr 1fr 1fr"], [style*="grid-template-columns: 280px 1fr"], [style*="grid-template-columns: 300px 1fr"],
+  [style*="grid-template-columns: 280px 1fr"], [style*="grid-template-columns: 300px 1fr"],
   [style*="grid-template-columns: 320px 1fr"], [style*="grid-template-columns: 1fr 320px"], [style*="grid-template-columns: minmax(0,1fr) 320px"],
   [style*="grid-template-columns: minmax(0, 1fr) 320px"], [style*="grid-template-columns: 1fr 340px"], [style*="grid-template-columns: 1fr 360px"] {
     grid-template-columns: minmax(0, 1fr) !important;

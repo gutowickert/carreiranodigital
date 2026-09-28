@@ -74,7 +74,7 @@ function Card({ c, aoAbrir }: { c: any; aoAbrir: () => void }) {
 
       {t ? (
         <>
-          <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr 1fr', gap: 8 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.2fr) minmax(0, 1fr) minmax(0, 1fr)', gap: 8 }}>
             {[
               { v: int(t.resultados), l: nome.varios, d: <Delta atual={t.resultados} anterior={a?.resultados} bom="sobe" />, g: true },
               { v: t.custo != null ? brl(t.custo, 2) : '—', l: 'por ' + nome.um.split(' ')[0], d: <Delta atual={t.custo} anterior={a?.custo} bom="desce" /> },
@@ -122,7 +122,7 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
   return (
     <>
       <div onClick={aoFechar} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 60 }} />
-      <aside style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(640px, 100vw)', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 61, overflowY: 'auto', padding: '22px 24px 40px', boxShadow: '-12px 0 40px rgba(0,0,0,.3)' }}>
+      <aside className="monitor-gaveta" style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 'min(640px, 100vw)', boxSizing: 'border-box', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 61, overflowY: 'auto', padding: '22px 24px 40px', boxShadow: '-12px 0 40px rgba(0,0,0,.3)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 10, alignItems: 'flex-start' }}>
           <div>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -311,14 +311,14 @@ export default function Monitor() {
               </div>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 16, marginTop: 16, alignItems: 'start' }}>
+            <div className="monitor-grade" style={{ display: 'grid', gridTemplateColumns: 'minmax(0,1fr) 320px', gap: 16, marginTop: 16, alignItems: 'start' }}>
               {/* os cards */}
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(min(300px,100%),1fr))', gap: 12 }}>
                 {cards.map(c => <Card key={c.id} c={c} aoAbrir={() => setSel(c.id)} />)}
               </div>
 
               {/* o lado: quem contatar e os encontros */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 16 }}>
+              <div className="monitor-lado" style={{ display: 'flex', flexDirection: 'column', gap: 12, position: 'sticky', top: 16 }}>
                 <div style={{ ...card, padding: '14px 16px' }}>
                   <div style={tit}>Contatar hoje</div>
                   {!d.contatar.length ? <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 8 }}>Ninguém pendente.</div>
