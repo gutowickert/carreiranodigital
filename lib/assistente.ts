@@ -286,6 +286,13 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
     if (!LOCAIS.some(l => l.chave === local)) return { erro: 'local inválido: sede_lajeado, regiao_lajeado, sede_poa ou regiao_poa' }
     const sessao = new Date(String(input.sessao).length <= 16 ? `${input.sessao}:00-03:00` : String(input.sessao))
     if (isNaN(sessao.getTime())) return { erro: 'data/hora da sessão inválida' }
+    // TRAVA DE DUPLICADO (28/09/2026): o Georges Carvalho nasceu duas vezes porque, ao pedir a agenda logo
+    // depois, o modelo "confirmou" o cadastro chamando esta ferramenta de novo. Mesmo cliente e produto já
+    // ativo → devolve o que existe em vez de criar outro.
+    const normal = (s: string) => s.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\s+/g, ' ').trim()
+    const { data: ativos } = await sb.from('projetos').select('id, cliente, produto, data_inicio').eq('org_id', u.org_id).eq('produto', produto).in('status', ['ativo', 'manutencao'])
+    const ja = (ativos || []).find(p => normal(p.cliente) === normal(String(input.cliente)))
+    if (ja) return { ok: true, ja_existia: true, id: ja.id, cliente: ja.cliente, produto: ROTEIROS[produto].nome, aviso: 'Esse cliente JÁ estava cadastrado nas entregas: não criei outro. Diga isso em uma linha; se ele quer mudar a sessão, use marcar_encontro_cliente.', ficha: `${origin}/dashboard/entregas/${ja.id}` }
     let lead_id: string | null = null
     if (input.lead) {
       const { data } = await sb.from('leads').select('id, nome, whatsapp').eq('org_id', u.org_id).ilike('nome', `%${input.lead}%`).order('atualizado_em', { ascending: false }).limit(2)
