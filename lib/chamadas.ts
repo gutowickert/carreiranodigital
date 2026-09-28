@@ -61,7 +61,7 @@ export async function finalizarChamada(codigo: string) {
       const inteiro = Buffer.concat(partes)
       gravacao_path = `${codigo}/gravacao.webm`
       await sb.storage.from(BUCKET).upload(gravacao_path, inteiro, { contentType: 'audio/webm', upsert: true })
-      transcricao = await transcreverAudio(inteiro)
+      transcricao = await transcreverAudio(inteiro, 'audio/webm', nomesDaChamada(ch))
     }
     const duracao = ch.iniciada_em && ch.encerrada_em ? Math.max(0, Math.round((+new Date(ch.encerrada_em) - +new Date(ch.iniciada_em)) / 1000)) : ch.duracao_seg || 0
     const ligacao_id = ch.lead_id ? await registrarNoLead({ ...ch, duracao_seg: duracao, gravacao_path, transcricao }) : null
@@ -111,7 +111,7 @@ export async function retranscreverChamada(codigo: string) {
   if (!ch.gravacao_path) return { ok: false as const, error: 'essa chamada não tem gravação' }
   const { data } = await sb.storage.from(BUCKET).download(ch.gravacao_path)
   if (!data) return { ok: false as const, error: 'não consegui baixar a gravação' }
-  const transcricao = await transcreverAudio(Buffer.from(await data.arrayBuffer()))
+  const transcricao = await transcreverAudio(Buffer.from(await data.arrayBuffer()), 'audio/webm', nomesDaChamada(ch))
   await sb.from('chamadas').update({ transcricao, status: 'transcrita' }).eq('id', ch.id)
   if (ch.ligacao_id) {
     const { data: lig } = await sb.from('ligacoes').select('metadata').eq('id', ch.ligacao_id).maybeSingle()
@@ -120,20 +120,26 @@ export async function retranscreverChamada(codigo: string) {
   return { ok: true as const, transcricao }
 }
 
-// Deepgram com separação de quem fala: "[02:15] Falante 1: ..." A voz de quem convidou é a
-// primeira a aparecer na maioria das chamadas, mas o rótulo é por falante, não por nome.
-export async function transcreverAudio(buf: Buffer, mime = 'audio/webm'): Promise<string | null> {
+// quem é quem na transcrição: o usuário do sistema que convidou e o lead
+export const nomesDaChamada = (ch: any) => ({ time: (ch?.criado_por_nome || 'Time').toString().trim(), lead: (ch?.lead_nome || 'Cliente').toString().trim().split(' ').slice(0, 2).join(' ') })
+
+// Deepgram em MULTICANAL: a gravação é estéreo, canal 0 = quem convidou (o time), canal 1 = o outro
+// lado (o lead). Cada fala sai com o NOME certo: "[02:15] Guto: ..." / "[02:19] Morgana: ...".
+// Gravação antiga em mono cai na separação por voz (diarize): falante 1 = time, os demais = lead.
+export async function transcreverAudio(buf: Buffer, mime = 'audio/webm', nomes = { time: 'Time', lead: 'Cliente' }): Promise<string | null> {
   const key = process.env.DEEPGRAM_API_KEY || ''
   if (!key || !buf.length) return null
-  const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true&diarize=true&utterances=true&keywords=Claude:2&keywords=Meta:1&keywords=tráfego:1', {
+  const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true&multichannel=true&diarize=true&utterances=true&keywords=Claude:2&keywords=Meta:1&keywords=tráfego:1', {
     method: 'POST', headers: { Authorization: `Token ${key}`, 'Content-Type': mime }, body: new Uint8Array(buf),
   })
   const j: any = await r.json().catch(() => null)
   if (!r.ok) return null
   const utts: any[] = j?.results?.utterances || []
+  const canais = Number(j?.metadata?.channels || 1)
   if (utts.length) {
     const mm = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(Math.floor(s % 60)).padStart(2, '0')}`
-    return utts.map(u => `[${mm(u.start)}] Falante ${(u.speaker ?? 0) + 1}: ${u.transcript}`).join('\n')
+    const quem = (u: any) => canais >= 2 ? (Number(u.channel || 0) === 0 ? nomes.time : nomes.lead) : ((u.speaker ?? 0) === 0 ? nomes.time : nomes.lead)
+    return utts.filter(u => (u.transcript || '').trim()).sort((a, b) => a.start - b.start).map(u => `[${mm(u.start)}] ${quem(u)}: ${u.transcript}`).join('\n')
   }
   const t = j?.results?.channels?.[0]?.alternatives?.[0]?.transcript
   return typeof t === 'string' && t.trim() ? t.trim() : null

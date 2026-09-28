@@ -100,6 +100,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   // deixa ele suspenso e o medidor diz "nao capta nada" com som passando (visto no teste automatico)
   const ctxMed = useRef<AudioContext | null>(null)
   const dest = useRef<MediaStreamAudioDestinationNode | null>(null)
+  const misturador = useRef<ChannelMergerNode | null>(null)   // canal 0 = eu (time), canal 1 = o outro lado
   const ice = useRef<RTCIceServer[]>(ICE_RESERVA)
   const fila = useRef<any[]>([])
   const timer = useRef<any>(null)
@@ -271,11 +272,15 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   function iniciarGravacao() {
     if (rec.current || !local.current) return
     try {
+      // ESTÉREO, UM LADO POR CANAL: esquerdo = meu microfone (o time), direito = o outro lado (o lead).
+      // É o que deixa a transcrição dizer com certeza quem falou (Deepgram multichannel), em vez de
+      // adivinhar pela ordem de quem falou primeiro.
       ctx.current = new AudioContext(); dest.current = ctx.current.createMediaStreamDestination()
-      ctx.current.createMediaStreamSource(local.current).connect(dest.current)
+      misturador.current = ctx.current.createChannelMerger(2); misturador.current.connect(dest.current)
+      ctx.current.createMediaStreamSource(local.current).connect(misturador.current, 0, 0)
       remoto.current?.getAudioTracks().forEach(t => misturarNaGravacao(t))
       const mime = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'].find(m => MediaRecorder.isTypeSupported(m)) || ''
-      const r = new MediaRecorder(dest.current.stream, mime ? { mimeType: mime, audioBitsPerSecond: 48000 } : undefined)
+      const r = new MediaRecorder(dest.current.stream, mime ? { mimeType: mime, audioBitsPerSecond: 96000 } : undefined)
       r.ondataavailable = async e => {
         if (!e.data || !e.data.size) return
         const fd = new FormData(); fd.append('acao', 'pedaco'); fd.append('h', h); fd.append('seq', String(Math.floor(Date.now() / 1000))); fd.append('mime', r.mimeType || mime); fd.append('arquivo', e.data, 'p.webm')
@@ -345,8 +350,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   function liberarSom() { tocarRemoto(); try { ctxMed.current?.resume() } catch { /* sem contexto */ } }
 
   function misturarNaGravacao(track: MediaStreamTrack) {
-    if (!ctx.current || !dest.current) return
-    try { ctx.current.createMediaStreamSource(new MediaStream([track])).connect(dest.current) } catch { /* já misturado */ }
+    if (!ctx.current || !misturador.current) return
+    try { ctx.current.createMediaStreamSource(new MediaStream([track])).connect(misturador.current, 0, 1) } catch { /* já misturado */ }
   }
 
   async function desligar(avisar = true) {
@@ -407,7 +412,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       const antigas = local.current?.getAudioTracks() || []
       antigas.forEach(t => { t.stop(); local.current?.removeTrack(t) })
       local.current?.addTrack(faixa)
-      if (ctx.current && dest.current) { try { ctx.current.createMediaStreamSource(new MediaStream([faixa])).connect(dest.current) } catch { /* já misturado */ } }
+      if (ctx.current && misturador.current) { try { ctx.current.createMediaStreamSource(new MediaStream([faixa])).connect(misturador.current, 0, 0) } catch { /* já misturado */ } }
       micVersao.current++
       setMicId(id); setMicLabel(faixa.label); setAviso(''); setMicMenu(false); log('mic trocado', faixa.label)
     } catch (e: any) { setAviso(`Não consegui usar esse microfone: ${motivoMidia(e)}.`) }
