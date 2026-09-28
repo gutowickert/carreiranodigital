@@ -215,6 +215,12 @@ export type Painel = {
   conquistas: { chave: string; titulo: string; descricao: string | null; valor: number | null; destravada_em: string }[]
   proximas: { titulo: string; falta: number; de: number; progresso: number }[]
   analise: string[]
+  // o jogo desde o início do contrato: nível pelos degraus de resultado, sequência de dias, melhor dia
+  jogo: {
+    acumulado: number; gasto_total: number; dias_com_resultado: number; sequencia: number
+    melhor_dia: { data: string; resultados: number } | null
+    nivel: { numero: number; nome: string; de: number; ate: number | null; progresso: number }
+  }
   valor_cliente: number | null; alvo_custo: number | null
   sincronizado_em: string | null
 }
@@ -283,9 +289,25 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   }
   anuncios.sort((a, b) => b.resultados - a.resultados || b.gasto - a.gasto)
 
-  // as próximas conquistas (o que falta destravar)
-  const { data: tudo } = await sb.from('trafego_anuncios_dia').select('resultados').eq('projeto_id', p.id)
+  // as próximas conquistas (o que falta destravar) e o JOGO desde o início: nível, sequência, melhor dia
+  const { data: tudo } = await sb.from('trafego_anuncios_dia').select('data, resultados, gasto').eq('projeto_id', p.id).order('data')
   const acum = (tudo || []).reduce((s, l) => s + Number(l.resultados), 0)
+  const porDiaTudo: Record<string, { resultados: number; gasto: number }> = {}
+  for (const l of tudo || []) { const k = String(l.data).slice(0, 10); porDiaTudo[k] = porDiaTudo[k] || { resultados: 0, gasto: 0 }; porDiaTudo[k].resultados += Number(l.resultados); porDiaTudo[k].gasto += Number(l.gasto) }
+  const diasTudo = Object.keys(porDiaTudo).sort()
+  const diasComResultado = diasTudo.filter(d => porDiaTudo[d].resultados > 0).length
+  // sequência: dias seguidos com resultado, contando de hoje (ou de ontem, se hoje ainda não sincronizou) pra trás
+  let sequencia = 0
+  { let d = porDiaTudo[hoje]?.resultados > 0 ? hoje : menosDias(hoje, 1); while (porDiaTudo[d]?.resultados > 0) { sequencia++; d = menosDias(d, 1) } }
+  const melhorDia = diasTudo.reduce<{ data: string; resultados: number } | null>((m, d) => (!m || porDiaTudo[d].resultados > m.resultados) && porDiaTudo[d].resultados > 0 ? { data: d, resultados: porDiaTudo[d].resultados } : m, null)
+  const NIVEIS = ['Começo', 'Aquecendo', 'Engrenando', 'Constante', 'Forte', 'Máquina', 'Referência', 'Domínio', 'Lenda']
+  const degrausBatidos = DEGRAUS_RESULTADO.filter(g => acum >= g).length
+  const proximoDegrau = DEGRAUS_RESULTADO.find(g => g > acum) || null
+  const degrauAnterior = degrausBatidos ? DEGRAUS_RESULTADO[degrausBatidos - 1] : 0
+  const jogo: Painel['jogo'] = {
+    acumulado: acum, gasto_total: (tudo || []).reduce((s, l) => s + Number(l.gasto) * (1 + impostoPct / 100), 0), dias_com_resultado: diasComResultado, sequencia, melhor_dia: melhorDia,
+    nivel: { numero: degrausBatidos + 1, nome: NIVEIS[Math.min(degrausBatidos, NIVEIS.length - 1)], de: degrauAnterior, ate: proximoDegrau, progresso: proximoDegrau ? Math.round(((acum - degrauAnterior) / (proximoDegrau - degrauAnterior)) * 100) : 100 },
+  }
   const proximas: Painel['proximas'] = []
   const proxR = DEGRAUS_RESULTADO.find(g => g > acum)
   if (proxR) proximas.push({ titulo: `${fmtInt(proxR)} ${nome.varios}`, falta: proxR - acum, de: proxR, progresso: Math.round((acum / proxR) * 100) })
@@ -300,7 +322,7 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   return {
     ok: true, de, ate, de_anterior: deAnt, ate_anterior: ateAnt, tipo, nome, total, anterior, porDia,
     funil: { impressoes: total.impressoes, cliques: total.cliques, resultados: total.resultados, vendas },
-    anuncios, eventos: eventos || [], conquistas: conquistas || [], proximas, analise,
+    anuncios, eventos: eventos || [], conquistas: conquistas || [], proximas, analise, jogo,
     valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo_custo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null,
     sincronizado_em: ultimo?.[0]?.atualizado_em || null,
   }

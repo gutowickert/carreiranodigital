@@ -35,10 +35,12 @@ export async function GET(req: Request) {
       const hoje = hojeBR()
       let de = ehData(sp.get('de')) ? sp.get('de')! : String(p.data_inicio).slice(0, 10)
       let ate = ehData(sp.get('ate')) ? sp.get('ate')! : hoje
-      const { data: ult } = await sb.from('trafego_anuncios_dia').select('data').eq('projeto_id', p.id).order('data', { ascending: false }).limit(1)
-      const ultimoDia = ult?.[0]?.data ? String(ult[0].data).slice(0, 10) : null
-      if (!ultimoDia) await sincronizarProjeto(p as any, { completo: true }).catch(() => null)
-      else if (ultimoDia < menosDias(hoje, 1)) await sincronizarProjeto(p as any).catch(() => null)
+      // AO VIVO (27/09/2026): igual ao monitor interno. Nunca sincronizou → puxa tudo; senão, se a última
+      // leitura tem mais de 10 min, relê os últimos 3 dias da Meta antes de montar. O cliente abre e vê agora.
+      const { data: ult } = await sb.from('trafego_anuncios_dia').select('data, atualizado_em').eq('projeto_id', p.id).order('atualizado_em', { ascending: false }).limit(1)
+      const ultimoSync = ult?.[0]?.atualizado_em ? String(ult[0].atualizado_em) : null
+      if (!ultimoSync) await sincronizarProjeto(p as any, { completo: true }).catch(() => null)
+      else if (ultimoSync < new Date(Date.now() - 10 * 60000).toISOString()) await sincronizarProjeto(p as any).catch(() => null)
       const pct = await impostoMetaPct(p.org_id)
       return NextResponse.json(await lerPainel(p as any, de, ate, pct))
     }

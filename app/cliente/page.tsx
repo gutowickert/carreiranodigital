@@ -67,36 +67,18 @@ export default function AreaDoCliente() {
       {/* ───────── topo */}
       <header style={{ marginTop: 28 }}>
         <div style={{ fontSize: 11.5, fontWeight: 700, letterSpacing: '.14em', textTransform: 'uppercase', color: 'var(--accent)' }}>Carreira no Digital · {p.produto}</div>
-        <h1 style={{ fontSize: 'clamp(28px,5vw,40px)', fontWeight: 800, color: 'var(--text)', margin: '6px 0 0', lineHeight: 1.1, textWrap: 'balance' as any }}>{p.cliente}</h1>
-        <p style={{ fontSize: 14, color: 'var(--text-faint)', margin: '8px 0 0' }}>
-          Contrato de {br(p.data_inicio)} a {br(p.data_fim)}
-          {p.fase && <> · agora: <b style={{ color: 'var(--text-2)' }}>{p.fase}</b></>}
+        <h1 className="display" style={{ fontSize: 'clamp(30px,7vw,44px)', fontWeight: 800, color: 'var(--text)', margin: '6px 0 0', lineHeight: 1.05, textWrap: 'balance' as any }}>{p.cliente}</h1>
+        <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '10px 0 0', display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {p.fase && <span style={{ fontSize: 11.5, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase', color: 'var(--accent-soft)', background: 'var(--accent-bg)', borderRadius: 999, padding: '4px 10px' }}>{p.fase}</span>}
+          <span>Contrato de {br(p.data_inicio)} a {br(p.data_fim)}</span>
         </p>
       </header>
 
-      {/* ───────── meta */}
-      <div style={tit}>Onde tu quer chegar</div>
-      <Meta projeto={p} ultimo={fechados[0]} />
-
-      {/* ───────── próximo encontro */}
-      {proximo && (
+      {/* ───────── tráfego */}
+      {p.tem_conta_anuncio && (
         <>
-          <div style={tit}>Próximo encontro</div>
-          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, minWidth: 220 }}>
-              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{proximo.titulo}</div>
-              <div style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 4 }}>
-                {proximo.data_combinada && proximo.estado !== 'previsto' && proximo.estado !== 'a_remarcar'
-                  ? <span>{maiuscula(dataHora(proximo.data_combinada))}</span>
-                  : <>por volta de {br(proximo.data_prevista)} — a data a gente combina no encontro anterior</>}
-              </div>
-              {proximo.descricao && <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>{proximo.descricao}</div>}
-            </div>
-            {proximo.estado === 'combinado' && (
-              <button onClick={() => confirmar(proximo.id)} disabled={confirmando} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>{confirmando ? 'Confirmando…' : 'Confirmo presença'}</button>
-            )}
-            {proximo.estado === 'confirmado' && <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--green)' }}>✔ Presença confirmada</span>}
-          </div>
+          <div style={{ marginTop: 22 }} />
+          <Painel k={k} inicio={String(p.data_inicio || '').slice(0, 10)} nomeCliente={p.cliente} />
         </>
       )}
 
@@ -113,14 +95,6 @@ export default function AreaDoCliente() {
               </div>
             ))}
           </div>
-        </>
-      )}
-
-      {/* ───────── tráfego */}
-      {p.tem_conta_anuncio && (
-        <>
-          <div style={tit}>Tráfego</div>
-          <Painel k={k} inicio={String(p.data_inicio || '').slice(0, 10)} />
         </>
       )}
 
@@ -148,6 +122,32 @@ export default function AreaDoCliente() {
                 {x.arquivo_url && !x.arquivo_mime?.startsWith('image/') && <a href={x.arquivo_url} target="_blank" rel="noopener" style={{ fontSize: 13, color: 'var(--accent)' }}>abrir arquivo</a>}
               </div>
             ))}
+          </div>
+        </>
+      )}
+
+      {/* ───────── meta */}
+      <div style={tit}>Onde tu quer chegar</div>
+      <Meta projeto={p} ultimo={fechados[0]} />
+
+      {/* ───────── próximo encontro */}
+      {proximo && (
+        <>
+          <div style={tit}>Próximo encontro</div>
+          <div style={{ ...card, display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+            <div style={{ flex: 1, minWidth: 220 }}>
+              <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--text)' }}>{proximo.titulo}</div>
+              <div style={{ fontSize: 14, color: 'var(--text-2)', marginTop: 4 }}>
+                {proximo.data_combinada && proximo.estado !== 'previsto' && proximo.estado !== 'a_remarcar'
+                  ? <span>{maiuscula(dataHora(proximo.data_combinada))}</span>
+                  : <>por volta de {br(proximo.data_prevista)} — a data a gente combina no encontro anterior</>}
+              </div>
+              {proximo.descricao && <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 6 }}>{proximo.descricao}</div>}
+            </div>
+            {proximo.estado === 'combinado' && (
+              <button onClick={() => confirmar(proximo.id)} disabled={confirmando} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>{confirmando ? 'Confirmando…' : 'Confirmo presença'}</button>
+            )}
+            {proximo.estado === 'confirmado' && <span style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--green)' }}>✔ Presença confirmada</span>}
           </div>
         </>
       )}
