@@ -10,12 +10,12 @@ import { ImageResponse } from 'next/og'
 const COR = { fundo: '#0B0A10', painel: '#15121F', borda: '#2A2540', texto: '#FFFFFF', texto2: '#C9C3D9', apagado: '#7E7793', roxo: '#6522D6', roxoClaro: '#C9AAFF', verde: '#22C55E', amarelo: '#F5B82E', vermelho: '#F0475F', cinza: '#6B6680' }
 const NIVEL_COR: Record<string, string> = { verde: COR.verde, amarelo: COR.amarelo, vermelho: COR.vermelho, cinza: COR.cinza }
 
-// Satori não lê woff2; o CSS do Google Fonts devolve TTF pra navegador antigo
+// Satori não lê woff2; o CSS do Google Fonts devolve TTF pra navegador antigo (o Firefox 40 passou a receber woff2 em 2026: Safari 5 ainda recebe TTF)
 let fontesCache: any[] | null = null
 async function fontes(): Promise<any[]> {
   if (fontesCache) return fontesCache
   try {
-    const css = await fetch('https://fonts.googleapis.com/css2?family=Manrope:wght@500;800', { headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; rv:40.0) Gecko/20100101 Firefox/40.0' } }).then(r => r.text())
+    const css = await fetch('https://fonts.googleapis.com/css2?family=Manrope:wght@500;800', { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10_6_8; de-at) AppleWebKit/533.21.1 (KHTML, like Gecko) Version/5.0.5 Safari/533.21.1' } }).then(r => r.text())
     const urls = [...css.matchAll(/font-weight:\s*(\d+);[^}]*?src:\s*url\(([^)]+\.ttf)\)/g)]
     const out: any[] = []
     for (const [, peso, url] of urls) out.push({ name: 'Manrope', data: await fetch(url).then(r => r.arrayBuffer()), weight: Number(peso), style: 'normal' })
