@@ -93,7 +93,8 @@ A ligação do sistema é **pelo navegador**: o botão **Chamar** (cartão do le
 1. `setup-nucleo/26-chamadas.sql` no Supabase do cliente (tabela protegida + pasta de gravações privada).
 2. `DEEPGRAM_API_KEY` (a transcrição). Sem ela, grava e não transcreve.
 3. Recomendado: servidor de apoio da Cloudflare (`CF_TURN_KEY_ID`, `CF_TURN_API_TOKEN`), grátis até 1 TB/mês. Sem ele usa um público que falha às vezes no 4G.
-4. Testar com dois aparelhos antes do primeiro uso: Chamar → mandar o link → os dois entram → falar → encerrar → em 1–2 minutos aparece no histórico do lead com a transcrição.
+4. **Nenhuma chamada se perde**: se quem convidou fechar a aba sem Encerrar, a tela avisa o servidor na saída; e se mesmo assim uma ficar parada (bateria, internet), o sistema fecha, transcreve e manda pro card sozinho depois de 10 minutos sem gravação nova (ao abrir a tela Chamadas e no motor da manhã/noite). O que se perde é só o finalzinho que ainda não tinha subido (até 30 s).
+5. Testar com dois aparelhos antes do primeiro uso: Chamar → mandar o link → os dois entram → falar → encerrar → em 1–2 minutos aparece no histórico do lead com a transcrição.
 
 O nome de quem convida vem do login (o Suporte CND aparece como "Suporte" pro cliente — pra teste, tudo bem; no dia a dia quem chama é a pessoa do cliente). A tela da chamada tem a assinatura discreta da CarreiraNoDigital.
 
@@ -154,6 +155,7 @@ O que não fazer no dia: mexer em código, criar etapa nova na hora, prometer in
 | erro 500 | Vercel Logs | migração SQL não rodada, env faltando |
 | a chamada não conecta | sair e entrar de novo dos dois lados | logo depois de publicar/ligar o servidor falha às vezes; no 4G, falta o servidor de apoio (Cloudflare) |
 | chamada sem transcrição | Vercel env; tela Chamadas → Transcrever | falta `DEEPGRAM_API_KEY`, ou ninguém falou |
+| chamada não apareceu no card | tela Chamadas (abrir já processa as paradas) | foi feita sem lead (pela tela Chamadas): vincular ao lead ali; ou ainda nos 10 min da rede de segurança |
 | o motor da manhã não fez follow-up | Supabase: `net._http_response` (o registro do motor) | "parou sem progresso": falta crédito/chave da IA; "cadência não definida": montar o Fluxo Comercial |
 | o "esqueci a senha" abre página errada | Supabase → Authentication → URL Configuration | Site URL velho (`localhost:3000`) |
 

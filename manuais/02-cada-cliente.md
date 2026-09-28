@@ -19,7 +19,7 @@ O que entrou em 27–28/09/2026:
 - **Mais leve**: o Funil carrega os ativos primeiro (2,5 MB → 1 MB); o Monitor abre na hora e lê a Meta por trás; a logo do menu caiu de 506 KB pra 71 KB; o aviso de WhatsApp no menu chega em ~0,3 s (campainha).
 - **Tráfego dos clientes**: número em cima de cada coluna, o maior em verde.
 - **Orçamento**: resposta da IA cortada tenta de novo sozinha.
-- **Chamadas por voz e vídeo** (do Guto): link `/conversa/<codigo>` com a prévia da marca, gravação em estéreo e transcrição com o nome de cada lado.
+- **Chamadas por voz e vídeo** (do Guto): link `/conversa/<codigo>` com a prévia da marca, gravação em estéreo e transcrição com o nome de cada lado. Com ícone próprio no menu (vídeo; a Fila de Ligações segue com o telefone). Desde 28/09 a aba fechada também encerra, e a rede de segurança fecha as esquecidas — a primeira foi uma do Rick, que ficou "em andamento" e foi processada sozinha.
 
 ## Espaço Dani Fell (crm-danifell)
 
