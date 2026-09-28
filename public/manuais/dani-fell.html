@@ -278,7 +278,7 @@
             </div>
           </div>
           <div class="regra"><span class="k">→</span><div><b>Responder por cima dela:</b> em qualquer conversa, escreve e manda. A IA percebe que uma pessoa assumiu e fica quieta ali. Pra devolver pra IA, move a cliente pra uma etapa em que ela atende.</div></div>
-          <p>A IA atende em <b>Não respondeu</b>, <b>Avaliação agendada</b>, <b>Faltou na avaliação</b> e <b>Pensando</b>. Em <b>Em conversa</b> e <b>Fechando</b>, quem fala é uma de vocês.</p>
+          <p>A IA atende em <b>Não respondeu</b>, <b>Avaliação agendada</b>, <b>Faltou na avaliação</b> e <b>Pensando</b>. Em <b>Chegou</b> e <b>Em conversa</b>, quem fala é uma de vocês (a IA só sugere a resposta).</p>
 
           <h3 style="margin-top:26px">Chamar a cliente por voz ou vídeo</h3>
           <p>Quando uma conversa pede voz, vocês chamam a cliente pelo próprio sistema. Ela não precisa instalar nada: recebe um link no WhatsApp, toca e entra pelo celular.</p>
@@ -301,14 +301,12 @@
         <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Como funciona:</b> as etapas são da empresa, não do sistema — dá pra renomear, criar e reordenar. Cada etapa tem um papel (ativa, esperando algo, ganho, perda) e a marca de quem atende (IA ou pessoa). Ganho pede produto e valor porque é essa venda que vira número nos Resultados e no Caixa; Perda pede o motivo porque é o motivo que a Máquina lê depois pra dizer por que se perde. <b>Por que "não apague etapa com cliente dentro":</b> o cliente fica numa etapa que os motores não conhecem — sem tarefa, sem cobrança, sem aviso. Ele some sem erro.</p></aside>
         <div class="bloco">
           <ol class="funil">
-            <li><i></i><div><b>Chegou</b><small>mandou a primeira mensagem</small></div><span class="tag ia">IA</span></li>
-            <li><i></i><div><b>Não respondeu</b><small>parou de responder; a IA cobra nos dias do fluxo</small></div><span class="tag ia">IA</span></li>
+            <li><i></i><div><b>Chegou</b><small>mandou a primeira mensagem; uma de vocês responde</small></div><span class="tag pessoa">Vocês</span></li>
+            <li><i></i><div><b>Não respondeu</b><small>foi respondida no primeiro dia e sumiu; a IA manda as mensagens do fluxo</small></div><span class="tag ia">IA</span></li>
             <li><i></i><div><b>Em conversa</b><small>uma de vocês assumiu</small></div><span class="tag pessoa">Vocês</span></li>
             <li><i></i><div><b>Avaliação agendada</b><small>tem data; a IA confirma e lembra</small></div><span class="tag ia">IA</span></li>
             <li><i></i><div><b>Faltou na avaliação</b><small>não veio; a IA tenta remarcar</small></div><span class="tag ia">IA</span></li>
-            <li><i></i><div><b>Pensando</b><small>recebeu o valor e pediu pra pensar</small></div><span class="tag ia">IA</span></li>
-            <li><i></i><div><b>Fechando</b><small>disse sim; falta o pagamento</small></div><span class="tag pessoa">Vocês</span></li>
-            <li><i></i><div><b>Retomar depois</b><small>pediu pra falar em outro momento; fica parada até a data</small></div><span class="tag nada">Ninguém</span></li>
+            <li><i></i><div><b>Pensando</b><small>fez a avaliação e está decidindo; a IA acompanha por até 3 meses</small></div><span class="tag ia">IA</span></li>
             <li class="fim"><i></i><div><b>Ganho</b><small>comprou, com produto e valor</small></div><span class="tag nada">Fim</span></li>
             <li class="fim"><i></i><div><b>Perda</b><small>não vai comprar, com o motivo</small></div><span class="tag nada">Fim</span></li>
           </ol>
@@ -318,6 +316,8 @@
             <li><div><b>Perdeu</b>Move para Perda e escolhe o motivo. O motivo é o que a Máquina lê depois pra dizer por que se perde.</div></li>
             <li><div><b>Abrir o cartão</b>Mostra a conversa inteira, o resumo da IA, a ficha e a jornada, e o histórico.</div></li>
           </ol>
+          <div class="regra"><span class="k">→</span><div><b>Às 23h o sistema fecha o dia sozinho:</b> quem vocês responderam e não respondeu de volta passa de <b>Chegou</b> pra <b>Não respondeu</b>, e avaliação que passou sem o cartão sair de <b>Avaliação agendada</b> vai pra <b>Faltou</b> (se ela veio, é só mover o cartão). Se a cliente responder depois, volta pra <b>Em conversa</b> e vocês recebem o aviso.</div></div>
+          <div class="regra"><span class="k">→</span><div><b>As mensagens da IA são as que a Meta aprovou:</b> fora das 24 horas depois da última mensagem da cliente, o WhatsApp só deixa mandar mensagem pronta e aprovada. São 10, escritas no jeito do Espaço: 3 pra quem não respondeu, 3 pra quem faltou e 4 pra quem está pensando. Nenhuma fala de valor de tratamento nem promete resultado. Enquanto a IA não puder mandar (por exemplo, sem cartão cadastrado no WhatsApp), quem não respondeu vira <b>tarefa pra vocês</b>, e ninguém fica esquecido.</div></div>
         </div>
       </section>
 

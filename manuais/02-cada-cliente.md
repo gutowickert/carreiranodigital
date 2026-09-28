@@ -28,12 +28,13 @@ Nutrição — o método Restaure seu Intestino. Contrato CRM + Tráfego, desde 
 - **Área da cliente**: a ficha (anamnese e exames) e a jornada (sessões, check-in semanal, medidas, exames, conquistas) que a cliente abre no celular sem login. O que nunca sai pra cliente está escrito em `lib/jornada.ts` (grau de disbiose, "alterado", registro interno).
 - **Caixa**: o mês em quatro números; entradas vêm das vendas do funil, só se lança o que sai.
 - **Motor do fim do dia**: a virada noturna de quem respondeu, além do da manhã.
-- **Funil próprio**: Chegou → Não respondeu (IA) → Em conversa → Avaliação agendada (IA) → Faltou (IA) → Pensando (IA) → Fechando → Retomar depois → Ganho / Perda.
+- **Funil próprio**: Chegou (time) → Não respondeu (IA) → Em conversa (time) → Avaliação agendada (IA responde) → Faltou (IA) → Pensando (IA, até D+90) → Ganho / Perda. "Fechando" e "Retomar depois" estão desativadas.
 - **Áudio pronto**: "O método Restaure seu Intestino", na voz da Dani.
 - **Chamadas por voz e vídeo** (desde 28/09): o botão Chamar no cartão da cliente, na conversa do WhatsApp e no Atender, no lugar do "Ligar" da API4COM (que ela não tem). Testado no ar: conecta, grava, transcreve com o nome de quem falou. A espera com som e passo a passo e o convite com capa também. Sem servidor de apoio próprio (Cloudflare), pode falhar no 4G.
 - **Área do cliente**: o botão **link** do lado de "card" copia o link da ficha pra mandar pra cliente.
+- **Follow-up da IA** (28/09): cadência de 22/09 (`setup-danifell/04-cadencia.mjs`) + **10 modelos aprovados pela Meta** (`18-modelos-de-mensagem.sql`: 3 Não respondeu, 3 Faltou, 4 Pensando). ⚠️ **Pausados** (`ativo=false`) até a Dani cadastrar o cartão no WhatsApp Manager — o teste deu 131042. Com o cartão: reativar os 10 e mandar um teste. Fora de propósito: Pensando D+1 (áudio da Dani) e D+14 (online) são dela; D+3 precisa de um relato real de cliente, com autorização.
 - Usuários: Dani, Bruna e Suporte CND (🔒 protegida). ⚠️ Dani e Bruna estão como *vendedor* — se uma delas for a dona, mudar o papel na implantação. Máquina CND em modo geral, todos com login entram.
-- *O que a IA sabe* tem 9 seções (quem somos, como atende, o que vende e preço, o que nunca se faz, o método, a avaliativa, quando acha caro, o acompanhamento, o preparo). ⚠️ Em 27/09: conta da Anthropic sem crédito e WhatsApp oficial não configurado.
+- *O que a IA sabe* tem 9 seções (quem somos, como atende, o que vende e preço, o que nunca se faz, o método, a avaliativa, quando acha caro, o acompanhamento, o preparo). Em 28/09: crédito na Anthropic ok (IA, sugestão e Máquina testadas no ar) e WhatsApp oficial no ar.
 
 ## GAJA Corretora de Seguros (crm-gaja)
 
