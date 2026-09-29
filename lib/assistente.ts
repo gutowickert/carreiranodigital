@@ -404,7 +404,7 @@ async function runToolAssistente(u: Usuario, name: string, input: any, origin: s
   if (name === 'trafego_clientes' || name === 'trafego_cliente') {
     const hoje = hojeBR()
     const de = input.de || menosDias(hoje, 6), ate = input.ate || hoje
-    let q = sb.from('projetos').select('id, org_id, cliente, produto, fase, ad_account_id, data_inicio, valor_cliente, alvo_custo_resultado').eq('org_id', u.org_id).in('status', ['ativo', 'manutencao']).not('ad_account_id', 'is', null)
+    let q = sb.from('projetos').select('id, org_id, cliente, produto, fase, ad_account_id, data_inicio, valor_cliente, alvo_custo_resultado, modelo_trafego').eq('org_id', u.org_id).in('status', ['ativo', 'manutencao']).not('ad_account_id', 'is', null)
     if (name === 'trafego_cliente') q = q.ilike('cliente', `%${input.cliente}%`)
     const { data: projetos } = await q.order('cliente')
     if (!projetos?.length) return { erro: name === 'trafego_cliente' ? 'cliente não encontrado (ou sem conta de anúncio ligada)' : 'nenhum cliente com conta de anúncio' }

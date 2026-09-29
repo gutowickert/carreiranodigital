@@ -198,6 +198,7 @@ async function montarCard(p: any, de: string, hoje: string, pct: number, nomePes
     const grave = parado >= LIMITES.diasSemGasto * 2
     base.alertas.push({ nivel: grave ? 'vermelho' : 'amarelo', chave: 'parou', titulo: `Campanha parada há ${parado} dias: tudo pausado, nenhum anúncio ativo`, acao: grave ? 'Reativar ou subir a próxima campanha hoje' : 'Foi de propósito? Se não, reativar' })
   }
+  if (painel.modelo === 'infoproduto' && leCusto && t.checkouts >= 5 && t.resultados === 0) base.alertas.push({ nivel: 'amarelo', chave: 'checkout_sem_compra', titulo: `${t.checkouts} checkouts iniciados e nenhuma compra`, acao: 'Conferir o checkout: preço, formas de pagamento e se o pixel marca a compra' })
   if (leCusto && t.gasto > 0 && t.resultados === 0 && !ultimos.every(d => d.gasto === 0)) base.alertas.push({ nivel: 'vermelho', chave: 'sem_resultado', titulo: `${fmtBRL(t.gasto)} em ${LIMITES.janelaDias} dias sem nenhum resultado`, acao: 'Trocar criativo ou público hoje' })
   if (leCusto && t.custo != null && t.resultados >= LIMITES.minResultados) {
     if (base.alvo_custo && t.custo > base.alvo_custo * LIMITES.custoVsAlvo) base.alertas.push({ nivel: 'vermelho', chave: 'custo_alvo', titulo: `Custo ${fmtBRL(t.custo)}, mais de ${LIMITES.custoVsAlvo}× o alvo de ${fmtBRL(base.alvo_custo)}`, acao: 'Rever público e oferta' })

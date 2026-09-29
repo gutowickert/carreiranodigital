@@ -125,7 +125,9 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10, marginTop: 18 }}>
           {[
             { l: `custo por ${nome.um.split(' ')[0]}`, v: t.custo != null ? brl(t.custo, 2) : '—', el: <Delta atual={t.custo} anterior={a?.custo} bom="desce" escuro />, extra: d.alvo_custo && t.custo != null ? (t.custo <= d.alvo_custo ? `abaixo do alvo de ${brl(d.alvo_custo, 2)}` : `alvo: ${brl(d.alvo_custo, 2)}`) : null },
-            { l: 'investido', v: brl(t.gasto, 2), el: <Delta atual={t.gasto} anterior={a?.gasto} bom="neutro" escuro />, extra: t.impostoPct ? 'com imposto' : null },
+            d.modelo === 'infoproduto'
+              ? { l: 'faturamento', v: brl(t.faturamento, 2), el: <Delta atual={t.faturamento} anterior={a?.faturamento} bom="sobe" escuro />, extra: t.roas != null ? `cada R$ 1 no anúncio voltou R$ ${t.roas.toFixed(2).replace('.', ',')} · ${brl(t.gasto, 2)} investido` : `${brl(t.gasto, 2)} investido` }
+              : { l: 'investido', v: brl(t.gasto, 2), el: <Delta atual={t.gasto} anterior={a?.gasto} bom="neutro" escuro />, extra: t.impostoPct ? 'com imposto' : null },
           ].map(x => (
             <div key={x.l} style={{ background: 'rgba(255,255,255,.10)', border: '1px solid rgba(255,255,255,.16)', borderRadius: 16, padding: '12px 14px', backdropFilter: 'blur(8px)' }}>
               <div style={{ fontSize: 11.5, fontWeight: 700, color: 'rgba(255,255,255,.7)', textTransform: 'uppercase', letterSpacing: '.08em' }}>{x.l}</div>
@@ -264,7 +266,8 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
           {[
             { i: Eye, l: 'vezes que o anúncio apareceu', v: d.funil.impressoes },
             { i: MousePointerClick, l: 'cliques', v: d.funil.cliques },
-            { i: MessageCircle, l: nome.frase, v: d.funil.resultados },
+            ...(d.modelo === 'infoproduto' ? [{ i: Eye, l: 'chegaram na página', v: d.funil.visitas || 0 }, { i: ShoppingBag, l: 'abriram o checkout', v: d.funil.checkouts || 0 }] : []),
+            { i: d.modelo === 'infoproduto' ? ShoppingBag : MessageCircle, l: nome.frase, v: d.funil.resultados },
             ...(d.funil.vendas != null ? [{ i: ShoppingBag, l: 'vendas informadas no mês', v: d.funil.vendas }] : []),
           ].map((x, i, arr) => {
             const larg = arr[0].v ? Math.max(4, Math.round((x.v / arr[0].v) * 100)) : 0

@@ -127,6 +127,7 @@ export async function PATCH(req: Request) {
     // sentido ao custo por conversa no painel do cliente
     if (b.valor_cliente !== undefined) p.valor_cliente = num(b.valor_cliente)
     if (b.alvo_custo_resultado !== undefined) p.alvo_custo_resultado = num(b.alvo_custo_resultado)
+    if (b.modelo_trafego !== undefined) p.modelo_trafego = b.modelo_trafego === 'infoproduto' ? 'infoproduto' : 'whatsapp'
     if (b.fase) p.fase = b.fase
     if (b.status && ['ativo', 'manutencao', 'concluido', 'cancelado'].includes(b.status)) p.status = b.status
 

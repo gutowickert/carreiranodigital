@@ -366,6 +366,7 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
     meta_objetivo: projeto.meta_objetivo || '',
     meta_leads: projeto.meta_leads ?? '', meta_vendas: projeto.meta_vendas ?? '', meta_faturamento: projeto.meta_faturamento ?? '',
     valor_cliente: projeto.valor_cliente ?? '', alvo_custo_resultado: projeto.alvo_custo_resultado ?? '',
+    modelo_trafego: projeto.modelo_trafego || 'whatsapp',
   })
   const [f, setF] = useState<any>(deProjeto())
   const temMeta = !!projeto.meta_objetivo || METRICAS_META.some(m => projeto[m.k] != null)
@@ -389,7 +390,12 @@ function MetaContrato({ projeto, atual, rotulo, aoMudar }: { projeto: any; atual
       {/* o que dá sentido ao custo por conversa no painel do cliente: sem isso, R$ 5 por conversa não diz nada */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))', gap: 8, marginTop: 8 }}>
         <div><label style={lbl}>Quanto vale um cliente novo (ticket ou pacote)</label><input style={inp} value={f.valor_cliente} onChange={e => setF({ ...f, valor_cliente: e.target.value })} placeholder="R$" /></div>
-        <div><label style={lbl}>Custo por conversa que consideramos bom</label><input style={inp} value={f.alvo_custo_resultado} onChange={e => setF({ ...f, alvo_custo_resultado: e.target.value })} placeholder="R$" /></div>
+        <div><label style={lbl}>Como o cliente vende</label>
+          <select style={inp} value={f.modelo_trafego} onChange={e => setF({ ...f, modelo_trafego: e.target.value })}>
+            <option value="whatsapp">Pelo WhatsApp (mede conversas)</option>
+            <option value="infoproduto">Página e checkout (mede checkout e venda)</option>
+          </select></div>
+        <div><label style={lbl}>{f.modelo_trafego === 'infoproduto' ? 'Custo por venda que consideramos bom' : 'Custo por conversa que consideramos bom'}</label><input style={inp} value={f.alvo_custo_resultado} onChange={e => setF({ ...f, alvo_custo_resultado: e.target.value })} placeholder="R$" /></div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 10, alignItems: 'center', flexWrap: 'wrap' }}>
         <button onClick={salvar} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Salvar meta</button>

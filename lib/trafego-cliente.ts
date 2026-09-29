@@ -18,6 +18,8 @@ import { hojeBR, menosDias, periodoAnterior, diasEntre } from '@/lib/periodos'
 type Projeto = {
   id: string; org_id: string; cliente: string; ad_account_id: string | null; data_inicio: string
   valor_cliente?: number | null; alvo_custo_resultado?: number | null; produto?: string
+  // 'infoproduto': vende pela página + checkout; o resultado é a COMPRA, e entram visitas, checkout e faturamento
+  modelo_trafego?: string | null
 }
 
 export type TipoResultado = 'conversa' | 'lead' | 'compra'
@@ -61,14 +63,16 @@ export async function sincronizarProjeto(p: Projeto, opts: { desde?: string; com
   if (!r.ok) return { ok: false, error: r.error }
 
   // 1) a foto diária
+  const info = p.modelo_trafego === 'infoproduto'
   const linhas = r.linhas.map(l => {
-    const tipo = tipoDaLinha(l)
+    const tipo: TipoResultado = info ? 'compra' : tipoDaLinha(l)
     return {
       org_id: p.org_id, projeto_id: p.id, ad_account_id: p.ad_account_id, data: l.data,
       campaign_id: l.campaign_id, campaign_name: l.campaign_name, adset_id: l.adset_id, adset_name: l.adset_name,
       ad_id: l.ad_id, ad_name: l.ad_name, objective: l.objective,
       gasto: l.gasto, impressoes: l.impressoes, alcance: l.alcance, cliques: l.cliques,
       conversas: l.conversas, leads: l.leads, compras: l.compras,
+      visitas: l.visitas || 0, checkouts: l.checkouts || 0, valor_compras: l.valor_compras || 0,
       resultados: valorDoTipo(l, tipo), tipo_resultado: tipo, atualizado_em: new Date().toISOString(),
     }
   })
@@ -209,7 +213,8 @@ export type Painel = {
   tipo: TipoResultado; nome: { um: string; varios: string; frase: string }
   total: Totais; anterior: Totais | null
   porDia: { data: string; gasto: number; resultados: number }[]
-  funil: { impressoes: number; cliques: number; resultados: number; vendas: number | null }
+  modelo: 'whatsapp' | 'infoproduto'
+  funil: { impressoes: number; cliques: number; resultados: number; vendas: number | null; visitas?: number; checkouts?: number }
   anuncios: AnuncioPainel[]
   eventos: { data: string; tipo: string; titulo: string; descricao: string | null }[]
   conquistas: { chave: string; titulo: string; descricao: string | null; valor: number | null; destravada_em: string }[]
@@ -224,7 +229,9 @@ export type Painel = {
   valor_cliente: number | null; alvo_custo: number | null
   sincronizado_em: string | null
 }
-type Totais = { gasto: number; gastoSemImposto: number; impostoPct: number; impressoes: number; cliques: number; resultados: number; custo: number | null; ctr: number | null }
+type Totais = { gasto: number; gastoSemImposto: number; impostoPct: number; impressoes: number; cliques: number; resultados: number; custo: number | null; ctr: number | null
+  // infoproduto (vêm zerados nos outros modelos)
+  visitas: number; checkouts: number; faturamento: number; custo_checkout: number | null; roas: number | null; conv_checkout: number | null }
 export type AnuncioPainel = {
   ad_id: string; nome: string; campanha: string; status: string; imagem_url: string | null
   gasto: number; impressoes: number; cliques: number; resultados: number; custo: number | null; ctr: number | null
@@ -241,8 +248,8 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   const f = 1 + (impostoPct || 0) / 100
 
   const [{ data: dias }, { data: diasAnt }, { data: ads }, { data: eventos }, { data: conquistas }, { data: placar }, { data: ultimo }] = await Promise.all([
-    sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, tipo_resultado').eq('projeto_id', p.id).gte('data', de).lte('data', ate),
-    sb.from('trafego_anuncios_dia').select('gasto, impressoes, cliques, resultados').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt),
+    sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, tipo_resultado, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', de).lte('data', ate),
+    sb.from('trafego_anuncios_dia').select('gasto, impressoes, cliques, resultados, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt),
     sb.from('trafego_anuncios').select('ad_id, ad_name, campaign_name, status, imagem_url, primeiro_dia').eq('projeto_id', p.id),
     sb.from('trafego_eventos').select('data, tipo, titulo, descricao').eq('projeto_id', p.id).gte('data', menosDias(ate, 45)).lte('data', ate).order('data', { ascending: false }).limit(30),
     sb.from('projeto_conquistas').select('chave, titulo, descricao, valor, destravada_em').eq('projeto_id', p.id).order('destravada_em', { ascending: false }),
@@ -251,8 +258,10 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   ])
 
   const soma = (ls: any[] | null): Totais => {
-    const t = (ls || []).reduce((a, l) => { a.g += Number(l.gasto); a.i += Number(l.impressoes); a.c += Number(l.cliques); a.r += Number(l.resultados); return a }, { g: 0, i: 0, c: 0, r: 0 })
-    return { gasto: t.g * f, gastoSemImposto: t.g, impostoPct: impostoPct || 0, impressoes: t.i, cliques: t.c, resultados: t.r, custo: t.r ? (t.g * f) / t.r : null, ctr: t.i ? (t.c / t.i) * 100 : null }
+    const t = (ls || []).reduce((a, l) => { a.g += Number(l.gasto); a.i += Number(l.impressoes); a.c += Number(l.cliques); a.r += Number(l.resultados); a.v += Number(l.visitas || 0); a.k += Number(l.checkouts || 0); a.f += Number(l.valor_compras || 0); return a }, { g: 0, i: 0, c: 0, r: 0, v: 0, k: 0, f: 0 })
+    const gasto = t.g * f
+    return { gasto, gastoSemImposto: t.g, impostoPct: impostoPct || 0, impressoes: t.i, cliques: t.c, resultados: t.r, custo: t.r ? gasto / t.r : null, ctr: t.i ? (t.c / t.i) * 100 : null,
+      visitas: t.v, checkouts: t.k, faturamento: t.f, custo_checkout: t.k ? gasto / t.k : null, roas: gasto ? t.f / gasto : null, conv_checkout: t.k ? (t.r / t.k) * 100 : null }
   }
   const total = soma(dias)
   const anterior = diasAnt?.length ? soma(diasAnt) : null
@@ -260,7 +269,8 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   // o tipo que predomina no período decide a língua do painel
   const porTipo: Record<string, number> = {}
   for (const d of dias || []) porTipo[d.tipo_resultado] = (porTipo[d.tipo_resultado] || 0) + Number(d.resultados)
-  const tipo = (Object.entries(porTipo).sort((a, b) => b[1] - a[1])[0]?.[0] || 'conversa') as TipoResultado
+  const info = p.modelo_trafego === 'infoproduto'
+  const tipo = (info ? 'compra' : (Object.entries(porTipo).sort((a, b) => b[1] - a[1])[0]?.[0] || 'conversa')) as TipoResultado
   const nome = NOME_RESULTADO[tipo]
 
   // por dia (pro gráfico)
@@ -317,11 +327,12 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   if (proxA && alcVal) proximas.push({ titulo: `${fmtInt(proxA)} pessoas alcançadas`, falta: proxA - alcVal, de: proxA, progresso: Math.round((alcVal / proxA) * 100) })
 
   const vendas = placar?.[0]?.vendas != null ? Number(placar[0].vendas) : null
-  const analise = escreverAnalise({ de, ate, total, anterior, nome, anuncios, eventos: eventos || [], valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null, vendas })
+  const analise = escreverAnalise({ info, de, ate, total, anterior, nome, anuncios, eventos: eventos || [], valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null, vendas })
 
   return {
     ok: true, de, ate, de_anterior: deAnt, ate_anterior: ateAnt, tipo, nome, total, anterior, porDia,
-    funil: { impressoes: total.impressoes, cliques: total.cliques, resultados: total.resultados, vendas },
+    modelo: info ? 'infoproduto' : 'whatsapp',
+    funil: { impressoes: total.impressoes, cliques: total.cliques, resultados: total.resultados, vendas, ...(info ? { visitas: total.visitas, checkouts: total.checkouts } : {}) },
     anuncios, eventos: eventos || [], conquistas: conquistas || [], proximas, analise, jogo,
     valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo_custo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null,
     sincronizado_em: ultimo?.[0]?.atualizado_em || null,
@@ -335,7 +346,7 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
 // traduz em clientes quando sabe quanto um cliente vale. Nunca promete.
 
 function escreverAnalise(x: {
-  de: string; ate: string; total: Totais; anterior: Totais | null; nome: Painel['nome']
+  info?: boolean; de: string; ate: string; total: Totais; anterior: Totais | null; nome: Painel['nome']
   anuncios: AnuncioPainel[]; eventos: any[]; valor_cliente: number | null; alvo: number | null; vendas: number | null
 }): string[] {
   const { total: t, anterior: a, nome } = x
@@ -359,6 +370,19 @@ function escreverAnalise(x: {
   } else if (a && a.gasto === 0) v += ' Não tem período anterior pra comparar: a campanha começou agora.'
   if (x.alvo && t.custo != null) v += t.custo <= x.alvo ? ` Está abaixo do alvo de ${fmtBRL(x.alvo)}.` : ` Está acima do alvo de ${fmtBRL(x.alvo)}: é onde estamos trabalhando.`
   out.push(v)
+
+  // 1b) infoproduto: o caminho até a compra e o retorno
+  if (x.info && t.gasto > 0) {
+    const partes: string[] = []
+    if (t.visitas) partes.push(`${fmtInt(t.visitas)} ${t.visitas === 1 ? 'pessoa chegou' : 'pessoas chegaram'} na página`)
+    if (t.checkouts) partes.push(`${fmtInt(t.checkouts)} ${t.checkouts === 1 ? 'abriu' : 'abriram'} o checkout${t.custo_checkout != null ? ` (${fmtBRL(t.custo_checkout)} cada)` : ''}`)
+    partes.push(`${fmtInt(t.resultados)} ${t.resultados === 1 ? 'comprou' : 'compraram'}${t.conv_checkout != null ? `, ${Math.round(t.conv_checkout)}% de quem abriu o checkout` : ''}`)
+    let s = partes.join(', ')
+    s = s.charAt(0).toUpperCase() + s.slice(1) + '.'
+    if (t.faturamento > 0 && t.roas != null) s += ` As compras somaram ${fmtBRL(t.faturamento)}: cada real no anúncio voltou R$ ${t.roas.toFixed(2).replace('.', ',')}.`
+    else if (t.checkouts >= 3 && t.resultados === 0) s += ' Gente chega no checkout e não compra: vale conferir preço, formas de pagamento e se o pixel marca a compra.'
+    out.push(s)
+  }
 
   // 2. quem puxou
   const melhor = x.anuncios.find(an => an.situacao === 'puxando') || x.anuncios.find(an => an.resultados > 0)

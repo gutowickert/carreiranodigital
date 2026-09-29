@@ -139,3 +139,10 @@ CREATE TABLE IF NOT EXISTS public.projeto_conquistas (
 );
 
 COMMIT;
+
+-- INFOPRODUTO (29/09/2026): cliente que vende pela página + checkout, não pelo WhatsApp (ex.: José Adão).
+-- modelo_trafego decide o que é "resultado" no painel e no monitor; o funil ganha visitas e checkout.
+alter table projetos add column if not exists modelo_trafego text not null default 'whatsapp';
+alter table trafego_anuncios_dia add column if not exists visitas integer not null default 0;
+alter table trafego_anuncios_dia add column if not exists checkouts integer not null default 0;
+alter table trafego_anuncios_dia add column if not exists valor_compras numeric not null default 0;

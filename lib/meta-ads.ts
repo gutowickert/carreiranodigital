@@ -168,17 +168,21 @@ export type AnuncioDia = {
   objective: string
   gasto: number; impressoes: number; alcance: number; cliques: number
   conversas: number; leads: number; compras: number
+  // infoproduto: quem chegou na página, quem abriu o checkout e quanto as compras somaram (action_values)
+  visitas: number; checkouts: number; valor_compras: number
 }
 
 const LEAD = ['lead', 'onsite_conversion.lead_grouped', 'leadgen_grouped', 'leadgen.other', 'offsite_conversion.fb_pixel_lead']
 const COMPRA = ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purchase']
+const CHECKOUT = ['initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout', 'omni_initiated_checkout']
+const VISITA = ['landing_page_view', 'omni_landing_page_view']
 
 export async function getAnunciosDia(conta: string, since: string, until: string): Promise<{ ok: boolean; error?: string; linhas: AnuncioDia[] }> {
   if (!TOKEN) return { ok: false, error: 'Falta FB_ADS_TOKEN', linhas: [] }
   const acct = 'act_' + String(conta || '').replace(/\D/g, '')
   if (acct === 'act_') return { ok: false, error: 'projeto sem conta de anúncio', linhas: [] }
   const tr = encodeURIComponent(JSON.stringify({ since, until }))
-  const fields = 'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,objective,spend,impressions,reach,clicks,actions'
+  const fields = 'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,objective,spend,impressions,reach,clicks,actions,action_values'
   let url: string | null = `${GRAPH}/${acct}/insights?level=ad&fields=${fields}&time_range=${tr}&time_increment=1&limit=500&access_token=${encodeURIComponent(TOKEN)}`
   const linhas: AnuncioDia[] = []
   try {
@@ -200,6 +204,9 @@ export async function getAnunciosDia(conta: string, since: string, until: string
           conversas: somaAcao(r.actions, CONVERSA),
           leads: somaAcao(r.actions, LEAD),
           compras: somaAcao(r.actions, COMPRA),
+          visitas: somaAcao(r.actions, VISITA),
+          checkouts: somaAcao(r.actions, CHECKOUT),
+          valor_compras: somaAcao(r.action_values, COMPRA),
         })
       }
       url = json?.paging?.next || null

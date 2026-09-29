@@ -78,7 +78,9 @@ function Card({ c, aoAbrir }: { c: any; aoAbrir: () => void }) {
             {[
               { v: int(t.resultados), l: nome.varios, d: <Delta atual={t.resultados} anterior={a?.resultados} bom="sobe" />, g: true },
               { v: t.custo != null ? brl(t.custo, 2) : '—', l: 'por ' + nome.um.split(' ')[0], d: <Delta atual={t.custo} anterior={a?.custo} bom="desce" /> },
-              { v: brl(t.gasto), l: 'investido', d: <Delta atual={t.gasto} anterior={a?.gasto} bom="neutro" /> },
+              c.painel?.modelo === 'infoproduto'
+                ? { v: int(t.checkouts), l: 'checkouts', d: <span style={{ fontSize: 10.5, color: 'var(--text-faint)' }}>{t.faturamento ? 'ROAS ' + (t.roas || 0).toFixed(1).replace('.', ',') : brl(t.gasto) + ' investido'}</span> }
+                : { v: brl(t.gasto), l: 'investido', d: <Delta atual={t.gasto} anterior={a?.gasto} bom="neutro" /> },
             ].map((x, i) => (
               <div key={i} style={{ minWidth: 0 }}>
                 <div style={{ fontSize: x.g ? 22 : 15, fontWeight: 800, color: 'var(--text)', fontVariantNumeric: 'tabular-nums', lineHeight: 1.1 }}>{x.v}</div>
@@ -176,6 +178,13 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
               { l: 'custo', v: p.total.custo != null ? brl(p.total.custo, 2) : '—', d: <Delta atual={p.total.custo} anterior={p.anterior?.custo} bom="desce" /> },
               { l: 'investido', v: brl(p.total.gasto, 2), d: <Delta atual={p.total.gasto} anterior={p.anterior?.gasto} bom="neutro" /> },
               { l: 'cliques', v: int(p.total.cliques), d: <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{p.total.ctr != null ? p.total.ctr.toFixed(1).replace('.', ',') + '% CTR' : ''}</span> },
+              // infoproduto: o caminho até a compra e o retorno
+              ...(p.modelo === 'infoproduto' ? [
+                { l: 'visitas na página', v: int(p.total.visitas), d: <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{p.total.cliques ? Math.round(p.total.visitas / p.total.cliques * 100) + '% dos cliques' : ''}</span> },
+                { l: 'checkouts iniciados', v: int(p.total.checkouts), d: <Delta atual={p.total.checkouts} anterior={p.anterior?.checkouts} bom="sobe" /> },
+                { l: 'custo por checkout', v: p.total.custo_checkout != null ? brl(p.total.custo_checkout, 2) : '—', d: <span style={{ fontSize: 11, color: 'var(--text-faint)' }}>{p.total.conv_checkout != null ? Math.round(p.total.conv_checkout) + '% compram' : ''}</span> },
+                { l: 'faturamento', v: brl(p.total.faturamento, 2), d: <span style={{ fontSize: 11, fontWeight: 700, color: p.total.roas != null && p.total.roas >= 1 ? 'var(--green)' : 'var(--text-faint)' }}>{p.total.roas != null ? 'ROAS ' + p.total.roas.toFixed(2).replace('.', ',') : ''}</span> },
+              ] : []),
             ].map((x, i) => (
               <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 8, padding: '10px 12px' }}>
                 <div style={{ fontSize: 17, fontWeight: 800, color: 'var(--text)', fontVariantNumeric: 'tabular-nums' }}>{x.v}</div>

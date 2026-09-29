@@ -14,7 +14,7 @@ export const maxDuration = 300
 //   POST → com login: { id } sincroniza um projeto (botão na ficha); { completo: true }
 //          refaz desde o início do contrato. Sem id, todos os da empresa.
 
-const SELECT = 'id, org_id, cliente, produto, ad_account_id, data_inicio, valor_cliente, alvo_custo_resultado'
+const SELECT = 'id, org_id, cliente, produto, ad_account_id, data_inicio, valor_cliente, alvo_custo_resultado, modelo_trafego'
 
 async function rodar(projetos: any[], completo = false) {
   const out: any[] = []
