@@ -86,7 +86,7 @@ export async function POST(req: NextRequest) {
       let foto: { ok: boolean; wamid?: string | null; error?: string } | null = null
       if (cod) {
         try {
-          const img = await fetch(`${new URL(req.url).origin}/call/${cod}/opengraph-image`)
+          const img = await fetch(`${new URL(req.url).origin}/call/${cod}/convite-foto`)
           if (img.ok) {
             const up = await uploadMidiaOf(Buffer.from(await img.arrayBuffer()), 'image/png', 'convite.png')
             if (up.ok && up.id) foto = await enviarMidiaOf(to, 'image', up.id, (texto || '').trim())
@@ -95,7 +95,7 @@ export async function POST(req: NextRequest) {
       }
       if (foto?.ok) { ro = foto; tipoMsg = 'imagem'; midiaMime = 'image/png' }
       else ro = await enviarTextoOf(to, (texto || '').trim(), { preview: !!preview })
-      if (foto?.ok) (body as any)._fotoUrl = `/call/${cod}/opengraph-image`
+      if (foto?.ok) (body as any)._fotoUrl = `/call/${cod}/convite-foto`
     }
     if (!ro.ok) return NextResponse.json({ ok: false, error: ro.error || 'falha ao enviar', foraJanela: /131047|131026|131051|re-?engag|template|outside|24\s*hour|janela/i.test(ro.error || '') }, { status: 200 })
 
