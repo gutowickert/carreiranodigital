@@ -28,7 +28,7 @@ O que entrou em 27–28/09/2026:
 Nutrição — o método Restaure seu Intestino. Contrato CRM + Tráfego, desde 16/09/2026. **Endereço: espacodanifell.vercel.app** (o crm-danifell continua valendo pros links antigos). Primeiro uso em 29/09/2026 — **depois disso, toda mudança sobe a versão** (2.0.1, 2.0.2…). O que é só dela:
 
 - **Área da cliente**: a ficha (anamnese e exames) e a jornada (sessões, check-in semanal, medidas, exames, conquistas) que a cliente abre no celular sem login. O que nunca sai pra cliente está escrito em `lib/jornada.ts` (grau de disbiose, "alterado", registro interno).
-- **Caixa**: o mês em quatro números; entradas vêm das vendas do funil, só se lança o que sai.
+- **Caixa**: o mês em quatro números; entradas vêm das vendas do funil **e, desde 29/09 (v2.0.8), da entrada avulsa** (`caixa_entradas`, setup-danifell/19 — o que entra sem venda no card); saídas lançadas no mesmo formulário. Também desde 29/09 (v2.0.7): a **ficha da cliente salva sozinha** (2s depois de cada resposta e ao sair) e a Área do cliente conta só as perguntas da ficha (178, não 185).
 - **Motor do fim do dia**: a virada noturna de quem respondeu, além do da manhã.
 - **Funil próprio**: Chegou (time) → Não respondeu (IA) → Em conversa (time) → Avaliação agendada (IA responde) → Faltou (IA) → Pensando (IA, até D+90) → Ganho / Perda. "Fechando" e "Retomar depois" estão desativadas.
 - **Áudio pronto**: "O método Restaure seu Intestino", na voz da Dani.
