@@ -41,6 +41,16 @@ function motivoMidia(e: any) {
 }
 
 // escolhe uma câmera de verdade: ignora NDI, OBS e outras virtuais; sem rótulo (antes da permissão), fica no padrão
+// COMO LIBERAR câmera/microfone bloqueados, no aparelho de quem está vendo. O "Tentar de novo" só
+// adianta depois disto: bloqueado uma vez, o navegador não pergunta sozinho.
+function comoLiberar() {
+  const ua = typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  if (/FBAN|FBAV|Instagram|WhatsApp|Line\//i.test(ua)) return 'Abre este link no navegador do celular (toque nos três pontinhos ou no ícone de compartilhar → Abrir no Safari/Chrome) e entra de novo.'
+  if (/iPhone|iPad/i.test(ua)) return 'No iPhone: toque em "aA" na barra do endereço → Ajustes do Site → Câmera e Microfone → Permitir. Depois toque em Tentar de novo.'
+  if (/Android/i.test(ua)) return 'No Android: toque no cadeado ao lado do endereço → Permissões → libere Câmera e Microfone. Depois toque em Tentar de novo.'
+  return 'Clique no cadeado ao lado do endereço → libere Câmera e Microfone → e tente de novo.'
+}
+
 async function cameraFisica(): Promise<MediaTrackConstraints> {
   const base: MediaTrackConstraints = { facingMode: 'user', width: { ideal: 640 } }
   try {
@@ -199,6 +209,11 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
     const p = new RTCPeerConnection({ iceServers: ice.current })
     pc.current = p
     local.current?.getTracks().forEach(t => p.addTrack(t, local.current!))
+    // LUGAR PRA VÍDEO E PRA ÁUDIO MESMO SEM CÂMERA (29/09/2026): quem convidava sem câmera montava a
+    // oferta só com áudio, e o vídeo do cliente não tinha por onde passar — ele via a própria câmera e
+    // do outro lado aparecia "Só voz". Com o lugar reservado (sem faixa), a câmera de qualquer lado
+    // entra depois com replaceTrack, sem renegociar (ver ligarCamera).
+    if (!local.current?.getVideoTracks().length) p.addTransceiver('video', { direction: 'sendrecv' })
     p.ontrack = e => {
       remoto.current?.addTrack(e.track)
       if (e.track.kind === 'video') setTemVideoRemoto(true)
@@ -239,7 +254,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         try { s = await navigator.mediaDevices.getUserMedia({ audio, video }) }
         catch (e: any) { usouVideo = false; setComVideo(false); setAviso(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); s = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
       } else s = await navigator.mediaDevices.getUserMedia({ audio, video: false })
-    } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}.`); return false }
+    } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}. ${comoLiberar()}`); return false }
     const f = s.getAudioTracks()[0]
     if (f && !micId && VIRTUAL_MIC.test(f.label)) {
       try {
@@ -315,6 +330,9 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         const p = pc.current!
         await p.setRemoteDescription(s.sdp)
         for (const c of fila.current) await p.addIceCandidate(c).catch(() => null); fila.current = []
+        // quem entrou sem câmera responde "posso mandar vídeo" mesmo assim: se ligar a câmera depois,
+        // ela passa sem renegociar
+        p.getTransceivers().forEach(tr => { if (tr.receiver.track?.kind === 'video' && tr.direction === 'recvonly') tr.direction = 'sendrecv' })
         const ans = await p.createAnswer(); await p.setLocalDescription(ans)
         enviar({ t: 'answer', sdp: p.localDescription })
       } else if (s.t === 'answer' && papel.current === 'host') {
@@ -452,8 +470,26 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   }
   function alternarCamera() {
     const ts = local.current?.getVideoTracks() || []
-    if (!ts.length) { setAviso('Entrou sem câmera. Pra usar vídeo, sai e entra de novo com a câmera marcada.'); return }
+    if (!ts.length) { ligarCamera(); return }
     const off = !camOff; setCamOff(off); ts.forEach(t => { t.enabled = !off })
+  }
+  // LIGAR A CÂMERA NO MEIO DA CHAMADA: entrou sem câmera, ou negou e mudou de ideia. Pede a autorização
+  // de novo (o navegador pergunta outra vez, ou avisa se está bloqueada) e põe a câmera no lugar de
+  // vídeo que a chamada já reservou — do outro lado ela aparece na hora.
+  async function ligarCamera() {
+    try {
+      const cam = await navigator.mediaDevices.getUserMedia({ video: await cameraFisica(), audio: false })
+      const faixa = cam.getVideoTracks()[0]; if (!faixa) return
+      const p = pc.current
+      const lugar = p?.getTransceivers().find(tr => tr.receiver.track?.kind === 'video' && tr.mid !== null) || p?.getTransceivers().find(tr => tr.receiver.track?.kind === 'video')
+      if (lugar) await lugar.sender.replaceTrack(faixa)
+      else if (p) p.addTrack(faixa, local.current || new MediaStream([faixa]))
+      if (!local.current) local.current = new MediaStream()
+      local.current.getVideoTracks().forEach(t => { t.stop(); local.current?.removeTrack(t) })
+      local.current.addTrack(faixa)
+      setTemVideoLocal(true); setCamOff(false); setComVideo(true); setAviso('')
+      if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
+    } catch (e: any) { setAviso(`A câmera não foi liberada (${motivoMidia(e)}). ${comoLiberar()}`) }
   }
   // TELA CHEIA: no computador e no Android, a página inteira vira tela cheia. O Safari do iPhone não
   // deixa página em tela cheia: lá o vídeo do outro lado abre em tela cheia nativa; sem vídeo, o modo
@@ -558,7 +594,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         )}
         {aviso && <div style={{ ...S.aviso, marginTop: 12 }}>{aviso}</div>}
         {erro && <div style={{ marginTop: 12, padding: '10px 12px', borderRadius: 12, background: 'var(--red-bg, #3A1520)', color: 'var(--red, #F0475F)', fontSize: 13.5, lineHeight: 1.45 }}>{erro}</div>}
-        <button onClick={entrar} style={{ ...S.btn, marginTop: 14, background: '#22C55E', color: '#06220f', boxShadow: '0 12px 30px rgba(34,197,94,.28)' }}>Entrar na chamada</button>
+        <button onClick={entrar} style={{ ...S.btn, marginTop: 14, background: '#22C55E', color: '#06220f', boxShadow: '0 12px 30px rgba(34,197,94,.28)' }}>{fase === 'erro' ? 'Tentar de novo' : 'Entrar na chamada'}</button>
       </div>
       <div style={{ opacity: .6, transform: 'scale(.92)' }}><AssinaturaCND escuro /></div>
     </div>
@@ -639,7 +675,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         )}
         <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 18px)', alignItems: 'flex-start', justifyContent: 'center' }}>
           <Redondo icone={mudo ? MicOff : Mic} rotulo={mudo ? 'Ativar mic' : 'Silenciar'} ativo={mudo} onClick={alternarMudo} />
-          {temVideoLocal && <Redondo icone={camOff ? VideoOff : Video} rotulo={camOff ? 'Ligar câmera' : 'Câmera'} ativo={camOff} onClick={alternarCamera} />}
+          <Redondo icone={!temVideoLocal || camOff ? VideoOff : Video} rotulo={!temVideoLocal || camOff ? 'Ligar câmera' : 'Câmera'} ativo={!temVideoLocal || camOff} onClick={alternarCamera} />
           <Redondo icone={telaCheia || imersivo ? Minimize2 : Maximize2} rotulo={telaCheia || imersivo ? 'Sair da tela cheia' : 'Tela cheia'} onClick={alternarTelaCheia} />
           <Redondo icone={Settings2} rotulo="Áudio" ativo={micMenu} onClick={() => { listarMics(); setMicMenu(v => !v) }} />
           <Redondo icone={PhoneOff} rotulo={host ? 'Encerrar' : 'Sair'} perigo onClick={() => desligar(true)} />
