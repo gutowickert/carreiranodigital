@@ -205,12 +205,17 @@ export async function POST(req: NextRequest) {
           // conversa, não aparece na caixa de entrada. Responde no after() porque a Meta quer o
           // 200 rápido e a IA leva segundos.
           const doTime = await usuarioDoNumero(m.from).catch(() => null)
-          if (doTime) {
+          // "#lead" no começo: quem é do time TESTA COMO CLIENTE — a mensagem vai pra caixa do time
+          // (sem o "#lead"), abre a janela de 24h pro atendente e segue o caminho de um lead. Sem isto
+          // o Nando e o Guto nunca conseguiam responder como cliente: tudo ia pro assistente (28/09/2026).
+          const comoLead = !!doTime && m.type === 'text' && /^\s*#lead\b/i.test(m.text?.body || '')
+          if (doTime && !comoLead) {
             const origin = req.nextUrl.origin
             after(async () => { try { await responderAssistente(doTime, m, origin) } catch { /* melhor esforço */ } })
             continue
           }
-          await registrarRecebida(m, ch.value)
+          const msg = comoLead ? { ...m, text: { ...m.text, body: (m.text?.body || '').replace(/^\s*#lead\b[\s:,.-]*/i, '') || '(teste)' } } : m
+          await registrarRecebida(msg, ch.value)
         }
         const statuses = ch.value?.statuses || []
         for (const st of statuses) {
