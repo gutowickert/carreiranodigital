@@ -67,7 +67,7 @@ Feito na Dani em 28/09/2026, no mesmo app do WhatsApp (~30 min, com uma aprovaç
 4. Usuários do sistema → **Gerar token** (o app, Nunca, `ads_read`; a Meta trava outras marcadas, não tem problema) → **outro admin aprova em Pedidos** → gerar de novo → o dono cola: `vercel env add FB_ADS_TOKEN production --sensitive`. Deploy.
 5. Conferir logado: tela Tráfego mostra o investido. (`/api/meta/spend` pede login desde 28/09 — antes abria pra qualquer um.)
 
-**Pixel / API de Conversões** (`FB_PIXEL_ID`, `FB_CAPI_TOKEN`): só se o anúncio usa pixel. Ver no Gerenciador → anúncio → Editar → **Rastreamento** (e depois *Fechar*, nunca *Publicar*). Anúncio de clique-pro-WhatsApp não usa — foi o caso da Dani, e ficou sem.
+**Pixel / API de Conversões** (`FB_PIXEL_ID`, `FB_CAPI_TOKEN`): só se o anúncio usa pixel. Ver no Gerenciador → anúncio → Editar → **Rastreamento** (e depois *Fechar*, nunca *Publicar*). Anúncio de clique-pro-WhatsApp não usa — mas mesmo assim vale mandar as VENDAS do sistema pro pixel que o cliente usa pra vendas (na Dani, o que recebe a Kiwify). Token: Gerenciador de Eventos (abrir pelo portfólio do cliente, senão cai na conta do Nando) → pixel → Configurações → Gerar token de acesso → na janela, deixar marcado SÓ esse pixel (vem com todos; depois não dá pra desfazer).
 
 | Sintoma | Causa quase sempre |
 | --- | --- |
