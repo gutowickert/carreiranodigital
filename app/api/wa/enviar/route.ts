@@ -7,7 +7,7 @@ import { enviarTexto as enviarTextoOf, enviarMidia as enviarMidiaOf, uploadMidia
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { telefone, texto, preview, audioBase64, anexoBase64, anexoNome, anexoTipo, leadId, chatLid, enviadoPor } = body
+    const { telefone, texto, preview, conviteFoto, audioBase64, anexoBase64, anexoNome, anexoTipo, leadId, chatLid, enviadoPor } = body
     const org = await orgDaRequest(req.headers.get('authorization'))
 
     let fone = (telefone || '').toString()
@@ -78,14 +78,31 @@ export async function POST(req: NextRequest) {
       ro = await enviarMidiaOf(to, tipoEnvio, up.id, texto?.trim() || undefined, anexoNome)
       tipoMsg = ehAudio ? 'audio' : (anexoTipo === 'imagem' ? 'imagem' : 'documento')
     } else {
-      ro = await enviarTextoOf(to, (texto || '').trim(), { preview: !!preview })
+      // O CONVITE DA CHAMADA VAI COMO FOTO COM LEGENDA (29/09/2026). Como texto com "prévia do link", quem
+      // gera a miniatura é a Meta — pequena e comprimida: chegava pixelada, qualquer que fosse a nossa
+      // imagem. Como foto, a capa chega em alta e o link vai na legenda (clicável). Se a foto falhar,
+      // manda do jeito antigo: o convite nunca deixa de sair.
+      const cod = conviteFoto ? ((texto || '').match(/\/conversa\/([a-z0-9]+)/i)?.[1] || '') : ''
+      let foto: { ok: boolean; wamid?: string | null; error?: string } | null = null
+      if (cod) {
+        try {
+          const img = await fetch(`${new URL(req.url).origin}/call/${cod}/opengraph-image`)
+          if (img.ok) {
+            const up = await uploadMidiaOf(Buffer.from(await img.arrayBuffer()), 'image/png', 'convite.png')
+            if (up.ok && up.id) foto = await enviarMidiaOf(to, 'image', up.id, (texto || '').trim())
+          }
+        } catch { /* cai no texto */ }
+      }
+      if (foto?.ok) { ro = foto; tipoMsg = 'imagem'; midiaMime = 'image/png' }
+      else ro = await enviarTextoOf(to, (texto || '').trim(), { preview: !!preview })
+      if (foto?.ok) (body as any)._fotoUrl = `/call/${cod}/opengraph-image`
     }
     if (!ro.ok) return NextResponse.json({ ok: false, error: ro.error || 'falha ao enviar', foraJanela: /131047|131026|131051|re-?engag|template|outside|24\s*hour|janela/i.test(ro.error || '') }, { status: 200 })
 
     await supabase.from('wa_mensagens').insert({
       org_id: org, conversa_id: conversa.id, zapi_id: ro.wamid || null, direcao: 'enviada',
       tipo: tipoMsg, texto: tipoMsg === 'documento' ? (anexoNome || null) : (texto?.trim() || null),
-      midia_url: dataUrl, midia_mime: midiaMime, status: 'enviada', canal: 'oficial', enviado_por: enviadoPor || null,
+      midia_url: dataUrl || (body as any)._fotoUrl || null, midia_mime: midiaMime, status: 'enviada', canal: 'oficial', enviado_por: enviadoPor || null,
     })
     const resumoMsg = tipoMsg === 'imagem' ? '📷 Imagem' : tipoMsg === 'documento' ? `📎 ${anexoNome || 'documento'}` : tipoMsg === 'audio' ? '🎤 Áudio' : (texto || '').trim()
     await supabase.from('wa_conversas').update({ ultima_msg: (resumoMsg || '').slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversa.id)

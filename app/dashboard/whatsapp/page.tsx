@@ -376,7 +376,7 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
   // o botão Chamar manda o convite da chamada como mensagem desta conversa
   async function enviarConvite(t: string): Promise<boolean> {
     try {
-      const res = await fetchAuth('/api/wa/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto: t, preview: true }) })
+      const res = await fetchAuth('/api/wa/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: conversa.telefone, leadId: conversa.lead_id, chatLid: conversa.chat_lid, texto: t, preview: true, conviteFoto: true }) })
       const json = await res.json()
       if (json.ok) { carregar(); onEnviou(); return true }
       setErro(json.error || 'falha ao enviar o convite'); if (json.foraJanela) setForaJanela(true); return false
