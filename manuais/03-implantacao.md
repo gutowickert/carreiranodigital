@@ -8,7 +8,7 @@ A regra de tudo: **toda conta é do cliente, no nome dele, paga por ele** (decid
 
 Se faltar, o sistema **não quebra, só finge que funciona**: os motores rodam no horário e não decidem nada.
 
-**O checklist completo dos 11 pré-requisitos** está em `setup-nucleo/SERVICOS-EXTERNOS.md` → "Checklist antes do PRIMEIRO USO" (nasceu dos esquecimentos de 27–28/09/2026: o crédito da Anthropic, a ligação da Dani, o endereço do login). **Passa por ele antes de marcar o primeiro uso, e avisa o dono do que depende dele.**
+**O checklist completo dos 27 pré-requisitos** está em `setup-nucleo/SERVICOS-EXTERNOS.md` → "Checklist antes do PRIMEIRO USO". Os 11 primeiros nasceram de 27–28/09/2026 (o crédito da Anthropic, a ligação da Dani, o endereço do login); os **16 novos (12–27) da noite de 28/09**, ligando a Dani: número livre, aprovação do token por outro admin, PIN, webhook, **app publicado**, **cartão no WhatsApp (131042)**, modelos aprovados, foto do perfil, conta de anúncios certa, API de Marketing, pixel das vendas, verificação da empresa, papel do dono, primeiro login e notificações, leads de teste apagados e o manual no menu. **Passa por ele antes de marcar o primeiro uso, e avisa o dono do que depende dele.**
 
 | Item | Onde | Sem isso |
 | --- | --- | --- |
