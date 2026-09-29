@@ -128,6 +128,32 @@ O nome de quem convida vem do login (o Suporte CND aparece como "Suporte" pro cl
 
 Chaves VAPID geradas na instalação; `db/push.sql`. Cada pessoa liga o próprio aparelho: fim do menu → *Notificações no celular* → Ligar. **iPhone**: só com o sistema adicionado à Tela de Início e **aberto pelo ícone**. Quando não chega: (1) Ligar feito naquele aparelho? (2) iPhone pelo ícone? (3) permissão do navegador? (4) desliga e liga de novo; (5) `VAPID_*` e `push.sql`.
 
+## ⚠️ O ENSAIO GERAL — obrigatório ANTES de toda implantação (nasceu da Dani, 28–29/09/2026)
+
+Tudo abaixo aconteceu na frente da cliente ou por pouco não aconteceu. Roda o ensaio **na véspera**, com o sistema dela no ar, e só marca a reunião com tudo ✅. As ferramentas de teste ficam em `Sistema CND/ferramentas/testes` (a pasta temporária do Claude é apagada sozinha).
+
+**1. Entrar COMO a cliente, não como Suporte.** Na Dani, as duas estavam como *vendedor*, vendo só os próprios leads e sem a caixa do WhatsApp: o sistema abriria VAZIO pra elas. Conferir papel (o dono = admin), `leads_escopo = todos`, `wa_caixa`, CRM ligado — e abrir o funil e o WhatsApp logado como elas.
+
+**2. Senhas combinadas antes.** Chegamos lá sem a senha delas (ninguém anotou em 16/09). Agora: `node --env-file=.env.local ../ferramentas/trocar-senha-suporte.mjs <email>` — a própria pessoa digita, escondido. Levar isso pronto, ou criar a senha com ela no começo da reunião.
+
+**3. Chamada entre REDES DIFERENTES.** Testar um aparelho no Wi-Fi e outro no 4G (Wi-Fi desligado). Na mesma rede sempre conecta e engana. Sem o servidor da Cloudflare (`CF_TURN_*`), em redes diferentes as duas pessoas ficam "esperando" pra sempre — foi a Bruna com o Rick. Conferir: `turn-sistema.js` → `cloudflare` e caminhos > 0.
+
+**4. O convite sai pelo WhatsApp OFICIAL, de TODAS as telas.** Do card, do Atender, da Fila e da tela Chamadas o botão abria o wa.me e o convite saía do celular pessoal da Bruna (corrigido na v2.0.1). Testar o Chamar de cada tela e ver de qual número chegou.
+
+**5. A campanha aponta pro número do sistema.** Anúncio de clique-pro-WhatsApp no número antigo = nenhum lead entra no sistema. Confirmar com quem roda o tráfego (Guto) ANTES da reunião, com um "oi" pelo anúncio caindo em "Chegou" com o nome do anúncio.
+
+**6. O celular como app.** Instalar na tela inicial, ligar as notificações e percorrer as abas num celular de verdade (e no iPhone simulado: `celular.js`). O sistema da Dani não tinha a versão app e tudo ficava sobreposto no celular.
+
+**7. Tudo de teste apagado, a demonstração pronta.** Leads de teste no funil = números do 1º mês errados e IA mandando follow-up pra quem testou. Pra apresentar: `setup-<cliente>/demo-apresentacao.mjs criar` (conferir antes se os nomes de produto ainda batem — em 29/09 não batiam) + as conversas de WhatsApp de demonstração; **pausar o follow-up automático** enquanto a demo existir e **apagar a demo + religar** no mesmo dia.
+
+**8. A capa e o convite da chamada chegando bem no celular.** Mandar um convite de verdade pra um celular e olhar: chegou pelo número oficial, como foto nítida (1600px), com o link clicável.
+
+**9. Pagamento, modelos e o WhatsApp de ponta a ponta** (itens 12–19 do checklist): cartão na conta do WhatsApp (131042), modelos aprovados e ativos, app publicado, mensagem de um celular de FORA entrando.
+
+**10. O manual no menu e o link com o dono** — e o manual com o endereço certo (o da Dani ainda mostrava o endereço antigo).
+
+Depois do primeiro uso, toda mudança sobe a versão (2.0.1…).
+
 ## O dia da implantação: as 2 horas
 
 | Minuto | O que acontece | Quem faz |
