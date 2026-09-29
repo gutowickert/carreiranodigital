@@ -28,24 +28,23 @@ export default async function Imagem({ params }: { params: Promise<{ codigo: str
   ])
   const quem = ch?.criado_por_nome ? ch.criado_por_nome.toString().split(' ')[0] : 'A Carreira no Digital'
   const video = !!ch?.com_video
-  // TUDO NO MEIO (29/09/2026): o WhatsApp mostra a capa como um QUADRADINHO recortado do centro da
-  // imagem. Com o texto alinhado à esquerda, o recorte cortava a frase ao meio e parecia distorcida.
-  // O essencial cabe no quadrado do meio (630×630); onde a capa aparece grande, continua bonita.
+  // SÓ A MARCA, GRANDE (29/09/2026, terceira tentativa). O WhatsApp mostra a capa como um QUADRADINHO
+  // de ~100px ao lado do texto. Com frase dentro da imagem, qualquer desenho vira borrão e parece
+  // quebrado — larga (achatava), centralizada (ainda miúda), quadrada com texto (ilegível). O texto
+  // ("Ricardo te convidou pra uma conversa") o WhatsApp já escreve ao lado, vindo do og:title.
   return new ImageResponse(
     (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff', fontFamily: 'Manrope', textAlign: 'center',
-        background: 'radial-gradient(circle at 50% 45%, #5a1bb8 0%, #2b0a55 55%, #1a0733 100%)' }}>
-        {logo ? <img src={logo} width={200} height={73} style={{ width: 200, height: 73 }} /> : <div style={{ fontSize: 32, fontWeight: 800 }}>Carreira no Digital</div>}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: 22, fontWeight: 600, background: 'rgba(255,255,255,.14)', borderRadius: 999, padding: '9px 20px', marginTop: 34 }}>
-          <div style={{ width: 12, height: 12, borderRadius: 6, background: '#4ade80' }} />
+      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#fff',
+        background: 'radial-gradient(circle at 50% 42%, #6a24d6 0%, #3a0f78 50%, #1a0733 100%)' }}>
+        {logo ? <img src={logo} width={470} height={171} style={{ width: 470, height: 171 }} /> : <div style={{ fontSize: 64, fontWeight: 800 }}>Carreira no Digital</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontSize: 40, fontWeight: 700, background: 'rgba(255,255,255,.16)', borderRadius: 999, padding: '14px 34px', marginTop: 56 }}>
+          <div style={{ width: 20, height: 20, borderRadius: 10, background: '#4ade80' }} />
           {video ? 'Chamada de vídeo' : 'Chamada de voz'}
         </div>
-        <div style={{ fontSize: 76, fontWeight: 800, lineHeight: 1.05, letterSpacing: -2, marginTop: 26 }}>{quem}</div>
-        <div style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.15, color: '#e9d5ff', marginTop: 6 }}>te convidou pra uma conversa</div>
-        <div style={{ fontSize: 22, fontWeight: 600, color: 'rgba(255,255,255,.72)', marginTop: 22 }}>Toque no link e clique em Entrar</div>
       </div>
     ),
-    { ...size, fonts: fonts.length ? fonts : undefined },
+    { ...size },
   )
+
 
 }
