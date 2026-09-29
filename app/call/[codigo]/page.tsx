@@ -51,11 +51,32 @@ function comoLiberar() {
   return 'Clique no cadeado ao lado do endereço → libere Câmera e Microfone → e tente de novo.'
 }
 
+// câmeras que aparecem na lista e não transmitem: virtuais (OBS, NDI…) e a INFRAVERMELHA do Windows
+// Hello (notebook com desbloqueio pelo rosto). Pegar a IR dava "o dispositivo não respondeu" (29/09, PC do Rick).
+const CAM_NAO_SERVE = /ndi|obs|virtual|snap|xsplit|manycam|droidcam|camo|\bir\b|infrared|infravermelh|windows hello/i
+
+// ABRE A CÂMERA SEM DESISTIR NA PRIMEIRA: a escolhida; se o Windows não entregar a imagem (em uso por
+// outro programa, câmera IR, driver), a padrão do aparelho; depois cada câmera da lista. Só desiste de
+// vez se a pessoa NEGOU a permissão — aí tentar outra câmera não adianta.
+async function abrirCamera(): Promise<MediaStreamTrack> {
+  const tentativas: MediaTrackConstraints[] = [await cameraFisica(), { facingMode: 'user', width: { ideal: 640 } }]
+  try {
+    const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput' && d.deviceId && !CAM_NAO_SERVE.test(d.label || ''))
+    for (const c of cams) tentativas.push({ deviceId: { exact: c.deviceId }, width: { ideal: 640 } })
+  } catch { /* sem lista: fica com as duas primeiras */ }
+  let ultimo: any = null
+  for (const v of tentativas) {
+    try { const s = await navigator.mediaDevices.getUserMedia({ video: v, audio: false }); const f = s.getVideoTracks()[0]; if (f) return f }
+    catch (e: any) { ultimo = e; if (e?.name === 'NotAllowedError' || e?.name === 'SecurityError') break }
+  }
+  throw ultimo || new Error('sem câmera')
+}
+
 async function cameraFisica(): Promise<MediaTrackConstraints> {
   const base: MediaTrackConstraints = { facingMode: 'user', width: { ideal: 640 } }
   try {
     const cams = (await navigator.mediaDevices.enumerateDevices()).filter(d => d.kind === 'videoinput')
-    const fisica = cams.find(d => d.label && !/ndi|obs|virtual|snap|xsplit|manycam|droidcam|camo/i.test(d.label))
+    const fisica = cams.find(d => d.label && !CAM_NAO_SERVE.test(d.label))
     return fisica ? { ...base, deviceId: { exact: fisica.deviceId } } : base
   } catch { return base }
 }
@@ -252,7 +273,11 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       if (comVideo) {
         const video = await cameraFisica()
         try { s = await navigator.mediaDevices.getUserMedia({ audio, video }) }
-        catch (e: any) { usouVideo = false; setComVideo(false); setAviso(`Câmera indisponível (${motivoMidia(e)}). Entrando só com voz.`); s = await navigator.mediaDevices.getUserMedia({ audio, video: false }) }
+        catch (e: any) {
+          s = await navigator.mediaDevices.getUserMedia({ audio, video: false })
+          try { s.addTrack(await abrirCamera()) }
+          catch (e2: any) { usouVideo = false; setComVideo(false); setAviso(`Câmera indisponível (${motivoMidia(e2 || e)}). Entrando só com voz — dá pra tocar em Ligar câmera depois.`) }
+        }
       } else s = await navigator.mediaDevices.getUserMedia({ audio, video: false })
     } catch (e: any) { setFase('erro'); setErro(`Não consegui acessar o microfone: ${motivoMidia(e)}. ${comoLiberar()}`); return false }
     const f = s.getAudioTracks()[0]
@@ -478,8 +503,7 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
   // vídeo que a chamada já reservou — do outro lado ela aparece na hora.
   async function ligarCamera() {
     try {
-      const cam = await navigator.mediaDevices.getUserMedia({ video: await cameraFisica(), audio: false })
-      const faixa = cam.getVideoTracks()[0]; if (!faixa) return
+      const faixa = await abrirCamera()
       const p = pc.current
       const lugar = p?.getTransceivers().find(tr => tr.receiver.track?.kind === 'video' && tr.mid !== null) || p?.getTransceivers().find(tr => tr.receiver.track?.kind === 'video')
       if (lugar) await lugar.sender.replaceTrack(faixa)
@@ -489,7 +513,11 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
       local.current.addTrack(faixa)
       setTemVideoLocal(true); setCamOff(false); setComVideo(true); setAviso('')
       if (vLocal.current) { vLocal.current.srcObject = local.current; vLocal.current.muted = true }
-    } catch (e: any) { setAviso(`A câmera não foi liberada (${motivoMidia(e)}). ${comoLiberar()}`) }
+    } catch (e: any) {
+      // negou: ensina a liberar. Não respondeu: é outro programa segurando a câmera, não permissão.
+      const negou = e?.name === 'NotAllowedError' || e?.name === 'SecurityError'
+      setAviso(negou ? `A câmera não foi liberada. ${comoLiberar()}` : `A câmera não respondeu (${motivoMidia(e)}). Fecha o programa que está usando a câmera (Teams, Zoom, WhatsApp do computador, outra aba com câmera) e toca em Ligar câmera de novo.`)
+    }
   }
   // TELA CHEIA: no computador e no Android, a página inteira vira tela cheia. O Safari do iPhone não
   // deixa página em tela cheia: lá o vídeo do outro lado abre em tela cheia nativa; sem vídeo, o modo

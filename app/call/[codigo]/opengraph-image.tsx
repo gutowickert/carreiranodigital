@@ -6,7 +6,9 @@ import { chamadaPorCodigo } from '@/lib/chamadas'
 // A imagem da prévia do link da chamada (WhatsApp, Instagram, e-mail): marca da escola, quem convida
 // e o que acontece ao clicar. Satori: só flexbox.
 export const alt = 'Convite para uma conversa com a Carreira no Digital'
-export const size = { width: 1200, height: 630 }
+// QUADRADA (29/09/2026): o WhatsApp encaixa a capa num quadradinho. Larga (1200×630), ela saía achatada
+// ou cortada; quadrada, ele mostra inteira.
+export const size = { width: 630, height: 630 }
 export const contentType = 'image/png'
 
 async function manrope() {
