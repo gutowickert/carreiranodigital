@@ -40,7 +40,17 @@ export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, com
   }, [aberto])
 
   async function criar(): Promise<typeof links> {
-    if (links) return links
+    // A CHAMADA GUARDADA SÓ SERVE SE AINDA ESTÁ ESPERANDO (29/09/2026): o botão reaproveitava a última
+    // chamada criada nesta tela, mesmo já encerrada — o Rick mandou 3 vezes o link de uma chamada que
+    // tinha acabado, e quem abria caía direto em "encerrada". Começou ou acabou: cria outra.
+    if (links) {
+      try {
+        const codigo = (links.lead.split('/').pop() || '').split('?')[0]
+        const st = await fetch(`/api/chamadas/${codigo}`).then(r => r.json())
+        if (st?.status === 'aguardando') return links
+      } catch { /* sem resposta: cria outra, que é o seguro */ }
+      setLinks(null)
+    }
     setCriando(true); setErro('')
     try {
       const j = await fetchAuth('/api/chamadas', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lead_id: leadId || undefined, lead_nome: nome || undefined, telefone: telefone || undefined, com_video: video }) }).then(r => r.json())
