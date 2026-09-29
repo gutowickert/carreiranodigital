@@ -703,7 +703,8 @@ export default function Chamada({ params }: { params: Promise<{ codigo: string }
         )}
         <div style={{ display: 'flex', gap: 'clamp(8px, 3vw, 18px)', alignItems: 'flex-start', justifyContent: 'center' }}>
           <Redondo icone={mudo ? MicOff : Mic} rotulo={mudo ? 'Ativar mic' : 'Silenciar'} ativo={mudo} onClick={alternarMudo} />
-          <Redondo icone={!temVideoLocal || camOff ? VideoOff : Video} rotulo={!temVideoLocal || camOff ? 'Ligar câmera' : 'Câmera'} ativo={!temVideoLocal || camOff} onClick={alternarCamera} />
+          {/* chamada SÓ DE VOZ fica como ligação: sem botão de câmera (a não ser que alguém já tenha ligado a sua) */}
+          {(info?.com_video || temVideoLocal) && <Redondo icone={!temVideoLocal || camOff ? VideoOff : Video} rotulo={!temVideoLocal || camOff ? 'Ligar câmera' : 'Câmera'} ativo={!temVideoLocal || camOff} onClick={alternarCamera} />}
           <Redondo icone={telaCheia || imersivo ? Minimize2 : Maximize2} rotulo={telaCheia || imersivo ? 'Sair da tela cheia' : 'Tela cheia'} onClick={alternarTelaCheia} />
           <Redondo icone={Settings2} rotulo="Áudio" ativo={micMenu} onClick={() => { listarMics(); setMicMenu(v => !v) }} />
           <Redondo icone={PhoneOff} rotulo={host ? 'Encerrar' : 'Sair'} perigo onClick={() => desligar(true)} />

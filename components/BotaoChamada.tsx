@@ -39,6 +39,15 @@ export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, com
     return () => document.removeEventListener('mousedown', fora)
   }, [aberto])
 
+  // ao ABRIR: se a chamada guardada já começou ou acabou, esquece dela — senão a caixinha "Com vídeo"
+  // continuava escondida (ela só aparece antes de criar) e o botão oferecia "Entrar de novo" numa
+  // chamada encerrada (29/09/2026)
+  useEffect(() => {
+    if (!aberto || !links) return
+    const codigo = (links.lead.split('/').pop() || '').split('?')[0]
+    fetch(`/api/chamadas/${codigo}`).then(r => r.json()).then(st => { if (st?.status !== 'aguardando') { setLinks(null); setMandado(''); setCopiado(false) } }).catch(() => null)
+  }, [aberto]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function criar(): Promise<typeof links> {
     // A CHAMADA GUARDADA SÓ SERVE SE AINDA ESTÁ ESPERANDO (29/09/2026): o botão reaproveitava a última
     // chamada criada nesta tela, mesmo já encerrada — o Rick mandou 3 vezes o link de uma chamada que
