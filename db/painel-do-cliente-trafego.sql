@@ -146,3 +146,18 @@ alter table projetos add column if not exists modelo_trafego text not null defau
 alter table trafego_anuncios_dia add column if not exists visitas integer not null default 0;
 alter table trafego_anuncios_dia add column if not exists checkouts integer not null default 0;
 alter table trafego_anuncios_dia add column if not exists valor_compras numeric not null default 0;
+
+-- VENDAS INFORMADAS PELO CLIENTE (29/09/2026): o cliente registra as vendas na area dele e o placar do
+-- trafego mostra vendas, faturamento e retorno no periodo. O time tambem pode lancar (origem 'time').
+create table if not exists projeto_vendas (
+  id uuid primary key default gen_random_uuid(),
+  org_id uuid not null,
+  projeto_id uuid not null references projetos(id) on delete cascade,
+  data date not null default current_date,
+  valor numeric not null default 0,
+  quantidade integer not null default 1,
+  descricao text,
+  origem text not null default 'cliente',
+  criado_em timestamptz not null default now()
+);
+create index if not exists projeto_vendas_projeto_data on projeto_vendas(projeto_id, data);

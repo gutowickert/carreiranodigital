@@ -109,6 +109,21 @@ export async function POST(req: Request) {
     const b = await req.json().catch(() => ({}))
     const p = await projetoDaChave(b.k)
     if (!p) return NextResponse.json({ ok: false, error: 'link inválido ou desativado' }, { status: 403 })
+    // VENDAS INFORMADAS pela área do cliente: alimentam o placar (faturamento, retorno, medalha de primeira venda)
+    if (b.acao === 'venda') {
+      const valor = Number(String(b.valor ?? '0').replace(/\./g, '').replace(',', '.')) || 0
+      const quantidade = Math.max(1, Math.min(999, Math.round(Number(b.quantidade) || 1)))
+      const data = ehData(b.data) ? b.data : hojeBR()
+      if (data > hojeBR()) return NextResponse.json({ ok: false, error: 'a data não pode ser no futuro' }, { status: 400 })
+      const { data: v, error } = await sb.from('projeto_vendas').insert({ org_id: p.org_id, projeto_id: p.id, data, valor, quantidade, descricao: String(b.descricao || '').slice(0, 200) || null, origem: 'cliente' }).select('id').single()
+      if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 })
+      await sb.from('projeto_andamentos').insert({ org_id: p.org_id, projeto_id: p.id, tipo: 'venda', observacao: `💰 ${p.cliente} informou ${quantidade === 1 ? 'uma venda' : quantidade + ' vendas'} pela área do cliente${valor ? ': R$ ' + valor.toLocaleString('pt-BR', { minimumFractionDigits: 2 }) : ''}${b.descricao ? ' (' + String(b.descricao).slice(0, 80) + ')' : ''}.`, autor: 'área do cliente' })
+      return NextResponse.json({ ok: true, id: v?.id })
+    }
+    if (b.acao === 'venda_apagar' && b.id) {
+      const { error } = await sb.from('projeto_vendas').delete().eq('projeto_id', p.id).eq('id', b.id).eq('origem', 'cliente')
+      return NextResponse.json({ ok: !error, error: error?.message })
+    }
     if (b.acao !== 'confirmar' || !b.id) return NextResponse.json({ ok: false, error: 'ação inválida' }, { status: 400 })
 
     const { data: m } = await sb.from('projeto_marcos').select('id, titulo, estado, natureza, data_combinada').eq('projeto_id', p.id).eq('id', b.id).maybeSingle()

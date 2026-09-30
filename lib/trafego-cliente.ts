@@ -221,6 +221,8 @@ export type Painel = {
   conquistas: { chave: string; titulo: string; descricao: string | null; valor: number | null; destravada_em: string }[]
   proximas: { titulo: string; falta: number; de: number; progresso: number }[]
   analise: string[]
+  // as vendas informadas no período (cliente ou time), com faturamento e retorno sobre o investido
+  vendas: { qtd: number; valor: number; qtdAnt: number; valorAnt: number; custo_venda: number | null; retorno: number | null; lista: { id: string; data: string; valor: number; quantidade: number; descricao: string | null; origem: string }[] }
   // o jogo desde o início do contrato: nível pelos degraus de resultado, sequência de dias, melhor dia
   jogo: {
     acumulado: number; gasto_total: number; dias_com_resultado: number; sequencia: number
@@ -248,13 +250,15 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   const [deAnt, ateAnt] = periodoAnterior(de, ate)
   const f = 1 + (impostoPct || 0) / 100
 
-  const [{ data: dias }, { data: diasAnt }, { data: ads }, { data: eventos }, { data: conquistas }, { data: placar }, { data: ultimo }] = await Promise.all([
+  const [{ data: dias }, { data: diasAnt }, { data: ads }, { data: eventos }, { data: conquistas }, { data: placar }, { data: vendasLista }, { data: vendasAntLista }, { data: ultimo }] = await Promise.all([
     sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, tipo_resultado, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', de).lte('data', ate),
     sb.from('trafego_anuncios_dia').select('gasto, impressoes, cliques, resultados, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt),
     sb.from('trafego_anuncios').select('ad_id, ad_name, campaign_name, status, imagem_url, primeiro_dia').eq('projeto_id', p.id),
     sb.from('trafego_eventos').select('data, tipo, titulo, descricao').eq('projeto_id', p.id).gte('data', menosDias(ate, 45)).lte('data', ate).order('data', { ascending: false }).limit(30),
     sb.from('projeto_conquistas').select('chave, titulo, descricao, valor, destravada_em').eq('projeto_id', p.id).order('destravada_em', { ascending: false }),
     sb.from('projeto_placar').select('mes, vendas, comissao').eq('projeto_id', p.id).eq('mes', ate.slice(0, 7)).is('ponto_a', null).limit(1),
+    sb.from('projeto_vendas').select('id, data, valor, quantidade, descricao, origem').eq('projeto_id', p.id).gte('data', de).lte('data', ate).order('data', { ascending: false }),
+    sb.from('projeto_vendas').select('valor, quantidade').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt),
     sb.from('trafego_anuncios_dia').select('atualizado_em').eq('projeto_id', p.id).order('atualizado_em', { ascending: false }).limit(1),
   ])
 
@@ -327,14 +331,23 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   const proxA = DEGRAUS_ALCANCE.find(g => g > alcVal)
   if (proxA && alcVal) proximas.push({ titulo: `${fmtInt(proxA)} pessoas alcançadas`, falta: proxA - alcVal, de: proxA, progresso: Math.round((alcVal / proxA) * 100) })
 
-  const vendas = placar?.[0]?.vendas != null ? Number(placar[0].vendas) : null
-  const analise = escreverAnalise({ info, de, ate, total, anterior, nome, anuncios, eventos: eventos || [], valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null, vendas })
+  // AS VENDAS INFORMADAS (pelo cliente na área dele, ou pelo time): contam no período escolhido e viram
+  // faturamento e retorno. Sem nenhuma informada, cai no placar mensal do time (vendas do mês).
+  const somaV = (ls: any[] | null) => (ls || []).reduce((a, v) => ({ qtd: a.qtd + Number(v.quantidade || 1), valor: a.valor + Number(v.valor || 0) }), { qtd: 0, valor: 0 })
+  const vAtual = somaV(vendasLista), vAnt = somaV(vendasAntLista)
+  const vendasInfo: Painel['vendas'] = {
+    qtd: vAtual.qtd, valor: vAtual.valor, qtdAnt: vAnt.qtd, valorAnt: vAnt.valor,
+    custo_venda: vAtual.qtd ? total.gasto / vAtual.qtd : null, retorno: total.gasto > 0 && vAtual.valor > 0 ? vAtual.valor / total.gasto : null,
+    lista: (vendasLista || []).map((v: any) => ({ id: v.id, data: String(v.data).slice(0, 10), valor: Number(v.valor || 0), quantidade: Number(v.quantidade || 1), descricao: v.descricao || null, origem: v.origem || 'cliente' })),
+  }
+  const vendas = vAtual.qtd ? vAtual.qtd : (placar?.[0]?.vendas != null ? Number(placar[0].vendas) : null)
+  const analise = escreverAnalise({ info, de, ate, total, anterior, nome, anuncios, eventos: eventos || [], valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null, vendas, faturamento: vAtual.valor || null })
 
   return {
     ok: true, de, ate, de_anterior: deAnt, ate_anterior: ateAnt, tipo, nome, total, anterior, porDia,
     modelo: info ? 'infoproduto' : 'whatsapp',
     funil: { impressoes: total.impressoes, cliques: total.cliques, resultados: total.resultados, vendas, ...(info ? { visitas: total.visitas, checkouts: total.checkouts } : {}) },
-    anuncios, eventos: eventos || [], conquistas: conquistas || [], proximas, analise, jogo,
+    anuncios, eventos: eventos || [], conquistas: conquistas || [], proximas, analise, jogo, vendas: vendasInfo,
     valor_cliente: p.valor_cliente ? Number(p.valor_cliente) : null, alvo_custo: p.alvo_custo_resultado ? Number(p.alvo_custo_resultado) : null,
     sincronizado_em: ultimo?.[0]?.atualizado_em || null,
   }
@@ -348,7 +361,7 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
 
 function escreverAnalise(x: {
   info?: boolean; de: string; ate: string; total: Totais; anterior: Totais | null; nome: Painel['nome']
-  anuncios: AnuncioPainel[]; eventos: any[]; valor_cliente: number | null; alvo: number | null; vendas: number | null
+  anuncios: AnuncioPainel[]; eventos: any[]; valor_cliente: number | null; alvo: number | null; vendas: number | null; faturamento?: number | null
 }): string[] {
   const { total: t, anterior: a, nome } = x
   const out: string[] = []
@@ -411,8 +424,13 @@ function escreverAnalise(x: {
   if (ajustes) feitos.push(`${ajustes} ${ajustes === 1 ? 'ajuste' : 'ajustes'} de campanha`)
   if (feitos.length) out.push(`Nas últimas semanas: ${feitos.join(', ')}.`)
 
+  // 5a) vendas informadas com valor: a conta mais direta que existe
+  if (x.faturamento && x.vendas && t.gasto > 0) {
+    const ret = x.faturamento / t.gasto
+    out.push(`${x.vendas} ${x.vendas === 1 ? 'venda informada' : 'vendas informadas'} no período, somando ${fmtBRL(x.faturamento)}: ${ret >= 1 ? `cada real investido voltou R$ ${ret.toFixed(2).replace('.', ',')}` : `o investimento ainda não se pagou (voltou R$ ${ret.toFixed(2).replace('.', ',')} por real)`}.`)
+  }
   // 5. em clientes
-  if (x.valor_cliente && t.gasto > 0) {
+  else if (x.valor_cliente && t.gasto > 0) {
     const precisa = Math.ceil(t.gasto / x.valor_cliente)
     let s = `Com um cliente valendo ${fmtBRL(x.valor_cliente)}, o investimento se paga com ${precisa} ${precisa === 1 ? 'venda' : 'vendas'} entre ${t.resultados ? `essas ${fmtInt(t.resultados)} ${nome.varios}` : 'os contatos'}.`
     if (x.vendas != null) s += ` Neste mês foram informadas ${x.vendas} ${x.vendas === 1 ? 'venda' : 'vendas'}${x.vendas >= precisa ? ': o investimento já se pagou.' : '.'}`

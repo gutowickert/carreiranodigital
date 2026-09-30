@@ -36,7 +36,9 @@ function topoRedondo(v: number) {
 // a pílula de comparação com o período anterior. `bom`: pra que lado é notícia boa
 function Delta({ atual, anterior, bom, escuro }: { atual: number | null | undefined; anterior: number | null | undefined; bom: 'sobe' | 'desce' | 'neutro'; escuro?: boolean }) {
   const base: React.CSSProperties = { display: 'inline-flex', alignItems: 'center', gap: 4, fontSize: 12, fontWeight: 800, padding: '4px 9px', borderRadius: 999, whiteSpace: 'nowrap' }
-  if (atual == null || !anterior) return <span style={{ ...base, fontWeight: 600, whiteSpace: 'normal', lineHeight: 1.2, background: escuro ? 'rgba(255,255,255,.12)' : 'var(--surface-2)', color: escuro ? 'rgba(255,255,255,.75)' : 'var(--text-faint)' }}>sem período anterior</span>
+  // anterior zerado: diz 'antes: 0' (é comparação, não falta de dado); só sem número nenhum é 'sem período anterior'
+  if (atual == null || anterior == null) return <span style={{ ...base, fontWeight: 600, whiteSpace: 'normal', lineHeight: 1.2, background: escuro ? 'rgba(255,255,255,.12)' : 'var(--surface-2)', color: escuro ? 'rgba(255,255,255,.75)' : 'var(--text-faint)' }}>sem período anterior</span>
+  if (!anterior) return <span style={{ ...base, fontWeight: 600, background: escuro ? 'rgba(255,255,255,.12)' : 'var(--surface-2)', color: escuro ? 'rgba(255,255,255,.75)' : 'var(--text-faint)' }}>antes: 0</span>
   const v = Math.round(((atual - anterior) / anterior) * 100)
   if (v === 0) return <span style={{ ...base, background: escuro ? 'rgba(255,255,255,.12)' : 'var(--surface-2)', color: escuro ? '#fff' : 'var(--text-2)' }}><Minus size={12} /> igual ao anterior</span>
   const subiu = v > 0
@@ -57,8 +59,12 @@ function iconeDe(chave: string) {
   return Star
 }
 
+// a ordem dos chips: do agora pro sempre
+const ORDEM = ['hoje', 'ontem', '7d', '30d', 'mes', 'mes_passado', 'inicio']
+
 export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: string; nomeCliente?: string }) {
-  const [periodo, setPeriodo] = useState(() => (inicio && inicio > intervalo('30d')[0] ? 'inicio' : '30d'))
+  const [periodo, setPeriodo] = useState('hoje')   // abre em hoje (decisão do Guto, 29/09/2026)
+  const [recarga, setRecarga] = useState(0)          // muda quando o cliente registra uma venda
   const [metrica, setMetrica] = useState<'resultados' | 'gasto'>('resultados')
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
@@ -72,7 +78,7 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
       .then(r => r.json()).catch(() => null)
       .then(j => { if (vivo) { setD(j); setCarregando(false); setFoco(null) } })
     return () => { vivo = false }
-  }, [k, de, ate])
+  }, [k, de, ate, recarga])
 
   const nome = d?.nome || { um: 'conversa', varios: 'conversas', frase: 'pessoas que te chamaram' }
   const porData: Record<string, any> = Object.fromEntries((d?.porDia || []).map((x: any) => [x.data, x]))
@@ -87,7 +93,7 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
   // os períodos como CHIPS que rolam de lado (no celular o <select> escondia a escolha)
   const chips = (
     <div className="rolavel-celular" style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4, scrollbarWidth: 'none' }}>
-      {PERIODOS.filter(([v]) => !['custom', 'ontem', 'mes_passado'].includes(v)).map(([v, l]) => {
+      {PERIODOS.filter(([v]) => v !== 'custom').sort((a, b) => ORDEM.indexOf(a[0]) - ORDEM.indexOf(b[0])).map(([v, l]) => {
         const ativo = periodo === v
         return <button key={v} onClick={() => setPeriodo(v)} aria-pressed={ativo} style={{ flexShrink: 0, border: '1px solid ' + (ativo ? 'transparent' : 'var(--border-strong)'), background: ativo ? grad : 'var(--surface)', color: ativo ? '#fff' : 'var(--text-2)', borderRadius: 999, padding: '8px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer', font: 'inherit', boxShadow: ativo ? '0 6px 18px rgba(124,58,237,.35)' : 'none' }}>{v === 'inicio' ? 'Desde o início' : l}</button>
       })}
@@ -137,6 +143,9 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
           ))}
         </div>
       </div>
+
+      {/* ═════════ 1b. AS VENDAS: o cliente informa, o placar mostra faturamento e retorno */}
+      <Vendas k={k} d={d} de={de} ate={ate} aoMudar={() => setRecarga(x => x + 1)} />
 
       {/* ═════════ 2. O JOGO: nível, sequência, medalhas */}
       {jogo && (
@@ -259,6 +268,26 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
             </div>
           </div>
         </div>
+        {dias.length > 1 && (
+          <details style={{ marginTop: 12 }}>
+            <summary style={{ cursor: 'pointer', fontSize: 13, fontWeight: 700, color: 'var(--accent-soft)', listStyle: 'none' }}>Ver dia a dia</summary>
+            <div style={{ overflowX: 'auto', marginTop: 8 }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13, fontVariantNumeric: 'tabular-nums' }}>
+                <thead><tr>{['dia', nome.varios, 'investido', 'custo'].map((h, i) => <th key={h} style={{ textAlign: i ? 'right' : 'left', padding: '6px 8px', fontSize: 10.5, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: 'var(--text-faint)', borderBottom: '1px solid var(--border)' }}>{h}</th>)}</tr></thead>
+                <tbody>
+                  {[...dias].reverse().map(x => (
+                    <tr key={x.data}>
+                      <td style={{ padding: '7px 8px', color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>{br(x.data)}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right', fontWeight: 700, color: x.resultados ? 'var(--text)' : 'var(--text-faint)', borderBottom: '1px solid var(--border)' }}>{int(x.resultados)}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right', color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>{brl(x.gasto, 2)}</td>
+                      <td style={{ padding: '7px 8px', textAlign: 'right', color: 'var(--text-2)', borderBottom: '1px solid var(--border)' }}>{x.resultados ? brl(x.gasto / x.resultados, 2) : '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </details>
+        )}
 
         {/* o funil, dentro do mesmo cartão: do anúncio até o cliente */}
         <div style={{ ...rotulo, marginTop: 20 }}>Do anúncio até o cliente</div>
@@ -308,6 +337,90 @@ export default function Painel({ k, inicio, nomeCliente }: { k: string; inicio: 
         {t.impostoPct ? ` O investido já inclui os ${String(t.impostoPct).replace('.', ',')}% de imposto que a Meta cobra.` : ''}
         {d.sincronizado_em ? ` Números lidos da Meta em ${new Date(d.sincronizado_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}.` : ''}
       </div>
+    </div>
+  )
+}
+
+// AS VENDAS INFORMADAS: o cliente registra aqui (data, valor, quantas, o que) e o placar passa a mostrar
+// faturamento e retorno sobre o investido. Apagar só o que ele mesmo registrou.
+function Vendas({ k, d, de, ate, aoMudar }: { k: string; d: any; de: string; ate: string; aoMudar: () => void }) {
+  const v = d.vendas || { qtd: 0, valor: 0, qtdAnt: 0, valorAnt: 0, custo_venda: null, retorno: null, lista: [] }
+  const t = d.total
+  const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const [aberto, setAberto] = useState(false)
+  const [f, setF] = useState({ data: hoje, valor: '', quantidade: '1', descricao: '' })
+  const [salvando, setSalvando] = useState(false)
+  const [msg, setMsg] = useState('')
+
+  async function salvar() {
+    if (!f.valor && !f.quantidade) { setMsg('Diz quantas vendas ou o valor.'); return }
+    setSalvando(true); setMsg('')
+    const j = await fetch('/api/cliente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k, acao: 'venda', ...f }) }).then(r => r.json()).catch(() => null)
+    setSalvando(false)
+    if (!j?.ok) { setMsg(j?.error || 'não consegui registrar'); return }
+    setF({ data: hoje, valor: '', quantidade: '1', descricao: '' }); setAberto(false); setMsg('Venda registrada. O placar já considera.'); aoMudar()
+  }
+  async function apagar(id: string) {
+    if (!confirm('Apagar essa venda do placar?')) return
+    await fetch('/api/cliente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ k, acao: 'venda_apagar', id }) }).catch(() => null)
+    aoMudar()
+  }
+  const campo: React.CSSProperties = { width: '100%', background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 12, padding: '11px 12px', fontSize: 16, color: 'var(--text)', fontFamily: 'inherit', boxSizing: 'border-box' }
+  const periodoCurto = de === ate
+
+  return (
+    <div style={{ ...card, marginTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+        <div style={rotulo}>Vendas {periodoCurto ? 'de ' + br(de) : 'no período'}</div>
+        <button onClick={() => { setAberto(x => !x); setMsg('') }} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, border: 'none', background: aberto ? 'var(--surface-2)' : grad, color: aberto ? 'var(--text-2)' : '#fff', borderRadius: 999, padding: '9px 16px', fontSize: 13.5, fontWeight: 800, cursor: 'pointer', font: 'inherit', boxShadow: aberto ? 'none' : '0 8px 20px rgba(124,58,237,.35)' }}>
+          <ShoppingBag size={15} /> {aberto ? 'Fechar' : 'Registrar venda'}
+        </button>
+      </div>
+
+      {aberto && (
+        <div style={{ marginTop: 14, padding: 14, borderRadius: 16, background: 'var(--surface-2)', border: '1px solid var(--border)', display: 'grid', gap: 10 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: 10 }}>
+            <label style={{ fontSize: 12, color: 'var(--text-faint)' }}>Quando<input type="date" max={hoje} value={f.data} onChange={e => setF({ ...f, data: e.target.value })} style={{ ...campo, marginTop: 4 }} /></label>
+            <label style={{ fontSize: 12, color: 'var(--text-faint)' }}>Quantas vendas<input type="number" min={1} value={f.quantidade} onChange={e => setF({ ...f, quantidade: e.target.value })} style={{ ...campo, marginTop: 4 }} /></label>
+          </div>
+          <label style={{ fontSize: 12, color: 'var(--text-faint)' }}>Valor total (R$)<input inputMode="decimal" placeholder="ex.: 1.200,00" value={f.valor} onChange={e => setF({ ...f, valor: e.target.value })} style={{ ...campo, marginTop: 4 }} /></label>
+          <label style={{ fontSize: 12, color: 'var(--text-faint)' }}>O que foi vendido (opcional)<input placeholder="ex.: 2 kits, cliente do anúncio do vídeo" value={f.descricao} onChange={e => setF({ ...f, descricao: e.target.value })} style={{ ...campo, marginTop: 4 }} /></label>
+          <button onClick={salvar} disabled={salvando} style={{ border: 'none', background: '#22C55E', color: '#06220f', borderRadius: 12, padding: '13px', fontSize: 15, fontWeight: 800, cursor: 'pointer', font: 'inherit', opacity: salvando ? .6 : 1 }}>{salvando ? 'Registrando…' : 'Salvar no placar'}</button>
+        </div>
+      )}
+      {msg && <div style={{ fontSize: 12.5, color: msg.startsWith('Venda') ? 'var(--green)' : 'var(--amber)', marginTop: 8 }}>{msg}</div>}
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8, marginTop: 14 }}>
+        {[
+          { l: v.qtd === 1 ? 'venda' : 'vendas', v: int(v.qtd), sub: v.qtdAnt ? `antes: ${int(v.qtdAnt)}` : null, cor: v.qtd ? 'var(--green)' : 'var(--text)' },
+          { l: 'faturamento', v: v.valor ? brl(v.valor, 0) : '—', sub: v.valorAnt ? `antes: ${brl(v.valorAnt, 0)}` : null, cor: 'var(--text)' },
+          v.retorno != null
+            ? { l: 'voltou por R$ 1', v: 'R$ ' + v.retorno.toFixed(2).replace('.', ','), sub: `${brl(t.gasto, 0)} investido`, cor: v.retorno >= 1 ? 'var(--green)' : 'var(--amber)' }
+            : { l: 'custo por venda', v: v.custo_venda != null ? brl(v.custo_venda, 2) : '—', sub: `${brl(t.gasto, 0)} investido`, cor: 'var(--text)' },
+        ].map((x, i) => (
+          <div key={i} style={{ background: 'var(--surface-2)', borderRadius: 14, padding: '12px 10px', textAlign: 'center' }}>
+            <div className="display" style={{ fontSize: 'clamp(20px, 6vw, 26px)', fontWeight: 800, color: x.cor, lineHeight: 1, fontVariantNumeric: 'tabular-nums', overflowWrap: 'anywhere' }}>{x.v}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 5, lineHeight: 1.25 }}>{x.l}</div>
+            {x.sub && <div style={{ fontSize: 10.5, color: 'var(--text-faint)', marginTop: 2 }}>{x.sub}</div>}
+          </div>
+        ))}
+      </div>
+
+      {v.lista.length ? (
+        <div style={{ marginTop: 12 }}>
+          {v.lista.slice(0, 12).map((x: any) => (
+            <div key={x.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderTop: '1px solid var(--border)', fontSize: 13 }}>
+              <span style={{ color: 'var(--text-faint)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{br(x.data)}</span>
+              <span style={{ flex: 1, minWidth: 0, color: 'var(--text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{x.quantidade > 1 ? `${x.quantidade} vendas` : '1 venda'}{x.descricao ? ` · ${x.descricao}` : ''}</span>
+              <b style={{ color: 'var(--text)', fontVariantNumeric: 'tabular-nums', flexShrink: 0 }}>{x.valor ? brl(x.valor, 2) : ''}</b>
+              {x.origem === 'cliente' && <button onClick={() => apagar(x.id)} aria-label="Apagar" style={{ border: 'none', background: 'transparent', color: 'var(--text-faint)', cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>}
+            </div>
+          ))}
+          {v.lista.length > 12 && <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 6 }}>e mais {v.lista.length - 12} no período</div>}
+        </div>
+      ) : (
+        <div style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 12, lineHeight: 1.5 }}>Nenhuma venda registrada {periodoCurto ? 'neste dia' : 'neste período'}. Cada venda que vier do anúncio, registra aqui: é o que mostra o retorno do investimento.</div>
+      )}
     </div>
   )
 }
