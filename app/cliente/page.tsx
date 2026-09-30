@@ -3,7 +3,8 @@
 import { useEffect, useState } from 'react'
 import Painel from './Painel'
 
-// ÁREA DO CLIENTE = O PLACAR DO TRÁFEGO (29/09/2026, decisão do Guto: "apenas um placar do tráfego, bem
+// ÁREA DO CLIENTE = O PLACAR DO TRÁFEGO. Link bonito: /placar/<chave> (app/placar/[k]); /cliente?k= segue valendo.
+// (29/09/2026, decisão do Guto: "apenas um placar do tráfego, bem
 // completo"). Abre com o link que a escola manda (/cliente?k=…), sem login, em HOJE, e o cliente escolhe o
 // período. Tudo que é entrega (meta, encontros, pendências, linha do tempo) saiu daqui: vive no sistema
 // interno e no grupo do WhatsApp. O cliente também registra as vendas dele aqui, e elas entram no placar.
@@ -11,13 +12,13 @@ import Painel from './Painel'
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 20, padding: 18 }
 const br = (d?: string | null) => (d ? String(d).slice(0, 10).split('-').reverse().join('/') : '')
 
-export default function AreaDoCliente() {
+export default function AreaDoCliente({ chave: chaveProp }: { chave?: string } = {}) {
   const [k, setK] = useState('')
   const [d, setD] = useState<any>(null)
   const [erro, setErro] = useState('')
 
   useEffect(() => {
-    const chave = new URLSearchParams(window.location.search).get('k') || ''
+    const chave = chaveProp || new URLSearchParams(window.location.search).get('k') || ''
     setK(chave)
     if (!chave) { setErro('Esse link está incompleto. Pede o link da tua área pra escola.'); return }
     fetch(`/api/cliente?k=${encodeURIComponent(chave)}`, { cache: 'no-store' }).then(r => r.json()).catch(() => null)

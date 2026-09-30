@@ -118,7 +118,7 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
   const [sinc, setSinc] = useState('')
   const [copiado, setCopiado] = useState(false)
   useEffect(() => { const h = (e: KeyboardEvent) => e.key === 'Escape' && aoFechar(); window.addEventListener('keydown', h); return () => window.removeEventListener('keydown', h) }, [aoFechar])
-  const portal = c.portal_chave ? `${window.location.origin}/cliente?k=${c.portal_chave}` : null
+  const portal = c.portal_chave ? `${window.location.origin}/placar/${c.portal_chave}` : null
   const sec = (t: string) => <div style={{ ...tit, margin: '22px 0 8px' }}>{t}</div>
 
   return (

@@ -31,7 +31,7 @@ const paraInput = (d?: string | null) => {
 // o link da área do cliente: ele vê o próprio projeto, sem login
 function LinkCliente({ projeto, aoMudar }: { projeto: any; aoMudar: () => void }) {
   const [aviso, setAviso] = useState('')
-  const url = projeto.portal_chave && typeof window !== 'undefined' ? `${window.location.origin}/cliente?k=${projeto.portal_chave}` : ''
+  const url = projeto.portal_chave && typeof window !== 'undefined' ? `${window.location.origin}/placar/${projeto.portal_chave}` : ''
 
   async function gerar(acao: 'portal_link' | 'portal_trocar') {
     if (acao === 'portal_trocar' && !confirm('O link atual para de funcionar. O cliente vai precisar do novo. Trocar?')) return
