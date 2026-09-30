@@ -33,15 +33,16 @@ export const NOME_RESULTADO: Record<TipoResultado, { um: string; varios: string;
 
 const PAUSADO = (s: string) => /PAUSED|ARCHIVED|DELETED|DISAPPROVED/i.test(s || '')
 
-// O resultado que vale pra campanha. Compra ganha de lead, lead ganha de conversa; sem
-// nenhum, decide pelo objetivo da campanha (uma campanha de leads sem lead no dia continua
-// sendo de leads).
+// O resultado que vale pra campanha de quem vende pelo WhatsApp: conversa; lead quando é
+// formulário (ou campanha de leads sem lead no dia). Infoproduto é compra, decidido no sync.
 function tipoDaLinha(l: AnuncioDia): TipoResultado {
-  if (l.compras > 0) return 'compra'
-  if (l.leads > 0) return 'lead'
+  // Cliente que vende pelo WhatsApp mede CONVERSA, mesmo quando a Meta registra "compra" no anúncio.
+  // Foi o caso do Anderson Segatto (29/09/2026): campanha de objetivo Vendas, a Meta atribuiu 4
+  // compras e o painel dele trocou 35 conversas por 4 "vendas". Compra como resultado agora só no
+  // modelo infoproduto (escolhido na ficha); as compras continuam gravadas na coluna própria.
   if (l.conversas > 0) return 'conversa'
+  if (l.leads > 0) return 'lead'
   if (/LEADS/i.test(l.objective)) return 'lead'
-  if (/SALES/i.test(l.objective) && /purchase/i.test(l.objective)) return 'compra'
   return 'conversa'
 }
 const valorDoTipo = (l: AnuncioDia, t: TipoResultado) => (t === 'compra' ? l.compras : t === 'lead' ? l.leads : l.conversas)
