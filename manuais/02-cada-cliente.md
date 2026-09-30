@@ -62,7 +62,15 @@ Corretora em Lajeado (Jhones, comercial; Eliana "Lana", administrativo e marketi
 - **A carteira do SGCOR** ainda não entrou: o caminho é exportar em Excel as apólices vigentes e importar (a importação por planilha ainda vai ser feita).
 - **Máquina CND em modo marketing**: a máquina do Deu Venda de verdade — as instruções do Projeto do claude.ai, os 14 documentos do método sob demanda, e os documentos da GAJA (negócio, marca, ideias, o que responder, página, anúncios) na memória, reescritos pela própria máquina com versão. Roda no Opus 5.
 - **O que a IA sabe** semeado das 73 respostas do questionário (9 seções).
-- ⚠️ Faltam: login do Jhones e da Lana, a chave da Anthropic e da Deepgram na Vercel, a decisão do WhatsApp (o número é o celular pessoal do Jhones), a **cadência de follow-up** (Fluxo Comercial — o motor da manhã avisa "cadência não definida"), as **chamadas** (ainda não foram pra GAJA) e a carteira do SGCOR. O produto "Plano de Saúde" está no cadastro e ele disse que não vende — perguntar antes de apagar.
+- **O QUE FALTA PRA GAJA (levantado em 30/09, manhã da apresentação, item por item contra o sistema no ar)** — checklist de 27 itens (`SERVICOS-EXTERNOS.md`) + ensaio geral (manual 03) + o que a Dani ganhou depois:
+  - **Chaves e contas:** Vercel da GAJA só tem Supabase, avisos e as internas. **Faltam** `ANTHROPIC_API_KEY` com crédito (1), `DEEPGRAM_API_KEY` (2), todas as `WA_OFICIAL_*` (3), `CF_TURN_*` (4), `FB_*` de anúncios e pixel (20–22).
+  - **WhatsApp oficial inteiro (12–19):** número não decidido (o dos clientes é o celular pessoal do Jhones: coexistência ou número novo), app Meta da GAJA, token com aprovação de outro admin, PIN, webhook + `messages`, app publicado, cartão no WhatsApp Manager, foto do perfil. **Nenhum modelo de mensagem** (0 em `followup_templates`).
+  - **Cadência de follow-up (10):** nunca gravada (nenhum `ia-fluxo`) — o motor da manhã segue em "cadência não definida".
+  - **Time (9, 24, 25):** só existe o Suporte CND (🔒 ok). **Jhones e Lana sem login**; senhas pra combinar (`trocar-senha-suporte.mjs`); Jhones = admin; 0 celulares com notificação.
+  - **Base:** 27 leads, **todos de demonstração** (Marcos Vinícius, Helena Barcellos…) e 4 apólices fictícias — apagar e religar tudo depois da apresentação (26). Carteira real do SGCOR ainda não importada. "Plano de Saúde" no cadastro × ele disse que não vende.
+  - **Conferir no painel do Supabase (6):** Site URL e Redirect URLs = gajaseguros.vercel.app. Crons já apontam pro endereço certo (7 ✅). Endereço com a marca ✅ (5). "O que a IA sabe" com 9 seções ✅ (11).
+  - **Manual (27):** o `manual.html` da GAJA é o genérico do núcleo ("Manual de Operação — Sistema CnD"), não um manual da GAJA como o da Dani.
+  - **O que a Dani ganhou e a GAJA NÃO tem:** chamadas pelo navegador (+ convite pelo WhatsApp oficial, capa em foto, TURN), **app no celular**, áudio do cliente virando texto, áudio indo como mensagem de voz, balão enviado com letra branca no escuro, **só vira lead quem vem de anúncio**, sincronizar status dos modelos com a Meta, follow-up só com modelo aprovado, log `wa-falha` (erro 131042). Datas em Brasília ✅ (30/09).
 
 ## Jamrock Skateboarding (crm-jamrock)
 
