@@ -146,31 +146,7 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
           {sinc && <span style={{ fontSize: 12, color: 'var(--text-faint)', alignSelf: 'center' }}>{sinc}</span>}
         </div>
 
-        {/* o que pede ação */}
-        {!!c.alertas.length && <>
-          {sec('Pontos de atenção')}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {c.alertas.map((a: any, i: number) => (
-              <div key={i} style={{ display: 'flex', gap: 10, padding: '9px 12px', borderRadius: 8, background: a.nivel === 'vermelho' ? 'var(--red-bg)' : 'var(--amber-bg)' }}>
-                <span style={{ color: a.nivel === 'vermelho' ? 'var(--red)' : 'var(--amber)', fontSize: 10, marginTop: 4 }}>●</span>
-                <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.45 }}>{a.titulo}{a.detalhe && <span style={{ color: 'var(--text-faint)' }}> · {a.detalhe}</span>}</div>
-              </div>
-            ))}
-          </div>
-        </>}
-        {!!c.recomendacoes.length && <>
-          {sec('O que fazer')}
-          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, color: 'var(--text)', lineHeight: 1.7 }}>
-            {c.recomendacoes.map((r: string, i: number) => <li key={i}>{r}</li>)}
-          </ol>
-        </>}
-
         {p && <>
-          {sec(`A semana em uma frase`)}
-          <div style={{ ...card, padding: '12px 14px', borderLeft: '3px solid var(--accent)' }}>
-            {p.analise.map((f: string, i: number) => <p key={i} style={{ margin: i ? '6px 0 0' : 0, fontSize: i ? 13 : 14, fontWeight: i ? 400 : 700, color: i ? 'var(--text-2)' : 'var(--text)', lineHeight: 1.5 }}>{f}</p>)}
-          </div>
-
           {sec('Números do período')}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
             {[
@@ -200,6 +176,12 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
               {c.anuncios_ativos ? ` ${c.anuncios_ativos} ${c.anuncios_ativos === 1 ? 'anúncio ativo' : 'anúncios ativos'}.` : ''}
             </div>
           )}
+
+
+          {sec(`A semana em uma frase`)}
+          <div style={{ ...card, padding: '12px 14px', borderLeft: '3px solid var(--accent)' }}>
+            {p.analise.map((f: string, i: number) => <p key={i} style={{ margin: i ? '6px 0 0' : 0, fontSize: i ? 13 : 14, fontWeight: i ? 400 : 700, color: i ? 'var(--text-2)' : 'var(--text)', lineHeight: 1.5 }}>{f}</p>)}
+          </div>
 
           {!!p.anuncios.length && <>
             {sec('Os anúncios')}
@@ -239,6 +221,25 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
               {p.conquistas.map((q: any, i: number) => <span key={i} style={{ fontSize: 12, padding: '5px 10px', borderRadius: 999, background: 'var(--green-bg)', color: 'var(--green)', fontWeight: 600 }}>✔ {q.titulo}</span>)}
             </div>
           </>}
+        </>}
+
+        {/* depois dos números: o que pede ação */}
+        {!!c.alertas.length && <>
+          {sec('Pontos de atenção')}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {c.alertas.map((a: any, i: number) => (
+              <div key={i} style={{ display: 'flex', gap: 10, padding: '9px 12px', borderRadius: 8, background: a.nivel === 'vermelho' ? 'var(--red-bg)' : 'var(--amber-bg)' }}>
+                <span style={{ color: a.nivel === 'vermelho' ? 'var(--red)' : 'var(--amber)', fontSize: 10, marginTop: 4 }}>●</span>
+                <div style={{ fontSize: 13, color: 'var(--text)', lineHeight: 1.45 }}>{a.titulo}{a.detalhe && <span style={{ color: 'var(--text-faint)' }}> · {a.detalhe}</span>}</div>
+              </div>
+            ))}
+          </div>
+        </>}
+        {!!c.recomendacoes.length && <>
+          {sec('O que fazer')}
+          <ol style={{ margin: 0, paddingLeft: 20, fontSize: 13.5, color: 'var(--text)', lineHeight: 1.7 }}>
+            {c.recomendacoes.map((r: string, i: number) => <li key={i}>{r}</li>)}
+          </ol>
         </>}
 
         {c.proximo && <>

@@ -379,7 +379,7 @@ img, svg { max-width: 100%; }
   .rolavel-celular > * { flex-shrink: 0; }
   /* Monitor das Entregas: uma coluna; quem contatar e os encontros vêm antes dos cards e não grudam no topo */
   .monitor-grade { grid-template-columns: minmax(0, 1fr) !important; }
-  .monitor-lado { position: static !important; order: -1; }
+  .monitor-lado { position: static !important; }
   /* a gaveta fica ENTRE as barras do app (o .conteudo cria um contexto de empilhamento, o z-index dela nao passa por cima da barra) */
   .monitor-gaveta { width: 100vw !important; top: calc(var(--app-topo) + env(safe-area-inset-top)) !important; bottom: calc(var(--app-abas) + env(safe-area-inset-bottom)) !important; padding: 14px 14px 30px !important; border-left: none !important; }
   /* caixa de digitar do WhatsApp: no celular a mensagem fica numa linha inteira, os botões embaixo */
