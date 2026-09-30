@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { gerarMensalidades, mensalidadesEmAberto } from '@/lib/mensalidades'
+import { hojeBR } from '@/lib/periodos'
 
 export const maxDuration = 60
 
@@ -51,7 +52,7 @@ export async function GET(req: Request) {
 
     // as cobranças em aberto, agrupadas por projeto
     const abertas = await mensalidadesEmAberto()
-    const hoje = new Date().toISOString().slice(0, 10)
+    const hoje = hojeBR()
     const porGrupo = new Map<string, any[]>()
     for (const l of abertas) {
       const g = porGrupo.get(l.grupo_recorrencia) || []

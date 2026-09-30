@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { CardNumero } from '@/components/ui'
+import { hojeBR } from '@/lib/periodos'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '14px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -11,7 +12,7 @@ const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--bord
 function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 function fmt0(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }) }
 function pct(v: number) { return (isFinite(v) ? v * 100 : 0).toFixed(0) + '%' }
-function hojeStr() { return new Date().toISOString().split('T')[0] }
+function hojeStr() { return hojeBR() }  // dia de Brasília (o UTC vira amanhã depois das 21h)
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 function diasEntre(a: string, b: string) { return Math.round((new Date(b + 'T12:00:00').getTime() - new Date(a + 'T12:00:00').getTime()) / 86400000) }
 

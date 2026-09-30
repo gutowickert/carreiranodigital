@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
+import { hojeBR } from '@/lib/periodos'
 
 type Turma = {
   id: string
@@ -113,7 +114,7 @@ export default function DetalheTurma() {
   const [valor, setValor] = useState('')
   const [formaPagamento, setFormaPagamento] = useState<'pix' | 'boleto' | 'cartao' | 'dinheiro' | 'transferencia'>('pix')
   const [parcelas, setParcelas] = useState('1')
-  const [dataVenda, setDataVenda] = useState(new Date().toISOString().split('T')[0])
+  const [dataVenda, setDataVenda] = useState(hojeBR())
   const [leadVinculado, setLeadVinculado] = useState('')
   const [vendedorId, setVendedorId] = useState('')
   const [contaId, setContaId] = useState('')
@@ -426,7 +427,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
         valor: a.valor,
         descricao: a.descricao,
         status: 'realizado',
-        data_pagamento: new Date().toISOString().split('T')[0],
+        data_pagamento: hojeBR(),
       }).eq('id', a.id)
     }
 

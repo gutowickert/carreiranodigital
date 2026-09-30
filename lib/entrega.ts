@@ -15,6 +15,7 @@
 // próximo se define com o cliente na frente — por isso o cliente em entrega
 // nunca fica sem data à frente.
 
+import { hojeBR } from '@/lib/periodos'
 export type Natureza = 'encontro' | 'interno' | 'marco'
 export type EstadoMarco = 'previsto' | 'combinado' | 'confirmado' | 'concluido' | 'a_remarcar' | 'cancelado'
 export type Produto = 'deu_venda' | 'crm' | 'combo' | 'crm_trafego'
@@ -357,7 +358,7 @@ export function conflitoDeRegiao(
 
 /** Quantos dias faltam para a data (negativo = já passou). */
 export function diasAte(dataISO: string, hojeISO?: string): number {
-  const hoje = new Date((hojeISO || soData(new Date())) + 'T12:00:00Z').getTime()
+  const hoje = new Date((hojeISO || hojeBR()) + 'T12:00:00Z').getTime()  // dia de Brasília, não de Londres
   const alvo = new Date(String(dataISO).slice(0, 10) + 'T12:00:00Z').getTime()
   return Math.round((alvo - hoje) / DIA)
 }

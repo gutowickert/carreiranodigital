@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { hojeBR } from '@/lib/periodos'
 
 type Lancamento = {
   id: string
@@ -85,7 +86,7 @@ export default function Financeiro() {
   const [contas, setContas] = useState<Conta[]>([])
   const [naturezas, setNaturezas] = useState<{ chave: string; nome: string; ativo: boolean }[]>([])
   const [selecionado, setSelecionado] = useState<FinanceiroTurma | null>(null)
-  const [mesSelecionado, setMesSelecionado] = useState(new Date().toISOString().slice(0, 7))
+  const [mesSelecionado, setMesSelecionado] = useState(hojeBR().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
   const [novoLanc, setNovoLanc] = useState(false)
   const [editando, setEditando] = useState<Lancamento | null>(null)
@@ -179,7 +180,7 @@ export default function Financeiro() {
         conta_id: lancContaId,
       }
       if (lancStatus === 'realizado' && !editando.data_pagamento) {
-        payload.data_pagamento = new Date().toISOString().split('T')[0]
+        payload.data_pagamento = hojeBR()
       }
 
       if (editando.recorrente && editando.grupo_recorrencia) {
@@ -252,7 +253,7 @@ export default function Financeiro() {
 
   async function confirmarPagamento(id: string) {
     await supabase.from('lancamentos_empresa').update({
-      status: 'realizado', data_pagamento: new Date().toISOString().split('T')[0],
+      status: 'realizado', data_pagamento: hojeBR(),
     }).eq('id', id)
     carregarLancamentos()
   }

@@ -11,6 +11,7 @@ import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
 import BotaoChamada from '@/components/BotaoChamada'
 import ItemLigacao from '@/components/ItemLigacao'
 import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
+import { hojeBR } from '@/lib/periodos'
 
 type Lead = {
   id: string
@@ -1503,7 +1504,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
   const [vForma, setVForma] = useState('pix')
   const [vParcelas, setVParcelas] = useState('1')
   const [vConta, setVConta] = useState('')
-  const [vData, setVData] = useState(new Date().toISOString().split('T')[0])
+  const [vData, setVData] = useState(hojeBR())
 
   useEffect(() => {
     supabase.from('contas_financeiras').select('id, nome').eq('ativo', true).order('nome').then(({ data }) => setContas((data as any) || []))

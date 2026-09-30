@@ -8,6 +8,7 @@ import VendasDoMes from '@/components/VendasDoMes'
 import { Card, CardNumero, Chip, Botao, CabecalhoPagina, Vazio } from '@/components/ui'
 import { CalendarDays, Columns3, AlertTriangle, Clock, GraduationCap, Trophy, Megaphone, Sparkles } from 'lucide-react'
 import { ResponsiveContainer, AreaChart, Area, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, CartesianGrid } from 'recharts'
+import { isoBR } from '@/lib/periodos'
 
 // O PAINEL — a tela que abre todo dia.
 //
@@ -133,12 +134,12 @@ export default function Dashboard() {
   async function carregar() {
     setCarregando(true)
     const hoje = new Date()
-    const hojeStr = hoje.toISOString().split('T')[0]
+    const hojeStr = isoBR(hoje)
     const inicioMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-01`
     const ultimoDiaMes = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0).getDate()
     const fimMes = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}-${String(ultimoDiaMes).padStart(2, '0')}`
     const data30Atras = new Date(hoje); data30Atras.setDate(data30Atras.getDate() - 30)
-    const data30Str = data30Atras.toISOString().split('T')[0]
+    const data30Str = isoBR(data30Atras)
 
     const [
       lancMes, turmasResp, turmasProgressoResp,
@@ -181,7 +182,7 @@ export default function Dashboard() {
     const serie: { dia: string; matriculas: number; receita: number }[] = []
     for (let i = 29; i >= 0; i--) {
       const dt = new Date(hoje); dt.setDate(dt.getDate() - i)
-      const ds = dt.toISOString().split('T')[0]
+      const ds = isoBR(dt)
       serie.push({ dia: `${String(dt.getDate()).padStart(2, '0')}/${String(dt.getMonth() + 1).padStart(2, '0')}`, matriculas: porDiaCount[ds] || 0, receita: porDiaReceita[ds] || 0 })
     }
 

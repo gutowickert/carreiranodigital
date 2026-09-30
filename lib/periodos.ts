@@ -2,6 +2,8 @@
 // o "hoje" do servidor é UTC e vira amanhã depois das 21h.
 
 export const hojeBR = () => new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+/** A data (YYYY-MM-DD) de um instante, no dia de Brasília — `toISOString()` dá o dia de Londres. */
+export const isoBR = (d: Date) => d.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
 
 export const menosDias = (iso: string, n: number) => {
   const d = new Date(iso + 'T12:00:00Z')

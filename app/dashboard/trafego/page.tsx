@@ -4,13 +4,14 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
 import { CardNumero } from '@/components/ui'
+import { hojeBR } from '@/lib/periodos'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '13px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 
 function fmt(v: number) { return (v || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
 function pct(v: number) { return (isFinite(v) ? v * 100 : 0).toFixed(0) + '%' }
-function hojeStr() { return new Date().toISOString().split('T')[0] }
+function hojeStr() { return hojeBR() }  // dia de Brasília (o UTC vira amanhã depois das 21h)
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 // normaliza texto pra casar utm (do lead) com nome de campanha/anuncio (do Meta)
 function norm(s?: string | null) { return (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, ' ').trim() }

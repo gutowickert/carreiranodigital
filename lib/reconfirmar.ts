@@ -2,6 +2,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { enviarTemplate } from '@/lib/whatsapp-oficial'
 import { enviarPush } from '@/lib/push'
 import { nomeDoLocal, diasAte } from '@/lib/entrega'
+import { hojeBR } from '@/lib/periodos'
 
 // A RECONFIRMAÇÃO DO ENCONTRO — a IA perguntando pro cliente antes de a equipe pegar a estrada.
 //
@@ -44,7 +45,7 @@ async function avisarEquipe(m: Marco, org: string, titulo: string, corpo: string
 }
 
 export async function reconfirmarEncontros(org: string, hojeISO?: string) {
-  const hoje = hojeISO || new Date().toISOString().slice(0, 10)
+  const hoje = hojeISO || hojeBR()  // dia de Brasília, não de Londres
   const enviadas: string[] = []
   const avisados: string[] = []
 

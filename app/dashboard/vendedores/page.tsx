@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getConfigNumero } from '@/lib/configuracoes'
+import { hojeBR } from '@/lib/periodos'
 
 type VendedorStats = {
   id: string
@@ -37,7 +38,7 @@ const ETAPA_LABELS: Record<string, string> = {
 }
 
 export default function DashboardVendedores() {
-  const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
+  const [mesFiltro, setMesFiltro] = useState(hojeBR().slice(0, 7))
   const [filtroSetor, setFiltroSetor] = useState<'todos' | 'comercial' | 'comercial_externo'>('todos')
   const [vendedores, setVendedores] = useState<VendedorStats[]>([])
   const [carregando, setCarregando] = useState(true)

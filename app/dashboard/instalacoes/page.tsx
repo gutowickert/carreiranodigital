@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import { fetchAuth } from '@/lib/api'
 import { Vazio } from '@/components/ui'
 import { Server, ExternalLink, Plus, X, RefreshCw, ClipboardList, Copy } from 'lucide-react'
+import { hojeBR } from '@/lib/periodos'
 
 // INSTALAÇÕES — todos os sistemas que a gente instalou, num lugar só.
 //
@@ -31,7 +32,7 @@ type NoAr = Record<string, { ok: boolean; status: number; ms: number; erro?: str
 
 const br = (d?: string | null) => d ? String(d).slice(0, 10).split('-').reverse().join('/') : '—'
 const dinheiro = (v: number) => 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 0 })
-const hoje = () => new Date().toISOString().slice(0, 10)
+const hoje = () => hojeBR()
 
 export default function Instalacoes() {
   const [lista, setLista] = useState<Inst[]>([])

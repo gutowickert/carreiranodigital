@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import CalendarioBase, { EventoCalendario } from '@/components/CalendarioBase'
 import { supabase } from '@/lib/supabase'
+import { hojeBR } from '@/lib/periodos'
 
 const CORES_TURMA = [
   '#7c3aed', '#2563eb', '#16a34a', '#dc2626', '#ea580c',
@@ -37,7 +38,7 @@ export default function AgendaAulas() {
   const [fimSugerido, setFimSugerido] = useState<Date>()
   const [aulaEditando, setAulaEditando] = useState<any>(null)
   const [visao, setVisao] = useState<'calendario' | 'grade'>('calendario')
-  const [mesGrade, setMesGrade] = useState(new Date().toISOString().slice(0, 7))
+  const [mesGrade, setMesGrade] = useState(hojeBR().slice(0, 7))
 
   async function carregarFiltros() {
     const [{ data: p }, { data: t }, { data: s }] = await Promise.all([

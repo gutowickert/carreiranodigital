@@ -5,6 +5,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/entrega'
+import { hojeBR } from '@/lib/periodos'
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
 // que está pendente COM O CLIENTE. GET lê, PATCH edita o cadastro, POST mexe nas
@@ -188,7 +189,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ ok: true })
     }
     if (acao === 'pendencia_entregue') {
-      await sb.from('projeto_pendencias').update({ entregue_em: new Date().toISOString().slice(0, 10) }).eq('org_id', org).eq('id', b.id)
+      await sb.from('projeto_pendencias').update({ entregue_em: hojeBR() }).eq('org_id', org).eq('id', b.id)
       return NextResponse.json({ ok: true })
     }
     // A LISTA PADRÃO nos projetos que nasceram antes dela existir (ou quando o roteiro mudou):
@@ -292,7 +293,7 @@ export async function POST(req: Request) {
       await sb.from('projeto_registros').insert({
         org_id: org, projeto_id: projetoId, tipo, frente, titulo: titulo.slice(0, 160),
         descricao: (b.descricao || '').toString().slice(0, 2000) || null,
-        data: /^\d{4}-\d{2}-\d{2}$/.test(String(b.data || '')) ? b.data : new Date().toISOString().slice(0, 10),
+        data: /^\d{4}-\d{2}-\d{2}$/.test(String(b.data || '')) ? b.data : hojeBR(),
         arquivo_path, arquivo_mime,
         autorizado_uso: ['sim', 'nao', 'pendente'].includes(b.autorizado_uso) ? b.autorizado_uso : 'pendente',
         dados_ocultos: !!b.dados_ocultos,

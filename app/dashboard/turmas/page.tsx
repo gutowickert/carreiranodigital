@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { getConfigNumero } from '@/lib/configuracoes'
+import { hojeBR } from '@/lib/periodos'
 
 type Turma = {
   id: string; data_inicio: string; data_fim: string; status: string
@@ -311,7 +312,7 @@ export default function Turmas() {
     if (false /* tráfego agora é regra fixa no financeiro, não por turma */) {
       const REF_TRAFEGO = '2026-01-01' // âncora dos blocos fixos de 4 dias
       const BLOCO = Math.max(1, await getConfigNumero('financeiro.dias_agrupamento_trafego', 4))
-      const hojeTraf = new Date().toISOString().split('T')[0]
+      const hojeTraf = hojeBR()
       const trafInicio = hojeTraf
       const trafFim = addDays(dataInicio, -1)
 
@@ -462,7 +463,7 @@ export default function Turmas() {
       break_even_matriculas: parseInt(meta),
     })
 
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = hojeBR()
 
     const { data: templatesAtivos } = await supabase.from('tarefa_templates')
       .select('*').eq('ativo', true).order('ordem')

@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { getConfigNumero } from '@/lib/configuracoes'
+import { hojeBR } from '@/lib/periodos'
 
 type VendedorComissao = {
   id: string
@@ -32,7 +33,7 @@ const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)'
 
 
 export default function Comissoes() {
-  const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
+  const [mesFiltro, setMesFiltro] = useState(hojeBR().slice(0, 7))
   const [vendedores, setVendedores] = useState<VendedorComissao[]>([])
   const [carregando, setCarregando] = useState(true)
   const [expandido, setExpandido] = useState<string | null>(null)

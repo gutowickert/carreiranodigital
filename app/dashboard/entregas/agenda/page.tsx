@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
+import { hojeBR } from '@/lib/periodos'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const btn: React.CSSProperties = { border: '1px solid var(--border-strong)', background: 'var(--surface-2)', color: 'var(--text-2)', borderRadius: 8, padding: '6px 11px', fontSize: 12.5, cursor: 'pointer' }
@@ -43,7 +44,7 @@ export default function AgendaEntregas() {
   const doDia = (d: Date) => visiveis.filter(i => String(i.data).slice(0, 10) === iso(d))
     .sort((a, b) => String(a.data).localeCompare(String(b.data)))
 
-  const hoje = iso(new Date())
+  const hoje = hojeBR()
   const aReconfirmar = itens.filter(i => i.situacao === 'confirmar' || i.situacao === 'a_remarcar').length
 
   return (

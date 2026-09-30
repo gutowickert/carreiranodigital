@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
 import { CardNumero } from '@/components/ui'
+import { hojeBR } from '@/lib/periodos'
 
 type Conta = { id: string; nome: string; tipo: string; unidade: string; saldo_inicial: number; ativo: boolean }
 type Lanc = { id: string; tipo: string; categoria: string; descricao: string; valor: number; status: string; data_vencimento: string; data_pagamento: string | null; conta_id: string | null }
@@ -28,7 +29,7 @@ export default function FluxoCaixa() {
   const [contas, setContas] = useState<Conta[]>([])
   const [lancamentos, setLancamentos] = useState<Lanc[]>([])
   const [transferencias, setTransferencias] = useState<Transf[]>([])
-  const [mes, setMes] = useState(new Date().toISOString().slice(0, 7))
+  const [mes, setMes] = useState(hojeBR().slice(0, 7))
   const [filtroConta, setFiltroConta] = useState('')
   const [naturezas, setNaturezas] = useState<{ chave: string; nome: string; ativo: boolean }[]>([])
   const [carregando, setCarregando] = useState(true)
@@ -39,7 +40,7 @@ export default function FluxoCaixa() {
   const [fTipo, setFTipo] = useState<'receita' | 'custo'>('receita')
   const [fDesc, setFDesc] = useState('')
   const [fValor, setFValor] = useState('')
-  const [fData, setFData] = useState(new Date().toISOString().split('T')[0])
+  const [fData, setFData] = useState(hojeBR())
   const [fConta, setFConta] = useState('')
   const [fCategoria, setFCategoria] = useState('outro')
   const [fStatus, setFStatus] = useState<'realizado' | 'previsto'>('realizado')

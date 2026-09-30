@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
+import { isoBR } from '@/lib/periodos'
 
 export const maxDuration = 60
 
@@ -37,8 +38,8 @@ export async function POST(req: NextRequest) {
     if (!dryRun && !confirm) return NextResponse.json({ ok: false, error: 'pra aplicar: dryRun=false E confirm=true' }, { status: 200 })
 
     const hojeBR = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
-    const limite = new Date(Date.now() - dias * 864e5).toISOString().slice(0, 10)   // começou há >= `dias`
-    const minData = new Date(Date.now() - 60 * 864e5).toISOString().slice(0, 10)     // não mexe em turma muito antiga
+    const limite = isoBR(new Date(Date.now() - dias * 864e5))   // começou há >= `dias`
+    const minData = isoBR(new Date(Date.now() - 60 * 864e5))     // não mexe em turma muito antiga
 
     // template pronto? (só dispara o toque se a Meta já aprovou = ativo)
     const { data: tpl } = await sb.from('followup_templates').select('ativo').eq('org_id', org).eq('nome_meta', TPL).maybeSingle()

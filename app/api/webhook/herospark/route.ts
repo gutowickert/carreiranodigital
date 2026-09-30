@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPurchase } from '@/lib/capi'
+import { hojeBR, isoBR } from '@/lib/periodos'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -179,7 +180,7 @@ export async function POST(req: NextRequest) {
         aluno_id: alunoId,
         turma_id: turmaId,
         valor_pago: valorFinal,
-        data_compra: new Date().toISOString().split('T')[0],
+        data_compra: hojeBR(),
         forma_pagamento: paymentMethod.includes('pix') ? 'pix' : (paymentMethod.includes('boleto') || paymentMethod.includes('slip')) ? 'boleto' : 'cartao',
         parcelas: ehBoletoParc ? installments : 1,
         status: 'ativa',
@@ -238,12 +239,12 @@ export async function POST(req: NextRequest) {
     }
 
     // 5/6/7) Financeiro
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = hojeBR()
 
     if (ehBoletoParc) {
       // BOLETO PARCELADO: a HeroSpark manda 1 webhook por boleto PAGO (valor da parcela).
       // Usa a DATA REAL do pagamento (payment_date do payload), não a data de processamento.
-      const pagDate = (() => { const pd = paymentDate ? new Date(paymentDate) : null; return (pd && !isNaN(+pd)) ? pd.toISOString().split('T')[0] : hoje })()
+      const pagDate = (() => { const pd = paymentDate ? new Date(paymentDate) : null; return (pd && !isNaN(+pd)) ? isoBR(pd) : hoje })()
       // DEDUP por (aluno + data REAL do pagamento): reenvio do MESMO pagamento tem o mesmo payment_date → não reprocessa.
       const { count: jaEssePag } = await supabase.from('lancamentos_empresa')
         .select('id', { count: 'exact', head: true })

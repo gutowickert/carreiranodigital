@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
+import { hojeBR } from '@/lib/periodos'
 
 type Template = {
   id: string
@@ -83,7 +84,7 @@ export default function TarefasTemplates() {
     setNovoForm(true)
   }
   async function aplicarTemplateEmTurmasFuturas(template: Template) {
-    const hoje = new Date().toISOString().split('T')[0]
+    const hoje = hojeBR()
     const { data: turmas } = await supabase.from('turmas')
       .select('id, data_inicio, data_fim, produto_id, produtos(nome)')
       .gte('data_inicio', hoje)

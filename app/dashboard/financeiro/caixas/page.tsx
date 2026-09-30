@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { hojeBR } from '@/lib/periodos'
 
 type Conta = {
   id: string
@@ -51,7 +52,7 @@ export default function Caixas() {
   const [transfOrigem, setTransfOrigem] = useState('')
   const [transfDestino, setTransfDestino] = useState('')
   const [transfValor, setTransfValor] = useState('')
-  const [transfData, setTransfData] = useState(new Date().toISOString().split('T')[0])
+  const [transfData, setTransfData] = useState(hojeBR())
   const [transfDesc, setTransfDesc] = useState('')
 
   useEffect(() => { carregar() }, [])

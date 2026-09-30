@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
+import { hojeBR } from '@/lib/periodos'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' } as React.CSSProperties
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
@@ -16,7 +17,7 @@ function addDays(date: string, days: number) {
 }
 
 export default function TrafegoRegraFixa() {
-  const hoje = new Date().toISOString().split('T')[0]
+  const hoje = hojeBR()
   const [valor, setValor] = useState('2000')
   const [intervalo, setIntervalo] = useState('3')
   const [inicio, setInicio] = useState(hoje)

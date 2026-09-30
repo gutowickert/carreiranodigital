@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip } from 'recharts'
 import { CardNumero } from '@/components/ui'
+import { hojeBR } from '@/lib/periodos'
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }
 const inp = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '9px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
@@ -17,7 +18,7 @@ export default function Resultados() {
   const [vendedores, setVendedores] = useState<any[]>([])
   const [motivos, setMotivos] = useState<any[]>([])
   const [filtro, setFiltro] = useState<'todos' | 'ganho' | 'perda'>('todos')
-  const [mesFiltro, setMesFiltro] = useState(new Date().toISOString().slice(0, 7))
+  const [mesFiltro, setMesFiltro] = useState(hojeBR().slice(0, 7))
 
   useEffect(() => { carregar() }, [mesFiltro])
 

@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, type Produto } from '@/lib/entrega'
 import { combinarMarco } from '@/lib/marco-acoes'
+import { isoBR } from '@/lib/periodos'
 
 // A máquina de estados do compromisso.
 //   combinar  → data e hora acertadas com o cliente (na sessão anterior)
@@ -110,7 +111,7 @@ export async function POST(req: Request) {
         const px = new Date(b.proxima_data_hora.toString())
         const inicio = String(projeto?.data_inicio || '').slice(0, 10)
         if (isNaN(px.getTime())) return erro('data do próximo encontro inválida')
-        if (inicio && px.toISOString().slice(0, 10) < inicio) {
+        if (inicio && isoBR(px) < inicio) {
           return erro(`A data do próximo encontro é antes do início do projeto (${inicio.split('-').reverse().join('/')}). Confere o dia.`)
         }
       }
@@ -124,7 +125,7 @@ export async function POST(req: Request) {
       if (proximoEncontro && b.proxima_data_hora) {
         const nova = new Date(b.proxima_data_hora.toString())
         if (!isNaN(nova.getTime())) {
-          const novaData = nova.toISOString().slice(0, 10)
+          const novaData = isoBR(nova)
           const antes = (proximoEncontro.data_prevista || '').slice(0, 10)
           const desloc = antes ? diasAte(novaData, antes) : 0
           // o próximo nasce COM lugar quando quem fechou informou — senão entraria na agenda sem
