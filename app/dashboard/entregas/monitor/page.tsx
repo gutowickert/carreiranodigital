@@ -44,13 +44,26 @@ function Delta({ atual, anterior, bom }: { atual: number | null | undefined; ant
   return <span style={{ fontSize: 11, fontWeight: 600, color: cor, whiteSpace: 'nowrap' }}>{subiu ? '▲' : '▼'} {subiu ? '+' : ''}{p}%</span>
 }
 
+// O NÚMERO EM CIMA DE CADA COLUNA (pedido do Nando, 30/09/2026 — era assim na tela antiga "Tráfego dos
+// Clientes", pedido de 27/09): lê-se sem passar o mouse. O dia que mais teve vem em negrito e verde; os
+// outros discretos. Empate no maior: todos em destaque.
 function Sparkline({ dias, cor }: { dias: any[]; cor: string }) {
+  const H = 34
   const max = Math.max(1, ...dias.map(d => d.resultados))
+  const fonte = dias.length > 20 ? 8 : dias.length > 12 ? 9 : 10.5
   return (
-    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: 34 }} title="resultados por dia, últimos 14 dias">
-      {dias.map(d => (
-        <div key={d.data} style={{ flex: 1, height: d.resultados ? Math.max(3, (d.resultados / max) * 34) : 2, background: d.resultados ? cor : 'var(--border-strong)', borderRadius: '3px 3px 0 0', opacity: d.resultados ? .85 : 1 }} />
-      ))}
+    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 2, height: H + 14 }} title="resultados por dia, últimos 14 dias">
+      {dias.map(d => {
+        const v = d.resultados || 0
+        const h = v ? Math.max(3, (v / max) * H) : 2
+        const ehPico = v > 0 && v === max
+        return (
+          <div key={d.data} style={{ flex: 1, minWidth: 0, height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'flex-end', alignItems: 'center', position: 'relative' }}>
+            {v > 0 && <span style={{ position: 'absolute', bottom: h + 2, fontSize: ehPico ? fonte + 1 : fonte, fontWeight: ehPico ? 800 : 500, color: ehPico ? 'var(--green)' : 'var(--text-muted)', fontVariantNumeric: 'tabular-nums', lineHeight: 1, whiteSpace: 'nowrap' }}>{v}</span>}
+            <div style={{ width: '100%', height: h, background: v ? cor : 'var(--border-strong)', borderRadius: '3px 3px 0 0', opacity: v ? (ehPico ? 1 : .8) : 1 }} />
+          </div>
+        )
+      })}
     </div>
   )
 }
