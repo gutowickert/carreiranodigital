@@ -267,7 +267,8 @@ function Detalhe({ c, aoFechar, aoSincronizar }: { c: any; aoFechar: () => void;
 
 // ─────────────────────────────────────────────────────────────── a tela
 export default function Monitor() {
-  const [dias, setDias] = useState<number>(() => { try { return Number(localStorage.getItem('cnd_monitor_dias')) || 7 } catch { return 7 } })
+  // 0 = DESDE O INÍCIO (cada cliente desde o início do próprio contrato) — 30/09/2026
+  const [dias, setDias] = useState<number>(() => { try { const s = localStorage.getItem('cnd_monitor_dias'); return s !== null && !isNaN(Number(s)) ? Number(s) : 7 } catch { return 7 } })
   const [d, setD] = useState<any>(null)
   const [carregando, setCarregando] = useState(true)
   const [sel, setSel] = useState<string | null>(null)
@@ -312,11 +313,11 @@ export default function Monitor() {
       <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 12, marginTop: 8, flexWrap: 'wrap' }}>
         <div>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Monitor das entregas</h1>
-          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu {dias === 1 ? 'hoje' : `nos últimos ${dias} dias`}. Verde em cima, vermelho embaixo. Clica no card pra ver tudo. Lê a Meta ao vivo ao abrir e a cada 5 minutos{lendoMeta ? ' · atualizando com a Meta agora…' : ''}{d?.atualizado_em ? ` (última leitura ${new Date(d.atualizado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${d.sincronizados ? `, ${d.sincronizados} conta${d.sincronizados > 1 ? 's' : ''} atualizada${d.sincronizados > 1 ? 's' : ''}` : ''})` : ''}.{dias < 3 ? ' Em janela curta só entram os alertas de estado (conta, saldo, campanha parada, entrega); leitura de custo pede pelo menos 3 dias.' : ''}</p>
+          <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 0' }}>Cada cliente com a cor calculada pelo que aconteceu {dias === 0 ? 'desde o início do contrato de cada um' : dias === 1 ? 'hoje' : `nos últimos ${dias} dias`}. Verde em cima, vermelho embaixo. Clica no card pra ver tudo. Lê a Meta ao vivo ao abrir e a cada 5 minutos{lendoMeta ? ' · atualizando com a Meta agora…' : ''}{d?.atualizado_em ? ` (última leitura ${new Date(d.atualizado_em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}${d.sincronizados ? `, ${d.sincronizados} conta${d.sincronizados > 1 ? 's' : ''} atualizada${d.sincronizados > 1 ? 's' : ''}` : ''})` : ''}.{dias < 3 ? ' Em janela curta só entram os alertas de estado (conta, saldo, campanha parada, entrega); leitura de custo pede pelo menos 3 dias.' : ''}</p>
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', border: '1px solid var(--border-strong)', borderRadius: 8, overflow: 'hidden' }}>
-            {([[1, 'Hoje'], [3, '3 dias'], [7, '7 dias'], [14, '14 dias'], [30, '30 dias']] as const).map(([n, l]) => (
+            {([[1, 'Hoje'], [3, '3 dias'], [7, '7 dias'], [14, '14 dias'], [30, '30 dias'], [0, 'Desde o início']] as const).map(([n, l]) => (
               <button key={n} onClick={() => escolher(n)} style={{ border: 'none', padding: '6px 12px', fontSize: 12.5, cursor: 'pointer', fontWeight: dias === n ? 700 : 400, background: dias === n ? 'var(--accent)' : 'var(--surface-2)', color: dias === n ? '#fff' : 'var(--text-2)' }}>{l}</button>
             ))}
           </div>

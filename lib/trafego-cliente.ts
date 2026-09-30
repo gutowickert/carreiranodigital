@@ -241,6 +241,19 @@ export type AnuncioPainel = {
   situacao: 'puxando' | 'queimando' | 'normal' | 'parado'
 }
 
+// TODAS AS LINHAS (30/09/2026): o Supabase devolve no máximo 1000 linhas e não avisa. "Desde o início"
+// num cliente com vários anúncios passa disso em poucos meses (anúncios × dias) e o total sairia pela
+// metade, calado. Lê em páginas de 1000, em ordem estável.
+async function todasAsLinhas(monta: () => any): Promise<{ data: any[] }> {
+  const out: any[] = []
+  for (let de = 0; ; de += 1000) {
+    const { data } = await monta().order('data').order('ad_id').range(de, de + 999)
+    out.push(...(data || []))
+    if (!data || data.length < 1000) break
+  }
+  return { data: out }
+}
+
 export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct: number): Promise<Painel> {
   const hoje = hojeBR()
   const inicio = String(p.data_inicio).slice(0, 10)
@@ -251,8 +264,8 @@ export async function lerPainel(p: Projeto, de: string, ate: string, impostoPct:
   const f = 1 + (impostoPct || 0) / 100
 
   const [{ data: dias }, { data: diasAnt }, { data: ads }, { data: eventos }, { data: conquistas }, { data: placar }, { data: vendasLista }, { data: vendasAntLista }, { data: ultimo }] = await Promise.all([
-    sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, tipo_resultado, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', de).lte('data', ate),
-    sb.from('trafego_anuncios_dia').select('gasto, impressoes, cliques, resultados, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt),
+    todasAsLinhas(() => sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, tipo_resultado, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', de).lte('data', ate)),
+    todasAsLinhas(() => sb.from('trafego_anuncios_dia').select('data, ad_id, gasto, impressoes, cliques, resultados, visitas, checkouts, valor_compras').eq('projeto_id', p.id).gte('data', deAnt).lte('data', ateAnt)),
     sb.from('trafego_anuncios').select('ad_id, ad_name, campaign_name, status, imagem_url, primeiro_dia').eq('projeto_id', p.id),
     sb.from('trafego_eventos').select('data, tipo, titulo, descricao').eq('projeto_id', p.id).gte('data', menosDias(ate, 45)).lte('data', ate).order('data', { ascending: false }).limit(30),
     sb.from('projeto_conquistas').select('chave, titulo, descricao, valor, destravada_em').eq('projeto_id', p.id).order('destravada_em', { ascending: false }),

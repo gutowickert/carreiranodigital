@@ -10,6 +10,7 @@ export const maxDuration = 120
 // Se o último sync de um cliente tem mais que isso, o monitor lê a Meta de novo antes de montar a tela.
 // Abaixo disso reaproveita o banco: quem abre a tela três vezes em dois minutos não paga três leituras.
 const FRESCOR_MIN = 10
+const DESDE_O_INICIO = 3650   // 10 anos: na prática, o contrato inteiro de qualquer cliente
 
 // O MONITOR DAS ENTREGAS: todos os clientes em entrega com cor, alertas, recomendação,
 // próximo encontro, quem contatar hoje e os encontros da semana. Interno: Guto e Mateus decidem em grupo aqui.
@@ -23,7 +24,10 @@ export async function GET(req: Request) {
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })
     const org = await orgDaRequest(auth)
     const sp = new URL(req.url).searchParams
-    const dias = Math.min(90, Math.max(1, Number(sp.get('dias')) || LIMITES.janelaDias))
+    // dias=0 → DESDE O INÍCIO (30/09/2026, pedido do Nando: "teria que conseguir o tempo todo"). Vai um
+    // período longo e o lerPainel corta cada cliente no início do PRÓPRIO contrato (cada um começou num dia).
+    const pedido = Number(sp.get('dias'))
+    const dias = pedido === 0 && sp.get('dias') !== null ? DESDE_O_INICIO : Math.min(90, Math.max(1, pedido || LIMITES.janelaDias))
     const aoVivo = sp.get('ao_vivo') !== '0'
 
     let sincronizados = 0, falhas: string[] = []
