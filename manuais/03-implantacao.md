@@ -152,6 +152,8 @@ Tudo abaixo aconteceu na frente da cliente ou por pouco não aconteceu. Roda o e
 
 **10. O manual no menu e o link com o dono** — e o manual com o endereço certo (o da Dani ainda mostrava o endereço antigo).
 
+**11. Varredura de resquícios e erros (30/09, GAJA).** `ferramentas/testes/varredura.js` passa por TODAS as telas no computador e no celular (iPhone) procurando palavra da escola (e de outro cliente, com `EXTRA='Dani|Bruna|…'`), erro de página, API falhando e tela transbordando; `card-e-busca.js` abre o card do lead e testa a busca de lead em Entregas e Chamadas. Na GAJA achou: "Curso" nos tipos de produto, "Conta de anúncio"/"Placar" na entrega, a Agenda de disparos da escola e "explicaram o curso" no copiloto. Lembrar que o texto que a IA LÊ (prompts) também é resquício: `grep -niE "turma|bolsa|alun|matr[íi]cula|curso|escola"` nos arquivos da IA.
+
 Depois do primeiro uso, toda mudança sobe a versão (2.0.1…).
 
 ## O dia da implantação: as 2 horas
