@@ -6,7 +6,7 @@ import { Video, Copy, Check, ExternalLink, MessageCircle } from 'lucide-react'
 
 // O BOTÃO "CHAMAR": cria uma chamada por voz/vídeo (app/call) pra um lead ou cliente e entrega o convite
 // do jeito mais curto possível. Um toque abre o painel; o segundo toque cria a chamada, abre a tua tela
-// numa aba nova e manda o link pro outro lado (pelo chat, quando a tela tem chat; senão pelo wa.me).
+// numa aba nova e manda o link pro outro lado, SEMPRE pelo WhatsApp oficial (nunca o wa.me do celular).
 // Usado no card do lead, na conversa do WhatsApp, na Fila de Ligações, no Atender agora e nas entregas.
 type Props = {
   leadId?: string | null
@@ -17,6 +17,19 @@ type Props = {
   compacto?: boolean
   style?: React.CSSProperties
 }
+
+// MANDA O CONVITE PELO WHATSAPP OFICIAL, nunca pelo WhatsApp de quem clicou (01/10/2026, igual à Dani).
+// Fora da tela do WhatsApp o botão abria o wa.me e nada saía sozinho: o Rick criou a chamada da Sabrina
+// pelo card e colou o link puro à mão. Fora da janela de 24h o WhatsApp só aceita modelo: aí volta
+// `foraJanela`, e quem chamou é avisado e fica com o link copiado.
+export async function enviarPeloOficial(telefone: string | null | undefined, leadId: string | null | undefined, texto: string): Promise<{ ok: boolean; foraJanela?: boolean; error?: string }> {
+  try {
+    const j = await fetchAuth('/api/wa/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ telefone: telefone || undefined, leadId: leadId || undefined, texto, preview: true, conviteFoto: true }) }).then(r => r.json())
+    return { ok: !!j?.ok, foraJanela: !!j?.foraJanela, error: j?.error }
+  } catch (e: any) { return { ok: false, error: e?.message || 'erro de rede' } }
+}
+export const AVISO_24H = 'Essa pessoa não falou com a gente nas últimas 24h, e o WhatsApp só deixa mandar modelo. Copiei o link: reabre a conversa dela com um modelo e manda o link, ou liga pra ela.'
 
 // quem chama e de onde vem logo na primeira linha: um link de gente desconhecida parece vírus
 export const textoConvite = (nome: string | null | undefined, link: string, quem?: string | null, empresa?: string | null) =>
@@ -76,15 +89,21 @@ export default function BotaoChamada({ leadId, nome, telefone, enviarNoChat, com
   }
 
   async function mandar() {
+    setMandado(''); setErro('')
     const janela = window.open('', '_blank')
     const l = await criar(); if (!l) { janela?.close(); return }
     const texto = textoConvite(l.nome, l.lead, l.quem, l.empresa)
     if (enviarNoChat) {
       const ok = await enviarNoChat(texto)
       setMandado(ok ? 'Convite enviado na conversa.' : 'Não consegui mandar pelo chat: copia o link e manda à mão.')
-    } else if (l.telefone) {
-      window.open(`https://wa.me/${l.telefone.replace(/\D/g, '')}?text=${encodeURIComponent(texto)}`, '_blank')
-      setMandado('WhatsApp aberto com o convite.')
+    } else if (l.telefone || leadId) {
+      const r = await enviarPeloOficial(l.telefone, leadId, texto)
+      if (r.ok) setMandado('Convite enviado pelo WhatsApp oficial.')
+      else {
+        try { await navigator.clipboard.writeText(l.lead) } catch { /* sem clipboard */ }
+        if (r.foraJanela) setErro(AVISO_24H)
+        else setErro(`Não consegui mandar pelo WhatsApp oficial (${r.error || 'erro'}). Copiei o link pra mandar à mão.`)
+      }
     } else {
       try { await navigator.clipboard.writeText(l.lead) } catch { /* sem clipboard */ }
       setMandado('Sem telefone: link copiado.')

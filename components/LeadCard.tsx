@@ -430,21 +430,6 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     }
   }
 
-  // O BOTÃO CHAMAR DO CARD MANDA O CONVITE PELO NÚMERO OFICIAL (01/10/2026), igual à tela do WhatsApp:
-  // foto com legenda, registrada na conversa. Antes abria o wa.me (o WhatsApp pessoal de quem clicou),
-  // nada saía sozinho: o Rick criou a chamada da Sabrina pelo card e acabou colando o link puro à mão.
-  async function enviarConvite(t: string): Promise<boolean> {
-    if (!lead) return false
-    setMsgLigacao('')
-    try {
-      const res = await fetchAuth('/api/wa/enviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ leadId: lead.id, telefone: form.whatsapp, texto: t, preview: true, conviteFoto: true }) })
-      const json = await res.json()
-      if (json.ok) return true
-      setMsgLigacao(json.foraJanela ? 'Erro: convite não enviado, o lead está fora das 24h. Reabre a conversa com um modelo no WhatsApp do card e chama de novo.' : 'Erro: convite não enviado. ' + (json.error || ''))
-      return false
-    } catch (e: any) { setMsgLigacao('Falha: convite não enviado. ' + ((e && e.message) || 'erro de rede')); return false }
-  }
-
   async function salvar() {
     let vendedorIdFinal = form.vendedor_id
     if (novoLead && form.turma_id && !form.vendedor_id) {
@@ -607,7 +592,7 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid #25D36640', background: chatAberto ? '#25D366' : 'rgba(37,211,102,.12)', color: chatAberto ? '#063' : '#25D366', fontSize: 13, fontWeight: 700, cursor: form.whatsapp ? 'pointer' : 'default', opacity: form.whatsapp ? 1 : 0.5 }}>
               <MessageCircle size={14} /> WhatsApp
             </button>
-            <BotaoChamada leadId={lead.id} nome={form.nome} telefone={form.whatsapp} enviarNoChat={form.whatsapp ? enviarConvite : undefined} />
+            <BotaoChamada leadId={lead.id} nome={form.nome} telefone={form.whatsapp} />
             <button onClick={toggleNaoLida} title="Marca pra outro atendente pegar"
               style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 'var(--r)', border: '1px solid ' + (naoLida ? 'var(--green)' : 'var(--border-strong)'), background: naoLida ? 'var(--green-bg)' : 'var(--glass-field)', color: naoLida ? 'var(--green)' : 'var(--text-muted)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               {naoLida ? <CircleDot size={14} /> : <Circle size={14} />} {naoLida ? 'Não lida' : 'Marcar não lida'}
