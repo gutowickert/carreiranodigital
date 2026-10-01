@@ -319,7 +319,8 @@
           </ol>
           <ol class="passos">
             <li><div><b>Mover</b>Arrasta o cartão pra outra coluna, ou abre e escolhe a etapa. Etapa com data pede a data e já cria a tarefa.</div></li>
-            <li><div><b>Ganhou</b>Move para Ganho e informa produto e valor. É isso que entra no Caixa e nos Resultados.</div></li>
+            <li><div><b>Deu sinal</b>A paciente marcou a avaliação e pagou um sinal pra garantir o horário: abre o cartão e toca em <b>Registrar sinal</b>. Informa o serviço, o valor combinado, quanto entrou e o dia da avaliação. Ela vai pra Avaliação agendada (não pra Ganho) e o Caixa conta só o que entrou.</div></li>
+            <li><div><b>Ganhou</b>Move para Ganho e informa produto e valor. É isso que entra no Caixa e nos Resultados. Ganho é quando ela fecha o tratamento, não quando paga o sinal.</div></li>
             <li><div><b>Perdeu</b>Move para Perda e escolhe o motivo. O motivo é o que a Máquina lê depois pra dizer por que se perde.</div></li>
             <li><div><b>Abrir o cartão</b>Mostra a conversa inteira, o resumo da IA, a ficha e a jornada, e o histórico.</div></li>
           </ol>
@@ -395,8 +396,9 @@
           <span class="eyebrow">Capítulo 9</span>
           <h2>Caixa e resultados</h2>
           <p>O Caixa mostra o mês em quatro números: o que entrou, de onde veio, o que saiu e o que ainda vai entrar. As entradas vêm sozinhas das vendas marcadas no funil. Vocês lançam o que sai e, com o botão <b>Entrada</b> no mesmo formulário, o que entrou <b>sem</b> venda no card (um produto vendido no balcão, um valor por fora). Venda que já está no card não se lança de novo, senão conta duas vezes.</p>
+          <p><b>Sinal.</b> Quando a paciente paga só um sinal, usem o botão <b>Registrar sinal</b> no cartão dela, e não o Ganho. O Caixa soma o sinal no dia em que entrou e mostra o resto em <b>A receber de quem deu sinal</b>, com o nome de cada uma. No dia em que ela pagar o resto, toquem em <b>Recebi</b> (no Caixa) ou em <b>Receber restante</b> (no cartão): aí esse valor entra, na data e na forma em que foi pago. Se ela desistir, o <b>×</b> tira o que faltava e o sinal continua no Caixa.</p>
         </div>
-        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Como funciona:</b> o Caixa (só na Dani) soma as vendas marcadas como Ganho no mês e o que vocês lançam de saída — não tem digitação de entrada, de propósito, pra não ter dois números diferentes pra mesma venda. Resultados separa as vendas por origem e por campanha; Velocidade de Venda conta os dias da primeira mensagem até o Ganho; Análise de Conversão conta quantas ficaram em cada etapa. <b>Número estranho</b> é quase sempre cartão na etapa errada ou venda marcada sem valor. Preço muda em Produtos e a IA já fala o novo na próxima mensagem.</p></aside>
+        <aside class="tecnico"><span class="tecnico-rotulo">Só tu vê · por trás</span><p><b>Como funciona:</b> o Caixa (só na Dani) soma as vendas marcadas como Ganho no mês e o que vocês lançam de saída — não tem digitação de entrada, de propósito, pra não ter dois números diferentes pra mesma venda. Resultados separa as vendas por origem e por campanha; Velocidade de Venda conta os dias da primeira mensagem até o Ganho; Análise de Conversão conta quantas ficaram em cada etapa. <b>Número estranho</b> é quase sempre cartão na etapa errada ou venda marcada sem valor. Preço muda em Produtos e a IA já fala o novo na próxima mensagem. <b>Sinal (2.1.8):</b> tabela <code>sinais</code>, lançada pelo botão Registrar sinal do cartão; não cria venda, não dá Ganho e não avisa a Meta de compra. O sinal entra no dia dele, o restante no dia do "Recebi"; o que falta fica em "A receber de quem deu sinal". Se ela lançar sinal pelo Ganho de novo, o Caixa soma o valor cheio: corrigir cancelando a venda e registrando o sinal.</p></aside>
         <div class="bloco">
           <div class="tabela">
             <table>
@@ -456,6 +458,7 @@
           <details><summary>Uma cliente sumiu do funil.</summary><p>Ela está em Perda ou em Retomar depois. Usa a busca do funil pelo nome.</p></details>
           <details><summary>Não chegou notificação.</summary><p>Confere se está ligada naquele aparelho (fim do menu) e, no iPhone, se o sistema foi aberto pelo ícone da tela de início.</p></details>
           <details><summary>A venda não apareceu no Caixa.</summary><p>O cartão precisa estar em Ganho, com produto e valor.</p></details>
+          <details><summary>A paciente pagou só o sinal. Onde eu lanço?</summary><p>No cartão dela, em Registrar sinal. Não usem o Ganho pra isso: o Ganho soma o valor inteiro no Caixa e tira a paciente do funil antes da avaliação.</p></details>
           <details><summary>Quanto custa a IA por mês?</summary><p>Paga por uso, na conta do Espaço. Em uso normal, algumas dezenas de reais. A tela Custo da IA mostra dia a dia.</p></details>
           <details><summary>O que não fazer?</summary><p>Dar o login pra outra pessoa (cada ação tem nome). Responder a cliente pelo celular fora do sistema (a IA não vê e pode cobrar em cima). Apagar cartão: move pra Perda com o motivo.</p></details>
           <div class="regra" style="margin-top:8px"><span class="k">?</span><div><b>Pedidos de mudança e problemas:</b> Suporte CND, pelo WhatsApp. Mudança no que a IA fala, em produto e em etapa vocês mesmas fazem; mudança de tela e de regra do sistema é com ele.</div></div>
