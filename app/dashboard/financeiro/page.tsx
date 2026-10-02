@@ -105,6 +105,8 @@ export default function Financeiro() {
   const [lancRecorrente, setLancRecorrente] = useState(false)
   const [lancMeses, setLancMeses] = useState('12')
   const [lancContaId, setLancContaId] = useState('')
+  // o recorrente que está na caixa de exclusão, com quantos lançamentos há dele em diante
+  const [excluindo, setExcluindo] = useState<{ l: Lancamento; futuros: number; pagos: number } | null>(null)
 
   const mesRef = mesSelecionado + '-01'
 
@@ -263,14 +265,29 @@ export default function Financeiro() {
 
   async function excluirLancamento(l: Lancamento) {
     if (l.recorrente && l.grupo_recorrencia) {
-      const confirma = confirm('Lançamento recorrente. Excluir todos os meses futuros desse grupo?')
-      if (!confirma) return
-      await supabase.from('lancamentos_empresa').delete()
-        .eq('grupo_recorrencia', l.grupo_recorrencia)
-        .gte('data_vencimento', l.data_vencimento)
+      // recorrente: abre a caixa pra escolher "só este mês" ou "este e os próximos" (02/10/2026,
+      // pedido do Rick — antes era todos os futuros ou nada). Conta antes quantos seriam apagados.
+      const { data, error } = await supabase.from('lancamentos_empresa').select('id, status')
+        .eq('grupo_recorrencia', l.grupo_recorrencia).gte('data_vencimento', l.data_vencimento)
+      if (error) { alert('Não foi possível conferir os lançamentos desse grupo. Nada foi excluído.'); return }
+      setExcluindo({ l, futuros: (data || []).length, pagos: (data || []).filter(x => x.status === 'realizado' && x.id !== l.id).length })
     } else {
       if (!confirm('Excluir este lançamento?')) return
       await supabase.from('lancamentos_empresa').delete().eq('id', l.id)
+      carregarLancamentos()
+    }
+  }
+
+  async function excluirRecorrente(soEste: boolean) {
+    if (!excluindo) return
+    const { l } = excluindo
+    setExcluindo(null)
+    if (soEste) {
+      await supabase.from('lancamentos_empresa').delete().eq('id', l.id)
+    } else {
+      await supabase.from('lancamentos_empresa').delete()
+        .eq('grupo_recorrencia', l.grupo_recorrencia!)
+        .gte('data_vencimento', l.data_vencimento)
     }
     carregarLancamentos()
   }
@@ -749,6 +766,34 @@ export default function Financeiro() {
                   </tr>
                 </tbody>
               </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {excluindo && (
+        <div onClick={() => setExcluindo(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', display: 'grid', placeItems: 'center', padding: 16, zIndex: 50 }}>
+          <div onClick={e => e.stopPropagation()} style={{ ...card, width: '100%', maxWidth: 440, display: 'grid', gap: 12 }}>
+            <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Excluir lançamento recorrente</div>
+            <div style={{ fontSize: 14, color: 'var(--text-2)' }}>
+              <strong style={{ color: 'var(--text)' }}>{excluindo.l.descricao || 'Sem descrição'}</strong> · {fmt(excluindo.l.valor)} · vencimento {new Date(excluindo.l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}
+            </div>
+            <button onClick={() => excluirRecorrente(true)} style={{ ...btnSecondary, textAlign: 'left', padding: '10px 14px' }}>
+              <div style={{ fontWeight: 700, color: 'var(--text)' }}>Só este mês</div>
+              <div style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>Exclui apenas este lançamento. Os outros meses continuam.</div>
+            </button>
+            <button onClick={() => excluirRecorrente(false)} style={{ ...btnSecondary, textAlign: 'left', padding: '10px 14px' }}>
+              <div style={{ fontWeight: 700, color: 'var(--red)' }}>Este e os próximos ({excluindo.futuros} {excluindo.futuros === 1 ? 'lançamento' : 'lançamentos'})</div>
+              <div style={{ fontSize: 12, fontWeight: 400, marginTop: 2 }}>Exclui deste vencimento em diante. Os meses anteriores continuam.</div>
+              {excluindo.pagos > 0 && (
+                <div style={{ fontSize: 12, fontWeight: 600, marginTop: 4, color: 'var(--red)' }}>
+                  Atenção: {excluindo.pagos} {excluindo.pagos === 1 ? 'dos próximos já está marcado como pago e será apagado' : 'dos próximos já estão marcados como pagos e serão apagados'} também.
+                </div>
+              )}
+            </button>
+            <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>A exclusão não pode ser desfeita.</div>
+            <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <button onClick={() => setExcluindo(null)} style={btnSecondary}>Cancelar</button>
             </div>
           </div>
         </div>
