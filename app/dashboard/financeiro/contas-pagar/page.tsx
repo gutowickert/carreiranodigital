@@ -6,9 +6,12 @@ import { supabase } from '@/lib/supabase'
 import { hojeBR, diasEntre } from '@/lib/periodos'
 import { Card, Botao, Campo, CabecalhoPagina, CardNumero, Vazio } from '@/components/ui'
 
-// CONTAS A PAGAR (02/10/2026, pedido do Rick) — etapa 1: SÓ CONSULTA.
+// CONTAS A PAGAR (02/10/2026, pedido do Rick).
 // Conta a pagar = custo lançado como "previsto" em lancamentos_empresa. Não tem cadastro próprio:
-// lançar, pagar e corrigir continuam na tela Lançamentos. Aqui não se grava nada.
+// lançar e corrigir continuam na tela Lançamentos.
+// Etapa 2: "Marcar como paga" — a ÚNICA gravação desta tela. Faz o mesmo que o confirmar pagamento
+// de Lançamentos (status realizado + data_pagamento), com caixa de confirmação e data à escolha
+// (nunca futura). Conta sem caixa não paga por aqui: o saldo é por caixa, e ela não sairia de lugar nenhum.
 //
 // Três grupos: Atrasadas e Vence hoje aparecem sempre (de qualquer mês — conta atrasada não pode
 // sumir porque alguém trocou o mês); "Vencem em <mês>" segue o seletor.
@@ -44,6 +47,29 @@ export default function ContasPagar() {
   const [fNat, setFNat] = useState('')
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
+  // a conta que está na caixa de confirmação do pagamento
+  const [pagando, setPagando] = useState<Conta | null>(null)
+  const [dataPag, setDataPag] = useState(hoje)
+  const [salvando, setSalvando] = useState(false)
+  const [erroPag, setErroPag] = useState('')
+
+  function abrirPagamento(c: Conta) { setPagando(c); setDataPag(hoje); setErroPag('') }
+
+  async function confirmarPagamento() {
+    if (!pagando) return
+    if (!dataPag) { setErroPag('Informe a data do pagamento.'); return }
+    if (dataPag > hoje) { setErroPag('A data do pagamento não pode ser no futuro.'); return }
+    setSalvando(true); setErroPag('')
+    // só mexe se a conta AINDA está prevista (outra pessoa pode ter pago na tela Lançamentos)
+    const { data, error } = await supabase.from('lancamentos_empresa')
+      .update({ status: 'realizado', data_pagamento: dataPag })
+      .eq('id', pagando.id).eq('status', 'previsto').select('id')
+    setSalvando(false)
+    if (error) { setErroPag('Não foi possível marcar como paga. Nada foi alterado. Avise o Guto.'); return }
+    if (!data || data.length === 0) setErro('Essa conta já não estava mais em aberto. Atualize a página para ver a lista de agora.')
+    setContas(l => l.filter(c => c.id !== pagando.id))
+    setPagando(null)
+  }
 
   useEffect(() => {
     supabase.from('contas_financeiras').select('id, nome').order('nome').then(({ data }) => setCaixas(data || []))
@@ -88,7 +114,7 @@ export default function ContasPagar() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 1000, margin: '0 auto' }}>
-      <CabecalhoPagina titulo="Contas a Pagar" sub="Custos lançados como previstos e ainda não pagos. Para pagar ou corrigir, use a tela Lançamentos." />
+      <CabecalhoPagina titulo="Contas a Pagar" sub="Custos lançados como previstos e ainda não pagos. Para lançar ou corrigir uma conta, use a tela Lançamentos." />
 
       <Card style={{ display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 16 }}>
         <Campo rotulo="Mês">
@@ -127,19 +153,54 @@ export default function ContasPagar() {
                 ? <Card><Vazio icone={CircleCheck} titulo="Nenhuma conta em aberto" texto="Não há custo previsto atrasado, vencendo hoje ou neste mês com esses filtros." /></Card>
                 : (
                   <div style={{ display: 'grid', gap: 16 }}>
-                    <Grupo titulo="Atrasadas" contas={atrasadas} hoje={hoje} natMap={natMap} caixaNome={caixaNome} atrasada />
-                    <Grupo titulo="Vence hoje" contas={deHoje} hoje={hoje} natMap={natMap} caixaNome={caixaNome} />
-                    <Grupo titulo={`Vencem em ${soMes(mes)}`} contas={doMes} hoje={hoje} natMap={natMap} caixaNome={caixaNome} />
+                    <Grupo titulo="Atrasadas" contas={atrasadas} hoje={hoje} natMap={natMap} caixaNome={caixaNome} aoPagar={abrirPagamento} atrasada />
+                    <Grupo titulo="Vence hoje" contas={deHoje} hoje={hoje} natMap={natMap} caixaNome={caixaNome} aoPagar={abrirPagamento} />
+                    <Grupo titulo={`Vencem em ${soMes(mes)}`} contas={doMes} hoje={hoje} natMap={natMap} caixaNome={caixaNome} aoPagar={abrirPagamento} />
                   </div>
                 )}
             </>
           )}
+
+      {pagando && (
+        <div onClick={() => !salvando && setPagando(null)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.55)', display: 'grid', placeItems: 'center', padding: 16, zIndex: 50 }}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: 420 }}>
+            <Card style={{ display: 'grid', gap: 14 }}>
+              <div style={{ fontSize: 17, fontWeight: 700, color: 'var(--text)' }}>Marcar como paga?</div>
+              <div style={{ display: 'grid', gap: 4, fontSize: 14, color: 'var(--text-2)' }}>
+                <div style={{ fontWeight: 600, color: 'var(--text)' }}>{pagando.descricao || 'Sem descrição'}</div>
+                <div>Valor: <strong>{brl(pagando.valor)}</strong></div>
+                <div>Vencimento: {new Date(pagando.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR')}</div>
+                <div>Caixa: {pagando.conta_id ? caixaNome[pagando.conta_id] || '—' : 'sem caixa definido'}</div>
+              </div>
+              {pagando.conta_id ? (
+                <>
+                  <Campo rotulo="Data do pagamento" erro={erroPag} dica="Hoje ou um dia que já passou.">
+                    <Campo.Input type="date" value={dataPag} max={hoje} onChange={e => setDataPag(e.target.value)} />
+                  </Campo>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8 }}>
+                    <Botao onClick={() => setPagando(null)} disabled={salvando}>Cancelar</Botao>
+                    <Botao tom="principal" onClick={confirmarPagamento} disabled={salvando}>{salvando ? 'Salvando…' : 'Confirmar pagamento'}</Botao>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ fontSize: 13.5, color: 'var(--red)' }}>Defina o caixa na tela Lançamentos antes de pagar. Sem caixa, o pagamento não sairia do saldo de nenhuma conta.</div>
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                    <Botao onClick={() => setPagando(null)}>Fechar</Botao>
+                  </div>
+                </>
+              )}
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
 
-function Grupo({ titulo, contas, hoje, natMap, caixaNome, atrasada }: {
-  titulo: string; contas: Conta[]; hoje: string; natMap: Record<string, string>; caixaNome: Record<string, string>; atrasada?: boolean
+function Grupo({ titulo, contas, hoje, natMap, caixaNome, aoPagar, atrasada }: {
+  titulo: string; contas: Conta[]; hoje: string; natMap: Record<string, string>; caixaNome: Record<string, string>
+  aoPagar: (c: Conta) => void; atrasada?: boolean
 }) {
   if (contas.length === 0) return null
   return (
@@ -159,6 +220,7 @@ function Grupo({ titulo, contas, hoje, natMap, caixaNome, atrasada }: {
             <span style={{ width: 130, flexShrink: 0, color: 'var(--text-muted)' }}>{c.conta_id ? caixaNome[c.conta_id] || '—' : '—'}</span>
             <span style={{ width: 80, flexShrink: 0, fontSize: 12, color: 'var(--red)' }}>{atrasada ? `há ${dias} ${dias === 1 ? 'dia' : 'dias'}` : ''}</span>
             <span style={{ width: 110, flexShrink: 0, textAlign: 'right', fontWeight: 700, color: 'var(--text)' }}>{brl(c.valor)}</span>
+            <Botao tamanho="sm" onClick={() => aoPagar(c)} style={{ flexShrink: 0, alignSelf: 'center' }}>Marcar como paga</Botao>
           </div>
         )
       })}
