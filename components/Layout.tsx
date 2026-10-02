@@ -140,13 +140,13 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
+      { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
       { nome: 'Relatório de Receitas', href: '/dashboard/financeiro/receitas' },
+      { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
       // 'Transferências entre Contas' (/dashboard/transferencias) saiu do menu em 02/10/2026: gravava numa
       // tabela que só ela lia, e o saldo das outras telas não mudava. Transferência se faz em Ajustes →
       // Caixas; este relatório lista as feitas por lá. A tela antiga continua existindo pelo endereço.
       { nome: 'Relatório de Transferências', href: '/dashboard/financeiro/transferencias' },
-      { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
     ],
   },
   {
