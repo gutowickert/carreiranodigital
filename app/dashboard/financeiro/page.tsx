@@ -213,10 +213,13 @@ export default function Financeiro() {
       const grupoId = gerarUuid()
       const vencDate = new Date(lancVencimento + 'T12:00:00')
       const dia = vencDate.getDate()
+      // a recorrência começa no mês do VENCIMENTO digitado, não no mês aberto na tela (02/10/2026,
+      // pedido do Rick: tela em outubro + vencimento 01/11 criava de 01/10 a 01/09)
+      const mesInicial = lancVencimento ? lancVencimento.slice(0, 7) : mesSelecionado
 
       const lancamentosParaInserir = []
       for (let i = 0; i < meses; i++) {
-        const mesAlvo = addMonths(mesSelecionado, i)
+        const mesAlvo = addMonths(mesInicial, i)
         const [y, m] = mesAlvo.split('-').map(Number)
         const ultimoDia = new Date(y, m, 0).getDate()
         const diaFinal = Math.min(dia, ultimoDia)
