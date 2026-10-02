@@ -115,3 +115,4 @@ Conferido em 02/10/2026. O mapa completo, com riscos e e-mails, fica em `Sistema
 - O repositório da escola ficou público de 31/05 a 02/10/2026. Quem pode enviar código: Guto (dono), Nando e Rick.
 - Os bancos da organização CarreiraNoDigital têm cópia de segurança diária, guardada por 7 dias.
 - A Vercel dos clientes (NandoSystem) está no plano grátis e só o Nando tem acesso.
+- **Publicação da escola (desde 02/10/2026):** a Vercel do Guto é do plano grátis e, com o repositório privado, bloqueia a publicação automática do que o Nando e o Rick enviam. Por isso o Guto ligou um gatilho de publicação (Deploy Hook da Vercel, chamado por um webhook do GitHub a cada envio pra `main`). Se um envio não entrar no ar, conferir esse webhook em GitHub → Settings → Webhooks.
