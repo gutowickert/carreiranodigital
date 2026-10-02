@@ -99,3 +99,19 @@ Loja de skate. **Congelada por decisão do Nando (25/09/2026): nenhuma atualiza�
 | Dani Fell | espacodanifell.vercel.app | CRM + Tráfego | geral, todos | Anthropic sem crédito em 27/09; Deepgram sim | **no ar (28/09)** — (51) 99923-0533, número novo, app "Sistema Dani Fell"; nome em análise na Meta | sim (28/09) |
 | GAJA | gajaseguros.vercel.app | combo | marketing | nenhuma | indefinido | não |
 | Jamrock | jamrockskateboardingco.vercel.app | — | não | — | — | não |
+
+## Onde está cada sistema (contas)
+
+Conferido em 02/10/2026. O mapa completo, com riscos e e-mails, fica em `Sistema CND/estado/MAPA.md` no computador do Nando. Aqui não entra senha nem chave.
+
+| Sistema | Código (GitHub) | No ar (Vercel) | Banco (Supabase) |
+| --- | --- | --- | --- |
+| Escola | `gutowickert/carreiranodigital`, privado desde 02/10/2026 | conta do Guto, time `guto-s-projects2` | organização CarreiraNoDigital, região EUA |
+| Espaço Dani Fell | `Nando-CarreiraNoDigital/crm-danifell`, privado | time NandoSystem | organização CarreiraNoDigital, São Paulo |
+| GAJA | `Nando-CarreiraNoDigital/crm-gaja`, privado | time NandoSystem | organização CarreiraNoDigital, São Paulo |
+| Vitrine / núcleo | `Nando-CarreiraNoDigital/crm-nucleo`, privado | time NandoSystem | organização CarreiraNoDigital, São Paulo |
+| JamRock | `Nando-CarreiraNoDigital/crm-jamrock`, privado | time NandoSystem | outra conta, não é a da CND |
+
+- O repositório da escola ficou público de 31/05 a 02/10/2026. Quem pode enviar código: Guto (dono), Nando e Rick.
+- Os bancos da organização CarreiraNoDigital têm cópia de segurança diária, guardada por 7 dias.
+- A Vercel dos clientes (NandoSystem) está no plano grátis e só o Nando tem acesso.
