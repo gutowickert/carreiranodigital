@@ -55,8 +55,8 @@ export default function RelatorioCustos() {
 
   return (
     <div style={{ padding: '28px 32px', maxWidth: 900, margin: '0 auto' }}>
-      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>💸 Relatório de Custos</h1>
-      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 20px' }}>Custos por natureza no período{mesmoMes ? ` — ${nomeMes(desde)}` : ''}.</p>
+      <h1 style={{ fontSize: 24, fontWeight: 800, color: 'var(--text)', margin: 0 }}>💸 Relatório de Despesas</h1>
+      <p style={{ fontSize: 13, color: 'var(--text-faint)', margin: '4px 0 20px' }}>Despesas por natureza no período{mesmoMes ? ` — ${nomeMes(desde)}` : ''}.</p>
 
       {/* filtros */}
       <div style={{ ...card, padding: 16, display: 'flex', gap: 14, flexWrap: 'wrap', alignItems: 'flex-end', marginBottom: 18 }}>
@@ -75,19 +75,19 @@ export default function RelatorioCustos() {
 
       {/* total */}
       <div style={{ ...card, padding: 20, marginBottom: 16, borderColor: 'var(--red)' }}>
-        <div style={{ fontSize: 12, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Total de custos no período</div>
+        <div style={{ fontSize: 12, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.05em' }}>Total de despesas no período</div>
         <div style={{ fontSize: 30, fontWeight: 800, color: 'var(--text)', marginTop: 2 }}>{brl(total)}</div>
         <div style={{ fontSize: 12, color: 'var(--text-faint)' }}>{linhas.reduce((s, l) => s + l.qtd, 0)} lançamentos · {linhas.length} naturezas</div>
       </div>
 
       {/* tabela */}
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 30 }}>Carregando…</div>
-        : linhas.length === 0 ? <div style={{ ...card, padding: 30, textAlign: 'center', color: 'var(--text-faint)' }}>Nenhum custo no período.</div>
+        : linhas.length === 0 ? <div style={{ ...card, padding: 30, textAlign: 'center', color: 'var(--text-faint)' }}>Nenhuma despesa no período.</div>
           : (
             <div style={{ ...card, padding: 8 }}>
               {linhas.map(l => (
                 <div key={l.chave} style={{ borderBottom: '1px solid var(--border)' }}>
-                <div onClick={() => setAbertas(a => ({ ...a, [l.chave]: !a[l.chave] }))} title={abertas[l.chave] ? 'Recolher' : 'Ver os custos'} style={{ padding: '10px 12px', cursor: 'pointer' }}>
+                <div onClick={() => setAbertas(a => ({ ...a, [l.chave]: !a[l.chave] }))} title={abertas[l.chave] ? 'Recolher' : 'Ver as despesas'} style={{ padding: '10px 12px', cursor: 'pointer' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 5 }}>
                     <span style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}><span style={{ display: 'inline-block', width: 16, color: 'var(--text-faint)' }}>{abertas[l.chave] ? '▾' : '▸'}</span>{l.nome} <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 400 }}>({l.qtd})</span></span>
                     <span style={{ fontSize: 14, fontWeight: 700, color: 'var(--text)' }}>{brl(l.valor)} <span style={{ fontSize: 11, color: 'var(--text-faint)', fontWeight: 400 }}>· {total ? Math.round(l.valor / total * 100) : 0}%</span></span>

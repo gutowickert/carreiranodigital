@@ -140,7 +140,7 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Relatório de Custos', href: '/dashboard/financeiro/custos' },
+      { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
       { nome: 'Transferências entre Contas', href: '/dashboard/transferencias' },
       { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
     ],
