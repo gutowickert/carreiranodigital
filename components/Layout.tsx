@@ -37,7 +37,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/turmas': GraduationCap, '/dashboard/chamada': UserCheck, '/dashboard/disparos': Send,
   '/dashboard/agenda-disparos': CalendarRange, '/dashboard/followup-templates': MessageSquareText,
   '/dashboard/disparos/relatorios': FileText, '/dashboard/listas': List,
-  '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight,
+  '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight, '/dashboard/financeiro/transferencias': ArrowLeftRight,
   '/dashboard/financeiro/custos': Receipt, '/dashboard/financeiro/receitas': Coins, '/dashboard/financeiro/contas-pagar': CreditCard, '/dashboard/financeiro/naturezas': Tags, '/dashboard/comissoes': Percent,
   '/dashboard/vendedores': Handshake,
   '/dashboard/crm/config': Settings2, '/dashboard/matriculas-orfas': UserX, '/dashboard/motivos-perda': ThumbsDown,
@@ -142,7 +142,10 @@ const grupos: Grupo[] = [
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
       { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
       { nome: 'Relatório de Receitas', href: '/dashboard/financeiro/receitas' },
-      { nome: 'Transferências entre Contas', href: '/dashboard/transferencias' },
+      // 'Transferências entre Contas' (/dashboard/transferencias) saiu do menu em 02/10/2026: gravava numa
+      // tabela que só ela lia, e o saldo das outras telas não mudava. Transferência se faz em Ajustes →
+      // Caixas; este relatório lista as feitas por lá. A tela antiga continua existindo pelo endereço.
+      { nome: 'Relatório de Transferências', href: '/dashboard/financeiro/transferencias' },
       { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
     ],
   },
