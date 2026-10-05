@@ -11,6 +11,8 @@ import { ORG_CND } from '@/lib/org'
 import { usuarioDoNumero, responder as responderAssistente } from '@/lib/assistente'
 import { processarFds, naJanela } from '@/lib/ia-fds'
 import { tocarCampainha } from '@/lib/campainha'
+import { lerReferral, leadDoAnuncio, ehDeuVenda } from '@/lib/ctwa'
+import { atenderDeuVenda } from '@/lib/ia-deu-venda'
 
 // a IA do fim de semana espera ~45s o lead terminar de escrever antes de agir (lib/ia-fds.ts)
 export const maxDuration = 120
@@ -89,9 +91,14 @@ async function registrarRecebida(m: any, value: any) {
   // CRIA o lead (chegada pelo botão do site: 1ª msg traz #ref → UTM/turma/rateio/CAPI) OU
   // vincula ao lead existente pelo telefone. Mesma lógica do webhook Z-API (lib/lead-do-wa.ts).
   // Resposta de disparo FRIO (sem #ref/turma no texto) NÃO vira lead — só marca "respondeu".
-  const { lead: leadMatch } = await criarOuAtribuirLeadDoWa(supabase, {
-    telefone: tel, texto, nome, ehLid: false, ehGrupo: false, fromMe: false,
-  })
+  // ANÚNCIO DIRETO PRO WHATSAPP: a 1ª mensagem traz o cartão de origem (referral) com o anúncio e o
+  // id do clique. Esse lead nasce pelo anúncio (lib/ctwa.ts), não pelo #ref do site.
+  const referral = lerReferral(m)
+  const doAnuncio = referral ? await leadDoAnuncio({ telefone: tel, nome, referral }).catch(() => null) : null
+  const { lead: leadAtribuido } = doAnuncio
+    ? { lead: { id: doAnuncio.id, nome: doAnuncio.nome } }
+    : await criarOuAtribuirLeadDoWa(supabase, { telefone: tel, texto, nome, ehLid: false, ehGrupo: false, fromMe: false })
+  const leadMatch = leadAtribuido
 
   // acha/cria a conversa do canal oficial
   let { data: conv } = await supabase.from('wa_conversas').select('*').eq('telefone', tel).eq('canal', 'oficial').maybeSingle()
@@ -159,6 +166,16 @@ async function registrarRecebida(m: any, value: any) {
   // LEAD respondeu no canal oficial. MODELO AUTÔNOMO: a IA ATENDE quem responde — NÃO tira o lead da IA.
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.
   const leadId = leadMatch?.id || conv.lead_id
+  // LEAD DO DEU VENDA COM A IA (veio do anúncio de WhatsApp): quem responde é a IA do Deu Venda
+  // (lib/ia-deu-venda.ts), e o lead NÃO volta pro time a cada mensagem. Ela mesma passa pro time
+  // quando o lead esquenta. Os outros leads seguem o caminho de sempre, logo abaixo.
+  if (leadId && msgIns?.id) {
+    const { data: lq } = await supabase.from('leads').select('atendido_por, handoff_em, codigo_turma').eq('id', leadId).maybeSingle()
+    if (lq && lq.atendido_por === 'ia' && !lq.handoff_em && ehDeuVenda(lq.codigo_turma)) {
+      after(async () => { try { await atenderDeuVenda(ORG_CND, conv.id, msgIns.id) } catch { /* melhor esforço */ } })
+      return
+    }
+  }
   if (leadId) {
     // MODELO: IA faz os follow-ups; o TIME atende quem responde. Lead RESPONDEU → as tarefas de CADÊNCIA da IA
     // não fazem mais sentido (ex.: "Seguir no WhatsApp / D2 se não respondeu"). Cancela SEMPRE (qualquer dono),

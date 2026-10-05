@@ -86,6 +86,23 @@ export async function enviarMidia(to: string, tipo: string, mediaId: string, cap
   }
 }
 
+// Envia uma mídia que está num endereço público (a Meta baixa sozinha). Vídeo até 16 MB, mp4 h264+aac.
+export async function enviarMidiaLink(to: string, tipo: 'image' | 'video' | 'document', link: string, caption?: string): Promise<{ ok: boolean; wamid?: string | null; error?: string }> {
+  if (!TOKEN || !PHONE_ID) return { ok: false, error: 'sem credenciais' }
+  try {
+    const res = await fetch(`${GRAPH}/${PHONE_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: foneOficial(to), type: tipo, [tipo]: caption ? { link, caption } : { link } }),
+    })
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: JSON.stringify((j && j.error) || j) }
+    return { ok: true, wamid: j.messages?.[0]?.id || null }
+  } catch (e: any) {
+    return { ok: false, error: (e && e.message) || 'falha' }
+  }
+}
+
 // Envia uma mensagem de TEMPLATE (único jeito de iniciar conversa na API oficial).
 // componentes = variáveis do template (ex: [{ type:'body', parameters:[{type:'text', text:'Guto'}] }])
 export async function enviarTemplate(

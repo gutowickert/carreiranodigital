@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPurchase } from '@/lib/capi'
+import { eventoMensagens } from '@/lib/ctwa'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,6 +56,15 @@ export async function POST(req: NextRequest) {
     externalId: mat.lead_id || mat.aluno_id,
     codigoTurma: turma?.codigo || null,
   })
+
+  // Lead que veio de ANÚNCIO DE WHATSAPP: a venda também vai pelo canal de mensagens, com o id do
+  // clique (ctwa_clid). É só assim que a Meta credita a venda ao anúncio de WhatsApp (lib/ctwa.ts).
+  if (mat.lead_id) {
+    const { data: lw } = await supabase.from('leads').select('ctwa_clid, whatsapp').eq('id', mat.lead_id).maybeSingle()
+    if (lw?.ctwa_clid) {
+      try { await eventoMensagens('Purchase', { leadId: mat.lead_id, ctwaClid: lw.ctwa_clid, telefone: lw.whatsapp, codigoTurma: turma?.codigo || null, valor: Number(mat.valor_pago) || 0, eventId: `Purchase-${mat.id}` }) } catch { /* melhor esforço */ }
+    }
+  }
 
   // (o log em webhook_logs origem='capi-purchase' agora é feito dentro do sendCapiEvent — não duplica aqui)
   if (!capi.ok) {
