@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 
 // O LOGO EM 3D — um objeto com espessura, inclinado, mostrando a lateral (pedido do Nando, 11/09).
 //
@@ -15,6 +15,15 @@ import { useRef, type PointerEvent } from 'react'
 //
 // `src` é a imagem do logo (fundo transparente). Cliente sem imagem passa `texto` — o nome em
 // relevo, mesmo efeito. Proporção padrão é a do logo da escola (2000×777).
+//
+// O LOGO É A PLACA (pedido do Nando, 05/10, na Wood Arte: "a logo ser uma placa, não a logo em cima
+// de uma placa" — era o que ele queria desde o começo). Com imagem de logo, NÃO tem chapa de vidro
+// atrás: o próprio logo flutua com a espessura das cópias empilhadas, como uma moeda ou um selo. A
+// chapa só aparece pro NOME escrito, de quem ainda não subiu logo (aí não há objeto nenhum sem ela).
+//
+// Logo mais ou menos quadrado (altura entre 80% e 125% da largura, como o selo redondo da Wood
+// Arte) usa a proporção real da imagem e ~70% da largura de um logo largo: mesma presença na tela,
+// sem virar um painel gigante. Ninguém configura nada: sai da própria imagem.
 
 export default function Logo3D({ src, texto, largura = 180, proporcao = 0.39, camadas = 10, passo = 1.1, inclinacao = [10, -18], chapa = true, flutua = true }: {
   src?: string; texto?: string; largura?: number; proporcao?: number
@@ -22,7 +31,24 @@ export default function Logo3D({ src, texto, largura = 180, proporcao = 0.39, ca
 }) {
   const obj = useRef<HTMLDivElement>(null)
   const arrasto = useRef<{ x: number; y: number; rx: number; ry: number } | null>(null)
-  const altura = Math.round(largura * proporcao)
+  // o formato do logo, lido da imagem depois que ela carrega (null = largo, ou ainda carregando)
+  const [forma, setForma] = useState<{ proporcao: number } | null>(null)
+  useEffect(() => {
+    setForma(null)
+    if (!src) return
+    let vivo = true
+    const im = new Image()
+    im.onload = () => {
+      if (!vivo || !im.naturalWidth) return
+      const p = im.naturalHeight / im.naturalWidth
+      if (p >= 0.8 && p <= 1.25) setForma({ proporcao: p })
+    }
+    im.src = src
+    return () => { vivo = false }
+  }, [src])
+  // o selo quadrado ocupa ~70% da largura de um logo largo: mesma presença, sem virar um painel gigante
+  if (forma) largura = Math.round(largura * 0.7)
+  const altura = Math.round(largura * (forma ? forma.proporcao : proporcao))
   const [rx, ry] = inclinacao
   const base = `rotateX(${rx}deg) rotateY(${ry}deg)`
   const pad = Math.round(largura * 0.09)
@@ -79,7 +105,7 @@ export default function Logo3D({ src, texto, largura = 180, proporcao = 0.39, ca
         {/* a chapa: colada nas costas do logo (1px atrás da última cópia), com 5 camadas de espessura.
             A margem do lado que vem pra frente (direita, com rotateY negativo) é menor: a perspectiva
             aumenta esse lado, e com margens iguais a chapa parecia sobrar pra direita. */}
-        {chapa && Array.from({ length: 5 }, (_, i) => (
+        {chapa && !src && Array.from({ length: 5 }, (_, i) => (
           <div key={'c' + i} aria-hidden="true" className={i === 0 ? 'chapa' : undefined} style={{
             position: 'absolute', borderRadius: 14,
             top: -pad, bottom: -pad, left: -pad, right: -Math.round(pad * (ry < 0 ? 0.6 : 1)),

@@ -16,6 +16,8 @@
 /* Tokens em seletor de ATRIBUTO (não :root) pra permitir ilha escura
    (ex: menu lateral data-theme="dark") dentro do tema claro. */
 :root, [data-theme="dark"] {
+  /* a sombra atrás do logo no menu (components/Layout.tsx): no escuro, quase preta */
+  --sombra-logo: radial-gradient(closest-side, rgba(12,8,22,.62) 0%, rgba(12,8,22,.42) 45%, rgba(12,8,22,.14) 75%, rgba(12,8,22,0) 100%);
   /* superfícies (ESCURO) — todas com um fio de roxo */
   --bg: #0f0c17;
   --surface: #171320;
@@ -62,6 +64,8 @@
 :root { --r-sm: 6px; --r: 10px; --r-lg: 16px; --r-pill: 999px; }
 
 [data-theme="light"] {
+  /* a sombra atrás do logo no claro puxa pro roxo escuro: preta, parecia sujeira no lavanda (05/10) */
+  --sombra-logo: radial-gradient(closest-side, rgba(46,16,101,.66) 0%, rgba(46,16,101,.45) 45%, rgba(46,16,101,.15) 75%, rgba(46,16,101,0) 100%);
   /* TEMA CLARO — não é inversão: fundo lavanda claríssimo, cards brancos, cores vivas */
   --bg: #f6f4fb;
   --surface: #ffffff;

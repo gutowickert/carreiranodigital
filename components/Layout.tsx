@@ -590,8 +590,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             overflowY: 'auto',
             zIndex: 50,
           }}>
-            {/* a marca em 3D, na chapa de vidro grosso (components/Logo3D.tsx) */}
-            <div style={{ padding: '8px 0 12px', flexShrink: 0, display: 'flex', justifyContent: 'center' }}>
+            {/* a marca em 3D flutua sozinha (components/Logo3D.tsx), sem chapa. Pra as letras brancas
+                lerem nos dois temas, o topo do menu escurece em degradê atrás dela (pedido do Nando,
+                05/10: sem a chapa, o roxo do fundo brigava com a letra) */}
+            <div style={{ padding: '26px 0 30px', margin: '-12px 0 -14px', flexShrink: 0, display: 'flex', justifyContent: 'center',
+              background: 'var(--sombra-logo)' }}>
               {marca?.logo_url
                 ? <Logo3D src={marca.logo_url} largura={160} />
                 : (marca && marca.id !== CND_ID)

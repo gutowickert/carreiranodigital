@@ -41,7 +41,9 @@ export default function Login() {
           display: 'flex', flexDirection: 'column', justifyContent: 'space-between', gap: 24,
         }}>
           <Circuito />
-          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', padding: '6px 0' }}>
+          {/* sem a chapa atrás do logo, um escuro em degradê segura a letra branca no roxo (05/10) */}
+          <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', padding: '40px 0', margin: '-34px -34px -20px',
+            background: 'radial-gradient(closest-side, rgba(12,8,22,.6) 0%, rgba(12,8,22,.4) 45%, rgba(12,8,22,.12) 78%, rgba(12,8,22,0) 100%)' }}>
             <Logo3D src="/logo-menu.png" largura={250} inclinacao={[12, -20]} />
           </div>
           <div style={{ position: 'relative' }}>
