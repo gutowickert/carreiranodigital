@@ -22,7 +22,9 @@ const semEmoji = (s: string) => (s || '')
 const nomesCompletos = (s: string) => (s || '')
   .replace(/\bANL\b/g, 'Anúncios para Negócios Locais')
   .replace(/\bFC\b/g, 'Formação Completa em Marketing Digital')
-const limpaMsg = (s: string) => nomesCompletos(semEmoji(s))
+// travessão é "cara de IA" (regra do Guto): vira vírgula
+const semTravessao = (s: string) => (s || '').replace(/\s*[—–]\s*/g, ', ')
+const limpaMsg = (s: string) => semTravessao(nomesCompletos(semEmoji(s)))
 
 // Playbook destilado (das vendas reais) — é o "gabarito" que guia a sugestão.
 const PLAYBOOK = `Você é o COPILOTO DE VENDAS da Carreira No Digital (cursos presenciais de marketing digital no RS). Ajuda o vendedor a converter no WhatsApp, no TOM da escola: próximo, direto, sem enrolação, tratando o cliente por "tu/você".
@@ -166,7 +168,13 @@ export async function POST(req: NextRequest) {
     const saudacaoRegra = jaFalamosHoje
       ? `IMPORTANTE — CONVERSA JÁ EM ANDAMENTO HOJE: já mandamos mensagem hoje pra esse contato. NÃO abra com "bom dia/boa tarde/boa noite" nem cumprimento nenhum — responda DIRETO, como continuação natural do papo.`
       : `AGORA são ${horaTxt} — período: ${periodo}. Se for REABRIR a conversa (fazia tempo), cumprimente pelo horário de AGORA; NÃO copie o "bom dia/boa tarde" da mensagem do cliente (pode ter passado tempo).`
-    const contexto = `${saudacaoRegra}\n\nContato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\nCONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
+    // Lead do DEU VENDA: produto individual, sem turma. Não leva a lista de turmas e não reaproveita
+    // conversa antiga de curso (o copiloto misturou: "a turma de Porto Alegre já começou" pra um lead do Deu Venda).
+    const ehDeuVenda = /^deuvenda/i.test(lead?.codigo_turma || '')
+    const blocoOferta = ehDeuVenda
+      ? `🔴 ESTE LEAD É DO DEU VENDA (chegou pelo anúncio do Deu Venda). O Deu Venda é implantação INDIVIDUAL (só ele com um especialista), NÃO é curso e NÃO tem turma. NUNCA cite turma, data de início, curso, ANL nem Formação, mesmo que a conversa antiga fale de curso: isso ficou pra trás. Caminho: entender o negócio dele, explicar o Deu Venda ligado ao negócio (estratégia com o especialista, a máquina de IA que faz as peças e edita os vídeos, a campanha no ar ainda na sessão, 3 meses de acompanhamento) e oferecer uma conversa com o especialista. Preço só se ele perguntar e depois de explicar: R$ 2.797 à vista ou 10x de R$ 299,70 no cartão, com os 3 meses inclusos; a verba de anúncio é dele e fica fora.\n\n`
+      : `TURMAS ABERTAS AGORA (use cidade, data e preço REAIS na oferta):\n${turmasTxt}\n\n`
+    const contexto = `${saudacaoRegra}\n\nContato: ${quemTxt} | etapa do funil: ${lead?.etapa || '-'} | turma de interesse: ${lead?.codigo_turma || '-'}\n\n${resumoTxt}${andamentosTxt}${blocoOferta}CONVERSA ATÉ AGORA:\n${linhas.length ? linhas.join('\n') : '(ainda sem mensagens)'}\n\nSugira a próxima mensagem que o vendedor deve enviar agora, coerente com onde a negociação parou.`
 
     const client = new Anthropic({ apiKey: key })
     const resp = await client.messages.create({
