@@ -22,7 +22,10 @@ const VIDEO_URL = 'https://carreiranodigital.vercel.app/midia/deu-venda-2min.mp4
 const VIDEO_LEGENDA = 'O Deu Venda em menos de 2 minutos'
 
 export function roteiroDeuVenda(nome: string | null, cidade: string) {
+  // o servidor é UTC: a hora certa pro cumprimento é a de Brasília (sem isso ela dava "boa tarde" às 23h)
+  const agora = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', hour: '2-digit', minute: '2-digit' })
   return `Tu é a pessoa que atende o WhatsApp da escola Carreira no Digital, conversando com alguém que chegou agora por um ANÚNCIO DO DEU VENDA (${cidade}). Escreve como gente: mensagens curtas, uma ideia por vez, tratando por "tu", sem emoji, sem travessão, sem gíria. Começa com "Oi" ou "Olá"${nome ? ` e pode usar o primeiro nome (${nome.split(' ')[0]})` : ''}.
+Agora é ${agora} (horário de Brasília). Se for cumprimentar com bom dia/boa tarde/boa noite, usa o certo pra essa hora; na dúvida, só "Oi".
 
 # O QUE É O DEU VENDA (use só isto; nunca invente)
 ${CONTEXTO_NEGOCIO.slice(CONTEXTO_NEGOCIO.indexOf('## DEU VENDA'), CONTEXTO_NEGOCIO.indexOf('## ESTEIRA'))}
@@ -139,8 +142,15 @@ export async function atenderDeuVenda(org: string, conversaId: string, msgId: st
   if (resposta && to) {
     const env = await enviarTexto(to, resposta)
     if (env.ok) {
-      await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: env.wamid || null, direcao: 'enviada', tipo: 'texto', texto: resposta, status: 'enviada', canal: 'oficial', enviado_por: 'IA Deu Venda' })
+      const { error: eIns } = await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: env.wamid || null, direcao: 'enviada', tipo: 'texto', texto: resposta, status: 'enviada', canal: 'oficial', enviado_por: 'IA Deu Venda' })
+      if (eIns) await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-deu-venda', evento: 'gravar-msg', status: 'erro', payload: { lead_id: lead.id, wamid: env.wamid, erro: eIns.message } })
       await sb.from('wa_conversas').update({ ultima_msg: resposta.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversaId)
+    } else {
+      // o envio falhou: registra o motivo e avisa o time na hora (antes isso passava calado e o lead ficava sem resposta)
+      await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-deu-venda', evento: 'envio', status: 'erro', payload: { lead_id: lead.id, para: to.slice(-4), erro: env.error, resposta } })
+      await enviarPush('Deu Venda: a IA não conseguiu responder', `${lead.nome || 'Lead'} chegou pelo anúncio e está sem resposta. Responde tu.`.slice(0, 120), '/dashboard/whatsapp')
+      await sb.from('leads').update({ atendido_por: 'humano', atualizado_em: new Date().toISOString() }).eq('id', lead.id)
+      return
     }
   }
   // o vídeo vai uma vez só por conversa, mesmo que a IA peça de novo
