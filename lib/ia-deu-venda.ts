@@ -142,7 +142,7 @@ export async function atenderDeuVenda(org: string, conversaId: string, msgId: st
   if (resposta && to) {
     const env = await enviarTexto(to, resposta)
     if (env.ok) {
-      const { error: eIns } = await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: env.wamid || null, direcao: 'enviada', tipo: 'texto', texto: resposta, status: 'enviada', canal: 'oficial', enviado_por: 'IA Deu Venda' })
+      const { error: eIns } = await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: env.wamid || null, direcao: 'enviada', tipo: 'texto', texto: resposta, status: 'enviada', canal: 'oficial', enviado_por: null })   // enviado_por é o id (uuid) de quem é do time; da IA fica vazio (gravar o nome derrubava o insert: a msg saía mas não aparecia no card)
       if (eIns) await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-deu-venda', evento: 'gravar-msg', status: 'erro', payload: { lead_id: lead.id, wamid: env.wamid, erro: eIns.message } })
       await sb.from('wa_conversas').update({ ultima_msg: resposta.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversaId)
     } else {
@@ -157,7 +157,7 @@ export async function atenderDeuVenda(org: string, conversaId: string, msgId: st
   const videoJaFoi = lista.some(m => m.direcao === 'enviada' && m.tipo === 'video')
   if (d.mandar_video && !videoJaFoi && to) {
     const v = await enviarMidiaLink(to, 'video', VIDEO_URL, VIDEO_LEGENDA)
-    if (v.ok) await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: v.wamid || null, direcao: 'enviada', tipo: 'video', texto: VIDEO_LEGENDA, midia_url: VIDEO_URL, midia_mime: 'video/mp4', status: 'enviada', canal: 'oficial', enviado_por: 'IA Deu Venda' })
+    if (v.ok) await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: v.wamid || null, direcao: 'enviada', tipo: 'video', texto: VIDEO_LEGENDA, midia_url: VIDEO_URL, midia_mime: 'video/mp4', status: 'enviada', canal: 'oficial', enviado_por: null })   // enviado_por é o id (uuid) de quem é do time; da IA fica vazio (gravar o nome derrubava o insert: a msg saía mas não aparecia no card)
     else await sb.from('webhook_logs').insert({ org_id: org, origem: 'ia-deu-venda', evento: 'video', status: 'erro', payload: { lead_id: lead.id, erro: v.error } })
   }
 
