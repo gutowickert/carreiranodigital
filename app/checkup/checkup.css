@@ -1,0 +1,142 @@
+/* Check-up de IA · marca do teunegócio OS. Tudo dentro de .ck pra não vazar pro sistema.
+   Mundo escuro de propósito (é a cara do OS): fundo e cores pintados explicitamente, sem depender do tema. */
+.ck {
+  --fundo: #0e0719; --fundo2: #160b28; --cartao: rgba(255,255,255,.06); --cartao2: rgba(255,255,255,.09);
+  --borda: rgba(255,255,255,.12); --tinta: #f5f1fb; --suave: #bdb1d1; --fraco: #8d80a3; --lilas: #c9aaff;
+  --os: #22c55e; --os-t: #06220f; --wa: #25d366; --roxo: #7b2ae8; --grad: linear-gradient(120deg, #7b2ae8, #c026d3);
+  --ruim: #ff8a7a; --meio: #f5c25b; --bom: #4ade80;
+  --tit: var(--f-bricolage), 'Bricolage Grotesque', system-ui, sans-serif;
+  --txt: var(--f-manrope), Manrope, system-ui, sans-serif;
+  min-height: 100dvh; background: var(--fundo); color: var(--tinta); font-family: var(--txt);
+  background-image: radial-gradient(120% 60% at 50% -10%, rgba(123,42,232,.28), transparent 60%);
+  background-attachment: fixed; -webkit-font-smoothing: antialiased;
+}
+.ck *, .ck *::before, .ck *::after { box-sizing: border-box; }
+:where(.ck) button { font: inherit; color: inherit; cursor: pointer; }
+body:has(.ck) { margin: 0; padding: 0; background: #0e0719; }
+.ck :focus-visible { outline: 2px solid var(--lilas); outline-offset: 2px; }
+
+/* logo */
+.ck .marca { font-family: var(--f-poppins), Poppins, sans-serif; font-weight: 900; letter-spacing: -.02em; font-size: 18px; white-space: nowrap; }
+.ck .marca .teu { color: var(--lilas); }
+.ck .marca .neg { color: #fff; }
+.ck .marca i { font-style: normal; background: var(--os); color: var(--os-t); border-radius: .2em; padding: .08em .2em .1em; margin-left: .15em; font-size: .8em; vertical-align: .08em; }
+
+/* casca do assistente */
+.ck-wiz { max-width: 560px; margin: 0 auto; min-height: 100dvh; display: flex; flex-direction: column; padding: 14px 16px calc(18px + env(safe-area-inset-bottom)); }
+.ck-topo { display: flex; align-items: center; gap: 12px; height: 40px; }
+.ck-voltar { background: none; border: 0; width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; color: var(--suave); }
+.ck-voltar:hover { background: var(--cartao); }
+.ck-barra { flex: 1; height: 6px; border-radius: 6px; background: var(--cartao2); overflow: hidden; }
+.ck-barra b { display: block; height: 100%; background: var(--grad); border-radius: 6px; transition: width .35s ease; }
+.ck-passo { font-size: 12px; color: var(--fraco); font-variant-numeric: tabular-nums; min-width: 38px; text-align: right; }
+
+.ck-corpo { flex: 1; display: flex; flex-direction: column; padding-top: 28px; animation: ck-entra .32s ease both; }
+@keyframes ck-entra { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.ck-eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--lilas); font-weight: 700; margin: 0 0 10px; }
+.ck-h { font-family: var(--tit); font-weight: 700; font-size: clamp(25px, 6.4vw, 32px); line-height: 1.12; letter-spacing: -.01em; margin: 0 0 8px; text-wrap: balance; }
+.ck-ajuda { color: var(--suave); margin: 0 0 18px; font-size: 15px; line-height: 1.5; }
+
+.ck-ops { display: grid; gap: 10px; margin-top: 10px; }
+.ck-op { text-align: left; width: 100%; padding: 15px 16px; border-radius: 14px; border: 1px solid var(--borda); background: var(--cartao); font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 12px; transition: background .15s, border-color .15s, transform .1s; }
+.ck-op:hover { background: var(--cartao2); }
+.ck-op:active { transform: scale(.99); }
+.ck-op[aria-pressed="true"] { border-color: var(--lilas); background: rgba(123,42,232,.26); }
+.ck-op .ck-check { width: 22px; height: 22px; border-radius: 7px; border: 1.5px solid var(--borda); flex: none; display: grid; place-items: center; font-size: 14px; color: var(--os-t); }
+.ck-op[aria-pressed="true"] .ck-check { background: var(--os); border-color: var(--os); }
+
+.ck-escala { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 12px; }
+.ck-escala .ck-op { justify-content: center; padding: 16px 0; font-size: 18px; font-variant-numeric: tabular-nums; }
+.ck-escala-leg { display: flex; justify-content: space-between; font-size: 12px; color: var(--fraco); margin-top: 8px; }
+
+.ck-busca, .ck-in { width: 100%; padding: 15px 16px; border-radius: 14px; border: 1px solid var(--borda); background: rgba(0,0,0,.25); color: var(--tinta); font: inherit; font-size: 17px; }
+.ck-in::placeholder, .ck-busca::placeholder { color: var(--fraco); }
+.ck-in:focus, .ck-busca:focus { outline: none; border-color: var(--lilas); }
+textarea.ck-in { min-height: 120px; resize: vertical; line-height: 1.5; }
+.ck-campo { display: grid; gap: 6px; margin-bottom: 14px; }
+.ck-campo span { font-size: 14px; color: var(--suave); font-weight: 600; }
+.ck-nichos { margin-top: 10px; }
+
+.ck-rodape { position: sticky; bottom: 0; padding-top: 14px; margin-top: auto; background: linear-gradient(transparent, var(--fundo) 30%); }
+.ck-btn { width: 100%; border: 0; border-radius: 14px; padding: 16px 18px; font-size: 17px; font-weight: 800; background: var(--grad); color: #fff; box-shadow: 0 10px 30px -10px rgba(192,38,211,.6); transition: filter .15s, opacity .15s; }
+.ck-btn:hover { filter: brightness(1.08); }
+.ck-btn:disabled { opacity: .4; cursor: not-allowed; box-shadow: none; }
+.ck-btn-wa { background: var(--wa); color: #062b14; box-shadow: 0 10px 30px -12px rgba(37,211,102,.7); display: flex; align-items: center; justify-content: center; gap: 10px; text-decoration: none; }
+.ck-aceite { display: flex; gap: 10px; align-items: flex-start; font-size: 13px; color: var(--suave); line-height: 1.45; margin: 4px 0 6px; }
+.ck-aceite input { width: 20px; height: 20px; accent-color: var(--roxo); flex: none; margin-top: 1px; }
+.ck-erro { color: var(--ruim); font-size: 14px; margin: 8px 0 0; }
+
+/* abertura */
+.ck-abre { flex: 1; display: flex; flex-direction: column; justify-content: center; padding: 24px 0; }
+.ck-abre h1 { font-family: var(--tit); font-size: clamp(34px, 9vw, 48px); line-height: 1.02; letter-spacing: -.02em; margin: 14px 0 14px; text-wrap: balance; }
+.ck-abre h1 em { font-style: normal; background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.ck-abre p { color: var(--suave); font-size: 17px; line-height: 1.55; margin: 0 0 22px; max-width: 36ch; }
+.ck-ganhos { display: grid; gap: 10px; margin: 0 0 26px; padding: 0; list-style: none; }
+.ck-ganhos li { display: flex; gap: 12px; align-items: center; font-size: 15px; color: var(--tinta); }
+.ck-ganhos li b { width: 30px; height: 30px; border-radius: 9px; background: var(--cartao2); display: grid; place-items: center; color: var(--os); flex: none; font-size: 15px; }
+.ck-mini { font-size: 13px; color: var(--fraco); margin-top: 12px; text-align: center; }
+
+/* analisando */
+.ck-analisa { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 18px; }
+.ck-radar { width: 120px; height: 120px; border-radius: 50%; position: relative; background: radial-gradient(circle, rgba(123,42,232,.35), transparent 70%); }
+.ck-radar::before, .ck-radar::after { content: ''; position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--lilas); opacity: 0; animation: ck-pulso 2.2s ease-out infinite; }
+.ck-radar::after { animation-delay: 1.1s; }
+.ck-radar span { position: absolute; inset: 38px; border-radius: 12px; background: var(--os); box-shadow: 0 0 30px var(--os); }
+@keyframes ck-pulso { from { transform: scale(.5); opacity: .9; } to { transform: scale(1.4); opacity: 0; } }
+.ck-analisa p { color: var(--suave); min-height: 1.5em; margin: 0; }
+
+/* relatório */
+.ck-rel { max-width: 720px; margin: 0 auto; padding: 18px 16px 120px; }
+.ck-rel-topo { display: flex; justify-content: space-between; align-items: center; padding: 4px 0 22px; }
+.ck-rel-topo small { color: var(--fraco); font-size: 12px; font-variant-numeric: tabular-nums; }
+.ck-rel h1 { font-family: var(--tit); font-size: clamp(28px, 7vw, 40px); line-height: 1.06; letter-spacing: -.015em; margin: 6px 0 14px; text-wrap: balance; }
+.ck-resumo { font-size: 17px; line-height: 1.6; color: var(--tinta); margin: 0 0 22px; }
+.ck-num { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ck-num > div { background: var(--cartao); border: 1px solid var(--borda); border-radius: 18px; padding: 16px; }
+.ck-num span { display: block; font-size: 13px; color: var(--suave); line-height: 1.35; }
+.ck-num b { display: block; font-family: var(--tit); font-size: clamp(22px, 6vw, 30px); color: #fff; margin: 8px 0 6px; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+.ck-num b em { font-style: normal; color: var(--os); }
+.ck-num small { font-size: 12px; color: var(--fraco); line-height: 1.4; display: block; }
+@media (max-width: 420px) { .ck-num { grid-template-columns: 1fr; } }
+
+.ck-sec { margin-top: 38px; }
+.ck-sec > h2 { font-family: var(--tit); font-size: 21px; margin: 0 0 4px; letter-spacing: -.01em; }
+.ck-sec > p.ck-sub { color: var(--fraco); font-size: 14px; margin: 0 0 14px; }
+.ck-etapas { display: grid; gap: 10px; margin-top: 12px; }
+.ck-etapa { display: grid; grid-template-columns: 104px 1fr 34px; align-items: center; gap: 10px; font-size: 14px; }
+.ck-etapa > span { color: var(--suave); }
+.ck-etapa .ck-trilho { height: 10px; border-radius: 10px; background: var(--cartao2); overflow: hidden; }
+.ck-etapa .ck-trilho i { display: block; height: 100%; border-radius: 10px; }
+.ck-etapa b { text-align: right; font-variant-numeric: tabular-nums; font-size: 14px; }
+.ck-cmp { display: grid; gap: 8px; }
+.ck-cmp > div { display: flex; justify-content: space-between; gap: 12px; padding: 12px 14px; border-radius: 12px; background: var(--cartao); font-size: 14px; flex-wrap: wrap; }
+.ck-cmp em { font-style: normal; color: var(--fraco); }
+.ck-pill { font-size: 12px; font-weight: 700; padding: 2px 9px; border-radius: 99px; white-space: nowrap; }
+
+.ck-opps { display: grid; gap: 12px; }
+.ck-opp { background: var(--cartao); border: 1px solid var(--borda); border-radius: 18px; padding: 18px; }
+.ck-opp header { display: flex; gap: 12px; align-items: baseline; margin-bottom: 10px; }
+.ck-opp header span { font-family: var(--tit); font-weight: 700; color: var(--lilas); font-size: 15px; font-variant-numeric: tabular-nums; }
+.ck-opp h3 { margin: 0; font-family: var(--tit); font-size: 18px; line-height: 1.25; }
+.ck-opp dl { margin: 0; display: grid; gap: 8px; }
+.ck-opp dt { font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--fraco); font-weight: 700; }
+.ck-opp dd { margin: 0 0 4px; line-height: 1.55; font-size: 15px; color: var(--tinta); }
+.ck-impacto { margin-top: 10px; padding: 10px 12px; border-radius: 12px; background: rgba(34,197,94,.1); color: #b8f5cf; font-weight: 600; font-size: 14px; line-height: 1.45; }
+.ck-extra { padding: 14px 16px; border-radius: 14px; border: 1px dashed rgba(201,170,255,.35); margin-bottom: 10px; }
+.ck-extra b { display: block; margin-bottom: 4px; }
+.ck-extra p { margin: 0; color: var(--suave); font-size: 15px; line-height: 1.5; }
+.ck-hoje { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.ck-hoje li { display: flex; gap: 12px; line-height: 1.5; font-size: 15px; }
+.ck-hoje li::before { content: '✓'; color: var(--os); font-weight: 800; flex: none; }
+.ck-convite { margin-top: 38px; padding: 22px 18px; border-radius: 22px; background: linear-gradient(160deg, rgba(123,42,232,.35), rgba(192,38,211,.18)); border: 1px solid rgba(201,170,255,.3); }
+.ck-convite h2 { font-family: var(--tit); margin: 0 0 8px; font-size: 22px; }
+.ck-convite p { margin: 0 0 16px; color: var(--tinta); line-height: 1.55; }
+.ck-prem { font-size: 13px; color: var(--fraco); line-height: 1.55; padding-left: 18px; }
+.ck-fixo { position: fixed; left: 0; right: 0; bottom: 0; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(14,7,25,.96) 35%); z-index: 5; }
+.ck-fixo .ck-btn { max-width: 560px; margin: 0 auto; }
+
+@media (prefers-reduced-motion: reduce) {
+  .ck-corpo { animation: none; }
+  .ck-radar::before, .ck-radar::after { animation: none; opacity: .5; }
+  .ck-barra b { transition: none; }
+}
