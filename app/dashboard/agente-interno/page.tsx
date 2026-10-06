@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useRef, useState } from 'react'
 import ReactMarkdown from 'react-markdown'
@@ -95,7 +96,7 @@ export default function AgenteInterno() {
     const novo: Msg[] = [...msgs, { role: 'user', content: t, anexos: pendentes.length ? pendentes : undefined }]
     setMsgs(novo); setInput(''); setPendentes([]); setPensando(true)
     try {
-      const j = await fetch('/api/agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, mensagens: novo }) }).then(r => r.json())
+      const j = await fetchAuth('/api/agente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, mensagens: novo }) }).then(r => r.json())
       setMsgs(m => [...m, { role: 'assistant', content: j.ok ? j.resposta : `${j.error || 'erro'}`, pendencias: j.pendencias?.length ? j.pendencias.map((p: any, i: number) => ({ ...p, _uid: `${m.length}-${i}-${(globalThis.crypto?.randomUUID?.() || Math.random().toString(36).slice(2))}` })) : undefined }])
     } catch {
       setMsgs(m => [...m, { role: 'assistant', content: 'falha de conexão' }])
@@ -104,7 +105,7 @@ export default function AgenteInterno() {
 
   async function confirmar(pend: any) {
     setFeitas(f => ({ ...f, [pend._uid]: '...' }))
-    const j = await fetch('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
+    const j = await fetchAuth('/api/agente/executar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, pendencia: pend }) }).then(r => r.json())
     if (j.ok) {
       const r = j.resultado || {}
       const txt = pend.tipo === 'despesas' ? `${r.criados} despesa(s) lançada(s) · ${brl(r.total)}` : pend.tipo === 'regra_ia' ? (r.regra_removida ? 'regra removida da IA' : 'regra aplicada na IA de vendas') : pend.tipo === 'fluxo' ? (r.fluxo_atualizado || 'fluxo atualizado') : (r.criado ? 'lead criado' : `lead atualizado (${r.atualizado})`)
@@ -117,20 +118,20 @@ export default function AgenteInterno() {
     const sugestao = msgs.find(m => m.role === 'user')?.content.slice(0, 60) || 'Conversa'
     const titulo = window.prompt('Dê um nome pra essa conversa (pra achar depois):', sugestao)
     if (titulo === null) return
-    const j = await fetch('/api/agente/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, titulo, mensagens: msgs }) }).then(r => r.json())
+    const j = await fetchAuth('/api/agente/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, titulo, mensagens: msgs }) }).then(r => r.json())
     setAviso(j.ok ? '💾 Salva!' : `${j.error}`)
     setTimeout(() => setAviso(''), 3000)
   }
   async function carregarSalvas() {
-    const j = await fetch(`/api/agente/salvar?email=${encodeURIComponent(email)}`).then(r => r.json())
+    const j = await fetchAuth(`/api/agente/salvar?email=${encodeURIComponent(email)}`).then(r => r.json())
     if (j.ok) setSalvas(j.salvas || [])
   }
   async function abrirSalva(id: string) {
-    const j = await fetch(`/api/agente/salvar?id=${id}`).then(r => r.json())
+    const j = await fetchAuth(`/api/agente/salvar?id=${id}`).then(r => r.json())
     if (j.ok) { setMsgs(j.mensagens || []); setMostrarSalvas(false) }
   }
   async function apagarSalva(id: string) {
-    await fetch(`/api/agente/salvar?id=${id}`, { method: 'DELETE' })
+    await fetchAuth(`/api/agente/salvar?id=${id}`, { method: 'DELETE' })
     carregarSalvas()
   }
   function toggleSalvas() { const v = !mostrarSalvas; setMostrarSalvas(v); if (v) carregarSalvas() }
@@ -275,7 +276,7 @@ function SimAtendimento() {
     const dialog = [...msgs, { de: 'lead' as const, texto: t }]
     setMsgs(dialog); setInput(''); setPensando(true)
     try {
-      const j = await fetch('/api/atendimento/simular-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dialog: dialog.map(m => ({ de: m.de, texto: m.texto })), produto, cidade }) }).then(r => r.json())
+      const j = await fetchAuth('/api/atendimento/simular-chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ dialog: dialog.map(m => ({ de: m.de, texto: m.texto })), produto, cidade }) }).then(r => r.json())
       setMsgs(m => [...m, j.ok ? { de: 'vendedor', texto: j.resposta, meta: j.meta } : { de: 'vendedor', texto: '' + j.error }])
     } catch { setMsgs(m => [...m, { de: 'vendedor', texto: 'falha de conexão' }]) }
     finally { setPensando(false) }

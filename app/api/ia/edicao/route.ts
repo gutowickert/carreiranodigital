@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Captura a EDIÇÃO humana de uma sugestão da IA (sugerido x enviado) — de QUALQUER tela.
 // Guarda o par em webhook_logs (origem='ia-edicao') pra a IA aprender o tom real da equipe.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     const org = await orgDaRequest(req.headers.get('authorization'))

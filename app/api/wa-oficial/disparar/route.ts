@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Custo estimado por categoria (Brasil, aprox.)
 function custoCategoria(cat: string): number {
@@ -9,6 +10,7 @@ function custoCategoria(cat: string): number {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const body = await req.json()

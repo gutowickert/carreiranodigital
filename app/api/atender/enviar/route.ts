@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { gerarProxima, garantirTarefa } from '@/lib/fluxo'
+import { chamadaPermitida, cabecalhoInterno } from '@/lib/exigir-login'
 
 // Envia a mensagem aprovada pelo humano na fila "Atender Agora", conclui a tarefa atual do lead
 // e AVANÇA a cadência (cria a próxima tarefa da mesma etapa). Se um MOVE vai seguir (botão "Enviar e mover"),
 // o front manda avancar=false pra não criar tarefa da etapa antiga — o move cria a da etapa nova.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     const auth = req.headers.get('authorization') || ''
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest) {
     if (!texto || !(telefone || conversaId)) return NextResponse.json({ ok: false, error: 'faltam texto e destino' }, { status: 200 })
     // repassa o token pro wa/enviar interno pra ele resolver a MESMA org (senão cairia no default)
     const env = await fetch(`${req.nextUrl.origin}/api/wa/enviar`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
+      method: 'POST', headers: { ...cabecalhoInterno(), 'Content-Type': 'application/json', ...(auth ? { Authorization: auth } : {}) },
       body: JSON.stringify({ telefone, leadId, chatLid, conversaId, texto }),
     }).then(r => r.json()).catch(() => ({ ok: false }))
     if (!env.ok) return NextResponse.json({ ok: false, error: env.error || 'falha ao enviar' }, { status: 200 })

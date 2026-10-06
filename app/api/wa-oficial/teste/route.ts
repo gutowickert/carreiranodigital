@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { enviarTemplate } from '@/lib/whatsapp-oficial'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Teste de envio com um template REAL da conta. Ex:
 //   /api/wa-oficial/teste?to=5551999999999&template=disparo_poa_&lang=pt_BR&p1=Guto
 //   himg=<url> pra templates com header de imagem.
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const sp = req.nextUrl.searchParams
   const to = (sp.get('to') || '').replace(/\D/g, '')
   const template = sp.get('template') || ''

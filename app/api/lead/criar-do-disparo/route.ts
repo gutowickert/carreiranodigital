@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Cria (ou vincula) um lead a partir de uma conversa da caixa de Disparos (canal oficial).
 // Server-side (service_role) pra não depender da RLS/sessão do navegador — era isso que dava "Erro ao criar lead".
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({}))

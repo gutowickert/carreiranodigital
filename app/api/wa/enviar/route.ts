@@ -3,8 +3,10 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { foneZapi } from '@/lib/zapi'
 import { enviarTexto as enviarTextoOf, enviarMidia as enviarMidiaOf, uploadMidia as uploadMidiaOf, foneOficial } from '@/lib/whatsapp-oficial'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const body = await req.json()
     const { telefone, texto, preview, conviteFoto, audioBase64, anexoBase64, anexoNome, anexoTipo, leadId, chatLid, enviadoPor } = body

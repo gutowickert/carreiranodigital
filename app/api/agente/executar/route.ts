@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { getFluxo, setFluxo, aplicarPatch } from '@/lib/fluxo'
+import { emailLogado } from '@/lib/exigir-login'
 
 // Executa uma AÇÃO proposta pelo Agente Interno, DEPOIS que o usuário confirma no cartão.
 //  POST { email, pendencia:{tipo, ...} }
@@ -10,7 +11,7 @@ const mesRef = (d: string) => (d || '').slice(0, 8) + '01'
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json().catch(() => ({}))
-    const email = (b.email || '').toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (!PERMITIDOS.includes(email)) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
     const p = b.pendencia
     if (!p?.tipo) return NextResponse.json({ ok: false, error: 'proposta inválida' }, { status: 200 })

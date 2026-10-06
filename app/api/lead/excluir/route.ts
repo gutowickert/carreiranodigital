@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Exclui um lead cadastrado por engano, limpando os registros ligados.
 // Bloqueia se houver matrícula vinculada (não quebrar o financeiro).
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const { leadId } = await req.json()
     if (!leadId) return NextResponse.json({ ok: false, error: 'leadId obrigatório' }, { status: 400 })

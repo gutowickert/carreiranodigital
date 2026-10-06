@@ -3,6 +3,7 @@ import Anthropic from '@anthropic-ai/sdk'
 import { TOOLS, runTool } from '@/lib/agente-tools'
 import { contextoCentral } from '@/lib/contexto-central'
 import { logIaUso } from '@/lib/ia-uso'
+import { chamadaPermitida, emailLogado } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
@@ -40,9 +41,10 @@ REGRA DE OURO: antes de propor mudança de fluxo, SEMPRE chame 'fluxo_comercial'
 ATALHOS (escrita com confirmação): você PODE cadastrar despesas (inclusive em lote) e criar/atualizar leads — mas NUNCA grava direto. Use as ferramentas 'propor_despesas' e 'propor_lead' pra montar a proposta; o sistema mostra um cartão e o usuário clica em Confirmar pra efetivar. Antes de propor, confira se tem os dados essenciais (despesa: descrição+valor; lead: nome). Se faltar algo importante (ex.: valor de uma despesa), pergunte. Depois de propor, diga em 1 linha que é só confirmar no cartão abaixo. Nunca diga que já cadastrou — quem efetiva é o clique do usuário.`
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const body = await req.json().catch(() => ({}))
-    const email = (body.email || '').toString().trim().toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (!PERMITIDOS.includes(email)) return NextResponse.json({ ok: false, error: 'sem acesso ao agente' }, { status: 200 })
     const key = process.env.ANTHROPIC_API_KEY
     if (!key) return NextResponse.json({ ok: false, error: 'falta ANTHROPIC_API_KEY' }, { status: 200 })

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
@@ -11,6 +12,7 @@ export const maxDuration = 120
 // Aqui aplicamos um GATE de org pra impedir uso cross-org; a consciência de org DENTRO
 // do motor fica pra quando uma 2ª org for usar IA de fato.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     if (!b.leadId && !b.conversaId) return NextResponse.json({ ok: false, error: 'informe leadId ou conversaId' }, { status: 200 })

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cabecalhoInterno } from '@/lib/exigir-login'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { getConfigIA } from '@/lib/ia-config'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
       if (!r.ok || !r.sugestao?.resposta) { feitos.push({ lead: lead.nome, skip: r.error || 'sem sugestão' }); continue }
       const msg = r.sugestao.resposta
       // envia pela via oficial (salva a msg + atualiza conversa)
-      const env = await fetch(`${origin}/api/wa/enviar`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ telefone: lead.whatsapp, leadId: lead.id, texto: msg }) }).then(x => x.json()).catch(() => ({ ok: false }))
+      const env = await fetch(`${origin}/api/wa/enviar`, { method: 'POST', headers: { 'Content-Type': 'application/json', ...cabecalhoInterno() }, body: JSON.stringify({ telefone: lead.whatsapp, leadId: lead.id, texto: msg }) }).then(x => x.json()).catch(() => ({ ok: false }))
       // conclui a tarefa e cria a próxima do pipeline (lendo o fluxo editável)
       await supabase.from('tarefas_lead').update({ concluida: true, concluida_em: agora, atualizado_em: agora }).eq('id', t.id)
       await gerarProxima(supabase, lead.id, lead.etapa, t.tipo, lead.nome)

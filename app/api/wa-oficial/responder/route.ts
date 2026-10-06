@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTexto, enviarMidia, uploadMidia } from '@/lib/whatsapp-oficial'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Responde uma conversa da caixa "WhatsApp Disparos" (número novo / Cloud API).
 // Texto, foto, documento ou áudio — mensagem de SESSÃO (só entrega dentro de 24h).
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const { conversaId, telefone, texto, audioBase64, anexoBase64, anexoNome, anexoTipo } = await req.json()

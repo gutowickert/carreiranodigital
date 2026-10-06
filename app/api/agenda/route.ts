@@ -6,6 +6,7 @@ import { balaoDe, horizonteISO } from '@/lib/agenda-balao'
 import { sincronizarAulas } from '@/lib/aulas-na-agenda'
 import { ROTEIROS, situacaoMarco, regiaoDoLocal, type Produto } from '@/lib/entrega'
 import { acompanhada, lerObs, esperando } from '@/lib/acompanhamento'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -67,6 +68,7 @@ type Item = {
 }
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const auth = req.headers.get('authorization')
   const org = await orgDaRequest(auth)
 

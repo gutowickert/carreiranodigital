@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { emailLogado } from '@/lib/exigir-login'
 
 // Salvar conversas ESTRATÉGICAS do Agente Interno (só o que o dono marca como importante).
 // Guarda em webhook_logs (origem='agente-conversa') pra não exigir tabela nova.
@@ -13,7 +14,7 @@ const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json().catch(() => ({}))
-    const email = (b.email || '').toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (!ok(email)) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
     if (!Array.isArray(b.mensagens) || !b.mensagens.length) return NextResponse.json({ ok: false, error: 'nada pra salvar' }, { status: 200 })
     const titulo = (b.titulo || b.mensagens.find((m: any) => m.role === 'user')?.content || 'Conversa').toString().slice(0, 120)
@@ -28,10 +29,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get('id')
-    const email = (req.nextUrl.searchParams.get('email') || '').toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (id) {
       const { data } = await supabase.from('webhook_logs').select('payload, recebido_em').eq('id', id).eq('origem', 'agente-conversa').maybeSingle()
-      if (!data || !ok((data.payload as any)?.email)) return NextResponse.json({ ok: false, error: 'não encontrada' }, { status: 200 })
+      // só o dono da conversa, pelo LOGIN (06/10): antes bastava saber o id
+      if (!data || !ok(email) || ((data.payload as any)?.email || '').toLowerCase() !== email) return NextResponse.json({ ok: false, error: 'não encontrada' }, { status: 200 })
       const p: any = data.payload
       return NextResponse.json({ ok: true, titulo: p.titulo, mensagens: p.mensagens || [], em: data.recebido_em })
     }
@@ -47,6 +49,8 @@ export async function DELETE(req: NextRequest) {
   try {
     const id = req.nextUrl.searchParams.get('id')
     if (!id) return NextResponse.json({ ok: false, error: 'falta id' }, { status: 200 })
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
+    if (!ok(email)) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
     await supabase.from('webhook_logs').delete().eq('id', id).eq('origem', 'agente-conversa')
     return NextResponse.json({ ok: true })
   } catch (e: any) { return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 }) }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Jornada por pessoa: junta os eventos do site (site_eventos) de cada visitor_id
 // com o clique no /wa (wa_clicks) e o lead resultante. É a "foto da pessoa
@@ -29,6 +30,7 @@ const paginaDe = (u?: string | null) => {
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const sp = req.nextUrl.searchParams
     const de = (sp.get('de') || '').slice(0, 10)

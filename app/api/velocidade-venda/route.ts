@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Velocidade de venda: tempo entre o lead entrar (criado_em) e comprar (data_ganho).
 //  GET ?desde=<ISO>&ate=<ISO> -> geral, distribuição e quebra por origem/vendedor/produto
@@ -30,6 +31,7 @@ function grupo(rows: any[], key: string) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const desde = req.nextUrl.searchParams.get('desde')

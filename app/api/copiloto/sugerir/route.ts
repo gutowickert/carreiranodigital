@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import Anthropic from '@anthropic-ai/sdk'
 import { logIaUso } from '@/lib/ia-uso'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -54,6 +55,7 @@ Responda APENAS com um objeto JSON válido, sem texto antes ou depois, exatament
 {"objecao":"<objeção detectada do cliente, ou 'nenhuma'>","dica":"<dica curta de 1 linha pro vendedor>","rascunho":"<a mensagem pronta pra enviar, SEM emojis>"}`
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const body = await req.json().catch(() => ({}))
     const org = await orgDaRequest(req.headers.get('authorization'))

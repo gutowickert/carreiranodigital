@@ -6,6 +6,7 @@ import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao, datasCurtas } from '@/lib/saudacao'
 import { dossiesLote } from '@/lib/historico-lead'
 import { interpretarFollowup } from '@/lib/interpretar-followup'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -28,6 +29,7 @@ function datasDaTurma(ini: string | null, fim: string | null): string {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({} as any))

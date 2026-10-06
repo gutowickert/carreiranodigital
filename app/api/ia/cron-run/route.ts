@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cabecalhoInterno } from '@/lib/exigir-login'
 import { fecharEsquecidas } from '@/lib/chamadas'
 
 export const maxDuration = 60
@@ -11,7 +12,7 @@ export const maxDuration = 60
 const BASE = 'https://carreiranodigital.vercel.app'
 const ORCAMENTO_MS = 52_000
 
-const post = (path: string, body: any) => fetch(BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }).then(r => r.json()).catch(() => null)
+const post = (path: string, body: any) => fetch(BASE + path, { method: 'POST', headers: { 'Content-Type': 'application/json', ...cabecalhoInterno() }, body: JSON.stringify(body) }).then(r => r.json()).catch(() => null)
 const ontemUTC = () => { const d = new Date(Date.now() - 864e5); return d.toISOString().slice(0, 10) }
 
 export async function POST(req: NextRequest) {

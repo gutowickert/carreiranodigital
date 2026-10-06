@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -18,12 +19,12 @@ export default function AutomacaoIA() {
       const { data: { session } } = await supabase.auth.getSession()
       const e = (session?.user?.email || '').toLowerCase()
       setEmail(e); setBloqueado(!PERMITIDOS.includes(e))
-      if (PERMITIDOS.includes(e)) { const j = await fetch(`/api/automacao-ia?email=${encodeURIComponent(e)}`).then(r => r.json()); if (j.ok) setC(j.config) }
+      if (PERMITIDOS.includes(e)) { const j = await fetchAuth(`/api/automacao-ia?email=${encodeURIComponent(e)}`).then(r => r.json()); if (j.ok) setC(j.config) }
     })()
   }, [])
 
   async function salvar(patch: any) {
-    const j = await fetch('/api/automacao-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, ...patch }) }).then(r => r.json())
+    const j = await fetchAuth('/api/automacao-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, ...patch }) }).then(r => r.json())
     if (j.ok) { setC(j.config); setAviso('💾 Salvo!'); setTimeout(() => setAviso(''), 2500) }
   }
 

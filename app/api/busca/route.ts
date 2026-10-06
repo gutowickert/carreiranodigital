@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 20
 
@@ -39,6 +40,7 @@ const dataBR = (iso?: string | null) => (iso ? `${iso.slice(8, 10)}/${iso.slice(
 type Item = { chave: string; nome: string; sub: string; href: string }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const auth = req.headers.get('authorization')
   const org = await orgDaRequest(auth)
   const quem = await quemEuVejo(auth, org)

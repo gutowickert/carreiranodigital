@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Achar o lead que deu origem a uma entrega, pra ligar os dois.
 //
@@ -31,6 +32,7 @@ async function rotulosDasEtapas(org: string): Promise<Record<string, string>> {
 }
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

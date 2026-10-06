@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Últimas mensagens de uma conversa — pra dar CONTEXTO na hora de aprovar a resposta na fila "Atender Agora".
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const conversaId = req.nextUrl.searchParams.get('conversaId')
   if (!conversaId) return NextResponse.json({ ok: false, error: 'faltou conversaId' }, { status: 200 })

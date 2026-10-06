@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { atenderLead } from '@/lib/atender-lead'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 300
 
@@ -14,6 +15,7 @@ export const maxDuration = 300
 const DIA = 864e5
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({} as any))

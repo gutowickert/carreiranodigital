@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
+import { usuarioLogado } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
 // Simulação de conversa multi-turno: você faz de LEAD, a IA de vendas conduz.
 //  POST { dialog: [{de:'lead'|'vendedor', texto}], produto?, cidade? } -> próxima mensagem do vendedor + meta
 export async function POST(req: NextRequest) {
+  // só quem está logado: cada chamada gasta crédito da IA do cliente
+  if (!(await usuarioLogado(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     const dialog = Array.isArray(b.dialog) ? b.dialog : []

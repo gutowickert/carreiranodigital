@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { gerarProxima, gerarPrimeira, garantirTarefa } from '@/lib/fluxo'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Ações rápidas do Atender: mover o lead de etapa no funil, ou marcar perda.
 // Registra o andamento (mudanca_etapa) igual ao CRM; na perda, cancela as tarefas pendentes.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const b = await req.json().catch(() => ({}))
   const org = await orgDaRequest(req.headers.get('authorization'))
   const leadId = (b.leadId || '').toString().trim()

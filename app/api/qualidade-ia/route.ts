@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { dossiesLote, timelineDossie } from '@/lib/historico-lead'
 import { gerarResumo } from '@/lib/resumo-lead'
+import { emailLogado } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -14,7 +15,7 @@ const ok = (e: string) => PERMITIDOS.includes((e || '').toLowerCase())
 
 export async function GET(req: NextRequest) {
   try {
-    const email = (req.nextUrl.searchParams.get('email') || '').toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (!ok(email)) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
     const org = await orgDaRequest(req.headers.get('authorization'))
 
@@ -68,7 +69,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const b = await req.json().catch(() => ({}))
-    const email = (b.email || '').toLowerCase()
+    const email = await emailLogado(req)  // do LOGIN, nunca do pedido (06/10)
     if (!ok(email)) return NextResponse.json({ ok: false, error: 'sem acesso' }, { status: 200 })
     if (!b.lead_id || !['ok', 'corrigir', 'assumir'].includes(b.status)) return NextResponse.json({ ok: false, error: 'dados inválidos' }, { status: 200 })
     const org = await orgDaRequest(req.headers.get('authorization'))

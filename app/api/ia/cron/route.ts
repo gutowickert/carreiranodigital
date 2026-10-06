@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { cabecalhoInterno } from '@/lib/exigir-login'
 import { POST as reconciliar } from '../reconciliar/route'
 import { POST as followup } from '../followup-auto/route'
 
@@ -8,7 +9,7 @@ export const maxDuration = 300
 // depois roda o MOTOR da Esteira IA (dispara os toques do fluxo nos frios). Ordem importa (reconcilia → dispara).
 // Protegido: só o cron da Vercel ou o CRON_SECRET. Respeita o kill switch (ia-automacao {ligado:false}) dentro de cada um.
 function reqInterno(body: any) {
-  return new NextRequest('https://cron.interno/', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+  return new NextRequest('https://cron.interno/', { method: 'POST', headers: { 'content-type': 'application/json', ...cabecalhoInterno() }, body: JSON.stringify(body) })  // senha interna: reconciliar e followup-auto exigem login (06/10)
 }
 
 export async function GET(req: NextRequest) {
