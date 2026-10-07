@@ -5,6 +5,7 @@ import Layout from '@/components/Layout'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import { hojeBR } from '@/lib/periodos'
+import { lerTudo } from '@/lib/ler-tudo'
 
 type Conta = {
   id: string
@@ -64,16 +65,20 @@ export default function Caixas() {
     
     if (!contasData) { setContas([]); setCarregando(false); return }
 
-    const { data: lancamentos } = await supabase.from('lancamentos_empresa')
-      .select('conta_id, tipo, valor, status')
-      .not('conta_id', 'is', null)
-      .eq('status', 'realizado')
+    // em páginas de 1000: lendo de uma vez, passando de 1000 linhas o banco cortava calado e o saldo saía errado
+    const lancamentos = await lerTudo<{ conta_id: string; tipo: string; valor: number; status: string }>((de, ate) =>
+      supabase.from('lancamentos_empresa')
+        .select('conta_id, tipo, valor, status')
+        .not('conta_id', 'is', null)
+        .eq('status', 'realizado')
+        .order('id').range(de, ate))
 
-    const { data: transfsOrigem } = await supabase.from('transferencias_caixa')
-      .select('conta_origem_id, valor')
-
-    const { data: transfsDestino } = await supabase.from('transferencias_caixa')
-      .select('conta_destino_id, valor')
+    const transfs = await lerTudo<{ conta_origem_id: string; conta_destino_id: string; valor: number }>((de, ate) =>
+      supabase.from('transferencias_caixa')
+        .select('conta_origem_id, conta_destino_id, valor')
+        .order('id').range(de, ate))
+    const transfsOrigem = transfs
+    const transfsDestino = transfs
 
     const contasComSaldo = contasData.map(c => {
       const entradas = (lancamentos || [])
