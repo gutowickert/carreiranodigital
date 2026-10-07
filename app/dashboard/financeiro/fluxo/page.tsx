@@ -25,6 +25,19 @@ function ultimoDiaDoMes(yyyymm: string) {
   return new Date(y, m, 0).getDate()
 }
 
+// o banco devolve no máximo 1000 linhas e não avisa: lê de 1000 em 1000 (ordenado por id) até acabar.
+// Antes o Fluxo lia tudo de uma vez e os saldos podiam sair com parte dos lançamentos (07/10/2026, Rick)
+async function lerTudo(tabela: string, colunas: string) {
+  const linhas: any[] = []
+  for (let de = 0; ; de += 1000) {
+    const { data, error } = await supabase.from(tabela).select(colunas).order('id').range(de, de + 999)
+    if (error) { console.error(`Erro lendo ${tabela}:`, error); break }
+    linhas.push(...(data || []))
+    if (!data || data.length < 1000) break
+  }
+  return linhas
+}
+
 export default function FluxoCaixa() {
   const [contas, setContas] = useState<Conta[]>([])
   const [lancamentos, setLancamentos] = useState<Lanc[]>([])
@@ -49,10 +62,10 @@ export default function FluxoCaixa() {
 
   async function carregar() {
     setCarregando(true)
-    const [{ data: c }, { data: l }, { data: t }, { data: n }] = await Promise.all([
+    const [{ data: c }, l, t, { data: n }] = await Promise.all([
       supabase.from('contas_financeiras').select('id, nome, tipo, unidade, saldo_inicial, ativo').eq('ativo', true).order('nome'),
-      supabase.from('lancamentos_empresa').select('id, tipo, categoria, descricao, valor, status, data_vencimento, data_pagamento, conta_id'),
-      supabase.from('transferencias_caixa').select('id, conta_origem_id, conta_destino_id, valor, data_transferencia, descricao'),
+      lerTudo('lancamentos_empresa', 'id, tipo, categoria, descricao, valor, status, data_vencimento, data_pagamento, conta_id'),
+      lerTudo('transferencias_caixa', 'id, conta_origem_id, conta_destino_id, valor, data_transferencia, descricao'),
       supabase.from('naturezas_financeiras').select('chave, nome, ativo').order('ordem').order('nome'),
     ])
     setContas(c || [])
