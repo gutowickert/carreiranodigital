@@ -21,27 +21,6 @@ type Lancamento = {
   grupo_recorrencia: string | null
 }
 
-type FinanceiroTurma = {
-  id: string
-  turma_id: string
-  receita_prevista: number
-  receita_realizada: number
-  custo_professores: number
-  custo_trafego_previsto: number
-  imposto_previsto: number
-  custo_deslocamento: number
-  margem_prevista: number
-  margem_realizada: number
-  break_even_matriculas: number
-  turmas: {
-    data_inicio: string
-    preco_venda: number
-    meta_matriculas: number
-    produtos: { nome: string }
-    cidades: { nome: string }
-  }
-}
-
 type Conta = {
   id: string
   nome: string
@@ -54,7 +33,6 @@ const unidadeNome: Record<string, string> = { lajeado: 'Lajeado', porto_alegre: 
 const categoriaNome: Record<string, string> = { pessoal: 'Pessoal', estrutura: 'Estrutura', sistemas: 'Sistemas', marketing: 'Marketing', turma: 'Turma', imposto: 'Imposto', outro: 'Outro' }
 
 const card = { backgroundColor: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', padding: '20px' }
-const cardHeader = { padding: '16px 24px', borderBottom: '1px solid var(--border)' }
 const input = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none', width: '100%' } as React.CSSProperties
 const select = { backgroundColor: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: '8px', padding: '8px 12px', fontSize: '14px', color: 'var(--text)', outline: 'none' } as React.CSSProperties
 const btnPrimary = { backgroundColor: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: '8px', padding: '8px 16px', fontSize: '14px', fontWeight: '500', cursor: 'pointer' } as React.CSSProperties
@@ -80,12 +58,12 @@ function ultimoDiaDoMes(yyyymm: string) {
 }
 
 export default function Financeiro() {
-  const [aba, setAba] = useState<'visao_geral' | 'turmas' | 'lancamentos' | 'dre'>('visao_geral')
-  const [financeiros, setFinanceiros] = useState<FinanceiroTurma[]>([])
+  const [aba, setAba] = useState<'visao_geral' | 'lancamentos'>('visao_geral')
   const [lancamentos, setLancamentos] = useState<Lancamento[]>([])
   const [contas, setContas] = useState<Conta[]>([])
   const [naturezas, setNaturezas] = useState<{ chave: string; nome: string; ativo: boolean }[]>([])
-  const [selecionado, setSelecionado] = useState<FinanceiroTurma | null>(null)
+  // quadro da visão geral aberto mostrando os lançamentos que somam o valor (07/10/2026, pedido do Rick)
+  const [quadroAberto, setQuadroAberto] = useState<'receita' | 'variaveis' | 'fixos' | null>(null)
   const [mesSelecionado, setMesSelecionado] = useState(hojeBR().slice(0, 7))
   const [carregando, setCarregando] = useState(true)
   const [novoLanc, setNovoLanc] = useState(false)
@@ -114,7 +92,7 @@ export default function Financeiro() {
 
   async function carregarTudo() {
     setCarregando(true)
-    await Promise.all([carregarFinanceiros(), carregarLancamentos(), carregarContas(), carregarNaturezas()])
+    await Promise.all([carregarLancamentos(), carregarContas(), carregarNaturezas()])
     setCarregando(false)
   }
 
@@ -125,11 +103,6 @@ export default function Financeiro() {
   // naturezas dinâmicas (tabela) com fallback pras fixas antigas
   const natMap: Record<string, string> = { ...categoriaNome, ...Object.fromEntries(naturezas.map(n => [n.chave, n.nome])) }
   const cats = naturezas.length ? naturezas.filter(n => n.ativo) : Object.entries(categoriaNome).map(([chave, nome]) => ({ chave, nome, ativo: true }))
-
-  async function carregarFinanceiros() {
-    const { data } = await supabase.from('financeiro_turma').select('*, turmas(data_inicio, preco_venda, meta_matriculas, produtos(nome), cidades(nome))').order('atualizado_em', { ascending: false })
-    if (data) setFinanceiros(data)
-  }
 
   async function carregarLancamentos() {
     const ultimoDia = ultimoDiaDoMes(mesSelecionado)
@@ -308,17 +281,21 @@ export default function Financeiro() {
   const custosPrev = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const custosReal = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custosFixosMes = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente).reduce((s, l) => s + l.valor, 0)
-  const margemPrev = receitasPrev - custosPrev
-  const margemReal = receitasReal - custosReal
   const resultadoPrev = receitasPrev - custosPrev
   const resultadoReal = receitasReal - custosReal
 
-  function totalPorCategoria(cat: string, status: string) {
-    return lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.categoria === cat && l.status === status).reduce((s, l) => s + l.valor, 0)
-  }
-  function totalPorCategoriaRecorrente(cat: string) {
-    return lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.categoria === cat && l.recorrente).reduce((s, l) => s + l.valor, 0)
-  }
+  // os lançamentos por trás de cada quadro: mesmos filtros das somas acima, pra lista bater com o número
+  const prevOuReal = (l: Lancamento) => l.status === 'previsto' || l.status === 'realizado'
+  const lancsDoQuadro = quadroAberto === 'receita' ? lancamentosFiltrados.filter(l => l.tipo === 'receita' && prevOuReal(l))
+    : quadroAberto === 'variaveis' ? lancamentosFiltrados.filter(l => l.tipo === 'custo' && prevOuReal(l))
+    : quadroAberto === 'fixos' ? lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente)
+    : []
+  const tituloQuadro = { receita: 'Receita', variaveis: 'Custos variáveis', fixos: 'Custos fixos (recorrentes)' }
+  function alternarQuadro(q: 'receita' | 'variaveis' | 'fixos') { setQuadroAberto(atual => atual === q ? null : q) }
+  const cardClicavel = (q: 'receita' | 'variaveis' | 'fixos') => ({
+    ...card, cursor: 'pointer',
+    border: quadroAberto === q ? '1px solid var(--accent)' : card.border,
+  }) as React.CSSProperties
 
   function agruparPorDia() {
     const grupos: Record<string, Lancamento[]> = {}
@@ -336,9 +313,7 @@ export default function Financeiro() {
 
   const abas = [
     { id: 'visao_geral', label: 'Visão geral' },
-    { id: 'turmas', label: 'Por turma' },
     { id: 'lancamentos', label: 'Lançamentos' },
-    { id: 'dre', label: 'DRE' },
   ]
 
   return (
@@ -368,8 +343,8 @@ export default function Financeiro() {
       {aba === 'visao_geral' && (
         <div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }}>
-            <div style={card}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita</div>
+            <div style={cardClicavel('receita')} onClick={() => alternarQuadro('receita')}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Receita {quadroAberto === 'receita' ? '▴' : '▾'}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-faint)' }}>Realizada</span>
                 <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--green)' }}>{fmt(receitasReal)}</span>
@@ -379,8 +354,8 @@ export default function Financeiro() {
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(receitasPrev)}</span>
               </div>
             </div>
-            <div style={card}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos variáveis</div>
+            <div style={cardClicavel('variaveis')} onClick={() => alternarQuadro('variaveis')}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos variáveis {quadroAberto === 'variaveis' ? '▴' : '▾'}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-faint)' }}>Realizado</span>
                 <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--red)' }}>{fmt(custosReal)}</span>
@@ -390,8 +365,8 @@ export default function Financeiro() {
                 <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(custosPrev)}</span>
               </div>
             </div>
-            <div style={card}>
-              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos (recorrentes)</div>
+            <div style={cardClicavel('fixos')} onClick={() => alternarQuadro('fixos')}>
+              <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos fixos (recorrentes) {quadroAberto === 'fixos' ? '▴' : '▾'}</div>
               <div style={{ fontSize: '20px', fontWeight: '700', color: 'var(--red)' }}>{fmt(custosFixosMes)}</div>
               <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '4px' }}>{lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente).length} lançamentos no mês</div>
             </div>
@@ -408,107 +383,42 @@ export default function Financeiro() {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
-            {['lajeado', 'porto_alegre'].map(unidade => {
-              const custosU = lancamentosFiltrados.filter(l => l.tipo === 'custo' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
-              const receitaU = lancamentosFiltrados.filter(l => l.tipo === 'receita' && (l.unidade === unidade || l.unidade === 'ambas')).reduce((s, l) => s + l.valor, 0)
-              return (
-                <div key={unidade} style={card}>
-                  <div style={{ fontSize: '15px', fontWeight: '600', color: 'var(--text)', marginBottom: '16px' }}>{unidadeNome[unidade]}</div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Receita do mês</span>
-                    <span style={{ color: 'var(--green)' }}>{fmt(receitaU)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', marginBottom: '8px' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Custos do mês</span>
-                    <span style={{ color: 'var(--red)' }}>{fmt(custosU)}</span>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '14px', fontWeight: '600', paddingTop: '12px', borderTop: '1px solid var(--border)', marginTop: '8px' }}>
-                    <span style={{ color: 'var(--text)' }}>Resultado</span>
-                    <span style={{ color: (receitaU - custosU) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(receitaU - custosU)}</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      )}
-
-      {aba === 'turmas' && (
-        <div style={{ display: 'flex', gap: '24px' }}>
-          <div style={{ flex: 1 }}>
+          {quadroAberto && (
             <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-              <div style={cardHeader}>
-                <span style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text-2)' }}>Financeiro por turma</span>
+              <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{tituloQuadro[quadroAberto]} · {lancsDoQuadro.length} lançamento(s)</span>
+                <button onClick={() => setQuadroAberto(null)} style={{ fontSize: '12px', color: 'var(--text-muted)', background: 'none', border: 'none', cursor: 'pointer' }}>Recolher ▴</button>
               </div>
-              {financeiros.length === 0 ? (
-                <p style={{ padding: '24px', fontSize: '14px', color: 'var(--text-faint)' }}>Nenhuma turma com financeiro registrado.</p>
-              ) : financeiros.map(f => (
-                <div key={f.id} onClick={() => setSelecionado(f)}
-                  style={{ padding: '16px 24px', borderBottom: '1px solid var(--border)', cursor: 'pointer', backgroundColor: selecionado?.id === f.id ? 'var(--surface-sel)' : 'transparent' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div>
-                      <div style={{ fontSize: '14px', fontWeight: '500', color: 'var(--text)' }}>{f.turmas?.produtos?.nome}</div>
-                      <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>
-                        {f.turmas?.cidades?.nome} · {f.turmas?.data_inicio ? new Date(f.turmas.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''}
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '14px', fontWeight: '600', color: (f.margem_prevista || 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(f.margem_prevista)}</div>
-                      <div style={{ fontSize: '11px', color: 'var(--text-faint)' }}>margem prevista</div>
-                    </div>
+              {lancsDoQuadro.length === 0 ? (
+                <p style={{ padding: '20px', fontSize: '14px', color: 'var(--text-faint)' }}>Nenhum lançamento neste mês.</p>
+              ) : (quadroAberto === 'fixos'
+                ? [{ titulo: 'Recorrentes do mês', itens: lancsDoQuadro }]
+                : [{ titulo: 'Realizado', itens: lancsDoQuadro.filter(l => l.status === 'realizado') }, { titulo: 'Previsto', itens: lancsDoQuadro.filter(l => l.status === 'previsto') }]
+              ).filter(g => g.itens.length > 0).map(g => (
+                <div key={g.titulo}>
+                  <div style={{ padding: '10px 20px', backgroundColor: 'var(--bg)', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                    <span>{g.titulo}</span>
+                    <span style={{ color: quadroAberto === 'receita' ? 'var(--green)' : 'var(--red)' }}>{fmt(g.itens.reduce((s, l) => s + l.valor, 0))}</span>
                   </div>
+                  {g.itens.map(l => (
+                    <div key={l.id} style={{ padding: '10px 20px', borderBottom: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '12px' }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', color: 'var(--text-2)' }}>
+                          {l.descricao}
+                          {l.recorrente && <span style={{ fontSize: '10px', marginLeft: '8px', padding: '2px 6px', borderRadius: '12px', backgroundColor: 'var(--accent-bg)', color: 'var(--accent-soft)' }}>↻</span>}
+                        </div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '2px' }}>
+                          {l.data_vencimento ? new Date(l.data_vencimento + 'T12:00:00').toLocaleDateString('pt-BR') : '—'} · {natMap[l.categoria] || l.categoria} · {nomeConta(l.conta_id)}
+                        </div>
+                      </div>
+                      <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', backgroundColor: l.status === 'realizado' ? 'var(--green-bg)' : 'var(--surface-2)', color: l.status === 'realizado' ? 'var(--green)' : 'var(--text-muted)' }}>
+                        {l.status}
+                      </span>
+                      <span style={{ fontSize: '13px', fontWeight: '600', minWidth: '110px', textAlign: 'right', color: l.tipo === 'receita' ? 'var(--green)' : 'var(--red)' }}>{fmt(l.valor)}</span>
+                    </div>
+                  ))}
                 </div>
               ))}
-            </div>
-          </div>
-
-          {selecionado && (
-            <div style={{ width: '340px', flexShrink: 0 }}>
-              <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-                <div style={cardHeader}>
-                  <div style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>{selecionado.turmas?.produtos?.nome}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-faint)', marginTop: '2px' }}>{selecionado.turmas?.cidades?.nome}</div>
-                </div>
-                <div style={{ padding: '20px' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                    <thead>
-                      <tr>
-                        <th></th>
-                        <th style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-faint)', fontWeight: '500', padding: '0 0 8px 0' }}>Previsto</th>
-                        <th style={{ textAlign: 'right', fontSize: '10px', color: 'var(--text-faint)', fontWeight: '500', padding: '0 0 8px 8px' }}>Realizado</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      <tr>
-                        <td style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '4px 0' }}>Receita</td>
-                        <td style={{ fontSize: '12px', textAlign: 'right', color: 'var(--text-muted)' }}>{fmt(selecionado.receita_prevista)}</td>
-                        <td style={{ fontSize: '12px', textAlign: 'right', color: 'var(--green)', fontWeight: '600', paddingLeft: '8px' }}>{fmt(selecionado.receita_realizada)}</td>
-                      </tr>
-                      <tr><td colSpan={3} style={{ paddingTop: '8px', borderTop: '1px solid var(--border)' }}></td></tr>
-                      {[
-                        ['Professores', selecionado.custo_professores],
-                        ['Tráfego', selecionado.custo_trafego_previsto],
-                        ['Imposto', selecionado.imposto_previsto],
-                        ['Deslocamento', selecionado.custo_deslocamento],
-                      ].map(([label, val]) => (
-                        <tr key={label as string}>
-                          <td style={{ fontSize: '12px', color: 'var(--text-muted)', padding: '3px 0' }}>(-) {label}</td>
-                          <td style={{ fontSize: '12px', textAlign: 'right', color: 'var(--red)' }}>{fmt(val as number)}</td>
-                          <td style={{ fontSize: '12px', textAlign: 'right', color: 'var(--text-faint)', paddingLeft: '8px' }}>—</td>
-                        </tr>
-                      ))}
-                      <tr><td colSpan={3} style={{ paddingTop: '8px', borderTop: '1px solid var(--border)' }}></td></tr>
-                      <tr>
-                        <td style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text)', padding: '6px 0' }}>Margem</td>
-                        <td style={{ fontSize: '13px', textAlign: 'right', fontWeight: '700', color: (selecionado.margem_prevista || 0) >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(selecionado.margem_prevista)}</td>
-                        <td style={{ fontSize: '13px', textAlign: 'right', fontWeight: '700', color: (selecionado.margem_realizada || 0) >= 0 ? 'var(--green)' : 'var(--red)', paddingLeft: '8px' }}>{fmt(selecionado.margem_realizada || 0)}</td>
-                      </tr>
-                    </tbody>
-                  </table>
-                  <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '12px' }}>Break-even: {selecionado.break_even_matriculas} matrículas</div>
-                </div>
-              </div>
             </div>
           )}
         </div>
@@ -694,80 +604,6 @@ export default function Financeiro() {
               })}
             </div>
           )}
-        </div>
-      )}
-
-      {aba === 'dre' && (
-        <div style={{ maxWidth: '720px' }}>
-          <div style={{ ...card, padding: 0, overflow: 'hidden' }}>
-            <div style={cardHeader}>
-              <span style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)' }}>
-                DRE — {new Date(mesRef + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}
-                {filtroConta && ` · ${nomeConta(filtroConta)}`}
-              </span>
-            </div>
-            <div style={{ padding: '24px' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                <thead>
-                  <tr>
-                    <th></th>
-                    <th style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500', padding: '0 16px 12px' }}>Previsto</th>
-                    <th style={{ textAlign: 'right', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500', padding: '0 0 12px 0' }}>Realizado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '6px 0' }}>Receita</td>
-                    <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--green)', padding: '6px 16px' }}>{fmt(receitasPrev)}</td>
-                    <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--green)', fontWeight: '600', padding: '6px 0' }}>{fmt(receitasReal)}</td>
-                  </tr>
-                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid var(--border)' }}></td></tr>
-                  <tr>
-                    <td colSpan={3} style={{ fontSize: '10px', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos variáveis</td>
-                  </tr>
-                  {[
-                    ['Pessoal (professores)', 'pessoal'],
-                    ['Marketing (tráfego)', 'marketing'],
-                    ['Imposto', 'imposto'],
-                    ['Outros (deslocamento etc.)', 'outro'],
-                  ].map(([label, cat]) => (
-                    <tr key={cat}>
-                      <td style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '4px 0' }}>(-) {label}</td>
-                      <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--red)', padding: '4px 16px' }}>{fmt(totalPorCategoria(cat, 'previsto'))}</td>
-                      <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--red)', padding: '4px 0' }}>{fmt(totalPorCategoria(cat, 'realizado'))}</td>
-                    </tr>
-                  ))}
-                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid var(--border)' }}></td></tr>
-                  <tr>
-                    <td style={{ fontSize: '14px', fontWeight: '600', color: 'var(--text)', padding: '8px 0' }}>= Margem bruta</td>
-                    <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemPrev >= 0 ? 'var(--green)' : 'var(--red)', padding: '8px 16px' }}>{fmt(margemPrev)}</td>
-                    <td style={{ fontSize: '14px', fontWeight: '600', textAlign: 'right', color: margemReal >= 0 ? 'var(--green)' : 'var(--red)', padding: '8px 0' }}>{fmt(margemReal)}</td>
-                  </tr>
-                  <tr><td colSpan={3} style={{ paddingTop: '12px', borderTop: '1px solid var(--border)' }}></td></tr>
-                  <tr>
-                    <td colSpan={3} style={{ fontSize: '10px', color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '0.05em', padding: '4px 0' }}>Custos fixos (recorrentes)</td>
-                  </tr>
-                  {['estrutura', 'pessoal', 'sistemas', 'marketing', 'outro'].map(cat => {
-                    const totalRec = totalPorCategoriaRecorrente(cat)
-                    if (!totalRec) return null
-                    return (
-                      <tr key={cat}>
-                        <td style={{ fontSize: '13px', color: 'var(--text-muted)', padding: '4px 0' }}>(-) {categoriaNome[cat]}</td>
-                        <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--red)', padding: '4px 16px' }}>{fmt(totalRec)}</td>
-                        <td style={{ fontSize: '13px', textAlign: 'right', color: 'var(--text-faint)', padding: '4px 0' }}>—</td>
-                      </tr>
-                    )
-                  })}
-                  <tr><td colSpan={3} style={{ paddingTop: '16px', borderTop: '2px solid var(--border)' }}></td></tr>
-                  <tr>
-                    <td style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text)', padding: '12px 0' }}>= Resultado líquido</td>
-                    <td style={{ fontSize: '16px', fontWeight: '800', textAlign: 'right', color: resultadoPrev >= 0 ? 'var(--green)' : 'var(--red)', padding: '12px 16px' }}>{fmt(resultadoPrev)}</td>
-                    <td style={{ fontSize: '16px', fontWeight: '800', textAlign: 'right', color: resultadoReal >= 0 ? 'var(--green)' : 'var(--red)', padding: '12px 0' }}>{fmt(resultadoReal)}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
       )}
 
