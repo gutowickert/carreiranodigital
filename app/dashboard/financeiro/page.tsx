@@ -281,13 +281,17 @@ export default function Financeiro() {
   const custosPrev = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
   const custosReal = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const custosFixosMes = lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente).reduce((s, l) => s + l.valor, 0)
+  // variáveis = custos que não são recorrentes; os recorrentes ficam só em "Custos fixos" (07/10/2026, pedido
+  // do Rick: antes os fixos entravam nos dois quadros). O resultado segue descontando todos os custos.
+  const variaveisPrev = lancamentosFiltrados.filter(l => l.tipo === 'custo' && !l.recorrente && l.status === 'previsto').reduce((s, l) => s + l.valor, 0)
+  const variaveisReal = lancamentosFiltrados.filter(l => l.tipo === 'custo' && !l.recorrente && l.status === 'realizado').reduce((s, l) => s + l.valor, 0)
   const resultadoPrev = receitasPrev - custosPrev
   const resultadoReal = receitasReal - custosReal
 
   // os lançamentos por trás de cada quadro: mesmos filtros das somas acima, pra lista bater com o número
   const prevOuReal = (l: Lancamento) => l.status === 'previsto' || l.status === 'realizado'
   const lancsDoQuadro = quadroAberto === 'receita' ? lancamentosFiltrados.filter(l => l.tipo === 'receita' && prevOuReal(l))
-    : quadroAberto === 'variaveis' ? lancamentosFiltrados.filter(l => l.tipo === 'custo' && prevOuReal(l))
+    : quadroAberto === 'variaveis' ? lancamentosFiltrados.filter(l => l.tipo === 'custo' && !l.recorrente && prevOuReal(l))
     : quadroAberto === 'fixos' ? lancamentosFiltrados.filter(l => l.tipo === 'custo' && l.recorrente)
     : []
   const tituloQuadro = { receita: 'Receita', variaveis: 'Custos variáveis', fixos: 'Custos fixos (recorrentes)' }
@@ -358,11 +362,11 @@ export default function Financeiro() {
               <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}>Custos variáveis {quadroAberto === 'variaveis' ? '▴' : '▾'}</div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-faint)' }}>Realizado</span>
-                <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--red)' }}>{fmt(custosReal)}</span>
+                <span style={{ fontSize: '20px', fontWeight: '700', color: 'var(--red)' }}>{fmt(variaveisReal)}</span>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                 <span style={{ fontSize: '11px', color: 'var(--text-faint)' }}>Previsto</span>
-                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(custosPrev)}</span>
+                <span style={{ fontSize: '13px', color: 'var(--text-muted)' }}>{fmt(variaveisPrev)}</span>
               </div>
             </div>
             <div style={cardClicavel('fixos')} onClick={() => alternarQuadro('fixos')}>
