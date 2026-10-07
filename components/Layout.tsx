@@ -39,6 +39,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/disparos/relatorios': FileText, '/dashboard/listas': List,
   '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight, '/dashboard/financeiro/transferencias': ArrowLeftRight,
   '/dashboard/financeiro/custos': Receipt, '/dashboard/financeiro/receitas': Coins, '/dashboard/financeiro/contas-pagar': CreditCard, '/dashboard/financeiro/naturezas': Tags, '/dashboard/comissoes': Percent,
+  '/dashboard/financeiro/notas-fiscais': FileText,
   '/dashboard/vendedores': Handshake,
   '/dashboard/crm/config': Settings2, '/dashboard/matriculas-orfas': UserX, '/dashboard/motivos-perda': ThumbsDown,
   '/dashboard/tarefas/templates': ListTodo, '/dashboard/salas': DoorOpen, '/dashboard/cidades': MapPin, '/dashboard/modulos': Blocks,
@@ -147,6 +148,8 @@ const grupos: Grupo[] = [
       // tabela que só ela lia, e o saldo das outras telas não mudava. Transferência se faz em Ajustes →
       // Caixas; este relatório lista as feitas por lá. A tela antiga continua existindo pelo endereço.
       { nome: 'Relatório de Transferências', href: '/dashboard/financeiro/transferencias' },
+      // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
+      { nome: 'Nota Fiscal', href: '/dashboard/financeiro/notas-fiscais' },
     ],
   },
   {
