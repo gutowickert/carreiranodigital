@@ -318,18 +318,19 @@ export default function Caixas() {
         {carregando ? (
           <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : (
-          // Geral na largura toda; Lajeado e Porto Alegre lado a lado (empilham em tela estreita) — 07/10/2026, pedido do Rick
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
+          // Geral na largura toda; Lajeado e Porto Alegre lado a lado, encostados (empilham em tela estreita).
+          // Todos os quadros com a mesma largura (07/10/2026, pedido do Rick)
+          <div style={{ display: 'flex', flexWrap: 'wrap', columnGap: 12, rowGap: 20 }}>
             {Object.entries(contasPorUnidade).map(([unidade, contasUnidade]) => (
-              <div key={unidade} style={unidade === 'geral' ? { flex: '1 1 100%' } : { flex: '1 1 420px', minWidth: 0 }}>
+              <div key={unidade} style={unidade === 'geral' ? { flex: '1 1 100%' } : { flex: '0 1 auto', maxWidth: '100%' }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>
                   {UNIDADES_LABEL[unidade]}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 12 }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
                   {contasUnidade.map(c => {
                     const tipo = TIPOS_LABEL[c.tipo]
                     return (
-                      <div key={c.id} style={{ ...card, padding: 18, opacity: c.ativo ? 1 : 0.5 }}>
+                      <div key={c.id} style={{ ...card, padding: 18, width: 330, maxWidth: '100%', boxSizing: 'border-box', opacity: c.ativo ? 1 : 0.5 }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 12 }}>
                           <div>
                             <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text)' }}>{c.nome}</div>
@@ -352,11 +353,10 @@ export default function Caixas() {
                           <div style={{ fontSize: 22, fontWeight: 700, color: (c.saldo_atual || 0) >= 0 ? 'var(--green)' : 'var(--red)', marginTop: 2 }}>
                             {fmt(c.saldo_atual || 0)}
                           </div>
-                          {(c.saldo_inicial || 0) !== 0 && (
-                            <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2 }}>
-                              Inicial: {fmt(c.saldo_inicial)}
-                            </div>
-                          )}
+                          {/* a linha ocupa o espaço mesmo sem saldo inicial, pros quadros ficarem da mesma altura */}
+                          <div style={{ fontSize: 10, color: 'var(--text-faint)', marginTop: 2, visibility: (c.saldo_inicial || 0) !== 0 ? 'visible' : 'hidden' }}>
+                            Inicial: {fmt(c.saldo_inicial)}
+                          </div>
                         </div>
 
                         <div style={{ display: 'flex', gap: 12, marginTop: 10, fontSize: 11 }}>
