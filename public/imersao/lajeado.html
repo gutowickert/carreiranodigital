@@ -1,10 +1,16 @@
 <!doctype html>
 <html lang="pt-BR">
 <head>
+<!-- Meta Pixel (conta da escola) -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Imersão Deu Venda',content_category:'Lajeado'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
 <meta charset="utf-8">
-<meta name="robots" content="noindex, nofollow">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Imersão Deu Venda Lajeado</title>
+<title>Imersão Deu Venda · Lajeado</title>
 <meta name="description" content="Imersão Deu Venda em Lajeado: em 3 encontros presenciais, teu negócio sai com a estratégia definida, os vídeos editados pela IA e os anúncios rodando. Turma pequena.">
 <meta property="og:title" content="Imersão Deu Venda · Lajeado">
 <meta property="og:description" content="3 encontros, turma pequena. Tu sai com os vídeos editados pela IA e os anúncios rodando.">
@@ -352,6 +358,59 @@ footer{padding:30px 0 110px;text-align:center;color:var(--fraco);font-size:13px}
   // vídeos de baixo só baixam quando chegam na tela
   var vo=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.src){v.src=v.getAttribute('data-src');}v.play&&v.play().catch(function(){});}else{v.pause&&v.pause();}});},{threshold:.3});
   [].forEach.call(document.querySelectorAll('video[data-src]'),function(v){vo.observe(v);});
+})();
+</script>
+<script>
+(function(){
+  var CRM='https://carreiranodigital.vercel.app';
+  var TRACK=CRM+'/api/track', WA=CRM+'/wa', CAMP='imersao-deu-venda-lajeado', TURMA='imersaodvlajeado102601', CIDADE='Lajeado';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+  var vid,sid;
+  try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
+  try{sid=sessionStorage.getItem('cnd_sid');if(!sid){sid=uid();sessionStorage.setItem('cnd_sid',sid);}}catch(e){sid=uid();}
+  var qs=new URLSearchParams(location.search);
+  var fbclid=qs.get('fbclid');
+  try{if(fbclid){localStorage.setItem('cnd_fbclid',fbclid);}else{fbclid=localStorage.getItem('cnd_fbclid');}}catch(e){}
+  var utm={source:qs.get('utm_source')||'',medium:qs.get('utm_medium')||'',campaign:qs.get('utm_campaign')||CAMP,content:qs.get('utm_content')||''};
+  function track(evento,meta){
+    try{
+      var payload=JSON.stringify({visitor_id:vid,sessao_id:sid,evento:evento,url:location.href,referrer:document.referrer,
+        utm_source:utm.source,utm_medium:utm.medium,utm_campaign:utm.campaign,utm_content:utm.content,fbclid:fbclid,meta:meta||null});
+      if(navigator.sendBeacon){navigator.sendBeacon(TRACK,new Blob([payload],{type:'text/plain'}));}
+      else{fetch(TRACK,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}
+    }catch(e){}
+  }
+  window.__cndTrack=track;
+  track('page_view');
+  var hit={};
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement,max=(h.scrollHeight-h.clientHeight)||1,pct=(h.scrollTop||document.body.scrollTop)/max*100;
+    if(pct>=50&&!hit[50]){hit[50]=1;track('scroll_50');}
+    if(pct>=90&&!hit[90]){hit[90]=1;track('scroll_90');}
+  },{passive:true});
+  function cookie(n){try{var m=document.cookie.match('(^|;)\\s*'+n+'=([^;]*)');return m?decodeURIComponent(m[2]):null}catch(e){return null}}
+  function waLink(msg,turma){
+    var ev=uid(), p=new URLSearchParams();
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);p.set('turma',turma||TURMA);
+    p.set('event_id',ev);
+    var _fbp=cookie('_fbp'); if(_fbp)p.set('fbp',_fbp);
+    var _fbc=cookie('_fbc'); if(_fbc)p.set('fbc',_fbc);
+    if(fbclid)p.set('fbclid',fbclid);
+    if(utm.source)p.set('utm_source',utm.source);
+    if(utm.medium)p.set('utm_medium',utm.medium);
+    p.set('utm_campaign',utm.campaign||CAMP);
+    if(utm.content)p.set('utm_content',utm.content);
+    return {url:WA+'?'+p.toString(), ev:ev};
+  }
+  // cada botão de turma leva o código daquela turma: o lead já cai na turma certa no CRM
+  [].forEach.call(document.querySelectorAll('a[data-cta]'),function(b){
+    var t=(b.textContent||'').trim(), l=waLink(b.getAttribute('data-msg'), b.getAttribute('data-turma'));
+    b.setAttribute('href',l.url);b.setAttribute('target','_blank');b.setAttribute('rel','noopener');
+    b.addEventListener('click',function(){
+      track('clique_wa',{botao:t.slice(0,40),turma:b.getAttribute('data-turma')||TURMA,event_id:l.ev});
+      try{if(window.fbq)fbq('track','Lead',{content_name:'Imersão Deu Venda',content_category:CIDADE},{eventID:l.ev});}catch(e){}
+    });
+  });
 })();
 </script>
 </body>
