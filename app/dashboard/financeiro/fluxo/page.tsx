@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
-import { ResponsiveContainer, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, CartesianGrid } from 'recharts'
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid, LabelList } from 'recharts'
 import { CardNumero } from '@/components/ui'
 import { hojeBR } from '@/lib/periodos'
 
@@ -117,8 +117,7 @@ export default function FluxoCaixa() {
   const saidasPrev = somaTipo(previstosMes, 'custo')
   const saldoProjetado = saldoFinalTotal + entradasPrev - saidasPrev
 
-  // ---- série dos últimos 12 meses (entradas, saídas, saldo acumulado) ----
-  const saldoIniContas = contas.reduce((s, c) => s + (c.saldo_inicial || 0), 0)
+  // ---- série dos últimos 12 meses (entradas, saídas) ----
   const [yBase, mBase] = mes.split('-').map(Number)
   const serie12 = Array.from({ length: 12 }, (_, idx) => {
     const i = 11 - idx
@@ -126,12 +125,10 @@ export default function FluxoCaixa() {
     const mm = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
     const ini = mm + '-01', fim = `${mm}-${String(ultimoDiaDoMes(mm)).padStart(2, '0')}`
     const noMes = reaisTodos.filter(l => { const x = dataEf(l); return x >= ini && x <= fim })
-    const ate = reaisTodos.filter(l => dataEf(l) <= fim)
     return {
       mes: `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(2)}`,
       entradas: Math.round(somaTipo(noMes, 'receita')),
       saidas: Math.round(somaTipo(noMes, 'custo')),
-      saldo: Math.round(saldoIniContas + somaTipo(ate, 'receita') - somaTipo(ate, 'custo')),
     }
   })
   const tipProps = { contentStyle: { background: 'var(--surface)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 12 }, itemStyle: { color: 'var(--text)' }, labelStyle: { color: 'var(--text-faint)' } }
@@ -164,6 +161,15 @@ export default function FluxoCaixa() {
   // naturezas dinâmicas (tabela) com fallback pras fixas antigas
   const natMap: Record<string, string> = { ...categoriaNome, ...Object.fromEntries(naturezas.map(n => [n.chave, n.nome])) }
   const cats = naturezas.length ? naturezas.filter(n => n.ativo) : Object.entries(categoriaNome).map(([chave, nome]) => ({ chave, nome, ativo: true }))
+
+  // pra onde vai o dinheiro: saídas pagas do mês (mesmo filtro do extrato) por natureza, as 6 maiores e o resto
+  // em "Demais"; a soma bate com o card Saídas (07/10/2026, pedido do Rick, no lugar do saldo acumulado)
+  const saidasPorNat: Record<string, number> = {}
+  movimentos.filter(l => l.tipo === 'custo').forEach(l => { saidasPorNat[l.categoria] = (saidasPorNat[l.categoria] || 0) + (l.valor || 0) })
+  const natOrdenadas = Object.entries(saidasPorNat).map(([cat, valor]) => ({ nome: natMap[cat] || cat || 'Sem natureza', valor })).sort((a, b) => b.valor - a.valor)
+  const ondeVai = natOrdenadas.length > 7
+    ? [...natOrdenadas.slice(0, 6), { nome: 'Demais', valor: natOrdenadas.slice(6).reduce((s, n) => s + n.valor, 0) }]
+    : natOrdenadas
 
   return (
     <div style={{ padding: '24px', minHeight: '100vh' }}>
@@ -254,19 +260,23 @@ export default function FluxoCaixa() {
               </ResponsiveContainer>
             </div>
             <div style={{ ...card, padding: 18 }}>
-              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>Saldo acumulado — 12 meses</div>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={serie12} margin={{ left: -6, right: 8, top: 4, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--glass-border)" vertical={false} />
-                  <XAxis dataKey="mes" tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: 'var(--text-faint)' }} axisLine={false} tickLine={false} width={44} tickFormatter={kfmt} />
-                  <Tooltip cursor={{ fill: 'var(--surface-2)', opacity: .5 }} {...tipProps} formatter={(v: any) => fmt(v)} />
-                  {/* saldo positivo na cor da marca, negativo em vermelho */}
-                  <Bar dataKey="saldo" name="Saldo" radius={[3, 3, 0, 0]}>
-                    {serie12.map((m: any, i: number) => <Cell key={i} fill={m.saldo >= 0 ? 'var(--accent)' : 'var(--red)'} />)}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              <div style={{ fontSize: 14, fontWeight: 600, color: 'var(--text-2)', marginBottom: 8 }}>
+                Pra onde vai o dinheiro <span style={{ fontSize: 12, fontWeight: 400, color: 'var(--text-faint)', textTransform: 'capitalize' }}>· {tituloMes}{contaSel ? ` · ${contaSel.nome}` : ''}</span>
+              </div>
+              {ondeVai.length === 0 ? (
+                <div style={{ height: 220, display: 'grid', placeItems: 'center', fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma saída paga neste mês.</div>
+              ) : (
+                <ResponsiveContainer width="100%" height={220}>
+                  <BarChart data={ondeVai} layout="vertical" margin={{ left: 0, right: 16, top: 4, bottom: 0 }}>
+                    <XAxis type="number" hide domain={[0, (max: number) => max * 1.35]} />
+                    <YAxis type="category" dataKey="nome" tick={{ fontSize: 11, fill: 'var(--text-muted)' }} axisLine={false} tickLine={false} width={96} />
+                    <Tooltip cursor={{ fill: 'var(--surface-2)', opacity: .5 }} {...tipProps} formatter={(v: any) => fmt(v)} />
+                    <Bar dataKey="valor" name="Saídas" fill="#f87171" radius={[0, 3, 3, 0]} barSize={16}>
+                      <LabelList dataKey="valor" position="right" formatter={(v: any) => fmt(v)} style={{ fontSize: 11, fill: 'var(--text-2)' }} />
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </div>
           </div>
 
