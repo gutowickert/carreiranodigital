@@ -318,9 +318,10 @@ export default function Caixas() {
         {carregando ? (
           <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Carregando...</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+          // Geral na largura toda; Lajeado e Porto Alegre lado a lado (empilham em tela estreita) — 07/10/2026, pedido do Rick
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 20 }}>
             {Object.entries(contasPorUnidade).map(([unidade, contasUnidade]) => (
-              <div key={unidade}>
+              <div key={unidade} style={unidade === 'geral' ? { flex: '1 1 100%' } : { flex: '1 1 420px', minWidth: 0 }}>
                 <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8, fontWeight: 600 }}>
                   {UNIDADES_LABEL[unidade]}
                 </div>
