@@ -99,6 +99,18 @@ h2{font-size:clamp(30px,5vw,46px);margin-bottom:14px}
 .leva b{display:block;font-size:17px;margin-bottom:4px}
 .leva span{color:var(--suave);font-size:15px}
 
+/* quem conduz */
+.quem{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px;align-items:center;margin-top:10px}
+.quem figure{border-radius:26px;overflow:hidden;border:1px solid var(--borda);max-width:420px}
+.quem img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.quem p{color:var(--suave);font-size:17px;max-width:58ch}
+.quem p b{color:var(--tinta)}
+.quem p+p{margin-top:12px}
+.numeros{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:22px;max-width:560px}
+.numeros div{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:14px}
+.numeros b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(24px,4vw,32px);line-height:1.05}
+.numeros span{font-size:13px;color:var(--suave);font-weight:600}
+
 /* turmas */
 .turmas-sec{background:var(--fundo2)}
 .turmas{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-top:34px}
@@ -136,6 +148,7 @@ footer{padding:30px 0 110px;text-align:center;color:var(--fraco);font-size:13px}
   .abre .ct{grid-template-columns:1fr;gap:30px}
   .leva{grid-template-columns:1fr 1fr}
   .preco{grid-template-columns:1fr;gap:14px}
+  .quem{grid-template-columns:1fr;gap:24px}
 }
 @media (max-width:560px){
   section{padding:56px 0}
@@ -237,6 +250,28 @@ footer{padding:30px 0 110px;text-align:center;color:var(--fraco);font-size:13px}
       <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5 6-6Z"/><circle cx="15" cy="9" r="1.5"/></svg><b>Os anúncios rodando</b><span>No Facebook e no Instagram, montados direto pelo Claude, no ar desde o 2º encontro.</span></div>
       <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a8 8 0 0 1-11.8 7L4 20l1.2-4.6A8 8 0 1 1 21 12Z"/></svg><b>O atendimento organizado</b><span>As respostas pro WhatsApp, pra cada contato virar conversa de venda.</span></div>
       <div class="rv d2"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><b>30 dias de acompanhamento</b><span>Grupo da turma no WhatsApp com o time da escola, até o encontro de resultado.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · quem conduz -->
+<section style="padding-top:0">
+  <div class="ct">
+    <span class="olho rv">Quem conduz a imersão</span>
+    <div class="quem">
+      <figure class="rv"><img src="midia/guto.jpg" alt="Guto Wickert na sede da escola" loading="lazy"></figure>
+      <div>
+        <h2 class="rv d1">Guto Wickert</h2>
+        <p class="rv d1">Dezesseis anos de empresa física antes do digital: vendeu uma, quebrou outra. Por isso olha o negócio <b>pelo caixa, não pelo like.</b></p>
+        <p class="rv d2">Idealizador da <b>Carreira no Digital</b>, escola presencial com sedes em Lajeado e Porto Alegre, que <b>formou mais de 500 alunos no primeiro ano.</b></p>
+        <p class="rv d2">Hoje a escola roda com <b>inteligência artificial no dia a dia</b>: o atendimento no WhatsApp, a edição dos vídeos, o conteúdo e as campanhas. O que tu vai fazer na imersão é o que a escola usa todo dia no próprio negócio.</p>
+        <div class="numeros rv d3">
+          <div><b>+500</b><span>alunos no primeiro ano da escola</span></div>
+          <div><b>+1.000</b><span>anúncios testados</span></div>
+          <div><b>R$ 1,5 mi</b><span>investidos em anúncio nos próprios negócios</span></div>
+          <div><b>+15 mil</b><span>vendas com anúncio nos últimos 3 anos</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </section>
