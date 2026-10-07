@@ -159,6 +159,8 @@ export default function FluxoCaixa() {
   }
 
   const tituloMes = new Date(inicioMes + 'T12:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+  // no mês de hoje o saldo final é o saldo atual; nos outros meses é o do fim daquele mês (07/10/2026, pedido do Rick)
+  const rotuloSaldo = mes === hojeBR().slice(0, 7) ? 'Saldo atual' : 'Saldo no fim do mês'
   // naturezas dinâmicas (tabela) com fallback pras fixas antigas
   const natMap: Record<string, string> = { ...categoriaNome, ...Object.fromEntries(naturezas.map(n => [n.chave, n.nome])) }
   const cats = naturezas.length ? naturezas.filter(n => n.ativo) : Object.entries(categoriaNome).map(([chave, nome]) => ({ chave, nome, ativo: true }))
@@ -226,7 +228,7 @@ export default function FluxoCaixa() {
         <>
           {/* os mesmos cards de número do Painel; o saldo final é o principal, em relevo */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 12, marginBottom: 20 }}>
-            <CardNumero vidro destaque rotulo="Saldo final do mês" prefixo="R$" valor={Math.round(resumo.saldoFinal).toLocaleString('pt-BR')} cor={resumo.saldoFinal >= 0 ? 'var(--green-strong)' : 'var(--red)'}
+            <CardNumero vidro destaque rotulo={rotuloSaldo} prefixo="R$" valor={Math.round(resumo.saldoFinal).toLocaleString('pt-BR')} cor={resumo.saldoFinal >= 0 ? 'var(--green-strong)' : 'var(--red)'}
               rodape={!filtroConta ? <span>projetado com previstos: {fmt(saldoProjetado)}</span> : undefined} />
             <CardNumero vidro rotulo="Saldo inicial do mês" prefixo="R$" valor={Math.round(resumo.saldoInicial).toLocaleString('pt-BR')} cor={resumo.saldoInicial >= 0 ? undefined : 'var(--red)'} />
             <CardNumero vidro rotulo="Entradas" prefixo="R$" valor={Math.round(resumo.entradas).toLocaleString('pt-BR')} cor="var(--green)"
@@ -274,7 +276,7 @@ export default function FluxoCaixa() {
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                    {['Caixa', 'Saldo inicial', 'Entradas', 'Saídas', 'Transf.', 'Saldo final'].map((h, i) => (
+                    {['Caixa', 'Saldo inicial', 'Entradas', 'Saídas', 'Transf.', rotuloSaldo].map((h, i) => (
                       <th key={h} style={{ textAlign: i === 0 ? 'left' : 'right', padding: '10px 20px', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                     ))}
                   </tr>
