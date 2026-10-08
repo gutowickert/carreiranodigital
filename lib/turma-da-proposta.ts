@@ -30,7 +30,8 @@ const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julh
 /** "Turma da noite (19:00–22:15)" → { turno: 'noite', horario: '19:00–22:15' } */
 export function turnoEHorario(observacoes: string | null): { turno: string | null; horario: string | null } {
   const o = observacoes || ''
-  const m = o.match(/turma\s+d[ao]\s+(manh[ãa]|tarde|noite)\s*(?:\(([^)]+)\))?/i)
+  // as turmas da Imersão Deu Venda escrevem "· TARDE (14:00–17:15)", sem o "Turma da" (08/10/2026)
+  const m = o.match(/turma\s+d[ao]\s+(manh[ãa]|tarde|noite)\s*(?:\(([^)]+)\))?/i) || o.match(/\b(manh[ãa]|tarde|noite)\s*\(([^)]+)\)/i)
   if (!m) return { turno: null, horario: null }
   return { turno: m[1].toLowerCase(), horario: (m[2] || '').trim() || null }
 }
@@ -53,9 +54,21 @@ export function datasDaTurma(inicio: string, fim: string): string {
   return `${di} a ${df} de ${mesI}`
 }
 
+/** Soma dias a uma data "aaaa-mm-dd" (sem fuso: é data de calendário). */
+export function maisDias(iso: string, n: number): string {
+  const [a, m, d] = iso.slice(0, 10).split('-').map(Number)
+  return new Date(Date.UTC(a, m - 1, d + n)).toISOString().slice(0, 10)
+}
+
+// ⚠️ NA IMERSÃO DEU VENDA o fim da turma é o ENCONTRO DE RESULTADO, uns 20 dias depois dos 3 encontros
+// seguidos. Pelo período cru, o seletor mostrava "20 de outubro a 3 de novembro" (08/10/2026).
+const ehImersaoDV = (nome?: string | null) => (nome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().includes('imersao deu venda')
+
 /** Uma linha só, pra caber num seletor: "Porto Alegre · 6, 7 e 8 de outubro · noite (19:00–22:15)" */
-export function rotuloDaTurma(t: TurmaResumo): string {
-  const quando = datasDaTurma(t.data_inicio, t.data_fim)
+export function rotuloDaTurma(t: TurmaResumo, produtoNome?: string | null): string {
+  const quando = ehImersaoDV(produtoNome)
+    ? `${datasDaTurma(t.data_inicio, maisDias(t.data_inicio, 2))} + resultado em ${datasDaTurma(t.data_fim, t.data_fim)}`
+    : datasDaTurma(t.data_inicio, t.data_fim)
   const turno = t.turno ? ` · ${t.turno}${t.horario ? ` (${t.horario})` : ''}` : ''
   return `${t.cidade} · ${quando}${turno}`
 }

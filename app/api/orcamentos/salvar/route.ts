@@ -108,7 +108,7 @@ export async function POST(req: Request) {
       // trocar a turma muda a DATA que o cliente já leu — é a alteração que mais precisa de dono
       if (patch.turma_id && patch.turma_id !== orc.turma_id) {
         const t = await turmaDoOrcamento(patch.turma_id)
-        mudou.push(`turma → ${t ? rotuloDaTurma(t) : patch.turma_id}`)
+        mudou.push(`turma → ${t ? rotuloDaTurma(t, orc.produto_nome) : patch.turma_id}`)
       }
 
       if (mudou.length && orc.lead_id) {

@@ -10,11 +10,13 @@
 // Deu Venda com o preço de R$ 797, que é o da turma de anúncios, pro Patrick, que tinha pedido as
 // duas coisas separadas.
 //
+// Corpos hoje: Deu Venda (individual), Anúncios para Negócios Locais e Imersão Deu Venda (turma, 08/10/2026).
+//
 // PRA INCLUIR UM PRODUTO NOVO: escreve o corpo dele aqui e registra o nome em lib/proposta-produtos.
 // A lista de lá não faz a proposta existir — ela só impede de oferecer uma que ainda não foi escrita.
 
 import type { TurmaResumo } from '@/lib/turma-da-proposta'
-import { datasDaTurma } from '@/lib/turma-da-proposta'
+import { datasDaTurma, maisDias } from '@/lib/turma-da-proposta'
 
 type Props = {
   cliente: string
@@ -48,11 +50,16 @@ export function AceiteDaPrevia() {
   )
 }
 
-const ehANL = (nome: string | null) =>
-  (nome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().includes('anuncios para negocios locais')
+const semAcento = (nome: string | null) => (nome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+const ehANL = (nome: string | null) => semAcento(nome).includes('anuncios para negocios locais')
+// ⚠️ A IMERSÃO VEM ANTES DO DEU VENDA EM TODA ESCOLHA: "Imersão Deu Venda" contém "Deu Venda", e o
+// corpo do individual (implantação, 3 meses, 5 encontros) numa proposta de turma é o mesmo erro do
+// Patrick ao contrário (08/10/2026)
+const ehImersaoDV = (nome: string | null) => semAcento(nome).includes('imersao deu venda')
 
 /** Escolhe o corpo pelo nome do produto. Sem correspondência, cai no Deu Venda, que é o padrão da casa. */
 export function CorpoDoProduto(p: Props) {
+  if (ehImersaoDV(p.produtoNome)) return <CorpoImersaoDV {...p} />
   return ehANL(p.produtoNome) ? <CorpoANL {...p} /> : <CorpoDeuVenda {...p} />
 }
 
@@ -64,7 +71,9 @@ export function CorpoDoProduto(p: Props) {
  * prometendo implantação e acompanhamento mensal, e só se contradizia na página seguinte.
  */
 export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | null; vista: string | null }) {
-  const nums = ehANL(produtoNome)
+  const nums = ehImersaoDV(produtoNome)
+    ? [['3', 'Encontros presenciais'], ['1', 'Encontro de resultado'], ['1', 'Pagamento único']]
+    : ehANL(produtoNome)
     ? [['3', 'Dias presenciais'], ['1', 'Campanha no ar'], ['1', 'Pagamento único']]
     : [['2', 'Encontros de implantação'], ['3', 'Meses acompanhado'], ['1', 'Pagamento único']]
   return (
@@ -84,6 +93,17 @@ export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | nu
  */
 export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma }: Omit<Props, 'cliente'>) {
   const valores = `${vista ? ` · ${vista} à vista no Pix` : ''}${parcela && parcelas ? ` ou ${parcelas}x de ${parcela} no cartão de crédito` : ''}`
+  if (ehImersaoDV(produtoNome)) {
+    const quando = turma ? ` · encontros ${datasDaTurma(turma.data_inicio, maisDias(turma.data_inicio, 2))} e encontro de resultado em ${diaEMes(turma.data_fim)}, em ${turma.cidade}${turma.turno ? ` (${turma.turno})` : ''}` : ''
+    return (
+      <>
+        {produtoNome || 'Imersão Deu Venda'} · 3 encontros presenciais de 3 horas e 1 encontro de resultado{quando}{valores}
+        {' '}· valor por inscrição, pagamento único · verba de anúncio por conta do aluno, direto pra Meta · a máquina de IA
+        e as contas são do aluno e continuam com ele · a escola faz junto nos encontros e acompanha 30 dias no grupo da
+        turma, e não garante volume de vendas.
+      </>
+    )
+  }
   if (ehANL(produtoNome)) {
     // a DATA entra no que a pessoa confirma: aceitar um curso sem saber quando é não é aceite
     const quando = turma ? ` · ${datasDaTurma(turma.data_inicio, turma.data_fim)}, em ${turma.cidade}${turma.turno ? ` (${turma.turno})` : ''}` : ''
@@ -237,6 +257,131 @@ function CorpoANL({ cliente, produtoNome, vista, parcela, parcelas, turma }: Pro
         <p className="corpo" style={{ fontSize: 13.5 }}>
           Pra comparar: agência básica cobra a partir de R$&nbsp;1.000 por mês, R$&nbsp;12.000 no ano — e tu
           continua sem saber o que está sendo feito.
+        </p>
+        <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
+      </section>
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────── IMERSÃO DEU VENDA (turma)
+//
+// Conteúdo tirado das páginas carreiranodigital.com/imersaolajeado e /imersaopoa (08/10/2026, pedido
+// do Nando). É o Deu Venda EM TURMA: 3 encontros de 3 horas seguidos e um de resultado uns 20 dias
+// depois. Não tem implantação individual nem os 3 meses do Deu Venda.
+//
+// ⚠️ AS DATAS SAEM DA TURMA, nunca escritas aqui. No cadastro, `data_inicio` é o 1º encontro e
+// `data_fim` é o ENCONTRO DE RESULTADO (não o 3º encontro): os 3 encontros são dias seguidos a
+// partir do início (terça a quinta). Usar data_inicio→data_fim como período escreveria "20 de
+// outubro a 3 de novembro", como se fossem duas semanas de aula.
+const diaEMes = (iso: string) => datasDaTurma(iso, iso)
+
+function QuandoEOndeImersao({ turma }: { turma: TurmaResumo }) {
+  const horario = turma.turno
+    ? `${turma.turno.charAt(0).toUpperCase()}${turma.turno.slice(1)}${turma.horario ? `, das ${turma.horario}` : ''}`
+    : null
+  return (
+    <div className="destaque verde">
+      <div className="rot">Quando e onde</div>
+      <p className="corpo">
+        Encontros em <strong>{datasDaTurma(turma.data_inicio, maisDias(turma.data_inicio, 2))}</strong>, em {turma.cidade}.
+        {horario ? ` ${horario}.` : ''} Encontro de resultado em <strong>{diaEMes(turma.data_fim)}</strong>.
+        {turma.endereco ? ` ${turma.endereco}.` : ''}
+        {turma.endereco
+          ? ' Turma pequena, vagas limitadas. Os detalhes finais chegam por WhatsApp na confirmação.'
+          : ' Turma pequena, vagas limitadas. O endereço e os detalhes chegam por WhatsApp na confirmação.'}
+      </p>
+    </div>
+  )
+}
+
+function CorpoImersaoDV({ cliente, produtoNome, vista, parcela, parcelas, turma }: Props) {
+  return (
+    <>
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O que é</span></div>
+        <h2 className="disp">Em 3 encontros, o teu negócio com anúncio rodando e vídeo editado pela IA.</h2>
+        <p className="corpo">
+          Uma imersão presencial, em turma pequena. Tu grava no celular e a inteligência artificial edita. A gente
+          monta contigo a estratégia, as artes e a campanha, e uns 20 dias depois senta de novo pra olhar os números.
+        </p>
+        <div className="destaque azul">
+          <div className="rot">Não é aula pra assistir</div>
+          <p className="corpo">
+            Tu traz o teu notebook, o celular com o WhatsApp Business e o acesso ao Facebook e ao Instagram do teu
+            negócio, e a gente faz junto. Cada encontro termina com algo pronto no teu negócio.
+          </p>
+        </div>
+        <div className="destaque verde">
+          <div className="rot">A novidade</div>
+          <p className="corpo">
+            A parte em que quase todo negócio trava é o vídeo. Agora tu grava do teu jeito no celular, e a máquina deixa
+            pronto pra anunciar: corta as pausas, põe legenda no tempo da fala e as tuas cores e a tua marca.
+          </p>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>02</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">Como funciona</span></div>
+        <h2 className="disp">Três encontros. Um negócio anunciando.</h2>
+        <div className="passos">
+          <div className="passo"><div className="n">Encontro 1 · Estratégia</div><p className="corpo">O contexto do teu negócio, o teu mercado, a tua oferta e pra quem falar. É o que faz a IA trabalhar pro teu negócio, e não um texto genérico. Sai com a estratégia e os roteiros dos vídeos.</p></div>
+          <div className="passo"><div className="n">Encontro 2 · Arte, vídeo e campanha</div><p className="corpo">As artes, as imagens e os vídeos que tu gravou, editados pela IA. E a campanha no Facebook e no Instagram, montada direto pelo Claude, contigo do lado. Sai com os anúncios no ar.</p></div>
+          <div className="passo"><div className="n">Encontro 3 · Ajuste e atendimento</div><p className="corpo">Os primeiros contatos chegando, o ajuste da campanha com dado de verdade, o atendimento no WhatsApp e o site da tua empresa feito com a IA. Sai com a campanha ajustada, o atendimento organizado e o site no ar.</p></div>
+          <div className="passo"><div className="n">Encontro de resultado · uns 20 dias depois</div><p className="corpo">A turma volta com os números na mão: quantas pessoas chamaram, quanto custou cada conversa, o que vendeu. E o que fazer daqui pra frente.</p></div>
+        </div>
+        {turma && <QuandoEOndeImersao turma={turma} />}
+        <div className="duas">
+          <ul className="lista">
+            <li>Conduzida pelo Guto Wickert, idealizador da Carreira no Digital, 16 anos de empresa física antes do digital</li>
+            <li>O que tu faz na imersão é o que a escola usa todo dia no próprio negócio</li>
+          </ul>
+          <ul className="lista">
+            <li>Turma pequena, presencial, encontros de 3 horas</li>
+            <li>30 dias no grupo da turma, com o time da escola no WhatsApp</li>
+          </ul>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>03</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O investimento</span></div>
+        <h2 className="disp">O que custa.</h2>
+        <div className="preco">
+          <div className="topo" style={{ borderBottom: 0, paddingBottom: 0 }}>
+            <span>{produtoNome || 'Imersão Deu Venda'} · 3 encontros e o encontro de resultado</span>
+          </div>
+          <div className="preco-linha">
+            {vista && <div className="valor"><b>{vista}</b><span>À vista, no Pix</span></div>}
+            {parcela && parcelas && <div className="valor alt"><b>{parcela}</b><span>{parcelas}x no cartão de crédito</span></div>}
+          </div>
+          <p className="corpo"><strong>Por inscrição.</strong> Pagamento único, sem mensalidade.</p>
+          <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
+            <ul className="lista">
+              <li>A tua estratégia e o teu padrão de marca</li>
+              <li>A máquina de IA configurada no Claude, que é tua</li>
+              <li>A edição dos teus vídeos, instalada no teu computador</li>
+              <li>Artes, posts, roteiros e legendas no teu padrão</li>
+            </ul>
+            <ul className="lista">
+              <li>A campanha no Facebook e no Instagram, no ar desde o 2º encontro</li>
+              <li>O atendimento no WhatsApp Business organizado</li>
+              <li>O site da tua empresa no ar</li>
+              <li>O encontro de resultado e 30 dias no grupo da turma</li>
+            </ul>
+          </div>
+        </div>
+        <div className="destaque azul">
+          <div className="rot">Fora do valor</div>
+          <p className="corpo">
+            <strong>A verba dos anúncios.</strong> É tua e vai direto pra Meta. Quanto investir, a gente define contigo
+            no 1º encontro.
+          </p>
+        </div>
+        <p className="corpo" style={{ fontSize: 13.5 }}>
+          Pra levar: notebook, celular com o WhatsApp Business e o acesso à página do Facebook e ao Instagram do teu
+          negócio. A gente te manda o passo a passo antes.
         </p>
         <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
       </section>

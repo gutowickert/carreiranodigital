@@ -159,7 +159,7 @@ export async function GET(req: Request) {
         // cada produto leva o SEU parcelamento: a tela troca junto quando o produto muda
         parcelas: parcelasDoProduto(p.nome),
         preco_parcelado: parcelaDoProduto(p.nome, p.preco_venda),
-        turmas: (turmasPorProduto[p.id] || []).map(t => ({ ...t, rotulo: rotuloDaTurma(t) })),
+        turmas: (turmasPorProduto[p.id] || []).map(t => ({ ...t, rotulo: rotuloDaTurma(t, p.nome) })),
       })),
       produto_sugerido: produto && temProposta(produto.nome) ? produto.id : (ofertaveis.length === 1 ? ofertaveis[0].id : null),
       // ⚠️ o produto da turma do lead pode ser o curso que ele JÁ FEZ: a tela avisa quando for outro

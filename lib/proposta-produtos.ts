@@ -22,7 +22,9 @@
 // PRA INCLUIR UM PRODUTO AQUI: primeiro escreve o corpo dele em app/proposta/[slug]/Corpos.tsx. A
 // lista não é o que faz a proposta existir; é só o que impede de oferecer uma que não existe.
 
-const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais']
+// A Imersão Deu Venda (turma, 08/10/2026) casa com 'deu venda' também: por isso, nas listas abaixo que
+// escolhem UM produto (resumo, parcelas, corpo), a chave dela vem ANTES da do Deu Venda individual.
+const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais', 'imersao deu venda']
 
 const semAcento = (s: string) =>
   (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
@@ -44,6 +46,23 @@ export function temProposta(nomeDoProduto: string | null | undefined): boolean {
 // sem elas a IA inventa uma resposta plausível e o cliente ouve uma coisa do vendedor, outra da
 // proposta e uma terceira do site. Com elas, é tudo a mesma escola falando.
 const RESUMOS: { chave: string; texto: string }[] = [
+  {
+    // ANTES do 'deu venda': o nome dela contém o do individual
+    chave: 'imersao deu venda',
+    texto: `É uma IMERSÃO PRESENCIAL EM TURMA PEQUENA, não a implantação individual do Deu Venda. São 3 encontros de 3 horas seguidos (terça a quinta) e, uns 20 dias depois, um encontro de resultado. Tirado da página carreiranodigital.com/imersaolajeado e /imersaopoa (08/10/2026).
+- Não é aula pra assistir: a pessoa traz o notebook, o celular com o WhatsApp Business e o acesso ao Facebook e ao Instagram do negócio, e a escola faz junto. Cada encontro termina com algo pronto no negócio dela.
+- A novidade: ela grava o vídeo do jeito dela no celular e a IA edita (corta as pausas, põe legenda no tempo da fala, as cores e a marca do negócio). É a parte em que quase todo negócio trava.
+- Encontro 1 · Estratégia: o contexto do negócio, o mercado, a oferta e pra quem falar. Sai com a estratégia e os roteiros dos vídeos.
+- Encontro 2 · Arte, vídeo e campanha: artes, imagens e os vídeos que ela gravou editados pela IA, e a campanha no Facebook e no Instagram montada direto pelo Claude, com ela do lado. Sai com os anúncios no ar.
+- Encontro 3 · Ajuste e atendimento: os primeiros contatos chegando, a campanha ajustada com dado de verdade, o atendimento no WhatsApp e o site da empresa feito com a IA. Sai com a campanha ajustada, o atendimento organizado e o site no ar.
+- Encontro de resultado (uns 20 dias depois): a turma volta com os números na mão (quantas pessoas chamaram, quanto custou cada conversa, o que vendeu) e decide o próximo passo.
+- O que ela leva: a estratégia; o padrão de marca (cores, letras, estilo) guardado na máquina; a máquina de IA configurada dentro do Claude com o negócio dela, que É DELA e continua com ela; a edição dos vídeos instalada e testada no computador dela; artes e posts no padrão dela; o site da empresa no ar; roteiros e legendas; a campanha no Facebook e no Instagram no ar desde o 2º encontro; o atendimento no WhatsApp Business com respostas prontas; o encontro de resultado; 30 dias no grupo da turma no WhatsApp com o time da escola.
+- Quem conduz: Guto Wickert, 16 anos de empresa física antes do digital (vendeu uma, quebrou outra; olha o negócio pelo caixa, não pelo like), idealizador da Carreira no Digital. A escola formou mais de 500 alunos no primeiro ano, testou mais de 1.000 anúncios, investiu R$ 1,5 mi em anúncio nos próprios negócios e fez mais de 15 mil vendas com anúncio nos últimos 3 anos. O que se faz na imersão é o que a escola usa todo dia no próprio negócio (atendimento no WhatsApp, edição de vídeo, conteúdo e campanhas com IA).
+- Turmas em Lajeado (sede na Rua Alberto Torres, 526, Centro) e Porto Alegre (Av. Carlos Gomes, 1340, Sala 904, Três Figueiras). Turma pequena, vagas limitadas. A data, o turno e o endereço vêm da turma escolhida no orçamento: não escreva data nenhuma.
+- A verba dos anúncios é da pessoa e vai direto pra Meta; quanto investir se define junto no 1º encontro.
+- O valor é POR INSCRIÇÃO, pagamento único. Ex-aluno da escola tem condição especial.
+- NÃO prometa: acompanhamento mensal de 3 meses, encontros individuais, especialista montando sozinho no negócio, nem volume de vendas. Isso é o Deu Venda individual, outro produto.`,
+  },
   {
     chave: 'anuncios para negocios locais',
     texto: `É um TREINAMENTO PRESENCIAL de 3 dias seguidos, em turma, sobre anúncios no Meta Ads. Não é implantação e não é acompanhamento mensal.
@@ -108,7 +127,11 @@ export function exigeTurma(nomeDoProduto: string | null | undefined): boolean {
 // A CONTA DO CARTÃO é a mesma nos dois: à vista + R$ 200, dividido pelas parcelas do produto.
 //   Deu Venda  2.797 + 200 = 2.997 → 10x de 299,70
 //   ANL          797 + 200 =   997 →  6x de 166,17
-const PARCELAS: { chave: string; vezes: number }[] = [
+// A IMERSÃO DEU VENDA (08/10/2026) NÃO TEM O ACRÉSCIMO: o site anuncia R$ 1.497 ou 6x de R$ 249,50
+// (1.497 ÷ 6, sem os R$ 200). A proposta tem que bater com a página que o cliente já viu.
+// Vem antes do 'deu venda', porque o nome dela contém o do individual.
+const PARCELAS: { chave: string; vezes: number; acrescimo?: number }[] = [
+  { chave: 'imersao deu venda', vezes: 6, acrescimo: 0 },
   { chave: 'deu venda', vezes: 10 },
   { chave: 'anuncios para negocios locais', vezes: 6 },
 ]
@@ -124,5 +147,7 @@ export function parcelasDoProduto(nomeDoProduto: string | null | undefined): num
 export function parcelaDoProduto(nomeDoProduto: string | null | undefined, precoVista: number | null): number | null {
   if (precoVista == null) return null
   const vezes = parcelasDoProduto(nomeDoProduto)
-  return Math.round(((Number(precoVista) + ACRESCIMO_CARTAO) / vezes) * 100) / 100
+  const n = semAcento(nomeDoProduto || '')
+  const acrescimo = PARCELAS.find(p => n.includes(p.chave))?.acrescimo ?? ACRESCIMO_CARTAO
+  return Math.round(((Number(precoVista) + acrescimo) / vezes) * 100) / 100
 }

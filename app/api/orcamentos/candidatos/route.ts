@@ -47,7 +47,7 @@ async function produtosOfertaveis(org: string) {
     id: p.id, nome: p.nome, preco_venda: p.preco_venda,
     exige_turma: exigeTurma(p.nome),
     turmas: exigeTurma(p.nome)
-      ? (await turmasDoProduto(org, p.id)).map(t => ({ ...t, rotulo: rotuloDaTurma(t) }))
+      ? (await turmasDoProduto(org, p.id)).map(t => ({ ...t, rotulo: rotuloDaTurma(t, p.nome) }))
       : [],
   })))
 }

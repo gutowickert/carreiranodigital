@@ -237,7 +237,8 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       <section className="folha">
         <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O aceite</span></div>
         <h2 className="disp">Fechado?</h2>
-        <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato pra marcar a data.</p>
+        {/* com turma escolhida a data já está na proposta: "pra marcar a data" fazia parecer que ainda não tinha (08/10/2026) */}
+        <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato {turma ? 'pra confirmar a tua vaga' : 'pra marcar a data'}.</p>
         <p className="corpo" style={{ fontSize: 13.5 }}>
           <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
         </p>
