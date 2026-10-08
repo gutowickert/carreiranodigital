@@ -2,6 +2,7 @@ import { randomBytes } from 'crypto'
 import Anthropic from '@anthropic-ai/sdk'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { lerTudo } from '@/lib/ler-tudo'
 
 // AS REUNIÕES POR VÍDEO (vieram da JamRock pra escola em 08/10/2026; lá nasceram em 29/09). Várias pessoas na mesma sala, sala de espera,
 // cada um grava o próprio microfone, sugestões ao vivo só pro anfitrião e resumo no fim.
@@ -127,11 +128,13 @@ export async function transcreverPedaco(r: any, pessoa: any, emMs: number, buf: 
   return linhas.length
 }
 
-// as falas transcritas + o que foi escrito no chat (marcado "(chat)"), na ordem em que aconteceu
+// as falas transcritas + o que foi escrito no chat (marcado "(chat)"), na ordem em que aconteceu.
+// LIDAS DE 1000 EM 1000 (08/10/2026): o banco entrega no máximo 1000 linhas e não avisa. A reunião com a
+// Valler (1h20) teve 1.480 falas e o resumo leu só as 1.000 primeiras: os últimos ~25 min ficaram de fora.
 export async function falasDaReuniao(r: any) {
-  const [{ data: f }, { data: m }] = await Promise.all([
-    sb.from('reuniao_falas').select('pessoa_id, nome, em, texto').eq('reuniao_id', r.id).order('em').range(0, 4999),
-    sb.from('reuniao_mensagens').select('pessoa_id, nome, criado_em, texto').eq('reuniao_id', r.id).order('criado_em').range(0, 1999),
+  const [f, m] = await Promise.all([
+    lerTudo<any>((de, ate) => sb.from('reuniao_falas').select('pessoa_id, nome, em, texto').eq('reuniao_id', r.id).order('em').order('id').range(de, ate)),
+    lerTudo<any>((de, ate) => sb.from('reuniao_mensagens').select('pessoa_id, nome, criado_em, texto').eq('reuniao_id', r.id).order('criado_em').order('id').range(de, ate)),
   ])
   const chat = (m || []).map(x => ({ pessoa_id: x.pessoa_id, nome: x.nome, em: x.criado_em, texto: x.texto, chat: true }))
   return [...(f || []), ...chat].sort((a: any, b: any) => +new Date(a.em) - +new Date(b.em)) as { pessoa_id: string | null; nome: string; em: string; texto: string; chat?: boolean }[]
@@ -139,8 +142,7 @@ export async function falasDaReuniao(r: any) {
 
 // O CHAT (ideia do Rick, 29/09): todos na reunião escrevem e veem
 export async function mensagensDaReuniao(r: any) {
-  const { data } = await sb.from('reuniao_mensagens').select('id, pessoa_id, nome, texto, criado_em').eq('reuniao_id', r.id).order('criado_em').range(0, 999)
-  return data || []
+  return lerTudo<any>((de, ate) => sb.from('reuniao_mensagens').select('id, pessoa_id, nome, texto, criado_em').eq('reuniao_id', r.id).order('criado_em').order('id').range(de, ate))
 }
 export async function novaMensagem(r: any, pessoa: any, texto: string) {
   const { data, error } = await sb.from('reuniao_mensagens').insert({ org_id: r.org_id, reuniao_id: r.id, pessoa_id: pessoa.id, nome: pessoa.nome, texto: texto.slice(0, 2000) }).select('id, pessoa_id, nome, texto, criado_em').single()
@@ -177,11 +179,13 @@ async function perguntarIA(system: string | Anthropic.TextBlockParam[], user: st
   throw ultimo
 }
 
-// SUGESTÕES AO VIVO (só o anfitrião vê). Recalcula quando chegou fala nova, no máximo a cada 15s;
+// SUGESTÕES AO VIVO (só o anfitrião vê). Recalcula quando chegou fala nova, no máximo a cada 60s;
 // senão devolve a última. A pauta nasce do contexto (a carta/proposta) e vai sendo marcada.
+// 60s e não 15s (08/10/2026): na reunião com a Valler (1h20) as sugestões a cada ~20s acabaram com o
+// crédito da IA da escola no meio da reunião. A tela continua perguntando a cada 20s (sai do cache).
 export async function sugestoesAoVivo(r: any) {
   const falas = await falasDaReuniao(r)
-  const recente = r.sugestoes_em && +new Date(r.sugestoes_em) > Date.now() - 15000
+  const recente = r.sugestoes_em && +new Date(r.sugestoes_em) > Date.now() - 60000
   if (r.sugestoes && (falas.length === r.sugestoes_falas || recente)) return { ...r.sugestoes, falas: falas.length, atualizado_em: r.sugestoes_em }
   if (!process.env.ANTHROPIC_API_KEY) return { erro: 'sem chave da IA', falas: falas.length }
 
@@ -249,15 +253,19 @@ Responda SÓ com JSON:
     const resumo = { ...(ia || {}), fala, duracao_seg: inicio && fim ? Math.round((fim - inicio) / 1000) : null, participantes: (pessoas || []).map(p => ({ nome: p.nome, papel: p.papel })), falas: falas.length, gerado_em: new Date().toISOString() }
     // o resumo sempre fica salvo; o status só vira 'resumida' se a reunião continua encerrada —
     // se o anfitrião REABRIU nesse meio-tempo, ela segue aberta (e ganha um resumo novo no próximo fim)
-    await sb.from('reunioes').update({ resumo }).eq('id', r.id)
-    await sb.from('reunioes').update({ status: 'resumida' }).eq('id', r.id).eq('status', 'encerrada')
+    // o resumo deu certo: apaga o erro de uma tentativa anterior (08/10/2026: o "Refazer" gerava o resumo,
+    // mas a tela seguia mostrando o erro de crédito da 1ª tentativa, porque o status ficava 'erro')
+    await sb.from('reunioes').update({ resumo, erro: null }).eq('id', r.id)
+    await sb.from('reunioes').update({ status: 'resumida' }).eq('id', r.id).in('status', ['encerrada', 'erro'])
     // no histórico do lead, se a reunião for de um lead
     if (r.lead_id) {
       await sb.from('lead_andamentos').insert({ org_id: r.org_id, lead_id: r.lead_id, vendedor_id: r.criado_por, tipo: 'reuniao', observacao: `🎥 Reunião "${r.titulo}" com ${(pessoas || []).length} pessoas.${ia?.resumo ? ' ' + ia.resumo : ''}` })
     }
     return { ok: true, falas: falas.length }
   } catch (e: any) {
-    await sb.from('reunioes').update({ status: 'erro', erro: e?.message || 'falha ao resumir' }).eq('id', r.id).eq('status', 'encerrada')
+    // o erro do crédito vinha cru (o JSON inteiro da Anthropic): diz em português o que fazer
+    const msg = /credit balance|billing/i.test(e?.message || '') ? 'Acabou o crédito da IA da escola (conta da Anthropic). Depois de pôr crédito,' : (e?.message || 'falha ao resumir')
+    await sb.from('reunioes').update({ status: 'erro', erro: msg }).eq('id', r.id).in('status', ['encerrada', 'erro'])
     return { ok: false, error: e?.message }
   }
 }
