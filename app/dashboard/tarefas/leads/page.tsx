@@ -30,6 +30,7 @@ const btnSecondary = { backgroundColor: 'var(--surface-2)', color: 'var(--text-2
 const TIPO_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
   // o cliente está com a proposta aberta na tela agora: é a tarefa mais urgente que existe no funil
   proposta_aberta: { label: 'Abriu a proposta — falar agora', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  proposta_aceita: { label: '✅ ACEITOU a proposta — dar seguimento', cor: 'var(--green)', bg: 'var(--green-bg)' },
   // cadência NOVA (D1–D13)
   ligar_1: { label: 'Ligar — 1ª tentativa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   ligar_2_audio: { label: 'Ligar — 2ª + áudio', cor: 'var(--amber)', bg: 'var(--amber-bg)' },

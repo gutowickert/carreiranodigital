@@ -300,6 +300,9 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [dispUnread, setDispUnread] = useState(0)
   // Balão vermelho da Agenda: o que é MEU e ainda não vi (regra em lib/agenda-balao.ts)
   const [agendaBalao, setAgendaBalao] = useState(0)
+  // PROPOSTAS (08/10/2026): os aceites sem seguimento (faixa verde no topo) e o balão do que é novo
+  const [aceites, setAceites] = useState<any[]>([])
+  const [propBalao, setPropBalao] = useState(0)
   const waPrevRef = useRef(-1)
 
   useEffect(() => {
@@ -410,6 +413,52 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     }
   }, [perfil])
 
+  // AS NOVIDADES DAS PROPOSTAS (08/10/2026, pedido do Nando: "hoje recebemos um push e já era").
+  // O aceite vira FAIXA VERDE no topo de todas as telas até alguém clicar em "Dei seguimento" (vale pra
+  // todos, fica no banco). Abriu / voltou / aceitou viram o balão do "Gerar orçamento" até a pessoa
+  // abrir a lista de novidades na tela de orçamentos (esse "já vi" é por aparelho: localStorage).
+  // Aceite novo também toca o bipe duas vezes e mostra o aviso do navegador.
+  const vePropostas = !!perfil && itemPermitido('/dashboard/orcamentos', perfil)
+  useEffect(() => {
+    if (!vePropostas) return
+    let ativo = true
+    async function checar() {
+      if (document.hidden) return
+      const j = await fetchAuth('/api/orcamentos/novidades').then(r => r.json()).catch(() => null)
+      if (!ativo || !j?.ok) return
+      setAceites(j.aceites || [])
+      let visto = 0, tocados: string[] = []
+      try { visto = Number(localStorage.getItem('propostas_visto_em') || 0); tocados = JSON.parse(localStorage.getItem('propostas_aceites_avisados') || '[]') } catch { /* sem localStorage */ }
+      setPropBalao((j.eventos || []).filter((e: any) => +new Date(e.em) > visto).length)
+      const novos = (j.aceites || []).filter((a: any) => !tocados.includes(a.id))
+      if (novos.length) {
+        bipe(); setTimeout(bipe, 350)
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try { new Notification('✅ Proposta aceita', { body: `${novos[0].cliente_nome || 'Um cliente'} aceitou a proposta. Dá seguimento.` }) } catch { /* ignore */ }
+        }
+        try { localStorage.setItem('propostas_aceites_avisados', JSON.stringify([...tocados, ...novos.map((a: any) => a.id)].slice(-200))) } catch { /* ignore */ }
+      }
+    }
+    const aoVoltar = () => { if (!document.hidden) checar() }
+    checar()
+    const t = setInterval(checar, 60000)
+    window.addEventListener('propostas:novidades', checar)
+    window.addEventListener('focus', aoVoltar)
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => {
+      ativo = false; clearInterval(t)
+      window.removeEventListener('propostas:novidades', checar)
+      window.removeEventListener('focus', aoVoltar)
+      document.removeEventListener('visibilitychange', aoVoltar)
+    }
+  }, [vePropostas])
+
+  async function deiSeguimento(id: string) {
+    setAceites(a => a.filter(x => x.id !== id))
+    await fetchAuth('/api/orcamentos/novidades', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => null)
+    window.dispatchEvent(new Event('propostas:novidades'))
+  }
+
   // Fecha menu ao trocar de página no mobile
   useEffect(() => { setMenuMobileAberto(false) }, [pathname])
 
@@ -462,7 +511,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const abaAtiva = (href: string) => href === '/dashboard' ? pathname === '/dashboard' : (pathname === href || pathname.startsWith(href + '/'))
   const naAba = abas.some(a => abaAtiva(a.href))
   // o balão da agenda aparece também na Minha semana: é lá que o que é novo pra ti fica listado
-  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : 0
+  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : href === '/dashboard/orcamentos' ? propBalao : 0
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
@@ -547,7 +596,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       {reais.map(m => {
                         const Icone = ICONES[m.href] || Circle
                         const ativo = pathname === m.href
-                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? agendaBalao : 0
+                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? agendaBalao : m.href === '/dashboard/orcamentos' ? propBalao : 0
                         return (
                           <Link key={m.href} href={m.href} className={'app-tile' + (ativo ? ' ativo' : '')}>
                             <span style={{ position: 'relative', lineHeight: 0 }}>
@@ -638,7 +687,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       letterSpacing: '0.1em',
                       marginTop: idx > 1 ? 4 : 0,
                     }}>
-                      <span>{grupo.titulo}</span>
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{grupo.titulo}
+                        {!abertos[grupo.titulo] && propBalao > 0 && grupo.itens.some(i => i.href === '/dashboard/orcamentos') && (
+                          <span title="Novidade nas propostas" style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--green)', display: 'inline-block' }} />
+                        )}
+                      </span>
                       <ChevronDown size={12} style={{ transform: abertos[grupo.titulo] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s ease' }} />
                     </button>
                   )}
@@ -679,6 +732,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                               </span>
                             )}
                             {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
+                            {/* propostas: verde, é cliente andando na direção da venda */}
+                            {m.href === '/dashboard/orcamentos' && propBalao > 0 && (
+                              <span title="Propostas abertas ou aceitas que você ainda não viu" style={{ background: 'var(--green)', color: '#fff', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
+                                {propBalao > 99 ? '99+' : propBalao}
+                              </span>
+                            )}
                             {(m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') && agendaBalao > 0 && (
                               <span title="Coisas tuas na agenda que você ainda não viu" style={{ background: 'var(--red)', color: '#fff', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center' }}>
                                 {agendaBalao > 99 ? '99+' : agendaBalao}
@@ -717,6 +776,25 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
 
       {/* .conteudo: as regras do globals.css que vestem as telas antigas valem só aqui dentro */}
       <div className={'conteudo' + (isMobile ? ' app-miolo' : '')} style={{ flex: 1, minWidth: 0, position: 'relative', zIndex: 1 }}>
+        {aceites.length > 0 && (
+          <div style={{ position: 'sticky', top: 0, zIndex: 60, display: 'flex', flexDirection: 'column', gap: 6, padding: isMobile ? '8px 10px 0' : '10px 16px 0' }}>
+            {aceites.map(a => (
+              <div key={a.id} role="alert" style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', padding: '12px 14px', borderRadius: 14,
+                background: 'linear-gradient(135deg, #16a34a, #059669)', color: '#fff', boxShadow: '0 10px 30px -10px rgba(5,150,105,.7)', border: '1px solid rgba(255,255,255,.25)' }}>
+                <span style={{ fontSize: 22, lineHeight: 1 }}>🎉</span>
+                <div style={{ flex: 1, minWidth: 200 }}>
+                  <div style={{ fontWeight: 800, fontSize: 15 }}>{a.cliente_nome || a.aceito_nome || 'Um cliente'} ACEITOU a proposta</div>
+                  <div style={{ fontSize: 12.5, opacity: .92 }}>
+                    {a.produto_nome || 'Proposta'} · {new Date(a.aceito_em).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                    {a.aceito_nome && a.aceito_nome !== a.cliente_nome ? ` · confirmou como "${a.aceito_nome}"` : ''} · dá seguimento agora
+                  </div>
+                </div>
+                {a.lead_id && <Link href={`/dashboard/crm?lead=${a.lead_id}`} style={{ background: '#fff', color: '#065f46', fontWeight: 800, fontSize: 13, padding: '8px 12px', borderRadius: 10, textDecoration: 'none' }}>Abrir o cartão</Link>}
+                <button onClick={() => deiSeguimento(a.id)} style={{ background: 'rgba(0,0,0,.18)', color: '#fff', border: '1px solid rgba(255,255,255,.45)', fontWeight: 700, fontSize: 13, padding: '8px 12px', borderRadius: 10, cursor: 'pointer', font: 'inherit' }}>Dei seguimento</button>
+              </div>
+            ))}
+          </div>
+        )}
         {children}
       </div>
       {paletaAberta && (

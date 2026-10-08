@@ -77,6 +77,54 @@ function Chip({ tom, children }: { tom: 'marca' | 'bom' | 'info' | 'atencao' | '
   )
 }
 
+// AS NOVIDADES DAS PROPOSTAS (08/10/2026, pedido do Nando): quem abriu, quem voltou a abrir e quem
+// aceitou nos últimos 7 dias. Abrir esta tela zera o balão do menu neste aparelho; a faixa verde do
+// aceite (components/Layout.tsx) só some com "Dei seguimento", que vale pra todos.
+const ROTULO_EVENTO: Record<string, { txt: string; ic: string; cor: string }> = {
+  aceitou: { txt: 'ACEITOU a proposta', ic: '✅', cor: 'var(--green)' },
+  voltou: { txt: 'voltou a abrir a proposta', ic: '🔁', cor: 'var(--accent)' },
+  abriu: { txt: 'abriu a proposta', ic: '👀', cor: 'var(--blue)' },
+}
+function NovidadesPropostas({ abrirCard }: { abrirCard: (id: string) => void }) {
+  const [ev, setEv] = useState<any[] | null>(null)
+  const [visto, setVisto] = useState(0)
+  useEffect(() => {
+    let antes = 0
+    try { antes = Number(localStorage.getItem('propostas_visto_em') || 0); localStorage.setItem('propostas_visto_em', String(Date.now())) } catch { /* sem localStorage */ }
+    setVisto(antes)
+    window.dispatchEvent(new Event('propostas:novidades'))
+    fetchAuth('/api/orcamentos/novidades').then(r => r.json()).then(j => setEv(j?.ok ? j.eventos || [] : [])).catch(() => setEv([]))
+  }, [])
+  if (!ev || !ev.length) return null
+  const quando = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  return (
+    <div style={{ ...card, marginTop: 14, padding: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <b style={{ fontSize: 14, color: 'var(--text)' }}>Novidades das propostas</b>
+        <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>últimos 7 dias · abrir esta tela zera o balão do menu</span>
+      </div>
+      <div style={{ maxHeight: 320, overflowY: 'auto' }}>
+        {ev.slice(0, 40).map((e, i) => {
+          const r = ROTULO_EVENTO[e.tipo] || ROTULO_EVENTO.abriu
+          const novo = +new Date(e.em) > visto
+          return (
+            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 14px', borderTop: i ? '1px solid var(--border)' : 0, background: e.tipo === 'aceitou' ? 'var(--green-bg)' : 'transparent' }}>
+              <span style={{ fontSize: 16 }}>{r.ic}</span>
+              <div style={{ flex: 1, minWidth: 0, fontSize: 13.5, color: 'var(--text-2)' }}>
+                <b style={{ color: 'var(--text)' }}>{e.cliente || 'Cliente'}</b> <span style={{ color: r.cor, fontWeight: e.tipo === 'aceitou' ? 800 : 600 }}>{r.txt}</span>
+                <span style={{ color: 'var(--text-faint)' }}> · {e.produto || '—'} · {e.detalhe}</span>
+              </div>
+              {novo && <span style={{ fontSize: 10.5, fontWeight: 800, color: '#fff', background: 'var(--green)', borderRadius: 99, padding: '2px 7px' }}>NOVO</span>}
+              <span style={{ fontSize: 12, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>{quando(e.em)}</span>
+              {e.lead_id && <button onClick={() => abrirCard(e.lead_id)} style={{ background: 'var(--surface-2)', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '5px 10px', fontSize: 12.5, cursor: 'pointer', font: 'inherit' }}>Cartão</button>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 export default function GerarOrcamento() {
   const [busca, setBusca] = useState('')
   const [itens, setItens] = useState<any[]>([])
@@ -280,6 +328,8 @@ export default function GerarOrcamento() {
       </div>
 
       {msg && <div style={{ ...card, marginTop: 14, color: 'var(--amber)', fontSize: 13.5 }}>{msg}</div>}
+
+      {!leadId && <NovidadesPropostas abrirCard={setCardAberto} />}
 
       {/* o card do lead por cima da tela: confere, fecha, e segue de onde parou */}
       {cardAberto && <LeadCardModal leadId={cardAberto} onClose={() => setCardAberto(null)} />}

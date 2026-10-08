@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { enviarPush } from '@/lib/push'
 
 export const maxDuration = 30
 
@@ -51,6 +52,31 @@ export async function POST(req: Request) {
         observacao: `✅ Proposta ACEITA pelo cliente — "${nome}" confirmou a leitura e o aceite pelo link.`,
       })
     } catch { /* o histórico não pode derrubar o aceite do cliente */ }
+
+    // O AVISO DO ACEITE (08/10/2026). Antes só a ABERTURA avisava: o Rodrigo Zart abriu às 15h03,
+    // aceitou às 15h09, e o push que o time viu foi o de "abriu". Agora o aceite manda push próprio,
+    // cria a tarefa de seguimento e aparece na faixa verde do topo do sistema até alguém clicar em
+    // "Dei seguimento" (app/api/orcamentos/novidades).
+    try {
+      const { data: lead } = orc.lead_id
+        ? await sb.from('leads').select('id, nome, vendedor_id').eq('id', orc.lead_id).maybeSingle()
+        : { data: null as any }
+      const { data: o2 } = await sb.from('orcamentos').select('produto_nome, cliente_nome').eq('id', orc.id).maybeSingle()
+      const quem = lead?.nome || o2?.cliente_nome || nome
+      try {
+        await enviarPush(`✅ ${quem} ACEITOU a proposta`, `${o2?.produto_nome || 'Proposta'} · aceita agora pelo link. Dá seguimento enquanto está quente.`,
+          lead?.id ? `/dashboard/crm?lead=${lead.id}` : '/dashboard/orcamentos')
+      } catch { /* o push não pode derrubar o aceite */ }
+      if (lead?.id) {
+        await sb.from('tarefas_lead').insert({
+          org_id: orc.org_id, lead_id: lead.id, vendedor_id: lead.vendedor_id || null,
+          tipo: 'proposta_aceita',
+          titulo: `Dar seguimento — ${quem} ACEITOU a proposta`,
+          descricao: `${quem} aceitou a proposta (${o2?.produto_nome || 'proposta'}) pelo link, confirmando como "${nome}". Falar agora pra fechar o pagamento e os próximos passos.`,
+          data_vencimento: agora,
+        })
+      }
+    } catch { /* idem */ }
 
     return NextResponse.json({ ok: true, aceito_em: agora, aceito_nome: nome })
   } catch {
