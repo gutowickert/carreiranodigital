@@ -4,14 +4,18 @@ import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
-// Auth opcional: se INTELIGENCIA_API_KEY estiver setada na Vercel, exige o token
-// (Authorization: Bearer <key> OU x-api-key: <key>). Sem a env, fica aberto.
-function autorizado(req: NextRequest): boolean {
+// QUEM PODE (08/10): quem está logado no sistema (a tela manda o login com fetchAuth) OU o sistema de
+// conteúdo de fora, com a chave INTELIGENCIA_API_KEY (Authorization: Bearer <key> OU x-api-key: <key>).
+// Antes, sem a chave na Vercel ficava aberto a qualquer um; e com a chave, a própria tela levava 401.
+function chaveDoConteudo(req: NextRequest): boolean {
   const key = process.env.INTELIGENCIA_API_KEY
-  if (!key) return true
+  if (!key) return false
   const bearer = (req.headers.get('authorization') || '').replace(/^Bearer\s+/i, '').trim()
   const xkey = (req.headers.get('x-api-key') || '').trim()
   return bearer === key || xkey === key
+}
+async function autorizado(req: NextRequest): Promise<boolean> {
+  return chaveDoConteudo(req) || (await chamadaPermitida(req))
 }
 const naoAutorizado = () => NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
 
@@ -20,9 +24,8 @@ const naoAutorizado = () => NextResponse.json({ ok: false, error: 'não autoriza
 //  GET ?produto=&cidade=        -> devolve o dossiê cacheado daquele segmento
 //  POST { produto, cidade }     -> (re)gera o dossiê via IA e salva
 export async function GET(req: NextRequest) {
-  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
-    if (!autorizado(req)) return naoAutorizado()
+    if (!(await autorizado(req))) return naoAutorizado()
     const sp = req.nextUrl.searchParams
     const produto = sp.get('produto')
     if (!produto) {
@@ -39,9 +42,8 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
-    if (!autorizado(req)) return naoAutorizado()
+    if (!(await autorizado(req))) return naoAutorizado()
     const body = await req.json().catch(() => ({}))
     const produto: string = body.produto
     const cidade: string = body.cidade || ''
