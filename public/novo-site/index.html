@@ -1,0 +1,502 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex, nofollow">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carreira no Digital</title>
+<meta name="description" content="Escola presencial em Lajeado e Porto Alegre. A inteligência artificial trabalhando no teu negócio, montada contigo: Imersão Deu Venda, Deu Venda Individual e teunegócio OS.">
+<meta name="theme-color" content="#0e0719">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap">
+<style>
+:root{
+  --fundo:#0e0719; --fundo2:#160b28; --cartao:rgba(255,255,255,.06); --borda:rgba(255,255,255,.12);
+  --tinta:#f5f1fb; --suave:#bdb1d1; --fraco:#8d80a3;
+  --roxo:#7b2ae8; --magenta:#c026d3; --lilas:#c9aaff; --verde:#22c55e; --wa:#25d366;
+  --grad:linear-gradient(120deg,#7b2ae8,#c026d3);
+  --raio:22px; --gut:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--fundo);color:var(--tinta);font-family:Manrope,system-ui,sans-serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,video{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3{font-family:'Bricolage Grotesque',Manrope,sans-serif;font-weight:800;letter-spacing:-.02em;line-height:1.04;text-wrap:balance}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ct{max-width:1120px;margin:0 auto;padding:0 var(--gut)}
+section{padding:80px 0;position:relative}
+.olho{display:inline-block;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--lilas);margin-bottom:14px}
+h2{font-size:clamp(30px,5vw,48px);margin-bottom:14px}
+.lead{font-size:clamp(17px,2.3vw,20px);color:var(--suave);max-width:60ch}
+.lead b{color:var(--tinta)}
+.centro{text-align:center}.centro .lead{margin:0 auto}
+
+/* faixa de protótipo */
+.proto{background:#fde68a;color:#3b2a00;font-size:13px;font-weight:700;text-align:center;padding:8px var(--gut)}
+
+/* topo */
+.topo{position:sticky;top:0;z-index:40;background:rgba(14,7,25,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--borda)}
+.topo .ct{display:flex;align-items:center;gap:22px;min-height:62px}
+.topo .logo{height:30px;width:auto;flex:none}
+.menu{display:flex;gap:20px;flex:1;justify-content:center}
+.menu a{font-size:14px;font-weight:700;color:var(--suave);text-decoration:none;white-space:nowrap}
+.menu a:hover{color:var(--tinta)}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 24px;border-radius:999px;font-weight:800;font-size:16px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:focus-visible,.menu a:focus-visible{outline:3px solid var(--lilas);outline-offset:3px}
+.btn svg{width:22px;height:22px;flex:none}
+.btn-wa{background:var(--wa);color:#05301a;box-shadow:0 10px 30px rgba(37,211,102,.28)}
+.btn-roxo{background:var(--grad);color:#fff;box-shadow:0 10px 30px rgba(123,42,232,.35)}
+.btn-sec{background:rgba(255,255,255,.08);color:var(--tinta);border:1px solid var(--borda)}
+.topo .btn{min-height:40px;padding:0 16px;font-size:14px;flex:none}
+
+/* abertura */
+.abre{padding-top:56px;overflow:hidden}
+.luz{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.luz.a{width:440px;height:440px;background:#7b2ae8;top:-140px;left:-140px;opacity:.45}
+.luz.b{width:380px;height:380px;background:#c026d3;bottom:-160px;right:-90px;opacity:.3}
+.abre .ct{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;position:relative}
+.abre h1{font-size:clamp(38px,6.6vw,70px);margin-bottom:18px}
+.botoes{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 24px}
+.sedes-mini{display:flex;flex-wrap:wrap;gap:10px}
+.sedes-mini span{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--suave);background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:8px 14px}
+.sedes-mini svg{width:18px;height:18px;color:var(--lilas)}
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:460px;margin:0 auto;position:relative}
+.cel{position:relative;aspect-ratio:9/16;border-radius:30px;padding:8px;background:#05020b;border:1px solid var(--borda);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cel video,.cel img{width:100%;height:100%;object-fit:cover;border-radius:23px}
+.dupla .cel:last-child{transform:translateY(34px);box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 6px rgba(123,42,232,.14)}
+.rotulo{position:absolute;left:50%;transform:translateX(-50%);bottom:-14px;white-space:nowrap;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:6px 12px;background:rgba(22,11,40,.95);border:1px solid var(--borda)}
+.rotulo.ok{background:var(--verde);color:#05301a;border-color:var(--verde)}
+
+.foto-abre{position:relative;max-width:440px;margin:0 auto;width:100%}
+.foto-abre>img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:28px;border:1px solid var(--borda);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cartao-sede{position:absolute;left:-28px;bottom:28px;display:flex;align-items:center;gap:12px;background:rgba(22,11,40,.94);border:1px solid var(--borda);border-radius:18px;padding:10px 16px 10px 10px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.cartao-sede img{width:64px;height:48px;object-fit:cover;border-radius:10px}
+.cartao-sede b{display:block;font-size:16px}
+.cartao-sede span{font-size:13px;color:var(--suave)}
+@media (max-width:560px){.cartao-sede{left:10px;bottom:14px}}
+
+/* o que a escola faz */
+.faz-sec{background:var(--fundo2)}
+.faz{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:38px}
+.faz article{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden;display:flex;flex-direction:column}
+.faz .mid{aspect-ratio:4/5;background:#05020b;overflow:hidden}
+.faz .mid video,.faz .mid img{width:100%;height:100%;object-fit:cover}
+.faz .mid img.topo-img{object-position:top}
+.faz .txt{padding:18px}
+.faz h3{font-size:21px;margin-bottom:6px}
+.faz p{color:var(--suave);font-size:15px;line-height:1.45}
+
+/* caminhos */
+.caminhos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;align-items:stretch}
+.cam{position:relative;background:var(--cartao);border:1px solid var(--borda);border-radius:26px;padding:26px;display:flex;flex-direction:column;gap:16px}
+.cam.dest{background:linear-gradient(170deg,rgba(123,42,232,.32),rgba(192,38,211,.12));border-color:rgba(201,170,255,.4)}
+.cam .tipo{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.1);color:var(--lilas)}
+.cam.dest .tipo{background:var(--verde);color:#05301a}
+.cam h3{font-size:30px}
+.cam .pra{color:var(--suave);font-size:16px}
+.cam dl{display:grid;gap:12px;border-top:1px solid var(--borda);padding-top:16px}
+.cam dt{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fraco)}
+.cam dd{font-size:15px;color:var(--tinta);margin-top:2px}
+.cam .btn{margin-top:auto}
+.cam .prox{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:700;color:#b8f5cf}
+.cam .prox svg{width:16px;height:16px;flex:none}
+.degrau{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--fraco);letter-spacing:.06em;text-transform:uppercase}
+.degrau i{display:flex;gap:4px}
+.degrau i b{width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,.14)}
+.degrau i b.on{background:var(--lilas)}
+.duvida{margin-top:26px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;background:var(--fundo2);border:1px dashed rgba(201,170,255,.4);border-radius:22px;padding:20px 24px}
+.duvida p{font-size:17px;color:var(--suave)}
+.duvida p b{color:var(--tinta)}
+
+/* sedes */
+.sedes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}
+.sede{border-radius:26px;overflow:hidden;border:1px solid var(--borda);background:var(--cartao)}
+.sede img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.sede div{padding:18px 20px}
+.sede b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:24px}
+.sede span{color:var(--suave);font-size:15px}
+
+/* resultados */
+.res-sec{background:var(--fundo2)}
+.res{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px;align-items:center;margin-top:36px}
+.depo{max-width:320px;margin:0 auto;width:100%}
+.depo .cel{padding:7px}
+.depo video{background:#000}
+.depo figcaption{margin-top:14px;text-align:center;font-weight:800;font-size:15px}
+.depo figcaption span{display:block;font-weight:600;font-size:13px;color:var(--fraco)}
+.casos{display:grid;gap:14px}
+.caso{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--fundo);border:1px solid var(--borda);border-radius:20px;padding:18px 20px}
+.caso .de-para{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(22px,3.4vw,30px);line-height:1;white-space:nowrap}
+.caso .de-para small{display:block;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;color:var(--fraco);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.caso p{color:var(--suave);font-size:15px}
+.numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.numeros div{background:var(--fundo);border:1px solid var(--borda);border-radius:16px;padding:14px}
+.numeros b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(22px,3.2vw,30px);line-height:1.05;font-variant-numeric:tabular-nums}
+.numeros span{font-size:13px;color:var(--suave);font-weight:600}
+
+/* quem */
+.quem{display:grid;grid-template-columns:.75fr 1.25fr;gap:44px;align-items:center;margin-top:10px}
+.quem figure{border-radius:26px;overflow:hidden;border:1px solid var(--borda);max-width:400px}
+.quem figure img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.quem p{color:var(--suave);max-width:58ch}
+.quem p b{color:var(--tinta)}
+.quem p+p{margin-top:12px}
+.socios{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.socio{display:flex;gap:14px;align-items:center;background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:14px}
+.socio i{flex:none;width:48px;height:48px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-style:normal;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px}
+.socio b{display:block;font-size:16px}
+.socio span{font-size:14px;color:var(--suave)}
+
+/* a escola roda assim */
+.roda{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.roda ul{list-style:none;display:grid;gap:10px;margin-top:22px}
+.roda li{display:flex;gap:12px;align-items:flex-start;color:var(--suave)}
+.roda li svg{flex:none;width:22px;height:22px;color:var(--verde);margin-top:2px}
+.roda li b{color:var(--tinta)}
+.tela{position:relative}
+.tela img{border-radius:18px;border:1px solid var(--borda);box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.tela .cel{position:absolute;width:38%;right:-12px;bottom:-30px;padding:6px;border-radius:24px}
+.tela .cel video{border-radius:18px}
+
+/* fim */
+.fim{text-align:center;overflow:hidden}
+.fim .botoes{justify-content:center}
+footer{border-top:1px solid var(--borda);padding:30px 0 110px;color:var(--fraco);font-size:13px}
+footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
+.fixo{position:fixed;left:0;right:0;bottom:0;z-index:45;padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(14,7,25,.96) 35%);display:none;gap:10px}
+.fixo .btn{flex:1;min-height:50px;font-size:15px;padding:0 14px}
+.aviso{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:60;background:#fde68a;color:#3b2a00;font-weight:700;font-size:14px;border-radius:14px;padding:12px 16px;max-width:calc(100% - 32px);box-shadow:0 14px 40px rgba(0,0,0,.4);transition:opacity .25s,transform .25s;pointer-events:none}
+.aviso.on{opacity:1;transform:translateX(-50%)}
+
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.rv.vis{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+
+@media (max-width:980px){
+  .menu{display:none}
+  .topo .ct{justify-content:space-between}
+  .faz{grid-template-columns:1fr 1fr}
+  .caminhos{grid-template-columns:1fr}
+  .numeros{grid-template-columns:1fr 1fr}
+}
+@media (max-width:860px){
+  .abre .ct,.res,.quem,.roda{grid-template-columns:1fr;gap:34px}
+  .tela{margin-right:12px}
+}
+@media (max-width:560px){
+  section{padding:60px 0}
+  .topo .btn{display:none}
+  .faz{grid-template-columns:1fr}
+  .faz .mid{aspect-ratio:1/1}
+  .sedes,.socios{grid-template-columns:1fr}
+  .caso{grid-template-columns:1fr;gap:8px}
+  .fixo{display:flex}
+  .dupla{gap:10px;max-width:340px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+}
+
+/* v3 (07/10): estrutura de posicionamento do site antigo */
+.mercado-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:44px;align-items:center}
+.stats{display:grid;gap:12px}
+.stats div{background:var(--cartao);border:1px solid var(--borda);border-radius:20px;padding:18px 20px;display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center}
+.stats b{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stats span{color:var(--suave);font-size:15px;line-height:1.45}
+.pilares{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
+.pilares div{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:22px}
+.pilares svg{width:28px;height:28px;color:var(--lilas);margin-bottom:12px}
+.pilares b{display:block;font-size:18px;margin-bottom:6px}
+.pilares span{color:var(--suave);font-size:15px;line-height:1.5}
+.par-ia{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;max-width:620px;margin:36px auto 10px}
+.par-ia figure{text-align:center}
+.par-ia .cel{width:min(240px,38vw);margin:0 auto;padding:7px;border-radius:28px}
+.par-ia .cel video{border-radius:22px}
+.par-ia figcaption{margin-top:12px;font-weight:800;font-size:15px}
+.par-ia .seta{width:46px;height:46px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center}
+.par-ia .seta svg{width:22px;height:22px}
+.quem-e{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:30px;max-width:900px;margin-left:auto;margin-right:auto}
+.quem-e span{font-size:15px;font-weight:700;background:var(--fundo);border:1px solid var(--borda);border-radius:999px;padding:10px 18px}
+.cam .itens{list-style:none;display:grid;gap:9px;border-top:1px solid var(--borda);padding-top:16px}
+.cam .itens li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.cam .itens svg{flex:none;width:18px;height:18px;color:var(--verde);margin-top:3px}
+.passos{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px;counter-reset:p}
+.passos li{counter-increment:p;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:20px}
+.passos li::before{content:counter(p);display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:var(--grad);font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;margin-bottom:14px}
+.passos b{display:block;font-size:17px;margin-bottom:6px}
+.passos span{color:var(--suave);font-size:14px;line-height:1.5}
+.vendas{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vendas div{background:var(--fundo2);border:1px solid var(--borda);border-radius:20px;padding:20px}
+.vendas small{display:block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--fraco);margin-bottom:8px}
+.vendas b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(30px,4vw,42px);line-height:1;font-variant-numeric:tabular-nums}
+.vendas span{color:#b8f5cf;font-weight:700;font-size:14px}
+.sede small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lilas);margin-bottom:4px}
+.compara{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:34px}
+.compara .col{border-radius:24px;padding:24px;border:1px solid var(--borda)}
+.compara .nao{background:var(--cartao)}
+.compara .sim{background:linear-gradient(160deg,rgba(123,42,232,.3),rgba(192,38,211,.12));border-color:rgba(201,170,255,.35)}
+.compara h3{font-size:24px;margin-bottom:14px}
+.compara ul{list-style:none;display:grid;gap:10px}
+.compara li{display:flex;gap:10px;align-items:flex-start;font-size:16px}
+.compara svg{flex:none;width:20px;height:20px;margin-top:3px}
+.compara .nao svg{color:#f87171}.compara .nao li{color:var(--suave)}
+.compara .sim svg{color:var(--verde)}
+.fim .olho{display:block}
+@media (max-width:980px){.pilares{grid-template-columns:1fr 1fr}.passos{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){.mercado-grid{grid-template-columns:1fr;gap:28px}}
+@media (max-width:560px){
+  .pilares,.passos,.vendas,.compara{grid-template-columns:1fr}
+  .stats div{grid-template-columns:1fr;gap:6px}
+  .par-ia{gap:10px}.par-ia .seta{width:36px;height:36px}
+}
+
+.btn{text-align:center;line-height:1.2}
+.cam .btn{white-space:nowrap;padding:0 18px}
+</style>
+</head>
+<body>
+
+<div class="proto">Protótipo pra apresentar ao time. Os botões de WhatsApp ainda não abrem conversa.</div>
+
+<header class="topo">
+  <div class="ct">
+    <a href="#inicio" aria-label="Carreira no Digital, início"><img class="logo" src="midia/logo.webp" alt="Carreira no Digital"></a>
+    <nav class="menu" aria-label="Menu">
+      <a href="#escola">A escola</a>
+      <a href="#ia">Vender com IA</a>
+      <a href="#caminhos">Caminhos</a>
+      <a href="#resultados">Resultados</a>
+      <a href="#unidades">Unidades</a>
+    </nav>
+    <a class="btn btn-wa" href="#" data-wa><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>WhatsApp</a>
+  </div>
+</header>
+
+<main id="inicio">
+
+<!-- 1 · abertura -->
+<section class="abre">
+  <div class="luz a"></div><div class="luz b"></div>
+  <div class="ct">
+    <div>
+      <span class="olho rv">Escola presencial · Lajeado e Porto Alegre</span>
+      <h1 class="rv d1">A escola presencial que coloca o teu negócio <span class="grad">vendendo no digital.</span></h1>
+      <p class="lead rv d2">Pra empresários, autônomos e prestadores de serviço que querem atrair mais clientes e vender mais. <b>Com quem sabe do teu lado, em turma pequena, e agora com a inteligência artificial trabalhando junto.</b></p>
+      <div class="botoes rv d3">
+        <a class="btn btn-roxo" href="#caminhos">Conhecer os caminhos</a>
+        <a class="btn btn-wa" href="#" data-wa><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Falar com a escola</a>
+      </div>
+      <div class="sedes-mini rv d3">
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>+500 alunos no primeiro ano</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg>Turmas pequenas</span>
+        <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5 6-6Z"/><circle cx="15" cy="9" r="1.5"/></svg>Resultado durante o curso</span>
+      </div>
+    </div>
+    <div class="foto-abre rv d2">
+      <img src="midia/aula.jpg" alt="Aula prática na sede de Porto Alegre">
+      <div class="cartao-sede"><img src="midia/sede.jpg" alt="Sede da escola em Lajeado"><div><b>2 sedes</b><span>Lajeado e Porto Alegre</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · o mercado mudou -->
+<section class="mercado">
+  <div class="ct">
+    <div class="mercado-grid">
+      <div>
+        <span class="olho rv">O jeito de vender mudou</span>
+        <h2 class="rv d1">O teu cliente decide antes de sair de casa. <span class="grad">E agora a IA mudou quem consegue aparecer.</span></h2>
+        <p class="lead rv d2">Antes de comprar, as pessoas pesquisam no Instagram, no Google e no WhatsApp. Aparecer bem ali exigia agência, editor de vídeo e designer. <b>Hoje, o dono do negócio grava no celular e a inteligência artificial faz o resto.</b> Quem aprende a usar isso primeiro, vende mais.</p>
+      </div>
+      <div class="stats">
+        <div class="rv"><b>+90%</b><span>dos consumidores pesquisam online antes de comprar no comércio local</span></div>
+        <div class="rv d1"><b>R$ 8</b><span>um anúncio de oito reais já virou uma venda de R$ 4.600, com a campanha certa</span></div>
+        <div class="rv d2"><b>Minutos</b><span>o vídeo, a arte e o texto que levavam dias, a IA entrega enquanto tu toma um café</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · o que é a escola -->
+<section class="faz-sec" id="escola">
+  <div class="ct">
+    <span class="olho rv">O que é a Carreira no Digital</span>
+    <h2 class="rv d1">Não é curso online. <span class="grad">É implantação presencial dentro do teu negócio.</span></h2>
+    <p class="lead rv d2">Uma escola criada pra quem tem algo pra vender e quer usar o digital pra vender mais, aplicando no próprio negócio, com quem faz isso todo dia.</p>
+    <div class="pilares">
+      <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><b>Presencial de verdade</b><span>Tu não assiste sozinho em casa. Faz do lado de quem sabe, tira a dúvida na hora e sai de cada encontro com algo pronto.</span></div>
+      <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M8 3v4M16 3v4M3 10h18"/></svg><b>Turmas pequenas</b><span>Poucas vagas por turma, pra cada um montar no próprio negócio com atenção de perto.</span></div>
+      <div class="rv d2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><b>No teu negócio real</b><span>O teu público, a tua oferta, os teus anúncios. Nada de exercício genérico.</span></div>
+      <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 15c-1.5 1.5-2 5-2 5s3.5-.5 5-2M14 4c3-1 6-1 6-1s0 3-1 6l-6 6-5-5 6-6Z"/><circle cx="15" cy="9" r="1.5"/></svg><b>Resultado durante o curso</b><span>A campanha vai pro ar enquanto tu ainda está na escola. Muitos fecham as primeiras vendas ali.</span></div>
+      <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg><b>A IA trabalhando contigo</b><span>Tu sai com a tua máquina de IA montada, e ela é tua: tu continua usando depois.</span></div>
+      <div class="rv d2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>A gente usa o que ensina</b><span>A própria escola vende assim: anúncio, atendimento e números, todo dia.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · vender com IA (a frente nova) -->
+<section id="ia">
+  <div class="ct">
+    <span class="olho rv">A frente nova da escola</span>
+    <h2 class="rv d1">Vender usando a inteligência artificial. <span class="grad">Tu pede, ela faz.</span></h2>
+    <p class="lead rv d2">É isso que o Deu Venda monta no teu negócio: uma máquina de marketing com IA, que já conhece a tua estratégia e a tua marca. Tudo isso saiu de negócios daqui, nas nossas salas.</p>
+    <div class="par-ia rv">
+      <figure><div class="cel"><video data-src="midia/katebruto.mp4" poster="midia/katebruto.jpg" muted loop playsinline preload="none" aria-label="Vídeo gravado no celular por uma dona de ótica"></video></div><figcaption>Gravou no celular</figcaption></figure>
+      <div class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
+      <figure><div class="cel"><video data-src="midia/kateedit.mp4" poster="midia/kateedit.jpg" muted loop playsinline preload="none" aria-label="O mesmo vídeo editado pela IA"></video></div><figcaption>A IA editou</figcaption></figure>
+    </div>
+    <div class="faz">
+      <article class="rv"><div class="mid"><video data-src="midia/cris.mp4" poster="midia/cris.jpg" muted loop playsinline preload="none" aria-label="Anúncio de uma loja de embalagens editado pela IA"></video></div><div class="txt"><h3>Edita os teus vídeos</h3><p>Corta as pausas, põe legenda, a tua marca e as tuas cores.</p></div></article>
+      <article class="rv d1"><div class="mid"><img src="midia/p2.jpg" alt="Arte de anúncio feita pela IA" loading="lazy"></div><div class="txt"><h3>Faz as artes e o site</h3><p>Posts, anúncios e as páginas da tua empresa, no padrão da tua marca.</p></div></article>
+      <article class="rv d2"><div class="mid"><video data-src="midia/anuncio-ia.mp4" poster="midia/anuncio-ia.jpg" muted loop playsinline preload="none" aria-label="Anúncio em vídeo feito pela IA"></video></div><div class="txt"><h3>Monta a campanha</h3><p>Roteiro, vídeo e a campanha no Facebook e no Instagram, direto pelo Claude.</p></div></article>
+      <article class="rv d3"><div class="mid"><img class="topo-img" src="midia/p5.jpg" alt="Página de um negócio local com botão de WhatsApp" loading="lazy"></div><div class="txt"><h3>Organiza o atendimento</h3><p>Cada contato que chega no WhatsApp vira conversa de venda.</p></div></article>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · pra quem é -->
+<section class="faz-sec">
+  <div class="ct centro">
+    <span class="olho rv">Pra quem é</span>
+    <h2 class="rv d1">Se tu tem algo pra vender, <span class="grad">a gente te mostra como vender mais.</span></h2>
+    <div class="quem-e rv d2">
+      <span>Lojas e comércio local</span><span>Clínicas e consultórios</span><span>Restaurantes</span><span>Barbearias e salões</span><span>Óticas</span><span>Construção e reformas</span><span>Prestadores de serviço</span><span>Imobiliárias e corretores</span><span>Autônomos e MEIs</span><span>Profissionais liberais</span><span>Escolas e cursos</span><span>Quem vai abrir um negócio</span>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · os caminhos -->
+<section id="caminhos">
+  <div class="ct">
+    <div class="centro">
+      <span class="olho rv">O que a escola oferece</span>
+      <h2 class="rv d1">Três caminhos, <span class="grad">feitos pra negócio real.</span></h2>
+      <p class="lead rv d2">Da turma presencial ao acompanhamento um a um, até o negócio organizado no dia a dia com o sistema.</p>
+    </div>
+    <div class="caminhos">
+      <article class="cam dest rv">
+        <span class="tipo">Novo · em turma</span>
+        <h3>Imersão Deu Venda</h3>
+        <p class="pra">3 encontros presenciais, turma pequena, pra montar a tua máquina de IA e sair com a campanha no ar.</p>
+        <ul class="itens"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Estratégia e padrão da tua marca</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Vídeos e artes feitos com IA</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Campanha no ar e o site da empresa</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Encontro de resultado 20 dias depois</li></ul>
+        <div style="display:grid;gap:10px;margin-top:auto">
+          <a class="btn btn-wa" href="https://carreiranodigital.vercel.app/imersao/porto-alegre.html" target="_blank" rel="noopener">Imersão em Porto Alegre</a>
+          <a class="btn btn-sec" href="https://carreiranodigital.vercel.app/imersao/lajeado.html" target="_blank" rel="noopener">Imersão em Lajeado</a>
+        </div>
+      </article>
+      <article class="cam rv d1">
+        <span class="tipo">Implantação individual</span>
+        <h3>Deu Venda Individual</h3>
+        <p class="pra">Um a um com o especialista: a máquina montada só pro teu negócio, com acompanhamento até a estratégia acertar.</p>
+        <ul class="itens"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Presencial, um a um</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>A campanha no ar no mesmo dia</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Acompanhamento depois</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Lajeado e Porto Alegre</li></ul>
+        <a class="btn btn-wa" href="#" data-wa data-msg="Olá! Quero conversar sobre o Deu Venda Individual." style="margin-top:auto"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Falar com o especialista</a>
+      </article>
+      <article class="cam rv d2">
+        <span class="tipo">Sistema · todo mês</span>
+        <h3>teunegócio OS</h3>
+        <p class="pra">O sistema de vendas do teu negócio: nenhum contato perdido, e o resultado medido todo mês.</p>
+        <ul class="itens"><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Atendimento no WhatsApp com IA</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Funil de vendas e agenda</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Os números num painel</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Quanto cada real em anúncio voltou</li></ul>
+        <a class="btn btn-sec" href="#" data-wa data-msg="Olá! Quero conhecer o teunegócio OS." style="margin-top:auto"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="m10 9 5 3-5 3z"/></svg>Conhecer o sistema</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · como funciona -->
+<section class="faz-sec">
+  <div class="ct">
+    <span class="olho rv">Como funciona</span>
+    <h2 class="rv d1">Simples. Presencial. <span class="grad">Com resultado.</span></h2>
+    <ol class="passos">
+      <li class="rv"><b>Escolhe o caminho</b><span>Não sabe qual faz sentido agora? Fala com a gente, a gente te indica.</span></li>
+      <li class="rv d1"><b>Monta presencial</b><span>Com quem sabe do lado, no teu negócio real, com o teu notebook.</span></li>
+      <li class="rv d2"><b>Sai com tudo rodando</b><span>Campanha no ar, máquina de IA montada, atendimento organizado.</span></li>
+      <li class="rv d3"><b>Olha os números</b><span>Encontro de resultado e acompanhamento, pra ajustar com dado de verdade.</span></li>
+      <li class="rv d3"><b>Cresce no teu ritmo</b><span>Com o marketing nas tuas mãos, tu para de depender de terceiros.</span></li>
+    </ol>
+  </div>
+</section>
+
+<!-- 8 · resultados -->
+<section id="resultados">
+  <div class="ct">
+    <span class="olho rv">Negócios reais. Resultados reais.</span>
+    <h2 class="rv d1">Durante o próprio curso, <span class="grad">não meses depois.</span></h2>
+    <div class="res">
+      <figure class="depo rv">
+        <div class="cel"><video src="midia/depoimento.mp4" poster="midia/depoimento.jpg" controls playsinline preload="none" aria-label="Depoimento de uma dona de ótica"></video></div>
+        <figcaption>Dona de ótica, aluna da escola<span>toca pra ouvir</span></figcaption>
+      </figure>
+      <div class="vendas">
+        <div class="rv"><small>Loja de celular · investiu R$ 40</small><b>R$ 12 mil</b><span>em vendas</span></div>
+        <div class="rv d1"><small>Loja de pneus · investiu R$ 8,53</small><b>R$ 4.600</b><span>em vendas</span></div>
+        <div class="rv d2"><small>Loja de carros · 2º dia de campanha</small><b>R$ 65 mil</b><span>em vendas</span></div>
+        <div class="rv d3"><small>Empresa de brindes · 17 min de campanha</small><b>R$ 6.700</b><span>em vendas</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · unidades -->
+<section class="faz-sec" id="unidades">
+  <div class="ct">
+    <span class="olho rv">Nossas unidades</span>
+    <h2 class="rv d1">Presencial, <span class="grad">perto do teu negócio.</span></h2>
+    <div class="sedes">
+      <div class="sede rv"><img src="midia/sede.jpg" alt="Sede da escola em Lajeado" loading="lazy"><div><small>Unidade sede</small><b>Lajeado</b><span>Rua Alberto Torres, 526, Centro, Lajeado/RS</span></div></div>
+      <div class="sede rv d1"><img src="midia/sede-poa.jpg" alt="Sede da escola em Porto Alegre" loading="lazy"><div><small>Unidade</small><b>Porto Alegre</b><span>Av. Carlos Gomes, 1340, Sala 904, Três Figueiras, Porto Alegre/RS</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 10 · por que presencial -->
+<section>
+  <div class="ct">
+    <span class="olho rv">Por que presencial</span>
+    <h2 class="rv d1">Curso online te deixa sozinho. <span class="grad">Aqui tu monta com quem sabe do lado.</span></h2>
+    <div class="compara rv d2">
+      <div class="col nao"><h3>Curso online</h3><ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Tu assiste sozinho</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Trava e fica sem resposta</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Conteúdo genérico</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Termina com teoria</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>Continua dependendo de agência</li></ul></div>
+      <div class="col sim"><h3>Carreira no Digital</h3><ul><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Quem sabe do teu lado</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Dúvida respondida na hora</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Tudo no teu negócio real</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Termina com a campanha no ar</li><li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>A máquina de IA é tua</li></ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 11 · próximo passo -->
+<section class="fim faz-sec">
+  <div class="luz a" style="left:auto;right:-160px;top:-60px;opacity:.3"></div>
+  <div class="ct" style="position:relative">
+    <span class="olho rv">Próximo passo</span>
+    <h2 class="rv d1">O teu negócio já tem o que vender. <span class="grad">Agora é fazer ele aparecer.</span></h2>
+    <p class="lead rv d2" style="margin:0 auto">Chama a gente no WhatsApp: a gente entende o teu negócio e te mostra o caminho certo.</p>
+    <div class="botoes rv d3">
+      <a class="btn btn-wa" href="#" data-wa><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Falar com a escola</a>
+      <a class="btn btn-sec" href="#caminhos">Ver os caminhos</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="ct"><span>Carreira no Digital · Lajeado e Porto Alegre</span><span>Imersão Deu Venda · Deu Venda Individual · teunegócio OS</span></div></footer>
+<div class="fixo"><a class="btn btn-sec" href="#caminhos">Os caminhos</a><a class="btn btn-wa" href="#" data-wa><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>WhatsApp</a></div>
+<div class="aviso" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:.12});
+  [].forEach.call(document.querySelectorAll('.rv'),function(el){io.observe(el);});
+  var vo=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.getAttribute('src')){v.src=v.getAttribute('data-src');}v.play&&v.play().catch(function(){});}else{v.pause&&v.pause();}});},{threshold:.3});
+  [].forEach.call(document.querySelectorAll('video[data-src]'),function(v){vo.observe(v);});
+  // protótipo: os botões de WhatsApp só avisam (no site real vão pro /wa do CRM, com a origem marcada)
+  var av=document.querySelector('.aviso'),tm;
+  [].forEach.call(document.querySelectorAll('[data-wa]'),function(b){b.addEventListener('click',function(ev){ev.preventDefault();av.textContent='No site real, este botão abre o WhatsApp do comercial'+(b.getAttribute('data-msg')?': "'+b.getAttribute('data-msg')+'"':'.');av.classList.add('on');clearTimeout(tm);tm=setTimeout(function(){av.classList.remove('on');},3200);});});
+})();
+</script>
+</body>
+</html>
