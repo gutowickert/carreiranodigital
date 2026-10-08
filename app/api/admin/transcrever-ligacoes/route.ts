@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -7,6 +8,7 @@ export const maxDuration = 60
 // Roda no servidor (onde o API4COM_TOKEN já existe), então ninguém precisa copiar token.
 // Trigger: POST { groqKey, limite?, teste?, debug? }  — groqKey é a chave do Groq (gate simples).
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const body = await req.json().catch(() => ({}))
   const dgKey: string = body.dgKey || body.groqKey || ''
   const limite: number = body.teste ? 1 : (body.limite || 5)
@@ -75,6 +77,7 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true, processados: pendentes.length, transcritos: ok, falhas: falha, restam: Math.max(0, restam), debug: debug ? dbg : undefined })
 }
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   return NextResponse.json({ status: 'ok', endpoint: 'transcrever-ligacoes' })
 }

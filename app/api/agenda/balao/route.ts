@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { orgDaRequest } from '@/lib/org'
 import { meuPerfil } from '@/lib/quem-eu-vejo'
 import { balaoDe } from '@/lib/agenda-balao'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // O número do balão vermelho da Agenda, no menu. Leve de propósito: o menu chama isto em toda
 // página, a cada minuto — não pode carregar a hierarquia inteira nem as três listas completas
@@ -11,6 +12,7 @@ import { balaoDe } from '@/lib/agenda-balao'
 // O menu esconde o balão nesse caso.
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const auth = req.headers.get('authorization')
   const eu = await meuPerfil(auth)
   if (!eu) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

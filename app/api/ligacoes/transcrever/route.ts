@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { transcreverLigacao } from '@/lib/transcrever-ligacao'
 import { chamadaPorCodigo, retranscreverChamada } from '@/lib/chamadas'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
@@ -14,6 +15,7 @@ export const maxDuration = 120
 //   POST { id }        → ligação (tabela ligacoes)
 //   POST { codigo }    → chamada do sistema (tabela chamadas)
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Andamentos de um lead — pra abrir o "card" dentro do Atender sem sair da fila.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const leadId = new URL(req.url).searchParams.get('leadId')
   if (!leadId) return NextResponse.json({ ok: false, error: 'falta leadId' }, { status: 200 })
@@ -15,6 +17,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization') || ''
     const org = await orgDaRequest(auth)

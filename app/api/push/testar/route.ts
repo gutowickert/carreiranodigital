@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { enviarPushPara } from '@/lib/push'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // MANDA UM AVISO DE TESTE PRO PRÓPRIO APARELHO.
 //
@@ -14,6 +15,7 @@ import { enviarPushPara } from '@/lib/push'
 // Manda SÓ pro aparelho que pediu, pelo endereço dele. Um teste que avisa a empresa inteira vira
 // motivo pra ninguém testar.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const { endpoint } = await req.json().catch(() => ({} as any))
     if (!endpoint) return NextResponse.json({ ok: false, error: 'faltou o aparelho' }, { status: 200 })

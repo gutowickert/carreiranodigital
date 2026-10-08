@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -57,7 +58,7 @@ export default function Professores() {
   }
 
   async function carregarAcessos() {
-    const j = await fetch('/api/professores/acesso').then(r => r.json()).catch(() => null)
+    const j = await fetchAuth('/api/professores/acesso').then(r => r.json()).catch(() => null)
     if (j?.ok) setAcessos(new Set((j.emails || []).map((e: string) => e.toLowerCase())))
   }
 
@@ -72,7 +73,7 @@ export default function Professores() {
     e.preventDefault()
     if (!acessoPara) return
     setAcSalvando(true); setAcMsg('')
-    const j = await fetch('/api/professores/acesso', {
+    const j = await fetchAuth('/api/professores/acesso', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ professor_id: acessoPara.id, email: acEmail.trim(), senha: acSenha }),
     }).then(r => r.json()).catch(() => null)

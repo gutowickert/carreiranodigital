@@ -85,7 +85,7 @@ export default function AgenteInterno() {
     setAnexando(true); setAviso('transcrevendo…')
     try {
       const data = await lerBase64(f)
-      const j = await fetch('/api/agente/transcrever', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: data, mime: f.type }) }).then(r => r.json())
+      const j = await fetchAuth('/api/agente/transcrever', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ audio: data, mime: f.type }) }).then(r => r.json())
       if (j.ok) { setInput(i => (i ? i + ' ' : '') + j.texto); setAviso('') } else setAviso(`${j.error}`)
     } finally { setAnexando(false) }
   }

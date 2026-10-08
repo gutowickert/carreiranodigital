@@ -6,6 +6,7 @@ import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/entrega'
 import { hojeBR } from '@/lib/periodos'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
 // que está pendente COM O CLIENTE. GET lê, PATCH edita o cadastro, POST mexe nas
@@ -25,6 +26,7 @@ const num = (v: any) => {
 }
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
     // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.
@@ -72,6 +74,7 @@ export async function GET(req: Request) {
 }
 
 export async function PATCH(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
     // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.
@@ -170,6 +173,7 @@ export async function PATCH(req: Request) {
 
 // pendências com o cliente + anotação solta na ficha
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
     // (e gravava) como se fosse gente de dentro. A tela da ficha já manda o login.

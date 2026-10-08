@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Explorador de eventos captados: lista bruta de site_eventos com filtros.
 // ?de=&ate=&evento=&turma=&vid=&q=&limit=  — pra investigar caso a caso.
@@ -8,6 +9,7 @@ import { orgDaRequest } from '@/lib/org'
 function addDays(s: string, d: number) { const x = new Date(s + 'T12:00:00'); x.setDate(x.getDate() + d); return x.toISOString().split('T')[0] }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const sp = req.nextUrl.searchParams
     const de = (sp.get('de') || '').slice(0, 10)

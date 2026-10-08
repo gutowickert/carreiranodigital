@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Atalho de administração: liga no Z-API a opção "Notificar enviadas por mim",
 // pra que as mensagens enviadas PELO CELULAR cheguem no webhook (e apareçam no
@@ -7,7 +8,8 @@ const INSTANCE = process.env.ZAPI_INSTANCE_ID || ''
 const TOKEN = process.env.ZAPI_TOKEN || ''
 const CLIENT_TOKEN = process.env.ZAPI_CLIENT_TOKEN || ''
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   if (!INSTANCE || !TOKEN || !CLIENT_TOKEN) {
     return NextResponse.json({ ok: false, error: 'Faltam ZAPI_INSTANCE_ID/ZAPI_TOKEN/ZAPI_CLIENT_TOKEN' }, { status: 500 })
   }

@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 30
 
 // Resumo de custo de IA (a partir dos logs origem='ia-uso') — valida a base de custo do SaaS.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const d30 = new Date(Date.now() - 30 * 864e5).toISOString()
   // pagina os logs de uso dos últimos 30 dias

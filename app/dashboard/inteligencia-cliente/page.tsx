@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 
@@ -16,18 +17,18 @@ export default function InteligenciaCliente() {
   const [erro, setErro] = useState('')
   const [copiado, setCopiado] = useState(false)
 
-  useEffect(() => { fetch('/api/inteligencia-cliente').then(r => r.json()).then(j => { if (j.ok) setSegs(j.segmentos || []) }).finally(() => setCarregando(false)) }, [])
+  useEffect(() => { fetchAuth('/api/inteligencia-cliente').then(r => r.json()).then(j => { if (j.ok) setSegs(j.segmentos || []) }).finally(() => setCarregando(false)) }, [])
 
   async function abrir(s: Seg) {
     setSel(s); setDossie(null); setErro(''); setGeradoEm(null)
-    const j = await fetch(`/api/inteligencia-cliente?produto=${encodeURIComponent(s.produto)}&cidade=${encodeURIComponent(s.cidade)}`).then(r => r.json())
+    const j = await fetchAuth(`/api/inteligencia-cliente?produto=${encodeURIComponent(s.produto)}&cidade=${encodeURIComponent(s.cidade)}`).then(r => r.json())
     if (j.ok) { setDossie(j.dossie); setGeradoEm(j.gerado_em || null) }
   }
   async function gerar(s: Seg) {
     setGerando(true); setErro('')
     try {
-      const j = await fetch('/api/inteligencia-cliente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: s.produto, cidade: s.cidade }) }).then(r => r.json())
-      if (j.ok) { setDossie(j.dossie); setGeradoEm(j.gerado_em || null); fetch('/api/inteligencia-cliente').then(r => r.json()).then(x => { if (x.ok) setSegs(x.segmentos || []) }) }
+      const j = await fetchAuth('/api/inteligencia-cliente', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ produto: s.produto, cidade: s.cidade }) }).then(r => r.json())
+      if (j.ok) { setDossie(j.dossie); setGeradoEm(j.gerado_em || null); fetchAuth('/api/inteligencia-cliente').then(r => r.json()).then(x => { if (x.ok) setSegs(x.segmentos || []) }) }
       else setErro(j.error || 'falha ao gerar')
     } catch { setErro('falha ao gerar') } finally { setGerando(false) }
   }

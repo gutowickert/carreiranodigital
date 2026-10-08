@@ -6,11 +6,13 @@ import { getInsightsConta, comImposto } from '@/lib/meta-ads'
 import { impostoMetaPct } from '@/lib/imposto-meta'
 import { ROTEIROS, type Produto } from '@/lib/entrega'
 import { hojeBR, periodoAnterior } from '@/lib/periodos'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Tráfego de TODOS os clientes com conta de anúncio ligada, num período, lado a
 // lado com o período anterior de mesmo tamanho. É o "como estão as campanhas de
 // todo mundo" numa tela só.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

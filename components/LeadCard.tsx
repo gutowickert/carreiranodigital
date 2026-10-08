@@ -1470,7 +1470,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
       atualizado_em: new Date().toISOString(),
     }).eq('id', lead.id)
     // dispara a COMPRA pro Meta (CAPI) — marca a venda na campanha (não bloqueia)
-    fetch('/api/capi/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula_id: matriculaSelecionada }) }).catch(() => { })
+    fetchAuth('/api/capi/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula_id: matriculaSelecionada }) }).catch(() => { })
 
     // Cancela tarefas pendentes (ganho encerra o ciclo)
     await supabase.from('tarefas_lead').update({
@@ -1562,7 +1562,7 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
       // lead -> ganho
       await supabase.from('leads').update({ etapa: 'ganho', data_ganho: new Date().toISOString(), valor_venda: valorVenda, matricula_id: mat.id, motivo_ganho: motivoGanho.trim() || null, atualizado_em: new Date().toISOString() }).eq('id', lead.id)
       // dispara a COMPRA pro Meta (CAPI) — marca a venda na campanha (não bloqueia)
-      fetch('/api/capi/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula_id: mat.id }) }).catch(() => { })
+      fetchAuth('/api/capi/purchase', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ matricula_id: mat.id }) }).catch(() => { })
       await supabase.from('tarefas_lead').update({ cancelada: true, cancelada_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }).eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false)
       await supabase.from('lead_andamentos').insert({ lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: 'ganho', observacao: `Venda cadastrada pelo CRM: ${vForma} ${numParcelas}x — R$ ${valorVenda.toFixed(2)}${motivoGanho.trim() ? ' — ' + motivoGanho.trim() : ''}` })
       setMensagem('Venda cadastrada e lead em ganho!')

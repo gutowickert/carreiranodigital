@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { sendPurchase } from '@/lib/capi'
 import { eventoMensagens } from '@/lib/ctwa'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -11,6 +12,7 @@ const supabase = createClient(
 // Dispara a Purchase pro CAPI a partir de uma matrícula já criada.
 // Chamado pela tela da turma logo após registrar a venda manual.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   let body: any = {}
   try {
     body = await req.json()

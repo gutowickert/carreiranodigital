@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Acesso de professor ao portal (/professor). Link é pelo EMAIL (login = professores.email).
 //  GET  -> lista de emails que já têm acesso (setor='professor')
 //  POST -> { professor_id, email, senha } cria o login e o perfil
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const { data } = await supabase.from('usuarios_perfil').select('email').eq('org_id', org).eq('papel', 'professor')
@@ -17,6 +19,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     const email = (b.email || '').toString().trim().toLowerCase()

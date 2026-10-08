@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Produtos/ofertas da org (genérico). Cada org gerencia os seus.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const { data } = await sb.from('produtos')
     .select('id, nome, tipo, modalidade, preco_venda, agendavel, descricao, ativo, criado_em')
@@ -12,6 +14,7 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({}))
@@ -41,6 +44,7 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const id = new URL(req.url).searchParams.get('id')
   if (!id) return NextResponse.json({ ok: false, error: 'falta id' }, { status: 200 })

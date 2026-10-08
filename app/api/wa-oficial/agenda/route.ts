@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // AGENDA DE DISPAROS POR TURMA (oficial). Gera o plano de 3 toques por turma aberta:
 //  • D-10  turma_aberta   (abertura de inscrições)
@@ -49,6 +50,7 @@ async function turmasAbertas(org: string) {
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const turmas = await turmasAbertas(org)
@@ -69,6 +71,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({}))

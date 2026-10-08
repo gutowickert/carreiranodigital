@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { orgDaRequest } from '@/lib/org'
 import { meuPerfil } from '@/lib/quem-eu-vejo'
 import { marcarLeituras } from '@/lib/agenda-balao'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Marca itens da agenda como lidos ou não lidos, PARA QUEM PEDIU. Só por aqui: a tabela de leituras
 // não tem regra de acesso pro navegador (ver 22-leituras-da-agenda.sql). A pessoa é sempre quem está
@@ -11,6 +12,7 @@ import { marcarLeituras } from '@/lib/agenda-balao'
 // Devolve o balão recalculado, pra tela e menu atualizarem sem outra ida ao servidor.
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const auth = req.headers.get('authorization')
   const eu = await meuPerfil(auth)
   if (!eu) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

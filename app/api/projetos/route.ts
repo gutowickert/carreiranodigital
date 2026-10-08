@@ -5,11 +5,13 @@ import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 import { criarProjeto } from '@/lib/criar-projeto'
 import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, segmentosDoProduto, type Produto } from '@/lib/entrega'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
 // de cada um; POST cria o projeto e já gera todos os marcos do roteiro.
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
     // (e gravava) como se fosse gente de dentro. Todas as telas de entregas já mandam o login.
@@ -86,6 +88,7 @@ export async function GET(req: Request) {
 function vazio() { return { atrasados: 0, a_confirmar: 0, sem_proximo: 0, vencendo: 0 } }
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota entregava
     // (e gravava) como se fosse gente de dentro. Todas as telas de entregas já mandam o login.

@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -59,7 +60,7 @@ export default function Trafego() {
   }
   async function carregarGasto() {
     try {
-      const res = await fetch(`/api/meta/spend?since=${de}&until=${ate}`)
+      const res = await fetchAuth(`/api/meta/spend?since=${de}&until=${ate}`)
       setSpend(await res.json())
     } catch { setSpend({ ok: false, total: 0, campaigns: [], ads: [], error: 'falha ao buscar gasto' }) }
   }

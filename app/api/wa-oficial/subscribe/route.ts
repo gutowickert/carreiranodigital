@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Inscreve ESTE app na WABA (pra os webhooks de status chegarem) e lista as
 // inscrições atuais. Abrir uma vez no navegador.
@@ -6,7 +7,8 @@ const TOKEN = process.env.WA_OFICIAL_TOKEN || ''
 const WABA_ID = process.env.WA_OFICIAL_WABA_ID || ''
 const GRAPH = 'https://graph.facebook.com/v25.0'
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   if (!TOKEN || !WABA_ID) return NextResponse.json({ ok: false, error: 'config faltando' }, { status: 200 })
   try {
     // inscreve o app na WABA

@@ -3,11 +3,13 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { urlGravacao } from '@/lib/chamadas'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // A gravação de uma chamada do sistema fica num bucket privado: o card do lead pede aqui uma URL
 // assinada (1h) na hora de tocar. Ligação da API4COM já tem URL pública em gravacao_url.
 //   GET ?id=<ligacao> → { url }
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

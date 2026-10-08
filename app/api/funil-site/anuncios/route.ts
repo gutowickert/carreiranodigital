@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Funil por anúncio (do site ao lead), agrupado por campanha + anúncio (utm).
 // O gasto/impressões/cliques do Meta a página junta por cima (mesmo casamento
@@ -26,6 +27,7 @@ async function carregar(tabela: string, cols: string, deISO: string, ateISO: str
 const ENG = new Set(['scroll_50', 'scroll_90', 'video_50', 'viu_oferta', 'viu_preco'])
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const sp = req.nextUrl.searchParams
     const de = (sp.get('de') || '').slice(0, 10)

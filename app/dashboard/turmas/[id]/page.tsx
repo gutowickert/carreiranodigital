@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -241,7 +242,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
     if (errMat) { setMensagem('Erro ao registrar venda: ' + errMat.message); setSalvando(false); return }
 
     // Dispara Purchase pro CAPI (server-side, via route — token fica protegido)
-    fetch('/api/capi/purchase', {
+    fetchAuth('/api/capi/purchase', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ matricula_id: matricula.id }),

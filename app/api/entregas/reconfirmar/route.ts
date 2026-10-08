@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { reconfirmarEncontros } from '@/lib/reconfirmar'
 import { ORG_CND } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -17,7 +18,8 @@ export const maxDuration = 60
 //
 // O que protege de uso indevido é a própria natureza do motor: ele só manda mensagem pra encontro
 // que existe, com data marcada, a exatamente 2 ou 1 dia de distância, e nunca duas vezes.
-export async function POST() {
+export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const r = await reconfirmarEncontros(ORG_CND)
     return NextResponse.json(r)

@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { faseTurma, hojeBRT, type Lote } from '@/lib/lote-core'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // 📅 FASE DE CADA TURMA (pro board "Ver por Fase"). Calcula, pela DATA, a fase de cada turma que tem lote
 // cadastrado (turma_lotes). Turma sem lote não aparece (o board joga esses leads na coluna "Sem lote").
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const { data: turmas } = await sb.from('turmas').select('id, data_inicio').eq('org_id', org)

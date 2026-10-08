@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { getFluxo, PRIORIDADE_PADRAO } from '@/lib/fluxo'
 import { orgDaRequest } from '@/lib/org'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
@@ -24,6 +25,7 @@ const familia = (cod: string) => /^fc/i.test(cod || '') ? 'FC' : /^anl/i.test(co
 // `lote`: os FOLLOW-UPS DO DIA (tarefas vencidas/hoje), exceto quem está respondendo — pra despachar em massa.
 // Todo item vem enriquecido: tempo de chegada, etapa no funil, se teve ligação, e andamentos.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const now = Date.now()
   const auth = req.headers.get('authorization')
   const org = await orgDaRequest(auth)

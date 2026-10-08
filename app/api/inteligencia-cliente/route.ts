@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { listarSegmentos, lerDossie, gerarDossie } from '@/lib/inteligencia-cliente'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
@@ -19,6 +20,7 @@ const naoAutorizado = () => NextResponse.json({ ok: false, error: 'não autoriza
 //  GET ?produto=&cidade=        -> devolve o dossiê cacheado daquele segmento
 //  POST { produto, cidade }     -> (re)gera o dossiê via IA e salva
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     if (!autorizado(req)) return naoAutorizado()
     const sp = req.nextUrl.searchParams
@@ -37,6 +39,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     if (!autorizado(req)) return naoAutorizado()
     const body = await req.json().catch(() => ({}))

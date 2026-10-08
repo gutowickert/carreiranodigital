@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Diagnóstico da conta oficial: lista números e templates disponíveis.
 const TOKEN = process.env.WA_OFICIAL_TOKEN || ''
@@ -11,6 +12,7 @@ async function get(path: string) {
 }
 
 export async function GET(req: import('next/server').NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   // permite inspecionar qualquer WABA via ?waba=  (default = env)
   const WABA_ID = req.nextUrl.searchParams.get('waba') || process.env.WA_OFICIAL_WABA_ID || ''
   if (!TOKEN || !WABA_ID) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Importa contatos frios (interessados/compradores) de duas fontes:
 //  - formato 'sleekflow': CSV exportado do SleekFlow (FirstName, PhoneNumber, ...)
@@ -57,6 +58,7 @@ function normFone(raw: string, dddPadrao: string): string {
 type Linha = { nome: string; telefone: string; email: string; notas: string; cidade?: string }
 
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const body = await req.json()
     const org = await orgDaRequest(req.headers.get('authorization'))

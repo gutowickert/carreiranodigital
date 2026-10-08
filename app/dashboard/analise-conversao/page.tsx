@@ -1,4 +1,5 @@
 'use client'
+import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import Layout from '@/components/Layout'
@@ -79,7 +80,7 @@ export default function AnaliseConversao() {
   async function carregar() {
     setCarregando(true)
     try {
-      const j = await (await fetch('/api/analise-conversao')).json()
+      const j = await (await fetchAuth('/api/analise-conversao')).json()
       if (j.semTabela) setSemTabela(true)
       else if (j.ok && j.analise) { setAnalise(j.analise.dados); setGeradoEm(j.analise.gerado_em) }
     } catch { setErro('Falha ao carregar.') }
@@ -90,7 +91,7 @@ export default function AnaliseConversao() {
   async function atualizar() {
     setAtualizando(true); setErro('')
     try {
-      const j = await (await fetch('/api/analise-conversao', { method: 'POST' })).json()
+      const j = await (await fetchAuth('/api/analise-conversao', { method: 'POST' })).json()
       if (j.semTabela) { setSemTabela(true); return }
       if (!j.ok) { setErro(j.error || 'Não consegui atualizar.'); return }
       setAnalise(j.analise.dados); setGeradoEm(j.analise.gerado_em); setSemTabela(false)

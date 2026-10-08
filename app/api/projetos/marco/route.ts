@@ -5,6 +5,7 @@ import { temSessao } from '@/lib/quem-eu-vejo'
 import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, type Produto } from '@/lib/entrega'
 import { combinarMarco } from '@/lib/marco-acoes'
 import { isoBR } from '@/lib/periodos'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // A máquina de estados do compromisso.
 //   combinar  → data e hora acertadas com o cliente (na sessão anterior)
@@ -16,6 +17,7 @@ const ok = (o: any) => NextResponse.json({ ok: true, ...o })
 const erro = (m: string, extra?: any) => NextResponse.json({ ok: false, error: m, ...(extra || {}) }, { status: 200 })
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     // Sem login, não responde: sem token, `orgDaRequest` cai na empresa padrão e a rota gravava
     // como se fosse gente de dentro. A tela da ficha já manda o login.

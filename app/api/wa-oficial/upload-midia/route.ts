@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { uploadMidia } from '@/lib/whatsapp-oficial'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Sobe um arquivo (base64) pro WhatsApp Cloud API e devolve o media_id, pra usar
 // no cabeçalho de mídia do template no disparo (em vez de URL pública).
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const { base64, nome } = await req.json()
     const mm = (base64 || '').match(/^data:([^;]+);base64,(.+)$/)

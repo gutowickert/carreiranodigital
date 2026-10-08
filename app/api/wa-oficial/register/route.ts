@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Re-registra o número na Cloud API (resolve "aceita mas não entrega" / EXPIRED).
 // Abrir: /api/wa-oficial/register?pin=123456  (escolha um PIN de 6 dígitos)
@@ -7,6 +8,7 @@ const PHONE_ID = process.env.WA_OFICIAL_PHONE_ID || ''
 const GRAPH = 'https://graph.facebook.com/v25.0'
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const pin = (req.nextUrl.searchParams.get('pin') || '').replace(/\D/g, '')
   if (!TOKEN || !PHONE_ID) return NextResponse.json({ ok: false, error: 'config faltando' }, { status: 200 })
   if (pin.length !== 6) return NextResponse.json({ ok: false, error: 'passe ?pin=NNNNNN (6 dígitos)' }, { status: 200 })

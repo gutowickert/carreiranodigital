@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 
@@ -19,6 +20,9 @@ function agg(rs: any[]) {
 export async function GET(req: NextRequest) {
   try {
     const turmaId = req.nextUrl.searchParams.get('turma')
+    // O RESULTADO (sem ?turma: notas e comentários de todas as turmas) só com login (08/10). A página
+    // pública /avaliar/<turma> usa só o GET ?turma (nome da turma) e o POST, que seguem abertos.
+    if (!turmaId && !(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
     if (turmaId) {
       // header público da página de NPS: pelo turma_id (UUID). Sem escopo de org aqui
       // porque o aluno preenche sem login — o org sai da própria turma no POST.

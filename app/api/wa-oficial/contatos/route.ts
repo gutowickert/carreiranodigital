@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // O PostgREST (Supabase) limita ~1000 linhas por request. Paginamos por range
 // pra não truncar nem a lista nem as contagens do resumo.
@@ -8,6 +9,7 @@ const PAGINA = 1000
 
 // Lista contatos frios com filtros + resumo (por cidade/categoria).
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const sp = req.nextUrl.searchParams
   const cidade = sp.get('cidade') || ''

@@ -1,17 +1,20 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 const slug = (s: string) => (s || '').toString().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40)
 
 // Etapas do funil da org. GET = lista; POST {etapas:[...]} = salva a lista inteira (ordem/edições/novas).
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const { data } = await sb.from('etapas').select('id, chave, label, ordem, cor, papel, ativo').eq('org_id', org).order('ordem', { ascending: true })
   return NextResponse.json({ ok: true, etapas: data || [] })
 }
 
 export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const org = await orgDaRequest(req.headers.get('authorization'))
     const b = await req.json().catch(() => ({}))

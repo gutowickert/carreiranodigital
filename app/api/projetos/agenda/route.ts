@@ -3,12 +3,14 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { ROTEIROS, situacaoMarco, type Produto } from '@/lib/entrega'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Agenda de entregas. Devolve os marcos de um período com o estado de cada um —
 // é o estado que define o peso visual: previsto (sombra, sem hora), combinado
 // (sólido pontilhado, falta reconfirmar) e confirmado (sólido limpo).
 
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     const org = await orgDaRequest(auth)

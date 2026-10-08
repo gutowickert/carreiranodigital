@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Lista os templates APROVADOS da conta (pro dropdown da tela de disparo).
 const TOKEN = process.env.WA_OFICIAL_TOKEN || ''
 const WABA_ID = process.env.WA_OFICIAL_WABA_ID || ''
 const GRAPH = 'https://graph.facebook.com/v25.0'
 
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   if (!TOKEN || !WABA_ID) return NextResponse.json({ ok: false, error: 'config faltando', templates: [] }, { status: 200 })
   try {
     const res = await fetch(`${GRAPH}/${WABA_ID}/message_templates?fields=name,language,status,category,components&limit=200`, {

@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { montarMonitor, LIMITES } from '@/lib/monitor-entregas'
 import { sincronizarProjeto } from '@/lib/trafego-cliente'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 120
 
@@ -19,6 +20,7 @@ const DESDE_O_INICIO = 3650   // 10 anos: na prática, o contrato inteiro de qua
 // está com o sync velho, em paralelo. Assim a tela mostra o que a Meta tem AGORA, igual ao Tráfego dos
 // Clientes, e continua servindo os 30 dias de histórico que só o banco guarda. `?ao_vivo=0` desliga.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

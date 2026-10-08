@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { lidDoTelefone } from '@/lib/zapi'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Admin (rode abrindo a URL): resolve e guarda o @lid das conversas do Z-API que ainda
 // não têm (pra casar as mensagens enviadas do CELULAR, que chegam só com @lid).
 // Processa em lotes priorizando as conversas mais recentes. Abra de novo até "restantes: 0".
-export async function GET() {
+export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const { data: convs } = await supabase.from('wa_conversas')
     .select('id, telefone')
     .or('canal.eq.zapi,canal.is.null')

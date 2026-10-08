@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 export const maxDuration = 60
 
 // Transcreve áudio (base64) via Deepgram pro Agente Interno mandar como texto.
 //  POST { audio: base64, mime }
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const b = await req.json().catch(() => ({}))
     const key = process.env.DEEPGRAM_API_KEY

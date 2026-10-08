@@ -144,7 +144,7 @@ export default function CaixaWhatsApp() {
   // Espelha as não-lidas reais do WhatsApp (ex: lidas no celular) no sistema
   useEffect(() => {
     if (autorizado !== true) return
-    const sync = () => fetch('/api/wa/sync-lidas', { method: 'POST' }).then(() => carregarConversas()).catch(() => {})
+    const sync = () => fetchAuth('/api/wa/sync-lidas', { method: 'POST' }).then(() => carregarConversas()).catch(() => {})
     sync()
     const t = setInterval(sync, 30000)
     return () => clearInterval(t)

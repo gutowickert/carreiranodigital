@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Agrega o Funil do Site a partir de site_eventos (comportamento no site) e
 // wa_clicks (clique no /wa -> lead). Tudo server-side pra não expor evento cru
@@ -31,6 +32,7 @@ function contaGrupo() {
 }
 
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const sp = req.nextUrl.searchParams
     const de = (sp.get('de') || '').slice(0, 10)

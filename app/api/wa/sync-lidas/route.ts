@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { listarChats } from '@/lib/zapi'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Espelha o nº de não-lidas do WhatsApp (estado real, ex: lido no celular) nas
 // conversas do sistema. Chamado periodicamente pela caixa de entrada.
-export async function POST() {
+export async function POST(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const r = await listarChats(1, 100)
     if (!r.ok || !Array.isArray(r.data)) {

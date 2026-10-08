@@ -2,10 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { marcarChatLido } from '@/lib/zapi'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Marca o chat como lido no WhatsApp (some o não-lida no celular) quando a
 // conversa é aberta no sistema. Também zera o não-lida no banco.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const { conversaId, telefone, chatLid } = await req.json()
     const org = await orgDaRequest(req.headers.get('authorization'))

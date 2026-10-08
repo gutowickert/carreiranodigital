@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Traduz o erro cru da Meta num motivo legível pra equipe.
 function motivoLabel(erro?: string | null): string {
@@ -22,6 +23,7 @@ function motivoLabel(erro?: string | null): string {
 //  - sem params: lista campanhas com o resumo (enviados/entregues/lidos/falhas/respostas/custo)
 //  - ?disparo=<id>: lista quem RESPONDEU aquela campanha
 export async function GET(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
   const disparoId = req.nextUrl.searchParams.get('disparo')
   const naoEntregues = req.nextUrl.searchParams.get('naoEntregues')

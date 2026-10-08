@@ -2,6 +2,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { sugerirAtendimento } from '@/lib/atendimento-ia'
 import { KB } from '@/lib/kb'
 import { getFluxo, fluxoTexto } from '@/lib/fluxo'
+import { cabecalhoInterno } from '@/lib/exigir-login'
 
 // Ferramentas SÓ-LEITURA do Agente Interno. Cobrem o sistema inteiro:
 // específicas (vendas/financeiro/marketing/tráfego/turmas/NPS) + genéricas (esquema/consultar/agregar).
@@ -210,7 +211,7 @@ export async function runTool(name: string, input: any, origin?: string): Promis
     let spend = 0, campanhas: any[] = []
     try {
       const base = origin || 'https://carreiranodigital.vercel.app'
-      const r = await fetch(`${base}/api/meta/spend?since=${desde}&until=${ate}`).then(x => x.json())
+      const r = await fetch(`${base}/api/meta/spend?since=${desde}&until=${ate}`, { headers: cabecalhoInterno() }).then(x => x.json())  // meta/spend exige login desde 08/10
       if (r?.ok) { spend = r.total || 0; campanhas = (r.campaigns || []).map((c: any) => ({ campanha: c.name, gasto: Math.round(c.spend) })).sort((a: any, b: any) => b.gasto - a.gasto).slice(0, 12) }
       else return { erro: 'Meta não retornou o gasto: ' + (r?.error || '?') }
     } catch (e: any) { return { erro: 'falha ao buscar gasto na Meta: ' + (e?.message || '') } }

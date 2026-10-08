@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Tira este aparelho da lista de avisos.
 //
@@ -7,6 +8,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 // depois: a tela se reapresenta ao servidor a cada carga, então apagar só a linha faria a inscrição
 // voltar sozinha no próximo F5. Um botão de desligar que não desliga é pior que não ter botão.
 export async function POST(req: NextRequest) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const { endpoint } = await req.json().catch(() => ({} as any))
     if (!endpoint) return NextResponse.json({ ok: false, error: 'faltou o aparelho' }, { status: 200 })

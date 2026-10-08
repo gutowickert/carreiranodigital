@@ -4,11 +4,13 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { getInsightsConta, comImposto } from '@/lib/meta-ads'
 import { impostoMetaPct } from '@/lib/imposto-meta'
+import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Números da conta de anúncio do CLIENTE, desde o início do projeto até hoje.
 // É o topo do funil que vem sozinho — o resto (propostas, vendas, comissão) vem
 // do placar enquanto o CRM dele não está no ar.
 export async function GET(req: Request) {
+  if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   try {
     const auth = req.headers.get('authorization')
     if (!(await temSessao(auth))) return NextResponse.json({ ok: false, error: 'sem sessao' }, { status: 401 })

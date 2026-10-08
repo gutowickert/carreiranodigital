@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createHmac, timingSafeEqual } from 'crypto'
 import { after } from 'next/server'
 import { transcreverAudioMsg } from '@/lib/transcrever-audio'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
@@ -208,9 +209,39 @@ export async function GET(req: NextRequest) {
 
 const MAP: Record<string, string> = { sent: 'enviado', delivered: 'entregue', read: 'lido', failed: 'falha' }
 
+// ASSINATURA DA META (o "carimbo"; o mesmo da Dani e do núcleo, 08/10). Sem conferir, qualquer um que
+// soubesse este endereço mandava um aviso falso e o sistema tratava como mensagem de lead (conversa
+// inventada, a IA respondendo, "sair" em nome de outra pessoa). A Meta assina o corpo de cada aviso com
+// o segredo do app (HMAC-SHA256) no cabeçalho `X-Hub-Signature-256`; a conta é sobre o corpo CRU.
+// Observação por padrão (anota em webhook_logs, origem 'wa-assinatura', sem recusar nada); bloqueia só
+// com `WA_OFICIAL_EXIGIR_ASSINATURA=true`. Sem `META_APP_SECRET` (na Vercel do Guto) segue como antes.
+const APP_SECRET = process.env.META_APP_SECRET || ''
+const EXIGIR_ASSINATURA = process.env.WA_OFICIAL_EXIGIR_ASSINATURA === 'true'
+type Assinatura = 'ok' | 'nao_confere' | 'sem_cabecalho' | 'sem_segredo'
+function conferirAssinatura(corpo: string, cabecalho: string | null): Assinatura {
+  if (!APP_SECRET) return 'sem_segredo'
+  if (!cabecalho) return 'sem_cabecalho'
+  const esperado = Buffer.from('sha256=' + createHmac('sha256', APP_SECRET).update(corpo, 'utf8').digest('hex'))
+  const recebido = Buffer.from(cabecalho.trim())
+  if (recebido.length !== esperado.length) return 'nao_confere'  // timingSafeEqual exige o mesmo tamanho
+  return timingSafeEqual(recebido, esperado) ? 'ok' : 'nao_confere'
+}
+
 export async function POST(req: NextRequest) {
+  let corpo = ''
+  try { corpo = await req.text() } catch { return NextResponse.json({ ok: true, ignorado: 'corpo invalido' }) }
+  const assinatura = conferirAssinatura(corpo, req.headers.get('x-hub-signature-256'))
+  const recusar = EXIGIR_ASSINATURA && assinatura !== 'ok' && assinatura !== 'sem_segredo'
+  if (assinatura !== 'sem_segredo' && (recusar || !EXIGIR_ASSINATURA)) {
+    await supabase.from('webhook_logs').insert({
+      org_id: ORG_CND, origem: 'wa-assinatura', evento: assinatura,
+      status: assinatura === 'ok' ? 'processado' : recusar ? 'ignorado' : 'erro',
+      payload: { modo: EXIGIR_ASSINATURA ? 'bloqueio' : 'observacao', tamanho: corpo.length },
+    }).then(() => null, () => null)
+  }
+  if (recusar) return NextResponse.json({ ok: false, error: 'assinatura invalida' }, { status: 401 })
   try {
-    const body = await req.json()
+    const body = JSON.parse(corpo)
     const entries = body.entry || []
     for (const e of entries) {
       for (const ch of (e.changes || [])) {

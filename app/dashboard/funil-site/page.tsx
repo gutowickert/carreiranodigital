@@ -376,7 +376,7 @@ function AbaAnuncios({ de, ate }: { de: string; ate: string }) {
     try {
       const [a, s] = await Promise.all([
         fetchAuth(`/api/funil-site/anuncios?de=${de}&ate=${ate}`).then(r => r.json()),
-        fetch(`/api/meta/spend?since=${de}&until=${ate}`).then(r => r.json()).catch(() => ({ ok: false, ads: [] })),
+        fetchAuth(`/api/meta/spend?since=${de}&until=${ate}`).then(r => r.json()).catch(() => ({ ok: false, ads: [] })),
       ])
       setAds(a.ads || [])
       setSpend({ ok: !!s.ok, ads: s.ads || [], error: s.error })
