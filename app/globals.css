@@ -401,7 +401,9 @@ img, svg { max-width: 100%; }
   [style*="grid-template-columns: repeat(auto-fit,minmax(160px"], [style*="grid-template-columns: repeat(auto-fill, minmax(200px"] {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
-  [style*="grid-template-columns: repeat(6"], [style*="grid-template-columns: repeat(7"], [style*="grid-template-columns: repeat(8"], [style*="grid-template-columns: repeat(9"] {
+  /* …menos o CALENDÁRIO (classe `calendario`): a semana tem 7 dias e precisa de 7 colunas. Sem a
+     exceção, no celular a Agenda virava 3 colunas e o dia 1 (quinta) caía embaixo de "TER" (08/10). */
+  [style*="grid-template-columns: repeat(6"]:not(.calendario), [style*="grid-template-columns: repeat(7"]:not(.calendario), [style*="grid-template-columns: repeat(8"]:not(.calendario), [style*="grid-template-columns: repeat(9"]:not(.calendario) {
     grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
   }
   [style*="grid-template-columns: repeat(3, 1fr)"], [style*="grid-template-columns: repeat(2, 1fr)"],

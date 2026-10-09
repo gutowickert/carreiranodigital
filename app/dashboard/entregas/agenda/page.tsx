@@ -70,7 +70,7 @@ export default function AgendaEntregas() {
       </p>
 
       {carregando ? <div style={{ color: 'var(--text-faint)', padding: 24 }}>Carregando…</div> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,minmax(0,1fr))', gap: 7, marginTop: 16 }}>
+        <div className="calendario" style={{ display: 'grid', gridTemplateColumns: 'repeat(7,minmax(0,1fr))', gap: 7, marginTop: 16 }}>
           {dias.map(d => {
             const eHoje = iso(d) === hoje
             const lista = doDia(d)

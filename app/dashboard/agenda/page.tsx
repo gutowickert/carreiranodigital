@@ -562,7 +562,7 @@ export default function Agenda() {
                 /* MÊS — de vidro: é um elemento só, parado, com a luz atrás */
                 <div className="vidro" style={{ overflow: 'hidden' }}>
                   {/* ⚠️ minmax(0, 1fr), não 1fr: o mínimo de `1fr` é o conteúdo, e com título longo a grade estoura. */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
+                  <div className="calendario" style={{ display: 'grid', gridTemplateColumns: 'repeat(7, minmax(0, 1fr))' }}>
                     {DIAS.map(d => (
                       <div key={d} style={{ padding: '10px 0', textAlign: 'center', fontSize: 10.5, fontWeight: 800, letterSpacing: '.12em', color: 'var(--text-faint)', textTransform: 'uppercase', borderBottom: '1px solid var(--glass-border)' }}>{d}</div>
                     ))}

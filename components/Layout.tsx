@@ -512,6 +512,35 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const naAba = abas.some(a => abaAtiva(a.href))
   // o balão da agenda aparece também na Minha semana: é lá que o que é novo pra ti fica listado
   const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : href === '/dashboard/orcamentos' ? propBalao : 0
+  // BALÃO QUE NÃO SE ESCONDE (08/10/2026, pedido do Nando olhando a Wood Arte; o mesmo do núcleo,
+  // adaptado aos balões da escola): o número de cada tela morava só no item do menu. Com o grupo FECHADO
+  // (ou dentro do "Mais" no celular) o item some e o número some junto. Agora toda contagem sai daqui,
+  // e o que está escondido sobe pra quem está à vista: o título do grupo fechado e o botão "Mais".
+  // Verde = mensagem ou cliente andando (WhatsApp, disparos, propostas). Vermelho = coisa pra FAZER (agenda).
+  const contagemDe = (href: string): { n: number; acao: boolean } => {
+    if (href === '/dashboard/whatsapp') return { n: waUnread, acao: false }
+    if (href === '/dashboard/whatsapp-disparos') return { n: dispUnread, acao: false }
+    if (href === '/dashboard/orcamentos') return { n: propBalao, acao: false }
+    if (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') return { n: agendaBalao, acao: true }
+    return { n: 0, acao: false }
+  }
+  // Soma de uma lista de telas. Números que são o MESMO número não somam duas vezes: os disparos são
+  // parte do WhatsApp, e Minha semana mostra o mesmo número da Agenda. `jaVisiveis` = telas cujo número
+  // já aparece em outro lugar (as abas de baixo do celular).
+  const somaDe = (hrefs: string[], jaVisiveis: string[] = []) => {
+    const tem = new Set(hrefs)
+    let msg = 0, acao = 0
+    for (const h of tem) {
+      if (h === '/dashboard/whatsapp-disparos' && (tem.has('/dashboard/whatsapp') || jaVisiveis.includes('/dashboard/whatsapp'))) continue
+      if (h === '/dashboard/minha-semana' && (tem.has('/dashboard/agenda') || jaVisiveis.includes('/dashboard/agenda'))) continue
+      const c = contagemDe(h)
+      if (c.acao) acao += c.n; else msg += c.n
+    }
+    return { msg, acao }
+  }
+  const pilula = (n: number, acao: boolean, titulo?: string) => n > 0 ? (
+    <span title={titulo} style={{ background: acao ? 'var(--red)' : '#25D366', color: acao ? '#fff' : '#063', borderRadius: 10, padding: '0 7px', fontSize: 11, fontWeight: 700, minWidth: 18, textAlign: 'center', letterSpacing: 0, textTransform: 'none' }}>{n > 99 ? '99+' : n}</span>
+  ) : null
 
   return (
     <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
@@ -558,7 +587,11 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             <button onClick={() => setMenuMobileAberto(true)} className={'app-aba' + (!naAba && !menuMobileAberto ? ' ativo' : '')} aria-label="Mais telas">
               <span style={{ position: 'relative', lineHeight: 0 }}>
                 <Menu size={23} strokeWidth={1.8} />
-                {dispUnread > 0 && <span className="app-balao" style={{ background: '#25D366', color: '#063' }}>{dispUnread > 99 ? '99+' : dispUnread}</span>}
+                {(() => {
+                  const noMais = somaDe(gruposVisiveis.flatMap(g => g.itens.map(i => i.href)).filter(h => h && !abas.some(a => a.href === h)), abas.map(a => a.href))
+                  const n = noMais.acao || noMais.msg
+                  return n > 0 && <span className="app-balao" style={{ background: noMais.acao ? 'var(--red)' : '#25D366', color: noMais.acao ? '#fff' : '#063' }}>{n > 99 ? '99+' : n}</span>
+                })()}
               </span>
               <span>Mais</span>
             </button>
@@ -690,11 +723,16 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       letterSpacing: '0.1em',
                       marginTop: idx > 1 ? 4 : 0,
                     }}>
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>{grupo.titulo}
-                        {!abertos[grupo.titulo] && propBalao > 0 && grupo.itens.some(i => i.href === '/dashboard/orcamentos') && (
-                          <span title="Novidade nas propostas" style={{ width: 8, height: 8, borderRadius: 4, background: 'var(--green)', display: 'inline-block' }} />
-                        )}
-                      </span>
+                      <span style={{ flex: 1, textAlign: 'left' }}>{grupo.titulo}</span>
+                      {!abertos[grupo.titulo] && (() => {
+                        const g = somaDe(grupo.itens.map(i => i.href).filter(Boolean))
+                        return (g.msg > 0 || g.acao > 0) && (
+                          <span style={{ display: 'flex', gap: 4, marginRight: 6 }}>
+                            {pilula(g.msg, false, 'Novidades aqui dentro (mensagens, propostas)')}
+                            {pilula(g.acao, true, 'Coisas pra fazer aqui dentro')}
+                          </span>
+                        )
+                      })()}
                       <ChevronDown size={12} style={{ transform: abertos[grupo.titulo] ? 'rotate(0deg)' : 'rotate(-90deg)', transition: 'transform .15s ease' }} />
                     </button>
                   )}
