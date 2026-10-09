@@ -6,7 +6,7 @@ import { recadoGateway as gateway } from '@/lib/recado/gateway'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 
 export const maxDuration = 30
-const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-' }
+const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-', grandao: 'CHUPETA-' }
 const dataOk = (s: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : null
 const codigo = (p: string) => (PREFIXO[p] || 'RECADO-') +Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 const limpa = (s: any, n = 120) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n)

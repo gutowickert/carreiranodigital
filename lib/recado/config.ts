@@ -9,7 +9,9 @@ export const recadoConfig = {
     },
     fada: {
       recado: { nome: 'Recado da Fada', preco: 24.9, itens: ['video', 'certificado', 'carta'] },
-      // missões (09/10): cada etapa é um vídeo entregue num dia; o trabalhador agenda pelas datas do formulário
+    },
+    // missões (09/10): cada etapa é um vídeo entregue num dia; o trabalhador agenda pelas datas do formulário
+    grandao: {
       chupeta: { nome: 'Missão Tchau Chupeta', preco: 49.9, itens: ['video', 'kit', 'certificado'], etapas: ['convocacao', 'entrega', 'agradecimento'] },
     },
     guardiao: {

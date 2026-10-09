@@ -31,7 +31,7 @@ small{display:block;text-align:center;color:var(--creme2);font-size:14px}
 var c=new URLSearchParams(location.search).get('c')||'',ordem=['aguardando_pagamento','pago','produzindo','entregue']
 var NOMES={aguardando_pagamento:'Pagamento',pago:'Na fila dos duendes',produzindo:'Gravando o vídeo',entregue:'Pronto pra assistir'}
 // missão (vários vídeos, um por dia): linha do tempo, vídeo de cada dia e os botões "como foi?"
-var QUEM={fada:'a Fada',noel:'o Papai Noel',guardiao:'o Guardião da Noite',coragem:'a Capitã Coragem',turbo:'o Capitão Turbo'}
+var QUEM={fada:'a Fada',noel:'o Papai Noel',guardiao:'o Guardião da Noite',coragem:'a Capitã Coragem',turbo:'o Capitão Turbo',grandao:'o Capitão Grandão'}
 var TIPO={convocacao:'A convocação',dia:'Notícia da noite',entrega:'O dia da entrega',agradecimento:'O agradecimento',vespera:'A véspera',medalha:'A medalha'}
 var COMO=[['cumpriu','Cumpriu!'],['tentou','Tentou'],['ainda_nao','Ainda não']]
 function quando(iso){var d=new Date(iso);return d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'numeric'})+', '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}

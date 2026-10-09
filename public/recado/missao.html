@@ -62,10 +62,10 @@ button:disabled{opacity:.7}
     <!-- chupeta -->
     <div data-m="chupeta">
       <label for="ch-nome">Como ela chama a chupeta? <small>(ex.: "pepeta", "tetê")</small></label><input id="ch-nome" type="text" placeholder="Ex.: pepeta">
-      <label for="ch-data">Em que dia a chupeta vai pra Fada?</label><input id="ch-data" type="date">
-      <p class="dica">A convocação chega hoje. No dia escolhido, às 18h, a Fada avisa que passa à noite. Na manhã seguinte chega o agradecimento.</p>
+      <label for="ch-data">Em que dia a chupeta vai embora?</label><input id="ch-data" type="date">
+      <p class="dica">A convocação chega hoje. No dia escolhido, às 18h, o Capitão Grandão avisa que passa à noite pra buscar. Na manhã seguinte chega a medalha de grandão.</p>
       <label for="ch-desafio">Quando ela mais usa? <small>(pra dormir, no carro, quando chora...)</small></label><input id="ch-desafio" type="text" placeholder="Ex.: só pra dormir, mas chora sem ela">
-      <label for="ch-presente">Vai ganhar algo em troca? <small>(opcional; a Fada só fala se tu contar)</small></label><input id="ch-presente" type="text" placeholder="Ex.: uma boneca nova">
+      <label for="ch-presente">Vai ganhar algo em troca? <small>(opcional; o herói só fala se tu contar)</small></label><input id="ch-presente" type="text" placeholder="Ex.: uma boneca nova">
     </div>
     <!-- dormir -->
     <div data-m="dormir">
@@ -105,7 +105,7 @@ button:disabled{opacity:.7}
 </div>
 <script>
 // Formulário das missões: ?m=chupeta | dormir | coragem. Manda pra mesma API do pedido, com os dados da missão.
-var M={chupeta:{p:'fada',nome:'Missão Tchau Chupeta',desc:'com a Fada · 3 vídeos + kit',preco:'R$ 49,90',img:'/recado/midia/fada.jpg',tit:'A Fada vai buscar a chupeta'},
+var M={chupeta:{p:'grandao',nome:'Missão Tchau Chupeta',desc:'com o Capitão Grandão · 3 vídeos + kit',preco:'R$ 49,90',img:'/recado/midia/grandao.jpg',tit:'O Capitão Grandão vem buscar a chupeta'},
   dormir:{p:'guardiao',nome:'Missão Noite de Herói',desc:'com o Guardião da Noite · 5 vídeos + kit',preco:'R$ 59,90',img:'/recado/midia/guardiao.jpg',tit:'O Guardião vai cuidar das noites'},
   coragem:{p:'coragem',nome:'Missão Coragem',desc:'com a Capitã Coragem · 2 vídeos + medalha',preco:'R$ 29,90',img:'/recado/midia/coragem.jpg',tit:'A Capitã vai treinar a coragem'}}
 var q=new URLSearchParams(location.search),m=M[q.get('m')]?q.get('m'):'chupeta',X=M[m],foto=null,$=function(i){return document.getElementById(i)}
