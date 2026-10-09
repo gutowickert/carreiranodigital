@@ -10,10 +10,14 @@ const adaptadores: Record<string, { cria: (p: Pedido) => Promise<{ gateway_id: s
   asaas: {
     async cria(p) {
       const A = { access_token: process.env.ASAAS_API_KEY as string, 'Content-Type': 'application/json' }, base = 'https://api.asaas.com/v3'
-      const cli = await (await fetch(base + '/customers', { method: 'POST', headers: A, body: JSON.stringify({ name: p.contato.responsavel, email: p.contato.email, mobilePhone: p.contato.whatsapp }) })).json()
+      const cli = await (await fetch(base + '/customers', { method: 'POST', headers: A, body: JSON.stringify({ name: p.contato.responsavel, email: p.contato.email, mobilePhone: p.contato.whatsapp.replace(/^55/, ''), notificationDisabled: true, externalReference: 'recado' }) })).json()   // sem e-mail/SMS do Asaas em nome da escola: a mãe paga na hora pelo link
       if (!cli.id) throw new Error('Asaas cliente: ' + JSON.stringify(cli).slice(0, 300))
       const venc = new Date(Date.now() + 86400e3).toISOString().slice(0, 10)
-      const c = await (await fetch(base + '/payments', { method: 'POST', headers: A, body: JSON.stringify({ customer: cli.id, billingType: 'UNDEFINED', value: p.preco, dueDate: venc, description: p.descricao, externalReference: p.codigo, callback: { successUrl: url(`/obrigado.html?c=${p.codigo}`), autoRedirect: true } }) })).json()
+      const corpo: any = { customer: cli.id, billingType: 'UNDEFINED', value: p.preco, dueDate: venc, description: p.descricao, externalReference: p.codigo, callback: { successUrl: url(`/obrigado.html?c=${p.codigo}`), autoRedirect: true } }
+      const cobra = async () => (await fetch(base + '/payments', { method: 'POST', headers: A, body: JSON.stringify(corpo) })).json()
+      let c = await cobra()
+      // a volta automática exige o site cadastrado na conta do Asaas; sem ele, cria sem a volta (a família recebe o vídeo do mesmo jeito)
+      if (!c.invoiceUrl && JSON.stringify(c).match(/callback|successUrl|dom[ií]nio/i)) { delete corpo.callback; c = await cobra() }
       if (!c.invoiceUrl) throw new Error('Asaas cobrança: ' + JSON.stringify(c).slice(0, 300))
       return { gateway_id: c.id, checkout_url: c.invoiceUrl }
     },
