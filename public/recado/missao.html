@@ -1,0 +1,131 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Conte sobre a missão · Recado Encantado</title>
+<meta name="theme-color" content="#2a1f6b">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
+<style>
+:root{--noite:#2a1f6b;--ouro:#f5c451;--rosa:#e0569a;--lilas:#b9a3ff;--creme:#fff8ec;--creme2:#f8edd8;--tinta:#2b2140;--suave:#5f5578;--verde:#1f7a4f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--creme);color:var(--tinta);font-family:Fredoka,system-ui,sans-serif;font-size:17px;line-height:1.5}
+.topo{background:var(--noite);color:#fff;padding:18px 20px;text-align:center}
+.topo img{height:36px;margin:0 auto;filter:brightness(0) invert(1)}
+.ct{max-width:640px;margin:0 auto;padding:26px 20px 80px}
+.heroi{display:flex;gap:16px;align-items:center;background:var(--noite);color:#fff;border-radius:22px;padding:14px;margin-bottom:18px}
+.heroi img{width:84px;height:84px;border-radius:16px;object-fit:cover;object-position:top;flex:none}
+.heroi b{display:block;font-size:20px;line-height:1.2}.heroi span{color:#d9d2f5;font-size:15px}
+.heroi .preco{margin-left:auto;font-weight:700;font-size:22px;color:var(--ouro);white-space:nowrap}
+h1{font-size:30px;line-height:1.15;margin-bottom:6px}
+.sub{color:var(--suave);margin-bottom:22px}
+.passo{background:#fff;border:1px solid #eadfc8;border-radius:22px;padding:22px;margin-bottom:16px}
+.passo h2{font-size:20px;margin-bottom:14px;display:flex;gap:10px;align-items:center}
+.passo h2 i{font-style:normal;width:32px;height:32px;border-radius:10px;background:var(--noite);color:var(--ouro);display:flex;align-items:center;justify-content:center;font-size:16px}
+label{display:block;font-weight:600;font-size:15px;margin:14px 0 6px}
+label small{font-weight:400;color:var(--suave)}
+input[type=text],input[type=tel],input[type=email],input[type=number],input[type=date],select,textarea{width:100%;font:inherit;font-size:17px;padding:13px 14px;border:2px solid #e6dcc6;border-radius:14px;background:#fffdf8;color:var(--tinta)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--lilas)}
+textarea{min-height:76px;resize:vertical}
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.foto{display:flex;gap:16px;align-items:center}.foto input{min-width:0;max-width:100%;flex:1;font-size:14px}
+.foto .prev{width:110px;height:110px;border-radius:18px;background:var(--creme2) center/cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--suave);font-size:13px;text-align:center}
+[data-m]{display:none}
+.ok{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:15px}
+.ok input{margin-top:4px;width:20px;height:20px;flex:none}
+button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--rosa);color:#fff;font:700 19px Fredoka;cursor:pointer;margin-top:8px;box-shadow:0 12px 30px rgba(224,86,154,.3)}
+button:disabled{opacity:.7}
+.aviso{font-size:14px;color:var(--suave);text-align:center;margin-top:12px}
+.dica{font-size:14px;color:var(--suave);background:var(--creme2);border-radius:12px;padding:10px 12px;margin-top:10px}
+@media (max-width:480px){.dupla{grid-template-columns:1fr}.heroi .preco{font-size:18px}}
+</style>
+</head>
+<body>
+<div class="topo"><img src="/recado/midia/logo.png" alt="Recado Encantado"></div>
+<div class="ct">
+<form id="f">
+  <div class="heroi"><img id="h-img" src="" alt=""><div><b id="h-nome"></b><span id="h-desc"></span></div><div class="preco" id="h-preco"></div></div>
+  <h1 id="tit">Conte sobre a missão</h1>
+  <p class="sub">Leva 3 minutos. Quanto mais detalhe, mais o herói parece conhecer o teu filho.</p>
+
+  <div class="passo"><h2><i>1</i> A criança</h2>
+    <div class="dupla"><div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required placeholder="Ex.: Laura"></div>
+    <div><label for="apelido">Como chamam em casa <small>(opcional)</small></label><input id="apelido" name="apelido" type="text" placeholder="Ex.: Laurinha"></div></div>
+    <div class="dupla"><div><label for="idade">Idade</label><input id="idade" name="idade" type="number" min="1" max="12" required></div>
+    <div><label for="genero">É</label><select id="genero" name="genero"><option value="menina">menina</option><option value="menino">menino</option></select></div></div>
+    <label>Uma foto de rosto, sorrindo e sozinha na foto</label>
+    <div class="foto"><div class="prev" id="prev">sem foto</div><input id="arquivo" type="file" accept="image/*" required></div>
+  </div>
+
+  <div class="passo"><h2><i>2</i> A missão</h2>
+    <!-- chupeta -->
+    <div data-m="chupeta">
+      <label for="ch-nome">Como ela chama a chupeta? <small>(ex.: "pepeta", "tetê")</small></label><input id="ch-nome" type="text" placeholder="Ex.: pepeta">
+      <label for="ch-data">Em que dia a chupeta vai pra Fada?</label><input id="ch-data" type="date">
+      <p class="dica">A convocação chega hoje. No dia escolhido, às 18h, a Fada avisa que passa à noite. Na manhã seguinte chega o agradecimento.</p>
+      <label for="ch-desafio">Quando ela mais usa? <small>(pra dormir, no carro, quando chora...)</small></label><input id="ch-desafio" type="text" placeholder="Ex.: só pra dormir, mas chora sem ela">
+      <label for="ch-presente">Vai ganhar algo em troca? <small>(opcional; a Fada só fala se tu contar)</small></label><input id="ch-presente" type="text" placeholder="Ex.: uma boneca nova">
+    </div>
+    <!-- dormir -->
+    <div data-m="dormir">
+      <label for="do-desafio">Como é a noite hoje?</label><input id="do-desafio" type="text" placeholder="Ex.: começa na cama dela e vem pra nossa de madrugada">
+      <label for="do-medo">Tem medo de alguma coisa? <small>(opcional)</small></label><input id="do-medo" type="text" placeholder="Ex.: do escuro, de monstro no armário">
+      <label for="do-ajuda">O que ajuda ela a dormir? <small>(opcional)</small></label><input id="do-ajuda" type="text" placeholder="Ex.: o ursinho Bento, a luz do abajur, a música da mãe">
+      <label for="do-data">Começa quando?</label><input id="do-data" type="date">
+      <p class="dica">São 5 vídeos: a convocação no primeiro dia e um vídeo por dia às 18h, respondendo a como foi a noite. No último, a medalha.</p>
+      <label for="do-recompensa">Tem uma recompensa no fim? <small>(opcional)</small></label><input id="do-recompensa" type="text" placeholder="Ex.: um passeio no parque">
+    </div>
+    <!-- coragem -->
+    <div data-m="coragem">
+      <label for="co-evento">O que vai acontecer?</label>
+      <select id="co-evento"><option value="vacina">Vacina</option><option value="dentista">Dentista</option><option value="medico">Consulta ou exame</option><option value="cabelo">Cortar o cabelo</option><option value="escola">Primeiro dia de aula</option><option value="outro">Outra coisa</option></select>
+      <label for="co-data">Em que dia?</label><input id="co-data" type="date">
+      <p class="dica">Na véspera, às 18h, a Capitã ensina a respiração de herói. No dia, às 18h, chega a medalha.</p>
+      <label for="co-desafio">Conta um pouco <small>(onde, com quem, o que vai ser feito)</small></label><input id="co-desafio" type="text" placeholder="Ex.: vacina da gripe no posto, com a mãe">
+      <label for="co-medo">Do que ela tem mais medo? <small>(opcional)</small></label><input id="co-medo" type="text" placeholder="Ex.: da agulha; já chorou muito da última vez">
+      <label for="co-recompensa">Tem algo especial depois? <small>(opcional)</small></label><input id="co-recompensa" type="text" placeholder="Ex.: sorvete com a vó">
+    </div>
+  </div>
+
+  <div class="passo"><h2><i>3</i> O que deixa o vídeo mágico</h2>
+    <label for="adora">Do que ela mais gosta <small>(pessoas, bicho, brinquedo, desenho)</small></label><textarea id="adora" name="adora" placeholder="Ex.: o cachorro Pipoca, a vovó Lúcia, dinossauros"></textarea>
+    <label for="detalhe">Um detalhe que só a família sabe <small>(opcional, mas é o que mais encanta)</small></label><input id="detalhe" name="detalhe" type="text" placeholder="Ex.: dorme abraçada com o ursinho Bento">
+  </div>
+
+  <div class="passo"><h2><i>4</i> Pra onde mandamos</h2>
+    <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
+    <div><label for="wa">WhatsApp</label><input id="wa" name="wa" type="tel" required placeholder="(51) 99999-9999"></div></div>
+    <label for="email">E-mail</label><input id="email" name="email" type="email" required>
+    <label class="ok"><input type="checkbox" required> Sou o responsável pela criança e autorizo usar a foto e as informações só pra fazer os vídeos. A foto é apagada em 30 dias.</label>
+  </div>
+  <button type="submit" id="enviar">Ir pro pagamento</button><p id="erro" style="color:#b0122b;font-weight:600;display:none;margin-top:10px"></p>
+  <p class="aviso">Pagamento por Pix ou cartão. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</p>
+</form>
+</div>
+<script>
+// Formulário das missões: ?m=chupeta | dormir | coragem. Manda pra mesma API do pedido, com os dados da missão.
+var M={chupeta:{p:'fada',nome:'Missão Tchau Chupeta',desc:'com a Fada · 3 vídeos + kit',preco:'R$ 49,90',img:'/recado/midia/fada.jpg',tit:'A Fada vai buscar a chupeta'},
+  dormir:{p:'guardiao',nome:'Missão Noite de Herói',desc:'com o Guardião da Noite · 5 vídeos + kit',preco:'R$ 59,90',img:'/recado/midia/guardiao.jpg',tit:'O Guardião vai cuidar das noites'},
+  coragem:{p:'coragem',nome:'Missão Coragem',desc:'com a Capitã Coragem · 2 vídeos + medalha',preco:'R$ 29,90',img:'/recado/midia/coragem.jpg',tit:'A Capitã vai treinar a coragem'}}
+var q=new URLSearchParams(location.search),m=M[q.get('m')]?q.get('m'):'chupeta',X=M[m],foto=null,$=function(i){return document.getElementById(i)}
+$('h-img').src=X.img;$('h-nome').textContent=X.nome;$('h-desc').textContent=X.desc;$('h-preco').textContent=X.preco;$('tit').textContent=X.tit
+document.querySelector('[data-m='+m+']').style.display='block'
+// datas: hoje no horário do Brasil (nunca a data UTC)
+var hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10),amanha=new Date(Date.now()+21*3600e3).toISOString().slice(0,10)
+$('ch-data').min=amanha;$('ch-data').value=amanha;$('co-data').min=hoje;$('do-data').min=hoje;$('do-data').value=hoje
+var obrig={chupeta:['ch-data'],coragem:['co-data']}[m]||[];obrig.forEach(function(i){$(i).required=true})
+$('arquivo').addEventListener('change',function(e){var fl=e.target.files[0];if(!fl)return;var img=new Image();img.onload=function(){var s=Math.min(1,1080/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);foto=c.toDataURL('image/jpeg',.85);$('prev').style.backgroundImage='url('+foto+')';$('prev').textContent=''};img.src=URL.createObjectURL(fl)})
+$('f').addEventListener('submit',function(e){e.preventDefault();var d=new FormData($('f')),bt=$('enviar'),er=$('erro'),v=function(i){return $(i).value.trim()}
+  var missao=m==='chupeta'?{nome_objeto:v('ch-nome'),data:v('ch-data'),desafio:v('ch-desafio'),presente:v('ch-presente')}
+    :m==='dormir'?{desafio:v('do-desafio'),medo:v('do-medo'),ajuda:v('do-ajuda'),data:v('do-data'),recompensa:v('do-recompensa')}
+    :{evento:v('co-evento'),data:v('co-data'),desafio:v('co-desafio'),medo:v('co-medo'),recompensa:v('co-recompensa')}
+  var c={nome:d.get('nome'),apelido:d.get('apelido')||d.get('nome'),idade:+d.get('idade'),genero:d.get('genero'),adora:(d.get('adora')||'').split(',').map(function(s){return s.trim()}).filter(Boolean),detalhe_magico:d.get('detalhe')}
+  var origem={};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
+  bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'
+  fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:X.p,pacote:m,foto:foto,crianca:c,missao:missao,contato:{responsavel:d.get('resp'),whatsapp:d.get('wa'),email:d.get('email')},origem:origem})})
+    .then(function(r){return r.json()}).then(function(j){if(j.checkout_url){location.href=j.checkout_url}else{throw new Error(j.erro||'erro')}})
+    .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
+</script>
+</body>
+</html>

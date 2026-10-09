@@ -6,7 +6,9 @@ import { recadoGateway as gateway } from '@/lib/recado/gateway'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 
 export const maxDuration = 30
-const codigo = (p: string) => (p === 'noel' ? 'NOEL-' : 'FADA-') + Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
+const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-' }
+const dataOk = (s: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : null
+const codigo = (p: string) => (PREFIXO[p] || 'RECADO-') +Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 const limpa = (s: any, n = 120) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n)
 
 export async function POST(req: NextRequest) {
@@ -24,10 +26,18 @@ export async function POST(req: NextRequest) {
       pra_melhorar: limpa(c.pra_melhorar), detalhe_magico: limpa(c.detalhe_magico, 200),
     }
     if (b.personagem === 'noel') { crianca.presente_modo = c.presente_modo === 'presente' ? 'presente' : 'surpresa'; crianca.presente = crianca.presente_modo === 'presente' ? limpa(c.presente) : 'surpresa' }
-    else { crianca.dentinho = limpa(c.dentinho); crianca.como_caiu = limpa(c.como_caiu); crianca.deixa_presente = limpa(c.deixa_presente) }
+    else if (b.pacote === 'recado') { crianca.dentinho = limpa(c.dentinho); crianca.como_caiu = limpa(c.como_caiu); crianca.deixa_presente = limpa(c.deixa_presente) }
+    // missão: o desafio contado pela mãe e as datas (o trabalhador agenda cada vídeo a partir delas)
+    let missao: any = null
+    if (pac.etapas) {
+      const m = b.missao || {}
+      missao = { tipo: b.pacote, desafio: limpa(m.desafio, 200), evento: limpa(m.evento, 40), data: dataOk(m.data), nome_objeto: limpa(m.nome_objeto, 40),
+        presente: limpa(m.presente, 80), medo: limpa(m.medo, 160), ajuda: limpa(m.ajuda, 160), recompensa: limpa(m.recompensa, 80) }
+      if ((b.pacote === 'coragem' || b.pacote === 'chupeta') && !missao.data) return NextResponse.json({ erro: 'faltou a data' }, { status: 400 })
+    }
     const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
     const preco = +(pac.preco + irmaos * cfg.irmao).toFixed(2)
-    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco, crianca, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem: b.origem || null }
+    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem: b.origem || null }
     if (b.foto && /^data:image\/(jpeg|png|webp);base64,/.test(b.foto)) {
       const buf = Buffer.from(b.foto.split(',')[1], 'base64'); if (buf.length > 4e6) return NextResponse.json({ erro: 'foto muito grande' }, { status: 400 })
       p.foto_path = await db.sobe(`${p.codigo}/foto.jpg`, buf, 'image/jpeg')
