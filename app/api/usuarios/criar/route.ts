@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { problemaNaSenha } from '@/lib/senha-forte'
 
 // CRIAR USUÁRIO — pelo servidor, não pelo navegador.
 //
@@ -35,6 +36,8 @@ export async function POST(req: Request) {
 
     const { email, senha, nome, setor, papel } = await req.json()
     if (!email || !senha || !nome) return NextResponse.json({ ok: false, error: 'faltou email, senha ou nome' }, { status: 200 })
+    const fraca = problemaNaSenha(String(senha))  // senha forte (08/10): a regra vale aqui, no servidor
+    if (fraca) return NextResponse.json({ ok: false, error: fraca }, { status: 200 })
 
     const { data: criado, error: errAuth } = await sb.auth.admin.createUser({
       email, password: senha, email_confirm: true, user_metadata: { nome, setor },

@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
+import { problemaNaSenha, REGRA_SENHA } from '@/lib/senha-forte'
 
 type UsuarioPerfil = {
   id: string
@@ -71,7 +72,10 @@ export default function Usuarios() {
 
   async function criarUsuario(e: React.FormEvent) {
     e.preventDefault()
-    setSalvando(true); setErro(''); setMensagem('')
+    setErro(''); setMensagem('')
+    const fraca = problemaNaSenha(uSenha)
+    if (fraca) { setErro(fraca); return }
+    setSalvando(true)
 
     // Vai pelo servidor (ver app/api/usuarios/criar). O `supabase.auth.signUp` daqui do navegador
     // TROCAVA A SESSÃO pela do usuário recém-criado: quem clicava era deslogado e virava o novato,
@@ -193,7 +197,8 @@ export default function Usuarios() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Senha inicial</label>
-                <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Minimo 6 caracteres" type="password" required minLength={6} style={input} />
+                <input value={uSenha} onChange={e => setUSenha(e.target.value)} placeholder="Senha forte" type="password" required minLength={10} style={input} />
+                <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '4px' }}>{REGRA_SENHA}</div>
               </div>
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px' }}>

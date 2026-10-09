@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { problemaNaSenha } from '@/lib/senha-forte'
 
 // Acesso de professor ao portal (/professor). Link é pelo EMAIL (login = professores.email).
 //  GET  -> lista de emails que já têm acesso (setor='professor')
@@ -25,8 +26,12 @@ export async function POST(req: NextRequest) {
     const email = (b.email || '').toString().trim().toLowerCase()
     const senha = (b.senha || '').toString()
     const professorId = b.professor_id
-    if (!professorId || !email || senha.length < 6) {
-      return NextResponse.json({ ok: false, error: 'informe professor, email e senha (mín. 6)' }, { status: 200 })
+    if (!professorId || !email) {
+      return NextResponse.json({ ok: false, error: 'informe professor e email' }, { status: 200 })
+    }
+    const fraca = problemaNaSenha(senha)  // senha forte (08/10)
+    if (fraca) {
+      return NextResponse.json({ ok: false, error: fraca }, { status: 200 })
     }
     const org = await orgDaRequest(req.headers.get('authorization'))
     const { data: prof } = await supabase.from('professores').select('id, nome').eq('org_id', org).eq('id', professorId).single()

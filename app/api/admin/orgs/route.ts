@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
 import { ORG_CND } from '@/lib/org'
+import { problemaNaSenha } from '@/lib/senha-forte'
 
 // PAINEL ADMIN (super-admin CnD): lista as organizações com uso/custo + ações.
 // Só quem é admin da CnD acessa.
@@ -115,7 +116,9 @@ export async function PUT(req: Request) {
   const email = (b.adminEmail || '').toString().trim().toLowerCase()
   const senha = (b.adminSenha || '').toString()
   const adminNome = (b.adminNome || '').toString().trim() || nome
-  if (!nome || !email || senha.length < 6) return NextResponse.json({ ok: false, error: 'informe nome da org, email e senha (mín. 6)' }, { status: 200 })
+  if (!nome || !email) return NextResponse.json({ ok: false, error: 'informe nome da org e email' }, { status: 200 })
+  const fraca = problemaNaSenha(senha)  // senha forte (08/10)
+  if (fraca) return NextResponse.json({ ok: false, error: fraca }, { status: 200 })
 
   // 1) cria a organização
   const orgId = randomUUID()

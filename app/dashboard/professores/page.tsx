@@ -3,6 +3,7 @@ import { fetchAuth } from '@/lib/api'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { REGRA_SENHA } from '@/lib/senha-forte'
 
 type Professor = {
   id: string
@@ -65,7 +66,8 @@ export default function Professores() {
   function abrirAcesso(p: Professor) {
     setAcessoPara(p)
     setAcEmail(p.email || '')
-    setAcSenha('cnd' + Math.floor(1000 + Math.random() * 9000)) // sugestão de senha
+    // sugestão de senha FORTE (08/10): antes era 'cnd' + 4 números, fraca. Ex.: Cnd4821#qxt
+    setAcSenha('Cnd' + Math.floor(1000 + Math.random() * 9000) + '#' + Array.from({ length: 3 }, () => 'abcdefghjkmnpqrstuvwxyz'[Math.floor(Math.random() * 23)]).join(''))
     setAcMsg('')
   }
 
@@ -221,7 +223,8 @@ export default function Professores() {
               </div>
               <div>
                 <label style={{ display: 'block', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '6px' }}>Senha inicial</label>
-                <input value={acSenha} onChange={e => setAcSenha(e.target.value)} required minLength={6} style={input} />
+                <input value={acSenha} onChange={e => setAcSenha(e.target.value)} required minLength={10} style={input} />
+                <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 4 }}>{REGRA_SENHA}</div>
               </div>
               <div style={{ display: 'flex', gap: '8px' }}>
                 <button type="submit" disabled={acSalvando} style={btnPrimary}>{acSalvando ? 'Criando...' : 'Criar acesso'}</button>

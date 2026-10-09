@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
+import { problemaNaSenha } from '@/lib/senha-forte'
 
 const card: React.CSSProperties = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 12 }
 const PLANOS = ['interno', 'teste', 'basico', 'pro', 'premium']
@@ -81,7 +82,9 @@ export default function AdminOrgs() {
   const [resultado, setResultado] = useState<any>(null)
 
   async function criarOrg() {
-    if (!f.nome || !f.adminEmail || f.adminSenha.length < 6) { setResultado({ erro: 'preencha nome da org, email e senha (mín. 6)' }); return }
+    if (!f.nome || !f.adminEmail) { setResultado({ erro: 'preencha nome da org e email' }); return }
+    const fraca = problemaNaSenha(f.adminSenha)
+    if (fraca) { setResultado({ erro: fraca }); return }
     setCriando(true); setResultado(null)
     const j = await fetchAuth('/api/admin/orgs', { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(f) }).then(r => r.json()).catch(() => ({ ok: false }))
     setCriando(false)
@@ -131,7 +134,7 @@ export default function AdminOrgs() {
             <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Nome do admin</label><input style={inp} value={f.adminNome} onChange={e => setF({ ...f, adminNome: e.target.value })} placeholder="Fulano de Tal" /></div>
             <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Slug (opcional)</label><input style={inp} value={f.slug} onChange={e => setF({ ...f, slug: e.target.value })} placeholder="escola-fulano" /></div>
             <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Email do admin *</label><input style={inp} value={f.adminEmail} onChange={e => setF({ ...f, adminEmail: e.target.value })} placeholder="admin@cliente.com" /></div>
-            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Senha inicial * (mín. 6)</label><input style={inp} value={f.adminSenha} onChange={e => setF({ ...f, adminSenha: e.target.value })} placeholder="senha123" /></div>
+            <div><label style={{ fontSize: 11, color: 'var(--text-faint)' }}>Senha inicial * (forte: 10+, maiúscula, minúscula, número e símbolo)</label><input style={inp} value={f.adminSenha} onChange={e => setF({ ...f, adminSenha: e.target.value })} placeholder="senha123" /></div>
           </div>
           <button onClick={criarOrg} disabled={criando} style={{ marginTop: 14, background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, padding: '10px 20px', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: criando ? .6 : 1 }}>{criando ? 'Criando…' : 'Criar cliente'}</button>
           {resultado?.erro && <div style={{ marginTop: 10, fontSize: 13, color: 'var(--red)' }}>{resultado.erro}</div>}

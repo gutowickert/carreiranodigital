@@ -16,7 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
-  Server, Video, CreditCard, Presentation,
+  Server, Video, CreditCard, Presentation, KeyRound,
   type LucideIcon,
 } from 'lucide-react'
 import { CANAL_CAMPAINHA } from '@/lib/campainha'
@@ -618,6 +618,9 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                   <span style={{ display: 'flex', gap: 8 }}><VidroToggle compacto /><ThemeToggle compacto /></span>
                 </div>
                 {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
+                <Link href="/dashboard/minha-senha" style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', textDecoration: 'none', boxSizing: 'border-box' }}>
+                  <KeyRound size={16} /> Trocar minha senha
+                </Link>
                 <button onClick={sair} style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--r-lg)', padding: '13px', fontSize: 14, fontWeight: 700, color: 'var(--text-muted)', cursor: 'pointer', font: 'inherit' }}>
                   <LogOut size={16} /> Sair da conta
                 </button>
@@ -766,6 +769,9 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                 <ThemeToggle compacto />
               </div>
               {(perfil.papel === 'admin' || perfil.wa_caixa) && <NotifCelular />}
+              <Link href="/dashboard/minha-senha" style={{ marginTop: 6, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: 'var(--r)', padding: '8px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', textDecoration: 'none', boxSizing: 'border-box' }}>
+                <KeyRound size={14} /> Trocar minha senha
+              </Link>
               <button onClick={sair} style={{ marginTop: 6, width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, background: 'transparent', border: '1px solid var(--glass-border)', borderRadius: 'var(--r)', padding: '8px', fontSize: 12.5, fontWeight: 600, color: 'var(--text-muted)', cursor: 'pointer' }}>
                 <LogOut size={14} /> Sair
               </button>
