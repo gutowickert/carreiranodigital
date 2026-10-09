@@ -40,6 +40,7 @@ Um sistema que trabalha em cima do WhatsApp do cliente: recebe quem chega, a IA 
 | Máquina CND | a conversa com a IA que conhece o sistema; aba Peças guarda o que ela produz |
 | Custo da IA | quanto a IA custou, por dia, por tipo, e a Máquina por pessoa |
 | Ajustes | etapas do funil (e em quais a IA atende), fluxo comercial, motivos de perda, usuários, logo e cor |
+| Os balões do menu | verde = mensagem nova (WhatsApp, disparos, propostas); vermelho = coisa pra fazer (agenda, IA pediu ajuda, artes pra revisar, tarefas de leads vencidas do time, produção atrasada, sinal a receber na Dani). Com o grupo fechado o número sobe pro nome do grupo; no celular, pro Mais |
 | Trocar minha senha | botão no menu, ao lado do Sair: cada pessoa troca a própria senha. Toda senha (criada ou trocada) precisa de 10+ caracteres, maiúscula, minúscula, número e símbolo |
 
 ## O avançado
