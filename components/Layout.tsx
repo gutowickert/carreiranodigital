@@ -304,6 +304,13 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [aceites, setAceites] = useState<any[]>([])
   const [propBalao, setPropBalao] = useState(0)
   const waPrevRef = useRef(-1)
+  // BALÕES DE TRABALHO PARADO (09/10/2026; o Nando aprovou em 08/10: "se faz sentido e facilitará para
+  // os atendentes, sim"). Telas com coisa pra uma pessoa fazer que não avisavam ninguém:
+  //  - Tarefas de Leads: tarefas VENCIDAS de lead que está com o time (as de lead com a IA o motor resolve
+  //    sozinho; contar essas seria ruído). É a mesma tabela e o mesmo filtro que a tela mostra.
+  //  - Produção (quem usa): pedido com prazo vencido e ainda não entregue.
+  const [tarefasVenc, setTarefasVenc] = useState(0)
+  const [producaoAtras, setProducaoAtras] = useState(0)
 
   useEffect(() => {
     function checkMobile() { setIsMobile(window.innerWidth < 768) }
@@ -466,6 +473,32 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [marca, setMarca] = useState<any>(null)
   useEffect(() => { fetchAuth('/api/org/me').then(r => r.json()).then(j => { if (j?.ok) setMarca(j.org) }).catch(() => { }) }, [])
 
+  useEffect(() => {
+    if (!perfil) return
+    let ativo = true
+    const usaProducao = marca?.config?.features?.producao === true
+    async function checar() {
+      if (document.hidden) return
+      const agora = new Date().toISOString()
+      const vencidas = () => supabase.from('tarefas_lead').select('id', { count: 'exact', head: true }).eq('concluida', false).eq('cancelada', false).lt('data_vencimento', agora)
+      const [{ count: todas }, { count: daIa }] = await Promise.all([
+        vencidas(),
+        supabase.from('tarefas_lead').select('id, leads!inner(atendido_por)', { count: 'exact', head: true }).eq('concluida', false).eq('cancelada', false).lt('data_vencimento', agora).eq('leads.atendido_por', 'ia'),
+      ])
+      if (ativo) setTarefasVenc(Math.max(0, (todas || 0) - (daIa || 0)))
+      if (usaProducao) {
+        const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+        const { count, error } = await supabase.from('pedidos_producao').select('id', { count: 'exact', head: true }).lt('prazo', hoje).not('status', 'in', '(entregue,cancelado)')
+        if (ativo) setProducaoAtras(error ? 0 : (count || 0))
+      }
+    }
+    const aoVoltar = () => { if (!document.hidden) checar() }
+    checar()
+    const t = setInterval(checar, 60000)
+    window.addEventListener('focus', aoVoltar)
+    return () => { ativo = false; clearInterval(t); window.removeEventListener('focus', aoVoltar) }
+  }, [perfil, marca?.config?.features?.producao])
+
   function toggle(titulo: string) {
     setAbertos(prev => ({ ...prev, [titulo]: !prev[titulo] }))
   }
@@ -522,6 +555,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     if (href === '/dashboard/whatsapp-disparos') return { n: dispUnread, acao: false }
     if (href === '/dashboard/orcamentos') return { n: propBalao, acao: false }
     if (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') return { n: agendaBalao, acao: true }
+    if (href === '/dashboard/tarefas/leads') return { n: tarefasVenc, acao: true }
+    if (href === '/dashboard/producao') return { n: producaoAtras, acao: true }
     return { n: 0, acao: false }
   }
   // Soma de uma lista de telas. Números que são o MESMO número não somam duas vezes: os disparos são
@@ -629,12 +664,12 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                       {reais.map(m => {
                         const Icone = ICONES[m.href] || Circle
                         const ativo = pathname === m.href
-                        const balao = m.href === '/dashboard/whatsapp' ? waUnread : m.href === '/dashboard/whatsapp-disparos' ? dispUnread : (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? agendaBalao : m.href === '/dashboard/orcamentos' ? propBalao : 0
+                        const { n: balao, acao: balaoAcao } = contagemDe(m.href)
                         return (
                           <Link key={m.href} href={m.href} className={'app-tile' + (ativo ? ' ativo' : '')}>
                             <span style={{ position: 'relative', lineHeight: 0 }}>
                               <Icone size={22} strokeWidth={1.75} />
-                              {balao > 0 && <span className="app-balao" style={{ background: (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? 'var(--red)' : '#25D366', color: (m.href === '/dashboard/agenda' || m.href === '/dashboard/minha-semana') ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
+                              {balao > 0 && <span className="app-balao" style={{ background: balaoAcao ? 'var(--red)' : '#25D366', color: balaoAcao ? '#fff' : '#063' }}>{balao > 99 ? '99+' : balao}</span>}
                             </span>
                             <span>{m.nome}</span>
                           </Link>
@@ -772,6 +807,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                                 {dispUnread > 99 ? '99+' : dispUnread}
                               </span>
                             )}
+                            {m.href === '/dashboard/tarefas/leads' && pilula(tarefasVenc, true, 'Tarefas vencidas de leads que estão com o time')}
+                            {m.href === '/dashboard/producao' && pilula(producaoAtras, true, 'Pedidos com o prazo vencido e ainda não entregues')}
                             {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
                             {/* propostas: verde, é cliente andando na direção da venda */}
                             {m.href === '/dashboard/orcamentos' && propBalao > 0 && (
