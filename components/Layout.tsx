@@ -16,7 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
-  Server, Video, CreditCard, Presentation, KeyRound,
+  Server, Video, CreditCard, Presentation, KeyRound, BarChart3,
   type LucideIcon,
 } from 'lucide-react'
 import { CANAL_CAMPAINHA } from '@/lib/campainha'
@@ -39,7 +39,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/disparos/relatorios': FileText, '/dashboard/listas': List,
   '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight, '/dashboard/financeiro/transferencias': ArrowLeftRight,
   '/dashboard/financeiro/custos': Receipt, '/dashboard/financeiro/receitas': Coins, '/dashboard/financeiro/contas-pagar': CreditCard, '/dashboard/financeiro/naturezas': Tags, '/dashboard/comissoes': Percent,
-  '/dashboard/financeiro/notas-fiscais': FileText,
+  '/dashboard/financeiro/notas-fiscais': FileText, '/dashboard/financeiro/relatorios': BarChart3,
   '/dashboard/vendedores': Handshake,
   '/dashboard/crm/config': Settings2, '/dashboard/matriculas-orfas': UserX, '/dashboard/motivos-perda': ThumbsDown,
   '/dashboard/tarefas/templates': ListTodo, '/dashboard/salas': DoorOpen, '/dashboard/cidades': MapPin, '/dashboard/modulos': Blocks,
@@ -143,6 +143,8 @@ const grupos: Grupo[] = [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
       { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
+      // 09/10/2026 (pedido do Rick): a central dos relatórios; os itens abaixo ficam por enquanto
+      { nome: 'Relatórios', href: '/dashboard/financeiro/relatorios' },
       { nome: 'Relatório de Receitas', href: '/dashboard/financeiro/receitas' },
       { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
       // 'Transferências entre Contas' (/dashboard/transferencias) saiu do menu em 02/10/2026: gravava numa
