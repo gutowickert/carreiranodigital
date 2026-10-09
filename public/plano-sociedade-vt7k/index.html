@@ -1,0 +1,473 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="robots" content="noindex, nofollow"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plano Lajeado e Franquia</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Source+Sans+3:wght@400;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: documento de uma coluna (plano de negócio), tabelas comparando os 3 cenários lado a lado, simulador no meio */
+:root{
+  --bg:#F3F5F4; --card:#FFFFFF; --fg:#15211D; --muted:#5A6A64; --line:#D7DFDB;
+  --accent:#0D7A63; --accent-soft:#E2F2EC; --warn:#B4540A; --warn-soft:#FBEBDD; --bad:#B42318;
+  --display:"Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --body:"Source Sans 3", "Segoe UI", system-ui, sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1614; --card:#17211E; --fg:#E6EEEA; --muted:#9AABA4; --line:#2A3833;
+  --accent:#3CC7A2; --accent-soft:#163A30; --warn:#F0A257; --warn-soft:#3A2614; --bad:#F27B6F; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1614; --card:#17211E; --fg:#E6EEEA; --muted:#9AABA4; --line:#2A3833;
+  --accent:#3CC7A2; --accent-soft:#163A30; --warn:#F0A257; --warn-soft:#3A2614; --bad:#F27B6F; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:17px/1.55 var(--body);margin:0}
+.wrap{max-width:980px;margin:0 auto;padding-inline:20px;padding-block:40px 80px;display:grid;gap:56px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+h1{font-size:clamp(34px,6vw,58px);font-weight:800;letter-spacing:-.02em}
+h2{font-size:clamp(24px,3.4vw,32px);font-weight:800;letter-spacing:-.01em}
+h3{font-size:19px;font-weight:600}
+p{margin:0;max-width:68ch}
+section{display:grid;gap:18px}
+.eyebrow{font:600 13px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--accent)}
+.lead{font-size:20px;color:var(--muted);max-width:60ch}
+.muted{color:var(--muted)}
+.small{font-size:14.5px}
+.num,td.n,th.n{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.box{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:20px}
+.note{background:var(--warn-soft);border-left:4px solid var(--warn);padding:14px 16px;border-radius:0 8px 8px 0;font-size:15.5px;max-width:none}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.cols>*{min-width:0}
+.scen{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@media (max-width:700px){.scen{grid-template-columns:1fr}}
+.scen .box{display:grid;gap:6px}
+.scen .big{font:800 34px/1 var(--display);color:var(--accent)}
+.scen .tag{font:600 13px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tbl{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:560px;font-size:15.5px}
+th,td{padding:9px 14px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:700;font-size:13px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.tot td{font-weight:700;border-top:2px solid var(--fg)}
+tr.hl td{background:var(--accent-soft);font-weight:700}
+tr.sub td{color:var(--muted);font-size:14.5px}
+tr:last-child td{border-bottom:0}
+.neg{color:var(--bad)}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;align-items:stretch}
+.flow div{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;display:grid;gap:4px;align-content:start}
+.flow div b{font-family:var(--display);font-size:17px}
+.flow div.on{background:var(--accent-soft);border-color:var(--accent)}
+ul,ol{margin:0;padding-left:22px;display:grid;gap:6px;max-width:72ch}
+.sim{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px}
+@media (max-width:760px){.sim{grid-template-columns:1fr}}
+.ctrl{display:grid;gap:14px}
+.ctrl label{display:grid;gap:4px;font-weight:600;font-size:15px}
+.ctrl .row{display:flex;justify-content:space-between;gap:10px}
+.ctrl output{font-family:var(--mono);color:var(--accent)}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.res{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-content:start}
+.res div{background:var(--bg);border-radius:8px;padding:12px;display:grid;gap:2px}
+.res span{font-size:13px;color:var(--muted)}
+.res b{font:600 21px/1.2 var(--mono)}
+.res .wide{grid-column:1/-1}
+.steps{display:grid;gap:12px;counter-reset:s}
+.steps .box{display:grid;grid-template-columns:44px minmax(0,1fr);gap:14px}
+.steps .box::before{counter-increment:s;content:counter(s);font:800 28px/1 var(--display);color:var(--accent)}
+.steps .box>div{display:grid;gap:6px}
+.pills{display:none;gap:6px;flex-wrap:wrap}
+.pills button{font:600 15px/1 var(--body);padding:10px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--fg);cursor:pointer}
+.pills button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--card)}
+.pills button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media (max-width:640px){
+  body{font-size:16px}
+  .wrap{padding-inline:16px;padding-block:28px 60px;gap:44px}
+  .lead{font-size:18px}
+  .pills{display:flex}
+  table{min-width:0;font-size:15px}
+  th,td{padding:9px 10px}
+  .off{display:none}
+  #t-prem thead{display:none}
+  #t-prem tr{display:grid;grid-template-columns:minmax(0,1fr) auto;border-bottom:1px solid var(--line)}
+  #t-prem tr:last-child{border-bottom:0}
+  #t-prem td{border:0;padding:10px 12px 2px}
+  #t-prem td:nth-child(1){font-weight:600}
+  #t-prem td:nth-child(3){grid-column:1/-1;padding:0 12px 10px}
+  .scen .big{font-size:30px}
+  .flow{grid-template-columns:1fr 1fr}
+  .flow div:last-child{grid-column:1/-1}
+  .res b{font-size:18px}
+  .steps .box{grid-template-columns:30px minmax(0,1fr);gap:10px}
+  .box{padding:16px}
+}
+footer{font-size:14px;color:var(--muted);border-top:1px solid var(--line);padding-top:18px}
+</style>
+
+</head><body>
+<div class="wrap">
+
+<header style="display:grid;gap:16px">
+  <span class="eyebrow">Proposta de sociedade · outubro de 2026</span>
+  <h1>Garrafas e copos personalizados no Vale do Taquari, com produção em casa e pontos de retirada</h1>
+  <p class="lead">Marca nova. O Segato produz na casa dele, em Arroio do Meio. Em vez de loja, a gente monta uma rede de pontos de retirada em comércios parceiros de Lajeado, Estrela, Teutônia, Cruzeiro do Sul e Arroio do Meio, e cuida da rota de entrega entre eles. A escola cuida do resto: tráfego, criativos, atendimento por IA, sistema e financeiro.</p>
+  <p class="note"><b>Premissa de calendário:</b> simulei <b>20 dias de produção por mês</b> (uns 5 dias por semana). Todos os valores são por mês. Os números são estimativas pra decidir; os de verdade aparecem nos 3 primeiros meses de operação.</p>
+</header>
+
+<section>
+  <span class="eyebrow">Resumo</span>
+  <h2>Os três cenários no Vale</h2>
+  <div class="scen" id="resumo"></div>
+</section>
+
+<section>
+  <span class="eyebrow">A sociedade</span>
+  <h2>Quem faz o quê e como o dinheiro anda</h2>
+  <div class="cols">
+    <div class="box" style="display:grid;gap:8px"><h3>Segato · 33,3%</h3><p class="small">Produção na casa dele em Arroio do Meio: arte na peça, máquina, acabamento, embalagem e separar os pedidos por ponto de retirada. Recebe <b>pró-labore fixo de R$ 3.500</b> todo mês, mais a parte dele no lucro.</p></div>
+    <div class="box" style="display:grid;gap:8px"><h3>Escola · 66,7%</h3><p class="small">Guto, Nando e Rick. Marca, tráfego, criativos, atendimento por IA no WhatsApp, sistema (pedidos, produção, entregas), financeiro com o Rick. Também cadastra e cuida dos pontos de retirada e da rota de entrega.</p></div>
+    <div class="box" style="display:grid;gap:8px"><h3>Caixinha · 20% do lucro</h3><p class="small">Conta separada, só pra crescer: próxima máquina, estoque maior, reserva de emergência e o caminho da franquia (marca no INPI, circular, unidade piloto). Não é distribuída.</p></div>
+  </div>
+  <div class="flow" aria-label="Caminho do dinheiro">
+    <div><span class="small muted">1</span><b>Venda</b><span class="small">garrafa R$ 80, copo R$ 65</span></div>
+    <div><span class="small muted">2</span><b>Custos por peça</b><span class="small">produto, imposto, cartão, tráfego, embalagem</span></div>
+    <div><span class="small muted">3</span><b>Custos fixos</b><span class="small">espaço, rota de entrega, pró-labore, 2º turno</span></div>
+    <div class="on"><span class="small muted">4</span><b>Lucro do mês</b><span class="small">20% vai pra caixinha</span></div>
+    <div class="on"><span class="small muted">5</span><b>80% dividido</b><span class="small">66,7% escola, 33,3% Segato</span></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Sem loja</span>
+  <h2>Como o cliente recebe: pontos de retirada no comércio</h2>
+  <p>Abrir loja custa aluguel, reforma e alguém no balcão. O caminho mais barato pra começar é produzir na casa do Segato e entregar através de <b>pontos de retirada</b>: comércios parceiros onde o cliente busca o pedido. Pro parceiro é bom negócio, porque <b>cada retirada é um cliente entrando na loja dele</b>. Muito empreendedor de outro segmento vai querer isso.</p>
+  <div class="cols">
+    <div class="box" style="display:grid;gap:8px"><h3>Onde</h3><p class="small">1 ou 2 pontos por cidade pra começar: <b>Lajeado, Estrela, Teutônia, Cruzeiro do Sul e Arroio do Meio</b>. Comércio de movimento e horário longo: farmácia, padaria, loja de presentes, papelaria, café.</p></div>
+    <div class="box" style="display:grid;gap:8px"><h3>Como roda</h3><p class="small">O cliente escolhe o ponto na hora da compra, pelo WhatsApp com a IA. A produção separa os pedidos por ponto. Uma <b>rota de entrega</b> passa nos pontos todo dia de produção. O cliente recebe aviso no WhatsApp quando o pedido chega no ponto.</p></div>
+    <div class="box" style="display:grid;gap:8px"><h3>O que o parceiro ganha</h3><p class="small">Cliente entrando na loja, nome no mapa de retirada da marca e um expositor com peças de amostra no balcão, que também vende. Sem custo pra ele. Combinado simples por escrito: guarda o pacote e confere o nome na entrega.</p></div>
+  </div>
+  <p class="small muted">Entrega em casa continua possível, com motoboy pago pelo cliente. Pedido de empresa grande (30 a 200 peças) vai direto da produção pro cliente.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Premissas</span>
+  <h2>De onde saem os números</h2>
+  <div class="tbl"><table id="t-prem">
+    <thead><tr><th>Item</th><th class="n">Valor</th><th>Observação</th></tr></thead>
+    <tbody>
+      <tr><td>Preço da garrafa</td><td class="n">R$ 80,00</td><td class="small muted">Simulação feita só com garrafa, como pedido. Copo (R$ 65, custo R$ 20, 30 min) dá quase o mesmo lucro por minuto de máquina.</td></tr>
+      <tr><td>Custo da garrafa</td><td class="n">R$ 23,00</td><td class="small muted">Peça + insumo da gravação</td></tr>
+      <tr><td>Imposto (Simples)</td><td class="n">6%</td><td class="small muted">R$ 4,80 por garrafa</td></tr>
+      <tr><td>Taxa de cartão / Pix</td><td class="n">3%</td><td class="small muted">Média entre parcelado e Pix</td></tr>
+      <tr><td>Tráfego pago (verba de anúncio)</td><td class="n">10%</td><td class="small muted">Usei 10%, não 5%. Marca nova começa sem cliente; 5% é meta pra quando tiver recompra e indicação. Com 5% o lucro sobe R$ 4 por garrafa.</td></tr>
+      <tr><td>Embalagem</td><td class="n">R$ 3,00</td><td class="small muted">Caixa, papel, etiqueta</td></tr>
+      <tr><td>Perdas e retrabalho</td><td class="n">R$ 2,00</td><td class="small muted">Gravação errada, peça riscada</td></tr>
+      <tr class="hl"><td>Sobra por garrafa</td><td class="n">R$ 36,80</td><td class="small">46% do preço, antes dos custos fixos</td></tr>
+      <tr><td>Capacidade da máquina</td><td class="n">30 por dia</td><td class="small muted">Até 20 num turno. Com um 2º turno de outra pessoa, a mesma máquina chega a 30. A primeira já é do Segato.</td></tr>
+      <tr><td>Pessoas</td><td class="n">1 a cada 2 máquinas</td><td class="small muted">Por turno. Uma pessoa cuida de duas máquinas ao mesmo tempo.</td></tr>
+      <tr><td>Equipamentos</td><td class="n">R$ 0</td><td class="small muted">O Segato já tem os equipamentos. Pra abrir, só adaptar o espaço de produção na casa dele.</td></tr>
+      <tr><td>Rota de entrega nos pontos</td><td class="n">R$ 1.600</td><td class="small muted">Por mês. Uma volta por dia de produção pelas 5 cidades (uns 80 km), terceirizada: R$ 80 por dia.</td></tr>
+      <tr><td>Expositores nos pontos</td><td class="n">R$ 300</td><td class="small muted">Cada um, uma vez. Peças de amostra no balcão do parceiro.</td></tr>
+      <tr><td>Espaço e energia (casa do Segato)</td><td class="n">R$ 500</td><td class="small muted">Por mês, pago ao Segato pelo uso do espaço e pela luz da produção. A luz extra de cada máquina entra à parte.</td></tr>
+      <tr><td>Operador do 2º turno (CLT)</td><td class="n">R$ 2.800</td><td class="small muted">Salário + encargos + vale. Entra quando as máquinas passam de 20 por dia cada.</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Capacidade</span>
+  <h2>Quantas máquinas e quantas pessoas</h2>
+  <p>Conta: <b>cada máquina faz até 20 por dia num turno e até 30 com um 2º turno</b>. <b>Uma pessoa cuida de 2 máquinas</b> por turno. A operação começa com a máquina e os equipamentos que o Segato já tem. Antes de comprar máquina, coloca o 2º turno; máquina nova só quando a fila passar de uma semana mesmo com os dois turnos.</p>
+  <div class="tbl"><table id="t-cap"></table></div>
+  <p class="note">Com 60 por dia são 2 máquinas em 2 turnos e 2 pessoas. Antes de chegar lá, conferir se a parte elétrica da casa aguenta, como fica a exaustão (gravação a laser solta fumaça e cheiro) e se a prefeitura de Arroio do Meio libera produção no endereço.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Investimento</span>
+  <h2>Quanto precisa pra abrir e quanto pra crescer</h2>
+  <p>O dinheiro entra em duas etapas. <b>Pra abrir</b> é pouco, porque os equipamentos já existem. <b>Pra crescer</b> só sai quando a venda já provou que precisa, e pode vir da caixinha e do próprio lucro.</p>
+  <div class="tbl"><table id="t-inv"></table></div>
+  <p class="small muted">Capital de giro = 2 meses de custo fixo, pra segurar o começo, enquanto as vendas ainda não chegaram no ritmo. Estoque = meio mês de garrafas e embalagens. Ao crescer, estoque e capital de giro aumentam junto.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Resultado mensal</span>
+  <h2>O que sobra todo mês</h2>
+  <div class="tbl"><table id="t-dre"></table></div>
+</section>
+
+<section>
+  <span class="eyebrow">Divisão</span>
+  <h2>Quanto cada um leva</h2>
+  <div class="tbl"><table id="t-div"></table></div>
+  <p class="small muted">A parte da escola é dividida entre Guto, Nando e Rick como vocês combinarem. O tráfego é verba de anúncio (dinheiro que vai pro Meta), não pagamento pra escola: o trabalho da escola é pago pelos 66,7%.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Simulador</span>
+  <h2>Mexa nos números</h2>
+  <div class="box sim">
+    <div class="ctrl">
+      <label for="s-dia"><span class="row">Garrafas por dia <output id="o-dia"></output></span><input type="range" id="s-dia" min="5" max="80" step="1" value="20"></label>
+      <label for="s-dias"><span class="row">Dias de produção no mês <output id="o-dias"></output></span><input type="range" id="s-dias" min="16" max="26" step="1" value="20"></label>
+      <label for="s-preco"><span class="row">Preço da garrafa <output id="o-preco"></output></span><input type="range" id="s-preco" min="60" max="120" step="1" value="80"></label>
+      <label for="s-custo"><span class="row">Custo da garrafa <output id="o-custo"></output></span><input type="range" id="s-custo" min="15" max="40" step="1" value="23"></label>
+      <label for="s-traf"><span class="row">Tráfego (% do faturamento) <output id="o-traf"></output></span><input type="range" id="s-traf" min="3" max="20" step="1" value="10"></label>
+      <label for="s-cap"><span class="row">Peças por máquina por dia, com 2 turnos <output id="o-cap"></output></span><input type="range" id="s-cap" min="15" max="45" step="1" value="30"></label>
+    </div>
+    <div class="res" id="sim-res"></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Retorno</span>
+  <h2>Em quanto tempo se paga e o que a caixinha compra</h2>
+  <div class="tbl"><table id="t-ret"></table></div>
+  <p>Abrindo com os equipamentos do Segato e sem loja, <b>a abertura se paga em poucos meses</b> já no cenário de 20 por dia. Primeiro entra o 2º turno; a 2ª máquina só quando a fila passar de uma semana com os dois turnos. Se a venda crescer mais rápido que a caixinha, dá pra completar com parte do lucro do mês ou parcelar a máquina: a decisão é dos sócios, olhando a fila.</p>
+  <p class="note"><b>Onde mora o risco:</b> 20 garrafas por dia são 400 por mês no Vale. Pra 40 ou 60 por dia, a venda pra pessoa física não basta: precisa de <b>empresa</b> (brinde de fim de ano, kit de boas-vindas, evento), formatura, casamento e time esportivo. Pedido de empresa vem de 30 a 200 peças de uma vez. Isso entra no plano comercial desde o primeiro mês.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Outra linha de receita</span>
+  <h2>Venda pra empresas em quantidade (serigrafia)</h2>
+  <p>Além da peça personalizada, tem a <b>venda em volume pra empresa</b>. Exemplo real: o Segato fechou <b>1.000 copos pra Claro a R$ 22 cada</b>, com custo de R$ 14 por copo. Isso sai numa <b>máquina de serigrafia mais simples</b>, que ele já tem: <b>300 copos por tarde</b>. Como é outra máquina, <b>não disputa tempo com a gravação</b> das garrafas.</p>
+  <div class="tbl"><table id="t-corp"></table></div>
+  <p class="small muted">Conta por pedido de 1.000 copos: R$ 22.000 de venda, menos R$ 14.000 de custo, 6% de imposto e R$ 0,30 por copo de embalagem e frete. Sem tráfego pago: esse cliente vem por prospecção (a escola monta a lista de empresas, brinde de fim de ano, evento, kit de boas-vindas). Entra na mesma regra da sociedade: 20% pra caixinha e o resto 66,7% escola, 33,3% Segato.</p>
+  <p class="note"><b>Levantar com o Segato o catálogo completo</b> do que dá pra vender lá (outros produtos, tamanhos, tipos de impressão, preço e custo de cada um). Cada linha nova entra aqui do mesmo jeito: preço, custo, quanto sai por tarde e em qual máquina.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Franquia</span>
+  <h2>A franquia: produção em casa e pontos parceiros</h2>
+  <p>Depois de Lajeado provada, a marca vira franqueadora. O franqueado produz em casa ou numa sala pequena, com 1 máquina, e monta a rede de pontos de retirada da região dele com o modelo que provamos aqui. A franqueadora (a escola) entrega tudo pronto: marca, anúncios na região dele, <b>atendimento por IA no WhatsApp que vende e manda o pedido pra fila dele</b>, sistema, fornecedor de garrafas e treinamento. Primeiras praças: Teutônia, Venâncio Aires, Santa Cruz do Sul e Porto Alegre.</p>
+  <div class="cols">
+    <div class="box" style="display:grid;gap:6px"><h3>O que o franqueado paga</h3><ul class="small"><li>Taxa de franquia: R$ 30.000</li><li>Royalties: 6% do faturamento</li><li>Fundo de marketing: 2% (vira anúncio da marca)</li><li>Sistema + atendimento por IA: R$ 490/mês</li><li>Compra as garrafas da franqueadora (R$ 2 de margem por peça)</li></ul></div>
+    <div class="box" style="display:grid;gap:6px"><h3>O que ele recebe</h3><ul class="small"><li>Marca registrada e o modelo de pontos de retirada</li><li>Treinamento de produção com o Segato</li><li>Anúncio na cidade dele (a verba é dele, 8%)</li><li>Atendimento e venda pela IA, 24 horas</li><li>Pedido chega pronto na fila, com arte aprovada</li></ul></div>
+  </div>
+  <h3>Investimento do franqueado</h3>
+  <div class="tbl"><table id="t-finv"></table></div>
+  <h3>Resultado do franqueado</h3>
+  <div class="tbl"><table id="t-fres"></table></div>
+  <p class="small muted">O franqueado produz sozinho: o lucro é o salário dele. Uma máquina faz até 20 por dia num turno; acima disso, 2º turno ou 2ª máquina.</p>
+  <h3>O que a franqueadora ganha</h3>
+  <div class="tbl"><table id="t-fq"></table></div>
+  <p class="small muted">Conta feita com cada unidade vendendo 15 garrafas por dia. Custo de atender cada unidade (IA, suporte, sistema): R$ 600/mês. Custo de implantar cada franquia (treinamento, montagem, comissão de venda): R$ 10 mil, o que deixa R$ 20 mil líquidos por taxa. O fundo de marketing não entra como ganho: ele é gasto em anúncio da marca.</p>
+</section>
+
+<section>
+  <span class="eyebrow">Caminho</span>
+  <h2>A ordem das coisas</h2>
+  <div class="steps">
+    <div class="box"><div><h3>Meses 0 a 1 · Montar</h3><p class="small">Nome e marca nova, contrato de sócios, CNPJ, alvará, adaptar o espaço na casa do Segato, fechar os 5 primeiros pontos parceiros, montar a rota, estoque, catálogo com fotos, IA de atendimento configurada, primeiros anúncios.</p></div></div>
+    <div class="box"><div><h3>Meses 1 a 6 · Provar no Vale</h3><p class="small">Meta: 20 garrafas por dia, 3 meses seguidos. Medir de verdade: qual ponto mais retira e quanto o expositor vende, custo por venda no anúncio, recompra, pedido de empresa, tempo real de máquina. Escrever o manual de produção enquanto o Segato faz.</p></div></div>
+    <div class="box"><div><h3>Meses 4 a 8 · Preparar a franquia (com a caixinha)</h3><p class="small">Registro da marca no INPI (fazer já no mês 1, demora), Circular de Oferta de Franquia (Lei 13.966/2019: entregar 10 dias antes de assinar), contrato, manual, kit do ponto parceiro.</p></div></div>
+    <div class="box"><div><h3>Meses 8 a 12 · Unidade piloto</h3><p class="small">Primeiro franqueado numa região vizinha (Venâncio Aires ou Santa Cruz do Sul), de preferência alguém de confiança, pra testar o modelo “só produz” antes de vender pra estranho.</p></div></div>
+    <div class="box"><div><h3>Mês 12 em diante · Vender franquias</h3><p class="small">Outras regiões do RS e Porto Alegre. A escola sabe fazer tráfego e venda: vender franquia é o mesmo funil, com público de quem quer ter o próprio negócio.</p></div></div>
+  </div>
+</section>
+
+<section>
+  <span class="eyebrow">Pra fechar antes de começar</span>
+  <h2>Decisões em aberto</h2>
+  <ol>
+    <li><b>Quem coloca o investimento.</b> Se a escola entra com o dinheiro e o Segato com o trabalho, decidir se o aporte volta primeiro (lucro distribuído só depois de devolver) ou se a divisão 66,7/33,3 vale desde o mês 1.</li>
+    <li><b>Os 33,3% do Segato valem pra quê.</b> Sugestão: 33,3% da operação do Vale. A franqueadora como empresa separada, com a parte do Segato definida à parte (ele é quem treina os franqueados).</li>
+    <li><b>Prazo e saída.</b> Contrato de sócios com período de experiência, o que acontece se alguém sair e quem fica com máquina e marca.</li>
+    <li><b>Nome da marca.</b> Escolher já pensando em franquia: curto, fácil de falar e livre no INPI.</li>
+    <li><b>Os equipamentos do Segato.</b> Entram como parte dele na sociedade, ficam emprestados ou a loja paga um aluguel por eles? Combinar também de quem são se alguém sair.</li>
+    <li><b>Quando comprar a próxima máquina.</b> Sugestão de regra: fila de pedidos acima de uma semana por 3 semanas seguidas. Confirmar na prática se a máquina faz mesmo 20 peças num turno e 30 em dois.</li>
+    <li><b>Produção em casa.</b> Ver com a prefeitura de Arroio do Meio e o contador se dá pra registrar a empresa e produzir no endereço do Segato (alvará, bombeiros).</li>
+    <li><b>Combinado com os pontos.</b> Um termo simples: o parceiro guarda o pacote, confere o nome na retirada e não responde por defeito do produto; a marca cuida do resto. Decidir se paga algo por retirada ou se o movimento na loja já basta.</li>
+  </ol>
+</section>
+
+<footer>Estimativa feita em 08/10/2026 e revista em 09/10/2026 (produção em casa e pontos de retirada) pela escola. Valores mensais com 20 dias de produção. Nenhum número aqui é garantia de resultado.</footer>
+</div>
+
+<script>
+const R = v => 'R$ ' + Math.round(v).toLocaleString('pt-BR')
+const P = v => (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + '%'
+
+// loja própria (Lajeado)
+function loja(o) {
+  const c = Object.assign({ porDia: 20, dias: 20, preco: 80, custo: 23, trafego: .10, imposto: .06, cartao: .03, embal: 3, perdas: 2, cap: 30 }, o)
+  const un = c.porDia * c.dias, fat = un * c.preco
+  const varUn = c.custo + c.preco * (c.trafego + c.imposto + c.cartao) + c.embal + c.perdas
+  const sobraUn = c.preco - varUn, contrib = sobraUn * un
+  const turno = c.cap * 2 / 3   // 30 por dia em 2 turnos = 20 num turno
+  const maqDe = d => Math.max(1, Math.ceil(d / c.cap))
+  const turnosDe = d => d <= turno * maqDe(d) ? 1 : 2
+  const pessoasDe = d => turnosDe(d) * Math.ceil(maqDe(d) / 2)   // 1 pessoa a cada 2 máquinas, por turno
+  const fixosDe = d => { const m = maqDe(d), a = pessoasDe(d) - 1
+    return { espaco: 500, rota: 1600, contas: 250 + 150 * m, contador: 350, sistemas: 400, manut: 120 * m, prolabore: 3500, aux: 2800 * a, outros: 300 } }
+  const soma = x => Object.values(x).reduce((a, b) => a + b, 0)
+  const maq = maqDe(c.porDia), novas = maq - 1, turnos = turnosDe(c.porDia), aux = pessoasDe(c.porDia) - 1
+  const f = fixosDe(c.porDia), fixos = soma(f)
+  const lucro = contrib - fixos, caixinha = Math.max(0, lucro) * .2, dist = Math.max(0, lucro) - caixinha
+  // abrir: com a máquina e os equipamentos do Segato, no ritmo de 1 máquina
+  const dIni = Math.min(c.porDia, turno), estIni = dIni * c.dias / 2 * (c.custo + c.embal), giroIni = 2 * soma(fixosDe(dIni))
+  const abrir = { sala: 1500, expo: 1500, estoque: estIni, marca: 3000, legal: 2500, lanc: 3000, giro: giroIni }
+  // crescer: só quando a venda pedir
+  const crescer = { maq: 18000 * novas, sala: 800 * novas, estoque: un / 2 * (c.custo + c.embal) - estIni, giro: 2 * fixos - giroIni }
+  const abrirTot = soma(abrir), crescerTot = soma(crescer), invTot = abrirTot + crescerTot
+  return { c, un, fat, varUn, sobraUn, contrib, maq, novas, turnos, aux, f, fixos, lucro, caixinha, dist, segLucro: dist / 3, escola: dist * 2 / 3, segTot: dist / 3 + f.prolabore,
+    abrir, crescer, abrirTot, crescerTot, invTot,
+    payback: lucro > 0 ? abrirTot / lucro : Infinity, paybackTot: lucro > 0 ? invTot / lucro : Infinity,
+    equilibrio: fixos / sobraUn / c.dias, mesesMaq: caixinha > 0 ? 18000 / caixinha : Infinity }
+}
+const S = [20, 40, 60].map(n => loja({ porDia: n }))
+const head = (t, cols) => `<thead><tr><th>${t}</th>${cols.map(c => `<th class="n">${c}</th>`).join('')}</tr></thead>`
+const row = (t, vals, cls = '') => `<tr class="${cls}"><td>${t}</td>${vals.map(v => `<td class="n">${v}</td>`).join('')}</tr>`
+const cols = ['20 por dia', '40 por dia', '60 por dia']
+const meses = m => isFinite(m) ? m.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' meses' : 'não se paga'
+
+document.getElementById('resumo').innerHTML = S.map(s => `<div class="box">
+  <span class="tag">${s.c.porDia} garrafas por dia · ${s.un} no mês</span>
+  <span class="big num">${R(s.lucro)}</span><span class="small muted">lucro por mês</span>
+  <span class="small">Pra abrir <b class="num">${R(s.abrirTot)}</b> · se paga em <b>${meses(s.payback)}</b></span>
+  <span class="small">${s.novas ? `Pra crescer, depois: <b class="num">${R(s.crescerTot)}</b> (${s.novas} máquina${s.novas > 1 ? 's' : ''} nova${s.novas > 1 ? 's' : ''})` : 'Sem máquina nova: usa a do Segato'}</span>
+  <span class="small">Segato leva <b class="num">${R(s.segTot)}</b> · escola <b class="num">${R(s.escola)}</b> · caixinha <b class="num">${R(s.caixinha)}</b></span>
+  <span class="small muted">${s.maq} ${s.maq > 1 ? 'máquinas' : 'máquina'}, ${s.aux + 1} ${s.aux ? 'pessoas' : 'pessoa'}</span></div>`).join('')
+
+document.getElementById('t-cap').innerHTML = head('Por dia', cols) + '<tbody>' +
+  row('Máquinas (até 30 por dia cada)', S.map(s => s.maq), 'hl') +
+  row('Turnos', S.map(s => s.turnos)) +
+  row('Já do Segato', S.map(() => 1)) +
+  row('Novas, compradas quando a venda pedir', S.map(s => s.novas || '·')) +
+  row('Pessoas na produção (1 a cada 2 máquinas por turno)', S.map(s => `Segato${s.aux ? ' + ' + s.aux + ' operador' + (s.aux > 1 ? 'es' : '') : ''}`)) +
+  row('Garrafas por mês', S.map(s => s.un.toLocaleString('pt-BR'))) + '</tbody>'
+
+const secao = t => `<tr><td colspan="4" style="font-weight:700;background:var(--bg)">${t}</td></tr>`
+document.getElementById('t-inv').innerHTML = head('Item', cols) + '<tbody>' +
+  secao('Pra abrir (agora)') +
+  row('Adaptar o espaço na casa do Segato (bancada, tomadas, exaustão)', S.map(s => R(s.abrir.sala))) +
+  row('Expositores nos 5 pontos parceiros', S.map(s => R(s.abrir.expo))) +
+  row('Máquina e equipamentos', S.map(() => 'do Segato')) +
+  row('Estoque inicial', S.map(s => R(s.abrir.estoque))) +
+  row('Marca nova, fotos, catálogo', S.map(s => R(s.abrir.marca))) +
+  row('CNPJ, alvará, bombeiros, contrato, INPI', S.map(s => R(s.abrir.legal))) +
+  row('Tráfego de lançamento', S.map(s => R(s.abrir.lanc))) +
+  row('Capital de giro (2 meses de fixo)', S.map(s => R(s.abrir.giro))) +
+  row('Total pra abrir', S.map(s => R(s.abrirTot)), 'tot') +
+  secao('Pra crescer (só quando a venda pedir)') +
+  row('Máquinas novas (R$ 18 mil cada)', S.map(s => s.crescer.maq ? R(s.crescer.maq) : '·')) +
+  row('Parte elétrica pra máquina nova', S.map(s => s.crescer.sala ? R(s.crescer.sala) : '·')) +
+  row('Estoque a mais', S.map(s => s.crescer.estoque ? R(s.crescer.estoque) : '·')) +
+  row('Capital de giro a mais', S.map(s => s.crescer.giro ? R(s.crescer.giro) : '·')) +
+  row('Total pra crescer', S.map(s => s.crescerTot ? R(s.crescerTot) : '·'), 'tot') +
+  row('Tudo junto', S.map(s => R(s.invTot)), 'hl') + '</tbody>'
+
+document.getElementById('t-dre').innerHTML = head('Mês', cols) + '<tbody>' +
+  row('Faturamento', S.map(s => R(s.fat)), 'hl') +
+  row('Custo das garrafas', S.map(s => '− ' + R(s.un * 23))) +
+  row('Imposto 6% + cartão 3%', S.map(s => '− ' + R(s.fat * .09))) +
+  row('Tráfego 10%', S.map(s => '− ' + R(s.fat * .10))) +
+  row('Embalagem e perdas', S.map(s => '− ' + R(s.un * 5))) +
+  row('Sobra antes dos fixos', S.map(s => R(s.contrib)), 'tot') +
+  row('Espaço e energia (casa do Segato)', S.map(s => '− ' + R(s.f.espaco)), 'sub') +
+  row('Rota de entrega nos pontos', S.map(s => '− ' + R(s.f.rota)), 'sub') +
+  row('Água, luz, internet', S.map(s => '− ' + R(s.f.contas)), 'sub') +
+  row('Contador', S.map(s => '− ' + R(s.f.contador)), 'sub') +
+  row('Sistemas e IA', S.map(s => '− ' + R(s.f.sistemas)), 'sub') +
+  row('Manutenção das máquinas', S.map(s => '− ' + R(s.f.manut)), 'sub') +
+  row('Pró-labore do Segato', S.map(s => '− ' + R(s.f.prolabore)), 'sub') +
+  row('Operador do 2º turno', S.map(s => s.f.aux ? '− ' + R(s.f.aux) : '·'), 'sub') +
+  row('Outros', S.map(s => '− ' + R(s.f.outros)), 'sub') +
+  row('Lucro do mês', S.map(s => R(s.lucro)), 'hl') +
+  row('Margem de lucro', S.map(s => P(s.lucro / s.fat))) +
+  row('Ponto de equilíbrio', S.map(s => s.equilibrio.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' por dia')) + '</tbody>'
+
+document.getElementById('t-div').innerHTML = head('Mês', cols) + '<tbody>' +
+  row('Lucro do mês', S.map(s => R(s.lucro))) +
+  row('Caixinha de crescimento (20%)', S.map(s => R(s.caixinha))) +
+  row('Pra dividir (80%)', S.map(s => R(s.dist)), 'tot') +
+  row('Escola (66,7%)', S.map(s => R(s.escola)), 'hl') +
+  row('Segato: parte no lucro (33,3%)', S.map(s => R(s.segLucro))) +
+  row('Segato: pró-labore', S.map(s => R(s.f.prolabore))) +
+  row('Segato no total', S.map(s => R(s.segTot)), 'hl') + '</tbody>'
+
+document.getElementById('t-ret').innerHTML = head('', cols) + '<tbody>' +
+  row('Pra abrir', S.map(s => R(s.abrirTot))) +
+  row('Lucro por mês', S.map(s => R(s.lucro))) +
+  row('A abertura se paga em', S.map(s => meses(s.payback)), 'hl') +
+  row('Abertura + crescimento se pagam em', S.map(s => meses(s.paybackTot))) +
+  row('Caixinha junta por mês', S.map(s => R(s.caixinha))) +
+  row('Caixinha compra 1 máquina em', S.map(s => meses(s.mesesMaq))) +
+  row('Caixinha em 12 meses', S.map(s => R(s.caixinha * 12))) + '</tbody>'
+
+
+// venda pra empresas em quantidade (serigrafia, máquina à parte)
+function corp(pedidos){ const q=1000,preco=22,custo=14, rec=q*preco*pedidos, cst=q*custo*pedidos, imp=rec*.06, emb=q*.3*pedidos, lucro=rec-cst-imp-emb
+  return { pedidos, rec, cst, imp, emb, lucro, tardes: Math.ceil(q*pedidos/300), caixinha: lucro*.2, escola: lucro*.8*2/3, segato: lucro*.8/3 } }
+const C=[1,2,4].map(corp), cc=['1 pedido no mês','2 pedidos','4 pedidos']
+document.getElementById('t-corp').innerHTML = head('Pedidos de 1.000 copos', cc) + '<tbody>' +
+  row('Venda', C.map(x => R(x.rec)), 'hl') + row('Custo dos copos (R$ 14)', C.map(x => '− ' + R(x.cst))) + row('Imposto 6%', C.map(x => '− ' + R(x.imp))) +
+  row('Embalagem e frete', C.map(x => '− ' + R(x.emb))) + row('Lucro a mais no mês', C.map(x => R(x.lucro)), 'tot') +
+  row('Tardes de produção (300 por tarde)', C.map(x => x.tardes)) + row('Caixinha (20%)', C.map(x => R(x.caixinha))) +
+  row('Escola (66,7%)', C.map(x => R(x.escola))) + row('Segato (33,3%)', C.map(x => R(x.segato))) + '</tbody>'
+
+// simulador
+const ids = ['dia', 'dias', 'preco', 'custo', 'traf', 'cap'], fmt = { dia: v => v, dias: v => v, preco: v => R(v), custo: v => R(v), traf: v => v + '%', cap: v => v }
+function sim() {
+  const v = Object.fromEntries(ids.map(k => [k, +document.getElementById('s-' + k).value]))
+  ids.forEach(k => document.getElementById('o-' + k).textContent = fmt[k](v[k]))
+  const s = loja({ porDia: v.dia, dias: v.dias, preco: v.preco, custo: v.custo, trafego: v.traf / 100, cap: v.cap })
+  const cel = (t, x, cls = '') => `<div class="${cls}"><span>${t}</span><b class="${s.lucro < 0 && /Lucro/.test(t) ? 'neg' : ''}">${x}</b></div>`
+  document.getElementById('sim-res').innerHTML =
+    cel('Lucro do mês', R(s.lucro), 'wide') + cel('Faturamento', R(s.fat)) + cel('Sobra por garrafa', R(s.sobraUn)) +
+    cel('Máquinas · turnos', s.maq + ' · ' + s.turnos) + cel('Pessoas', s.aux + 1) + cel('Caixinha (20%)', R(s.caixinha)) + cel('Escola (66,7%)', R(s.escola)) +
+    cel('Segato no total', R(s.segTot)) + cel('Pra abrir', R(s.abrirTot)) + cel('Pra crescer depois', s.crescerTot ? R(s.crescerTot) : 'R$ 0') +
+    cel('Abertura se paga em', meses(s.payback)) +
+    cel('Ponto de equilíbrio', s.equilibrio.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' por dia')
+}
+ids.forEach(k => document.getElementById('s-' + k).addEventListener('input', sim)); sim()
+
+// franquia
+function franq(porDia) {   // fixos: rota de entrega 1.200 (região menor) no lugar do aluguel
+  const dias = 20, preco = 80, un = porDia * dias, fat = un * preco, maq = Math.max(1, Math.ceil(porDia / 20))
+  const varUn = 25 + preco * (.06 + .03 + .06 + .02 + .08) + 3 + 2
+  const fixos = 1200 + 250 + 150 * maq + 490 + 350 + 120 * maq + 200
+  const inv = { taxa: 30000, maq: 18000 * maq, obra: 2500, estoque: 3000, equip: 3000, giro: 6000, legal: 1500 }
+  const invTot = Object.values(inv).reduce((a, b) => a + b, 0), lucro = (preco - varUn) * un - fixos
+  return { porDia, un, fat, varUn, fixos, maq, inv, invTot, lucro, payback: invTot / lucro, royal: fat * .06, mkt: fat * .02, margemIns: un * 2 }
+}
+const F = [10, 15, 20].map(franq), fc = ['10 por dia', '15 por dia', '20 por dia']
+document.getElementById('t-finv').innerHTML = head('Item', fc) + '<tbody>' +
+  row('Taxa de franquia', F.map(f => R(f.inv.taxa))) + row('Máquina', F.map(f => R(f.inv.maq) + (f.maq > 1 ? ' (2)' : ''))) +
+  row('Adaptar o espaço de produção', F.map(f => R(f.inv.obra))) + row('Estoque inicial', F.map(f => R(f.inv.estoque))) +
+  row('Equipamentos', F.map(f => R(f.inv.equip))) + row('Capital de giro', F.map(f => R(f.inv.giro))) +
+  row('Alvará e abertura', F.map(f => R(f.inv.legal))) + row('Total', F.map(f => R(f.invTot)), 'tot') + '</tbody>'
+document.getElementById('t-fres').innerHTML = head('Mês', fc) + '<tbody>' +
+  row('Faturamento', F.map(f => R(f.fat)), 'hl') +
+  row('Custos por peça (garrafa, imposto, cartão, royalties, fundo, anúncio, embalagem)', F.map(f => '− ' + R(f.varUn * f.un))) +
+  row('Custos fixos (rota de entrega R$ 1.200, contas, sistema, contador)', F.map(f => '− ' + R(f.fixos))) +
+  row('Lucro do franqueado', F.map(f => R(f.lucro)), 'hl') +
+  row('Investimento se paga em', F.map(f => meses(f.payback))) + '</tbody>'
+const u15 = franq(15), porUnid = u15.royal + 490 + u15.margemIns - 600
+document.getElementById('t-fq').innerHTML = head('Rede', ['5 unidades', '15 unidades', '30 unidades']) + '<tbody>' +
+  row('Royalties 6% por unidade', [5, 15, 30].map(() => R(u15.royal))) +
+  row('Sistema + IA por unidade', [5, 15, 30].map(() => R(490))) +
+  row('Margem nas garrafas por unidade', [5, 15, 30].map(() => R(u15.margemIns))) +
+  row('Menos custo de atender', [5, 15, 30].map(() => '− ' + R(600))) +
+  row('Ganho recorrente por mês (rede toda)', [5, 15, 30].map(n => R(porUnid * n)), 'hl') +
+  row('Taxas de franquia (uma vez, líquido)', [5, 15, 30].map(n => R(20000 * n)), 'tot') + '</tbody>'
+
+// celular: um cenário por vez, com botões em cima de cada tabela (tabelas do mesmo grupo andam juntas)
+const grupos = { 't-corp': 'corp', 't-cap': 'loja', 't-inv': 'loja', 't-dre': 'loja', 't-div': 'loja', 't-ret': 'loja', 't-finv': 'fr', 't-fres': 'fr', 't-fq': 'fq' }
+const escolha = { corp: 1, loja: 1, fr: 2, fq: 1 }
+function mostra(g) {
+  for (const [id, gg] of Object.entries(grupos)) {
+    if (gg !== g) continue
+    const t = document.getElementById(id), k = escolha[g]
+    t.querySelectorAll('tr').forEach(tr => { if (tr.children.length < 4) return; [...tr.children].forEach((c, i) => c.classList.toggle('off', i > 0 && i !== k)) })
+    t.closest('.tbl').previousElementSibling.querySelectorAll('button').forEach((b, i) => b.setAttribute('aria-pressed', String(i + 1 === k)))
+  }
+}
+for (const [id, g] of Object.entries(grupos)) {
+  const t = document.getElementById(id), nomes = [...t.querySelectorAll('thead th')].slice(1).map(th => th.textContent)
+  const p = document.createElement('div'); p.className = 'pills'; p.setAttribute('role', 'group'); p.setAttribute('aria-label', 'Escolher cenário')
+  nomes.forEach((n, i) => { const b = document.createElement('button'); b.type = 'button'; b.textContent = n; b.onclick = () => { escolha[g] = i + 1; mostra(g) }; p.appendChild(b) })
+  t.closest('.tbl').before(p)
+}
+Object.keys(escolha).forEach(mostra)
+</script>
+
+</body></html>
