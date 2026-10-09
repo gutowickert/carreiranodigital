@@ -14,8 +14,10 @@ export async function POST(req: NextRequest) {
       const pg: any = await (await fetch('https://api.mercadopago.com/v1/payments/' + a.mp_id, { headers: { Authorization: 'Bearer ' + process.env.MP_ACCESS_TOKEN } })).json()
       a = { codigo: pg.external_reference, pago: pg.status === 'approved', forma: pg.payment_type_id, taxa: (pg.fee_details || []).reduce((s: number, f: any) => s + f.amount, 0) }
     }
-    if (!a.codigo) return NextResponse.json({ ok: true })
-    const [p] = await db.busca('pedidos', `codigo=eq.${encodeURIComponent(a.codigo)}&select=id,status`)
+    // a conta do Asaas é a da escola: aviso de cobrança que não é do Recado passa direto (responde ok pra não travar a fila do Asaas)
+    if (!a.codigo && !a.link) return NextResponse.json({ ok: true })
+    let [p] = a.codigo ? await db.busca('pedidos', `codigo=eq.${encodeURIComponent(a.codigo)}&select=id,status`) : []
+    if (!p && a.link) [p] = await db.busca('pedidos', `gateway_id=eq.${encodeURIComponent(a.link)}&select=id,status`)
     if (!p) return NextResponse.json({ ok: true })
     await db.evento(p.id, 'aviso_pagamento', { pago: a.pago, forma: a.forma })
     if (a.pago && p.status === 'aguardando_pagamento') {

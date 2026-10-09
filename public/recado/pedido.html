@@ -109,7 +109,7 @@ f.addEventListener('submit',function(e){e.preventDefault();var d=new FormData(f)
   var origem={};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
   bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'
   fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:p,pacote:d.get('pacote'),foto:foto,crianca:c,contato:{responsavel:d.get('resp'),whatsapp:d.get('wa'),email:d.get('email')},origem:origem})})
-    .then(function(r){return r.json()}).then(function(j){if(j.checkout_url){location.href=j.checkout_url}else{throw new Error(j.erro||'erro')}})
+    .then(function(r){return r.json()}).then(function(j){if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
     .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
 </script>
 </body>

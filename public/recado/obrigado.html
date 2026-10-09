@@ -55,7 +55,12 @@ function missao(s){
   return fim }
 function desenha(s){
   if(s.etapas)return missao(s)
-  var quem=s.personagem==='fada'?'a Fada do Dente':'o Papai Noel'
+  var quem=s.pacote==='recado'?'a Fada do Dente':QUEM[s.personagem]||'o Papai Noel'
+  if(s.status==='aguardando_pagamento'&&s.pagar){
+    document.getElementById('tit').textContent='Falta só o pagamento'
+    document.getElementById('sub').textContent='Pix ou cartão, na página segura do Asaas. Assim que confirmar, '+quem+' começa a preparar tudo pra '+s.nome+'. Pode deixar esta página aberta: ela atualiza sozinha.'
+    document.getElementById('passos').innerHTML='<div class="bts"><a class="bt" href="'+s.pagar+'" target="_blank" rel="noopener">Pagar agora</a></div><p style="font-size:15px">Guarda este link: é aqui que tu acompanha tudo.</p>'
+    return false }
   if(s.status==='entregue'){
     document.getElementById('tit').textContent='O recado chegou!'
     document.getElementById('sub').textContent=quem.charAt(0).toUpperCase()+quem.slice(1)+' gravou um vídeo especial pra '+s.nome+'.'
