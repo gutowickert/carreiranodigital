@@ -40,6 +40,7 @@ Um sistema que trabalha em cima do WhatsApp do cliente: recebe quem chega, a IA 
 | Máquina CND | a conversa com a IA que conhece o sistema; aba Peças guarda o que ela produz |
 | Custo da IA | quanto a IA custou, por dia, por tipo, e a Máquina por pessoa |
 | Ajustes | etapas do funil (e em quais a IA atende), fluxo comercial, motivos de perda, usuários, logo e cor |
+| Trocar minha senha | botão no menu, ao lado do Sair: cada pessoa troca a própria senha. Toda senha (criada ou trocada) precisa de 10+ caracteres, maiúscula, minúscula, número e símbolo |
 
 ## O avançado
 
