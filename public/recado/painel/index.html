@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Painel · Recado Encantado</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Fredoka:wght@600;700&display=swap">
+<style>
+:root{--bg:#f6f3fb;--card:#fff;--tx:#1d1530;--tx2:#5d5472;--mut:#8f87a3;--bd:#e6e0f0;--marca:#6b2a8f;--rosa:#e6457a;--ouro:#f2c14e;
+--bom:#15a34a;--bombg:#dcf5e6;--at:#c2680c;--atbg:#fdeecb;--ruim:#dc2626;--ruimbg:#fde7e7;--info:#2563eb;--infobg:#dce9fe;--neu:#efeaf6}
+*{box-sizing:border-box;margin:0}body{font:15px/1.5 Manrope,system-ui,sans-serif;background:var(--bg);color:var(--tx)}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+header b{font:700 22px Fredoka;color:var(--marca)}header span{color:var(--mut);font-size:13px}
+main{max-width:1240px;margin:0 auto;padding:20px 24px 60px;display:grid;gap:18px}
+.seg{display:inline-flex;background:var(--neu);border-radius:999px;padding:4px}.seg button{border:0;background:none;padding:7px 14px;border-radius:999px;font:700 13px Manrope;color:var(--tx2);cursor:pointer}.seg button.on{background:#fff;color:var(--marca);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px 16px}.k span{font:700 12px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}.k b{display:block;font:800 26px Manrope;margin-top:4px;font-variant-numeric:tabular-nums}.k small{color:var(--mut);font-size:12.5px}
+.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px}.box h3{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.funil{display:grid;gap:8px}.fl{display:grid;grid-template-columns:130px 1fr 54px;align-items:center;gap:10px;font-size:13.5px}.fl i{display:block;height:24px;border-radius:6px;background:var(--marca);min-width:2px}.fl b{text-align:right;font-variant-numeric:tabular-nums}
+.barras{display:flex;align-items:flex-end;gap:5px;height:150px;padding-top:10px}.barras div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}.barras i{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--marca);opacity:.42}.barras div:last-child i{opacity:1}.barras span{font-size:10.5px;color:var(--mut)}
+.maq{display:flex;align-items:center;gap:14px}.luz{width:14px;height:14px;border-radius:50%;flex:none}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font:700 12px Manrope;white-space:nowrap}
+.s-aguardando_pagamento{background:var(--neu);color:var(--tx2)}.s-pago{background:var(--infobg);color:var(--info)}.s-produzindo{background:var(--atbg);color:var(--at)}.s-revisao{background:var(--atbg);color:var(--at)}.s-entregue{background:var(--bombg);color:var(--bom)}.s-falhou{background:var(--ruimbg);color:var(--ruim)}.s-cancelado,.s-reembolsado{background:var(--neu);color:var(--mut)}
+.abas{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.abas button{border:1px solid var(--bd);background:#fff;border-radius:999px;padding:6px 12px;font:700 13px Manrope;color:var(--tx2);cursor:pointer}.abas button.on{background:var(--marca);border-color:var(--marca);color:#fff}
+.tab{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:720px}th{text-align:left;font:700 11.5px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--bd)}td{padding:10px;border-bottom:1px solid var(--bd);font-size:14px}tr.l{cursor:pointer}tr.l:hover td{background:#faf7fd}td.n{text-align:right;font-variant-numeric:tabular-nums}
+.vazio{padding:30px;text-align:center;color:var(--mut)}
+#gaveta{position:fixed;inset:0;background:rgba(20,10,40,.45);display:none;justify-content:flex-end;z-index:20}#gaveta.ab{display:flex}
+#gaveta .g{width:min(560px,100%);background:#fff;height:100%;overflow:auto;padding:22px;display:grid;gap:16px;align-content:start}
+.g h2{font:700 24px Fredoka;color:var(--marca)}.lin{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.tl{display:grid;gap:0}.tl div{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:8px 0;border-left:2px solid var(--bd);padding-left:14px;position:relative;font-size:13.5px}.tl div:before{content:"";position:absolute;left:-6px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--marca)}.tl span{color:var(--mut)}
+.g video,.g img{width:100%;border-radius:14px}.dados{background:var(--bg);border-radius:14px;padding:14px;font-size:14px;display:grid;gap:4px}
+.bts{display:flex;gap:8px;flex-wrap:wrap}.bt{border:1px solid var(--bd);background:#fff;border-radius:10px;padding:8px 14px;font:700 13.5px Manrope;cursor:pointer}.bt.p{background:var(--marca);color:#fff;border-color:var(--marca)}.bt.r{color:var(--ruim)}
+.fala{background:#fffaf0;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;border-left:4px solid var(--ouro)}
+#login[hidden],#app[hidden]{display:none}#login{max-width:360px;margin:15vh auto;background:#fff;border:1px solid var(--bd);border-radius:18px;padding:26px;display:grid;gap:12px}#login input{padding:12px;border:1px solid var(--bd);border-radius:10px;font:15px Manrope}
+</style></head><body>
+<div id="login" hidden><b style="font:700 22px Fredoka;color:var(--marca)">Painel do Recado</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
+<div id="app" hidden>
+<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1">Hoje</button><button data-d="7" class="on">7 dias</button><button data-d="30">30 dias</button></div></header>
+<main>
+  <section class="kpis" id="kpis"></section>
+  <section class="grid2">
+    <div class="box"><h3>Vendas por dia <span id="legbar" style="font-weight:600;color:var(--mut)">pedidos pagos</span></h3><div class="barras" id="barras"></div></div>
+    <div class="box"><h3>Funil</h3><div class="funil" id="funil"></div></div>
+  </section>
+  <section class="grid2">
+    <div class="box"><h3>Máquina de vídeo</h3><div class="maq" id="maq"></div></div>
+    <div class="box"><h3>Precisa de atenção</h3><div id="atencao"></div></div>
+  </section>
+  <section class="box"><h3>Pedidos</h3><div class="abas" id="abas"></div><div class="tab"><table><thead><tr><th>Código</th><th>Criança</th><th>Personagem</th><th>Pacote</th><th>Situação</th><th>Quando</th><th class="n">Valor</th></tr></thead><tbody id="lista"></tbody></table></div></section>
+</main></div>
+<div id="gaveta"><div class="g" id="gav"></div></div>
+<script>
+var SENHA='';try{SENHA=localStorage.getItem('painel_senha')||''}catch(e){}
+var D=null,dias=7,aba='todos'
+var NOME={aguardando_pagamento:'Aguardando pagamento',pago:'Na fila',produzindo:'Produzindo',revisao:'Revisão',entregue:'Entregue',falhou:'Falhou',cancelado:'Cancelado',reembolsado:'Reembolsado'}
+var PAC={encanto:'Encanto',magico:'Magia Completa',recado:'Recado da Fada'}
+var R=function(v){return 'R$ '+(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function quando(t){if(!t)return'·';var m=(Date.now()-new Date(t))/60000;return m<1?'agora':m<60?Math.round(m)+' min':m<1440?Math.round(m/60)+' h':new Date(t).toLocaleDateString('pt-BR')}
+function api(q,op){return fetch('/api/recado/painel'+q,Object.assign({headers:{'x-senha':SENHA,'Content-Type':'application/json'}},op||{})).then(function(r){if(r.status===401)throw new Error('senha');return r.json()})}
+function entra(){api('?o=tudo').then(function(d){document.getElementById('login').hidden=true;document.getElementById('app').hidden=false;D=d;desenha()}).catch(function(e){document.getElementById('login').hidden=false;document.getElementById('app').hidden=true;if(SENHA)document.getElementById('lerro').textContent=e.message==='senha'?'Senha errada':'Sem conexão'})}
+document.getElementById('entrar').onclick=function(){SENHA=document.getElementById('senha').value;try{localStorage.setItem('painel_senha',SENHA)}catch(e){}entra()}
+document.getElementById('per').onclick=function(e){if(!e.target.dataset.d)return;dias=+e.target.dataset.d;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});desenha()}
+function desenha(){
+  var lim=Date.now()-dias*864e5,ped=D.pedidos.filter(function(p){return new Date(p.criado_em)>=lim}),pagos=ped.filter(function(p){return p.pago_em})
+  var fat=pagos.reduce(function(s,p){return s+ +p.preco},0),tax=pagos.reduce(function(s,p){return s+(+p.taxa_gateway||0)},0),cus=pagos.reduce(function(s,p){return s+(p.custo&&+p.custo.total||0)},0)
+  var ent=ped.filter(function(p){return p.entregue_em&&p.pago_em}),tm=ent.length?ent.reduce(function(s,p){return s+(new Date(p.entregue_em)-new Date(p.pago_em))},0)/ent.length/60000:null
+  document.getElementById('atual').textContent='atualizado '+new Date(D.agora).toLocaleTimeString('pt-BR')
+  document.getElementById('kpis').innerHTML=[['Faturamento',R(fat),pagos.length+' pedidos pagos'],['Ticket médio',R(pagos.length?fat/pagos.length:0),'por pedido'],['Lucro estimado',R(fat-tax-cus),'menos taxas '+R(tax)+' e máquina '+R(cus)],
+    ['Conversão',(ped.length?Math.round(pagos.length/ped.length*100):0)+'%','de quem preencheu e pagou'],['Entregues',ent.length,'no período'],['Tempo até entregar',tm==null?'·':Math.round(tm)+' min','média depois do pagamento']]
+    .map(function(k){return '<div class="k"><span>'+k[0]+'</span><b>'+k[1]+'</b><small>'+k[2]+'</small></div>'}).join('')
+  // barras por dia (últimos 14)
+  var mapa={};D.pedidos.forEach(function(p){if(!p.pago_em)return;var d=new Date(p.pago_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});mapa[d]=(mapa[d]||0)+1})
+  var ds=[];for(var i=13;i>=0;i--){ds.push(new Date(Date.now()-i*864e5).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}))}
+  var mx=Math.max(1,Math.max.apply(null,ds.map(function(d){return mapa[d]||0})))
+  document.getElementById('barras').innerHTML=ds.map(function(d){var v=mapa[d]||0;return '<div title="'+d+': '+v+' pagos"><b style="font-size:11px">'+(v||'')+'</b><i style="height:'+(v/mx*100)+'%"></i><span>'+d.slice(0,2)+'</span></div>'}).join('')
+  // funil
+  var cont=function(f){return ped.filter(f).length},etapas=[['Preencheram',ped.length],['Pagaram',pagos.length],['Produzidos',cont(function(p){return['revisao','entregue'].indexOf(p.status)>=0})],['Entregues',cont(function(p){return p.status==='entregue'})]]
+  var top=Math.max(1,etapas[0][1]);document.getElementById('funil').innerHTML=etapas.map(function(e){return '<div class="fl"><span>'+e[0]+'</span><i style="width:'+(e[1]/top*100)+'%"></i><b>'+e[1]+'</b></div>'}).join('')
+  // máquina
+  var m=D.maquina||{estado:'desligada'},cor={desligada:'#9a93ae',ligando:'#fbbf24',livre:'#34d399',produzindo:'#8b5cf6'}[m.estado]||'#9a93ae',fila=D.pedidos.filter(function(p){return p.status==='pago'}).length
+  document.getElementById('maq').innerHTML='<span class="luz" style="background:'+cor+';box-shadow:0 0 12px '+cor+'"></span><div><b style="font-size:18px">'+({desligada:'Desligada',ligando:'Ligando',livre:'Ligada, livre',produzindo:'Produzindo'}[m.estado]||m.estado)+'</b>'+
+    (m.detalhe&&m.detalhe.codigo?' · '+esc(m.detalhe.codigo):'')+'<br><span style="color:var(--mut);font-size:13px">'+fila+' na fila · última mudança '+quando(m.atualizado_em)+'. Liga sozinha quando entra pedido pago e desliga 15 min depois da fila esvaziar.</span></div>'
+  // atenção
+  var at=D.pedidos.filter(function(p){return p.status==='falhou'||p.status==='revisao'||(p.status==='pago'&&Date.now()-new Date(p.pago_em)>30*60000)||(p.status==='produzindo'&&Date.now()-new Date(p.produzindo_em)>90*60000)})
+  document.getElementById('atencao').innerHTML=at.length?at.slice(0,6).map(function(p){return '<div class="lin" style="padding:6px 0;border-bottom:1px solid var(--bd);cursor:pointer" onclick="abre(\''+p.id+'\')"><span><b>'+esc(p.codigo)+'</b> · '+esc(p.nome)+'</span><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></div>'}).join(''):'<div class="vazio" style="padding:12px">Nada travado. Tudo andando.</div>'
+  // abas e lista
+  var abas=[['todos','Todos']].concat(Object.keys(NOME).map(function(k){return[k,NOME[k]]}))
+  document.getElementById('abas').innerHTML=abas.map(function(a){var n=a[0]==='todos'?ped.length:ped.filter(function(p){return p.status===a[0]}).length;return n||a[0]==='todos'?'<button data-a="'+a[0]+'" class="'+(aba===a[0]?'on':'')+'">'+a[1]+' · '+n+'</button>':''}).join('')
+  var vis=ped.filter(function(p){return aba==='todos'||p.status===aba})
+  document.getElementById('lista').innerHTML=vis.length?vis.map(function(p){return '<tr class="l" onclick="abre(\''+p.id+'\')"><td><b>'+esc(p.codigo)+'</b></td><td>'+esc(p.nome)+'<br><span style="color:var(--mut);font-size:12.5px">'+esc(p.responsavel)+'</span></td><td>'+(p.personagem==='noel'?'Papai Noel':'Fada do Dente')+'</td><td>'+(PAC[p.pacote]||p.pacote)+'</td><td><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></td><td>'+quando(p.criado_em)+'</td><td class="n">'+R(p.preco)+'</td></tr>'}).join(''):'<tr><td colspan="7" class="vazio">Nenhum pedido nesse período.</td></tr>'
+}
+document.getElementById('abas').onclick=function(e){if(e.target.dataset.a){aba=e.target.dataset.a;desenha()}}
+function abre(id){var g=document.getElementById('gav');g.innerHTML='<div class="vazio">Carregando...</div>';document.getElementById('gaveta').classList.add('ab')
+  api('?o=pedido&id='+id).then(function(d){var p=d.pedido,c=p.crianca||{},L=d.links||{},t0=new Date(p.criado_em)
+    g.innerHTML='<div class="lin"><h2>'+esc(c.nome)+'</h2><button class="bt" onclick="fecha()">Fechar</button></div>'+
+      '<div class="lin"><span><b>'+esc(p.codigo)+'</b> · '+(p.personagem==='noel'?'Papai Noel':'Fada do Dente')+' · '+(PAC[p.pacote]||p.pacote)+' · '+R(p.preco)+'</span><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></div>'+
+      (p.erro?'<div class="dados" style="background:var(--ruimbg);color:var(--ruim)"><b>Erro</b>'+esc(p.erro)+'</div>':'')+
+      (L.video_path?'<video controls playsinline src="'+L.video_path+'"></video>':'')+
+      '<div class="bts">'+(L.certificado_path?'<a class="bt" target="_blank" href="'+L.certificado_path+'">Certificado</a>':'')+(L.carta_path?'<a class="bt" target="_blank" href="'+L.carta_path+'">Carta</a>':'')+(L.foto_path?'<a class="bt" target="_blank" href="'+L.foto_path+'">Foto enviada</a>':'')+'<a class="bt" target="_blank" href="/recado/obrigado.html?c='+esc(p.codigo)+'">Página da família</a></div>'+
+      '<div class="dados"><b>A criança</b>'+esc(c.idade)+' anos · '+esc(c.genero)+(c.cidade?' · '+esc(c.cidade):'')+'<br>Conquistas: '+esc((c.conquistas||[]).join('; '))+'<br>Adora: '+esc((c.adora||[]).join(', '))+(c.pra_melhorar?'<br>Pra melhorar: '+esc(c.pra_melhorar):'')+(c.detalhe_magico?'<br>Detalhe: '+esc(c.detalhe_magico):'')+'</div>'+
+      '<div class="dados"><b>Contato</b>'+esc(p.contato.responsavel)+' · '+esc(p.contato.whatsapp)+' · '+esc(p.contato.email)+(p.forma_pagamento?'<br>Pagou com '+esc(p.forma_pagamento)+(p.taxa_gateway?' (taxa '+R(p.taxa_gateway)+')':''):'')+(p.custo&&p.custo.total?'<br>Custo de produção: '+R(p.custo.total):'')+'</div>'+
+      (p.roteiro&&p.roteiro.fala?'<div class="fala"><b>O que o personagem fala</b><br>'+esc(p.roteiro.fala)+'</div>':'')+
+      '<div><b style="font-size:14px">Linha do tempo</b><div class="tl" style="margin-top:8px">'+d.eventos.map(function(e){var s=Math.round((new Date(e.quando)-t0)/1000);return '<div><span>'+new Date(e.quando).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' (+'+(s<60?s+'s':Math.round(s/60)+'min')+')</span><span style="color:var(--tx)">'+esc(e.tipo.replace(/_/g,' '))+(e.detalhe&&e.detalhe.segundos?' · '+Math.round(e.detalhe.segundos/60)+' min':'')+(e.detalhe&&e.detalhe.msg?' · '+esc(e.detalhe.msg):'')+(e.detalhe&&e.detalhe.motivo?' · '+esc(e.detalhe.motivo):'')+'</span></div>'}).join('')+'</div></div>'+
+      '<div class="bts"><button class="bt p" onclick="acao(\'refazer\',\''+p.id+'\')">Refazer o vídeo</button><button class="bt" onclick="acao(\'reenviar\',\''+p.id+'\')">Marcar pra reenviar</button><button class="bt r" onclick="acao(\'cancelar\',\''+p.id+'\')">Cancelar</button><button class="bt r" onclick="acao(\'marcar_reembolsado\',\''+p.id+'\')">Marcar reembolsado</button></div>'
+  })}
+function fecha(){document.getElementById('gaveta').classList.remove('ab')}
+document.getElementById('gaveta').onclick=function(e){if(e.target.id==='gaveta')fecha()}
+function acao(a,id){var b=event.target;if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='Confirmar?';return}api('',{method:'POST',body:JSON.stringify({acao:a,id:id})}).then(function(){fecha();entra()})}
+entra();setInterval(function(){if(!document.getElementById('app').hidden)entra()},20000)
+</script></body></html>
