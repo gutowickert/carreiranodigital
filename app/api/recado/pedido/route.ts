@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto'
 import { recadoDb as db } from '@/lib/recado/db'
 import { recadoGateway as gateway } from '@/lib/recado/gateway'
 import { recadoConfig as cfg } from '@/lib/recado/config'
+import { enviaEmail, moldura, linkFamilia } from '@/lib/recado/email'
 
 export const maxDuration = 30
 const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-', grandao: 'CHUPETA-' }
@@ -18,9 +19,10 @@ export async function POST(req: NextRequest) {
     const pac = (cfg.pacotes[b.personagem] || {})[b.pacote]
     if (!pac) return NextResponse.json({ erro: 'pacote inválido' }, { status: 400 })
     const c = b.crianca || {}, ct = b.contato || {}
-    if (!limpa(c.nome) || !limpa(ct.whatsapp) || !limpa(ct.email)) return NextResponse.json({ erro: 'faltou nome, WhatsApp ou e-mail' }, { status: 400 })
-    let wa = String(ct.whatsapp).replace(/\D/g, ''); if (wa.length < 10 || wa.length > 13) return NextResponse.json({ erro: 'WhatsApp inválido' }, { status: 400 })
-    if (!wa.startsWith('55')) wa = '55' + wa
+    if (!limpa(c.nome) || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(limpa(ct.email))) return NextResponse.json({ erro: 'faltou o nome ou um e-mail válido' }, { status: 400 })
+    // celular é opcional (Guto 10/10: a entrega é na página da família, com o link no e-mail)
+    let wa = String(ct.whatsapp || '').replace(/\D/g, ''); if (wa && (wa.length < 10 || wa.length > 13)) return NextResponse.json({ erro: 'celular inválido' }, { status: 400 })
+    if (wa && !wa.startsWith('55')) wa = '55' + wa
     const crianca: any = {
       nome: limpa(c.nome, 40), apelido: limpa(c.apelido || c.nome, 40), idade: Math.max(1, Math.min(14, +c.idade || 0)), genero: c.genero === 'menino' ? 'menino' : 'menina', cidade: limpa(c.cidade, 60),
       conquistas: (c.conquistas || []).map((x: any) => limpa(x)).filter(Boolean).slice(0, 4), adora: (c.adora || []).map((x: any) => limpa(x, 60)).filter(Boolean).slice(0, 6),
@@ -50,6 +52,10 @@ export async function POST(req: NextRequest) {
     const cob = await gateway.cria({ ...p, descricao: `${cfg.marca}: ${pac.nome} (${crianca.nome})` })
     await db.atualiza('pedidos', `id=eq.${salvo.id}`, { gateway: gateway.nome(), gateway_id: cob.gateway_id, checkout_url: cob.checkout_url })
     await db.evento(salvo.id, 'cobranca', { gateway: gateway.nome() })
+    // e-mail com o link da página da família (é lá que tudo chega); se falhar, o pedido segue
+    const em = await enviaEmail(p.contato.email, `Teu pedido do Recado Encantado (${crianca.nome})`,
+      moldura('Recebemos o pedido!', `Assim que o pagamento confirmar, a gente começa a preparar tudo pra ${crianca.nome}. Na página da família tu acompanha o andamento, paga se ainda não pagou, e é lá que o vídeo aparece.`, 'Abrir a página da família', linkFamilia(p.codigo)))
+    await db.evento(salvo.id, 'email_pedido', em).catch(() => {})
     return NextResponse.json({ codigo: p.codigo, checkout_url: cob.checkout_url })
   } catch (e: any) {
     console.error('recado/pedido', e)

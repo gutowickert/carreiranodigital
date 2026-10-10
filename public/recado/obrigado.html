@@ -26,7 +26,7 @@ small{display:block;text-align:center;color:var(--creme2);font-size:14px}
 <img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado">
 <div class="card" id="card"><h1 id="tit">Recebemos!</h1><p id="sub">Carregando o teu pedido...</p><div class="passos" id="passos"></div></div>
 <a class="bt claro" id="guia" style="display:none;margin-bottom:14px"></a>
-<small>Dúvidas? Responde a mensagem que chegou no teu WhatsApp. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</small>
+<small>Guarda o link desta página: o link também está no teu e-mail. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</small>
 </div>
 <script>
 var c=new URLSearchParams(location.search).get('c')||'',ordem=['aguardando_pagamento','pago','produzindo','entregue']
@@ -43,7 +43,7 @@ function missao(s){
   var sig=s.status+s.etapas.map(function(e){return e.status+e.resposta}).join()   // só redesenha se mudou (não interrompe o vídeo tocando)
   if(sig===window.__sig)return fim; window.__sig=sig
   document.getElementById('tit').textContent=fim?'Missão cumprida!':s.status==='aguardando_pagamento'?'Quase lá!':'A missão começou!'
-  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' grava a convocação pra '+s.nome+'.':'Cada vídeo aparece aqui e no teu WhatsApp no dia certo. Depois de cada um, conta pra '+quem+' como foi: o próximo vídeo responde a isso.'
+  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' grava a convocação pra '+s.nome+'.':'Cada vídeo aparece aqui no dia certo, e a gente avisa no teu e-mail. Depois de cada um, conta pra '+quem+' como foi: o próximo vídeo responde a isso.'
   var h=s.etapas.map(function(e,k){
     var cab='<div class="passo '+(e.status==='entregue'?'feito':e.status==='produzindo'||e.status==='pronta'?'agora':'')+'"><i>'+(e.status==='entregue'?'✓':e.ordem)+'</i>'+(TIPO[e.tipo]||'Vídeo')+'<span style="margin-left:auto;font-weight:500;font-size:14px">'+(e.status==='entregue'?'':quando(e.quando))+'</span></div>'
     if(e.status!=='entregue')return cab
@@ -70,13 +70,13 @@ function desenha(s){
     return true }
   var i=Math.max(0,ordem.indexOf(s.status))
   document.getElementById('tit').textContent=s.status==='aguardando_pagamento'?'Quase lá!':'Tudo certo!'
-  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Chega no teu WhatsApp em até 2 horas, e também aparece aqui.'
+  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Em até 2 horas aparece aqui nesta página, e a gente avisa no teu e-mail.'
   document.getElementById('passos').innerHTML=ordem.map(function(o,k){return '<div class="passo '+(k<i||(k===i&&o==='entregue')?'feito':k===i?'agora':'')+'"><i>'+(k<i?'✓':k+1)+'</i>'+NOMES[o]+'</div>'}).join('')
   return false }
 // guia simples pra quem ajuda (mãe, pai, vó): uma página por herói
 var GUIA={chupeta:['chupeta','Capitão Grandão'],dormir:['dormir','Guardião da Noite'],coragem:['coragem','Capitã Coragem'],recado:['fada','Fada do Dente'],encanto:['noel','Papai Noel'],magico:['noel','Papai Noel']}
 function guia(s){var g=GUIA[s.pacote],a=document.getElementById('guia');if(!g||a.style.display==='block'||['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)>=0)return;a.href='/api/recado/guia?c='+encodeURIComponent(c);a.target='_blank';a.textContent='Guia: como ajudar junto com '+(g[0]==='fada'||g[0]==='coragem'?'a ':'o ')+g[1];a.style.display='block'}
-function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no WhatsApp.';return}guia(s);if(['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)<0&&window.recadoRastro)recadoRastro.compra(c,s.preco,s.personagem+'/'+s.pacote);if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
+function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no teu e-mail.';return}guia(s);if(['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)<0&&window.recadoRastro)recadoRastro.compra(c,s.preco,s.personagem+'/'+s.pacote);if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
 busca()
 </script><script src="/recado/rastro.js"></script>
 </body></html>
