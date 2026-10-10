@@ -10,9 +10,9 @@ const cod = (s: any) => String(s || '').toUpperCase().replace(/[^A-Z0-9-]/g, '')
 export async function GET(req: NextRequest) {
   const c = cod(req.nextUrl.searchParams.get('c'))
   if (!c) return NextResponse.json({ erro: 'sem código' }, { status: 400 })
-  const [p] = await db.busca('pedidos', `codigo=eq.${c}&select=id,status,personagem,pacote,checkout_url,nome:crianca->>nome,video_path,carta_path,certificado_path,mensagem:roteiro->>mensagem_whatsapp`)
+  const [p] = await db.busca('pedidos', `codigo=eq.${c}&select=id,status,personagem,pacote,preco,checkout_url,nome:crianca->>nome,video_path,carta_path,certificado_path,mensagem:roteiro->>mensagem_whatsapp`)
   if (!p) return NextResponse.json({ erro: 'pedido não encontrado' }, { status: 404 })
-  const out: any = { status: p.status, etapa: ETAPA[p.status], personagem: p.personagem, pacote: p.pacote, nome: p.nome }
+  const out: any = { status: p.status, etapa: ETAPA[p.status], personagem: p.personagem, pacote: p.pacote, nome: p.nome, preco: +p.preco || 0 }
   if (p.status === 'aguardando_pagamento') out.pagar = p.checkout_url   // a página do pedido mostra o botão Pagar agora
   const etapas = await db.busca('etapas', `pedido_id=eq.${p.id}&order=ordem.asc&select=ordem,tipo,quando,status,resposta,video_path,extras`).catch(() => [])
   if (etapas.length) {
