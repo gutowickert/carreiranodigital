@@ -77,7 +77,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
     const id = String(b.id || '').replace(/[^a-f0-9-]/g, '')
-    const muda: any = ({ refazer: { status: 'pago', erro: null }, reenviar: { status: 'revisao' }, cancelar: { status: 'cancelado' }, marcar_reembolsado: { status: 'reembolsado' } } as any)[b.acao]
+    const muda: any = ({ refazer: { status: 'pago', erro: null }, liberar: { status: 'entregue', entregue_em: new Date().toISOString(), erro: null }, reenviar: { status: 'revisao' }, cancelar: { status: 'cancelado' }, marcar_reembolsado: { status: 'reembolsado' } } as any)[b.acao]
     if (!muda || !id) return NextResponse.json({ erro: 'ação inválida' }, { status: 400 })
     await db.atualiza('pedidos', `id=eq.${id}`, muda)
     await db.evento(id, 'painel_' + b.acao, {})

@@ -11,7 +11,7 @@
   var M = { chupeta: 'grandao/chupeta', dormir: 'guardiao/dormir', coragem: 'coragem/coragem' }
   var p = location.pathname, m = (p.match(/missao-(\w+)/) || [])[1] || q.get('m'), produto = M[m] || null
   if (!produto && /pedido/.test(p)) produto = q.get('p') === 'fada' ? 'fada/recado' : 'noel/' + (q.get('pac') || 'magico')
-  if (!produto && (/\/recado\/?$/.test(p) || p === '/')) produto = 'noel/magico'
+  if (!produto && /natal|\/vo\.html/.test(p)) produto = 'noel/magico'   // a página principal virou a vitrine de todos (10/10): sem produto
   // Pixel da Meta (10/10): PageView em todas, ViewContent na página do produto, InitiateCheckout no envio do formulário,
   // AddPaymentInfo no "Pagar agora" e Purchase na página do pedido quando o pagamento confirma (recadoRastro.compra, 1 vez por pedido).
   var PIXEL = '1739805330556259', PRECO = { 'grandao/chupeta': 94.9, 'guardiao/dormir': 139.9, 'coragem/coragem': 64.9, 'fada/recado': 39.9, 'noel/encanto': 39.9, 'noel/magico': 64.9 }
