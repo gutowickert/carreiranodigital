@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Conte sobre o seu filho · Recado Encantado</title>
+<title>Conte sobre a criança · Recado Encantado</title>
 <meta name="theme-color" content="#2a1f6b">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
 <style>
@@ -47,7 +47,7 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
 <div class="topo"><img src="/recado/midia/logo.png" alt="Recado Encantado"></div>
 <div class="ct">
 <form id="f">
-  <h1>Conte sobre o seu filho</h1>
+  <h1>Conte sobre a criança</h1>
   <p class="sub">Leva 3 minutos. Quanto mais detalhe, mais mágico fica.</p>
 
   <div class="passo"><h2><i>1</i> Quem vai mandar o recado?</h2>
@@ -82,10 +82,13 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
   </div>
 
   <div class="passo"><h2><i>4</i> Pra onde mandamos</h2>
+    <div class="dupla"><div><label for="quem">Quem está pedindo?</label><select id="quem" name="quem"><option value="mae">Mãe</option><option value="pai">Pai</option><option value="avo">Avó</option><option value="avo_m">Avô</option><option value="tia">Tia</option><option value="tio">Tio</option><option value="madrinha">Madrinha</option><option value="padrinho">Padrinho</option><option value="outro">Outra pessoa</option></select></div>
+    <div id="chama-box" style="display:none"><label for="chama">A criança te chama de</label><input id="chama" name="chama" type="text" placeholder="Ex.: vó Lúcia"></div></div>
+    <p id="chama-dica" style="display:none;font-size:14px;color:var(--suave);margin-top:6px">O personagem vai contar que foi você que pediu o recado.</p>
     <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
     <div><label for="wa">WhatsApp</label><input id="wa" name="wa" type="tel" required placeholder="(51) 99999-9999"></div></div>
     <label for="email">E-mail</label><input id="email" name="email" type="email" required>
-    <label class="ok"><input type="checkbox" required> Sou o responsável pela criança e autorizo usar a foto e as informações só pra fazer o vídeo. A foto é apagada em 30 dias.</label>
+    <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. A foto é apagada em 30 dias.</label>
   </div>
   <button type="submit" id="enviar">Ir pro pagamento</button><p class="erro" id="erro" style="color:#b0122b;font-weight:600;display:none"></p>
   <p class="aviso">Pagamento por Pix ou cartão. Chega no teu WhatsApp em até 2 horas. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</p>
@@ -98,13 +101,14 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
 var PAC={noel:[['encanto','Encanto','Vídeo + certificado',39.90],['magico','Magia Completa','Vídeo + certificado + carta + véspera',64.90]],fada:[['recado','Recado da Fada','Vídeo + certificado + carta',39.90]]}
 var f=document.getElementById('f'),foto=null,q=new URLSearchParams(location.search)
 function pacotes(p){document.getElementById('pacotes').innerHTML=PAC[p].map(function(x,i){return '<label><span>'+x[1]+'<small>'+x[2]+'</small></span><span>R$ '+x[3].toFixed(2).replace('.',',')+' <input type="radio" name="pacote" value="'+x[0]+'"'+((q.get('pac')===x[0]||(!q.get('pac')&&i===PAC[p].length-1))?' checked':'')+'></span></label>'}).join('')}
+var qm=document.getElementById('quem');if(q.get('quem')&&qm.querySelector('option[value='+q.get('quem')+']'))qm.value=q.get('quem');function quem(){var o=qm.value!=='mae'&&qm.value!=='pai';document.getElementById('chama-box').style.display=o?'block':'none';document.getElementById('chama-dica').style.display=o?'block':'none';var ch=document.getElementById('chama');if(o&&!ch.value){ch.placeholder={avo:'Ex.: vó Lúcia',avo_m:'Ex.: vô Pedro',tia:'Ex.: tia Carla',tio:'Ex.: tio João',madrinha:'Ex.: dinda Ana',padrinho:'Ex.: dindo Rafa'}[qm.value]||'Ex.: tia Carla'}}qm.addEventListener('change',quem);quem()
 var ini=q.get('p')==='fada'?'fada':'noel';document.querySelector('input[name=personagem][value='+ini+']').checked=true;document.body.className=ini;pacotes(ini)
 f.addEventListener('change',function(e){if(e.target.name==='presente_modo'){document.getElementById('presente').style.display=e.target.value==='presente'?'block':'none'}if(e.target.name==='personagem'){document.body.className=e.target.value;pacotes(e.target.value)}})
 // reduz a foto no próprio celular (até 1080 px) antes de enviar
 document.getElementById('arquivo').addEventListener('change',function(e){var fl=e.target.files[0];if(!fl)return;var img=new Image();img.onload=function(){var s=Math.min(1,1080/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);foto=c.toDataURL('image/jpeg',.85);var pv=document.getElementById('prev');pv.style.backgroundImage='url('+foto+')';pv.textContent=''};img.src=URL.createObjectURL(fl)})
 f.addEventListener('submit',function(e){e.preventDefault();var d=new FormData(f),p=d.get('personagem'),bt=document.getElementById('enviar'),er=document.getElementById('erro')
   var c={nome:d.get('nome'),apelido:d.get('apelido')||d.get('nome'),idade:+d.get('idade'),genero:d.get('genero'),cidade:d.get('cidade'),
-    conquistas:[d.get('c1'),d.get('c2'),d.get('c3')].filter(Boolean),adora:(d.get('adora')||'').split(',').map(function(s){return s.trim()}).filter(Boolean),pra_melhorar:d.get('melhorar'),detalhe_magico:d.get('detalhe')}
+    conquistas:[d.get('c1'),d.get('c2'),d.get('c3')].filter(Boolean),adora:(d.get('adora')||'').split(',').map(function(s){return s.trim()}).filter(Boolean),pra_melhorar:d.get('melhorar'),detalhe_magico:d.get('detalhe'),quem_pede:d.get('quem'),quem_pede_nome:d.get('chama')||''}
   if(p==='noel'){c.presente_modo=d.get('presente_modo');c.presente=c.presente_modo==='presente'?d.get('presente'):'surpresa'}else{c.dentinho=d.get('dentinho');c.como_caiu=d.get('como_caiu');c.deixa_presente=d.get('deixa')}
   var origem=window.recadoRastro?window.recadoRastro.origem():{};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
   bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'

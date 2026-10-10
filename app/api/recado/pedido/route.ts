@@ -10,6 +10,7 @@ const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao
 const dataOk = (s: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : null
 const codigo = (p: string) => (PREFIXO[p] || 'RECADO-') +Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 const limpa = (s: any, n = 120) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n)
+const QUEM = ['mae', 'pai', 'avo', 'avo_m', 'tia', 'tio', 'madrinha', 'padrinho', 'outro']
 
 export async function POST(req: NextRequest) {
   try {
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
       conquistas: (c.conquistas || []).map((x: any) => limpa(x)).filter(Boolean).slice(0, 4), adora: (c.adora || []).map((x: any) => limpa(x, 60)).filter(Boolean).slice(0, 6),
       pra_melhorar: limpa(c.pra_melhorar), detalhe_magico: limpa(c.detalhe_magico, 200),
     }
+    // quem pediu (avó, tia, madrinha...): o personagem conta que foi essa pessoa que mandou o recado
+    if (QUEM.includes(c.quem_pede)) { crianca.quem_pede = c.quem_pede; if (!['mae', 'pai'].includes(c.quem_pede) && limpa(c.quem_pede_nome, 40)) crianca.quem_pede_nome = limpa(c.quem_pede_nome, 40) }
     if (b.personagem === 'noel') { crianca.presente_modo = c.presente_modo === 'presente' ? 'presente' : 'surpresa'; crianca.presente = crianca.presente_modo === 'presente' ? limpa(c.presente) : 'surpresa' }
     else if (b.pacote === 'recado') { crianca.dentinho = limpa(c.dentinho); crianca.como_caiu = limpa(c.como_caiu); crianca.deixa_presente = limpa(c.deixa_presente) }
     // missão: o desafio contado pela mãe e as datas (o trabalhador agenda cada vídeo a partir delas)
