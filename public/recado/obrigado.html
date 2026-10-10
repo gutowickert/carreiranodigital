@@ -25,6 +25,7 @@ small{display:block;text-align:center;color:var(--creme2);font-size:14px}
 </style></head><body><div class="ct">
 <img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado">
 <div class="card" id="card"><h1 id="tit">Recebemos!</h1><p id="sub">Carregando o teu pedido...</p><div class="passos" id="passos"></div></div>
+<a class="bt claro" id="guia" style="display:none;margin-bottom:14px"></a>
 <small>Dúvidas? Responde a mensagem que chegou no teu WhatsApp. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</small>
 </div>
 <script>
@@ -72,7 +73,10 @@ function desenha(s){
   document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Chega no teu WhatsApp em até 2 horas, e também aparece aqui.'
   document.getElementById('passos').innerHTML=ordem.map(function(o,k){return '<div class="passo '+(k<i||(k===i&&o==='entregue')?'feito':k===i?'agora':'')+'"><i>'+(k<i?'✓':k+1)+'</i>'+NOMES[o]+'</div>'}).join('')
   return false }
-function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no WhatsApp.';return}if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
+// guia simples pra quem ajuda (mãe, pai, vó): uma página por herói
+var GUIA={chupeta:['chupeta','Capitão Grandão'],dormir:['dormir','Guardião da Noite'],coragem:['coragem','Capitã Coragem'],recado:['fada','Fada do Dente'],encanto:['noel','Papai Noel'],magico:['noel','Papai Noel']}
+function guia(s){var g=GUIA[s.pacote],a=document.getElementById('guia');if(!g||a.style.display==='block')return;a.href='/recado/guia-'+g[0]+'.html';a.target='_blank';a.textContent='Guia: como ajudar junto com '+(g[0]==='fada'||g[0]==='coragem'?'a ':'o ')+g[1];a.style.display='block'}
+function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no WhatsApp.';return}guia(s);if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
 busca()
 </script><script src="/recado/rastro.js"></script>
 </body></html>
