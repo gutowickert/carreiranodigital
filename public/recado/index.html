@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Recado Encantado</title>
-<meta name="description" content="Heróis que falam o nome do teu filho e ajudam nas fases difíceis: largar a chupeta, dormir na própria cama, ter coragem. E nas datas mágicas, a Fada do Dente e o Papai Noel.">
+<meta name="description" content="Heróis que falam o nome da criança e ajudam nas fases difíceis: largar a chupeta, dormir na própria cama, ter coragem. E nas datas mágicas, a Fada do Dente e o Papai Noel.">
 <meta property="og:title" content="Recado Encantado: heróis que falam o nome do teu filho">
 <meta property="og:description" content="Vídeos com o nome e a foto da criança, pra ajudar nas fases difíceis e nas datas mágicas.">
 <meta property="og:image" content="https://recadoencantando.com.br/recado/midia/grandao.jpg">
@@ -55,7 +55,7 @@ h2{font-size:clamp(30px,5vw,46px);margin-bottom:14px}
 .grupo{margin-top:34px}
 .grupo>h3{font-size:22px;margin-bottom:6px}
 .grupo>p{color:var(--suave);font-size:16px;margin-bottom:16px}
-.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.cards.dois{grid-template-columns:repeat(2,minmax(0,360px));justify-content:center}
 .card{background:#fff;border:1px solid #eadfc8;border-radius:var(--raio);overflow:hidden;text-decoration:none;display:flex;flex-direction:column;transition:transform .15s,box-shadow .15s}
 .card:hover{transform:translateY(-3px);box-shadow:0 16px 40px rgba(42,31,107,.12)}
 .card img{width:100%;aspect-ratio:1;object-fit:cover;object-position:top}
@@ -94,7 +94,7 @@ footer .ct{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
   <div class="ct">
     <div>
       <span class="olho rv" style="color:var(--ouro)">Vídeos com o nome e a foto da criança</span>
-      <h1 class="rv">Heróis que chamam o teu filho <span class="script">pelo nome.</span></h1>
+      <h1 class="rv">Heróis que chamam a criança <span class="script">pelo nome.</span></h1>
       <p class="lead rv">Pras fases difíceis, como <b>largar a chupeta, dormir na própria cama e ter coragem</b>, e pras datas mágicas, com a Fada do Dente e o Papai Noel. Tu conta sobre a criança em 3 minutos e o herói grava um vídeo só pra ela.</p>
       <div class="botoes rv"><a class="btn btn-ouro" href="#herois">Escolher o herói</a><a class="btn btn-claro" href="#como">Como funciona</a></div>
       <div class="selos rv"><span>✓ Com o nome e a foto</span><span>✓ Guia pra família</span><span>✓ Garantia de 7 dias</span></div>
@@ -123,12 +123,11 @@ footer .ct{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
       </div>
     </div>
     <div class="grupo">
-      <h3 class="rv">Datas mágicas</h3><p class="rv">Um vídeo pronto no WhatsApp, pra filmar a reação.</p>
-      <div class="cards">
+      <h3 class="rv">Datas mágicas</h3><p class="rv">Um vídeo pronto, pra filmar a reação. Pro filho, filha, neto ou neta.</p>
+      <div class="cards dois">
         <a class="card rv" href="/recado/pedido.html?p=fada&pac=recado"><img src="/recado/midia/fada.jpg" alt="Fada do Dente" loading="lazy"><div><span class="tag">Caiu um dentinho</span><b>Fada do Dente</b><span>Ela fala o nome da criança, do dentinho que caiu e manda o certificado.</span><em>R$ 39,90</em></div></a>
         <a class="card rv" href="/recado/natal.html"><img src="/recado/midia/noel-perfil.jpg" alt="Papai Noel" loading="lazy"><div><span class="tag">Natal</span><b>Papai Noel</b><span>Chama pelo nome, mostra a foto e conta tudo o que a criança fez no ano.</span><em>a partir de R$ 39,90</em></div></a>
-        <a class="card rv" href="/recado/vo.html"><img src="/recado/midia/cena-presentes.jpg" alt="Presentes de Natal" loading="lazy"><div><span class="tag">Pra avó dar de presente</span><b>Presente da vó</b><span>O herói conta pro neto que foi a vó que pediu o recado.</span><em>a partir de R$ 39,90</em></div></a>
-      </div>
+              </div>
     </div>
   </div>
 </section>
