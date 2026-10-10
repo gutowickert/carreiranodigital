@@ -11,7 +11,8 @@ const nextConfig: NextConfig = {
   // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
   async rewrites() {
     // Recado Encantado (frente da escola): quem entra por recadoencantado.com.br vê as páginas de public/recado; a API fica em /api/recado
-    const recado = [{ type: 'host' as const, value: '(www\\.)?recadoencantado\\.com\\.br' }]
+    // os dois nomes: recadoencantado (o da marca) e recadoencantando (o que foi registrado em 09/10)
+    const recado = [{ type: 'host' as const, value: '(www\\.)?recadoencant(ado|ando)\\.com\\.br' }]
     return {
       beforeFiles: [
         { source: '/', has: recado, destination: '/recado/index.html' },
