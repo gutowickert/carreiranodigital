@@ -104,7 +104,8 @@ $('abas').onclick=function(e){if(!e.target.dataset.a)return;aba=e.target.dataset
 
 // ===== contas =====
 var chave=function(p){return p.personagem+'/'+p.pacote}
-var pago=function(p){return !!p.pago_em&&['cancelado','reembolsado','aguardando_pagamento'].indexOf(p.status)<0}
+// pedido de teste ou cortesia aparece na lista, mas não conta como venda
+var pago=function(p){return !!p.pago_em&&['cancelado','reembolsado','aguardando_pagamento'].indexOf(p.status)<0&&!(p.origem&&p.origem.teste)}
 function prodPed(p){var c=p.custo||{};if(c.producao!=null)return{v:+c.producao,real:true};if(c.total!=null&&c.gpu!=null)return{v:+c.total,real:true};var pr=D.produtos[chave(p)];return{v:pr?pr.custoPadrao:0,real:false}}
 function taxaPed(p){if(p.taxa_gateway!=null)return +p.taxa_gateway;if(p.custo&&p.custo.taxa!=null)return +p.custo.taxa;return +(0.7*0.49+0.3*(p.preco*0.0349+0.49)).toFixed(2)}
 var camp=function(p){return (p.origem&&p.origem.utm_campaign)||'(direto/orgânico)'}
