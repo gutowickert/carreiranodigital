@@ -59,7 +59,7 @@ function desenha(s){
   if(s.status==='aguardando_pagamento'&&s.pagar){
     document.getElementById('tit').textContent='Falta só o pagamento'
     document.getElementById('sub').textContent='Pix ou cartão, na página segura do Asaas. Assim que confirmar, '+quem+' começa a preparar tudo pra '+s.nome+'. Pode deixar esta página aberta: ela atualiza sozinha.'
-    document.getElementById('passos').innerHTML='<div class="bts"><a class="bt" href="'+s.pagar+'" target="_blank" rel="noopener">Pagar agora</a></div><p style="font-size:15px">Guarda este link: é aqui que tu acompanha tudo.</p>'
+    document.getElementById('passos').innerHTML='<div class="bts"><a class="bt" href="'+s.pagar+'" target="_blank" rel="noopener" onclick="window.recadoRastro&&recadoRastro.envia('pagar_clique',{pedido:c})">Pagar agora</a></div><p style="font-size:15px">Guarda este link: é aqui que tu acompanha tudo.</p>'
     return false }
   if(s.status==='entregue'){
     document.getElementById('tit').textContent='O recado chegou!'
@@ -74,4 +74,5 @@ function desenha(s){
   return false }
 function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no WhatsApp.';return}if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
 busca()
-</script></body></html>
+</script><script src="/recado/rastro.js"></script>
+</body></html>

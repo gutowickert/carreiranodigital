@@ -37,7 +37,7 @@ export async function POST(req: NextRequest) {
     }
     const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
     const preco = +(pac.preco + irmaos * cfg.irmao).toFixed(2)
-    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem: b.origem || null }
+    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem: b.origem || null, visitante: limpa(b.origem?.visitante, 40) || null }
     if (b.foto && /^data:image\/(jpeg|png|webp);base64,/.test(b.foto)) {
       const buf = Buffer.from(b.foto.split(',')[1], 'base64'); if (buf.length > 4e6) return NextResponse.json({ erro: 'foto muito grande' }, { status: 400 })
       p.foto_path = await db.sobe(`${p.codigo}/foto.jpg`, buf, 'image/jpeg')

@@ -105,9 +105,9 @@ button:disabled{opacity:.7}
 </div>
 <script>
 // Formulário das missões: ?m=chupeta | dormir | coragem. Manda pra mesma API do pedido, com os dados da missão.
-var M={chupeta:{p:'grandao',nome:'Missão Tchau Chupeta',desc:'com o Capitão Grandão · 3 vídeos + kit',preco:'R$ 49,90',img:'/recado/midia/grandao.jpg',tit:'O Capitão Grandão vem buscar a chupeta'},
-  dormir:{p:'guardiao',nome:'Missão Noite de Herói',desc:'com o Guardião da Noite · 5 vídeos + kit',preco:'R$ 59,90',img:'/recado/midia/guardiao.jpg',tit:'O Guardião vai cuidar das noites'},
-  coragem:{p:'coragem',nome:'Missão Coragem',desc:'com a Capitã Coragem · 2 vídeos + medalha',preco:'R$ 29,90',img:'/recado/midia/coragem.jpg',tit:'A Capitã vai treinar a coragem'}}
+var M={chupeta:{p:'grandao',nome:'Missão Tchau Chupeta',desc:'com o Capitão Grandão · 3 vídeos + kit',preco:'R$ 94,90',img:'/recado/midia/grandao.jpg',tit:'O Capitão Grandão vem buscar a chupeta'},
+  dormir:{p:'guardiao',nome:'Missão Noite de Herói',desc:'com o Guardião da Noite · 5 vídeos + kit',preco:'R$ 139,90',img:'/recado/midia/guardiao.jpg',tit:'O Guardião vai cuidar das noites'},
+  coragem:{p:'coragem',nome:'Missão Coragem',desc:'com a Capitã Coragem · 2 vídeos + medalha',preco:'R$ 64,90',img:'/recado/midia/coragem.jpg',tit:'A Capitã vai treinar a coragem'}}
 var q=new URLSearchParams(location.search),m=M[q.get('m')]?q.get('m'):'chupeta',X=M[m],foto=null,$=function(i){return document.getElementById(i)}
 $('h-img').src=X.img;$('h-nome').textContent=X.nome;$('h-desc').textContent=X.desc;$('h-preco').textContent=X.preco;$('tit').textContent=X.tit
 document.querySelector('[data-m='+m+']').style.display='block'
@@ -121,11 +121,12 @@ $('f').addEventListener('submit',function(e){e.preventDefault();var d=new FormDa
     :m==='dormir'?{desafio:v('do-desafio'),medo:v('do-medo'),ajuda:v('do-ajuda'),data:v('do-data'),recompensa:v('do-recompensa')}
     :{evento:v('co-evento'),data:v('co-data'),desafio:v('co-desafio'),medo:v('co-medo'),recompensa:v('co-recompensa')}
   var c={nome:d.get('nome'),apelido:d.get('apelido')||d.get('nome'),idade:+d.get('idade'),genero:d.get('genero'),adora:(d.get('adora')||'').split(',').map(function(s){return s.trim()}).filter(Boolean),detalhe_magico:d.get('detalhe')}
-  var origem={};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
+  var origem=window.recadoRastro?window.recadoRastro.origem():{};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
   bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'
   fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:X.p,pacote:m,foto:foto,crianca:c,missao:missao,contato:{responsavel:d.get('resp'),whatsapp:d.get('wa'),email:d.get('email')},origem:origem})})
     .then(function(r){return r.json()}).then(function(j){if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
     .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
 </script>
+<script src="/recado/rastro.js"></script>
 </body>
 </html>

@@ -3,107 +3,235 @@
 <meta name="robots" content="noindex"><title>Painel · Recado Encantado</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Fredoka:wght@600;700&display=swap">
 <style>
-:root{--bg:#f6f3fb;--card:#fff;--tx:#1d1530;--tx2:#5d5472;--mut:#8f87a3;--bd:#e6e0f0;--marca:#6b2a8f;--rosa:#e6457a;--ouro:#f2c14e;
---bom:#15a34a;--bombg:#dcf5e6;--at:#c2680c;--atbg:#fdeecb;--ruim:#dc2626;--ruimbg:#fde7e7;--info:#2563eb;--infobg:#dce9fe;--neu:#efeaf6}
+/* Painel do negócio (10/10): metas, funil do anúncio à compra, produtos, financeiro, pedidos e lançamentos. Tudo do banco. */
+:root{--bg:#f6f3fb;--card:#fff;--tx:#1d1530;--tx2:#5d5472;--mut:#8f87a3;--bd:#e6e0f0;--marca:#6b2a8f;--marca2:#b9a3ff;--rosa:#e6457a;--ouro:#f2c14e;
+--bom:#15803d;--bombg:#dcf5e6;--at:#b45309;--atbg:#fdeecb;--ruim:#dc2626;--ruimbg:#fde7e7;--info:#2563eb;--infobg:#dce9fe;--neu:#efeaf6}
 *{box-sizing:border-box;margin:0}body{font:15px/1.5 Manrope,system-ui,sans-serif;background:var(--bg);color:var(--tx)}
-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 24px;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding:14px 24px;background:#fff;border-bottom:1px solid var(--bd);position:sticky;top:0;z-index:5}
 header b{font:700 22px Fredoka;color:var(--marca)}header span{color:var(--mut);font-size:13px}
-main{max-width:1240px;margin:0 auto;padding:20px 24px 60px;display:grid;gap:18px}
-.seg{display:inline-flex;background:var(--neu);border-radius:999px;padding:4px}.seg button{border:0;background:none;padding:7px 14px;border-radius:999px;font:700 13px Manrope;color:var(--tx2);cursor:pointer}.seg button.on{background:#fff;color:var(--marca);box-shadow:0 1px 3px rgba(0,0,0,.08)}
-.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px}@media(max-width:1000px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}@media(max-width:560px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
-.k{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px 16px}.k span{font:700 12px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}.k b{display:block;font:800 26px Manrope;margin-top:4px;font-variant-numeric:tabular-nums}.k small{color:var(--mut);font-size:12.5px}
-.grid2{display:grid;grid-template-columns:1.4fr 1fr;gap:18px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
-.box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px}.box h3{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.funil{display:grid;gap:8px}.fl{display:grid;grid-template-columns:130px 1fr 54px;align-items:center;gap:10px;font-size:13.5px}.fl i{display:block;height:24px;border-radius:6px;background:var(--marca);min-width:2px}.fl b{text-align:right;font-variant-numeric:tabular-nums}
-.barras{display:flex;align-items:flex-end;gap:5px;height:150px;padding-top:10px}.barras div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;height:100%}.barras i{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--marca);opacity:.42}.barras div:last-child i{opacity:1}.barras span{font-size:10.5px;color:var(--mut)}
-.maq{display:flex;align-items:center;gap:14px}.luz{width:14px;height:14px;border-radius:50%;flex:none}
+nav{display:flex;gap:4px;flex-wrap:wrap;padding:10px 24px;background:#fff;border-bottom:1px solid var(--bd)}nav button{border:0;background:none;padding:8px 14px;border-radius:10px;font:700 14px Manrope;color:var(--tx2);cursor:pointer}nav button.on{background:var(--neu);color:var(--marca)}
+main{max-width:1280px;margin:0 auto;padding:20px 24px 60px;display:grid;gap:18px}
+.seg{display:inline-flex;background:var(--neu);border-radius:999px;padding:4px}.seg button{border:0;background:none;padding:7px 13px;border-radius:999px;font:700 13px Manrope;color:var(--tx2);cursor:pointer}.seg button.on{background:#fff;color:var(--marca);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px}
+.k{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:14px 16px}.k span{font:700 11.5px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em}.k b{display:block;font:800 25px Manrope;margin-top:4px;font-variant-numeric:tabular-nums}.k small{color:var(--mut);font-size:12.5px}
+.k.bom{border-left:4px solid var(--bom)}.k.at{border-left:4px solid var(--at)}.k.ruim{border-left:4px solid var(--ruim)}
+.grid2{display:grid;grid-template-columns:1.3fr 1fr;gap:18px}@media(max-width:900px){.grid2{grid-template-columns:1fr}}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:18px;padding:18px;min-width:0}.box h3{font-size:14px;font-weight:800;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.box h3 small{font-weight:600;color:var(--mut)}
+.nota{font-size:13px;color:var(--tx2);background:var(--neu);border-radius:12px;padding:10px 12px}
+.meta{display:grid;gap:12px}.mt{display:grid;gap:5px}.mt .l{display:flex;justify-content:space-between;font-size:13.5px}.mt .l b{font-variant-numeric:tabular-nums}.barra{height:10px;border-radius:99px;background:var(--neu);overflow:hidden}.barra i{display:block;height:100%;border-radius:99px;background:var(--marca)}
+.funil{display:grid;gap:10px}.fl{display:grid;grid-template-columns:150px 1fr 120px;align-items:center;gap:10px;font-size:13.5px}.fl i{display:block;height:28px;border-radius:7px;background:var(--marca);min-width:3px}.fl b{text-align:right;font-variant-numeric:tabular-nums}.fl em{font-style:normal;color:var(--mut);font-size:12px;display:block;text-align:right}
+@media(max-width:560px){.fl{grid-template-columns:96px 1fr 84px}}
+.barras{display:flex;align-items:flex-end;gap:4px;height:160px;padding-top:10px}.barras div{flex:1;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;height:100%;min-width:0}.barras i{display:block;width:100%;border-radius:4px 4px 0 0;background:var(--marca)}.barras i.c{background:var(--marca2)}.barras span{font-size:10px;color:var(--mut)}
+.leg{display:flex;gap:14px;font-size:12px;color:var(--tx2)}.leg i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
 .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font:700 12px Manrope;white-space:nowrap}
-.s-aguardando_pagamento{background:var(--neu);color:var(--tx2)}.s-pago{background:var(--infobg);color:var(--info)}.s-produzindo{background:var(--atbg);color:var(--at)}.s-revisao{background:var(--atbg);color:var(--at)}.s-entregue{background:var(--bombg);color:var(--bom)}.s-falhou{background:var(--ruimbg);color:var(--ruim)}.s-cancelado,.s-reembolsado{background:var(--neu);color:var(--mut)}
-.abas{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}.abas button{border:1px solid var(--bd);background:#fff;border-radius:999px;padding:6px 12px;font:700 13px Manrope;color:var(--tx2);cursor:pointer}.abas button.on{background:var(--marca);border-color:var(--marca);color:#fff}
-.tab{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:720px}th{text-align:left;font:700 11.5px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--bd)}td{padding:10px;border-bottom:1px solid var(--bd);font-size:14px}tr.l{cursor:pointer}tr.l:hover td{background:#faf7fd}td.n{text-align:right;font-variant-numeric:tabular-nums}
-.vazio{padding:30px;text-align:center;color:var(--mut)}
+.c-bom{background:var(--bombg);color:var(--bom)}.c-at{background:var(--atbg);color:var(--at)}.c-ruim{background:var(--ruimbg);color:var(--ruim)}.c-neu{background:var(--neu);color:var(--tx2)}.c-info{background:var(--infobg);color:var(--info)}
+.tab{overflow-x:auto}table{width:100%;border-collapse:collapse;min-width:760px}th{text-align:left;font:700 11px Manrope;color:var(--mut);text-transform:uppercase;letter-spacing:.06em;padding:8px 10px;border-bottom:1px solid var(--bd);white-space:nowrap}td{padding:9px 10px;border-bottom:1px solid var(--bd);font-size:13.5px}td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}tr.l{cursor:pointer}tr.l:hover td{background:#faf7fd}tr.tot td{font-weight:800;background:#faf7fd}
+.dre{display:grid;gap:0}.dre div{display:flex;justify-content:space-between;padding:9px 4px;border-bottom:1px solid var(--bd);font-size:14px}.dre div b{font-variant-numeric:tabular-nums}.dre .s{font-weight:800;background:#faf7fd}.dre .neg b{color:var(--ruim)}
+.vazio{padding:24px;text-align:center;color:var(--mut)}
+form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;align-items:end}form.lanc label{font:700 11.5px Manrope;color:var(--mut);display:grid;gap:4px}form.lanc input,form.lanc select{padding:9px 10px;border:1px solid var(--bd);border-radius:10px;font:14px Manrope;width:100%}
+.bt{border:1px solid var(--bd);background:#fff;border-radius:10px;padding:8px 14px;font:700 13.5px Manrope;cursor:pointer}.bt.p{background:var(--marca);color:#fff;border-color:var(--marca)}.bt.r{color:var(--ruim)}
 #gaveta{position:fixed;inset:0;background:rgba(20,10,40,.45);display:none;justify-content:flex-end;z-index:20}#gaveta.ab{display:flex}
-#gaveta .g{width:min(560px,100%);background:#fff;height:100%;overflow:auto;padding:22px;display:grid;gap:16px;align-content:start}
-.g h2{font:700 24px Fredoka;color:var(--marca)}.lin{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.tl{display:grid;gap:0}.tl div{display:grid;grid-template-columns:92px 1fr;gap:10px;padding:8px 0;border-left:2px solid var(--bd);padding-left:14px;position:relative;font-size:13.5px}.tl div:before{content:"";position:absolute;left:-6px;top:13px;width:10px;height:10px;border-radius:50%;background:var(--marca)}.tl span{color:var(--mut)}
-.g video,.g img{width:100%;border-radius:14px}.dados{background:var(--bg);border-radius:14px;padding:14px;font-size:14px;display:grid;gap:4px}
-.bts{display:flex;gap:8px;flex-wrap:wrap}.bt{border:1px solid var(--bd);background:#fff;border-radius:10px;padding:8px 14px;font:700 13.5px Manrope;cursor:pointer}.bt.p{background:var(--marca);color:#fff;border-color:var(--marca)}.bt.r{color:var(--ruim)}
+#gaveta .g{width:min(580px,100%);background:#fff;height:100%;overflow:auto;padding:22px;display:grid;gap:16px;align-content:start}
+.g h2{font:700 24px Fredoka;color:var(--marca)}.lin{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;align-items:center}
+.tl{display:grid}.tl div{display:grid;grid-template-columns:110px 1fr;gap:10px;padding:7px 0 7px 14px;border-left:2px solid var(--bd);position:relative;font-size:13px}.tl div:before{content:"";position:absolute;left:-6px;top:12px;width:10px;height:10px;border-radius:50%;background:var(--marca)}.tl span:first-child{color:var(--mut)}
+.g video{width:100%;border-radius:14px}.dados{background:var(--bg);border-radius:14px;padding:14px;font-size:13.5px;display:grid;gap:4px}
 .fala{background:#fffaf0;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;border-left:4px solid var(--ouro)}
 #login[hidden],#app[hidden]{display:none}#login{max-width:360px;margin:15vh auto;background:#fff;border:1px solid var(--bd);border-radius:18px;padding:26px;display:grid;gap:12px}#login input{padding:12px;border:1px solid var(--bd);border-radius:10px;font:15px Manrope}
+[data-aba]{display:none}[data-aba].on{display:grid;gap:18px}
 </style></head><body>
 <div id="login" hidden><b style="font:700 22px Fredoka;color:var(--marca)">Painel do Recado</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
 <div id="app" hidden>
-<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1">Hoje</button><button data-d="7" class="on">7 dias</button><button data-d="30">30 dias</button></div></header>
+<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1">Hoje</button><button data-d="7">7 dias</button><button data-d="30" class="on">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
+<nav id="abas"><button data-a="geral" class="on">Visão geral</button><button data-a="funil">Funil</button><button data-a="produtos">Produtos</button><button data-a="fin">Financeiro</button><button data-a="pedidos">Pedidos</button><button data-a="lanc">Lançamentos</button></nav>
 <main>
-  <section class="kpis" id="kpis"></section>
-  <section class="grid2">
-    <div class="box"><h3>Vendas por dia <span id="legbar" style="font-weight:600;color:var(--mut)">pedidos pagos</span></h3><div class="barras" id="barras"></div></div>
-    <div class="box"><h3>Funil</h3><div class="funil" id="funil"></div></div>
-  </section>
-  <section class="grid2">
-    <div class="box"><h3>Máquina de vídeo</h3><div class="maq" id="maq"></div></div>
-    <div class="box"><h3>Precisa de atenção</h3><div id="atencao"></div></div>
-  </section>
-  <section class="box"><h3>Pedidos</h3><div class="abas" id="abas"></div><div class="tab"><table><thead><tr><th>Código</th><th>Criança</th><th>Personagem</th><th>Pacote</th><th>Situação</th><th>Quando</th><th class="n">Valor</th></tr></thead><tbody id="lista"></tbody></table></div></section>
+<section data-aba="geral" class="on">
+  <div class="kpis" id="kpis"></div>
+  <div class="grid2">
+    <div class="box"><h3>Metas do mês <small id="metames"></small></h3><div class="meta" id="metas"></div></div>
+    <div class="box"><h3>Onde estamos</h3><div id="alertas" style="display:grid;gap:8px"></div></div>
+  </div>
+  <div class="grid2">
+    <div class="box"><h3>Receita e custos por dia <span class="leg"><span><i style="background:var(--marca)"></i>receita</span><span><i style="background:var(--marca2)"></i>custos (produção, taxa, tráfego)</span></span></h3><div class="barras" id="barras"></div></div>
+    <div class="box"><h3>Máquina de vídeo</h3><div id="maq"></div></div>
+  </div>
+</section>
+<section data-aba="funil">
+  <div class="box"><h3>Do anúncio à compra <span><select id="fprod" class="bt"></select> <select id="fcamp" class="bt"></select></span></h3><div class="funil" id="funil"></div>
+    <p class="nota" style="margin-top:12px">Cada passo conta pessoas diferentes (visitantes únicos). O pago vem dos pedidos confirmados pelo Asaas. A porcentagem da direita é quantos passaram do passo anterior.</p></div>
+  <div class="box"><h3>Por campanha <small>visitantes do site · pedidos · gasto lançado</small></h3><div class="tab"><table><thead><tr><th>Campanha</th><th class="n">Visitantes</th><th class="n">Pedidos</th><th class="n">Pagos</th><th class="n">Conversão</th><th class="n">Receita</th><th class="n">Gasto</th><th class="n">CPA</th><th class="n">ROAS</th><th class="n">Margem</th></tr></thead><tbody id="camp"></tbody></table></div></div>
+  <div class="box"><h3>Visitantes e compras por dia</h3><div class="barras" id="fdia"></div></div>
+</section>
+<section data-aba="produtos">
+  <div class="box"><h3>Cada produto <small>regra: produção até 15% do preço · tráfego 15 a 20%</small></h3><div class="tab"><table><thead><tr><th>Produto</th><th class="n">Preço</th><th class="n">Pagos</th><th class="n">Receita</th><th class="n">Produção/pedido</th><th class="n">% produção</th><th class="n">Taxa</th><th class="n">Tráfego</th><th class="n">CPA</th><th class="n">% tráfego</th><th class="n">Margem</th><th class="n">ROI do anúncio</th></tr></thead><tbody id="prods"></tbody></table></div>
+  <p class="nota" style="margin-top:12px">Produção/pedido: custo real medido nos vídeos já feitos; sem vídeo ainda, o custo padrão (máquina R$ 0,154/s + voz R$ 0,018/s + roteiro e envio). Margem = receita menos produção, taxa e tráfego. ROI do anúncio = margem antes do tráfego dividida pelo gasto.</p></div>
+</section>
+<section data-aba="fin">
+  <div class="grid2">
+    <div class="box"><h3>Resultado do período <small id="finper"></small></h3><div class="dre" id="dre"></div></div>
+    <div class="box"><h3>Por pedido (média)</h3><div class="dre" id="unit"></div></div>
+  </div>
+  <div class="box"><h3>Custo de cada pedido pago</h3><div class="tab"><table><thead><tr><th>Código</th><th>Produto</th><th>Quando</th><th class="n">Preço</th><th class="n">Vídeos</th><th class="n">Produção</th><th class="n">Taxa</th><th class="n">% produção</th><th class="n">Sobra</th></tr></thead><tbody id="cped"></tbody></table></div></div>
+</section>
+<section data-aba="pedidos">
+  <div class="box"><h3>Pedidos <span class="seg" id="fsit"></span></h3><div class="tab"><table><thead><tr><th>Código</th><th>Criança</th><th>Produto</th><th>Situação</th><th>Origem</th><th>Quando</th><th class="n">Valor</th><th class="n">Custo</th></tr></thead><tbody id="lista"></tbody></table></div></div>
+</section>
+<section data-aba="lanc">
+  <div class="box"><h3>Gasto com anúncio <small>um lançamento por dia e campanha (até ligar a Meta direto)</small></h3>
+    <form class="lanc" id="fgasto"><label>Dia<input name="dia" type="date" required></label><label>Campanha (utm_campaign)<input name="campanha" placeholder="chupeta"></label><label>Produto<select name="produto"></select></label><label>Valor R$<input name="valor" inputmode="decimal" required></label><label>Cliques<input name="cliques" inputmode="numeric"></label><button class="bt p">Lançar gasto</button></form>
+    <div class="tab" style="margin-top:12px"><table><thead><tr><th>Dia</th><th>Campanha</th><th>Produto</th><th class="n">Cliques</th><th class="n">Valor</th><th></th></tr></thead><tbody id="lgastos"></tbody></table></div></div>
+  <div class="grid2">
+    <div class="box"><h3>Custos fixos por mês</h3><form class="lanc" id="ffixo"><label>Nome<input name="nome" required></label><label>Valor por mês R$<input name="valor" inputmode="decimal" required></label><button class="bt p">Adicionar</button></form><div class="tab" style="margin-top:12px"><table style="min-width:420px"><tbody id="lfixos"></tbody></table></div></div>
+    <div class="box"><h3>Metas do mês</h3><form class="lanc" id="fmeta"><label>Mês<input name="mes" type="month" required></label><label>Faturamento R$<input name="faturamento" inputmode="decimal"></label><label>Pedidos<input name="pedidos" inputmode="numeric"></label><label>Margem %<input name="margem_pct" inputmode="decimal" placeholder="45"></label><label>Tráfego até %<input name="trafego_pct" inputmode="decimal" placeholder="20"></label><button class="bt p">Salvar meta</button></form><div class="tab" style="margin-top:12px"><table style="min-width:420px"><tbody id="lmetas"></tbody></table></div></div>
+  </div>
+</section>
 </main></div>
 <div id="gaveta"><div class="g" id="gav"></div></div>
 <script>
 var SENHA='';try{SENHA=localStorage.getItem('painel_senha')||''}catch(e){}
-var D=null,dias=7,aba='todos'
-var NOME={aguardando_pagamento:'Aguardando pagamento',pago:'Na fila',produzindo:'Produzindo',revisao:'Revisão',entregue:'Entregue',falhou:'Falhou',cancelado:'Cancelado',reembolsado:'Reembolsado'}
-var PAC={encanto:'Encanto',magico:'Magia Completa',recado:'Recado da Fada'}
-var R=function(v){return 'R$ '+(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}
+var D=null,per='30',aba='geral',sit='todos',fprod='todos',fcamp='todas'
+var SIT={aguardando_pagamento:'Aguardando pagamento',pago:'Na fila',produzindo:'Produzindo',em_missao:'Em missão',revisao:'Revisão',entregue:'Entregue',falhou:'Falhou',cancelado:'Cancelado',reembolsado:'Reembolsado'}
+var CSIT={aguardando_pagamento:'c-neu',pago:'c-info',produzindo:'c-at',em_missao:'c-info',revisao:'c-at',entregue:'c-bom',falhou:'c-ruim',cancelado:'c-neu',reembolsado:'c-neu'}
+var R=function(v){return 'R$ '+(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})},P=function(v){return v==null||!isFinite(v)?'·':(v*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'},X=function(v){return v==null||!isFinite(v)?'·':v.toLocaleString('pt-BR',{maximumFractionDigits:1})+'x'}
 var esc=function(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+var $=function(i){return document.getElementById(i)}
 function quando(t){if(!t)return'·';var m=(Date.now()-new Date(t))/60000;return m<1?'agora':m<60?Math.round(m)+' min':m<1440?Math.round(m/60)+' h':new Date(t).toLocaleDateString('pt-BR')}
 function api(q,op){return fetch('/api/recado/painel'+q,Object.assign({headers:{'x-senha':SENHA,'Content-Type':'application/json'}},op||{})).then(function(r){if(r.status===401)throw new Error('senha');return r.json()})}
-function entra(){api('?o=tudo').then(function(d){document.getElementById('login').hidden=true;document.getElementById('app').hidden=false;D=d;desenha()}).catch(function(e){document.getElementById('login').hidden=false;document.getElementById('app').hidden=true;if(SENHA)document.getElementById('lerro').textContent=e.message==='senha'?'Senha errada':'Sem conexão'})}
-document.getElementById('entrar').onclick=function(){SENHA=document.getElementById('senha').value;try{localStorage.setItem('painel_senha',SENHA)}catch(e){}entra()}
-document.getElementById('per').onclick=function(e){if(!e.target.dataset.d)return;dias=+e.target.dataset.d;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});desenha()}
+function diasPer(){if(per==='mes'){var h=new Date();return Math.max(1,Math.ceil((h-new Date(h.getFullYear(),h.getMonth(),1))/864e5))}return +per}
+function entra(){api('?o=tudo&dias='+Math.max(diasPer(),31)).then(function(d){if(d.erro)throw new Error(d.erro);$('login').hidden=true;$('app').hidden=false;D=d;desenha()}).catch(function(e){if(e.message==='senha'||!D){$('login').hidden=false;$('app').hidden=true;if(SENHA)$('lerro').textContent=e.message==='senha'?'Senha errada':'Sem conexão: '+e.message}})}
+$('entrar').onclick=function(){SENHA=$('senha').value;try{localStorage.setItem('painel_senha',SENHA)}catch(e){}entra()}
+$('per').onclick=function(e){if(!e.target.dataset.d)return;per=e.target.dataset.d;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});if(diasPer()>31&&D&&D.dias<diasPer())entra();else desenha()}
+$('abas').onclick=function(e){if(!e.target.dataset.a)return;aba=e.target.dataset.a;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});document.querySelectorAll('[data-aba]').forEach(function(s){s.classList.toggle('on',s.dataset.aba===aba)})}
+
+// ===== contas =====
+var chave=function(p){return p.personagem+'/'+p.pacote}
+var pago=function(p){return !!p.pago_em&&['cancelado','reembolsado','aguardando_pagamento'].indexOf(p.status)<0}
+function prodPed(p){var c=p.custo||{};if(c.producao!=null)return{v:+c.producao,real:true};if(c.total!=null&&c.gpu!=null)return{v:+c.total,real:true};var pr=D.produtos[chave(p)];return{v:pr?pr.custoPadrao:0,real:false}}
+function taxaPed(p){if(p.taxa_gateway!=null)return +p.taxa_gateway;if(p.custo&&p.custo.taxa!=null)return +p.custo.taxa;return +(0.7*0.49+0.3*(p.preco*0.0349+0.49)).toFixed(2)}
+var camp=function(p){return (p.origem&&p.origem.utm_campaign)||'(direto/orgânico)'}
+function fixosNoPeriodo(ini,fim){return D.fixos.reduce(function(s,f){var a=Math.max(ini,new Date(f.inicio+'T00:00:00-03:00')),b=Math.min(fim,f.fim?new Date(f.fim+'T23:59:59-03:00'):fim);return s+(b>a?f.valor_mensal*(b-a)/(30*864e5):0)},0)}
+function periodo(){var fim=new Date(),ini=per==='mes'?new Date(fim.getFullYear(),fim.getMonth(),1):new Date(Date.now()-diasPer()*864e5);return{ini:ini,fim:fim}}
+function soma(peds,gastos,ini,fim){var pg=peds.filter(pago),rec=0,prod=0,tax=0,real=0;pg.forEach(function(p){rec+=+p.preco;var c=prodPed(p);prod+=c.v;if(c.real)real++;tax+=taxaPed(p)})
+  var traf=gastos.reduce(function(s,g){return s+ +g.valor},0),fix=ini?fixosNoPeriodo(ini,fim):0,mc=rec-prod-tax-traf
+  return{pedidos:peds.length,pagos:pg.length,rec:rec,prod:prod,tax:tax,traf:traf,fix:fix,mc:mc,res:mc-fix,ticket:pg.length?rec/pg.length:0,real:real}}
+
 function desenha(){
-  var lim=Date.now()-dias*864e5,ped=D.pedidos.filter(function(p){return new Date(p.criado_em)>=lim}),pagos=ped.filter(function(p){return p.pago_em})
-  var fat=pagos.reduce(function(s,p){return s+ +p.preco},0),tax=pagos.reduce(function(s,p){return s+(+p.taxa_gateway||0)},0),cus=pagos.reduce(function(s,p){return s+(p.custo&&+p.custo.total||0)},0)
-  var ent=ped.filter(function(p){return p.entregue_em&&p.pago_em}),tm=ent.length?ent.reduce(function(s,p){return s+(new Date(p.entregue_em)-new Date(p.pago_em))},0)/ent.length/60000:null
-  document.getElementById('atual').textContent='atualizado '+new Date(D.agora).toLocaleTimeString('pt-BR')
-  document.getElementById('kpis').innerHTML=[['Faturamento',R(fat),pagos.length+' pedidos pagos'],['Ticket médio',R(pagos.length?fat/pagos.length:0),'por pedido'],['Lucro estimado',R(fat-tax-cus),'menos taxas '+R(tax)+' e máquina '+R(cus)],
-    ['Conversão',(ped.length?Math.round(pagos.length/ped.length*100):0)+'%','de quem preencheu e pagou'],['Entregues',ent.length,'no período'],['Tempo até entregar',tm==null?'·':Math.round(tm)+' min','média depois do pagamento']]
-    .map(function(k){return '<div class="k"><span>'+k[0]+'</span><b>'+k[1]+'</b><small>'+k[2]+'</small></div>'}).join('')
-  // barras por dia (últimos 14)
-  var mapa={};D.pedidos.forEach(function(p){if(!p.pago_em)return;var d=new Date(p.pago_em).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});mapa[d]=(mapa[d]||0)+1})
-  var ds=[];for(var i=13;i>=0;i--){ds.push(new Date(Date.now()-i*864e5).toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}))}
-  var mx=Math.max(1,Math.max.apply(null,ds.map(function(d){return mapa[d]||0})))
-  document.getElementById('barras').innerHTML=ds.map(function(d){var v=mapa[d]||0;return '<div title="'+d+': '+v+' pagos"><b style="font-size:11px">'+(v||'')+'</b><i style="height:'+(v/mx*100)+'%"></i><span>'+d.slice(0,2)+'</span></div>'}).join('')
-  // funil
-  var cont=function(f){return ped.filter(f).length},etapas=[['Preencheram',ped.length],['Pagaram',pagos.length],['Produzidos',cont(function(p){return['revisao','entregue'].indexOf(p.status)>=0})],['Entregues',cont(function(p){return p.status==='entregue'})]]
-  var top=Math.max(1,etapas[0][1]);document.getElementById('funil').innerHTML=etapas.map(function(e){return '<div class="fl"><span>'+e[0]+'</span><i style="width:'+(e[1]/top*100)+'%"></i><b>'+e[1]+'</b></div>'}).join('')
-  // máquina
-  var m=D.maquina||{estado:'desligada'},cor={desligada:'#9a93ae',ligando:'#fbbf24',livre:'#34d399',produzindo:'#8b5cf6'}[m.estado]||'#9a93ae',fila=D.pedidos.filter(function(p){return p.status==='pago'}).length
-  document.getElementById('maq').innerHTML='<span class="luz" style="background:'+cor+';box-shadow:0 0 12px '+cor+'"></span><div><b style="font-size:18px">'+({desligada:'Desligada',ligando:'Ligando',livre:'Ligada, livre',produzindo:'Produzindo'}[m.estado]||m.estado)+'</b>'+
-    (m.detalhe&&m.detalhe.codigo?' · '+esc(m.detalhe.codigo):'')+'<br><span style="color:var(--mut);font-size:13px">'+fila+' na fila · última mudança '+quando(m.atualizado_em)+'. Liga sozinha quando entra pedido pago e desliga 15 min depois da fila esvaziar.</span></div>'
-  // atenção
-  var at=D.pedidos.filter(function(p){return p.status==='falhou'||p.status==='revisao'||(p.status==='pago'&&Date.now()-new Date(p.pago_em)>30*60000)||(p.status==='produzindo'&&Date.now()-new Date(p.produzindo_em)>90*60000)})
-  document.getElementById('atencao').innerHTML=at.length?at.slice(0,6).map(function(p){return '<div class="lin" style="padding:6px 0;border-bottom:1px solid var(--bd);cursor:pointer" onclick="abre(\''+p.id+'\')"><span><b>'+esc(p.codigo)+'</b> · '+esc(p.nome)+'</span><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></div>'}).join(''):'<div class="vazio" style="padding:12px">Nada travado. Tudo andando.</div>'
-  // abas e lista
-  var abas=[['todos','Todos']].concat(Object.keys(NOME).map(function(k){return[k,NOME[k]]}))
-  document.getElementById('abas').innerHTML=abas.map(function(a){var n=a[0]==='todos'?ped.length:ped.filter(function(p){return p.status===a[0]}).length;return n||a[0]==='todos'?'<button data-a="'+a[0]+'" class="'+(aba===a[0]?'on':'')+'">'+a[1]+' · '+n+'</button>':''}).join('')
-  var vis=ped.filter(function(p){return aba==='todos'||p.status===aba})
-  document.getElementById('lista').innerHTML=vis.length?vis.map(function(p){return '<tr class="l" onclick="abre(\''+p.id+'\')"><td><b>'+esc(p.codigo)+'</b></td><td>'+esc(p.nome)+'<br><span style="color:var(--mut);font-size:12.5px">'+esc(p.responsavel)+'</span></td><td>'+(p.personagem==='noel'?'Papai Noel':'Fada do Dente')+'</td><td>'+(PAC[p.pacote]||p.pacote)+'</td><td><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></td><td>'+quando(p.criado_em)+'</td><td class="n">'+R(p.preco)+'</td></tr>'}).join(''):'<tr><td colspan="7" class="vazio">Nenhum pedido nesse período.</td></tr>'
+  var pr=periodo(),peds=D.pedidos.filter(function(p){return new Date(p.criado_em)>=pr.ini}),gas=D.gastos.filter(function(g){return new Date(g.dia+'T12:00:00-03:00')>=pr.ini})
+  var S=soma(peds,gas,pr.ini,pr.fim),vis=visitantes('todos','todas'),regras=D.regras
+  $('atual').textContent='atualizado '+new Date(D.agora).toLocaleTimeString('pt-BR')
+  // ===== visão geral
+  var k=[['Faturamento',R(S.rec),S.pagos+' pedidos pagos',''],['Ticket médio',R(S.ticket),'por pedido pago',''],
+    ['Margem de contribuição',R(S.mc),P(S.rec?S.mc/S.rec:null)+' da receita',S.rec?(S.mc/S.rec>=.45?'bom':S.mc/S.rec>=.3?'at':'ruim'):''],
+    ['Resultado',R(S.res),'depois dos fixos ('+R(S.fix)+')',S.res>0?'bom':S.rec?'ruim':''],
+    ['Produção',P(S.rec?S.prod/S.rec:null),'da receita · meta até 15%',S.rec?(S.prod/S.rec<=regras.custoMax?'bom':'ruim'):''],
+    ['Tráfego',P(S.rec?S.traf/S.rec:null),R(S.traf)+' · meta 15 a 20%',S.rec&&S.traf?(S.traf/S.rec<=regras.trafegoMax?'bom':S.traf/S.rec<=.3?'at':'ruim'):''],
+    ['CPA',S.pagos&&S.traf?R(S.traf/S.pagos):'·','custo de anúncio por venda',''],['ROAS',S.traf?X(S.rec/S.traf):'·','receita por real de anúncio',S.traf?(S.rec/S.traf>=5?'bom':S.rec/S.traf>=3?'at':'ruim'):''],
+    ['Conversão do site',vis.visita?P(S.pagos/vis.visita):'·',vis.visita+' visitantes → '+S.pagos+' pagos','']]
+  $('kpis').innerHTML=k.map(function(x){return '<div class="k '+x[3]+'"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>'}).join('')
+  // metas do mês corrente (sempre o mês inteiro)
+  var h=new Date(),m0=new Date(h.getFullYear(),h.getMonth(),1),mes=m0.toISOString().slice(0,7),mt=D.metas.find(function(x){return x.mes.slice(0,7)===mes})
+  var MS=soma(D.pedidos.filter(function(p){return new Date(p.criado_em)>=m0}),D.gastos.filter(function(g){return g.dia.slice(0,7)===mes}),m0,h),fracao=(h-m0)/(new Date(h.getFullYear(),h.getMonth()+1,1)-m0)
+  $('metames').textContent=m0.toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+' · '+Math.round(fracao*100)+'% do mês passou'
+  if(!mt){$('metas').innerHTML='<div class="nota">Sem meta pra este mês. Define em Lançamentos: faturamento, pedidos, margem e teto de tráfego.</div>'}
+  else{var linhas=[['Faturamento',MS.rec,+mt.faturamento,R],['Pedidos pagos',MS.pagos,+mt.pedidos,function(v){return Math.round(v)}]].filter(function(l){return l[2]})
+    var html=linhas.map(function(l){var pc=l[1]/l[2],ritmo=fracao?pc/fracao:0;return '<div class="mt"><div class="l"><span>'+l[0]+'</span><b>'+l[3](l[1])+' de '+l[3](l[2])+' · '+P(pc)+'</b></div><div class="barra"><i style="width:'+Math.min(100,pc*100)+'%;background:'+(ritmo>=1?'var(--bom)':ritmo>=.7?'var(--at)':'var(--ruim)')+'"></i></div><small style="color:var(--mut)">no ritmo de hoje: '+l[3](fracao?l[1]/fracao:0)+' no fim do mês</small></div>'}).join('')
+    if(mt.margem_pct!=null)html+='<div class="mt"><div class="l"><span>Margem de contribuição</span><b>'+P(MS.rec?MS.mc/MS.rec:null)+' · meta '+mt.margem_pct+'%</b></div></div>'
+    if(mt.trafego_pct!=null)html+='<div class="mt"><div class="l"><span>Tráfego sobre a receita</span><b>'+P(MS.rec?MS.traf/MS.rec:null)+' · teto '+mt.trafego_pct+'%</b></div></div>'
+    $('metas').innerHTML=html}
+  // alertas
+  var al=[],pp=porProduto(peds,gas)
+  pp.forEach(function(x){if(x.pagos&&x.prodPct>regras.custoMax)al.push(['ruim',x.nome+': produção em '+P(x.prodPct)+' do preço (meta até 15%)'])
+    if(x.pagos&&x.traf&&x.trafPct>regras.trafegoMax)al.push(['at',x.nome+': tráfego em '+P(x.trafPct)+' (teto 20%). CPA '+R(x.cpa)+' pra um preço de '+R(x.preco)])})
+  var travados=D.pedidos.filter(function(p){return p.status==='falhou'||p.status==='revisao'||(p.status==='pago'&&Date.now()-new Date(p.pago_em)>45*60000)})
+  if(travados.length)al.push(['ruim',travados.length+' pedido(s) parado(s) ou com erro: veja em Pedidos'])
+  if(!D.gastos.length)al.push(['info','Nenhum gasto de anúncio lançado ainda: o ROI aparece quando lançar (Lançamentos)'])
+  if(!vis.visita)al.push(['info','O rastreador do site ainda não registrou visitas neste período'])
+  $('alertas').innerHTML=al.length?al.map(function(a){return '<div class="chip c-'+a[0]+'" style="white-space:normal;border-radius:12px;padding:8px 12px">'+esc(a[1])+'</div>'}).join(''):'<div class="chip c-bom" style="border-radius:12px;padding:8px 12px">Tudo dentro das regras.</div>'
+  barrasDia(peds,gas)
+  var mq=D.maquina||{estado:'desligada'},cor={desligada:'#9a93ae',ligando:'#fbbf24',livre:'#34d399',produzindo:'#8b5cf6'}[mq.estado]||'#9a93ae',fila=D.pedidos.filter(function(p){return p.status==='pago'}).length
+  $('maq').innerHTML='<div class="lin" style="justify-content:flex-start"><span style="width:14px;height:14px;border-radius:50%;background:'+cor+';box-shadow:0 0 12px '+cor+'"></span><b style="font-size:18px">'+({desligada:'Desligada',ligando:'Ligando',livre:'Ligada, livre',produzindo:'Produzindo'}[mq.estado]||mq.estado)+'</b></div><p style="color:var(--mut);font-size:13px;margin-top:6px">'+fila+' pedido(s) na fila · última mudança '+quando(mq.atualizado_em)+'. Liga quando entra pedido pago e desliga 15 min depois da fila esvaziar.</p>'
+  funil();produtos(pp);financeiro(S,peds,pr);lista(peds);lancamentos()
 }
-document.getElementById('abas').onclick=function(e){if(e.target.dataset.a){aba=e.target.dataset.a;desenha()}}
-function abre(id){var g=document.getElementById('gav');g.innerHTML='<div class="vazio">Carregando...</div>';document.getElementById('gaveta').classList.add('ab')
-  api('?o=pedido&id='+id).then(function(d){var p=d.pedido,c=p.crianca||{},L=d.links||{},t0=new Date(p.criado_em)
+function barrasDia(peds,gas){var dd={},n=Math.min(diasPer(),31);for(var i=n-1;i>=0;i--){var d=new Date(Date.now()-i*864e5).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});dd[d]={r:0,c:0}}
+  peds.filter(pago).forEach(function(p){var d=new Date(p.pago_em).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});if(dd[d]){dd[d].r+=+p.preco;dd[d].c+=prodPed(p).v+taxaPed(p)}})
+  gas.forEach(function(g){if(dd[g.dia])dd[g.dia].c+=+g.valor})
+  var ks=Object.keys(dd),mx=Math.max(1,Math.max.apply(null,ks.map(function(k){return Math.max(dd[k].r,dd[k].c)})))
+  $('barras').innerHTML=ks.map(function(k){return '<div title="'+k.slice(8)+'/'+k.slice(5,7)+': receita '+R(dd[k].r)+' · custos '+R(dd[k].c)+'"><div style="display:flex;gap:1px;align-items:flex-end;height:100%;width:100%"><i style="height:'+(dd[k].r/mx*100)+'%"></i><i class="c" style="height:'+(dd[k].c/mx*100)+'%"></i></div><span>'+k.slice(8)+'</span></div>'}).join('')}
+
+// ===== funil
+var PASSOS=[['visita','Visitaram a página'],['cta','Clicaram pra comprar'],['form_inicio','Começaram o formulário'],['form_envio','Enviaram o formulário'],['pagar_clique','Abriram o pagamento']]
+function visitantes(prod,cp){var o={};D.funil.forEach(function(f){if((prod==='todos'||f.produto===prod)&&(cp==='todas'||f.campanha===cp))o[f.evento]=(o[f.evento]||0)+ +f.visitantes});return o}
+function funil(){
+  var pr=periodo(),prods=['todos'].concat(Object.keys(D.produtos)),camps=['todas'].concat(Array.from(new Set(D.funil.map(function(f){return f.campanha}).concat(D.pedidos.map(camp)))))
+  $('fprod').innerHTML=prods.map(function(p){return '<option value="'+p+'"'+(p===fprod?' selected':'')+'>'+(p==='todos'?'Todos os produtos':esc(D.produtos[p].nome))+'</option>'}).join('')
+  $('fcamp').innerHTML=camps.map(function(c){return '<option value="'+esc(c)+'"'+(c===fcamp?' selected':'')+'>'+(c==='todas'?'Todas as campanhas':esc(c))+'</option>'}).join('')
+  var v=visitantes(fprod,fcamp),peds=D.pedidos.filter(function(p){return new Date(p.criado_em)>=pr.ini&&(fprod==='todos'||chave(p)===fprod)&&(fcamp==='todas'||camp(p)===fcamp)})
+  var et=PASSOS.map(function(p){return[p[1],v[p[0]]||0]});et.splice(4,0,['Viraram pedido',peds.length]);et.push(['Pagaram',peds.filter(pago).length])
+  var top=Math.max(1,et[0][1]);$('funil').innerHTML=et.map(function(e,i){var ant=i?et[i-1][1]:null;return '<div class="fl"><span>'+e[0]+'</span><i style="width:'+(e[1]/top*100)+'%;opacity:'+(1-i*.09)+'"></i><b>'+e[1].toLocaleString('pt-BR')+'<em>'+(ant?P(e[1]/ant)+' do anterior':'')+'</em></b></div>'}).join('')
+  // por campanha
+  var C={};D.funil.forEach(function(f){if(f.evento==='visita'&&(fprod==='todos'||f.produto===fprod)){(C[f.campanha]=C[f.campanha]||{v:0,p:[],g:0}).v+=+f.visitantes}})
+  D.pedidos.filter(function(p){return new Date(p.criado_em)>=pr.ini&&(fprod==='todos'||chave(p)===fprod)}).forEach(function(p){(C[camp(p)]=C[camp(p)]||{v:0,p:[],g:0}).p.push(p)})
+  D.gastos.filter(function(g){return new Date(g.dia+'T12:00:00-03:00')>=pr.ini&&(fprod==='todos'||!g.produto||g.produto===fprod)}).forEach(function(g){var c=g.campanha||'(sem campanha)';(C[c]=C[c]||{v:0,p:[],g:0}).g+= +g.valor})
+  var ks=Object.keys(C).sort(function(a,b){return C[b].v-C[a].v})
+  $('camp').innerHTML=ks.length?ks.map(function(c){var x=C[c],s=soma(x.p,[{valor:x.g}]);return '<tr><td><b>'+esc(c)+'</b></td><td class="n">'+x.v+'</td><td class="n">'+s.pedidos+'</td><td class="n">'+s.pagos+'</td><td class="n">'+P(x.v?s.pagos/x.v:null)+'</td><td class="n">'+R(s.rec)+'</td><td class="n">'+R(x.g)+'</td><td class="n">'+(s.pagos&&x.g?R(x.g/s.pagos):'·')+'</td><td class="n">'+(x.g?X(s.rec/x.g):'·')+'</td><td class="n">'+R(s.mc)+'</td></tr>'}).join(''):'<tr><td colspan="10" class="vazio">Sem visitas ou pedidos no período.</td></tr>'
+  // por dia
+  var dd={},n=Math.min(diasPer(),31);for(var i=n-1;i>=0;i--){var d=new Date(Date.now()-i*864e5).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});dd[d]={v:0,c:0}}
+  D.funilDia.forEach(function(f){if(f.evento==='visita'&&dd[f.dia])dd[f.dia].v=+f.visitantes});D.pedidos.filter(pago).forEach(function(p){var d=new Date(p.pago_em).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});if(dd[d])dd[d].c++})
+  var ks2=Object.keys(dd),mv=Math.max(1,Math.max.apply(null,ks2.map(function(k){return dd[k].v}))),mc=Math.max(1,Math.max.apply(null,ks2.map(function(k){return dd[k].c})))
+  $('fdia').innerHTML=ks2.map(function(k){return '<div title="'+k.slice(8)+'/'+k.slice(5,7)+': '+dd[k].v+' visitantes, '+dd[k].c+' compras"><div style="display:flex;gap:1px;align-items:flex-end;height:100%;width:100%"><i class="c" style="height:'+(dd[k].v/mv*100)+'%"></i><i style="height:'+(dd[k].c/mc*100)+'%"></i></div><span>'+k.slice(8)+'</span></div>'}).join('')
+}
+$('fprod').onchange=function(){fprod=this.value;funil()};$('fcamp').onchange=function(){fcamp=this.value;funil()}
+
+// ===== produtos
+function porProduto(peds,gas){return Object.keys(D.produtos).map(function(k){var pr=D.produtos[k],ps=peds.filter(function(p){return chave(p)===k}),g=gas.filter(function(x){return x.produto===k}),s=soma(ps,g)
+  return{k:k,nome:pr.nome,preco:pr.preco,pagos:s.pagos,rec:s.rec,prodUn:s.pagos?s.prod/s.pagos:pr.custoPadrao,prodPct:(s.pagos?s.prod/s.pagos:pr.custoPadrao)/pr.preco,tax:s.tax,traf:s.traf,cpa:s.pagos&&s.traf?s.traf/s.pagos:null,trafPct:s.rec?s.traf/s.rec:null,mc:s.mc,roi:s.traf?(s.mc+s.traf)/s.traf:null,real:s.real}})}
+function produtos(pp){var t={pagos:0,rec:0,tax:0,traf:0,mc:0}
+  $('prods').innerHTML=pp.map(function(x){t.pagos+=x.pagos;t.rec+=x.rec;t.tax+=x.tax;t.traf+=x.traf;t.mc+=x.mc
+    var cp=x.prodPct<=D.regras.custoMax?'c-bom':'c-ruim',ct=x.trafPct==null?'':x.trafPct<=D.regras.trafegoMax?'c-bom':x.trafPct<=.3?'c-at':'c-ruim'
+    return '<tr><td><b>'+esc(x.nome)+'</b></td><td class="n">'+R(x.preco)+'</td><td class="n">'+x.pagos+'</td><td class="n">'+R(x.rec)+'</td><td class="n">'+R(x.prodUn)+(x.real?'':' <small style="color:var(--mut)">padrão</small>')+'</td><td class="n"><span class="chip '+cp+'">'+P(x.prodPct)+'</span></td><td class="n">'+R(x.tax)+'</td><td class="n">'+R(x.traf)+'</td><td class="n">'+(x.cpa?R(x.cpa):'·')+'</td><td class="n">'+(x.trafPct==null?'·':'<span class="chip '+ct+'">'+P(x.trafPct)+'</span>')+'</td><td class="n">'+R(x.mc)+'</td><td class="n">'+(x.roi?X(x.roi):'·')+'</td></tr>'}).join('')+
+    '<tr class="tot"><td>Total</td><td></td><td class="n">'+t.pagos+'</td><td class="n">'+R(t.rec)+'</td><td></td><td></td><td class="n">'+R(t.tax)+'</td><td class="n">'+R(t.traf)+'</td><td class="n">'+(t.pagos&&t.traf?R(t.traf/t.pagos):'·')+'</td><td class="n">'+P(t.rec?t.traf/t.rec:null)+'</td><td class="n">'+R(t.mc)+'</td><td class="n">'+(t.traf?X((t.mc+t.traf)/t.traf):'·')+'</td></tr>'}
+
+// ===== financeiro
+function financeiro(S,peds,pr){$('finper').textContent=pr.ini.toLocaleDateString('pt-BR')+' a hoje'
+  var L=[['Receita (pedidos pagos)',S.rec,''],['(−) Produção dos vídeos',-S.prod,'neg'],['(−) Taxas de pagamento',-S.tax,'neg'],['(−) Tráfego pago',-S.traf,'neg'],['= Margem de contribuição',S.mc,'s'],['(−) Custos fixos do período',-S.fix,'neg'],['= Resultado',S.res,'s']]
+  $('dre').innerHTML=L.map(function(l){return '<div class="'+l[2]+'"><span>'+l[0]+'</span><b>'+R(l[1])+(S.rec&&l[0]!=='Receita (pedidos pagos)'?' <small style="color:var(--mut);font-weight:600">'+P(Math.abs(l[1])/S.rec)+'</small>':'')+'</b></div>'}).join('')
+  var n=S.pagos||1;$('unit').innerHTML=[['Ticket médio',S.ticket],['Produção',S.prod/n],['Taxa',S.tax/n],['Tráfego (CPA)',S.traf/n],['Sobra por pedido',S.mc/n],['Fixo rateado',S.fix/n],['Lucro por pedido',S.res/n]].map(function(l,i){return '<div class="'+(i===4||i===6?'s':'')+'"><span>'+l[0]+'</span><b>'+(S.pagos?R(l[1]):'·')+'</b></div>'}).join('')
+  var pg=peds.filter(pago)
+  $('cped').innerHTML=pg.length?pg.map(function(p){var c=prodPed(p),t=taxaPed(p),vids=p.custo&&p.custo.videos?p.custo.videos.length:'·';return '<tr class="l" onclick="abre(\''+p.id+'\')"><td><b>'+esc(p.codigo)+'</b></td><td>'+esc((D.produtos[chave(p)]||{}).nome||chave(p))+'</td><td>'+quando(p.pago_em)+'</td><td class="n">'+R(p.preco)+'</td><td class="n">'+vids+'</td><td class="n">'+R(c.v)+(c.real?'':' <small style="color:var(--mut)">padrão</small>')+'</td><td class="n">'+R(t)+'</td><td class="n"><span class="chip '+(c.v/p.preco<=.15?'c-bom':'c-ruim')+'">'+P(c.v/p.preco)+'</span></td><td class="n">'+R(p.preco-c.v-t)+'</td></tr>'}).join(''):'<tr><td colspan="9" class="vazio">Nenhum pedido pago no período.</td></tr>'}
+
+// ===== pedidos
+function lista(peds){var sits=['todos'].concat(Object.keys(SIT).filter(function(s){return peds.some(function(p){return p.status===s})}))
+  $('fsit').innerHTML=sits.map(function(s){var n=s==='todos'?peds.length:peds.filter(function(p){return p.status===s}).length;return '<button data-s="'+s+'" class="'+(sit===s?'on':'')+'">'+(s==='todos'?'Todos':SIT[s])+' · '+n+'</button>'}).join('')
+  var vs=peds.filter(function(p){return sit==='todos'||p.status===sit})
+  $('lista').innerHTML=vs.length?vs.map(function(p){var c=prodPed(p);return '<tr class="l" onclick="abre(\''+p.id+'\')"><td><b>'+esc(p.codigo)+'</b></td><td>'+esc(p.nome)+'<br><span style="color:var(--mut);font-size:12px">'+esc(p.responsavel)+'</span></td><td>'+esc((D.produtos[chave(p)]||{}).nome||chave(p))+'</td><td><span class="chip '+(CSIT[p.status]||'c-neu')+'">'+(SIT[p.status]||p.status)+'</span></td><td>'+esc(camp(p))+'</td><td>'+quando(p.criado_em)+'</td><td class="n">'+R(p.preco)+'</td><td class="n">'+R(c.v)+'</td></tr>'}).join(''):'<tr><td colspan="8" class="vazio">Nenhum pedido.</td></tr>'}
+$('fsit').onclick=function(e){if(e.target.dataset.s){sit=e.target.dataset.s;lista(D.pedidos.filter(function(p){return new Date(p.criado_em)>=periodo().ini}))}}
+
+// ===== lançamentos
+function lancamentos(){$('fgasto').produto.innerHTML='<option value="">(todos)</option>'+Object.keys(D.produtos).map(function(k){return '<option value="'+k+'">'+esc(D.produtos[k].nome)+'</option>'}).join('')
+  if(!$('fgasto').dia.value)$('fgasto').dia.value=new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'})
+  $('lgastos').innerHTML=D.gastos.length?D.gastos.slice(0,60).map(function(g){return '<tr><td>'+g.dia.split('-').reverse().join('/')+'</td><td>'+esc(g.campanha)+'</td><td>'+esc((D.produtos[g.produto]||{}).nome||'todos')+'</td><td class="n">'+(g.cliques||'·')+'</td><td class="n">'+R(g.valor)+'</td><td class="n"><button class="bt r" onclick="acao(\'gasto_del\',{id:'+g.id+'},this)">Apagar</button></td></tr>'}).join(''):'<tr><td colspan="6" class="vazio">Nenhum gasto lançado.</td></tr>'
+  $('lfixos').innerHTML=D.fixos.map(function(f){return '<tr><td>'+esc(f.nome)+(f.obs?'<br><small style="color:var(--mut)">'+esc(f.obs)+'</small>':'')+'</td><td class="n">'+R(f.valor_mensal)+'/mês</td><td class="n">'+(f.fim?'<span class="chip c-neu">encerrado</span>':'<button class="bt r" onclick="acao(\'fixo_fim\',{id:'+f.id+'},this)">Encerrar</button>')+'</td></tr>'}).join('')+'<tr class="tot"><td>Total ativo</td><td class="n">'+R(D.fixos.filter(function(f){return!f.fim}).reduce(function(s,f){return s+ +f.valor_mensal},0))+'/mês</td><td></td></tr>'
+  $('lmetas').innerHTML=D.metas.length?D.metas.map(function(m){return '<tr><td>'+new Date(m.mes+'T12:00:00').toLocaleDateString('pt-BR',{month:'long',year:'numeric'})+'</td><td class="n">'+(m.faturamento?R(m.faturamento):'·')+'</td><td class="n">'+(m.pedidos||'·')+' pedidos</td><td class="n">'+(m.margem_pct!=null?'margem '+m.margem_pct+'%':'')+'</td></tr>'}).join(''):'<tr><td class="vazio">Sem metas.</td></tr>'}
+function form(id,acaoNome,extra){$(id).onsubmit=function(e){e.preventDefault();var o={acao:acaoNome};new FormData(this).forEach(function(v,k){o[k]=v});if(extra)extra(o);var b=this.querySelector('button');b.disabled=true;api('',{method:'POST',body:JSON.stringify(o)}).then(function(r){b.disabled=false;if(r.erro)return alert(r.erro);e.target.reset();entra()})}}
+form('fgasto','gasto_add');form('ffixo','fixo_add');form('fmeta','meta_set',function(o){o.mes=o.mes+'-01'})
+function acao(a,o,b){if(b&&b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='Confirmar?';return}api('',{method:'POST',body:JSON.stringify(Object.assign({acao:a},o))}).then(function(){fecha();entra()})}
+
+// ===== gaveta do pedido
+function abre(id){var g=$('gav');g.innerHTML='<div class="vazio">Carregando...</div>';$('gaveta').classList.add('ab')
+  api('?o=pedido&id='+id).then(function(d){var p=d.pedido,c=p.crianca||{},L=d.links||{},t0=new Date(p.criado_em),cu=p.custo||{},pc=prodPed(p)
     g.innerHTML='<div class="lin"><h2>'+esc(c.nome)+'</h2><button class="bt" onclick="fecha()">Fechar</button></div>'+
-      '<div class="lin"><span><b>'+esc(p.codigo)+'</b> · '+(p.personagem==='noel'?'Papai Noel':'Fada do Dente')+' · '+(PAC[p.pacote]||p.pacote)+' · '+R(p.preco)+'</span><span class="chip s-'+p.status+'">'+NOME[p.status]+'</span></div>'+
+      '<div class="lin"><span><b>'+esc(p.codigo)+'</b> · '+esc((D.produtos[chave(p)]||{}).nome||chave(p))+' · '+R(p.preco)+'</span><span class="chip '+(CSIT[p.status]||'c-neu')+'">'+(SIT[p.status]||p.status)+'</span></div>'+
       (p.erro?'<div class="dados" style="background:var(--ruimbg);color:var(--ruim)"><b>Erro</b>'+esc(p.erro)+'</div>':'')+
       (L.video_path?'<video controls playsinline src="'+L.video_path+'"></video>':'')+
-      '<div class="bts">'+(L.certificado_path?'<a class="bt" target="_blank" href="'+L.certificado_path+'">Certificado</a>':'')+(L.carta_path?'<a class="bt" target="_blank" href="'+L.carta_path+'">Carta</a>':'')+(L.foto_path?'<a class="bt" target="_blank" href="'+L.foto_path+'">Foto enviada</a>':'')+'<a class="bt" target="_blank" href="/recado/obrigado.html?c='+esc(p.codigo)+'">Página da família</a></div>'+
-      '<div class="dados"><b>A criança</b>'+esc(c.idade)+' anos · '+esc(c.genero)+(c.cidade?' · '+esc(c.cidade):'')+'<br>Conquistas: '+esc((c.conquistas||[]).join('; '))+'<br>Adora: '+esc((c.adora||[]).join(', '))+(c.pra_melhorar?'<br>Pra melhorar: '+esc(c.pra_melhorar):'')+(c.detalhe_magico?'<br>Detalhe: '+esc(c.detalhe_magico):'')+'</div>'+
-      '<div class="dados"><b>Contato</b>'+esc(p.contato.responsavel)+' · '+esc(p.contato.whatsapp)+' · '+esc(p.contato.email)+(p.forma_pagamento?'<br>Pagou com '+esc(p.forma_pagamento)+(p.taxa_gateway?' (taxa '+R(p.taxa_gateway)+')':''):'')+(p.custo&&p.custo.total?'<br>Custo de produção: '+R(p.custo.total):'')+'</div>'+
+      '<div class="dados"><b>Conta do pedido</b>Preço '+R(p.preco)+' · produção '+R(pc.v)+(pc.real?'':' (padrão)')+' · taxa '+R(taxaPed(p))+' · sobra '+R(p.preco-pc.v-taxaPed(p))+(cu.videos?'<br>'+cu.videos.map(function(v,i){return 'vídeo '+(i+1)+': '+v.seg+' s, '+R(v.producao)+', '+v.maquina_min_real+' min reais'}).join('<br>'):'')+'</div>'+
+      (d.etapas&&d.etapas.length?'<div class="dados"><b>Missão</b>'+d.etapas.map(function(e){return e.ordem+'. '+esc(e.tipo)+' · '+esc(e.status)+(e.resposta?' · mãe: '+esc(e.resposta):'')}).join('<br>')+'</div>':'')+
+      '<div class="dados"><b>Origem</b>'+esc(camp(p))+(p.origem&&p.origem.utm_source?' · '+esc(p.origem.utm_source):'')+(p.origem&&p.origem.utm_content?' · anúncio '+esc(p.origem.utm_content):'')+'</div>'+
+      (d.caminho&&d.caminho.length?'<div><b style="font-size:14px">Caminho no site</b><div class="tl" style="margin-top:8px">'+d.caminho.map(function(e){return '<div><span>'+new Date(e.quando).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</span><span>'+esc(e.evento)+' · '+esc(e.pagina)+'</span></div>'}).join('')+'</div></div>':'')+
+      '<div class="dados"><b>Contato</b>'+esc(p.contato.responsavel)+' · '+esc(p.contato.whatsapp)+' · '+esc(p.contato.email)+'</div>'+
       (p.roteiro&&p.roteiro.fala?'<div class="fala"><b>O que o personagem fala</b><br>'+esc(p.roteiro.fala)+'</div>':'')+
-      '<div><b style="font-size:14px">Linha do tempo</b><div class="tl" style="margin-top:8px">'+d.eventos.map(function(e){var s=Math.round((new Date(e.quando)-t0)/1000);return '<div><span>'+new Date(e.quando).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' (+'+(s<60?s+'s':Math.round(s/60)+'min')+')</span><span style="color:var(--tx)">'+esc(e.tipo.replace(/_/g,' '))+(e.detalhe&&e.detalhe.segundos?' · '+Math.round(e.detalhe.segundos/60)+' min':'')+(e.detalhe&&e.detalhe.msg?' · '+esc(e.detalhe.msg):'')+(e.detalhe&&e.detalhe.motivo?' · '+esc(e.detalhe.motivo):'')+'</span></div>'}).join('')+'</div></div>'+
-      '<div class="bts"><button class="bt p" onclick="acao(\'refazer\',\''+p.id+'\')">Refazer o vídeo</button><button class="bt" onclick="acao(\'reenviar\',\''+p.id+'\')">Marcar pra reenviar</button><button class="bt r" onclick="acao(\'cancelar\',\''+p.id+'\')">Cancelar</button><button class="bt r" onclick="acao(\'marcar_reembolsado\',\''+p.id+'\')">Marcar reembolsado</button></div>'
+      '<div><b style="font-size:14px">Linha do tempo</b><div class="tl" style="margin-top:8px">'+d.eventos.map(function(e){var s=Math.round((new Date(e.quando)-t0)/1000);return '<div><span>'+new Date(e.quando).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+' (+'+(s<60?s+'s':Math.round(s/60)+'min')+')</span><span>'+esc(e.tipo.replace(/_/g,' '))+(e.detalhe&&e.detalhe.msg?' · '+esc(e.detalhe.msg):'')+'</span></div>'}).join('')+'</div></div>'+
+      '<div class="lin" style="justify-content:flex-start"><a class="bt" target="_blank" href="/recado/obrigado.html?c='+esc(p.codigo)+'">Página da família</a><button class="bt p" onclick="acao(\'refazer\',{id:\''+p.id+'\'},this)">Refazer</button><button class="bt r" onclick="acao(\'cancelar\',{id:\''+p.id+'\'},this)">Cancelar</button><button class="bt r" onclick="acao(\'marcar_reembolsado\',{id:\''+p.id+'\'},this)">Reembolsado</button></div>'
   })}
-function fecha(){document.getElementById('gaveta').classList.remove('ab')}
-document.getElementById('gaveta').onclick=function(e){if(e.target.id==='gaveta')fecha()}
-function acao(a,id){var b=event.target;if(b.dataset.ok!=='1'){b.dataset.ok='1';b.textContent='Confirmar?';return}api('',{method:'POST',body:JSON.stringify({acao:a,id:id})}).then(function(){fecha();entra()})}
-entra();setInterval(function(){if(!document.getElementById('app').hidden)entra()},20000)
+function fecha(){$('gaveta').classList.remove('ab')}
+$('gaveta').onclick=function(e){if(e.target.id==='gaveta')fecha()}
+entra();setInterval(function(){if(!$('app').hidden&&!$('gaveta').classList.contains('ab')&&document.activeElement.tagName!=='INPUT')entra()},60000)
 </script></body></html>
