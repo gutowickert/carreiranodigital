@@ -6,6 +6,7 @@
   var q = new URLSearchParams(location.search), utm = {}
   ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'fbclid'].forEach(function (k) { if (q.get(k)) utm[k] = q.get(k) })
   if (Object.keys(utm).length) ls('recado_utm', JSON.stringify(utm))   // a última campanha que trouxe a pessoa
+  if (q.get('cupom')) ls('recado_cupom', q.get('cupom').toUpperCase())   // link com cupom: o formulário já vem preenchido
   try { utm = JSON.parse(ls('recado_utm') || '{}') } catch (e) { utm = {} }
   // produto da página: missao-chupeta -> grandao/chupeta, ?m=dormir -> guardiao/dormir, pedido ?p=fada -> fada/recado
   var M = { chupeta: 'grandao/chupeta', dormir: 'guardiao/dormir', coragem: 'coragem/coragem' }

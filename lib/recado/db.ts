@@ -14,6 +14,7 @@ export const recadoDb = {
   insere: (tab: string, linha: any) => req(`/rest/v1/recado_${tab}`, { method: 'POST', body: JSON.stringify(linha), headers: { Prefer: 'return=representation' } }).then((r: any[]) => r[0]),
   atualiza: (tab: string, filtro: string, campos: any) => req(`/rest/v1/recado_${tab}?${filtro}`, { method: 'PATCH', body: JSON.stringify(campos), headers: { Prefer: 'return=representation' } }),
   busca: (tab: string, filtro: string) => req(`/rest/v1/recado_${tab}?${filtro}`),
+  rpc: (fn: string, args: any) => req(`/rest/v1/rpc/${fn}`, { method: 'POST', body: JSON.stringify(args) }),
   evento: (pedido_id: string, tipo: string, detalhe: any = {}) => req('/rest/v1/recado_eventos', { method: 'POST', body: JSON.stringify({ pedido_id, tipo, detalhe }) }),
   sobe: async (caminho: string, buffer: Buffer, tipo: string) => {
     const r = await fetch(`${U()}/storage/v1/object/recado/${caminho}`, { method: 'POST', headers: { apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': tipo, 'x-upsert': 'true' }, body: buffer as any })

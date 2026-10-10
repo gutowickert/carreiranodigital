@@ -76,7 +76,7 @@ function desenha(s){
 // guia simples pra quem ajuda (mãe, pai, vó): uma página por herói
 var GUIA={chupeta:['chupeta','Capitão Grandão'],dormir:['dormir','Guardião da Noite'],coragem:['coragem','Capitã Coragem'],recado:['fada','Fada do Dente'],encanto:['noel','Papai Noel'],magico:['noel','Papai Noel']}
 function guia(s){var g=GUIA[s.pacote],a=document.getElementById('guia');if(!g||a.style.display==='block'||['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)>=0)return;a.href='/api/recado/guia?c='+encodeURIComponent(c);a.target='_blank';a.textContent='Guia: como ajudar junto com '+(g[0]==='fada'||g[0]==='coragem'?'a ':'o ')+g[1];a.style.display='block'}
-function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no teu e-mail.';return}guia(s);if(['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)<0&&window.recadoRastro)recadoRastro.compra(c,s.preco,s.personagem+'/'+s.pacote);if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
+function busca(){fetch('/api/recado/status?c='+encodeURIComponent(c)).then(function(r){return r.json()}).then(function(s){if(s.erro){document.getElementById('sub').textContent='Não encontramos esse pedido. Confere o link que chegou no teu e-mail.';return}guia(s);if(['aguardando_pagamento','cancelado','reembolsado'].indexOf(s.status)<0&&s.preco>0&&window.recadoRastro)recadoRastro.compra(c,s.preco,s.personagem+'/'+s.pacote);if(!desenha(s))setTimeout(busca,15000)}).catch(function(){setTimeout(busca,20000)})}
 busca()
 </script><script src="/recado/rastro.js"></script>
 </body></html>

@@ -41,14 +41,33 @@ export async function POST(req: NextRequest) {
       if ((b.pacote === 'coragem' || b.pacote === 'chupeta') && !missao.data) return NextResponse.json({ erro: 'faltou a data' }, { status: 400 })
     }
     const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
-    const preco = +(pac.preco + irmaos * cfg.irmao).toFixed(2)
-    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem: b.origem || null, visitante: limpa(b.origem?.visitante, 40) || null }
+    let preco = +(pac.preco + irmaos * cfg.irmao).toFixed(2)
+    // cupom (Guto 10/10): grátis entra direto na produção, sem pagamento; % dá desconto e segue pro Asaas
+    const codCupom = limpa(b.cupom, 30).toUpperCase().replace(/[^A-Z0-9-]/g, '')
+    let cupom: any = null
+    if (codCupom) {
+      ;[cupom] = await db.rpc('recado_usa_cupom', { c: codCupom, prod: `${b.personagem}/${b.pacote}` })
+      if (!cupom) return NextResponse.json({ erro: 'esse cupom não vale (já foi usado, venceu ou é de outro produto)' }, { status: 400 })
+      if (cupom.tipo === 'pct') preco = Math.max(5, +(preco * (1 - (+cupom.valor || 0) / 100)).toFixed(2))   // o Asaas não cobra menos de R$ 5
+    }
+    const gratis = cupom?.tipo === 'gratis'
+    const origem = { ...(b.origem || {}), ...(cupom ? { cupom: cupom.codigo } : {}), ...(gratis ? { cortesia: true } : {}) }
+    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco: gratis ? 0 : preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem, visitante: limpa(b.origem?.visitante, 40) || null }
+    if (gratis) { p.status = 'pago'; p.pago_em = new Date().toISOString(); p.forma_pagamento = 'cupom' }
     if (b.foto && /^data:image\/(jpeg|png|webp);base64,/.test(b.foto)) {
       const buf = Buffer.from(b.foto.split(',')[1], 'base64'); if (buf.length > 4e6) return NextResponse.json({ erro: 'foto muito grande' }, { status: 400 })
       p.foto_path = await db.sobe(`${p.codigo}/foto.jpg`, buf, 'image/jpeg')
     }
-    const salvo = await db.insere('pedidos', p)
-    await db.evento(salvo.id, 'criado', { pacote: pac.nome, preco })
+    let salvo: any
+    try { salvo = await db.insere('pedidos', p) } catch (e) { if (cupom) await db.rpc('recado_devolve_cupom', { c: cupom.codigo }).catch(() => {}); throw e }
+    await db.evento(salvo.id, 'criado', { pacote: pac.nome, preco: p.preco, cupom: cupom?.codigo })
+    if (gratis) {
+      // cortesia: sem cobrança. O trabalhador pega na fila como qualquer pedido pago.
+      const em = await enviaEmail(p.contato.email, `Teu recado de presente está a caminho (${crianca.nome})`,
+        moldura('Presente confirmado!', `A gente já começou a preparar tudo pra ${crianca.nome}. Na página da família tu acompanha o andamento, e é lá que o vídeo aparece.`, 'Abrir a página da família', linkFamilia(p.codigo)))
+      await db.evento(salvo.id, 'email_pedido', em).catch(() => {})
+      return NextResponse.json({ codigo: p.codigo, gratis: true })
+    }
     const cob = await gateway.cria({ ...p, descricao: `${cfg.marca}: ${pac.nome} (${crianca.nome})` })
     await db.atualiza('pedidos', `id=eq.${salvo.id}`, { gateway: gateway.nome(), gateway_id: cob.gateway_id, checkout_url: cob.checkout_url })
     await db.evento(salvo.id, 'cobranca', { gateway: gateway.nome() })

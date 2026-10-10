@@ -90,6 +90,7 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
     <label for="email">E-mail</label><input id="email" name="email" type="email" required>
     <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. A foto é apagada em 30 dias.</label>
   </div>
+  <details id="cupom-box" style="margin:4px 0 10px"><summary style="cursor:pointer;color:var(--suave);font-size:15px">Tenho um cupom</summary><input id="cupom" name="cupom" type="text" placeholder="Código do cupom" style="margin-top:8px;text-transform:uppercase" autocomplete="off"></details>
   <button type="submit" id="enviar">Ir pro pagamento</button><p class="erro" id="erro" style="color:#b0122b;font-weight:600;display:none"></p>
   <p class="aviso">Pagamento por Pix ou cartão. Depois de pagar tu vai direto pra página da família, onde o vídeo aparece em até 2 horas. O link também chega no teu e-mail. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</p>
 </form>
@@ -112,10 +113,11 @@ f.addEventListener('submit',function(e){e.preventDefault();var d=new FormData(f)
   if(p==='noel'){c.presente_modo=d.get('presente_modo');c.presente=c.presente_modo==='presente'?d.get('presente'):'surpresa'}else{c.dentinho=d.get('dentinho');c.como_caiu=d.get('como_caiu');c.deixa_presente=d.get('deixa')}
   var origem=window.recadoRastro?window.recadoRastro.origem():{};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
   bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'
-  fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:p,pacote:d.get('pacote'),foto:foto,crianca:c,contato:{responsavel:d.get('resp'),whatsapp:d.get('wa'),email:d.get('email')},origem:origem})})
-    .then(function(r){return r.json()}).then(function(j){if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
+  fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:p,pacote:d.get('pacote'),foto:foto,crianca:c,contato:{responsavel:d.get('resp'),whatsapp:d.get('wa'),email:d.get('email')},origem:origem,cupom:(document.getElementById('cupom').value||'').trim()})})
+    .then(function(r){return r.json()}).then(function(j){if(j.gratis){try{localStorage.removeItem('recado_cupom')}catch(e){}location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)}else if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
     .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
 </script>
 <script src="/recado/rastro.js"></script>
+<script>(function(){var q=new URLSearchParams(location.search),c=q.get('cupom');try{c=c||localStorage.getItem('recado_cupom')}catch(e){}var i=document.getElementById('cupom'),b=document.getElementById('enviar');function bt(){b.textContent=i.value.trim()?'Confirmar pedido':'Ir pro pagamento'}if(c){i.value=c.toUpperCase();document.getElementById('cupom-box').open=true}i.addEventListener('input',bt);bt()})()</script>
 </body>
 </html>

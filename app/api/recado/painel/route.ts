@@ -32,7 +32,7 @@ export async function GET(req: NextRequest) {
     }
     const dias = Math.max(1, Math.min(400, +(q.get('dias') || 90)))
     const desde = new Date(Date.now() - dias * 86400e3).toISOString()
-    const [pedidos, maquina, funil, funilDia, gastos, fixos, metas] = await Promise.all([
+    const [pedidos, maquina, funil, funilDia, gastos, fixos, metas, cupons] = await Promise.all([
       db.busca('pedidos', `criado_em=gte.${desde}&order=criado_em.desc&limit=1000&select=id,codigo,criado_em,personagem,pacote,preco,status,nome:crianca->>nome,responsavel:contato->>responsavel,pago_em,produzindo_em,entregue_em,forma_pagamento,taxa_gateway,custo,erro,tentativas,origem,visitante`),
       db.busca('maquina', 'id=eq.1'),
       rpc('recado_funil', { desde }),
@@ -40,11 +40,12 @@ export async function GET(req: NextRequest) {
       db.busca('gastos', `dia=gte.${desde.slice(0, 10)}&order=dia.desc&limit=1000`),
       db.busca('custos_fixos', 'order=inicio.desc&limit=200'),
       db.busca('metas', 'order=mes.desc&limit=24'),
+      db.busca('cupons', 'order=criado_em.desc&limit=200').catch(() => []),
     ])
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
     for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
-    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, gastos, fixos, metas, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
+    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
     console.error('recado/painel', e)
     return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 })
@@ -69,6 +70,15 @@ export async function POST(req: NextRequest) {
       await db.insere('custos_fixos', { nome: txt(b.nome), valor_mensal: valor, inicio: dia(b.inicio) || new Date().toISOString().slice(0, 10), obs: txt(b.obs, 200) || null })
       return NextResponse.json({ ok: true })
     }
+    // cupons (Guto 10/10): grátis vira cortesia e entra direto na produção; pct dá desconto
+    if (b.acao === 'cupom_add') {
+      const codigo = txt(b.codigo, 30).toUpperCase().replace(/[^A-Z0-9-]/g, ''); if (codigo.length < 3) return NextResponse.json({ erro: 'código com pelo menos 3 letras' }, { status: 400 })
+      const tipo = b.tipo === 'pct' ? 'pct' : 'gratis', valor = tipo === 'pct' ? num(b.valor) : null
+      if (tipo === 'pct' && !(valor! > 0 && valor! < 100)) return NextResponse.json({ erro: 'desconto entre 1 e 99%' }, { status: 400 })
+      await db.insere('cupons', { codigo, tipo, valor, usos_max: Math.max(1, Math.min(1000, num(b.usos_max) || 1)), validade: dia(b.validade), produto: txt(b.produto, 40) || null, obs: txt(b.obs, 200) || null })
+      return NextResponse.json({ ok: true })
+    }
+    if (b.acao === 'cupom_fim') { await db.atualiza('cupons', `codigo=eq.${encodeURIComponent(txt(b.codigo, 30))}`, { ativo: false }); return NextResponse.json({ ok: true }) }
     if (b.acao === 'fixo_fim') { await db.atualiza('custos_fixos', `id=eq.${+b.id}`, { fim: new Date().toISOString().slice(0, 10) }); return NextResponse.json({ ok: true }) }
     if (b.acao === 'meta_set') {
       const mes = dia(b.mes); if (!mes) return NextResponse.json({ erro: 'mês' }, { status: 400 })
