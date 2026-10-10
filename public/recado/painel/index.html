@@ -125,7 +125,7 @@ function desenha(){
     ['Produção',P(S.rec?S.prod/S.rec:null),'da receita · meta até 15%',S.rec?(S.prod/S.rec<=regras.custoMax?'bom':'ruim'):''],
     ['Tráfego',P(S.rec?S.traf/S.rec:null),R(S.traf)+' · meta 15 a 20%',S.rec&&S.traf?(S.traf/S.rec<=regras.trafegoMax?'bom':S.traf/S.rec<=.3?'at':'ruim'):''],
     ['CPA',S.pagos&&S.traf?R(S.traf/S.pagos):'·','custo de anúncio por venda',''],['ROAS',S.traf?X(S.rec/S.traf):'·','receita por real de anúncio',S.traf?(S.rec/S.traf>=5?'bom':S.rec/S.traf>=3?'at':'ruim'):''],
-    ['Conversão do site',vis.visita?P(S.pagos/vis.visita):'·',vis.visita+' visitantes → '+S.pagos+' pagos','']]
+    ['Conversão do site',vis.visita?P(S.pagos/vis.visita):'·',(vis.visita||0)+' visitantes → '+S.pagos+' pagos','']]
   $('kpis').innerHTML=k.map(function(x){return '<div class="k '+x[3]+'"><span>'+x[0]+'</span><b>'+x[1]+'</b><small>'+x[2]+'</small></div>'}).join('')
   // metas do mês corrente (sempre o mês inteiro)
   var h=new Date(),m0=new Date(h.getFullYear(),h.getMonth(),1),mes=m0.toISOString().slice(0,7),mt=D.metas.find(function(x){return x.mes.slice(0,7)===mes})

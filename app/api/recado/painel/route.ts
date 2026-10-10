@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
     ])
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
-    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
+    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
     return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, gastos, fixos, metas, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
     console.error('recado/painel', e)
