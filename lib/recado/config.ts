@@ -23,5 +23,5 @@ export const recadoConfig = {
   } as Record<string, Record<string, { nome: string; preco: number; itens: string[]; etapas?: string[] }>>,
   irmao: 19.9,
   gateway: (process.env.RECADO_GATEWAY || 'asaas') as 'asaas' | 'infinitepay' | 'mercadopago',
-  urlSite: process.env.RECADO_URL_SITE || 'https://recadoencantado.com.br',
+  urlSite: process.env.RECADO_URL_SITE || 'https://recadoencantando.com.br',
 }
