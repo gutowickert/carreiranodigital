@@ -6,6 +6,7 @@ import { NextRequest, NextResponse } from 'next/server'
 const GRAPH = 'https://graph.facebook.com/v25.0', NOME = 'cnd_aviso_recado'
 const ok = (req: NextRequest) => !!process.env.RECADO_PAINEL_SENHA && req.headers.get('x-senha') === process.env.RECADO_PAINEL_SENHA
 async function waba() {
+  if (process.env.WA_OFICIAL_WABA_ID) return process.env.WA_OFICIAL_WABA_ID
   const T = process.env.WA_OFICIAL_TOKEN, P = process.env.WA_OFICIAL_PHONE_ID
   const r: any = await fetch(`${GRAPH}/${P}?fields=whatsapp_business_account&access_token=${T}`).then(r => r.json())
   if (r?.whatsapp_business_account?.id) return r.whatsapp_business_account.id
