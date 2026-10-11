@@ -13,8 +13,10 @@
     "@breezystack/lamejs": "^1.2.7",
     "@supabase/supabase-js": "^2.106.2",
     "date-fns": "^4.4.0",
+    "imapflow": "^2.4.0",
     "jszip": "^3.10.1",
     "lucide-react": "^0.475.0",
+    "mailparser": "^3.9.38",
     "next": "16.2.6",
     "opus-recorder": "^8.0.5",
     "react": "19.2.4",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.0",
+    "@types/mailparser": "^3.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

@@ -20,7 +20,8 @@ export async function POST(req: NextRequest) {
       const [p] = await db.busca('pedidos', `codigo=eq.${encodeURIComponent(codigo)}&select=contato`).catch(() => [])
       nome = p?.contato?.responsavel || null
     }
-    await db.insere('suporte', { codigo, nome, email, mensagem, pagina: limpa(b.pagina, 200) || null })
+    const s = await db.insere('suporte', { codigo, nome, email, mensagem, pagina: limpa(b.pagina, 200) || null, origem: 'pagina', assunto: `Ajuda${codigo ? ' · pedido ' + codigo : ''}`, nao_lidas: 1 })
+    await db.insere('suporte_msgs', { suporte_id: s.id, direcao: 'entrada', de: email, texto: mensagem }).catch(() => null)   // a conversa no painel
     await avisaDono('🆘 Pedido de ajuda', `${nome || email}${codigo ? ' · pedido ' + codigo : ''}\n${mensagem.slice(0, 400)}\nResponder pra: ${email}`, 'sos').catch(() => null)
     await enviaEmail(email, 'Recebemos a tua mensagem',
       moldura('Recebemos a tua mensagem', `Obrigado por escrever. A gente responde aqui no teu e-mail (${email}) o quanto antes.${codigo ? ` Pedido ${codigo}.` : ''}`,

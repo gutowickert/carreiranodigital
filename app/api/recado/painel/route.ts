@@ -30,6 +30,12 @@ export async function GET(req: NextRequest) {
       for (const k of ['foto_path', 'video_path', 'carta_path', 'certificado_path']) if (p[k]) links[k] = await db.linkAssinado(p[k], 3600).catch(() => null)
       return NextResponse.json({ pedido: p, eventos, etapas, caminho, links }, sem)
     }
+    if (q.get('o') === 'conversa') {   // suporte: as mensagens de uma conversa (11/10)
+      const id = String(q.get('id') || '').replace(/[^a-f0-9-]/g, '')
+      const [s] = await db.busca('suporte', `id=eq.${id}&select=*`)
+      const msgs = await db.busca('suporte_msgs', `suporte_id=eq.${id}&order=quando.asc&select=quando,direcao,de,texto`)
+      return NextResponse.json({ conversa: s || null, msgs }, sem)
+    }
     const dias = Math.max(1, Math.min(400, +(q.get('dias') || 90)))
     // painel zerado em 11/10 00h (Guto: começou o orgânico de verdade). Testes de antes ficam no banco, só não entram nas contas.
     // Trocar a data (ou desligar) pela variável RECADO_PAINEL_INICIO na Vercel.
@@ -47,7 +53,7 @@ export async function GET(req: NextRequest) {
       db.busca('metas', 'order=mes.desc&limit=24'),
       db.busca('cupons', 'order=criado_em.desc&limit=200').catch(() => []),
     ])
-    const suporte = await db.busca('suporte', 'order=criado_em.desc&limit=200').catch(() => [])   // pedidos de ajuda (11/10)
+    const suporte = await db.busca('suporte', 'order=atualizado_em.desc&limit=200').catch(() => [])   // pedidos de ajuda (11/10)
     // 11/10: os passos crus do período (o funil somado do banco conta duas vezes quem abre duas páginas). O painel conta pessoas
     // diferentes com eles e mostra até onde cada um chegou no formulário (form_campo / form_erro).
     const ev: any[] = []
@@ -74,6 +80,19 @@ export async function POST(req: NextRequest) {
   const dia = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null
   const txt = (v: any, n = 120) => String(v || '').replace(/[<>]/g, '').trim().slice(0, n)
   try {
+    // caixa do contato@ dentro do painel (11/10): lê o Titan, responde pelo mesmo fio, marca como lida
+    if (b.acao === 'suporte_sync') {
+      const { sincroniza, caixaLigada } = await import('@/lib/recado/suporte-email')
+      if (!caixaLigada()) return NextResponse.json({ ok: false, semCaixa: true })
+      try { return NextResponse.json({ ok: true, ...(await sincroniza()) }) } catch (e: any) { return NextResponse.json({ ok: false, erro: 'Não consegui ler a caixa: ' + String(e.message || e).slice(0, 160) }) }
+    }
+    if (b.acao === 'suporte_responde') {
+      const texto = String(b.texto || '').trim().slice(0, 8000), id = String(b.id || '').replace(/[^a-f0-9-]/g, '')
+      if (texto.length < 2) return NextResponse.json({ erro: 'Escreve a resposta.' }, { status: 400 })
+      const { responde } = await import('@/lib/recado/suporte-email')
+      try { return NextResponse.json(await responde(id, texto)) } catch (e: any) { return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 }) }
+    }
+    if (b.acao === 'suporte_lido') { await db.atualiza('suporte', `id=eq.${String(b.id || '').replace(/[^a-f0-9-]/g, '')}`, { nao_lidas: 0 }); return NextResponse.json({ ok: true }) }
     if (b.acao === 'suporte_status') {
       const st = b.status === 'resolvido' ? 'resolvido' : 'aberto', id = String(b.id || '').replace(/[^a-f0-9-]/g, '')
       await db.atualiza('suporte', `id=eq.${id}`, { status: st, resolvido_em: st === 'resolvido' ? new Date().toISOString() : null })
