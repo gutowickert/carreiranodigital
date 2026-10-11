@@ -35,10 +35,12 @@ export async function GET(req: NextRequest) {
     // Trocar a data (ou desligar) pela variável RECADO_PAINEL_INICIO na Vercel.
     const INICIO = process.env.RECADO_PAINEL_INICIO || '2026-10-11T03:00:00.000Z'
     const desde = [new Date(Date.now() - dias * 86400e3).toISOString(), INICIO].sort().pop() as string
+    // o funil (visitantes por etapa) vem somado do banco: precisa do início do período escolhido no painel, senão "Hoje" mostra 31 dias
+    const fd = q.get('funil_desde'), funilDesde = fd && !isNaN(Date.parse(fd)) ? [new Date(fd).toISOString(), INICIO].sort().pop() as string : desde
     const [pedidos, maquina, funil, funilDia, gastos, fixos, metas, cupons] = await Promise.all([
       db.busca('pedidos', `criado_em=gte.${desde}&order=criado_em.desc&limit=1000&select=id,codigo,criado_em,personagem,pacote,preco,status,nome:crianca->>nome,responsavel:contato->>responsavel,pago_em,produzindo_em,entregue_em,forma_pagamento,taxa_gateway,custo,erro,tentativas,origem,visitante`),
       db.busca('maquina', 'id=eq.1'),
-      rpc('recado_funil', { desde }),
+      rpc('recado_funil', { desde: funilDesde }),
       rpc('recado_funil_dia', { desde }),
       db.busca('gastos', `dia=gte.${desde.slice(0, 10)}&order=dia.desc&limit=1000`),
       db.busca('custos_fixos', 'order=inicio.desc&limit=200'),

@@ -107,9 +107,9 @@ var $=function(i){return document.getElementById(i)}
 function quando(t){if(!t)return'·';var m=(Date.now()-new Date(t))/60000;return m<1?'agora':m<60?Math.round(m)+' min':m<1440?Math.round(m/60)+' h':new Date(t).toLocaleDateString('pt-BR')}
 function api(q,op){return fetch('/api/recado/painel'+q,Object.assign({headers:{'x-senha':SENHA,'Content-Type':'application/json'}},op||{})).then(function(r){if(r.status===401)throw new Error('senha');return r.json()})}
 function diasPer(){if(per==='mes'){var h=new Date();return Math.max(1,Math.ceil((h-new Date(h.getFullYear(),h.getMonth(),1))/864e5))}return +per}
-function entra(){api('?o=tudo&dias='+Math.max(diasPer(),31)).then(function(d){if(d.erro)throw new Error(d.erro);$('login').hidden=true;$('app').hidden=false;D=d;desenha()}).catch(function(e){if(e.message==='senha'||!D){$('login').hidden=false;$('app').hidden=true;if(SENHA)$('lerro').textContent=e.message==='senha'?'Senha errada':'Sem conexão: '+e.message}})}
+function entra(){api('?o=tudo&dias='+Math.max(diasPer(),31)+'&funil_desde='+encodeURIComponent(periodo().ini.toISOString())).then(function(d){if(d.erro)throw new Error(d.erro);$('login').hidden=true;$('app').hidden=false;D=d;desenha()}).catch(function(e){if(e.message==='senha'||!D){$('login').hidden=false;$('app').hidden=true;if(SENHA)$('lerro').textContent=e.message==='senha'?'Senha errada':'Sem conexão: '+e.message}})}
 $('entrar').onclick=function(){SENHA=$('senha').value;try{localStorage.setItem('painel_senha',SENHA)}catch(e){}entra()}
-$('per').onclick=function(e){if(!e.target.dataset.d)return;per=e.target.dataset.d;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});if(diasPer()>31&&D&&D.dias<diasPer())entra();else desenha()}
+$('per').onclick=function(e){if(!e.target.dataset.d)return;per=e.target.dataset.d;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});desenha();entra()}
 $('abas').onclick=function(e){if(!e.target.dataset.a)return;aba=e.target.dataset.a;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});document.querySelectorAll('[data-aba]').forEach(function(s){s.classList.toggle('on',s.dataset.aba===aba)})}
 
 // ===== contas =====
