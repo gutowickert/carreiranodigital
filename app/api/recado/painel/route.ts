@@ -47,6 +47,7 @@ export async function GET(req: NextRequest) {
       db.busca('metas', 'order=mes.desc&limit=24'),
       db.busca('cupons', 'order=criado_em.desc&limit=200').catch(() => []),
     ])
+    const suporte = await db.busca('suporte', 'order=criado_em.desc&limit=200').catch(() => [])   // pedidos de ajuda (11/10)
     // 11/10: os passos crus do período (o funil somado do banco conta duas vezes quem abre duas páginas). O painel conta pessoas
     // diferentes com eles e mostra até onde cada um chegou no formulário (form_campo / form_erro).
     const ev: any[] = []
@@ -59,7 +60,7 @@ export async function GET(req: NextRequest) {
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
     for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
-    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
+    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
     console.error('recado/painel', e)
     return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 })
@@ -73,6 +74,11 @@ export async function POST(req: NextRequest) {
   const dia = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null
   const txt = (v: any, n = 120) => String(v || '').replace(/[<>]/g, '').trim().slice(0, n)
   try {
+    if (b.acao === 'suporte_status') {
+      const st = b.status === 'resolvido' ? 'resolvido' : 'aberto', id = String(b.id || '').replace(/[^a-f0-9-]/g, '')
+      await db.atualiza('suporte', `id=eq.${id}`, { status: st, resolvido_em: st === 'resolvido' ? new Date().toISOString() : null })
+      return NextResponse.json({ ok: true })
+    }
     if (b.acao === 'gasto_add') {
       const valor = num(b.valor); if (!dia(b.dia) || valor == null) return NextResponse.json({ erro: 'dia e valor' }, { status: 400 })
       await db.insere('gastos', { dia: b.dia, canal: txt(b.canal, 30) || 'meta', campanha: txt(b.campanha), produto: txt(b.produto, 40) || null, valor, impressoes: num(b.impressoes), cliques: num(b.cliques), obs: txt(b.obs, 200) || null })

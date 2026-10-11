@@ -29,6 +29,6 @@ export async function avisaDono(titulo: string, texto: string, tags = 'bell') {
     return enviarAoTime(u, `*${titulo}*\n${texto}\n${PAINEL}`, { nome: 'cnd_aviso_recado', params: [limpo(titulo.replace(/[^\p{L}\p{N} !,.]/gu, '').trim()), limpo(texto)] })
   })().catch(() => null))
   const email = process.env.RECADO_AVISO_EMAIL
-  if (email) tarefas.push(enviaEmail(email, titulo, moldura(titulo, texto.replace(/\n/g, '<br>'), 'Abrir o painel', PAINEL)).catch(() => null))
+  if (email) tarefas.push(enviaEmail(email, titulo, moldura(titulo, texto.replace(/\n/g, '<br>'), 'Abrir o painel', PAINEL, false)).catch(() => null))
   await Promise.all(tarefas)
 }

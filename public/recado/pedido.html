@@ -117,6 +117,7 @@ f.addEventListener('submit',function(e){e.preventDefault();var d=new FormData(f)
     .then(function(r){return r.json()}).then(function(j){if(j.gratis){try{localStorage.removeItem('recado_cupom')}catch(e){}location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)}else if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
     .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
 </script>
+<p style="text-align:center;font-size:14px;opacity:.8;padding:18px 16px 28px;margin:0">Dúvidas antes de pedir? Escreve pra <a href="mailto:contato@recadoencantando.com.br" style="color:inherit;text-decoration:underline">contato@recadoencantando.com.br</a></p>
 <script src="/recado/rastro.js"></script>
 <script>(function(){var q=new URLSearchParams(location.search),c=q.get('cupom');try{c=c||localStorage.getItem('recado_cupom')}catch(e){}var i=document.getElementById('cupom'),b=document.getElementById('enviar');function bt(){b.textContent=i.value.trim()?'Confirmar pedido':'Ir pro pagamento'}if(c){i.value=c.toUpperCase();document.getElementById('cupom-box').open=true}i.addEventListener('input',bt);bt()})()</script>
 </body>

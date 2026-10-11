@@ -42,7 +42,7 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 <div id="login" hidden><b style="font:700 22px Fredoka;color:var(--marca)">Painel do Recado</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
 <div id="app" hidden>
 <header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1" class="on">Hoje</button><button data-d="7">7 dias</button><button data-d="30">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
-<nav id="abas"><button data-a="geral" class="on">Visão geral</button><button data-a="camp">Campanhas</button><button data-a="funil">Funil</button><button data-a="produtos">Produtos</button><button data-a="fin">Financeiro</button><button data-a="pedidos">Pedidos</button><button data-a="lanc">Lançamentos</button></nav>
+<nav id="abas"><button data-a="geral" class="on">Visão geral</button><button data-a="camp">Campanhas</button><button data-a="funil">Funil</button><button data-a="produtos">Produtos</button><button data-a="fin">Financeiro</button><button data-a="pedidos">Pedidos</button><button data-a="lanc">Lançamentos</button><button data-a="suporte">Suporte <span id="nsup"></span></button></nav>
 <main>
 <section data-aba="geral" class="on">
   <div class="kpis" id="kpis"></div>
@@ -84,6 +84,10 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 </section>
 <section data-aba="pedidos">
   <div class="box"><h3>Pedidos <span class="seg" id="fsit"></span></h3><div class="tab"><table><thead><tr><th>Código</th><th>Criança</th><th>Produto</th><th>Situação</th><th>Origem</th><th>Quando</th><th class="n">Valor</th><th class="n">Custo</th></tr></thead><tbody id="lista"></tbody></table></div></div>
+</section>
+<section data-aba="suporte">
+  <div class="box"><h3>Pedidos de ajuda <small>das páginas do pedido · o e-mail contato@recadoencantando.com.br chega na caixa do Titan</small></h3><div class="tab"><table style="min-width:640px"><thead><tr><th>Quando</th><th>Quem</th><th>Pedido</th><th>Mensagem</th><th></th><th></th></tr></thead><tbody id="lsup"></tbody></table></div>
+    <p class="nota" style="margin-top:12px">Cada pedido de ajuda também avisa no teu celular. Responder abre o teu e-mail com o endereço da pessoa. Depois de resolver, marca como resolvido.</p></div>
 </section>
 <section data-aba="lanc">
   <div class="box"><h3>Gasto com anúncio <small>um lançamento por dia e campanha (até ligar a Meta direto)</small></h3>
@@ -163,7 +167,7 @@ function desenha(){
   barrasDia(peds,gas)
   var mq=D.maquina||{estado:'desligada'},cor={desligada:'#9a93ae',ligando:'#fbbf24',livre:'#34d399',produzindo:'#8b5cf6'}[mq.estado]||'#9a93ae',fila=D.pedidos.filter(function(p){return p.status==='pago'}).length
   $('maq').innerHTML='<div class="lin" style="justify-content:flex-start"><span style="width:14px;height:14px;border-radius:50%;background:'+cor+';box-shadow:0 0 12px '+cor+'"></span><b style="font-size:18px">'+({desligada:'Desligada',ligando:'Ligando',livre:'Ligada, livre',produzindo:'Produzindo'}[mq.estado]||mq.estado)+'</b></div><p style="color:var(--mut);font-size:13px;margin-top:6px">'+fila+' pedido(s) na fila · última mudança '+quando(mq.atualizado_em)+'. Liga quando entra pedido pago e desliga 15 min depois da fila esvaziar.</p>'
-  funil();produtos(pp);financeiro(S,peds,pr);lista(peds);lancamentos()
+  funil();produtos(pp);financeiro(S,peds,pr);lista(peds);lancamentos();suporte()
 }
 function barrasDia(peds,gas){var dd={},n=Math.min(diasPer(),31);for(var i=n-1;i>=0;i--){var d=new Date(Date.now()-i*864e5).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});dd[d]={r:0,c:0}}
   peds.filter(pago).forEach(function(p){var d=new Date(p.pago_em).toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'});if(dd[d]){dd[d].r+=+p.preco;dd[d].c+=prodPed(p).v+taxaPed(p)}})
@@ -249,6 +253,13 @@ document.addEventListener('click',function(e){var b=e.target.closest&&e.target.c
 $('cpAtualiza').onclick=campanhas
 // quando a aba Campanhas abre: carrega e atualiza a cada minuto; sai da aba, para
 $('abas').addEventListener('click',function(e){if(e.target.dataset.a==='camp'){cpMarca();campanhas();clearInterval(cpT);cpT=setInterval(function(){if(aba==='camp')campanhas()},60000)}else{clearInterval(cpT)}})
+// ===== suporte (11/10): pedidos de ajuda da página do pedido
+function suporte(){var L=D.suporte||[],ab=L.filter(function(s){return s.status!=='resolvido'}).length
+  $('nsup').innerHTML=ab?'<span class="chip c-ruim">'+ab+'</span>':''
+  $('lsup').innerHTML=L.length?L.map(function(s){var cod=s.codigo?esc(s.codigo):'·',pd=s.codigo?D.pedidos.filter(function(p){return p.codigo===s.codigo})[0]:null
+    var mail='mailto:'+encodeURIComponent(s.email)+'?subject='+encodeURIComponent('Recado Encantado'+(s.codigo?' · pedido '+s.codigo:''))+'&body='+encodeURIComponent('\n\n---\nTua mensagem: '+s.mensagem)
+    return '<tr'+(s.status==='resolvido'?' style="opacity:.55"':'')+'><td>'+quando(s.criado_em)+'</td><td><b>'+esc(s.nome||'')+'</b><br><small>'+esc(s.email)+'</small></td><td>'+(pd?'<a href="#" onclick="abre(\''+pd.id+'\');return false">'+cod+'</a>':cod)+'</td><td style="white-space:pre-wrap;max-width:420px">'+esc(s.mensagem)+'</td>'+
+      '<td><a class="bt" href="'+mail+'">Responder</a></td><td>'+(s.status==='resolvido'?'<button class="bt" onclick="acao(\'suporte_status\',{id:\''+s.id+'\',status:\'aberto\'},this)">Reabrir</button>':'<button class="bt p" onclick="acao(\'suporte_status\',{id:\''+s.id+'\',status:\'resolvido\'},this)">Resolvido</button>')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="vazio">Nenhum pedido de ajuda.</td></tr>'}
 // ===== lançamentos
 function cupons(){var f=$('fcupom');f.produto.innerHTML='<option value="">todos</option>'+Object.keys(D.produtos).map(function(k){return '<option value="'+k+'">'+esc(D.produtos[k].nome)+'</option>'}).join('')
   var cs=D.cupons||[];$('lcupons').innerHTML=cs.length?cs.map(function(c){var link='https://recadoencantando.com.br/?cupom='+encodeURIComponent(c.codigo),vale=c.ativo&&c.usos<c.usos_max&&(!c.validade||c.validade>=new Date().toLocaleDateString('sv-SE',{timeZone:'America/Sao_Paulo'}));return '<tr><td><b>'+esc(c.codigo)+'</b>'+(c.obs?'<br><small style="color:var(--mut)">'+esc(c.obs)+'</small>':'')+'</td><td>'+(c.tipo==='gratis'?'Grátis':c.valor+'% off')+'</td><td>'+esc((D.produtos[c.produto]||{}).nome||'todos')+'</td><td class="n">'+c.usos+' de '+c.usos_max+'</td><td>'+(vale?'<button class="bt" onclick="navigator.clipboard.writeText(\''+link+'\');this.textContent=\'Copiado!\'">Copiar link</button>':'<span class="chip c-neu">'+(c.ativo?'esgotado ou vencido':'encerrado')+'</span>')+'</td><td class="n">'+(c.ativo?'<button class="bt r" onclick="acao(\'cupom_fim\',{codigo:\''+esc(c.codigo)+'\'},this)">Encerrar</button>':'')+'</td></tr>'}).join(''):'<tr><td colspan="6" class="vazio">Nenhum cupom.</td></tr>'}

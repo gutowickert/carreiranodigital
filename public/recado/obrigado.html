@@ -27,7 +27,27 @@ small{display:block;text-align:center;color:var(--creme2);font-size:14px}
 <div class="card" id="card"><h1 id="tit">Recebemos!</h1><p id="sub">Carregando o teu pedido...</p><div class="passos" id="passos"></div></div>
 <a class="bt claro" id="guia" style="display:none;margin-bottom:14px"></a>
 <small>Guarda o link desta página: o link também está no teu e-mail. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</small>
+<div class="card" id="ajuda">
+  <h2 style="font-size:24px;color:var(--noite);text-align:center">Precisa de ajuda?</h2>
+  <p style="font-size:16px">Tudo o que tu comprou aparece nesta página, e cada novidade também chega no teu e-mail. Se um e-mail nosso não chegou, olha a caixa de spam ou de promoções.</p>
+  <p style="font-size:16px">Alguma dúvida ou problema? Escreve aqui embaixo ou manda pra <a href="mailto:contato@recadoencantando.com.br" style="color:var(--rosa);font-weight:700">contato@recadoencantando.com.br</a><span id="ajcod"></span>.</p>
+  <form id="fajuda" style="display:grid;gap:10px">
+    <textarea name="mensagem" id="ajmsg" rows="4" required placeholder="Conta o que aconteceu" style="font:17px Fredoka;padding:12px;border-radius:14px;border:2px solid var(--creme2);resize:vertical"></textarea>
+    <input name="email" id="ajemail" type="email" required placeholder="Teu e-mail pra resposta" style="font:17px Fredoka;padding:12px;border-radius:14px;border:2px solid var(--creme2)">
+    <input name="site" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-9999px;width:1px;height:1px">
+    <button class="bt" type="submit" style="border:0;cursor:pointer;font-family:Fredoka">Enviar mensagem</button>
+    <p id="ajok" style="font-size:16px;display:none"></p>
+  </form>
 </div>
+</div>
+<script>
+// suporte (11/10): a mensagem vai pro painel do Recado e a família recebe a confirmação por e-mail
+(function(){var cod=new URLSearchParams(location.search).get('c')||'';if(cod)document.getElementById('ajcod').textContent=' com o código do pedido, '+cod
+  document.getElementById('fajuda').onsubmit=function(e){e.preventDefault();var f=this,b=f.querySelector('button'),ok=document.getElementById('ajok');b.disabled=true;b.textContent='Enviando...'
+    fetch('/api/recado/suporte',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({codigo:cod,mensagem:f.mensagem.value,email:f.email.value,site:f.site.value,pagina:location.pathname+location.search})})
+      .then(function(r){return r.json()}).then(function(j){if(j.erro)throw new Error(j.erro);f.mensagem.style.display=f.email.style.display=b.style.display='none';ok.textContent='Recebemos! A gente responde no teu e-mail o quanto antes.';ok.style.display='block'})
+      .catch(function(x){b.disabled=false;b.textContent='Enviar mensagem';ok.textContent=(x&&x.message)||'Não deu agora. Escreve pra contato@recadoencantando.com.br';ok.style.display='block'})}})()
+</script>
 <script>
 var c=new URLSearchParams(location.search).get('c')||'',ordem=['aguardando_pagamento','pago','produzindo','entregue']
 var NOMES={aguardando_pagamento:'Pagamento',pago:'Na fila dos duendes',produzindo:'Gravando o vídeo',entregue:'Pronto pra assistir'}
