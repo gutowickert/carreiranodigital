@@ -41,7 +41,7 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 </style></head><body>
 <div id="login" hidden><b style="font:700 22px Fredoka;color:var(--marca)">Painel do Recado</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
 <div id="app" hidden>
-<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1">Hoje</button><button data-d="7">7 dias</button><button data-d="30" class="on">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
+<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1" class="on">Hoje</button><button data-d="7">7 dias</button><button data-d="30">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
 <nav id="abas"><button data-a="geral" class="on">Visão geral</button><button data-a="camp">Campanhas</button><button data-a="funil">Funil</button><button data-a="produtos">Produtos</button><button data-a="fin">Financeiro</button><button data-a="pedidos">Pedidos</button><button data-a="lanc">Lançamentos</button></nav>
 <main>
 <section data-aba="geral" class="on">
@@ -98,7 +98,7 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 <div id="gaveta"><div class="g" id="gav"></div></div>
 <script>
 var SENHA='';try{SENHA=localStorage.getItem('painel_senha')||''}catch(e){}
-var D=null,per='30',aba='geral',sit='todos',fprod='todos',fcamp='todas'
+var D=null,per='1',aba='geral',sit='todos',fprod='todos',fcamp='todas'
 var SIT={aguardando_pagamento:'Aguardando pagamento',pago:'Na fila',produzindo:'Produzindo',em_missao:'Em missão',revisao:'Revisão',entregue:'Entregue',falhou:'Falhou',cancelado:'Cancelado',reembolsado:'Reembolsado'}
 var CSIT={aguardando_pagamento:'c-neu',pago:'c-info',produzindo:'c-at',em_missao:'c-info',revisao:'c-at',entregue:'c-bom',falhou:'c-ruim',cancelado:'c-neu',reembolsado:'c-neu'}
 var R=function(v){return 'R$ '+(+v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})},P=function(v){return v==null||!isFinite(v)?'·':(v*100).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'},X=function(v){return v==null||!isFinite(v)?'·':v.toLocaleString('pt-BR',{maximumFractionDigits:1})+'x'}
@@ -120,7 +120,7 @@ function prodPed(p){var c=p.custo||{};if(c.producao!=null)return{v:+c.producao,r
 function taxaPed(p){if(p.taxa_gateway!=null)return +p.taxa_gateway;if(p.custo&&p.custo.taxa!=null)return +p.custo.taxa;return +(0.7*0.49+0.3*(p.preco*0.0349+0.49)).toFixed(2)}
 var camp=function(p){return (p.origem&&p.origem.utm_campaign)||'(direto/orgânico)'}
 function fixosNoPeriodo(ini,fim){return D.fixos.reduce(function(s,f){var a=Math.max(ini,new Date(f.inicio+'T00:00:00-03:00')),b=Math.min(fim,f.fim?new Date(f.fim+'T23:59:59-03:00'):fim);return s+(b>a?f.valor_mensal*(b-a)/(30*864e5):0)},0)}
-function periodo(){var fim=new Date(),ini=per==='mes'?new Date(fim.getFullYear(),fim.getMonth(),1):new Date(Date.now()-diasPer()*864e5);return{ini:ini,fim:fim}}
+function periodo(){var fim=new Date(),ini=per==='mes'?new Date(fim.getFullYear(),fim.getMonth(),1):per==='1'?new Date(fim.getFullYear(),fim.getMonth(),fim.getDate()):new Date(Date.now()-diasPer()*864e5);return{ini:ini,fim:fim}}
 function soma(peds,gastos,ini,fim){var pg=peds.filter(pago),rec=0,prod=0,tax=0,real=0;pg.forEach(function(p){rec+=+p.preco;var c=prodPed(p);prod+=c.v;if(c.real)real++;tax+=taxaPed(p)})
   var traf=gastos.reduce(function(s,g){return s+ +g.valor},0),fix=ini?fixosNoPeriodo(ini,fim):0,mc=rec-prod-tax-traf
   return{pedidos:peds.length,pagos:pg.length,rec:rec,prod:prod,tax:tax,traf:traf,fix:fix,mc:mc,res:mc-fix,ticket:pg.length?rec/pg.length:0,real:real}}
