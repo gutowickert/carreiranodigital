@@ -25,6 +25,17 @@ function produtoDaCampanha(nome: string): string | null {
   return null
 }
 
+// produto por palavra em qualquer lugar do nome do conjunto
+function produtoDoConjunto(nome: string): string | null {
+  const n = String(nome || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase()
+  if (/CHUPETA|GRANDAO/.test(n)) return 'grandao/chupeta'
+  if (/CORAGEM|CAPITA/.test(n)) return 'coragem/coragem'
+  if (/GUARDIAO|DORMIR|NOITE/.test(n)) return 'guardiao/dormir'
+  if (/FADA|DENTE/.test(n)) return 'fada/recado'
+  if (/NOEL|NATAL/.test(n)) return /ENCANTO/.test(n) ? 'noel/encanto' : 'noel/magico'
+  return null
+}
+
 async function sincroniza(dias: number) {
   const conta = process.env.RECADO_META_CONTA
   if (!conta) return { ok: false, erro: 'falta a conta de anúncios do Recado (RECADO_META_CONTA)' }
@@ -32,9 +43,13 @@ async function sincroniza(dias: number) {
   const r = await getAnunciosDia(conta, desde, ate)
   if (!r.ok) return { ok: false, erro: r.error }
   const soma = new Map<string, any>()
-  for (const l of r.linhas) {
-    const k = l.data + '|' + l.campaign_name
-    const s = soma.get(k) || { dia: l.data, canal: 'meta_api', campanha: l.campaign_name.slice(0, 120), produto: produtoDaCampanha(l.campaign_name), valor: 0, impressoes: 0, cliques: 0, obs: 'automático da Meta' }
+  // a conta de anúncios tem campanhas de outros negócios (11/10: FALOUORÇOU, DEFESAPRONTA): só entra o que é do Recado.
+  // Produto pelo nome do CONJUNTO ("CONJUNTO FADA DO DENTE MÃES") ou, se não der, da campanha.
+  const doRecado = (l: any) => /RECADO/i.test(l.campaign_name) || !!produtoDaCampanha(l.campaign_name)
+  for (const l of r.linhas.filter(doRecado)) {
+    const prod = produtoDoConjunto(l.adset_name) || produtoDaCampanha(l.campaign_name)
+    const k = l.data + '|' + l.campaign_name + '|' + l.adset_name
+    const s = soma.get(k) || { dia: l.data, canal: 'meta_api', campanha: l.campaign_name.slice(0, 120), produto: prod, valor: 0, impressoes: 0, cliques: 0, obs: ('Meta · ' + l.adset_name).slice(0, 200) }
     s.valor += l.gasto; s.impressoes += l.impressoes; s.cliques += l.cliques; soma.set(k, s)
   }
   const linhas = [...soma.values()].filter(s => s.valor > 0).map(s => ({ ...s, valor: +s.valor.toFixed(2) }))
@@ -45,7 +60,7 @@ async function sincroniza(dias: number) {
     const ins = await fetch(`${U()}/rest/v1/recado_gastos`, { method: 'POST', headers: H(), body: JSON.stringify(linhas) })
     if (!ins.ok) return { ok: false, erro: 'banco ' + ins.status + ': ' + (await ins.text()).slice(0, 200) }
   }
-  return { ok: true, desde, ate, campanhas: new Set(linhas.map(l => l.campanha)).size, linhas: linhas.length, total: +linhas.reduce((a, l) => a + l.valor, 0).toFixed(2), sem_produto: [...new Set(linhas.filter(l => !l.produto).map(l => l.campanha))] }
+  return { ok: true, desde, ate, conjuntos: linhas.length ? new Set(linhas.map(l => l.obs)).size : 0, campanhas: new Set(linhas.map(l => l.campanha)).size, linhas: linhas.length, total: +linhas.reduce((a, l) => a + l.valor, 0).toFixed(2), sem_produto: [...new Set(linhas.filter(l => !l.produto).map(l => l.campanha))] }
 }
 
 export async function GET(req: NextRequest) {
