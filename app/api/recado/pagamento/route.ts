@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recadoDb as db } from '@/lib/recado/db'
 import { recadoGateway as gateway } from '@/lib/recado/gateway'
+import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
 
 export async function POST(req: NextRequest) {
   const seg = process.env.RECADO_WEBHOOK_SEGREDO
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
     if (a.pago && p.status === 'aguardando_pagamento') {
       await db.atualiza('pedidos', `id=eq.${p.id}`, { status: 'pago', pago_em: new Date().toISOString(), forma_pagamento: a.forma || null, taxa_gateway: a.taxa ?? null })
       await db.evento(p.id, 'pago', { forma: a.forma })
+      // aviso de VENDA no celular do Guto (pedido de teste não avisa)
+      const [v] = await db.busca('pedidos', `id=eq.${p.id}&select=codigo,personagem,pacote,preco,origem,nome:crianca->>nome`).catch(() => [])
+      if (v && !v.origem?.teste) await avisaDono('💰 VENDA!', `${nomeProduto(v.personagem, v.pacote)} · ${reais(v.preco)}${a.forma ? ' (' + a.forma + ')' : ''}\nCriança: ${v.nome}\nCampanha: ${v.origem?.utm_campaign || '(direto/orgânico)'}\nPedido ${v.codigo}`, 'moneybag').catch(() => null)
     }
     return NextResponse.json({ ok: true })
   } catch (e: any) {

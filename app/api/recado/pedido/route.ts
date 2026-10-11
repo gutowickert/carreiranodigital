@@ -5,6 +5,7 @@ import { recadoDb as db } from '@/lib/recado/db'
 import { recadoGateway as gateway } from '@/lib/recado/gateway'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 import { enviaEmail, moldura, linkFamilia } from '@/lib/recado/email'
+import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
 
 export const maxDuration = 30
 const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-', grandao: 'CHUPETA-' }
@@ -58,6 +59,8 @@ export async function POST(req: NextRequest) {
       const buf = Buffer.from(b.foto.split(',')[1], 'base64'); if (buf.length > 4e6) return NextResponse.json({ erro: 'foto muito grande' }, { status: 400 })
       p.foto_path = await db.sobe(`${p.codigo}/foto.jpg`, buf, 'image/jpeg')
     }
+    // aviso no celular do Guto (pedido de teste não avisa)
+    const avisa = (titulo: string, extra: string) => origem.teste ? null : avisaDono(titulo, `${nomeProduto(b.personagem, b.pacote)} · ${crianca.nome}, ${crianca.idade} anos\n${extra}\nCampanha: ${origem.utm_campaign || '(direto/orgânico)'}\nPedido ${p.codigo}`, gratis ? 'gift' : 'memo').catch(() => null)
     let salvo: any
     try { salvo = await db.insere('pedidos', p) } catch (e) { if (cupom) await db.rpc('recado_devolve_cupom', { c: cupom.codigo }).catch(() => {}); throw e }
     await db.evento(salvo.id, 'criado', { pacote: pac.nome, preco: p.preco, cupom: cupom?.codigo })
@@ -66,6 +69,7 @@ export async function POST(req: NextRequest) {
       const em = await enviaEmail(p.contato.email, `Teu recado de presente está a caminho (${crianca.nome})`,
         moldura('Presente confirmado!', `A gente já começou a preparar tudo pra ${crianca.nome}. Na página da família tu acompanha o andamento, e é lá que o vídeo aparece.`, 'Abrir a página da família', linkFamilia(p.codigo)))
       await db.evento(salvo.id, 'email_pedido', em).catch(() => {})
+      await avisa('🎁 Pedido com cupom (cortesia)', `Cupom ${cupom.codigo}: já entrou na produção`)
       return NextResponse.json({ codigo: p.codigo, gratis: true })
     }
     const cob = await gateway.cria({ ...p, descricao: `${cfg.marca}: ${pac.nome} (${crianca.nome})` })
@@ -75,6 +79,7 @@ export async function POST(req: NextRequest) {
     const em = await enviaEmail(p.contato.email, `Teu pedido do Recado Encantado (${crianca.nome})`,
       moldura('Recebemos o pedido!', `Assim que o pagamento confirmar, a gente começa a preparar tudo pra ${crianca.nome}. Na página da família tu acompanha o andamento, paga se ainda não pagou, e é lá que o vídeo aparece.`, 'Abrir a página da família', linkFamilia(p.codigo)))
     await db.evento(salvo.id, 'email_pedido', em).catch(() => {})
+    await avisa('📝 Novo pedido', `${reais(p.preco)} · foi pro pagamento${cupom ? ' (cupom ' + cupom.codigo + ')' : ''}`)
     return NextResponse.json({ codigo: p.codigo, checkout_url: cob.checkout_url })
   } catch (e: any) {
     console.error('recado/pedido', e)
