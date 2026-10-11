@@ -4,6 +4,10 @@
   var ls = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v) } catch (e) { return null } }
   var vis = ls('recado_v'); if (!vis) { vis = (Date.now().toString(36) + Math.random().toString(36).slice(2, 10)); ls('recado_v', vis) }
   var q = new URLSearchParams(location.search), utm = {}
+  // o navegador do dono não conta (11/10): abrir o painel marca sozinho; ?eu=1 marca, ?eu=0 desmarca. Sem rastreio e sem Pixel.
+  if (q.get('eu') === '1') ls('recado_eu', '1')
+  if (q.get('eu') === '0') try { localStorage.removeItem('recado_eu') } catch (e) {}
+  if (ls('recado_eu') === '1') { window.recadoRastro = { visitante: vis, utm: {}, envia: function () {}, compra: function () {}, origem: function () { return { visitante: vis, dono: true } } }; return }
   ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'fbclid'].forEach(function (k) { if (q.get(k)) utm[k] = q.get(k) })
   if (Object.keys(utm).length) ls('recado_utm', JSON.stringify(utm))   // a última campanha que trouxe a pessoa
   if (q.get('cupom')) ls('recado_cupom', q.get('cupom').toUpperCase())   // link com cupom: o formulário já vem preenchido
@@ -42,4 +46,21 @@
   var comecou = false
   document.addEventListener('input', function (e) { if (!comecou && e.target.closest && e.target.closest('form')) { comecou = true; envia('form_inicio') } }, true)
   document.addEventListener('submit', function () { envia('form_envio') }, true)
+  // até onde a pessoa chegou (11/10): cada campo preenchido manda 1 vez o nome e quanto do formulário já está feito.
+  // Conta só os campos que aparecem na tela (cada produto mostra os seus). form_erro: o campo que barrou o envio.
+  var feito = function (el) { return (el.type === 'radio' || el.type === 'checkbox') ? el.checked : String(el.value || '').trim() !== '' }
+  var campos = {}, erros = {}
+  function progresso(f) {
+    var n = {}
+    ;[].forEach.call(f.elements, function (el) { if (!el.name || /hidden|submit|button/.test(el.type) || !el.getClientRects().length) return; n[el.name] = n[el.name] || feito(el) })
+    var k = Object.keys(n), ok = k.filter(function (x) { return n[x] }).length
+    return { feitos: ok, total: k.length, pct: k.length ? Math.round(ok * 100 / k.length) : 0 }
+  }
+  document.addEventListener('change', function (e) {
+    var el = e.target, f = el.closest && el.closest('form')
+    if (!f || !el.name || campos[el.name] || !feito(el)) return
+    campos[el.name] = 1; var pr = progresso(f)
+    envia('form_campo', { dados: { campo: el.name, ordem: Object.keys(campos).length, pct: pr.pct, feitos: pr.feitos, total: pr.total } })
+  }, true)
+  document.addEventListener('invalid', function (e) { var el = e.target; if (!el.name || erros[el.name]) return; erros[el.name] = 1; envia('form_erro', { dados: { campo: el.name } }) }, true)
 })()

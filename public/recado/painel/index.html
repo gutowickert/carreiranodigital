@@ -66,6 +66,8 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 <section data-aba="funil">
   <div class="box"><h3>Do anúncio à compra <span><select id="fprod" class="bt"></select> <select id="fcamp" class="bt"></select></span></h3><div class="funil" id="funil"></div>
     <p class="nota" style="margin-top:12px">Cada passo conta pessoas diferentes (visitantes únicos). O pago vem dos pedidos confirmados pelo Asaas. A porcentagem da direita é quantos passaram do passo anterior.</p></div>
+  <div class="box"><h3>Quem começou o formulário <small>até onde cada pessoa chegou</small></h3><div class="tab"><table style="min-width:640px"><thead><tr><th>Quando</th><th>Produto</th><th>Anúncio</th><th>Último campo</th><th class="n">Preenchido</th><th>Onde travou</th><th>Enviou?</th></tr></thead><tbody id="fprog"></tbody></table></div>
+    <p class="nota" style="margin-top:12px">Preenchido conta os campos que aparecem pra aquele produto, inclusive os opcionais. Onde travou é o campo obrigatório que barrou o envio. O detalhe por campo começou em 11/10 à noite: quem começou antes aparece sem ele. O navegador de quem abre este painel não entra nas contas.</p></div>
   <div class="box"><h3>Por campanha <small>visitantes do site · pedidos · gasto lançado</small></h3><div class="tab"><table><thead><tr><th>Campanha</th><th class="n">Visitantes</th><th class="n">Pedidos</th><th class="n">Pagos</th><th class="n">Conversão</th><th class="n">Receita</th><th class="n">Gasto</th><th class="n">CPA</th><th class="n">ROAS</th><th class="n">Margem</th></tr></thead><tbody id="camp"></tbody></table></div></div>
   <div class="box"><h3>Visitantes e compras por dia</h3><div class="barras" id="fdia"></div></div>
 </section>
@@ -98,6 +100,7 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 <div id="gaveta"><div class="g" id="gav"></div></div>
 <script>
 var SENHA='';try{SENHA=localStorage.getItem('painel_senha')||''}catch(e){}
+try{localStorage.setItem('recado_eu','1')}catch(e){}   // quem abre o painel não entra nas contas do site (rastro.js)
 var D=null,per='1',aba='geral',sit='todos',fprod='todos',fcamp='todas'
 var SIT={aguardando_pagamento:'Aguardando pagamento',pago:'Na fila',produzindo:'Produzindo',em_missao:'Em missão',revisao:'Revisão',entregue:'Entregue',falhou:'Falhou',cancelado:'Cancelado',reembolsado:'Reembolsado'}
 var CSIT={aguardando_pagamento:'c-neu',pago:'c-info',produzindo:'c-at',em_missao:'c-info',revisao:'c-at',entregue:'c-bom',falhou:'c-ruim',cancelado:'c-neu',reembolsado:'c-neu'}
@@ -170,7 +173,20 @@ function barrasDia(peds,gas){var dd={},n=Math.min(diasPer(),31);for(var i=n-1;i>
 
 // ===== funil
 var PASSOS=[['visita','Visitaram a página'],['cta','Clicaram pra comprar'],['form_inicio','Começaram o formulário'],['form_envio','Enviaram o formulário'],['pagar_clique','Abriram o pagamento']]
-function visitantes(prod,cp){var o={};D.funil.forEach(function(f){if((prod==='todos'||f.produto===prod)&&(cp==='todas'||f.campanha===cp))o[f.evento]=(o[f.evento]||0)+ +f.visitantes});return o}
+// 11/10: com os passos crus (D.ev) conta pessoas diferentes de verdade; a soma do banco contava duas vezes quem abre duas páginas
+function prodEv(e){return e.produto||'(sem produto)'}
+function campEv(e){return e.campanha||'(direto/orgânico)'}
+function evDe(prod,cp){return D.ev.filter(function(e){return (prod==='todos'||prodEv(e)===prod)&&(cp==='todas'||campEv(e)===cp)})}
+var CAMPO={personagem:'Personagem',nome:'Nome da criança',apelido:'Apelido',idade:'Idade',genero:'Menino ou menina',cidade:'Cidade',dentinho:'Qual dentinho',como_caiu:'Como caiu',c1:'Conquista 1',c2:'Conquista 2',c3:'Conquista 3',adora:'O que adora',melhorar:'O que melhorar',presente_modo:'Presente',presente:'Presente',deixa:'O que deixa',detalhe:'Detalhe',quem:'Quem pede',chama:'Como a criança chama',resp:'Nome de quem pede',wa:'WhatsApp',email:'E-mail',cupom:'Cupom',pacote:'Pacote',foto:'Foto'}
+function progressoForm(prod,cp){
+  if(!D.ev){$('fprog').innerHTML='<tr><td colspan="7" class="vazio">Sem o detalhe dos passos neste período.</td></tr>';return}
+  var V={};evDe(prod,cp).forEach(function(e){(V[e.visitante]=V[e.visitante]||[]).push(e)})
+  var L=Object.keys(V).map(function(k){var l=V[k],ini=l.filter(function(e){return e.evento==='form_inicio'})[0];if(!ini)return null
+    var cs=l.filter(function(e){return e.evento==='form_campo'}),ult=cs[cs.length-1],er=l.filter(function(e){return e.evento==='form_erro'}).map(function(e){return CAMPO[e.campo]||e.campo})
+    return{t:ini.quando,prod:ini.produto,an:ini.anuncio||campEv(ini),ult:ult?(CAMPO[ult.campo]||ult.campo):null,pct:cs.length?cs.reduce(function(m,e){return Math.max(m,+e.pct||0)},0):null,er:er,
+      env:l.some(function(e){return e.evento==='form_envio'}),pag:l.some(function(e){return e.evento==='pagar_clique'})}}).filter(Boolean).sort(function(a,b){return a.t<b.t?1:-1})
+  $('fprog').innerHTML=L.length?L.map(function(x){return '<tr><td>'+quando(x.t)+'</td><td>'+esc((D.produtos[x.prod]||{}).nome||x.prod||'·')+'</td><td><small>'+esc(x.an)+'</small></td><td>'+(x.ult?esc(x.ult):'·')+'</td><td class="n">'+(x.pct==null?'·':x.pct+'%')+'</td><td>'+(x.er.length?'<span class="chip c-ruim">'+esc(x.er.join(', '))+'</span>':'·')+'</td><td>'+(x.pag?'<span class="chip c-bom">abriu o pagamento</span>':x.env?'<span class="chip c-bom">enviou</span>':'<span class="chip">não</span>')+'</td></tr>'}).join(''):'<tr><td colspan="7" class="vazio">Ninguém começou o formulário no período.</td></tr>'}
+function visitantes(prod,cp){var o={};if(D.ev){var S={};evDe(prod,cp).forEach(function(e){(S[e.evento]=S[e.evento]||{})[e.visitante]=1});for(var k in S)o[k]=Object.keys(S[k]).length;return o}D.funil.forEach(function(f){if((prod==='todos'||f.produto===prod)&&(cp==='todas'||f.campanha===cp))o[f.evento]=(o[f.evento]||0)+ +f.visitantes});return o}
 function funil(){
   var pr=periodo(),prods=['todos'].concat(Object.keys(D.produtos)),camps=['todas'].concat(Array.from(new Set(D.funil.map(function(f){return f.campanha}).concat(D.pedidos.map(camp)))))
   $('fprod').innerHTML=prods.map(function(p){return '<option value="'+p+'"'+(p===fprod?' selected':'')+'>'+(p==='todos'?'Todos os produtos':esc(D.produtos[p].nome))+'</option>'}).join('')
@@ -179,7 +195,9 @@ function funil(){
   var et=PASSOS.map(function(p){return[p[1],v[p[0]]||0]});et.splice(4,0,['Viraram pedido',peds.length]);et.push(['Pagaram',peds.filter(pago).length])
   var top=Math.max(1,et[0][1]);$('funil').innerHTML=et.map(function(e,i){var ant=i?et[i-1][1]:null;return '<div class="fl"><span>'+e[0]+'</span><i style="width:'+(e[1]/top*100)+'%;opacity:'+(1-i*.09)+'"></i><b>'+e[1].toLocaleString('pt-BR')+'<em>'+(ant?P(e[1]/ant)+' do anterior':'')+'</em></b></div>'}).join('')
   // por campanha
-  var C={};D.funil.forEach(function(f){if(f.evento==='visita'&&(fprod==='todos'||f.produto===fprod)){(C[f.campanha]=C[f.campanha]||{v:0,p:[],g:0}).v+=+f.visitantes}})
+  progressoForm(fprod,fcamp)
+  var C={};if(D.ev){var CV={};evDe(fprod,'todas').forEach(function(e){if(e.evento==='visita')(CV[campEv(e)]=CV[campEv(e)]||{})[e.visitante]=1});for(var c in CV)(C[c]=C[c]||{v:0,p:[],g:0}).v=Object.keys(CV[c]).length}
+  else D.funil.forEach(function(f){if(f.evento==='visita'&&(fprod==='todos'||f.produto===fprod)){(C[f.campanha]=C[f.campanha]||{v:0,p:[],g:0}).v+=+f.visitantes}})
   D.pedidos.filter(function(p){return new Date(p.criado_em)>=pr.ini&&(fprod==='todos'||chave(p)===fprod)}).forEach(function(p){(C[camp(p)]=C[camp(p)]||{v:0,p:[],g:0}).p.push(p)})
   D.gastos.filter(function(g){return new Date(g.dia+'T12:00:00-03:00')>=pr.ini&&(fprod==='todos'||!g.produto||g.produto===fprod)}).forEach(function(g){var c=g.campanha||'(sem campanha)';(C[c]=C[c]||{v:0,p:[],g:0}).g+= +g.valor})
   var ks=Object.keys(C).sort(function(a,b){return C[b].v-C[a].v})

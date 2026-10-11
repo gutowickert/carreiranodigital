@@ -5,7 +5,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { recadoDb as db } from '@/lib/recado/db'
 
-const EVENTOS = ['visita', 'cta', 'form_inicio', 'form_envio', 'pagar_clique']
+// form_campo: cada campo preenchido (dados.campo, dados.pct); form_erro: campo que barrou o envio (11/10)
+const EVENTOS = ['visita', 'cta', 'form_inicio', 'form_campo', 'form_erro', 'form_envio', 'pagar_clique']
 const ROBO = /bot|crawl|spider|slurp|facebookexternalhit|facebot|meta-externalagent|headlesschrome|lighthouse|inspectiontool|preview|pingdom|uptime/i
 const limpa = (s: any, n = 120) => (s == null ? null : String(s).replace(/[<>]/g, '').slice(0, n))
 const decodifica = (s: any) => { if (s == null) return s; let v = String(s); for (let i = 0; i < 2 && /%[0-9A-F]{2}|\+/i.test(v); i++) { try { v = decodeURIComponent(v.replace(/\+/g, ' ')) } catch { break } } return v }

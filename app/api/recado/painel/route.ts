@@ -47,10 +47,19 @@ export async function GET(req: NextRequest) {
       db.busca('metas', 'order=mes.desc&limit=24'),
       db.busca('cupons', 'order=criado_em.desc&limit=200').catch(() => []),
     ])
+    // 11/10: os passos crus do período (o funil somado do banco conta duas vezes quem abre duas páginas). O painel conta pessoas
+    // diferentes com eles e mostra até onde cada um chegou no formulário (form_campo / form_erro).
+    const ev: any[] = []
+    try {
+      for (let o = 0; o < 50000; o += 1000) {
+        const l = await db.busca('site_eventos', `quando=gte.${funilDesde}&select=quando,visitante,evento,produto,campanha:utm_campaign,anuncio:utm_content,campo:dados->>campo,pct:dados->>pct&order=quando.asc&offset=${o}&limit=1000`)
+        ev.push(...l); if (l.length < 1000) break
+      }
+    } catch (e) { console.error('recado/painel eventos', e) }
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
     for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
-    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
+    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
     console.error('recado/painel', e)
     return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 })
