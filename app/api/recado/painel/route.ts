@@ -31,7 +31,10 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ pedido: p, eventos, etapas, caminho, links }, sem)
     }
     const dias = Math.max(1, Math.min(400, +(q.get('dias') || 90)))
-    const desde = new Date(Date.now() - dias * 86400e3).toISOString()
+    // painel zerado em 11/10 00h (Guto: começou o orgânico de verdade). Testes de antes ficam no banco, só não entram nas contas.
+    // Trocar a data (ou desligar) pela variável RECADO_PAINEL_INICIO na Vercel.
+    const INICIO = process.env.RECADO_PAINEL_INICIO || '2026-10-11T03:00:00.000Z'
+    const desde = [new Date(Date.now() - dias * 86400e3).toISOString(), INICIO].sort().pop() as string
     const [pedidos, maquina, funil, funilDia, gastos, fixos, metas, cupons] = await Promise.all([
       db.busca('pedidos', `criado_em=gte.${desde}&order=criado_em.desc&limit=1000&select=id,codigo,criado_em,personagem,pacote,preco,status,nome:crianca->>nome,responsavel:contato->>responsavel,pago_em,produzindo_em,entregue_em,forma_pagamento,taxa_gateway,custo,erro,tentativas,origem,visitante`),
       db.busca('maquina', 'id=eq.1'),
