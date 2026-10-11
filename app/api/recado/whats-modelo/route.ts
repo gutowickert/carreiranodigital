@@ -23,6 +23,12 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   if (!ok(req)) return NextResponse.json({ erro: 'senha' }, { status: 401 })
+  // ?teste=1: manda um aviso de teste pelos três canais (WhatsApp, app ntfy, e-mail)
+  if (req.nextUrl.searchParams.get('teste')) {
+    const { avisaDono } = await import('@/lib/recado/avisa-dono')
+    await avisaDono('Avisos do Recado ligados', 'Assim vão chegar os avisos de pedido novo e de venda confirmada.', 'tada')
+    return NextResponse.json({ ok: true })
+  }
   const W = await waba(), T = process.env.WA_OFICIAL_TOKEN
   const corpo = {
     name: NOME, language: 'pt_BR', category: 'UTILITY',
