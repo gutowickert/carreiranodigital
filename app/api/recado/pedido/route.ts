@@ -52,6 +52,9 @@ export async function POST(req: NextRequest) {
       if (cupom.tipo === 'pct') preco = Math.max(5, +(preco * (1 - (+cupom.valor || 0) / 100)).toFixed(2))   // o Asaas não cobra menos de R$ 5
     }
     const gratis = cupom?.tipo === 'gratis'
+    // a Meta manda {{campaign.name}}/{{ad.name}} codificado duas vezes: decodifica pra bater com o nome na Meta
+    const dec = (v: any) => { if (v == null) return v; let x = String(v); for (let i = 0; i < 2 && /%[0-9A-F]{2}|\+/i.test(x); i++) { try { x = decodeURIComponent(x.replace(/\+/g, ' ')) } catch { break } } return x.slice(0, 200) }
+    if (b.origem) for (const k of ['utm_campaign', 'utm_content']) if (b.origem[k]) b.origem[k] = dec(b.origem[k])
     const origem = { ...(b.origem || {}), ...(cupom ? { cupom: cupom.codigo } : {}), ...(gratis ? { cortesia: true } : {}) }
     const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco: gratis ? 0 : preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem, visitante: limpa(b.origem?.visitante, 40) || null }
     if (gratis) { p.status = 'pago'; p.pago_em = new Date().toISOString(); p.forma_pagamento = 'cupom' }
