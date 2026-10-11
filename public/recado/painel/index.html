@@ -38,10 +38,41 @@ form.lanc{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));
 .fala{background:#fffaf0;border-radius:14px;padding:14px;font-size:14px;line-height:1.55;border-left:4px solid var(--ouro)}
 #login[hidden],#app[hidden]{display:none}#login{max-width:360px;margin:15vh auto;background:#fff;border:1px solid var(--bd);border-radius:18px;padding:26px;display:grid;gap:12px}#login input{padding:12px;border:1px solid var(--bd);border-radius:10px;font:15px Manrope}
 [data-aba]{display:none}[data-aba].on{display:grid;gap:18px}
+/* ===== visual da marca (11/10): logo original, noite #2a1f6b, rosa #e0569a, ouro #f5c451, lilás #b9a3ff, como no site ===== */
+:root{--marca:#2a1f6b;--marca2:#b9a3ff;--rosa:#e0569a;--ouro:#f5c451;--noite2:#1a1240;--bg:#f5f1fb;--bd:#ebe4f5;--tx:#1f1838;--tx2:#5f5578;--neu:#f0eaf8;
+  --grad:linear-gradient(90deg,#2a1f6b,#7a3e8f 55%,#e0569a);--sombra:0 8px 26px rgba(42,31,107,.08)}
+body{background:radial-gradient(900px 420px at 100% -10%,rgba(224,86,154,.12),transparent 60%),radial-gradient(820px 400px at -10% -5%,rgba(185,163,255,.28),transparent 60%),var(--bg);background-attachment:fixed;min-height:100vh}
+header{background:rgba(255,255,255,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:10px 24px}
+header .marca{display:flex;align-items:center;gap:16px;flex-wrap:wrap}header .marca img{height:58px;width:auto;display:block;margin:-6px 0}
+.fl em{font:600 11.5px Manrope;color:var(--mut)}.leg{font:600 12px Manrope}
+.vivo{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;color:var(--mut);background:var(--neu);padding:4px 11px;border-radius:999px}
+.vivo i{width:8px;height:8px;border-radius:50%;background:#2fbf71;box-shadow:0 0 0 0 rgba(47,191,113,.6);animation:vivo 2s infinite}
+@keyframes vivo{70%{box-shadow:0 0 0 7px rgba(47,191,113,0)}100%{box-shadow:0 0 0 0 rgba(47,191,113,0)}}
+nav{background:transparent;border:0;padding:16px 24px 0;max-width:1280px;margin:0 auto;gap:6px}
+nav button{padding:9px 16px;border-radius:999px;background:rgba(255,255,255,.75);border:1px solid var(--bd);font-weight:700}
+nav button:hover{color:var(--marca);border-color:var(--marca2)}nav button.on{background:var(--marca);color:#fff;border-color:var(--marca);box-shadow:0 6px 16px rgba(42,31,107,.25)}
+nav button .chip{padding:1px 7px;font-size:11px;margin-left:2px}
+.seg{background:var(--neu)}.seg button.on{background:var(--marca);color:#fff;box-shadow:0 4px 12px rgba(42,31,107,.25)}
+.k{border:0;border-radius:20px;box-shadow:var(--sombra);padding:16px 18px 15px;position:relative;overflow:hidden}
+.k:before{content:"";position:absolute;inset:0 0 auto 0;height:5px;background:var(--grad)}
+.k.bom,.k.at,.k.ruim{border-left:0}.k.bom:before{background:var(--bom)}.k.at:before{background:var(--ouro)}.k.ruim:before{background:var(--ruim)}
+.k b{font:700 30px Fredoka;color:var(--marca);letter-spacing:-.01em}
+.box{border:0;border-radius:22px;box-shadow:var(--sombra);padding:20px}
+.box h3{font:700 18px Fredoka;color:var(--marca)}.box h3 small{font:600 12.5px Manrope}
+.fl i{height:34px;border-radius:12px;background:var(--grad)}.fl span{font-weight:600}.fl b{font:700 20px Fredoka;color:var(--marca)}
+.barra{height:12px}.barra i{background:var(--grad)}
+.barras i{background:linear-gradient(180deg,#e0569a,#2a1f6b);border-radius:6px 6px 0 0}.barras i.c{background:var(--marca2)}
+.bt{border-radius:999px}.bt.p{background:var(--rosa);border-color:var(--rosa)}.bt.p:hover{filter:brightness(1.06)}
+th{color:var(--marca);opacity:.7}tr.l:hover td{background:#f8f3fd}tr.tot td{background:#f6f0fc}
+.nota{background:#f6f0fc;border:1px dashed #ddd0f2}
+#login{border:0;box-shadow:0 20px 60px rgba(42,31,107,.18);border-radius:24px;padding:30px}
+#gaveta .g{border-radius:22px 0 0 22px}
+@media (prefers-reduced-motion:reduce){.vivo i{animation:none}}
+@media(max-width:560px){header{padding:8px 16px}header .marca img{height:46px}nav{padding:12px 16px 4px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none}nav::-webkit-scrollbar{display:none}nav button{flex:none}main{padding:16px 16px 60px}}
 </style></head><body>
-<div id="login" hidden><b style="font:700 22px Fredoka;color:var(--marca)">Painel do Recado</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
+<div id="login" hidden><img src="/recado/midia/logo.png" alt="Recado Encantado" style="width:220px;margin:0 auto 4px;display:block"><b style="font:700 18px Fredoka;color:var(--marca);text-align:center">Painel do negócio</b><input id="senha" type="password" placeholder="Senha do painel"><button class="bt p" id="entrar">Entrar</button><span id="lerro" style="color:var(--ruim);font-size:13px"></span></div>
 <div id="app" hidden>
-<header><div><b>Recado Encantado</b> <span id="atual">·</span></div><div class="seg" id="per"><button data-d="1" class="on">Hoje</button><button data-d="7">7 dias</button><button data-d="30">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
+<header><div class="marca"><img src="/recado/midia/logo.png" alt="Recado Encantado"><span class="vivo"><i></i><span id="atual">·</span></span></div><div class="seg" id="per"><button data-d="1" class="on">Hoje</button><button data-d="7">7 dias</button><button data-d="30">30 dias</button><button data-d="mes">Este mês</button><button data-d="90">90 dias</button></div></header>
 <nav id="abas"><button data-a="geral" class="on">Visão geral</button><button data-a="camp">Campanhas</button><button data-a="funil">Funil</button><button data-a="produtos">Produtos</button><button data-a="fin">Financeiro</button><button data-a="pedidos">Pedidos</button><button data-a="lanc">Lançamentos</button><button data-a="suporte">Suporte <span id="nsup"></span></button></nav>
 <main>
 <section data-aba="geral" class="on">
