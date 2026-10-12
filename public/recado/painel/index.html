@@ -120,9 +120,9 @@ th{color:var(--marca);opacity:.7}tr.l:hover td{background:#f8f3fd}tr.tot td{back
   <div class="box"><h3>Pedidos <span class="seg" id="fsit"></span></h3><div class="tab"><table><thead><tr><th>Código</th><th>Criança</th><th>Produto</th><th>Situação</th><th>Origem</th><th>Quando</th><th class="n">Valor</th><th class="n">Custo</th></tr></thead><tbody id="lista"></tbody></table></div></div>
 </section>
 <section data-aba="suporte">
-  <div class="box"><h3>Suporte <span><span class="seg" id="fsup"><button data-s="aberto" class="on">Abertas</button><button data-s="resolvido">Resolvidas</button><button data-s="todas">Todas</button></span> <button class="bt p" id="bsync">Buscar e-mails</button></span></h3>
+  <div class="box"><h3>Suporte <span><span class="seg" id="fsup"><button data-s="todas" class="on">Todos</button><button data-s="aberto">Precisam de ti</button><button data-s="resolvido">Resolvidos</button></span> <button class="bt p" id="bsync">Buscar e-mails</button></span></h3>
     <p class="nota" id="ssync" style="margin:-4px 0 12px">Tudo o que chega no contato@recadoencantando.com.br e pela página do pedido aparece aqui. Responde por aqui: a pessoa recebe no e-mail dela, no mesmo fio.</p>
-    <div class="tab"><table style="min-width:640px"><thead><tr><th>Última</th><th>Quem</th><th>Assunto</th><th>Mensagem</th><th>Veio por</th><th></th></tr></thead><tbody id="lsup"></tbody></table></div></div>
+    <div class="tab"><table style="min-width:640px"><thead><tr><th>Quando</th><th>Quem</th><th>Problema</th><th>Solução</th><th>Situação</th></tr></thead><tbody id="lsup"></tbody></table></div></div>
 </section>
 <section data-aba="lanc">
   <div class="box"><h3>Gasto com anúncio <small>um lançamento por dia e campanha (até ligar a Meta direto)</small></h3>
@@ -289,14 +289,16 @@ $('cpAtualiza').onclick=campanhas
 // quando a aba Campanhas abre: carrega e atualiza a cada minuto; sai da aba, para
 $('abas').addEventListener('click',function(e){if(e.target.dataset.a==='camp'){cpMarca();campanhas();clearInterval(cpT);cpT=setInterval(function(){if(aba==='camp')campanhas()},60000)}else{clearInterval(cpT)}})
 // ===== suporte (11/10): pedidos de ajuda da página do pedido
-var fsup='aberto'
+var fsup='todas'
 function suporte(){var T=D.suporte||[],ab=T.filter(function(s){return s.status!=='resolvido'}),nl=ab.filter(function(s){return s.nao_lidas>0}).length
   $('nsup').innerHTML=ab.length?'<span class="chip '+(nl?'c-ruim':'c-neu')+'">'+ab.length+'</span>':''
   var L=T.filter(function(s){return fsup==='todas'||(fsup==='aberto'?s.status!=='resolvido':s.status==='resolvido')})
   $('lsup').innerHTML=L.length?L.map(function(s){
-    return '<tr class="l" onclick="conversa(\''+s.id+'\')"'+(s.status==='resolvido'?' style="opacity:.6"':'')+'><td>'+quando(s.atualizado_em||s.criado_em)+'</td><td><b>'+esc(s.nome||s.email)+'</b>'+(s.nao_lidas>0?' <span class="chip c-ruim">nova</span>':'')+'<br><small style="color:var(--mut)">'+esc(s.email)+'</small></td>'+
-      '<td>'+esc(s.assunto||'Ajuda')+(s.codigo?'<br><small style="color:var(--mut)">pedido '+esc(s.codigo)+'</small>':'')+'</td><td style="max-width:380px"><span style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+esc(s.mensagem)+'</span></td>'+
-      '<td><span class="chip '+(s.origem==='email'?'c-info':'c-neu')+'">'+(s.origem==='email'?'e-mail':'página')+'</span></td><td><button class="bt">Abrir</button></td></tr>'}).join(''):'<tr><td colspan="6" class="vazio">'+(fsup==='aberto'?'Nenhuma conversa aberta. Tudo respondido.':'Nada aqui.')+'</td></tr>'}
+    // uma linha por chamado: o problema e o que foi feito (o atendimento automático escreve os dois); clicar abre a conversa
+    var um=function(t){return '<span style="display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;overflow:hidden">'+t+'</span>'}
+    var sit=s.status==='resolvido'?'<span class="chip c-bom">resolvido</span>':s.nao_lidas>0&&!s.solucao?'<span class="chip c-at">respondendo...</span>':'<span class="chip c-ruim">precisa de ti</span>'
+    return '<tr class="l" onclick="conversa(\''+s.id+'\')"><td style="white-space:nowrap">'+quando(s.atualizado_em||s.criado_em)+'</td><td style="white-space:nowrap"><b>'+esc(s.nome||s.email.split('@')[0])+'</b>'+(s.codigo?' <small style="color:var(--mut)">'+esc(s.codigo)+'</small>':'')+'</td>'+
+      '<td style="max-width:300px">'+um(esc(s.problema||s.assunto||s.mensagem||''))+'</td><td style="max-width:360px;color:var(--tx2)">'+um(esc(s.solucao||'·'))+'</td><td>'+sit+'</td></tr>'}).join(''):'<tr><td colspan="5" class="vazio">'+(fsup==='aberto'?'Nada precisando de ti agora.':'Nenhum chamado.')+'</td></tr>'}
 $('fsup').onclick=function(e){if(!e.target.dataset.s)return;fsup=e.target.dataset.s;[].forEach.call(this.children,function(b){b.classList.toggle('on',b===e.target)});suporte()}
 // a conversa aberta na gaveta: histórico e a resposta
 function conversa(id){var g=$('gav');g.innerHTML='<div class="vazio">Carregando...</div>';$('gaveta').classList.add('ab')
@@ -305,7 +307,7 @@ function conversa(id){var g=$('gav');g.innerHTML='<div class="vazio">Carregando.
     g.innerHTML='<div class="lin"><h2>'+esc(s.nome||s.email)+'</h2><button class="bt" onclick="fecha()">Fechar</button></div>'+
       '<div class="lin"><span>'+esc(s.email)+(s.codigo?' · '+(pd?'<a href="#" onclick="abre(\''+pd.id+'\');return false">pedido '+esc(s.codigo)+'</a>':'pedido '+esc(s.codigo)):'')+'</span><span class="chip '+(s.status==='resolvido'?'c-bom':'c-at')+'">'+(s.status==='resolvido'?'resolvida':'aberta')+'</span></div>'+
       '<div style="font-weight:700;color:var(--marca)">'+esc(s.assunto||'Ajuda')+'</div>'+
-      '<div class="conv">'+(d.msgs.length?d.msgs:[{quando:s.criado_em,direcao:'entrada',texto:s.mensagem}]).map(function(m){return '<div class="msg '+m.direcao+'"><small>'+(m.direcao==='saida'?'Tu':'Cliente')+' · '+new Date(m.quando).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</small><div>'+esc(m.texto)+'</div></div>'}).join('')+'</div>'+
+      '<div class="conv">'+(d.msgs.length?d.msgs:[{quando:s.criado_em,direcao:'entrada',texto:s.mensagem}]).map(function(m){return '<div class="msg '+m.direcao+'"><small>'+(m.direcao==='saida'?(m.de==='ia'?'Atendimento automático':'Tu'):'Cliente')+' · '+new Date(m.quando).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+'</small><div>'+esc(m.texto)+'</div></div>'}).join('')+'</div>'+
       '<form id="fresp" style="display:grid;gap:8px"><textarea id="resp" rows="5" placeholder="Escreve a resposta. Ela vai pro e-mail de '+esc(s.email)+', assinada pela Equipe Recado Encantado." style="font:14px Manrope;padding:12px;border:1px solid var(--bd);border-radius:14px;resize:vertical"></textarea>'+
       '<div class="lin"><button class="bt" type="button" onclick="acao(\'suporte_status\',{id:\''+s.id+'\',status:\''+(s.status==='resolvido'?'aberto':'resolvido')+'\'},this)">'+(s.status==='resolvido'?'Reabrir':'Marcar como resolvida')+'</button><button class="bt p" type="submit">Enviar resposta</button></div><span id="rerro" style="color:var(--ruim);font-size:13px"></span></form>'
     $('fresp').onsubmit=function(e){e.preventDefault();var t=$('resp').value.trim(),b=this.querySelector('[type=submit]');if(!t)return;b.disabled=true;b.textContent='Enviando...'
@@ -313,11 +315,11 @@ function conversa(id){var g=$('gav');g.innerHTML='<div class="vazio">Carregando.
     if(s.nao_lidas>0)api('',{method:'POST',body:JSON.stringify({acao:'suporte_lido',id:s.id})}).then(function(){s.nao_lidas=0;(D.suporte||[]).forEach(function(x){if(x.id===s.id)x.nao_lidas=0});suporte()})})}
 // lê a caixa do contato@ ao abrir o painel e a cada 2 minutos
 function syncSuporte(manual){var st=$('ssync'),b=$('bsync');if(manual){b.disabled=true;b.textContent='Buscando...'}
-  return api('',{method:'POST',body:JSON.stringify({acao:'suporte_sync'})}).then(function(r){b.disabled=false;b.textContent='Buscar e-mails'
+  return api('',{method:'POST',body:JSON.stringify({acao:'suporte_auto'})}).then(function(r){b.disabled=false;b.textContent='Buscar e-mails'
     if(r.semCaixa){st.innerHTML='<b>A caixa do contato@ ainda não está ligada.</b> Falta pôr a senha dela na Vercel (RECADO_SUPORTE_SENHA). Até lá, aparecem aqui só as mensagens da página do pedido.';return}
     if(r.erro){st.textContent=r.erro;return}
-    st.textContent='Caixa do contato@ lida às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+(r.novas?' · '+r.novas+' e-mail(s) novo(s)':' · nada novo')+'. Responde por aqui: a pessoa recebe no e-mail dela, no mesmo fio.'
-    if(r.novas)entra()}).catch(function(){b.disabled=false;b.textContent='Buscar e-mails'})}
+    st.textContent='Caixa do contato@ lida às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+(r.novas?' · '+r.novas+' e-mail(s) novo(s)':' · nada novo')+(r.respondidas?' · '+r.respondidas+' respondida(s) pelo atendimento automático':'')+'. O atendimento automático responde sozinho e te avisa no celular quando precisa de ti. Tu também pode responder por aqui.'
+    if(r.novas||r.respondidas)entra()}).catch(function(){b.disabled=false;b.textContent='Buscar e-mails'})}
 $('bsync').onclick=function(){syncSuporte(true)}
 setInterval(function(){if(!$('app').hidden)syncSuporte()},120000)
 // ===== lançamentos

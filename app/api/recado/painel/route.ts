@@ -7,6 +7,7 @@ import { recadoDb as db } from '@/lib/recado/db'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 import { economia, custoPadrao } from '@/lib/recado/economia'
 
+export const maxDuration = 60   // o atendente automático chama o Claude (11/10)
 const autorizado = (req: NextRequest) => !!process.env.RECADO_PAINEL_SENHA && req.headers.get('x-senha') === process.env.RECADO_PAINEL_SENHA
 const sem = { headers: { 'Cache-Control': 'no-store' } }
 const U = () => process.env.NEXT_PUBLIC_SUPABASE_URL as string, K = () => process.env.SUPABASE_SERVICE_ROLE_KEY as string
@@ -85,6 +86,13 @@ export async function POST(req: NextRequest) {
       const { sincroniza, caixaLigada } = await import('@/lib/recado/suporte-email')
       if (!caixaLigada()) return NextResponse.json({ ok: false, semCaixa: true })
       try { return NextResponse.json({ ok: true, ...(await sincroniza()) }) } catch (e: any) { return NextResponse.json({ ok: false, erro: 'Não consegui ler a caixa: ' + String(e.message || e).slice(0, 160) }) }
+    }
+    // o vigia (no computador, a cada 2 min) e o painel aberto chamam isto: lê a caixa e o atendente automático responde
+    if (b.acao === 'suporte_auto') {
+      const { sincroniza, caixaLigada } = await import('@/lib/recado/suporte-email'), { atendeSozinho } = await import('@/lib/recado/suporte-ia')
+      const lida = caixaLigada() ? await sincroniza().catch((e: any) => ({ novas: 0, erro: String(e.message || e).slice(0, 160) })) : { novas: 0, erro: 'sem caixa' }
+      const ia = await atendeSozinho(3).catch((e: any) => ({ feitas: [], erro: String(e.message || e).slice(0, 160) }))
+      return NextResponse.json({ ok: true, ...lida, respondidas: ia.feitas.length, erroIa: (ia as any).erro || null })
     }
     if (b.acao === 'suporte_responde') {
       const texto = String(b.texto || '').trim().slice(0, 8000), id = String(b.id || '').replace(/[^a-f0-9-]/g, '')

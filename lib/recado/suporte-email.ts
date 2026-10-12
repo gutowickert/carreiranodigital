@@ -37,7 +37,9 @@ async function conversaDe(email: string, nome: string | null, assunto: string, t
     const [m] = await db.busca('suporte_msgs', `msg_id=eq.${encodeURIComponent(r)}&select=suporte_id`).catch(() => [])
     if (m) return m.suporte_id
   }
-  const [aberta] = await db.busca('suporte', `email=eq.${encodeURIComponent(email)}&status=eq.aberto&order=atualizado_em.desc&limit=1&select=id`).catch(() => [])
+  // a resposta do cliente a um e-mail nosso (o fio do Resend não fica guardado): a conversa recente da mesma pessoa, aberta ou resolvida
+  const recente = new Date(Date.now() - 7 * 864e5).toISOString()
+  const [aberta] = await db.busca('suporte', `email=eq.${encodeURIComponent(email)}&atualizado_em=gte.${recente}&order=atualizado_em.desc&limit=1&select=id`).catch(() => [])
   if (aberta) return aberta.id
   const codigo = (assunto.match(CODIGO) || texto.match(CODIGO) || [])[0] || null
   const nova = await db.insere('suporte', { email, nome, assunto: assunto.slice(0, 200), mensagem: texto.slice(0, 2000), codigo, origem: 'email', criado_em: quando.toISOString(), atualizado_em: quando.toISOString(), nao_lidas: 0 })
@@ -71,7 +73,7 @@ export async function sincroniza(): Promise<{ novas: number; erro?: string }> {
         const sid = await conversaDe(email, de.name || null, assunto, texto, refs, quando)
         await db.insere('suporte_msgs', { suporte_id: sid, quando: new Date(quando).toISOString(), direcao: 'entrada', de: email, texto, msg_id: msgId, uid })
         const [s] = await db.busca('suporte', `id=eq.${sid}&select=nao_lidas`)
-        await db.atualiza('suporte', `id=eq.${sid}`, { status: 'aberto', resolvido_em: null, atualizado_em: new Date().toISOString(), nao_lidas: (s?.nao_lidas || 0) + 1 })
+        await db.atualiza('suporte', `id=eq.${sid}`, { status: 'aberto', resolvido_em: null, escalado_em: null, ia_erro_em: null, atualizado_em: new Date().toISOString(), nao_lidas: (s?.nao_lidas || 0) + 1 })
         novas++
         if (novas <= 3) await avisaDono('📩 E-mail no suporte', `${de.name || email}${assunto ? ' · ' + assunto : ''}\n${texto.slice(0, 300)}`, 'email').catch(() => null)
       } finally { await estado('uid_inbox', String(uid)) }
@@ -80,7 +82,8 @@ export async function sincroniza(): Promise<{ novas: number; erro?: string }> {
   return { novas }
 }
 
-export async function responde(id: string, texto: string) {
+// autor: 'dono' (respondido no painel) ou 'ia' (o atendente automático, suporte-ia.ts)
+export async function responde(id: string, texto: string, autor: 'dono' | 'ia' = 'dono') {
   const [s] = await db.busca('suporte', `id=eq.${id}&select=*`)
   if (!s) throw new Error('conversa não encontrada')
   const msgs: any[] = await db.busca('suporte_msgs', `suporte_id=eq.${id}&order=quando.asc`)
@@ -98,7 +101,8 @@ export async function responde(id: string, texto: string) {
     body: JSON.stringify({ from: `Recado Encantado <${SUPORTE}>`, to: [s.email], reply_to: SUPORTE, subject: assunto, html, text: texto + '\n\nUm abraço,\nEquipe Recado Encantado', headers }) })
   const j: any = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error('o e-mail não saiu: ' + (j.message || r.status))
-  await db.insere('suporte_msgs', { suporte_id: id, direcao: 'saida', de: SUPORTE, texto, msg_id: null })
-  await db.atualiza('suporte', `id=eq.${id}`, { atualizado_em: new Date().toISOString(), nao_lidas: 0, assunto: s.assunto || base })
+  await db.insere('suporte_msgs', { suporte_id: id, direcao: 'saida', de: autor === 'ia' ? 'ia' : SUPORTE, texto, msg_id: null })
+  await db.atualiza('suporte', `id=eq.${id}`, { atualizado_em: new Date().toISOString(), nao_lidas: 0, assunto: s.assunto || base,
+    ...(autor === 'dono' ? { solucao: 'Tu respondeu: ' + texto.replace(/\s+/g, ' ').slice(0, 110) } : {}) })
   return { ok: true }
 }
