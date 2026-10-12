@@ -81,6 +81,12 @@ export async function POST(req: NextRequest) {
   const dia = (v: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null
   const txt = (v: any, n = 120) => String(v || '').replace(/[<>]/g, '').trim().slice(0, n)
   try {
+    // o trabalhador (no computador) avisa o dono no celular quando um pedido falha (12/10)
+    if (b.acao === 'avisa_dono') {
+      const { avisaDono } = await import('@/lib/recado/avisa-dono')
+      await avisaDono(txt(b.titulo, 80) || 'Recado Encantado', String(b.texto || '').replace(/[<>]/g, '').slice(0, 600), 'warning')
+      return NextResponse.json({ ok: true })
+    }
     // caixa do contato@ dentro do painel (11/10): lê o Titan, responde pelo mesmo fio, marca como lida
     if (b.acao === 'suporte_sync') {
       const { sincroniza, caixaLigada } = await import('@/lib/recado/suporte-email')
