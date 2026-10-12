@@ -50,7 +50,7 @@ small{display:block;text-align:center;color:var(--creme2);font-size:14px}
 </script>
 <script>
 var c=new URLSearchParams(location.search).get('c')||'',ordem=['aguardando_pagamento','pago','produzindo','entregue']
-var NOMES={aguardando_pagamento:'Pagamento',pago:'Na fila dos duendes',produzindo:'Gravando o vídeo',entregue:'Pronto pra assistir'}
+var NOMES={aguardando_pagamento:'Pagamento',pago:'Na fila de gravação',produzindo:'Gravando o vídeo',entregue:'Pronto pra assistir'}   // os duendes são só do Noel (abaixo)
 // missão (vários vídeos, um por dia): linha do tempo, vídeo de cada dia e os botões "como foi?"
 var QUEM={fada:'a Fada',noel:'o Papai Noel',guardiao:'o Guardião da Noite',coragem:'a Capitã Coragem',turbo:'o Capitão Turbo',grandao:'o Capitão Grandão'}
 var TIPO={convocacao:'A convocação',dia:'Notícia da noite',entrega:'O dia da entrega',agradecimento:'O agradecimento',vespera:'A véspera',medalha:'A medalha'}
@@ -91,7 +91,7 @@ function desenha(s){
   var i=Math.max(0,ordem.indexOf(s.status))
   document.getElementById('tit').textContent=s.status==='aguardando_pagamento'?'Quase lá!':'Tudo certo!'
   document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Em até 2 horas aparece aqui nesta página, e a gente avisa no teu e-mail.'
-  document.getElementById('passos').innerHTML=ordem.map(function(o,k){return '<div class="passo '+(k<i||(k===i&&o==='entregue')?'feito':k===i?'agora':'')+'"><i>'+(k<i?'✓':k+1)+'</i>'+NOMES[o]+'</div>'}).join('')
+  document.getElementById('passos').innerHTML=ordem.map(function(o,k){return '<div class="passo '+(k<i||(k===i&&o==='entregue')?'feito':k===i?'agora':'')+'"><i>'+(k<i?'✓':k+1)+'</i>'+(o==='pago'&&s.personagem==='noel'?'Na fila dos duendes':NOMES[o])+'</div>'}).join('')
   return false }
 // guia simples pra quem ajuda (mãe, pai, vó): uma página por herói
 var GUIA={chupeta:['chupeta','Capitão Grandão'],dormir:['dormir','Guardião da Noite'],coragem:['coragem','Capitã Coragem'],recado:['fada','Fada do Dente'],encanto:['noel','Papai Noel'],magico:['noel','Papai Noel']}

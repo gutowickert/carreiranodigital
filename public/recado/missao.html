@@ -47,7 +47,7 @@ button:disabled{opacity:.7}
 <form id="f">
   <div class="heroi"><img id="h-img" src="" alt=""><div><b id="h-nome"></b><span id="h-desc"></span></div><div class="preco" id="h-preco"></div></div>
   <h1 id="tit">Conte sobre a missão</h1>
-  <p class="sub">Leva 3 minutos. Quanto mais detalhe, mais o herói parece conhecer o teu filho.</p>
+  <p class="sub">Leva 3 minutos. Quanto mais detalhe, mais o herói parece conhecer a criança.</p>
 
   <div class="passo"><h2><i>1</i> A criança</h2>
     <div class="dupla"><div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required placeholder="Ex.: Laura"></div>
@@ -61,19 +61,19 @@ button:disabled{opacity:.7}
   <div class="passo"><h2><i>2</i> A missão</h2>
     <!-- chupeta -->
     <div data-m="chupeta">
-      <label for="ch-nome">Como ela chama a chupeta? <small>(ex.: "pepeta", "tetê")</small></label><input id="ch-nome" type="text" placeholder="Ex.: pepeta">
+      <label for="ch-nome">Como <span class="ela">ela</span> chama a chupeta? <small>(ex.: "pepeta", "tetê")</small></label><input id="ch-nome" type="text" placeholder="Ex.: pepeta">
       <label for="ch-data">Em que dia a chupeta vai embora?</label><input id="ch-data" type="date">
-      <p class="dica">A convocação chega hoje. No dia escolhido, às 18h, o Capitão Grandão avisa que passa à noite pra buscar. Na manhã seguinte chega a medalha de grandão.</p>
-      <label for="ch-desafio">Quando ela mais usa? <small>(pra dormir, no carro, quando chora...)</small></label><input id="ch-desafio" type="text" placeholder="Ex.: só pra dormir, mas chora sem ela">
+      <p class="dica">A convocação chega em até 2 horas (pedido feito depois das 21h chega às 8h da manhã). No dia escolhido, às 18h, o Capitão Grandão avisa que passa à noite pra buscar. Na manhã seguinte chega a medalha de grandão.</p>
+      <label for="ch-desafio">Quando <span class="ela">ela</span> mais usa? <small>(pra dormir, no carro, quando chora...)</small></label><input id="ch-desafio" type="text" placeholder="Ex.: só pra dormir, mas chora sem ela">
       <label for="ch-presente">Vai ganhar algo em troca? <small>(opcional; o herói só fala se tu contar)</small></label><input id="ch-presente" type="text" placeholder="Ex.: uma boneca nova">
     </div>
     <!-- dormir -->
     <div data-m="dormir">
       <label for="do-desafio">Como é a noite hoje?</label><input id="do-desafio" type="text" placeholder="Ex.: começa na cama dela e vem pra nossa de madrugada">
       <label for="do-medo">Tem medo de alguma coisa? <small>(opcional)</small></label><input id="do-medo" type="text" placeholder="Ex.: do escuro, de monstro no armário">
-      <label for="do-ajuda">O que ajuda ela a dormir? <small>(opcional)</small></label><input id="do-ajuda" type="text" placeholder="Ex.: o ursinho Bento, a luz do abajur, a música da mãe">
+      <label for="do-ajuda">O que ajuda <span class="ela">ela</span> a dormir? <small>(opcional)</small></label><input id="do-ajuda" type="text" placeholder="Ex.: o ursinho Bento, a luz do abajur, a música da mãe">
       <label for="do-data">Começa quando?</label><input id="do-data" type="date">
-      <p class="dica">São 5 vídeos: a convocação no primeiro dia e um vídeo por dia às 18h, respondendo a como foi a noite. No último, a medalha.</p>
+      <p class="dica">São 5 vídeos: a convocação chega em até 2 horas (depois das 21h, às 8h da manhã), e depois um vídeo por dia às 18h, respondendo a como foi a noite. No último, a medalha.</p>
       <label for="do-recompensa">Tem uma recompensa no fim? <small>(opcional)</small></label><input id="do-recompensa" type="text" placeholder="Ex.: um passeio no parque">
     </div>
     <!-- coragem -->
@@ -81,15 +81,15 @@ button:disabled{opacity:.7}
       <label for="co-evento">O que vai acontecer?</label>
       <select id="co-evento"><option value="vacina">Vacina</option><option value="dentista">Dentista</option><option value="medico">Consulta ou exame</option><option value="cabelo">Cortar o cabelo</option><option value="escola">Primeiro dia de aula</option><option value="outro">Outra coisa</option></select>
       <label for="co-data">Em que dia?</label><input id="co-data" type="date">
-      <p class="dica">Na véspera, às 18h, a Capitã ensina a respiração de herói. No dia, às 18h, chega a medalha.</p>
+      <p class="dica">Na véspera, às 18h, a Capitã ensina a respiração de herói. Se for hoje ou amanhã e já passou desse horário, chega em até 2 horas (nunca entre 21h e 8h). No dia, às 18h, chega a medalha.</p>
       <label for="co-desafio">Conta um pouco <small>(onde, com quem, o que vai ser feito)</small></label><input id="co-desafio" type="text" placeholder="Ex.: vacina da gripe no posto, com a mãe">
-      <label for="co-medo">Do que ela tem mais medo? <small>(opcional)</small></label><input id="co-medo" type="text" placeholder="Ex.: da agulha; já chorou muito da última vez">
+      <label for="co-medo">Do que <span class="ela">ela</span> tem mais medo? <small>(opcional)</small></label><input id="co-medo" type="text" placeholder="Ex.: da agulha; já chorou muito da última vez">
       <label for="co-recompensa">Tem algo especial depois? <small>(opcional)</small></label><input id="co-recompensa" type="text" placeholder="Ex.: sorvete com a vó">
     </div>
   </div>
 
   <div class="passo"><h2><i>3</i> O que deixa o vídeo mágico</h2>
-    <label for="adora">Do que ela mais gosta <small>(pessoas, bicho, brinquedo, desenho)</small></label><textarea id="adora" name="adora" placeholder="Ex.: o cachorro Pipoca, a vovó Lúcia, dinossauros"></textarea>
+    <label for="adora">Do que <span class="ela">ela</span> mais gosta <small>(pessoas, bicho, brinquedo, desenho)</small></label><textarea id="adora" name="adora" placeholder="Ex.: o cachorro Pipoca, a vovó Lúcia, dinossauros"></textarea>
     <label for="detalhe">Um detalhe que só a família sabe <small>(opcional, mas é o que mais encanta)</small></label><input id="detalhe" name="detalhe" type="text" placeholder="Ex.: dorme abraçada com o ursinho Bento">
   </div>
 
@@ -129,6 +129,7 @@ $('f').addEventListener('submit',function(e){e.preventDefault();var d=new FormDa
     .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
 </script>
 <p style="text-align:center;font-size:14px;opacity:.8;padding:18px 16px 28px;margin:0">Dúvidas antes de pedir? Escreve pra <a href="mailto:contato@recadoencantando.com.br" style="color:inherit;text-decoration:underline">contato@recadoencantando.com.br</a></p>
+<script>(function(){var g=document.getElementById('genero');function p(){document.querySelectorAll('.ela').forEach(function(s){s.textContent=g.value==='menino'?'ele':'ela'})}g.addEventListener('change',p);p()})()</script>
 <script src="/recado/rastro.js"></script>
 <script>(function(){var q=new URLSearchParams(location.search),c=q.get('cupom');try{c=c||localStorage.getItem('recado_cupom')}catch(e){}var i=document.getElementById('cupom'),b=document.getElementById('enviar');function bt(){b.textContent=i.value.trim()?'Confirmar pedido':'Ir pro pagamento'}if(c){i.value=c.toUpperCase();document.getElementById('cupom-box').open=true}i.addEventListener('input',bt);bt()})()</script>
 </body>
