@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex"><title>Imersão Deu Venda · a preparação</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap">
+<style>
+/* Imersão Deu Venda (12/10/2026): só a preparação (o "Antes"), pra mandar no WhatsApp. Gerada a partir do index.html: a seção é a mesma. Padrão visual: negocios/carreiranodigital/marca/DESIGN.md.
+   Cada passo tem caixinha de feito, guardada no navegador do aluno. Prints da Meta tratados (borrados) em ./prints. */
+:root{--bg:#0f0c17;--surface:#171320;--surface-2:#1f1a2b;--border:#261f36;--border-strong:#372e4c;--text:#f4f1fb;--text-2:#c9c2da;--text-muted:#9a93ae;--text-faint:#736c88;
+--accent:#8b5cf6;--accent-soft:#b39bff;--accent-bg:#2a1b4d;--green:#34d399;--green-bg:#0b2e24;--red:#fb7185;--red-bg:#3b1520;--amber:#fbbf24;--amber-bg:#3a2a0a;--blue:#60a5fa;--blue-bg:#14243f;
+--grad:linear-gradient(135deg,#7c3aed,#c026d3);--grad-escuro:#4c1d95;--glow:rgba(139,92,246,.35);
+--glass:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.035));--glass-border:rgba(255,255,255,.14);--glass-hi:rgba(255,255,255,.26);--glass-shadow:0 18px 50px rgba(0,0,0,.55);
+--blob-1:rgba(139,92,246,.60);--blob-2:rgba(217,70,239,.42);--blob-3:rgba(56,189,248,.26);--grid:rgba(255,255,255,.03);color-scheme:dark}
+[data-theme="light"]{--bg:#f6f4fb;--surface:#fff;--surface-2:#f1eef8;--border:#e4dff0;--border-strong:#cfc8e3;--text:#17122a;--text-2:#3d3654;--text-muted:#6e6885;--text-faint:#9891ad;
+--accent:#6d28d9;--accent-soft:#6d28d9;--accent-bg:#ede7fb;--green:#15803d;--green-bg:#d6f5e0;--red:#dc2626;--red-bg:#fde7e7;--amber:#b45309;--amber-bg:#fdeecb;--blue:#2563eb;--blue-bg:#dce9fe;--grad-escuro:#3b1a7a;--glow:rgba(109,40,217,.22);
+--glass:linear-gradient(180deg,rgba(255,255,255,.74),rgba(255,255,255,.50));--glass-border:rgba(255,255,255,.92);--glass-hi:#fff;--glass-shadow:0 14px 40px rgba(76,29,149,.13);
+--blob-1:rgba(139,92,246,.42);--blob-2:rgba(217,70,239,.30);--blob-3:rgba(56,189,248,.22);--grid:rgba(76,29,149,.05);color-scheme:light}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:400 16px/1.6 Manrope,system-ui,sans-serif;min-height:100vh}
+.luz{position:fixed;inset:0;z-index:0;pointer-events:none;background:radial-gradient(40% 44% at 14% 6%,var(--blob-1),transparent 70%),radial-gradient(30% 34% at 90% 92%,var(--blob-2),transparent 70%),radial-gradient(26% 30% at 64% 42%,var(--blob-3),transparent 70%),repeating-linear-gradient(90deg,var(--grid) 0 1px,transparent 1px 44px),repeating-linear-gradient(0deg,var(--grid) 0 1px,transparent 1px 44px)}
+.pagina{position:relative;z-index:1;max-width:980px;margin:0 auto;padding-inline:clamp(16px,4vw,40px);padding-block:28px 90px;display:grid;gap:28px}
+.vidro{position:relative;background:var(--glass);border:1px solid var(--glass-border);border-radius:16px;box-shadow:inset 0 1px 0 var(--glass-hi),var(--glass-shadow);-webkit-backdrop-filter:blur(22px) saturate(1.4);backdrop-filter:blur(22px) saturate(1.4)}
+h1,h2,h3{font-family:'Bricolage Grotesque',Manrope,sans-serif;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.025em;text-wrap:balance}
+h1{font-weight:800;font-size:clamp(34px,6vw,56px);line-height:1}h1 .g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-weight:700;font-size:clamp(26px,3.6vw,34px);line-height:1.1}h3{font-weight:700;font-size:20px;line-height:1.25}
+.olho{font:800 11px Manrope;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted)}
+p{max-width:68ch}a{color:var(--accent-soft)}code{font:600 .9em ui-monospace,Consolas,monospace;background:var(--surface-2);padding:1px 6px;border-radius:6px;color:var(--accent-soft)}
+.topo{padding:clamp(20px,4vw,34px);display:grid;gap:16px}
+.topo .linha{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.chapa{display:inline-flex;align-items:center;border-radius:14px;padding:10px 18px;background:linear-gradient(160deg,rgba(255,255,255,.16),rgba(255,255,255,.04) 42%,rgba(0,0,0,.18)),#150a2b;box-shadow:inset 0 1px 0 rgba(255,255,255,.42),inset 0 -3px 0 rgba(0,0,0,.5),0 0 0 1px rgba(124,58,237,.45),0 14px 30px -14px rgba(0,0,0,.65)}
+.chapa img{height:30px;display:block}
+.ctrl{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+select,.bt{font:600 14px Manrope;color:var(--text);background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;padding:9px 12px}
+select{max-width:100%}.bt{cursor:pointer;display:inline-flex;align-items:center;gap:6px}.bt:hover{border-color:var(--accent)}
+.bt.p{background:var(--grad);color:#fff;border:0;box-shadow:0 3px 0 var(--grad-escuro),0 12px 20px -8px var(--glow)}
+.prog{display:grid;gap:6px}.prog .barra{height:10px;border-radius:999px;background:var(--surface-2);overflow:hidden}.prog .barra i{display:block;height:100%;background:var(--grad);border-radius:999px;transition:width .3s}
+.prog small{color:var(--text-muted);font-size:13px}
+nav.etapas{position:sticky;top:0;z-index:5;display:flex;gap:6px;overflow-x:auto;padding:10px 12px;margin-inline:-12px;scrollbar-width:none;background:color-mix(in srgb,var(--bg) 82%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);border-radius:0 0 14px 14px}nav.etapas::-webkit-scrollbar{display:none}
+nav.etapas a{flex:none;text-decoration:none;font:700 13.5px Manrope;color:var(--text-2);background:var(--surface);border:1px solid var(--border-strong);padding:8px 14px;border-radius:999px;display:inline-flex;gap:7px;align-items:center}
+nav.etapas a.on{background:var(--accent-bg);color:var(--accent-soft);border-color:var(--accent)}nav.etapas a .n{font:700 11px Manrope;color:var(--text-muted)}
+nav.etapas a.ok .n{color:var(--green)}
+section.etapa{display:grid;gap:16px;scroll-margin-top:64px}
+.cab{padding:22px 24px;display:grid;gap:10px}
+.cab .quando{display:flex;gap:8px;flex-wrap:wrap}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font:700 12px Manrope;background:var(--surface-2);color:var(--text-muted)}
+.chip.m{background:var(--accent-bg);color:var(--accent-soft)}.chip.v{background:var(--green-bg);color:var(--green)}.chip.a{background:var(--amber-bg);color:var(--amber)}.chip.r{background:var(--red-bg);color:var(--red)}
+.sai{display:grid;gap:6px;padding:14px 16px;border-radius:12px;background:var(--surface-2);border:1px dashed var(--border-strong)}
+.sai b{font:800 11px Manrope;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.sai ul{padding-left:18px;color:var(--text-2);font-size:15px}
+.passo{display:grid;grid-template-columns:36px 1fr;gap:14px;padding:18px 20px;background:var(--surface);border:1px solid var(--border);border-radius:16px}
+.passo.feito{border-color:var(--green);background:linear-gradient(0deg,var(--green-bg),var(--surface) 70%)}
+.passo .ck{width:30px;height:30px;border-radius:9px;border:2px solid var(--border-strong);display:grid;place-items:center;cursor:pointer;background:var(--surface-2)}
+.passo .ck input{position:absolute;opacity:0;width:1px;height:1px}
+.passo .ck svg{width:18px;height:18px;stroke:#fff;stroke-width:3;opacity:0}
+.passo.feito .ck{background:var(--green);border-color:var(--green)}.passo.feito .ck svg{opacity:1}
+.passo .ck:has(input:focus-visible){outline:2px solid var(--accent);outline-offset:2px}
+.passo .corpo{display:grid;gap:10px;min-width:0}
+.passo h3 small{display:block;font:600 12.5px Manrope;color:var(--text-muted);letter-spacing:0;margin-top:2px}
+.passo ol,.passo ul{padding-left:20px;display:grid;gap:4px;color:var(--text-2)}
+.passo p{color:var(--text-2)}
+.pede{display:grid;gap:6px}
+.pede div{display:flex;align-items:center;gap:10px;justify-content:space-between;background:var(--accent-bg);border:1px solid var(--accent);border-radius:12px;padding:10px 12px}
+.pede span{font:600 15px Manrope;color:var(--text)}.pede span:before{content:"Pede pra máquina";display:block;font:800 10.5px Manrope;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft);margin-bottom:2px}
+.pede button{flex:none;font:700 12px Manrope;color:var(--accent-soft);background:transparent;border:1px solid var(--accent);border-radius:8px;padding:6px 10px;cursor:pointer}
+.trava{border-left:3px solid var(--amber);background:var(--amber-bg);border-radius:0 12px 12px 0;padding:10px 14px;font-size:14.5px;color:var(--text)}
+.trava b{color:var(--amber)}
+.dica{border-left:3px solid var(--blue);background:var(--blue-bg);border-radius:0 12px 12px 0;padding:10px 14px;font-size:14.5px}
+details.telas{border:1px solid var(--border-strong);border-radius:12px;background:var(--surface-2)}
+details.telas summary{cursor:pointer;padding:10px 14px;font:700 14px Manrope;color:var(--accent-soft);list-style:none}details.telas summary::-webkit-details-marker{display:none}
+details.telas summary:before{content:"+ ";}details.telas[open] summary:before{content:"− "}
+.grade{display:grid;gap:14px;padding:4px 14px 14px}
+figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px solid var(--border-strong);background:#fff;cursor:zoom-in}figcaption{font-size:13.5px;color:var(--text-muted)}
+.zoom{position:fixed;inset:0;z-index:20;background:rgba(8,4,20,.82);display:none;place-items:center;padding:20px;cursor:zoom-out}.zoom.on{display:grid}.zoom img{max-width:100%;max-height:100%;border-radius:10px}
+.apoio{padding:20px 22px;display:grid;gap:10px;scroll-margin-top:64px}.apoio>p{color:var(--text-2)}.apoio .pre{font-size:14.5px;color:var(--text-muted)}
+.grade>p,.grade>ol{color:var(--text-2);font-size:15px}.grade>ol{padding-left:20px;display:grid;gap:4px}
+.proximo{display:grid;gap:6px;padding:20px 22px;text-decoration:none;color:var(--text)}.proximo b{font:800 19px Manrope;color:var(--accent-soft)}.proximo span:last-child{color:var(--text-2);font-size:15px}
+.tab{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}th{font:800 11px Manrope;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
+.rodape{text-align:center;color:var(--text-muted);font-size:14px;display:grid;gap:6px}
+@media (max-width:560px){.passo{grid-template-columns:1fr;gap:10px}.pede div{flex-direction:column;align-items:flex-start}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+@media print{.luz,nav.etapas,.ctrl,.pede button{display:none}body{background:#fff;color:#000}.vidro,.passo{box-shadow:none;backdrop-filter:none;background:#fff;border:1px solid #ccc}details.telas{display:none}}
+</style></head><body>
+<div class="luz" aria-hidden="true"></div>
+<main class="pagina">
+
+<header class="vidro topo">
+  <div class="linha"><span class="chapa"><img src="/logo.png" alt="Carreira no Digital"></span>
+    <div class="ctrl"><select id="turma" aria-label="Tua turma">
+      <option value="poa-tarde">Porto Alegre · tarde (14h às 17h15)</option>
+      <option value="poa-noite">Porto Alegre · noite (19h às 22h15)</option>
+      <option value="laj-noite">Lajeado · noite (19h às 22h15)</option></select>
+      <button class="bt" id="tema" type="button">Claro / escuro</button></div></div>
+  <span class="olho">Imersão Deu Venda · antes do primeiro encontro</span>
+  <h1>A tua <span class="g">preparação</span>, passo a passo.</h1>
+  <p style="color:var(--text-2)">Estes são os passos pra fazer em casa antes do encontro 1, com as telas do Facebook. Marca cada passo quando terminar: fica guardado neste navegador. Escolhe a tua turma ali em cima pra ver o prazo.</p>
+  <div class="prog"><div class="barra"><i id="barra" style="width:0"></i></div><small id="progtxt">0 de 0 passos feitos</small></div>
+</header>
+
+<section class="etapa" id="antes">
+  <div class="vidro cab"><span class="olho">Antes do primeiro encontro</span><h2>A preparação</h2>
+    <div class="quando"><span class="chip m" data-data="antes"></span><span class="chip">uns 60 minutos, em casa</span></div>
+    <p style="color:var(--text-2)">Tudo o que depende da Meta ou de outra empresa leva dias pra liberar. Se ficar pra hora do encontro, a turma anda e tu fica esperando. Faz com calma, nesta ordem. Travou em algum? Manda print no grupo da turma.</p>
+    <div class="sai"><b>Chega no encontro 1 com</b><ul><li>o aplicativo do Claude instalado, com o plano Pro</li><li>o portfólio da empresa na Meta com página, Instagram, WhatsApp e a conta de anúncios criada (em reais, no fuso de São Paulo)</li><li>logo, fotos e preços numa pasta</li><li>o domínio e a hospedagem do site comprados, se tu quer o site no ar no encontro 3</li></ul></div></div>
+
+  <article class="passo" data-id="a1"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>O computador<small>5 min</small></h3>
+    <ul><li><b>Notebook com Windows ou Mac</b>, carregador junto.</li><li><b>Google Chrome</b> instalado (a máquina usa ele pra desenhar as artes).</li><li>Uns 10 GB livres no disco.</li></ul>
+    <div class="dica">Usa Mac? Avisa a escola antes. A parte de artes e vídeo no Mac é nova e a gente confere contigo no começo do encontro 1.</div></div></article>
+
+  <article class="passo" data-id="a2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>O aplicativo do Claude, no plano Pro<small>10 min</small></h3>
+    <ol><li>Entra em <b>claude.ai</b> e cria a tua conta com o e-mail do negócio (ou o teu).</li><li>Assina o plano <b>Pro</b>. A máquina roda dentro do aplicativo e precisa dele.</li><li>Baixa e instala o aplicativo em <b>claude.ai/download</b>, e entra com a mesma conta.</li></ol>
+    <div class="trava"><b>Importante:</b> a conta é tua, não da escola. Tudo o que a máquina aprender sobre o teu negócio fica contigo depois da imersão.</div></div></article>
+
+  <article class="passo" data-id="a3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>O portfólio da empresa na Meta<small>10 min · business.facebook.com</small></h3>
+    <p>É a "casa" do teu negócio no Facebook: junta a página, o Instagram, o WhatsApp e a conta de anúncios num lugar só. Entra em <b>business.facebook.com</b> com o teu Facebook pessoal.</p>
+    <ol><li>Se já aparece o nome do teu negócio no seletor do alto à esquerda, tu já tem portfólio. Pula pro item 3.</li><li>Se não: clica no seletor e em <b>Criar um portfólio empresarial</b>. Nome do negócio, teu nome e o e-mail.</li><li>Confere que tu tem <b>acesso total</b>: Configurações → Pessoas → Detalhes na tua linha.</li></ol>
+    <details class="telas"><summary>Ver as telas (10)</summary><div class="grade">
+      <figure><img loading="lazy" src="prints/A1-business-suite.jpg" alt=""><figcaption>A entrada do Business Suite.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/B1-mouse-seletor-portfolio.jpg" alt=""><figcaption>O seletor do portfólio, no alto à esquerda.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/B2-lista-portfolios-criar.jpg" alt=""><figcaption>Lá embaixo da lista: Criar um portfólio empresarial.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/B3-janela-criar-portfolio.jpg" alt=""><figcaption>A janela de criação.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/A2-mouse-configuracoes.jpg" alt=""><figcaption>Configurações, na engrenagem da barra da esquerda.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/A3-configuracoes.jpg" alt=""><figcaption>Configurações pode abrir direto em Pessoas. Tudo bem: é pra lá mesmo que tu vai.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/C1-mouse-pessoas.jpg" alt=""><figcaption>Se abrir em Informações da empresa, clica em Usuários → Pessoas.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/C2-lista-pessoas.jpg" alt=""><figcaption>Pessoas: a tua linha tem que estar aqui.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/C3-mouse-detalhes-voce.jpg" alt=""><figcaption>Detalhes, no fim da tua linha.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/C4-detalhes-acesso-total.jpg" alt=""><figcaption>Em Detalhes, tem que dizer Acesso total.</figcaption></figure></div></details></div></article>
+
+  <article class="passo" data-id="a4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>Página, Instagram e WhatsApp dentro do portfólio<small>15 min · Configurações → Contas</small></h3>
+    <ol><li><b>Páginas</b> → Adicionar → escolhe a tua página do Facebook (ou cria uma).</li><li><b>Perfis do Instagram</b> → Adicionar → entra com o Instagram do negócio. Ele precisa ser conta profissional.</li><li><b>Contas do WhatsApp</b> → Adicionar → liga o número do <b>WhatsApp Business</b> que vai receber os clientes.</li></ol>
+    <div class="trava"><b>O WhatsApp:</b> tem que ser o aplicativo <b>WhatsApp Business</b> no celular, no número que tu ou alguém do time responde em até 10 minutos no horário comercial. É pra ele que o anúncio vai mandar as pessoas.</div>
+    <details class="telas"><summary>Ver as telas (9)</summary><div class="grade">
+      <figure><img loading="lazy" src="prints/F1-mouse-paginas.jpg" alt=""><figcaption>Contas → Páginas.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/F2-mouse-adicionar.jpg" alt=""><figcaption>+ Adicionar, no alto à direita.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/F3-opcoes-adicionar-pagina.jpg" alt=""><figcaption>Adicionar a que já existe, pedir acesso ou criar nova.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/G1-mouse-perfis-instagram.jpg" alt=""><figcaption>Contas → Perfis do Instagram.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/G2-mouse-adicionar.jpg" alt=""><figcaption>+ Adicionar.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/G3-janela-adicionar-instagram.jpg" alt=""><figcaption>A janela pra entrar com o Instagram (pode vir em inglês).</figcaption></figure>
+      <figure><img loading="lazy" src="prints/H1-mouse-contas-whatsapp.jpg" alt=""><figcaption>Contas → Contas do WhatsApp.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/H2-mouse-adicionar.jpg" alt=""><figcaption>+ Adicionar.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/H3-opcoes-adicionar-whatsapp.jpg" alt=""><figcaption>Vincular o número que tu já usa.</figcaption></figure></div></details></div></article>
+
+  <article class="passo" data-id="a5"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>A conta de anúncios<small>10 min · Configurações → Contas de anúncios</small></h3>
+    <p>É a conta onde a campanha vai rodar. Hoje é só criar (ou conferir) a conta. A forma de pagamento a gente cadastra junto, no encontro 2.</p>
+    <ol><li>Configurações → <b>Contas de anúncios</b>. Se já tem uma, confere se ela é tua. Se não: <b>+ Adicionar</b> → <b>Criar uma nova conta de anúncios</b>.</li><li>No formulário, troca o fuso pra <b>(GMT-03:00) São Paulo</b> e a moeda pra <b>BRL, Real brasileiro</b>. Ele vem em Los Angeles e dólar, e depois não dá pra mudar.</li></ol>
+    <details class="telas"><summary>Ver as telas (5)</summary><div class="grade">
+      <figure><img loading="lazy" src="prints/D1-mouse-contas-de-anuncios.jpg" alt=""><figcaption>Contas → Contas de anúncios.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/D2-mouse-adicionar.jpg" alt=""><figcaption>+ Adicionar, no alto à direita.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/D3-opcoes-adicionar.jpg" alt=""><figcaption>As opções de + Adicionar.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/D4a-mouse-criar-nova-conta.jpg" alt=""><figcaption>Criar uma nova conta de anúncios.</figcaption></figure>
+      <figure><img loading="lazy" src="prints/D4-formulario-nova-conta.jpg" alt=""><figcaption>Aqui: fuso São Paulo e moeda BRL, antes de avançar.</figcaption></figure></div></details></div></article>
+
+  <article class="passo" data-id="a6"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>A pasta do teu negócio<small>20 min · no computador</small></h3>
+    <p>Cria uma pasta chamada <b>Meu negócio</b> na Área de Trabalho e junta:</p>
+    <ul><li><b>O logo</b>, de preferência em PNG com fundo transparente ou SVG. Não tem? Pede pra quem fez a tua marca o arquivo original.</li><li><b>De 10 a 20 fotos reais</b>: a fachada, o ambiente, tu e o time, o produto, o trabalho acontecendo, e a foto que mais mostra o que tu faz. Foto do celular serve.</li><li><b>Os preços</b> do que tu vende, numa nota ou foto da tabela.</li><li>De <b>2 a 3 prints</b> de perfis ou sites que tu acha bonitos (pode ser de outro ramo).</li></ul>
+    <div class="dica">Sem preço não tem oferta, e sem foto as artes saem genéricas. Esses dois são os que mais fazem diferença.</div></div></article>
+
+  <article class="passo" data-id="a7"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>O endereço do site<small>10 min pra comprar · a conta leva de horas a 2 dias pra ficar de pé</small></h3>
+    <p>No encontro 3 tu sai com o site da tua empresa no ar. Pra isso, o domínio (o <b>teunegocio.com.br</b>) e a hospedagem têm que estar comprados antes.</p>
+    <ol><li>Já tem site ou domínio? Anota onde está e quem tem a senha, e pula este passo.</li><li>Não tem: a escola usa a <a href="https://www.hostgator.com.br/53318-77-3-32.html" target="_blank" rel="noopener">HostGator</a>, plano compartilhado mais barato (este é um link de afiliado da escola: tu paga o mesmo e a escola ganha uma comissão; comprar por ele não muda nada no teu atendimento).</li><li>Paga com <b>cartão</b>. Boleto leva de 1 a 2 dias úteis.</li><li>Desmarca os extras. Domínio <b>.com.br</b> pede CPF ou CNPJ.</li><li>Guarda o e-mail de "dados de acesso" que a HostGator manda (olha no spam).</li></ol></div></article>
+
+  <article class="passo" data-id="a8"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
+    <h3>Quanto tu vai investir em anúncio<small>2 min pra pensar</small></h3>
+    <p>A verba é tua e vai direto pra Meta. Pensa num valor por dia que tu aguenta por <b>uma semana inteira sem sentir</b>. No encontro 1 a gente fecha o número contigo, pela tua capacidade de atender e pelo preço do que tu vende.</p></div></article>
+</section>
+
+<a class="vidro proximo" href="./"><span class="olho">Depois da preparação</span><b>Ver o passo a passo completo da imersão →</b><span>Encontro por encontro, com o que pedir pra máquina e as telas de cada etapa.</span></a>
+
+<footer class="rodape"><span>Carreira no Digital · Imersão Deu Venda</span><span>Travou em algum passo? Manda print no grupo da turma.</span></footer>
+</main>
+<div class="zoom" id="zoom"><img alt=""></div>
+<script>
+(function(){
+  var ls=function(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+  var CH='imersao-dv-aluno-v1',feito={};try{feito=JSON.parse(ls(CH)||'{}')}catch(e){}
+  // datas de cada turma (página da imersão, 07/10)
+  var T={'poa-tarde':{antes:'até 19/10',e1:'terça 20/10 · 14h',noite:'noite de 20/10',e2:'quarta 21/10 · 14h',e3:'quinta 22/10 · 14h',e4:'terça 3/11'},
+         'poa-noite':{antes:'até 19/10',e1:'terça 20/10 · 19h',noite:'noite de 20/10',e2:'quarta 21/10 · 19h',e3:'quinta 22/10 · 19h',e4:'terça 3/11'},
+         'laj-noite':{antes:'até 26/10',e1:'terça 27/10 · 19h',noite:'noite de 27/10',e2:'quarta 28/10 · 19h',e3:'quinta 29/10 · 19h',e4:'segunda 9/11'}}
+  var sel=document.getElementById('turma');sel.value=ls('imersao-dv-turma')||'poa-tarde'
+  function datas(){var t=T[sel.value]||T['poa-tarde'];document.querySelectorAll('[data-data]').forEach(function(c){c.textContent=t[c.dataset.data]})}
+  sel.onchange=function(){ls('imersao-dv-turma',sel.value);datas()};datas()
+  var tema=ls('imersao-dv-tema');if(tema)document.documentElement.dataset.theme=tema
+  document.getElementById('tema').onclick=function(){var n=document.documentElement.dataset.theme==='light'?'dark':'light';document.documentElement.dataset.theme=n;ls('imersao-dv-tema',n)}
+  var passos=[].slice.call(document.querySelectorAll('.passo'))
+  function conta(){var tot=passos.length,ok=passos.filter(function(p){return feito[p.dataset.id]}).length
+    document.getElementById('barra').style.width=(tot?ok*100/tot:0)+'%';document.getElementById('progtxt').textContent=ok+' de '+tot+' passos feitos'
+    document.querySelectorAll('nav.etapas a').forEach(function(a){var ps=passos.filter(function(p){return p.closest('section').id===a.dataset.e}),k=ps.filter(function(p){return feito[p.dataset.id]}).length;a.querySelector('.n').textContent=k+'/'+ps.length;a.classList.toggle('ok',ps.length&&k===ps.length)})}
+  passos.forEach(function(p){var c=p.querySelector('input');c.checked=!!feito[p.dataset.id];p.classList.toggle('feito',c.checked)
+    c.onchange=function(){if(c.checked)feito[p.dataset.id]=1;else delete feito[p.dataset.id];ls(CH,JSON.stringify(feito));p.classList.toggle('feito',c.checked);conta()}})
+  conta()
+  // copiar o pedido pra máquina
+  document.querySelectorAll('.pede button').forEach(function(b){b.onclick=function(){var t=b.previousElementSibling.textContent;
+    var ok=function(){b.textContent='copiado';setTimeout(function(){b.textContent='copiar'},1500)}
+    if(navigator.clipboard)navigator.clipboard.writeText(t).then(ok,function(){})
+    else{var r=document.createRange();r.selectNodeContents(b.previousElementSibling);var s=getSelection();s.removeAllRanges();s.addRange(r)}}})
+  // print grande ao clicar
+  var z=document.getElementById('zoom');document.querySelectorAll('figure img').forEach(function(i){i.onclick=function(){z.querySelector('img').src=i.src;z.classList.add('on')}});z.onclick=function(){z.classList.remove('on')}
+  // a etapa em que a pessoa está fica marcada no menu
+  var nav=document.querySelectorAll('nav.etapas a');if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)nav.forEach(function(a){a.classList.toggle('on',a.dataset.e===e.target.id)})})},{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.etapa').forEach(function(s){io.observe(s)})}
+})()
+</script>
+</body></html>
