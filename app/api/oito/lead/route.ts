@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { oitoDb as db, novoCodigo } from '@/lib/oito/db'
-import { oitoConfig as cfg, ehMarca } from '@/lib/oito/config'
+import { oitoConfig as cfg, ehMarca, emEspanhol } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
 
 const t = (s: any, n = 300) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -14,8 +14,14 @@ export async function POST(req: Request) {
     const b = await req.json()
     if (!ehMarca(b.marca)) return NextResponse.json({ erro: 'marca' }, { status: 400 })
     const n = b.negocio || {}, x = b.contexto || {}
-    let whats = soDigitos(n.whatsapp); if (whats.length === 10 || whats.length === 11) whats = '55' + whats
-    if (!t(n.nome) || whats.length < 12 || !t(n.cidade)) return NextResponse.json({ erro: 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
+    // 13/10: as marcas em espanhol vendem na Colômbia (+57, celular de 10 dígitos) e no Chile (+56, celular de 9)
+    const es = emEspanhol(b.marca), pais = es ? (b.pais === 'CL' ? 'CL' : 'CO') : 'BR'
+    let whats = soDigitos(n.whatsapp)
+    if (pais === 'BR' && (whats.length === 10 || whats.length === 11)) whats = '55' + whats
+    if (pais === 'CO' && whats.length === 10) whats = '57' + whats
+    if (pais === 'CL' && whats.length === 9) whats = '56' + whats
+    const whatsOk = pais === 'BR' ? whats.length >= 12 : pais === 'CO' ? /^57\d{10}$/.test(whats) : /^56\d{9}$/.test(whats)
+    if (!t(n.nome) || !whatsOk || !t(n.cidade)) return NextResponse.json({ erro: es ? 'Falta el nombre del negocio, la ciudad o el WhatsApp.' : 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
 
     // o mesmo WhatsApp já pediu teste nessa marca: devolve o que já existe (não gera de novo)
     // TRAVA DE TESTES REPETIDOS (13/10): quem já pediu não ganha outro, volta pros posts que já recebeu.
@@ -49,14 +55,14 @@ export async function POST(req: Request) {
       nome_negocio: t(n.nome, 120), responsavel: t(n.responsavel, 120), whatsapp: whats, email: t(n.email, 160).toLowerCase(),
       cidade: t(n.cidade, 80), bairro: t(n.bairro, 80), instagram: t(n.instagram, 60).replace(/^@/, ''),
       contexto, cores: b.cores && typeof b.cores === 'object' ? { fundo: t(b.cores.fundo, 9), destaque: t(b.cores.destaque, 9), texto: t(b.cores.texto, 9), nome: t(b.cores.nome, 40) } : null,
-      ip_hash: ipHash, fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
+      ip_hash: ipHash, pais, gateway: es ? 'hotmart' : 'asaas', documento: es ? t(n.documento, 20) || null : null, fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
     })
     await db.insere('lotes', { cliente_id: c.id, tipo: 'teste', qtd: cfg.postsTeste, status: 'espera' })
     await db.evento('lead', { cliente_id: c.id, marca: c.marca, sessao: c.sessao, detalhe: { fotos_modo: c.fotos_modo } })
-    avisaDono('teste pedido', `${cfg.marcas[c.marca as 'salao'].nome} · ${c.nome_negocio} (${c.cidade})`)
+    avisaDono('teste pedido', `${cfg.marcas[c.marca as 'salao'].nome + (es ? ' (' + pais + ')' : '')} · ${c.nome_negocio} (${c.cidade})`)
     return NextResponse.json({ codigo: c.codigo })
   } catch (e: any) {
     console.error('oito lead', e)
-    return NextResponse.json({ erro: 'Não deu pra salvar agora. Tenta de novo em um minuto.' }, { status: 500 })
+    return NextResponse.json({ erro: 'Não deu pra salvar agora. Tenta de novo em um minuto. / No se pudo guardar. Intenta de nuevo en un minuto.' }, { status: 500 })
   }
 }

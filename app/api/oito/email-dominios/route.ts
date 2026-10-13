@@ -12,6 +12,10 @@ const R = 'https://api.resend.com'
 const CONTAS = () => [
   { chave: process.env.RESEND_API_KEY, dominios: [cfg.marcas.salao.dominio, cfg.marcas.prato.dominio] },
   { chave: process.env.OITO_RESEND_PATA, dominios: [cfg.marcas.pata.dominio] },
+  // 13/10: as marcas em espanhol, cada uma na sua conta grátis
+  { chave: process.env.OITO_RESEND_DIVINO, dominios: [cfg.marcas.divino.dominio] },
+  { chave: process.env.OITO_RESEND_SABROSO, dominios: [cfg.marcas.sabroso.dominio] },
+  { chave: process.env.OITO_RESEND_PELUDO, dominios: [cfg.marcas.peludo.dominio] },
 ].filter(c => c.chave) as { chave: string; dominios: string[] }[]
 const H = (k: string) => ({ Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' })
 

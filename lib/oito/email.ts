@@ -1,14 +1,18 @@
-// Oito Posts: e-mails das marcas (13/10), pelo Resend. Cada marca sai do seu domínio (contato@<dominio> responde).
-// Salão e Prato usam a conta do Recado (RESEND_API_KEY); o Pata tem conta própria grátis (OITO_RESEND_PATA), por causa do limite de domínios.
+// Oito Posts: e-mails das marcas (13/10), pelo Resend. Cada marca sai do seu domínio (contato@/contacto@<dominio> responde).
+// Salão e Prato usam a conta do Recado (RESEND_API_KEY); as outras têm conta própria grátis (OITO_RESEND_<MARCA>), por causa do limite de domínios.
+// As marcas em espanhol (Feed Divino, Sabroso, Peludo) recebem os mesmos e-mails, em espanhol.
 // Nunca derruba nada: se falhar, só registra no log.
-import { oitoConfig as cfg, Marca } from './config'
+import { oitoConfig as cfg, Marca, emEspanhol } from './config'
 
 const CORES: Record<Marca, { escuro: string; destaque: string; sobre: string; claro: string }> = {
   salao: { escuro: '#2b1420', destaque: '#d4577f', sobre: '#ffffff', claro: '#fbf4f2' },
   prato: { escuro: '#1d120c', destaque: '#ff5a1f', sobre: '#ffffff', claro: '#fff7ee' },
   pata: { escuro: '#102a4c', destaque: '#ffb703', sobre: '#102a4c', claro: '#f3f7ff' },
+  divino: { escuro: '#2a1036', destaque: '#c2408f', sobre: '#ffffff', claro: '#fbf3f8' },
+  sabroso: { escuro: '#24120a', destaque: '#e8451e', sobre: '#ffffff', claro: '#fff6ec' },
+  peludo: { escuro: '#123528', destaque: '#f4a52a', sobre: '#123528', claro: '#f2f8f3' },
 }
-const chave = (m: Marca) => (m === 'pata' ? process.env.OITO_RESEND_PATA : process.env.RESEND_API_KEY)
+export const chaveResend = (m: Marca) => process.env['OITO_RESEND_' + m.toUpperCase()] || (m === 'salao' || m === 'prato' ? process.env.RESEND_API_KEY : undefined)
 const site = (m: Marca) => `https://www.${cfg.marcas[m].dominio}`
 const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
 
@@ -23,18 +27,18 @@ export function molduraOito(m: Marca, titulo: string, corpo: string, botao?: { t
       <div style="font-size:16px;line-height:1.6;color:#333">${corpo}</div>
       ${botao ? `<p style="margin:26px 0 6px"><a href="${botao.url}" style="display:inline-block;background:${C.destaque};color:${C.sobre};text-decoration:none;font:700 16px Arial;padding:15px 24px;border-radius:999px">${esc(botao.texto)}</a></p>` : ''}
     </div>
-    <p style="font-size:12px;color:#777;margin-top:18px;line-height:1.5">${esc(nome)} · ${cfg.marcas[m].dominio}<br>Dúvidas? É só responder este e-mail.</p>
+    <p style="font-size:12px;color:#777;margin-top:18px;line-height:1.5">${esc(nome)} · ${cfg.marcas[m].dominio}<br>${emEspanhol(m) ? '¿Dudas? Solo responde este correo.' : 'Dúvidas? É só responder este e-mail.'}</p>
   </div></body></html>`
 }
 
 export async function enviaEmailOito(m: Marca, para: string | null | undefined, assunto: string, html: string) {
-  const k = chave(m)
+  const k = chaveResend(m)
   if (!k || !para || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(para)) return { ok: false, motivo: !k ? 'sem chave' : 'sem e-mail' }
-  const dom = cfg.marcas[m].dominio
+  const de = cfg.marcas[m].email
   try {
     const r = await fetch('https://api.resend.com/emails', {
       method: 'POST', headers: { Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: `${cfg.marcas[m].nome} <contato@${dom}>`, to: [para], reply_to: `contato@${dom}`, subject: assunto, html }),
+      body: JSON.stringify({ from: `${cfg.marcas[m].nome} <${de}>`, to: [para], reply_to: de, subject: assunto, html }),
       signal: AbortSignal.timeout(15000),
     })
     const j = await r.json().catch(() => ({}))
@@ -43,10 +47,12 @@ export async function enviaEmailOito(m: Marca, para: string | null | undefined, 
   } catch (e: any) { console.error('oito email', e?.message); return { ok: false } }
 }
 
-// os 4 e-mails do produto
-export const emailsOito = {
+const primeiroNome = (c: any) => (c.responsavel ? esc(String(c.responsavel).split(' ')[0]) : '')
+
+// os 4 e-mails do produto, em português e em espanhol
+const pt = {
   testePronto: (c: any) => enviaEmailOito(c.marca, c.email, 'Seus 2 posts grátis estão prontos',
-    molduraOito(c.marca, `${c.responsavel ? esc(c.responsavel.split(' ')[0]) + ', seus' : 'Seus'} 2 posts estão prontos`,
+    molduraOito(c.marca, `${c.responsavel ? primeiroNome(c) + ', seus' : 'Seus'} 2 posts estão prontos`,
       `<p>Os 2 posts grátis do <b>${esc(c.nome_negocio)}</b> já estão prontos, com arte e legenda. É só baixar e postar.</p><p>Guarde este e-mail: o botão abaixo leva sempre pros seus posts.</p>`,
       { texto: 'Ver meus posts', url: `${site(c.marca)}/teste.html?c=${c.codigo}` })),
   pagamentoConfirmado: (c: any) => enviaEmailOito(c.marca, c.email, 'Pagamento confirmado: seus 8 posts estão sendo feitos',
@@ -61,4 +67,28 @@ export const emailsOito = {
     molduraOito(c.marca, 'Tem novidade pro próximo mês?',
       `<p>No dia <b>${esc(data.split('-').reverse().join('/'))}</b> sua assinatura renova e os próximos 8 posts do <b>${esc(c.nome_negocio)}</b> começam a ser feitos.</p><p>Tem serviço novo, promoção, data especial ou horário diferente? Conte em "Meu negócio", na sua área, e os posts já saem com isso.</p><p style="font-size:13px;color:#777">Não quer continuar? Dá pra cancelar num botão na área, sem multa.</p>`,
       { texto: 'Contar as novidades', url: `${site(c.marca)}/conta.html?c=${c.codigo}` })),
+}
+const es = {
+  testePronto: (c: any) => enviaEmailOito(c.marca, c.email, 'Tus 2 posts gratis están listos',
+    molduraOito(c.marca, `${c.responsavel ? primeiroNome(c) + ', tus' : 'Tus'} 2 posts están listos`,
+      `<p>Los 2 posts gratis de <b>${esc(c.nome_negocio)}</b> ya están listos, con diseño y texto. Solo descárgalos y publícalos.</p><p>Guarda este correo: el botón de abajo siempre te lleva a tus posts.</p>`,
+      { texto: 'Ver mis posts', url: `${site(c.marca)}/teste.html?c=${c.codigo}` })),
+  pagamentoConfirmado: (c: any) => enviaEmailOito(c.marca, c.email, 'Pago confirmado: tus 8 posts ya se están haciendo',
+    molduraOito(c.marca, 'Pago confirmado',
+      `<p>¡Bienvenido a ${esc(cfg.marcas[c.marca as Marca].nome)}! Los 8 posts del mes de <b>${esc(c.nome_negocio)}</b> se están haciendo ahora y estarán listos en pocos minutos.</p><p>En tu área descargas las imágenes, copias los textos, pides ajustes y nos cuentas las novedades del mes.</p>`,
+      { texto: 'Abrir mi área', url: `${site(c.marca)}/conta.html?c=${c.codigo}` })),
+  mesEntregue: (c: any) => enviaEmailOito(c.marca, c.email, 'Llegaron los 8 posts del mes',
+    molduraOito(c.marca, 'Llegaron tus 8 posts del mes',
+      `<p>Están en tu área, cada uno con el día sugerido para publicar (2 por semana).</p><p>Consejo: programa los 8 de una vez en Meta Business Suite y olvídate. El paso a paso está en la guía de tu área.</p>`,
+      { texto: 'Ver los posts del mes', url: `${site(c.marca)}/conta.html?c=${c.codigo}` })),
+  avisoRenovacao: (c: any, data: string) => enviaEmailOito(c.marca, c.email, 'Tu próximo mes de posts empieza pronto',
+    molduraOito(c.marca, '¿Hay novedades para el próximo mes?',
+      `<p>El <b>${esc(data.split('-').reverse().join('/'))}</b> se renueva tu suscripción y empiezan a hacerse los próximos 8 posts de <b>${esc(c.nome_negocio)}</b>.</p><p>¿Tienes un servicio nuevo, una promoción, una fecha especial o un horario distinto? Cuéntalo en "Mi negocio", en tu área, y los posts saldrán con eso.</p><p style="font-size:13px;color:#777">¿No quieres seguir? Puedes cancelar con un botón en tu área, sin multa.</p>`,
+      { texto: 'Contar las novedades', url: `${site(c.marca)}/conta.html?c=${c.codigo}` })),
+}
+export const emailsOito = {
+  testePronto: (c: any) => (emEspanhol(c.marca) ? es : pt).testePronto(c),
+  pagamentoConfirmado: (c: any) => (emEspanhol(c.marca) ? es : pt).pagamentoConfirmado(c),
+  mesEntregue: (c: any) => (emEspanhol(c.marca) ? es : pt).mesEntregue(c),
+  avisoRenovacao: (c: any, data: string) => (emEspanhol(c.marca) ? es : pt).avisoRenovacao(c, data),
 }

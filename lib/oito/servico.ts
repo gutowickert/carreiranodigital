@@ -1,6 +1,6 @@
 // Oito Posts: as regras que mais de uma rota usa (a vista do cliente, a ativação pelo pagamento, o aviso ao dono).
 import { oitoDb as db } from './db'
-import { oitoConfig as cfg, Marca } from './config'
+import { oitoConfig as cfg, Marca, precoTxt } from './config'
 import { situacao, asaasHoje } from './asaas'
 
 export async function avisaDono(titulo: string, texto: string, dinheiro = false) {
@@ -59,9 +59,9 @@ export async function garanteLoteDoCiclo(c: any, pagoAte: string) {
   await db.evento(primeiro ? 'pagou' : 'renovou', { cliente_id: c.id, marca: c.marca, detalhe: { ciclo } })
   if (primeiro && !c.exemplo) { const { emailsOito } = await import('./email'); await emailsOito.pagamentoConfirmado(c).catch(() => null) }
   if (!c.exemplo) {
-    await avisaDono(primeiro ? 'venda nova 💰' : 'renovação', `${cfg.marcas[c.marca as Marca].nome} · ${c.nome_negocio} (${c.cidade}) · R$ ${cfg.preco}`, true)
+    await avisaDono(primeiro ? 'venda nova 💰' : 'renovação', `${cfg.marcas[c.marca as Marca].nome} · ${c.nome_negocio} (${c.cidade}) · ${precoTxt(c.marca as Marca)}`, true)
     // 13/10: aviso de venda no WhatsApp do Guto, do Rick e do Nando (nunca derruba a venda)
     const { avisaVendaWhats } = await import('./whats')
-    await avisaVendaWhats(cfg.marcas[c.marca as Marca].nome, `${primeiro ? 'assinatura nova' : 'renovação'} de ${c.nome_negocio} (${c.cidade || 'sem cidade'}), R$ ${cfg.preco} por mês`).catch(() => null)
+    await avisaVendaWhats(cfg.marcas[c.marca as Marca].nome, `${primeiro ? 'assinatura nova' : 'renovação'} de ${c.nome_negocio} (${c.cidade || 'sem cidade'}), ${precoTxt(c.marca as Marca)} por mês`).catch(() => null)
   }
 }

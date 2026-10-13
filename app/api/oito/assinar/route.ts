@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { oitoConfig as cfg, Marca } from '@/lib/oito/config'
 import { criaAssinatura, situacao, simulado, podeSimular } from '@/lib/oito/asaas'
+import { linkCheckout } from '@/lib/oito/hotmart'
 
 export const maxDuration = 30
 const t = (s: any, n = 160) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -29,6 +30,14 @@ export async function POST(req: Request) {
     const c = b.c && (await db.um('clientes', { codigo: String(b.c).toUpperCase() }))
     if (!c) return NextResponse.json({ erro: 'Código não encontrado.' }, { status: 404 })
     if (c.status === 'ativo') return NextResponse.json({ ja: true })
+    // marcas em espanhol (13/10): a cobrança é o checkout da Hotmart; o código vai no sck e volta no webhook
+    if (cfg.marcas[c.marca as Marca].gateway === 'hotmart') {
+      const url = linkCheckout(c.marca as Marca, c)
+      if (!url) return NextResponse.json({ erro: 'El pago no está disponible ahora. Intenta de nuevo en unos minutos.' }, { status: 503 })
+      if (c.status === 'teste') await db.atualiza('clientes', { id: c.id }, { status: 'aguardando_pagamento', gateway: 'hotmart' })
+      await db.evento('assinatura_aberta', { cliente_id: c.id, marca: c.marca, detalhe: { gateway: 'hotmart' } })
+      return NextResponse.json({ url })
+    }
     // já tem assinatura aberta: devolve a fatura em aberto, não cria outra
     if (c.asaas_assinatura) {
       const s = await situacao(c.asaas_assinatura, c.pago_ate).catch(() => null)
@@ -38,7 +47,7 @@ export async function POST(req: Request) {
     const nome = t(b.nome), documento = t(b.documento, 20).replace(/\D/g, ''), email = t(b.email).toLowerCase() || c.email
     if (!nome || !docOk(documento)) return NextResponse.json({ erro: 'Confere o nome e o CPF ou CNPJ.' }, { status: 400 })
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return NextResponse.json({ erro: 'Confere o e-mail: a fatura vai pra ele.' }, { status: 400 })
-    const a = await criaAssinatura({ codigo: c.codigo, marcaNome: cfg.marcas[c.marca as Marca].nome, nome, documento, email, whatsapp: c.whatsapp, valor: cfg.preco })
+    const a = await criaAssinatura({ codigo: c.codigo, marcaNome: cfg.marcas[c.marca as Marca].nome, nome, documento, email, whatsapp: c.whatsapp, valor: cfg.marcas[c.marca as Marca].preco })
     await db.atualiza('clientes', { id: c.id }, { status: 'aguardando_pagamento', documento, email, asaas_customer: a.customer, asaas_assinatura: a.assinatura })
     await db.evento('assinatura_aberta', { cliente_id: c.id, marca: c.marca, detalhe: { simulado: simulado() } })
     return NextResponse.json({ fatura: a.fatura, simulado: simulado() })

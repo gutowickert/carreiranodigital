@@ -10,20 +10,20 @@
   --bg:#f4f4fa;--card:#fff;--card2:#fafaff;--tx:#17152b;--tx2:#46435f;--mut:#686483;--bd:#e5e3f1;--bd2:#d6d3ea;
   --marca:#5b4bff;--marca-tx:#4636e8;--marca-bg:#eeecff;--marca-sombra:rgba(91,75,255,.28);
   --bom:#0f7a45;--bombg:#dcf5e7;--at:#9a5300;--atbg:#ffefd2;--ruim:#c92a2a;--ruimbg:#fde5e5;--info:#2557c9;--infobg:#e2ebfe;--neu:#efeef6;--neutx:#4f4c69;
-  --salao:#c2557a;--salao-tx:#a63f63;--salao-bg:#fbe9f0;--prato:#ff6a2b;--prato-tx:#b9450f;--prato-bg:#ffede4;--pata:#2a7de1;--pata-tx:#1d63bb;--pata-bg:#e4effd;
+  --salao:#c2557a;--salao-tx:#a63f63;--salao-bg:#fbe9f0;--prato:#ff6a2b;--prato-tx:#b9450f;--prato-bg:#ffede4;--pata:#2a7de1;--pata-tx:#1d63bb;--pata-bg:#e4effd;--divino:#9b3fb5;--divino-tx:#7c2c93;--divino-bg:#f4e6f8;--sabroso:#d9480f;--sabroso-tx:#a8380b;--sabroso-bg:#fdebe2;--peludo:#2f9e6b;--peludo-tx:#1f7a51;--peludo-bg:#e3f5ec;
   --sombra:0 1px 2px rgba(23,21,43,.04),0 6px 22px rgba(23,21,43,.06);--raio:18px;--foco:0 0 0 3px #fff,0 0 0 5px var(--marca);
   color-scheme:light}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
   --bg:#0e0d18;--card:#191827;--card2:#1e1d2e;--tx:#f2f1fa;--tx2:#c9c6e0;--mut:#9d99bb;--bd:#2b2940;--bd2:#3a3854;
   --marca:#7a6cff;--marca-tx:#aaa1ff;--marca-bg:#27234d;--marca-sombra:rgba(122,108,255,.35);
   --bom:#5ad692;--bombg:#123726;--at:#ffb44d;--atbg:#3a2a0f;--ruim:#ff7b7b;--ruimbg:#3e1717;--info:#86aaff;--infobg:#18264a;--neu:#24233a;--neutx:#c4c1dc;
-  --salao-tx:#f59bbd;--salao-bg:#3b1c29;--prato-tx:#ffa070;--prato-bg:#3d2113;--pata-tx:#86b8ff;--pata-bg:#16294a;
+  --salao-tx:#f59bbd;--salao-bg:#3b1c29;--prato-tx:#ffa070;--prato-bg:#3d2113;--pata-tx:#86b8ff;--pata-bg:#16294a;--divino-tx:#d9a0ea;--divino-bg:#33173d;--sabroso-tx:#ff9a6b;--sabroso-bg:#3d1d10;--peludo-tx:#7fd9ad;--peludo-bg:#123326;
   --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);--foco:0 0 0 3px var(--bg),0 0 0 5px var(--marca-tx);color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0e0d18;--card:#191827;--card2:#1e1d2e;--tx:#f2f1fa;--tx2:#c9c6e0;--mut:#9d99bb;--bd:#2b2940;--bd2:#3a3854;
   --marca:#7a6cff;--marca-tx:#aaa1ff;--marca-bg:#27234d;--marca-sombra:rgba(122,108,255,.35);
   --bom:#5ad692;--bombg:#123726;--at:#ffb44d;--atbg:#3a2a0f;--ruim:#ff7b7b;--ruimbg:#3e1717;--info:#86aaff;--infobg:#18264a;--neu:#24233a;--neutx:#c4c1dc;
-  --salao-tx:#f59bbd;--salao-bg:#3b1c29;--prato-tx:#ffa070;--prato-bg:#3d2113;--pata-tx:#86b8ff;--pata-bg:#16294a;
+  --salao-tx:#f59bbd;--salao-bg:#3b1c29;--prato-tx:#ffa070;--prato-bg:#3d2113;--pata-tx:#86b8ff;--pata-bg:#16294a;--divino-tx:#d9a0ea;--divino-bg:#33173d;--sabroso-tx:#ff9a6b;--sabroso-bg:#3d1d10;--peludo-tx:#7fd9ad;--peludo-bg:#123326;
   --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);--foco:0 0 0 3px var(--bg),0 0 0 5px var(--marca-tx);color-scheme:dark}
 
 *{box-sizing:border-box;margin:0;padding:0}
@@ -143,7 +143,7 @@ button.k:hover{box-shadow:var(--sombra),0 0 0 1.5px var(--bd2)}
 .pill .gira{width:9px;height:9px;border-radius:50%;border:2px solid currentColor;border-right-color:transparent;animation:gira 1s linear infinite}
 @keyframes gira{to{transform:rotate(360deg)}}
 .tg{display:inline-flex;align-items:center;gap:5px;padding:2px 8px;border-radius:7px;font-weight:700;font-size:11.5px;white-space:nowrap}
-.tg.salao{background:var(--salao-bg);color:var(--salao-tx)}.tg.prato{background:var(--prato-bg);color:var(--prato-tx)}.tg.pata{background:var(--pata-bg);color:var(--pata-tx)}
+.tg.salao{background:var(--salao-bg);color:var(--salao-tx)}.tg.prato{background:var(--prato-bg);color:var(--prato-tx)}.tg.pata{background:var(--pata-bg);color:var(--pata-tx)}.tg.divino{background:var(--divino-bg);color:var(--divino-tx)}.tg.sabroso{background:var(--sabroso-bg);color:var(--sabroso-tx)}.tg.peludo{background:var(--peludo-bg);color:var(--peludo-tx)}
 .tg.ex{background:var(--neu);color:var(--neutx);border:1px dashed var(--bd2)}
 .tg.tipo{background:var(--marca-bg);color:var(--marca-tx)}
 
@@ -166,7 +166,7 @@ button.k:hover{box-shadow:var(--sombra),0 0 0 1.5px var(--bd2)}
 .fi{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:10px;align-items:start;padding:10px 0;border-bottom:1px solid var(--bd)}
 .fi:last-child{border-bottom:0}
 .fi .em{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;font-size:16px;background:var(--neu)}
-.fi .em.salao{background:var(--salao-bg)}.fi .em.prato{background:var(--prato-bg)}.fi .em.pata{background:var(--pata-bg)}
+.fi .em.salao{background:var(--salao-bg)}.fi .em.prato{background:var(--prato-bg)}.fi .em.pata{background:var(--pata-bg)}.fi .em.divino{background:var(--divino-bg)}.fi .em.sabroso{background:var(--sabroso-bg)}.fi .em.peludo{background:var(--peludo-bg)}
 .fi .tx{font-size:14px;line-height:1.4;min-width:0;overflow-wrap:anywhere}
 .fi .tx small{display:block;color:var(--mut);font-size:12.5px;margin-top:2px}
 .fi .qd{font-size:12px;color:var(--mut);white-space:nowrap;padding-top:2px}
@@ -183,7 +183,7 @@ button.k:hover{box-shadow:var(--sombra),0 0 0 1.5px var(--bd2)}
 button.lin:hover{background:var(--card2)}
 .lin:focus-visible{border-radius:12px}
 .lin .cor{align-self:stretch;border-radius:4px;background:var(--bd2)}
-.lin .cor.salao{background:var(--salao)}.lin .cor.prato{background:var(--prato)}.lin .cor.pata{background:var(--pata)}
+.lin .cor.salao{background:var(--salao)}.lin .cor.prato{background:var(--prato)}.lin .cor.pata{background:var(--pata)}.lin .cor.divino{background:var(--divino)}.lin .cor.sabroso{background:var(--sabroso)}.lin .cor.peludo{background:var(--peludo)}
 .lin .t{display:flex;align-items:center;gap:7px;flex-wrap:wrap;font-weight:700;font-size:15px;min-width:0}
 .lin .t .n{overflow-wrap:anywhere}
 .lin .sub{font-size:13px;color:var(--mut);margin-top:3px;overflow-wrap:anywhere}
@@ -479,9 +479,15 @@ var E = { aba: 'hoje', dias: 1, fm: 'todas', cq: '', cm: 'todas', cs: 'todos', p
 var M = {
   salao: { nome: 'Salão no Feed', curto: 'Salão', cor: '#c2557a', dominio: 'salaonofeed.com.br', em: '💇' },
   prato: { nome: 'Prato no Feed', curto: 'Prato', cor: '#ff6a2b', dominio: 'pratonofeed.com.br', em: '🍔' },
-  pata:  { nome: 'Pata no Feed',  curto: 'Pata',  cor: '#2a7de1', dominio: 'patanofeed.com.br',  em: '🐾' }
+  pata:  { nome: 'Pata no Feed',  curto: 'Pata',  cor: '#2a7de1', dominio: 'patanofeed.com.br',  em: '🐾' },
+  // 13/10: as marcas em espanhol (Colômbia e Chile, cobradas em dólar pela Hotmart)
+  divino:  { nome: 'Feed Divino',  curto: 'Divino',  cor: '#9b3fb5', dominio: 'feeddivino.com',  em: '💅', es: 1 },
+  sabroso: { nome: 'Feed Sabroso', curto: 'Sabroso', cor: '#d9480f', dominio: 'feedsabroso.com', em: '🌮', es: 1 },
+  peludo:  { nome: 'Feed Peludo',  curto: 'Peludo',  cor: '#2f9e6b', dominio: 'feedpeludo.com',  em: '🐶', es: 1 }
 };
-var MARCAS = ['salao', 'prato', 'pata'];
+var MARCAS = ['salao', 'prato', 'pata', 'divino', 'sabroso', 'peludo'];
+function segMarcas() { return [['todas', 'Todas']].concat(MARCAS.map(function (m) { return [m, M[m].curto, M[m].cor] })) }
+function usd(n) { return n ? ' + US$ ' + Math.round(n).toLocaleString('pt-BR') : '' }
 var ST = { teste: ['Teste', 'info'], aguardando_pagamento: ['Aguardando pagamento', 'at'], ativo: ['Ativo', 'bom'], atrasado: ['Atrasado', 'ruim'], cancelado: ['Cancelado', 'neu'] };
 var LST = { espera: ['Esperando', 'neu'], fila: ['Na fila', 'info'], gerando: ['Gerando', 'at'], pronto: ['Pronto', 'bom'], erro: ['Erro', 'ruim'] };
 var LTIPO = { teste: 'Teste grátis', mes: 'Posts do mês', ajuste: 'Ajuste' };
@@ -634,7 +640,7 @@ function hojeAba() {
   var hb = mq.trabalhador, idade = hb ? (Date.now() - new Date(hb.em)) / 1000 : null;
   var pag = mq.pagamentos;
   var k = '';
-  k += '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + '</span>'
+  k += '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '') + '</span>'
     + '<span class="s">' + n.ativos + ' assinante' + (n.ativos === 1 ? '' : 's') + ' ativo' + (n.ativos === 1 ? '' : 's') + ' × ' + R0(preco) + '</span>'
     + '<div class="mini"><span><b class="num">' + n.aguardando + '</b>aguardando pagamento</span><span><b class="num">' + n.atrasados + '</b>atrasados</span><span><b class="num">' + n.testes + '</b>no teste</span><span><b class="num">' + n.cancelados + '</b>cancelados</span></div></div>';
   k += '<button class="k" data-act="irmaq"><span class="r"><i class="dot" style="background:var(--bom)"></i>Vendas ' + periodoTxt() + '</span><span class="v num">' + (f.pagou || 0) + '</span><span class="s">' + (f.pagou ? R0(f.pagou * preco) + ' de MRR novo' : 'ninguém pagou ainda') + '</span></button>';
@@ -649,7 +655,7 @@ function hojeAba() {
   $('kpis').innerHTML = k;
 
   // funil
-  $('fmarca').innerHTML = segHtml('fm', [['todas', 'Todas'], ['salao', 'Salão', M.salao.cor], ['prato', 'Prato', M.prato.cor], ['pata', 'Pata', M.pata.cor]], E.fm);
+  $('fmarca').innerHTML = segHtml('fm', segMarcas(), E.fm);
   // 13/10: o funil começa nos cliques do anúncio (Meta), porque nem todo clique vira visita (a página não carrega, a pessoa volta antes)
   var fh = Object.assign({}, D.funil[E.fm] || {}), temClique = campOk() && C.ok !== false;
   if (temClique) fh.clique = E.fm === 'todas' ? (C.total && C.total.cliques) || 0 : ((campDe(E.fm) || {}).cliques || 0);
@@ -736,7 +742,7 @@ function campanhasAba() {
   if (err) av += '<div class="aviso ' + (cErroRede ? 'at' : 'info') + '" role="status">⚠️ ' + esc(err) + '</div>';
   if (campOk() && C.fora && C.fora.length) av += '<div class="aviso at" role="status">🔎 Essas campanhas têm FEED no nome mas não reconhecemos a marca: ' + esc(C.fora.join(', ')) + '. Usa "SALÃO NO FEED", "PRATO NO FEED" ou "PATA NO FEED" no nome.</div>';
   $('cerro').innerHTML = av;
-  $('cfm').innerHTML = segHtml('cfm', [['todas', 'Todas'], ['salao', 'Salão', M.salao.cor], ['prato', 'Prato', M.prato.cor], ['pata', 'Pata', M.pata.cor]], E.cfm);
+  $('cfm').innerHTML = segHtml('cfm', segMarcas(), E.cfm);
   if (!campOk()) {
     var msg = cErroRede ? '<div class="vazio"><b aria-hidden="true">📡</b>Sem dados da Meta agora.</div>' : '<div class="vazio"><b aria-hidden="true">⏳</b>Buscando as campanhas na Meta…</div>';
     $('ckpis').innerHTML = ''; $('cfunil').innerHTML = msg; $('ccamps').innerHTML = ''; return;
@@ -804,7 +810,7 @@ function clientesAba() {
     ['aguardando_pagamento', 'Aguardando', null, conta(function (c) { return c.status === 'aguardando_pagamento' && !c.exemplo })], ['atrasado', 'Atrasados', null, conta(function (c) { return c.status === 'atrasado' && !c.exemplo })],
     ['cancelado', 'Cancelados', null, conta(function (c) { return c.status === 'cancelado' && !c.exemplo })], ['exemplo', 'Exemplos', null, conta(function (c) { return c.exemplo })]];
   $('cst').innerHTML = segHtml('cs', sts, E.cs);
-  $('cmarca').innerHTML = segHtml('cm', [['todas', 'Todas'], ['salao', 'Salão', M.salao.cor], ['prato', 'Prato', M.prato.cor], ['pata', 'Pata', M.pata.cor]], E.cm);
+  $('cmarca').innerHTML = segHtml('cm', segMarcas(), E.cm);
   var lista = base.filter(function (c) { return E.cs === 'todos' ? true : E.cs === 'exemplo' ? c.exemplo : c.status === E.cs && !c.exemplo });
   if (!lista.length) { $('clientes').innerHTML = '<div class="vazio"><b aria-hidden="true">🔎</b>' + (todos.length ? 'Nenhum cliente com esse filtro.' : 'Nenhum cliente ainda. Quando alguém pedir o teste, aparece aqui.') + '</div>'; return }
   var mostra = lista.slice(0, E.cmax);
@@ -1000,7 +1006,7 @@ function dinheiroAba() {
   var custoPorAtivo = n.ativos ? n.custo_ia_usd * DOLAR / n.ativos : null;
 
   $('dkpis').innerHTML =
-    '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + '</span><span class="s">' + n.ativos + ' assinante(s) ativo(s) · no ritmo de ' + R0(n.mrr * 12) + ' por ano</span>'
+    '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '') + '</span><span class="s">' + n.ativos + ' assinante(s) ativo(s) · no ritmo de ' + R0(n.mrr * 12) + ' por ano</span>'
     + '<div class="mini"><span><b class="num">' + R0(n.mrr * (margem / preco)) + '</b>sobra estimada por mês</span><span><b class="num">' + n.aguardando + '</b>aguardando (' + R0(n.aguardando * preco) + ')</span><span><b class="num">' + n.atrasados + '</b>atrasados (' + R0(n.atrasados * preco) + ')</span></div></div>'
     + '<div class="k"><span class="r"><i class="dot" style="background:var(--marca)"></i>Ticket</span><span class="v num">' + R0(preco) + '</span><span class="s">por mês, plano único</span></div>'
     + '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA ' + periodoTxt() + '</span><span class="v num">' + RU(n.custo_ia_usd) + '</span><span class="s">' + (custoPorAtivo != null ? R(custoPorAtivo) + ' por assinante ativo' : 'sem assinante ativo') + '</span></div>';

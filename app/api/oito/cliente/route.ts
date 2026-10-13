@@ -9,6 +9,7 @@ import { oitoDb as db } from '@/lib/oito/db'
 import { vistaCliente, sincronizaPagamento, avisaDono } from '@/lib/oito/servico'
 import { oitoConfig as cfg } from '@/lib/oito/config'
 import { cancelaAssinatura } from '@/lib/oito/asaas'
+import { cancelaHotmart } from '@/lib/oito/hotmart'
 
 export const maxDuration = 30
 const t = (s: any, n = 300) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -60,6 +61,10 @@ export async function POST(req: Request) {
     // sem fidelidade: o próprio cliente cancela; o que já pagou vale até o fim do período
     if (b.acao === 'cancelar') {
       if (c.asaas_assinatura) await cancelaAssinatura(c.asaas_assinatura).catch(() => null)
+      // Hotmart (marcas em espanhol): cancela pela API; sem credenciais, o dono cancela na mão
+      let hm: any = null
+      if (c.hotmart_assinatura) hm = await cancelaHotmart(c.hotmart_assinatura).catch((e: any) => ({ ok: false, motivo: e?.message }))
+      if (c.gateway === 'hotmart' && !hm?.ok && !c.exemplo) avisaDono('CANCELAR NA HOTMART', `${c.nome_negocio} (${c.codigo}) pediu cancelamento: cancelar a assinatura na Hotmart (${hm?.motivo || 'sem código de assinante'})`, true)
       await db.atualiza('clientes', { id: c.id }, { status: 'cancelado' })
       await db.evento('cancelou', { cliente_id: c.id, marca: c.marca, detalhe: { por: 'cliente', motivo: t(b.motivo, 500) } })
       if (!c.exemplo) avisaDono('cancelamento', `${c.nome_negocio} (${c.cidade})${b.motivo ? ': ' + t(b.motivo, 150) : ''}`)

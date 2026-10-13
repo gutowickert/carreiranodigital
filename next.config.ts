@@ -19,8 +19,9 @@ const nextConfig: NextConfig = {
     // os dois nomes: recadoencantado (o da marca) e recadoencantando (o que foi registrado em 09/10)
     const recado = [{ type: 'host' as const, value: '(www\\.)?recadoencant(ado|ando)\\.com\\.br' }]
     // Oito Posts (12/10): três marcas, cada uma no seu domínio, todas servidas de public/oito/<marca>; a API fica em /api/oito
-    const oito = [['salao', 'salaonofeed'], ['prato', 'pratonofeed'], ['pata', 'patanofeed']].flatMap(([m, d]) => {
-      const h = [{ type: 'host' as const, value: `(www\\.)?${d}\\.com\\.br` }]
+    // 13/10: + as três em espanhol (Colômbia e Chile), em domínio .com
+    const oito = [['salao', 'salaonofeed.com.br'], ['prato', 'pratonofeed.com.br'], ['pata', 'patanofeed.com.br'], ['divino', 'feeddivino.com'], ['sabroso', 'feedsabroso.com'], ['peludo', 'feedpeludo.com']].flatMap(([m, d]) => {
+      const h = [{ type: 'host' as const, value: `(www\\.)?${d.replace(/\./g, '\\.')}` }]
       return [
         { source: '/', has: h, destination: `/oito/${m}/index.html` },
         { source: '/:path((?!api/|_next/|oito/).+)', has: h, destination: `/oito/${m}/:path` },
@@ -32,8 +33,8 @@ const nextConfig: NextConfig = {
         { source: '/:path((?!api/|_next/|recado/).+)', has: recado, destination: '/recado/:path' },
         ...oito,
         // pelo endereço da Vercel: /oito/salao abre a página de venda da marca
-        { source: '/oito/:m(salao|prato|pata)', destination: '/oito/:m/index.html' },
-        { source: '/oito/:m(salao|prato|pata)/', destination: '/oito/:m/index.html' },
+        { source: '/oito/:m(salao|prato|pata|divino|sabroso|peludo)', destination: '/oito/:m/index.html' },
+        { source: '/oito/:m(salao|prato|pata|divino|sabroso|peludo)/', destination: '/oito/:m/index.html' },
         { source: '/oito/painel', destination: '/oito/painel/index.html' },
         { source: '/oito/painel/', destination: '/oito/painel/index.html' },
       ],

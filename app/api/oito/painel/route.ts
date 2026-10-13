@@ -3,7 +3,7 @@
 //   POST {acao, ...}            → regerar · pago_manual · cancelar · suporte_ok · apagar · exemplo
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
-import { senhaOk, oitoConfig as cfg, Marca } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, Marca, MARCAS } from '@/lib/oito/config'
 import { cancelaAssinatura, asaasHoje, asaasMaisUmMes } from '@/lib/oito/asaas'
 import { garanteLoteDoCiclo } from '@/lib/oito/servico'
 
@@ -37,10 +37,10 @@ export async function GET(req: Request) {
 
   // funil: pessoas distintas por etapa (sessão antes do cadastro, cliente depois)
   const funil: Record<string, Record<string, number>> = {}
-  for (const m of ['todas', 'salao', 'prato', 'pata']) {
+  for (const m of ['todas', 'br', 'es', ...MARCAS]) {
     funil[m] = {}
     for (const et of ETAPAS) {
-      const ev = noPeriodo.filter(e => e.tipo === et && (m === 'todas' || e.marca === m))
+      const ev = noPeriodo.filter(e => e.tipo === et && (m === 'todas' || e.marca === m || (m === 'es' || m === 'br') && !!e.marca && cfg.marcas[e.marca as Marca]?.idioma === (m === 'es' ? 'es' : 'pt')))
       funil[m][et] = new Set(ev.map(e => e.cliente_id || e.sessao || e.id)).size
     }
   }
@@ -59,9 +59,9 @@ export async function GET(req: Request) {
   const nomeDe = new Map(clientes.map(c => [c.id, c]))
 
   return NextResponse.json({
-    modo: db.modo(), dias, desde, fim, pagamento_ligado: !!process.env.ASAAS_API_KEY,
+    modo: db.modo(), dias, desde, fim, pagamento_ligado: !!process.env.ASAAS_API_KEY, hotmart_ligado: !!process.env.OITO_HOTMART_HOTTOK,
     numeros: {
-      ativos: ativos.length, mrr: ativos.length * cfg.preco, atrasados: reais.filter(c => c.status === 'atrasado').length,
+      ativos: ativos.length, mrr: ativos.filter(c => cfg.marcas[c.marca as Marca]?.moeda !== 'USD').length * cfg.preco, mrr_usd: ativos.filter(c => cfg.marcas[c.marca as Marca]?.moeda === 'USD').reduce((s, c) => s + cfg.marcas[c.marca as Marca].preco, 0), atrasados: reais.filter(c => c.status === 'atrasado').length,
       aguardando: reais.filter(c => c.status === 'aguardando_pagamento').length, testes: reais.filter(c => c.status === 'teste').length,
       cancelados: reais.filter(c => c.status === 'cancelado').length,
       custo_ia_usd: +custoPeriodo.toFixed(2), custo_teste_medio_usd: custoTestes.length ? +(custoTestes.reduce((s, l) => s + (+l.custo_usd || 0), 0) / custoTestes.length).toFixed(3) : null,
@@ -72,7 +72,7 @@ export async function GET(req: Request) {
     clientes: clientes.slice(0, 300).map(c => {
       const ls = porCliente.get(c.id) || []
       return { id: c.id, codigo: c.codigo, marca: c.marca, status: c.status, exemplo: !!c.exemplo, nome: c.nome_negocio, responsavel: c.responsavel, cidade: c.cidade, bairro: c.bairro,
-        whatsapp: c.whatsapp, email: c.email, instagram: c.instagram, fotos_modo: c.fotos_modo, pago_ate: c.pago_ate, criado_em: c.criado_em, utm: c.utm, contexto: c.contexto,
+        whatsapp: c.whatsapp, email: c.email, instagram: c.instagram, pais: c.pais || 'BR', gateway: c.gateway || 'asaas', fotos_modo: c.fotos_modo, pago_ate: c.pago_ate, criado_em: c.criado_em, utm: c.utm, contexto: c.contexto,
         lotes: ls.length, ultimo_lote: ls[0] ? { tipo: ls[0].tipo, status: ls[0].status } : null, custo_usd: +ls.reduce((s, l) => s + (+l.custo_usd || 0), 0).toFixed(2) }
     }),
     fila: lotes.slice(0, 80).map(l => ({ id: l.id, tipo: l.tipo, status: l.status, qtd: l.qtd, tentativas: l.tentativas, erro: l.erro, criado_em: l.criado_em, iniciado_em: l.iniciado_em, pronto_em: l.pronto_em,

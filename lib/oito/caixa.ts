@@ -7,10 +7,10 @@
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { oitoDb as db } from './db'
-import { oitoConfig as cfg, Marca } from './config'
+import { oitoConfig as cfg, Marca, MARCAS, emEspanhol } from './config'
+import { chaveResend } from './email'
 import { novaMensagemCliente } from './suporte'
 
-const MARCAS: Marca[] = ['salao', 'prato', 'pata']
 const senha = (m: Marca) => { const v = process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]; return v ? v.trim().replace(/^["']|["']$/g, '') : v }
 export const caixasLigadas = () => MARCAS.filter(m => !!senha(m))
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -33,23 +33,22 @@ async function estado(chave: string, valor?: any) {
 
 export async function respondeEmail(ch: any, texto: string, autor: 'ia' | 'dono') {
   const m = (ch.marca || 'salao') as Marca, dom = cfg.marcas[m].dominio, nome = cfg.marcas[m].nome
-  const chave = m === 'pata' ? process.env.OITO_RESEND_PATA : process.env.RESEND_API_KEY
+  const chave = chaveResend(m), de = cfg.marcas[m].email, es = emEspanhol(m)
   if (!chave || !ch.contato || !/@/.test(ch.contato)) return { ok: false }
-  const base = ch.email_assunto || `${nome} · atendimento`
+  const base = ch.email_assunto || `${nome} · ${es ? 'atención' : 'atendimento'}`
   const assunto = /^re:/i.test(base) ? base : 'Re: ' + base
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#222"><div style="white-space:pre-wrap">${esc(texto)}</div>
-<p style="margin-top:18px">Um abraço,<br><b>Equipe ${esc(nome)}</b><br><a href="https://www.${dom}">${dom}</a></p></div>`
+<p style="margin-top:18px">${es ? 'Un abrazo,<br><b>Equipo' : 'Um abraço,<br><b>Equipe'} ${esc(nome)}</b><br><a href="https://www.${dom}">${dom}</a></p></div>`
   const headers: Record<string, string> = {}
   if (ch.email_ref) { headers['In-Reply-To'] = ch.email_ref; headers['References'] = ch.email_ref }
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + chave, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: `${nome} <contato@${dom}>`, to: [ch.contato], reply_to: `contato@${dom}`, subject: assunto, html, text: texto + `\n\nUm abraço,\nEquipe ${nome}`, headers }) })
+    body: JSON.stringify({ from: `${nome} <${de}>`, to: [ch.contato], reply_to: de, subject: assunto, html, text: texto + (es ? `\n\nUn abrazo,\nEquipo ${nome}` : `\n\nUm abraço,\nEquipe ${nome}`), headers }) })
   return { ok: r.ok, autor }
 }
 
 async function lerCaixa(m: Marca) {
-  const dom = cfg.marcas[m].dominio
   const c = new ImapFlow({ host: process.env.OITO_EMAIL_IMAP || "imap.titan.email", port: 993, secure: true,
-    auth: { user: `contato@${dom}`, pass: senha(m) as string }, logger: false, tls: { rejectUnauthorized: false } })
+    auth: { user: cfg.marcas[m].email, pass: senha(m) as string }, logger: false, tls: { rejectUnauthorized: false } })
   let novas = 0
   await c.connect()
   const lock = await c.getMailboxLock('INBOX')
@@ -64,12 +63,12 @@ async function lerCaixa(m: Marca) {
         const p: any = await simpleParser(msg.source)
         const de = p.from?.value?.[0] || {}, email = String(de.address || '').toLowerCase()
         // ignora as próprias marcas e o Recado (evita duas IAs se respondendo em loop), robôs e avisos automáticos
-        if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
+        if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /@feed(divino|sabroso|peludo)\.com$/.test(email) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
         if (p.headers?.get('auto-submitted') && String(p.headers.get('auto-submitted')) !== 'no') continue
         // e-mail automático não vira chamado (13/10): newsletter, boas-vindas e confirmação de serviços, notificações
         const prec = String(p.headers?.get('precedence') || '').toLowerCase()
         if (p.headers?.get('list-unsubscribe') || /bulk|list|junk/.test(prec)) continue
-        if (/@([a-z0-9-]+.)*(titan.email|resend.com|hostgator.com(.br)?|facebookmail.com|meta.com|google.com|accounts.google.com|vercel.com|asaas.com|supabase.(io|com))$/.test(email)) continue
+        if (/@([a-z0-9-]+.)*(titan.email|resend.com|hostgator.com(.br)?|facebookmail.com|meta.com|google.com|accounts.google.com|vercel.com|asaas.com|supabase.(io|com)|hotmart.com)$/.test(email)) continue
         if (/^(notifications?|updates?|news|newsletter|alerts?|info|team|suporte@titan|marketing)@/.test(email)) continue
         const texto = limpa(p.text || (p.html ? String(p.html).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '') : '')) || '(mensagem sem texto)'
         const assunto = String(p.subject || '').trim().slice(0, 200)

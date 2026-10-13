@@ -6,7 +6,7 @@
 import { NextResponse } from 'next/server'
 import { getAnunciosDia, type AnuncioDia } from '@/lib/meta-ads'
 import { oitoDb as db } from '@/lib/oito/db'
-import { senhaOk, oitoConfig as cfg, Marca } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, Marca, MARCAS } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -15,11 +15,16 @@ function marcaDaCampanha(nome: string): Marca | null {
   if (n.includes('SALAONOFEED')) return 'salao'
   if (n.includes('PRATONOFEED')) return 'prato'
   if (n.includes('PATANOFEED')) return 'pata'
+  // 13/10: as marcas em espanhol ("FEED DIVINO", "FEED SABROSO", "FEED PELUDO")
+  if (n.includes('FEEDDIVINO')) return 'divino'
+  if (n.includes('FEEDSABROSO')) return 'sabroso'
+  if (n.includes('FEEDPELUDO')) return 'peludo'
   return null
 }
 const hojeBR = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
 const diaBR = (ms: number) => new Date(ms - 3 * 3600e3).toISOString().slice(0, 10)
 const r2 = (n: number) => +n.toFixed(2)
+const USD_BRL = +(process.env.OITO_USD_BRL || 5.4)
 const div = (a: number, b: number) => (b > 0 ? r2(a / b) : null)
 
 export async function GET(req: Request) {
@@ -44,7 +49,7 @@ export async function GET(req: Request) {
 
   // o site, por marca e por anúncio (utm_content)
   const site: Record<string, any> = {}
-  for (const m of ['salao', 'prato', 'pata']) site[m] = { visitas: new Set(), testes: 0, testes_meta: 0, assinaturas: 0, vendas: 0, por_anuncio: {} as Record<string, { testes: number; vendas: number }> }
+  for (const m of MARCAS) site[m] = { visitas: new Set(), testes: 0, testes_meta: 0, assinaturas: 0, vendas: 0, por_anuncio: {} as Record<string, { testes: number; vendas: number }> }
   for (const e of ev) {
     const s = site[e.marca as string]; if (!s) continue
     const c: any = e.cliente_id ? porCliente.get(e.cliente_id) : null
@@ -58,7 +63,7 @@ export async function GET(req: Request) {
 
   // a Meta, por marca → campanha → anúncio
   const marcas: any = {}
-  for (const m of ['salao', 'prato', 'pata'] as Marca[]) {
+  for (const m of MARCAS) {
     const ls = linhas.filter(l => marcaDaCampanha(l.campaign_name) === m)
     const soma = (f: keyof AnuncioDia) => ls.reduce((a, l) => a + (+l[f] || 0), 0)
     const gasto = soma('gasto'), cliques = soma('cliques'), impressoes = soma('impressoes'), s = site[m]
@@ -74,14 +79,15 @@ export async function GET(req: Request) {
       nome: cfg.marcas[m].nome,
       gasto: r2(gasto), impressoes, cliques, ctr: impressoes ? r2(cliques / impressoes * 100) : null, cpc: div(gasto, cliques),
       leads_meta: soma('leads'), visitas: s.visitas.size, testes: s.testes, testes_meta: s.testes_meta, assinaturas: s.assinaturas, vendas: s.vendas,
-      custo_por_teste: div(gasto, s.testes), custo_por_venda: div(gasto, s.vendas), receita: s.vendas * cfg.preco, retorno: div(s.vendas * cfg.preco, gasto),
+      custo_por_teste: div(gasto, s.testes), custo_por_venda: div(gasto, s.vendas), moeda: cfg.marcas[m].moeda, receita: s.vendas * cfg.marcas[m].preco, retorno: div(s.vendas * cfg.marcas[m].preco * (cfg.marcas[m].moeda === 'USD' ? USD_BRL : 1), gasto),
       conversao_clique_teste: cliques ? r2(s.testes / cliques * 100) : null, conversao_teste_venda: s.testes ? r2(s.vendas / s.testes * 100) : null,
       campanhas: [...campanhas.values()].map(c => ({ ...c, gasto: r2(c.gasto), ctr: c.impressoes ? r2(c.cliques / c.impressoes * 100) : null, cpc: div(c.gasto, c.cliques),
         anuncios: [...c.anuncios.values()].map((a: any) => { const x = s.por_anuncio[a.nome] || { testes: 0, vendas: 0 }; return { ...a, gasto: r2(a.gasto), ctr: a.impressoes ? r2(a.cliques / a.impressoes * 100) : null, cpc: div(a.gasto, a.cliques), testes: x.testes, vendas: x.vendas, custo_por_teste: div(a.gasto, x.testes) } })
           .sort((a: any, b: any) => b.gasto - a.gasto) })).sort((a, b) => b.gasto - a.gasto),
     }
   }
-  const tot = (f: string) => (['salao', 'prato', 'pata'] as const).reduce((a, m) => a + (+marcas[m][f] || 0), 0)
+  // receita somada em reais (as marcas em dólar convertidas pela cotação de OITO_USD_BRL, padrão 5,40)
+  const tot = (f: string) => MARCAS.reduce((a, m) => a + (+marcas[m][f] || 0) * (f === 'receita' && cfg.marcas[m].moeda === 'USD' ? USD_BRL : 1), 0)
   return NextResponse.json({
     ok: !!meta.ok, erro: meta.ok ? null : meta.error, conta: conta ? 'ok' : null, desde: desdeDia, ate, dias,
     total: { gasto: r2(tot('gasto')), cliques: tot('cliques'), impressoes: tot('impressoes'), testes: tot('testes'), vendas: tot('vendas'), receita: tot('receita'),
