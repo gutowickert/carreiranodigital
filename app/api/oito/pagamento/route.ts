@@ -5,14 +5,14 @@ import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { senhaOk } from '@/lib/oito/config'
 import { sincronizaPagamento, garanteLoteDoCiclo } from '@/lib/oito/servico'
-import { asaasHoje, asaasMaisUmMes } from '@/lib/oito/asaas'
+import { asaasHoje, asaasMaisUmMes, podeSimular } from '@/lib/oito/asaas'
 
 export const maxDuration = 60
 
 export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}))
   // assinatura "sim-" só nasce quando não há chave do Asaas (teste local); em produção nunca existe
-  if (b.simular && !process.env.ASAAS_API_KEY) {
+  if (b.simular && podeSimular()) {
     const c = await db.um('clientes', { codigo: String(b.c || '').toUpperCase() })
     if (!c || !String(c.asaas_assinatura || '').startsWith('sim-')) return NextResponse.json({ erro: 'sem assinatura simulada' }, { status: 400 })
     const pagoAte = asaasMaisUmMes(asaasHoje())

@@ -13,6 +13,8 @@ const PAGO = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH']
 const hoje = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
 const maisUmMes = (d: string) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCMonth(x.getUTCMonth() + 1); return x.toISOString().slice(0, 10) }
 export const simulado = () => !process.env.ASAAS_API_KEY
+// na Vercel nunca simula: sem chave, a assinatura falha (senão daria pra "pagar" de mentira)
+export const podeSimular = () => simulado() && !process.env.VERCEL
 
 export async function criaAssinatura(d: { codigo: string; marcaNome: string; nome: string; documento: string; email: string; whatsapp: string; valor: number }) {
   if (simulado()) return { customer: 'sim-' + d.codigo, assinatura: 'sim-' + d.codigo, fatura: null as string | null }

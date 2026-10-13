@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { oitoConfig as cfg, Marca } from '@/lib/oito/config'
-import { criaAssinatura, situacao, simulado } from '@/lib/oito/asaas'
+import { criaAssinatura, situacao, simulado, podeSimular } from '@/lib/oito/asaas'
 
 export const maxDuration = 30
 const t = (s: any, n = 160) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
       const s = await situacao(c.asaas_assinatura, c.pago_ate).catch(() => null)
       if (s && !s.cancelada) return NextResponse.json({ fatura: s.faturaAberta, simulado: c.asaas_assinatura.startsWith('sim-') })
     }
+    if (simulado() && !podeSimular()) return NextResponse.json({ erro: 'O pagamento está fora do ar agora. Tenta de novo em alguns minutos.' }, { status: 503 })
     const nome = t(b.nome), documento = t(b.documento, 20).replace(/\D/g, ''), email = t(b.email).toLowerCase() || c.email
     if (!nome || !docOk(documento)) return NextResponse.json({ erro: 'Confere o nome e o CPF ou CNPJ.' }, { status: 400 })
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return NextResponse.json({ erro: 'Confere o e-mail: a fatura vai pra ele.' }, { status: 400 })

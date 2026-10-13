@@ -53,7 +53,7 @@ export async function GET(req: Request) {
   const nomeDe = new Map(clientes.map(c => [c.id, c]))
 
   return NextResponse.json({
-    modo: db.modo(), dias, desde,
+    modo: db.modo(), dias, desde, pagamento_ligado: !!process.env.ASAAS_API_KEY,
     numeros: {
       ativos: ativos.length, mrr: ativos.length * cfg.preco, atrasados: reais.filter(c => c.status === 'atrasado').length,
       aguardando: reais.filter(c => c.status === 'aguardando_pagamento').length, testes: reais.filter(c => c.status === 'teste').length,
