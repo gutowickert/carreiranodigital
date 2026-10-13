@@ -1,0 +1,42 @@
+// Oito Posts: o formulário de entrada. Grava o negócio e abre o lote de teste (2 posts grátis).
+// O lote nasce em "espera": as fotos sobem depois, com o código; o "liberar" (rota cliente) põe na fila.
+import { NextResponse } from 'next/server'
+import { oitoDb as db, novoCodigo } from '@/lib/oito/db'
+import { oitoConfig as cfg, ehMarca } from '@/lib/oito/config'
+import { avisaDono } from '@/lib/oito/servico'
+
+const t = (s: any, n = 300) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
+const soDigitos = (s: any) => t(s, 30).replace(/\D/g, '')
+
+export async function POST(req: Request) {
+  try {
+    const b = await req.json()
+    if (!ehMarca(b.marca)) return NextResponse.json({ erro: 'marca' }, { status: 400 })
+    const n = b.negocio || {}, x = b.contexto || {}
+    let whats = soDigitos(n.whatsapp); if (whats.length === 10 || whats.length === 11) whats = '55' + whats
+    if (!t(n.nome) || whats.length < 12 || !t(n.cidade)) return NextResponse.json({ erro: 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
+
+    // o mesmo WhatsApp já pediu teste nessa marca: devolve o que já existe (não gera de novo)
+    const ja = (await db.lista('clientes', { whatsapp: whats, marca: b.marca })).find(c => !c.exemplo)
+    if (ja) return NextResponse.json({ codigo: ja.codigo, existente: true })
+
+    const contexto = {
+      servicos: t(x.servicos, 600), carro_chefe: t(x.carro_chefe), diferencial: t(x.diferencial, 500), publico: t(x.publico, 400),
+      preco_medio: t(x.preco_medio, 80), tom: t(x.tom, 40), evitar: t(x.evitar, 400), horario: t(x.horario, 200), extra: t(x.extra, 600),
+    }
+    const c = await db.insere('clientes', {
+      codigo: novoCodigo(), marca: b.marca, status: 'teste', exemplo: false,
+      nome_negocio: t(n.nome, 120), responsavel: t(n.responsavel, 120), whatsapp: whats, email: t(n.email, 160).toLowerCase(),
+      cidade: t(n.cidade, 80), bairro: t(n.bairro, 80), instagram: t(n.instagram, 60).replace(/^@/, ''),
+      contexto, cores: b.cores && typeof b.cores === 'object' ? { fundo: t(b.cores.fundo, 9), destaque: t(b.cores.destaque, 9), texto: t(b.cores.texto, 9), nome: t(b.cores.nome, 40) } : null,
+      fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
+    })
+    await db.insere('lotes', { cliente_id: c.id, tipo: 'teste', qtd: cfg.postsTeste, status: 'espera' })
+    await db.evento('lead', { cliente_id: c.id, marca: c.marca, sessao: c.sessao, detalhe: { fotos_modo: c.fotos_modo } })
+    avisaDono('teste pedido', `${cfg.marcas[c.marca as 'salao'].nome} · ${c.nome_negocio} (${c.cidade})`)
+    return NextResponse.json({ codigo: c.codigo })
+  } catch (e: any) {
+    console.error('oito lead', e)
+    return NextResponse.json({ erro: 'Não deu pra salvar agora. Tenta de novo em um minuto.' }, { status: 500 })
+  }
+}

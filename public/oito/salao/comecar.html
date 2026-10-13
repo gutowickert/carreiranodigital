@@ -1,0 +1,58 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salão no Feed · seus 2 posts grátis</title><meta name="description" content="Responda umas perguntas e receba 2 posts prontos em 1 minuto.">
+<meta property="og:title" content="Salão no Feed · seus 2 posts grátis"><meta property="og:description" content="Responda umas perguntas e receba 2 posts prontos em 1 minuto."><meta property="og:type" content="website">
+<meta property="og:image" content="/oito/salao/exemplos/ex-01.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%23d4577f'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20font-size%3D'17'%20font-family%3D'Arial'%20font-weight%3D'800'%20text-anchor%3D'middle'%20fill%3D'%23ffffff'%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;1,9..144,600&family=DM+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mv63jzvf">
+<style>:root{--escuro:#2b1420;--destaque:#d4577f;--sobre-destaque:#ffffff;--claro:#fbf4f2;--tinta:#2b1420;--suave:#7a5b66;--linha:#ecdcdc;--ft:'Fraunces', Georgia, serif;--fc:'DM Sans', system-ui, sans-serif;--peso-t:600}</style>
+</head>
+<body data-marca="salao">
+<header class="topo"><div class="wrap"><a class="logo" href="/oito/salao/"><i>S</i>Salão no Feed</a><nav><a class="link" href="#" data-ajuda>Ajuda</a></nav></div></header>
+<main class="estreito">
+  <div class="form-topo"><div class="barra" role="progressbar" aria-label="Progresso" aria-valuemin="0" aria-valuemax="5"><i></i></div><p class="nota" id="passo-txt">Passo 1 de 5</p></div>
+  <form id="f" novalidate>
+    <div class="etapa ativa" data-n="1">
+      <h1>Vamos conhecer seu salão</h1><p class="lead">É com isso que a gente escreve os posts. Leva 3 minutos.</p>
+      <div class="campo"><label for="nome">Nome do salão</label><input id="nome" name="nome" required maxlength="120" autocomplete="organization"></div>
+      <div class="campo"><label for="cidade">Cidade</label><input id="cidade" name="cidade" required maxlength="80" autocomplete="address-level2"></div>
+      <div class="campo"><label for="bairro">Bairro <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
+      <div class="campo"><label for="instagram">Instagram <span class="suave">(opcional)</span></label><input id="instagram" name="instagram" maxlength="60" placeholder="@seuperfil" autocapitalize="off"></div>
+    </div>
+    <div class="etapa" data-n="2">
+      <h1>O que você vende?</h1><p class="lead">Quanto mais concreto, melhor o post.</p>
+      <div class="campo"><label for="servicos">Serviços ou produtos</label><textarea id="servicos" name="servicos" required maxlength="600" placeholder="Ex.: corte, coloração, mechas, escova, hidratação, sobrancelha"></textarea></div>
+      <div class="campo"><label for="carro_chefe">O que você mais quer vender</label><input id="carro_chefe" name="carro_chefe" required maxlength="200" placeholder="Ex.: mechas e loiros"></div>
+      <div class="campo"><label for="diferencial">O que faz o cliente escolher você <span class="suave">(opcional)</span></label><textarea id="diferencial" name="diferencial" maxlength="500" placeholder="Ex.: atendimento com hora marcada, sem espera"></textarea></div>
+      <div class="campo"><label for="horario">Dias e horário de atendimento <span class="suave">(opcional)</span></label><input id="horario" name="horario" maxlength="200" placeholder="Ex.: terça a sábado, das 9h às 19h"></div>
+    </div>
+    <div class="etapa" data-n="3">
+      <h1>O jeito da sua marca</h1><p class="lead">As cores e o tom vão em todos os posts.</p>
+      <div class="campo"><label>Tom das legendas</label><div class="chips"><label><input type="radio" name="tom" value="Elegante" checked><span>Elegante</span></label><label><input type="radio" name="tom" value="Acolhedor"><span>Acolhedor</span></label><label><input type="radio" name="tom" value="Divertido"><span>Divertido</span></label><label><input type="radio" name="tom" value="Direto e profissional"><span>Direto e profissional</span></label></div></div>
+      <div class="campo"><label>Cores dos posts</label><div class="paletas"><label><input type="radio" name="paleta" value="0" checked><span class="pal"><i><b style="background:#3b2a24"></b><b style="background:#c9a27a"></b><b style="background:#fbf3ec"></b></i><em>Nude e dourado</em></span></label><label><input type="radio" name="paleta" value="1"><span class="pal"><i><b style="background:#5a2a3a"></b><b style="background:#e8a4b8"></b><b style="background:#fff3f6"></b></i><em>Rosé</em></span></label><label><input type="radio" name="paleta" value="2"><span class="pal"><i><b style="background:#141414"></b><b style="background:#d4af6a"></b><b style="background:#f7f1e3"></b></i><em>Preto e ouro</em></span></label><label><input type="radio" name="paleta" value="3"><span class="pal"><i><b style="background:#3d2a5c"></b><b style="background:#c7a6ea"></b><b style="background:#f6f0ff"></b></i><em>Lilás</em></span></label><label><input type="radio" name="paleta" value="4"><span class="pal"><i><b style="background:#2f3e36"></b><b style="background:#b8c9a8"></b><b style="background:#f4f1ea"></b></i><em>Verde sálvia</em></span></label><label><input type="radio" name="paleta" value="5"><span class="pal"><i><b style="background:#5b2b1e"></b><b style="background:#e09f7d"></b><b style="background:#fff4ec"></b></i><em>Terracota</em></span></label></div></div>
+      <div class="campo"><label>Logo <span class="suave">(opcional)</span></label><label class="sobe" for="logo"><b>Enviar o logo</b><br><span class="suave">PNG ou JPG. Sem logo, vai o nome do salão.</span></label><input id="logo" type="file" accept="image/*" class="esconde"><div id="logo-prev" class="miniaturas"></div></div>
+      <div class="campo"><label for="evitar">Algo que nunca deve aparecer? <span class="suave">(opcional)</span></label><input id="evitar" name="evitar" maxlength="400" placeholder="Ex.: não falar de preço"></div>
+    </div>
+    <div class="etapa" data-n="4">
+      <h1>E as imagens?</h1><p class="lead">Você escolhe. Dá pra mudar depois.</p>
+      <div class="escolha">
+        <label><input type="radio" name="fotos_modo" value="enviar"><div><b>Vou enviar fotos minhas</b><span>Fica mais real. Até 10 agora, e mais depois na sua área.</span></div></label>
+        <label><input type="radio" name="fotos_modo" value="ia" checked><div><b>Gerem as imagens pra mim</b><span>Imagens criadas por inteligência artificial, de acordo com o que você vende.</span></div></label>
+      </div>
+      <div id="fotos-caixa" class="esconde" style="margin-top:16px"><label class="sobe" for="fotos"><b>Escolher fotos</b><br><span class="suave">Fotos do salão, do trabalho, do ambiente. Na vertical fica melhor.</span></label><input id="fotos" type="file" accept="image/*" multiple class="esconde"><div id="fotos-prev" class="miniaturas"></div></div>
+    </div>
+    <div class="etapa" data-n="5">
+      <h1>Pra onde mandar?</h1><p class="lead">Os 2 posts aparecem na próxima tela. O WhatsApp é pra gente falar com você se precisar.</p>
+      <div class="campo"><label for="responsavel">Seu nome</label><input id="responsavel" name="responsavel" required maxlength="120" autocomplete="name"></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="20" placeholder="(51) 99999-9999" autocomplete="tel"></div>
+      <div class="campo"><label for="email">E-mail <span class="suave">(opcional)</span></label><input id="email" name="email" type="email" maxlength="160" autocomplete="email"></div>
+      <p class="nota">Ao continuar, você concorda com os <a href="/oito/salao/termos.html" target="_blank">termos</a>. Não mandamos spam.</p>
+    </div>
+    <p class="erro-form" id="erro" role="alert"></p>
+    <div class="navega"><button type="button" class="btn fantasma" id="volta" style="visibility:hidden">Voltar</button><button class="btn grande" id="segue">Continuar</button></div>
+  </form>
+</main>
+<script src="/oito/comum/app.js?v=mv63jzvf"></script><script src="/oito/comum/form.js?v=mv63jzvf"></script>
+<script>OITO_FORM([{"nome":"Nude e dourado","fundo":"#3b2a24","destaque":"#c9a27a","texto":"#fbf3ec"},{"nome":"Rosé","fundo":"#5a2a3a","destaque":"#e8a4b8","texto":"#fff3f6"},{"nome":"Preto e ouro","fundo":"#141414","destaque":"#d4af6a","texto":"#f7f1e3"},{"nome":"Lilás","fundo":"#3d2a5c","destaque":"#c7a6ea","texto":"#f6f0ff"},{"nome":"Verde sálvia","fundo":"#2f3e36","destaque":"#b8c9a8","texto":"#f4f1ea"},{"nome":"Terracota","fundo":"#5b2b1e","destaque":"#e09f7d","texto":"#fff4ec"}])</script>
+</body></html>

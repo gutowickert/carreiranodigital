@@ -1,0 +1,58 @@
+<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pata no Feed · seus 2 posts grátis</title><meta name="description" content="Responda umas perguntas e receba 2 posts prontos em 1 minuto.">
+<meta property="og:title" content="Pata no Feed · seus 2 posts grátis"><meta property="og:description" content="Responda umas perguntas e receba 2 posts prontos em 1 minuto."><meta property="og:type" content="website">
+<meta property="og:image" content="/oito/pata/exemplos/ex-01.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%23ffb703'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20font-size%3D'17'%20font-family%3D'Arial'%20font-weight%3D'800'%20text-anchor%3D'middle'%20fill%3D'%23102a4c'%3EP%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&family=Nunito:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mv63jzvf">
+<style>:root{--escuro:#102a4c;--destaque:#ffb703;--sobre-destaque:#102a4c;--claro:#f3f7ff;--tinta:#102a4c;--suave:#52627a;--linha:#dde6f3;--ft:'Fredoka', system-ui, sans-serif;--fc:'Nunito', system-ui, sans-serif;--peso-t:700;--em-estilo:normal}</style>
+</head>
+<body data-marca="pata">
+<header class="topo"><div class="wrap"><a class="logo" href="/oito/pata/"><i>P</i>Pata no Feed</a><nav><a class="link" href="#" data-ajuda>Ajuda</a></nav></div></header>
+<main class="estreito">
+  <div class="form-topo"><div class="barra" role="progressbar" aria-label="Progresso" aria-valuemin="0" aria-valuemax="5"><i></i></div><p class="nota" id="passo-txt">Passo 1 de 5</p></div>
+  <form id="f" novalidate>
+    <div class="etapa ativa" data-n="1">
+      <h1>Vamos conhecer seu pet shop</h1><p class="lead">É com isso que a gente escreve os posts. Leva 3 minutos.</p>
+      <div class="campo"><label for="nome">Nome do pet shop</label><input id="nome" name="nome" required maxlength="120" autocomplete="organization"></div>
+      <div class="campo"><label for="cidade">Cidade</label><input id="cidade" name="cidade" required maxlength="80" autocomplete="address-level2"></div>
+      <div class="campo"><label for="bairro">Bairro <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
+      <div class="campo"><label for="instagram">Instagram <span class="suave">(opcional)</span></label><input id="instagram" name="instagram" maxlength="60" placeholder="@seuperfil" autocapitalize="off"></div>
+    </div>
+    <div class="etapa" data-n="2">
+      <h1>O que você vende?</h1><p class="lead">Quanto mais concreto, melhor o post.</p>
+      <div class="campo"><label for="servicos">Serviços ou produtos</label><textarea id="servicos" name="servicos" required maxlength="600" placeholder="Ex.: banho e tosa, rações, acessórios, leva e traz"></textarea></div>
+      <div class="campo"><label for="carro_chefe">O que você mais quer vender</label><input id="carro_chefe" name="carro_chefe" required maxlength="200" placeholder="Ex.: banho e tosa com leva e traz"></div>
+      <div class="campo"><label for="diferencial">O que faz o cliente escolher você <span class="suave">(opcional)</span></label><textarea id="diferencial" name="diferencial" maxlength="500" placeholder="Ex.: secagem sem estresse, foto do pet pronto"></textarea></div>
+      <div class="campo"><label for="horario">Dias e horário de atendimento <span class="suave">(opcional)</span></label><input id="horario" name="horario" maxlength="200" placeholder="Ex.: terça a sábado, das 9h às 19h"></div>
+    </div>
+    <div class="etapa" data-n="3">
+      <h1>O jeito da sua marca</h1><p class="lead">As cores e o tom vão em todos os posts.</p>
+      <div class="campo"><label>Tom das legendas</label><div class="chips"><label><input type="radio" name="tom" value="Carinhoso" checked><span>Carinhoso</span></label><label><input type="radio" name="tom" value="Divertido"><span>Divertido</span></label><label><input type="radio" name="tom" value="Profissional"><span>Profissional</span></label><label><input type="radio" name="tom" value="Direto"><span>Direto</span></label></div></div>
+      <div class="campo"><label>Cores dos posts</label><div class="paletas"><label><input type="radio" name="paleta" value="0" checked><span class="pal"><i><b style="background:#16325c"></b><b style="background:#ffb703"></b><b style="background:#f4f8ff"></b></i><em>Azul pet</em></span></label><label><input type="radio" name="paleta" value="1"><span class="pal"><i><b style="background:#0f4c45"></b><b style="background:#7ce0c3"></b><b style="background:#f1fffb"></b></i><em>Menta</em></span></label><label><input type="radio" name="paleta" value="2"><span class="pal"><i><b style="background:#5a2d0c"></b><b style="background:#ff9f43"></b><b style="background:#fff7ee"></b></i><em>Laranja</em></span></label><label><input type="radio" name="paleta" value="3"><span class="pal"><i><b style="background:#3b1e5a"></b><b style="background:#ffcf5c"></b><b style="background:#f8f2ff"></b></i><em>Roxo</em></span></label><label><input type="radio" name="paleta" value="4"><span class="pal"><i><b style="background:#0b4f6c"></b><b style="background:#ffd166"></b><b style="background:#f0faff"></b></i><em>Céu</em></span></label><label><input type="radio" name="paleta" value="5"><span class="pal"><i><b style="background:#5c1a3b"></b><b style="background:#ff8fab"></b><b style="background:#fff0f5"></b></i><em>Chiclete</em></span></label></div></div>
+      <div class="campo"><label>Logo <span class="suave">(opcional)</span></label><label class="sobe" for="logo"><b>Enviar o logo</b><br><span class="suave">PNG ou JPG. Sem logo, vai o nome do pet shop.</span></label><input id="logo" type="file" accept="image/*" class="esconde"><div id="logo-prev" class="miniaturas"></div></div>
+      <div class="campo"><label for="evitar">Algo que nunca deve aparecer? <span class="suave">(opcional)</span></label><input id="evitar" name="evitar" maxlength="400" placeholder="Ex.: não falar de preço"></div>
+    </div>
+    <div class="etapa" data-n="4">
+      <h1>E as imagens?</h1><p class="lead">Você escolhe. Dá pra mudar depois.</p>
+      <div class="escolha">
+        <label><input type="radio" name="fotos_modo" value="enviar"><div><b>Vou enviar fotos minhas</b><span>Fica mais real. Até 10 agora, e mais depois na sua área.</span></div></label>
+        <label><input type="radio" name="fotos_modo" value="ia" checked><div><b>Gerem as imagens pra mim</b><span>Imagens criadas por inteligência artificial, de acordo com o que você vende.</span></div></label>
+      </div>
+      <div id="fotos-caixa" class="esconde" style="margin-top:16px"><label class="sobe" for="fotos"><b>Escolher fotos</b><br><span class="suave">Fotos do pet shop, do trabalho, do ambiente. Na vertical fica melhor.</span></label><input id="fotos" type="file" accept="image/*" multiple class="esconde"><div id="fotos-prev" class="miniaturas"></div></div>
+    </div>
+    <div class="etapa" data-n="5">
+      <h1>Pra onde mandar?</h1><p class="lead">Os 2 posts aparecem na próxima tela. O WhatsApp é pra gente falar com você se precisar.</p>
+      <div class="campo"><label for="responsavel">Seu nome</label><input id="responsavel" name="responsavel" required maxlength="120" autocomplete="name"></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="20" placeholder="(51) 99999-9999" autocomplete="tel"></div>
+      <div class="campo"><label for="email">E-mail <span class="suave">(opcional)</span></label><input id="email" name="email" type="email" maxlength="160" autocomplete="email"></div>
+      <p class="nota">Ao continuar, você concorda com os <a href="/oito/pata/termos.html" target="_blank">termos</a>. Não mandamos spam.</p>
+    </div>
+    <p class="erro-form" id="erro" role="alert"></p>
+    <div class="navega"><button type="button" class="btn fantasma" id="volta" style="visibility:hidden">Voltar</button><button class="btn grande" id="segue">Continuar</button></div>
+  </form>
+</main>
+<script src="/oito/comum/app.js?v=mv63jzvf"></script><script src="/oito/comum/form.js?v=mv63jzvf"></script>
+<script>OITO_FORM([{"nome":"Azul pet","fundo":"#16325c","destaque":"#ffb703","texto":"#f4f8ff"},{"nome":"Menta","fundo":"#0f4c45","destaque":"#7ce0c3","texto":"#f1fffb"},{"nome":"Laranja","fundo":"#5a2d0c","destaque":"#ff9f43","texto":"#fff7ee"},{"nome":"Roxo","fundo":"#3b1e5a","destaque":"#ffcf5c","texto":"#f8f2ff"},{"nome":"Céu","fundo":"#0b4f6c","destaque":"#ffd166","texto":"#f0faff"},{"nome":"Chiclete","fundo":"#5c1a3b","destaque":"#ff8fab","texto":"#fff0f5"}])</script>
+</body></html>
