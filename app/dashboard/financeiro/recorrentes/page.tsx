@@ -87,25 +87,37 @@ export default function ClientesRecorrencia() {
                   {vencidos > 0 && <span style={{ color: 'var(--red)', fontWeight: 700 }}>{vencidos} vencido{vencidos > 1 ? 's' : ''}</span>}
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 8 }}>
-                  {c.meses.map(m => {
-                    const s = COR[m.situacao]
-                    return (
-                      <div key={m.mes} style={{ border: `1px solid ${m.situacao === 'vencido' ? 'var(--red)' : 'var(--border)'}`, borderRadius: 10, padding: '10px 11px', background: m.situacao === 'pago' ? s.bg : 'transparent', display: 'flex', flexDirection: 'column', gap: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text)', textTransform: 'capitalize' }}>{nomeMes(m.mes)}</span>
-                        <span style={{ fontSize: 13, color: 'var(--text-2)' }}>{fmt(m.valor)}</span>
-                        <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>vence {br(m.vence)}</span>
-                        {m.situacao === 'pago' ? (
-                          <span style={{ fontSize: 12, fontWeight: 700, color: s.cor }}>✓ Pago{m.pagoEm ? ` em ${br(m.pagoEm).slice(0, 5)}` : ''}</span>
-                        ) : (
-                          <>
-                            <span style={{ fontSize: 11.5, fontWeight: 700, color: s.cor }}>{s.txt}</span>
-                            <button onClick={() => setPagar({ c, m })} style={{ ...btnPri, padding: '5px 8px', fontSize: 12 }}>Lançar pagamento</button>
-                          </>
-                        )}
-                      </div>
-                    )
-                  })}
+                {/* em lista, um mês por linha (13/10/2026, pedido do Rick: no lugar dos quadradinhos) */}
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid var(--border)' }}>
+                        {['Mês', 'Vencimento', 'Valor', 'Situação', ''].map((h, i) => (
+                          <th key={i} style={{ textAlign: i === 2 ? 'right' : 'left', padding: '8px 10px', fontSize: 11, color: 'var(--text-faint)', fontWeight: 500 }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {c.meses.map(m => {
+                        const s = COR[m.situacao]
+                        return (
+                          <tr key={m.mes} style={{ borderBottom: '1px solid var(--border)', background: m.situacao === 'pago' ? s.bg : m.situacao === 'vencido' ? 'var(--red-bg)' : 'transparent' }}>
+                            <td style={{ ...td, fontWeight: 700, color: 'var(--text)', textTransform: 'capitalize' }}>{nomeMes(m.mes)}</td>
+                            <td style={{ ...td, color: 'var(--text-muted)' }}>{br(m.vence)}</td>
+                            <td style={{ ...td, color: 'var(--text-2)', textAlign: 'right' }}>{fmt(m.valor)}</td>
+                            <td style={{ ...td, fontWeight: 700, color: s.cor }}>
+                              {m.situacao === 'pago' ? `✓ Pago${m.pagoEm ? ` em ${br(m.pagoEm).slice(0, 5)}` : ''}` : s.txt}
+                            </td>
+                            <td style={{ ...td, textAlign: 'right' }}>
+                              {m.situacao !== 'pago' && (
+                                <button onClick={() => setPagar({ c, m })} style={{ ...btnPri, padding: '5px 10px', fontSize: 12, whiteSpace: 'nowrap' }}>Lançar pagamento</button>
+                              )}
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             )
@@ -184,4 +196,5 @@ function ModalPagar({ c, m, caixas, onFechar, onSalvo }: { c: Cliente; m: Mes; c
 const btnPri = { padding: '9px 16px', background: 'var(--accent)', color: 'var(--on-accent)', border: 'none', borderRadius: 8, fontSize: 13.5, fontWeight: 700, cursor: 'pointer' } as React.CSSProperties
 const btnSec = { padding: '7px 13px', background: 'transparent', color: 'var(--text-2)', border: '1px solid var(--border-strong)', borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: 'pointer' } as React.CSSProperties
 const inp = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '9px 12px', color: 'var(--text)', fontSize: 14, outline: 'none', width: '100%' } as React.CSSProperties
+const td = { padding: '8px 10px', fontSize: 13 } as React.CSSProperties
 const lbl = { fontSize: 11.5, color: 'var(--text-muted)', display: 'block', marginBottom: 4 } as React.CSSProperties
