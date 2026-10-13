@@ -145,8 +145,6 @@ const grupos: Grupo[] = [
       { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
       // 13/10/2026 (pedido do Rick): as mensalidades dos clientes do CRM, 12 meses, com o "pagou"
       { nome: 'Clientes com recorrência', href: '/dashboard/financeiro/recorrentes' },
-      // 09/10/2026 (pedido do Rick): a central dos relatórios; os itens abaixo ficam por enquanto
-      { nome: 'Relatórios', href: '/dashboard/financeiro/relatorios' },
       { nome: 'Relatório de Receitas', href: '/dashboard/financeiro/receitas' },
       { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
       // 'Transferências entre Contas' (/dashboard/transferencias) saiu do menu em 02/10/2026: gravava numa
@@ -155,6 +153,9 @@ const grupos: Grupo[] = [
       { nome: 'Relatório de Transferências', href: '/dashboard/financeiro/transferencias' },
       // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
       { nome: 'Nota Fiscal', href: '/dashboard/financeiro/notas-fiscais' },
+      // 13/10/2026 (pedido do Rick): a central de 09/10 repetia os relatórios acima; voltou a
+      // "em construção" e foi pro fim do grupo
+      { nome: 'Relatórios', href: '/dashboard/financeiro/relatorios' },
     ],
   },
   {
