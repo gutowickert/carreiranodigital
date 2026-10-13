@@ -4,6 +4,7 @@
 //   POST {acao:'foto_desc', foto, descricao}
 //   POST {acao:'fim', lote, custo_usd} · POST {acao:'erro', lote, erro}
 import { NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { oitoDb as db } from '@/lib/oito/db'
 import { senhaOk, oitoConfig as cfg, Marca } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
@@ -69,6 +70,24 @@ export async function POST(req: Request) {
     if (!p || buf.length < 1000) return NextResponse.json({ erro: 'post ou imagem' }, { status: 400 })
     await db.sobe(p.imagem_path, buf, 'image/jpeg')
     return NextResponse.json({ ok: true })
+  }
+  // o que a leitura do Instagram do negócio encontrou (resumo da IA), guardado no contexto
+  if (b.acao === 'instagram') {
+    const l2 = await db.um('lotes', { id: String(b.lote) }), c2 = l2 && await db.um('clientes', { id: l2.cliente_id })
+    if (!c2) return NextResponse.json({ erro: 'lote' }, { status: 404 })
+    await db.atualiza('clientes', { id: c2.id }, { contexto: { ...(c2.contexto || {}), instagram: { ...(b.dados || {}), em: new Date().toISOString() } } })
+    return NextResponse.json({ ok: true })
+  }
+  // foto boa do Instagram do próprio negócio entra como foto dele (até 8)
+  if (b.acao === 'foto_ig') {
+    const l2 = await db.um('lotes', { id: String(b.lote) }), c2 = l2 && await db.um('clientes', { id: l2.cliente_id })
+    const buf = Buffer.from(String(b.imagem || ''), 'base64')
+    if (!c2 || buf.length < 1000) return NextResponse.json({ erro: 'dados' }, { status: 400 })
+    const ja = (await db.lista('fotos', { cliente_id: c2.id })).filter(f => String(f.descricao || '').startsWith('[instagram]'))
+    if (ja.length >= 8) return NextResponse.json({ ok: false, erro: 'limite' })
+    const p = await db.sobe(`clientes/${c2.codigo}/fotos/ig-${crypto.randomUUID().slice(0, 8)}.jpg`, buf, 'image/jpeg')
+    const f = await db.insere('fotos', { cliente_id: c2.id, path: p, descricao: '[instagram] ' + String(b.descricao || '').slice(0, 380) })
+    return NextResponse.json({ ok: true, id: f.id })
   }
   if (b.acao === 'foto_desc') {
     await db.atualiza('fotos', { id: b.foto }, { descricao: String(b.descricao || '').slice(0, 400) })
