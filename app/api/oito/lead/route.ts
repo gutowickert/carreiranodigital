@@ -1,6 +1,7 @@
 // Oito Posts: o formulário de entrada. Grava o negócio e abre o lote de teste (2 posts grátis).
 // O lote nasce em "espera": as fotos sobem depois, com o código; o "liberar" (rota cliente) põe na fila.
 import { NextResponse } from 'next/server'
+import crypto from 'node:crypto'
 import { oitoDb as db, novoCodigo } from '@/lib/oito/db'
 import { oitoConfig as cfg, ehMarca } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
@@ -17,8 +18,27 @@ export async function POST(req: Request) {
     if (!t(n.nome) || whats.length < 12 || !t(n.cidade)) return NextResponse.json({ erro: 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
 
     // o mesmo WhatsApp já pediu teste nessa marca: devolve o que já existe (não gera de novo)
-    const ja = (await db.lista('clientes', { whatsapp: whats, marca: b.marca })).find(c => !c.exemplo)
-    if (ja) return NextResponse.json({ codigo: ja.codigo, existente: true })
+    // TRAVA DE TESTES REPETIDOS (13/10): quem já pediu não ganha outro, volta pros posts que já recebeu.
+    // Mesmo WhatsApp (qualquer marca) · mesmo @ · mesmo negócio na mesma cidade · o mesmo aparelho · até 3 testes por conexão em 24 h.
+    const norm = (s: any) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/[^a-z0-9]/g, '')
+    const ig = t(n.instagram, 60).replace(/^@/, '').toLowerCase()
+    const ip = (req.headers.get('x-forwarded-for') || '').split(',')[0].trim()
+    const ipHash = ip ? crypto.createHash('sha256').update('oito:' + ip).digest('hex').slice(0, 32) : null
+    const todos = (await db.lista('clientes', {}, { ordem: 'criado_em', desc: true, limite: 3000 })).filter(c => !c.exemplo)
+    const doAparelho = Array.isArray(b.ja) ? b.ja.map((x: any) => String(x).toUpperCase()).slice(0, 10) : []
+    const ja = todos.find(c => c.whatsapp === whats)
+      || (ig && todos.find(c => String(c.instagram || '').toLowerCase() === ig))
+      || todos.find(c => norm(c.nome_negocio) === norm(n.nome) && norm(c.cidade) === norm(n.cidade))
+      || todos.find(c => doAparelho.includes(c.codigo))
+    if (ja) {
+      await db.evento('teste_repetido', { cliente_id: ja.id, marca: b.marca, detalhe: { motivo: ja.whatsapp === whats ? 'whatsapp' : 'outro' } })
+      return NextResponse.json({ codigo: ja.codigo, marca: ja.marca, existente: true })
+    }
+    if (ipHash) {
+      const dia = new Date(Date.now() - 86400e3).toISOString()
+      const daConexao = todos.filter(c => c.ip_hash === ipHash && c.criado_em >= dia)
+      if (daConexao.length >= 3) return NextResponse.json({ codigo: daConexao[0].codigo, marca: daConexao[0].marca, existente: true })
+    }
 
     const contexto = {
       servicos: t(x.servicos, 600), carro_chefe: t(x.carro_chefe), diferencial: t(x.diferencial, 500), publico: t(x.publico, 400),
@@ -29,7 +49,7 @@ export async function POST(req: Request) {
       nome_negocio: t(n.nome, 120), responsavel: t(n.responsavel, 120), whatsapp: whats, email: t(n.email, 160).toLowerCase(),
       cidade: t(n.cidade, 80), bairro: t(n.bairro, 80), instagram: t(n.instagram, 60).replace(/^@/, ''),
       contexto, cores: b.cores && typeof b.cores === 'object' ? { fundo: t(b.cores.fundo, 9), destaque: t(b.cores.destaque, 9), texto: t(b.cores.texto, 9), nome: t(b.cores.nome, 40) } : null,
-      fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
+      ip_hash: ipHash, fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
     })
     await db.insere('lotes', { cliente_id: c.id, tipo: 'teste', qtd: cfg.postsTeste, status: 'espera' })
     await db.evento('lead', { cliente_id: c.id, marca: c.marca, sessao: c.sessao, detalhe: { fotos_modo: c.fotos_modo } })

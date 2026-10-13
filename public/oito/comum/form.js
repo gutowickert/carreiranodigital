@@ -66,17 +66,26 @@ function OITO_FORM(paletas) {
       negocio: { nome: E.nome.value, cidade: E.cidade.value, bairro: E.bairro.value, instagram: E.instagram.value, responsavel: E.responsavel.value, whatsapp: E.whatsapp.value, email: E.email.value },
       contexto: { servicos: E.servicos.value, carro_chefe: E.carro_chefe.value, diferencial: E.diferencial.value, horario: E.horario.value, tom: E.tom.value, evitar: E.evitar.value },
     }
-    var codigo
+    // trava de testes repetidos (13/10): o servidor também confere os códigos que este aparelho já recebeu
+    corpo.ja = ['salao', 'prato', 'pata'].map(function (m) { return OITO.ls.get('oito_codigo_' + m) }).filter(Boolean)
+    var codigo, existente = null
     OITO.api('lead', corpo).then(function (j) {
       codigo = j.codigo
-      if (j.existente) return 'existente'
+      if (j.existente) { existente = j; return 'existente' }
       var sobe = Promise.resolve()
       if (logo) sobe = sobe.then(function () { return OITO.api('foto', { c: codigo, tipo: 'logo', dado: logo }).catch(function () {}) })
       fotos.forEach(function (d, i) { sobe = sobe.then(function () { segue.textContent = 'Enviando foto ' + (i + 1) + ' de ' + fotos.length + '…'; return OITO.api('foto', { c: codigo, dado: d }).catch(function () {}) }) })
       return sobe.then(function () { return OITO.api('cliente', { c: codigo, acao: 'liberar' }) })
     }).then(function () {
+      OITO.ls.set(chave, '{}')
+      // quem já tinha pedido volta pros posts que já recebeu (sem contar como lead de novo), na página da marca certa
+      if (existente) {
+        var m = existente.marca || OITO.marca
+        if (m === OITO.marca) { OITO.ls.set('oito_codigo_' + m, codigo); location.href = OITO.url('teste.html?c=' + codigo + '&ja=1'); return }
+        location.href = 'https://www.' + { salao: 'salaonofeed', prato: 'pratonofeed', pata: 'patanofeed' }[m] + '.com.br/teste.html?c=' + codigo + '&ja=1'; return
+      }
       OITO.fb('Lead', { content_name: OITO.marca }, 'lead-' + codigo)
-      OITO.ls.set(chave, '{}'); OITO.ls.set('oito_codigo_' + OITO.marca, codigo)
+      OITO.ls.set('oito_codigo_' + OITO.marca, codigo)
       location.href = OITO.url('teste.html?c=' + codigo)
     }).catch(function (er) {
       erro.textContent = er.message; segue.disabled = false; segue.textContent = 'Tentar de novo'

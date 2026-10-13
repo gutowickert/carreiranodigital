@@ -3,6 +3,8 @@
   var c = (OITO.q.get('c') || OITO.ls.get('oito_codigo_' + OITO.marca) || '').toUpperCase()
   if (!c) { location.href = OITO.url('comecar.html'); return }
   document.getElementById('codigo').textContent = c
+  // quem tentou pedir outro teste grátis volta pra cá com ?ja=1 (13/10)
+  if (OITO.q.get('ja') === '1') setTimeout(function () { OITO.aviso('Você já tinha pedido o teste grátis: estes são os seus posts.') }, 800)
   var etapas = [].slice.call(document.querySelectorAll('.etapas-geracao li')), t0 = Date.now(), viu = false, faturaUrl = null
   // as etapas da animação avançam com o tempo (o trabalho real leva ~40 s)
   var anima = setInterval(function () { var k = Math.min(etapas.length, Math.floor((Date.now() - t0) / 9000) + 1); etapas.forEach(function (li, i) { li.classList.toggle('feito', i < k) }) }, 1000)
