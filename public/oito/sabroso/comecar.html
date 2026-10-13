@@ -1,0 +1,61 @@
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Feed Sabroso · tus 2 posts gratis</title><meta name="description" content="Responde unas preguntas y recibe 2 posts listos en 1 minuto.">
+<meta property="og:title" content="Feed Sabroso · tus 2 posts gratis"><meta property="og:description" content="Responde unas preguntas y recibe 2 posts listos en 1 minuto."><meta property="og:type" content="website"><meta property="og:locale" content="es_LA">
+<meta property="og:image" content="/oito/sabroso/exemplos/ex-01.jpg">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D'http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg'%20viewBox%3D'0%200%2032%2032'%3E%3Crect%20width%3D'32'%20height%3D'32'%20rx%3D'8'%20fill%3D'%23e23d1c'%2F%3E%3Ctext%20x%3D'16'%20y%3D'22'%20font-size%3D'17'%20font-family%3D'Arial'%20font-weight%3D'800'%20text-anchor%3D'middle'%20fill%3D'%23ffffff'%3ES%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="apple-touch-icon" href="/oito/sabroso/icone.png"><meta name="theme-color" content="#2a0e08"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Feed Sabroso">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&family=Work+Sans:wght@400;600;700;800&display=swap">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mv75hcdr"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mv75hcdr">
+<style>:root{--escuro:#2a0e08;--destaque:#e23d1c;--sobre-destaque:#ffffff;--claro:#fff8ec;--tinta:#2a0e08;--suave:#73554a;--linha:#f1dfcc;--ft:'Bricolage Grotesque', 'Arial Black', sans-serif;--fc:'Work Sans', system-ui, sans-serif;--peso-t:800;--esp-t:-.035em;--em-estilo:normal}</style>
+</head>
+<body data-marca="sabroso" data-ajuste-ex="Ej.: cambiar la imagen por una de la pizza; hablar del domicilio gratis">
+<header class="topo"><div class="wrap"><a class="logo" href="/oito/sabroso/"><i>S</i>Feed Sabroso</a><nav><a class="link" href="#" data-ajuda>Ayuda</a></nav></div></header>
+<main class="estreito">
+  <div class="form-topo"><div class="barra" role="progressbar" aria-label="Progreso" aria-valuemin="0" aria-valuemax="5"><i></i></div><p class="nota" id="passo-txt">Paso 1 de 5</p></div>
+  <form id="f" novalidate>
+    <div class="etapa ativa" data-n="1">
+      <h1>Conozcamos tu restaurante</h1><p class="lead">Con esto escribimos los posts. Toma 3 minutos.</p>
+      <div class="campo"><label for="nome">Nombre del restaurante</label><input id="nome" name="nome" required maxlength="120" autocomplete="organization"></div>
+      <div class="campo"><label id="pais-rot">País</label><div class="chips paises" role="radiogroup" aria-labelledby="pais-rot"><label><input type="radio" name="pais" value="CO"><span><i class="bandera co"></i>Colombia</span></label><label><input type="radio" name="pais" value="CL"><span><i class="bandera cl"></i>Chile</span></label></div></div>
+      <div class="campo"><label for="cidade">Ciudad</label><input id="cidade" name="cidade" required maxlength="80" autocomplete="address-level2"></div>
+      <div class="campo"><label for="bairro">Barrio o comuna <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
+      <div class="campo"><label for="instagram">Instagram del restaurante <span class="suave">(opcional)</span></label><input id="instagram" name="instagram" maxlength="60" placeholder="@tuperfil" autocapitalize="off" autocomplete="off"><small>Si tienes, miramos el perfil para acertar el tono y aprovechar tus mejores fotos.</small></div>
+      <div class="campo"><label for="documento"><span id="doc-rot">NIT (Colombia) / RUT (Chile) de tu negocio</span> <span class="suave">(opcional)</span></label><input id="documento" name="documento" maxlength="20" autocomplete="off"><small>Si eres empresa o tienes registro. Puedes dejarlo en blanco.</small></div>
+    </div>
+    <div class="etapa" data-n="2">
+      <h1>¿Qué vendes?</h1><p class="lead">Mientras más concreto, mejor el post.</p>
+      <div class="campo"><label for="servicos">Servicios o productos</label><textarea id="servicos" name="servicos" required maxlength="600" placeholder="Ej.: hamburguesas artesanales, papas fritas, combos, domicilio propio"></textarea></div>
+      <div class="campo"><label for="carro_chefe">Lo que más quieres vender</label><input id="carro_chefe" name="carro_chefe" required maxlength="200" placeholder="Ej.: la doble con cheddar"></div>
+      <div class="campo"><label for="diferencial">Por qué te eligen a ti <span class="suave">(opcional)</span></label><textarea id="diferencial" name="diferencial" maxlength="500" placeholder="Ej.: pan hecho en casa, carne molida al momento"></textarea></div>
+      <div class="campo"><label for="horario">Días y horario de atención <span class="suave">(opcional)</span></label><input id="horario" name="horario" maxlength="200" placeholder="Ej.: miércoles a domingo, de 18:00 a 23:00"></div>
+    </div>
+    <div class="etapa" data-n="3">
+      <h1>El estilo de tu marca</h1><p class="lead">Los colores y el tono van en todos los posts.</p>
+      <div class="campo"><label>Tono de los textos</label><div class="chips"><label><input type="radio" name="tom" value="Relajado" checked><span>Relajado</span></label><label><input type="radio" name="tom" value="Casero"><span>Casero</span></label><label><input type="radio" name="tom" value="Sofisticado"><span>Sofisticado</span></label><label><input type="radio" name="tom" value="Directo"><span>Directo</span></label></div></div>
+      <div class="campo"><label>Colores de los posts</label><div class="paletas"><label><input type="radio" name="paleta" value="0" checked><span class="pal"><i><b style="background:#1c1410"></b><b style="background:#ff6a2b"></b><b style="background:#fff6ee"></b></i><em>Carbón</em></span></label><label><input type="radio" name="paleta" value="1"><span class="pal"><i><b style="background:#7a1a12"></b><b style="background:#ffc145"></b><b style="background:#fff8ec"></b></i><em>Tomate</em></span></label><label><input type="radio" name="paleta" value="2"><span class="pal"><i><b style="background:#1f3324"></b><b style="background:#e8c547"></b><b style="background:#f7f3e8"></b></i><em>Hierbas</em></span></label><label><input type="radio" name="paleta" value="3"><span class="pal"><i><b style="background:#111111"></b><b style="background:#ffd23f"></b><b style="background:#ffffff"></b></i><em>Negro y amarillo</em></span></label><label><input type="radio" name="paleta" value="4"><span class="pal"><i><b style="background:#3a2418"></b><b style="background:#e7b07a"></b><b style="background:#fbf1e6"></b></i><em>Café</em></span></label><label><input type="radio" name="paleta" value="5"><span class="pal"><i><b style="background:#14213d"></b><b style="background:#fca311"></b><b style="background:#f5f5f5"></b></i><em>Azul marino</em></span></label></div></div>
+      <div class="campo"><label>Logo <span class="suave">(opcional)</span></label><label class="sobe" for="logo"><b>Subir el logo</b><br><span class="suave">PNG o JPG. Sin logo, va el nombre del restaurante.</span></label><input id="logo" type="file" accept="image/*" class="esconde"><div id="logo-prev" class="miniaturas"></div></div>
+      <div class="campo"><label for="evitar">¿Algo que nunca debe aparecer? <span class="suave">(opcional)</span></label><input id="evitar" name="evitar" maxlength="400" placeholder="Ej.: no mostrar precios"></div>
+    </div>
+    <div class="etapa" data-n="4">
+      <h1>¿Y las imágenes?</h1><p class="lead">Tú eliges. Puedes cambiarlo después.</p>
+      <div class="escolha">
+        <label><input type="radio" name="fotos_modo" value="enviar"><div><b>Voy a enviar mis fotos</b><span>Queda más real. Hasta 10 ahora, y más después en tu área.</span></div></label>
+        <label><input type="radio" name="fotos_modo" value="ia" checked><div><b>Créenme las imágenes</b><span>Imágenes creadas con inteligencia artificial, de acuerdo con lo que vendes.</span></div></label>
+      </div>
+      <div id="fotos-caixa" class="esconde" style="margin-top:16px"><label class="sobe" for="fotos"><b>Elegir fotos</b><br><span class="suave">Fotos del restaurante, del trabajo, del lugar. Verticales quedan mejor.</span></label><input id="fotos" type="file" accept="image/*" multiple class="esconde"><div id="fotos-prev" class="miniaturas"></div></div>
+    </div>
+    <div class="etapa" data-n="5">
+      <h1>¿A dónde te escribimos?</h1><p class="lead">Los 2 posts aparecen en la siguiente pantalla. El WhatsApp es para hablar contigo si hace falta.</p>
+      <div class="campo"><label for="responsavel">Tu nombre</label><input id="responsavel" name="responsavel" required maxlength="120" autocomplete="name"></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><div class="tel"><span id="ddi" aria-hidden="true">+57</span><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="16" placeholder="300 123 4567" autocomplete="tel-national"></div><small id="zap-ajuda">Celular de Colombia: 10 dígitos, empieza por 3.</small></div>
+      <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required maxlength="160" autocomplete="email"><small>Te enviamos el enlace de tus posts.</small></div>
+      <p class="nota">Al continuar, aceptas los <a href="/oito/sabroso/termos.html" target="_blank">términos</a>. No enviamos spam.</p>
+    </div>
+    <p class="erro-form" id="erro" role="alert"></p>
+    <div class="navega"><button type="button" class="btn fantasma" id="volta" style="visibility:hidden">Atrás</button><button class="btn grande" id="segue">Continuar</button></div>
+  </form>
+</main>
+<script src="/oito/comum-es/app.js?v=mv75hcdr"></script><script src="/oito/comum-es/form.js?v=mv75hcdr"></script>
+<script>OITO_FORM([{"nome":"Carbón","fundo":"#1c1410","destaque":"#ff6a2b","texto":"#fff6ee"},{"nome":"Tomate","fundo":"#7a1a12","destaque":"#ffc145","texto":"#fff8ec"},{"nome":"Hierbas","fundo":"#1f3324","destaque":"#e8c547","texto":"#f7f3e8"},{"nome":"Negro y amarillo","fundo":"#111111","destaque":"#ffd23f","texto":"#ffffff"},{"nome":"Café","fundo":"#3a2418","destaque":"#e7b07a","texto":"#fbf1e6"},{"nome":"Azul marino","fundo":"#14213d","destaque":"#fca311","texto":"#f5f5f5"}])</script>
+</body></html>
