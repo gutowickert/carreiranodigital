@@ -89,11 +89,17 @@ async function lerCaixa(m: Marca) {
   return novas
 }
 
-export async function sincronizaCaixas() {
+export async function sincronizaCaixas(forca = false) {
   const res: Record<string, any> = {}
   for (const m of MARCAS) {
     if (!senha(m)) { res[m] = 'sem senha'; continue }
-    try { res[m] = await lerCaixa(m) } catch (e: any) { res[m] = 'erro: ' + [e?.message, e?.authenticationFailed ? 'login recusado' : '', e?.responseText, e?.serverResponseCode, e?.code].filter(Boolean).join(' · ').slice(0, 220) }
+    // login recusado: espera 30 min antes de tentar de novo (tentativa errada em sequência pode bloquear a caixa no Titan)
+    const falha = await estado('caixa_falha_' + m)
+    if (falha?.em && Date.now() - new Date(falha.em).getTime() < 30 * 60e3 && !forca) { res[m] = 'aguardando (login recusado há pouco)'; continue }
+    try { res[m] = await lerCaixa(m) } catch (e: any) {
+      res[m] = 'erro: ' + [e?.message, e?.authenticationFailed ? 'login recusado' : '', e?.responseText, e?.serverResponseCode, e?.code].filter(Boolean).join(' · ').slice(0, 220)
+      if (e?.authenticationFailed) await estado('caixa_falha_' + m, { em: new Date().toISOString() })
+    }
   }
   return res
 }

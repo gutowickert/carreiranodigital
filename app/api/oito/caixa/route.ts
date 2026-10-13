@@ -8,5 +8,6 @@ export const maxDuration = 60
 
 export async function POST(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return NextResponse.json({ erro: 'senha' }, { status: 401 })
-  return NextResponse.json(await sincronizaCaixas())
+  // ?forca=1 tenta mesmo se o login foi recusado há pouco (depois de corrigir a senha)
+  return NextResponse.json(await sincronizaCaixas(new URL(req.url).searchParams.get('forca') === '1'))
 }
