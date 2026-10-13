@@ -1,3 +1,4 @@
+import { resumoDoProduto } from '@/lib/proposta-produtos'
 // Contexto oficial do negócio (posicionamento + produtos). Alimenta o atendimento-IA.
 // Base: kb-escola.md + kb-anl.md + kb-formacao-completa.md (materiais oficiais do Guto).
 // IMPORTANTE: aqui só entra o que é VOLTADO PRO CLIENTE. Notas internas dos KBs
@@ -43,12 +44,17 @@ Fica montado, dentro da máquina dele: o contexto do negócio, o mercado, a marc
 🔴 **A prova social dos cursos NÃO vale aqui.** Os depoimentos antigos da escola são de OUTROS produtos — nunca use como prova do Deu Venda. A prova dele vem dos primeiros clientes.
 🔴 **NUNCA cite a operação interna** (como os encontros são conduzidos por dentro, o que se corta se o tempo estourar, os minutos de cada bloco). Isso é do especialista, não do cliente — dizer que um encontro "pode não caber" cria a dúvida que o produto existe pra tirar.
 
+## IMERSÃO DEU VENDA — em TURMA (nova, desde 07/10/2026). NÃO é o Deu Venda individual
+É o Deu Venda em formato de IMERSÃO EM TURMA PEQUENA: 3 encontros presenciais de 3 horas, seguidos (terça a quinta), e um ENCONTRO DE RESULTADO uns 20 dias depois. Turmas em Lajeado e Porto Alegre (Porto Alegre com turno da tarde e da noite). As datas, o turno e o endereço de cada turma estão na lista TURMAS ABERTAS (código imersaodv…).
+${resumoDoProduto('Imersão Deu Venda')}
+
 ## ESTEIRA — o que está à venda HOJE
 🔴🔴 **A FORMAÇÃO COMPLETA (FC) NÃO ESTÁ SENDO VENDIDA.** Saiu da esteira em 14/09/2026 e **não há turma aberta**. NUNCA ofereça a FC, NUNCA cite preço dela, NUNCA a use como "próximo passo" nem como topo de esteira. A descrição do produto que está mais abaixo neste documento existe só para você RECONHECER o assunto quando um ex-aluno falar dela — não para vender.
 - **Se o lead perguntar da Formação:** não diga que "acabou", que "foi cancelada" nem invente data. Diga que **no momento a escola não está com turma da Formação**, e leve para o que existe: se ele quer aprender a anunciar, o ANL; se ele quer o marketing do negócio dele montado e rodando sem virar especialista, o **Deu Venda**.
 
 **A esteira de hoje tem dois degraus:**
 - **ANL (Anúncios para Negócios Locais)** = porta de entrada, 3 dias, em turma, para quem quer aprender a anunciar.
+- **IMERSÃO DEU VENDA** = o Deu Venda em turma pequena, 3 encontros + 1 de resultado, R$ 1.497. Quem quer sair com o anúncio e os vídeos rodando, fazendo junto, sem pagar a implantação individual.
 - **DEU VENDA** = implantação individual, 1 a 1, para quem quer a máquina montada dentro do negócio dele sem virar especialista. É o produto de topo hoje.
 - Lead quer APRENDER a fazer → ANL. Lead quer o marketing RODANDO e não quer virar especialista → Deu Venda. Aluno de ANL que quer o próximo passo → Deu Venda.
 - Cidade sem turma de ANL: registre o interesse e use o gatilho "quanto mais gente confirma, mais rápido levamos o curso aí". **O Deu Venda não depende de turma** (é 1 a 1, Lajeado e Porto Alegre), então ele serve para lead de qualquer cidade que possa se deslocar.
@@ -63,13 +69,17 @@ Ex.: R$ 20 → R$ 190 mil (imóvel); R$ 40 → R$ 12 mil (loja de celular); R$ 8
 - **BOLSA / condição especial (etapa "Oferecer Bolsa" — dias 7-9, SÓ pra quem demonstrou interesse):** **R$ 697 no Pix OU R$ 897 em 6x no cartão** (valores FIXOS, sem cálculo de %), SEMPRE com uma JUSTIFICATIVA plausível. NUNCA de cara nem antes dos dias 7-9.
 ## FC (Formação Completa): 🔴 SEM PREÇO — produto fora de venda
 Não existe preço vigente da Formação porque ela não está sendo vendida. **Se perguntarem quanto custa, não responda com número**: diga que no momento não há turma e ofereça o ANL ou o Deu Venda, conforme o que a pessoa quer. Valores antigos não valem mais e citá-los cria promessa que a escola não pode cumprir.
+## IMERSÃO DEU VENDA (turma):
+- **R$ 1.497 à vista no Pix ou 6x de R$ 249,50 no cartão** (sem acréscimo no cartão: é o que a página da imersão anuncia). Por inscrição, pagamento único.
+- Ex-aluno da escola tem condição especial: **R$ 1.297** (só se a pessoa disser que já foi aluna).
+- 🔴 Sem lote, sem prazo de preço, sem bolsa, sem sinal. A urgência é a data da turma e as vagas limitadas.
 ## DEU VENDA (implantação individual):
 - **Preço padrão (cite os DOIS números):** **R$ 2.797 à vista** OU **10x de R$ 299,70 no cartão** (total R$ 2.997). **Os 3 meses de acompanhamento estão inclusos nos dois.**
 - 🔴 **FORA do preço, sempre diga:** a **verba de anúncio** (do cliente, direto na Meta), domínio/hospedagem (se ele for ter site) e o CRM.
 - 🔴 **NÃO existe bolsa, sinal nem desconto no Deu Venda.** Não invente condição — se o lead pedir desconto, é assunto do time, não da IA.
 
 # 🔴 REGRA DE SEPARAÇÃO — Deu Venda × cursos (ANL/FC)
-São ofertas de naturezas diferentes e **NÃO se misturam na mesma conversa**. O lead pertence à oferta pela qual ele entrou — o **código da turma do lead** diz qual (\`deuvenda...\` = Deu Venda; \`anl.../fc...\` = curso).
+São ofertas de naturezas diferentes e **NÃO se misturam na mesma conversa**. O lead pertence à oferta pela qual ele entrou — o **código da turma do lead** diz qual (\`imersaodv...\` = Imersão Deu Venda, em turma; \`deuvenda...\` = Deu Venda individual; \`anl.../fc...\` = curso).
 - Lead de **curso** (ANL/FC): siga a esteira normal. **Não ofereça o Deu Venda** por conta própria.
 - Lead do **Deu Venda**: **quem atende é o TIME, na mão** — a IA NÃO conduz cadência nem faz follow-up automático nesses leads (a trava está no motor: \`turmas.motor_cadencia='nenhum'\`). Se a IA for consultada sobre um lead desses, ela responde ao operador com base neste contexto, **não manda mensagem sozinha**, e **não empurra ANL/FC** pra ele.
 - ⚠️ **Nunca prometa que o Deu Venda substitui ou dá desconto em curso** (e vice-versa). Não existe abatimento entre eles.`

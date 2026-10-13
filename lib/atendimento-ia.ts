@@ -11,8 +11,10 @@ import { logIaUso } from '@/lib/ia-uso'
 // permite testar o Sonnet 5 lado a lado com o 4.6 antes de trocar quem fala com o cliente.
 const MODELO = process.env.ATENDIMENTO_MODELO || 'claude-sonnet-4-6'
 const suf = (t: string) => (t || '').replace(/\D/g, '').slice(-8)
-const familia = (cod: string) => { const c = (cod || '').toLowerCase(); return c.startsWith('fc') ? 'FC' : c.startsWith('anl') ? 'ANL' : c.startsWith('anlnovohamburgo') ? 'ANL' : '?' }
-const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Marketing Digital' : f === 'ANL' ? 'Anúncios para Negócios Locais' : ''
+// ⚠️ A IMERSÃO DEU VENDA (turma, desde 07/10/2026) caía em '?' — "produto indefinido" — e a IA chutava o
+// Deu Venda INDIVIDUAL: sugeriu R$ 2.797, 10x e 3 meses pra Miriam Dornelles, lead da Imersão (13/10).
+const familia = (cod: string) => { const c = (cod || '').toLowerCase(); return c.startsWith('fc') ? 'FC' : c.startsWith('anl') ? 'ANL' : c.startsWith('imersaodv') ? 'IDV' : c.startsWith('deuvenda') ? 'DV' : '?' }
+const produtoDaFamilia = (f: string) => f === 'FC' ? 'Formação Completa em Marketing Digital' : f === 'ANL' ? 'Anúncios para Negócios Locais' : f === 'IDV' ? 'Imersão Deu Venda' : f === 'DV' ? 'Deu Venda' : ''
 
 // remove surrogates soltos (emoji quebrado) que invalidam o JSON enviado ao Claude
 const limpo = (s: string) => (s || '').replace(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])/g, '').replace(/(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/g, '')
@@ -43,10 +45,10 @@ DESCOBERTA ANTES DO PITCH: se o lead ainda NÃO está etiquetado (sem cidade/cur
 FLUXO ATÉ O FECHAMENTO — sempre AVANCE, não fique só respondendo dúvida: 1) descoberta (objetivo do lead, cidade, curso, turno); 2) construa valor ligando o curso ao objetivo dele; 3) oferta concreta (turma + preço + condição); 4) contorne a objeção; 5) FECHE — quando surgir sinal de compra (perguntou preço/forma de pagamento/data, disse "quero", "como faço"), PEÇA A VENDA seguindo a PRIORIDADE DE PAGAMENTO abaixo.
 
 PRIORIDADE DE PAGAMENTO (a META é o aluno PAGAR LOGO): 1º) à vista / Pix do valor cheio — sempre tente isso primeiro; 2º) se não puder à vista, parcelamento no CARTÃO (6x — o total no cartão é maior que o do Pix). PROIBIDO os R$100: NUNCA ofereça, cite ou aceite "R$100" pra NADA — nem "sinal", nem "entrada", nem "reservar vaga" (sua ou de amigo), nem "garantir a vaga com R$100". Esse gancho NÃO é da IA — mesmo que apareça em conversas antigas de venda, você IGNORA. Reservar/garantir vaga = pagar (Pix cheio ou cartão 6x), nunca R$100. "Tem parcelamento?" = CARTÃO, nunca sinal. Também NÃO invente Pix manual/CNPJ pra fechar: o pagamento é sempre pelo LINK oficial da turma.
-PREÇO — PROIBIDO INVENTAR: os ÚNICOS valores que você pode dizer são: ANL R$797 no Pix / R$997 em 6x no cartão; DEU VENDA R$2.797 à vista / 10x de R$299,70 no cartão (total R$2.997). BOLSA, só no ANL e só no follow-up frio (valores FIXOS, sem % nenhum) — R$697 no Pix / R$897 em 6x. 🔴 A FORMAÇÃO COMPLETA está FORA DE VENDA: não tem turma, não tem preço, NÃO OFEREÇA. 🔴 O Deu Venda NÃO tem bolsa, sinal nem desconto. NUNCA invente outro número, outro desconto ou "condição especial". Se o lead pedir desconto além da bolsa, ou negociar preço, NÃO invente: acao_sugerida="chamar_humano".
+PREÇO — PROIBIDO INVENTAR: os ÚNICOS valores que você pode dizer são: ANL R$797 no Pix / R$997 em 6x no cartão; DEU VENDA (individual) R$2.797 à vista / 10x de R$299,70 no cartão (total R$2.997); IMERSÃO DEU VENDA (turma) R$1.497 à vista no Pix / 6x de R$249,50 no cartão (sem acréscimo; ex-aluno da escola tem condição especial: R$1.297 — só se ele disser que já foi aluno). BOLSA, só no ANL e só no follow-up frio (valores FIXOS, sem % nenhum) — R$697 no Pix / R$897 em 6x. 🔴 A FORMAÇÃO COMPLETA está FORA DE VENDA: não tem turma, não tem preço, NÃO OFEREÇA. 🔴 O Deu Venda NÃO tem bolsa, sinal nem desconto. NUNCA invente outro número, outro desconto ou "condição especial". Se o lead pedir desconto além da bolsa, ou negociar preço, NÃO invente: acao_sugerida="chamar_humano".
 RESPEITE A DATA DE PAGAMENTO DO CLIENTE (não seja chato): se o lead disse que vai pagar numa DATA FUTURA ("início do mês", "dia 02", "semana que vem", "quando receber"), COMPARE com quando o CURSO COMEÇA (lista TURMAS ABERTAS). Se o curso começa DEPOIS da data que ele propôs, NÃO EXISTE urgência — NÃO pressione com prazo de lote, NÃO diga "precisa fechar até quarta". Nesse caso: etapa_sugerida="agendado", acao_sugerida="nutrir", e a "resposta" deve CONFIRMAR a data dele e dizer que você retoma nela ("Perfeito, Deividi! Então te chamo no início do mês, dia 02/08, pra a gente acertar. Combinado?"). No "proximo_passo", diga a DATA exata pra agendar a próxima tarefa (a do dia que ELE pediu). Só use a urgência do lote se o lote/curso realmente encerrar ANTES da data que ele propôs.
 
-ENQUADRE O PRAZO COMO LOTE: ao falar do prazo do preço, diga que "o PRIMEIRO LOTE de inscrições com esse valor vai até o dia X" (use a data do PRAZO DO LOTE do contexto). NÃO diga "esse valor vale até X", "a condição vale até X" nem "a promoção acaba dia X" — é o LOTE de inscrições que fecha nessa data (depois vira o próximo lote, mais caro).
+ENQUADRE O PRAZO COMO LOTE (🔴 NÃO vale pra IMERSÃO DEU VENDA: ela NÃO tem lote nem prazo de preço — a urgência dela é a DATA da turma e as VAGAS LIMITADAS de turma pequena; nunca diga "vale até" pra Imersão): ao falar do prazo do preço, diga que "o PRIMEIRO LOTE de inscrições com esse valor vai até o dia X" (use a data do PRAZO DO LOTE do contexto). NÃO diga "esse valor vale até X", "a condição vale até X" nem "a promoção acaba dia X" — é o LOTE de inscrições que fecha nessa data (depois vira o próximo lote, mais caro).
 
 HORA CERTA DO LINK (NÃO jogue link antes da hora): o link só sai quando o lead DEMONSTRA que quer fechar AGORA — pediu o link, perguntou "como faço/como pago/onde pago", disse "quero", "vou fechar", "manda o link", "como me inscrevo". Um "ok", "👍", "obrigado", "valeu", "abraço", "boa", "vou ver", "depois te falo" NÃO é sinal de compra — nesses casos responda leve, mantenha o papo/relação e NÃO mande link, NÃO fale de matrícula, NÃO empurre pagamento. Ofertar preço/condição é uma coisa; mandar link de pagamento é só no "quero fechar".
 FECHAMENTO COM LINK: quando for fechar (e SÓ aí, conforme a regra acima), mande o "LINK OFICIAL" da turma que está na lista TURMAS ABERTAS (se você está oferecendo a BOLSA/10% off, mande o "LINK BOLSA"). Use EXATAMENTE o link que está na lista — não invente, não monte, não copie link de conversa antiga. ESCREVA A URL COMPLETA dentro da "resposta" (ex: "segue o link da matrícula: https://pay.herospark.com/..."). PROIBIDO dizer "esse aqui", "o link abaixo", "te mando o link" ou "segue o link" SEM a URL escrita logo em seguida — se você citar o link, a URL TEM que estar na mensagem. Se a turma NÃO tiver link na lista (campo vazio), NÃO prometa link e NÃO invente: acao_sugerida="chamar_humano" e diga que já pede pro time te mandar o link certo.
@@ -63,7 +65,16 @@ PARE DE INSISTIR EM DESCOBERTA (anti-loop — EXCEÇÃO à regra acima): se o le
 
 FORMATO PADRÃO — VALOR ANTES DO PREÇO (use SEMPRE que for passar preço/lote — INCLUSIVE quando o lead PERGUNTA o preço direto: mostre o valor curtinho ANTES, depois o preço, nesse formato):
 • ANL: ele sai com a CAMPANHA do próprio negócio no ar (Instagram/Facebook), segmentada pra região dele, com lead chegando no WhatsApp; APLICA no negócio dele durante a aula, com o Douglas Conceição (dono de agência, host do DougCast) do lado; no 2º dia já sobe a campanha real (muitos têm conversa no dia seguinte e fecham ainda no curso). SÓ ENTÃO o preço (Pix / 6x no cartão) com validade até a DATA do PRAZO DO LOTE.
-• DEU VENDA: a máquina de captação montada DENTRO do negócio dele, 1 a 1 com um especialista, em 2 encontros de implantação, e a campanha no ar ainda na implantação; depois 3 meses de acompanhamento, um encontro por mês, ajustando até a estratégia acertar. NÃO é curso nem turma. SÓ ENTÃO o preço.
+• IMERSÃO DEU VENDA (turma, lead com código imersaodv…): em 3 encontros presenciais de 3 horas, seguidos (terça a quinta), ele sai com o anúncio do negócio dele rodando no Facebook e no Instagram, os vídeos que ELE grava no celular editados pela IA (corta pausa, legenda, a marca dele), a estratégia, as artes, o atendimento no WhatsApp organizado e o site da empresa no ar; uns 20 dias depois, o ENCONTRO DE RESULTADO pra olhar os números. Turma pequena, conduzida pelo Guto Wickert. A máquina de IA é dele e fica com ele. NÃO é implantação individual e NÃO tem 3 meses de acompanhamento (tem 30 dias no grupo da turma). É SÓ Meta (Facebook e Instagram), não Google. SÓ ENTÃO o preço (R$1.497 no Pix ou 6x de R$249,50 no cartão).
+• DEU VENDA (individual, lead com código deuvenda…): a máquina de captação montada DENTRO do negócio dele, 1 a 1 com um especialista, em 2 encontros de implantação, e a campanha no ar ainda na implantação; depois 3 meses de acompanhamento, um encontro por mês, ajustando até a estratégia acertar. NÃO é curso nem turma. SÓ ENTÃO o preço.
+ROTEIRO MODELO DA IMERSÃO — a venda da Miriam Dornelles (10 e 11/10/2026, conduzida pelo Rick, fechou em 2 dias). SIGA ESTE RITMO com lead da Imersão:
+1) 1ª resposta (OBRIGATÓRIO os três, nesta ordem, numa mensagem só): cumprimenta e se apresenta ("aqui é da Carreira no Digital"); EXPLICA a Imersão num parágrafo (3 encontros presenciais, os DIAS e o HORÁRIO da turma que ele escolheu, o que ele sai com pronto: anúncio rodando no Facebook e no Instagram, vídeos gravados no celular e editados pela IA, e a DATA do encontro de resultado dessa turma, tudo da lista TURMAS ABERTAS); e PERGUNTA qual é o negócio dele. NÃO responda só com a pergunta do negócio. NÃO dá preço ainda.
+2) Respondeu o negócio / trouxe dúvida: responde LIGANDO ao negócio dele (ex.: consultoria → "consultoria tem muito espaço pra captar cliente pelo Meta") e confere se encaixa no que ele precisa. Se ele NÃO perguntou preço, NÃO dê o preço aqui: espere ele escolher o turno ou perguntar.
+3) Perguntou de horário: dá as opções REAIS de turno daquela cidade (ex.: Porto Alegre tem tarde 14h às 17h15 e noite 19h às 22h15) e pergunta qual fica melhor. Nunca diga "combinado conforme disponibilidade".
+4) Escolheu o turno / perguntou preço: valor + preço com DOIS caminhos: "quer fazer a inscrição e garantir a vaga, ou prefere que a gente marque uma ligação rápida pra explicar melhor?".
+5) "Já sei o básico, vai avançar em quê?" / quer detalhe pra decidir: responde curto com o que ele SAI PRONTO (anúncio no ar no 2º encontro, vídeos editados pela IA, site, atendimento, encontro de resultado) e TERMINA SEMPRE propondo a LIGAÇÃO com DIA e HORA concretos (ex.: "posso te ligar amanhã às 10h pra te mostrar como isso fica no teu negócio?"). Nunca termine esse passo com "faz sentido?" sem propor a ligação.
+6) Depois da ligação: a proposta vai pelo link (quem manda é o time). Aceitou: comemora curto, confirma e diz quando o time volta a chamar pra acertar os detalhes.
+
 FECHAMENTO — NUNCA use "quer que eu garanta a vaga?". Feche perguntando o que ele ACHA / se tem alguma DÚVIDA de como encaixa no negócio dele.
 DESCOBERTA DO NEGÓCIO: se ele AINDA não falou do negócio, pergunte o que ele faz pra mostrar como o curso aplica no caso dele — MAS se você JÁ perguntou isso antes e ele NÃO respondeu (follow-up travado), NÃO pergunte de novo: entregue o VALOR + PREÇO + PRAZO no formato acima.
 
@@ -150,7 +161,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   // 1) lead/conversa atual (ou lead simulado)
   let lead: any = null
   if (simul) {
-    const f = /anl|an[úu]ncio/i.test(input.produtoHint || '') ? 'anl' : /fc|forma/i.test(input.produtoHint || '') ? 'fc' : ''
+    const f = /imers/i.test(input.produtoHint || '') ? 'imersaodv' : /deu ?venda/i.test(input.produtoHint || '') ? 'deuvenda' : /anl|an[úu]ncio/i.test(input.produtoHint || '') ? 'anl' : /fc|forma/i.test(input.produtoHint || '') ? 'fc' : ''
     lead = { id: null, nome: '(lead simulado)', whatsapp: '', codigo_turma: f, turma_id: null, etapa: 'simulação' }
   } else if (input.leadId) {
     const { data } = await supabase.from('leads').select('id, nome, whatsapp, codigo_turma, turma_id, etapa').eq('id', input.leadId).maybeSingle()
@@ -219,7 +230,7 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
   const diaSem = (d: string) => DS[new Date(d + 'T12:00:00-03:00').getDay()]
   const brData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
-  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome, endereco)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, data_fim, observacoes, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome, endereco)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
   const tvIds = (tv || []).map((t: any) => t.id)
   const datasPorTurma: Record<string, any[]> = {}
   if (tvIds.length) {
@@ -229,8 +240,17 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const diasPara = (d: string) => Math.round((new Date(d + 'T12:00:00-03:00').getTime() - new Date(hoje + 'T12:00:00-03:00').getTime()) / 864e5)
   const ofertas = (tv || []).map((t: any) => {
     const ds = datasPorTurma[t.id] || []
-    const dias = ds.map((d: any) => `${brData(d.data)} (${diaSem(d.data)})`).join(', ')
-    const hor = ds[0]?.horario_inicio ? `${ds[0].horario_inicio.slice(0, 5)} às ${(ds[0].horario_fim || '').slice(0, 5)}` : ''
+    let dias = ds.map((d: any) => `${brData(d.data)} (${diaSem(d.data)})`).join(', ')
+    let hor = ds[0]?.horario_inicio ? `${ds[0].horario_inicio.slice(0, 5)} às ${(ds[0].horario_fim || '').slice(0, 5)}` : ''
+    // ⚠️ AS TURMAS DA IMERSÃO NÃO TÊM turma_datas (13/10/2026): os dias e o turno estão só na observação
+    // ("· TARDE (14:00–17:15). Encontros 20, 21 e 22/10; resultado 03/11"). Sem isto a lista ia sem dia e
+    // sem horário, e a IA inventou "o horário é combinado conforme a disponibilidade".
+    if (!ds.length && /^imersaodv/i.test(t.codigo || '') && t.data_inicio) {
+      const mais = (n: number) => { const x = new Date(t.data_inicio + 'T12:00:00-03:00'); x.setDate(x.getDate() + n); return x.toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }) }
+      dias = [0, 1, 2].map(n => `${brData(mais(n))} (${diaSem(mais(n))})`).join(', ') + (t.data_fim ? ` + ENCONTRO DE RESULTADO ${brData(t.data_fim)} (${diaSem(t.data_fim)})` : '')
+      const m = (t.observacoes || '').match(/\b(MANH[ÃA]|TARDE|NOITE)\s*\((\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})\)/i)
+      if (m) hor = `${m[1].toLowerCase()}, ${m[2]} às ${m[3]}`
+    }
     const dpc = t.data_inicio ? diasPara(t.data_inicio) : null
     const urg = dpc != null ? ` — COMEÇA EM ${dpc} DIA(S)${dpc <= 7 ? ' 🔥 ÚLTIMOS DIAS' : ''}` : ''
     const links = `${t.link_pagamento ? ` — LINK OFICIAL: ${t.link_pagamento}` : ''}${t.link_pagamento_bolsa ? ` — LINK BOLSA(10%off): ${t.link_pagamento_bolsa}` : ''}`
