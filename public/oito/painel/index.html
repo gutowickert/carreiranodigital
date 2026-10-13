@@ -637,7 +637,10 @@ function hojeAba() {
 
   // funil
   $('fmarca').innerHTML = segHtml('fm', [['todas', 'Todas'], ['salao', 'Salão', M.salao.cor], ['prato', 'Prato', M.prato.cor], ['pata', 'Pata', M.pata.cor]], E.fm);
-  $('funil').innerHTML = funilHtml(D.funil[E.fm] || {}, E.fm === 'todas' ? 'linear-gradient(90deg,#5b4bff,#9a6cf0)' : M[E.fm].cor);
+  // 13/10: o funil começa nos cliques do anúncio (Meta), porque nem todo clique vira visita (a página não carrega, a pessoa volta antes)
+  var fh = Object.assign({}, D.funil[E.fm] || {}), temClique = campOk() && C.ok !== false;
+  if (temClique) fh.clique = E.fm === 'todas' ? (C.total && C.total.cliques) || 0 : ((campDe(E.fm) || {}).cliques || 0);
+  $('funil').innerHTML = funilHtml(fh, E.fm === 'todas' ? 'linear-gradient(90deg,#5b4bff,#9a6cf0)' : M[E.fm].cor, temClique ? [['clique', 'Cliques no anúncio']].concat(ETAPAS) : ETAPAS);
 
   // feed
   var itens = (D.ultimos || []).map(function (e) {
@@ -650,15 +653,17 @@ function hojeAba() {
   $('feedqt').textContent = itens.length ? itens.length + ' ' + periodoTxt() + (visitas ? ' · fora ' + visitas + ' visita' + (visitas === 1 ? '' : 's') : '') : '';
   $('feed').innerHTML = itens.length ? itens.join('') : '<div class="vazio"><b aria-hidden="true">🌙</b>Nada aconteceu ' + periodoTxt() + ' ainda.' + (visitas ? '<br>Só ' + visitas + ' visita(s) nas páginas.' : '') + '</div>';
 }
-function funilHtml(f, cor) {
-  var topo = Math.max(1, f.visita || 0, f.form_inicio || 0);
-  var h = '<div class="funil">' + ETAPAS.map(function (et, i) {
-    var v = f[et[0]] || 0, ant = i ? f[ETAPAS[i - 1][0]] || 0 : null, cv = ant ? v / ant : null;
-    var em = i === 0 ? 'pessoas' : ant ? P(cv) + ' do anterior' : '—';
+function funilHtml(f, cor, etapas) {
+  var ET = etapas || ETAPAS;
+  var topo = Math.max(1, f.clique || 0, f.visita || 0, f.form_inicio || 0);
+  var h = '<div class="funil">' + ET.map(function (et, i) {
+    var v = f[et[0]] || 0, ant = i ? f[ET[i - 1][0]] || 0 : null, cv = ant ? v / ant : null;
+    var em = i === 0 ? (et[0] === 'clique' ? 'na Meta' : 'pessoas') : ant ? P(cv) + ' do anterior' : '—';
     return '<div class="fe"><span class="nm">' + et[1] + '</span><span class="trilho" aria-hidden="true"><i style="width:' + Math.max(v ? 2 : 0, v / topo * 100) + '%;--cor:' + cor + '"></i></span><span class="q"><b class="num">' + nf(v) + '</b><em' + (cv != null && cv < .2 && ant >= 5 ? ' class="baixo"' : '') + '>' + em + '</em></span></div>';
   }).join('') + '</div>';
   var tot = f.visita ? (f.pagou || 0) / f.visita : null, tv = f.teste_pronto ? (f.pagou || 0) / f.teste_pronto : null;
-  h += '<div class="funil-tot"><span>Da visita à venda: <b class="num">' + P(tot, 1) + '</b></span><span>Do teste à venda: <b class="num">' + P(tv, 1) + '</b></span></div>';
+  var tc = f.clique ? (f.pagou || 0) / f.clique : null;
+  h += '<div class="funil-tot">' + (f.clique != null ? '<span>Do clique à venda: <b class="num">' + P(tc, 1) + '</b></span>' : '') + '<span>Da visita à venda: <b class="num">' + P(tot, 1) + '</b></span><span>Do teste à venda: <b class="num">' + P(tv, 1) + '</b></span></div>';
   return h;
 }
 
