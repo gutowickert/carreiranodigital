@@ -42,7 +42,10 @@ export async function GET(req: Request) {
   const c = await db.um('clientes', { id: l.cliente_id })
   const fotos = await db.lista('fotos', { cliente_id: c!.id }, { ordem: 'criado_em' })
   const fl = await db.links(fotos.map(f => f.path))
-  const anteriores = (await db.lista('posts', { cliente_id: c!.id }, { ordem: 'criado_em', desc: true, limite: 40 })).map(p => ({ titulo: p.titulo, pauta: p.pauta, foto_id: p.foto_id }))
+  const todos = await db.lista('posts', { cliente_id: c!.id }, { ordem: 'criado_em', desc: true, limite: 60 })
+  const anteriores = todos.slice(0, 40).map(p => ({ titulo: p.titulo, pauta: p.pauta, modelo: p.modelo, foto_id: p.foto_id }))
+  // o que o cliente já pediu pra mudar vira preferência pros próximos meses (a "memória" do negócio)
+  const preferencias = [...new Set(todos.filter(p => p.ajuste_pedido).map(p => String(p.ajuste_pedido).trim()))].slice(0, 12)
   const [logo] = await db.links([c!.logo_path])
   const alvo: any = l.tipo === 'ajuste' ? await db.um('posts', { id: l.mes }) : null
   if (alvo) alvo.bruta_url = (await db.links([alvo.bruta_path]))[0]
@@ -50,7 +53,7 @@ export async function GET(req: Request) {
   return NextResponse.json({
     lote: { ...l, status: 'gerando' }, cliente: { ...cli, logo, marca_nome: cfg.marcas[c!.marca as Marca].nome },
     fotos: fotos.map((f, i) => ({ id: f.id, url: fl[i], descricao: f.descricao, usos: f.usos })),
-    anteriores, ajuste: alvo ? { post: alvo, pedido: alvo.ajuste_pedido } : null,
+    anteriores, preferencias, ajuste: alvo ? { post: alvo, pedido: alvo.ajuste_pedido } : null,
   })
 }
 
@@ -95,6 +98,8 @@ export async function POST(req: Request) {
 
   if (b.acao === 'fim') {
     await db.atualiza('lotes', { id: l.id }, { status: 'pronto', pronto_em: new Date().toISOString(), custo_usd: +b.custo_usd || 0 })
+    // as "novidades deste mês" valem pra um mês só: depois do lote do mês, vão pro histórico
+    if (l.tipo === 'mes' && c!.contexto?.novidades) await db.atualiza('clientes', { id: c!.id }, { contexto: { ...c!.contexto, novidades: '', novidades_anteriores: c!.contexto.novidades } })
     const tipo = l.tipo === 'teste' ? 'teste_pronto' : l.tipo === 'mes' ? 'mes_entregue' : 'ajuste_entregue'
     await db.evento(tipo, { cliente_id: c!.id, marca: c!.marca, detalhe: { lote: l.id, segundos: Math.round((Date.now() - new Date(l.iniciado_em).getTime()) / 1000), custo_usd: +b.custo_usd || 0 } })
     return NextResponse.json({ ok: true })
