@@ -1,7 +1,7 @@
 // Oito Posts: a tela do teste (teste.html?c=). Espera os 2 posts, mostra, e oferece a assinatura.
 (function () {
   var c = (OITO.q.get('c') || OITO.ls.get('oito_codigo_' + OITO.marca) || '').toUpperCase()
-  if (!c) { location.href = '/oito/' + OITO.marca + '/comecar.html'; return }
+  if (!c) { location.href = OITO.url('comecar.html'); return }
   document.getElementById('codigo').textContent = c
   var etapas = [].slice.call(document.querySelectorAll('.etapas-geracao li')), t0 = Date.now(), viu = false, faturaUrl = null
   // as etapas da animação avançam com o tempo (o trabalho real leva ~40 s)
@@ -9,7 +9,7 @@
 
   function olha(pag) {
     OITO.api('cliente?c=' + encodeURIComponent(c) + (pag ? '&pag=1' : '')).then(function (v) {
-      if (v.status === 'ativo' || v.status === 'atrasado' || v.status === 'cancelado') { location.href = '/oito/' + OITO.marca + '/conta.html?c=' + c; return }
+      if (v.status === 'ativo' || v.status === 'atrasado' || v.status === 'cancelado') { location.href = OITO.url('conta.html?c=' + c); return }
       var teste = v.lotes.filter(function (l) { return l.tipo === 'teste' })[0]
       var posts = v.posts.filter(function (p) { return teste && p.lote_id === teste.id })
       if (teste && teste.status === 'pronto' && posts.length) {
@@ -44,7 +44,7 @@
     OITO.rastro('assinar_clique', {}, c); OITO.fb('InitiateCheckout', { value: 197, currency: 'BRL', content_name: OITO.marca }, 'checkout-' + c)
     OITO.api('assinar', { c: c, nome: document.getElementById('a-nome').value, documento: document.getElementById('a-doc').value, email: document.getElementById('a-email').value })
       .then(function (j) {
-        if (j.ja) { location.href = '/oito/' + OITO.marca + '/conta.html?c=' + c; return }
+        if (j.ja) { location.href = OITO.url('conta.html?c=' + c); return }
         if (j.simulado) document.getElementById('simular').hidden = false
         // a fatura abre numa aba nova (clique do botão, não bloqueia): esta tela fica conferindo o pagamento
         aguardando(j.fatura)

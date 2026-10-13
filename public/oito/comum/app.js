@@ -3,6 +3,18 @@
 (function () {
   var OITO_PIXEL = { salao: '', prato: '', pata: '' }
   var marca = document.body.dataset.marca
+  // no domínio da marca (www.salaonofeed.com.br...) os endereços ficam limpos: /comecar.html em vez de /oito/salao/comecar.html
+  var emDominio = /(^|\.)(salao|prato|pata)nofeed\.com\.br$/.test(location.hostname)
+  var prefixo = '/oito/' + marca + '/'
+  function url(p) { return (emDominio ? '/' : prefixo) + (p || '') }
+  if (emDominio) {
+    var limpa = function (a) { var h = a.getAttribute('href'); if (h && h.indexOf(prefixo) === 0) a.setAttribute('href', '/' + h.slice(prefixo.length)) }
+    document.addEventListener('DOMContentLoaded', function () { [].forEach.call(document.querySelectorAll('a[href^="' + prefixo + '"]'), limpa) })
+    // links criados depois (área do cliente, cartões): corrige no clique
+    document.addEventListener('click', function (e) { var a = e.target.closest && e.target.closest('a[href^="' + prefixo + '"]'); if (a) limpa(a) }, true)
+    // quem chegou por um link antigo (/oito/salao/...) vê o endereço limpo na barra
+    if (location.pathname.indexOf(prefixo) === 0) history.replaceState(null, '', '/' + location.pathname.slice(prefixo.length) + location.search + location.hash)
+  }
   var ls = { get: function (k) { try { return localStorage.getItem(k) } catch (e) { return null } }, set: function (k, v) { try { localStorage.setItem(k, v) } catch (e) {} } }
   var sessao = ls.get('oito_sessao'); if (!sessao) { sessao = Math.random().toString(36).slice(2) + Date.now().toString(36); ls.set('oito_sessao', sessao) }
   var q = new URLSearchParams(location.search)
@@ -109,11 +121,11 @@
       '<p>Assim os posts do mês ficam a um toque, sem procurar link.</p>' + passos +
       '<div class="sa-acoes"><button class="btn peq instalar-agora"' + (pedidoInstalar ? '' : ' hidden') + '>Instalar</button><button class="btn peq fantasma sa-copia">Copiar meu link</button><button class="sa-fecha" aria-label="Fechar">Agora não</button></div></div></div>'
     el.querySelector('.instalar-agora').onclick = function () { if (!pedidoInstalar) return; pedidoInstalar.prompt(); pedidoInstalar.userChoice.then(function (r) { if (r.outcome === 'accepted') { rastro('app_instalado', {}, c); el.innerHTML = '' } }) }
-    el.querySelector('.sa-copia').onclick = function () { var u = location.origin + '/oito/' + marca + '/conta.html?c=' + c; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { aviso('Link copiado. Guarde no WhatsApp ou nos favoritos.') }, function () { prompt('Seu link:', u) }) }
+    el.querySelector('.sa-copia').onclick = function () { var u = location.origin + url('conta.html?c=' + c); (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { aviso('Link copiado. Guarde no WhatsApp ou nos favoritos.') }, function () { prompt('Seu link:', u) }) }
     el.querySelector('.sa-fecha').onclick = function () { ls.set('oito_app_fechado_' + c, '1'); el.innerHTML = '' }
   }
 
-  window.OITO = { marca: marca, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
+  window.OITO = { marca: marca, url: url, emDominio: emDominio, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
     utm: function () { try { return JSON.parse(ls.get('oito_utm') || 'null') } catch (e) { return null } } }
 
   // botão flutuante de ajuda (abre o chat numa gaveta) em toda página com [data-ajuda]

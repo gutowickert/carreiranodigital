@@ -77,7 +77,7 @@ function OITO_FORM(paletas) {
     }).then(function () {
       OITO.fb('Lead', { content_name: OITO.marca }, 'lead-' + codigo)
       OITO.ls.set(chave, '{}'); OITO.ls.set('oito_codigo_' + OITO.marca, codigo)
-      location.href = '/oito/' + OITO.marca + '/teste.html?c=' + codigo
+      location.href = OITO.url('teste.html?c=' + codigo)
     }).catch(function (er) {
       erro.textContent = er.message; segue.disabled = false; segue.textContent = 'Tentar de novo'
       OITO.rastro('form_erro', { erro: String(er.message).slice(0, 120) })

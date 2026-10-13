@@ -1,7 +1,7 @@
 // Oito Posts: a área do cliente (conta.html?c=): posts do mês, meu negócio, fotos, ajuda e assinatura.
 (function () {
   var c = (OITO.q.get('c') || OITO.ls.get('oito_codigo_' + OITO.marca) || '').toUpperCase(), E = OITO.esc, v = null, aba = 'posts', vigia = null
-  if (!c) { location.href = '/oito/' + OITO.marca + '/'; return }
+  if (!c) { location.href = OITO.url(''); return }
   OITO.ls.set('oito_codigo_' + OITO.marca, c)
   var STATUS = { ativo: ['ok', 'Assinatura em dia'], aguardando_pagamento: ['alerta', 'Aguardando pagamento'], atrasado: ['ruim', 'Fatura em atraso'], cancelado: ['', 'Assinatura cancelada'], teste: ['', 'Teste grátis'] }
 
