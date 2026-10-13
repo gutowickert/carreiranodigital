@@ -92,7 +92,7 @@ export async function sincronizaCaixas() {
   const res: Record<string, any> = {}
   for (const m of MARCAS) {
     if (!senha(m)) { res[m] = 'sem senha'; continue }
-    try { res[m] = await lerCaixa(m) } catch (e: any) { res[m] = 'erro: ' + String(e?.message || e).slice(0, 120) }
+    try { res[m] = await lerCaixa(m) } catch (e: any) { res[m] = 'erro: ' + [e?.message, e?.authenticationFailed ? 'login recusado' : '', e?.responseText, e?.serverResponseCode, e?.code].filter(Boolean).join(' · ').slice(0, 220) }
   }
   return res
 }
