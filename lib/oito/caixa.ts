@@ -1,0 +1,96 @@
+// Oito Posts: as caixas contato@ das 3 marcas (HostGator) dentro do suporte do painel (13/10), igual ao Recado.
+// Lê por IMAP o que chegou, abre/continua o chamado (origem 'email'), a IA responde e a resposta sai por e-mail, do contato@ da marca,
+// no mesmo fio. A resposta dada pelo dono no painel também sai por e-mail.
+// Precisa das senhas das caixas na Vercel: OITO_EMAIL_SENHA_SALAO, OITO_EMAIL_SENHA_PRATO, OITO_EMAIL_SENHA_PATA.
+// Sem a senha de uma marca, aquela caixa só não é lida; nada quebra.
+import { ImapFlow } from 'imapflow'
+import { simpleParser } from 'mailparser'
+import { oitoDb as db } from './db'
+import { oitoConfig as cfg, Marca } from './config'
+import { novaMensagemCliente } from './suporte'
+
+const MARCAS: Marca[] = ['salao', 'prato', 'pata']
+const senha = (m: Marca) => process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]
+export const caixasLigadas = () => MARCAS.filter(m => !!senha(m))
+const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+
+// só o que a pessoa escreveu agora: corta a mensagem anterior citada
+function limpa(t: string) {
+  const linhas = String(t || '').replace(/\r/g, '').split('\n'), out: string[] = []
+  for (const l of linhas) {
+    if (/^>/.test(l) || /^(Em|On) .+(escreveu|wrote):?\s*$/i.test(l) || /^-{2,}\s*(Mensagem original|Original Message)/i.test(l) || /^De: .+/i.test(l) && out.length) break
+    out.push(l)
+  }
+  return out.join('\n').trim().slice(0, 4000)
+}
+
+async function estado(chave: string, valor?: any) {
+  if (valor === undefined) return (await db.um('estado', { chave }))?.valor || null
+  const r = await db.atualiza('estado', { chave }, { valor })
+  if (!r.length) await db.insere('estado', { chave, valor })
+}
+
+export async function respondeEmail(ch: any, texto: string, autor: 'ia' | 'dono') {
+  const m = (ch.marca || 'salao') as Marca, dom = cfg.marcas[m].dominio, nome = cfg.marcas[m].nome
+  const chave = m === 'pata' ? process.env.OITO_RESEND_PATA : process.env.RESEND_API_KEY
+  if (!chave || !ch.contato || !/@/.test(ch.contato)) return { ok: false }
+  const base = ch.email_assunto || `${nome} · atendimento`
+  const assunto = /^re:/i.test(base) ? base : 'Re: ' + base
+  const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#222"><div style="white-space:pre-wrap">${esc(texto)}</div>
+<p style="margin-top:18px">Um abraço,<br><b>Equipe ${esc(nome)}</b><br><a href="https://www.${dom}">${dom}</a></p></div>`
+  const headers: Record<string, string> = {}
+  if (ch.email_ref) { headers['In-Reply-To'] = ch.email_ref; headers['References'] = ch.email_ref }
+  const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + chave, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ from: `${nome} <contato@${dom}>`, to: [ch.contato], reply_to: `contato@${dom}`, subject: assunto, html, text: texto + `\n\nUm abraço,\nEquipe ${nome}`, headers }) })
+  return { ok: r.ok, autor }
+}
+
+async function lerCaixa(m: Marca) {
+  const dom = cfg.marcas[m].dominio
+  const c = new ImapFlow({ host: process.env.OITO_EMAIL_IMAP || `mail.${dom}`, port: 993, secure: true,
+    auth: { user: `contato@${dom}`, pass: senha(m) as string }, logger: false, tls: { rejectUnauthorized: false } })
+  let novas = 0
+  await c.connect()
+  const lock = await c.getMailboxLock('INBOX')
+  try {
+    const ult = +((await estado('caixa_' + m))?.uid || 0)
+    // primeira leitura: só os últimos 3 dias; depois, só o que chegou desde a última
+    const uids = ((await c.search(ult ? { uid: `${ult + 1}:*` } : { since: new Date(Date.now() - 3 * 864e5) }, { uid: true })) || []).filter(u => u > ult).sort((a, b) => a - b).slice(0, 30)
+    for (const uid of uids) {
+      try {
+        const msg: any = await c.fetchOne(String(uid), { source: true }, { uid: true })
+        if (!msg?.source) continue
+        const p: any = await simpleParser(msg.source)
+        const de = p.from?.value?.[0] || {}, email = String(de.address || '').toLowerCase()
+        if (!email || email.endsWith('@' + dom) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
+        const texto = limpa(p.text || (p.html ? String(p.html).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '') : '')) || '(mensagem sem texto)'
+        const assunto = String(p.subject || '').trim().slice(0, 200)
+        // continua o chamado aberto dessa pessoa (últimos 7 dias) ou abre um novo
+        const recente = new Date(Date.now() - 7 * 864e5).toISOString()
+        let ch = (await db.lista('chamados', { contato: email, origem: 'email' }, { ordem: 'atualizado_em', desc: true, limite: 1 }))[0]
+        if (!ch || ch.atualizado_em < recente || ch.status === 'resolvido') {
+          const cli = (await db.lista('clientes', { email }))[0]
+          ch = await db.insere('chamados', { cliente_id: cli?.id || null, marca: cli?.marca || m, nome: de.name || cli?.nome_negocio || email, contato: email, origem: 'email', assunto: (assunto || texto).slice(0, 120), email_assunto: assunto || null, status: 'aberto' })
+        }
+        if (p.messageId) { await db.atualiza('chamados', { id: ch.id }, { email_ref: p.messageId }); ch.email_ref = p.messageId }
+        const antes = (await db.lista('chamado_msgs', { chamado_id: ch.id })).length
+        await novaMensagemCliente(ch, (assunto && antes === 0 ? `[${assunto}]\n` : '') + texto)
+        // se a IA respondeu, a resposta sai por e-mail
+        const msgs = await db.lista('chamado_msgs', { chamado_id: ch.id }, { ordem: 'criado_em' })
+        const ultima = msgs[msgs.length - 1]
+        if (msgs.length > antes + 1 && ultima?.autor === 'ia') await respondeEmail({ ...ch, marca: ch.marca || m }, ultima.texto, 'ia')
+        novas++
+      } finally { await estado('caixa_' + m, { uid, em: new Date().toISOString() }) }
+    }
+  } finally { lock.release(); await c.logout().catch(() => null) }
+  return novas
+}
+
+export async function sincronizaCaixas() {
+  const res: Record<string, any> = {}
+  for (const m of MARCAS) {
+    if (!senha(m)) { res[m] = 'sem senha'; continue }
+    try { res[m] = await lerCaixa(m) } catch (e: any) { res[m] = 'erro: ' + String(e?.message || e).slice(0, 120) }
+  }
+  return res
+}

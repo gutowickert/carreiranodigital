@@ -51,6 +51,8 @@ export async function POST(req: Request) {
         const texto = t(b.texto)
         if (!texto) return NextResponse.json({ erro: 'texto' }, { status: 400 })
         await db.insere('chamado_msgs', { chamado_id: ch.id, autor: 'dono', texto })
+        // chamado que veio por e-mail: a resposta do dono sai por e-mail também (13/10)
+        if (ch.origem === 'email') { const { respondeEmail } = await import('@/lib/oito/caixa'); await respondeEmail(ch, texto, 'dono').catch(() => null) }
         await db.atualiza('chamados', { id: ch.id }, { status: 'resolvido', resolvido_por: 'dono', solucao: t(b.solucao, 200) || texto.slice(0, 200), nao_lidas_cliente: (ch.nao_lidas_cliente || 0) + 1, nao_lidas_dono: 0, atualizado_em: agora })
       } else if (b.acao === 'resolver') await db.atualiza('chamados', { id: ch.id }, { status: 'resolvido', resolvido_por: 'dono', nao_lidas_dono: 0, atualizado_em: agora })
       else if (b.acao === 'reabrir') await db.atualiza('chamados', { id: ch.id }, { status: 'esperando_dono', atualizado_em: agora })
