@@ -21,7 +21,7 @@ export async function GET(req: Request) {
     if (!c) return NextResponse.json({ erro: 'cliente' }, { status: 404 })
     const ps = (await db.lista('posts', { cliente_id: c.id }, { ordem: 'criado_em' })).filter(p => p.status !== 'substituido' && p.bruta_path)
     const brutas = await db.links(ps.map(p => p.bruta_path)), [logo] = await db.links([c.logo_path])
-    return NextResponse.json({ cliente: { codigo: c.codigo, marca: c.marca, cores: c.cores, nome_negocio: c.nome_negocio, instagram: c.instagram, bairro: c.bairro, cidade: c.cidade, logo },
+    return NextResponse.json({ cliente: { codigo: c.codigo, marca: c.marca, cores: c.cores, tom: (c.contexto || {}).tom, nome_negocio: c.nome_negocio, instagram: c.instagram, bairro: c.bairro, cidade: c.cidade, logo },
       posts: ps.map((p, i) => ({ id: p.id, modelo: p.modelo, titulo: p.titulo, apoio: p.apoio, itens: p.itens, chamada: p.chamada, bruta_url: brutas[i] })) })
   }
   // o painel mostra "trabalhador ligado" pelo último contato
