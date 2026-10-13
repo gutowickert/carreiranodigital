@@ -62,7 +62,9 @@ async function lerCaixa(m: Marca) {
         if (!msg?.source) continue
         const p: any = await simpleParser(msg.source)
         const de = p.from?.value?.[0] || {}, email = String(de.address || '').toLowerCase()
-        if (!email || email.endsWith('@' + dom) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
+        // ignora as próprias marcas e o Recado (evita duas IAs se respondendo em loop), robôs e avisos automáticos
+        if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
+        if (p.headers?.get('auto-submitted') && String(p.headers.get('auto-submitted')) !== 'no') continue
         const texto = limpa(p.text || (p.html ? String(p.html).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '') : '')) || '(mensagem sem texto)'
         const assunto = String(p.subject || '').trim().slice(0, 200)
         // continua o chamado aberto dessa pessoa (últimos 7 dias) ou abre um novo
