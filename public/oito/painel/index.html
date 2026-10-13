@@ -740,21 +740,21 @@ function campanhasAba() {
   // funil com dinheiro
   var f = somaCamp(E.cfm) || {}, cor = E.cfm === 'todas' ? 'linear-gradient(90deg,#5b4bff,#9a6cf0)' : M[E.cfm].cor;
   var et = [
-    ['Impressões', f.impressoes, f.impressoes ? 'CPM ' + R(f.gasto / f.impressoes * 1000) : '', ''],
     ['Cliques', f.cliques, 'CTR ' + pctTxt(f.ctr), f.cpc != null ? R(f.cpc) + ' por clique' : ''],
     ['Visitas na página', f.visitas, f.cliques ? P(f.visitas / f.cliques) + ' dos cliques' : '', ''],
     ['Testes pedidos', f.testes, f.visitas ? P(f.testes / f.visitas, 1) + ' das visitas' : '', f.custo_por_teste != null ? R(f.custo_por_teste) + ' por teste' : ''],
     ['Assinaturas abertas', f.assinaturas, f.testes ? P(f.assinaturas / f.testes) + ' dos testes' : '', ''],
     ['Vendas', f.vendas, f.assinaturas ? P(f.vendas / f.assinaturas) + ' das assinaturas' : '', f.custo_por_venda != null ? R(f.custo_por_venda) + ' por venda' : '']
   ];
-  var mx = Math.log10((f.impressoes || 0) + 1) || 1;
+  // 13/10: o funil começa nos cliques (sem impressões), em escala normal
+  var mx = Math.max(1, +f.cliques || 0, +f.visitas || 0);
   var h = '<div class="gasto-topo"><span>Investido ' + periodoTxt() + (E.cfm !== 'todas' ? ' · ' + esc(M[E.cfm].nome) : '') + '</span><b class="num">' + R(f.gasto) + '</b></div><div class="funil">'
     + et.map(function (e) {
       var v = +e[1] || 0;
-      return '<div class="fe"><span class="nm">' + e[0] + '</span><span class="trilho" aria-hidden="true"><i style="width:' + (v ? Math.max(2, Math.log10(v + 1) / mx * 100) : 0) + '%;--cor:' + cor + '"></i></span><span class="q"><b class="num">' + nf(v) + '</b>' + (e[2] ? '<em>' + e[2] + '</em>' : '') + (e[3] ? '<em class="din">' + e[3] + '</em>' : '') + '</span></div>';
+      return '<div class="fe"><span class="nm">' + e[0] + '</span><span class="trilho" aria-hidden="true"><i style="width:' + (v ? Math.max(2, v / mx * 100) : 0) + '%;--cor:' + cor + '"></i></span><span class="q"><b class="num">' + nf(v) + '</b>' + (e[2] ? '<em>' + e[2] + '</em>' : '') + (e[3] ? '<em class="din">' + e[3] + '</em>' : '') + '</span></div>';
     }).join('') + '</div>'
     + '<div class="funil-tot"><span>Leads que a Meta contou: <b class="num">' + nf(f.leads_meta) + '</b></span><span>Retorno: <b class="num">' + (f.retorno != null ? nf(f.retorno, 1) + 'x' : '—') + '</b></span></div>'
-    + '<p style="font-size:12px;color:var(--mut);margin-top:8px">As barras vão em escala logarítmica (impressões são milhares, vendas são poucas); a % é sobre a etapa anterior.</p>';
+    + '<p style="font-size:12px;color:var(--mut);margin-top:8px">A % de cada etapa é sobre a etapa anterior.</p>';
   $('cfunil').innerHTML = h;
   // campanhas por marca
   var ms = E.cfm === 'todas' ? MARCAS : [E.cfm];
