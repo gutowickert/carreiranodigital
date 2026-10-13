@@ -66,14 +66,19 @@ async function lerCaixa(m: Marca) {
         // ignora as próprias marcas e o Recado (evita duas IAs se respondendo em loop), robôs e avisos automáticos
         if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
         if (p.headers?.get('auto-submitted') && String(p.headers.get('auto-submitted')) !== 'no') continue
+        // e-mail automático não vira chamado (13/10): newsletter, boas-vindas e confirmação de serviços, notificações
+        const prec = String(p.headers?.get('precedence') || '').toLowerCase()
+        if (p.headers?.get('list-unsubscribe') || /bulk|list|junk/.test(prec)) continue
+        if (/@([a-z0-9-]+.)*(titan.email|resend.com|hostgator.com(.br)?|facebookmail.com|meta.com|google.com|accounts.google.com|vercel.com|asaas.com|supabase.(io|com))$/.test(email)) continue
+        if (/^(notifications?|updates?|news|newsletter|alerts?|info|team|suporte@titan|marketing)@/.test(email)) continue
         const texto = limpa(p.text || (p.html ? String(p.html).replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '') : '')) || '(mensagem sem texto)'
         const assunto = String(p.subject || '').trim().slice(0, 200)
         // continua o chamado aberto dessa pessoa (últimos 7 dias) ou abre um novo
         const recente = new Date(Date.now() - 7 * 864e5).toISOString()
-        let ch = (await db.lista('chamados', { contato: email, origem: 'email' }, { ordem: 'atualizado_em', desc: true, limite: 1 }))[0]
+        let ch = (await db.lista('chamados', { contato: email, origem: 'email', marca: m }, { ordem: 'atualizado_em', desc: true, limite: 1 }))[0]
         if (!ch || ch.atualizado_em < recente || ch.status === 'resolvido') {
           const cli = (await db.lista('clientes', { email }))[0]
-          ch = await db.insere('chamados', { cliente_id: cli?.id || null, marca: cli?.marca || m, nome: de.name || cli?.nome_negocio || email, contato: email, origem: 'email', assunto: (assunto || texto).slice(0, 120), email_assunto: assunto || null, status: 'aberto' })
+          ch = await db.insere('chamados', { cliente_id: cli?.marca === m ? cli.id : null, marca: m, nome: de.name || cli?.nome_negocio || email, contato: email, origem: 'email', assunto: (assunto || texto).slice(0, 120), email_assunto: assunto || null, status: 'aberto' })
         }
         if (p.messageId) { await db.atualiza('chamados', { id: ch.id }, { email_ref: p.messageId }); ch.email_ref = p.messageId }
         const antes = (await db.lista('chamado_msgs', { chamado_id: ch.id })).length
