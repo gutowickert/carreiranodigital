@@ -1,7 +1,7 @@
 // Oito Posts: o JS comum das páginas das 3 marcas (rastro do funil, pixel, fotos, chat de suporte, utilidades).
 // Cada página tem <body data-marca="salao|prato|pata">. O pixel de cada marca fica em OITO_PIXEL (vazio = desligado).
 (function () {
-  var OITO_PIXEL = { salao: '', prato: '', pata: '' }
+  var OITO_PIXEL = { salao: '1455599803169071', prato: '972396812578762', pata: '1594681621732255' }
   var marca = document.body.dataset.marca
   // no domínio da marca (www.salaonofeed.com.br...) os endereços ficam limpos: /comecar.html em vez de /oito/salao/comecar.html
   var emDominio = /(^|\.)(salao|prato|pata)nofeed\.com\.br$/.test(location.hostname)
