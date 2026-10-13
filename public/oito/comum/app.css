@@ -198,3 +198,25 @@ textarea{resize:vertical;min-height:96px}
 .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#111;color:#fff;padding:12px 18px;border-radius:12px;font-weight:600;z-index:90;transition:opacity .4s}
 .toast.erro{background:#b42318}.toast.sai{opacity:0}
 .esconde{display:none!important}
+
+/* toque moderno nas páginas do app (formulário, teste, área) — 13/10 */
+body:not(.venda){background:radial-gradient(900px 420px at 100% -8%,color-mix(in srgb,var(--destaque) 18%,transparent),transparent 65%),radial-gradient(700px 380px at -10% 110%,color-mix(in srgb,var(--escuro) 8%,transparent),transparent 60%) fixed,var(--claro)}
+.caixa,.post,.passo,.perguntas details,.escolha label,.sobe{box-shadow:0 18px 40px -30px rgba(0,0,0,.35)}
+.post{border-radius:24px}
+.post img{transition:transform .25s}
+.post:hover img{transform:scale(1.015)}
+.oferta{background:radial-gradient(600px 300px at 100% 0,color-mix(in srgb,var(--destaque) 35%,transparent),transparent 60%),var(--escuro)}
+.etapa h1{letter-spacing:-.015em}
+.barra{height:10px}
+.barra i{background:linear-gradient(90deg,var(--destaque),color-mix(in srgb,var(--destaque) 60%,#fff))}
+
+/* cartão "salve sua área como app" */
+.salva-app{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid var(--linha);border-radius:22px;padding:18px;margin:0 0 20px;box-shadow:0 18px 40px -30px rgba(0,0,0,.35)}
+.salva-app .sa-ic img{width:58px;height:58px;border-radius:15px;flex:none;box-shadow:0 8px 18px -8px rgba(0,0,0,.4)}
+.salva-app .sa-txt{display:grid;gap:8px;font-size:15px}
+.salva-app .sa-txt b{font-size:17px}
+.salva-app .sa-txt p{color:var(--suave)}
+.salva-app ol{padding-left:20px;display:grid;gap:4px}
+.salva-app .sa-acoes{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.salva-app .sa-fecha{border:0;background:none;color:var(--suave);font:600 14px var(--fc);cursor:pointer;padding:8px}
+[hidden]{display:none!important}

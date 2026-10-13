@@ -20,7 +20,7 @@
     var s = STATUS[v.status] || ['', v.status]
     document.getElementById('situacao').innerHTML = '<span class="pilula ' + s[0] + '">' + s[1] + (v.pago_ate && v.status !== 'aguardando_pagamento' ? ' · até ' + OITO.dataBR(v.pago_ate) : '') + '</span>'
     if (v.status === 'ativo' && !OITO.ls.get('oito_comprou_' + c)) { OITO.ls.set('oito_comprou_' + c, '1'); OITO.fb('Purchase', { value: 197, currency: 'BRL', content_name: OITO.marca }, 'compra-' + c) }
-    if (!desenha.feito) { desenha.feito = true; OITO.rastro('area_visita', {}, c); negocio(); fotos(); OITO.chat(document.getElementById('chat'), { c: c }) }
+    if (!desenha.feito) { desenha.feito = true; OITO.rastro('area_visita', {}, c); OITO.salvaApp(document.getElementById('salva-app'), c); negocio(); fotos(); OITO.chat(document.getElementById('chat'), { c: c }) }
     posts(); assinatura()
     // enquanto algo está sendo feito (ou o pagamento não confirmou), atualiza sozinho
     var andando = v.lotes.some(function (l) { return ['fila', 'gerando', 'espera'].indexOf(l.status) >= 0 }) || v.posts.some(function (p) { return p.status === 'ajuste_pedido' })
@@ -40,7 +40,7 @@
     var fazendo = atual.status !== 'pronto'
     el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 18px">' +
       '<p class="suave">' + (fazendo ? '<b>Seus posts estão sendo feitos:</b> ' + doMes.length + ' de ' + atual.qtd + ' prontos. Esta página atualiza sozinha.' : doMes.length + ' posts, 2 por semana. Ajustes que ainda pode pedir este mês: <b>' + v.ajustes_restantes + '</b>.') + '</p>' +
-      (doMes.length && !fazendo ? '<button class="btn peq escuro" id="zip">Baixar todos (.zip)</button>' : '') + '</div><div class="posts" id="lista-posts"></div>' + anteriores(doMes)
+      (doMes.length && !fazendo ? '<span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn peq fantasma" href="/oito/' + OITO.marca + '/guia.html">Como postar e dicas</a><button class="btn peq escuro" id="zip">Baixar todos (.zip)</button></span>' : '') + '</div><div class="posts" id="lista-posts"></div>' + anteriores(doMes)
     OITO_POSTS(document.getElementById('lista-posts'), doMes, { c: c, ajuste: v.status === 'ativo' && v.ajustes_restantes > 0, depois: function () { carrega() } })
     var z = document.getElementById('zip'); if (z) z.onclick = function () { baixaTodos(doMes, z) }
     var ant = document.getElementById('lista-ant'); if (ant) OITO_POSTS(ant, v.posts.filter(function (p) { return doMes.indexOf(p) < 0 }), {})

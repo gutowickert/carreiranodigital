@@ -88,7 +88,32 @@
     carrega(); setInterval(carrega, 20000)
   }
 
-  window.OITO = { marca: marca, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
+  // ---------- "salvar como app" (área do cliente) ----------
+  // O manifesto é dinâmico: o app instalado abre direto na área deste cliente. No Android aparece o botão Instalar;
+  // no iPhone, o passo a passo do Safari. Se já está aberto como app, não mostra nada.
+  var pedidoInstalar = null
+  addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); pedidoInstalar = e; var b = document.querySelector('.instalar-agora'); if (b) b.hidden = false })
+  function salvaApp(el, c) {
+    if (!el || !c) return
+    var mf = document.querySelector('link[rel=manifest]') || document.head.appendChild(Object.assign(document.createElement('link'), { rel: 'manifest' }))
+    mf.href = '/api/oito/manifest?m=' + marca + '&c=' + encodeURIComponent(c)
+    var app = matchMedia('(display-mode: standalone)').matches || navigator.standalone
+    if (app || ls.get('oito_app_fechado_' + c)) return
+    var ua = navigator.userAgent, ios = /iPhone|iPad|iPod/.test(ua), android = /Android/.test(ua), safari = ios && !/CriOS|FxiOS|EdgiOS|Instagram|FBAN|FBAV/.test(ua)
+    var passos = ios
+      ? (safari ? '<ol><li>Toque em <b>Compartilhar</b> <span aria-hidden="true">⬆️</span>, na barra de baixo do Safari.</li><li>Role e toque em <b>Adicionar à Tela de Início</b>.</li><li>Toque em <b>Adicionar</b>. Pronto: o ícone fica junto dos seus apps.</li></ol>'
+        : '<p>Abra este link no <b>Safari</b> (no menu ••• toque em "Abrir no Safari") e depois: <b>Compartilhar ⬆️ → Adicionar à Tela de Início</b>.</p>')
+      : android ? '<ol><li>Toque em <b>Instalar</b> aqui embaixo.</li><li>Se o botão não aparecer: no Chrome, toque nos <b>⋮</b> (canto de cima) → <b>Adicionar à tela inicial</b> ou <b>Instalar app</b>.</li></ol>'
+      : '<p>No celular, abra este mesmo link e adicione à tela de início. No computador, salve nos favoritos (Ctrl+D).</p>'
+    el.innerHTML = '<div class="salva-app"><div class="sa-ic"><img src="/oito/' + marca + '/icone.png" alt=""></div><div class="sa-txt"><b>Salve sua área como app</b>' +
+      '<p>Assim os posts do mês ficam a um toque, sem procurar link.</p>' + passos +
+      '<div class="sa-acoes"><button class="btn peq instalar-agora"' + (pedidoInstalar ? '' : ' hidden') + '>Instalar</button><button class="btn peq fantasma sa-copia">Copiar meu link</button><button class="sa-fecha" aria-label="Fechar">Agora não</button></div></div></div>'
+    el.querySelector('.instalar-agora').onclick = function () { if (!pedidoInstalar) return; pedidoInstalar.prompt(); pedidoInstalar.userChoice.then(function (r) { if (r.outcome === 'accepted') { rastro('app_instalado', {}, c); el.innerHTML = '' } }) }
+    el.querySelector('.sa-copia').onclick = function () { var u = location.origin + '/oito/' + marca + '/conta.html?c=' + c; (navigator.clipboard ? navigator.clipboard.writeText(u) : Promise.reject()).then(function () { aviso('Link copiado. Guarde no WhatsApp ou nos favoritos.') }, function () { prompt('Seu link:', u) }) }
+    el.querySelector('.sa-fecha').onclick = function () { ls.set('oito_app_fechado_' + c, '1'); el.innerHTML = '' }
+  }
+
+  window.OITO = { marca: marca, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
     utm: function () { try { return JSON.parse(ls.get('oito_utm') || 'null') } catch (e) { return null } } }
 
   // botão flutuante de ajuda (abre o chat numa gaveta) em toda página com [data-ajuda]

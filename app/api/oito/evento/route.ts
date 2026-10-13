@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { ehMarca } from '@/lib/oito/config'
 
-const TIPOS = new Set(['visita', 'form_inicio', 'form_passo', 'form_erro', 'teste_visto', 'assinar_clique', 'fatura_aberta', 'area_visita', 'baixou', 'copiou_legenda'])
+const TIPOS = new Set(['visita', 'form_inicio', 'form_passo', 'form_erro', 'teste_visto', 'assinar_clique', 'fatura_aberta', 'area_visita', 'baixou', 'copiou_legenda', 'app_instalado'])
 
 export async function POST(req: Request) {
   try {

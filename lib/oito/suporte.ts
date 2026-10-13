@@ -48,7 +48,7 @@ Responde a última mensagem do cliente. Devolve SÓ este JSON:
 {"resposta":"o texto pro cliente","passar_para_dono":false,"resolvido":false,"problema":"o problema em uma frase curta","solucao":"o que tu fizeste/orientaste em uma frase curta"}`
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY as string, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODELO, max_tokens: 900, system: SABE((chamado.marca || 'salao') as Marca), messages: [{ role: 'user', content: pedido }] }),
+    body: JSON.stringify({ model: MODELO, max_tokens: 1500, thinking: { type: 'between_tools' }, system: SABE((chamado.marca || 'salao') as Marca), messages: [{ role: 'user', content: pedido }] }),
     signal: AbortSignal.timeout(40000),
   })
   const j = await r.json()

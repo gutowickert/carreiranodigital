@@ -17,7 +17,7 @@
         document.getElementById('gerando').classList.add('esconde'); document.getElementById('prontos').classList.remove('esconde')
         document.getElementById('titulo-prontos').textContent = 'Prontos pra postar, ' + (v.negocio.nome || '')
         OITO_POSTS(document.getElementById('posts'), posts, {})
-        if (!viu) { viu = true; OITO.rastro('teste_visto', {}, c) }
+        if (!viu) { viu = true; OITO.rastro('teste_visto', {}, c); OITO.salvaApp(document.getElementById('salva-app'), c) }
         if (v.negocio.email) document.getElementById('a-email').value = v.negocio.email
         if (v.status === 'aguardando_pagamento') aguardando()
         return
