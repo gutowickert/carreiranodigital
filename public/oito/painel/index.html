@@ -70,6 +70,7 @@ header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 8
 nav#abas{max-width:1280px;margin:0 auto;display:flex;gap:6px;padding:0 24px 10px}
 nav#abas button{display:flex;align-items:center;gap:7px;padding:8px 15px;border-radius:999px;font-weight:700;font-size:14px;color:var(--tx2);border:1px solid transparent;position:relative}
 nav#abas button svg{width:17px;height:17px;flex:none}
+nav#abas .rotulo-pq{display:none}
 nav#abas button:hover{color:var(--marca-tx);background:var(--card)}
 nav#abas button[aria-selected="true"]{background:var(--marca);color:#fff;box-shadow:0 6px 16px var(--marca-sombra)}
 .badge{min-width:19px;height:19px;padding:0 5px;border-radius:999px;background:var(--ruim);color:#fff;font-size:11px;font-weight:800;display:inline-grid;place-items:center;line-height:1}
@@ -249,6 +250,30 @@ button.lin:hover{background:var(--card2)}
 .minif{display:flex;align-items:flex-end;gap:4px;height:56px}
 .minif i{flex:1;border-radius:5px 5px 2px 2px;min-height:3px}
 
+/* ===== campanhas ===== */
+code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);border-radius:6px;padding:1px 5px;overflow-wrap:anywhere}
+.fe .q em.din{color:var(--marca-tx)}
+.gasto-topo{display:flex;align-items:baseline;justify-content:space-between;gap:4px 12px;flex-wrap:wrap;padding:12px 14px;border-radius:14px;background:var(--marca-bg);margin-bottom:14px;color:var(--marca-tx)}
+.gasto-topo span{font-weight:700;font-size:14px}
+.gasto-topo b{font-size:26px;font-weight:800;letter-spacing:-.02em}
+.camp{border-bottom:1px solid var(--bd)}.camp:last-child{border-bottom:0}
+.camp>.lin{border-bottom:0}
+.seta-ab{display:inline-block;transition:transform .2s;color:var(--mut);font-weight:800}
+.camp.ab .seta-ab{transform:rotate(90deg)}
+.ads{display:grid;gap:8px;padding:0 0 14px 16px}
+.ad{background:var(--card2);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;display:grid;gap:4px;min-width:0}
+.ad.melhor{border-color:var(--bom);background:var(--bombg)}
+.ad .t{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-weight:700;font-size:14px;overflow-wrap:anywhere}
+.ad .sub{font-size:12px;color:var(--mut);overflow-wrap:anywhere}
+.nums{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:12.5px;color:var(--tx2)}
+.nums b{color:var(--tx);font-variant-numeric:tabular-nums}
+.mc .ns.n2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.k .carrega{color:var(--mut);font-size:15px;font-weight:600}
+#ckpis{grid-template-columns:repeat(3,minmax(0,1fr))}
+#cfunil .fe{grid-template-columns:160px minmax(0,1fr) 150px}
+@media(max-width:760px){#ckpis{grid-template-columns:repeat(2,minmax(0,1fr))}#ckpis .hero{padding:14px}#ckpis .hero .v{font-size:28px}}
+@media(max-width:600px){#cfunil .fe{grid-template-columns:minmax(0,1fr) auto}}
+
 /* ===== gaveta ===== */
 #gav{position:fixed;inset:0;z-index:40;display:flex;justify-content:flex-end}
 #gav .fundo{position:absolute;inset:0;background:rgba(14,12,30,.5);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}
@@ -310,7 +335,10 @@ button.lin:hover{background:var(--card2)}
   .lin .cor{grid-row:1 / span 2}
   .topo{padding:9px 16px}
   nav#abas{position:fixed;left:0;right:0;bottom:0;z-index:30;max-width:none;margin:0;padding:6px 4px calc(6px + env(safe-area-inset-bottom));gap:0;background:var(--card);border-top:1px solid var(--bd);box-shadow:0 -6px 20px rgba(0,0,0,.06)}
-  nav#abas button{flex:1;flex-direction:column;gap:2px;padding:6px 0;border-radius:12px;font-size:10.5px;min-width:0}
+  nav#abas button{flex:1;flex-direction:column;gap:2px;padding:6px 0;border-radius:12px;font-size:10px;min-width:0;letter-spacing:-.02em}
+  nav#abas button span:not(.badge){max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  nav#abas .rotulo-lg{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}  /* fica pro leitor de tela */
+  nav#abas .rotulo-pq{display:block}
   nav#abas button svg{width:21px;height:21px}
   nav#abas button[aria-selected="true"]{background:var(--marca-bg);color:var(--marca-tx);box-shadow:none}
   nav#abas .badge{position:absolute;top:1px;left:calc(50% + 6px);min-width:17px;height:17px;font-size:10px}
@@ -352,6 +380,7 @@ button.lin:hover{background:var(--card2)}
   </div>
   <nav id="abas" role="tablist" aria-label="Seções do painel">
     <button role="tab" data-act="aba" data-v="hoje" aria-selected="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg><span>Hoje</span></button>
+    <button role="tab" data-act="aba" data-v="campanhas" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11v2a1 1 0 0 0 1 1h3l5 4V6L7 10H4a1 1 0 0 0-1 1z"/><path d="M16 9a3 3 0 0 1 0 6"/><path d="M19 6a7 7 0 0 1 0 12"/></svg><span class="rotulo-lg">Campanhas</span><span class="rotulo-pq" aria-hidden="true">Anúncios</span></button>
     <button role="tab" data-act="aba" data-v="clientes" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-4-6.3"/></svg><span>Clientes</span></button>
     <button role="tab" data-act="aba" data-v="producao" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg><span>Produção</span><span class="badge" id="berro" hidden></span></button>
     <button role="tab" data-act="aba" data-v="suporte" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Suporte</span><span class="badge" id="bsup" hidden></span></button>
@@ -377,6 +406,14 @@ button.lin:hover{background:var(--card2)}
       <div class="box"><h2>O funil <span class="seg" id="fmarca" role="group" aria-label="Marca do funil"></span></h2><div id="funil"></div></div>
       <div class="box"><h2>Últimos acontecimentos <small id="feedqt"></small></h2><div class="feed" id="feed"></div></div>
     </div>
+  </section>
+
+  <section class="aba" data-aba="campanhas" hidden>
+    <div id="cerro" class="avisos"></div>
+    <div class="kpis" id="ckpis"></div>
+    <div class="box"><h2>Do anúncio à venda <span class="seg" id="cfm" role="group" aria-label="Marca do funil de anúncios"></span></h2><div id="cfunil"></div></div>
+    <div id="ccamps" class="grid"></div>
+    <p class="nota">Pra ver o resultado por anúncio, coloque nos parâmetros de URL do anúncio: <code>utm_source=meta&amp;utm_campaign={{campaign.name}}&amp;utm_content={{ad.name}}</code><br>A Meta atualiza o gasto com uns 15 minutos de atraso. Testes, assinaturas e vendas vêm do nosso site; "leads da Meta" é o que a Meta contou.</p>
   </section>
 
   <section class="aba" data-aba="clientes" hidden>
@@ -440,7 +477,9 @@ var LST = { espera: ['Esperando', 'neu'], fila: ['Na fila', 'info'], gerando: ['
 var LTIPO = { teste: 'Teste grátis', mes: 'Posts do mês', ajuste: 'Ajuste' };
 var ETAPAS = [['visita', 'Visitas'], ['form_inicio', 'Começou o formulário'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['teste_visto', 'Viu o teste'], ['assinar_clique', 'Clicou em assinar'], ['assinatura_aberta', 'Abriu a fatura'], ['pagou', 'Pagou']];
 var CTX = { carro_chefe: 'Carro-chefe', servicos: 'Serviços', diferencial: 'Diferencial', publico: 'Público', tom: 'Tom de voz', horario: 'Horário', preco_medio: 'Preço médio', evitar: 'Evitar', extra: 'Extra', novidades: 'Novidades do mês' };
-var TITULOS = { hoje: 'Hoje', clientes: 'Clientes', producao: 'Produção', suporte: 'Suporte', dinheiro: 'Dinheiro', marcas: 'Marcas' };
+var C = null, cCarregando = false, cErroRede = null;   // campanhas da Meta (carregam à parte: a Meta pode demorar)
+E.cfm = 'todas'; E.cab = {};
+var TITULOS = { hoje: 'Hoje', campanhas: 'Campanhas', clientes: 'Clientes', producao: 'Produção', suporte: 'Suporte', dinheiro: 'Dinheiro', marcas: 'Marcas' };
 
 // ===== utilidades =====
 var $ = function (i) { return document.getElementById(i) };
@@ -500,6 +539,7 @@ function carrega(manual) {
     $('login').hidden = true; $('app').hidden = false;
     desenha(); ticker();
     if (manual) toast('Atualizado');
+    carregaCamp();
   }).catch(function (e) {
     if (e.senha) { SENHA = ''; try { localStorage.removeItem('oito_senha') } catch (x) {} mostraLogin(D || manual !== undefined ? 'Senha errada ou expirada.' : ''); return }
     falhou = true; ticker();
@@ -519,7 +559,7 @@ function desenha() {
   $('bsup').setAttribute('aria-label', precisa + ' chamados precisam de ti');
   var erros = D.maquina && D.maquina.erros || 0;
   $('berro').hidden = !erros; $('berro').textContent = erros;
-  hojeAba(); clientesAba(); producaoAba(); suporteAba(); dinheiroAba(); marcasAba();
+  hojeAba(); campanhasAba(); clientesAba(); producaoAba(); suporteAba(); dinheiroAba(); marcasAba();
   if (E.gav && E.gav.tipo === 'cliente') abreCliente(E.gav.id, true);
   if (E.gav && E.gav.tipo === 'chamado') atualizaConversa();
 }
@@ -536,7 +576,7 @@ function mudaAba(a, foco) {
   document.querySelectorAll('#abas [role=tab]').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.v === a ? 'true' : 'false') });
   document.querySelectorAll('section.aba').forEach(function (s) { s.hidden = s.dataset.aba !== a });
   $('titulo').textContent = TITULOS[a];
-  $('per').hidden = ['hoje', 'dinheiro', 'marcas'].indexOf(a) < 0;
+  $('per').hidden = ['hoje', 'campanhas', 'dinheiro', 'marcas'].indexOf(a) < 0;
   if (location.hash !== '#' + a) history.replaceState(null, '', a === 'hoje' ? location.pathname + location.search : '#' + a);
   if (foco !== false) window.scrollTo(0, 0);
 }
@@ -585,7 +625,7 @@ function hojeAba() {
     + '<span class="s">' + n.ativos + ' assinante' + (n.ativos === 1 ? '' : 's') + ' ativo' + (n.ativos === 1 ? '' : 's') + ' × ' + R0(preco) + '</span>'
     + '<div class="mini"><span><b class="num">' + n.aguardando + '</b>aguardando pagamento</span><span><b class="num">' + n.atrasados + '</b>atrasados</span><span><b class="num">' + n.testes + '</b>no teste</span><span><b class="num">' + n.cancelados + '</b>cancelados</span></div></div>';
   k += '<button class="k" data-act="irmaq"><span class="r"><i class="dot" style="background:var(--bom)"></i>Vendas ' + periodoTxt() + '</span><span class="v num">' + (f.pagou || 0) + '</span><span class="s">' + (f.pagou ? R0(f.pagou * preco) + ' de MRR novo' : 'ninguém pagou ainda') + '</span></button>';
-  k += '<div class="k"><span class="r"><i class="dot" style="background:var(--marca)"></i>Assinantes ativos</span><span class="v num">' + n.ativos + '</span><span class="s">pagantes (sem os exemplos)</span></div>';
+  k += cartaoAnuncios();
   k += '<div class="k"><span class="r"><i class="dot" style="background:var(--info)"></i>Testes gerados</span><span class="v num">' + (f.teste_pronto || 0) + '</span><span class="s">' + (f.lead || 0) + ' pedido' + ((f.lead || 0) === 1 ? '' : 's') + ' ' + periodoTxt() + '</span></div>';
   k += '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA</span><span class="v num">' + RU(n.custo_ia_usd) + '</span><span class="s">US$ ' + nf(n.custo_ia_usd, 2) + ' ' + periodoTxt() + ' · dólar a ' + R(DOLAR) + '</span></div>';
   k += '<div class="k maq"><span class="r">Saúde da máquina</span><div class="lado"><span class="luz' + (mq.ligado ? '' : ' off') + '" aria-hidden="true"></span><div><div class="estado">Trabalhador ' + (mq.ligado ? 'ligado' : 'desligado') + '</div>'
@@ -620,6 +660,118 @@ function funilHtml(f, cor) {
   var tot = f.visita ? (f.pagou || 0) / f.visita : null, tv = f.teste_pronto ? (f.pagou || 0) / f.teste_pronto : null;
   h += '<div class="funil-tot"><span>Da visita à venda: <b class="num">' + P(tot, 1) + '</b></span><span>Do teste à venda: <b class="num">' + P(tv, 1) + '</b></span></div>';
   return h;
+}
+
+// ===== Campanhas (Meta + nosso site) =====
+function carregaCamp() {
+  if (!SENHA || cCarregando) return;
+  cCarregando = true;
+  var dias = E.dias, ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort() }, 50000) : null;
+  fetch('/api/oito/campanhas?dias=' + dias, { headers: { 'x-senha': SENHA }, cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+    .then(function (r) {
+      if (r.status === 401) { var e = new Error('senha'); e.senha = true; throw e }
+      return r.json().then(function (j) { if (!r.ok && !j.marcas) throw new Error(j && j.erro || ('erro ' + r.status)); return j });
+    })
+    .then(function (j) { if (dias !== E.dias) return; C = limpaCamp(j); cErroRede = null })
+    .catch(function (e) {
+      if (e.senha) { mostraLogin('Senha errada ou expirada.'); return }
+      if (dias === E.dias) cErroRede = e.name === 'AbortError' ? 'a Meta demorou demais pra responder' : e.message;
+    })
+    .then(function () { if (t) clearTimeout(t); cCarregando = false; if (!D) return; hojeAba(); campanhasAba(); marcasAba(); if (dias !== E.dias) carregaCamp() });
+}
+// sem gasto, "custo por teste" R$ 0,00 engana: vira "—"
+function limpaCamp(j) {
+  var z = function (o) { if (o && !(+o.gasto > 0)) { o.custo_por_teste = null; o.custo_por_venda = null; o.retorno = null } };
+  z(j.total);
+  MARCAS.forEach(function (m) { var x = j.marcas && j.marcas[m]; if (!x) return; z(x); (x.campanhas || []).forEach(function (c) { (c.anuncios || []).forEach(z) }) });
+  return j;
+}
+function campOk() { return C && C.dias === E.dias }
+function campDe(m) { return campOk() && C.marcas ? C.marcas[m] || null : null }
+function erroCampTxt() {
+  if (cErroRede) return 'Não deu pra falar com a Meta agora (' + cErroRede + '). O painel tenta de novo sozinho em 30 s; o resto segue normal.';
+  if (!campOk() || C.ok) return null;
+  var e = String(C.erro || '');
+  if (/conta/i.test(e)) return 'A conta de anúncios ainda não está ligada ao painel (falta configurar OITO_META_CONTA na Vercel). Os testes e as vendas do site continuam aparecendo.';
+  if (/token|oauth|expir|190|permiss/i.test(e)) return 'O acesso à Meta expirou ou foi negado: precisa renovar o token. Os testes e as vendas do site continuam aparecendo.';
+  return 'A Meta respondeu com erro: ' + e + '. Os testes e as vendas do site continuam aparecendo.';
+}
+function cartaoAnuncios() {
+  var t = campOk() ? C.total : null, err = erroCampTxt(), v, s;
+  if (t && C.ok) { v = R(t.gasto); s = (t.testes || 0) + ' teste' + (t.testes === 1 ? '' : 's') + ' · ' + (t.custo_por_teste != null ? R(t.custo_por_teste) + ' por teste' : 'nenhum teste ainda') }
+  else if (err) { v = '—'; s = cErroRede ? 'a Meta não respondeu agora' : /conta/i.test(C.erro || '') ? 'conta de anúncios não ligada' : 'a Meta deu erro: ver Campanhas' }
+  else { v = '<span class="carrega">carregando…</span>'; s = 'buscando na Meta' }
+  return '<button class="k" data-act="aba" data-v="campanhas"><span class="r"><i class="dot" style="background:var(--marca)"></i>Anúncios ' + periodoTxt() + '</span><span class="v num">' + v + '</span><span class="s">' + esc(s) + ' →</span></button>';
+}
+function somaCamp(m) {
+  if (m !== 'todas') return campDe(m);
+  var o = { gasto: 0, impressoes: 0, cliques: 0, visitas: 0, testes: 0, assinaturas: 0, vendas: 0, leads_meta: 0, receita: 0 };
+  MARCAS.forEach(function (k) { var x = campDe(k); if (x) for (var f in o) o[f] += +x[f] || 0 });
+  o.ctr = o.impressoes ? o.cliques / o.impressoes * 100 : null; o.cpc = o.cliques ? o.gasto / o.cliques : null;
+  var g = o.gasto > 0;
+  o.custo_por_teste = g && o.testes ? o.gasto / o.testes : null; o.custo_por_venda = g && o.vendas ? o.gasto / o.vendas : null; o.retorno = g ? o.receita / o.gasto : null;
+  return o;
+}
+var pctTxt = function (v) { return v == null || !isFinite(v) ? '—' : nf(v, v < 10 ? 1 : 0) + '%' };   // a API já manda CTR em %
+function campanhasAba() {
+  var err = erroCampTxt(), av = '';
+  if (err) av += '<div class="aviso ' + (cErroRede ? 'at' : 'info') + '" role="status">⚠️ ' + esc(err) + '</div>';
+  if (campOk() && C.fora && C.fora.length) av += '<div class="aviso at" role="status">🔎 Essas campanhas têm FEED no nome mas não reconhecemos a marca: ' + esc(C.fora.join(', ')) + '. Usa "SALÃO NO FEED", "PRATO NO FEED" ou "PATA NO FEED" no nome.</div>';
+  $('cerro').innerHTML = av;
+  $('cfm').innerHTML = segHtml('cfm', [['todas', 'Todas'], ['salao', 'Salão', M.salao.cor], ['prato', 'Prato', M.prato.cor], ['pata', 'Pata', M.pata.cor]], E.cfm);
+  if (!campOk()) {
+    var msg = cErroRede ? '<div class="vazio"><b aria-hidden="true">📡</b>Sem dados da Meta agora.</div>' : '<div class="vazio"><b aria-hidden="true">⏳</b>Buscando as campanhas na Meta…</div>';
+    $('ckpis').innerHTML = ''; $('cfunil').innerHTML = msg; $('ccamps').innerHTML = ''; return;
+  }
+  var t = C.total || {}, ret = t.retorno;
+  var kc = function (cor, rot, val, sub, extra) { return '<div class="k"' + (extra || '') + '><span class="r"><i class="dot" style="background:' + cor + '"></i>' + rot + '</span><span class="v num">' + val + '</span><span class="s">' + sub + '</span></div>' };
+  $('ckpis').innerHTML =
+    '<div class="k hero" style="grid-column:auto"><span class="r">Gasto em anúncio</span><span class="v num">' + R0(t.gasto) + '</span><span class="s">' + periodoTxt() + ' · ' + nf(t.cliques) + ' cliques · ' + nf(t.impressoes) + ' impressões</span></div>'
+    + kc('var(--info)', 'Testes pedidos', nf(t.testes), 'pelo nosso site, ' + periodoTxt())
+    + kc('var(--marca)', 'Custo por teste', t.custo_por_teste != null ? R(t.custo_por_teste) : '—', 'gasto ÷ testes pedidos')
+    + kc('var(--bom)', 'Vendas', nf(t.vendas), t.vendas ? R0(t.receita) + ' de primeira mensalidade' : 'nenhuma venda no período')
+    + kc('var(--at)', 'Custo por venda', t.custo_por_venda != null ? R(t.custo_por_venda) : '—', 'gasto ÷ vendas · preço ' + R0(D.preco || 197))
+    + kc(ret == null ? 'var(--mut)' : ret >= 3 ? 'var(--bom)' : ret >= 1 ? 'var(--at)' : 'var(--ruim)', 'Retorno', ret != null ? nf(ret, 1) + 'x' : '—', 'receita ÷ gasto (só o 1º mês)', ret != null ? ' style="' + (ret >= 3 ? 'box-shadow:var(--sombra),inset 0 0 0 2px var(--bombg)' : ret < 1 ? 'box-shadow:var(--sombra),inset 0 0 0 2px var(--ruimbg)' : '') + '"' : '');
+  // funil com dinheiro
+  var f = somaCamp(E.cfm) || {}, cor = E.cfm === 'todas' ? 'linear-gradient(90deg,#5b4bff,#9a6cf0)' : M[E.cfm].cor;
+  var et = [
+    ['Impressões', f.impressoes, f.impressoes ? 'CPM ' + R(f.gasto / f.impressoes * 1000) : '', ''],
+    ['Cliques', f.cliques, 'CTR ' + pctTxt(f.ctr), f.cpc != null ? R(f.cpc) + ' por clique' : ''],
+    ['Visitas na página', f.visitas, f.cliques ? P(f.visitas / f.cliques) + ' dos cliques' : '', ''],
+    ['Testes pedidos', f.testes, f.visitas ? P(f.testes / f.visitas, 1) + ' das visitas' : '', f.custo_por_teste != null ? R(f.custo_por_teste) + ' por teste' : ''],
+    ['Assinaturas abertas', f.assinaturas, f.testes ? P(f.assinaturas / f.testes) + ' dos testes' : '', ''],
+    ['Vendas', f.vendas, f.assinaturas ? P(f.vendas / f.assinaturas) + ' das assinaturas' : '', f.custo_por_venda != null ? R(f.custo_por_venda) + ' por venda' : '']
+  ];
+  var mx = Math.log10((f.impressoes || 0) + 1) || 1;
+  var h = '<div class="gasto-topo"><span>Investido ' + periodoTxt() + (E.cfm !== 'todas' ? ' · ' + esc(M[E.cfm].nome) : '') + '</span><b class="num">' + R(f.gasto) + '</b></div><div class="funil">'
+    + et.map(function (e) {
+      var v = +e[1] || 0;
+      return '<div class="fe"><span class="nm">' + e[0] + '</span><span class="trilho" aria-hidden="true"><i style="width:' + (v ? Math.max(2, Math.log10(v + 1) / mx * 100) : 0) + '%;--cor:' + cor + '"></i></span><span class="q"><b class="num">' + nf(v) + '</b>' + (e[2] ? '<em>' + e[2] + '</em>' : '') + (e[3] ? '<em class="din">' + e[3] + '</em>' : '') + '</span></div>';
+    }).join('') + '</div>'
+    + '<div class="funil-tot"><span>Leads que a Meta contou: <b class="num">' + nf(f.leads_meta) + '</b></span><span>Retorno: <b class="num">' + (f.retorno != null ? nf(f.retorno, 1) + 'x' : '—') + '</b></span></div>'
+    + '<p style="font-size:12px;color:var(--mut);margin-top:8px">As barras vão em escala logarítmica (impressões são milhares, vendas são poucas); a % é sobre a etapa anterior.</p>';
+  $('cfunil').innerHTML = h;
+  // campanhas por marca
+  var ms = E.cfm === 'todas' ? MARCAS : [E.cfm];
+  $('ccamps').innerHTML = ms.map(function (m) {
+    var x = campDe(m) || { campanhas: [] }, cs = x.campanhas || [];
+    return '<div class="box"><h2><span style="display:flex;align-items:center;gap:8px">' + M[m].em + ' ' + esc(nomeMarca(m)) + '</span><small>' + cs.length + ' campanha' + (cs.length === 1 ? '' : 's') + ' · ' + R(x.gasto) + ' · ' + nf(x.testes) + ' testes · ' + (x.custo_por_teste != null ? R(x.custo_por_teste) + '/teste' : 'sem teste') + '</small></h2>'
+      + (cs.length ? '<div class="lista">' + cs.map(function (c) { return campHtml(c, m) }).join('') + '</div>' : '<div class="vazio">Nenhuma campanha com "' + esc(nomeMarca(m).toUpperCase()) + '" no nome rodando ' + periodoTxt() + '.</div>') + '</div>';
+  }).join('');
+}
+function campHtml(c, m) {
+  var ads = c.anuncios || [], testes = ads.reduce(function (s, a) { return s + (a.testes || 0) }, 0), vendas = ads.reduce(function (s, a) { return s + (a.vendas || 0) }, 0);
+  var cpt = testes ? c.gasto / testes : null, ab = !!E.cab[c.id];
+  var comTeste = ads.filter(function (a) { return a.testes > 0 && a.custo_por_teste != null }), melhor = comTeste.length > 1 || (comTeste.length === 1 && ads.length > 1) ? comTeste.reduce(function (b, a) { return a.custo_por_teste < b.custo_por_teste ? a : b }) : null;
+  var h = '<div class="camp' + (ab ? ' ab' : '') + '"><button class="lin" data-act="camp" data-v="' + esc(c.id) + '" aria-expanded="' + ab + '"><span class="cor ' + m + '"></span><div style="min-width:0"><div class="t"><span class="seta-ab" aria-hidden="true">›</span><span class="n">' + esc(c.nome) + '</span></div>'
+    + '<div class="nums" style="margin-top:4px"><span>CTR <b>' + pctTxt(c.ctr) + '</b></span><span>CPC <b>' + (c.cpc != null ? R(c.cpc) : '—') + '</b></span><span>cliques <b>' + nf(c.cliques) + '</b></span><span>testes <b>' + testes + '</b></span>' + (vendas ? '<span>vendas <b>' + vendas + '</b></span>' : '') + '<span>' + ads.length + ' anúncio' + (ads.length === 1 ? '' : 's') + '</span></div></div>'
+    + '<div class="dir"><b class="num" style="font-size:17px">' + R(c.gasto) + '</b><small class="num">' + (cpt != null ? R(cpt) + ' por teste' : 'sem teste') + '</small></div></button>';
+  if (ab) h += '<div class="ads">' + (ads.length ? ads.map(function (a) {
+    var best = melhor && a.id === melhor.id;
+    return '<div class="ad' + (best ? ' melhor' : '') + '"><div class="t">' + esc(a.nome || '(sem nome)') + (best ? '<span class="pill bom">🏆 melhor custo por teste</span>' : '') + '</div>' + (a.conjunto ? '<div class="sub">conjunto: ' + esc(a.conjunto) + '</div>' : '')
+      + '<div class="nums"><span>gasto <b>' + R(a.gasto) + '</b></span><span>impressões <b>' + nf(a.impressoes) + '</b></span><span>cliques <b>' + nf(a.cliques) + '</b></span><span>CTR <b>' + pctTxt(a.ctr) + '</b></span><span>CPC <b>' + (a.cpc != null ? R(a.cpc) : '—') + '</b></span><span>leads da Meta <b>' + nf(a.leads_meta) + '</b></span><span>testes <b>' + (a.testes || 0) + '</b></span><span>vendas <b>' + (a.vendas || 0) + '</b></span><span>por teste <b>' + (a.custo_por_teste != null ? R(a.custo_por_teste) : '—') + '</b></span></div></div>';
+  }).join('') : '<div class="vazio">Sem anúncios nesse período.</div>') + '</div>';
+  return h + '</div>';
 }
 
 // ===== aba Clientes =====
@@ -870,6 +1022,7 @@ function marcasAba() {
     var base = location.origin + '/oito/' + m + '/';
     return '<article class="mc"><div class="cab" style="background:linear-gradient(135deg,' + M[m].cor + ',' + M[m].cor + 'cc)"><b>' + M[m].em + ' ' + esc(cfg.nome || M[m].nome) + '</b><span>' + esc(dom) + '</span></div><div class="corpo">'
       + '<div class="ns"><div><b class="num">' + at + '</b><span>ativos · ' + R0(at * preco) + '</span></div><div><b class="num">' + (f.teste_pronto || 0) + '</b><span>testes ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div><div><b class="num">' + (f.pagou || 0) + '</b><span>vendas ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div></div>'
+      + (function () { var cm = campDe(m); return '<div class="ns n2"><div><b class="num">' + (cm ? R(cm.gasto) : '—') + '</b><span>gasto em anúncio ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div><div><b class="num">' + (cm && cm.custo_por_teste != null ? R(cm.custo_por_teste) : '—') + '</b><span>custo por teste</span></div></div>' })()
       + '<div><div class="minif" role="img" aria-label="Funil ' + esc(cfg.nome || M[m].nome) + ': ' + ETAPAS.map(function (e) { return e[1] + ' ' + (f[e[0]] || 0) }).join(', ') + '">' + ETAPAS.map(function (e, i) { return '<i title="' + e[1] + ': ' + (f[e[0]] || 0) + '" style="height:' + Math.max(4, (f[e[0]] || 0) / mx * 100) + '%;background:' + M[m].cor + ';opacity:' + (1 - i * .08) + '"></i>' }).join('') + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:6px"><span>' + (f.visita || 0) + ' visitas</span><span>visita → venda ' + P(f.visita ? (f.pagou || 0) / f.visita : null, 1) + '</span></div></div>'
       + (cfg.nicho ? '<p class="nicho">' + esc(cfg.nicho) + '</p>' : '')
@@ -899,7 +1052,9 @@ document.addEventListener('click', function (ev) {
   if (a === 'fluz') { if (ev.target === b || b.classList.contains('fecha')) fechaFoto(); return }
   switch (a) {
     case 'aba': fechaGav(true); mudaAba(v); break;
-    case 'dias': E.dias = +v; document.querySelectorAll('#per button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v) }); carregando = false; carrega(); break;
+    case 'cfm': E.cfm = v; campanhasAba(); break;
+    case 'camp': E.cab[v] = !E.cab[v]; campanhasAba(); var bt2 = document.querySelector('[data-act="camp"][data-v="' + (window.CSS && CSS.escape ? CSS.escape(v) : v) + '"]'); if (bt2) bt2.focus(); break;
+    case 'dias': E.dias = +v; C = null; cErroRede = null; document.querySelectorAll('#per button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v) }); carregando = false; carrega(); break;
     case 'fm': E.fm = v; hojeAba(); break;
     case 'cm': E.cm = v; E.cmax = 40; clientesAba(); break;
     case 'cs': E.cs = v; E.cmax = 40; clientesAba(); break;
