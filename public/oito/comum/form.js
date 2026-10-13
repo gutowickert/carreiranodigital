@@ -31,6 +31,8 @@ function OITO_FORM(paletas) {
       if (ig.value && !/^@?[A-Za-z0-9._]{1,30}$/.test(ig.value.trim())) { erro.textContent = 'Confere o @: só letras, números, ponto e sublinhado.'; ig.focus(); return false }
     }
     if (i === 4 && zap.value.replace(/\D/g, '').length < 10) { erro.textContent = 'Confere o WhatsApp, com DDD.'; zap.focus(); return false }
+    // e-mail obrigatório (13/10): o link dos posts e os avisos do mês vão por ele
+    if (i === 4 && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.elements.email.value.trim())) { erro.textContent = 'Confere o e-mail: o link dos seus posts vai pra ele.'; f.elements.email.focus(); return false }
     if (i === 3 && f.elements.fotos_modo.value === 'enviar' && !fotos.length) { erro.textContent = 'Escolhe pelo menos uma foto (ou deixa que a gente gere as imagens).'; return false }
     return true
   }
