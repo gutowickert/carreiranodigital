@@ -10,7 +10,7 @@ import { senhaOk, oitoConfig as cfg, Marca } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '')
-export function marcaDaCampanha(nome: string): Marca | null {
+function marcaDaCampanha(nome: string): Marca | null {
   const n = norm(nome)
   if (n.includes('SALAONOFEED')) return 'salao'
   if (n.includes('PRATONOFEED')) return 'prato'
