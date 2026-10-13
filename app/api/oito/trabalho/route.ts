@@ -13,6 +13,16 @@ const nega = () => NextResponse.json({ erro: 'senha' }, { status: 401 })
 
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return nega()
+  // ?refazer=CODIGO: os posts do cliente com a imagem crua, pra refazer só a arte (quando o modelo visual muda)
+  const refazer = new URL(req.url).searchParams.get('refazer')
+  if (refazer) {
+    const c = await db.um('clientes', { codigo: refazer.toUpperCase() })
+    if (!c) return NextResponse.json({ erro: 'cliente' }, { status: 404 })
+    const ps = (await db.lista('posts', { cliente_id: c.id }, { ordem: 'criado_em' })).filter(p => p.status !== 'substituido' && p.bruta_path)
+    const brutas = await db.links(ps.map(p => p.bruta_path)), [logo] = await db.links([c.logo_path])
+    return NextResponse.json({ cliente: { codigo: c.codigo, marca: c.marca, cores: c.cores, nome_negocio: c.nome_negocio, instagram: c.instagram, bairro: c.bairro, cidade: c.cidade, logo },
+      posts: ps.map((p, i) => ({ id: p.id, modelo: p.modelo, titulo: p.titulo, apoio: p.apoio, itens: p.itens, chamada: p.chamada, bruta_url: brutas[i] })) })
+  }
   // o painel mostra "trabalhador ligado" pelo último contato
   const hb = { em: new Date().toISOString(), maquina: req.headers.get('x-maquina') || '' }
   db.atualiza('estado', { chave: 'trabalhador' }, { valor: hb }).then(r => (r.length ? null : db.insere('estado', { chave: 'trabalhador', valor: hb }))).catch(() => null)
@@ -49,6 +59,14 @@ export async function POST(req: Request) {
   const b = await req.json()
   const l = b.lote ? await db.um('lotes', { id: b.lote }) : null
 
+  // troca só a arte de um post (mesmo arquivo, mesmo link)
+  if (b.acao === 'refaz_arte') {
+    const p = await db.um('posts', { id: String(b.post) })
+    const buf = Buffer.from(String(b.imagem || ''), 'base64')
+    if (!p || buf.length < 1000) return NextResponse.json({ erro: 'post ou imagem' }, { status: 400 })
+    await db.sobe(p.imagem_path, buf, 'image/jpeg')
+    return NextResponse.json({ ok: true })
+  }
   if (b.acao === 'foto_desc') {
     await db.atualiza('fotos', { id: b.foto }, { descricao: String(b.descricao || '').slice(0, 400) })
     return NextResponse.json({ ok: true })
