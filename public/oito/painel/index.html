@@ -352,6 +352,10 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
   #toast{bottom:calc(84px + env(safe-area-inset-bottom))}
 }
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+.perp{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin:10px 0 0;width:100%;justify-content:flex-end}
+.perp label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--mut)}
+.perp input{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--linha,#ddd);background:var(--card,#fff);color:inherit}
+.perp .btn{padding:9px 16px}
 </style></head><body>
 
 <div id="login" hidden>
@@ -396,7 +400,13 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
       <button data-act="dias" data-v="1" aria-pressed="true">Hoje</button>
       <button data-act="dias" data-v="7" aria-pressed="false">7 dias</button>
       <button data-act="dias" data-v="30" aria-pressed="false">30 dias</button>
+      <button data-act="dias" data-v="p" aria-pressed="false">Datas</button>
     </div>
+    <form class="perp" id="perp" hidden>
+      <label>De <input type="date" id="pde" required></label>
+      <label>Até <input type="date" id="pate" required></label>
+      <button class="btn" type="submit">Ver</button>
+    </form>
   </div>
 
   <section class="aba" data-aba="hoje">
@@ -514,7 +524,10 @@ function wa(n) { var d = String(n || '').replace(/\D/g, ''); if (!d) return null
 function foneBonito(n) { var d = String(n || '').replace(/\D/g, ''); if (d.indexOf('55') === 0 && d.length >= 12) d = d.slice(2); return d.length === 11 ? '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7) : d.length === 10 ? '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6) : (n || '') }
 function areaCliente(c) { return '/oito/' + encodeURIComponent(c.marca) + '/conta.html?c=' + encodeURIComponent(c.codigo) }
 function nomeMarca(m) { return (D && D.marcas && D.marcas[m] && D.marcas[m].nome) || (M[m] && M[m].nome) || m || '' }
-function periodoTxt() { return E.dias === 1 ? 'hoje' : 'nos últimos ' + E.dias + ' dias' }
+function dataCurta(d) { var p = String(d).split('-'); return p[2] + '/' + p[1] }
+function periodoTxt() { if (typeof E.dias === 'string') { var p = E.dias.split('|'); return p[1] === p[2] ? 'em ' + dataCurta(p[1]) : 'de ' + dataCurta(p[1]) + ' a ' + dataCurta(p[2]) } return E.dias === 1 ? 'hoje' : 'nos últimos ' + E.dias + ' dias' }
+function perCurto() { if (typeof E.dias === 'string') { var p = E.dias.split('|'); return p[1] === p[2] ? dataCurta(p[1]) : dataCurta(p[1]) + '–' + dataCurta(p[2]) } return E.dias === 1 ? 'hoje' : E.dias + ' d' }
+function qper(k) { if (typeof k === 'string') { var p = k.split('|'); return 'de=' + p[1] + '&ate=' + p[2] } return 'dias=' + k }
 function media(a) { return a.length ? a.reduce(function (s, x) { return s + x }, 0) / a.length : null }
 function toast(t, ruim) { var el = $('toast'); el.textContent = t; el.className = ruim ? 'ruim' : ''; el.hidden = false; clearTimeout(toast.t); toast.t = setTimeout(function () { el.hidden = true }, 3200) }
 
@@ -533,7 +546,7 @@ function carrega(manual) {
   if (carregando) return Promise.resolve();
   carregando = true;
   var dias = E.dias;
-  return api('/api/oito/painel?dias=' + dias).then(function (d) {
+  return api('/api/oito/painel?' + qper(dias)).then(function (d) {
     if (dias !== E.dias) return;           // trocou de período no meio
     D = d; carregadoEm = Date.now(); falhou = false;
     $('login').hidden = true; $('app').hidden = false;
@@ -672,12 +685,12 @@ function carregaCamp() {
   if (!SENHA || cCarregando) return;
   cCarregando = true;
   var dias = E.dias, ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort() }, 50000) : null;
-  fetch('/api/oito/campanhas?dias=' + dias, { headers: { 'x-senha': SENHA }, cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+  fetch('/api/oito/campanhas?' + qper(dias), { headers: { 'x-senha': SENHA }, cache: 'no-store', signal: ctl ? ctl.signal : undefined })
     .then(function (r) {
       if (r.status === 401) { var e = new Error('senha'); e.senha = true; throw e }
       return r.json().then(function (j) { if (!r.ok && !j.marcas) throw new Error(j && j.erro || ('erro ' + r.status)); return j });
     })
-    .then(function (j) { if (dias !== E.dias) return; C = limpaCamp(j); cErroRede = null })
+    .then(function (j) { if (dias !== E.dias) return; C = limpaCamp(j); C.dias = dias; cErroRede = null })
     .catch(function (e) {
       if (e.senha) { mostraLogin('Senha errada ou expirada.'); return }
       if (dias === E.dias) cErroRede = e.name === 'AbortError' ? 'a Meta demorou demais pra responder' : e.message;
@@ -1026,8 +1039,8 @@ function marcasAba() {
     var dom = cfg.dominio || M[m].dominio, mx = Math.max(1, f.visita || 0);
     var base = location.origin + '/oito/' + m + '/';
     return '<article class="mc"><div class="cab" style="background:linear-gradient(135deg,' + M[m].cor + ',' + M[m].cor + 'cc)"><b>' + M[m].em + ' ' + esc(cfg.nome || M[m].nome) + '</b><span>' + esc(dom) + '</span></div><div class="corpo">'
-      + '<div class="ns"><div><b class="num">' + at + '</b><span>ativos · ' + R0(at * preco) + '</span></div><div><b class="num">' + (f.teste_pronto || 0) + '</b><span>testes ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div><div><b class="num">' + (f.pagou || 0) + '</b><span>vendas ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div></div>'
-      + (function () { var cm = campDe(m); return '<div class="ns n2"><div><b class="num">' + (cm ? R(cm.gasto) : '—') + '</b><span>gasto em anúncio ' + (E.dias === 1 ? 'hoje' : E.dias + ' d') + '</span></div><div><b class="num">' + (cm && cm.custo_por_teste != null ? R(cm.custo_por_teste) : '—') + '</b><span>custo por teste</span></div></div>' })()
+      + '<div class="ns"><div><b class="num">' + at + '</b><span>ativos · ' + R0(at * preco) + '</span></div><div><b class="num">' + (f.teste_pronto || 0) + '</b><span>testes ' + perCurto() + '</span></div><div><b class="num">' + (f.pagou || 0) + '</b><span>vendas ' + perCurto() + '</span></div></div>'
+      + (function () { var cm = campDe(m); return '<div class="ns n2"><div><b class="num">' + (cm ? R(cm.gasto) : '—') + '</b><span>gasto em anúncio ' + perCurto() + '</span></div><div><b class="num">' + (cm && cm.custo_por_teste != null ? R(cm.custo_por_teste) : '—') + '</b><span>custo por teste</span></div></div>' })()
       + '<div><div class="minif" role="img" aria-label="Funil ' + esc(cfg.nome || M[m].nome) + ': ' + ETAPAS.map(function (e) { return e[1] + ' ' + (f[e[0]] || 0) }).join(', ') + '">' + ETAPAS.map(function (e, i) { return '<i title="' + e[1] + ': ' + (f[e[0]] || 0) + '" style="height:' + Math.max(4, (f[e[0]] || 0) / mx * 100) + '%;background:' + M[m].cor + ';opacity:' + (1 - i * .08) + '"></i>' }).join('') + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:6px"><span>' + (f.visita || 0) + ' visitas</span><span>visita → venda ' + P(f.visita ? (f.pagou || 0) / f.visita : null, 1) + '</span></div></div>'
       + (cfg.nicho ? '<p class="nicho">' + esc(cfg.nicho) + '</p>' : '')
@@ -1059,7 +1072,17 @@ document.addEventListener('click', function (ev) {
     case 'aba': fechaGav(true); mudaAba(v); break;
     case 'cfm': E.cfm = v; campanhasAba(); break;
     case 'camp': E.cab[v] = !E.cab[v]; campanhasAba(); var bt2 = document.querySelector('[data-act="camp"][data-v="' + (window.CSS && CSS.escape ? CSS.escape(v) : v) + '"]'); if (bt2) bt2.focus(); break;
-    case 'dias': E.dias = +v; C = null; cErroRede = null; document.querySelectorAll('#per button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v) }); carregando = false; carrega(); break;
+    case 'dias':
+      if (v === 'p') {
+        var fp = $('perp'), hj = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+        fp.hidden = !fp.hidden
+        if (!$('pde').value) { $('pde').value = new Date(Date.now() - 3 * 3600e3 - 6 * 86400e3).toISOString().slice(0, 10); $('pate').value = hj }
+        $('pde').max = hj; $('pate').max = hj
+        if (!fp.hidden) $('pde').focus()
+        break
+      }
+      $('perp').hidden = true
+      E.dias = +v; C = null; cErroRede = null; document.querySelectorAll('#per button').forEach(function (x) { x.setAttribute('aria-pressed', x.dataset.v === v) }); carregando = false; carrega(); break;
     case 'fm': E.fm = v; hojeAba(); break;
     case 'cm': E.cm = v; E.cmax = 40; clientesAba(); break;
     case 'cs': E.cs = v; E.cmax = 40; clientesAba(); break;
@@ -1148,5 +1171,17 @@ if (SENHA) carrega(); else mostraLogin();
 setInterval(ticker, 1000);
 setInterval(function () { if (!$('app').hidden && !document.hidden) carrega() }, RECARGA);
 document.addEventListener('visibilitychange', function () { if (!document.hidden && SENHA && Date.now() - carregadoEm > RECARGA) carrega() });
+
+document.addEventListener('submit', function (ev) {
+  if (!ev.target || ev.target.id !== 'perp') return
+  ev.preventDefault()
+  var de = $('pde').value, ate = $('pate').value
+  if (!de || !ate) return
+  if (de > ate) { var x = de; de = ate; ate = x; $('pde').value = de; $('pate').value = ate }
+  E.dias = 'p|' + de + '|' + ate; C = null; cErroRede = null
+  document.querySelectorAll('#per button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === 'p') })
+  $('perp').hidden = true
+  carregando = false; carrega()
+})
 </script>
 </body></html>

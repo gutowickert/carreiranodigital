@@ -25,8 +25,11 @@ const div = (a: number, b: number) => (b > 0 ? r2(a / b) : null)
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return NextResponse.json({ erro: 'senha' }, { status: 401 })
   const u = new URL(req.url), dias = Math.min(90, Math.max(1, +(u.searchParams.get('dias') || 1)))
-  const ate = hojeBR(), desdeDia = dias === 1 ? ate : diaBR(Date.now() - (dias - 1) * 86400e3)
-  const desdeTs = `${desdeDia}T03:00:00.000Z`
+  let ate = hojeBR(), desdeDia = dias === 1 ? ate : diaBR(Date.now() - (dias - 1) * 86400e3)
+  // período personalizado (13/10): ?de=AAAA-MM-DD&ate=AAAA-MM-DD
+  const de = u.searchParams.get('de'), ateP = u.searchParams.get('ate')
+  if (de && ateP && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(de) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(ateP) && de <= ateP) { desdeDia = de; ate = ateP < hojeBR() ? ateP : hojeBR() }
+  const desdeTs = `${desdeDia}T03:00:00.000Z`, fimTs = new Date(new Date(ate + 'T03:00:00.000Z').getTime() + 86400e3).toISOString()
   const conta = process.env.OITO_META_CONTA || process.env.RECADO_META_CONTA
 
   const [meta, clientes, eventos] = await Promise.all([
@@ -36,7 +39,7 @@ export async function GET(req: Request) {
   ])
   const linhas = (meta.linhas || []).filter(l => marcaDaCampanha(l.campaign_name))
   const exemplo = new Set(clientes.filter(c => c.exemplo).map(c => c.id))
-  const ev = eventos.filter(e => e.criado_em >= desdeTs && (!e.cliente_id || !exemplo.has(e.cliente_id)))
+  const ev = eventos.filter(e => e.criado_em >= desdeTs && e.criado_em < fimTs && (!e.cliente_id || !exemplo.has(e.cliente_id)))
   const porCliente = new Map(clientes.map(c => [c.id, c]))
 
   // o site, por marca e por anúncio (utm_content)

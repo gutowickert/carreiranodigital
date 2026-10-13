@@ -16,7 +16,13 @@ export async function GET(req: Request) {
   const u = new URL(req.url), dias = Math.min(90, Math.max(1, +(u.searchParams.get('dias') || 1)))
   // "hoje" começa à meia-noite de Brasília
   const agora = Date.now(), meiaNoite = new Date(new Date(agora - 3 * 3600e3).toISOString().slice(0, 10) + 'T03:00:00Z').getTime()
-  const desde = new Date(dias === 1 ? meiaNoite : agora - dias * 86400e3).toISOString()
+  let desde = new Date(dias === 1 ? meiaNoite : agora - dias * 86400e3).toISOString(), fim = new Date(agora + 60e3).toISOString()
+  // período personalizado (13/10): ?de=AAAA-MM-DD&ate=AAAA-MM-DD, dias inteiros no horário de Brasília
+  const de = u.searchParams.get('de'), ateP = u.searchParams.get('ate')
+  if (de && ateP && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(de) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(ateP) && de <= ateP) {
+    desde = de + 'T03:00:00.000Z'
+    fim = new Date(new Date(ateP + 'T03:00:00.000Z').getTime() + 86400e3).toISOString()
+  }
 
   const [clientes, lotes, eventos, estado, chamados] = await Promise.all([
     db.lista('clientes', {}, { ordem: 'criado_em', desc: true }),
@@ -27,7 +33,7 @@ export async function GET(req: Request) {
   ])
   const exemplo = new Set(clientes.filter(c => c.exemplo).map(c => c.id))
   const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
-  const noPeriodo = eventos.filter(e => e.criado_em >= desde && real(e))
+  const noPeriodo = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
 
   // funil: pessoas distintas por etapa (sessão antes do cadastro, cliente depois)
   const funil: Record<string, Record<string, number>> = {}
@@ -43,8 +49,8 @@ export async function GET(req: Request) {
   for (const l of lotes) { const a = porCliente.get(l.cliente_id) || []; a.push(l); porCliente.set(l.cliente_id, a) }
   const reais = clientes.filter(c => !c.exemplo)
   const ativos = reais.filter(c => c.status === 'ativo')
-  const custoPeriodo = lotes.filter(l => l.pronto_em && l.pronto_em >= desde && !exemplo.has(l.cliente_id)).reduce((s, l) => s + (+l.custo_usd || 0), 0)
-  const custoTestes = lotes.filter(l => l.tipo === 'teste' && l.pronto_em && l.pronto_em >= desde && !exemplo.has(l.cliente_id))
+  const custoPeriodo = lotes.filter(l => l.pronto_em && l.pronto_em >= desde && l.pronto_em < fim && !exemplo.has(l.cliente_id)).reduce((s, l) => s + (+l.custo_usd || 0), 0)
+  const custoTestes = lotes.filter(l => l.tipo === 'teste' && l.pronto_em && l.pronto_em >= desde && l.pronto_em < fim && !exemplo.has(l.cliente_id))
   const hb = estado.find(e => e.chave === 'trabalhador')?.valor
   const pag = estado.find(e => e.chave === 'pagamentos')?.valor
 
@@ -53,7 +59,7 @@ export async function GET(req: Request) {
   const nomeDe = new Map(clientes.map(c => [c.id, c]))
 
   return NextResponse.json({
-    modo: db.modo(), dias, desde, pagamento_ligado: !!process.env.ASAAS_API_KEY,
+    modo: db.modo(), dias, desde, fim, pagamento_ligado: !!process.env.ASAAS_API_KEY,
     numeros: {
       ativos: ativos.length, mrr: ativos.length * cfg.preco, atrasados: reais.filter(c => c.status === 'atrasado').length,
       aguardando: reais.filter(c => c.status === 'aguardando_pagamento').length, testes: reais.filter(c => c.status === 'teste').length,
