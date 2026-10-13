@@ -57,6 +57,7 @@ export async function garanteLoteDoCiclo(c: any, pagoAte: string) {
   const primeiro = !(await db.um('lotes', { cliente_id: c.id, tipo: 'mes' }))
   try { await db.insere('lotes', { cliente_id: c.id, tipo: 'mes', mes: ciclo, qtd: cfg.postsMes, status: 'fila' }) } catch (e: any) { if (/duplicate|23505/.test(e.message)) return; throw e }
   await db.evento(primeiro ? 'pagou' : 'renovou', { cliente_id: c.id, marca: c.marca, detalhe: { ciclo } })
+  if (primeiro && !c.exemplo) { const { emailsOito } = await import('./email'); await emailsOito.pagamentoConfirmado(c).catch(() => null) }
   if (!c.exemplo) {
     await avisaDono(primeiro ? 'venda nova 💰' : 'renovação', `${cfg.marcas[c.marca as Marca].nome} · ${c.nome_negocio} (${c.cidade}) · R$ ${cfg.preco}`, true)
     // 13/10: aviso de venda no WhatsApp do Guto, do Rick e do Nando (nunca derruba a venda)

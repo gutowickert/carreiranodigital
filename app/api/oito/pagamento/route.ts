@@ -29,5 +29,16 @@ export async function POST(req: Request) {
     catch (e: any) { res.push({ codigo: c.codigo, erro: e.message.slice(0, 120) }) }
   }
   await db.atualiza('estado', { chave: 'pagamentos' }, { valor: { em: new Date().toISOString(), conferidos: todos.length } }).then(async r => { if (!r.length) await db.insere('estado', { chave: 'pagamentos', valor: { em: new Date().toISOString(), conferidos: todos.length } }) }).catch(() => null)
-  return NextResponse.json({ conferidos: todos.length, mudancas: res })
+  // aviso de renovação (13/10): 3 dias antes do vencimento, uma vez por ciclo, pede as novidades do mês
+  const em3 = new Date(Date.now() - 3 * 3600e3 + 3 * 86400e3).toISOString().slice(0, 10)
+  const avisos: string[] = []
+  for (const c of todos.filter(x => x.status === 'ativo' && x.pago_ate && x.pago_ate <= em3 && !x.exemplo)) {
+    const ja = await db.lista('eventos', { cliente_id: c.id, tipo: 'aviso_renovacao' })
+    if (ja.some(e => e.detalhe?.pago_ate === c.pago_ate)) continue
+    const { emailsOito } = await import('@/lib/oito/email')
+    const r = await emailsOito.avisoRenovacao(c, c.pago_ate)
+    await db.evento('aviso_renovacao', { cliente_id: c.id, marca: c.marca, detalhe: { pago_ate: c.pago_ate, enviado: !!r.ok } })
+    avisos.push(c.codigo)
+  }
+  return NextResponse.json({ conferidos: todos.length, mudancas: res, avisos })
 }
