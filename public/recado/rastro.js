@@ -38,7 +38,14 @@
     try { fbq('track', 'Purchase', { content_ids: [prod || produto], content_type: 'product', value: +valor || 0, currency: 'BRL' }, { eventID: codigo }) } catch (e) {}
   }
   window.recadoRastro = { visitante: vis, utm: utm, envia: envia, compra: compra, origem: function () { return Object.assign({ visitante: vis }, utm) } }
-  envia('visita')
+  // robôs fora do funil (13/10): navegador automatizado (revisão de anúncio da Meta) não manda evento nenhum, e a VISITA
+  // só conta com a página visível de verdade por 1,5 s (o Instagram e o Facebook pré-carregam a página escondida antes do clique)
+  if (navigator.webdriver || /bot|crawl|spider|facebookexternalhit|facebot|meta-externalagent|headlesschrome|lighthouse/i.test(navigator.userAgent || '')) { window.recadoRastro.envia = function () {}; return }
+  ;(function () {
+    var feito = false, t = null
+    function confere() { clearTimeout(t); if (document.visibilityState === 'visible' && !feito) t = setTimeout(function () { if (!feito && document.visibilityState === 'visible') { feito = true; envia('visita') } }, 1500) }
+    document.addEventListener('visibilitychange', confere); confere()
+  })()
   document.addEventListener('click', function (e) {
     var a = e.target.closest && e.target.closest('a[href*="pedido.html"],a[href*="missao.html"],a[href*="#pacotes"],a[href*="#comecar"]')
     if (a) envia('cta', { dados: { texto: (a.textContent || '').trim().slice(0, 60) } })

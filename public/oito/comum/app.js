@@ -28,8 +28,22 @@
   }
   // quem abre o painel neste navegador fica marcado (oito_eu) e não entra no funil; ?eu=1 marca também
   if (q.get('eu') === '1') ls.set('oito_eu', '1')
+  // robôs fora do funil (13/10): navegador automatizado (revisão de anúncio da Meta, pré-visualização de link) não conta,
+  // e a VISITA só conta quando a página fica visível de verdade por 1,5 s. O Instagram e o Facebook pré-carregam a página
+  // escondida antes do clique; sem isso, cada impressão do anúncio virava "visita".
+  var ROBO = /bot|crawl|spider|slurp|facebookexternalhit|facebot|meta-externalagent|headlesschrome|lighthouse|inspectiontool|pingdom|uptime/i
+  var humano = !navigator.webdriver && !ROBO.test(navigator.userAgent || '')
+  function quandoVisivel(fn) {
+    var feito = false, t = null
+    function confere() {
+      clearTimeout(t)
+      if (document.visibilityState === 'visible' && !feito) t = setTimeout(function () { if (!feito && document.visibilityState === 'visible') { feito = true; fn() } }, 1500)
+    }
+    document.addEventListener('visibilitychange', confere); confere()
+  }
   function rastro(tipo, detalhe, c) {
-    if (ls.get('oito_eu')) return
+    if (ls.get('oito_eu') || !humano) return
+    if ((tipo === 'visita' || tipo === 'area_visita') && !rastro.visivel) { return quandoVisivel(function () { rastro.visivel = true; rastro(tipo, detalhe, c) }) }
     try { navigator.sendBeacon('/api/oito/evento', new Blob([JSON.stringify({ tipo: tipo, marca: marca, sessao: sessao, c: c || q.get('c') || undefined, detalhe: detalhe || {} })], { type: 'application/json' })) } catch (e) {}
   }
   // pixel da Meta, só se a marca tiver um configurado

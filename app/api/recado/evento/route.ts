@@ -14,7 +14,9 @@ const decodifica = (s: any) => { if (s == null) return s; let v = String(s); for
 export async function POST(req: NextRequest) {
   try {
     const ua = req.headers.get('user-agent') || ''
-    if (ROBO.test(ua)) return NextResponse.json({ ok: true, robo: true })
+    // 13/10: pré-carregamento (o app abre a página antes do clique) também não conta
+    const pre = /prefetch|prerender|preview/i.test(`${req.headers.get('sec-purpose') || ''} ${req.headers.get('purpose') || ''} ${req.headers.get('x-purpose') || ''}`)
+    if (ROBO.test(ua) || pre) return NextResponse.json({ ok: true, robo: true })
     const b: any = JSON.parse(await req.text())
     if (!EVENTOS.includes(b.evento) || !/^[a-z0-9]{8,40}$/i.test(String(b.visitante || ''))) return NextResponse.json({ ok: false }, { status: 400 })
     const u = b.utm || {}
