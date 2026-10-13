@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { oitoDb as db, novoCodigo } from '@/lib/oito/db'
-import { oitoConfig as cfg, ehMarca, emEspanhol } from '@/lib/oito/config'
+import { oitoConfig as cfg, ehMarca, emEspanhol, senhaOk } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
 
 const t = (s: any, n = 300) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -40,7 +40,8 @@ export async function POST(req: Request) {
       await db.evento('teste_repetido', { cliente_id: ja.id, marca: b.marca, detalhe: { motivo: ja.whatsapp === whats ? 'whatsapp' : 'outro' } })
       return NextResponse.json({ codigo: ja.codigo, marca: ja.marca, existente: true })
     }
-    if (ipHash) {
+    // com a senha do painel (os exemplos criados daqui do PC) o limite por conexão não vale
+    if (ipHash && !senhaOk(req.headers.get('x-senha'))) {
       const dia = new Date(Date.now() - 86400e3).toISOString()
       const daConexao = todos.filter(c => c.ip_hash === ipHash && c.criado_em >= dia)
       if (daConexao.length >= 3) return NextResponse.json({ codigo: daConexao[0].codigo, marca: daConexao[0].marca, existente: true })
