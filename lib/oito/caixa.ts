@@ -1,4 +1,5 @@
 // Oito Posts: as caixas contato@ das 3 marcas (HostGator) dentro do suporte do painel (13/10), igual ao Recado.
+// As caixas ficam no Titan (MX das marcas = mx1.titan.email), igual ao Recado: IMAP em imap.titan.email.
 // Lê por IMAP o que chegou, abre/continua o chamado (origem 'email'), a IA responde e a resposta sai por e-mail, do contato@ da marca,
 // no mesmo fio. A resposta dada pelo dono no painel também sai por e-mail.
 // Precisa das senhas das caixas na Vercel: OITO_EMAIL_SENHA_SALAO, OITO_EMAIL_SENHA_PRATO, OITO_EMAIL_SENHA_PATA.
@@ -47,7 +48,7 @@ export async function respondeEmail(ch: any, texto: string, autor: 'ia' | 'dono'
 
 async function lerCaixa(m: Marca) {
   const dom = cfg.marcas[m].dominio
-  const c = new ImapFlow({ host: process.env.OITO_EMAIL_IMAP || `mail.${dom}`, port: 993, secure: true,
+  const c = new ImapFlow({ host: process.env.OITO_EMAIL_IMAP || "imap.titan.email", port: 993, secure: true,
     auth: { user: `contato@${dom}`, pass: senha(m) as string }, logger: false, tls: { rejectUnauthorized: false } })
   let novas = 0
   await c.connect()
