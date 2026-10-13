@@ -24,11 +24,10 @@ function OITO_FORM(paletas) {
   function valida(i) {
     var falta = [].slice.call(etapas[i].querySelectorAll('[required]')).filter(function (el) { return !el.value.trim() })
     if (falta.length) { erro.textContent = 'Preenche o que está faltando.'; falta[0].focus(); return false }
-    // o @ é obrigatório (13/10): a máquina lê o perfil pra acertar o conteúdo. Aceita link do perfil também.
+    // o @ é opcional: se vier, a máquina lê o perfil pra acertar o conteúdo. Aceita link do perfil também.
     if (i === 0) {
       var ig = f.elements.instagram, m = ig.value.trim().match(/instagram\.com\/([A-Za-z0-9._]+)/)
       if (m) ig.value = '@' + m[1]
-      if (!ig.value.replace(/[@\s]/g, '') && !document.getElementById('sem_ig').checked) { erro.textContent = 'Coloca o @ do Instagram (ou marca que ainda não tem).'; ig.focus(); return false }
       if (ig.value && !/^@?[A-Za-z0-9._]{1,30}$/.test(ig.value.trim())) { erro.textContent = 'Confere o @: só letras, números, ponto e sublinhado.'; ig.focus(); return false }
     }
     if (i === 4 && zap.value.replace(/\D/g, '').length < 10) { erro.textContent = 'Confere o WhatsApp, com DDD.'; zap.focus(); return false }
@@ -64,7 +63,7 @@ function OITO_FORM(paletas) {
     var E = f.elements, p = paletas[+E.paleta.value || 0]
     var corpo = {
       marca: OITO.marca, sessao: OITO.sessao, utm: OITO.utm(), fotos_modo: E.fotos_modo.value, cores: { fundo: p.fundo, destaque: p.destaque, texto: p.texto, nome: p.nome },
-      negocio: { nome: E.nome.value, cidade: E.cidade.value, bairro: E.bairro.value, instagram: document.getElementById('sem_ig').checked ? '' : E.instagram.value, responsavel: E.responsavel.value, whatsapp: E.whatsapp.value, email: E.email.value },
+      negocio: { nome: E.nome.value, cidade: E.cidade.value, bairro: E.bairro.value, instagram: E.instagram.value, responsavel: E.responsavel.value, whatsapp: E.whatsapp.value, email: E.email.value },
       contexto: { servicos: E.servicos.value, carro_chefe: E.carro_chefe.value, diferencial: E.diferencial.value, horario: E.horario.value, tom: E.tom.value, evitar: E.evitar.value },
     }
     var codigo
