@@ -33,12 +33,19 @@
   // escondida antes do clique; sem isso, cada impressão do anúncio virava "visita".
   var ROBO = /bot|crawl|spider|slurp|facebookexternalhit|facebot|meta-externalagent|headlesschrome|lighthouse|inspectiontool|pingdom|uptime/i
   var humano = !navigator.webdriver && !ROBO.test(navigator.userAgent || '')
+  // 13/10 (2ª versão): a revisão de anúncios da Meta abre a página visível de verdade (um computador e um celular, mesmo Chrome),
+  // tira o print e sai. A visita agora só conta quando a pessoa INTERAGE (rola, toca, clica, digita) com a página visível,
+  // ou quando fica 10 s com ela visível.
   function quandoVisivel(fn) {
-    var feito = false, t = null
+    var feito = false, t = null, visivelDesde = null
+    function vai() { if (feito || document.visibilityState !== 'visible') return; feito = true; clearTimeout(t); fn() }
     function confere() {
       clearTimeout(t)
-      if (document.visibilityState === 'visible' && !feito) t = setTimeout(function () { if (!feito && document.visibilityState === 'visible') { feito = true; fn() } }, 1500)
+      if (document.visibilityState === 'visible' && !feito) { visivelDesde = visivelDesde || Date.now(); t = setTimeout(vai, 10000) }
     }
+    var gesto = function () { if (visivelDesde && Date.now() - visivelDesde > 600) vai() }
+    addEventListener('scroll', function () { if (scrollY > 40) gesto() }, { passive: true })
+    ;['touchstart', 'pointerdown', 'keydown'].forEach(function (ev) { addEventListener(ev, gesto, { passive: true }) })
     document.addEventListener('visibilitychange', confere); confere()
   }
   function rastro(tipo, detalhe, c) {
