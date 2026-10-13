@@ -11,7 +11,7 @@ import { oitoConfig as cfg, Marca } from './config'
 import { novaMensagemCliente } from './suporte'
 
 const MARCAS: Marca[] = ['salao', 'prato', 'pata']
-const senha = (m: Marca) => process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]
+const senha = (m: Marca) => { const v = process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]; return v ? v.trim().replace(/^["']|["']$/g, '') : v }
 export const caixasLigadas = () => MARCAS.filter(m => !!senha(m))
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
