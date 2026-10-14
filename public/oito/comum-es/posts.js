@@ -2,11 +2,19 @@
 window.OITO_POSTS = function (el, posts, op) {
   op = op || {}
   var E = OITO.esc, ej = document.body.dataset.ajusteEx || 'Ej.: cambiar la imagen; hablar del horario del sábado'
+  // "Publicar por mí" (14/10): la etiqueta de Instagram (publicado siempre; programado y error solo con Instagram conectado)
+  var selo = function (p) {
+    if (p.publicado_em) return '<span class="pilula ok" style="justify-self:start">Publicado en Instagram</span>'
+    if (!op.ig || p.nao_publicar) return ''
+    if (p.publicacao_erro) return '<span class="pilula ruim" style="justify-self:start">Error al publicar</span>'
+    var l = p.publicar_local
+    return l ? '<span class="pilula" style="justify-self:start">Programado ' + l.slice(8, 10) + '/' + l.slice(5, 7) + ' ' + l.slice(11, 16) + '</span>' : ''
+  }
   el.innerHTML = posts.map(function (p, i) {
     var refazendo = p.status === 'ajuste_pedido'
     return '<article class="post" data-i="' + i + '">' +
       (refazendo ? '<div class="refazendo">Rehaciendo con tu ajuste…<br><small>' + E(p.ajuste_pedido || '') + '</small></div>' : '<img src="' + E(p.url) + '" alt="' + E(p.titulo) + '" loading="lazy">') +
-      '<div class="info">' + (p.data_sugerida ? '<span class="data">Publicar el ' + OITO.dataBR(p.data_sugerida) + '</span>' : '') +
+      '<div class="info">' + (p.data_sugerida ? '<span class="data">Publicar el ' + OITO.dataBR(p.data_sugerida) + '</span>' : '') + selo(p) +
       '<div class="leg">' + E(p.legenda || '') + '</div>' +
       '<div class="acoes">' + (refazendo ? '' : '<button class="btn peq" data-a="baixar">Descargar imagen</button>') +
       '<button class="btn peq fantasma" data-a="copiar">Copiar texto</button>' +

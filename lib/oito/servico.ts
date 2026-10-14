@@ -2,6 +2,7 @@
 import { oitoDb as db } from './db'
 import { oitoConfig as cfg, Marca, precoTxt } from './config'
 import { situacao, asaasHoje } from './asaas'
+import { vistaInstagram, local } from './postar'
 
 export async function avisaDono(titulo: string, texto: string, dinheiro = false) {
   const topico = process.env.RECADO_NTFY_TOPICO
@@ -24,13 +25,17 @@ export async function vistaCliente(c: any) {
   const urls = await db.links(vivos.map(p => p.imagem_path))
   const [logo] = await db.links([c.logo_path])
   const ajustesMes = posts.filter(p => p.ajuste_pedido && p.criado_em >= new Date(Date.now() - 31 * 86400e3).toISOString()).length
+  // "Postar por mim" (14/10): a ligação com o Instagram (nunca o token) e, por post, quando sai e se saiu
+  const ig = await vistaInstagram(c)
   return {
     codigo: c.codigo, marca: c.marca, status: c.status, exemplo: !!c.exemplo,
     negocio: { nome: c.nome_negocio, responsavel: c.responsavel, cidade: c.cidade, bairro: c.bairro, instagram: c.instagram, whatsapp: c.whatsapp, email: c.email },
     contexto: c.contexto || {}, cores: c.cores, logo, fotos_modo: c.fotos_modo, fotos: fotos.length, pago_ate: c.pago_ate,
-    ajustes_restantes: Math.max(0, cfg.ajustesPorMes - ajustesMes),
+    ajustes_restantes: Math.max(0, cfg.ajustesPorMes - ajustesMes), instagram: ig,
     lotes: lotes.map(l => ({ id: l.id, tipo: l.tipo, mes: l.mes, qtd: l.qtd, status: l.status, criado_em: l.criado_em, pronto_em: l.pronto_em })),
-    posts: vivos.map((p, i) => ({ id: p.id, lote_id: p.lote_id, ordem: p.ordem, titulo: p.titulo, legenda: p.legenda, pauta: p.pauta, data_sugerida: p.data_sugerida, status: p.status, ajuste_pedido: p.ajuste_pedido, url: urls[i] })),
+    posts: vivos.map((p, i) => ({ id: p.id, lote_id: p.lote_id, ordem: p.ordem, titulo: p.titulo, legenda: p.legenda, pauta: p.pauta, data_sugerida: p.data_sugerida, status: p.status, ajuste_pedido: p.ajuste_pedido, url: urls[i],
+      publicar_em: p.publicar_em || null, publicar_local: local(p.publicar_em, ig.fuso), publicado_em: p.publicado_em || null, nao_publicar: !!p.nao_publicar,
+      publicacao_erro: (p.publicacao_tentativas || 0) >= 3 && !p.publicado_em ? p.publicacao_erro || 'erro' : null })),
   }
 }
 

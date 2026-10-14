@@ -8,6 +8,7 @@ import crypto from 'node:crypto'
 import { oitoDb as db } from '@/lib/oito/db'
 import { senhaOk, oitoConfig as cfg, Marca } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
+import { agendaPostNovo } from '@/lib/oito/postar'
 
 export const maxDuration = 60
 const nega = () => NextResponse.json({ erro: 'senha' }, { status: 401 })
@@ -110,6 +111,8 @@ export async function POST(req: Request) {
       foto_origem: p.foto_origem, foto_id: p.foto_id || null, revisao: p.revisao && typeof p.revisao === 'object' ? p.revisao : null, data_sugerida: p.data_sugerida || null, imagem_path: caminho,
       ajuste_de: l.tipo === 'ajuste' ? l.mes : null, ajuste_pedido: l.tipo === 'ajuste' ? p.ajuste_pedido || null : null,
     })
+    // "Postar por mim" (14/10): cliente com Instagram ligado já recebe o post agendado (o ajuste herda a data do original)
+    await agendaPostNovo(c, novo, l).catch(e => console.error('oito agenda', e?.message))
     if (l.tipo === 'ajuste') await db.atualiza('posts', { id: l.mes }, { status: 'substituido' })
     if (p.foto_id) { const f = await db.um('fotos', { id: p.foto_id }); if (f) await db.atualiza('fotos', { id: f.id }, { usos: (f.usos || 0) + 1 }) }
     return NextResponse.json({ ok: true, id: novo.id })

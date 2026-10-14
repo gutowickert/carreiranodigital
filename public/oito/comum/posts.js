@@ -2,11 +2,19 @@
 window.OITO_POSTS = function (el, posts, op) {
   op = op || {}
   var E = OITO.esc
+  // "Postar por mim" (14/10): o selo do Instagram (publicado sempre aparece; agendado e erro só com o Instagram ligado)
+  var selo = function (p) {
+    if (p.publicado_em) return '<span class="pilula ok" style="justify-self:start">Publicado no Instagram</span>'
+    if (!op.ig || p.nao_publicar) return ''
+    if (p.publicacao_erro) return '<span class="pilula ruim" style="justify-self:start">Erro ao publicar</span>'
+    var l = p.publicar_local
+    return l ? '<span class="pilula" style="justify-self:start">Agendado ' + l.slice(8, 10) + '/' + l.slice(5, 7) + ' ' + l.slice(11, 16) + '</span>' : ''
+  }
   el.innerHTML = posts.map(function (p, i) {
     var refazendo = p.status === 'ajuste_pedido'
     return '<article class="post" data-i="' + i + '">' +
       (refazendo ? '<div class="refazendo">Refazendo com o seu ajuste…<br><small>' + E(p.ajuste_pedido || '') + '</small></div>' : '<img src="' + E(p.url) + '" alt="' + E(p.titulo) + '" loading="lazy">') +
-      '<div class="info">' + (p.data_sugerida ? '<span class="data">Postar ' + OITO.dataBR(p.data_sugerida) + '</span>' : '') +
+      '<div class="info">' + (p.data_sugerida ? '<span class="data">Postar ' + OITO.dataBR(p.data_sugerida) + '</span>' : '') + selo(p) +
       '<div class="leg">' + E(p.legenda || '') + '</div>' +
       '<div class="acoes">' + (refazendo ? '' : '<button class="btn peq" data-a="baixar">Baixar imagem</button>') +
       '<button class="btn peq fantasma" data-a="copiar">Copiar legenda</button>' +

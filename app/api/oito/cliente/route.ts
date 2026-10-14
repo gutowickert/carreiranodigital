@@ -4,10 +4,12 @@
 //   POST {c, acao:'ajuste', post, texto}  → refaz um post com o pedido dele (limite por mês)
 //   POST {c, acao:'contexto', ...}        → atualiza o que ele contou do negócio
 //   POST {c, acao:'suporte', texto}       → mensagem pro painel
+//   POST {c, acao:'ig_agendar', post, quando:'AAAA-MM-DDTHH:MM'} · {c, acao:'ig_pular', post, valor} · {c, acao:'ig_desligar'}  → "Postar por mim" (14/10)
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { vistaCliente, sincronizaPagamento, avisaDono } from '@/lib/oito/servico'
-import { oitoConfig as cfg } from '@/lib/oito/config'
+import { oitoConfig as cfg, emEspanhol } from '@/lib/oito/config'
+import { instante, fusoDe } from '@/lib/oito/postar'
 import { cancelaAssinatura } from '@/lib/oito/asaas'
 import { cancelaHotmart } from '@/lib/oito/hotmart'
 
@@ -68,6 +70,39 @@ export async function POST(req: Request) {
       await db.atualiza('clientes', { id: c.id }, { status: 'cancelado' })
       await db.evento('cancelou', { cliente_id: c.id, marca: c.marca, detalhe: { por: 'cliente', motivo: t(b.motivo, 500) } })
       if (!c.exemplo) avisaDono('cancelamento', `${c.nome_negocio} (${c.cidade})${b.motivo ? ': ' + t(b.motivo, 150) : ''}`)
+      return NextResponse.json({ ok: true })
+    }
+
+    // "Postar por mim" (14/10): mudar a hora de um post, pular um post, desligar o Instagram. Só pra assinante em dia.
+    if (b.acao === 'ig_agendar' || b.acao === 'ig_pular' || b.acao === 'ig_desligar') {
+      const es = emEspanhol(c.marca)
+      if (c.status !== 'ativo') return NextResponse.json({ erro: es ? 'Disponible en la suscripción.' : 'Disponível na assinatura.' }, { status: 403 })
+      const ig = await db.um('instagram', { cliente_id: c.id })
+      if (b.acao === 'ig_desligar') {
+        // apaga o token na hora: sem ele, nada sai
+        if (ig) await db.atualiza('instagram', { id: ig.id }, { ligado: false, token: null, erro: null, atualizado_em: new Date().toISOString() })
+        await db.evento('ig_desligou', { cliente_id: c.id, marca: c.marca, detalhe: { por: 'cliente' } })
+        return NextResponse.json({ ok: true })
+      }
+      const p = await db.um('posts', { id: String(b.post), cliente_id: c.id })
+      if (!p || p.status === 'substituido') return NextResponse.json({ erro: es ? 'Post no encontrado.' : 'Post não encontrado.' }, { status: 404 })
+      if (p.publicado_em) return NextResponse.json({ erro: es ? 'Este post ya se publicó.' : 'Esse post já foi publicado.' }, { status: 409 })
+      if (b.acao === 'ig_pular') {
+        // voltou pra agenda com a hora já vencida: fica sem hora (nunca publica atrasado sem o cliente escolher a hora nova)
+        const vencido = !b.valor && p.publicar_em && new Date(p.publicar_em).getTime() < Date.now() + 5 * 60e3
+        await db.atualiza('posts', { id: p.id }, { nao_publicar: !!b.valor, ...(vencido ? { publicar_em: null } : {}) })
+        await db.evento('ig_pulou', { cliente_id: c.id, marca: c.marca, detalhe: { post: p.id, valor: !!b.valor } })
+        return NextResponse.json({ ok: true })
+      }
+      // quando = "2026-10-20T10:00", no fuso do cliente
+      const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(t(b.quando, 20))
+      const q = m ? instante(m[1], m[2], fusoDe(c)) : null
+      if (!q) return NextResponse.json({ erro: es ? 'Elige día y hora.' : 'Escolhe o dia e a hora.' }, { status: 400 })
+      if (q.getTime() < Date.now() + 5 * 60e3) return NextResponse.json({ erro: es ? 'Elige una hora que todavía no pasó (al menos 5 minutos desde ahora).' : 'Escolhe uma hora que ainda não passou (pelo menos 5 minutos a partir de agora).' }, { status: 400 })
+      if (q.getTime() > Date.now() + 75 * 86400e3) return NextResponse.json({ erro: es ? 'Como máximo 75 días adelante.' : 'No máximo 75 dias pra frente.' }, { status: 400 })
+      // reagendar também zera as tentativas: é o jeito de tentar de novo um post que deu erro
+      await db.atualiza('posts', { id: p.id }, { publicar_em: q.toISOString(), nao_publicar: false, publicacao_tentativas: 0, publicacao_erro: null })
+      await db.evento('ig_agendou', { cliente_id: c.id, marca: c.marca, detalhe: { post: p.id, quando: q.toISOString() } })
       return NextResponse.json({ ok: true })
     }
 

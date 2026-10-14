@@ -28,14 +28,66 @@
     clearTimeout(vigia); if (andando || v.status === 'aguardando_pagamento') vigia = setTimeout(function () { carrega(v.status === 'aguardando_pagamento') }, andando ? 6000 : 12000)
   }
 
+  // "Publicar por mí" (14/10): la tarjeta vive en su propio espacio de la pestaña, fuera del redibujo de los posts (no borra lo que se está escribiendo)
+  function corpoPosts() {
+    var corpo = document.getElementById('posts-corpo')
+    if (!corpo) { document.getElementById('aba-posts').innerHTML = '<div id="postar" style="margin-bottom:22px"></div><div id="posts-corpo"></div>'; corpo = document.getElementById('posts-corpo') }
+    return corpo
+  }
+  var IGMSG = { ok: ['Instagram conectado. Los próximos posts se publicarán solos.'], erro: ['No se pudo conectar Instagram. Inténtalo de nuevo.', 'erro'], pessoal: ['Esa cuenta de Instagram es personal. Cámbiala a cuenta profesional y vuelve a conectar.', 'erro'], assinatura: ['Publicar por mí es parte de la suscripción.', 'erro'] }
+  if (IGMSG[OITO.q.get('ig')]) { var igm = IGMSG[OITO.q.get('ig')]; setTimeout(function () { OITO.aviso(igm[0], igm[1]) }, 500); history.replaceState(null, '', location.pathname + '?c=' + c) }
+  function quando(s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + ' a las ' + s.slice(11, 16) : '' }
+  function postar(lista) {
+    var el = document.getElementById('postar'), ig = v.instagram || {}, tit = '<h3 style="margin-bottom:6px">Publicar por mí</h3>'
+    var hora = ig.fuso === 'America/Santiago' ? 'hora de Chile' : 'hora de Colombia'
+    if (document.activeElement && document.activeElement !== document.body && el.contains(document.activeElement)) return
+    if (!ig.disponivel) { el.innerHTML = '<div class="caixa">' + tit + '<p class="suave">Muy pronto: los posts se publicarán solos en tu Instagram, el día y a la hora indicados.</p></div>'; return }
+    if (v.status !== 'ativo') { el.innerHTML = '<div class="caixa">' + tit + '<p class="suave"><b>Disponible en la suscripción.</b> Conectas tu Instagram una vez y los 8 posts del mes se publican solos, el día sugerido. Puedes cambiar la hora o saltar cualquiera.</p></div>'; return }
+    if (!ig.ligado) {
+      el.innerHTML = '<div class="caixa">' + tit + '<p class="suave" style="margin-bottom:12px">Conecta tu Instagram una vez y los posts del mes se publican solos, el día sugerido, a las ' + E(ig.hora_padrao) + ' (' + hora + '). Puedes cambiar la hora o saltar cualquier post.</p>' +
+        (ig.erro ? '<p style="margin-bottom:12px"><span class="pilula ruim">Instagram se desconectó. Vuelve a conectar.</span></p>' : '') +
+        '<ul class="suave" style="padding-left:20px;display:grid;gap:5px;margin-bottom:16px;font-size:15px"><li>Tiene que ser una <b>cuenta profesional</b> (empresa o creador de contenido). Es gratis y toma 1 minuto: <a href="https://help.instagram.com/502981923235522" target="_blank" rel="noopener">mira cómo cambiarla</a>.</li><li>Inicias sesión en el propio Instagram: <b>nunca vemos tu contraseña</b>.</li><li>Puedes desconectar cuando quieras, aquí mismo.</li></ul>' +
+        '<a class="btn" href="/api/oito/instagram/conectar?c=' + encodeURIComponent(c) + '">Conectar mi Instagram</a></div>'
+      return
+    }
+    var fila = lista.filter(function (p) { return !p.publicado_em }), feitos = lista.filter(function (p) { return p.publicado_em }).length
+    fila.sort(function (a, b) { return (a.publicar_em || a.data_sugerida || '9') > (b.publicar_em || b.data_sugerida || '9') ? 1 : -1 })
+    var cmp = 'style="font-size:15px;padding:9px 10px;width:auto"'
+    el.innerHTML = '<div class="caixa">' + tit + '<p class="suave" style="margin-bottom:14px"><span class="pilula ok">@' + E(ig.usuario || '') + ' conectado</span> Los posts se publican solos a la hora marcada (' + hora + ').' + (feitos ? ' Ya publicados este mes: <b>' + feitos + '</b>.' : '') + '</p>' +
+      (fila.length ? '<div style="display:grid;gap:10px">' + fila.map(function (p) {
+        var lc = p.publicar_local || ((p.data_sugerida || '') + 'T' + ig.hora_padrao)
+        var st = p.status === 'ajuste_pedido' ? 'Rehaciéndose (mantiene la hora)' : p.nao_publicar ? 'No se va a publicar' : p.publicacao_erro ? 'No se publicó: ' + p.publicacao_erro + '. Guarda una hora nueva para intentarlo de nuevo.' : p.publicar_em ? 'Programado el ' + quando(p.publicar_local) : 'Sin hora (la fecha sugerida ya pasó)'
+        return '<div data-ig="' + E(p.id) + '" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;border-top:1px solid var(--linha);padding-top:10px">' +
+          (p.url ? '<img src="' + E(p.url) + '" alt="" style="width:46px;height:58px;object-fit:cover;border-radius:8px">' : '') +
+          '<div style="flex:1;min-width:150px"><b style="font-size:15px">' + E(p.titulo || 'Post') + '</b><br><small class="suave">' + E(st) + '</small></div>' +
+          '<span style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><input type="date" ' + cmp + ' value="' + E(lc.slice(0, 10)) + '"><input type="time" ' + cmp + ' value="' + E(lc.slice(11, 16)) + '"><button class="btn peq" data-ig-a="salvar">Guardar</button>' +
+          '<label style="display:flex;gap:6px;align-items:center;font-size:14px;cursor:pointer"><input type="checkbox" data-ig-a="pular" style="width:auto"' + (p.nao_publicar ? ' checked' : '') + '> No publicar este</label></span></div>'
+      }).join('') + '</div>' : '<p class="suave">Ningún post en espera. Los del próximo mes entran aquí solos.</p>') +
+      '<button class="btn peq fantasma" style="margin-top:16px" data-ig-a="desligar">Desconectar Instagram</button></div>'
+    el.onclick = function (e) {
+      var a = e.target.dataset.igA, linha = e.target.closest('[data-ig]')
+      if (a === 'salvar') {
+        var ins = linha.querySelectorAll('input'); e.target.disabled = true
+        OITO.api('cliente', { c: c, acao: 'ig_agendar', post: linha.dataset.ig, quando: ins[0].value + 'T' + ins[1].value }).then(function () { OITO.aviso('Hora guardada.'); e.target.blur(); carrega() }).catch(function (er) { e.target.disabled = false; OITO.aviso(er.message, 'erro') })
+      }
+      if (a === 'desligar' && confirm('¿Desconectar Instagram? Los posts dejan de publicarse solos (siguen aquí para descargar).'))
+        OITO.api('cliente', { c: c, acao: 'ig_desligar' }).then(function () { OITO.aviso('Instagram desconectado.'); carrega() }).catch(function (er) { OITO.aviso(er.message, 'erro') })
+    }
+    el.onchange = function (e) {
+      if (e.target.dataset.igA !== 'pular') return
+      OITO.api('cliente', { c: c, acao: 'ig_pular', post: e.target.closest('[data-ig]').dataset.ig, valor: e.target.checked }).then(function () { OITO.aviso(e.target.checked ? 'Ese no se va a publicar.' : 'Ese vuelve a la agenda.'); e.target.blur(); carrega() }).catch(function (er) { OITO.aviso(er.message, 'erro') })
+    }
+  }
+
   function posts() {
-    var el = document.getElementById('aba-posts'), meses = v.lotes.filter(function (l) { return l.tipo === 'mes' }), atual = meses[0]
+    var el = corpoPosts(), meses = v.lotes.filter(function (l) { return l.tipo === 'mes' }), atual = meses[0]
     if (!atual) {
       el.innerHTML = '<div class="caixa"><h3>' + (v.status === 'aguardando_pagamento' ? 'Apenas se confirme el pago, empezamos a hacer tus 8 posts.' : 'Tus posts del mes aparecen aquí después de suscribirte.') + '</h3>' +
         (v.status === 'aguardando_pagamento' ? '<p class="suave" style="margin-top:8px">Con tarjeta se confirma en minutos; otros medios pueden tardar un poco más. Esta página se actualiza sola.</p><button class="btn" style="margin-top:14px" id="ver-fatura">Completar el pago en Hotmart</button>' : '') +
         (v.status === 'teste' ? '<a class="btn" style="margin-top:14px" href="/oito/' + OITO.marca + '/teste.html?c=' + c + '">Ver mi prueba y suscribirme</a>' : '') + '</div>' + anteriores([])
       var vf = document.getElementById('ver-fatura'); if (vf) vf.onclick = abreFatura
       var ant0 = document.getElementById('lista-ant'); if (ant0) OITO_POSTS(ant0, v.posts, {})
+      postar([])
       return
     }
     var doMes = v.posts.filter(function (p) { return p.lote_id === atual.id || (v.lotes.some(function (l) { return l.id === p.lote_id && l.tipo === 'ajuste' && l.criado_em >= atual.criado_em })) })
@@ -44,7 +96,8 @@
     el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 18px">' +
       '<p class="suave">' + (fazendo ? '<b>Estamos haciendo tus posts:</b> ' + doMes.length + ' de ' + atual.qtd + ' listos. Esta página se actualiza sola.' : doMes.length + ' posts, 2 por semana. Ajustes que todavía puedes pedir este mes: <b>' + v.ajustes_restantes + '</b>.') + '</p>' +
       (doMes.length && !fazendo ? '<span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn peq fantasma" href="/oito/' + OITO.marca + '/guia.html">Cómo publicar y consejos</a><button class="btn peq escuro" id="zip">Descargar todos (.zip)</button></span>' : '') + '</div><div class="posts" id="lista-posts"></div>' + anteriores(doMes)
-    OITO_POSTS(document.getElementById('lista-posts'), doMes, { c: c, ajuste: v.status === 'ativo' && v.ajustes_restantes > 0, depois: function () { carrega() } })
+    OITO_POSTS(document.getElementById('lista-posts'), doMes, { c: c, ajuste: v.status === 'ativo' && v.ajustes_restantes > 0, ig: !!(v.instagram && v.instagram.ligado && v.status === 'ativo'), depois: function () { carrega() } })
+    postar(doMes)
     var z = document.getElementById('zip'); if (z) z.onclick = function () { baixaTodos(doMes, z) }
     var ant = document.getElementById('lista-ant'); if (ant) OITO_POSTS(ant, v.posts.filter(function (p) { return doMes.indexOf(p) < 0 }), {})
   }
