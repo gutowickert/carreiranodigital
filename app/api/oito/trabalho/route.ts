@@ -120,9 +120,11 @@ export async function POST(req: Request) {
     // as "novidades deste mês" valem pra um mês só: depois do lote do mês, vão pro histórico
     if (l.tipo === 'mes' && c!.contexto?.novidades) await db.atualiza('clientes', { id: c!.id }, { contexto: { ...c!.contexto, novidades: '', novidades_anteriores: c!.contexto.novidades } })
     const tipo = l.tipo === 'teste' ? 'teste_pronto' : l.tipo === 'mes' ? 'mes_entregue' : 'ajuste_entregue'
+    // lote refeito (14/10): o e-mail sai só na primeira entrega daquele lote
+    const jaAvisou = (await db.lista('eventos', { cliente_id: c!.id, tipo })).some(e => e.detalhe?.lote === l.id)
     await db.evento(tipo, { cliente_id: c!.id, marca: c!.marca, detalhe: { lote: l.id, segundos: Math.round((Date.now() - new Date(l.iniciado_em).getTime()) / 1000), custo_usd: +b.custo_usd || 0 } })
     // e-mail pro cliente (13/10): teste pronto e mês entregue (exemplos não recebem)
-    if (!c!.exemplo) { const { emailsOito } = await import('@/lib/oito/email'); if (l.tipo === 'teste') await emailsOito.testePronto(c); if (l.tipo === 'mes') await emailsOito.mesEntregue(c) }
+    if (!c!.exemplo && !jaAvisou) { const { emailsOito } = await import('@/lib/oito/email'); if (l.tipo === 'teste') await emailsOito.testePronto(c); if (l.tipo === 'mes') await emailsOito.mesEntregue(c) }
     return NextResponse.json({ ok: true })
   }
 
