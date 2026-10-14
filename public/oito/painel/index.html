@@ -905,11 +905,13 @@ function producaoAba() {
   $('lotes').innerHTML = l.length ? l.map(loteHtml).join('') : '<div class="vazio"><b aria-hidden="true">📭</b>Nenhum lote aqui.</div>';
   var ps = D.posts || [];
   $('gal').innerHTML = ps.length ? ps.map(function (p) {
-    return '<button data-act="foto" data-v="' + esc(p.id) + '" aria-label="Ver grande: ' + esc(semAst(p.titulo)) + ', ' + esc(p.cliente || '') + '"><span class="img"><img src="' + esc(p.url) + '" alt="" loading="lazy">' + tg(p.marca) + '</span><span class="tt">' + titulo(p.titulo) + '</span><small>' + esc(p.cliente || '') + ' · ' + quando(p.criado_em) + '</small></button>';
+    return '<button data-act="foto" data-v="' + esc(p.id) + '" aria-label="Ver grande: ' + esc(semAst(p.titulo)) + ', ' + esc(p.cliente || '') + '"><span class="img"><img src="' + esc(p.url) + '" alt="" loading="lazy">' + tg(p.marca) + revTag(p) + '</span><span class="tt">' + titulo(p.titulo) + '</span><small>' + esc(p.cliente || '') + ' · ' + quando(p.criado_em) + (p.revisao && !p.revisao.ok ? ' · <b style="color:var(--ruim)">revisar: ' + esc((p.revisao.problemas || []).join('; ')) + '</b>' : '') + '</small></button>';
   }).join('') : '<div class="vazio" style="grid-column:1/-1"><b aria-hidden="true">🖼️</b>Nenhum post gerado ainda.</div>';
   var aj = D.mensagens || [];
   $('ajustes').innerHTML = aj.length ? aj.map(ajusteHtml).join('') : '<div class="vazio">Nenhum ajuste pedido.</div>';
 }
+// 14/10: a nota do revisor (a IA confere cada post antes de entregar); reprovado nas 3 tentativas = marcado pra revisão
+function revTag(p) { var r = p.revisao; if (!r || r.nota == null) return ''; return '<span class="tg" style="position:absolute;right:6px;top:6px;background:' + (r.ok ? 'var(--bom)' : 'var(--ruim)') + ';color:#fff" title="Nota do revisor">' + (r.ok ? '✓ ' : '⚠ ') + r.nota + '</span>' }
 function abreFoto(id) {
   var p = (D.posts || []).find(function (x) { return x.id === id }); if (!p) return;
   E.voltaFoco = document.activeElement;

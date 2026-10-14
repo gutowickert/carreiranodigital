@@ -107,7 +107,7 @@ export async function POST(req: Request) {
     const novo = await db.insere('posts', {
       bruta_path: bruta, itens: p.itens || null, chamada: p.chamada || null, cena: p.cena || null, tipo: p.tipo || null,
       lote_id: l.id, cliente_id: c!.id, ordem: p.ordem, pauta: p.pauta, titulo: p.titulo, apoio: p.apoio, legenda: p.legenda, modelo: p.modelo,
-      foto_origem: p.foto_origem, foto_id: p.foto_id || null, data_sugerida: p.data_sugerida || null, imagem_path: caminho,
+      foto_origem: p.foto_origem, foto_id: p.foto_id || null, revisao: p.revisao && typeof p.revisao === 'object' ? p.revisao : null, data_sugerida: p.data_sugerida || null, imagem_path: caminho,
       ajuste_de: l.tipo === 'ajuste' ? l.mes : null, ajuste_pedido: l.tipo === 'ajuste' ? p.ajuste_pedido || null : null,
     })
     if (l.tipo === 'ajuste') await db.atualiza('posts', { id: l.mes }, { status: 'substituido' })
