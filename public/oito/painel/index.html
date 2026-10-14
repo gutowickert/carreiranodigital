@@ -388,6 +388,7 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
     <button role="tab" data-act="aba" data-v="clientes" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="4"/><path d="M2 21a7 7 0 0 1 14 0"/><path d="M17 4a4 4 0 0 1 0 8"/><path d="M22 21a7 7 0 0 0-4-6.3"/></svg><span>Clientes</span></button>
     <button role="tab" data-act="aba" data-v="producao" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="2"/><rect x="14" y="3" width="7" height="5" rx="2"/><rect x="14" y="12" width="7" height="9" rx="2"/><rect x="3" y="16" width="7" height="5" rx="2"/></svg><span>Produção</span><span class="badge" id="berro" hidden></span></button>
     <button role="tab" data-act="aba" data-v="suporte" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span>Suporte</span><span class="badge" id="bsup" hidden></span></button>
+    <button role="tab" data-act="aba" data-v="whats" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21l1.6-4.8A8.5 8.5 0 1 1 7.8 19.4L3 21z"/><path d="M9 10.5c.4 1.6 1.9 3.1 3.5 3.5l1.2-1.2 2 .8v1.6c-4 .6-8-3.4-7.4-7.4h1.6l.8 2-1.7.7z"/></svg><span>WhatsApp</span><b class="ct" id="wct" hidden></b></button>
     <button role="tab" data-act="aba" data-v="dinheiro" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="13" rx="3"/><circle cx="12" cy="12.5" r="2.5"/><path d="M6 10v.01M18 15v.01"/></svg><span>Dinheiro</span></button>
     <button role="tab" data-act="aba" data-v="marcas" aria-selected="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg><span>Marcas</span></button>
   </nav>
@@ -450,6 +451,12 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
       <p class="nota" style="margin-top:12px">A IA responde o cliente na hora e passa pra ti quando o assunto pede decisão (dinheiro, reembolso, exceção) ou depois de 4 respostas. Quando tu respondes, o chamado já fica como resolvido.</p></div>
   </section>
 
+  <section class="aba" data-aba="whats" hidden>
+    <div class="kpis" id="wkpis"></div>
+    <div class="box"><h2>Conversas <span class="seg" id="wfil" role="group" aria-label="Filtrar conversas"></span></h2><div class="lista" id="wlista"></div>
+      <p class="nota" style="margin-top:12px">Quem fez o teste grátis e não assinou recebe 3 mensagens automáticas (20 min depois do teste, no dia seguinte e 3 dias depois). Quando a pessoa responde, a IA vendedora conversa e te chama quando ela quer falar com alguém, pede desconto ou quer assinar. Quando tu respondes, a conversa fica contigo e a IA para.</p></div>
+  </section>
+
   <section class="aba" data-aba="dinheiro" hidden>
     <div class="kpis" id="dkpis"></div>
     <div class="grid g2">
@@ -495,7 +502,7 @@ var ETAPAS = [['visita', 'Visitas'], ['form_inicio', 'Começou o formulário'], 
 var CTX = { carro_chefe: 'Carro-chefe', servicos: 'Serviços', diferencial: 'Diferencial', publico: 'Público', tom: 'Tom de voz', horario: 'Horário', preco_medio: 'Preço médio', evitar: 'Evitar', extra: 'Extra', novidades: 'Novidades do mês' };
 var C = null, cCarregando = false, cErroRede = null;   // campanhas da Meta (carregam à parte: a Meta pode demorar)
 E.cfm = 'todas'; E.cab = {};
-var TITULOS = { hoje: 'Hoje', campanhas: 'Campanhas', clientes: 'Clientes', producao: 'Produção', suporte: 'Suporte', dinheiro: 'Dinheiro', marcas: 'Marcas' };
+var TITULOS = { hoje: 'Hoje', campanhas: 'Campanhas', clientes: 'Clientes', producao: 'Produção', suporte: 'Suporte', whats: 'WhatsApp', dinheiro: 'Dinheiro', marcas: 'Marcas' };
 
 // ===== utilidades =====
 var $ = function (i) { return document.getElementById(i) };
@@ -595,6 +602,7 @@ function mudaAba(a, foco) {
   document.querySelectorAll('#abas [role=tab]').forEach(function (b) { b.setAttribute('aria-selected', b.dataset.v === a ? 'true' : 'false') });
   document.querySelectorAll('section.aba').forEach(function (s) { s.hidden = s.dataset.aba !== a });
   $('titulo').textContent = TITULOS[a];
+  if (a === 'whats') carregaWhats();
   $('per').hidden = ['hoje', 'campanhas', 'dinheiro', 'marcas'].indexOf(a) < 0;
   if (location.hash !== '#' + a) history.replaceState(null, '', a === 'hoje' ? location.pathname + location.search : '#' + a);
   if (foco !== false) window.scrollTo(0, 0);
@@ -948,6 +956,60 @@ function suporteAba() {
   l.sort(function (a, b) { var ua = a.status === 'esperando_dono' ? 0 : 1, ub = b.status === 'esperando_dono' ? 0 : 1; return ua - ub || ((a.atualizado_em || '') < (b.atualizado_em || '') ? 1 : -1) });
   $('chamados').innerHTML = l.length ? l.map(chamadoHtml).join('') : '<div class="vazio"><b aria-hidden="true">🤝</b>' + (chs.length ? 'Nenhum chamado nesse filtro.' : 'Nenhum chamado ainda. Quando um cliente escrever, aparece aqui.') + '</div>';
 }
+// ---------- WhatsApp de venda (14/10) ----------
+var W = null, wTimer = null;
+var WMODO = { ia: ['IA atendendo', 'info'], humano: ['Contigo', 'at'], encerrada: ['Encerrada', 'neu'] };
+var WETAPA = { interessado: 'Interessado', duvida: 'Com dúvida', objecao: 'Objeção', quer_assinar: 'Quer assinar', sem_interesse: 'Sem interesse', assinou: 'Assinou' };
+function carregaWhats() {
+  return api('/api/oito/whats').then(function (j) { W = j; whatsAba(); var n = (j.conversas || []).reduce(function (a, c) { return a + (c.nao_lidas || 0) }, 0); var ct = $('wct'); if (ct) { ct.hidden = !n; ct.textContent = n } })
+    .catch(function (e) { if (e.senha) return mostraLogin('Senha errada ou expirada.'); $('wlista').innerHTML = '<div class="vazio">Não carregou: ' + esc(e.message) + '</div>' });
+}
+function whatsAba() {
+  if (!W) { $('wlista').innerHTML = '<div class="vazio">Carregando…</div>'; return }
+  var cs = W.conversas || [], f = E.wf || 'todas';
+  var conta = function (fn) { return cs.filter(fn).length };
+  $('wkpis').innerHTML = (W.ligado ? '' : '<div class="k"><span class="r"><i class="dot" style="background:var(--ruim)"></i>Número</span><span class="v" style="font-size:18px">não ligado</span><span class="s">falta o número novo na Vercel (OITO_WA_PHONE_ID)</span></div>')
+    + '<div class="k"><span class="r">Conversas</span><span class="v num">' + cs.length + '</span><span class="s">' + conta(function (c) { return c.followup_etapa > 0 }) + ' receberam follow-up</span></div>'
+    + '<div class="k"><span class="r">Responderam</span><span class="v num">' + conta(function (c) { return c.janela_ate }) + '</span><span class="s">' + conta(function (c) { return c.etapa === 'quer_assinar' }) + ' querem assinar</span></div>'
+    + '<div class="k"><span class="r">Contigo</span><span class="v num">' + conta(function (c) { return c.modo === 'humano' }) + '</span><span class="s">' + conta(function (c) { return c.nao_lidas > 0 }) + ' com mensagem nova</span></div>';
+  $('wfil').innerHTML = segHtml('wf', [['todas', 'Todas'], ['novas', 'Novas', null, conta(function (c) { return c.nao_lidas > 0 })], ['humano', 'Contigo'], ['ia', 'IA'], ['fila', 'Follow-up']], f);
+  var l = cs.filter(function (c) { return f === 'todas' || (f === 'novas' && c.nao_lidas > 0) || (f === 'humano' && c.modo === 'humano') || (f === 'ia' && c.modo === 'ia' && c.janela_ate) || (f === 'fila' && c.proximo_followup_em) });
+  $('wlista').innerHTML = l.length ? l.map(function (c) {
+    var md = WMODO[c.modo] || WMODO.ia;
+    return '<button class="lin" data-act="wcv" data-v="' + esc(c.id) + '"><span class="cor ' + esc(c.marca || '') + '"></span><div style="min-width:0"><div class="t"><span class="n">' + esc(c.nome || foneBonito(c.telefone)) + '</span>' + tg(c.marca) + (c.nao_lidas ? '<span class="tg" style="background:var(--ruim);color:#fff">' + c.nao_lidas + ' nova(s)</span>' : '') + '</div><div class="sub">' + esc(c.ultima_msg || '—') + '</div></div><span class="dir">' + pill(md) + (c.etapa && WETAPA[c.etapa] ? '<small>' + WETAPA[c.etapa] + '</small>' : '') + '<small>' + (c.ultima_msg_em ? quando(c.ultima_msg_em) : c.proximo_followup_em ? 'follow-up ' + quando(c.proximo_followup_em) : '') + '</small></span></button>';
+  }).join('') : '<div class="vazio">' + (cs.length ? 'Nenhuma conversa nesse filtro.' : 'Nenhuma conversa ainda. Elas aparecem quando o número estiver ligado e alguém fizer o teste.') + '</div>';
+}
+function abreWhats(id) {
+  var c = ((W && W.conversas) || []).find(function (x) { return x.id === id }) || { id: id };
+  abreGav({ tipo: 'whats', id: id }, '<div class="gcab"><div style="min-width:0"><h2 id="gtit">' + esc(c.nome || foneBonito(c.telefone || '')) + '</h2></div><button class="ico" data-act="fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div><div class="vazio">Carregando a conversa…</div>');
+  carregaWhatsConversa(id);
+  clearInterval(wTimer); wTimer = setInterval(function () { if (!E.gav || E.gav.tipo !== 'whats') return clearInterval(wTimer); carregaWhatsConversa(E.gav.id, true) }, 15000);
+}
+function carregaWhatsConversa(id, quieto) {
+  return api('/api/oito/whats?id=' + encodeURIComponent(id)).then(function (j) {
+    if (!E.gav || E.gav.tipo !== 'whats' || E.gav.id !== id) return;
+    var c = j.conversa, cli = j.cliente, md = WMODO[c.modo] || WMODO.ia, janela = c.janela_ate && c.janela_ate > new Date().toISOString();
+    var html = '<div class="gcab"><div style="min-width:0"><h2 id="gtit">' + esc(c.nome || foneBonito(c.telefone)) + '</h2><div class="tags">' + pill(md) + tg(c.marca) + (c.etapa && WETAPA[c.etapa] ? '<span class="tg tipo">' + WETAPA[c.etapa] + '</span>' : '') + (c.optout ? '<span class="tg tipo">pediu SAIR</span>' : '') + '</div></div>'
+      + '<button class="ico" data-act="fechar" aria-label="Fechar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>';
+    html += '<div class="gsec"><div class="resumo"><div><span>WhatsApp</span><span style="color:var(--tx);font-weight:500;font-size:14px"><a href="' + esc(wa(c.telefone)) + '" target="_blank" rel="noopener">' + esc(foneBonito(c.telefone)) + '</a></span></div>'
+      + '<div><span>Negócio</span><span style="color:var(--tx);font-weight:500;font-size:14px">' + (cli ? esc(cli.nome) + ' · ' + esc(cli.cidade || '') + ' · ' + esc((ST[cli.status] || [cli.status])[0]) : 'ainda não fez o teste') + '</span></div>'
+      + '<div><span>Follow-up</span><span style="color:var(--tx);font-weight:500;font-size:14px">' + (c.followup_etapa || 0) + ' de 3 enviado(s)' + (c.proximo_followup_em ? ' · próximo ' + quando(c.proximo_followup_em) : '') + '</span></div></div>'
+      + (cli ? '<div class="acoes">' + ((D.clientes || []).find(function (x) { return x.codigo === cli.codigo }) ? '<button class="bt pq" data-act="cli" data-v="' + esc((D.clientes.find(function (x) { return x.codigo === cli.codigo }) || {}).id) + '">Ver o cliente</button>' : '') + '</div>' : '') + '</div>';
+    html += '<div class="conv" aria-live="polite">' + ((j.msgs || []).length ? j.msgs.map(function (m) {
+      var quem = m.autor === 'cliente' ? esc(c.nome || 'Cliente') : m.autor === 'ia' ? 'IA' : m.autor === 'sistema' ? 'Automática' : 'Tu';
+      return '<div class="msg ' + esc(m.autor === 'sistema' ? 'ia' : m.autor) + '"' + (m.autor === 'sistema' ? ' style="opacity:.75"' : '') + '><small>' + quem + ' · ' + quando(m.em) + (m.status && m.autor !== 'cliente' ? ' · ' + esc(m.status) : '') + (m.erro ? ' · <b style="color:var(--ruim)">' + esc(m.erro) + '</b>' : '') + '</small>' + esc(m.texto) + '</div>';
+    }).join('') : '<div class="vazio">Sem mensagens.</div>') + '</div>';
+    html += '<div class="resp"><label class="sr" for="wtexto">Tua mensagem</label><textarea id="wtexto" ' + (janela ? '' : 'disabled ') + 'placeholder="' + (janela ? 'Escreve pro cliente… (sai pelo WhatsApp e a conversa fica contigo)' : 'Passaram 24 h da última mensagem do cliente: a Meta só deixa responder depois que ele escrever de novo.') + '"></textarea>'
+      + '<div class="acoes"><div class="acoes">'
+      + (c.modo !== 'ia' ? '<button class="bt pq" data-act="wmodo" data-v="' + esc(c.id) + '|ia">Devolver pra IA</button>' : '<button class="bt pq" data-act="wmodo" data-v="' + esc(c.id) + '|humano">Assumir</button>')
+      + (c.modo !== 'encerrada' ? '<button class="bt pq" data-act="wmodo" data-v="' + esc(c.id) + '|encerrada">Encerrar</button>' : '')
+      + '</div><button class="bt p" data-act="wresp" data-v="' + esc(c.id) + '"' + (janela ? '' : ' disabled') + '>Enviar</button></div></div>';
+    var g = $('gcorpo'), txt = $('wtexto'), rasc = txt ? txt.value : '', st = g.scrollTop, noFim = g.scrollTop + g.clientHeight >= g.scrollHeight - 40;
+    g.innerHTML = html;
+    if (rasc && $('wtexto')) $('wtexto').value = rasc;
+    if (quieto && !noFim) g.scrollTop = st; else { var cvEl = g.querySelector('.conv'); if (cvEl) g.scrollTop = Math.max(0, cvEl.offsetTop + cvEl.offsetHeight - g.clientHeight + 160) }
+  }).catch(function (e) { if (e.senha) return mostraLogin('Senha errada ou expirada.'); if (!quieto) toast('Não abriu a conversa: ' + e.message, true) });
+}
 function abreChamado(id) {
   var h = (D.chamados || []).find(function (x) { return x.id === id }) || { id: id };
   abreGav({ tipo: 'chamado', id: id }, cabChamado(h) + '<div class="vazio">Carregando a conversa…</div>');
@@ -1098,6 +1160,22 @@ document.addEventListener('click', function (ev) {
     case 'pf': E.pf = v; producaoAba(); break;
     case 'sf': E.sf = v; suporteAba(); if (E.aba !== 'suporte') mudaAba('suporte'); break;
     case 'cli': abreCliente(v); break;
+    case 'wcv': abreWhats(v); break;
+    case 'wf': E.wf = v; whatsAba(); break;
+    case 'wresp': {
+      var wt = $('wtexto'), wtx = wt ? wt.value.trim() : '';
+      if (!wtx) { toast('Escreve a mensagem primeiro', true); if (wt) wt.focus(); break }
+      b.disabled = true;
+      api('/api/oito/whats', { method: 'POST', body: { acao: 'responder', id: v, texto: wtx } }).then(function () { wt.value = ''; toast('Mensagem enviada'); return carregaWhats() }).then(function () { carregaWhatsConversa(v) })
+        .catch(function (e) { b.disabled = false; if (e.senha) return mostraLogin('Senha errada ou expirada.'); toast('Não enviou: ' + e.message, true) });
+      break;
+    }
+    case 'wmodo': {
+      var pm = v.split('|'); b.disabled = true;
+      api('/api/oito/whats', { method: 'POST', body: { acao: 'modo', id: pm[0], modo: pm[1] } }).then(function () { toast(pm[1] === 'ia' ? 'A IA voltou a atender' : pm[1] === 'humano' ? 'A conversa é tua agora' : 'Conversa encerrada'); return carregaWhats() }).then(function () { carregaWhatsConversa(pm[0]) })
+        .catch(function (e) { b.disabled = false; toast('Não mudou: ' + e.message, true) });
+      break;
+    }
     case 'ch': abreChamado(v); break;
     case 'foto': abreFoto(v); break;
     case 'fechar': fechaGav(); break;
