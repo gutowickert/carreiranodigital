@@ -7,3 +7,11 @@ SELECT '00000000-0000-0000-0000-0000000000cd', 'deu_venda_novo_formato', NULL, '
        'Oi {{nome}}, aqui é da Carreira no Digital. Como tu se interessou pelo Deu Venda, queria te contar que abrimos um novo formato dele, com mais de 50% de desconto. Se quiser saber como funciona, é só responder esta mensagem.',
        'nome', 'rascunho', true
 WHERE NOT EXISTS (SELECT 1 FROM public.followup_templates WHERE nome_meta = 'cnd_deu_venda_novo_formato');
+
+-- A MESMA, SEM O NOME (14/10, pedido do Nando): tem gente com nome de WhatsApp tipo "Deus é mais",
+-- e o {{nome}} virava "Oi Deus é mais, aqui é da...". Use esta quando o nome do contato não for um nome.
+INSERT INTO public.followup_templates (org_id, chave, etapa, produto, nome_meta, categoria, tipo_janela, ordem, corpo, variaveis, status, ativo)
+SELECT '00000000-0000-0000-0000-0000000000cd', 'deu_venda_novo_formato_sem_nome', NULL, 'deu_venda', 'cnd_deu_venda_novo_formato_sem_nome', 'marketing', 'template', 963,
+       'Oi, aqui é da Carreira no Digital. Como tu se interessou pelo Deu Venda, queria te contar que abrimos um novo formato dele, com mais de 50% de desconto. Se quiser saber como funciona, é só responder esta mensagem.',
+       '', 'rascunho', true
+WHERE NOT EXISTS (SELECT 1 FROM public.followup_templates WHERE nome_meta = 'cnd_deu_venda_novo_formato_sem_nome');
