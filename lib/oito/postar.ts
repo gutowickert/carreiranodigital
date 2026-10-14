@@ -128,11 +128,15 @@ export function urlAutorizar(codigo: string, marca: string) {
 // código da volta → token curto → token de 60 dias → quem é a conta
 export async function trocaCodigo(code: string) {
   const f = new URLSearchParams({ client_id: igAppId(), client_secret: igSegredo(), grant_type: 'authorization_code', redirect_uri: igRetorno(), code: code.replace(/#_$/, '') })
-  const j = await igFetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: f })
+  // 14/10: cada passo marcado no erro (a 1ª conexão real falhou com "Unsupported request - method type: get" sem dizer onde)
+  const passo = async (nome: string, fn: () => Promise<any>) => { try { return await fn() } catch (e: any) { e.message = `[${nome}] ${e.message}`; throw e } }
+  const j = await passo('codigo', () => igFetch('https://api.instagram.com/oauth/access_token', { method: 'POST', body: f }))
   const curto = j.access_token || j.data?.[0]?.access_token
-  if (!curto) throw new Error('sem token curto')
-  const longo = await igFetch(`${IG_GRAPH}/access_token?` + new URLSearchParams({ grant_type: 'ig_exchange_token', client_secret: igSegredo(), access_token: curto }))
-  const me = await igFetch(`${IG_GRAPH}/${IG_VERSAO}/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(longo.access_token)}`)
+  if (!curto) throw new Error('[codigo] sem token curto: ' + JSON.stringify(j).slice(0, 120))
+  // token de 60 dias: o endereço sem versão e, se recusar, com a versão
+  const q = new URLSearchParams({ grant_type: 'ig_exchange_token', client_secret: igSegredo(), access_token: curto })
+  const longo = await passo('60dias', () => igFetch(`${IG_GRAPH}/access_token?` + q).catch(() => igFetch(`${IG_GRAPH}/${IG_VERSAO}/access_token?` + q)))
+  const me = await passo('conta', () => igFetch(`${IG_GRAPH}/me?fields=user_id,username,account_type&access_token=${encodeURIComponent(longo.access_token)}`))
   return { token: longo.access_token as string, expira_em: new Date(Date.now() + (+longo.expires_in || 60 * 86400) * 1000).toISOString(), ig_user_id: String(me.user_id || me.id), usuario: me.username as string, tipo: me.account_type as string }
 }
 
