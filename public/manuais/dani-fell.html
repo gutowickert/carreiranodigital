@@ -314,7 +314,7 @@
             <li><i></i><div><b>Não respondeu</b><small>foi respondida no primeiro dia e sumiu; a IA manda as mensagens do fluxo</small></div><span class="tag ia">IA</span></li>
             <li><i></i><div><b>Em conversa</b><small>uma de vocês assumiu</small></div><span class="tag pessoa">Vocês</span></li>
             <li><i></i><div><b>Avaliação agendada</b><small>tem data; a IA confirma e lembra</small></div><span class="tag ia">IA</span></li>
-            <li><i></i><div><b>Faltou na avaliação</b><small>não veio; a IA tenta remarcar</small></div><span class="tag ia">IA</span></li>
+            <li><i></i><div><b>Faltou na avaliação</b><small>vocês confirmaram que não veio; a IA tenta remarcar</small></div><span class="tag ia">IA</span></li>
             <li><i></i><div><b>Pensando</b><small>fez a avaliação e está decidindo; a IA acompanha por até 3 meses</small></div><span class="tag ia">IA</span></li>
             <li class="fim"><i></i><div><b>Ganho</b><small>comprou, com produto e valor</small></div><span class="tag nada">Fim</span></li>
             <li class="fim"><i></i><div><b>Perda</b><small>não vai comprar, com o motivo</small></div><span class="tag nada">Fim</span></li>
@@ -326,7 +326,7 @@
             <li><div><b>Perdeu</b>Move para Perda e escolhe o motivo. O motivo é o que a Máquina lê depois pra dizer por que se perde.</div></li>
             <li><div><b>Abrir o cartão</b>Mostra a conversa inteira, o resumo da IA, a ficha e a jornada, e o histórico.</div></li>
           </ol>
-          <div class="regra"><span class="k">→</span><div><b>Às 23h o sistema fecha o dia sozinho:</b> quem vocês responderam e não respondeu de volta passa de <b>Chegou</b> pra <b>Não respondeu</b>, e avaliação que passou sem o cartão sair de <b>Avaliação agendada</b> vai pra <b>Faltou</b> (se ela veio, é só mover o cartão). Se a cliente responder depois, volta pra <b>Em conversa</b> e vocês recebem o aviso.</div></div>
+          <div class="regra"><span class="k">→</span><div><b>Às 23h o sistema fecha o dia sozinho:</b> quem vocês responderam e não respondeu de volta passa de <b>Chegou</b> pra <b>Não respondeu</b>, e quem conversou e sumiu há mais de 24 horas vai pra <b>Em conversa</b>. Avaliação que passou sem estar marcada como feita <b>não</b> vai sozinha pra Faltou: o sistema cria a tarefa vermelha <b>"Ela veio na avaliação?"</b> pra manhã seguinte, com os botões <b>Veio</b> (o cartão vai pra Pensando) e <b>Faltou</b> (vai pra Faltou e só então sai a mensagem de remarcar). Se ela remarcou, mudem a data no cartão. Se a cliente responder depois, volta pra <b>Em conversa</b> e vocês recebem o aviso.</div></div>
           <div class="regra"><span class="k">→</span><div><b>As mensagens da IA são as que a Meta aprovou:</b> fora das 24 horas depois da última mensagem da cliente, o WhatsApp só deixa mandar mensagem pronta e aprovada. São 10, escritas no jeito do Espaço: 3 pra quem não respondeu, 3 pra quem faltou e 4 pra quem está pensando. Nenhuma fala de valor de tratamento nem promete resultado. Enquanto a IA não puder mandar (por exemplo, sem cartão cadastrado no WhatsApp), quem não respondeu vira <b>tarefa pra vocês</b>, e ninguém fica esquecido.</div></div>
         </div>
       </section>
