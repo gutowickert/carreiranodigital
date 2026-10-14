@@ -7,7 +7,7 @@ import { avisaDono } from './servico'
 const MODELO = process.env.OITO_MODELO || 'claude-sonnet-5-5'
 export const MAX_IA = 4
 
-const SABE = (marca: Marca) => `Tu és o atendimento do ${cfg.marcas[marca].nome}, um serviço que entrega posts prontos pro Instagram de ${cfg.marcas[marca].nicho}.
+export const SABE = (marca: Marca) => `Tu és o atendimento do ${cfg.marcas[marca].nome}, um serviço que entrega posts prontos pro Instagram de ${cfg.marcas[marca].nicho}.
 COMO O SERVIÇO FUNCIONA (só afirma o que está aqui):
 - Plano único: ${cfg.postsMes} posts estáticos por mês (imagem 1080x1350 + legenda pronta com hashtags), por ${precoTxt(marca)}/mês. Sem fidelidade.
 - As datas sugeridas são 2 por semana. Os posts ficam na área do cliente (link com o código dele) pra baixar a imagem e copiar a legenda.
@@ -29,7 +29,7 @@ Nesses casos diz que encaminhou pra equipe e que a resposta vem por aqui em até
 ESTILO: português do Brasil, simpático, direto, frases curtas, sem jargão. Trata por "você". Sem emoji ou no máximo 1.`
 
 // 13/10: o mesmo atendente, pras marcas em espanhol (Colômbia e Chile, cobradas pela Hotmart)
-const SABE_ES = (marca: Marca) => `Eres la atención al cliente de ${cfg.marcas[marca].nome}, un servicio que entrega posts listos para Instagram de ${cfg.marcas[marca].nicho}.
+export const SABE_ES = (marca: Marca) => `Eres la atención al cliente de ${cfg.marcas[marca].nome}, un servicio que entrega posts listos para Instagram de ${cfg.marcas[marca].nicho}.
 CÓMO FUNCIONA EL SERVICIO (solo afirma lo que está aquí):
 - Plan único: ${cfg.postsMes} posts estáticos al mes (imagen 1080x1350 + texto listo con hashtags), por ${precoTxt(marca)} al mes. Sin permanencia.
 - Fechas sugeridas: 2 por semana. Los posts quedan en el área del cliente (enlace con su código) para descargar la imagen y copiar el texto.
