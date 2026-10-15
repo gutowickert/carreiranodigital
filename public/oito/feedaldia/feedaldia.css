@@ -1,4 +1,4 @@
-/* No Feed (generado por Desktop/Oito Posts/site/build-es.js: editar allá) */
+/* Feed al Día (generado por Desktop/Oito Posts/site/build-es.js: editar allá) */
 .nf{display:inline-flex;align-items:center;gap:.11em;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.04em;line-height:1;text-transform:none;white-space:nowrap;color:var(--nf-tx,currentColor)}
 .nf .nf-cx{background:var(--nf-cx);color:var(--nf-cxt);border-radius:.2em;padding:.01em .17em .09em;box-shadow:0 .02em 0 var(--nf-cs)}
 .logo .nf{font-size:30px}
@@ -6,15 +6,18 @@
 .nf-chip{font:700 13px/1 var(--fc);color:var(--destaque);background:color-mix(in srgb,var(--destaque) 10%,#fff);border:1px solid color-mix(in srgb,var(--destaque) 25%,#fff);border-radius:999px;padding:7px 11px;text-decoration:none;white-space:nowrap}
 @media (max-width:520px){.logo .nf{font-size:25px}.nf-chip{font-size:12px;padding:6px 9px}.topo nav .link{display:none}}
 @media (max-width:370px){.nf-chip{display:none}}
-.btn:not(.fantasma):not(.escuro){background:linear-gradient(135deg,#7c3aed,#c026d3)}
-.escura h2 em,.v-final h2 em,.oferta h2 em,.bloco.escuro h3 em{color:#d8b4fe}
-.escura .cartoes b{color:#d8b4fe}
-.selo-topo b{background:linear-gradient(135deg,#7c3aed,#c026d3);color:#fff}
+.btn:not(.fantasma):not(.escuro){background:linear-gradient(135deg,#ff4d5e,#ff8a4c)}
+.escura h2 em,.v-final h2 em,.oferta h2 em,.bloco.escuro h3 em{color:#ffb4a6}
+.escura .cartoes b{color:#ffb4a6}
+.selo-topo b{background:linear-gradient(135deg,#ff4d5e,#ff8a4c);color:#fff}
 .aviso-nf{display:flex;gap:10px;align-items:center;background:var(--claro);border:1px solid var(--linha);border-radius:16px;padding:10px 12px;margin-top:14px}
 .aviso-nf img{width:38px;height:38px;border-radius:10px;flex:none}
 .aviso-nf b{display:block;font-size:13px}.aviso-nf span{font-size:14px;color:var(--suave)}
-.trilha.q4 .etapa-v:nth-child(4) .num{background:linear-gradient(135deg,#7c3aed,#c026d3);box-shadow:0 14px 30px -14px #7c3aed}
+.trilha.q4 .etapa-v:nth-child(4) .num{background:linear-gradient(135deg,#ff4d5e,#ff8a4c);box-shadow:0 14px 30px -14px #ec3b4d}
 .nf-heroi .bolhas{-webkit-mask-image:linear-gradient(#000 55%,transparent);mask-image:linear-gradient(#000 55%,transparent)}
+/* no celular, el botón "¿Dudas?" tapaba el 3er número del héroe: aparece recién después del héroe (landing-es.js marca body.passou) */
+.ajuda-flutua{transition:opacity .2s}
+@media (max-width:560px){body.nicho:not(.passou) .ajuda-flutua{opacity:0;pointer-events:none}}
 .nf-outros{padding:26px 0;text-align:center;color:var(--suave)}.nf-outros a{color:var(--destaque);font-weight:700}
 footer .wrap{flex-wrap:wrap;row-gap:8px}
 /* la home */
@@ -26,12 +29,12 @@ footer .wrap{flex-wrap:wrap;row-gap:8px}
 .nf-nichos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
 @media (max-width:860px){.nf-nichos{grid-template-columns:1fr}}
 .nf-nicho{display:flex;flex-direction:column;background:#fff;border:1px solid var(--linha);border-radius:26px;overflow:hidden;text-decoration:none;color:var(--tinta);transition:transform .15s,box-shadow .15s;box-shadow:0 18px 40px -28px rgba(23,18,42,.45)}
-.nf-nicho:hover{transform:translateY(-3px);box-shadow:0 24px 50px -26px rgba(124,58,237,.55)}
+.nf-nicho:hover{transform:translateY(-3px);box-shadow:0 24px 50px -26px rgba(236,59,77,.45)}
 .nf-mosaico{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;background:var(--linha)}
 .nf-mosaico img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
 .nf-nicho-txt{padding:18px 20px 22px;display:grid;gap:6px}
 .nf-nicho-txt h3{font-size:26px}.nf-nicho-txt p{color:var(--suave)}
 .nf-seta{font-weight:800;color:var(--destaque);margin-top:6px}
 .nf-preco-caixa{display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;background:var(--escuro);color:#fff;border-radius:28px;padding:30px 32px}
-.nf-preco-caixa .rotulo{color:#d8b4fe}.nf-preco-caixa .valor{font:800 clamp(48px,9vw,72px)/1 var(--ft);letter-spacing:-.04em;margin:8px 0;white-space:nowrap}
+.nf-preco-caixa .rotulo{color:#ffb4a6}.nf-preco-caixa .valor{font:800 clamp(48px,9vw,72px)/1 var(--ft);letter-spacing:-.04em;margin:8px 0;white-space:nowrap}
 .nf-preco-caixa .valor small{font:600 18px var(--fc)}.nf-preco-caixa p{opacity:.85;max-width:520px}

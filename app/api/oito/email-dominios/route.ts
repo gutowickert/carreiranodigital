@@ -5,15 +5,15 @@
 //   POST             (x-senha) → cria os que faltam
 //   POST ?verificar=1 (x-senha) → pede pro Resend conferir o DNS agora
 import { NextResponse } from 'next/server'
-import { senhaOk, oitoConfig as cfg, NOFEED } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, FEEDALDIA } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const R = 'https://api.resend.com'
 const CONTAS = () => [
   { chave: process.env.RESEND_API_KEY, dominios: [cfg.marcas.salao.dominio, cfg.marcas.prato.dominio] },
   { chave: process.env.OITO_RESEND_PATA, dominios: [cfg.marcas.pata.dominio] },
-  // 15/10: o espanhol virou o No Feed, um domínio só (NOFEED.dominio), numa conta grátis própria
-  { chave: process.env.OITO_RESEND_NOFEED, dominios: [NOFEED.dominio] },
+  // 15/10: o espanhol virou o Feed al Día, um domínio só (FEEDALDIA.dominio), numa conta grátis própria
+  { chave: process.env.OITO_RESEND_FEEDALDIA || process.env.OITO_RESEND_NOFEED, dominios: [FEEDALDIA.dominio] },
 ].filter(c => c.chave) as { chave: string; dominios: string[] }[]
 const H = (k: string) => ({ Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' })
 

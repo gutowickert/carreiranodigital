@@ -1,27 +1,27 @@
 // Oito Posts: e-mails das marcas (13/10), pelo Resend. Cada marca sai do seu domínio (contato@/contacto@<dominio> responde).
 // Salão e Prato usam a conta do Recado (RESEND_API_KEY); as outras têm conta própria grátis (OITO_RESEND_<MARCA>), por causa do limite de domínios.
-// As marcas em espanhol recebem os mesmos e-mails, em espanhol. 15/10: elas viraram o No Feed: um remetente só
-// (OITO_RESEND_NOFEED, com o NOFEED.email do config.ts), a cor e a marca do No Feed, e os links das páginas novas (cfg.url).
+// As marcas em espanhol recebem os mesmos e-mails, em espanhol. 15/10: elas viraram o Feed al Día: um remetente só
+// (OITO_RESEND_FEEDALDIA, ou a _NOFEED antiga, com o FEEDALDIA.email do config.ts), a cor e a marca do Feed al Día, e os links das páginas novas (cfg.url).
 // Nunca derruba nada: se falhar, só registra no log.
-import { oitoConfig as cfg, Marca, emEspanhol, noFeed } from './config'
+import { oitoConfig as cfg, Marca, emEspanhol, feedAlDia, envFeedAlDia } from './config'
 
 const CORES: Record<Marca, { escuro: string; destaque: string; sobre: string; claro: string }> = {
   salao: { escuro: '#2b1420', destaque: '#d4577f', sobre: '#ffffff', claro: '#fbf4f2' },
   prato: { escuro: '#1d120c', destaque: '#ff5a1f', sobre: '#ffffff', claro: '#fff7ee' },
   pata: { escuro: '#102a4c', destaque: '#ffb703', sobre: '#102a4c', claro: '#f3f7ff' },
-  // o No Feed (os 3 nichos em espanhol): o roxo da marca
-  divino: { escuro: '#1e0b3a', destaque: '#7c3aed', sobre: '#ffffff', claro: '#f6f2ff' },
-  sabroso: { escuro: '#1e0b3a', destaque: '#7c3aed', sobre: '#ffffff', claro: '#f6f2ff' },
-  peludo: { escuro: '#1e0b3a', destaque: '#7c3aed', sobre: '#ffffff', claro: '#f6f2ff' },
+  // o Feed al Día (os 3 nichos em espanhol): o coral da marca
+  divino: { escuro: '#1c1022', destaque: '#f0444f', sobre: '#ffffff', claro: '#fbf6f2' },
+  sabroso: { escuro: '#1c1022', destaque: '#f0444f', sobre: '#ffffff', claro: '#fbf6f2' },
+  peludo: { escuro: '#1c1022', destaque: '#f0444f', sobre: '#ffffff', claro: '#fbf6f2' },
 }
-export const chaveResend = (m: Marca) => (noFeed(m) && process.env.OITO_RESEND_NOFEED) || process.env['OITO_RESEND_' + m.toUpperCase()] || (m === 'salao' || m === 'prato' ? process.env.RESEND_API_KEY : undefined)
+export const chaveResend = (m: Marca) => (feedAlDia(m) && envFeedAlDia('RESEND')) || process.env['OITO_RESEND_' + m.toUpperCase()] || (m === 'salao' || m === 'prato' ? process.env.RESEND_API_KEY : undefined)
 const site = (m: Marca) => `https://www.${cfg.marcas[m].dominio}`
-// o link de uma página do cliente: o No Feed usa as páginas novas (/oito/nofeed/<nicho>/ ou o domínio, quando ligado)
-const link = (m: Marca, p: string) => noFeed(m) ? cfg.url(m, p) : `${site(m)}/${p}`
-// o domínio que aparece no rodapé (o do No Feed só depois de ligado)
-const dominioVisivel = (m: Marca) => noFeed(m) ? (process.env.OITO_DOMINIO_NOFEED || '') : cfg.marcas[m].dominio
-// o No Feed: [no] numa caixinha roxa + feed
-const logoNoFeed = '<span style="display:inline-block;background:linear-gradient(135deg,#7c3aed,#c026d3);color:#fff;border-radius:7px;padding:1px 7px 3px;box-shadow:0 2px 0 #4c1d95;margin-right:3px">no</span>feed'
+// o link de uma página do cliente: o Feed al Día usa as páginas novas (/oito/feedaldia/<nicho>/ ou o domínio, quando ligado)
+const link = (m: Marca, p: string) => feedAlDia(m) ? cfg.url(m, p) : `${site(m)}/${p}`
+// o domínio que aparece no rodapé (o do Feed al Día só depois de ligado)
+const dominioVisivel = (m: Marca) => feedAlDia(m) ? (envFeedAlDia('DOMINIO') || '') : cfg.marcas[m].dominio
+// o Feed al Día: feed + [al día] numa caixinha coral
+const logoFeedAlDia = 'feed<span style="display:inline-block;background:linear-gradient(135deg,#ff4d5e,#ff8a4c);color:#fff;border-radius:7px;padding:1px 7px 3px;box-shadow:0 2px 0 #b3263a;margin-left:4px">al día</span>'
 const esc = (s: any) => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] as string))
 
 // a moldura de todos os e-mails: nome da marca, título, texto, botão e rodapé
@@ -29,7 +29,7 @@ export function molduraOito(m: Marca, titulo: string, corpo: string, botao?: { t
   const C = CORES[m], nome = cfg.marcas[m].nome
   return `<!doctype html><html><body style="margin:0;background:${C.claro};font-family:Arial,Helvetica,sans-serif;color:#1a1a1a">
   <div style="max-width:560px;margin:0 auto;padding:28px 18px">
-    <div style="font:700 20px Arial;color:${C.escuro};margin-bottom:18px">${noFeed(m) ? logoNoFeed : `<span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:${C.destaque};color:${C.sobre};margin-right:8px">${nome[0]}</span>${esc(nome)}`}</div>
+    <div style="font:700 20px Arial;color:${C.escuro};margin-bottom:18px">${feedAlDia(m) ? logoFeedAlDia : `<span style="display:inline-block;width:30px;height:30px;line-height:30px;text-align:center;border-radius:9px;background:${C.destaque};color:${C.sobre};margin-right:8px">${nome[0]}</span>${esc(nome)}`}</div>
     <div style="background:#fff;border-radius:18px;padding:28px 24px">
       <h1 style="font:700 24px/1.25 Arial;margin:0 0 14px;color:${C.escuro}">${esc(titulo)}</h1>
       <div style="font-size:16px;line-height:1.6;color:#333">${corpo}</div>

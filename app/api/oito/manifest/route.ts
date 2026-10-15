@@ -1,9 +1,9 @@
 // Oito Posts: o manifesto do "app" da área do cliente. É dinâmico pra o app instalado já abrir na área DAQUELE cliente (com o código).
 //   /api/oito/manifest?m=salao&c=CODIGO
-// 15/10: o No Feed (divino/sabroso/peludo) abre em /oito/nofeed/<nicho>/ pela Vercel, ou em /<nicho>/ no domínio próprio.
-import { oitoConfig as cfg, ehMarca, noFeed } from '@/lib/oito/config'
+// 15/10: o Feed al Día (divino/sabroso/peludo) abre em /oito/feedaldia/<nicho>/ pela Vercel, ou em /<nicho>/ no domínio próprio.
+import { oitoConfig as cfg, ehMarca, feedAlDia } from '@/lib/oito/config'
 
-const COR: Record<string, [string, string]> = { salao: ['#2b1420', '#fbf4f2'], prato: ['#1d120c', '#fff7ee'], pata: ['#102a4c', '#f3f7ff'], divino: ['#1e0b3a', '#f6f2ff'], sabroso: ['#1e0b3a', '#f6f2ff'], peludo: ['#1e0b3a', '#f6f2ff'] }
+const COR: Record<string, [string, string]> = { salao: ['#2b1420', '#fbf4f2'], prato: ['#1d120c', '#fff7ee'], pata: ['#102a4c', '#f3f7ff'], divino: ['#1c1022', '#fbf6f2'], sabroso: ['#1c1022', '#fbf6f2'], peludo: ['#1c1022', '#fbf6f2'] }
 
 export async function GET(req: Request) {
   const u = new URL(req.url), m = u.searchParams.get('m') || '', c = (u.searchParams.get('c') || '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 12)
@@ -13,10 +13,10 @@ export async function GET(req: Request) {
   const host = req.headers.get('host') || new URL(req.url).hostname || ''
   const es = cfg.marcas[m].idioma === 'es'
   let base: string, icone: string
-  if (noFeed(m)) {
+  if (feedAlDia(m)) {
     const dom = !/vercel\.app$|localhost|127\.0\.0\.1/.test(host)
-    base = dom ? `/${cfg.marcas[m].pasta}/` : `/oito/nofeed/${cfg.marcas[m].pasta}/`
-    icone = '/oito/nofeed/icone.png'
+    base = dom ? `/${cfg.marcas[m].pasta}/` : `/oito/feedaldia/${cfg.marcas[m].pasta}/`
+    icone = '/oito/feedaldia/icone.png'
   } else {
     const dom = /nofeed\.com\.br$/.test(host) || /feed(divino|sabroso|peludo)\.com$/.test(host)
     base = dom ? '/' : `/oito/${m}/`

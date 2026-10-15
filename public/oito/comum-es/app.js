@@ -1,22 +1,22 @@
 // Oito Posts en español: el JS común de las páginas de las 3 marcas de Colombia y Chile (rastro del embudo, píxel, fotos, chat de soporte, utilidades).
 // Cada página tiene <body data-marca="divino|sabroso|peludo">. El píxel de cada marca va en OITO_PIXEL (vacío = apagado).
-// 15/10: el No Feed. Las páginas nuevas traen <body data-marca="divino" data-grupo="nofeed" data-pasta="salon">: un solo píxel
-// (OITO_PIXEL.nofeed) para los 3 nichos, y las direcciones son /oito/nofeed/<pasta>/ (Vercel) o /<pasta>/ (dominio propio).
+// 15/10: el Feed al Día (primero se llamó No Feed). Las páginas nuevas traen <body data-marca="divino" data-grupo="feedaldia" data-pasta="salon">: un solo píxel
+// (OITO_PIXEL.feedaldia) para los 3 nichos, y las direcciones son /oito/feedaldia/<pasta>/ (Vercel) o /<pasta>/ (dominio propio).
 // El precio llega en window.OITO_PRECO (build-es.js lo lee de lib/oito/config.ts).
 // Copia traducida de /oito/comum/app.js (la brasileña); la lógica es la misma.
 (function () {
-  var OITO_PIXEL = { nofeed: '', divino: '', sabroso: '', peludo: '' }
+  var OITO_PIXEL = { feedaldia: '', divino: '', sabroso: '', peludo: '' }
   var marca = document.body.dataset.marca, grupo = document.body.dataset.grupo || '', pasta = document.body.dataset.pasta || ''
   var PASTAS = { divino: 'salon', sabroso: 'restaurante', peludo: 'mascotas' }
   // en el dominio de la marca (www.feeddivino.com...) las direcciones quedan limpias: /comecar.html en vez de /oito/divino/comecar.html
-  // No Feed: en el dominio propio la dirección no empieza con /oito/ (sirve para cualquier dominio que se conecte)
-  var emDominio = grupo === 'nofeed' ? location.pathname.indexOf('/oito/') !== 0 : /(^|\.)feed(divino|sabroso|peludo)\.com$/.test(location.hostname)
-  var prefixo = grupo === 'nofeed' ? '/oito/nofeed/' : '/oito/' + marca + '/'
-  var aqui = grupo === 'nofeed' ? pasta + '/' : ''
+  // Feed al Día: en el dominio propio la dirección no empieza con /oito/ (sirve para cualquier dominio que se conecte)
+  var emDominio = grupo === 'feedaldia' ? location.pathname.indexOf('/oito/') !== 0 : /(^|\.)feed(divino|sabroso|peludo)\.com$/.test(location.hostname)
+  var prefixo = grupo === 'feedaldia' ? '/oito/feedaldia/' : '/oito/' + marca + '/'
+  var aqui = grupo === 'feedaldia' ? pasta + '/' : ''
   function url(p) { return (emDominio ? '/' : prefixo) + aqui + (p || '') }
-  // la página de otro nicho del No Feed (quien pidió la prueba en otro nicho vuelve a la suya)
-  function urlDe(m, p) { return PASTAS[m] && grupo === 'nofeed' ? (emDominio ? '/' : prefixo) + PASTAS[m] + '/' + (p || '') : null }
-  var icone = grupo === 'nofeed' ? '/oito/nofeed/icone.png' : '/oito/' + marca + '/icone.png'
+  // la página de otro nicho del Feed al Día (quien pidió la prueba en otro nicho vuelve a la suya)
+  function urlDe(m, p) { return PASTAS[m] && grupo === 'feedaldia' ? (emDominio ? '/' : prefixo) + PASTAS[m] + '/' + (p || '') : null }
+  var icone = grupo === 'feedaldia' ? '/oito/feedaldia/icone.png' : '/oito/' + marca + '/icone.png'
   if (emDominio) {
     var limpa = function (a) { var h = a.getAttribute('href'); if (h && h.indexOf(prefixo) === 0) a.setAttribute('href', '/' + h.slice(prefixo.length)) }
     document.addEventListener('DOMContentLoaded', function () { [].forEach.call(document.querySelectorAll('a[href^="' + prefixo + '"]'), limpa) })
@@ -62,7 +62,7 @@
     try { navigator.sendBeacon('/api/oito/evento', new Blob([JSON.stringify({ tipo: tipo, marca: marca, sessao: sessao, c: c || q.get('c') || undefined, detalhe: detalhe || {} })], { type: 'application/json' })) } catch (e) {}
   }
   // píxel de Meta, solo si la marca tiene uno configurado
-  var pixel = grupo === 'nofeed' ? OITO_PIXEL.nofeed : OITO_PIXEL[marca]
+  var pixel = grupo === 'feedaldia' ? OITO_PIXEL.feedaldia : OITO_PIXEL[marca]
   if (pixel) {
     !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s) }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
     fbq('init', pixel); fbq('track', 'PageView')
