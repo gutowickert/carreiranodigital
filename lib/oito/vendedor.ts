@@ -71,7 +71,50 @@ export async function rodaFollowups() {
   const agora = new Date().toISOString(), envios: string[] = []
   const vencidos = (await db.lista('wa_conversas', {}, { ordem: 'proximo_followup_em', limite: 300 })).filter(cv => cv.proximo_followup_em && cv.proximo_followup_em <= agora).slice(0, 20)
   for (const cv of vencidos) envios.push(cv.telefone.slice(-4) + ': ' + (await passoFollowup(cv).catch(e => 'erro ' + e.message)))
-  return { ligado: true, novos, envios }
+  const retomadas = await retomaConversas().catch((e: any) => ['erro ' + e.message])
+  return { ligado: true, novos, envios, retomadas }
+}
+
+// 15/10: quem começou pelo WhatsApp e parou no meio do funil (sem responder a nossa última mensagem) recebe até 2 lembretes por fase:
+//   1º: 3 h depois da última mensagem dele, ainda dentro das 24 h (texto livre, da fase) · 2º: 2 dias depois, com o modelo aprovado
+//   (só depois do teste: o modelo fala dos posts). Só das 9h às 20h (Brasília). Para com SAIR, modo humano ou se ele responder.
+const RETOMA: Record<string, string> = {
+  novo: 'Oi{n}! Ficou faltando pouco pra eu montar os seus 2 posts grátis. Quer continuar? É só responder aqui 🙂',
+  entrevista: 'Oi{n}! Ficou faltando pouco pra eu montar os seus 2 posts grátis. Quer continuar? É só responder aqui 🙂',
+  aprovando_teste: 'Oi{n}! Conseguiu ver os 2 posts? Me conta o que achou. Se quiser mudar alguma coisa, eu ajusto.',
+  venda: 'Oi{n}! Ficou alguma dúvida sobre a assinatura? Posso te explicar o que precisar por aqui.',
+  aguardando_pagamento: 'Oi{n}! A fatura está no link que te mandei. Se tiver qualquer problema pra pagar, me avisa que eu resolvo.',
+}
+async function retomaConversas() {
+  const hora = new Date(Date.now() - 3 * 3600e3).getUTCHours()
+  if (hora < 9 || hora >= 20) return []
+  const agora = Date.now(), feitos: string[] = []
+  // as conversas do follow-up do formulário (fase novo com passo enviado) seguem no fluxo delas
+  const cvs = (await db.lista('wa_conversas', { modo: 'ia' }, { ordem: 'ultima_msg_em', desc: true, limite: 300 }))
+    .filter(cv => !cv.optout && !cv.simulado && RETOMA[cv.fase] && cv.janela_ate && !(cv.followup_etapa > 0 && cv.fase === 'novo'))
+  for (const cv of cvs.slice(0, 200)) {
+    if (feitos.length >= 10) break
+    const ultima = (await db.lista('wa_msgs', { conversa_id: cv.id }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
+    if (!ultima || ultima.autor === 'cliente') continue // a vez é nossa: quem responde é o agente, não o lembrete
+    const passou = agora - (new Date(cv.janela_ate).getTime() - 24 * 3600e3)
+    const r = cv.rascunho || {}, feito = (r.retoma || {})[cv.fase] || 0
+    const c = cv.cliente_id ? await db.um('clientes', { id: cv.cliente_id }) : null
+    if (c && ['ativo', 'cancelado'].includes(c.status)) continue
+    const nome = primeiro(cv.nome || c?.responsavel), n = nome && !/^\d/.test(nome) ? ', ' + nome : ''
+    let res: any = null
+    if (feito === 0 && passou > 3 * 3600e3 && passou < 23 * 3600e3) {
+      const txt = RETOMA[cv.fase].replace('{n}', n)
+      res = await enviaTexto(cv.telefone, txt); await registraSaida(cv, 'sistema', txt, res)
+    } else if (feito === 1 && passou > 48 * 3600e3 && passou < 6 * 86400e3 && c && ['aprovando_teste', 'venda', 'aguardando_pagamento'].includes(cv.fase)) {
+      const m = c.marca as Marca, es = emEspanhol(m), modelo = MODELOS[es ? 'es' : 'pt'][1]
+      res = await enviaModelo(cv.telefone, modelo, es ? 'es' : 'pt_BR', [nome || c.nome_negocio, cfg.marcas[m].nome, c.nome_negocio])
+      await registraSaida(cv, 'sistema', `[modelo ${modelo}] lembrete 2 (${cv.fase})`, res, 'modelo')
+    } else continue
+    await db.atualiza('wa_conversas', { id: cv.id }, { rascunho: { ...r, retoma: { ...(r.retoma || {}), [cv.fase]: feito + 1 } } })
+    if (res?.ok) await db.evento('wa_retoma', { cliente_id: cv.cliente_id || null, marca: cv.marca || null, detalhe: { fase: cv.fase, lembrete: feito + 1 } })
+    feitos.push(`${cv.telefone.slice(-4)} ${cv.fase} ${feito + 1}${res?.ok ? '' : ' falhou'}`)
+  }
+  return feitos
 }
 
 // ---------- o vendedor ----------
