@@ -81,6 +81,8 @@ async function lerCaixa(m: Marca) {
         }
         if (p.messageId) { await db.atualiza('chamados', { id: ch.id }, { email_ref: p.messageId }); ch.email_ref = p.messageId }
         const antes = (await db.lista('chamado_msgs', { chamado_id: ch.id })).length
+        // 15/10: SAIR / SALIR para o follow-up por e-mail
+        if (/^\s*(sair|salir|parar|stop)\b/i.test(texto)) { const cli = (await db.lista('clientes', { email }))[0]; if (cli) await db.evento('email_sair', { cliente_id: cli.id, marca: cli.marca, detalhe: {} }) }
         await novaMensagemCliente(ch, (assunto && antes === 0 ? `[${assunto}]\n` : '') + texto)
         // se a IA respondeu, a resposta sai por e-mail
         const msgs = await db.lista('chamado_msgs', { chamado_id: ch.id }, { ordem: 'criado_em' })

@@ -53,7 +53,10 @@ const ultimaDoCliente = async (id: string) => (await db.lista('wa_msgs', { conve
 
 // a varredura (o gerador chama a cada 2 min): põe na fila quem teve o teste pronto e manda os passos vencidos
 export async function rodaFollowups() {
-  if (!waLigado()) return { ligado: false }
+  // 15/10: o e-mail roda sempre; o WhatsApp só com o número ligado
+  const { rodaFollowupEmail } = await import('./followup-email')
+  const email = await rodaFollowupEmail().catch((e: any) => ({ erro: e?.message }))
+  if (!waLigado()) return { ligado: false, email }
   const desde = new Date(Date.now() - 3 * 86400e3).toISOString()
   const prontos = (await db.lista('eventos', { tipo: 'teste_pronto' }, { ordem: 'criado_em', desc: true, limite: 200 })).filter(e => e.criado_em > desde)
   const vistos = new Set<string>(), novos: string[] = []
