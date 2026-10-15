@@ -65,6 +65,8 @@ export async function rodaFollowups() {
     vistos.add(e.cliente_id)
     const c = await db.um('clientes', { id: e.cliente_id })
     if (!c || c.exemplo || c.status !== 'teste') continue
+    // 15/10: o espanhol (Feed al Día) não usa o WhatsApp brasileiro (nome "No Feed", +55): só o follow-up por e-mail, até ter número próprio
+    if (emEspanhol(c.marca as Marca)) continue
     const cv = await db.um('wa_conversas', { telefone: String(c.whatsapp || '') })
     if (!cv) { await agendaFollowup(c); novos.push(c.codigo) }
   }
