@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}))
   const out: any = {}
   // 15/10: ativa o número na Cloud API (registro com o PIN de confirmação em duas etapas, 6 dígitos)
-  if (b.registrar && /^d{6}$/.test(String(b.pin || ''))) {
+  if (b.registrar && /^\d{6}$/.test(String(b.pin || ''))) {
     const r = await g(`/${process.env.OITO_WA_PHONE_ID}/register`, { method: 'POST', body: JSON.stringify({ messaging_product: 'whatsapp', pin: String(b.pin) }) })
     out.registro = r.ok ? 'ativado' : r.j
   }
