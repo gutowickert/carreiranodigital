@@ -9,7 +9,9 @@ import { garanteLoteDoCiclo } from '@/lib/oito/servico'
 
 export const maxDuration = 60
 const nega = () => NextResponse.json({ erro: 'senha' }, { status: 401 })
-const ETAPAS = ['visita', 'form_inicio', 'lead', 'teste_pronto', 'teste_visto', 'assinar_clique', 'assinatura_aberta', 'pagou'] as const
+// 15/10: o funil passa pelo WhatsApp: site → clique no WhatsApp → mandou mensagem → pediu o teste → teste pronto → aprovou → fatura → pagou
+// (o formulário continua como caminho secundário e nas marcas em espanhol: form_inicio e assinar_clique ficam no meio)
+const ETAPAS = ['visita', 'whats_clique', 'wa_conversa', 'form_inicio', 'lead', 'teste_pronto', 'teste_aprovado', 'assinar_clique', 'assinatura_aberta', 'pagou'] as const
 
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return nega()
@@ -40,8 +42,10 @@ export async function GET(req: Request) {
   for (const m of ['todas', 'br', 'es', ...MARCAS]) {
     funil[m] = {}
     for (const et of ETAPAS) {
-      const ev = noPeriodo.filter(e => e.tipo === et && (m === 'todas' || e.marca === m || (m === 'es' || m === 'br') && !!e.marca && cfg.marcas[e.marca as Marca]?.idioma === (m === 'es' ? 'es' : 'pt')))
-      funil[m][et] = new Set(ev.map(e => e.cliente_id || e.sessao || e.id)).size
+      // wa_conversa: conversas distintas do WhatsApp que mandaram mensagem no período (fora as simuladas)
+      const tipo = et === 'wa_conversa' ? 'wa_recebida' : et
+      const ev = noPeriodo.filter(e => e.tipo === tipo && !(e.tipo === 'wa_recebida' && e.detalhe?.simulado) && (m === 'todas' || e.marca === m || (m === 'es' || m === 'br') && !!e.marca && cfg.marcas[e.marca as Marca]?.idioma === (m === 'es' ? 'es' : 'pt')))
+      funil[m][et] = new Set(ev.map(e => et === 'wa_conversa' ? e.detalhe?.conversa || e.id : e.cliente_id || e.sessao || e.id)).size
     }
   }
 
@@ -86,7 +90,7 @@ export async function GET(req: Request) {
       respondido: !!e.detalhe?.respondido, cliente: nomeDe.get(e.cliente_id)?.nome_negocio, codigo: nomeDe.get(e.cliente_id)?.codigo, whatsapp: nomeDe.get(e.cliente_id)?.whatsapp, marca: e.marca })),
     renovacoes: noPeriodo.filter(e => e.tipo === 'renovou').length,
     // o feed mostra acontecimentos (as visitas e os passos do formulário ficam só nas contagens)
-    ultimos: noPeriodo.filter(e => !['visita', 'form_passo', 'form_erro', 'form_inicio', 'area_visita', 'baixou', 'copiou_legenda'].includes(e.tipo)).slice(0, 80).map(e => ({ tipo: e.tipo, marca: e.marca, em: e.criado_em, cliente: nomeDe.get(e.cliente_id)?.nome_negocio || null, detalhe: e.detalhe })),
+    ultimos: noPeriodo.filter(e => !['visita', 'form_passo', 'form_erro', 'form_inicio', 'area_visita', 'baixou', 'copiou_legenda', 'wa_recebida'].includes(e.tipo)).slice(0, 80).map(e => ({ tipo: e.tipo, marca: e.marca, em: e.criado_em, cliente: nomeDe.get(e.cliente_id)?.nome_negocio || null, detalhe: e.detalhe })),
     marcas: cfg.marcas, preco: cfg.preco,
   }, { headers: { 'Cache-Control': 'no-store' } })
 }

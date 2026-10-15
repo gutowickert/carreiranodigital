@@ -498,7 +498,7 @@ function usd(n) { return n ? ' + US$ ' + Math.round(n).toLocaleString('pt-BR') :
 var ST = { teste: ['Teste', 'info'], aguardando_pagamento: ['Aguardando pagamento', 'at'], ativo: ['Ativo', 'bom'], atrasado: ['Atrasado', 'ruim'], cancelado: ['Cancelado', 'neu'] };
 var LST = { espera: ['Esperando', 'neu'], fila: ['Na fila', 'info'], gerando: ['Gerando', 'at'], pronto: ['Pronto', 'bom'], erro: ['Erro', 'ruim'] };
 var LTIPO = { teste: 'Teste grátis', mes: 'Posts do mês', ajuste: 'Ajuste' };
-var ETAPAS = [['visita', 'Visitas'], ['form_inicio', 'Começou o formulário'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['teste_visto', 'Viu o teste'], ['assinar_clique', 'Clicou em assinar'], ['assinatura_aberta', 'Abriu a fatura'], ['pagou', 'Pagou']];
+var ETAPAS = [['visita', 'Visitas no site'], ['whats_clique', 'Clicou no WhatsApp'], ['wa_conversa', 'Mandou mensagem'], ['form_inicio', 'Começou o formulário'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['teste_aprovado', 'Aprovou o teste'], ['assinar_clique', 'Clicou em assinar'], ['assinatura_aberta', 'Abriu a fatura'], ['pagou', 'Pagou']];
 var CTX = { carro_chefe: 'Carro-chefe', servicos: 'Serviços', diferencial: 'Diferencial', publico: 'Público', tom: 'Tom de voz', horario: 'Horário', preco_medio: 'Preço médio', evitar: 'Evitar', extra: 'Extra', novidades: 'Novidades do mês' };
 var C = null, cCarregando = false, cErroRede = null;   // campanhas da Meta (carregam à parte: a Meta pode demorar)
 E.cfm = 'todas'; E.cab = {};
@@ -617,6 +617,8 @@ var EVT = {
   lead: function (e) { return ['🙋', e.c + ' pediu o teste', e.detalhe && e.detalhe.fotos_modo === 'proprias' ? 'vai mandar fotos próprias' : ''] },
   teste_pronto: function (e) { return ['✨', 'O teste de ' + e.c + ' ficou pronto', infoLote(e.detalhe)] },
   teste_visto: function (e) { return ['👀', e.c + ' viu o teste', ''] },
+  whats_clique: function (e) { return ['💬', 'Alguém clicou no WhatsApp do ' + nomeMarca(e.marca), ''] },
+  teste_aprovado: function (e) { return ['👍', e.c + ' aprovou o teste', 'pelo WhatsApp'] },
   assinar_clique: function (e) { return ['👆', e.c + ' clicou em assinar', ''] },
   assinatura_aberta: function (e) { return ['🧾', e.c + ' abriu a fatura', e.detalhe && e.detalhe.simulado ? 'fatura simulada (teste)' : ''] },
   fatura_aberta: function (e) { return ['🧾', e.c + ' abriu a fatura', ''] },
