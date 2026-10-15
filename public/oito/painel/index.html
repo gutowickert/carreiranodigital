@@ -356,6 +356,12 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
 .perp label{display:grid;gap:4px;font-size:12px;font-weight:700;color:var(--mut)}
 .perp input{font:inherit;font-size:15px;padding:8px 10px;border-radius:10px;border:1px solid var(--linha,#ddd);background:var(--card,#fff);color:inherit}
 .perp .btn{padding:9px 16px}
+/* 15/10: o seletor de região (Brasil | LATAM): troca o painel inteiro */
+.reg{margin-left:14px;flex:none;box-shadow:inset 0 0 0 1px var(--bd2)}
+.reg button{font-size:14.5px;padding:8px 16px}
+.reg button[aria-pressed="true"]{background:var(--marca);color:#fff;box-shadow:0 4px 12px var(--marca-sombra)}
+#app.trocando main{opacity:.45;pointer-events:none;transition:opacity .15s}
+@media(max-width:760px){.topo{flex-wrap:wrap}.reg{order:3;width:100%;margin:2px 0 0;display:flex}.reg button{flex:1;justify-content:center}}
 </style></head><body>
 
 <div id="login" hidden>
@@ -376,6 +382,7 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
   <div class="topo">
     <div class="logo" aria-hidden="true">8</div>
     <div class="nome"><b>Oito Posts</b><span class="vivo" id="vivo"><i></i><span id="atual">carregando…</span></span></div>
+    <div class="seg reg" id="reg" role="group" aria-label="Região do painel"><button data-act="reg" data-v="br" aria-pressed="true">🇧🇷 Brasil</button><button data-act="reg" data-v="latam" aria-pressed="false">🌎 LATAM</button></div>
     <div class="dir">
       <button class="ico" data-act="atualizar" title="Atualizar agora" aria-label="Atualizar agora"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 4v5h-5"/></svg></button>
       <button class="ico" data-act="tema" title="Modo claro ou escuro" aria-label="Trocar entre modo claro e escuro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg></button>
@@ -479,21 +486,26 @@ code{font:600 12.5px ui-monospace,Consolas,monospace;background:var(--neu);borde
 <script>
 'use strict';
 // ===== estado =====
-var DOLAR = 5.6, TAXA_PAG = 0.05, IMPOSTO = 0.06, RECARGA = 30000;
+var DOLAR = 5.6, TAXA_HOTMART = 0.10, TAXA_PAG = 0.05, IMPOSTO = 0.06, RECARGA = 30000;
 var SENHA = ''; try { SENHA = localStorage.getItem('oito_senha') || '' } catch (e) {}
 var D = null, carregadoEm = 0, carregando = false, falhou = false;
+// 15/10: a região do painel: br (Salão/Prato/Pata no Feed, R$) ou latam (Feed al Día, US$). ?regiao=br|latam na URL ganha do que ficou salvo.
+var REG = (function () { var q = (location.search.match(/[?&]regiao=(br|latam)\b/) || [])[1]; if (q) { try { localStorage.setItem('oito_regiao', q) } catch (e) {} return q } try { var s = localStorage.getItem('oito_regiao'); if (s === 'br' || s === 'latam') return s } catch (e) {} return 'br' })();
 var E = { aba: 'hoje', dias: 1, fm: 'todas', cq: '', cm: 'todas', cs: 'todos', pf: 'todos', sf: 'todos', cmax: 40, gav: null, voltaFoco: null };
 var M = {
   salao: { nome: 'Salão no Feed', curto: 'Salão', cor: '#c2557a', dominio: 'salaonofeed.com.br', em: '💇' },
   prato: { nome: 'Prato no Feed', curto: 'Prato', cor: '#ff6a2b', dominio: 'pratonofeed.com.br', em: '🍔' },
   pata:  { nome: 'Pata no Feed',  curto: 'Pata',  cor: '#2a7de1', dominio: 'patanofeed.com.br',  em: '🐾' },
-  // 13/10: as marcas em espanhol (Colômbia e Chile, cobradas em dólar pela Hotmart)
-  divino:  { nome: 'Feed Divino',  curto: 'Divino',  cor: '#9b3fb5', dominio: 'feeddivino.com',  em: '💅', es: 1 },
-  sabroso: { nome: 'Feed Sabroso', curto: 'Sabroso', cor: '#d9480f', dominio: 'feedsabroso.com', em: '🌮', es: 1 },
-  peludo:  { nome: 'Feed Peludo',  curto: 'Peludo',  cor: '#2f9e6b', dominio: 'feedpeludo.com',  em: '🐶', es: 1 }
+  // 15/10: o espanhol (Colômbia e Chile, em dólar pela Hotmart) é uma marca só, Feed al Día, com 3 nichos
+  divino:  { nome: 'Feed al Día · Salón',       curto: 'Salón',       cor: '#9b3fb5', dominio: 'feedaldia.com', pasta: 'salon',       em: '💅', es: 1 },
+  sabroso: { nome: 'Feed al Día · Restaurante', curto: 'Restaurante', cor: '#d9480f', dominio: 'feedaldia.com', pasta: 'restaurante', em: '🌮', es: 1 },
+  peludo:  { nome: 'Feed al Día · Mascotas',    curto: 'Mascotas',    cor: '#2f9e6b', dominio: 'feedaldia.com', pasta: 'mascotas',    em: '🐶', es: 1 }
 };
 var MARCAS = ['salao', 'prato', 'pata', 'divino', 'sabroso', 'peludo'];
-function segMarcas() { return [['todas', 'Todas']].concat(MARCAS.map(function (m) { return [m, M[m].curto, M[m].cor] })) }
+function latam() { return REG === 'latam' }
+function regMarcas() { return latam() ? ['divino', 'sabroso', 'peludo'] : ['salao', 'prato', 'pata'] }
+// no Brasil o nome inteiro (Salão no Feed); no LATAM só o nicho (Salón), a marca é uma só
+function segMarcas() { return [['todas', 'Todas']].concat(regMarcas().map(function (m) { return [m, latam() ? M[m].curto : M[m].nome, M[m].cor] })) }
 function usd(n) { return n ? ' + US$ ' + Math.round(n).toLocaleString('pt-BR') : '' }
 var ST = { teste: ['Teste', 'info'], aguardando_pagamento: ['Aguardando pagamento', 'at'], ativo: ['Ativo', 'bom'], atrasado: ['Atrasado', 'ruim'], cancelado: ['Cancelado', 'neu'] };
 var LST = { espera: ['Esperando', 'neu'], fila: ['Na fila', 'info'], gerando: ['Gerando', 'at'], pronto: ['Pronto', 'bom'], erro: ['Erro', 'ruim'] };
@@ -511,6 +523,10 @@ var nf = function (v, d) { return (+v || 0).toLocaleString('pt-BR', { minimumFra
 var R = function (v) { return 'R$ ' + nf(v, 2) };                       // com centavos
 var R0 = function (v) { return 'R$ ' + nf(Math.round(+v || 0)) };      // número grande
 var RU = function (usd) { return R((+usd || 0) * DOLAR) };             // dólar → real
+// 15/10: o dinheiro na moeda da região (Brasil em R$, LATAM em US$; nunca soma as duas)
+var MO = function (v) { return latam() ? 'US$ ' + nf(v, 2) : R(v) };
+var MO0 = function (v) { return latam() ? 'US$ ' + nf(Math.round(+v || 0)) : R0(v) };
+var MI = function (usd) { return latam() ? 'US$ ' + nf(usd, 2) : RU(usd) };   // custo de IA (vem em dólar)
 var P = function (v, d) { return v == null || !isFinite(v) ? '—' : (v * 100).toLocaleString('pt-BR', { maximumFractionDigits: d == null ? 0 : d }) + '%' };
 var TZ = { timeZone: 'America/Sao_Paulo' };
 function dataHora(t) { if (!t) return '—'; return new Date(t).toLocaleString('pt-BR', Object.assign({ day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' }, TZ)) }
@@ -535,8 +551,8 @@ function titulo(t) { return esc(t || 'Post').replace(/\*([^*]+)\*/g, '<em>$1</em
 function semAst(t) { return String(t || '').replace(/\*/g, '') }
 function wa(n) { var d = String(n || '').replace(/\D/g, ''); if (!d) return null; if (d.length <= 11) d = '55' + d; return 'https://wa.me/' + d }
 function foneBonito(n) { var d = String(n || '').replace(/\D/g, ''); if (d.indexOf('55') === 0 && d.length >= 12) d = d.slice(2); return d.length === 11 ? '(' + d.slice(0, 2) + ') ' + d.slice(2, 7) + '-' + d.slice(7) : d.length === 10 ? '(' + d.slice(0, 2) + ') ' + d.slice(2, 6) + '-' + d.slice(6) : (n || '') }
-function areaCliente(c) { return '/oito/' + encodeURIComponent(c.marca) + '/conta.html?c=' + encodeURIComponent(c.codigo) }
-function nomeMarca(m) { return (D && D.marcas && D.marcas[m] && D.marcas[m].nome) || (M[m] && M[m].nome) || m || '' }
+function areaCliente(c) { var p = M[c.marca] && M[c.marca].pasta; return (p ? '/oito/feedaldia/' + p : '/oito/' + encodeURIComponent(c.marca)) + '/conta.html?c=' + encodeURIComponent(c.codigo) }
+function nomeMarca(m) { var x = D && D.marcas && D.marcas[m]; return (x && (x.rotulo || x.nome)) || (M[m] && M[m].nome) || m || '' }
 function dataCurta(d) { var p = String(d).split('-'); return p[2] + '/' + p[1] }
 function periodoTxt() { if (typeof E.dias === 'string') { var p = E.dias.split('|'); return p[1] === p[2] ? 'em ' + dataCurta(p[1]) : 'de ' + dataCurta(p[1]) + ' a ' + dataCurta(p[2]) } return E.dias === 1 ? 'hoje' : 'nos últimos ' + E.dias + ' dias' }
 function perCurto() { if (typeof E.dias === 'string') { var p = E.dias.split('|'); return p[1] === p[2] ? dataCurta(p[1]) : dataCurta(p[1]) + '–' + dataCurta(p[2]) } return E.dias === 1 ? 'hoje' : E.dias + ' d' }
@@ -558,11 +574,11 @@ function carrega(manual) {
   if (!SENHA) { mostraLogin(); return Promise.resolve() }
   if (carregando) return Promise.resolve();
   carregando = true;
-  var dias = E.dias;
-  return api('/api/oito/painel?' + qper(dias)).then(function (d) {
-    if (dias !== E.dias) return;           // trocou de período no meio
+  var dias = E.dias, reg = REG;
+  return api('/api/oito/painel?' + qper(dias) + '&regiao=' + reg).then(function (d) {
+    if (dias !== E.dias || reg !== REG) return;           // trocou de período ou de região no meio
     D = d; carregadoEm = Date.now(); falhou = false;
-    $('login').hidden = true; $('app').hidden = false;
+    $('login').hidden = true; $('app').hidden = false; $('app').classList.remove('trocando');
     desenha(); ticker();
     if (manual) toast('Atualizado');
     carregaCamp();
@@ -571,6 +587,17 @@ function carrega(manual) {
     falhou = true; ticker();
     if (!D) mostraLogin('Sem conexão com o servidor: ' + e.message); else if (manual) toast('Não atualizou: ' + e.message, true);
   }).then(function () { carregando = false });
+}
+// 15/10: troca a região: tudo (funil, números, clientes, fila, posts, ajustes, dinheiro, chamados, WhatsApp, campanhas) vem de novo, filtrado no servidor
+function marcaReg() { document.querySelectorAll('#reg button').forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.v === REG ? 'true' : 'false') }) }
+function mudaRegiao(r) {
+  if ((r !== 'br' && r !== 'latam') || r === REG) return;
+  REG = r; try { localStorage.setItem('oito_regiao', r) } catch (e) {}
+  if (/[?&]regiao=/.test(location.search)) history.replaceState(null, '', location.pathname + location.search.replace(/([?&]regiao=)(br|latam)/, '$1' + r) + location.hash);
+  E.fm = 'todas'; E.cm = 'todas'; E.cfm = 'todas'; E.cab = {}; E.cmax = 40; C = null; cErroRede = null; W = null;
+  marcaReg(); fechaGav(true); $('app').classList.add('trocando');
+  carregando = false; carrega();
+  if (E.aba === 'whats') carregaWhats();
 }
 function acao(corpo, ok, url) {
   return api(url || '/api/oito/painel', { method: 'POST', body: corpo }).then(function () { toast(ok); return carrega() })
@@ -622,7 +649,7 @@ var EVT = {
   assinar_clique: function (e) { return ['👆', e.c + ' clicou em assinar', ''] },
   assinatura_aberta: function (e) { return ['🧾', e.c + ' abriu a fatura', e.detalhe && e.detalhe.simulado ? 'fatura simulada (teste)' : ''] },
   fatura_aberta: function (e) { return ['🧾', e.c + ' abriu a fatura', ''] },
-  pagou: function (e) { return ['💰', e.c + ' pagou', 'venda nova · ' + R0(D.preco || 197) + '/mês'] },
+  pagou: function (e) { return ['💰', e.c + ' pagou', 'venda nova · ' + MO0(D.preco || 197) + '/mês'] },
   renovou: function (e) { return ['🔁', e.c + ' renovou 💰', 'mais um mês'] },
   mes_entregue: function (e) { return ['📦', 'Os posts do mês de ' + e.c + ' ficaram prontos', infoLote(e.detalhe)] },
   ajuste_pedido: function (e) { return ['✏️', e.c + ' pediu ajuste', e.detalhe && e.detalhe.texto ? '“' + String(e.detalhe.texto).slice(0, 140) + '”' : ''] },
@@ -634,7 +661,7 @@ var EVT = {
   baixou: function (e) { return ['⬇️', e.c + ' baixou um post', ''] },
   copiou_legenda: function (e) { return ['📋', e.c + ' copiou uma legenda', ''] }
 };
-function infoLote(d) { if (!d) return ''; var p = []; if (d.segundos) p.push('em ' + dur(d.segundos)); if (d.custo_usd) p.push('custo ' + RU(d.custo_usd)); return p.join(' · ') }
+function infoLote(d) { if (!d) return ''; var p = []; if (d.segundos) p.push('em ' + dur(d.segundos)); if (d.custo_usd) p.push('custo ' + MI(d.custo_usd)); return p.join(' · ') }
 
 function hojeAba() {
   var n = D.numeros, f = D.funil.todas || {}, mq = D.maquina || {}, preco = D.preco || 197;
@@ -650,13 +677,13 @@ function hojeAba() {
   var hb = mq.trabalhador, idade = hb ? (Date.now() - new Date(hb.em)) / 1000 : null;
   var pag = mq.pagamentos;
   var k = '';
-  k += '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '') + '</span>'
-    + '<span class="s">' + n.ativos + ' assinante' + (n.ativos === 1 ? '' : 's') + ' ativo' + (n.ativos === 1 ? '' : 's') + ' × ' + R0(preco) + '</span>'
+  k += '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + (latam() ? MO0(n.mrr_usd) : R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '')) + '</span>'
+    + '<span class="s">' + n.ativos + ' assinante' + (n.ativos === 1 ? '' : 's') + ' ativo' + (n.ativos === 1 ? '' : 's') + ' × ' + MO0(preco) + '</span>'
     + '<div class="mini"><span><b class="num">' + n.aguardando + '</b>aguardando pagamento</span><span><b class="num">' + n.atrasados + '</b>atrasados</span><span><b class="num">' + n.testes + '</b>no teste</span><span><b class="num">' + n.cancelados + '</b>cancelados</span></div></div>';
-  k += '<button class="k" data-act="irmaq"><span class="r"><i class="dot" style="background:var(--bom)"></i>Vendas ' + periodoTxt() + '</span><span class="v num">' + (f.pagou || 0) + '</span><span class="s">' + (f.pagou ? R0(f.pagou * preco) + ' de MRR novo' : 'ninguém pagou ainda') + '</span></button>';
+  k += '<button class="k" data-act="irmaq"><span class="r"><i class="dot" style="background:var(--bom)"></i>Vendas ' + periodoTxt() + '</span><span class="v num">' + (f.pagou || 0) + '</span><span class="s">' + (f.pagou ? MO0(f.pagou * preco) + ' de MRR novo' : 'ninguém pagou ainda') + '</span></button>';
   k += cartaoAnuncios();
   k += '<div class="k"><span class="r"><i class="dot" style="background:var(--info)"></i>Testes gerados</span><span class="v num">' + (f.teste_pronto || 0) + '</span><span class="s">' + (f.lead || 0) + ' pedido' + ((f.lead || 0) === 1 ? '' : 's') + ' ' + periodoTxt() + '</span></div>';
-  k += '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA</span><span class="v num">' + RU(n.custo_ia_usd) + '</span><span class="s">US$ ' + nf(n.custo_ia_usd, 2) + ' ' + periodoTxt() + ' · dólar a ' + R(DOLAR) + '</span></div>';
+  k += '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA</span><span class="v num">' + MI(n.custo_ia_usd) + '</span><span class="s">' + (latam() ? 'em dólar, ' + periodoTxt() : 'US$ ' + nf(n.custo_ia_usd, 2) + ' ' + periodoTxt() + ' · dólar a ' + R(DOLAR)) + '</span></div>';
   k += '<div class="k maq"><span class="r">Saúde da máquina</span><div class="lado"><span class="luz' + (mq.ligado ? '' : ' off') + '" aria-hidden="true"></span><div><div class="estado">Trabalhador ' + (mq.ligado ? 'ligado' : 'desligado') + '</div>'
     + '<span class="s">' + (hb ? 'último contato ' + (idade < 50 ? 'agora' : 'há ' + (idade < 3600 ? Math.round(idade / 60) + ' min' : dur(idade))) + (hb.maquina ? ' · ' + esc(hb.maquina) : '') : 'nunca deu sinal') + '</span></div></div>'
     + '<div class="itens"><button data-act="irprod"><b class="num">' + (mq.fila || 0) + '</b><span>na fila</span></button>'
@@ -700,18 +727,18 @@ function funilHtml(f, cor, etapas) {
 function carregaCamp() {
   if (!SENHA || cCarregando) return;
   cCarregando = true;
-  var dias = E.dias, ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort() }, 50000) : null;
-  fetch('/api/oito/campanhas?' + qper(dias), { headers: { 'x-senha': SENHA }, cache: 'no-store', signal: ctl ? ctl.signal : undefined })
+  var dias = E.dias, reg = REG, ctl = window.AbortController ? new AbortController() : null, t = ctl ? setTimeout(function () { ctl.abort() }, 50000) : null;
+  fetch('/api/oito/campanhas?' + qper(dias) + '&regiao=' + reg, { headers: { 'x-senha': SENHA }, cache: 'no-store', signal: ctl ? ctl.signal : undefined })
     .then(function (r) {
       if (r.status === 401) { var e = new Error('senha'); e.senha = true; throw e }
       return r.json().then(function (j) { if (!r.ok && !j.marcas) throw new Error(j && j.erro || ('erro ' + r.status)); return j });
     })
-    .then(function (j) { if (dias !== E.dias) return; C = limpaCamp(j); C.dias = dias; cErroRede = null })
+    .then(function (j) { if (dias !== E.dias || reg !== REG) return; C = limpaCamp(j); C.dias = dias; C.reg = reg; cErroRede = null })
     .catch(function (e) {
       if (e.senha) { mostraLogin('Senha errada ou expirada.'); return }
-      if (dias === E.dias) cErroRede = e.name === 'AbortError' ? 'a Meta demorou demais pra responder' : e.message;
+      if (dias === E.dias && reg === REG) cErroRede = e.name === 'AbortError' ? 'a Meta demorou demais pra responder' : e.message;
     })
-    .then(function () { if (t) clearTimeout(t); cCarregando = false; if (!D) return; hojeAba(); campanhasAba(); marcasAba(); if (dias !== E.dias) carregaCamp() });
+    .then(function () { if (t) clearTimeout(t); cCarregando = false; if (!D) return; hojeAba(); campanhasAba(); marcasAba(); if (dias !== E.dias || reg !== REG) carregaCamp() });
 }
 // sem gasto, "custo por teste" R$ 0,00 engana: vira "—"
 function limpaCamp(j) {
@@ -720,7 +747,7 @@ function limpaCamp(j) {
   MARCAS.forEach(function (m) { var x = j.marcas && j.marcas[m]; if (!x) return; z(x); (x.campanhas || []).forEach(function (c) { (c.anuncios || []).forEach(z) }) });
   return j;
 }
-function campOk() { return C && C.dias === E.dias }
+function campOk() { return C && C.dias === E.dias && C.reg === REG }
 function campDe(m) { return campOk() && C.marcas ? C.marcas[m] || null : null }
 function erroCampTxt() {
   if (cErroRede) return 'Não deu pra falar com a Meta agora (' + cErroRede + '). O painel tenta de novo sozinho em 30 s; o resto segue normal.';
@@ -740,17 +767,18 @@ function cartaoAnuncios() {
 function somaCamp(m) {
   if (m !== 'todas') return campDe(m);
   var o = { gasto: 0, impressoes: 0, cliques: 0, visitas: 0, testes: 0, assinaturas: 0, vendas: 0, leads_meta: 0, receita: 0 };
-  MARCAS.forEach(function (k) { var x = campDe(k); if (x) for (var f in o) o[f] += +x[f] || 0 });
+  regMarcas().forEach(function (k) { var x = campDe(k); if (x) for (var f in o) o[f] += +x[f] || 0 });
   o.ctr = o.impressoes ? o.cliques / o.impressoes * 100 : null; o.cpc = o.cliques ? o.gasto / o.cliques : null;
   var g = o.gasto > 0;
-  o.custo_por_teste = g && o.testes ? o.gasto / o.testes : null; o.custo_por_venda = g && o.vendas ? o.gasto / o.vendas : null; o.retorno = g ? o.receita / o.gasto : null;
+  // o retorno do total vem do servidor (no LATAM a receita é em dólar e o gasto em real: ele converte)
+  o.custo_por_teste = g && o.testes ? o.gasto / o.testes : null; o.custo_por_venda = g && o.vendas ? o.gasto / o.vendas : null; o.retorno = g ? (C.total && C.total.retorno != null ? C.total.retorno : o.receita / o.gasto) : null;
   return o;
 }
 var pctTxt = function (v) { return v == null || !isFinite(v) ? '—' : nf(v, v < 10 ? 1 : 0) + '%' };   // a API já manda CTR em %
 function campanhasAba() {
   var err = erroCampTxt(), av = '';
   if (err) av += '<div class="aviso ' + (cErroRede ? 'at' : 'info') + '" role="status">⚠️ ' + esc(err) + '</div>';
-  if (campOk() && C.fora && C.fora.length) av += '<div class="aviso at" role="status">🔎 Essas campanhas têm FEED no nome mas não reconhecemos a marca: ' + esc(C.fora.join(', ')) + '. Usa "SALÃO NO FEED", "PRATO NO FEED" ou "PATA NO FEED" no nome.</div>';
+  if (campOk() && C.fora && C.fora.length) av += '<div class="aviso at" role="status">🔎 Essas campanhas têm FEED no nome mas não reconhecemos a marca: ' + esc(C.fora.join(', ')) + '. Usa ' + (latam() ? '"FEED AL DÍA · SALÓN", "FEED AL DÍA · RESTAURANTE" ou "FEED AL DÍA · MASCOTAS"' : '"SALÃO NO FEED", "PRATO NO FEED" ou "PATA NO FEED"') + ' no nome.</div>';
   $('cerro').innerHTML = av;
   $('cfm').innerHTML = segHtml('cfm', segMarcas(), E.cfm);
   if (!campOk()) {
@@ -760,11 +788,11 @@ function campanhasAba() {
   var t = C.total || {}, ret = t.retorno;
   var kc = function (cor, rot, val, sub, extra) { return '<div class="k"' + (extra || '') + '><span class="r"><i class="dot" style="background:' + cor + '"></i>' + rot + '</span><span class="v num">' + val + '</span><span class="s">' + sub + '</span></div>' };
   $('ckpis').innerHTML =
-    '<div class="k hero" style="grid-column:auto"><span class="r">Gasto em anúncio</span><span class="v num">' + R0(t.gasto) + '</span><span class="s">' + periodoTxt() + ' · ' + nf(t.cliques) + ' cliques · ' + nf(t.impressoes) + ' impressões</span></div>'
+    '<div class="k hero" style="grid-column:auto"><span class="r">Gasto em anúncio</span><span class="v num">' + R0(t.gasto) + '</span><span class="s">' + periodoTxt() + ' · ' + nf(t.cliques) + ' cliques · ' + nf(t.impressoes) + ' impressões' + (latam() ? ' · em R$, a moeda da conta de anúncios' : '') + '</span></div>'
     + kc('var(--info)', 'Testes pedidos', nf(t.testes), 'pelo nosso site, ' + periodoTxt())
     + kc('var(--marca)', 'Custo por teste', t.custo_por_teste != null ? R(t.custo_por_teste) : '—', 'gasto ÷ testes pedidos')
-    + kc('var(--bom)', 'Vendas', nf(t.vendas), t.vendas ? R0(t.receita) + ' de primeira mensalidade' : 'nenhuma venda no período')
-    + kc('var(--at)', 'Custo por venda', t.custo_por_venda != null ? R(t.custo_por_venda) : '—', 'gasto ÷ vendas · preço ' + R0(D.preco || 197))
+    + kc('var(--bom)', 'Vendas', nf(t.vendas), t.vendas ? MO0(t.receita) + ' de primeira mensalidade' : 'nenhuma venda no período')
+    + kc('var(--at)', 'Custo por venda', t.custo_por_venda != null ? R(t.custo_por_venda) : '—', 'gasto ÷ vendas · preço ' + MO0(D.preco || 197))
     + kc(ret == null ? 'var(--mut)' : ret >= 3 ? 'var(--bom)' : ret >= 1 ? 'var(--at)' : 'var(--ruim)', 'Retorno', ret != null ? nf(ret, 1) + 'x' : '—', 'receita ÷ gasto (só o 1º mês)', ret != null ? ' style="' + (ret >= 3 ? 'box-shadow:var(--sombra),inset 0 0 0 2px var(--bombg)' : ret < 1 ? 'box-shadow:var(--sombra),inset 0 0 0 2px var(--ruimbg)' : '') + '"' : '');
   // funil com dinheiro
   var f = somaCamp(E.cfm) || {}, cor = E.cfm === 'todas' ? 'linear-gradient(90deg,#5b4bff,#9a6cf0)' : M[E.cfm].cor;
@@ -786,7 +814,7 @@ function campanhasAba() {
     + '<p style="font-size:12px;color:var(--mut);margin-top:8px">A % de cada etapa é sobre a etapa anterior.</p>';
   $('cfunil').innerHTML = h;
   // campanhas por marca
-  var ms = E.cfm === 'todas' ? MARCAS : [E.cfm];
+  var ms = E.cfm === 'todas' ? regMarcas() : [E.cfm];
   $('ccamps').innerHTML = ms.map(function (m) {
     var x = campDe(m) || { campanhas: [] }, cs = x.campanhas || [];
     return '<div class="box"><h2><span style="display:flex;align-items:center;gap:8px">' + M[m].em + ' ' + esc(nomeMarca(m)) + '</span><small>' + cs.length + ' campanha' + (cs.length === 1 ? '' : 's') + ' · ' + R(x.gasto) + ' · ' + nf(x.testes) + ' testes · ' + (x.custo_por_teste != null ? R(x.custo_por_teste) + '/teste' : 'sem teste') + '</small></h2>'
@@ -828,7 +856,7 @@ function clientesAba() {
     var st = ST[c.status] || [c.status, 'neu'];
     var sub = [c.cidade ? esc(c.cidade) + (c.bairro ? ' · ' + esc(c.bairro) : '') : null, c.pago_ate && c.status !== 'teste' ? 'pago até ' + dataCurta(c.pago_ate) : null, 'entrou ' + quando(c.criado_em)].filter(Boolean).join(' · ');
     return '<button class="lin" data-act="cli" data-v="' + esc(c.id) + '"><span class="cor ' + esc(c.marca) + '"></span><div style="min-width:0"><div class="t"><span class="n">' + esc(c.nome || '(sem nome)') + '</span>' + tg(c.marca) + (c.exemplo ? '<span class="tg ex">exemplo</span>' : '') + '</div><div class="sub">' + sub + '</div></div>'
-      + '<div class="dir">' + pill(st) + '<small class="num">IA ' + RU(c.custo_usd) + '</small></div></button>';
+      + '<div class="dir">' + pill(st) + '<small class="num">IA ' + MI(c.custo_usd) + '</small></div></button>';
   }).join('') + (lista.length > mostra.length ? '<button class="bt mais" data-act="cmais">Mostrar mais ' + (lista.length - mostra.length) + '</button>' : '');
 }
 
@@ -865,7 +893,7 @@ function abreCliente(id, soAtualiza) {
     + '<dt>Entrou em</dt><dd>' + dataHora(c.criado_em) + '</dd>'
     + '<dt>Fotos</dt><dd>' + (c.fotos_modo === 'ia' ? 'geradas por IA' : c.fotos_modo === 'proprias' ? 'fotos próprias' : esc(c.fotos_modo || '—')) + '</dd>'
     + '<dt>Lotes</dt><dd>' + c.lotes + (c.ultimo_lote ? ' · último: ' + esc(LTIPO[c.ultimo_lote.tipo] || c.ultimo_lote.tipo) + ' ' + pill(LST[c.ultimo_lote.status] || [c.ultimo_lote.status, 'neu']) : '') + '</dd>'
-    + '<dt>Custo de IA</dt><dd class="num">' + RU(c.custo_usd) + ' <span style="color:var(--mut)">(US$ ' + nf(c.custo_usd, 2) + ', desde o início)</span></dd>'
+    + '<dt>Custo de IA</dt><dd class="num">' + MI(c.custo_usd) + ' <span style="color:var(--mut)">(' + (latam() ? '' : 'US$ ' + nf(c.custo_usd, 2) + ', ') + 'desde o início)</span></dd>'
     + '</dl></div>';
   // contexto
   var ks = Object.keys(ctx).filter(function (k) { var v = ctx[k]; return v != null && v !== '' && !(Array.isArray(v) && !v.length) });
@@ -891,7 +919,7 @@ function loteHtml(l) {
   var sub = [l.qtd ? l.qtd + ' post' + (l.qtd === 1 ? '' : 's') : null, tempo, l.tentativas ? l.tentativas + ' tentativa' + (l.tentativas === 1 ? '' : 's') : null, 'criado ' + quando(l.criado_em)].filter(Boolean).join(' · ');
   return '<div class="lin"><span class="cor ' + esc(l.marca || '') + '"></span><div style="min-width:0"><div class="t"><span class="tg tipo">' + esc(LTIPO[l.tipo] || l.tipo) + '</span><span class="n">' + esc(l.cliente || '(cliente apagado)') + '</span>' + tg(l.marca) + '</div><div class="sub">' + sub + '</div>'
     + (l.erro ? '<div class="erro">' + esc(l.erro) + '</div>' : '') + '</div>'
-    + '<div class="dir">' + pill(st, l.status === 'gerando' ? '<i class="gira" aria-hidden="true"></i>' : '') + '<small class="num">' + (l.custo_usd ? RU(l.custo_usd) : '—') + '</small>'
+    + '<div class="dir">' + pill(st, l.status === 'gerando' ? '<i class="gira" aria-hidden="true"></i>' : '') + '<small class="num">' + (l.custo_usd ? MI(l.custo_usd) : '—') + '</small>'
     + (l.status === 'erro' ? '<button class="bt pq p" data-act="regerar" data-v="' + esc(l.id) + '">Gerar de novo</button>' : '') + '</div></div>';
 }
 function ajusteHtml(a) {
@@ -963,7 +991,8 @@ var W = null, wTimer = null;
 var WMODO = { ia: ['IA atendendo', 'info'], humano: ['Contigo', 'at'], encerrada: ['Encerrada', 'neu'] };
 var WETAPA = { interessado: 'Interessado', duvida: 'Com dúvida', objecao: 'Objeção', quer_assinar: 'Quer assinar', sem_interesse: 'Sem interesse', assinou: 'Assinou' };
 function carregaWhats() {
-  return api('/api/oito/whats').then(function (j) { W = j; whatsAba(); var n = (j.conversas || []).reduce(function (a, c) { return a + (c.nao_lidas || 0) }, 0); var ct = $('wct'); if (ct) { ct.hidden = !n; ct.textContent = n } })
+  var reg = REG;
+  return api('/api/oito/whats?regiao=' + reg).then(function (j) { if (reg !== REG) return; W = j; whatsAba(); var n = (j.conversas || []).reduce(function (a, c) { return a + (c.nao_lidas || 0) }, 0); var ct = $('wct'); if (ct) { ct.hidden = !n; ct.textContent = n } })
     .catch(function (e) { if (e.senha) return mostraLogin('Senha errada ou expirada.'); $('wlista').innerHTML = '<div class="vazio">Não carregou: ' + esc(e.message) + '</div>' });
 }
 function whatsAba() {
@@ -1067,56 +1096,57 @@ function dinheiroAba() {
   var custoTeste = n.custo_teste_medio_usd != null ? n.custo_teste_medio_usd : medTesteFila;
   var custoTesteFonte = n.custo_teste_medio_usd != null ? 'média dos testes ' + periodoTxt() : medTesteFila != null ? 'média dos últimos testes da fila' : null;
   var ajMes = 2;   // estimativa: metade dos 4 ajustes permitidos
-  var iaCli = medMes != null ? medMes * DOLAR + (medAj != null ? medAj * DOLAR * ajMes : 0) : null;
-  var taxa = preco * TAXA_PAG, imp = preco * IMPOSTO, margem = preco - (iaCli || 0) - taxa - imp;
-  var custoPorAtivo = n.ativos ? n.custo_ia_usd * DOLAR / n.ativos : null;
+  var cx = latam() ? 1 : DOLAR, mrr = latam() ? n.mrr_usd : n.mrr, taxaPag = latam() ? TAXA_HOTMART : TAXA_PAG;
+  var iaCli = medMes != null ? medMes * cx + (medAj != null ? medAj * cx * ajMes : 0) : null;
+  var taxa = preco * taxaPag, imp = preco * IMPOSTO, margem = preco - (iaCli || 0) - taxa - imp;
+  var custoPorAtivo = n.ativos ? n.custo_ia_usd * cx / n.ativos : null;
 
   $('dkpis').innerHTML =
-    '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '') + '</span><span class="s">' + n.ativos + ' assinante(s) ativo(s) · no ritmo de ' + R0(n.mrr * 12) + ' por ano</span>'
-    + '<div class="mini"><span><b class="num">' + R0(n.mrr * (margem / preco)) + '</b>sobra estimada por mês</span><span><b class="num">' + n.aguardando + '</b>aguardando (' + R0(n.aguardando * preco) + ')</span><span><b class="num">' + n.atrasados + '</b>atrasados (' + R0(n.atrasados * preco) + ')</span></div></div>'
-    + '<div class="k"><span class="r"><i class="dot" style="background:var(--marca)"></i>Ticket</span><span class="v num">' + R0(preco) + '</span><span class="s">por mês, plano único</span></div>'
-    + '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA ' + periodoTxt() + '</span><span class="v num">' + RU(n.custo_ia_usd) + '</span><span class="s">' + (custoPorAtivo != null ? R(custoPorAtivo) + ' por assinante ativo' : 'sem assinante ativo') + '</span></div>';
+    '<div class="k hero"><span class="r">Receita mensal recorrente</span><span class="v num">' + (latam() ? MO0(mrr) : R0(n.mrr) + (n.mrr_usd ? '<small style="font-size:.5em">' + usd(n.mrr_usd) + '</small>' : '')) + '</span><span class="s">' + n.ativos + ' assinante(s) ativo(s) · no ritmo de ' + MO0(mrr * 12) + ' por ano</span>'
+    + '<div class="mini"><span><b class="num">' + MO0(mrr * (margem / preco)) + '</b>sobra estimada por mês</span><span><b class="num">' + n.aguardando + '</b>aguardando (' + MO0(n.aguardando * preco) + ')</span><span><b class="num">' + n.atrasados + '</b>atrasados (' + MO0(n.atrasados * preco) + ')</span></div></div>'
+    + '<div class="k"><span class="r"><i class="dot" style="background:var(--marca)"></i>Ticket</span><span class="v num">' + MO0(preco) + '</span><span class="s">por mês, plano único</span></div>'
+    + '<div class="k"><span class="r"><i class="dot" style="background:var(--at)"></i>Custo de IA ' + periodoTxt() + '</span><span class="v num">' + MI(n.custo_ia_usd) + '</span><span class="s">' + (custoPorAtivo != null ? MO(custoPorAtivo) + ' por assinante ativo' : 'sem assinante ativo') + '</span></div>';
 
   var linhas = [
     ['Mensalidade', '', preco, ''],
-    ['Custo de IA', medMes != null ? 'lote do mês ' + RU(medMes) + (medAj != null ? ' + ' + ajMes + ' ajustes de ' + RU(medAj) : '') : 'ainda sem lote do mês pronto pra medir', -(iaCli || 0), 'neg'],
-    ['Taxa de pagamento', '~5% do Asaas', -taxa, 'neg'],
+    ['Custo de IA', medMes != null ? 'lote do mês ' + MI(medMes) + (medAj != null ? ' + ' + ajMes + ' ajustes de ' + MI(medAj) : '') : 'ainda sem lote do mês pronto pra medir', -(iaCli || 0), 'neg'],
+    ['Taxa de pagamento', latam() ? '~' + Math.round(TAXA_HOTMART * 100) + '% da Hotmart' : '~5% do Asaas', -taxa, 'neg'],
     ['Imposto', '~6% (Simples)', -imp, 'neg']
   ];
   var tot = Math.max(1, preco);
-  $('unit').innerHTML = '<div class="pilha" role="img" aria-label="De ' + R(preco) + ', sobram ' + R(margem) + '"><i style="width:' + (margem / tot * 100) + '%;background:var(--bom)"></i><i style="width:' + ((iaCli || 0) / tot * 100) + '%;background:var(--at)"></i><i style="width:' + (taxa / tot * 100) + '%;background:var(--info)"></i><i style="width:' + (imp / tot * 100) + '%;background:var(--salao)"></i></div>'
-    + '<div class="conta">' + linhas.map(function (l) { return '<div class="l ' + l[3] + '"><span>' + l[0] + (l[3] ? '<span class="est">estimado</span>' : '') + (l[1] ? '<small>' + esc(l[1]) + '</small>' : '') + '</span><b class="num">' + (l[2] < 0 ? '− ' + R(-l[2]) : R(l[2])) + '</b></div>' }).join('')
-    + '<div class="l tot"><span>Sobra por cliente por mês<small style="color:inherit;opacity:.8">' + P(margem / preco) + ' da mensalidade</small></span><b class="num">' + R(margem) + '</b></div></div>';
+  $('unit').innerHTML = '<div class="pilha" role="img" aria-label="De ' + MO(preco) + ', sobram ' + MO(margem) + '"><i style="width:' + (margem / tot * 100) + '%;background:var(--bom)"></i><i style="width:' + ((iaCli || 0) / tot * 100) + '%;background:var(--at)"></i><i style="width:' + (taxa / tot * 100) + '%;background:var(--info)"></i><i style="width:' + (imp / tot * 100) + '%;background:var(--salao)"></i></div>'
+    + '<div class="conta">' + linhas.map(function (l) { return '<div class="l ' + l[3] + '"><span>' + l[0] + (l[3] ? '<span class="est">estimado</span>' : '') + (l[1] ? '<small>' + esc(l[1]) + '</small>' : '') + '</span><b class="num">' + (l[2] < 0 ? '− ' + MO(-l[2]) : MO(l[2])) + '</b></div>' }).join('')
+    + '<div class="l tot"><span>Sobra por cliente por mês<small style="color:inherit;opacity:.8">' + P(margem / preco) + ' da mensalidade</small></span><b class="num">' + MO(margem) + '</b></div></div>';
 
   var conv = f.teste_pronto ? (f.pagou || 0) / f.teste_pronto : null;
-  var porVenda = custoTeste != null && conv ? custoTeste * DOLAR / conv : null;
+  var porVenda = custoTeste != null && conv ? custoTeste * cx / conv : null;
   $('tper').textContent = periodoTxt();
   $('cteste').innerHTML = '<div class="conta">'
-    + '<div class="l"><span>Custo médio de um teste (2 posts)' + (custoTesteFonte ? '<small>' + custoTesteFonte + '</small>' : '<small>nenhum teste pronto pra medir ainda</small>') + '</span><b class="num">' + (custoTeste != null ? R(custoTeste * DOLAR) : '—') + '</b></div>'
+    + '<div class="l"><span>Custo médio de um teste (2 posts)' + (custoTesteFonte ? '<small>' + custoTesteFonte + '</small>' : '<small>nenhum teste pronto pra medir ainda</small>') + '</span><b class="num">' + (custoTeste != null ? MO(custoTeste * cx) : '—') + '</b></div>'
     + '<div class="l"><span>Testes prontos<small>' + periodoTxt() + '</small></span><b class="num">' + (f.teste_pronto || 0) + '</b></div>'
     + '<div class="l"><span>Vendas<small>' + periodoTxt() + '</small></span><b class="num">' + (f.pagou || 0) + '</b></div>'
     + '<div class="l"><span>Conversão do teste à venda</span><b class="num">' + P(conv, 1) + '</b></div>'
-    + '<div class="l tot" style="background:var(--marca-bg)"><span style="color:var(--marca-tx)">Custo em testes por venda<small style="color:inherit;opacity:.85">custo do teste ÷ conversão</small></span><b class="num" style="color:var(--marca-tx)">' + (porVenda != null ? R(porVenda) : '—') + '</b></div></div>'
-    + (porVenda != null ? '<p class="nota" style="margin-top:12px">Cada venda gasta ' + R(porVenda) + ' em testes que não viraram cliente: ' + P(porVenda / preco, 1) + ' da primeira mensalidade.</p>'
+    + '<div class="l tot" style="background:var(--marca-bg)"><span style="color:var(--marca-tx)">Custo em testes por venda<small style="color:inherit;opacity:.85">custo do teste ÷ conversão</small></span><b class="num" style="color:var(--marca-tx)">' + (porVenda != null ? MO(porVenda) : '—') + '</b></div></div>'
+    + (porVenda != null ? '<p class="nota" style="margin-top:12px">Cada venda gasta ' + MO(porVenda) + ' em testes que não viraram cliente: ' + P(porVenda / preco, 1) + ' da primeira mensalidade.</p>'
       : '<p class="nota" style="margin-top:12px">Aparece quando houver teste pronto e venda no período. Com poucos dados, olha em 30 dias.</p>');
 
-  $('dnota').innerHTML = '<b>O que é estimativa:</b> o dólar a ' + R(DOLAR) + '; a taxa de pagamento (~5%) e o imposto (~6%) são aproximados; o custo de IA por cliente usa a média dos lotes do mês e dos ajustes que aparecem na fila (os últimos 80 lotes) e supõe ' + ajMes + ' ajustes por mês. O MRR e os assinantes são exatos (contados do banco, sem os clientes de exemplo). Não entra aqui o gasto com anúncio.';
+  $('dnota').innerHTML = '<b>O que é estimativa:</b> ' + (latam() ? 'tudo em dólar (a Hotmart cobra em US$ e a IA custa em US$); a taxa da Hotmart (~' + Math.round(TAXA_HOTMART * 100) + '%) e o imposto (~6%) são aproximados;' : 'o dólar a ' + R(DOLAR) + '; a taxa de pagamento (~5%) e o imposto (~6%) são aproximados;') + ' o custo de IA por cliente usa a média dos lotes do mês e dos ajustes que aparecem na fila (os últimos 80 lotes) e supõe ' + ajMes + ' ajustes por mês. O MRR e os assinantes são exatos (contados do banco, sem os clientes de exemplo). Não entra aqui o gasto com anúncio.';
 }
 
 // ===== aba Marcas =====
 function marcasAba() {
   var cl = (D.clientes || []).filter(function (c) { return !c.exemplo }), preco = D.preco || 197;
-  $('marcas').innerHTML = MARCAS.map(function (m) {
+  $('marcas').innerHTML = regMarcas().map(function (m) {
     var cfg = (D.marcas && D.marcas[m]) || {}, f = D.funil[m] || {}, at = cl.filter(function (c) { return c.marca === m && c.status === 'ativo' }).length;
     var dom = cfg.dominio || M[m].dominio, mx = Math.max(1, f.visita || 0);
-    var base = location.origin + '/oito/' + m + '/';
-    return '<article class="mc"><div class="cab" style="background:linear-gradient(135deg,' + M[m].cor + ',' + M[m].cor + 'cc)"><b>' + M[m].em + ' ' + esc(cfg.nome || M[m].nome) + '</b><span>' + esc(dom) + '</span></div><div class="corpo">'
-      + '<div class="ns"><div><b class="num">' + at + '</b><span>ativos · ' + R0(at * preco) + '</span></div><div><b class="num">' + (f.teste_pronto || 0) + '</b><span>testes ' + perCurto() + '</span></div><div><b class="num">' + (f.pagou || 0) + '</b><span>vendas ' + perCurto() + '</span></div></div>'
+    var pg = M[m].pasta ? '/oito/feedaldia/' + M[m].pasta + '/' : '/oito/' + m + '/', domTx = M[m].pasta ? dom + '/' + M[m].pasta : dom;
+    return '<article class="mc"><div class="cab" style="background:linear-gradient(135deg,' + M[m].cor + ',' + M[m].cor + 'cc)"><b>' + M[m].em + ' ' + esc(nomeMarca(m)) + '</b><span>' + esc(domTx) + '</span></div><div class="corpo">'
+      + '<div class="ns"><div><b class="num">' + at + '</b><span>ativos · ' + MO0(at * preco) + '</span></div><div><b class="num">' + (f.teste_pronto || 0) + '</b><span>testes ' + perCurto() + '</span></div><div><b class="num">' + (f.pagou || 0) + '</b><span>vendas ' + perCurto() + '</span></div></div>'
       + (function () { var cm = campDe(m); return '<div class="ns n2"><div><b class="num">' + (cm ? R(cm.gasto) : '—') + '</b><span>gasto em anúncio ' + perCurto() + '</span></div><div><b class="num">' + (cm && cm.custo_por_teste != null ? R(cm.custo_por_teste) : '—') + '</b><span>custo por teste</span></div></div>' })()
-      + '<div><div class="minif" role="img" aria-label="Funil ' + esc(cfg.nome || M[m].nome) + ': ' + ETAPAS.map(function (e) { return e[1] + ' ' + (f[e[0]] || 0) }).join(', ') + '">' + ETAPAS.map(function (e, i) { return '<i title="' + e[1] + ': ' + (f[e[0]] || 0) + '" style="height:' + Math.max(4, (f[e[0]] || 0) / mx * 100) + '%;background:' + M[m].cor + ';opacity:' + (1 - i * .08) + '"></i>' }).join('') + '</div>'
+      + '<div><div class="minif" role="img" aria-label="Funil ' + esc(nomeMarca(m)) + ': ' + ETAPAS.map(function (e) { return e[1] + ' ' + (f[e[0]] || 0) }).join(', ') + '">' + ETAPAS.map(function (e, i) { return '<i title="' + e[1] + ': ' + (f[e[0]] || 0) + '" style="height:' + Math.max(4, (f[e[0]] || 0) / mx * 100) + '%;background:' + M[m].cor + ';opacity:' + (1 - i * .08) + '"></i>' }).join('') + '</div>'
       + '<div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:6px"><span>' + (f.visita || 0) + ' visitas</span><span>visita → venda ' + P(f.visita ? (f.pagou || 0) / f.visita : null, 1) + '</span></div></div>'
       + (cfg.nicho ? '<p class="nicho">' + esc(cfg.nicho) + '</p>' : '')
-      + '<div class="links"><a href="/oito/' + m + '/" target="_blank" rel="noopener">Página de venda <small>/oito/' + m + '/</small></a><a href="/oito/' + m + '/comecar.html" target="_blank" rel="noopener">Formulário <small>/oito/' + m + '/comecar.html</small></a><a href="https://' + esc(dom) + '" target="_blank" rel="noopener">Domínio <small>' + esc(dom) + '</small></a></div>'
+      + '<div class="links"><a href="' + pg + '" target="_blank" rel="noopener">Página de venda <small>' + pg + '</small></a><a href="' + pg + 'comecar.html" target="_blank" rel="noopener">Formulário <small>' + pg + 'comecar.html</small></a><a href="https://' + esc(domTx) + '" target="_blank" rel="noopener">Domínio <small>' + esc(domTx) + '</small></a></div>'
       + '<button class="bt" data-act="vermarca" data-v="' + m + '">Ver clientes do ' + esc(M[m].curto) + '</button>'
       + '</div></article>';
   }).join('');
@@ -1142,6 +1172,7 @@ document.addEventListener('click', function (ev) {
   if (a === 'fluz') { if (ev.target === b || b.classList.contains('fecha')) fechaFoto(); return }
   switch (a) {
     case 'aba': fechaGav(true); mudaAba(v); break;
+    case 'reg': mudaRegiao(v); break;
     case 'cfm': E.cfm = v; campanhasAba(); break;
     case 'camp': E.cab[v] = !E.cab[v]; campanhasAba(); var bt2 = document.querySelector('[data-act="camp"][data-v="' + (window.CSS && CSS.escape ? CSS.escape(v) : v) + '"]'); if (bt2) bt2.focus(); break;
     case 'dias':
@@ -1255,6 +1286,7 @@ try { aplicaTema(localStorage.getItem('oito_tema')) } catch (e) {}
 
 // ===== começa =====
 mudaAba(location.hash.slice(1) || 'hoje', false);
+marcaReg();
 if (SENHA) carrega(); else mostraLogin();
 setInterval(ticker, 1000);
 setInterval(function () { if (!$('app').hidden && !document.hidden) carrega() }, RECARGA);

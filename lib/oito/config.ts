@@ -58,6 +58,11 @@ export const emEspanhol = (m: Marca) => oitoConfig.marcas[m]?.idioma === 'es'
 export const feedAlDia = (m: Marca) => oitoConfig.marcas[m]?.grupo === 'feedaldia'
 // o nome pra listas internas (painel, avisos): "Feed al Día · Salón" em vez de três "Feed al Día"
 export const rotuloMarca = (m: Marca) => oitoConfig.marcas[m]?.rotulo || oitoConfig.marcas[m]?.nome || m
-export const precoTxt = (m: Marca) => oitoConfig.marcas[m].moeda === 'USD' ? `US$ ${oitoConfig.marcas[m].preco}` : `R$ ${oitoConfig.marcas[m].preco}`
+// 15/10: o painel separado em duas regiões: br = Salão/Prato/Pata no Feed (R$, Asaas), latam = Feed al Día (US$, Hotmart).
+// Registro sem marca (ou com marca desconhecida) fica no Brasil. As rotas do painel aceitam ?regiao=br|latam.
+export type Regiao = 'br' | 'latam'
+export const regiaoDe = (m: any): Regiao => oitoConfig.marcas[m as Marca]?.idioma === 'es' ? 'latam' : 'br'
+export const lerRegiao = (v: string | null): Regiao | null => v === 'br' || v === 'latam' ? v : null
+export const precoTxt =(m: Marca) => oitoConfig.marcas[m].moeda === 'USD' ? `US$ ${oitoConfig.marcas[m].preco}` : `R$ ${oitoConfig.marcas[m].preco}`
 // a mesma senha do painel do Recado protege o painel e o trabalhador (não precisa variável nova na Vercel)
 export const senhaOk = (s: string | null) => !!s && !!process.env.RECADO_PAINEL_SENHA && s === process.env.RECADO_PAINEL_SENHA.replace(/^"|"$/g, '')

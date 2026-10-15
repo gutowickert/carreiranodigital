@@ -1,11 +1,12 @@
 // Oito Posts: o WhatsApp de venda no painel (14/10). Tudo com a senha do painel (x-senha).
 //   GET                    → as conversas (as mais recentes primeiro) + se o número está ligado
+//   GET ?regiao=br|latam   → (15/10) só as conversas da região, pela marca da conversa ou do cliente; conversa sem marca fica no Brasil
 //   GET ?id=               → a conversa inteira (zera as não lidas)
 //   POST {acao:'responder', id, texto}      → o dono escreve (só dentro da janela de 24 h; fora dela a Meta só aceita modelo)
 //   POST {acao:'modo', id, modo:'ia'|'humano'|'encerrada'}
 //   POST {acao:'followup'}                  → roda a varredura do follow-up (o gerador chama a cada 2 min)
 import { NextResponse } from 'next/server'
-import { senhaOk } from '@/lib/oito/config'
+import { senhaOk, regiaoDe, lerRegiao } from '@/lib/oito/config'
 import { oitoDb as db } from '@/lib/oito/db'
 import { enviaTexto, registraSaida, waLigado } from '@/lib/oito/wa'
 import { rodaFollowups, atendeConversa } from '@/lib/oito/vendedor'
@@ -15,7 +16,7 @@ const nega = () => NextResponse.json({ erro: 'senha' }, { status: 401 })
 
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return nega()
-  const id = new URL(req.url).searchParams.get('id')
+  const sp = new URL(req.url).searchParams, id = sp.get('id')
   if (id) {
     const cv = await db.um('wa_conversas', { id })
     if (!cv) return NextResponse.json({ erro: 'conversa' }, { status: 404 })
@@ -27,7 +28,15 @@ export async function GET(req: Request) {
   // 15/10: painel zerado: só as conversas com movimento depois de painel_desde (quem responder de novo volta pra lista)
   const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
   const cvs = (await db.lista('wa_conversas', {}, { ordem: 'atualizado_em', desc: true, limite: 200 })).filter(cv => !zero || String(cv.ultima_msg_em || cv.atualizado_em || '') >= zero)
-  return NextResponse.json({ ligado: waLigado(), conversas: cvs }, { headers: { 'Cache-Control': 'no-store' } })
+  const regiao = lerRegiao(sp.get('regiao'))
+  let lista = cvs
+  if (regiao) {
+    const semMarca = [...new Set(cvs.filter(cv => !cv.marca && cv.cliente_id).map(cv => cv.cliente_id))]
+    const marcaCli = new Map<string, any>()
+    if (semMarca.length) for (const c of await db.lista('clientes', {})) marcaCli.set(c.id, c.marca)
+    lista = cvs.filter(cv => regiaoDe(cv.marca || (cv.cliente_id ? marcaCli.get(cv.cliente_id) : null)) === regiao)
+  }
+  return NextResponse.json({ ligado: waLigado(), regiao, conversas: lista }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 export async function POST(req: Request) {

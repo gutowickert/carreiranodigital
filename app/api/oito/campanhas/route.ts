@@ -3,10 +3,11 @@
 // ("SALÃO NO FEED", "PRATO NO FEED", "PATA NO FEED", com ou sem acento/espaço). Cruza com o funil do site: visitas, testes, assinaturas, vendas.
 // Por anúncio, o cruzamento usa utm_content = nome do anúncio (no Gerenciador: utm_content={{ad.name}}).
 //   GET ?dias=1|7|30  (x-senha)
+//       &regiao=br|latam  (15/10) só as campanhas e o site da região; o total da região fica na moeda dela (sem somar R$ com US$). Sem o parâmetro, tudo.
 import { NextResponse } from 'next/server'
 import { getAnunciosDia, campanhasCriadasEm, type AnuncioDia } from '@/lib/meta-ads'
 import { oitoDb as db } from '@/lib/oito/db'
-import { senhaOk, oitoConfig as cfg, Marca, MARCAS, rotuloMarca } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, Marca, MARCAS, rotuloMarca, regiaoDe, lerRegiao } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '')
@@ -40,6 +41,7 @@ export async function GET(req: Request) {
   if (de && ateP && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(de) && /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(ateP) && de <= ateP) { desdeDia = de; ate = ateP < hojeBR() ? ateP : hojeBR() }
   const desdeTs = `${desdeDia}T03:00:00.000Z`, fimTs = new Date(new Date(ate + 'T03:00:00.000Z').getTime() + 86400e3).toISOString()
   const conta = process.env.OITO_META_CONTA || process.env.RECADO_META_CONTA
+  const regiao = lerRegiao(u.searchParams.get('regiao')), MS = MARCAS.filter(m => !regiao || regiaoDe(m) === regiao)
 
   const [meta, clientes, eventos] = await Promise.all([
     conta ? getAnunciosDia(conta, desdeDia, ate) : Promise.resolve({ ok: false, error: 'falta a conta de anúncios (OITO_META_CONTA)', linhas: [] as AnuncioDia[] }),
@@ -48,7 +50,7 @@ export async function GET(req: Request) {
   ])
   // 15/10: painel zerado: campanhas criadas antes de painel_desde ficam de fora (os números da Meta são por dia, não dá pra cortar na hora)
   const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
-  let linhas = (meta.linhas || []).filter(l => marcaDaCampanha(l.campaign_name))
+  let linhas = (meta.linhas || []).filter(l => { const m = marcaDaCampanha(l.campaign_name); return !!m && MS.includes(m) })
   // as campanhas têm o próprio corte (campanhas_desde): zerar o site de novo não pode esconder as campanhas novas que já estão rodando
   const corteCamp = String((await db.um('estado', { chave: 'campanhas_desde' }).catch(() => null))?.valor || '') || zero
   if (corteCamp) { const criadas = await campanhasCriadasEm(linhas.map(l => l.campaign_id)); linhas = linhas.filter(l => (criadas.get(l.campaign_id) || '9') >= corteCamp) }
@@ -58,7 +60,7 @@ export async function GET(req: Request) {
 
   // o site, por marca e por anúncio (utm_content)
   const site: Record<string, any> = {}
-  for (const m of MARCAS) site[m] = { visitas: new Set(), testes: 0, testes_meta: 0, assinaturas: 0, vendas: 0, por_anuncio: {} as Record<string, { testes: number; vendas: number }> }
+  for (const m of MS) site[m] = { visitas: new Set(), testes: 0, testes_meta: 0, assinaturas: 0, vendas: 0, por_anuncio: {} as Record<string, { testes: number; vendas: number }> }
   for (const e of ev) {
     const s = site[e.marca as string]; if (!s) continue
     const c: any = e.cliente_id ? porCliente.get(e.cliente_id) : null
@@ -72,7 +74,7 @@ export async function GET(req: Request) {
 
   // a Meta, por marca → campanha → anúncio
   const marcas: any = {}
-  for (const m of MARCAS) {
+  for (const m of MS) {
     const ls = linhas.filter(l => marcaDaCampanha(l.campaign_name) === m)
     const soma = (f: keyof AnuncioDia) => ls.reduce((a, l) => a + (+l[f] || 0), 0)
     const gasto = soma('gasto'), cliques = soma('cliques'), impressoes = soma('impressoes'), s = site[m]
@@ -95,12 +97,14 @@ export async function GET(req: Request) {
           .sort((a: any, b: any) => b.gasto - a.gasto) })).sort((a, b) => b.gasto - a.gasto),
     }
   }
-  // receita somada em reais (as marcas em dólar convertidas pela cotação de OITO_USD_BRL, padrão 5,40)
-  const tot = (f: string) => MARCAS.reduce((a, m) => a + (+marcas[m][f] || 0) * (f === 'receita' && cfg.marcas[m].moeda === 'USD' ? USD_BRL : 1), 0)
+  // receita somada em reais (as marcas em dólar convertidas pela cotação de OITO_USD_BRL, padrão 5,40);
+  // com ?regiao=latam a receita fica em dólar (todas as marcas da região são US$) e o retorno converte só pra dividir pelo gasto
+  const emUsd = regiao === 'latam'
+  const tot = (f: string) => MS.reduce((a, m) => a + (+marcas[m][f] || 0) * (f === 'receita' && !emUsd && cfg.marcas[m].moeda === 'USD' ? USD_BRL : 1), 0)
   return NextResponse.json({
-    ok: !!meta.ok, erro: meta.ok ? null : meta.error, conta: conta ? 'ok' : null, desde: desdeDia, ate, dias,
+    ok: !!meta.ok, erro: meta.ok ? null : meta.error, conta: conta ? 'ok' : null, desde: desdeDia, ate, dias, regiao, moeda_receita: emUsd ? 'USD' : 'BRL',
     total: { gasto: r2(tot('gasto')), cliques: tot('cliques'), impressoes: tot('impressoes'), testes: tot('testes'), vendas: tot('vendas'), receita: tot('receita'),
-      custo_por_teste: div(tot('gasto'), tot('testes')), custo_por_venda: div(tot('gasto'), tot('vendas')), retorno: div(tot('receita'), tot('gasto')) },
+      custo_por_teste: div(tot('gasto'), tot('testes')), custo_por_venda: div(tot('gasto'), tot('vendas')), retorno: div(tot('receita') * (emUsd ? USD_BRL : 1), tot('gasto')) },
     marcas,
     // campanhas da conta que não entraram (pra conferir o nome): só as que têm "FEED" no nome
     fora: [...new Set((meta.linhas || []).filter(l => !marcaDaCampanha(l.campaign_name) && /FEED/i.test(l.campaign_name)).map(l => l.campaign_name))].slice(0, 10),

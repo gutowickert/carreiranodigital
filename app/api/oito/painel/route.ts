@@ -1,9 +1,10 @@
 // Oito Posts: o painel do dono (mesma senha do painel do Recado, no cabeçalho x-senha).
 //   GET ?dias=1|7|30            → funil por marca, clientes, fila, posts recentes, mensagens, dinheiro e saúde da máquina
+//       &regiao=br|latam        → (15/10) só os dados da região: br = Salão/Prato/Pata no Feed (R$), latam = Feed al Día (US$). Sem o parâmetro, tudo.
 //   POST {acao, ...}            → regerar · pago_manual · cancelar · suporte_ok · apagar · exemplo
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
-import { senhaOk, oitoConfig as cfg, Marca, MARCAS } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, Marca, MARCAS, PRECO_USD, regiaoDe, lerRegiao } from '@/lib/oito/config'
 import { cancelaAssinatura, asaasHoje, asaasMaisUmMes } from '@/lib/oito/asaas'
 import { garanteLoteDoCiclo } from '@/lib/oito/servico'
 
@@ -36,9 +37,14 @@ export async function GET(req: Request) {
   // 15/10: o painel zerado (pedido do Guto): conta só o que aconteceu depois de oito_estado.painel_desde; os dados antigos continuam no banco
   const zero = String(estado.find(e => e.chave === 'painel_desde')?.valor || '')
   const depois = (d: any) => !zero || String(d || '') >= zero
+  // 15/10: ?regiao=br|latam corta tudo aqui no servidor (não vai dado da outra região); sem o parâmetro, as duas juntas como antes
+  const regiao = lerRegiao(u.searchParams.get('regiao'))
+  const marcaCli = new Map(clientesT.map(c => [c.id, c.marca]))
+  const naReg = (marca: any, clienteId?: any) => !regiao || regiaoDe(marca || (clienteId ? marcaCli.get(clienteId) : null)) === regiao
+  const MS = MARCAS.filter(m => !regiao || regiaoDe(m) === regiao)
   const exemplo = new Set(clientesT.filter(c => c.exemplo).map(c => c.id))
-  const clientes = clientesT.filter(c => depois(c.criado_em)), lotes = lotesT.filter(l => depois(l.criado_em))
-  const eventos = eventosT.filter(e => depois(e.criado_em)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em))
+  const clientes = clientesT.filter(c => depois(c.criado_em) && naReg(c.marca)), lotes = lotesT.filter(l => depois(l.criado_em) && naReg(null, l.cliente_id))
+  const eventos = eventosT.filter(e => depois(e.criado_em) && naReg(e.marca, e.cliente_id)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em) && naReg(ch.marca, ch.cliente_id))
   const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
   const noPeriodoT = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
   // 15/10: clique sem visita é robô (o revisor da Meta abre a página e clica em todos os botões no mesmo segundo): só conta clique de sessão que carregou a página
@@ -47,7 +53,7 @@ export async function GET(req: Request) {
 
   // funil: pessoas distintas por etapa (sessão antes do cadastro, cliente depois)
   const funil: Record<string, Record<string, number>> = {}
-  for (const m of ['todas', 'br', 'es', ...MARCAS]) {
+  for (const m of regiao ? ['todas', ...MS] : ['todas', 'br', 'es', ...MARCAS]) {
     funil[m] = {}
     for (const et of ETAPAS) {
       // wa_conversa: conversas distintas do WhatsApp que mandaram mensagem no período (fora as simuladas)
@@ -66,12 +72,12 @@ export async function GET(req: Request) {
   const hb = estado.find(e => e.chave === 'trabalhador')?.valor
   const pag = estado.find(e => e.chave === 'pagamentos')?.valor
 
-  const recentes = (await db.lista('posts', {}, { ordem: 'criado_em', desc: true, limite: 40 })).filter(p => p.status !== 'substituido')
+  const recentes = (await db.lista('posts', {}, { ordem: 'criado_em', desc: true, limite: regiao ? 160 : 40 })).filter(p => p.status !== 'substituido' && naReg(null, p.cliente_id)).slice(0, 40)
   const links = await db.links(recentes.map(p => p.imagem_path))
   const nomeDe = new Map(clientes.map(c => [c.id, c]))
 
   return NextResponse.json({
-    modo: db.modo(), dias, desde, fim, pagamento_ligado: !!process.env.ASAAS_API_KEY, hotmart_ligado: !!process.env.OITO_HOTMART_HOTTOK,
+    modo: db.modo(), dias, desde, fim, regiao, moeda: regiao === 'latam' ? 'USD' : 'BRL', pagamento_ligado: !!process.env.ASAAS_API_KEY, hotmart_ligado: !!process.env.OITO_HOTMART_HOTTOK,
     numeros: {
       ativos: ativos.length, mrr: ativos.filter(c => cfg.marcas[c.marca as Marca]?.moeda !== 'USD').length * cfg.preco, mrr_usd: ativos.filter(c => cfg.marcas[c.marca as Marca]?.moeda === 'USD').reduce((s, c) => s + cfg.marcas[c.marca as Marca].preco, 0), atrasados: reais.filter(c => c.status === 'atrasado').length,
       aguardando: reais.filter(c => c.status === 'aguardando_pagamento').length, testes: reais.filter(c => c.status === 'teste').length,
@@ -99,7 +105,7 @@ export async function GET(req: Request) {
     renovacoes: noPeriodo.filter(e => e.tipo === 'renovou').length,
     // o feed mostra acontecimentos (as visitas e os passos do formulário ficam só nas contagens)
     ultimos: noPeriodo.filter(e => !['visita', 'form_passo', 'form_erro', 'form_inicio', 'area_visita', 'baixou', 'copiou_legenda', 'wa_recebida'].includes(e.tipo)).slice(0, 80).map(e => ({ tipo: e.tipo, marca: e.marca, em: e.criado_em, cliente: nomeDe.get(e.cliente_id)?.nome_negocio || null, detalhe: e.detalhe })),
-    marcas: cfg.marcas, preco: cfg.preco,
+    marcas: Object.fromEntries(MS.map(m => [m, cfg.marcas[m]])), preco: regiao === 'latam' ? PRECO_USD : cfg.preco,
   }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
