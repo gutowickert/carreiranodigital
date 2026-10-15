@@ -11,6 +11,7 @@ const api = async (caminho: string, opts: any = {}) => {
 }
 const PAGO = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH']
 const hoje = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+const maisDias = (n: number) => new Date(Date.now() - 3 * 3600e3 + n * 86400e3).toISOString().slice(0, 10)
 const maisUmMes = (d: string) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCMonth(x.getUTCMonth() + 1); return x.toISOString().slice(0, 10) }
 export const simulado = () => !process.env.ASAAS_API_KEY
 // na Vercel nunca simula: sem chave, a assinatura falha (senão daria pra "pagar" de mentira)
@@ -20,7 +21,7 @@ export async function criaAssinatura(d: { codigo: string; marcaNome: string; nom
   if (simulado()) return { customer: 'sim-' + d.codigo, assinatura: 'sim-' + d.codigo, fatura: null as string | null }
   const fone = d.whatsapp.replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
   const c = await api('/customers', { method: 'POST', body: JSON.stringify({ name: d.nome, cpfCnpj: d.documento.replace(/\D/g, ''), email: d.email, mobilePhone: fone, externalReference: d.codigo, notificationDisabled: false }) })
-  const s = await api('/subscriptions', { method: 'POST', body: JSON.stringify({ customer: c.id, billingType: 'UNDEFINED', value: d.valor, nextDueDate: hoje(), cycle: 'MONTHLY', description: `${d.marcaNome} · 8 posts por mês`, externalReference: d.codigo }) })
+  const s = await api('/subscriptions', { method: 'POST', body: JSON.stringify({ customer: c.id, billingType: 'UNDEFINED', value: d.valor, nextDueDate: maisDias(2), cycle: 'MONTHLY', description: `${d.marcaNome} · 8 posts por mês`, externalReference: d.codigo }) })
   const p = await api(`/subscriptions/${s.id}/payments`)
   return { customer: c.id as string, assinatura: s.id as string, fatura: (p.data?.[0]?.invoiceUrl as string) || null }
 }
@@ -38,6 +39,19 @@ export async function situacao(assinatura: string, pagoAteLocal?: string | null)
     atrasada: pags.some(x => x.status === 'OVERDUE'),
     cancelada: s.status === 'INACTIVE' || !!s.deleted,
   }
+}
+
+// 15/10: a fatura em aberto que já venceu (ou vence hoje) ganha vencimento novo, pra o Pix funcionar de novo
+export async function renovaFatura(assinatura: string) {
+  if (assinatura.startsWith('sim-')) return null
+  const p = await api(`/subscriptions/${assinatura}/payments?limit=20`)
+  const aberta = (p.data || []).filter((x: any) => ['PENDING', 'OVERDUE'].includes(x.status)).sort((a: any, b: any) => (a.dueDate > b.dueDate ? 1 : -1))[0]
+  if (!aberta) return null
+  if (aberta.dueDate <= hoje()) {
+    const nova = await api(`/payments/${aberta.id}`, { method: 'POST', body: JSON.stringify({ dueDate: maisDias(2), billingType: aberta.billingType || 'UNDEFINED', value: aberta.value }) })
+    return (nova.invoiceUrl as string) || (aberta.invoiceUrl as string)
+  }
+  return aberta.invoiceUrl as string
 }
 
 export async function cancelaAssinatura(assinatura: string) {

@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { oitoConfig as cfg, Marca } from '@/lib/oito/config'
-import { criaAssinatura, situacao, simulado, podeSimular } from '@/lib/oito/asaas'
+import { criaAssinatura, situacao, simulado, podeSimular, renovaFatura } from '@/lib/oito/asaas'
 import { linkCheckout } from '@/lib/oito/hotmart'
 
 export const maxDuration = 30
@@ -41,7 +41,8 @@ export async function POST(req: Request) {
     // já tem assinatura aberta: devolve a fatura em aberto, não cria outra
     if (c.asaas_assinatura) {
       const s = await situacao(c.asaas_assinatura, c.pago_ate).catch(() => null)
-      if (s && !s.cancelada) return NextResponse.json({ fatura: s.faturaAberta, simulado: c.asaas_assinatura.startsWith('sim-') })
+      // a fatura vencida ganha vencimento novo antes de voltar pro cliente (fatura vencida não gera Pix)
+      if (s && !s.cancelada) { const f = await renovaFatura(c.asaas_assinatura).catch(() => null); return NextResponse.json({ fatura: f || s.faturaAberta, simulado: c.asaas_assinatura.startsWith('sim-') }) }
     }
     if (simulado() && !podeSimular()) return NextResponse.json({ erro: 'O pagamento está fora do ar agora. Tenta de novo em alguns minutos.' }, { status: 503 })
     const nome = t(b.nome), documento = t(b.documento, 20).replace(/\D/g, ''), email = t(b.email).toLowerCase() || c.email
