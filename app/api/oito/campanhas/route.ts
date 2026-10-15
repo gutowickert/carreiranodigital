@@ -4,7 +4,7 @@
 // Por anúncio, o cruzamento usa utm_content = nome do anúncio (no Gerenciador: utm_content={{ad.name}}).
 //   GET ?dias=1|7|30  (x-senha)
 import { NextResponse } from 'next/server'
-import { getAnunciosDia, type AnuncioDia } from '@/lib/meta-ads'
+import { getAnunciosDia, campanhasCriadasEm, type AnuncioDia } from '@/lib/meta-ads'
 import { oitoDb as db } from '@/lib/oito/db'
 import { senhaOk, oitoConfig as cfg, Marca, MARCAS } from '@/lib/oito/config'
 
@@ -42,9 +42,12 @@ export async function GET(req: Request) {
     db.lista('clientes', {}, { ordem: 'criado_em', desc: true }),
     db.lista('eventos', {}, { ordem: 'criado_em', desc: true, limite: 8000 }),
   ])
-  const linhas = (meta.linhas || []).filter(l => marcaDaCampanha(l.campaign_name))
+  // 15/10: painel zerado: campanhas criadas antes de painel_desde ficam de fora (os números da Meta são por dia, não dá pra cortar na hora)
+  const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
+  let linhas = (meta.linhas || []).filter(l => marcaDaCampanha(l.campaign_name))
+  if (zero) { const criadas = await campanhasCriadasEm(linhas.map(l => l.campaign_id)); linhas = linhas.filter(l => (criadas.get(l.campaign_id) || '9') >= zero) }
   const exemplo = new Set(clientes.filter(c => c.exemplo).map(c => c.id))
-  const ev = eventos.filter(e => e.criado_em >= desdeTs && e.criado_em < fimTs && (!e.cliente_id || !exemplo.has(e.cliente_id)))
+  const ev = eventos.filter(e => e.criado_em >= desdeTs && e.criado_em < fimTs && (!zero || e.criado_em >= zero) && (!e.cliente_id || !exemplo.has(e.cliente_id)))
   const porCliente = new Map(clientes.map(c => [c.id, c]))
 
   // o site, por marca e por anúncio (utm_content)

@@ -40,7 +40,10 @@ export async function GET(req: Request) {
   const clientes = clientesT.filter(c => depois(c.criado_em)), lotes = lotesT.filter(l => depois(l.criado_em))
   const eventos = eventosT.filter(e => depois(e.criado_em)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em))
   const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
-  const noPeriodo = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
+  const noPeriodoT = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
+  // 15/10: clique sem visita é robô (o revisor da Meta abre a página e clica em todos os botões no mesmo segundo): só conta clique de sessão que carregou a página
+  const comVisita = new Set(noPeriodoT.filter(e => e.tipo === 'visita' && e.sessao).map(e => e.sessao))
+  const noPeriodo = noPeriodoT.filter(e => !['whats_clique', 'form_inicio'].includes(e.tipo) || (e.sessao && comVisita.has(e.sessao)) || e.cliente_id)
 
   // funil: pessoas distintas por etapa (sessão antes do cadastro, cliente depois)
   const funil: Record<string, Record<string, number>> = {}

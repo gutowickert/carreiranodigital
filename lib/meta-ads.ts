@@ -271,3 +271,13 @@ export async function getStatusConta(conta: string): Promise<StatusConta> {
     return { ok: true, nome: j.name, moeda: j.currency, status: j.account_status, ativa: j.account_status === 1, prepago: !!j.is_prepay_account, saldo, saldo_texto: j.funding_source_details?.display_string || null }
   } catch (e: any) { return { ok: false, error: e?.message || 'falha ao ler a Meta' } }
 }
+
+// 15/10 (Oito, painel zerado): quando cada campanha foi criada, pra deixar de fora as campanhas antigas
+export async function campanhasCriadasEm(ids: string[]): Promise<Map<string, string>> {
+  const r = new Map<string, string>(), so = [...new Set(ids.filter(Boolean))]
+  for (let i = 0; i < so.length && TOKEN; i += 40) {
+    const j: any = await fetch(, { cache: 'no-store' }).then(x => x.json()).catch(() => ({}))
+    for (const [id, v] of Object.entries(j || {})) if ((v as any)?.created_time) r.set(id, new Date((v as any).created_time).toISOString())
+  }
+  return r
+}
