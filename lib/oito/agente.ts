@@ -306,7 +306,13 @@ export async function notificaFimLote(c: any, l: any) {
 export async function notificaPagamento(c: any) {
   const cv = await conversaDoCliente(c); if (!ativa(cv) || !janelaAberta(cv)) return
   const es = emEspanhol(c.marca as Marca)
-  const txt = es ? `¡Pago confirmado! 🎉 Ya estoy preparando tus ${cfg.postsMes} posts del mes. Te aviso aquí apenas estén listos (unos 30 minutos).` : `Pagamento confirmado! 🎉 Já estou preparando os seus ${cfg.postsMes} posts do mês. Te aviso aqui assim que ficarem prontos (uns 30 minutos).`
+  const txt = es ? `¡Pago confirmado! 🎉 Ya estoy preparando tus ${cfg.postsMes} posts del mes. Te aviso aquí apenas estén listos (unos 30 minutos).
+
+Esta es tu área de cliente, guárdala: ahí quedan todos tus posts de todos los meses, con los textos y el historial. ${cfg.url(c.marca as Marca, 'conta.html?c=' + c.codigo)}` : `Pagamento confirmado! 🎉 Já estou preparando os seus ${cfg.postsMes} posts do mês. Te aviso aqui assim que ficarem prontos (uns 30 minutos).
+
+Essa é a sua área do cliente, salva ela: ali ficam todos os seus posts, de todos os meses, com as legendas e o histórico. ${cfg.url(c.marca as Marca, 'conta.html?c=' + c.codigo)}
+
+E a cada mês eu fico mais afiado no seu negócio: tudo o que você me conta, aprova e ajusta fica guardado pro próximo mês. Ideia ou foto boa que surgir no dia a dia, já me manda aqui.`
   await registraSaida(cv, 'sistema', txt, await enviaTexto(cv.telefone, txt))
   await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'cliente', etapa: 'assinou' })
 }
