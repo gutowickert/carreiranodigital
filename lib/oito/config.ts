@@ -12,7 +12,7 @@ type InfoMarca = { nome: string; dominio: string; nicho: string; quem: string; b
 export const PRECO_BRL = 197
 // O PREÇO DO FEED AL DÍA (espanhol, cobrado pela Hotmart), em dólar: mude só aqui (e no produto da Hotmart).
 // As páginas (Desktop/Oito Posts/site/build-es.js) e os anúncios (anuncios/gera-feedaldia.js) leem este número.
-export const PRECO_USD = 39
+export const PRECO_USD = 29 // 15/10: Guto baixou de 39 pra 29
 
 // 15/10: o Feed al Día (antes "No Feed"). Um site, um Instagram, uma assinatura na Hotmart (OITO_HOTMART_LINK_FEEDALDIA),
 // um pixel, um remetente (OITO_RESEND_FEEDALDIA). As chaves divino/sabroso/peludo seguem como o NICHO do cliente (o estilo dos
