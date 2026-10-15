@@ -24,7 +24,7 @@ const MODELOS = [
     texto: 'Oi, {{1}}! Aqui é do {{2}} de novo.\n\nO que achou dos posts do {{3}}? Com a assinatura, os 8 posts do mês chegam prontos, com a sua marca e a legenda. É só baixar e postar.\n\nPosso te ajudar com alguma dúvida?',
     botoes: ['Quero assinar', 'Tenho uma dúvida', 'Agora não'] },
   { name: 'oito_seguimento_2', language: 'pt_BR', es: false,
-    texto: '{{1}}, aqui é do {{2}}. Essa é a nossa última mensagem por aqui 🙂\n\nOs posts grátis do {{3}} continuam na sua área. Quando quiser os 8 posts do mês, é só responder esta mensagem.\n\nSe não quiser mais receber, responda SAIR.',
+    texto: 'Oi, {{1}}! Aqui é do {{2}}. Essa é a nossa última mensagem por aqui 🙂\n\nOs posts grátis do {{3}} continuam na sua área. Quando quiser os 8 posts do mês, é só responder esta mensagem.\n\nSe não quiser mais receber, responda SAIR.',
     botoes: ['Quero assinar'] },
   { name: 'oito_es_prueba_lista', language: 'es', es: true, url: true,
     texto: '¡Hola, {{1}}! Te escribimos de {{2}} 👋\n\nLos 2 posts gratis de {{3}} ya están listos. ¿Alcanzaste a verlos?\n\nSi quieres, te cuento cómo funciona el mes completo, con los 8 posts.',
@@ -33,7 +33,7 @@ const MODELOS = [
     texto: '¡Hola, {{1}}! Te escribimos de {{2}} otra vez.\n\n¿Qué te parecieron los posts de {{3}}? Con la suscripción, los 8 posts del mes llegan listos, con tu marca y el texto. Solo descargas y publicas.\n\n¿Te ayudo con alguna duda?',
     botoes: ['Quiero suscribirme', 'Tengo una duda', 'Ahora no'] },
   { name: 'oito_es_seguimiento_2', language: 'es', es: true,
-    texto: '{{1}}, te escribimos de {{2}}. Este es nuestro último mensaje por aquí 🙂\n\nLos posts gratis de {{3}} siguen en tu área. Cuando quieras los 8 posts del mes, solo responde este mensaje.\n\nSi no quieres recibir más mensajes, responde SALIR.',
+    texto: '¡Hola, {{1}}! Te escribimos de {{2}}. Este es nuestro último mensaje por aquí 🙂\n\nLos posts gratis de {{3}} siguen en tu área. Cuando quieras los 8 posts del mes, solo responde este mensaje.\n\nSi no quieres recibir más mensajes, responde SALIR.',
     botoes: ['Quiero suscribirme'] },
 ]
 
