@@ -17,11 +17,13 @@ export const simulado = () => !process.env.ASAAS_API_KEY
 // na Vercel nunca simula: sem chave, a assinatura falha (senão daria pra "pagar" de mentira)
 export const podeSimular = () => simulado() && !process.env.VERCEL
 
-export async function criaAssinatura(d: { codigo: string; marcaNome: string; nome: string; documento: string; email: string; whatsapp: string; valor: number }) {
+// 15/10: a forma de pagamento: cartão (cobra sozinho todo mês), Pix (fatura com QR Code todo mês) ou o cliente escolhe na fatura
+export type Forma = 'CREDIT_CARD' | 'PIX' | 'UNDEFINED'
+export async function criaAssinatura(d: { codigo: string; marcaNome: string; nome: string; documento: string; email: string; whatsapp: string; valor: number; forma?: Forma }) {
   if (simulado()) return { customer: 'sim-' + d.codigo, assinatura: 'sim-' + d.codigo, fatura: null as string | null }
   const fone = d.whatsapp.replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')
   const c = await api('/customers', { method: 'POST', body: JSON.stringify({ name: d.nome, cpfCnpj: d.documento.replace(/\D/g, ''), email: d.email, mobilePhone: fone, externalReference: d.codigo, notificationDisabled: false }) })
-  const s = await api('/subscriptions', { method: 'POST', body: JSON.stringify({ customer: c.id, billingType: 'UNDEFINED', value: d.valor, nextDueDate: maisDias(2), cycle: 'MONTHLY', description: `${d.marcaNome} · 8 posts por mês`, externalReference: d.codigo }) })
+  const s = await api('/subscriptions', { method: 'POST', body: JSON.stringify({ customer: c.id, billingType: d.forma || 'UNDEFINED', value: d.valor, nextDueDate: maisDias(2), cycle: 'MONTHLY', description: `${d.marcaNome} · 8 posts por mês`, externalReference: d.codigo }) })
   const p = await api(`/subscriptions/${s.id}/payments`)
   return { customer: c.id as string, assinatura: s.id as string, fatura: (p.data?.[0]?.invoiceUrl as string) || null }
 }
