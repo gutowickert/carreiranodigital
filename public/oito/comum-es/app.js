@@ -1,13 +1,22 @@
 // Oito Posts en español: el JS común de las páginas de las 3 marcas de Colombia y Chile (rastro del embudo, píxel, fotos, chat de soporte, utilidades).
 // Cada página tiene <body data-marca="divino|sabroso|peludo">. El píxel de cada marca va en OITO_PIXEL (vacío = apagado).
+// 15/10: el No Feed. Las páginas nuevas traen <body data-marca="divino" data-grupo="nofeed" data-pasta="salon">: un solo píxel
+// (OITO_PIXEL.nofeed) para los 3 nichos, y las direcciones son /oito/nofeed/<pasta>/ (Vercel) o /<pasta>/ (dominio propio).
+// El precio llega en window.OITO_PRECO (build-es.js lo lee de lib/oito/config.ts).
 // Copia traducida de /oito/comum/app.js (la brasileña); la lógica es la misma.
 (function () {
-  var OITO_PIXEL = { divino: '', sabroso: '', peludo: '' }
-  var marca = document.body.dataset.marca
+  var OITO_PIXEL = { nofeed: '', divino: '', sabroso: '', peludo: '' }
+  var marca = document.body.dataset.marca, grupo = document.body.dataset.grupo || '', pasta = document.body.dataset.pasta || ''
+  var PASTAS = { divino: 'salon', sabroso: 'restaurante', peludo: 'mascotas' }
   // en el dominio de la marca (www.feeddivino.com...) las direcciones quedan limpias: /comecar.html en vez de /oito/divino/comecar.html
-  var emDominio = /(^|\.)feed(divino|sabroso|peludo)\.com$/.test(location.hostname)
-  var prefixo = '/oito/' + marca + '/'
-  function url(p) { return (emDominio ? '/' : prefixo) + (p || '') }
+  // No Feed: en el dominio propio la dirección no empieza con /oito/ (sirve para cualquier dominio que se conecte)
+  var emDominio = grupo === 'nofeed' ? location.pathname.indexOf('/oito/') !== 0 : /(^|\.)feed(divino|sabroso|peludo)\.com$/.test(location.hostname)
+  var prefixo = grupo === 'nofeed' ? '/oito/nofeed/' : '/oito/' + marca + '/'
+  var aqui = grupo === 'nofeed' ? pasta + '/' : ''
+  function url(p) { return (emDominio ? '/' : prefixo) + aqui + (p || '') }
+  // la página de otro nicho del No Feed (quien pidió la prueba en otro nicho vuelve a la suya)
+  function urlDe(m, p) { return PASTAS[m] && grupo === 'nofeed' ? (emDominio ? '/' : prefixo) + PASTAS[m] + '/' + (p || '') : null }
+  var icone = grupo === 'nofeed' ? '/oito/nofeed/icone.png' : '/oito/' + marca + '/icone.png'
   if (emDominio) {
     var limpa = function (a) { var h = a.getAttribute('href'); if (h && h.indexOf(prefixo) === 0) a.setAttribute('href', '/' + h.slice(prefixo.length)) }
     document.addEventListener('DOMContentLoaded', function () { [].forEach.call(document.querySelectorAll('a[href^="' + prefixo + '"]'), limpa) })
@@ -53,7 +62,7 @@
     try { navigator.sendBeacon('/api/oito/evento', new Blob([JSON.stringify({ tipo: tipo, marca: marca, sessao: sessao, c: c || q.get('c') || undefined, detalhe: detalhe || {} })], { type: 'application/json' })) } catch (e) {}
   }
   // píxel de Meta, solo si la marca tiene uno configurado
-  var pixel = OITO_PIXEL[marca]
+  var pixel = grupo === 'nofeed' ? OITO_PIXEL.nofeed : OITO_PIXEL[marca]
   if (pixel) {
     !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s) }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
     fbq('init', pixel); fbq('track', 'PageView')
@@ -140,7 +149,7 @@
         : '<p>Abre este enlace en <b>Safari</b> (en el menú ••• toca «Abrir en Safari») y después: <b>Compartir ⬆️ → Agregar a inicio</b>.</p>')
       : android ? '<ol><li>Toca <b>Instalar</b> aquí abajo.</li><li>Si el botón no aparece: en Chrome, toca los <b>⋮</b> (arriba a la derecha) → <b>Agregar a la pantalla principal</b> o <b>Instalar app</b>.</li></ol>'
       : '<p>En el celular, abre este mismo enlace y agrégalo a la pantalla de inicio. En el computador, guárdalo en favoritos (Ctrl+D).</p>'
-    el.innerHTML = '<div class="salva-app"><div class="sa-ic"><img src="/oito/' + marca + '/icone.png" alt=""></div><div class="sa-txt"><b>Guarda tu área como app</b>' +
+    el.innerHTML = '<div class="salva-app"><div class="sa-ic"><img src="' + icone + '" alt=""></div><div class="sa-txt"><b>Guarda tu área como app</b>' +
       '<p>Así los posts del mes quedan a un toque, sin buscar el enlace.</p>' + passos +
       '<div class="sa-acoes"><button class="btn peq instalar-agora"' + (pedidoInstalar ? '' : ' hidden') + '>Instalar</button><button class="btn peq fantasma sa-copia">Copiar mi enlace</button><button class="sa-fecha" aria-label="Cerrar">Ahora no</button></div></div></div>'
     el.querySelector('.instalar-agora').onclick = function () { if (!pedidoInstalar) return; pedidoInstalar.prompt(); pedidoInstalar.userChoice.then(function (r) { if (r.outcome === 'accepted') { rastro('app_instalado', {}, c); el.innerHTML = '' } }) }
@@ -148,7 +157,7 @@
     el.querySelector('.sa-fecha').onclick = function () { ls.set('oito_app_fechado_' + c, '1'); el.innerHTML = '' }
   }
 
-  window.OITO = { marca: marca, url: url, emDominio: emDominio, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
+  window.OITO = { marca: marca, url: url, urlDe: urlDe, preco: window.OITO_PRECO || 0, emDominio: emDominio, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
     utm: function () { try { return JSON.parse(ls.get('oito_utm') || 'null') } catch (e) { return null } } }
 
   // botón flotante de ayuda (abre el chat en un panel) en toda página con [data-ajuda]

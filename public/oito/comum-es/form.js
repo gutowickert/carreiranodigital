@@ -122,6 +122,8 @@ function OITO_FORM(paletas) {
       if (existente) {
         var m = existente.marca || OITO.marca
         if (m === OITO.marca) { OITO.ls.set('oito_codigo_' + m, codigo); location.href = OITO.url('teste.html?c=' + codigo + '&ja=1'); return }
+        var otra = OITO.urlDe(m, 'teste.html?c=' + codigo + '&ja=1')
+        if (otra) { OITO.ls.set('oito_codigo_' + m, codigo); location.href = otra; return }
         var dom = { divino: 'feeddivino', sabroso: 'feedsabroso', peludo: 'feedpeludo' }[m]
         if (dom) { location.href = 'https://www.' + dom + '.com/teste.html?c=' + codigo + '&ja=1'; return }
         OITO.ls.set('oito_codigo_' + OITO.marca, codigo); location.href = OITO.url('teste.html?c=' + codigo + '&ja=1'); return

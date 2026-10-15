@@ -20,7 +20,7 @@
     document.getElementById('nome-neg').textContent = v.negocio.nome
     var s = STATUS[v.status] || ['', v.status]
     document.getElementById('situacao').innerHTML = '<span class="pilula ' + s[0] + '">' + s[1] + (v.pago_ate && v.status !== 'aguardando_pagamento' ? ' · hasta ' + OITO.dataBR(v.pago_ate) : '') + '</span>'
-    if (v.status === 'ativo' && !OITO.ls.get('oito_comprou_' + c)) { OITO.ls.set('oito_comprou_' + c, '1'); OITO.fb('Purchase', { value: 39, currency: 'USD', content_name: OITO.marca }, 'compra-' + c) }
+    if (v.status === 'ativo' && !OITO.ls.get('oito_comprou_' + c)) { OITO.ls.set('oito_comprou_' + c, '1'); OITO.fb('Purchase', { value: OITO.preco, currency: 'USD', content_name: OITO.marca }, 'compra-' + c) }
     if (!desenha.feito) { desenha.feito = true; OITO.rastro('area_visita', {}, c); OITO.salvaApp(document.getElementById('salva-app'), c); negocio(); fotos(); OITO.chat(document.getElementById('chat'), { c: c }) }
     posts(); assinatura()
     // mientras algo se está haciendo (o el pago no se confirma), se actualiza sola
@@ -84,7 +84,7 @@
     if (!atual) {
       el.innerHTML = '<div class="caixa"><h3>' + (v.status === 'aguardando_pagamento' ? 'Apenas se confirme el pago, empezamos a hacer tus 8 posts.' : 'Tus posts del mes aparecen aquí después de suscribirte.') + '</h3>' +
         (v.status === 'aguardando_pagamento' ? '<p class="suave" style="margin-top:8px">Con tarjeta se confirma en minutos; otros medios pueden tardar un poco más. Esta página se actualiza sola.</p><button class="btn" style="margin-top:14px" id="ver-fatura">Completar el pago en Hotmart</button>' : '') +
-        (v.status === 'teste' ? '<a class="btn" style="margin-top:14px" href="/oito/' + OITO.marca + '/teste.html?c=' + c + '">Ver mi prueba y suscribirme</a>' : '') + '</div>' + anteriores([])
+        (v.status === 'teste' ? '<a class="btn" style="margin-top:14px" href="' + OITO.url('teste.html?c=' + c) + '">Ver mi prueba y suscribirme</a>' : '') + '</div>' + anteriores([])
       var vf = document.getElementById('ver-fatura'); if (vf) vf.onclick = abreFatura
       var ant0 = document.getElementById('lista-ant'); if (ant0) OITO_POSTS(ant0, v.posts, {})
       postar([])
@@ -95,7 +95,7 @@
     var fazendo = atual.status !== 'pronto'
     el.innerHTML = '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin:6px 0 18px">' +
       '<p class="suave">' + (fazendo ? '<b>Estamos haciendo tus posts:</b> ' + doMes.length + ' de ' + atual.qtd + ' listos. Esta página se actualiza sola.' : doMes.length + ' posts, 2 por semana. Ajustes que todavía puedes pedir este mes: <b>' + v.ajustes_restantes + '</b>.') + '</p>' +
-      (doMes.length && !fazendo ? '<span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn peq fantasma" href="/oito/' + OITO.marca + '/guia.html">Cómo publicar y consejos</a><button class="btn peq escuro" id="zip">Descargar todos (.zip)</button></span>' : '') + '</div><div class="posts" id="lista-posts"></div>' + anteriores(doMes)
+      (doMes.length && !fazendo ? '<span style="display:flex;gap:8px;flex-wrap:wrap"><a class="btn peq fantasma" href="' + OITO.url('guia.html') + '">Cómo publicar y consejos</a><button class="btn peq escuro" id="zip">Descargar todos (.zip)</button></span>' : '') + '</div><div class="posts" id="lista-posts"></div>' + anteriores(doMes)
     OITO_POSTS(document.getElementById('lista-posts'), doMes, { c: c, ajuste: v.status === 'ativo' && v.ajustes_restantes > 0, ig: !!(v.instagram && v.instagram.ligado && v.status === 'ativo'), depois: function () { carrega() } })
     postar(doMes)
     var z = document.getElementById('zip'); if (z) z.onclick = function () { baixaTodos(doMes, z) }
@@ -149,10 +149,10 @@
 
   function assinatura() {
     var el = document.getElementById('aba-assinatura'), s = v.status
-    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Un solo plan · US$ 39/mes</h3><p class="suave">8 posts al mes, hasta 4 ajustes, sin permanencia.</p>' +
+    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Un solo plan · US$ ' + OITO.preco + '/mes</h3><p class="suave">8 posts al mes, con ajustes, sin permanencia.</p>' +
       '<p>Estado: <b>' + (STATUS[s] || ['', s])[1] + '</b>' + (v.pago_ate ? ' · pagado hasta ' + OITO.dataBR(v.pago_ate) : '') + '</p>' +
       (s === 'aguardando_pagamento' || s === 'atrasado' ? '<button class="btn" id="fatura">' + (s === 'atrasado' ? 'Ponerme al día en Hotmart' : 'Completar el pago en Hotmart') + '</button>' : '') +
-      (s === 'teste' ? '<a class="btn" href="/oito/' + OITO.marca + '/teste.html?c=' + c + '">Suscribirme</a>' : '') +
+      (s === 'teste' ? '<a class="btn" href="' + OITO.url('teste.html?c=' + c) + '">Suscribirme</a>' : '') +
       (s === 'ativo' || s === 'atrasado' || s === 'aguardando_pagamento' ? '<details><summary class="suave" style="cursor:pointer;font-weight:700">Gestionar o cancelar mi suscripción</summary><div style="display:grid;gap:12px;margin-top:12px">' +
         '<p class="suave">El cobro lo hace <b>Hotmart</b>, en tu moneda local, cada mes. El recibo te llega al correo desde Hotmart. Para cambiar la tarjeta o ver tus pagos, entra a tu cuenta de Hotmart con el mismo correo de la compra.</p>' +
         '<p class="suave">Para cancelar no tienes que entrar a Hotmart: lo haces aquí. Nosotros cancelamos el cobro, no se te cobra nada más y lo que ya pagaste vale hasta el final del período.</p>' +

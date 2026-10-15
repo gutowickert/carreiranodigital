@@ -5,17 +5,15 @@
 //   POST             (x-senha) → cria os que faltam
 //   POST ?verificar=1 (x-senha) → pede pro Resend conferir o DNS agora
 import { NextResponse } from 'next/server'
-import { senhaOk, oitoConfig as cfg } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, NOFEED } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const R = 'https://api.resend.com'
 const CONTAS = () => [
   { chave: process.env.RESEND_API_KEY, dominios: [cfg.marcas.salao.dominio, cfg.marcas.prato.dominio] },
   { chave: process.env.OITO_RESEND_PATA, dominios: [cfg.marcas.pata.dominio] },
-  // 13/10: as marcas em espanhol, cada uma na sua conta grátis
-  { chave: process.env.OITO_RESEND_DIVINO, dominios: [cfg.marcas.divino.dominio] },
-  { chave: process.env.OITO_RESEND_SABROSO, dominios: [cfg.marcas.sabroso.dominio] },
-  { chave: process.env.OITO_RESEND_PELUDO, dominios: [cfg.marcas.peludo.dominio] },
+  // 15/10: o espanhol virou o No Feed, um domínio só (NOFEED.dominio), numa conta grátis própria
+  { chave: process.env.OITO_RESEND_NOFEED, dominios: [NOFEED.dominio] },
 ].filter(c => c.chave) as { chave: string; dominios: string[] }[]
 const H = (k: string) => ({ Authorization: 'Bearer ' + k, 'Content-Type': 'application/json' })
 
@@ -35,7 +33,7 @@ export async function GET(req: Request) {
     const x: any = await fetch(`${R}/domains/${d.id}`, { headers: H(d.chave), cache: 'no-store' }).then(r => r.json())
     return { dominio: d.name, status: x.status, registros: (x.records || []).map((r: any) => ({ tipo: r.type, nome: r.name, valor: r.value, prioridade: r.priority ?? null, status: r.status })) }
   }))
-  const todos = Object.values(cfg.marcas).map(m => m.dominio)
+  const todos = [...new Set(Object.values(cfg.marcas).map(m => m.dominio))]
   return NextResponse.json({ conta_pata: !!process.env.OITO_RESEND_PATA, faltam: todos.filter(n => !ds.find(d => d.name === n)), dominios: out })
 }
 

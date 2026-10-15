@@ -6,12 +6,16 @@
 import { NextResponse } from 'next/server'
 import { getAnunciosDia, campanhasCriadasEm, type AnuncioDia } from '@/lib/meta-ads'
 import { oitoDb as db } from '@/lib/oito/db'
-import { senhaOk, oitoConfig as cfg, Marca, MARCAS } from '@/lib/oito/config'
+import { senhaOk, oitoConfig as cfg, Marca, MARCAS, rotuloMarca } from '@/lib/oito/config'
 
 export const maxDuration = 60
 const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toUpperCase().replace(/[^A-Z0-9]/g, '')
 function marcaDaCampanha(nome: string): Marca | null {
   const n = norm(nome)
+  // 15/10: o No Feed (espanhol), uma campanha por nicho: "NO FEED · SALON", "NO FEED · RESTAURANTE", "NO FEED · MASCOTAS"
+  if (/NOFEED(ES)?SALON/.test(n)) return 'divino'
+  if (/NOFEED(ES)?RESTAURANTE/.test(n)) return 'sabroso'
+  if (/NOFEED(ES)?MASCOTA/.test(n)) return 'peludo'
   if (n.includes('SALAONOFEED')) return 'salao'
   if (n.includes('PRATONOFEED')) return 'prato'
   if (n.includes('PATANOFEED')) return 'pata'
@@ -81,7 +85,7 @@ export async function GET(req: Request) {
       c.anuncios.set(l.ad_id, a); campanhas.set(l.campaign_id, c)
     }
     marcas[m] = {
-      nome: cfg.marcas[m].nome,
+      nome: rotuloMarca(m),
       gasto: r2(gasto), impressoes, cliques, ctr: impressoes ? r2(cliques / impressoes * 100) : null, cpc: div(gasto, cliques),
       leads_meta: soma('leads'), visitas: s.visitas.size, testes: s.testes, testes_meta: s.testes_meta, assinaturas: s.assinaturas, vendas: s.vendas,
       custo_por_teste: div(gasto, s.testes), custo_por_venda: div(gasto, s.vendas), moeda: cfg.marcas[m].moeda, receita: s.vendas * cfg.marcas[m].preco, retorno: div(s.vendas * cfg.marcas[m].preco * (cfg.marcas[m].moeda === 'USD' ? USD_BRL : 1), gasto),

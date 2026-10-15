@@ -53,7 +53,7 @@
     var w = window.open('', '_blank')
     if (w) try { w.document.write('<!doctype html><meta charset="utf-8"><title>Hotmart</title><p style="font:18px system-ui;padding:40px;text-align:center">Abriendo el pago seguro de Hotmart…</p>') } catch (e) {}
     b.disabled = true; b.textContent = 'Abriendo Hotmart…'
-    OITO.rastro('assinar_clique', {}, c); OITO.fb('InitiateCheckout', { value: 39, currency: 'USD', content_name: OITO.marca }, 'checkout-' + c)
+    OITO.rastro('assinar_clique', {}, c); OITO.fb('InitiateCheckout', { value: OITO.preco, currency: 'USD', content_name: OITO.marca }, 'checkout-' + c)
     OITO.api('assinar', { c: c })
       .then(function (j) {
         if (j.ja) { if (w) w.close(); location.href = OITO.url('conta.html?c=' + c); return }
@@ -65,7 +65,7 @@
         OITO.rastro('checkout_aberto', {}, c)
         document.getElementById('aguardando').scrollIntoView({ behavior: 'smooth', block: 'center' })
       })
-      .catch(function (x) { if (w) w.close(); er.textContent = x.message; b.disabled = false; b.textContent = 'Suscribirme por US$ 39/mes' })
+      .catch(function (x) { if (w) w.close(); er.textContent = x.message; b.disabled = false; b.textContent = 'Suscribirme por US$ ' + OITO.preco + '/mes' })
   }
   document.getElementById('simular').onclick = function () { OITO.api('pagamento', { c: c, simular: true }).then(function () { olha(true) }) }
   olha(OITO.q.get('pago') === '1')

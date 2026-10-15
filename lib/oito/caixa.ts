@@ -4,14 +4,18 @@
 // no mesmo fio. A resposta dada pelo dono no painel também sai por e-mail.
 // Precisa das senhas das caixas na Vercel: OITO_EMAIL_SENHA_SALAO, OITO_EMAIL_SENHA_PRATO, OITO_EMAIL_SENHA_PATA.
 // Sem a senha de uma marca, aquela caixa só não é lida; nada quebra.
+// 15/10: o No Feed (divino/sabroso/peludo) tem UMA caixa (NOFEED.email), com a senha em OITO_EMAIL_SENHA_NOFEED. Ela é lida
+// uma vez só, e o chamado fica no nicho do cliente que escreveu.
 import { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
 import { oitoDb as db } from './db'
-import { oitoConfig as cfg, Marca, MARCAS, emEspanhol } from './config'
+import { oitoConfig as cfg, Marca, MARCAS, emEspanhol, noFeed, NOFEED } from './config'
 import { chaveResend } from './email'
 import { novaMensagemCliente } from './suporte'
 
-const senha = (m: Marca) => { const v = process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]; return v ? v.trim().replace(/^["']|["']$/g, '') : v }
+const ehNoFeed = (a: any) => !!a && !!cfg.marcas[a as Marca] && noFeed(a as Marca)
+const mesmoGrupo = (a: any, b: Marca) => a === b || (noFeed(b) && ehNoFeed(a))
+const senha = (m: Marca) => { const v = noFeed(m) ? process.env.OITO_EMAIL_SENHA_NOFEED : process.env['OITO_EMAIL_SENHA_' + m.toUpperCase()]; return v ? v.trim().replace(/^["']|["']$/g, '') : v }
 export const caixasLigadas = () => MARCAS.filter(m => !!senha(m))
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
 
@@ -38,7 +42,7 @@ export async function respondeEmail(ch: any, texto: string, autor: 'ia' | 'dono'
   const base = ch.email_assunto || `${nome} · ${es ? 'atención' : 'atendimento'}`
   const assunto = /^re:/i.test(base) ? base : 'Re: ' + base
   const html = `<div style="font-family:Arial,sans-serif;font-size:15px;line-height:1.55;color:#222"><div style="white-space:pre-wrap">${esc(texto)}</div>
-<p style="margin-top:18px">${es ? 'Un abrazo,<br><b>Equipo' : 'Um abraço,<br><b>Equipe'} ${esc(nome)}</b><br><a href="https://www.${dom}">${dom}</a></p></div>`
+<p style="margin-top:18px">${es ? 'Un abrazo,<br><b>Equipo' : 'Um abraço,<br><b>Equipe'} ${esc(nome)}</b><br>${noFeed(m) ? (process.env.OITO_DOMINIO_NOFEED ? `<a href="https://${process.env.OITO_DOMINIO_NOFEED}">${process.env.OITO_DOMINIO_NOFEED}</a>` : '') : `<a href="https://www.${dom}">${dom}</a>`}</p></div>`
   const headers: Record<string, string> = {}
   if (ch.email_ref) { headers['In-Reply-To'] = ch.email_ref; headers['References'] = ch.email_ref }
   const r = await fetch('https://api.resend.com/emails', { method: 'POST', headers: { Authorization: 'Bearer ' + chave, 'Content-Type': 'application/json' },
@@ -63,7 +67,7 @@ async function lerCaixa(m: Marca) {
         const p: any = await simpleParser(msg.source)
         const de = p.from?.value?.[0] || {}, email = String(de.address || '').toLowerCase()
         // ignora as próprias marcas e o Recado (evita duas IAs se respondendo em loop), robôs e avisos automáticos
-        if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /@feed(divino|sabroso|peludo)\.com$/.test(email) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
+        if (!email || /@(salaonofeed|pratonofeed|patanofeed|recadoencantando|recadoencantado)\.com\.br$/.test(email) || /@feed(divino|sabroso|peludo)\.com$/.test(email) || email.endsWith('@' + NOFEED.dominio) || /mailer-daemon|postmaster|no-?reply|resend\.dev|amazonses/.test(email)) continue
         if (p.headers?.get('auto-submitted') && String(p.headers.get('auto-submitted')) !== 'no') continue
         // e-mail automático não vira chamado (13/10): newsletter, boas-vindas e confirmação de serviços, notificações
         const prec = String(p.headers?.get('precedence') || '').toLowerCase()
@@ -74,10 +78,10 @@ async function lerCaixa(m: Marca) {
         const assunto = String(p.subject || '').trim().slice(0, 200)
         // continua o chamado aberto dessa pessoa (últimos 7 dias) ou abre um novo
         const recente = new Date(Date.now() - 7 * 864e5).toISOString()
-        let ch = (await db.lista('chamados', { contato: email, origem: 'email', marca: m }, { ordem: 'atualizado_em', desc: true, limite: 1 }))[0]
+        let ch = (await db.lista('chamados', { contato: email, origem: 'email' }, { ordem: 'atualizado_em', desc: true, limite: 5 })).find(x => mesmoGrupo(x.marca, m))
         if (!ch || ch.atualizado_em < recente || ch.status === 'resolvido') {
-          const cli = (await db.lista('clientes', { email }))[0]
-          ch = await db.insere('chamados', { cliente_id: cli?.marca === m ? cli.id : null, marca: m, nome: de.name || cli?.nome_negocio || email, contato: email, origem: 'email', assunto: (assunto || texto).slice(0, 120), email_assunto: assunto || null, status: 'aberto' })
+          const cli = (await db.lista('clientes', { email }))[0], doGrupo = !!cli && mesmoGrupo(cli.marca, m)
+          ch = await db.insere('chamados', { cliente_id: doGrupo ? cli.id : null, marca: doGrupo ? cli.marca : m, nome: de.name || cli?.nome_negocio || email, contato: email, origem: 'email', assunto: (assunto || texto).slice(0, 120), email_assunto: assunto || null, status: 'aberto' })
         }
         if (p.messageId) { await db.atualiza('chamados', { id: ch.id }, { email_ref: p.messageId }); ch.email_ref = p.messageId }
         const antes = (await db.lista('chamado_msgs', { chamado_id: ch.id })).length
@@ -96,9 +100,12 @@ async function lerCaixa(m: Marca) {
 }
 
 export async function sincronizaCaixas(forca = false) {
-  const res: Record<string, any> = {}
+  const res: Record<string, any> = {}, lidas = new Set<string>()
   for (const m of MARCAS) {
     if (!senha(m)) { res[m] = 'sem senha'; continue }
+    // a caixa do No Feed é uma só pros 3 nichos: lê uma vez
+    if (lidas.has(cfg.marcas[m].email)) { res[m] = 'mesma caixa de ' + cfg.marcas[m].email; continue }
+    lidas.add(cfg.marcas[m].email)
     // login recusado: espera 30 min antes de tentar de novo (tentativa errada em sequência pode bloquear a caixa no Titan)
     const falha = await estado('caixa_falha_' + m)
     if (falha?.em && Date.now() - new Date(falha.em).getTime() < 30 * 60e3 && !forca) { res[m] = 'aguardando (login recusado há pouco)'; continue }

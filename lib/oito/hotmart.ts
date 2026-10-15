@@ -1,12 +1,13 @@
-// Oito Posts: a cobrança das marcas em espanhol pela Hotmart (13/10). Assinatura mensal de US$ 39, um produto por marca.
-// O checkout é o link do produto na Hotmart (OITO_HOTMART_LINK_DIVINO / _SABROSO / _PELUDO); o código do cliente vai no ?sck=
+// Oito Posts: a cobrança do espanhol pela Hotmart (13/10). Assinatura mensal (o preço é o PRECO_USD do config.ts).
+// 15/10: o No Feed tem UM produto pros 3 nichos: OITO_HOTMART_LINK_NOFEED. Sem ela, cai no link antigo do nicho
+// (OITO_HOTMART_LINK_DIVINO / _SABROSO / _PELUDO), pra nada parar durante a troca. O código do cliente vai no ?sck=
 // e volta no webhook (data.purchase.origin.sck), que é como a compra encontra o cliente.
 // Webhook: /api/oito/hotmart, conferido pelo hottok (OITO_HOTMART_HOTTOK).
 // Cancelar pela API precisa das credenciais (OITO_HOTMART_CLIENT_ID, _SECRET, _BASIC); sem elas, o dono é avisado pra cancelar na mão.
-import { oitoConfig as cfg, Marca } from './config'
+import { oitoConfig as cfg, Marca, noFeed } from './config'
 
 export function linkCheckout(m: Marca, c: { codigo: string; email?: string; responsavel?: string; nome_negocio?: string; whatsapp?: string }) {
-  const base = process.env['OITO_HOTMART_LINK_' + m.toUpperCase()]
+  const base = (noFeed(m) && process.env.OITO_HOTMART_LINK_NOFEED) || process.env['OITO_HOTMART_LINK_' + m.toUpperCase()]
   if (!base) return null
   const u = new URL(base.trim())
   u.searchParams.set('sck', c.codigo)
@@ -37,9 +38,10 @@ export async function cancelaHotmart(assinante: string) {
   return { ok: r.ok, motivo: r.ok ? '' : 'hotmart ' + r.status }
 }
 
-// a marca pela qual a compra entrou (o nome do produto na Hotmart tem o nome da marca), pra quando o sck não vier
+// a marca pela qual a compra entrou (o nome do produto na Hotmart tem o nome da marca), pra quando o sck não vier.
+// 15/10: o produto do No Feed é um só pros 3 nichos, então o nome não diz o nicho: devolve null e a busca vai pelo e-mail.
 export function marcaDoProduto(nome: string): Marca | null {
   const n = String(nome || '').toLowerCase()
-  for (const m of ['divino', 'sabroso', 'peludo'] as Marca[]) if (n.includes(cfg.marcas[m].nome.toLowerCase()) || n.includes(m)) return m
+  for (const m of ['divino', 'sabroso', 'peludo'] as Marca[]) if ((!noFeed(m) && n.includes(cfg.marcas[m].nome.toLowerCase())) || n.includes(m)) return m
   return null
 }
