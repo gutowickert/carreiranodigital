@@ -139,7 +139,8 @@ export default function Questionario() {
     <Moldura>
       <div style={{ padding: '10px 0 4px' }}>
         <div style={marca}>Implantação do CRM</div>
-        <h1 style={disp}>{nome ? `Conhecendo a ${nome.split(' ')[0]}` : 'Conhecendo teu negócio'}</h1>
+        <h1 style={disp}>{/* nome curto demais no 1º termo ("W Prime Seeds") usa os dois primeiros */}
+        {nome ? `Conhecendo a ${nome.split(' ')[0].length < 3 ? nome.split(' ').slice(0, 2).join(' ') : nome.split(' ')[0]}` : 'Conhecendo teu negócio'}</h1>
         <p style={txt}>
           Antes de montar o CRM, a gente precisa entender como a tua empresa vende de verdade — com as
           tuas palavras. É isto que faz o sistema já nascer com a cara do teu negócio, e a IA falar

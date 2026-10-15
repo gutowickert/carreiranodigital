@@ -187,6 +187,62 @@ export type Propostas = { hoje?: Pergunta[]; etapas?: Pergunta[]; produtos?: Per
 const T = (quando: string, acao: string, marca?: 'tpl' | 'tar'): Toque => ({ quando, acao, marca })
 
 export const PROPOSTAS: Record<string, Propostas> = {
+  // W PRIME SEEDS (15/10/2026). Representação comercial de insumos pro TABACO, pelo que o Instagram
+  // mostra (@wprimeseeds: "W Prime Seeds Tobacco | Representações"): sementes de tabaco (híbrido
+  // Virgínia, PVH2444 — Profigen do Brasil), substrato pra float (Agrinobre), Phytoagri e o creme
+  // protetor da Protege Química. Cliente final: o produtor de tabaco. O negócio anda pelo CALENDÁRIO
+  // DA SAFRA (semente e substrato antes da semeadura; creme na colheita), então o funil tem
+  // "Próxima safra" no lugar de perda, e o follow-up é por época, não só por dias. Tudo aqui é
+  // SUPOSIÇÃO pra ele aprovar ou corrigir; nada disso foi confirmado ainda.
+  'w-prime-seeds': {
+    hoje: [
+      { id: 'como_vende', p: 'Como a venda acontece hoje?', tipo: 'multi', porque: 'Representação vende de jeitos diferentes. Saber o seu decide se o sistema organiza visita, conversa de WhatsApp ou pedido de revenda.', o: ['Visita na propriedade', 'WhatsApp com o produtor', 'Telefone', 'Pelas revendas/agropecuárias', 'Pela fumageira ou cooperativa', 'Dia de campo e eventos', 'Outro'], entra: 'etapas · agenda' },
+      { id: 'regiao', p: 'Que região você atende? Municípios, ou até onde vai', porque: 'A IA precisa saber se atende a cidade de quem chama, e a agenda de visitas agrupa por região.', ph: 'Ex.: Vale do Rio Pardo, Centro-Serra, até Candelária…', entra: 'atendimento · agenda' },
+      { id: 'integrado', p: 'Os produtores que compram de você são integrados a alguma fumageira? Isso muda a compra?', porque: 'Produtor integrado muitas vezes recebe insumo pela empresa. Entender isso muda o argumento de venda e quem decide.', entra: 'qualificação · argumento' },
+      { id: 'pedidos_hoje', p: 'Onde ficam hoje os pedidos e a lista de clientes? (caderno, planilha, sistema da representada…)', porque: 'É o que a gente traz pro CRM no primeiro dia, pra ninguém começar do zero.', entra: 'importação' },
+    ],
+    etapas: [
+      { id: 'e1', p: 'Novo contato', tipo: 'valida', prop: 'Chegou pelo Instagram, indicação, dia de campo ou visita. <b>Quem responde primeiro na época da semeadura leva.</b>', entra: 'etapas' },
+      { id: 'e2', p: 'Qualificação', tipo: 'valida', prop: 'O que planta (Virgínia, Burley…), quantos pés ou estufas, município, quando semeia, se é integrado e a qual empresa. A IA pode perguntar isso sozinha.', entra: 'etapas' },
+      { id: 'e3', p: 'Visita marcada', tipo: 'valida', prop: 'Ir na propriedade mostrar a semente, o substrato, o creme. Entra na agenda, com lembrete no dia anterior.', entra: 'etapas · agenda' },
+      { id: 'e4', p: 'Orçamento enviado', tipo: 'valida', prop: 'Quantidade e valor na mão do produtor. Esperando resposta, com lembrete.', entra: 'etapas' },
+      { id: 'e5', p: 'Negociação', tipo: 'valida', prop: 'Prazo, forma de pagamento (à vista, na safra), entrega. Aqui é gente, não IA.', entra: 'etapas' },
+      { id: 'e6', p: 'Pedido fechado — entregar', tipo: 'valida', prop: 'Fechou: separar, entregar, cobrar. Sai do funil de venda e entra no "depois da venda".', entra: 'etapas' },
+      { id: 'e7', p: 'Próxima safra', tipo: 'valida', prop: 'Já comprou neste ano, ou ainda não é época. <b>Não é perda</b>: o sistema traz de volta antes da próxima semeadura.', entra: 'etapas' },
+      { id: 'e8', p: 'Perdido', tipo: 'valida', prop: 'Comprou de outro ou parou de plantar. Fica guardado com o motivo, e volta na próxima safra.', entra: 'etapas' },
+    ],
+    produtos: [
+      { id: 'prod', p: 'Os produtos que vimos no seu Instagram', tipo: 'valida', prop: 'Sementes de tabaco (híbridos Virgínia, como o PVH2444 — Profigen) · Substrato pra float (Agrinobre) · Produtos Phytoagri · Creme protetor pra colheita (Protege Química). <b>Confirma, corrige e completa</b>: o que mais você representa, e o preço ou a faixa de cada um.', entra: 'produtos' },
+    ],
+    qualifica: [
+      { id: 'q_semente', p: 'Semente — o que perguntar antes de orçar', tipo: 'valida', prop: 'Tipo de tabaco (Virgínia, Burley, Comum) · quantos pés ou estufas · município · quando faz a semeadura · usa float? · é integrado? a qual empresa · já usou a variedade?', entra: 'qualificação' },
+      { id: 'q_substrato', p: 'Substrato', tipo: 'valida', prop: 'Quantas bandejas · qual substrato usa hoje · quando monta o float · precisa de entrega?', entra: 'qualificação' },
+      { id: 'q_creme', p: 'Creme protetor', tipo: 'valida', prop: 'Quantas pessoas trabalham na colheita · quando começa a colher · já usa alguma proteção?', entra: 'qualificação' },
+    ],
+    followup: [
+      { id: 'c1', p: 'Novo contato', tipo: 'valida', entra: 'cadência', toques: [T('na hora', 'responder e perguntar o que planta e quantos pés'), T('+2h', 'segunda mensagem, se não respondeu'), T('fim do dia', 'sem resposta: a IA assume o follow-up')] },
+      { id: 'c4', p: 'Orçamento enviado', tipo: 'valida', entra: 'cadência', toques: [T('D+1', '"conseguiu ver? quer que eu passe aí?"', 'tpl'), T('D+3', 'responder a dúvida mais comum', 'tpl'), T('D+7', 'última, lembrando a época da semeadura', 'tpl')] },
+      { id: 'c7', p: 'Próxima safra', tipo: 'valida', entra: 'cadência', toques: [T('antes da semeadura', 'semente e substrato: "vai semear quando? já separo o teu"', 'tpl'), T('antes da colheita', 'creme protetor pra quem colhe', 'tpl'), T('depois da colheita', '"como foi a safra?" + indicação', 'tpl')] },
+      { id: 'c8', p: 'Perdido', tipo: 'valida', entra: 'cadência', toques: [T('na próxima safra', 'convite pra orçar de novo, mesmo quem comprou de outro', 'tpl')] },
+    ],
+    depois: [
+      { id: 'r1', p: 'Pedido entregue', tipo: 'valida', entra: 'roteiro', toques: [T('na entrega', 'confirmação + orientação de uso do fabricante'), T('D+15', '"como tá a germinação / as mudas?"', 'tpl'), T('na colheita', 'oferta do creme protetor', 'tpl'), T('fim da safra', '"como foi?" + começa a próxima', 'tar')] },
+    ],
+    ia: [
+      { id: 'ia_agro', p: 'Recomendação técnica', tipo: 'valida', prop: 'A IA <b>nunca</b> recomenda dose, mistura ou aplicação de produto, nem diagnostica problema na lavoura ou na muda: isso <b>passa pra você na hora</b>. Ela colhe a informação (foto, o que está acontecendo, desde quando) pra você já chegar sabendo.', entra: 'travas da IA' },
+      { id: 'ia_travas', p: 'Travas', tipo: 'valida', prop: 'A IA <b>nunca</b>: promete produtividade ou resultado de safra · dá desconto ou prazo fora do combinado · fala mal de outra semente ou de outra empresa · passa preço que não esteja no cadastro.', entra: 'travas da IA' },
+    ],
+    teste: [
+      '"Oi, tem a semente PVH2444? Quanto fica?"',
+      '"Qual substrato é melhor pro float?"',
+      '"Minhas mudas tão amarelando, o que eu faço?"',
+      '"Vocês entregam lá no interior de Candelária?"',
+      '"Dá pra pagar na safra?"',
+      '"Pra que serve esse creme protetor?"',
+      '"A fumageira já me dá a semente, por que eu compraria de vocês?"',
+      '"Me manda o preço que eu vejo com meu sogro"',
+    ],
+  },
   'gaja-corretora-de-seguros': {
     // Perguntar "que sistema vocês usam?" a um corretor rende "o de cotação". Perguntar pelo NOME
     // rende a resposta certa — e é o nome que decide se dá pra integrar ou se vai ser digitação
