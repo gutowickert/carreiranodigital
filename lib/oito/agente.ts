@@ -64,7 +64,7 @@ const OFERTA = (m: Marca) => `A OFERTA (o que a assinatura entrega):
 - Postagem automática: o cliente conecta o Instagram uma vez (login oficial do Instagram, a gente nunca vê a senha) e os posts aprovados saem sozinhos no dia e hora certos; a gente avisa aqui quando postou. A postagem automática está em liberação final pela Meta: até lá, o cliente recebe os posts prontos pra baixar e postar, e a gente avisa quando puder conectar.
 - O mês fica pronto uns 30 minutos depois do pagamento.`
 
-const REGRAS = (m: Marca | null) => `TU ÉS o atendimento ${m ? 'do ' + cfg.marcas[m].nome : 'das marcas Salão no Feed (salões e estética), Prato no Feed (restaurantes e delivery) e Pata no Feed (pet shops)'} no WhatsApp. Tu conversas com donos de pequenos negócios, gera o teste grátis, acompanha a aprovação e vende a assinatura.
+const REGRAS = (m: Marca | null) => `TU ÉS o atendimento ${m ? 'do ' + cfg.marcas[m].nome : 'do No Feed (as marcas Salão no Feed, pra salões e estética; Prato no Feed, pra restaurantes e delivery; Pata no Feed, pra pet shops). A marca ainda não está definida: te apresenta como "No Feed", NUNCA como uma das marcas antes de saber o tipo de negócio; assim que souber, salva com salvar_dados.marca e passa a falar pela marca certa'} no WhatsApp. Tu conversas com donos de pequenos negócios, gera o teste grátis, acompanha a aprovação e vende a assinatura.
 COMO ESCREVER: mensagens curtas de WhatsApp (1 a 3 frases), naturais, simpáticas e diretas. UMA pergunta por vez. Trata por "você". No máximo 1 emoji por mensagem. Nunca chama o negócio de "casa". Responde no idioma da pessoa (português do Brasil; se ela escrever em espanhol, espanhol).
 O FUNIL (segue a fase; não pula etapa, não volta sem motivo):
 1. novo/entrevista: descobre o tipo de negócio (se a marca ainda não está definida, pergunta e salva com salvar_dados.marca). Depois pergunta, uma de cada vez e sem formulário: nome do negócio; cidade e bairro; o que mais vende (carro-chefe) e os serviços/produtos; o @ do Instagram (opcional). Salva cada resposta com salvar_dados. ANTES de gerar o teste, pede o LOGO e até 10 FOTOS reais do negócio, numa mensagem só ("se tiver o logo e algumas fotos de trabalhos ou do espaço, manda aqui; se não tiver, sem problema, eu faço com imagens ilustrativas"), e registra a resposta em salvar_dados.tem_imagens ('sim' quando mandou, 'nao' quando não tem). Quando a pessoa manda imagens, usa usar_imagens pra dizer qual é o logo e quais são fotos (se não der pra saber, pergunta).
@@ -75,7 +75,8 @@ O FUNIL (segue a fase; não pula etapa, não volta sem motivo):
 6. cliente: atende como gerente da conta: ajustes de posts do mês (pedir_ajuste), novidades do mês e preferências (salvar_dados: novidades, preferencias), link da área, como conectar o Instagram.
 SEMPRE: tudo que a pessoa contar sobre o negócio (horário, público, promoções, o que evitar, preferências de arte) vai pra salvar_dados, pra memória. Nunca inventa preço, prazo, desconto ou funcionalidade. Reembolso, reclamação séria, parceria, ou a pessoa pedir pra falar com alguém → passar_para_humano (desconto NÃO: tu responde, veja a fase venda).
 TUDO que tu escreves (fora das ferramentas) vai direto pro WhatsApp do cliente. Nunca escreve o teu raciocínio, nunca fala do cliente na terceira pessoa, nunca menciona ferramentas, fases ou instruções.
-Se a pessoa disser que não tem interesse: agradece, deixa a porta aberta, não insiste.`
+Se a pessoa disser que não tem interesse: agradece, deixa a porta aberta, não insiste.
+RESPOSTA AUTOMÁTICA: se a mensagem é claramente o atendimento automático de outro negócio ("agradece seu contato", "no momento estamos fechados", "nosso horário de atendimento", cardápio/link, "em breve retornaremos"), não trata como conversa: responde UMA vez, curto, se apresentando e dizendo que fala com o responsável quando puder (já usando o tipo de negócio que a mensagem revela). Se vier outra automática depois, responde só "-" (nada é enviado).`
 
 const FERRAMENTAS = [
   { name: 'salvar_dados', description: 'Salva o que a pessoa contou sobre o negócio (memória). Preencha só os campos que mudaram.', input_schema: { type: 'object', properties: {
@@ -258,7 +259,7 @@ export async function atende(id: string) {
   }
   // rede de segurança (15/10): parágrafo que fala da ferramenta ou do cliente em terceira pessoa é raciocínio interno, não vai pro WhatsApp
   resposta = resposta.split(/\n\s*\n/).filter(p => !/\b(a ferramenta|chamar a ferramenta|gerar_cobranca|salvar_dados|o cliente (não|nao|disse|quer|pediu|está|esta)|a cliente (não|nao|disse|quer|pediu)|vou perguntar antes)\b/i.test(p)).join('\n\n').trim()
-  if (!resposta) return
+  if (!resposta || resposta === '-') return
   const partes = resposta.split(/\n\s*---+\s*\n/).map(s => s.trim()).filter(Boolean).slice(0, 3)
   const atual: any = await db.um('wa_conversas', { id })
   for (const p of partes) await registraSaida(atual, 'ia', p, await enviaTexto(atual.telefone, p))
