@@ -7,7 +7,8 @@
 import { oitoConfig as cfg, Marca, feedAlDia, envFeedAlDia } from './config'
 
 export function linkCheckout(m: Marca, c: { codigo: string; email?: string; responsavel?: string; nome_negocio?: string; whatsapp?: string }) {
-  const base = (feedAlDia(m) && envFeedAlDia('HOTMART_LINK')) || process.env['OITO_HOTMART_LINK_' + m.toUpperCase()]
+  // 15/10: o produto único do Feed al Día (US$ 29) já vem aqui; a variável da Vercel, se existir, manda
+  const base = (feedAlDia(m) && (envFeedAlDia('HOTMART_LINK') || 'https://pay.hotmart.com/F108049314E')) || process.env['OITO_HOTMART_LINK_' + m.toUpperCase()]
   if (!base) return null
   const u = new URL(base.trim())
   u.searchParams.set('sck', c.codigo)
