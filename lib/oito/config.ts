@@ -6,17 +6,21 @@ export type Marca = 'salao' | 'prato' | 'pata' | 'divino' | 'sabroso' | 'peludo'
 export type Nicho = 'salao' | 'prato' | 'pata'
 type InfoMarca = { nome: string; dominio: string; nicho: string; quem: string; base: Nicho; idioma: 'pt' | 'es'; gateway: 'asaas' | 'hotmart'; preco: number; moeda: 'BRL' | 'USD'; email: string }
 
+// O PREÇO DAS MARCAS BRASILEIRAS (15/10): mude só aqui. A cobrança do Asaas, o suporte, as páginas de venda
+// (o build.js das páginas, na pasta Desktop/Oito Posts/site, lê este número) e os anúncios (anuncios/gera-whats.js) saem dele.
+export const PRECO_BRL = 197
+
 export const MARCAS: Marca[] = ['salao', 'prato', 'pata', 'divino', 'sabroso', 'peludo']
 
 export const oitoConfig = {
-  preco: 197,
+  preco: PRECO_BRL,
   postsMes: 8,
   postsTeste: 2,
   ajustesPorMes: 4,
   marcas: {
-    salao: { nome: 'Salão no Feed', dominio: 'salaonofeed.com.br', nicho: 'salões de beleza, estética, sobrancelha, cílios, unhas e cabelo', quem: 'o teu salão', base: 'salao', idioma: 'pt', gateway: 'asaas', preco: 197, moeda: 'BRL', email: 'contato@salaonofeed.com.br' },
-    prato: { nome: 'Prato no Feed', dominio: 'pratonofeed.com.br', nicho: 'restaurantes, lancherias, hamburguerias, pizzarias, confeitarias e delivery', quem: 'o teu restaurante', base: 'prato', idioma: 'pt', gateway: 'asaas', preco: 197, moeda: 'BRL', email: 'contato@pratonofeed.com.br' },
-    pata: { nome: 'Pata no Feed', dominio: 'patanofeed.com.br', nicho: 'pet shops, banho e tosa, clínicas veterinárias e adestramento', quem: 'o teu pet shop', base: 'pata', idioma: 'pt', gateway: 'asaas', preco: 197, moeda: 'BRL', email: 'contato@patanofeed.com.br' },
+    salao: { nome: 'Salão no Feed', dominio: 'salaonofeed.com.br', nicho: 'salões de beleza, estética, sobrancelha, cílios, unhas e cabelo', quem: 'o teu salão', base: 'salao', idioma: 'pt', gateway: 'asaas', preco: PRECO_BRL, moeda: 'BRL', email: 'contato@salaonofeed.com.br' },
+    prato: { nome: 'Prato no Feed', dominio: 'pratonofeed.com.br', nicho: 'restaurantes, lancherias, hamburguerias, pizzarias, confeitarias e delivery', quem: 'o teu restaurante', base: 'prato', idioma: 'pt', gateway: 'asaas', preco: PRECO_BRL, moeda: 'BRL', email: 'contato@pratonofeed.com.br' },
+    pata: { nome: 'Pata no Feed', dominio: 'patanofeed.com.br', nicho: 'pet shops, banho e tosa, clínicas veterinárias e adestramento', quem: 'o teu pet shop', base: 'pata', idioma: 'pt', gateway: 'asaas', preco: PRECO_BRL, moeda: 'BRL', email: 'contato@patanofeed.com.br' },
     divino: { nome: 'Feed Divino', dominio: 'feeddivino.com', nicho: 'salones de belleza, uñas, cejas y pestañas, estética y barberías', quem: 'tu salón', base: 'salao', idioma: 'es', gateway: 'hotmart', preco: 39, moeda: 'USD', email: 'contacto@feeddivino.com' },
     sabroso: { nome: 'Feed Sabroso', dominio: 'feedsabroso.com', nicho: 'restaurantes, comidas rápidas, hamburgueserías, pizzerías, pastelerías y domicilios', quem: 'tu restaurante', base: 'prato', idioma: 'es', gateway: 'hotmart', preco: 39, moeda: 'USD', email: 'contacto@feedsabroso.com' },
     peludo: { nome: 'Feed Peludo', dominio: 'feedpeludo.com', nicho: 'pet shops, peluquería canina, veterinarias y guarderías', quem: 'tu pet shop', base: 'pata', idioma: 'es', gateway: 'hotmart', preco: 39, moeda: 'USD', email: 'contacto@feedpeludo.com' },

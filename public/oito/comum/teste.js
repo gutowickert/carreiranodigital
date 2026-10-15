@@ -43,7 +43,7 @@
     e.preventDefault()
     var b = e.target.querySelector('button'), er = document.getElementById('a-erro'); er.textContent = ''
     b.disabled = true; b.textContent = 'Abrindo a fatura…'
-    OITO.rastro('assinar_clique', {}, c); OITO.fb('InitiateCheckout', { value: 197, currency: 'BRL', content_name: OITO.marca }, 'checkout-' + c)
+    OITO.rastro('assinar_clique', {}, c); OITO.fb('InitiateCheckout', { value: window.OITO_PRECO || 197, currency: 'BRL', content_name: OITO.marca }, 'checkout-' + c)
     OITO.api('assinar', { c: c, nome: document.getElementById('a-nome').value, documento: document.getElementById('a-doc').value, email: document.getElementById('a-email').value })
       .then(function (j) {
         if (j.ja) { location.href = OITO.url('conta.html?c=' + c); return }

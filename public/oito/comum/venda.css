@@ -128,3 +128,83 @@ body.venda{overflow-x:hidden}
 .fixo .btn{width:100%;font-size:18px;padding:18px}
 @media (max-width:760px){.fixo{display:block}.venda .ajuda-flutua{bottom:86px}}
 @media (prefers-reduced-motion:reduce){.celular,.etiqueta,.faixa .trilho{animation:none}.faixa{overflow-x:auto}}
+
+/* ===== 15/10: a oferta pelo WhatsApp ===== */
+.ic-wa{width:1.2em;height:1.2em;flex:none}
+.btn-wa{gap:10px}
+.btn.largo{width:100%}
+.selo-topo b{display:inline-grid;place-items:center;padding:4px}
+.selo-topo b .ic-wa{width:16px;height:16px}
+.nota-cta{font-size:15px;color:var(--suave);margin-top:14px;line-height:1.6}
+.form-alt{font-size:14px;color:var(--suave);text-decoration:underline;text-underline-offset:3px}
+.form-alt:hover{color:var(--tinta)}
+.form-alt.claro{color:rgba(255,255,255,.6)}
+.form-alt.claro:hover{color:#fff}
+.ctas.centro{justify-content:center;margin-top:30px}
+.numeros b{white-space:nowrap}
+
+/* o celular com a conversa do WhatsApp */
+.celular.wa .tela{background:#efeae2;display:flex;flex-direction:column;font-family:system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+.wa-topo{background:#008069;color:#fff;padding:52px 12px 10px;display:flex;gap:9px;align-items:center;flex:none}
+.wa-volta{font-size:26px;line-height:1;opacity:.9;margin-right:-2px}
+.wa-av{width:34px;height:34px;border-radius:50%;background:var(--destaque);color:var(--sobre-destaque);display:grid;place-items:center;font:800 15px/1 var(--fc);flex:none}
+.wa-nome{font:600 14px/1.2 system-ui,sans-serif}
+.wa-st{font-size:11px;opacity:.85}
+.wa-msgs{flex:1;padding:10px 9px;display:flex;flex-direction:column;gap:6px;overflow:hidden;background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:14px 14px}
+.wa-dia{align-self:center;background:#fff;font-size:10px;font-weight:600;letter-spacing:.04em;color:#54656f;border-radius:6px;padding:4px 8px;box-shadow:0 1px .5px rgba(0,0,0,.1)}
+.wa-b{max-width:84%;padding:6px 8px 4px;border-radius:8px;font:13px/1.35 system-ui,sans-serif;color:#111b21;box-shadow:0 1px .5px rgba(0,0,0,.13)}
+.wa-b.ele{background:#fff;align-self:flex-start;border-top-left-radius:2px}
+.wa-b.eu{background:#d9fdd3;align-self:flex-end;border-top-right-radius:2px}
+.wa-b small{display:block;text-align:right;font-size:10px;color:#667781;margin-top:1px}
+.wa-b.eu small::after{content:" ✓✓";color:#53bdeb;letter-spacing:-.15em}
+.wa-b.aviso b{color:#008069}
+.wa-album{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:3px;width:196px;margin:-2px -4px 6px;border-radius:6px;overflow:hidden}
+.wa-album img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.wa-album .mais{position:absolute;right:0;bottom:0;width:calc(50% - 1.5px);aspect-ratio:4/5;background:rgba(0,0,0,.5);color:#fff;display:grid;place-items:center;font:600 24px/1 system-ui,sans-serif}
+.wa-pe{display:flex;gap:6px;padding:7px 8px 14px;align-items:center;flex:none}
+.wa-pe i{flex:1;background:#fff;border-radius:20px;height:34px;font:400 13px/34px system-ui,sans-serif;color:#8696a0;padding-left:14px;font-style:normal}
+.wa-pe b{width:34px;height:34px;border-radius:50%;background:#00a884;flex:none}
+.etiqueta.e1{top:120px}
+.etiqueta.e2{top:330px}
+
+/* como funciona em 4 passos */
+.trilha.q4{grid-template-columns:repeat(4,1fr)}
+.trilha.q4 .etapa-v:nth-child(4) .num{background:#008069;color:#fff;box-shadow:0 14px 30px -14px #008069}
+.avisos-wa{display:flex;gap:12px;align-items:center;margin-top:30px;background:#fff;border:1px solid var(--linha);border-radius:18px;padding:16px 20px;font-size:17px}
+.avisos-wa .ic-wa{color:#00a884;width:28px;height:28px}
+@media (max-width:1000px){.trilha.q4{grid-template-columns:repeat(2,1fr)}.trilha.q4::before{display:none}}
+@media (max-width:560px){.trilha.q4{grid-template-columns:1fr}}
+
+/* bento: a conversinha e o aviso */
+.wa-mini{margin-top:auto;background:#efeae2;border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:6px}
+.wa-mini .wa-b{font-size:14px;max-width:78%}
+.wa-mini .wa-b img{display:block;width:120px;aspect-ratio:4/5;object-fit:cover;border-radius:6px;margin:-2px -4px 6px}
+.aviso-wa{margin-top:auto;display:flex;gap:14px;align-items:center;background:var(--claro);border-radius:18px;padding:14px 16px}
+.aviso-wa i{width:44px;height:44px;border-radius:12px;background:#00a884;color:#fff;display:grid;place-items:center;flex:none;font-style:normal}
+.aviso-wa i .ic-wa{width:26px;height:26px}
+.aviso-wa b{display:block;font:700 14px/1.2 var(--fc);color:var(--tinta)}
+.aviso-wa span{font-size:14px;color:var(--suave)}
+/* ajuste: a conversa cabe inteira no celular */
+.wa-album{width:164px}
+.wa-album .mais{font-size:20px}
+.wa-b{font-size:12.5px;line-height:1.32}
+.wa-msgs{gap:5px;padding:8px}
+.etiqueta.e1{top:70px;left:-10px}
+.etiqueta.e2{top:300px}
+.etiqueta.e3{bottom:24px;left:-6px}
+.etiqueta.e1{top:400px;left:-10px}
+.etiqueta.e2{top:112px;right:-10px}
+.etiqueta.e3{bottom:14px;right:-6px;left:auto}
+.etiqueta.e1{top:250px}
+.celular.wa ~ .etiqueta.e3{display:none}
+.trilha.q4 .etapa-v{align-content:start}
+.trilha.q4 .etapa-v h3{font-size:22px}
+@media (min-width:1001px){.trilha.q4 .etapa-v h3{min-height:2.5em;display:flex;align-items:flex-end}}
+.v-preco{align-items:start}
+.v-preco>div:first-child{padding-top:40px}
+@media (max-width:860px){.v-preco>div:first-child{padding-top:0}}
+@media (max-width:520px){.numeros{gap:16px;flex-wrap:nowrap;margin-top:28px}.numeros b{font-size:24px}.numeros span{font-size:12px;line-height:1.3}}
+@media (max-width:520px){.cartao-preco{padding:28px 22px}.cartao-preco .btn{font-size:17px;padding:20px 16px}}
+/* a marca nova (15/10): foto de perfil no avatar do WhatsApp e no aviso */
+img.wa-av{object-fit:cover;display:block}
+.aviso-wa .av-marca{width:44px;height:44px;border-radius:12px;flex:none;object-fit:cover}

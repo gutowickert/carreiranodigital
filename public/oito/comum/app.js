@@ -149,6 +149,16 @@
   window.OITO = { marca: marca, url: url, emDominio: emDominio, salvaApp: salvaApp, sessao: sessao, q: q, api: api, rastro: rastro, fb: fb, comprime: comprime, aviso: aviso, copia: copia, esc: esc, dataBR: dataBR, chat: chat, ls: ls,
     utm: function () { try { return JSON.parse(ls.get('oito_utm') || 'null') } catch (e) { return null } } }
 
+  // WhatsApp (15/10): o funil principal agora é o WhatsApp. Todo link [data-whats="onde"] abre o wa.me com a mensagem pronta;
+  // o clique conta como whats_clique no funil e dispara Contact + Lead no pixel (o Lead do formulário continua no form.js).
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest && e.target.closest('[data-whats]'); if (!a) return
+    rastro('whats_clique', { de: a.dataset.whats || '' })
+    var id = 'whats-' + sessao + '-' + Date.now().toString(36)
+    fb('Contact', { content_name: marca, content_category: 'whatsapp' }, id + '-c')
+    fb('Lead', { content_name: marca, content_category: 'whatsapp' }, id)
+  })
+
   // botão flutuante de ajuda (abre o chat numa gaveta) em toda página com [data-ajuda]
   document.addEventListener('click', function (e) {
     var a = e.target.closest('[data-ajuda]'); if (!a) return; e.preventDefault()
