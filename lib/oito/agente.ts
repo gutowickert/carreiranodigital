@@ -60,7 +60,7 @@ async function retrato(cv: any) {
 
 const OFERTA = (m: Marca) => `A OFERTA (o que a assinatura entrega):
 - ${cfg.postsMes} posts por mês feitos pro negócio (arte com a marca + legenda pronta), por ${precoTxt(m)}/mês, sem fidelidade (cancela quando quiser).
-- Todo mês o cliente APROVA os posts aqui no WhatsApp (ou na área dele) e pode pedir ajuste por mensagem (até ${cfg.ajustesPorMes} por mês).
+- Todo mês o cliente APROVA os posts aqui no WhatsApp (ou na área dele) e pode pedir ajuste por mensagem. (Existe um limite de ${cfg.ajustesPorMes} ajustes por mês: NUNCA fala desse número na oferta; só responde se a pessoa perguntar ou quando o limite acabar.)
 - Postagem automática: o cliente conecta o Instagram uma vez (login oficial do Instagram, a gente nunca vê a senha) e os posts aprovados saem sozinhos no dia e hora certos; a gente avisa aqui quando postou. A postagem automática está em liberação final pela Meta: até lá, o cliente recebe os posts prontos pra baixar e postar, e a gente avisa quando puder conectar.
 - O mês fica pronto uns 30 minutos depois do pagamento.
 - É como ter uma agência no WhatsApp: o cliente pede os posts aqui, a gente entrega, aprova junto com ele e ajusta.

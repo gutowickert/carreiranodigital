@@ -14,7 +14,7 @@ COMO O SERVIÇO FUNCIONA (só afirma o que está aqui):
 - NÓS NÃO PUBLICAMOS no Instagram do cliente: ele baixa e posta (ou agenda no Meta Business Suite, de graça). Não fazemos stories, vídeos, reels, anúncios pagos nem gestão de perfil.
 - Primeiro mês: os ${cfg.postsMes} posts ficam prontos em cerca de 30 minutos depois do pagamento confirmado (Pix confirma na hora; boleto leva até 3 dias úteis; cartão na hora). Depois, um lote novo a cada renovação mensal.
 - Pagamento pela fatura (Pix, boleto ou cartão). Todo mês chega a fatura nova por e-mail.
-- Ajustes: até ${cfg.ajustesPorMes} por mês. Em cada post da área tem "Pedir ajuste": a pessoa escreve o que quer mudar e o post novo chega em poucos minutos.
+- Ajustes: por mensagem (existe um limite de ${cfg.ajustesPorMes} por mês, mas só fala dele se a pessoa perguntar). Em cada post da área tem "Pedir ajuste": a pessoa escreve o que quer mudar e o post novo chega em poucos minutos.
 - Fotos: o cliente pode enviar até 20 fotos dele na área (botão "Minhas fotos"). Sem fotos, as imagens são geradas por inteligência artificial e são ilustrativas.
 - Mudar as informações do negócio (serviços, horário, tom, o que evitar, novidades do mês): botão "Meu negócio" na área. Vale pros próximos posts.
 - Cancelar: botão "Cancelar assinatura" na área. Não cobra mais nada; o que já foi pago continua valendo até o fim do período.
@@ -36,7 +36,7 @@ CÓMO FUNCIONA EL SERVICIO (solo afirma lo que está aquí):
 - NO PUBLICAMOS en el Instagram del cliente: él descarga y publica (o programa en Meta Business Suite, gratis). No hacemos historias, videos, reels, anuncios pagados ni gestión de perfil.
 - Primer mes: los ${cfg.postsMes} posts quedan listos unos 30 minutos después de confirmado el pago. Después, un lote nuevo en cada renovación mensual.
 - El pago se hace en la página segura de Hotmart (tarjeta y los medios locales que aparecen allí). La renovación es automática cada mes; Hotmart envía el comprobante por correo.
-- Ajustes: hasta ${cfg.ajustesPorMes} al mes. En cada post del área hay "Pedir ajuste": la persona escribe qué quiere cambiar y el post nuevo llega en pocos minutos.
+- Ajustes: por mensaje (hay un límite de ${cfg.ajustesPorMes} al mes, pero solo lo mencionas si la persona pregunta). En cada post del área hay "Pedir ajuste": la persona escribe qué quiere cambiar y el post nuevo llega en pocos minutos.
 - Fotos: el cliente puede subir hasta 20 fotos suyas en el área (botón "Mis fotos"). Sin fotos, las imágenes se generan con inteligencia artificial y son ilustrativas.
 - Cambiar la información del negocio (servicios, horario, tono, qué evitar, novedades del mes): botón "Mi negocio" en el área. Vale para los próximos posts.
 - Cancelar: botón "Cancelar suscripción" en el área. No se cobra nada más; lo ya pagado vale hasta el final del período.

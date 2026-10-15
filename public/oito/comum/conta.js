@@ -145,7 +145,7 @@
 
   function assinatura() {
     var el = document.getElementById('aba-assinatura'), s = v.status
-    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Plano único · R$ ' + (window.OITO_PRECO || 197) + '/mês</h3><p class="suave">8 posts por mês, até 4 ajustes, sem fidelidade.</p>' +
+    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Plano único · R$ ' + (window.OITO_PRECO || 197) + '/mês</h3><p class="suave">8 posts por mês, ajustes por mensagem, sem fidelidade.</p>' +
       '<p>Situação: <b>' + (STATUS[s] || ['', s])[1] + '</b>' + (v.pago_ate ? ' · pago até ' + OITO.dataBR(v.pago_ate) : '') + '</p>' +
       (s === 'aguardando_pagamento' || s === 'atrasado' ? '<button class="btn" id="fatura">Pagar a fatura</button>' : '') +
       (s === 'teste' ? '<a class="btn" href="/oito/' + OITO.marca + '/teste.html?c=' + c + '">Assinar</a>' : '') +

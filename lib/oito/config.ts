@@ -16,7 +16,7 @@ export const oitoConfig = {
   preco: PRECO_BRL,
   postsMes: 8,
   postsTeste: 2,
-  ajustesPorMes: 4,
+  ajustesPorMes: 10, // 15/10: limite interno, não é anunciado na oferta (antes 4)
   marcas: {
     salao: { nome: 'Salão no Feed', dominio: 'salaonofeed.com.br', nicho: 'salões de beleza, estética, sobrancelha, cílios, unhas e cabelo', quem: 'o teu salão', base: 'salao', idioma: 'pt', gateway: 'asaas', preco: PRECO_BRL, moeda: 'BRL', email: 'contato@salaonofeed.com.br' },
     prato: { nome: 'Prato no Feed', dominio: 'pratonofeed.com.br', nicho: 'restaurantes, lancherias, hamburguerias, pizzarias, confeitarias e delivery', quem: 'o teu restaurante', base: 'prato', idioma: 'pt', gateway: 'asaas', preco: PRECO_BRL, moeda: 'BRL', email: 'contato@pratonofeed.com.br' },
