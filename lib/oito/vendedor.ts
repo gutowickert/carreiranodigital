@@ -125,6 +125,15 @@ export async function respondeVenda(cv: any) {
 
 // depois que o cliente escreve (o webhook espera uns segundos pra juntar mensagens seguidas)
 export async function atendeConversa(id: string) {
+  // 15/10: o agente do WhatsApp (agente.ts) faz o funil inteiro; o vendedor antigo fica só de reserva
+  try { const { atende } = await import('./agente'); return await atende(id) } catch (e: any) {
+    await db.atualiza('wa_conversas', { id }, { modo: 'humano' })
+    const cv = await db.um('wa_conversas', { id })
+    avisaDono('WhatsApp (agente falhou), assume', `${cv?.nome || cv?.telefone}: ${String(e?.message || '').slice(0, 120)}`)
+    return
+  }
+}
+export async function atendeConversaAntigo(id: string) {
   const cv = await db.um('wa_conversas', { id })
   if (!cv || cv.modo !== 'ia' || cv.optout) return
   if ((cv.ia_respostas || 0) >= MAX_IA_VENDA) {

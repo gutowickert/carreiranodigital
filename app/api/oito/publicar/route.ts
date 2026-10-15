@@ -58,6 +58,8 @@ export async function POST(req: Request) {
         await db.atualiza('posts', { id: p.id }, { publicado_em: new Date().toISOString(), ig_media_id: id, publicacao_erro: null })
         await db.evento('publicado', { cliente_id: c.id, marca: c.marca, detalhe: { post: p.id, ig_media_id: id, tentativa: tent } })
         res.publicados.push({ cliente: c.codigo, post: p.id, ig: id })
+        // 15/10: o agente avisa no WhatsApp que postou
+        try { const { notificaPublicado } = await import('@/lib/oito/agente'); await notificaPublicado(c, null) } catch {}
       } catch (e: any) {
         const msg = String(e?.message || e).slice(0, 300)
         await db.atualiza('posts', { id: p.id }, { publicacao_erro: msg })

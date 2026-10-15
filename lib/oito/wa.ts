@@ -16,7 +16,11 @@ export function fone(raw: string) {
   return d
 }
 
+// 15/10: telefones de simulação (começam com 55000) não saem pra Meta: a validação do agente roda sem mandar nada de verdade
+export const ehSimulado = (tel: string) => /^55000/.test(String(tel || ''))
 async function manda(corpo: any) {
+  if (corpo.to && ehSimulado(corpo.to)) return { ok: true, wamid: 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) }
+  if (corpo.status === 'read' && String(corpo.message_id || '').startsWith('sim-')) return { ok: true }
   if (!waLigado()) return { ok: false, erro: 'WhatsApp do Oito não configurado (OITO_WA_PHONE_ID)' }
   try {
     const r = await fetch(`${GRAPH}/${PHONE()}/messages`, {
@@ -37,6 +41,22 @@ export function enviaModelo(para: string, nome: string, idioma: string, corpo: s
   for (const b of botoes) components.push({ type: 'button', sub_type: b.tipo, index: String(b.indice), parameters: [b.tipo === 'url' ? { type: 'text', text: b.valor } : { type: 'payload', payload: b.valor }] })
   return manda({ to: fone(para), type: 'template', template: { name: nome, language: { code: idioma }, ...(components.length ? { components } : {}) } })
 }
+
+// imagem por link público (o post pronto, a fatura...), com legenda
+export const enviaImagem = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'image', image: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
+
+// baixa uma mídia recebida (foto, logo): a Meta dá um endereço temporário, que só abre com o token
+export async function baixaMidia(id: string) {
+  const r = await fetch(`${GRAPH}/${id}`, { headers: { Authorization: 'Bearer ' + TOKEN() }, signal: AbortSignal.timeout(15000) })
+  const j: any = await r.json().catch(() => ({}))
+  if (!r.ok || !j.url) throw new Error('mídia: ' + (j?.error?.message || r.status))
+  const b = await fetch(j.url, { headers: { Authorization: 'Bearer ' + TOKEN() }, signal: AbortSignal.timeout(30000) })
+  if (!b.ok) throw new Error('mídia: download ' + b.status)
+  return { buf: Buffer.from(await b.arrayBuffer()), mime: String(j.mime_type || b.headers.get('content-type') || 'image/jpeg') }
+}
+
+// a janela de 24 h: dentro dela vale texto livre; fora, só modelo aprovado
+export const janelaAberta = (cv: any) => !!cv?.janela_ate && cv.janela_ate > new Date().toISOString()
 
 export const marcaLida = (wamid: string) => manda({ status: 'read', message_id: wamid })
 

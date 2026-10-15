@@ -126,6 +126,8 @@ export async function POST(req: Request) {
     // lote refeito (14/10): o e-mail sai só na primeira entrega daquele lote
     const jaAvisou = (await db.lista('eventos', { cliente_id: c!.id, tipo })).some(e => e.detalhe?.lote === l.id)
     await db.evento(tipo, { cliente_id: c!.id, marca: c!.marca, detalhe: { lote: l.id, segundos: Math.round((Date.now() - new Date(l.iniciado_em).getTime()) / 1000), custo_usd: +b.custo_usd || 0 } })
+    // 15/10: o agente do WhatsApp manda o teste em imagens, o ajuste e o aviso do mês pronto (inclusive nas simulações)
+    try { const { notificaFimLote } = await import('@/lib/oito/agente'); await notificaFimLote(c, l) } catch (e: any) { console.error('oito whats fim', e?.message) }
     // e-mail pro cliente (13/10): teste pronto e mês entregue (exemplos não recebem)
     if (!c!.exemplo && !jaAvisou) { const { emailsOito } = await import('@/lib/oito/email'); if (l.tipo === 'teste') await emailsOito.testePronto(c); if (l.tipo === 'mes') await emailsOito.mesEntregue(c) }
     return NextResponse.json({ ok: true })
