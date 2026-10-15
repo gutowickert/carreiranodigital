@@ -95,7 +95,7 @@ export async function GET(req: Request) {
     }),
     fila: lotes.slice(0, 80).map(l => ({ id: l.id, tipo: l.tipo, status: l.status, qtd: l.qtd, tentativas: l.tentativas, erro: l.erro, criado_em: l.criado_em, iniciado_em: l.iniciado_em, pronto_em: l.pronto_em,
       custo_usd: +l.custo_usd || 0, cliente: nomeDe.get(l.cliente_id)?.nome_negocio, codigo: nomeDe.get(l.cliente_id)?.codigo, marca: nomeDe.get(l.cliente_id)?.marca })),
-    posts: recentes.map((p, i) => ({ id: p.id, titulo: p.titulo, url: links[i], revisao: p.revisao || null, criado_em: p.criado_em, cliente: nomeDe.get(p.cliente_id)?.nome_negocio, marca: nomeDe.get(p.cliente_id)?.marca })),
+    posts: recentes.map((p, i) => ({ id: p.id, titulo: p.titulo, url: links[i], revisao: p.revisao || null, criado_em: p.criado_em, cliente: nomeDe.get(p.cliente_id)?.nome_negocio, marca: nomeDe.get(p.cliente_id)?.marca || marcaCli.get(p.cliente_id) || null })),
     // suporte: uma linha por chamado, com o problema e a solução que a IA adotou
     chamados: chamados.map(ch => ({ id: ch.id, status: ch.status, origem: ch.origem, marca: ch.marca, nome: ch.nome || nomeDe.get(ch.cliente_id)?.nome_negocio, contato: ch.contato,
       codigo: nomeDe.get(ch.cliente_id)?.codigo || null, assunto: ch.assunto, problema: ch.problema, solucao: ch.solucao, ia_respostas: ch.ia_respostas, resolvido_por: ch.resolvido_por || null, nao_lidas: ch.nao_lidas_dono,
