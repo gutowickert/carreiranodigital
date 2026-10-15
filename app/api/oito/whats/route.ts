@@ -24,7 +24,9 @@ export async function GET(req: Request) {
     return NextResponse.json({ conversa: cv, cliente: cli ? { codigo: cli.codigo, nome: cli.nome_negocio, cidade: cli.cidade, status: cli.status, marca: cli.marca, instagram: cli.instagram } : null,
       msgs: msgs.map(m => ({ autor: m.autor, tipo: m.tipo, texto: m.texto, status: m.status, erro: m.erro, em: m.criado_em })) }, { headers: { 'Cache-Control': 'no-store' } })
   }
-  const cvs = await db.lista('wa_conversas', {}, { ordem: 'atualizado_em', desc: true, limite: 200 })
+  // 15/10: painel zerado: só as conversas com movimento depois de painel_desde (quem responder de novo volta pra lista)
+  const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
+  const cvs = (await db.lista('wa_conversas', {}, { ordem: 'atualizado_em', desc: true, limite: 200 })).filter(cv => !zero || String(cv.ultima_msg_em || cv.atualizado_em || '') >= zero)
   return NextResponse.json({ ligado: waLigado(), conversas: cvs }, { headers: { 'Cache-Control': 'no-store' } })
 }
 

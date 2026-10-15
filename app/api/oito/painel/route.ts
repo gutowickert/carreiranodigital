@@ -26,14 +26,19 @@ export async function GET(req: Request) {
     fim = new Date(new Date(ateP + 'T03:00:00.000Z').getTime() + 86400e3).toISOString()
   }
 
-  const [clientes, lotes, eventos, estado, chamados] = await Promise.all([
+  const [clientesT, lotesT, eventosT, estado, chamadosT] = await Promise.all([
     db.lista('clientes', {}, { ordem: 'criado_em', desc: true }),
     db.lista('lotes', {}, { ordem: 'criado_em', desc: true, limite: 400 }),
     db.lista('eventos', {}, { ordem: 'criado_em', desc: true, limite: 5000 }),
     db.lista('estado', {}),
     db.lista('chamados', {}, { ordem: 'atualizado_em', desc: true, limite: 200 }).catch(() => [] as any[]),
   ])
-  const exemplo = new Set(clientes.filter(c => c.exemplo).map(c => c.id))
+  // 15/10: o painel zerado (pedido do Guto): conta só o que aconteceu depois de oito_estado.painel_desde; os dados antigos continuam no banco
+  const zero = String(estado.find(e => e.chave === 'painel_desde')?.valor || '')
+  const depois = (d: any) => !zero || String(d || '') >= zero
+  const exemplo = new Set(clientesT.filter(c => c.exemplo).map(c => c.id))
+  const clientes = clientesT.filter(c => depois(c.criado_em)), lotes = lotesT.filter(l => depois(l.criado_em))
+  const eventos = eventosT.filter(e => depois(e.criado_em)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em))
   const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
   const noPeriodo = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
 
