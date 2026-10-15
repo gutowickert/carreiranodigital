@@ -99,7 +99,7 @@ async function retomaConversas() {
     const passou = agora - (new Date(cv.janela_ate).getTime() - 24 * 3600e3)
     const r = cv.rascunho || {}, feito = (r.retoma || {})[cv.fase] || 0
     const c = cv.cliente_id ? await db.um('clientes', { id: cv.cliente_id }) : null
-    if (c && ['ativo', 'cancelado'].includes(c.status)) continue
+    if (c && (c.exemplo || ['ativo', 'cancelado'].includes(c.status))) continue // exemplo = teste nosso: sem lembrete
     const nome = primeiro(cv.nome || c?.responsavel), n = nome && !/^\d/.test(nome) ? ', ' + nome : ''
     let res: any = null
     if (feito === 0 && passou > 3 * 3600e3 && passou < 23 * 3600e3) {
