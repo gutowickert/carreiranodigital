@@ -65,7 +65,11 @@ export async function conversaDe(telefone: string, extra: { nome?: string | null
   const tel = fone(telefone)
   let cv = await db.um('wa_conversas', { telefone: tel })
   if (cv) return cv
+  // 15/10: a Meta às vezes manda o celular brasileiro sem o 9 (554498479803) e o cadastro tem com o 9 (5544998479803), ou o contrário
+  const outro = /^55\d{10}$/.test(tel) ? tel.slice(0, 4) + '9' + tel.slice(4) : /^55\d{2}9\d{8}$/.test(tel) ? tel.slice(0, 4) + tel.slice(5) : ''
+  if (outro) { cv = await db.um('wa_conversas', { telefone: outro }); if (cv) return cv }
   const cli = (await db.lista('clientes', { whatsapp: tel }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
+    || (outro ? (await db.lista('clientes', { whatsapp: outro }, { ordem: 'criado_em', desc: true, limite: 1 }))[0] : undefined)
   try {
     cv = await db.insere('wa_conversas', { telefone: tel, cliente_id: cli?.id || null, marca: cli?.marca || null, nome: extra.nome || cli?.responsavel || cli?.nome_negocio || null })
   } catch (e: any) { if (/duplicate|23505/.test(e.message)) cv = await db.um('wa_conversas', { telefone: tel }); else throw e }
