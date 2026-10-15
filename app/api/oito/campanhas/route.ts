@@ -45,7 +45,9 @@ export async function GET(req: Request) {
   // 15/10: painel zerado: campanhas criadas antes de painel_desde ficam de fora (os números da Meta são por dia, não dá pra cortar na hora)
   const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
   let linhas = (meta.linhas || []).filter(l => marcaDaCampanha(l.campaign_name))
-  if (zero) { const criadas = await campanhasCriadasEm(linhas.map(l => l.campaign_id)); linhas = linhas.filter(l => (criadas.get(l.campaign_id) || '9') >= zero) }
+  // as campanhas têm o próprio corte (campanhas_desde): zerar o site de novo não pode esconder as campanhas novas que já estão rodando
+  const corteCamp = String((await db.um('estado', { chave: 'campanhas_desde' }).catch(() => null))?.valor || '') || zero
+  if (corteCamp) { const criadas = await campanhasCriadasEm(linhas.map(l => l.campaign_id)); linhas = linhas.filter(l => (criadas.get(l.campaign_id) || '9') >= corteCamp) }
   const exemplo = new Set(clientes.filter(c => c.exemplo).map(c => c.id))
   const ev = eventos.filter(e => e.criado_em >= desdeTs && e.criado_em < fimTs && (!zero || e.criado_em >= zero) && (!e.cliente_id || !exemplo.has(e.cliente_id)))
   const porCliente = new Map(clientes.map(c => [c.id, c]))
