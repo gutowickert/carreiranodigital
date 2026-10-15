@@ -1,6 +1,6 @@
 // Oito Posts: configura a conta de WhatsApp do Oito (14/10). Rodar uma vez, depois que o número estiver na conta.
 //   GET  (x-senha) → o número, a conta e a situação dos modelos
-//   POST (x-senha) {webhook?:true, modelos?:true} → liga o webhook próprio na conta (override) e cria os modelos que faltam
+//   POST (x-senha) {registrar?:true, pin?:'123456', webhook?:true, modelos?:true} → liga o webhook próprio na conta (override) e cria os modelos que faltam
 // Precisa de OITO_WA_WABA_ID, OITO_WA_PHONE_ID e um token com acesso à conta (OITO_WA_TOKEN ou o WA_OFICIAL_TOKEN da escola).
 import { NextResponse } from 'next/server'
 import { senhaOk } from '@/lib/oito/config'
@@ -53,6 +53,11 @@ export async function POST(req: Request) {
   if (!WABA()) return NextResponse.json({ erro: 'falta OITO_WA_WABA_ID' }, { status: 503 })
   const b = await req.json().catch(() => ({}))
   const out: any = {}
+  // 15/10: ativa o número na Cloud API (registro com o PIN de confirmação em duas etapas, 6 dígitos)
+  if (b.registrar && /^d{6}$/.test(String(b.pin || ''))) {
+    const r = await g(`/${process.env.OITO_WA_PHONE_ID}/register`, { method: 'POST', body: JSON.stringify({ messaging_product: 'whatsapp', pin: String(b.pin) }) })
+    out.registro = r.ok ? 'ativado' : r.j
+  }
   if (b.webhook) {
     const r = await g(`/${WABA()}/subscribed_apps`, { method: 'POST', body: JSON.stringify({ override_callback_uri: 'https://carreiranodigital.vercel.app/api/oito/whats/webhook', verify_token: process.env.OITO_WA_VERIFY_TOKEN || 'oito-wa-2026' }) })
     out.webhook = r.ok ? 'ligado' : r.j
