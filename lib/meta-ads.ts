@@ -276,7 +276,7 @@ export async function getStatusConta(conta: string): Promise<StatusConta> {
 export async function campanhasCriadasEm(ids: string[]): Promise<Map<string, string>> {
   const r = new Map<string, string>(), so = [...new Set(ids.filter(Boolean))]
   for (let i = 0; i < so.length && TOKEN; i += 40) {
-    const j: any = await fetch(, { cache: 'no-store' }).then(x => x.json()).catch(() => ({}))
+    const j: any = await fetch(`${GRAPH}/?ids=${so.slice(i, i + 40).join(',')}&fields=created_time&access_token=${encodeURIComponent(TOKEN)}`, { cache: 'no-store' }).then(x => x.json()).catch(() => ({}))
     for (const [id, v] of Object.entries(j || {})) if ((v as any)?.created_time) r.set(id, new Date((v as any).created_time).toISOString())
   }
   return r
