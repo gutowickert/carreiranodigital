@@ -51,7 +51,9 @@ export async function respondeEmail(ch: any, texto: string, autor: 'ia' | 'dono'
 }
 
 async function lerCaixa(m: Marca) {
-  const c = new ImapFlow({ host: process.env.OITO_EMAIL_IMAP || "imap.titan.email", port: 993, secure: true,
+  // 16/10: a caixa do Feed al Día fica na HostGator (cPanel), não no Titan
+  const host = feedAlDia(m) ? (envFeedAlDia('EMAIL_IMAP') || 'br1100.hostgator.com.br') : (process.env.OITO_EMAIL_IMAP || "imap.titan.email")
+  const c = new ImapFlow({ host, port: 993, secure: true,
     auth: { user: cfg.marcas[m].email, pass: senha(m) as string }, logger: false, tls: { rejectUnauthorized: false } })
   let novas = 0
   await c.connect()
