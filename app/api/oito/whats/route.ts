@@ -5,6 +5,7 @@
 //   POST {acao:'responder', id, texto}      → o dono escreve (só dentro da janela de 24 h; fora dela a Meta só aceita modelo)
 //   POST {acao:'modo', id, modo:'ia'|'humano'|'encerrada'}
 //   POST {acao:'followup'}                  → roda a varredura do follow-up (o gerador chama a cada 2 min)
+//   POST {acao:'imagens', id, antes?, imagens:[{path, legenda?}], depois?, modo_depois?} → (16/10) manda imagens do storage com textos
 import { NextResponse } from 'next/server'
 import { senhaOk, regiaoDe, lerRegiao } from '@/lib/oito/config'
 import { oitoDb as db } from '@/lib/oito/db'
@@ -54,6 +55,24 @@ export async function POST(req: Request) {
     // quem responde assume a conversa (a IA para de responder)
     await db.atualiza('wa_conversas', { id: cv.id }, { modo: 'humano', nao_lidas: 0 })
     return NextResponse.json(r.ok ? { ok: true } : { erro: r.erro }, { status: r.ok ? 200 : 502 })
+  }
+  // 16/10: o dono (ou o Claude, a pedido dele) manda imagens já guardadas no storage, com legenda, e textos antes/depois
+  //   POST {acao:'imagens', id, antes?, imagens:[{path, legenda?}], depois?, modo_depois?:'ia'|'humano'}
+  if (b.acao === 'imagens') {
+    if (!cv.janela_ate || cv.janela_ate < new Date().toISOString()) return NextResponse.json({ erro: 'Passaram 24 h da última mensagem do cliente.' }, { status: 409 })
+    const { enviaImagem } = await import('@/lib/oito/wa')
+    const out: any[] = []
+    const texto = async (t: string) => { const r = await enviaTexto(cv.telefone, t); await registraSaida(cv, 'dono', t, r); out.push(r.ok) }
+    if (b.antes) await texto(String(b.antes).slice(0, 4000))
+    for (const im of (Array.isArray(b.imagens) ? b.imagens : []).slice(0, 6)) {
+      const url = await db.link(String(im.path), 60 * 60 * 24 * 7)
+      if (!url) { out.push(false); continue }
+      const leg = String(im.legenda || '').slice(0, 1000), r = await enviaImagem(cv.telefone, url, leg)
+      await registraSaida(cv, 'dono', '[imagem] ' + (leg || im.path), r); out.push(r.ok)
+    }
+    if (b.depois) await texto(String(b.depois).slice(0, 4000))
+    await db.atualiza('wa_conversas', { id: cv.id }, { modo: b.modo_depois === 'ia' ? 'ia' : 'humano', nao_lidas: 0, ...(b.modo_depois === 'ia' ? { ia_respostas: 0 } : {}) })
+    return NextResponse.json({ ok: out.every(Boolean), enviados: out })
   }
   if (b.acao === 'modo' && ['ia', 'humano', 'encerrada'].includes(b.modo)) {
     await db.atualiza('wa_conversas', { id: cv.id }, { modo: b.modo, ...(b.modo === 'ia' ? { ia_respostas: 0 } : {}) })
