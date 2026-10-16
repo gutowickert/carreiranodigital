@@ -28,7 +28,7 @@ export async function GET(req: Request) {
   }
   // 15/10: painel zerado: só as conversas com movimento depois de painel_desde (quem responder de novo volta pra lista)
   const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
-  const cvs = (await db.lista('wa_conversas', {}, { ordem: 'atualizado_em', desc: true, limite: 200 })).filter(cv => !zero || String(cv.ultima_msg_em || cv.atualizado_em || '') >= zero)
+  const cvs = (await db.lista('wa_conversas', {}, { ordem: 'atualizado_em', desc: true, limite: 200 })).filter(cv => !cv.simulado && (!zero || String(cv.ultima_msg_em || cv.atualizado_em || '') >= zero))
   const regiao = lerRegiao(sp.get('regiao'))
   let lista = cvs
   if (regiao) {
