@@ -19,7 +19,7 @@
     document.getElementById('nome-neg').textContent = v.negocio.nome
     var s = STATUS[v.status] || ['', v.status]
     document.getElementById('situacao').innerHTML = '<span class="pilula ' + s[0] + '">' + s[1] + (v.pago_ate && v.status !== 'aguardando_pagamento' ? ' · até ' + OITO.dataBR(v.pago_ate) : '') + '</span>'
-    if (v.status === 'ativo' && !OITO.ls.get('oito_comprou_' + c)) { OITO.ls.set('oito_comprou_' + c, '1'); OITO.fb('Purchase', { value: window.OITO_PRECO || 197, currency: 'BRL', content_name: OITO.marca }, 'compra-' + c) }
+    if (v.status === 'ativo' && !OITO.ls.get('oito_comprou_' + c)) { OITO.ls.set('oito_comprou_' + c, '1'); OITO.fb('Purchase', { value: window.OITO_PRECO || 99, currency: 'BRL', content_name: OITO.marca }, 'compra-' + c) }
     if (!desenha.feito) { desenha.feito = true; OITO.rastro('area_visita', {}, c); OITO.salvaApp(document.getElementById('salva-app'), c); negocio(); fotos(); OITO.chat(document.getElementById('chat'), { c: c }) }
     posts(); assinatura()
     // enquanto algo está sendo feito (ou o pagamento não confirmou), atualiza sozinho
@@ -145,7 +145,7 @@
 
   function assinatura() {
     var el = document.getElementById('aba-assinatura'), s = v.status
-    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Plano único · R$ ' + (window.OITO_PRECO || 197) + '/mês</h3><p class="suave">8 posts por mês, ajustes por mensagem, sem fidelidade.</p>' +
+    el.innerHTML = '<div class="caixa" style="display:grid;gap:12px"><h3>Plano único · R$ ' + (window.OITO_PRECO || 99) + '/mês</h3><p class="suave">8 posts por mês, ajustes por mensagem, sem fidelidade.</p>' +
       '<p>Situação: <b>' + (STATUS[s] || ['', s])[1] + '</b>' + (v.pago_ate ? ' · pago até ' + OITO.dataBR(v.pago_ate) : '') + '</p>' +
       (s === 'aguardando_pagamento' || s === 'atrasado' ? '<button class="btn" id="fatura">Pagar a fatura</button>' : '') +
       (s === 'teste' ? '<a class="btn" href="/oito/' + OITO.marca + '/teste.html?c=' + c + '">Assinar</a>' : '') +

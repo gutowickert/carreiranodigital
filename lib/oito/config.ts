@@ -9,7 +9,7 @@ type InfoMarca = { nome: string; dominio: string; nicho: string; quem: string; b
 
 // O PREÇO DAS MARCAS BRASILEIRAS (15/10): mude só aqui. A cobrança do Asaas, o suporte, as páginas de venda
 // (o build.js das páginas, na pasta Desktop/Oito Posts/site, lê este número) e os anúncios (anuncios/gera-whats.js) saem dele.
-export const PRECO_BRL = 197
+export const PRECO_BRL = 99 // 16/10: teste de preço pedido pelo Guto (era 197)
 // O PREÇO DO FEED AL DÍA (espanhol, cobrado pela Hotmart), em dólar: mude só aqui (e no produto da Hotmart).
 // As páginas (Desktop/Oito Posts/site/build-es.js) e os anúncios (anuncios/gera-feedaldia.js) leem este número.
 export const PRECO_USD = 29 // 15/10: Guto baixou de 39 pra 29

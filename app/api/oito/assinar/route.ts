@@ -1,4 +1,4 @@
-// Oito Posts: abre a assinatura de R$ 197/mês no Asaas e devolve o link da primeira fatura.
+// Oito Posts: abre a assinatura mensal (PRECO_BRL do config.ts) no Asaas e devolve o link da primeira fatura.
 // Sem chave do Asaas (modo local), a assinatura é simulada e a página mostra o botão "simular pagamento".
 import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
