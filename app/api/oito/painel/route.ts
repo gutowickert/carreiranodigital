@@ -147,6 +147,13 @@ export async function POST(req: Request) {
     }
     case 'apagar': if (c && (c.status === 'teste' || c.exemplo)) await db.apaga('clientes', { id: c.id }); break
     case 'exemplo': if (c) await db.atualiza('clientes', { id: c.id }, { exemplo: !!b.valor }); break
+    // 16/10: assinatura aberta com o preço antigo passa pro preço atual da marca (e as faturas em aberto junto)
+    case 'preco_atual': {
+      if (!c?.asaas_assinatura) return NextResponse.json({ erro: 'sem assinatura no Asaas' }, { status: 400 })
+      const { mudaValorAssinatura } = await import('@/lib/oito/asaas')
+      const r = await mudaValorAssinatura(c.asaas_assinatura, cfg.marcas[c.marca as Marca].preco).catch((e: any) => ({ ok: false, erro: e.message }))
+      return NextResponse.json(r)
+    }
     default: return NextResponse.json({ erro: 'ação' }, { status: 400 })
   }
   return NextResponse.json({ ok: true, marca: c ? cfg.marcas[c.marca as Marca]?.nome : null })

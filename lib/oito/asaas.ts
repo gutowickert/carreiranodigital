@@ -14,6 +14,12 @@ const hoje = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
 const maisDias = (n: number) => new Date(Date.now() - 3 * 3600e3 + n * 86400e3).toISOString().slice(0, 10)
 const maisUmMes = (d: string) => { const x = new Date(d + 'T12:00:00Z'); x.setUTCMonth(x.getUTCMonth() + 1); return x.toISOString().slice(0, 10) }
 export const simulado = () => !process.env.ASAAS_API_KEY
+// 16/10: muda o valor da assinatura (teste de preço) e das faturas em aberto dela
+export async function mudaValorAssinatura(assinatura: string, valor: number) {
+  if (simulado()) return { ok: true, simulado: true }
+  const s = await api(`/subscriptions/${assinatura}`, { method: 'POST', body: JSON.stringify({ value: valor, updatePendingPayments: true }) })
+  return { ok: true, valor: s.value }
+}
 // na Vercel nunca simula: sem chave, a assinatura falha (senão daria pra "pagar" de mentira)
 export const podeSimular = () => simulado() && !process.env.VERCEL
 
