@@ -35,7 +35,27 @@ const MODELOS = [
   { name: 'oito_es_seguimiento_2', language: 'es', es: true,
     texto: '¡Hola, {{1}}! Te escribimos de {{2}}. Este es nuestro último mensaje por aquí 🙂\n\nLos posts gratis de {{3}} siguen en tu área. Cuando quieras los 8 posts del mes, solo responde este mensaje.\n\nSi no quieres recibir más mensajes, responde SALIR.',
     botoes: ['Quiero suscribirme'] },
-]
+  // 16/10 (v2, pedido do Guto): a 1ª mensagem busca a APROVAÇÃO, não a venda; tudo mais leve. O teste pronto vai como UTILIDADE
+  // (é o aviso de uma entrega). Enquanto a Meta não aprova, o sistema cai sozinho nos modelos antigos (lib/oito/vendedor.ts).
+  { name: 'oito_teste_pronto_v2', language: 'pt_BR', es: false, url: true, categoria: 'UTILITY',
+    texto: 'Oi, {{1}}! Aqui é do {{2}} 😊\n\nOs 2 posts do {{3}} ficaram prontos. Deu uma olhada? Me conta o que achou.\n\nSe estiver do seu jeito, é só aprovar. Se quiser mudar alguma coisa (o texto, a foto, as cores), me diz aqui que eu ajusto.',
+    botoes: ['Aprovado 👍', 'Quero ajustar'], link: 'Ver os posts' },
+  { name: 'oito_seguimento_1_v2', language: 'pt_BR', es: false,
+    texto: 'Oi, {{1}}! Aqui é do {{2}}, passando pra saber se os posts do {{3}} serviram 🙂\n\nSe algum detalhe não ficou do seu jeito, eu ajusto rapidinho. E se fizer sentido receber 8 assim todo mês, te conto como funciona, sem compromisso.',
+    botoes: ['Quero ajustar', 'Como funciona?', 'Agora não'] },
+  { name: 'oito_seguimento_2_v2', language: 'pt_BR', es: false,
+    texto: 'Oi, {{1}}! Última mensagem do {{2}} por aqui, prometo 😊\n\nOs posts do {{3}} continuam guardados na sua área. Quando quiser os do mês, é só responder esta conversa.\n\nSe preferir não receber mais, responda SAIR.',
+    botoes: ['Quero os do mês'] },
+  { name: 'oito_es_prueba_lista_v2', language: 'es', es: true, url: true, categoria: 'UTILITY',
+    texto: '¡Hola, {{1}}! Te escribimos de {{2}} 😊\n\nLos 2 posts de {{3}} ya están listos. ¿Alcanzaste a verlos? Cuéntame qué te parecieron.\n\nSi te gustan, solo apruébalos. Si quieres cambiar algo (el texto, la foto, los colores), dímelo aquí y lo ajusto.',
+    botoes: ['Aprobado 👍', 'Quiero ajustar'], link: 'Ver los posts' },
+  { name: 'oito_es_seguimiento_1_v2', language: 'es', es: true,
+    texto: '¡Hola, {{1}}! Te escribimos de {{2}}: ¿los posts de {{3}} te sirvieron? 🙂\n\nSi algún detalle no quedó a tu gusto, lo ajusto rapidito. Y si te sirve recibir 8 así cada mes, te cuento cómo funciona, sin compromiso.',
+    botoes: ['Quiero ajustar', '¿Cómo funciona?', 'Ahora no'] },
+  { name: 'oito_es_seguimiento_2_v2', language: 'es', es: true,
+    texto: '¡Hola, {{1}}! Último mensaje de {{2}} por aquí, lo prometo 😊\n\nLos posts de {{3}} siguen guardados en tu área. Cuando quieras los del mes, solo responde esta conversación.\n\nSi prefieres no recibir más mensajes, responde SALIR.',
+    botoes: ['Quiero los del mes'] },
+] as { name: string; language: string; es: boolean; url?: boolean; categoria?: string; texto: string; botoes: string[]; link?: string }[]
 
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return NextResponse.json({ erro: 'senha' }, { status: 401 })
@@ -71,7 +91,7 @@ export async function POST(req: Request) {
       if (m.url) buttons.push({ type: 'URL', text: m.link, url: BASE_URL + '{{1}}', example: [BASE_URL + (m.es ? 'peludo' : 'pata') + '/teste.html?c=ABC123'] })
       for (const t of m.botoes) buttons.push({ type: 'QUICK_REPLY', text: t })
       const comp: any[] = [{ type: 'BODY', text: m.texto, example: { body_text: [EX(m.es)] } }, { type: 'BUTTONS', buttons }]
-      const r = await g(`/${WABA()}/message_templates`, { method: 'POST', body: JSON.stringify({ name: m.name, language: m.language, category: 'MARKETING', components: comp }) })
+      const r = await g(`/${WABA()}/message_templates`, { method: 'POST', body: JSON.stringify({ name: m.name, language: m.language, category: m.categoria || 'MARKETING', components: comp }) })
       out.modelos[m.name] = r.ok ? (r.j.status || 'enviado') : (r.j.error?.error_user_msg || r.j.error?.message || 'erro')
     }
   }

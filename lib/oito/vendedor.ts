@@ -19,6 +19,12 @@ export const MODELOS = {
   pt: ['oito_teste_pronto', 'oito_seguimento_1', 'oito_seguimento_2'],
   es: ['oito_es_prueba_lista', 'oito_es_seguimiento_1', 'oito_es_seguimiento_2'],
 }
+// 16/10: as versões novas (a 1ª pede a aprovação, não vende; tudo mais leve). Tenta a _v2; se a Meta ainda não aprovou, vai a antiga.
+export async function enviaModeloNovo(tel: string, modelo: string, idioma: string, corpo: string[], botoes: any[] = []) {
+  const r = await enviaModelo(tel, modelo + '_v2', idioma, corpo, botoes)
+  if (r.ok) return { ...r, modelo: modelo + '_v2' }
+  return { ...(await enviaModelo(tel, modelo, idioma, corpo, botoes)), modelo }
+}
 const hojeHora = (dias: number, hora: number, tz = -3) => { const d = new Date(Date.now() + tz * 3600e3); d.setUTCDate(d.getUTCDate() + dias); d.setUTCHours(hora - tz, 0, 0, 0); return d }
 const primeiro = (s: any) => String(s || '').trim().split(/\s+/)[0] || ''
 
@@ -51,9 +57,9 @@ async function passoFollowup(cv: any) {
   if (parar) { await db.atualiza('wa_conversas', { id: cv.id }, { proximo_followup_em: null }); return 'parou' }
   const m = c.marca as Marca, es = emEspanhol(m), etapa = cv.followup_etapa
   const nome = primeiro(c.responsavel) || c.nome_negocio
-  const modelo = MODELOS[es ? 'es' : 'pt'][etapa]
-  const r = await enviaModelo(cv.telefone, modelo, es ? 'es' : 'pt_BR', [nome, cfg.marcas[m].nome, c.nome_negocio],
+  const r = await enviaModeloNovo(cv.telefone, MODELOS[es ? 'es' : 'pt'][etapa], es ? 'es' : 'pt_BR', [nome, cfg.marcas[m].nome, c.nome_negocio],
     etapa === 0 ? [{ tipo: 'url', indice: 0, valor: `${m}/teste.html?c=${c.codigo}` }] : [])
+  const modelo = r.modelo
   await registraSaida(cv, 'sistema', `[modelo ${modelo}] follow-up ${etapa + 1} de 3`, r, 'modelo')
   const prox = etapa === 0 ? hojeHora(1, 10) : etapa === 1 ? hojeHora(2, 10) : null
   await db.atualiza('wa_conversas', { id: cv.id }, { followup_etapa: etapa + 1, proximo_followup_em: r.ok && prox ? prox.toISOString() : null })
@@ -90,12 +96,20 @@ export async function rodaFollowups() {
 // 15/10: quem começou pelo WhatsApp e parou no meio do funil (sem responder a nossa última mensagem) recebe até 2 lembretes por fase:
 //   1º: 3 h depois da última mensagem dele, ainda dentro das 24 h (texto livre, da fase) · 2º: 2 dias depois, com o modelo aprovado
 //   (só depois do teste: o modelo fala dos posts). Só das 9h às 20h (Brasília). Para com SAIR, modo humano ou se ele responder.
+// 16/10: mais leves e menos de cobrança (pedido do Guto)
 const RETOMA: Record<string, string> = {
-  novo: 'Oi{n}! Ficou faltando pouco pra eu montar os seus 2 posts grátis. Quer continuar? É só responder aqui 🙂',
-  entrevista: 'Oi{n}! Ficou faltando pouco pra eu montar os seus 2 posts grátis. Quer continuar? É só responder aqui 🙂',
-  aprovando_teste: 'Oi{n}! Conseguiu ver os 2 posts? Me conta o que achou. Se quiser mudar alguma coisa, eu ajusto.',
-  venda: 'Oi{n}! Ficou alguma dúvida sobre a assinatura? Posso te explicar o que precisar por aqui.',
-  aguardando_pagamento: 'Oi{n}! A fatura está no link que te mandei. Se tiver qualquer problema pra pagar, me avisa que eu resolvo.',
+  novo: 'Oi{n}! Ficamos na metade 🙂 Faltam só umas respostas pra eu montar os seus 2 posts grátis. Quando tiver um minutinho, é só seguir por aqui.',
+  entrevista: 'Oi{n}! Ficamos na metade 🙂 Faltam só umas respostas pra eu montar os seus 2 posts grátis. Quando tiver um minutinho, é só seguir por aqui.',
+  aprovando_teste: 'Oi{n}! Conseguiu dar uma olhada nos 2 posts? Quero muito saber o que achou. Se quiser trocar alguma coisa, eu ajusto.',
+  venda: 'Oi{n}! Se ficou alguma dúvida, pode perguntar sem compromisso. E se preferir pensar com calma, tudo bem também 🙂',
+  aguardando_pagamento: 'Oi{n}! Só pra você não ficar sem os posts: o link de pagamento continua valendo. Se deu algum problema, me conta que eu resolvo.',
+}
+const RETOMA_ES: Record<string, string> = {
+  novo: '¡Hola{n}! Quedamos a mitad de camino 🙂 Faltan solo unas respuestas para armar tus 2 posts gratis. Cuando tengas un minuto, seguimos por aquí.',
+  entrevista: '¡Hola{n}! Quedamos a mitad de camino 🙂 Faltan solo unas respuestas para armar tus 2 posts gratis. Cuando tengas un minuto, seguimos por aquí.',
+  aprovando_teste: '¡Hola{n}! ¿Alcanzaste a ver los 2 posts? Me encantaría saber qué te parecieron. Si quieres cambiar algo, lo ajusto.',
+  venda: '¡Hola{n}! Si te quedó alguna duda, pregúntame sin compromiso. Y si prefieres pensarlo con calma, también está bien 🙂',
+  aguardando_pagamento: '¡Hola{n}! Para que no te quedes sin tus posts: el enlace de pago sigue activo. Si hubo algún problema, cuéntame y lo resolvemos.',
 }
 async function retomaConversas() {
   const hora = new Date(Date.now() - 3 * 3600e3).getUTCHours()
@@ -115,12 +129,12 @@ async function retomaConversas() {
     const nome = primeiro(cv.nome || c?.responsavel), n = nome && !/^\d/.test(nome) ? ', ' + nome : ''
     let res: any = null
     if (feito === 0 && passou > 3 * 3600e3 && passou < 23 * 3600e3) {
-      const txt = RETOMA[cv.fase].replace('{n}', n)
+      const txt = ((cv.marca && emEspanhol(cv.marca as Marca) ? RETOMA_ES : RETOMA)[cv.fase] || RETOMA[cv.fase]).replace('{n}', n)
       res = await enviaTexto(cv.telefone, txt); await registraSaida(cv, 'sistema', txt, res)
     } else if (feito === 1 && passou > 48 * 3600e3 && passou < 6 * 86400e3 && c && ['aprovando_teste', 'venda', 'aguardando_pagamento'].includes(cv.fase)) {
-      const m = c.marca as Marca, es = emEspanhol(m), modelo = MODELOS[es ? 'es' : 'pt'][1]
-      res = await enviaModelo(cv.telefone, modelo, es ? 'es' : 'pt_BR', [nome || c.nome_negocio, cfg.marcas[m].nome, c.nome_negocio])
-      await registraSaida(cv, 'sistema', `[modelo ${modelo}] lembrete 2 (${cv.fase})`, res, 'modelo')
+      const m = c.marca as Marca, es = emEspanhol(m)
+      res = await enviaModeloNovo(cv.telefone, MODELOS[es ? 'es' : 'pt'][1], es ? 'es' : 'pt_BR', [nome || c.nome_negocio, cfg.marcas[m].nome, c.nome_negocio])
+      await registraSaida(cv, 'sistema', `[modelo ${res.modelo}] lembrete 2 (${cv.fase})`, res, 'modelo')
     } else continue
     await db.atualiza('wa_conversas', { id: cv.id }, { rascunho: { ...r, retoma: { ...(r.retoma || {}), [cv.fase]: feito + 1 } } })
     if (res?.ok) await db.evento('wa_retoma', { cliente_id: cv.cliente_id || null, marca: cv.marca || null, detalhe: { fase: cv.fase, lembrete: feito + 1 } })
