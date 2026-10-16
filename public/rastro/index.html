@@ -20,7 +20,7 @@
   --bg:#0b111b;--sup:#121a27;--sup2:#182233;--tinta:#e9eef6;--tinta2:#b4bfcf;--mut:#8592a6;--linha:#243044;
   --acento:#5b93ff;--acento-bg:#15274a;--quente:#ff8a63;--quente-bg:#3a1e14;--bom:#4fd394;--bom-bg:#0f3324;--ruim:#ff7d7d;--ruim-bg:#3d1616;--at:#ffb64d;--at-bg:#3a2a0f;
   --sombra:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}}
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0}[hidden]{display:none!important}
 html,body{background:var(--bg);color:var(--tinta);font:15px/1.5 var(--f-texto);-webkit-font-smoothing:antialiased}
 .pag{max-width:1240px;margin:0 auto;padding-block:max(18px,env(safe-area-inset-top,0px)) 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
 h1,h2,h3{font-family:var(--f-display);letter-spacing:-.01em;line-height:1.15}
@@ -39,7 +39,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{ou
 .aviso{background:var(--at-bg);color:var(--at);border-radius:12px;padding:10px 14px;font-size:14px}
 .kpis{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
 .kpi{background:var(--sup);border:1px solid var(--linha);border-radius:14px;padding:13px 15px;min-width:0}
-.kpi span{display:block;font-size:12.5px;color:var(--mut)}
+.kpi>span{display:block;font-size:12.5px;color:var(--mut)}
 .kpi b{display:block;font:700 24px var(--f-dado);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .kpi small{font-size:12px;color:var(--mut)}
 .kpi.grande b{font-size:28px}
@@ -129,14 +129,17 @@ function api() {
 function grafico() {
   var W = 600, H = 190, pl = 46, pb = 22, pt = 10, pr = 8;
   if (D.horas) {
-    var hs = D.horas, max = Math.max.apply(null, hs.map(function (x) { return x.faturamento })) || 1, bw = (W - pl - pr) / 24;
+    var hs = D.horas, max = Math.max.apply(null, hs.map(function (x) { return x.faturamento })) || 0, bw = (W - pl - pr) / 24;
+    if (!max) { $('graf-tit').textContent = 'Faturamento por hora (hoje)'; $('graf').innerHTML = '<p class="vazio" style="padding:60px 0;text-align:center">Nenhuma venda hoje ainda. As barras aparecem conforme as vendas chegam.</p>'; return }
     var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Faturamento por hora hoje">';
     [0, .5, 1].forEach(function (f) { var y = pt + (H - pt - pb) * (1 - f); s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--linha)"/><text x="' + (pl - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)" font-family="IBM Plex Mono">' + brl0(max * f) + '</text>' });
     hs.forEach(function (x, i) { var h = (H - pt - pb) * x.faturamento / max; s += '<rect x="' + (pl + i * bw + 2) + '" y="' + (H - pb - h) + '" width="' + (bw - 4) + '" height="' + h + '" rx="3" fill="var(--acento)"><title>' + i + 'h: ' + x.vendas + ' vendas, ' + brl(x.faturamento) + '</title></rect>'; if (i % 3 === 0) s += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="var(--mut)" font-family="IBM Plex Mono">' + i + 'h</text>' });
     $('graf-tit').textContent = 'Faturamento por hora (hoje)';
     $('graf').innerHTML = s + '</svg><div class="legenda"><span><i style="background:var(--acento)"></i>faturamento</span><span>o gasto de hoje está nos números acima</span></div>'; return;
   }
-  var ds = D.dias, max2 = Math.max.apply(null, ds.map(function (x) { return Math.max(x.faturamento, x.gasto) })) || 1, n = ds.length, g = (W - pl - pr) / n, b = Math.max(2, g / 2 - 3);
+  var ds = D.dias, max2 = Math.max.apply(null, ds.map(function (x) { return Math.max(x.faturamento, x.gasto) })) || 0;
+  if (!max2) { $('graf-tit').textContent = 'Faturamento x gasto, por dia'; $('graf').innerHTML = '<p class="vazio" style="padding:60px 0;text-align:center">Sem gasto nem vendas no período.</p>'; return }
+  var n = ds.length, g = (W - pl - pr) / n, b = Math.max(2, g / 2 - 3);
   var s2 = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Faturamento e gasto por dia">';
   [0, .5, 1].forEach(function (f) { var y = pt + (H - pt - pb) * (1 - f); s2 += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--linha)"/><text x="' + (pl - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)" font-family="IBM Plex Mono">' + brl0(max2 * f) + '</text>' });
   ds.forEach(function (x, i) { var x0 = pl + i * g + (g - 2 * b - 2) / 2, hf = (H - pt - pb) * x.faturamento / max2, hg = (H - pt - pb) * x.gasto / max2;
@@ -157,13 +160,13 @@ function desenha() {
   var p = periodo(); $('de').value = p[0]; $('ate').value = p[1];
   var ult = D.ultima_venda_recebida;
   $('status').innerHTML = '<span><span class="ponto"></span>atualizado às ' + new Date(D.agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (EST.per === 'hoje' ? ' · atualiza a cada minuto' : '') + '</span><span>conta ' + esc(D.projeto.conta) + '</span>';
-  var avisos = []; if (!D.meta.ok) avisos.push('A Meta não respondeu: ' + (D.meta.erro || 'sem detalhe') + '. Os números de gasto ficam zerados até voltar.'); if (!ult) avisos.push('Nenhuma venda chegou da Kiwify ainda. Faça a ligação no quadro "Ligação com a Kiwify", no fim da página.');
+  var avisos = []; if (!D.meta.ok) avisos.push('A Meta não respondeu: ' + String(D.meta.erro || 'sem detalhe').replace(/\.\s*$/, '') + '. Os números de gasto ficam zerados até voltar.'); if (!ult) avisos.push('Nenhuma venda chegou da Kiwify ainda. Faça a ligação no quadro "Ligação com a Kiwify", no fim da página.');
   $('aviso').hidden = !avisos.length; $('aviso').innerHTML = avisos.map(esc).join('<br>');
   $('kpis').innerHTML = [
     ['Faturamento', brl(t.faturamento), t.vendas + ' vendas · ticket ' + brl(t.ticket), 'grande'], ['Gasto na Meta', brl(t.gasto), nf(t.cliques) + ' cliques', 'grande'],
-    ['ROAS', t.roas != null ? t.roas.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '–', 'faturamento ÷ gasto', 'grande'], ['Lucro', '<span class="' + (t.lucro >= 0 ? 'bom-t' : 'ruim-t') + '">' + brl(t.lucro) + '</span>', 'líquido da Kiwify − gasto', 'grande'],
+    ['ROAS', t.roas != null ? t.roas.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '–', 'faturamento ÷ gasto', 'grande'], ['Lucro', brl(t.lucro), 'líquido da Kiwify − gasto', 'grande', t.lucro >= 0 ? 'bom-t' : 'ruim-t'],
     ['CPA', brl(t.cpa), 'gasto por venda'], ['Vendas', nf(t.vendas), 'a Meta contou ' + nf(t.compras_meta)], ['Líquido Kiwify', brl(t.liquido), 'já sem as taxas'], ['Reembolsos', nf(t.reembolsos), brl(t.reembolsos_valor)]
-  ].map(function (k) { return '<div class="kpi ' + (k[3] || '') + '"><span>' + k[0] + '</span><b>' + k[1] + '</b><small>' + k[2] + '</small></div>' }).join('');
+  ].map(function (k) { return '<div class="kpi ' + (k[3] || '') + '"><span>' + k[0] + '</span><b class="' + (k[4] || '') + '">' + k[1] + '</b><small>' + k[2] + '</small></div>' }).join('');
   grafico();
   var tf = D.origens.reduce(function (s, o) { return s + o.faturamento }, 0) || 1;
   $('origens').innerHTML = D.origens.filter(function (o) { return o.vendas }).map(function (o) { return '<div class="barra"><span>' + esc(o.nome) + '</span><b>' + o.vendas + ' · ' + brl0(o.faturamento) + '</b><span class="tr"><i style="width:' + Math.max(2, o.faturamento / tf * 100) + '%"></i></span></div>' }).join('') || '<p class="vazio">Sem vendas no período.</p>';
