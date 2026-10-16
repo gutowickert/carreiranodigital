@@ -50,7 +50,7 @@ th:first-child,td:first-child{text-align:left;white-space:normal;min-width:170px
 .pessoa>button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px 12px;cursor:pointer}
 .pessoa>button:focus-visible{outline:2px solid var(--marca);border-radius:12px}
 .hora{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}
-.meio{min-width:0}.meio .l1{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meio .l2{font-size:13px;color:var(--tx2)}
+.meio{min-width:0}.meio .l1,.meio .l2{display:block}.meio .l1{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meio .l2{font-size:13px;color:var(--tx2)}
 .pontos{display:flex;gap:3px}.pontos i{width:8px;height:8px;border-radius:50%;background:var(--bd)}.pontos i.on{background:var(--marca)}.pontos i.fim{background:var(--bom)}
 .linha{display:none;padding:0 12px 12px 84px;font-size:13px;color:var(--tx2)}.pessoa.aberta .linha{display:block}
 .linha li{list-style:none;padding:3px 0;border-left:2px solid var(--bd);padding-left:10px}.linha li b{font-weight:600;color:var(--mut);font-variant-numeric:tabular-nums;margin-right:6px}
@@ -102,7 +102,7 @@ function barras(lista, total, cor) {
 // os números da Meta por anúncio (nome do anúncio = utm_content)
 function metaPorAnuncio() {
   var m = {}; if (!C || !C.marcas) return m;
-  Object.keys(C.marcas).forEach(function (k) { (C.marcas[k].campanhas || []).forEach(function (c) { (c.anuncios || []).forEach(function (a) { var x = m[a.nome] || (m[a.nome] = { gasto: 0, cliques: 0, impressoes: 0, marca: k, campanha: c.nome }); x.gasto += a.gasto || 0; x.cliques += a.cliques || 0; x.impressoes += a.impressoes || 0 }) }) });
+  Object.keys(C.marcas).forEach(function (k) { (C.marcas[k].campanhas || []).forEach(function (c) { (c.anuncios || []).forEach(function (a) { var ch = k + '|' + a.nome, x = m[ch] || (m[ch] = { nome: a.nome, gasto: 0, cliques: 0, impressoes: 0, marca: k, campanha: c.nome }); x.gasto += a.gasto || 0; x.cliques += a.cliques || 0; x.impressoes += a.impressoes || 0 }) }) });
   return m;
 }
 function leitura() {
@@ -122,9 +122,9 @@ function leitura() {
   if (abriu >= 3) { var pediu = f.pediu || 0; L.push([pediu / abriu < .4 ? 'at' : 'bom', pct(pediu, abriu) + ' de quem abriu o formulário pediu o teste (' + pediu + ' de ' + abriu + ').']); if (D.formulario && D.formulario[0] && D.formulario[0].n >= 2) L.push(['at', 'No formulário, a maior desistência é no ' + D.formulario[0].k + ' (' + D.formulario[0].n + ' pessoas).']) }
   if ((f.wa_chamou || 0) >= 3) L.push([(f.wa_respondeu || 0) / f.wa_chamou < .25 ? 'at' : 'bom', 'O WhatsApp chamou ' + f.wa_chamou + ' e ' + (f.wa_respondeu || 0) + ' responderam (' + pct(f.wa_respondeu || 0, f.wa_chamou) + ').']);
   if (f.pediu && gasto) L.push(['', 'Custo por teste até agora: ' + din(gasto / f.pediu) + (f.pagou ? ' · custo por venda: ' + din(gasto / f.pagou) : '') + '.']);
-  var M = metaPorAnuncio(), ads = D.anuncios.filter(function (a) { return M[a.anuncio] });
-  ads.forEach(function (a) { var m = M[a.anuncio]; if (m.cliques >= 15 && !a.etapas.pediu) L.push(['at', 'O anúncio "' + a.anuncio + '" já teve ' + m.cliques + ' cliques (' + din(m.gasto) + ') e nenhum teste.']) });
-  var melhor = ads.filter(function (a) { return a.etapas.pediu }).map(function (a) { return { a: a, c: M[a.anuncio].gasto / a.etapas.pediu } }).sort(function (x, y) { return x.c - y.c })[0];
+  var M = metaPorAnuncio(), ads = D.anuncios.filter(function (a) { return M[a.marca + '|' + a.anuncio] });
+  ads.forEach(function (a) { var m = M[a.marca + '|' + a.anuncio]; if (m.cliques >= 15 && !a.etapas.pediu) L.push(['at', 'O anúncio "' + a.anuncio + '" já teve ' + m.cliques + ' cliques (' + din(m.gasto) + ') e nenhum teste.']) });
+  var melhor = ads.filter(function (a) { return a.etapas.pediu }).map(function (a) { return { a: a, c: M[a.marca + '|' + a.anuncio].gasto / a.etapas.pediu } }).sort(function (x, y) { return x.c - y.c })[0];
   if (melhor) L.push(['bom', 'Melhor custo por teste: "' + melhor.a.anuncio + '", ' + din(melhor.c) + ' por teste.']);
   return L.map(function (x) { return '<li class="' + x[0] + '">' + esc(x[1]) + '</li>' });
 }
@@ -141,8 +141,8 @@ function desenha() {
   $('funil').innerHTML = barras(esc_, null);
   $('param').innerHTML = barras(D.onde_param, D.total, 'var(--at)');
   // por anúncio
-  var M = metaPorAnuncio(), nomes = {}; D.anuncios.forEach(function (a) { nomes[a.anuncio] = 1 }); Object.keys(M).forEach(function (n) { nomes[n] = 1 });
-  var linhas = Object.keys(nomes).map(function (n) { var a = D.anuncios.find(function (x) { return x.anuncio === n }) || { pessoas: 0, etapas: {}, marca: (M[n] || {}).marca }, m = M[n] || {}; return { n: n, a: a, m: m } }).sort(function (x, y) { return (y.m.gasto || 0) - (x.m.gasto || 0) || y.a.pessoas - x.a.pessoas });
+  var M = metaPorAnuncio(), nomes = {}; D.anuncios.forEach(function (a) { nomes[a.marca + '|' + a.anuncio] = 1 }); Object.keys(M).forEach(function (n) { nomes[n] = 1 });
+  var linhas = Object.keys(nomes).map(function (n) { var a = D.anuncios.find(function (x) { return x.marca + '|' + x.anuncio === n }) || { pessoas: 0, etapas: {}, marca: (M[n] || {}).marca }, m = M[n] || {}; return { n: n.split('|').slice(1).join('|'), a: a, m: m } }).sort(function (x, y) { return (y.m.gasto || 0) - (x.m.gasto || 0) || y.a.pessoas - x.a.pessoas });
   $('anuncios').innerHTML = linhas.length ? '<table><thead><tr><th>Anúncio</th><th>Gasto</th><th>Cliques</th><th>CTR</th><th>No site</th><th>Tempo (med.)</th><th>Rolou (med.)</th><th>Abriu form.</th><th>Pediu teste</th><th>WhatsApp resp.</th><th>Pagou</th><th>Custo/teste</th></tr></thead><tbody>' +
     linhas.map(function (l) { var e = l.a.etapas || {}; return '<tr><td>' + chip(l.a.marca) + ' ' + esc(l.n) + '</td><td>' + din(l.m.gasto) + '</td><td>' + nf(l.m.cliques) + '</td><td>' + (l.m.impressoes ? (l.m.cliques / l.m.impressoes * 100).toFixed(1) + '%' : '–') + '</td><td>' + nf(l.a.pessoas) + '</td><td>' + (l.a.seg_mediana != null ? l.a.seg_mediana + 's' : '–') + '</td><td>' + (l.a.rolou_mediana != null ? l.a.rolou_mediana + '%' : '–') + '</td><td>' + nf(e.abriu_form) + '</td><td>' + nf(e.pediu) + '</td><td>' + nf(e.wa_respondeu) + '</td><td>' + nf(e.pagou) + '</td><td>' + (e.pediu && l.m.gasto ? din(l.m.gasto / e.pediu) : '–') + '</td></tr>' }).join('') + '</tbody></table>' : '<p class="vazio">Ainda sem dados.</p>';
   var P = D.pagina;

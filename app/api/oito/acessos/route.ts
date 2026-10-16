@@ -143,7 +143,8 @@ export async function GET(req: Request) {
   // 3. os números pra decidir: por anúncio, onde param, a página de venda, o formulário e o aparelho
   const porAnuncio: Record<string, any> = {}
   for (const p of pessoas) {
-    const a = porAnuncio[p.anuncio] ||= { anuncio: p.anuncio, campanha: p.campanha, marca: p.marca, pessoas: 0, etapas: Object.fromEntries(ESCADA.map(e => [e, 0])), seg: [] as number[], rolou: [] as number[] }
+    // o nome do anúncio se repete nas marcas ("ANUNCIO 1 IMG"): a chave é marca + nome
+    const a = porAnuncio[p.marca + '|' + p.anuncio] ||= { anuncio: p.anuncio, campanha: p.campanha, marca: p.marca, pessoas: 0, etapas: Object.fromEntries(ESCADA.map(e => [e, 0])), seg: [] as number[], rolou: [] as number[] }
     a.pessoas++
     for (let i = 0; i <= p.etapa_i; i++) a.etapas[ESCADA[i]]++
     if (p.pagina) { a.seg.push(p.pagina.seg); a.rolou.push(p.pagina.rolou) }
