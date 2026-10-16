@@ -4,7 +4,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap">
 <style>
 /* Imersão Deu Venda (12/10/2026): o passo a passo do aluno, encontro por encontro. Padrão visual: negocios/carreiranodigital/marca/DESIGN.md.
-   Cada passo tem caixinha de feito, guardada no navegador do aluno. Prints da Meta tratados (borrados) em ./prints. */
+   Cada passo tem caixinha de feito. Com ?c=<codigo> (16/10) o progresso vai pro banco (/api/imersao) e o professor vê em turma.html; sem código, fica no navegador. Prints da Meta tratados (borrados) em ./prints. */
 :root{--bg:#0f0c17;--surface:#171320;--surface-2:#1f1a2b;--border:#261f36;--border-strong:#372e4c;--text:#f4f1fb;--text-2:#c9c2da;--text-muted:#9a93ae;--text-faint:#736c88;
 --accent:#8b5cf6;--accent-soft:#b39bff;--accent-bg:#2a1b4d;--green:#34d399;--green-bg:#0b2e24;--red:#fb7185;--red-bg:#3b1520;--amber:#fbbf24;--amber-bg:#3a2a0a;--blue:#60a5fa;--blue-bg:#14243f;
 --grad:linear-gradient(135deg,#7c3aed,#c026d3);--grad-escuro:#4c1d95;--glow:rgba(139,92,246,.35);
@@ -74,6 +74,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 .grade>p,.grade>ol{color:var(--text-2);font-size:15px}.grade>ol{padding-left:20px;display:grid;gap:4px}
 .tab{overflow-x:auto}table{border-collapse:collapse;width:100%;min-width:520px;font-size:14.5px}th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--border)}th{font:800 11px Manrope;letter-spacing:.08em;text-transform:uppercase;color:var(--text-muted)}
 .rodape{text-align:center;color:var(--text-muted);font-size:14px;display:grid;gap:6px}
+.ola{font:700 18px Manrope;color:var(--text);margin-top:-4px}.salvo{color:var(--text-faint);font-size:13px}.salvo.erro{color:var(--amber)}
 @media (max-width:560px){.passo{grid-template-columns:1fr;gap:10px}.pede div{flex-direction:column;align-items:flex-start}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{.luz,nav.etapas,.ctrl,.pede button{display:none}body{background:#fff;color:#000}.vidro,.passo{box-shadow:none;backdrop-filter:none;background:#fff;border:1px solid #ccc}details.telas{display:none}}
@@ -85,14 +86,27 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   <div class="linha"><span class="chapa"><img src="/logo.png" alt="Carreira no Digital"></span>
     <div class="ctrl"><select id="turma" aria-label="Tua turma">
       <option value="poa-tarde">Porto Alegre · tarde (14h às 17h15)</option>
-      <option value="poa-noite">Porto Alegre · noite (19h às 22h15)</option>
       <option value="laj-noite">Lajeado · noite (19h às 22h15)</option></select>
       <button class="bt" id="tema" type="button">Claro / escuro</button></div></div>
-  <span class="olho">Imersão Deu Venda · teu passo a passo</span>
+  <span class="olho" id="olho">Imersão Deu Venda · teu passo a passo</span>
+  <p class="ola" id="ola" hidden></p>
   <h1>Do zero ao <span class="g">anúncio rodando</span>, um passo de cada vez.</h1>
-  <p style="color:var(--text-2)">Esta página é o teu roteiro da imersão. Cada encontro tem os passos na ordem, o que pedir pra máquina, as telas do Facebook e o que tu leva no fim. Marca cada passo quando terminar: fica guardado neste navegador.</p>
-  <div class="prog"><div class="barra"><i id="barra" style="width:0"></i></div><small id="progtxt">0 de 0 passos feitos</small></div>
+  <p style="color:var(--text-2)">Esta página é o teu roteiro da imersão. Cada encontro tem os passos na ordem, o que pedir pra máquina, as telas do Facebook e o que tu leva no fim. Marca cada passo quando terminar: <span id="ondefica">fica guardado neste navegador.</span></p>
+  <div class="prog"><div class="barra"><i id="barra" style="width:0"></i></div><small id="progtxt">0 de 0 passos feitos</small><small id="salvo" class="salvo" aria-live="polite"></small></div>
 </header>
+
+<section class="vidro apoio" id="pergunta">
+  <span class="olho">Travou? Pergunta pra tua máquina</span>
+  <h2>Ela sabe onde tu parou</h2>
+  <p>A máquina lê a tua pasta e sabe em que etapa tu está. Antes de chamar o professor, pergunta pra ela, do teu jeito. Estas funcionam sempre:</p>
+  <div class="pede">
+    <div><span>e agora?</span><button type="button">copiar</button></div>
+    <div><span>o que eu já fiz?</span><button type="button">copiar</button></div>
+    <div><span>não entendi o que é isso, me explica com o meu negócio</span><button type="button">copiar</button></div>
+    <div><span>deu erro</span><button type="button">copiar</button></div>
+  </div>
+  <p class="pre">Ela pedir um print da tua tela é normal: é assim que ela te diz exatamente onde clicar. Se a resposta parecer de um Claude qualquer, que não te conhece, tu abriste a sessão fora da pasta DEU-VENDA.</p>
+</section>
 
 <nav class="etapas" id="nav">
   <a href="#antes" data-e="antes">Antes <span class="n"></span></a>
@@ -117,7 +131,8 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="a2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O aplicativo do Claude, no plano Pro<small>10 min</small></h3>
-    <ol><li>Entra em <b>claude.ai</b> e cria a tua conta com o e-mail do negócio (ou o teu).</li><li>Assina o plano <b>Pro</b>. A máquina roda dentro do aplicativo e precisa dele.</li><li>Baixa e instala o aplicativo em <b>claude.ai/download</b>, e entra com a mesma conta.</li></ol>
+    <ol><li>Entra em <b>claude.ai</b> e cria a tua conta com o e-mail do negócio (ou o teu).</li><li>Assina o plano <b>Pro</b>. A máquina roda na aba <b>Code</b> do aplicativo, e ela só existe do Pro pra cima.</li><li>Baixa e instala o aplicativo em <b>claude.com/download</b>, e entra com a mesma conta. Abre uma vez e confere que lá em cima aparecem as abas <b>Chat</b> e <b>Code</b>.</li></ol>
+    <div class="dica">Usa Mac? Ele precisa ser do macOS 13 (Ventura) pra frente: confere no menu da maçã → Sobre Este Mac. Mac mais antigo, avisa a escola antes.</div>
     <div class="trava"><b>Importante:</b> a conta é tua, não da escola. Tudo o que a máquina aprender sobre o teu negócio fica contigo depois da imersão.</div></div></article>
 
   <article class="passo" data-id="a3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
@@ -187,45 +202,53 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-1"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Instalar a máquina<small>20 min · junto com a turma, o professor mostra no telão</small></h3>
-    <ol><li>Copia a pasta <b>DEU-VENDA</b> que o professor passar pra tua Área de Trabalho.</li><li>Dentro dela, dois cliques no <b>instalar.bat</b> (no Mac, o professor te mostra o instalador). Se ele pedir pra rodar de novo, roda.</li><li>No aplicativo do Claude, abre a pasta <b>DEU-VENDA</b> do jeito que o professor mostrar.</li><li>Copia pra dentro de <code>DEU-VENDA/fotos</code> as fotos da tua pasta <b>Meu negócio</b>, e o logo pra <code>DEU-VENDA/marca</code>.</li></ol>
+    <ol><li>Copia a pasta <b>DEU-VENDA</b> do pendrive do professor pra tua <b>Área de Trabalho</b> (no Mac, a Mesa).</li><li><b>Fecha o aplicativo do Claude</b> por inteiro (no Mac, Cmd + Q).</li><li><b>Windows:</b> abre a pasta DEU-VENDA e dá dois cliques no <b>instalar.bat</b>. Se aparecer um aviso azul, clica em <b>Mais informações → Executar assim mesmo</b>; se perguntar se permite alterações, <b>Sim</b>. Espera aparecer <b>PRONTO</b>.<br><b>Mac:</b> abre o <b>Terminal</b> (Cmd + Espaço, escreve Terminal, Enter), digita <code>bash</code> e um espaço, arrasta o arquivo <b>instalar.command</b> da pasta pra dentro da janela e aperta Enter. Se pedir senha, é a de entrar no Mac (ela não aparece enquanto tu digita). Espera o <b>PRONTO</b>.</li><li>Abre o Claude → aba <b>Code</b> → <b>+ Nova sessão</b> → no ambiente, <b>Local</b> → na pasta do projeto, escolhe a <b>DEU-VENDA</b> (a própria pasta, não a Área de Trabalho). Se o Mac perguntar se o Claude pode acessar a Mesa, <b>Permitir</b>.</li><li>Copia pra dentro de <code>DEU-VENDA/fotos</code> as fotos da tua pasta <b>Meu negócio</b>, e o logo pra <code>DEU-VENDA/marca</code>.</li></ol>
     <div class="pede"><div><span>o que tu já sabe do meu negócio?</span><button type="button">copiar</button></div></div>
-    <p>O certo é ela responder que ainda não sabe nada e começar pelo passo 1. Se ela inventar coisa, chama o professor.</p></div></article>
+    <p>O certo é ela responder que ainda não sabe nada e que vai começar pelo teu negócio. Se ela responder como um Claude qualquer, tu abriste a pasta errada: abre uma nova sessão escolhendo a DEU-VENDA.</p>
+    <div class="dica"><b>Quando aparecer uma caixinha pedindo licença:</b> se for pra montar arte, vídeo ou ler os teus arquivos, clica em <b>Sim</b> (ou "Sim, e não perguntar de novo"). Se for pra criar ou mudar campanha, só depois de ler o resumo e dizer "pode subir". Na dúvida, <b>Não</b>: nada quebra.</div>
+    <div class="trava"><b>Uma sessão nova a cada etapa</b> (+ Nova sessão, sempre na pasta DEU-VENDA). Conversa muito comprida fica lenta e gasta o limite do teu plano. Nada se perde: tudo o que a máquina faz fica salvo na pasta, e ela começa lendo de lá.</div></div></article>
 
   <article class="passo" data-id="e1-2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Ligar a tua conta de anúncios na máquina<small>5 min</small></h3>
     <p>É isso que deixa a máquina olhar os anúncios do teu ramo e, no encontro 2, montar a tua campanha. Ela te passa o caminho; o professor mostra no telão.</p>
     <div class="pede"><div><span>quero conectar a minha conta da Meta</span><button type="button">copiar</button></div></div>
-    <div class="trava"><b>Se der erro de permissão:</b> tu não é administrador da conta de anúncios. Volta no passo "A conta de anúncios" da preparação, ou pede o acesso pra quem criou.</div></div></article>
+    <p>O caminho, que ela vai te dar um passo por vez: no menu do Claude, <b>Personalizar → Conectores</b> (em inglês, <i>Customize → Connectors</i>) → <b>+ Adicionar</b> → <b>Adicionar conector personalizado</b> → nome <code>Meta Ads</code>, endereço <code>https://mcp.facebook.com/ads</code> → entra com o teu Facebook e escolhe a conta de anúncios do negócio.</p>
+    <div class="trava"><b>Se der erro de permissão:</b> tu não é administrador da conta de anúncios. Volta no passo "A conta de anúncios" da preparação, ou pede o acesso pra quem criou.</div>
+    <div class="dica"><b>Diz que o conector está indisponível?</b> A Meta está liberando aos poucos, conta por conta. Não tem problema: tu segue sem ele hoje, e no encontro 2 sobe a campanha na mão, com o passo a passo que a máquina monta com os teus números.</div></div></article>
 
   <article class="passo" data-id="e1-3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O teu negócio<small>40 min</small></h3>
-    <p>A máquina já sabe o básico do teu ramo e só pergunta o que é teu. Prefere falar? Usa o microfone do teclado do computador e fala à vontade, ela organiza depois.</p>
+    <p>A máquina já sabe o básico do teu ramo e só pergunta o que é teu. Prefere falar? No Windows, aperta <b>Windows + H</b>; no Mac, a tecla <b>Fn</b> duas vezes. Fala à vontade, o computador escreve e ela organiza depois.</p>
     <div class="pede"><div><span>vamos começar pelo meu negócio</span><button type="button">copiar</button></div></div>
     <p>Ela vai te pedir, entre outras coisas:</p>
     <ul><li>a última venda boa que tu fez, contada como foi</li><li>o que tu não faz, e o cliente que tu não pega</li><li>o que tu vende, o preço, o mínimo e o máximo</li><li>uma mensagem tua de verdade pra cliente, copiada do WhatsApp</li><li>as perguntas que mais te cansam de responder</li><li>se tu tem foto, print ou vídeo de cliente satisfeito, e se pode usar</li></ul>
-    <div class="dica">Fica com o WhatsApp aberto no celular: muita resposta está lá. E quando ela propuser algo que não é a tua realidade, corrige. É assim que ela aprende.</div>
+    <div class="dica">Deixa o WhatsApp aberto no computador (<b>web.whatsapp.com</b>): muita resposta está lá, e é de lá que tu copia e cola as tuas mensagens de verdade, do jeito que tu escreveu. E quando ela propuser algo que não é a tua realidade, corrige. É assim que ela aprende.</div>
     <p>Sai em <code>negocio/o-meu-negocio.md</code>.</p></div></article>
 
   <article class="passo" data-id="e1-4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
-    <h3>O teu mercado<small>15 min</small></h3>
+    <h3>O teu mercado<small>20 min</small></h3>
     <p>A máquina olha os anúncios que os concorrentes do teu ramo estão rodando agora e te mostra o que todo mundo diz e o que ninguém está dizendo. Esse espaço vazio costuma ser a tua oferta.</p>
     <div class="pede"><div><span>agora olha o meu mercado</span><button type="button">copiar</button></div></div>
-    <p>Ela te propõe 3 buscas e pergunta qual marca do teu ramo tu admira de longe. Sai em <code>negocio/o-meu-mercado.md</code>.</p></div></article>
+    <p>Ela te propõe 3 buscas e pergunta qual marca do teu ramo tu admira de longe. Sem o conector, tu mesmo faz as buscas na Biblioteca de Anúncios, diz quantos anúncios apareceram e manda 3 prints. Sai em <code>negocio/o-meu-mercado.md</code>.</p>
+    <div class="dica"><b>Print:</b> no Windows, <b>Windows + Shift + S</b>, marca a tela e, na conversa, <b>Ctrl + V</b>. No Mac, <b>Cmd + Shift + 3</b> e arrasta a imagem pra conversa.</div></div></article>
 
   <article class="passo" data-id="e1-5"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>A tua oferta<small>40 min · o passo mais importante da imersão</small></h3>
     <p>Aqui sai o que tu vai anunciar. A máquina te faz perguntas de dono:</p>
     <ul><li>se tu só pudesse vender uma coisa nos próximos 30 dias, e ela tivesse que pagar tudo, qual seria?</li><li>quantos clientes novos por semana tu dá conta de atender bem?</li><li>quanto tempo passa entre a pessoa te conhecer e pagar?</li><li>depois que compra, o cliente volta? Em quanto tempo?</li></ul>
     <div class="pede"><div><span>vamos fechar a minha oferta</span><button type="button">copiar</button></div></div>
-    <p>Ela te mostra 3 caminhos e <b>tu escolhe</b>. A oferta sai escrita como texto de página, e dela saem o texto do anúncio e as respostas pras perguntas que mais chegam (<code>negocio/o-que-responder.md</code>).</p>
+    <p>Ela te mostra 3 caminhos e <b>tu escolhe</b>. Depois a oferta vira o texto da tua página, e dele saem o texto do anúncio e as respostas pras perguntas que mais chegam no WhatsApp:</p>
+    <div class="pede"><div><span>escreve a minha oferta como a página</span><button type="button">copiar</button></div><div><span>faz as respostas pro WhatsApp</span><button type="button">copiar</button></div></div>
+    <p>Saem em <code>negocio/a-pagina-….md</code> (o texto da página e, no fim, o do anúncio) e <code>negocio/o-que-responder.md</code>. Lê com calma e corrige o que não é teu jeito de falar.</p>
     <div class="trava"><b>Quem decide é tu:</b> o preço, o que tu promete e o que tu não promete. Se a máquina propuser algo que tu não consegue entregar, diz não.</div></div></article>
 
   <article class="passo" data-id="e1-6"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Os roteiros dos vídeos<small>25 min</small></h3>
     <div class="pede"><div><span>me dá 20 ideias de vídeo pra anúncio</span><button type="button">copiar</button></div><div><span>faz o roteiro dessas 3</span><button type="button">copiar</button></div></div>
-    <p>Escolhe 2 ou 3 ideias. Cada roteiro vem em 5 partes curtas, uma tomada cada: o gancho, a dor, o produto, a prova e a chamada.</p>
+    <p>Escolhe 2 ou 3 ideias. Cada roteiro vem em 5 partes curtas, uma tomada cada: o gancho, a dor, o produto, a prova e a chamada. Não gosta de aparecer? Diz isso: ela faz o roteiro com a tua voz por cima e as tuas mãos trabalhando.</p>
     <div class="pede"><div><span>como eu gravo?</span><button type="button">copiar</button></div></div>
-    <p>Tira print dos roteiros ou deixa o computador aberto: é com eles que tu grava hoje à noite.</p></div></article>
+    <p>Os roteiros ficam em <code>negocio/os-meus-videos.md</code>. Pra levar pro celular: copia o texto e manda pra ti mesmo no WhatsApp.</p>
+    <div class="dica"><b>Antes de ir embora, confere:</b> pede <i>"o que eu já fiz?"</i>. Ela tem que listar o teu negócio, o mercado, a oferta, a página, as respostas e os roteiros. E se ainda não comprou o domínio do site, compra hoje: ele leva até 2 dias pra funcionar.</div></div></article>
 </section>
 
 <!-- ======================= NOITE ======================= -->
@@ -238,11 +261,13 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   <article class="passo" data-id="n1"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>As 5 regras da gravação</h3>
     <ol><li><b>Celular em pé</b>, na vertical.</li><li><b>Uma ideia por vídeo</b>: um roteiro, um vídeo.</li><li><b>Pode errar.</b> Errou, respira e fala de novo a frase inteira. A máquina corta o erro.</li><li><b>Luz de frente</b>: tu virado pra janela ou pra lâmpada, nunca de costas pra ela.</li><li><b>Olha pra lente</b>, não pra tua imagem na tela.</li></ol>
-    <div class="dica">Não precisa decorar. Grava parte por parte: o gancho, para, a dor, para, e assim por diante. Lugar silencioso, sem ventilador ligado.</div></div></article>
+    <div class="dica">Não precisa decorar. Grava parte por parte: o gancho, para, a dor, para, e assim por diante. Lugar silencioso, sem ventilador ligado.</div>
+    <div class="dica"><b>Voz por cima (tu não aparece):</b> grava as cenas sem falar (as mãos, o produto, o lugar) e depois grava a tua voz lendo o roteiro <b>também com a câmera do celular</b>, filmando a mesa, num lugar quieto. Áudio de gravador ou recado de WhatsApp não serve pro editor.</div></div></article>
 
   <article class="passo" data-id="n2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Gravar e guardar</h3>
-    <ol><li>Grava os 2 ou 3 vídeos.</li><li>Assiste uma vez com som: dá pra ouvir bem?</li><li>Deixa no celular. Amanhã tu passa pro computador na hora (cabo, WhatsApp Web ou Google Drive, o que for mais fácil pra ti).</li></ol></div></article>
+    <ol><li>Grava os 2 ou 3 vídeos.</li><li>Assiste uma vez com som: dá pra ouvir bem?</li><li>Deixa no celular. Amanhã tu passa pro computador na hora: pelo cabo, pelo Google Drive, ou pelo WhatsApp <b>como documento</b> (no clipe, "Documento", não "Galeria"), que vai o arquivo original, com som.</li></ol>
+    <div class="trava"><b>Vídeo mandado como vídeo pelo WhatsApp</b> ou baixado do Instagram pode chegar sem som e com a qualidade lá embaixo. Se a máquina disser "SEM SOM", é isso: passa de novo do jeito certo.</div></div></article>
 </section>
 
 <!-- ======================= ENCONTRO 2 ======================= -->
@@ -268,7 +293,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
     <h3>As artes<small>25 min</small></h3>
     <div class="pede"><div><span>monta a arte do anúncio</span><button type="button">copiar</button></div></div>
     <p>Ela monta a peça no teu padrão, em cima das tuas fotos, no formato de feed e de story. As peças ficam em <code>pecas/prontas</code>, e tem uma imagem com todas lado a lado pra tu conferir.</p>
-    <div class="trava"><b>Olha cada peça:</b> o rosto ou o produto ficou tapado pelo texto? O preço está certo? Pede o ajuste em português: "sobe o texto", "troca a foto", "tira o preço".</div></div></article>
+    <div class="trava"><b>Olha cada peça:</b> o rosto ou o produto ficou tapado pelo texto? O preço está certo? Pede o ajuste em português: "o texto tapou o rosto, põe o texto em cima e a foto embaixo", "troca a foto", "tira o preço".</div></div></article>
 
   <article class="passo" data-id="e2-4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Conferir os vídeos<small>10 min</small></h3>
@@ -297,13 +322,13 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   <article class="passo" data-id="e2-6"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Subir a campanha<small>30 min · contigo do lado</small></h3>
     <div class="pede"><div><span>vamos subir a campanha</span><button type="button">copiar</button></div></div>
-    <p>Antes de criar qualquer coisa, ela te mostra um resumo de 5 linhas: objetivo, nome, verba por dia, público e raio, peça e destino. <b>Lê com calma.</b> Só quando estiver certo, tu escreve:</p>
+    <p>Antes, ela confirma contigo umas perguntas (o que tu quer que a pessoa faça, quanto tu vende, as cidades, quanto pode investir por dia). Depois te mostra um resumo de 5 linhas: o objetivo, o nome, o destino, um conjunto por cidade com o raio e a verba, e as peças. <b>Lê com calma.</b> Só quando estiver certo, tu escreve:</p>
     <div class="pede"><div><span>pode subir</span><button type="button">copiar</button></div></div>
     <ol><li>Ela monta a campanha na tua conta e te diz se está <b>no ar</b> ou <b>em análise</b>. A Meta revisa em alguns minutos ou algumas horas.</li><li>Confere 3 coisas: o botão abre o teu WhatsApp? O valor por dia é o combinado? Quem responde sabe que vai começar a chegar gente?</li><li>Quando aprovar, procura o teu anúncio no Instagram pelo celular e clica: tem que abrir a conversa com a mensagem pronta.</li></ol>
     <div class="trava"><b>Se aparecer "informações em falta":</b> é a forma de pagamento. Volta no passo "A forma de pagamento", logo acima.</div>
     <div class="dica"><b>A tua conta ainda não tem o conector?</b> A Meta está liberando aos poucos, conta por conta, e a máquina te avisa logo no começo. Aí tu sobe na mão, com os teus números já preenchidos. Pede pra ela:</div>
     <div class="pede"><div><span>me dá o passo a passo pra subir na mão</span><button type="button">copiar</button></div></div>
-    <p>Ela grava o passo a passo com a tua campanha (nomes, verba, cidade e raio, qual peça vai em cada anúncio e os textos prontos pra copiar) e te guia uma tela por vez. As telas estão logo abaixo, no Plano B.</p></div></article>
+    <p>Ela grava o passo a passo com a tua campanha em <code>negocio/campanha-…-passo-a-passo.md</code> (nomes, verba, cidade e raio, qual peça vai em cada anúncio e os textos prontos pra copiar) e te guia uma tela por vez. As telas estão logo abaixo, no Plano B.</p></div></article>
 
   <article class="vidro apoio" id="na-mao">
     <span class="olho">Plano B · se a tua conta não tem o conector</span>
@@ -334,14 +359,14 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
       <figure><img loading="lazy" src="prints/M04b-mouse-continuar.jpg" alt=""><figcaption>Continuar. O aviso amarelo em cima é a forma de pagamento que falta.</figcaption></figure></div></details>
 
     <details class="telas"><summary>5 · O nome e o orçamento da campanha</summary><div class="grade">
-      <p><b>Nome:</b> sempre no padrão <code>CAMPANHA OU PRODUTO - ANÚNCIOS - PÚBLICO</code>. O nome é pra ti: daqui a três meses é por ele que tu acha cada campanha. Escolhe tudo maiúscula ou tudo minúscula e mantém.</p>
+      <p><b>Nome:</b> o padrão da escola é <code>PRODUTO - ABO - CIDADES</code>, tudo em maiúscula (ex.: <code>PRIMEIRO BANHO - ABO - LAJEADO</code>). O nome é pra ti: daqui a três meses é por ele que tu acha cada campanha. O teu já vem pronto no passo a passo da máquina.</p>
       <p><b>Orçamento:</b> rola até Orçamento e marca <b>Orçamento do conjunto de anúncios</b>. Assim cada público recebe o valor que tu mandou e dá pra comparar de verdade. Depois, <b>Avançar</b>.</p>
       <p>Repara no canto de cima: <b>Em rascunho</b> e "Todas as edições salvas". O que tu escreveu não se perde, e a campanha <b>não está no ar</b>.</p>
       <figure><img loading="lazy" src="prints/M05-nome-e-orcamento.jpg" alt=""><figcaption>Nome da campanha em cima, Orçamento do conjunto de anúncios embaixo.</figcaption></figure></div></details>
 
     <details class="telas"><summary>6 · O conjunto: nome, conversão, orçamento e público</summary><div class="grade">
-      <p>A tela é longa. Só mexe em quatro coisas; o resto fica como veio.</p>
-      <ol><li><b>Nome do conjunto</b> = o público (ex.: <code>Lajeado 23km 25-55</code>). Estratégia de ciclo de vida: não mexe.</li><li><b>Local da conversão</b> → <b>Destinos das mensagens</b>. Confere a tua Página. Em Destinos: <b>Destino manual</b>, só <b>WhatsApp</b> marcado, e confere o número. O convite "reduza os custos em 9%": não aceita.</li><li><b>Orçamento diário</b>: escreve só o número (<code>20,00</code>). O texto embaixo ("gasto diário máximo de R$ 35") não é furo: a conta fecha na semana. A caixa "Usar orçamento recomendado": não clica. Data de término: <b>Nenhum</b>.</li><li><b>Público</b>: em Localizações, a tua cidade e o raio em km (raio, nunca lista de cidades). Idade larga, todos os gêneros, <b>interesses vazios</b>.</li></ol>
+      <p>A tela é longa. Mexe nestas coisas, o resto fica como veio. <b>Um conjunto por cidade</b>, cada um com a sua verba (no mínimo R$ 20 por dia cada).</p>
+      <ol><li><b>Nome do conjunto</b>: <code>CONJUNTO</code> e a cidade (ex.: <code>CONJUNTO LAJEADO</code>; no print está o nome antigo). Estratégia de ciclo de vida: não mexe.</li><li><b>Local da conversão</b> → <b>Destinos das mensagens</b>. Confere a tua Página. Em Destinos: <b>Destino manual</b>, só <b>WhatsApp</b> marcado, e confere o número. O convite "reduza os custos em 9%": não aceita.</li><li><b>Orçamento diário</b>: escreve só o número (<code>20,00</code>). O texto embaixo ("gasto diário máximo de R$ 35") não é furo: a conta fecha na semana. A caixa "Usar orçamento recomendado": não clica. Data de término: <b>Nenhum</b>.</li><li><b>Público</b>: em Localizações, a cidade e o raio em km (raio, nunca lista de cidades): 20 km na capital, 30 km no interior. Idade <b>18 a 65</b>, todos os gêneros, público Advantage+ ligado, <b>interesses vazios</b>.</li><li><b>Posicionamentos</b>: <b>Manuais</b>, só <b>Facebook e Instagram</b> (Feeds, Stories e Reels). Desmarca <b>Audience Network, Messenger e Threads</b>: a Audience Network joga a verba em aplicativos e jogos, com clique que nunca chega no teu WhatsApp.</li></ol>
       <p>Aviso amarelo de limite de gastos à direita? A campanha sobe e depois para sozinha: ajusta o limite em Cobrança e pagamentos. Depois, <b>Avançar</b>.</p>
       <figure><img loading="lazy" src="prints/M06-conjunto-conversao.jpg" alt=""><figcaption>Nome do conjunto e Local da conversão: Destinos das mensagens.</figcaption></figure>
       <figure><img loading="lazy" src="prints/M07-destino-whatsapp.jpg" alt=""><figcaption>Destino manual, só o WhatsApp marcado. O "Aplicar agora" dos 9% fica sem clicar.</figcaption></figure>
@@ -350,7 +375,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
     <details class="telas"><summary>7 · O anúncio: nome, formato, mídia e texto</summary><div class="grade">
       <p>Daqui em diante a Meta oferece ajuda o tempo todo (pontuação, "+3 pontos", Aplicar agora). <b>Desconsidera.</b> Pontuação 92 ou 93 é normal.</p>
-      <ol><li><b>Nome do anúncio</b>: o nome do vídeo ou da imagem. <b>Anúncio em parceria</b>: desativado. <b>Identidade</b>: a tua Página.</li><li><b>Fonte do criativo</b>: Upload manual. <b>Formato</b>: Imagem ou vídeo único.</li><li><b>Configurar criativo</b> → Anúncio em imagem ou em vídeo → na galeria, <b>+ Carregar</b> puxa a peça do computador. Seleciona e <b>Avançar</b>.</li><li><b>Texto</b>: no texto principal, a legenda que saiu da máquina; título curto; descrição pode ficar vazia; chamada para ação: <b>Enviar mensagem pelo WhatsApp</b>.</li></ol>
+      <ol><li><b>Nome do anúncio</b>: o nome do vídeo ou da imagem. <b>Anúncio em parceria</b>: desativado. <b>Identidade</b>: a tua Página.</li><li><b>Fonte do criativo</b>: Upload manual. <b>Formato</b>: Imagem ou vídeo único.</li><li><b>Configurar criativo</b> → Anúncio em imagem ou em vídeo → na galeria, <b>+ Carregar</b> puxa a peça do computador (as artes ficam em <code>DEU-VENDA/pecas/prontas</code>, os vídeos em <code>DEU-VENDA/EDITOR-DE-VIDEO/prontos</code>). Seleciona e <b>Avançar</b>. A arte de feed e a de story da mesma peça vão no <b>mesmo anúncio</b>: a de feed nos Feeds, a de story em Stories e Reels.</li><li><b>Texto</b>: no texto principal, a legenda que saiu da máquina; título curto; descrição pode ficar vazia; chamada para ação: <b>Enviar mensagem pelo WhatsApp</b>.</li></ol>
       <figure><img loading="lazy" src="prints/M10-anuncio-topo.jpg" alt=""><figcaption>Nome do anúncio, parceria desativada e Identidade.</figcaption></figure>
       <figure><img loading="lazy" src="prints/M11-fonte-formato.jpg" alt=""><figcaption>Upload manual e Imagem ou vídeo único.</figcaption></figure>
       <figure><img loading="lazy" src="prints/M12-configurar-criativo.jpg" alt=""><figcaption>Configurar criativo: imagem ou vídeo.</figcaption></figure>
@@ -478,20 +503,35 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   <article class="passo" data-id="e4-3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O próximo passo e a rotina do mês<small>40 min</small></h3>
     <div class="pede"><div><span>como eu estou?</span><button type="button">copiar</button></div><div><span>me dá 5 ideias de conteúdo pra esta semana</span><button type="button">copiar</button></div></div>
-    <p>Sai daqui com a decisão da campanha e com o que a máquina faz por ti toda semana: as ideias, os roteiros, as artes e a leitura dos números. Dúvida depois? O grupo da turma segue aberto por 30 dias.</p></div></article>
+    <p>Sai daqui com a decisão da campanha e com a tua rotina com a máquina:</p>
+    <div class="tab"><table><thead><tr><th>quando</th><th>tu pede</th><th>ela te entrega</th></tr></thead><tbody>
+      <tr><td>todo dia</td><td>(no WhatsApp)</td><td>tu responde com as respostas prontas e marca a etiqueta de cada conversa</td></tr>
+      <tr><td>toda semana, 15 min</td><td><i>faz os próximos</i></td><td>os posts da semana, prontos pra postar</td></tr>
+      <tr><td>a cada 7 dias</td><td><i>como está a minha campanha?</i></td><td>a leitura curta: quanto custou cada conversa e quantas fecharam</td></tr>
+      <tr><td>uma vez por mês</td><td><i>como eu estou?</i></td><td>o painel e a decisão do mês</td></tr>
+      <tr><td>uma vez por mês</td><td><i>me dá ideias de anúncio</i></td><td>um anúncio novo pra somar à campanha</td></tr>
+      <tr><td>gravou vídeo</td><td><i>edita esse vídeo</i></td><td>o vídeo pronto, com legenda e a tua marca</td></tr>
+      <tr><td>pergunta nova no WhatsApp</td><td><i>guarda essa no o-que-responder</i></td><td>a resposta pronta, guardada</td></tr>
+      <tr><td>a cada 3 meses</td><td><i>vamos revisar o meu negócio</i></td><td>a oferta e o preço conferidos</td></tr>
+    </tbody></table></div>
+    <p>Dúvida depois? Pergunta pra máquina primeiro. O grupo da turma segue aberto por 30 dias.</p></div></article>
 </section>
 
-<footer class="rodape"><span>Carreira no Digital · Imersão Deu Venda</span><span>Travou em algum passo? Manda print no grupo da turma.</span></footer>
+<footer class="rodape"><span>Carreira no Digital · Imersão Deu Venda</span><span>Travou em algum passo? Pergunta pra tua máquina: <i>"e agora?"</i>, <i>"deu erro"</i>, <i>"não entendi"</i>. Se ela não resolver, manda print no grupo da turma.</span></footer>
 </main>
 <div class="zoom" id="zoom"><img alt=""></div>
 <script>
 (function(){
   var ls=function(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
-  var CH='imersao-dv-aluno-v1',feito={};try{feito=JSON.parse(ls(CH)||'{}')}catch(e){}
-  // datas de cada turma (página da imersão, 07/10)
-  var T={'poa-tarde':{antes:'até 19/10',e1:'terça 20/10 · 14h',noite:'noite de 20/10',e2:'quarta 21/10 · 14h',e3:'quinta 22/10 · 14h',e4:'terça 3/11'},
-         'poa-noite':{antes:'até 19/10',e1:'terça 20/10 · 19h',noite:'noite de 20/10',e2:'quarta 21/10 · 19h',e3:'quinta 22/10 · 19h',e4:'terça 3/11'},
-         'laj-noite':{antes:'até 26/10',e1:'terça 27/10 · 19h',noite:'noite de 27/10',e2:'quarta 28/10 · 19h',e3:'quinta 29/10 · 19h',e4:'segunda 9/11'}}
+  // 16/10: o link individual. Com ?c=<codigo> o progresso vai pro banco da escola (o professor vê) e a página
+  // cumprimenta o aluno pelo nome; sem código continua como antes, guardado só neste navegador.
+  var COD=((location.search.match(/[?&]c=([a-z0-9]{6,16})/i)||[])[1]||'').toLowerCase()
+  var CH=COD?'imersao-dv-aluno-'+COD:'imersao-dv-aluno-v1',feito={};try{feito=JSON.parse(ls(CH)||'{}')}catch(e){}
+  var PEND=CH+'-pendente',pend={};try{pend=JSON.parse(ls(PEND)||'{}')}catch(e){}
+  // datas de cada turma (página da imersão, 07/10; a noite de POA não saiu, 15/10)
+  var T={'poa-tarde':{antes:'até 19/10',e1:'terça 20/10 · 14h',noite:'noite de 20/10',e2:'quarta 21/10 · 14h',e3:'quinta 22/10 · 14h',e4:'terça 3/11 · 14h'},
+         'poa-noite':{antes:'até 19/10',e1:'terça 20/10 · 19h',noite:'noite de 20/10',e2:'quarta 21/10 · 19h',e3:'quinta 22/10 · 19h',e4:'terça 3/11 · 19h'},
+         'laj-noite':{antes:'até 26/10',e1:'terça 27/10 · 19h',noite:'noite de 27/10',e2:'quarta 28/10 · 19h',e3:'quinta 29/10 · 19h',e4:'segunda 9/11 · 19h'}}
   var sel=document.getElementById('turma');sel.value=ls('imersao-dv-turma')||'poa-tarde'
   function datas(){var t=T[sel.value]||T['poa-tarde'];document.querySelectorAll('[data-data]').forEach(function(c){c.textContent=t[c.dataset.data]})}
   sel.onchange=function(){ls('imersao-dv-turma',sel.value);datas()};datas()
@@ -501,9 +541,32 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   function conta(){var tot=passos.length,ok=passos.filter(function(p){return feito[p.dataset.id]}).length
     document.getElementById('barra').style.width=(tot?ok*100/tot:0)+'%';document.getElementById('progtxt').textContent=ok+' de '+tot+' passos feitos'
     document.querySelectorAll('nav.etapas a').forEach(function(a){var ps=passos.filter(function(p){return p.closest('section').id===a.dataset.e}),k=ps.filter(function(p){return feito[p.dataset.id]}).length;a.querySelector('.n').textContent=k+'/'+ps.length;a.classList.toggle('ok',ps.length&&k===ps.length)})}
-  passos.forEach(function(p){var c=p.querySelector('input');c.checked=!!feito[p.dataset.id];p.classList.toggle('feito',c.checked)
-    c.onchange=function(){if(c.checked)feito[p.dataset.id]=1;else delete feito[p.dataset.id];ls(CH,JSON.stringify(feito));p.classList.toggle('feito',c.checked);conta()}})
-  conta()
+  function pinta(){passos.forEach(function(p){var c=p.querySelector('input');c.checked=!!feito[p.dataset.id];p.classList.toggle('feito',c.checked)});conta()}
+  var salvo=document.getElementById('salvo')
+  function aviso(t,ruim){salvo.textContent=t;salvo.classList.toggle('erro',!!ruim)}
+  // manda pro banco o que ainda não foi (sem internet, fica guardado aqui e vai depois)
+  function envia(){if(!COD)return;Object.keys(pend).forEach(function(id){var f=pend[id]
+    fetch('/api/imersao',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({c:COD,passo:id,feito:f})})
+      .then(function(r){if(!r.ok)throw 0;if(pend[id]===f){delete pend[id];ls(PEND,JSON.stringify(pend))}if(!Object.keys(pend).length)aviso('Salvo. O professor acompanha o teu progresso.')})
+      .catch(function(){aviso('Sem internet agora: ficou guardado neste aparelho e vai assim que voltar.',1)})})}
+  passos.forEach(function(p){var c=p.querySelector('input')
+    c.onchange=function(){var id=p.dataset.id;if(c.checked)feito[id]=1;else delete feito[id];ls(CH,JSON.stringify(feito));p.classList.toggle('feito',c.checked);conta()
+      if(COD){pend[id]=c.checked;ls(PEND,JSON.stringify(pend));aviso('Salvando…');envia()}}})
+  pinta()
+  if(COD){
+    document.getElementById('ondefica').textContent='fica salvo no teu link, em qualquer aparelho que tu abrir.'
+    fetch('/api/imersao?c='+COD).then(function(r){if(!r.ok)throw r.status;return r.json()}).then(function(a){
+      var s={};Object.keys(a.feitos||{}).forEach(function(k){s[k]=1})
+      Object.keys(pend).forEach(function(k){if(pend[k])s[k]=1;else delete s[k]})
+      feito=s;ls(CH,JSON.stringify(feito));pinta()
+      var ola=document.getElementById('ola'),nome=String(a.nome||'').split(' ')[0]
+      ola.textContent='Oi, '+nome+(a.negocio?' · '+a.negocio:'')+'. Este link é só teu.';ola.hidden=false
+      document.title='Imersão Deu Venda · '+nome
+      if(T[a.turma]){sel.value=a.turma;datas();sel.disabled=true;sel.title='A tua turma'}
+      envia()
+    }).catch(function(st){aviso(st===404?'Não achei este link. Confere se copiou inteiro, ou pede o teu link pro professor.':'Não consegui abrir o teu progresso agora: o que tu marcar fica guardado neste aparelho.',1)})
+    window.addEventListener('online',envia)
+  }
   // copiar o pedido pra máquina
   document.querySelectorAll('.pede button').forEach(function(b){b.onclick=function(){var t=b.previousElementSibling.textContent;
     var ok=function(){b.textContent='copiado';setTimeout(function(){b.textContent='copiar'},1500)}
