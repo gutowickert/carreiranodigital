@@ -51,8 +51,34 @@
   function rastro(tipo, detalhe, c) {
     if (ls.get('oito_eu') || !humano) return
     if ((tipo === 'visita' || tipo === 'area_visita') && !rastro.visivel) { return quandoVisivel(function () { rastro.visivel = true; rastro(tipo, detalhe, c) }) }
+    // 16/10: a visita leva o anúncio que trouxe a pessoa (a primeira utm guardada), pra ver o caminho de cada anúncio, 1 a 1
+    if (tipo === 'visita') { detalhe = detalhe || {}; try { var u0 = JSON.parse(ls.get('oito_utm') || 'null') || (Object.keys(utm).length ? utm : null); if (u0) detalhe.utm = u0 } catch (e) {} }
     try { navigator.sendBeacon('/api/oito/evento', new Blob([JSON.stringify({ tipo: tipo, marca: marca, sessao: sessao, c: c || q.get('c') || undefined, detalhe: detalhe || {} })], { type: 'application/json' })) } catch (e) {}
   }
+  // 16/10: o "saiu" (onde as pessoas param): ao esconder ou fechar a página, o tempo visível, até onde rolou (%),
+  // a última seção que apareceu na tela e, no formulário, o passo em que estava. Manda de novo só se a pessoa avançou.
+  ;(function () {
+    var p = location.pathname, pag = /comecar\.html/.test(p) ? 'form' : /teste\.html/.test(p) ? 'teste' : /(conta|guia|termos|painel)/.test(p) ? null : 'venda'
+    if (!pag) return
+    var visivel = 0, desde = document.visibilityState === 'visible' ? Date.now() : null, rolou = 0, secao = '', ultimo = -1, enviado = ''
+    addEventListener('scroll', function () { var h = document.documentElement.scrollHeight - innerHeight; if (h > 0) rolou = Math.max(rolou, Math.min(100, Math.round(scrollY / h * 100))) }, { passive: true })
+    function observa() {
+      if (!('IntersectionObserver' in window)) return
+      var io = new IntersectionObserver(function (es) { es.forEach(function (e) { if (e.isIntersecting) { var i = +e.target.getAttribute('data-oi'); if (i > ultimo) { ultimo = i; secao = e.target.getAttribute('data-os') } } }) }, { threshold: 0.3 })
+      ;[].forEach.call(document.querySelectorAll('main > section, main > div, footer'), function (s, i) { var nome = s.getAttribute('data-secao') || s.id || (String(s.className || '').split(' ').filter(Boolean)[0]) || s.tagName.toLowerCase(); s.setAttribute('data-oi', i); s.setAttribute('data-os', nome); io.observe(s) })
+    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', observa); else observa()
+    function manda() {
+      if (desde) { visivel += Date.now() - desde; desde = null }
+      var at = document.querySelector('.etapa.ativa'), passo = at ? +at.getAttribute('data-n') || null : null
+      var d = { pagina: pag, seg: Math.round(visivel / 1000), rolou: rolou, secao: secao || null, passo: passo }
+      var chave = [d.rolou, d.secao, d.passo, Math.floor(d.seg / 10)].join('|')
+      if (chave === enviado || d.seg < 1 || (pag === 'venda' && !rastro.visivel)) return
+      enviado = chave; rastro('saiu', d)
+    }
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') manda(); else desde = Date.now() })
+    addEventListener('pagehide', manda)
+  })()
   // pixel da Meta, só se a marca tiver um configurado
   var pixel = OITO_PIXEL[marca]
   if (pixel) {

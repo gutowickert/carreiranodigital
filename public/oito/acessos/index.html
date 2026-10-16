@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Acessos · Oito Posts</title>
+<style>
+/* Acessos 1 a 1 (16/10): acompanha o teste de perto. Dados de /api/oito/acessos e /api/oito/campanhas (mesma senha do painel). */
+:root{--bg:#f4f4fa;--card:#fff;--card2:#fafaff;--tx:#17152b;--tx2:#46435f;--mut:#686483;--bd:#e5e3f1;--marca:#5b4bff;--marca-bg:#eeecff;
+  --bom:#0f7a45;--bombg:#dcf5e7;--at:#9a5300;--atbg:#ffefd2;--ruim:#c92a2a;--ruimbg:#fde5e5;--info:#2557c9;--infobg:#e2ebfe;
+  --salao:#c2557a;--prato:#ff6a2b;--pata:#2a7de1;--divino:#9b3fb5;--sabroso:#d9480f;--peludo:#2f9e6b;--sombra:0 1px 2px rgba(23,21,43,.04),0 6px 22px rgba(23,21,43,.06);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0e0d18;--card:#191827;--card2:#1e1d2e;--tx:#f2f1fa;--tx2:#c9c6e0;--mut:#9d99bb;--bd:#2b2940;--marca:#8a7dff;--marca-bg:#27234d;
+  --bom:#5ad692;--bombg:#123726;--at:#ffb44d;--atbg:#3a2a0f;--ruim:#ff7b7b;--ruimbg:#3e1717;--info:#86aaff;--infobg:#18264a;--sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0e0d18;--card:#191827;--card2:#1e1d2e;--tx:#f2f1fa;--tx2:#c9c6e0;--mut:#9d99bb;--bd:#2b2940;--marca:#8a7dff;--marca-bg:#27234d;
+  --bom:#5ad692;--bombg:#123726;--at:#ffb44d;--atbg:#3a2a0f;--ruim:#ff7b7b;--ruimbg:#3e1717;--info:#86aaff;--infobg:#18264a;color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:18px 16px 60px}
+header{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:16px}
+h1{font-size:22px;letter-spacing:-.01em}h1 small{display:block;font-size:13px;font-weight:500;color:var(--mut)}
+h2{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}h2 small{font-weight:500;color:var(--mut);font-size:13px}
+.box{background:var(--card);border:1px solid var(--bd);border-radius:16px;padding:16px;box-shadow:var(--sombra);margin-bottom:14px;min-width:0}
+.grade{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+.seg{display:inline-flex;background:var(--card2);border:1px solid var(--bd);border-radius:999px;padding:3px}
+.seg button{border:0;background:transparent;color:var(--tx2);font:600 13px system-ui;padding:6px 12px;border-radius:999px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--marca);color:#fff}
+.acoes{display:flex;gap:8px;align-items:center;flex-wrap:wrap;font-size:13px;color:var(--mut)}
+a{color:var(--marca)}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:14px}
+.kpi{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:12px 14px}
+.kpi b{display:block;font-size:24px;font-variant-numeric:tabular-nums}.kpi span{font-size:12.5px;color:var(--mut)}
+.leitura{display:grid;gap:8px}.leitura li{list-style:none;padding:10px 12px;border-radius:12px;background:var(--card2);border:1px solid var(--bd);font-size:14.5px}
+.leitura li.ruim{background:var(--ruimbg);border-color:transparent}.leitura li.at{background:var(--atbg);border-color:transparent}.leitura li.bom{background:var(--bombg);border-color:transparent}
+.barras{display:grid;gap:7px}
+.barra{display:grid;grid-template-columns:minmax(0,190px) minmax(0,1fr) 64px;gap:10px;align-items:center;font-size:13.5px}
+.barra .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx2)}
+.barra .tr{height:10px;background:var(--card2);border-radius:99px;overflow:hidden;border:1px solid var(--bd)}
+.barra .tr i{display:block;height:100%;background:var(--marca);border-radius:99px}
+.barra .q{text-align:right;font-variant-numeric:tabular-nums}.barra .q em{font-style:normal;color:var(--mut);font-size:12px;margin-left:4px}
+.tab{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:7px 8px;border-bottom:1px solid var(--bd);text-align:right;white-space:nowrap}th{color:var(--mut);font-weight:600;font-size:12px}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:170px}
+.chip{display:inline-block;padding:1px 8px;border-radius:99px;font-size:11.5px;font-weight:700;color:#fff;vertical-align:middle}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.filtros button{border:1px solid var(--bd);background:var(--card2);color:var(--tx2);border-radius:99px;padding:5px 11px;font:600 12.5px system-ui;cursor:pointer}
+.filtros button[aria-pressed="true"]{background:var(--marca-bg);color:var(--marca);border-color:var(--marca)}
+.pessoa{border:1px solid var(--bd);border-radius:12px;margin-bottom:8px;background:var(--card2)}
+.pessoa>button{all:unset;box-sizing:border-box;display:grid;grid-template-columns:62px minmax(0,1fr) auto;gap:10px;align-items:center;width:100%;padding:10px 12px;cursor:pointer}
+.pessoa>button:focus-visible{outline:2px solid var(--marca);border-radius:12px}
+.hora{font-size:12.5px;color:var(--mut);font-variant-numeric:tabular-nums}
+.meio{min-width:0}.meio .l1{font-size:13.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.meio .l2{font-size:13px;color:var(--tx2)}
+.pontos{display:flex;gap:3px}.pontos i{width:8px;height:8px;border-radius:50%;background:var(--bd)}.pontos i.on{background:var(--marca)}.pontos i.fim{background:var(--bom)}
+.linha{display:none;padding:0 12px 12px 84px;font-size:13px;color:var(--tx2)}.pessoa.aberta .linha{display:block}
+.linha li{list-style:none;padding:3px 0;border-left:2px solid var(--bd);padding-left:10px}.linha li b{font-weight:600;color:var(--mut);font-variant-numeric:tabular-nums;margin-right:6px}
+.vazio{color:var(--mut);font-size:14px;padding:8px 0}
+#login{max-width:340px;margin:12vh auto;text-align:center}#login input{width:100%;padding:11px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--card);color:var(--tx);font-size:15px;margin:12px 0}
+#login button,.btn{background:var(--marca);color:#fff;border:0;border-radius:10px;padding:10px 16px;font:600 14px system-ui;cursor:pointer}
+@media(max-width:600px){.barra{grid-template-columns:minmax(0,120px) minmax(0,1fr) 54px}.linha{padding-left:12px}.pessoa>button{grid-template-columns:50px minmax(0,1fr)}.pontos{display:none}}
+</style>
+</head>
+<body>
+<div id="login" hidden><h1>Acessos</h1><p style="color:var(--mut)">A mesma senha do painel.</p><form id="flogin"><input id="senha" type="password" placeholder="Senha do painel" autocomplete="current-password" required><button>Entrar</button></form><p id="lerro" style="color:var(--ruim)"></p></div>
+<div class="wrap" id="app" hidden>
+  <header>
+    <h1>Acessos, 1 a 1<small id="periodo">…</small></h1>
+    <div class="acoes"><span class="seg" id="reg"><button data-r="br">Brasil</button><button data-r="latam">LATAM</button></span><span id="atual">…</span><a href="/oito/painel">← painel</a></div>
+  </header>
+  <div class="kpis" id="kpis"></div>
+  <div class="box"><h2>Leitura rápida <small>o que os números estão dizendo agora</small></h2><ul class="leitura" id="leitura"></ul></div>
+  <div class="grade">
+    <div class="box"><h2>O funil <small>pessoas que chegaram em cada etapa</small></h2><div class="barras" id="funil"></div></div>
+    <div class="box"><h2>Onde param <small>a última etapa de cada pessoa</small></h2><div class="barras" id="param"></div></div>
+  </div>
+  <div class="box"><h2>Por anúncio <small>Meta (gasto, cliques) + o que cada um fez no site</small></h2><div class="tab" id="anuncios"></div></div>
+  <div class="grade">
+    <div class="box"><h2>Página de venda <small>quem só viu a página</small></h2><div id="pagina"></div></div>
+    <div class="box"><h2>Formulário <small>em que passo desistem</small></h2><div class="barras" id="form"></div><h2 style="margin-top:16px">Aparelho</h2><div class="barras" id="aparelhos"></div></div>
+  </div>
+  <div class="box"><h2>Cada acesso <small id="qtd"></small></h2><div class="filtros" id="filtros"></div><div id="lista"></div></div>
+</div>
+<script>
+var SENHA = ''; try { SENHA = localStorage.getItem('oito_senha') || '' } catch (e) {}
+var REG = 'br'; try { REG = localStorage.getItem('oito_regiao') === 'latam' ? 'latam' : 'br' } catch (e) {}
+var D = null, C = null, FILTRO = 'todos', ABERTOS = {};
+var COR = { salao: 'var(--salao)', prato: 'var(--prato)', pata: 'var(--pata)', divino: 'var(--divino)', sabroso: 'var(--sabroso)', peludo: 'var(--peludo)' };
+var NOME = { salao: 'Salão', prato: 'Prato', pata: 'Pata', divino: 'Salón', sabroso: 'Restaurante', peludo: 'Mascotas' };
+function $(i) { return document.getElementById(i) }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
+function nf(n) { return n == null ? '–' : Number(n).toLocaleString('pt-BR') }
+function pct(a, b) { return b ? Math.round(a / b * 100) + '%' : '–' }
+function din(v) { return v == null ? '–' : (REG === 'latam' ? '' : 'R$ ') + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+function hora(iso) { var d = new Date(iso); return d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (new Date().toDateString() === d.toDateString() ? '' : '\n' + d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) }
+function chip(m) { return m ? '<span class="chip" style="background:' + (COR[m] || 'var(--mut)') + '">' + esc(NOME[m] || m) + '</span>' : '' }
+function api(u) { return fetch(u, { headers: { 'x-senha': SENHA }, cache: 'no-store' }).then(function (r) { if (r.status === 401) { var e = new Error('senha'); e.senha = true; throw e } return r.json() }) }
+function barras(lista, total, cor) {
+  if (!lista || !lista.length) return '<p class="vazio">Ainda sem dados.</p>';
+  var max = Math.max.apply(null, lista.map(function (x) { return x.n })) || 1;
+  return lista.map(function (x) { return '<div class="barra"><span class="nm" title="' + esc(x.k) + '">' + esc(x.k) + '</span><span class="tr"><i style="width:' + Math.max(2, x.n / max * 100) + '%' + (cor ? ';background:' + cor : '') + '"></i></span><span class="q">' + nf(x.n) + (total ? '<em>' + pct(x.n, total) + '</em>' : '') + '</span></div>' }).join('');
+}
+// os números da Meta por anúncio (nome do anúncio = utm_content)
+function metaPorAnuncio() {
+  var m = {}; if (!C || !C.marcas) return m;
+  Object.keys(C.marcas).forEach(function (k) { (C.marcas[k].campanhas || []).forEach(function (c) { (c.anuncios || []).forEach(function (a) { var x = m[a.nome] || (m[a.nome] = { gasto: 0, cliques: 0, impressoes: 0, marca: k, campanha: c.nome }); x.gasto += a.gasto || 0; x.cliques += a.cliques || 0; x.impressoes += a.impressoes || 0 }) }) });
+  return m;
+}
+function leitura() {
+  var L = [], f = D.funil, P = D.pagina, tot = D.total, pouco = tot < 20;
+  var cliques = C && C.total ? C.total.cliques : null, gasto = C && C.total ? C.total.gasto : null;
+  if (!tot) return ['<li>Nenhum acesso desde o zero ainda. Assim que o tráfego trouxer gente, cada pessoa aparece aqui.</li>'];
+  if (pouco) L.push(['', 'Amostra pequena (' + tot + ' pessoas): use como sinal, não como conclusão. Com 50+ dá pra decidir com segurança.']);
+  if (cliques != null && cliques > 0) { var perda = 1 - tot / cliques; if (perda > .35) L.push(['at', nf(cliques) + ' cliques na Meta viraram ' + nf(tot) + ' pessoas no site (' + Math.round(perda * 100) + '% se perdem antes da página carregar ou de interagir). Se continuar acima de 40%, vale olhar a velocidade da página e o público.']) }
+  if (P && P.pessoas >= 4) {
+    var r = (P.rolagem || []).find(function (x) { return x.k === '0-24%' }), rr = r ? r.n / P.pessoas : 0;
+    if (rr >= .5) L.push(['ruim', Math.round(rr * 100) + '% de quem só viu a página saiu antes de rolar 25%: o topo (título, frase e botão) não está segurando. Teste outro título ou um topo mais parecido com o anúncio.']);
+    if (P.seg_mediana != null && P.seg_mediana < 8) L.push(['at', 'Metade sai da página em menos de ' + P.seg_mediana + 's. É pouco pra ler: o anúncio pode estar prometendo algo que o topo não mostra de cara.']);
+    if (P.secoes && P.secoes[0] && P.pessoas >= 5) L.push(['', 'A seção onde mais gente para de rolar é "' + P.secoes[0].k + '" (' + P.secoes[0].n + ' de ' + P.pessoas + ').']);
+  }
+  var abriu = f.abriu_form || 0, viu = f.visita || 0;
+  if (viu >= 5) L.push([abriu / viu < .15 ? 'ruim' : abriu / viu < .3 ? 'at' : 'bom', pct(abriu, viu) + ' de quem entrou abriu o formulário (' + abriu + ' de ' + viu + ').' + (abriu / viu < .15 ? ' O botão ou a oferta da página não estão convencendo.' : '')]);
+  if (abriu >= 3) { var pediu = f.pediu || 0; L.push([pediu / abriu < .4 ? 'at' : 'bom', pct(pediu, abriu) + ' de quem abriu o formulário pediu o teste (' + pediu + ' de ' + abriu + ').']); if (D.formulario && D.formulario[0] && D.formulario[0].n >= 2) L.push(['at', 'No formulário, a maior desistência é no ' + D.formulario[0].k + ' (' + D.formulario[0].n + ' pessoas).']) }
+  if ((f.wa_chamou || 0) >= 3) L.push([(f.wa_respondeu || 0) / f.wa_chamou < .25 ? 'at' : 'bom', 'O WhatsApp chamou ' + f.wa_chamou + ' e ' + (f.wa_respondeu || 0) + ' responderam (' + pct(f.wa_respondeu || 0, f.wa_chamou) + ').']);
+  if (f.pediu && gasto) L.push(['', 'Custo por teste até agora: ' + din(gasto / f.pediu) + (f.pagou ? ' · custo por venda: ' + din(gasto / f.pagou) : '') + '.']);
+  var M = metaPorAnuncio(), ads = D.anuncios.filter(function (a) { return M[a.anuncio] });
+  ads.forEach(function (a) { var m = M[a.anuncio]; if (m.cliques >= 15 && !a.etapas.pediu) L.push(['at', 'O anúncio "' + a.anuncio + '" já teve ' + m.cliques + ' cliques (' + din(m.gasto) + ') e nenhum teste.']) });
+  var melhor = ads.filter(function (a) { return a.etapas.pediu }).map(function (a) { return { a: a, c: M[a.anuncio].gasto / a.etapas.pediu } }).sort(function (x, y) { return x.c - y.c })[0];
+  if (melhor) L.push(['bom', 'Melhor custo por teste: "' + melhor.a.anuncio + '", ' + din(melhor.c) + ' por teste.']);
+  return L.map(function (x) { return '<li class="' + x[0] + '">' + esc(x[1]) + '</li>' });
+}
+function desenha() {
+  var f = D.funil, cliques = C && C.total ? C.total.cliques : null, gasto = C && C.total ? C.total.gasto : null;
+  $('periodo').textContent = 'desde ' + new Date(D.desde).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' · ' + (REG === 'latam' ? 'Feed al Día' : 'Salão, Prato e Pata no Feed');
+  $('atual').textContent = 'atualizado às ' + new Date(D.agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + ' · a cada 60 s';
+  [].forEach.call($('reg').children, function (b) { b.setAttribute('aria-pressed', b.dataset.r === REG) });
+  $('kpis').innerHTML = [[gasto != null ? din(gasto) : '–', 'investido (Meta)'], [nf(cliques), 'cliques no anúncio'], [nf(D.total), 'pessoas no site'], [nf(f.pediu), 'pediram o teste'], [nf(f.wa_respondeu), 'responderam no WhatsApp'], [nf(f.pagou), 'pagaram'], [f.pediu && gasto ? din(gasto / f.pediu) : '–', 'custo por teste']]
+    .map(function (k) { return '<div class="kpi"><b>' + k[0] + '</b><span>' + k[1] + '</span></div>' }).join('');
+  $('leitura').innerHTML = leitura().join('');
+  var esc_ = D.escada.map(function (e) { return { k: e.nome, n: f[e.id] || 0 } });
+  if (cliques != null) esc_.unshift({ k: 'Cliques no anúncio', n: cliques });
+  $('funil').innerHTML = barras(esc_, null);
+  $('param').innerHTML = barras(D.onde_param, D.total, 'var(--at)');
+  // por anúncio
+  var M = metaPorAnuncio(), nomes = {}; D.anuncios.forEach(function (a) { nomes[a.anuncio] = 1 }); Object.keys(M).forEach(function (n) { nomes[n] = 1 });
+  var linhas = Object.keys(nomes).map(function (n) { var a = D.anuncios.find(function (x) { return x.anuncio === n }) || { pessoas: 0, etapas: {}, marca: (M[n] || {}).marca }, m = M[n] || {}; return { n: n, a: a, m: m } }).sort(function (x, y) { return (y.m.gasto || 0) - (x.m.gasto || 0) || y.a.pessoas - x.a.pessoas });
+  $('anuncios').innerHTML = linhas.length ? '<table><thead><tr><th>Anúncio</th><th>Gasto</th><th>Cliques</th><th>CTR</th><th>No site</th><th>Tempo (med.)</th><th>Rolou (med.)</th><th>Abriu form.</th><th>Pediu teste</th><th>WhatsApp resp.</th><th>Pagou</th><th>Custo/teste</th></tr></thead><tbody>' +
+    linhas.map(function (l) { var e = l.a.etapas || {}; return '<tr><td>' + chip(l.a.marca) + ' ' + esc(l.n) + '</td><td>' + din(l.m.gasto) + '</td><td>' + nf(l.m.cliques) + '</td><td>' + (l.m.impressoes ? (l.m.cliques / l.m.impressoes * 100).toFixed(1) + '%' : '–') + '</td><td>' + nf(l.a.pessoas) + '</td><td>' + (l.a.seg_mediana != null ? l.a.seg_mediana + 's' : '–') + '</td><td>' + (l.a.rolou_mediana != null ? l.a.rolou_mediana + '%' : '–') + '</td><td>' + nf(e.abriu_form) + '</td><td>' + nf(e.pediu) + '</td><td>' + nf(e.wa_respondeu) + '</td><td>' + nf(e.pagou) + '</td><td>' + (e.pediu && l.m.gasto ? din(l.m.gasto / e.pediu) : '–') + '</td></tr>' }).join('') + '</tbody></table>' : '<p class="vazio">Ainda sem dados.</p>';
+  var P = D.pagina;
+  $('pagina').innerHTML = P.pessoas ? '<p style="margin-bottom:10px;color:var(--tx2)">' + P.pessoas + ' pessoas viram só a página. Metade ficou até <b>' + P.seg_mediana + 's</b> e rolou até <b>' + P.rolou_mediana + '%</b>.</p><h2>Até onde rolaram</h2><div class="barras">' + barras(P.rolagem, P.pessoas) + '</div><h2 style="margin-top:14px">Última seção vista</h2><div class="barras">' + barras(P.secoes, P.pessoas) + '</div><h2 style="margin-top:14px">Tempo na página</h2><div class="barras">' + barras(P.tempo, P.pessoas) + '</div>' : '<p class="vazio">Ainda sem dados de saída (começam a chegar com as visitas novas).</p>';
+  $('form').innerHTML = barras(D.formulario, null, 'var(--ruim)');
+  $('aparelhos').innerHTML = barras(D.aparelhos, D.total);
+  // a lista
+  var F = { todos: ['Todos', function () { return true }], teste: ['Chegaram ao teste', function (p) { return p.etapa_i >= 3 }], whats: ['No WhatsApp', function (p) { return p.etapa_i >= 7 }], form: ['Pararam no formulário', function (p) { return p.etapa === 'comecou_form' || p.etapa === 'abriu_form' }], pagina: ['Só a página', function (p) { return p.etapa_i === 0 }] };
+  $('filtros').innerHTML = Object.keys(F).map(function (k) { return '<button data-f="' + k + '" aria-pressed="' + (FILTRO === k) + '">' + F[k][0] + ' · ' + D.pessoas.filter(F[k][1]).length + '</button>' }).join('');
+  var lista = D.pessoas.filter(F[FILTRO][1]);
+  $('qtd').textContent = lista.length + ' pessoa' + (lista.length === 1 ? '' : 's') + ', a mais recente primeiro';
+  $('lista').innerHTML = lista.length ? lista.map(function (p) {
+    var pts = D.escada.map(function (e, i) { return '<i class="' + (i <= p.etapa_i ? (i === p.etapa_i ? 'on fim' : 'on') : '') + '" title="' + esc(e.nome) + '"></i>' }).join('');
+    var quem = p.cliente ? '<b>' + esc(p.cliente.nome) + '</b> · ' + esc(p.cliente.cidade || '') + ' · ' : '';
+    return '<div class="pessoa' + (ABERTOS[p.id] ? ' aberta' : '') + '" data-id="' + esc(p.id) + '"><button aria-expanded="' + !!ABERTOS[p.id] + '"><span class="hora" style="white-space:pre">' + hora(p.inicio) + '</span><span class="meio"><span class="l1">' + chip(p.marca) + ' ' + quem + esc(p.anuncio) + ' · ' + esc(p.aparelho.so + ' ' + p.aparelho.app) + '</span><span class="l2">' + esc(p.parou) + '</span></span><span class="pontos" aria-label="chegou até: ' + esc(p.etapa_nome) + '">' + pts + '</span></button>' +
+      '<ul class="linha">' + p.linha.map(function (x) { return '<li><b>' + new Date(x.em).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) + '</b>' + esc(x.txt) + '</li>' }).join('') + (p.campanha ? '<li><b>origem</b>campanha ' + esc(p.campanha) + '</li>' : '') + '</ul></div>';
+  }).join('') : '<p class="vazio">Ninguém nesse filtro ainda.</p>';
+}
+function carrega() {
+  var hoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10);
+  return api('/api/oito/acessos?regiao=' + REG).then(function (d) {
+    D = d; var de = new Date(new Date(d.desde).getTime() - 3 * 3600e3).toISOString().slice(0, 10);
+    return api('/api/oito/campanhas?regiao=' + REG + '&de=' + de + '&ate=' + hoje).catch(function () { return null });
+  }).then(function (c) { C = c && c.ok !== false ? c : null; $('login').hidden = true; $('app').hidden = false; desenha() })
+    .catch(function (e) { if (e.senha) { $('app').hidden = true; $('login').hidden = false; $('lerro').textContent = SENHA ? 'Senha errada.' : '' } });
+}
+$('flogin').onsubmit = function (e) { e.preventDefault(); SENHA = $('senha').value; try { localStorage.setItem('oito_senha', SENHA) } catch (x) {} carrega() };
+$('reg').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; REG = b.dataset.r; try { localStorage.setItem('oito_regiao', REG) } catch (x) {} carrega() };
+$('filtros').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; FILTRO = b.dataset.f; desenha() };
+$('lista').onclick = function (e) { var b = e.target.closest('.pessoa>button'); if (!b) return; var p = b.parentNode, id = p.dataset.id; ABERTOS[id] = !ABERTOS[id]; p.classList.toggle('aberta', ABERTOS[id]); b.setAttribute('aria-expanded', ABERTOS[id]) };
+try { localStorage.setItem('oito_eu', '1') } catch (e) {}
+if (SENHA) carrega(); else { $('login').hidden = false }
+setInterval(function () { if (SENHA && !document.hidden) carrega() }, 60000);
+</script>
+</body>
+</html>

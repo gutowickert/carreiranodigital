@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server'
 import { oitoDb as db } from '@/lib/oito/db'
 import { ehMarca } from '@/lib/oito/config'
 
-const TIPOS = new Set(['visita', 'form_inicio', 'form_passo', 'form_erro', 'teste_visto', 'assinar_clique', 'fatura_aberta', 'area_visita', 'baixou', 'copiou_legenda', 'app_instalado', 'whats_clique'])
+const TIPOS = new Set(['visita', 'form_inicio', 'form_passo', 'form_erro', 'teste_visto', 'assinar_clique', 'fatura_aberta', 'area_visita', 'baixou', 'copiou_legenda', 'app_instalado', 'whats_clique', 'saiu'])  // 16/10: saiu = onde a pessoa parou (tempo, rolagem, seção, passo)
 
 // robôs e pré-carregamento não entram (13/10): o navegador fica guardado em detalhe.ua pra conferir depois
 const ROBO = /bot|crawl|spider|slurp|facebookexternalhit|facebot|meta-externalagent|headlesschrome|lighthouse|inspectiontool|pingdom|uptime/i
