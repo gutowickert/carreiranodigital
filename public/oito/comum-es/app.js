@@ -5,7 +5,7 @@
 // El precio llega en window.OITO_PRECO (build-es.js lo lee de lib/oito/config.ts).
 // Copia traducida de /oito/comum/app.js (la brasileña); la lógica es la misma.
 (function () {
-  var OITO_PIXEL = { feedaldia: '', divino: '', sabroso: '', peludo: '' }
+  var OITO_PIXEL = { feedaldia: '2440227939714184', divino: '', sabroso: '', peludo: '' }
   var marca = document.body.dataset.marca, grupo = document.body.dataset.grupo || '', pasta = document.body.dataset.pasta || ''
   var PASTAS = { divino: 'salon', sabroso: 'restaurante', peludo: 'mascotas' }
   // en el dominio de la marca (www.feeddivino.com...) las direcciones quedan limpias: /comecar.html en vez de /oito/divino/comecar.html
