@@ -39,7 +39,7 @@ const MODELOS = [
   // (é o aviso de uma entrega). Enquanto a Meta não aprova, o sistema cai sozinho nos modelos antigos (lib/oito/vendedor.ts).
   { name: 'oito_teste_pronto_v2', language: 'pt_BR', es: false, url: true, categoria: 'UTILITY',
     texto: 'Oi, {{1}}! Aqui é do {{2}} 😊\n\nOs 2 posts do {{3}} ficaram prontos. Deu uma olhada? Me conta o que achou.\n\nSe estiver do seu jeito, é só aprovar. Se quiser mudar alguma coisa (o texto, a foto, as cores), me diz aqui que eu ajusto.',
-    botoes: ['Aprovado 👍', 'Quero ajustar'], link: 'Ver os posts' },
+    botoes: ['Aprovado', 'Quero ajustar'], link: 'Ver os posts' },
   { name: 'oito_seguimento_1_v2', language: 'pt_BR', es: false,
     texto: 'Oi, {{1}}! Aqui é do {{2}}, passando pra saber se os posts do {{3}} serviram 🙂\n\nSe algum detalhe não ficou do seu jeito, eu ajusto rapidinho. E se fizer sentido receber 8 assim todo mês, te conto como funciona, sem compromisso.',
     botoes: ['Quero ajustar', 'Como funciona?', 'Agora não'] },
@@ -48,7 +48,7 @@ const MODELOS = [
     botoes: ['Quero os do mês'] },
   { name: 'oito_es_prueba_lista_v2', language: 'es', es: true, url: true, categoria: 'UTILITY',
     texto: '¡Hola, {{1}}! Te escribimos de {{2}} 😊\n\nLos 2 posts de {{3}} ya están listos. ¿Alcanzaste a verlos? Cuéntame qué te parecieron.\n\nSi te gustan, solo apruébalos. Si quieres cambiar algo (el texto, la foto, los colores), dímelo aquí y lo ajusto.',
-    botoes: ['Aprobado 👍', 'Quiero ajustar'], link: 'Ver los posts' },
+    botoes: ['Aprobado', 'Quiero ajustar'], link: 'Ver los posts' },
   { name: 'oito_es_seguimiento_1_v2', language: 'es', es: true,
     texto: '¡Hola, {{1}}! Te escribimos de {{2}}: ¿los posts de {{3}} te sirvieron? 🙂\n\nSi algún detalle no quedó a tu gusto, lo ajusto rapidito. Y si te sirve recibir 8 así cada mes, te cuento cómo funciona, sin compromiso.',
     botoes: ['Quiero ajustar', '¿Cómo funciona?', 'Ahora no'] },
