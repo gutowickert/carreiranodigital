@@ -510,7 +510,12 @@ function usd(n) { return n ? ' + US$ ' + Math.round(n).toLocaleString('pt-BR') :
 var ST = { teste: ['Teste', 'info'], aguardando_pagamento: ['Aguardando pagamento', 'at'], ativo: ['Ativo', 'bom'], atrasado: ['Atrasado', 'ruim'], cancelado: ['Cancelado', 'neu'] };
 var LST = { espera: ['Esperando', 'neu'], fila: ['Na fila', 'info'], gerando: ['Gerando', 'at'], pronto: ['Pronto', 'bom'], erro: ['Erro', 'ruim'] };
 var LTIPO = { teste: 'Teste grátis', mes: 'Posts do mês', ajuste: 'Ajuste' };
-var ETAPAS = [['visita', 'Visitas no site'], ['whats_clique', 'Clicou no WhatsApp'], ['wa_conversa', 'Mandou mensagem'], ['form_inicio', 'Começou o formulário'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['teste_aprovado', 'Aprovou o teste'], ['assinar_clique', 'Clicou em assinar'], ['assinatura_aberta', 'Abriu a fatura'], ['pagou', 'Pagou']];
+// 16/10: cada região mostra só o caminho dela. Brasil: site → WhatsApp → agente → fatura. LATAM: site → formulário → teste na tela → Hotmart.
+var ETAPAS_REG = {
+  br: [['visita', 'Visitas no site'], ['whats_clique', 'Clicou no WhatsApp'], ['wa_conversa', 'Mandou mensagem'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['teste_aprovado', 'Aprovou o teste'], ['assinatura_aberta', 'Abriu a fatura'], ['pagou', 'Pagou']],
+  latam: [['visita', 'Visitas no site'], ['form_inicio', 'Começou o formulário'], ['lead', 'Pediu o teste'], ['teste_pronto', 'Teste pronto'], ['assinar_clique', 'Clicou em assinar'], ['pagou', 'Pagou']]
+};
+var ETAPAS = ETAPAS_REG[REG] || ETAPAS_REG.br;
 var CTX = { carro_chefe: 'Carro-chefe', servicos: 'Serviços', diferencial: 'Diferencial', publico: 'Público', tom: 'Tom de voz', horario: 'Horário', preco_medio: 'Preço médio', evitar: 'Evitar', extra: 'Extra', novidades: 'Novidades do mês' };
 var C = null, cCarregando = false, cErroRede = null;   // campanhas da Meta (carregam à parte: a Meta pode demorar)
 E.cfm = 'todas'; E.cab = {};
@@ -593,6 +598,7 @@ function marcaReg() { document.querySelectorAll('#reg button').forEach(function 
 function mudaRegiao(r) {
   if ((r !== 'br' && r !== 'latam') || r === REG) return;
   REG = r; try { localStorage.setItem('oito_regiao', r) } catch (e) {}
+  ETAPAS = ETAPAS_REG[r] || ETAPAS_REG.br;
   if (/[?&]regiao=/.test(location.search)) history.replaceState(null, '', location.pathname + location.search.replace(/([?&]regiao=)(br|latam)/, '$1' + r) + location.hash);
   E.fm = 'todas'; E.cm = 'todas'; E.cfm = 'todas'; E.cab = {}; E.cmax = 40; C = null; cErroRede = null; W = null;
   marcaReg(); fechaGav(true); $('app').classList.add('trocando');
