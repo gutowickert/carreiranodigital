@@ -55,7 +55,9 @@ export async function GET(req: Request) {
   // 16/10: quem tem assinatura ou pagamento em aberto continua visível depois de zerar (senão some quem está no meio da compra)
   const clientes = clientesT.filter(c => (depois(c.criado_em) || EM_ABERTO.includes(c.status)) && naReg(c.marca)), lotes = lotesT.filter(l => depois(l.criado_em) && naReg(null, l.cliente_id))
   const eventos = eventosT.filter(e => depois(e.criado_em) && naReg(e.marca, e.cliente_id)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em) && naReg(ch.marca, ch.cliente_id))
-  const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
+  // 16/10: depois de zerar, o funil é uma turma nova: evento de cliente que entrou antes do zero (ex.: o WhatsApp chamando um teste antigo) não conta
+  const daTurma = new Set(clientesT.filter(c => depois(c.criado_em)).map(c => c.id))
+  const real = (e: any) => !e.cliente_id || (!exemplo.has(e.cliente_id) && (!zero || daTurma.has(e.cliente_id)))
   const noPeriodoT = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
   // 15/10: clique sem visita é robô (o revisor da Meta abre a página e clica em todos os botões no mesmo segundo): só conta clique de sessão que carregou a página
   const comVisita = new Set(noPeriodoT.filter(e => e.tipo === 'visita' && e.sessao).map(e => e.sessao))
