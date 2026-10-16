@@ -244,7 +244,14 @@ export async function atende(id: string) {
   const m = ((c?.marca || cv.marca) as Marca | null)
   const sabe = m ? (emEspanhol(m) ? SABE_ES(m) : SABE(m)) + '\n\n' + OFERTA(m) : ''
   const historico = msgs.slice(-40).map(x => `${x.autor === 'cliente' ? 'CLIENTE' : x.autor === 'sistema' ? 'SISTEMA (mensagem automática já enviada)' : x.autor === 'dono' ? 'EQUIPE' : 'TU'}: ${x.texto}`).join('\n')
-  const conversa: any[] = [{ role: 'user', content: `${texto}\n\nCONVERSA:\n${historico}\n\nResponde a(s) última(s) mensagem(ns) do cliente. Usa as ferramentas quando precisar agir. No fim, escreve SÓ o texto que vai pro cliente (se forem 2 ou 3 mensagens, separa com uma linha contendo só ---).` }]
+  // 16/10: a IA VÊ as imagens que a pessoa mandou (antes só lia "(mandou a imagem #n)" e ficava perguntando qual era o logo)
+  const midias: any[] = ((cv.rascunho || {}).midias || []).map((md: any, i: number) => ({ ...md, n: i + 1 })).filter((md: any) => /^image\//.test(md.mime || 'image/')).slice(-6)
+  const links = midias.length ? await db.links(midias.map((md: any) => md.path)).catch(() => [] as any[]) : []
+  const imagens: any[] = []
+  midias.forEach((md: any, i: number) => { if (links[i]) imagens.push({ type: 'text', text: `Imagem #${md.n} que a pessoa mandou (marcada como: ${md.uso || 'ainda não definido'}):` }, { type: 'image', source: { type: 'url', url: links[i] } }) })
+  const pedidoFinal = `Responde a(s) última(s) mensagem(ns) do cliente. Usa as ferramentas quando precisar agir.${imagens.length ? ' As imagens que ele mandou estão acima: OLHA pra elas antes de perguntar qualquer coisa sobre elas (o que é logo, o que é foto, o que aparece).' : ''}
+FORMATO OBRIGATÓRIO DA RESPOSTA: cada mensagem que vai pro WhatsApp vai entre <whatsapp> e </whatsapp> (1 a 3 mensagens). Tudo que estiver fora dessas marcas é descartado e o cliente nunca vê. Nada de raciocínio dentro das marcas. Se não for responder nada, escreve <whatsapp>-</whatsapp>.`
+  const conversa: any[] = [{ role: 'user', content: [...imagens, { type: 'text', text: `${texto}\n\nCONVERSA:\n${historico}\n\n${pedidoFinal}` }] }]
   let resposta = ''
   for (let volta = 0; volta < 6; volta++) {
     const r = await fetch('https://api.anthropic.com/v1/messages', {
@@ -265,10 +272,16 @@ export async function atende(id: string) {
     }
     conversa.push({ role: 'user', content: resultados })
   }
-  // rede de segurança (15/10): parágrafo que fala da ferramenta ou do cliente em terceira pessoa é raciocínio interno, não vai pro WhatsApp
-  resposta = resposta.split(/\n\s*\n/).filter(p => !/\b(a ferramenta|chamar a ferramenta|gerar_cobranca|salvar_dados|o cliente (não|nao|disse|quer|pediu|está|esta)|a cliente (não|nao|disse|quer|pediu)|vou perguntar antes)\b/i.test(p)).join('\n\n').trim()
-  if (!resposta || resposta === '-') return
-  const partes = resposta.split(/\n\s*---+\s*\n/).map(s => s.trim()).filter(Boolean).slice(0, 3)
+  // 16/10: só vai pro WhatsApp o que está entre <whatsapp></whatsapp>; o resto é raciocínio e fica de fora
+  const marcadas = [...resposta.matchAll(/<whatsapp>([\s\S]*?)<\/whatsapp>/gi)].map(x => x[1].trim()).filter(x => x && x !== '-')
+  let partes: string[]
+  if (marcadas.length || /<whatsapp>/i.test(resposta)) partes = marcadas.slice(0, 3)
+  else {
+    // sem as marcas (raro): rede de segurança, tira parágrafo de raciocínio (fala do cliente em 3ª pessoa, das ferramentas, do que "vou" fazer)
+    const limpo = resposta.split(/\n\s*\n/).filter(p => !/(\b(a ferramenta|chamar a ferramenta|gerar_cobranca|salvar_dados|usar_imagens|pedir_ajuste|passar_para_humano)\b|^\s*(o|a) client[ea]\b|\b(o|a) client[ea] (não|nao|disse|quer|pediu|está|esta|respondeu|mandou|escreveu)\b|\bvou (perguntar|chamar|registrar|marcar) (antes|de novo)\b|não deu pra saber)/i.test(p)).join('\n\n').trim()
+    partes = limpo && limpo !== '-' ? limpo.split(/\n\s*---+\s*\n/).map(s => s.trim()).filter(Boolean).slice(0, 3) : []
+  }
+  if (!partes.length) return
   const atual: any = await db.um('wa_conversas', { id })
   for (const p of partes) await registraSaida(atual, 'ia', p, await enviaTexto(atual.telefone, p))
   await db.atualiza('wa_conversas', { id }, { ia_respostas: (atual.ia_respostas || 0) + 1 })
