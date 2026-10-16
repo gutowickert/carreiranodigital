@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0b111b">
+<title>Rastro</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Rastro (16/10): o painel do rastreador próprio. Topo com projeto e período; números do dia; gráfico; campanhas abrindo até o anúncio; vendas ao vivo. */
+:root{
+  --bg:#f5f6f8;--sup:#fff;--sup2:#eef1f5;--tinta:#0e1726;--tinta2:#3d4a5c;--mut:#6b7789;--linha:#dfe4ec;
+  --acento:#1463ff;--acento-bg:#e5eeff;--quente:#ff6a3d;--quente-bg:#ffece5;
+  --bom:#0f8a53;--bom-bg:#ddf5e9;--ruim:#d23b3b;--ruim-bg:#fde6e6;--at:#a86200;--at-bg:#fdf0d9;
+  --f-display:"Sora",ui-sans-serif,system-ui,sans-serif;--f-texto:"Plus Jakarta Sans",ui-sans-serif,system-ui,sans-serif;--f-dado:"IBM Plex Mono",ui-monospace,Consolas,monospace;
+  --sombra:0 1px 2px rgba(14,23,38,.05),0 8px 24px rgba(14,23,38,.07);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0b111b;--sup:#121a27;--sup2:#182233;--tinta:#e9eef6;--tinta2:#b4bfcf;--mut:#8592a6;--linha:#243044;
+  --acento:#5b93ff;--acento-bg:#15274a;--quente:#ff8a63;--quente-bg:#3a1e14;--bom:#4fd394;--bom-bg:#0f3324;--ruim:#ff7d7d;--ruim-bg:#3d1616;--at:#ffb64d;--at-bg:#3a2a0f;
+  --sombra:0 1px 2px rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.3);color-scheme:dark}}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{background:var(--bg);color:var(--tinta);font:15px/1.5 var(--f-texto);-webkit-font-smoothing:antialiased}
+.pag{max-width:1240px;margin:0 auto;padding-block:max(18px,env(safe-area-inset-top,0px)) 60px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:16px}
+h1,h2,h3{font-family:var(--f-display);letter-spacing:-.01em;line-height:1.15}
+h2{font-size:16px;font-weight:700;display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}h2 small{font:500 12.5px var(--f-texto);color:var(--mut)}
+.topo{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between}
+.logo{font:800 22px var(--f-display);display:flex;align-items:center;gap:9px}
+.logo i{width:24px;height:24px;border-radius:8px;background:linear-gradient(135deg,var(--acento),var(--quente))}
+.ctrl{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+select,input[type=date]{font:600 14px var(--f-texto);color:var(--tinta);background:var(--sup);border:1px solid var(--linha);border-radius:10px;padding:7px 10px}
+.seg{display:inline-flex;background:var(--sup);border:1px solid var(--linha);border-radius:12px;padding:3px;flex-wrap:wrap}
+.seg button{border:0;background:transparent;color:var(--tinta2);font:600 13px var(--f-texto);padding:6px 11px;border-radius:9px;cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--acento);color:#fff}
+button:focus-visible,select:focus-visible,input:focus-visible,a:focus-visible{outline:2px solid var(--acento);outline-offset:2px}
+.status{font-size:12.5px;color:var(--mut);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.ponto{width:8px;height:8px;border-radius:50%;background:var(--bom);display:inline-block;margin-right:5px}
+.aviso{background:var(--at-bg);color:var(--at);border-radius:12px;padding:10px 14px;font-size:14px}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(4,minmax(0,1fr))}
+.kpi{background:var(--sup);border:1px solid var(--linha);border-radius:14px;padding:13px 15px;min-width:0}
+.kpi span{display:block;font-size:12.5px;color:var(--mut)}
+.kpi b{display:block;font:700 24px var(--f-dado);font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi small{font-size:12px;color:var(--mut)}
+.kpi.grande b{font-size:28px}
+.bom-t{color:var(--bom)}.ruim-t{color:var(--ruim)}
+.card{background:var(--sup);border:1px solid var(--linha);border-radius:16px;padding:16px;box-shadow:var(--sombra);min-width:0}
+.grade{display:grid;gap:16px;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr)}
+.graf svg{display:block;width:100%;height:190px}
+.legenda{display:flex;gap:14px;font-size:12.5px;color:var(--mut);margin-top:6px}.legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.tab{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-top:8px}
+table{border-collapse:collapse;width:100%;font-size:13px;font-variant-numeric:tabular-nums}
+th,td{padding:8px 9px;border-bottom:1px solid var(--linha);text-align:right;white-space:nowrap}
+th{font:600 11px var(--f-texto);color:var(--mut);text-transform:uppercase;letter-spacing:.04em;position:sticky;top:0;background:var(--sup)}
+th:first-child,td:first-child{text-align:left;white-space:normal;min-width:220px}
+tr.n1 td:first-child{padding-left:26px}tr.n2 td:first-child{padding-left:46px;color:var(--tinta2)}
+tr.n0{font-weight:600}tr.n1{background:color-mix(in srgb,var(--sup2) 45%,transparent)}tr.n2{background:color-mix(in srgb,var(--sup2) 75%,transparent)}
+.abre{all:unset;cursor:pointer;display:inline-flex;gap:7px;align-items:baseline}
+.abre::before{content:"▸";color:var(--mut);font-size:11px;transition:transform .15s}.abre[aria-expanded="true"]::before{transform:rotate(90deg)}
+.roas{font-weight:700;padding:1px 8px;border-radius:99px}.roas.bom{background:var(--bom-bg);color:var(--bom)}.roas.at{background:var(--at-bg);color:var(--at)}.roas.ruim{background:var(--ruim-bg);color:var(--ruim)}
+.barras{display:grid;gap:8px}
+.barra{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;font-size:13.5px}
+.barra .tr{grid-column:1/-1;height:8px;background:var(--sup2);border-radius:99px;overflow:hidden}.barra .tr i{display:block;height:100%;background:var(--acento);border-radius:99px}
+.barra b{font-family:var(--f-dado);font-weight:500}
+.vendas{display:grid;max-height:420px;overflow:auto}
+.venda{display:grid;grid-template-columns:52px minmax(0,1fr) auto;gap:10px;padding:8px 0;border-bottom:1px solid var(--linha);font-size:13.5px;align-items:center}
+.venda .h{font:500 12px var(--f-dado);color:var(--mut)}.venda .o{color:var(--mut);font-size:12.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.venda b{font-family:var(--f-dado)}.venda .rb{color:var(--ruim);text-decoration:line-through}
+.vazio{color:var(--mut);font-size:14px;padding:6px 0}
+.config{display:grid;gap:10px}
+.config code{font:500 12.5px var(--f-dado);background:var(--sup2);border:1px solid var(--linha);border-radius:8px;padding:8px 10px;display:block;word-break:break-all}
+.config ol{padding-left:20px;display:grid;gap:4px;font-size:14px;color:var(--tinta2)}
+.btn{background:var(--acento);color:#fff;border:0;border-radius:10px;padding:8px 14px;font:700 13.5px var(--f-texto);cursor:pointer;justify-self:start}
+.btn.sec{background:var(--sup2);color:var(--tinta)}
+#login{max-width:340px;margin:16vh auto;text-align:center;display:grid;gap:12px;padding:0 16px}
+#login input{width:100%;padding:11px 12px;border:1px solid var(--linha);border-radius:10px;background:var(--sup);color:var(--tinta);font-size:15px}
+@media(max-width:980px){.grade{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:640px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.kpi b{font-size:20px}.kpi.grande b{font-size:22px}}
+@media (prefers-reduced-motion:reduce){.abre::before{transition:none}}
+</style>
+</head>
+<body>
+<form id="login" hidden><div class="logo" style="justify-content:center"><i></i>Rastro</div><p style="color:var(--mut)">Digite a senha do Rastro.</p><label for="senha" style="position:absolute;left:-9999px">Senha</label><input id="senha" type="password" autocomplete="current-password" placeholder="Senha" required><button class="btn" style="justify-self:center">Entrar</button><p id="lerro" style="color:var(--ruim)"></p></form>
+<div class="pag" id="app" hidden>
+  <header class="topo">
+    <div class="logo"><i></i>Rastro</div>
+    <div class="ctrl">
+      <label for="proj" style="position:absolute;left:-9999px">Projeto</label><select id="proj"></select>
+      <span class="seg" id="per"><button data-p="hoje">Hoje</button><button data-p="ontem">Ontem</button><button data-p="7">7 dias</button><button data-p="30">30 dias</button><button data-p="mes">Este mês</button></span>
+      <label for="de" style="position:absolute;left:-9999px">De</label><input type="date" id="de"><label for="ate" style="position:absolute;left:-9999px">Até</label><input type="date" id="ate">
+    </div>
+  </header>
+  <div class="status" id="status"></div>
+  <div class="aviso" id="aviso" hidden></div>
+  <section class="kpis" id="kpis"></section>
+  <section class="grade">
+    <div class="card graf"><h2 id="graf-tit">Faturamento x gasto</h2><div id="graf"></div></div>
+    <div class="card"><h2>De onde vieram as vendas</h2><div class="barras" id="origens" style="margin-top:10px"></div><h2 style="margin-top:16px">Produtos</h2><div class="barras" id="produtos" style="margin-top:10px"></div></div>
+  </section>
+  <section class="card"><h2>Campanhas <small>toque para abrir os conjuntos e os anúncios · ROAS = faturamento ÷ gasto</small></h2><div class="tab" id="camps"></div></section>
+  <section class="grade">
+    <div class="card"><h2>Vendas <small id="vqt"></small></h2><div class="vendas" id="vendas"></div></div>
+    <div class="card config"><h2>Ligação com a Kiwify</h2><p style="font-size:14px;color:var(--tinta2)">Cada venda da Kiwify chega aqui pelo endereço abaixo, que é secreto: não compartilhe.</p><code id="hook">…</code><button class="btn sec" id="copia" type="button">Copiar endereço</button>
+      <ol><li>Na Kiwify: <b>Apps → Webhooks → Criar webhook</b>.</li><li>Cole o endereço acima e escolha os produtos (ou todos).</li><li>Marque: compra aprovada, compra reembolsada, chargeback, assinatura renovada e cancelada.</li><li>Salve e toque em <b>enviar teste</b>: em segundos aparece aqui embaixo.</li></ol>
+      <p id="ultima" style="font-size:13.5px;color:var(--mut)"></p></div>
+  </section>
+</div>
+<script>
+var SENHA = ''; try { SENHA = localStorage.getItem('rastro_senha') || '' } catch (e) {}
+var EST = { proj: '', per: 'hoje', de: '', ate: '' }; try { var s0 = JSON.parse(localStorage.getItem('rastro_estado') || '{}'); if (s0.per) EST.per = s0.per; if (s0.proj) EST.proj = s0.proj } catch (e) {}
+var D = null, ABERTOS = {};
+function $(i) { return document.getElementById(i) }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
+function brl(v) { return v == null ? '–' : 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+function brl0(v) { return v == null ? '–' : 'R$ ' + Number(v).toLocaleString('pt-BR', { maximumFractionDigits: 0 }) }
+function nf(v) { return v == null ? '–' : Number(v).toLocaleString('pt-BR') }
+function dia(off) { return new Date(Date.now() - 3 * 3600e3 - off * 864e5).toISOString().slice(0, 10) }
+function periodo() {
+  if (EST.per === 'custom' && EST.de && EST.ate) return [EST.de, EST.ate];
+  var h = dia(0); if (EST.per === 'ontem') return [dia(1), dia(1)]; if (EST.per === '7') return [dia(6), h]; if (EST.per === '30') return [dia(29), h]; if (EST.per === 'mes') return [h.slice(0, 8) + '01', h]; return [h, h];
+}
+function roasChip(r) { if (r == null) return '–'; var c = r >= 2.5 ? 'bom' : r >= 1.5 ? 'at' : 'ruim'; return '<span class="roas ' + c + '">' + r.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) + '</span>' }
+function salva() { try { localStorage.setItem('rastro_estado', JSON.stringify({ per: EST.per, proj: EST.proj })) } catch (e) {} }
+function api() {
+  var p = periodo();
+  return fetch('/api/rastro/painel?projeto=' + encodeURIComponent(EST.proj) + '&de=' + p[0] + '&ate=' + p[1], { headers: { 'x-senha': SENHA }, cache: 'no-store' })
+    .then(function (r) { if (r.status === 401) { var e = new Error('senha'); e.senha = true; throw e } return r.json() });
+}
+function grafico() {
+  var W = 600, H = 190, pl = 46, pb = 22, pt = 10, pr = 8;
+  if (D.horas) {
+    var hs = D.horas, max = Math.max.apply(null, hs.map(function (x) { return x.faturamento })) || 1, bw = (W - pl - pr) / 24;
+    var s = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Faturamento por hora hoje">';
+    [0, .5, 1].forEach(function (f) { var y = pt + (H - pt - pb) * (1 - f); s += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--linha)"/><text x="' + (pl - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)" font-family="IBM Plex Mono">' + brl0(max * f) + '</text>' });
+    hs.forEach(function (x, i) { var h = (H - pt - pb) * x.faturamento / max; s += '<rect x="' + (pl + i * bw + 2) + '" y="' + (H - pb - h) + '" width="' + (bw - 4) + '" height="' + h + '" rx="3" fill="var(--acento)"><title>' + i + 'h: ' + x.vendas + ' vendas, ' + brl(x.faturamento) + '</title></rect>'; if (i % 3 === 0) s += '<text x="' + (pl + i * bw + bw / 2) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="var(--mut)" font-family="IBM Plex Mono">' + i + 'h</text>' });
+    $('graf-tit').textContent = 'Faturamento por hora (hoje)';
+    $('graf').innerHTML = s + '</svg><div class="legenda"><span><i style="background:var(--acento)"></i>faturamento</span><span>o gasto de hoje está nos números acima</span></div>'; return;
+  }
+  var ds = D.dias, max2 = Math.max.apply(null, ds.map(function (x) { return Math.max(x.faturamento, x.gasto) })) || 1, n = ds.length, g = (W - pl - pr) / n, b = Math.max(2, g / 2 - 3);
+  var s2 = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Faturamento e gasto por dia">';
+  [0, .5, 1].forEach(function (f) { var y = pt + (H - pt - pb) * (1 - f); s2 += '<line x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y + '" y2="' + y + '" stroke="var(--linha)"/><text x="' + (pl - 6) + '" y="' + (y + 4) + '" font-size="10" text-anchor="end" fill="var(--mut)" font-family="IBM Plex Mono">' + brl0(max2 * f) + '</text>' });
+  ds.forEach(function (x, i) { var x0 = pl + i * g + (g - 2 * b - 2) / 2, hf = (H - pt - pb) * x.faturamento / max2, hg = (H - pt - pb) * x.gasto / max2;
+    s2 += '<rect x="' + x0 + '" y="' + (H - pb - hf) + '" width="' + b + '" height="' + hf + '" rx="2" fill="var(--acento)"><title>' + x.dia + ': faturamento ' + brl(x.faturamento) + '</title></rect><rect x="' + (x0 + b + 2) + '" y="' + (H - pb - hg) + '" width="' + b + '" height="' + hg + '" rx="2" fill="var(--quente)"><title>' + x.dia + ': gasto ' + brl(x.gasto) + '</title></rect>';
+    if (n <= 10 || i % Math.ceil(n / 8) === 0) s2 += '<text x="' + (pl + i * g + g / 2) + '" y="' + (H - 6) + '" font-size="10" text-anchor="middle" fill="var(--mut)" font-family="IBM Plex Mono">' + x.dia.slice(8) + '/' + x.dia.slice(5, 7) + '</text>' });
+  $('graf-tit').textContent = 'Faturamento x gasto, por dia';
+  $('graf').innerHTML = s2 + '</svg><div class="legenda"><span><i style="background:var(--acento)"></i>faturamento</span><span><i style="background:var(--quente)"></i>gasto na Meta</span></div>';
+}
+function linha(o, nivel, chave, filhos) {
+  var nome = filhos ? '<button class="abre" data-k="' + esc(chave) + '" aria-expanded="' + !!ABERTOS[chave] + '">' + esc(o.nome) + '</button>' : esc(o.nome);
+  return '<tr class="n' + nivel + '"><td>' + nome + '</td><td>' + brl(o.gasto) + '</td><td>' + nf(o.cliques) + '</td><td>' + (o.ctr != null ? o.ctr.toLocaleString('pt-BR') + '%' : '–') + '</td><td>' + brl(o.cpc) + '</td><td>' + nf(o.vendas) + '</td><td>' + brl(o.faturamento) + '</td><td>' + roasChip(o.roas) + '</td><td>' + brl(o.cpa) + '</td><td class="' + (o.lucro >= 0 ? 'bom-t' : 'ruim-t') + '">' + brl(o.lucro) + '</td><td>' + nf(o.compras_meta) + '</td></tr>';
+}
+function desenha() {
+  var t = D.total;
+  $('proj').innerHTML = D.projetos.map(function (p) { return '<option value="' + esc(p.slug) + '"' + (p.slug === D.projeto.slug ? ' selected' : '') + '>' + esc(p.nome) + '</option>' }).join('');
+  EST.proj = D.projeto.slug;
+  [].forEach.call($('per').children, function (b) { b.setAttribute('aria-pressed', b.dataset.p === EST.per) });
+  var p = periodo(); $('de').value = p[0]; $('ate').value = p[1];
+  var ult = D.ultima_venda_recebida;
+  $('status').innerHTML = '<span><span class="ponto"></span>atualizado às ' + new Date(D.agora).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) + (EST.per === 'hoje' ? ' · atualiza a cada minuto' : '') + '</span><span>conta ' + esc(D.projeto.conta) + '</span>';
+  var avisos = []; if (!D.meta.ok) avisos.push('A Meta não respondeu: ' + (D.meta.erro || 'sem detalhe') + '. Os números de gasto ficam zerados até voltar.'); if (!ult) avisos.push('Nenhuma venda chegou da Kiwify ainda. Faça a ligação no quadro "Ligação com a Kiwify", no fim da página.');
+  $('aviso').hidden = !avisos.length; $('aviso').innerHTML = avisos.map(esc).join('<br>');
+  $('kpis').innerHTML = [
+    ['Faturamento', brl(t.faturamento), t.vendas + ' vendas · ticket ' + brl(t.ticket), 'grande'], ['Gasto na Meta', brl(t.gasto), nf(t.cliques) + ' cliques', 'grande'],
+    ['ROAS', t.roas != null ? t.roas.toLocaleString('pt-BR', { maximumFractionDigits: 2 }) : '–', 'faturamento ÷ gasto', 'grande'], ['Lucro', '<span class="' + (t.lucro >= 0 ? 'bom-t' : 'ruim-t') + '">' + brl(t.lucro) + '</span>', 'líquido da Kiwify − gasto', 'grande'],
+    ['CPA', brl(t.cpa), 'gasto por venda'], ['Vendas', nf(t.vendas), 'a Meta contou ' + nf(t.compras_meta)], ['Líquido Kiwify', brl(t.liquido), 'já sem as taxas'], ['Reembolsos', nf(t.reembolsos), brl(t.reembolsos_valor)]
+  ].map(function (k) { return '<div class="kpi ' + (k[3] || '') + '"><span>' + k[0] + '</span><b>' + k[1] + '</b><small>' + k[2] + '</small></div>' }).join('');
+  grafico();
+  var tf = D.origens.reduce(function (s, o) { return s + o.faturamento }, 0) || 1;
+  $('origens').innerHTML = D.origens.filter(function (o) { return o.vendas }).map(function (o) { return '<div class="barra"><span>' + esc(o.nome) + '</span><b>' + o.vendas + ' · ' + brl0(o.faturamento) + '</b><span class="tr"><i style="width:' + Math.max(2, o.faturamento / tf * 100) + '%"></i></span></div>' }).join('') || '<p class="vazio">Sem vendas no período.</p>';
+  var tp = D.produtos.reduce(function (s, o) { return s + o.faturamento }, 0) || 1;
+  $('produtos').innerHTML = D.produtos.slice(0, 6).map(function (o) { return '<div class="barra"><span>' + esc(o.nome) + '</span><b>' + o.vendas + ' · ' + brl0(o.faturamento) + '</b><span class="tr"><i style="width:' + Math.max(2, o.faturamento / tp * 100) + '%;background:var(--quente)"></i></span></div>' }).join('') || '<p class="vazio">Sem vendas no período.</p>';
+  var cs = D.campanhas.filter(function (c) { return c.gasto > 0 || c.vendas > 0 });
+  if (!cs.length) $('camps').innerHTML = '<p class="vazio">Nenhuma campanha com gasto ou venda no período.</p>';
+  else {
+    var h = '<table><thead><tr><th>Campanha / conjunto / anúncio</th><th>Gasto</th><th>Cliques</th><th>CTR</th><th>CPC</th><th>Vendas</th><th>Faturamento</th><th>ROAS</th><th>CPA</th><th>Lucro</th><th>Compras (Meta)</th></tr></thead><tbody>';
+    cs.forEach(function (c) { var kc = 'c' + c.id; h += linha(c, 0, kc, c.conjuntos.length);
+      if (ABERTOS[kc]) c.conjuntos.filter(function (s) { return s.gasto > 0 || s.vendas > 0 }).forEach(function (s) { var ks = 's' + s.id; h += linha(s, 1, ks, s.anuncios.length);
+        if (ABERTOS[ks]) s.anuncios.filter(function (a) { return a.gasto > 0 || a.vendas > 0 }).forEach(function (a) { h += linha(a, 2, '', 0) }) }) });
+    $('camps').innerHTML = h + '</tbody></table>';
+  }
+  $('vqt').textContent = D.vendas.length ? 'as mais recentes primeiro' : '';
+  $('vendas').innerHTML = D.vendas.length ? D.vendas.map(function (v) { var d = new Date(v.em); var reemb = v.status !== 'aprovada';
+    return '<div class="venda"><span class="h">' + (D.de === D.ate ? d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' })) + '</span><span><span style="display:block">' + esc(v.produto || 'Produto') + (reemb ? ' · <span class="ruim-t">' + esc(v.status) + '</span>' : '') + '</span><span class="o">' + esc(v.origem) + '</span></span><b class="' + (reemb ? 'rb' : '') + '">' + brl(v.valor) + '</b></div>' }).join('') : '<p class="vazio">Nenhuma venda no período.</p>';
+  $('hook').textContent = D.projeto.webhook;
+  $('ultima').textContent = ult ? 'Última notificação da Kiwify: ' + new Date(ult.atualizado_em).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) + ' (' + (ult.evento || ult.status) + ').' : 'Ainda não chegou nenhuma notificação da Kiwify.';
+}
+function carrega() {
+  return api().then(function (d) { if (d.erro) throw new Error(d.erro); D = d; $('login').hidden = true; $('app').hidden = false; desenha() })
+    .catch(function (e) { if (e.senha) { $('app').hidden = true; $('login').hidden = false; $('lerro').textContent = SENHA ? 'Senha errada.' : '' } else { $('aviso').hidden = false; $('aviso').textContent = 'Não carregou: ' + e.message } });
+}
+$('login').onsubmit = function (e) { e.preventDefault(); SENHA = $('senha').value; try { localStorage.setItem('rastro_senha', SENHA) } catch (x) {} carrega() };
+$('per').onclick = function (e) { var b = e.target.closest('button'); if (!b) return; EST.per = b.dataset.p; salva(); carrega() };
+$('proj').onchange = function () { EST.proj = this.value; ABERTOS = {}; salva(); carrega() };
+['de', 'ate'].forEach(function (i) { $(i).onchange = function () { EST.per = 'custom'; EST.de = $('de').value; EST.ate = $('ate').value; if (EST.de && EST.ate) carrega() } });
+$('camps').onclick = function (e) { var b = e.target.closest('.abre'); if (!b) return; ABERTOS[b.dataset.k] = !ABERTOS[b.dataset.k]; desenha() };
+$('copia').onclick = function () { var t = $('hook').textContent, b = this; var ok = function () { b.textContent = 'Copiado' ; setTimeout(function () { b.textContent = 'Copiar endereço' }, 2000) };
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(ok).catch(function () { var r = document.createRange(); r.selectNodeContents($('hook')); var s = getSelection(); s.removeAllRanges(); s.addRange(r) }) };
+if (SENHA) carrega(); else $('login').hidden = false;
+setInterval(function () { if (SENHA && EST.per === 'hoje' && !document.hidden && D) carrega() }, 60000);
+</script>
+</body>
+</html>

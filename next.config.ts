@@ -71,6 +71,11 @@ const nextConfig: NextConfig = {
         { source: '/oito/feedaldia/:n(salon|restaurante|mascotas)/', destination: '/oito/feedaldia/:n/index.html' },
         { source: '/oito/painel', destination: '/oito/painel/index.html' },
         { source: '/oito/painel/', destination: '/oito/painel/index.html' },
+        { source: '/oito/acessos', destination: '/oito/acessos/index.html' },
+        { source: '/oito/acessos/', destination: '/oito/acessos/index.html' },
+        // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
+        { source: '/rastro', destination: '/rastro/index.html' },
+        { source: '/rastro/', destination: '/rastro/index.html' },
       ],
       afterFiles: [{ source: '/conversa/:codigo', destination: '/call/:codigo' }],
       fallback: [],
