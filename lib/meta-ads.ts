@@ -177,6 +177,38 @@ const COMPRA = ['purchase', 'offsite_conversion.fb_pixel_purchase', 'omni_purcha
 const CHECKOUT = ['initiate_checkout', 'offsite_conversion.fb_pixel_initiate_checkout', 'omni_initiated_checkout']
 const VISITA = ['landing_page_view', 'omni_landing_page_view']
 
+// 16/10 (Oito Posts, painel zerado no meio do dia): um dia só, somando a partir de uma hora (no fuso da conta de anúncios).
+// A Meta entrega por hora com o breakdown hourly_stats_aggregated_by_advertiser_time_zone; o alcance não vem por hora (fica 0).
+export async function getAnunciosDiaDesdeHora(conta: string, dia: string, hora: number): Promise<{ ok: boolean; error?: string; linhas: AnuncioDia[] }> {
+  if (!TOKEN) return { ok: false, error: 'Falta FB_ADS_TOKEN', linhas: [] }
+  const acct = 'act_' + String(conta || '').replace(/\D/g, '')
+  if (acct === 'act_') return { ok: false, error: 'projeto sem conta de anúncio', linhas: [] }
+  const tr = encodeURIComponent(JSON.stringify({ since: dia, until: dia }))
+  const fields = 'campaign_id,campaign_name,adset_id,adset_name,ad_id,ad_name,objective,spend,impressions,clicks,actions,action_values'
+  let url: string | null = `${GRAPH}/${acct}/insights?level=ad&fields=${fields}&time_range=${tr}&breakdowns=hourly_stats_aggregated_by_advertiser_time_zone&limit=500&access_token=${encodeURIComponent(TOKEN)}`
+  const porAnuncio = new Map<string, AnuncioDia>()
+  try {
+    for (let pagina = 0; url && pagina < 20; pagina++) {
+      const json: any = await fetch(url).then(r => r.json())
+      if (json?.error) return { ok: false, error: traduzErroMeta(json.error), linhas: [] }
+      for (const r of (json.data || [])) {
+        const h = parseInt(String(r.hourly_stats_aggregated_by_advertiser_time_zone || '').slice(0, 2), 10)
+        if (!r.ad_id || !(h >= hora)) continue
+        const a = porAnuncio.get(r.ad_id) || { data: dia, campaign_id: r.campaign_id || '', campaign_name: r.campaign_name || '(sem campanha)', adset_id: r.adset_id || '', adset_name: r.adset_name || '(sem conjunto)',
+          ad_id: r.ad_id, ad_name: r.ad_name || '(sem anúncio)', objective: r.objective || '', gasto: 0, impressoes: 0, alcance: 0, cliques: 0, conversas: 0, leads: 0, compras: 0, visitas: 0, checkouts: 0, valor_compras: 0 }
+        a.gasto += parseFloat(r.spend || '0'); a.impressoes += parseInt(r.impressions || '0', 10); a.cliques += parseInt(r.clicks || '0', 10)
+        a.conversas += somaAcao(r.actions, CONVERSA); a.leads += somaAcao(r.actions, LEAD); a.compras += somaAcao(r.actions, COMPRA)
+        a.visitas += somaAcao(r.actions, VISITA); a.checkouts += somaAcao(r.actions, CHECKOUT); a.valor_compras += somaAcao(r.action_values, COMPRA)
+        porAnuncio.set(r.ad_id, a)
+      }
+      url = json?.paging?.next || null
+    }
+    return { ok: true, linhas: [...porAnuncio.values()] }
+  } catch (e: any) {
+    return { ok: false, error: e?.message || 'falha ao ler a Meta', linhas: [] }
+  }
+}
+
 export async function getAnunciosDia(conta: string, since: string, until: string): Promise<{ ok: boolean; error?: string; linhas: AnuncioDia[] }> {
   if (!TOKEN) return { ok: false, error: 'Falta FB_ADS_TOKEN', linhas: [] }
   const acct = 'act_' + String(conta || '').replace(/\D/g, '')

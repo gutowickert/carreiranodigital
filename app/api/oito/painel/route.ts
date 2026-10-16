@@ -10,9 +10,18 @@ import { garanteLoteDoCiclo } from '@/lib/oito/servico'
 
 export const maxDuration = 60
 const nega = () => NextResponse.json({ erro: 'senha' }, { status: 401 })
-// 15/10: o funil passa pelo WhatsApp: site → clique no WhatsApp → mandou mensagem → pediu o teste → teste pronto → aprovou → fatura → pagou
-// (o formulário continua como caminho secundário e nas marcas em espanhol: form_inicio e assinar_clique ficam no meio)
-const ETAPAS = ['visita', 'whats_clique', 'wa_conversa', 'form_inicio', 'lead', 'teste_pronto', 'teste_aprovado', 'assinar_clique', 'assinatura_aberta', 'pagou'] as const
+// 16/10: o funil novo (BR e LATAM iguais): visita → começou o teste (formulário) → pediu o teste → teste pronto → o WhatsApp chamou
+// → respondeu no WhatsApp → aprovou o teste → quis assinar (clicou em assinar na tela ou pediu a fatura/link no WhatsApp) → pagou.
+// whats_clique (o link pequeno "Prefere fazer pelo WhatsApp?") vai junto, pra aparecer à parte.
+const ETAPAS = ['visita', 'form_inicio', 'lead', 'teste_pronto', 'wa_chamado', 'wa_conversa', 'teste_aprovado', 'quer_assinar', 'pagou', 'whats_clique'] as const
+// de que eventos sai cada etapa (o padrão é o evento com o mesmo nome)
+const EVENTOS_DA_ETAPA: Record<string, (e: any) => boolean> = {
+  wa_chamado: e => e.tipo === 'wa_followup' && +e.detalhe?.etapa === 1,
+  wa_conversa: e => e.tipo === 'wa_recebida' && !e.detalhe?.simulado,
+  quer_assinar: e => e.tipo === 'assinar_clique' || e.tipo === 'assinatura_aberta',
+}
+// status com dinheiro em jogo: esses clientes continuam na lista e nos números mesmo depois de zerar o painel
+const EM_ABERTO = ['ativo', 'aguardando_pagamento', 'atrasado']
 
 export async function GET(req: Request) {
   if (!senhaOk(req.headers.get('x-senha'))) return nega()
@@ -43,7 +52,8 @@ export async function GET(req: Request) {
   const naReg = (marca: any, clienteId?: any) => !regiao || regiaoDe(marca || (clienteId ? marcaCli.get(clienteId) : null)) === regiao
   const MS = MARCAS.filter(m => !regiao || regiaoDe(m) === regiao)
   const exemplo = new Set(clientesT.filter(c => c.exemplo).map(c => c.id))
-  const clientes = clientesT.filter(c => depois(c.criado_em) && naReg(c.marca)), lotes = lotesT.filter(l => depois(l.criado_em) && naReg(null, l.cliente_id))
+  // 16/10: quem tem assinatura ou pagamento em aberto continua visível depois de zerar (senão some quem está no meio da compra)
+  const clientes = clientesT.filter(c => (depois(c.criado_em) || EM_ABERTO.includes(c.status)) && naReg(c.marca)), lotes = lotesT.filter(l => depois(l.criado_em) && naReg(null, l.cliente_id))
   const eventos = eventosT.filter(e => depois(e.criado_em) && naReg(e.marca, e.cliente_id)), chamados = chamadosT.filter(ch => depois(ch.atualizado_em) && naReg(ch.marca, ch.cliente_id))
   const real = (e: any) => !e.cliente_id || !exemplo.has(e.cliente_id)
   const noPeriodoT = eventos.filter(e => e.criado_em >= desde && e.criado_em < fim && real(e))
@@ -56,9 +66,9 @@ export async function GET(req: Request) {
   for (const m of regiao ? ['todas', ...MS] : ['todas', 'br', 'es', ...MARCAS]) {
     funil[m] = {}
     for (const et of ETAPAS) {
-      // wa_conversa: conversas distintas do WhatsApp que mandaram mensagem no período (fora as simuladas)
-      const tipo = et === 'wa_conversa' ? 'wa_recebida' : et
-      const ev = noPeriodo.filter(e => e.tipo === tipo && !(e.tipo === 'wa_recebida' && e.detalhe?.simulado) && (m === 'todas' || e.marca === m || (m === 'es' || m === 'br') && !!e.marca && cfg.marcas[e.marca as Marca]?.idioma === (m === 'es' ? 'es' : 'pt')))
+      // wa_conversa: conversas distintas do WhatsApp que mandaram mensagem no período (fora as simuladas); o resto, pessoas distintas
+      const daEtapa = EVENTOS_DA_ETAPA[et] || ((e: any) => e.tipo === et)
+      const ev = noPeriodo.filter(e => daEtapa(e) && (m === 'todas' || e.marca === m || (m === 'es' || m === 'br') && !!e.marca && cfg.marcas[e.marca as Marca]?.idioma === (m === 'es' ? 'es' : 'pt')))
       funil[m][et] = new Set(ev.map(e => et === 'wa_conversa' ? e.detalhe?.conversa || e.id : e.cliente_id || e.sessao || e.id)).size
     }
   }

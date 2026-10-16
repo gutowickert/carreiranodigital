@@ -214,6 +214,7 @@ async function geraCobranca(cv: any, inp: any) {
     const url = linkCheckout(m, { ...c, email: t(inp.email, 160) || c.email, responsavel: t(inp.nome_completo, 120) })
     if (!url) return 'o pagamento está fora do ar agora; passe para humano'
     await db.atualiza('clientes', { id: c.id }, { status: 'aguardando_pagamento', gateway: 'hotmart' })
+    await db.evento('assinatura_aberta', { cliente_id: c.id, marca: m, detalhe: { origem: 'whatsapp', gateway: 'hotmart' } }) // 16/10: pro funil ("quis assinar")
     await atualizaCv(cv, { fase: 'aguardando_pagamento' })
     return 'link de pagamento: ' + url
   }

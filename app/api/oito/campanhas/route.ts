@@ -5,7 +5,7 @@
 //   GET ?dias=1|7|30  (x-senha)
 //       &regiao=br|latam  (15/10) só as campanhas e o site da região; o total da região fica na moeda dela (sem somar R$ com US$). Sem o parâmetro, tudo.
 import { NextResponse } from 'next/server'
-import { getAnunciosDia, campanhasCriadasEm, type AnuncioDia } from '@/lib/meta-ads'
+import { getAnunciosDia, getAnunciosDiaDesdeHora, campanhasCriadasEm, type AnuncioDia } from '@/lib/meta-ads'
 import { oitoDb as db } from '@/lib/oito/db'
 import { senhaOk, oitoConfig as cfg, Marca, MARCAS, rotuloMarca, regiaoDe, lerRegiao } from '@/lib/oito/config'
 
@@ -50,7 +50,18 @@ export async function GET(req: Request) {
   ])
   // 15/10: painel zerado: campanhas criadas antes de painel_desde ficam de fora (os números da Meta são por dia, não dá pra cortar na hora)
   const zero = String((await db.um('estado', { chave: 'painel_desde' }).catch(() => null))?.valor || '')
-  let linhas = (meta.linhas || []).filter(l => { const m = marcaDaCampanha(l.campaign_name); return !!m && MS.includes(m) })
+  const daRegiao = (l: AnuncioDia) => { const m = marcaDaCampanha(l.campaign_name); return !!m && MS.includes(m) }
+  let linhas = (meta.linhas || []).filter(daRegiao)
+  // 16/10: o corte do painel (painel_desde) vale pro gasto também: os dias antes saem e, no dia do corte, só conta a partir da hora
+  // (a Meta dá esse dia por hora, no fuso da conta, que é o de Brasília). Assim custo por teste e por venda começam do zero junto com o site.
+  if (zero && conta) {
+    const zMs = new Date(zero).getTime(), zDia = diaBR(zMs), zHora = new Date(zMs - 3 * 3600e3).getUTCHours()
+    linhas = linhas.filter(l => l.data >= zDia)
+    if (zDia >= desdeDia && zDia <= ate) {
+      const porHora = await getAnunciosDiaDesdeHora(conta, zDia, zHora)
+      if (porHora.ok) linhas = linhas.filter(l => l.data !== zDia).concat(porHora.linhas.filter(daRegiao))
+    }
+  }
   // as campanhas têm o próprio corte (campanhas_desde): zerar o site de novo não pode esconder as campanhas novas que já estão rodando
   const corteCamp = String((await db.um('estado', { chave: 'campanhas_desde' }).catch(() => null))?.valor || '') || zero
   if (corteCamp) { const criadas = await campanhasCriadasEm(linhas.map(l => l.campaign_id)); linhas = linhas.filter(l => (criadas.get(l.campaign_id) || '9') >= corteCamp) }
