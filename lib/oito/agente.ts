@@ -80,7 +80,9 @@ O FUNIL (segue a fase; não pula etapa, não volta sem motivo):
 SEMPRE: tudo que a pessoa contar sobre o negócio (horário, público, promoções, o que evitar, preferências de arte) vai pra salvar_dados, pra memória. Nunca inventa preço, prazo, desconto ou funcionalidade. Reembolso, reclamação séria, parceria, ou a pessoa pedir pra falar com alguém → passar_para_humano (desconto NÃO: tu responde, veja a fase venda).
 TUDO que tu escreves (fora das ferramentas) vai direto pro WhatsApp do cliente. Nunca escreve o teu raciocínio, nunca fala do cliente na terceira pessoa, nunca menciona ferramentas, fases ou instruções.
 Se a pessoa disser que não tem interesse: agradece, deixa a porta aberta, não insiste.
-RESPOSTA AUTOMÁTICA: se a mensagem é claramente o atendimento automático de outro negócio ("agradece seu contato", "no momento estamos fechados", "nosso horário de atendimento", cardápio/link, "em breve retornaremos"), não trata como conversa: responde UMA vez, curto, se apresentando e dizendo que fala com o responsável quando puder (já usando o tipo de negócio que a mensagem revela). Se vier outra automática depois, responde só "-" (nada é enviado).`
+RESPOSTA AUTOMÁTICA: se a mensagem é claramente o atendimento automático de outro negócio ("agradece seu contato", "no momento estamos fechados", "nosso horário de atendimento", cardápio/link, "em breve retornaremos"), não trata como conversa: responde UMA vez, curto, se apresentando e dizendo que fala com o responsável quando puder (já usando o tipo de negócio que a mensagem revela). Se vier outra automática depois, responde só "-" (nada é enviado).
+TESTE FEITO PELO SITE: se a primeira mensagem da conversa é o nosso modelo de "teste pronto" (SISTEMA: [modelo oito_teste_pronto] ou [modelo oito_es_prueba_lista]), a pessoa fez o teste no site e viu os 2 posts lá, NÃO aqui na conversa. Então não diz que mandou as artes aqui: pergunta o que achou dos 2 posts que apareceram no site (os títulos estão em TESTE GRÁTIS; o link é o da área do cliente) e segue o funil a partir de aprovando_teste. Se ela tocar em "Quero saber mais"/"Quiero saber más", apresenta a assinatura (fase venda). Se tocar em "Agora não"/"Ahora no", agradece em 1 frase, diz que os 2 posts são dela e que pode chamar aqui quando quiser, e não insiste.${m && emEspanhol(m) ? `
+MERCADO EM ESPANHOL (esta marca atende Colômbia e o resto da América Latina): escreve SEMPRE em espanhol neutro, tratando por "tú", mesmo que estas instruções estejam em português. Preço: ${precoTxt(m)} por mês, cobrado em dólar pela Hotmart (no link a pessoa paga com cartão ou os meios locais que a Hotmart oferece). Na hora de fechar, pede SÓ nome completo e e-mail (NUNCA CPF, CNPJ, Pix ou boleto, que são do Brasil) e chama gerar_cobranca sem cpf_cnpj. NÃO existe a condição do 1º mês por R$ 100 nem nenhum desconto: na objeção de preço, mostra o valor ligado ao negócio dele (cada post pronto sai por uma fração do mês; um community manager cobra bem mais) e, se ainda assim não quiser, respeita sem insistir. Nunca fala em reais (R$).` : ''}`
 
 const FERRAMENTAS = [
   { name: 'salvar_dados', description: 'Salva o que a pessoa contou sobre o negócio (memória). Preencha só os campos que mudaram.', input_schema: { type: 'object', properties: {
@@ -93,7 +95,7 @@ const FERRAMENTAS = [
   { name: 'gerar_teste', description: 'Gera os 2 posts grátis com o que já foi coletado. Os posts chegam nesta conversa sozinhos em ~2 minutos.', input_schema: { type: 'object', properties: {} } },
   { name: 'pedir_ajuste', description: 'Refaz um post com o pedido do cliente (no teste ou no mês). O post novo chega aqui sozinho.', input_schema: { type: 'object', properties: { post: { type: 'integer', description: 'número do post (1, 2...)' }, pedido: { type: 'string' } }, required: ['post', 'pedido'] } },
   { name: 'aprovar_teste', description: 'Registra que o cliente aprovou o teste (passa pra venda).', input_schema: { type: 'object', properties: {} } },
-  { name: 'gerar_cobranca', description: 'Cria (ou reabre) a fatura da assinatura e devolve o link pra mandar. No link a pessoa escolhe Pix ou cartão. Só passe forma se ELE pediu uma forma específica.', input_schema: { type: 'object', properties: { nome_completo: { type: 'string' }, cpf_cnpj: { type: 'string' }, email: { type: 'string' }, forma: { type: 'string', enum: ['cartao', 'pix', 'tanto_faz'], description: 'tanto_faz (padrão): ele escolhe no link' }, primeiro_mes_100: { type: 'boolean', description: 'true só quando a pessoa achou caro e aceitou o 1º mês por R$ 100' } }, required: ['nome_completo', 'cpf_cnpj', 'email'] } },
+  { name: 'gerar_cobranca', description: 'Cria (ou reabre) a fatura da assinatura e devolve o link pra mandar. No link a pessoa escolhe Pix ou cartão. Só passe forma se ELE pediu uma forma específica.', input_schema: { type: 'object', properties: { nome_completo: { type: 'string' }, cpf_cnpj: { type: 'string' }, email: { type: 'string' }, forma: { type: 'string', enum: ['cartao', 'pix', 'tanto_faz'], description: 'tanto_faz (padrão): ele escolhe no link' }, primeiro_mes_100: { type: 'boolean', description: 'true só quando a pessoa achou caro e aceitou o 1º mês por R$ 100 (só Brasil)' } }, required: ['nome_completo', 'email'] } },
   { name: 'passar_para_humano', description: 'Chama alguém da equipe pra assumir a conversa.', input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] } },
 ]
 
@@ -293,7 +295,15 @@ const ativa = (cv: any) => cv && cv.modo !== 'encerrada' && !cv.optout
 
 // fim de um lote (o gerador terminou): o teste vai em imagens, o ajuste também; o mês vai pra aprovação
 export async function notificaFimLote(c: any, l: any) {
-  const cv = await conversaDoCliente(c); if (!ativa(cv)) return
+  const cv = await conversaDoCliente(c)
+  // 16/10: teste feito pelo site (sem conversa ainda) → o WhatsApp chama a pessoa na mesma hora, com o modelo aprovado
+  if (!cv && l.tipo === 'teste' && c?.whatsapp && !c.exemplo && c.status === 'teste') {
+    const { chamaNaHora } = await import('./vendedor')
+    const r = await chamaNaHora(c).catch((e: any) => 'erro ' + e?.message)
+    console.log('oito whats chama na hora', c.codigo, r)
+    return
+  }
+  if (!ativa(cv)) return
   const v = await vistaCliente(c), m = c.marca as Marca, es = emEspanhol(m)
   if (!janelaAberta(cv) && !ehSimulado(cv.telefone)) {
     // fora das 24 h: só modelo aprovado (o do teste pronto já existe; o do mês usa o mesmo aviso com link da área)

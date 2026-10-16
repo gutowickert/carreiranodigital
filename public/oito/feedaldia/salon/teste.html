@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/oito/feedaldia/icone.png"><meta name="theme-color" content="#1c1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Feed al Día">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,800&display=swap">
-<link rel="stylesheet" href="/oito/comum/app.css?v=mv9yjoji"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mv9yjoji"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mv9yjoji">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mvbcpz3w"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mvbcpz3w"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mvbcpz3w">
 <style>:root{--escuro:#1c1022;--destaque:#ec3b4d;--sobre-destaque:#ffffff;--claro:#fbf6f2;--tinta:#1c1022;--suave:#6a5a63;--linha:#efe1da;--ft:'Bricolage Grotesque', 'Arial Black', sans-serif;--fc:'Figtree', system-ui, sans-serif;--peso-t:800;--esp-t:-.035em;--em-estilo:normal}</style>
 </head>
 <body data-marca="divino" data-grupo="feedaldia" data-pasta="salon" data-ajuste-ex="Ej.: cambiar la imagen por una de uñas; hablar del horario del sábado">
@@ -22,6 +22,11 @@
     <p class="rotulo">Tus 2 posts gratis</p>
     <h1 style="font-size:clamp(32px,6vw,52px);margin:10px 0 8px" id="titulo-prontos">Listos para publicar</h1>
     <p class="suave" style="margin-bottom:26px">Descarga la imagen, copia el texto y publica. Son tuyos, aunque no te suscribas. <a href="/oito/feedaldia/salon/guia.html" target="_blank">Cómo publicar y consejos →</a></p>
+    <div class="caixa" style="margin:0 0 26px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;border-left:4px solid #25d366">
+      <div style="flex:1;min-width:220px"><b>Te acabamos de escribir por WhatsApp</b><br><span class="suave">Respóndenos ahí para ajustar los posts, resolver dudas o suscribirte. Es la misma atención.</span></div>
+      <a class="btn" id="wa-teste" href="https://wa.me/5551993767137" target="_blank" rel="noopener" data-whats="teste" style="background:#25d366;color:#fff">Abrir WhatsApp</a>
+    </div>
+    <script>(function () { var c = new URLSearchParams(location.search).get('c') || ''; document.getElementById('wa-teste').href = 'https://wa.me/5551993767137?text=' + encodeURIComponent('¡Hola! Hice la prueba de los 2 posts de Feed al Día en la web' + (c ? ' (código ' + c + ')' : '')) })()</script>
     <div class="posts" id="posts"></div>
     <div class="oferta" id="oferta">
       <p class="rotulo">¿Te gustó?</p>
@@ -46,5 +51,5 @@
 </main>
 <footer><div class="wrap"><span>© 2026 Feed al Día</span><span><a href="/oito/feedaldia/salon/">Salones y estética</a> · <a href="/oito/feedaldia/restaurante/">Restaurantes y domicilios</a> · <a href="/oito/feedaldia/mascotas/">Pet shops y veterinarias</a></span><span><a href="/oito/feedaldia/termos.html">Términos y privacidad</a> · <a href="#" data-ajuda>Escríbenos</a></span></div></footer>
 <button class="btn escuro ajuda-flutua peq" data-ajuda>¿Dudas?</button>
-<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mv9yjoji"></script><script src="/oito/comum-es/posts.js?v=mv9yjoji"></script><script src="/oito/comum-es/teste.js?v=mv9yjoji"></script>
+<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mvbcpz3w"></script><script src="/oito/comum-es/posts.js?v=mvbcpz3w"></script><script src="/oito/comum-es/teste.js?v=mvbcpz3w"></script>
 </body></html>

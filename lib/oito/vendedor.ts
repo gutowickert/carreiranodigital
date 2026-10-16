@@ -23,13 +23,24 @@ const hojeHora = (dias: number, hora: number, tz = -3) => { const d = new Date(D
 const primeiro = (s: any) => String(s || '').trim().split(/\s+/)[0] || ''
 
 // quando o teste fica pronto, a conversa entra na fila do follow-up (chamado pela rota de follow-up, que varre os testes prontos)
+// 16/10: o 1º passo é NA HORA (era 20 min depois) e a conversa já nasce em "aprovando_teste": quando a pessoa responder,
+// o agente sabe que ela já viu os 2 posts (no site) e segue pra opinião e venda. Vale pro espanhol também (mesmo número).
 export async function agendaFollowup(c: any) {
   if (!c?.whatsapp || c.exemplo || c.status !== 'teste') return null
   const cv = await conversaDe(c.whatsapp, { nome: c.responsavel || c.nome_negocio })
   if (cv.followup_etapa > 0 || cv.proximo_followup_em || cv.optout) return cv
-  const quando = new Date(Date.now() + 20 * 60e3)
-  await db.atualiza('wa_conversas', { id: cv.id }, { cliente_id: c.id, marca: c.marca, proximo_followup_em: quando.toISOString() })
-  return cv
+  await db.atualiza('wa_conversas', { id: cv.id }, { cliente_id: c.id, marca: c.marca, fase: 'aprovando_teste', proximo_followup_em: new Date().toISOString() })
+  return { ...cv, cliente_id: c.id, marca: c.marca, fase: 'aprovando_teste' }
+}
+
+// 16/10: o teste do site ficou pronto → o WhatsApp chama a pessoa na mesma hora (chamado pelo fim do lote, não espera a varredura)
+export async function chamaNaHora(c: any) {
+  if (!waLigado()) return 'whatsapp desligado'
+  const cv = await agendaFollowup(c)
+  if (!cv) return 'sem whatsapp ou não é teste'
+  if (cv.followup_etapa > 0) return 'já chamado'
+  const atual = await db.um('wa_conversas', { id: cv.id })
+  return passoFollowup(atual)
 }
 
 // manda o próximo passo do follow-up de uma conversa (se ainda faz sentido)
@@ -65,8 +76,7 @@ export async function rodaFollowups() {
     vistos.add(e.cliente_id)
     const c = await db.um('clientes', { id: e.cliente_id })
     if (!c || c.exemplo || c.status !== 'teste') continue
-    // 15/10: o espanhol (Feed al Día) não usa o WhatsApp brasileiro (nome "No Feed", +55): só o follow-up por e-mail, até ter número próprio
-    if (emEspanhol(c.marca as Marca)) continue
+    // 16/10: o espanhol (Feed al Día) passou a usar o mesmo WhatsApp ("No Feed", +55), com os modelos em espanhol (antes: só e-mail)
     const cv = await db.um('wa_conversas', { telefone: String(c.whatsapp || '') })
     if (!cv) { await agendaFollowup(c); novos.push(c.codigo) }
   }
