@@ -187,7 +187,7 @@ export async function respondeVenda(cv: any) {
     signal: AbortSignal.timeout(45000),
   })
   const j = await r.json()
-  if (!r.ok) throw new Error('IA ' + r.status)
+  if (!r.ok) throw new Error('IA ' + r.status + ' ' + JSON.stringify(j).slice(0, 200))
   const txt = j.content.map((x: any) => x.text || '').join('')
   return JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1)) as { mensagens: string[]; passar_para_humano: boolean; etapa: string; resumo: string }
 }
@@ -198,6 +198,8 @@ export async function atendeConversa(id: string) {
   try { const { atende } = await import('./agente'); return await atende(id) } catch (e: any) {
     await db.atualiza('wa_conversas', { id }, { modo: 'humano' })
     const cv = await db.um('wa_conversas', { id })
+    const { alertaCredito } = await import('./servico')
+    await alertaCredito('O atendimento do WhatsApp', e)
     avisaDono('WhatsApp (agente falhou), assume', `${cv?.nome || cv?.telefone}: ${String(e?.message || '').slice(0, 120)}`)
     return
   }

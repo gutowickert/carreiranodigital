@@ -136,7 +136,10 @@ export async function POST(req: Request) {
   if (b.acao === 'erro') {
     const desiste = (l.tentativas || 0) >= 3
     await db.atualiza('lotes', { id: l.id }, { status: desiste ? 'erro' : 'fila', erro: String(b.erro || '').slice(0, 500) })
-    if (desiste && !c!.exemplo) avisaDono('lote com erro', `${c!.nome_negocio} · ${l.tipo}: ${String(b.erro || '').slice(0, 150)}`)
+    // 17/10: falta de crédito (Anthropic ou Replicate) avisa já na 1ª tentativa, com o motivo claro
+    const { alertaCredito } = await import('@/lib/oito/servico')
+    const credito = await alertaCredito('O gerador de posts (testes e meses)', b.erro)
+    if (desiste && !c!.exemplo && !credito) avisaDono('lote com erro', `${c!.nome_negocio} · ${l.tipo}: ${String(b.erro || '').slice(0, 150)}`)
     return NextResponse.json({ ok: true, desistiu: desiste })
   }
   return NextResponse.json({ erro: 'ação' }, { status: 400 })

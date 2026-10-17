@@ -14,6 +14,38 @@ export async function avisaDono(titulo: string, texto: string, dinheiro = false)
   }).catch(() => null)
 }
 
+// 17/10: aviso de PROBLEMA (prioridade máxima no celular), sem repetir o mesmo aviso dentro de `janelaMin` minutos.
+// A última vez de cada aviso fica em oito_estado (chave aviso_<chave>).
+export async function avisaProblema(chave: string, titulo: string, texto: string, janelaMin = 30) {
+  const k = 'aviso_' + chave
+  const ult: any = await db.um('estado', { chave: k }).catch(() => null)
+  if (ult?.valor?.em && Date.now() - new Date(ult.valor.em).getTime() < janelaMin * 60e3) return false
+  const v = { em: new Date().toISOString() }
+  const r = await db.atualiza('estado', { chave: k }, { valor: v }).catch(() => [] as any[])
+  if (!r.length) await db.insere('estado', { chave: k, valor: v }).catch(() => null)
+  const topico = process.env.RECADO_NTFY_TOPICO
+  if (!topico) return true
+  await fetch('https://ntfy.sh/', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic: topico, title: 'Oito · ' + titulo, message: texto, tags: ['warning'], priority: 5 }),
+    signal: AbortSignal.timeout(8000),
+  }).catch(() => null)
+  return true
+}
+
+// 17/10: o crédito acabou na Anthropic (o texto e o atendimento) ou no Replicate (as imagens) → aviso na HORA, não depois de 3 tentativas.
+// Nem a Anthropic nem o Replicate informam o saldo pela API: dá pra saber quando acaba, não antes (por isso: recarga automática nos dois).
+const SEM_CREDITO = /credit balance is too low|insufficient credit|insufficient_quota|purchase credit|payment required|billing/i
+export async function alertaCredito(origem: string, erro: any) {
+  const m = String(erro?.message || erro || '')
+  if (!SEM_CREDITO.test(m)) return false
+  const rep = /insufficient credit|flux|replicate/i.test(m)
+  const s = rep ? 'Replicate' : 'Anthropic'
+  await avisaProblema('credito_' + s.toLowerCase(), `SEM CRÉDITO na ${s}`,
+    `${origem} parou por falta de crédito. Recarregue em ${rep ? 'replicate.com/account/billing' : 'console.anthropic.com/settings/billing'} e me avise pra eu colocar em dia o que travou.`, 30)
+  return true
+}
+
 // o que a página do cliente pode ver (nada de documento, assinatura ou custo)
 export async function vistaCliente(c: any) {
   const [lotes, posts, fotos] = await Promise.all([

@@ -76,7 +76,7 @@ Responde a última mensagem do cliente. Devolve SÓ este JSON:
     signal: AbortSignal.timeout(40000),
   })
   const j = await r.json()
-  if (!r.ok) throw new Error('IA ' + r.status)
+  if (!r.ok) throw new Error('IA ' + r.status + ' ' + JSON.stringify(j).slice(0, 200))
   const txt = j.content.map((c: any) => c.text || '').join('')
   const o = JSON.parse(txt.slice(txt.indexOf('{'), txt.lastIndexOf('}') + 1))
   return o as { resposta: string; passar_para_dono: boolean; resolvido: boolean; problema: string; solucao: string }
@@ -104,6 +104,7 @@ export async function novaMensagemCliente(chamado: any, texto: string) {
   } catch (e: any) {
     // IA fora do ar: o chamado fica pro dono, nunca sem resposta
     await db.atualiza('chamados', { id: chamado.id }, { status: 'esperando_dono', nao_lidas_dono: (chamado.nao_lidas_dono || 0) + 1, atualizado_em: agora })
-    avisaDono('suporte (IA falhou)', `${chamado.nome || 'cliente'}: ${texto.slice(0, 160)}`)
+    const { alertaCredito } = await import('./servico')
+    if (!(await alertaCredito('O suporte da área do cliente', e))) avisaDono('suporte (IA falhou)', `${chamado.nome || 'cliente'}: ${texto.slice(0, 160)}`)
   }
 }
