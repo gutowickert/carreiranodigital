@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/oito/feedaldia/icone.png"><meta name="theme-color" content="#1c1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Feed al Día">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,800&display=swap">
-<link rel="stylesheet" href="/oito/comum/app.css?v=mvcheizr"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mvcheizr"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mvcheizr">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mvcj4tq7"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mvcj4tq7"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mvcj4tq7">
 <style>:root{--escuro:#1c1022;--destaque:#ec3b4d;--sobre-destaque:#ffffff;--claro:#fbf6f2;--tinta:#1c1022;--suave:#6a5a63;--linha:#efe1da;--ft:'Bricolage Grotesque', 'Arial Black', sans-serif;--fc:'Figtree', system-ui, sans-serif;--peso-t:800;--esp-t:-.035em;--em-estilo:normal}</style>
 </head>
 <body data-marca="divino" data-grupo="feedaldia" data-pasta="salon" data-ajuste-ex="Ej.: cambiar la imagen por una de uñas; hablar del horario del sábado">
@@ -17,7 +17,6 @@
     <div class="etapa ativa" data-n="1">
       <h1>Conozcamos tu salón</h1><p class="lead">Con esto escribimos los posts. Toma 3 minutos.</p>
       <div class="campo"><label for="nome">Nombre del salón</label><input id="nome" name="nome" required maxlength="120" autocomplete="organization"></div>
-      <div class="campo"><label for="pais">País</label><select id="pais" name="pais" required><option value="">Elige tu país</option><option value="AR">Argentina</option><option value="BO">Bolivia</option><option value="CL">Chile</option><option value="CO">Colombia</option><option value="CR">Costa Rica</option><option value="EC">Ecuador</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="MX">México</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PY">Paraguay</option><option value="PE">Perú</option><option value="PR">Puerto Rico</option><option value="DO">República Dominicana</option><option value="UY">Uruguay</option><option value="VE">Venezuela</option></select></div>
       <div class="campo"><label for="cidade">Ciudad</label><input id="cidade" name="cidade" required maxlength="80" autocomplete="address-level2"></div>
       <div class="campo"><label for="bairro">Barrio o zona <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
       <div class="campo"><label for="instagram">Instagram del salón <span class="suave">(opcional)</span></label><input id="instagram" name="instagram" maxlength="60" placeholder="@tuperfil" autocapitalize="off" autocomplete="off"><small>Si tienes, miramos el perfil para acertar el tono y aprovechar tus mejores fotos.</small></div>
@@ -48,7 +47,7 @@
     <div class="etapa" data-n="5">
       <h1>¿A dónde te escribimos?</h1><p class="lead">Los 2 posts aparecen en la siguiente pantalla, y te escribimos por WhatsApp para saber qué te parecieron.</p>
       <div class="campo"><label for="responsavel">Tu nombre</label><input id="responsavel" name="responsavel" required maxlength="120" autocomplete="name"></div>
-      <div class="campo"><label for="whatsapp">WhatsApp</label><div class="tel"><span id="ddi" aria-hidden="true">+</span><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="16" placeholder="Tu celular" autocomplete="tel-national"></div><small id="zap-ajuda">Celular con WhatsApp.</small></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><div class="tel"><label class="ddi-sel"><span id="ddi" aria-hidden="true">+</span><select id="pais" name="pais" aria-label="Código del país"><option value="">País</option><option value="AR">Argentina +54</option><option value="BO">Bolivia +591</option><option value="CA">Canadá +1</option><option value="CL">Chile +56</option><option value="CO">Colombia +57</option><option value="CR">Costa Rica +506</option><option value="EC">Ecuador +593</option><option value="SV">El Salvador +503</option><option value="ES">España +34</option><option value="US">Estados Unidos +1</option><option value="GT">Guatemala +502</option><option value="HN">Honduras +504</option><option value="MX">México +52</option><option value="NI">Nicaragua +505</option><option value="PA">Panamá +507</option><option value="PY">Paraguay +595</option><option value="PE">Perú +51</option><option value="PR">Puerto Rico +1</option><option value="DO">República Dominicana +1</option><option value="UY">Uruguay +598</option><option value="VE">Venezuela +58</option><option value="OT">Otro país</option></select></label><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="16" placeholder="Tu celular" autocomplete="tel-national"></div><small id="zap-ajuda">Celular con WhatsApp.</small></div>
       <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required maxlength="160" autocomplete="email"><small>Te enviamos el enlace de tus posts.</small></div>
       <p class="nota">Al continuar, aceptas los <a href="/oito/feedaldia/termos.html" target="_blank">términos</a>. No enviamos spam.</p>
     </div>
@@ -56,6 +55,6 @@
     <div class="navega"><button type="button" class="btn fantasma" id="volta" style="visibility:hidden">Atrás</button><button class="btn grande" id="segue">Continuar</button></div>
   </form>
 </main>
-<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mvcheizr"></script><script src="/oito/comum-es/form.js?v=mvcheizr"></script>
+<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mvcj4tq7"></script><script src="/oito/comum-es/form.js?v=mvcj4tq7"></script>
 <script>OITO_FORM([{"nome":"Nude y dorado","fundo":"#3b2a24","destaque":"#c9a27a","texto":"#fbf3ec"},{"nome":"Rosa palo","fundo":"#5a2a3a","destaque":"#e8a4b8","texto":"#fff3f6"},{"nome":"Negro y oro","fundo":"#141414","destaque":"#d4af6a","texto":"#f7f1e3"},{"nome":"Lavanda","fundo":"#3d2a5c","destaque":"#c7a6ea","texto":"#f6f0ff"},{"nome":"Verde salvia","fundo":"#2f3e36","destaque":"#b8c9a8","texto":"#f4f1ea"},{"nome":"Fucsia","fundo":"#4a0f2e","destaque":"#ff5fa2","texto":"#fff1f7"}])</script>
 </body></html>

@@ -37,7 +37,7 @@ export function leState(s: string | null): { c: string; m: Marca } | null {
 
 // ---------- fuso e horário ----------
 // BR: São Paulo; espanhol: o fuso do país do cliente (PAISES_ES; horário de verão o Intl resolve), sem país = Bogotá
-export const fusoDe = (c: any) => !emEspanhol(c.marca) ? 'America/Sao_Paulo' : PAISES_ES[c.pais]?.fuso || 'America/Bogota'
+export const fusoDe = (c: any) => !emEspanhol(c.marca) ? 'America/Sao_Paulo' : c.fuso || PAISES_ES[c.pais]?.fuso || 'America/Bogota'
 export const horaPadrao = (m: Marca) => ({ salao: '10:00', prato: '11:00', pata: '10:00' } as const)[nichoDe(m)]
 
 function partes(ms: number, tz: string) {

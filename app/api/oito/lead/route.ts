@@ -15,10 +15,15 @@ export async function POST(req: Request) {
     if (!ehMarca(b.marca)) return NextResponse.json({ erro: 'marca' }, { status: 400 })
     const n = b.negocio || {}, x = b.contexto || {}
     // 13/10: as marcas em espanhol vendiam na Colômbia e no Chile; 17/10: toda a América Latina (tabela PAISES_ES)
-    const es = emEspanhol(b.marca), pais = es ? (PAISES_ES[b.pais] ? b.pais : 'CO') : 'BR'
+    // "OT" (outro país): o número vem completo; o país e o fuso ficam os da conexão (a Vercel manda no cabeçalho)
+    const es = emEspanhol(b.marca)
+    const geo = (req.headers.get('x-vercel-ip-country') || '').toUpperCase().slice(0, 2), geoFuso = req.headers.get('x-vercel-ip-timezone') || ''
+    const escolhido = es ? (PAISES_ES[b.pais] || b.pais === 'OT' ? b.pais : 'CO') : 'BR'
+    const pais = escolhido === 'OT' ? (/^[A-Z]{2}$/.test(geo) ? geo : 'OT') : escolhido
+    const fuso = es && geo === pais && /^[A-Za-z_]+\/[A-Za-z_\/-]+$/.test(geoFuso) ? geoFuso : null
     let whats = soDigitos(n.whatsapp)
     if (pais === 'BR' && (whats.length === 10 || whats.length === 11)) whats = '55' + whats
-    if (es) whats = whatsDoPais(pais, whats)
+    if (es) whats = whatsDoPais(escolhido, whats)
     const whatsOk = pais === 'BR' ? whats.length >= 12 : !!whats
     if (!t(n.nome) || !whatsOk || !t(n.cidade)) return NextResponse.json({ erro: es ? 'Falta el nombre del negocio, la ciudad o el WhatsApp.' : 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
 
@@ -55,7 +60,7 @@ export async function POST(req: Request) {
       nome_negocio: t(n.nome, 120), responsavel: t(n.responsavel, 120), whatsapp: whats, email: t(n.email, 160).toLowerCase(),
       cidade: t(n.cidade, 80), bairro: t(n.bairro, 80), instagram: t(n.instagram, 60).replace(/^@/, ''),
       contexto, cores: b.cores && typeof b.cores === 'object' ? { fundo: t(b.cores.fundo, 9), destaque: t(b.cores.destaque, 9), texto: t(b.cores.texto, 9), nome: t(b.cores.nome, 40) } : null,
-      ip_hash: ipHash, pais, gateway: es ? 'hotmart' : 'asaas', documento: es ? t(n.documento, 20) || null : null, fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
+      ip_hash: ipHash, pais, fuso, gateway: es ? 'hotmart' : 'asaas', documento: es ? t(n.documento, 20) || null : null, fotos_modo: b.fotos_modo === 'enviar' ? 'enviar' : 'ia', utm: b.utm && typeof b.utm === 'object' ? b.utm : null, sessao: t(b.sessao, 60),
     })
     await db.insere('lotes', { cliente_id: c.id, tipo: 'teste', qtd: cfg.postsTeste, status: 'espera' })
     await db.evento('lead', { cliente_id: c.id, marca: c.marca, sessao: c.sessao, detalhe: { fotos_modo: c.fotos_modo } })

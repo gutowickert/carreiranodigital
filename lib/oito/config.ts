@@ -56,7 +56,8 @@ export const ehMarca = (m: any): m is Marca => MARCAS.includes(m)
 export const nichoDe = (m: Marca): Nicho => oitoConfig.marcas[m]?.base || 'salao'
 export const emEspanhol = (m: Marca) => oitoConfig.marcas[m]?.idioma === 'es'
 
-// 17/10: o Feed al Día passou a anunciar pra toda a América Latina (antes só Colômbia e Chile).
+// 17/10: o Feed al Día passou a anunciar pra toda a América Latina (antes só Colômbia e Chile), e no mesmo dia pro mundo todo:
+// o país sai do código do WhatsApp; "OT" = outro país (a pessoa escreve o número completo; o país e o fuso vêm da conexão).
 // país: nome, código do WhatsApp, dígitos do celular (sem o 0 de longa distância), começo válido, fuso.
 // A mesma tabela está no formulário (public/oito/comum-es/form.js). Argentina: no WhatsApp vai 54 + 9 + o número.
 export const PAISES_ES: Record<string, { nome: string; ddi: string; largo: number; inicio: string; fuso: string }> = {
@@ -78,11 +79,15 @@ export const PAISES_ES: Record<string, { nome: string; ddi: string; largo: numbe
   DO: { nome: 'República Dominicana', ddi: '1', largo: 10, inicio: '809|829|849', fuso: 'America/Santo_Domingo' },
   UY: { nome: 'Uruguay', ddi: '598', largo: 8, inicio: '9', fuso: 'America/Montevideo' },
   VE: { nome: 'Venezuela', ddi: '58', largo: 10, inicio: '4', fuso: 'America/Caracas' },
+  ES: { nome: 'España', ddi: '34', largo: 9, inicio: '6|7', fuso: 'Europe/Madrid' },
+  US: { nome: 'Estados Unidos', ddi: '1', largo: 10, inicio: '', fuso: 'America/New_York' },
+  CA: { nome: 'Canadá', ddi: '1', largo: 10, inicio: '', fuso: 'America/Toronto' },
 }
 // o WhatsApp completo (código do país + número, só dígitos) ou '' se não fecha com o país
 export function whatsDoPais(pais: string, raw: string) {
-  const p = PAISES_ES[pais]; if (!p) return ''
   let d = String(raw || '').replace(/\D/g, '')
+  if (pais === 'OT') { d = d.replace(/^00/, ''); return d.length >= 10 && d.length <= 15 && !d.startsWith('0') ? d : '' }
+  const p = PAISES_ES[pais]; if (!p) return ''
   const certo = (n: string) => n.length === p.largo && (!p.inicio || new RegExp('^(' + p.inicio + ')').test(n))
   const ddi = p.ddi + (pais === 'AR' ? '9' : '')
   if (d.startsWith(ddi) && certo(d.slice(ddi.length))) return d

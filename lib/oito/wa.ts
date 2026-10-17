@@ -10,12 +10,14 @@ const PHONE = () => process.env.OITO_WA_PHONE_ID || ''
 export const waLigado = () => !!(TOKEN() && PHONE())
 
 // só dígitos; número brasileiro sem DDI ganha o 55 (o cadastro já grava com o código do país; isto é só uma rede de segurança)
-// 17/10: números completos da América Latina também têm 11 dígitos e NÃO levam o 55: Peru 51+9, Chile 56+9, América Central 502-507+8,
-// Bolívia 591+8, Uruguai 598+8, Rep. Dominicana e Porto Rico 1+10
-const LATAM_11 = /^(519\d{8}|569\d{8}|50[2-7]\d{8}|59[18]\d{8}|1(809|829|849|787|939)\d{7})$/
+// 17/10: números completos de fora também têm 10 ou 11 dígitos e NÃO levam o 55. Só ganha 55 o que tem cara de brasileiro:
+// 11 dígitos com o 9 do celular na 3ª posição, ou 10 dígitos de fixo (3ª posição de 2 a 5). EUA, Canadá e Caribe (1 + 10) nunca têm 9 na 3ª.
+// Mesmo assim, Peru 51+9 e Chile 56+9 têm a cara de um celular de Porto Alegre ou de DDD 56 sem o 55: esses ficam como estão.
+const ESTRANGEIRO = /^(519|569)\d{8}$/
 export function fone(raw: string) {
   let d = String(raw || '').replace(/\D/g, '')
-  if (d && d.length >= 10 && d.length <= 11 && !LATAM_11.test(d)) d = '55' + d
+  const brasileiro = (d.length === 11 && d[2] === '9') || (d.length === 10 && /[2-5]/.test(d[2]))
+  if (brasileiro && !ESTRANGEIRO.test(d)) d = '55' + d
   return d
 }
 
