@@ -39,7 +39,7 @@
   function quando(s) { return s ? s.slice(8, 10) + '/' + s.slice(5, 7) + ' a las ' + s.slice(11, 16) : '' }
   function postar(lista) {
     var el = document.getElementById('postar'), ig = v.instagram || {}, tit = '<h3 style="margin-bottom:6px">Publicar por mí</h3>'
-    var hora = ig.fuso === 'America/Santiago' ? 'hora de Chile' : 'hora de Colombia'
+    var hora = 'hora local'
     if (document.activeElement && document.activeElement !== document.body && el.contains(document.activeElement)) return
     if (!ig.disponivel) { el.innerHTML = '<div class="caixa">' + tit + '<p class="suave">Muy pronto: los posts se publicarán solos en tu Instagram, el día y a la hora indicados.</p></div>'; return }
     if (v.status !== 'ativo') { el.innerHTML = '<div class="caixa">' + tit + '<p class="suave"><b>Disponible en la suscripción.</b> Conectas tu Instagram una vez y los 8 posts del mes se publican solos, el día sugerido. Puedes cambiar la hora o saltar cualquiera.</p></div>'; return }

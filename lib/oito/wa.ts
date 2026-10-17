@@ -9,10 +9,13 @@ const TOKEN = () => process.env.OITO_WA_TOKEN || process.env.WA_OFICIAL_TOKEN ||
 const PHONE = () => process.env.OITO_WA_PHONE_ID || ''
 export const waLigado = () => !!(TOKEN() && PHONE())
 
-// só dígitos; número brasileiro sem DDI ganha o 55
+// só dígitos; número brasileiro sem DDI ganha o 55 (o cadastro já grava com o código do país; isto é só uma rede de segurança)
+// 17/10: números completos da América Latina também têm 11 dígitos e NÃO levam o 55: Peru 51+9, Chile 56+9, América Central 502-507+8,
+// Bolívia 591+8, Uruguai 598+8, Rep. Dominicana e Porto Rico 1+10
+const LATAM_11 = /^(519\d{8}|569\d{8}|50[2-7]\d{8}|59[18]\d{8}|1(809|829|849|787|939)\d{7})$/
 export function fone(raw: string) {
   let d = String(raw || '').replace(/\D/g, '')
-  if (d && d.length >= 10 && d.length <= 11) d = '55' + d
+  if (d && d.length >= 10 && d.length <= 11 && !LATAM_11.test(d)) d = '55' + d
   return d
 }
 
@@ -66,7 +69,10 @@ export async function conversaDe(telefone: string, extra: { nome?: string | null
   let cv = await db.um('wa_conversas', { telefone: tel })
   if (cv) return cv
   // 15/10: a Meta às vezes manda o celular brasileiro sem o 9 (554498479803) e o cadastro tem com o 9 (5544998479803), ou o contrário
-  const outro = /^55\d{10}$/.test(tel) ? tel.slice(0, 4) + '9' + tel.slice(4) : /^55\d{2}9\d{8}$/.test(tel) ? tel.slice(0, 4) + tel.slice(5) : ''
+  // 17/10: no México a Meta manda 521 + 10 dígitos e o cadastro tem 52 + 10; na Argentina, 549 + 10 e às vezes 54 + 10
+  const outro = /^55\d{10}$/.test(tel) ? tel.slice(0, 4) + '9' + tel.slice(4) : /^55\d{2}9\d{8}$/.test(tel) ? tel.slice(0, 4) + tel.slice(5)
+    : /^521\d{10}$/.test(tel) ? '52' + tel.slice(3) : /^52\d{10}$/.test(tel) ? '521' + tel.slice(2)
+    : /^549\d{10}$/.test(tel) ? '54' + tel.slice(3) : /^54\d{10}$/.test(tel) ? '549' + tel.slice(2) : ''
   if (outro) { cv = await db.um('wa_conversas', { telefone: outro }); if (cv) return cv }
   const cli = (await db.lista('clientes', { whatsapp: tel }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
     || (outro ? (await db.lista('clientes', { whatsapp: outro }, { ordem: 'criado_em', desc: true, limite: 1 }))[0] : undefined)

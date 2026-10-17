@@ -55,6 +55,43 @@ export const oitoConfig = {
 export const ehMarca = (m: any): m is Marca => MARCAS.includes(m)
 export const nichoDe = (m: Marca): Nicho => oitoConfig.marcas[m]?.base || 'salao'
 export const emEspanhol = (m: Marca) => oitoConfig.marcas[m]?.idioma === 'es'
+
+// 17/10: o Feed al Día passou a anunciar pra toda a América Latina (antes só Colômbia e Chile).
+// país: nome, código do WhatsApp, dígitos do celular (sem o 0 de longa distância), começo válido, fuso.
+// A mesma tabela está no formulário (public/oito/comum-es/form.js). Argentina: no WhatsApp vai 54 + 9 + o número.
+export const PAISES_ES: Record<string, { nome: string; ddi: string; largo: number; inicio: string; fuso: string }> = {
+  AR: { nome: 'Argentina', ddi: '54', largo: 10, inicio: '', fuso: 'America/Argentina/Buenos_Aires' },
+  BO: { nome: 'Bolivia', ddi: '591', largo: 8, inicio: '6|7', fuso: 'America/La_Paz' },
+  CL: { nome: 'Chile', ddi: '56', largo: 9, inicio: '9', fuso: 'America/Santiago' },
+  CO: { nome: 'Colombia', ddi: '57', largo: 10, inicio: '3', fuso: 'America/Bogota' },
+  CR: { nome: 'Costa Rica', ddi: '506', largo: 8, inicio: '', fuso: 'America/Costa_Rica' },
+  EC: { nome: 'Ecuador', ddi: '593', largo: 9, inicio: '9', fuso: 'America/Guayaquil' },
+  SV: { nome: 'El Salvador', ddi: '503', largo: 8, inicio: '6|7', fuso: 'America/El_Salvador' },
+  GT: { nome: 'Guatemala', ddi: '502', largo: 8, inicio: '', fuso: 'America/Guatemala' },
+  HN: { nome: 'Honduras', ddi: '504', largo: 8, inicio: '', fuso: 'America/Tegucigalpa' },
+  MX: { nome: 'México', ddi: '52', largo: 10, inicio: '', fuso: 'America/Mexico_City' },
+  NI: { nome: 'Nicaragua', ddi: '505', largo: 8, inicio: '', fuso: 'America/Managua' },
+  PA: { nome: 'Panamá', ddi: '507', largo: 8, inicio: '6', fuso: 'America/Panama' },
+  PY: { nome: 'Paraguay', ddi: '595', largo: 9, inicio: '9', fuso: 'America/Asuncion' },
+  PE: { nome: 'Perú', ddi: '51', largo: 9, inicio: '9', fuso: 'America/Lima' },
+  PR: { nome: 'Puerto Rico', ddi: '1', largo: 10, inicio: '787|939', fuso: 'America/Puerto_Rico' },
+  DO: { nome: 'República Dominicana', ddi: '1', largo: 10, inicio: '809|829|849', fuso: 'America/Santo_Domingo' },
+  UY: { nome: 'Uruguay', ddi: '598', largo: 8, inicio: '9', fuso: 'America/Montevideo' },
+  VE: { nome: 'Venezuela', ddi: '58', largo: 10, inicio: '4', fuso: 'America/Caracas' },
+}
+// o WhatsApp completo (código do país + número, só dígitos) ou '' se não fecha com o país
+export function whatsDoPais(pais: string, raw: string) {
+  const p = PAISES_ES[pais]; if (!p) return ''
+  let d = String(raw || '').replace(/\D/g, '')
+  const certo = (n: string) => n.length === p.largo && (!p.inicio || new RegExp('^(' + p.inicio + ')').test(n))
+  const ddi = p.ddi + (pais === 'AR' ? '9' : '')
+  if (d.startsWith(ddi) && certo(d.slice(ddi.length))) return d
+  if (d.length > p.largo && d.startsWith(p.ddi)) d = d.slice(p.ddi.length)
+  if (pais === 'AR' && d.length > p.largo && d[0] === '9') d = d.slice(1)
+  if (pais === 'MX' && d.length > p.largo && d[0] === '1') d = d.slice(1)
+  while (d.length > p.largo && d[0] === '0') d = d.slice(1)
+  return certo(d) ? ddi + d : ''
+}
 export const feedAlDia = (m: Marca) => oitoConfig.marcas[m]?.grupo === 'feedaldia'
 // o nome pra listas internas (painel, avisos): "Feed al Día · Salón" em vez de três "Feed al Día"
 export const rotuloMarca = (m: Marca) => oitoConfig.marcas[m]?.rotulo || oitoConfig.marcas[m]?.nome || m

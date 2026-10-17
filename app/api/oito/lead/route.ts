@@ -3,7 +3,7 @@
 import { NextResponse } from 'next/server'
 import crypto from 'node:crypto'
 import { oitoDb as db, novoCodigo } from '@/lib/oito/db'
-import { oitoConfig as cfg, ehMarca, emEspanhol, senhaOk } from '@/lib/oito/config'
+import { oitoConfig as cfg, ehMarca, emEspanhol, senhaOk, PAISES_ES, whatsDoPais } from '@/lib/oito/config'
 import { avisaDono } from '@/lib/oito/servico'
 
 const t = (s: any, n = 300) => (typeof s === 'string' ? s.trim().slice(0, n) : '')
@@ -14,13 +14,12 @@ export async function POST(req: Request) {
     const b = await req.json()
     if (!ehMarca(b.marca)) return NextResponse.json({ erro: 'marca' }, { status: 400 })
     const n = b.negocio || {}, x = b.contexto || {}
-    // 13/10: as marcas em espanhol vendem na Colômbia (+57, celular de 10 dígitos) e no Chile (+56, celular de 9)
-    const es = emEspanhol(b.marca), pais = es ? (b.pais === 'CL' ? 'CL' : 'CO') : 'BR'
+    // 13/10: as marcas em espanhol vendiam na Colômbia e no Chile; 17/10: toda a América Latina (tabela PAISES_ES)
+    const es = emEspanhol(b.marca), pais = es ? (PAISES_ES[b.pais] ? b.pais : 'CO') : 'BR'
     let whats = soDigitos(n.whatsapp)
     if (pais === 'BR' && (whats.length === 10 || whats.length === 11)) whats = '55' + whats
-    if (pais === 'CO' && whats.length === 10) whats = '57' + whats
-    if (pais === 'CL' && whats.length === 9) whats = '56' + whats
-    const whatsOk = pais === 'BR' ? whats.length >= 12 : pais === 'CO' ? /^57\d{10}$/.test(whats) : /^56\d{9}$/.test(whats)
+    if (es) whats = whatsDoPais(pais, whats)
+    const whatsOk = pais === 'BR' ? whats.length >= 12 : !!whats
     if (!t(n.nome) || !whatsOk || !t(n.cidade)) return NextResponse.json({ erro: es ? 'Falta el nombre del negocio, la ciudad o el WhatsApp.' : 'Faltou o nome do negócio, a cidade ou o WhatsApp.' }, { status: 400 })
 
     // o mesmo WhatsApp já pediu teste nessa marca: devolve o que já existe (não gera de novo)

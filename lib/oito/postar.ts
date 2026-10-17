@@ -3,7 +3,7 @@
 // Sem OITO_IG_APP_ID tudo continua funcionando: o cartão diz "em breve" e as rotas devolvem 503.
 import crypto from 'node:crypto'
 import { oitoDb as db } from './db'
-import { oitoConfig as cfg, Marca, nichoDe, emEspanhol } from './config'
+import { oitoConfig as cfg, Marca, nichoDe, emEspanhol, PAISES_ES } from './config'
 
 export const IG_VERSAO = process.env.OITO_IG_VERSAO || 'v25.0'
 export const IG_GRAPH = 'https://graph.instagram.com'
@@ -36,8 +36,8 @@ export function leState(s: string | null): { c: string; m: Marca } | null {
 }
 
 // ---------- fuso e horário ----------
-// BR: São Paulo; espanhol: Bogotá (CO) ou Santiago (CL, com horário de verão; o Intl resolve)
-export const fusoDe = (c: any) => !emEspanhol(c.marca) ? 'America/Sao_Paulo' : c.pais === 'CL' ? 'America/Santiago' : 'America/Bogota'
+// BR: São Paulo; espanhol: o fuso do país do cliente (PAISES_ES; horário de verão o Intl resolve), sem país = Bogotá
+export const fusoDe = (c: any) => !emEspanhol(c.marca) ? 'America/Sao_Paulo' : PAISES_ES[c.pais]?.fuso || 'America/Bogota'
 export const horaPadrao = (m: Marca) => ({ salao: '10:00', prato: '11:00', pata: '10:00' } as const)[nichoDe(m)]
 
 function partes(ms: number, tz: string) {

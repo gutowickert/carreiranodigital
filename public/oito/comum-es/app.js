@@ -31,8 +31,8 @@
   // utm: guarda la primera que trajo a la persona
   var utm = {}; ['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'utm_term', 'fbclid'].forEach(function (k) { if (q.get(k)) utm[k] = q.get(k).slice(0, 120) })
   if (Object.keys(utm).length && !ls.get('oito_utm')) ls.set('oito_utm', JSON.stringify(utm))
-  // el anuncio trae ?pais=CO o ?pais=CL: se guarda para marcar el país en el formulario
-  var paisUrl = (q.get('pais') || '').toUpperCase(); if (paisUrl === 'CO' || paisUrl === 'CL') ls.set('oito_pais', paisUrl)
+  // el anuncio puede traer ?pais=XX (CO, MX, AR...): se guarda para marcar el país en el formulario
+  var paisUrl = (q.get('pais') || '').toUpperCase(); if (/^[A-Z]{2}$/.test(paisUrl)) ls.set('oito_pais', paisUrl)
 
   function api(caminho, corpo) {
     return fetch('/api/oito/' + caminho, corpo ? { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) } : { cache: 'no-store' })

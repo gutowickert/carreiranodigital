@@ -6,7 +6,7 @@
 <link rel="apple-touch-icon" href="/oito/feedaldia/icone.png"><meta name="theme-color" content="#1c1022"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Feed al Día">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700;800&display=swap"><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,800&display=swap">
-<link rel="stylesheet" href="/oito/comum/app.css?v=mvbf600c"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mvbf600c"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mvbf600c">
+<link rel="stylesheet" href="/oito/comum/app.css?v=mvcheizr"><link rel="stylesheet" href="/oito/comum-es/es.css?v=mvcheizr"><link rel="stylesheet" href="/oito/feedaldia/feedaldia.css?v=mvcheizr">
 <style>:root{--escuro:#1c1022;--destaque:#ec3b4d;--sobre-destaque:#ffffff;--claro:#fbf6f2;--tinta:#1c1022;--suave:#6a5a63;--linha:#efe1da;--ft:'Bricolage Grotesque', 'Arial Black', sans-serif;--fc:'Figtree', system-ui, sans-serif;--peso-t:800;--esp-t:-.035em;--em-estilo:normal}</style>
 </head>
 <body data-marca="sabroso" data-grupo="feedaldia" data-pasta="restaurante" data-ajuste-ex="Ej.: cambiar la imagen por una de la pizza; hablar del domicilio gratis">
@@ -17,11 +17,11 @@
     <div class="etapa ativa" data-n="1">
       <h1>Conozcamos tu restaurante</h1><p class="lead">Con esto escribimos los posts. Toma 3 minutos.</p>
       <div class="campo"><label for="nome">Nombre del restaurante</label><input id="nome" name="nome" required maxlength="120" autocomplete="organization"></div>
-      <div class="campo"><label id="pais-rot">País</label><div class="chips paises" role="radiogroup" aria-labelledby="pais-rot"><label><input type="radio" name="pais" value="CO"><span><i class="bandera co"></i>Colombia</span></label><label><input type="radio" name="pais" value="CL"><span><i class="bandera cl"></i>Chile</span></label></div></div>
+      <div class="campo"><label for="pais">País</label><select id="pais" name="pais" required><option value="">Elige tu país</option><option value="AR">Argentina</option><option value="BO">Bolivia</option><option value="CL">Chile</option><option value="CO">Colombia</option><option value="CR">Costa Rica</option><option value="EC">Ecuador</option><option value="SV">El Salvador</option><option value="GT">Guatemala</option><option value="HN">Honduras</option><option value="MX">México</option><option value="NI">Nicaragua</option><option value="PA">Panamá</option><option value="PY">Paraguay</option><option value="PE">Perú</option><option value="PR">Puerto Rico</option><option value="DO">República Dominicana</option><option value="UY">Uruguay</option><option value="VE">Venezuela</option></select></div>
       <div class="campo"><label for="cidade">Ciudad</label><input id="cidade" name="cidade" required maxlength="80" autocomplete="address-level2"></div>
-      <div class="campo"><label for="bairro">Barrio o comuna <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
+      <div class="campo"><label for="bairro">Barrio o zona <span class="suave">(opcional)</span></label><input id="bairro" name="bairro" maxlength="80"></div>
       <div class="campo"><label for="instagram">Instagram del restaurante <span class="suave">(opcional)</span></label><input id="instagram" name="instagram" maxlength="60" placeholder="@tuperfil" autocapitalize="off" autocomplete="off"><small>Si tienes, miramos el perfil para acertar el tono y aprovechar tus mejores fotos.</small></div>
-      <div class="campo"><label for="documento"><span id="doc-rot">NIT (Colombia) / RUT (Chile) de tu negocio</span> <span class="suave">(opcional)</span></label><input id="documento" name="documento" maxlength="20" autocomplete="off"><small>Si eres empresa o tienes registro. Puedes dejarlo en blanco.</small></div>
+      <div class="campo"><label for="documento"><span id="doc-rot">Documento fiscal de tu negocio</span> <span class="suave">(opcional)</span></label><input id="documento" name="documento" maxlength="20" autocomplete="off"><small>Si eres empresa o tienes registro. Puedes dejarlo en blanco.</small></div>
     </div>
     <div class="etapa" data-n="2">
       <h1>¿Qué vendes?</h1><p class="lead">Mientras más concreto, mejor el post.</p>
@@ -48,7 +48,7 @@
     <div class="etapa" data-n="5">
       <h1>¿A dónde te escribimos?</h1><p class="lead">Los 2 posts aparecen en la siguiente pantalla, y te escribimos por WhatsApp para saber qué te parecieron.</p>
       <div class="campo"><label for="responsavel">Tu nombre</label><input id="responsavel" name="responsavel" required maxlength="120" autocomplete="name"></div>
-      <div class="campo"><label for="whatsapp">WhatsApp</label><div class="tel"><span id="ddi" aria-hidden="true">+57</span><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="16" placeholder="300 123 4567" autocomplete="tel-national"></div><small id="zap-ajuda">Celular de Colombia: 10 dígitos, empieza por 3.</small></div>
+      <div class="campo"><label for="whatsapp">WhatsApp</label><div class="tel"><span id="ddi" aria-hidden="true">+</span><input id="whatsapp" name="whatsapp" required inputmode="tel" maxlength="16" placeholder="Tu celular" autocomplete="tel-national"></div><small id="zap-ajuda">Celular con WhatsApp.</small></div>
       <div class="campo"><label for="email">Correo</label><input id="email" name="email" type="email" required maxlength="160" autocomplete="email"><small>Te enviamos el enlace de tus posts.</small></div>
       <p class="nota">Al continuar, aceptas los <a href="/oito/feedaldia/termos.html" target="_blank">términos</a>. No enviamos spam.</p>
     </div>
@@ -56,6 +56,6 @@
     <div class="navega"><button type="button" class="btn fantasma" id="volta" style="visibility:hidden">Atrás</button><button class="btn grande" id="segue">Continuar</button></div>
   </form>
 </main>
-<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mvbf600c"></script><script src="/oito/comum-es/form.js?v=mvbf600c"></script>
+<script>window.OITO_PRECO=29</script><script src="/oito/comum-es/app.js?v=mvcheizr"></script><script src="/oito/comum-es/form.js?v=mvcheizr"></script>
 <script>OITO_FORM([{"nome":"Carbón","fundo":"#1c1410","destaque":"#ff6a2b","texto":"#fff6ee"},{"nome":"Tomate","fundo":"#7a1a12","destaque":"#ffc145","texto":"#fff8ec"},{"nome":"Hierbas","fundo":"#1f3324","destaque":"#e8c547","texto":"#f7f3e8"},{"nome":"Negro y amarillo","fundo":"#111111","destaque":"#ffd23f","texto":"#ffffff"},{"nome":"Café","fundo":"#3a2418","destaque":"#e7b07a","texto":"#fbf1e6"},{"nome":"Azul marino","fundo":"#14213d","destaque":"#fca311","texto":"#f5f5f5"}])</script>
 </body></html>

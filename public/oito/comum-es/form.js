@@ -1,16 +1,35 @@
 // Oito Posts en español: el formulario de 5 pasos (comecar.html). Guarda lo escrito (menos las imágenes) si la persona sale y vuelve.
-// Diferencias con el brasileño: país (CO/CL), NIT/RUT opcional y WhatsApp con el código del país.
+// Diferencias con el brasileño: país (17/10: toda Latinoamérica; antes solo CO/CL), documento opcional y WhatsApp con el código del país.
 function OITO_FORM(paletas) {
   var f = document.getElementById('f'), etapas = [].slice.call(f.querySelectorAll('.etapa')), n = 0
   var segue = document.getElementById('segue'), volta = document.getElementById('volta'), erro = document.getElementById('erro')
   var barra = document.querySelector('.barra i'), passoTxt = document.getElementById('passo-txt')
   var chave = 'oito_form_' + OITO.marca, logo = null, fotos = [], comecou = false
 
-  // celular por país: código, largo, primer dígito, formato y ejemplo
+  // celular por país: código, dígitos del celular (sin el 0 de larga distancia), primeros dígitos válidos, grupos para el formato, ejemplo y documento.
+  // Argentina: en WhatsApp va 54 + 9 + el número; México: 52 + 10 dígitos. La misma tabla está en lib/oito/config.ts (PAISES_ES).
+  function P(nome, ddi, largo, inicio, grupos, ej, doc) { return { nome: nome, ddi: ddi, largo: largo, inicio: inicio, grupos: grupos, ej: ej, doc: doc, ayuda: 'Celular de ' + nome + ': ' + largo + ' dígitos' + (inicio ? ', empieza por ' + inicio.split('|').join(' o ') : '') + '.' } }
   var PAISES = {
-    CO: { ddi: '57', largo: 10, inicio: '3', doc: 'NIT de tu negocio', ej: '300 123 4567', ayuda: 'Celular de Colombia: 10 dígitos, empieza por 3.', fmt: function (d) { return d.length > 6 ? d.slice(0, 3) + ' ' + d.slice(3, 6) + ' ' + d.slice(6) : d.length > 3 ? d.slice(0, 3) + ' ' + d.slice(3) : d } },
-    CL: { ddi: '56', largo: 9, inicio: '9', doc: 'RUT de tu negocio', ej: '9 1234 5678', ayuda: 'Celular de Chile: 9 dígitos, empieza por 9.', fmt: function (d) { return d.length > 5 ? d.slice(0, 1) + ' ' + d.slice(1, 5) + ' ' + d.slice(5) : d.length > 1 ? d.slice(0, 1) + ' ' + d.slice(1) : d } },
+    AR: P('Argentina', '54', 10, '', [2, 4, 4], '11 2345 6789', 'CUIT'),
+    BO: P('Bolivia', '591', 8, '6|7', [4, 4], '7123 4567', 'NIT'),
+    CL: P('Chile', '56', 9, '9', [1, 4, 4], '9 1234 5678', 'RUT'),
+    CO: P('Colombia', '57', 10, '3', [3, 3, 4], '300 123 4567', 'NIT'),
+    CR: P('Costa Rica', '506', 8, '', [4, 4], '8312 3456', 'Cédula jurídica'),
+    EC: P('Ecuador', '593', 9, '9', [2, 3, 4], '99 123 4567', 'RUC'),
+    SV: P('El Salvador', '503', 8, '6|7', [4, 4], '7012 3456', 'NIT'),
+    GT: P('Guatemala', '502', 8, '', [4, 4], '5123 4567', 'NIT'),
+    HN: P('Honduras', '504', 8, '', [4, 4], '9123 4567', 'RTN'),
+    MX: P('México', '52', 10, '', [2, 4, 4], '55 1234 5678', 'RFC'),
+    NI: P('Nicaragua', '505', 8, '', [4, 4], '8123 4567', 'RUC'),
+    PA: P('Panamá', '507', 8, '6', [4, 4], '6123 4567', 'RUC'),
+    PY: P('Paraguay', '595', 9, '9', [3, 3, 3], '981 123 456', 'RUC'),
+    PE: P('Perú', '51', 9, '9', [3, 3, 3], '912 345 678', 'RUC'),
+    PR: P('Puerto Rico', '1', 10, '787|939', [3, 3, 4], '787 123 4567', 'Número de registro'),
+    DO: P('República Dominicana', '1', 10, '809|829|849', [3, 3, 4], '809 123 4567', 'RNC'),
+    UY: P('Uruguay', '598', 8, '9', [2, 3, 3], '91 234 567', 'RUT'),
+    VE: P('Venezuela', '58', 10, '4', [3, 3, 4], '412 123 4567', 'RIF'),
   }
+  function fmt(p, d) { var r = [], k = 0; p.grupos.forEach(function (g) { if (k < d.length) r.push(d.slice(k, k + g)); k += g }); return r.join(' ') }
 
   // recupera el borrador
   try { var r = JSON.parse(OITO.ls.get(chave) || '{}'); Object.keys(r).forEach(function (k) { var el = f.elements[k]; if (!el) return; if (el.length && el[0] && el[0].type === 'radio') { [].forEach.call(el, function (x) { x.checked = x.value === r[k] }) } else el.value = r[k] }) } catch (e) {}
@@ -18,32 +37,37 @@ function OITO_FORM(paletas) {
   f.addEventListener('input', function () { salva(); if (!comecou) { comecou = true; OITO.rastro('form_inicio', { de: 'formulario' }) } })
   f.addEventListener('change', salva)
 
-  function pais() { return PAISES[f.elements.pais.value] || null }
-  // país que vino del anuncio (?pais=CO|CL, en esta página o en la de venta): el de la URL de esta página manda;
-  // el guardado desde la página de venta solo se usa si la persona todavía no eligió
+  var sel = f.elements.pais
+  function pais() { return PAISES[sel.value] || null }
+  // país que vino del anuncio (?pais=XX, en esta página o en la de venta): el de la URL de esta página manda;
+  // el guardado desde la página de venta solo se usa si la persona todavía no eligió; si no hay ninguno, el país de la conexión
   ;(function () {
     var u = (OITO.q.get('pais') || '').toUpperCase(), g = OITO.ls.get('oito_pais'), v = PAISES[u] ? u : (!f.elements.pais.value && PAISES[g] ? g : '')
-    if (v) [].forEach.call(f.elements.pais, function (x) { x.checked = x.value === v })
+    if (v) { sel.value = v; return }
+    if (!sel.value) fetch('/api/oito/pais').then(function (r) { return r.json() }).then(function (j) { if (!sel.value && PAISES[j.pais]) { sel.value = j.pais; trocaPais(); salva() } }).catch(function () {})
   })()
   var zap = f.elements.whatsapp
   // los dígitos del celular, sin el código del país si la persona lo escribió o lo pegó
   function digitos() {
     var p = pais() || PAISES.CO, d = zap.value.replace(/\D/g, '')
     if (d.length > p.largo && d.indexOf(p.ddi) === 0) d = d.slice(p.ddi.length)
+    if (p === PAISES.AR && d.length > p.largo && d[0] === '9') d = d.slice(1) // 54 9 11...
+    if (p === PAISES.MX && d.length > p.largo && d[0] === '1') d = d.slice(1) // el 1 viejo de los celulares de México
+    while (d.length > p.largo && d[0] === '0') d = d.slice(1) // 0 de larga distancia (Ecuador, Venezuela, Paraguay...)
     return d.slice(0, p.largo)
   }
-  function formata() { var p = pais() || PAISES.CO; zap.value = p.fmt(digitos()) }
+  function formata() { var p = pais() || PAISES.CO; zap.value = fmt(p, digitos()) }
   zap.addEventListener('input', formata)
   // al elegir el país cambian el código, el ejemplo, la ayuda y el nombre del documento
   function trocaPais() {
     var p = pais()
-    document.getElementById('ddi').textContent = '+' + (p ? p.ddi : '57')
-    zap.placeholder = p ? p.ej : PAISES.CO.ej
-    document.getElementById('zap-ajuda').textContent = p ? p.ayuda : 'Celular con WhatsApp.'
-    document.getElementById('doc-rot').textContent = p ? p.doc : 'NIT (Colombia) / RUT (Chile) de tu negocio'
+    document.getElementById('ddi').textContent = '+' + (p ? p.ddi : '')
+    zap.placeholder = p ? p.ej : 'Tu celular'
+    document.getElementById('zap-ajuda').textContent = p ? p.ayuda : 'Elige tu país en el paso 1.'
+    document.getElementById('doc-rot').textContent = p ? p.doc + ' de tu negocio' : 'Documento fiscal de tu negocio'
     if (zap.value) formata()
   }
-  ;[].forEach.call(f.elements.pais, function (r) { r.addEventListener('change', trocaPais) }); trocaPais()
+  sel.addEventListener('change', trocaPais); trocaPais()
 
   function mostra(i) {
     etapas.forEach(function (e, k) { e.classList.toggle('ativa', k === i) })
@@ -56,17 +80,17 @@ function OITO_FORM(paletas) {
     var falta = [].slice.call(etapas[i].querySelectorAll('[required]')).filter(function (el) { return !el.value.trim() })
     if (falta.length) { erro.textContent = 'Completa lo que falta.'; falta[0].focus(); return false }
     if (i === 0) {
-      if (!pais()) { erro.textContent = 'Elige el país de tu negocio: Colombia o Chile.'; f.elements.pais[0].focus(); return false }
+      if (!pais()) { erro.textContent = 'Elige el país de tu negocio.'; sel.focus(); return false }
       // el @ es opcional: si viene, la máquina lee el perfil para acertar el contenido. Acepta también el enlace del perfil.
       var ig = f.elements.instagram, m = ig.value.trim().match(/instagram\.com\/([A-Za-z0-9._]+)/)
       if (m) ig.value = '@' + m[1]
       if (ig.value && !/^@?[A-Za-z0-9._]{1,30}$/.test(ig.value.trim())) { erro.textContent = 'Revisa el @: solo letras, números, punto y guion bajo.'; ig.focus(); return false }
       var doc = f.elements.documento
-      if (doc.value.trim() && !/^[0-9.\-\s]{6,15}[0-9kK]?$/.test(doc.value.trim())) { erro.textContent = pais().doc.replace(' de tu negocio', '') + ': revisa el número (solo números, puntos, guion y, en el RUT, la K).'; doc.focus(); return false }
+      if (doc.value.trim() && !/^[0-9A-Za-zÑñ.\-\s]{5,20}$/.test(doc.value.trim())) { erro.textContent = pais().doc + ': revisa el número (solo letras, números, puntos y guion).'; doc.focus(); return false }
     }
     if (i === 4) {
       var p = pais(), d = digitos()
-      if (d.length !== p.largo || d[0] !== p.inicio) { erro.textContent = 'Revisa el WhatsApp. ' + p.ayuda; zap.focus(); return false }
+      if (d.length !== p.largo || (p.inicio && !new RegExp('^(' + p.inicio + ')').test(d))) { erro.textContent = 'Revisa el WhatsApp. ' + p.ayuda; zap.focus(); return false }
       // correo obligatorio: el enlace de los posts y los avisos del mes van por ahí
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(f.elements.email.value.trim())) { erro.textContent = 'Revisa el correo: ahí te enviamos el enlace de tus posts.'; f.elements.email.focus(); return false }
     }
@@ -103,7 +127,7 @@ function OITO_FORM(paletas) {
     var corpo = {
       marca: OITO.marca, pais: E.pais.value, sessao: OITO.sessao, utm: OITO.utm(), fotos_modo: E.fotos_modo.value, cores: { fundo: p.fundo, destaque: p.destaque, texto: p.texto, nome: p.nome },
       // WhatsApp completo, con el código del país y sin el +: 573001234567 / 56912345678
-      negocio: { nome: E.nome.value, cidade: E.cidade.value, bairro: E.bairro.value, instagram: E.instagram.value, documento: E.documento.value.trim(), responsavel: E.responsavel.value, whatsapp: ps.ddi + digitos(), email: E.email.value.trim() },
+      negocio: { nome: E.nome.value, cidade: E.cidade.value, bairro: E.bairro.value, instagram: E.instagram.value, documento: E.documento.value.trim(), responsavel: E.responsavel.value, whatsapp: ps.ddi + (ps === PAISES.AR ? '9' : '') + digitos(), email: E.email.value.trim() },
       contexto: { servicos: E.servicos.value, carro_chefe: E.carro_chefe.value, diferencial: E.diferencial.value, horario: E.horario.value, tom: E.tom.value, evitar: E.evitar.value },
     }
     // freno de pruebas repetidas: el servidor también revisa los códigos que este aparato ya recibió
