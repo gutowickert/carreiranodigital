@@ -14,9 +14,10 @@ const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g,
 function marcaDaCampanha(nome: string): Marca | null {
   const n = norm(nome)
   // 15/10: o Feed al Día (espanhol; antes No Feed), uma campanha por nicho: "FEED AL DIA · SALON", "... · RESTAURANTE", "... · MASCOTAS"
-  if (/(FEEDALDIA|NOFEED)(ES)?SALON/.test(n)) return 'divino'
-  if (/(FEEDALDIA|NOFEED)(ES)?RESTAURANTE/.test(n)) return 'sabroso'
-  if (/(FEEDALDIA|NOFEED)(ES)?MASCOTA/.test(n)) return 'peludo'
+  // 17/10: pode ter país ou outra coisa no meio ("FEED AL DIA · CO - SALON")
+  if (/(FEEDALDIA|NOFEED).*SALON/.test(n)) return 'divino'
+  if (/(FEEDALDIA|NOFEED).*RESTAURANTE/.test(n)) return 'sabroso'
+  if (/(FEEDALDIA|NOFEED).*MASCOTA/.test(n)) return 'peludo'
   if (n.includes('SALAONOFEED')) return 'salao'
   if (n.includes('PRATONOFEED')) return 'prato'
   if (n.includes('PATANOFEED')) return 'pata'
