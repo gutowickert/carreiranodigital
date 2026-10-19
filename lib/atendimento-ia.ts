@@ -230,7 +230,9 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const DS = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb']
   const diaSem = (d: string) => DS[new Date(d + 'T12:00:00-03:00').getDay()]
   const brData = (d: string) => `${d.slice(8, 10)}/${d.slice(5, 7)}`
-  const { data: tv } = await supabase.from('turmas').select('id, codigo, status, data_inicio, data_fim, observacoes, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome, endereco)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  const { data: tvTodas } = await supabase.from('turmas').select('id, codigo, status, data_inicio, data_fim, observacoes, preco_venda, vagas, link_pagamento, link_pagamento_bolsa, produtos(nome), cidades(nome), salas(nome, endereco)').gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)').order('data_inicio').limit(40)
+  // 19/10/2026: ANL e FC encerrados — turma desses cursos que ainda esteja aberta no CRM não entra na lista que a IA oferece
+  const tv = (tvTodas || []).filter((t: any) => !/an[uú]ncios para neg[oó]cios locais|forma[cç][aã]o completa/i.test(t.produtos?.nome || '') && !/^(anl|fc)/i.test(t.codigo || ''))
   const tvIds = (tv || []).map((t: any) => t.id)
   const datasPorTurma: Record<string, any[]> = {}
   if (tvIds.length) {
