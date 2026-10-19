@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>teunegócio OS</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="robots" content="noindex">
+<meta name="description" content="A IA trabalhando dentro do teu negócio. A gente estuda o que se repete na tua empresa e coloca a IA pra fazer, num sistema com o teu nome, em uso em até 17 dias.">
+<meta property="og:title" content="teunegócio OS · a IA trabalhando dentro do teu negócio">
+<meta property="og:description" content="Um sistema com o nome da tua empresa e uma IA dentro, em uso em até 17 dias.">
+<meta property="og:image" content="/teunegocio-os/midia/tour.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap">
+<style>
+/* Layout: página curta de venda (decisão de 05/10: 5 blocos + vitrine). Fundo violeta da marca; o verde é só do bloco OS e do que a IA fez.
+   Momentos: o nome da empresa ao vivo no logotipo (topo), 472 x 23 em pontos (prova), as telas reais com "Tua marca". */
+:root{
+  --bg:#140726; --bg2:#1c0d33; --card:#21113b; --line:#36235a; --ink:#f6f1ff; --ink2:#cbbde6; --muted:#9a8bb8;
+  --lilas:#c9aaff; --lilas-forte:#a77bff; --verde:#22c55e; --verde-tinta:#06220f; --perigo:#ff8a9a;
+  --display:"Poppins","Segoe UI",Arial,sans-serif; --body:"Manrope","Segoe UI",Arial,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
+img,video{max-width:100%;display:block}
+a{color:inherit}
+.faixa{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
+.miolo{max-width:1120px;margin:0 auto}
+h1,h2,h3{margin:0;text-wrap:balance}
+p{margin:0}
+.rot{font:800 12px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--lilas)}
+
+/* a marca */
+.marca{font:900 22px/1 var(--display);letter-spacing:-.02em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.marca .t{color:var(--lilas)} .marca .n{color:#fff}
+.marca .os{background:var(--verde);color:var(--verde-tinta);border-radius:7px;padding:2px 7px 4px;font-size:.82em}
+
+/* topo */
+.barra{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
+.barra .miolo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;font:800 16px var(--body);text-decoration:none;padding:15px 26px;border:0;cursor:pointer;transition:transform .15s,box-shadow .15s}
+.btn-wa{background:var(--verde);color:var(--verde-tinta);box-shadow:0 10px 30px -10px rgba(34,197,94,.6)}
+.btn-wa:hover{transform:translateY(-2px)}
+.btn-wa svg{width:20px;height:20px}
+.btn-leve{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
+.btn-pq{padding:10px 18px;font-size:14.5px}
+.btn:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--lilas);outline-offset:3px}
+
+/* 1 · hero */
+.hero{padding-block:56px 72px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;inset:auto -20% -40% 30%;height:90%;background:radial-gradient(closest-side,rgba(167,123,255,.28),transparent);pointer-events:none}
+.hero .miolo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center;position:relative;z-index:1}
+.hero h1{font:900 clamp(38px,5.4vw,64px)/1.03 var(--display);letter-spacing:-.03em;margin-top:12px}
+.hero h1 em{font-style:normal;color:var(--lilas)}
+.hero .sub{font-size:clamp(18px,2vw,21px);color:var(--ink2);margin-top:20px;max-width:34ch}
+.nome{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:grid;gap:12px;max-width:520px}
+.nome label{font:700 14px var(--body);color:var(--muted)}
+.nome input{width:100%;font:700 18px var(--body);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
+.nome .vira{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+.nome .vira .marca{font-size:clamp(20px,5vw,26px);max-width:100%}
+.hero .acoes{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
+.hero .miuda{font-size:14px;color:var(--muted);margin-top:12px}
+.cel{justify-self:center;width:min(100%,330px);aspect-ratio:720/900;border-radius:34px;padding:10px;background:linear-gradient(160deg,#3a2560,#1a0d30);box-shadow:0 40px 80px -30px rgba(0,0,0,.8),0 0 0 1px #4a3373;position:relative}
+.cel video,.cel img{width:100%;height:100%;object-fit:cover;border-radius:26px;background:#0d0619}
+.cel .etiqueta{position:absolute;left:-14px;bottom:56px;background:var(--verde);color:var(--verde-tinta);font:800 13px var(--body);padding:8px 12px;border-radius:12px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6)}
+.cel .etiqueta2{position:absolute;right:-12px;top:70px;background:#fff;color:#1a0733;font:800 13px var(--body);padding:8px 12px;border-radius:12px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6)}
+
+/* seções */
+.sec{padding-block:84px}
+.sec+.sec{border-top:1px solid var(--line)}
+.cab{display:grid;gap:12px;margin-bottom:40px;max-width:720px}
+.cab h2{font:900 clamp(30px,4.4vw,48px)/1.08 var(--display);letter-spacing:-.02em}
+.cab p{font-size:19px;color:var(--ink2)}
+
+/* 2 · o que se repete */
+.trocas{display:grid;gap:16px}
+.troca{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1.2fr);align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden}
+.troca .antes{padding:22px 24px;display:grid;gap:6px;align-content:center}
+.troca .antes small{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--perigo)}
+.troca .antes p{font:700 19px/1.35 var(--body);color:var(--ink2)}
+.troca .seta{display:grid;place-items:center;color:var(--lilas);font:900 26px var(--display)}
+.troca .depois{padding:18px;background:var(--bg2);display:grid;gap:8px;align-content:center}
+.bolha{max-width:88%;padding:9px 13px;border-radius:14px;font:600 14.5px/1.4 var(--body)}
+.bolha.cli{background:#2e1c4f;justify-self:start;border-bottom-left-radius:4px}
+.bolha.ia{background:#e9fbe9;color:#0d3a1a;justify-self:end;border-bottom-right-radius:4px}
+.bolha small{display:block;font:700 10.5px var(--body);opacity:.65;margin-top:2px}
+.tag-ia{justify-self:end;font:800 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--verde)}
+.troca .depois .bolha{animation:entra .5s both}
+.troca .depois .bolha:nth-child(2){animation-delay:.25s}.troca .depois .bolha:nth-child(3){animation-delay:.5s}
+@keyframes entra{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.mais{margin-top:18px;color:var(--muted);font-size:16px}
+
+/* 3 · a prova */
+.prova{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:40px;align-items:center}
+.pontos{display:grid;grid-template-columns:repeat(auto-fill,minmax(11px,1fr));gap:4px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
+.pontos i{display:block;aspect-ratio:1;border-radius:50%;background:var(--lilas-forte);opacity:.85}
+.pontos i.nao{background:#fff;opacity:1;box-shadow:0 0 0 2px var(--bg)}
+.legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font:700 14px var(--body);color:var(--ink2)}
+.legenda span{display:inline-flex;align-items:center;gap:8px}
+.legenda i{width:12px;height:12px;border-radius:50%;display:inline-block}
+.placar{display:grid;gap:14px}
+.placar .num{font:900 clamp(54px,7vw,84px)/1 var(--display);letter-spacing:-.03em;color:var(--ink)}
+.num .x{color:var(--muted);font-size:.5em;margin-inline:6px}
+.placar p{font-size:18px;color:var(--ink2)}
+.placar p b{color:var(--ink)}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:6px}
+.mini div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
+.mini b{display:block;font:900 22px var(--display);color:var(--lilas)}
+.mini span{font-size:12.5px;color:var(--muted);line-height:1.3;display:block}
+
+/* 4 · o teu nome */
+.telas{display:grid;grid-auto-flow:column;grid-auto-columns:min(78%,560px);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:14px;scrollbar-color:var(--line) transparent}
+.tela{scroll-snap-align:start;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:grid}
+.tela .topo-tela{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font:700 13px var(--body);color:var(--muted)}
+.tela .topo-tela i{width:9px;height:9px;border-radius:50%;background:#4a3373;display:inline-block}
+.tela .topo-tela .marca{font-size:14px;margin-left:6px}
+.tela img{aspect-ratio:16/9;object-fit:cover;object-position:top left;width:100%}
+.tela.cel-tela img{aspect-ratio:16/9;object-fit:contain;background:#eef2f7}
+.tela p{padding:14px 16px;font-size:15px;color:var(--ink2)}
+.tela p b{color:var(--ink)}
+.dica-rola{font-size:13.5px;color:var(--muted);margin-top:8px}
+
+/* 5 · como começa */
+.passos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.passo{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:grid;gap:10px;align-content:start}
+.passo .n{font:900 46px/1 var(--display);color:var(--lilas)}
+.passo h3{font:800 21px var(--body)}
+.passo p{color:var(--ink2);font-size:16px}
+.linha17{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
+.trilho{position:relative;height:10px;border-radius:99px;background:#2e1c4f;margin:16px 0 12px}
+.trilho i{position:absolute;inset:0 auto 0 0;width:19%;border-radius:99px;background:linear-gradient(90deg,var(--lilas-forte),var(--verde))}
+.marcos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;font-size:13.5px;color:var(--ink2)}
+.marcos b{display:block;font:800 14px var(--body);color:var(--ink)}
+
+/* 6 · casos */
+.casos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.caso{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:grid;gap:12px;align-content:start}
+.caso h3{font:800 22px var(--body)}
+.caso ul{margin:0;padding-left:20px;display:grid;gap:7px;color:var(--ink2);font-size:16px}
+.caso .q{font:800 12px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+
+/* 7 · fechamento */
+.fim{text-align:left}
+.fim .caixa-fim{background:linear-gradient(150deg,#2a1450,#1a0d30);border:1px solid #4a3373;border-radius:28px;padding:clamp(28px,5vw,56px);display:grid;gap:22px}
+.fim h2{font:900 clamp(32px,5vw,56px)/1.05 var(--display);letter-spacing:-.02em}
+.fim p{font-size:19px;color:var(--ink2);max-width:52ch}
+.faq{display:grid;gap:10px;margin-top:8px}
+.faq details{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
+.faq summary{cursor:pointer;font:800 16px var(--body);list-style:none;display:flex;justify-content:space-between;gap:12px}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"+";color:var(--lilas);font-weight:900}
+.faq details[open] summary::after{content:"−"}
+.faq details p{margin-top:8px;font-size:16px}
+.rodape{padding-block:34px calc(34px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+.rodape .miolo{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+
+/* celular */
+@media (max-width:860px){
+  .hero .miolo,.prova{grid-template-columns:minmax(0,1fr)}
+  .cel{width:min(78%,300px)}
+  .troca{grid-template-columns:minmax(0,1fr)}
+  .troca .seta{transform:rotate(90deg);padding-block:2px}
+  .passos,.casos{grid-template-columns:minmax(0,1fr)}
+  .marcos{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .barra .btn-pq span{display:none}
+}
+@media (max-width:420px){.barra .marca{font-size:19px}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
+</style>
+<!-- Pixel da escola (o mesmo da vitrine). Contato = clique no botão do WhatsApp. -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
+</script>
+</head>
+<body>
+
+<header class="barra faixa">
+  <div class="miolo">
+    <span class="marca" aria-label="teunegócio OS"><span><span class="t">teu</span><span class="n">negócio</span></span><span class="os">OS</span></span>
+    <a class="btn btn-wa btn-pq" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg><span>Falar com a escola</span></a>
+  </div>
+</header>
+
+<main>
+<!-- 1 · a frase, o nome ao vivo e o vídeo -->
+<section class="hero faixa">
+  <div class="miolo">
+    <div>
+      <p class="rot">Carreira no Digital · com IA trabalhando dentro</p>
+      <h1>A IA trabalhando <em>dentro</em> do teu negócio.</h1>
+      <p class="sub">A gente estuda o que se repete na tua empresa e coloca a IA pra fazer. Tudo num sistema com o teu nome, em uso em até 17 dias.</p>
+      <div class="nome">
+        <label for="empresa">Como se chama a tua empresa?</label>
+        <input id="empresa" type="text" maxlength="24" placeholder="ex.: Clínica Bella" autocomplete="organization">
+        <div class="vira">Na tua empresa, ele se chama <span class="marca" id="logo-vivo"><span class="n" id="logo-nome">tuaempresa</span><span class="os">OS</span></span></div>
+      </div>
+      <div class="acoes">
+        <a class="btn btn-wa" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>Quero ver no meu negócio</a>
+        <a class="btn btn-leve" href="/teunegocio-os/vitrine.html">Ver tudo que ele faz</a>
+      </div>
+      <p class="miuda">Uma conversa curta e sem compromisso. A escola mostra funcionando e diz na hora se serve pra ti.</p>
+    </div>
+    <div class="cel" aria-label="O sistema funcionando, em 26 segundos">
+      <video src="/teunegocio-os/midia/tour.mp4" poster="/teunegocio-os/midia/tour.jpg" autoplay muted loop playsinline preload="metadata"></video>
+      <span class="etiqueta2">22h · cliente chamou</span>
+      <span class="etiqueta">✓ a IA respondeu</span>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · o que muda -->
+<section class="sec faixa" id="muda">
+  <div class="miolo">
+    <div class="cab">
+      <p class="rot">O que muda</p>
+      <h2>O que se repete, a IA faz.</h2>
+      <p>Três exemplos de verdade. Cada empresa tem o seu processo repetitivo, e é ele que a gente estuda primeiro.</p>
+    </div>
+    <div class="trocas">
+      <div class="troca">
+        <div class="antes"><small>Antes</small><p>Alguém do time responde a mesma pergunta o dia inteiro.</p></div>
+        <div class="seta" aria-hidden="true">→</div>
+        <div class="depois">
+          <div class="bolha cli">Vocês atendem sábado?<small>22:14</small></div>
+          <div class="bolha ia">Atendemos sim, das 8h às 12h. Quer que eu reserve um horário?<small>22:14 · IA</small></div>
+          <span class="tag-ia">a IA respondeu na hora, do teu jeito</span>
+        </div>
+      </div>
+      <div class="troca">
+        <div class="antes"><small>Antes</small><p>Lembrar de voltar em cada cliente que ficou de pensar.</p></div>
+        <div class="seta" aria-hidden="true">→</div>
+        <div class="depois">
+          <div class="bolha ia">Oi, Carla! Conseguiu ver o orçamento? Se quiser, separo um horário pra sexta.<small>2 dias depois · IA</small></div>
+          <div class="bolha cli">Pode ser sexta às 10h!<small>agora</small></div>
+          <span class="tag-ia">a IA voltou no dia certo</span>
+        </div>
+      </div>
+      <div class="troca">
+        <div class="antes"><small>Antes</small><p>Mandar a arte, esperar, cobrar a aprovação.</p></div>
+        <div class="seta" aria-hidden="true">→</div>
+        <div class="depois">
+          <div class="bolha ia">Olha a prévia do teu brinde com a logo. Aprova?<small>IA · com a imagem</small></div>
+          <div class="bolha cli">Aprovado! 👍<small>agora</small></div>
+          <span class="tag-ia">pedido liberado pra produção · numa empresa de brindes</span>
+        </div>
+      </div>
+    </div>
+    <p class="mais">E o que o teu negócio precisar. A IA só fala o que tu ensinou e, quando não sabe, chama alguém do time.</p>
+  </div>
+</section>
+
+<!-- 3 · a prova -->
+<section class="sec faixa" id="prova">
+  <div class="miolo">
+    <div class="cab">
+      <p class="rot">A prova</p>
+      <h2>Teu cliente não foi embora pelo preço.</h2>
+      <p>Em três meses, na própria escola, cada ponto é uma pessoa que sumiu sem responder.</p>
+    </div>
+    <div class="prova">
+      <div>
+        <div class="pontos" id="pontos" role="img" aria-label="472 pontos lilases de quem sumiu sem responder e 23 pontos brancos de quem disse que não tinha orçamento"></div>
+        <div class="legenda"><span><i style="background:var(--lilas-forte)"></i>472 sumiram sem responder</span><span><i style="background:#fff"></i>23 disseram que não tinham orçamento</span></div>
+      </div>
+      <div class="placar">
+        <p class="num">472<span class="x">×</span>23</p>
+        <p><b>Quem some não disse não.</b> Ninguém voltou nele no dia certo. É isso que o sistema não deixa acontecer.</p>
+        <div class="mini">
+          <div><b>13,3%</b><span>dos contatos viraram venda</span></div>
+          <div><b>107</b><span>mensagens por dia saindo pela IA</span></div>
+          <div><b>6 dias</b><span>do contato à venda, em média</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · o nome dele -->
+<section class="sec faixa" id="nome">
+  <div class="miolo">
+    <div class="cab">
+      <p class="rot">Ele tem o teu nome</p>
+      <h2>Um sistema só, com a tua marca. E tudo conversa.</h2>
+      <p>Telas reais. Onde aparece "Tua marca", entra a tua.</p>
+    </div>
+    <div class="telas">
+      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/painel.jpg" alt="O painel do dia: faturamento, leads e tarefas" loading="lazy"><p><b>O teu dia numa tela.</b> O que vendeu, quem chegou e o que fazer primeiro.</p></figure>
+      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/funil.jpg" alt="O funil com as etapas do negócio" loading="lazy"><p><b>O funil do teu jeito.</b> Cada cliente vira um card sozinho, com a etapa e o próximo passo.</p></figure>
+      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/agenda.jpg" alt="A agenda do time" loading="lazy"><p><b>A agenda do time.</b> Com a confirmação automática antes de cada horário.</p></figure>
+      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/resultados.jpg" alt="Os resultados do mês" loading="lazy"><p><b>O placar do mês.</b> Quanto vendeu, quanto converteu e onde trava.</p></figure>
+      <figure class="tela cel-tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/corretora.jpg" alt="A área do cliente no celular" loading="lazy"><p><b>E o teu cliente acompanha pelo celular,</b> com a tua marca.</p></figure>
+    </div>
+    <p class="dica-rola">Arrasta pro lado pra ver as outras telas →</p>
+  </div>
+</section>
+
+<!-- 5 · como começa -->
+<section class="sec faixa" id="comeca">
+  <div class="miolo">
+    <div class="cab">
+      <p class="rot">Como começa</p>
+      <h2>Três passos. Em uso em até 17 dias.</h2>
+      <p>Não é sistema de cem dias. A base já roda todo dia na escola: a gente ajusta o que é teu.</p>
+    </div>
+    <div class="passos">
+      <div class="passo"><span class="n">1</span><h3>A gente estuda o teu dia</h3><p>O que se repete, onde trava e o que toma o tempo do time. E mede o ponto de partida.</p></div>
+      <div class="passo"><span class="n">2</span><h3>A IA assume o repetitivo</h3><p>Num sistema com o teu nome, cada um do time com o seu login.</p></div>
+      <div class="passo"><span class="n">3</span><h3>90 dias ajustando junto</h3><p>Apareceu outro processo pra automatizar? Tu pede, a gente faz.</p></div>
+    </div>
+    <div class="linha17">
+      <p class="rot">Os primeiros 90 dias</p>
+      <div class="trilho" aria-hidden="true"><i></i></div>
+      <div class="marcos">
+        <div><b>Dias 0 a 3</b>o ponto de partida medido</div>
+        <div><b>Até o dia 17</b>em uso, com o teu nome</div>
+        <div><b>Dias 30 e 60</b>a leitura do mês</div>
+        <div><b>Dia 90</b>a meta dos próximos 90</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 6 · em quem já roda -->
+<section class="sec faixa" id="casos">
+  <div class="miolo">
+    <div class="cab">
+      <p class="rot">Onde já roda</p>
+      <h2>Dois negócios diferentes. A mesma base.</h2>
+    </div>
+    <div class="casos">
+      <div class="caso"><p class="q">Uma clínica de saúde</p><h3>Da agenda de papel ao sistema</h3><ul>
+        <li>A agenda foi pro sistema, com <b>confirmação automática 1 ou 2 dias antes</b></li>
+        <li>O financeiro que a clínica não tinha</li>
+        <li>A ficha que o paciente preenche no celular, salvando a cada resposta</li>
+        <li>A jornada do tratamento, sessão a sessão</li>
+      </ul></div>
+      <div class="caso"><p class="q">Uma corretora de seguros</p><h3>A operação inteira num lugar só</h3><ul>
+        <li>O operacional da empresa montado dentro do sistema</li>
+        <li>A IA lê a apólice em PDF e a renovação entra na fila <b>30, 15 e 5 dias antes</b></li>
+        <li>Uma área do cliente com a marca da corretora</li>
+      </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 7 · o próximo passo -->
+<section class="sec faixa fim" id="falar">
+  <div class="miolo">
+    <div class="caixa-fim">
+      <p class="rot">O próximo passo</p>
+      <h2>Vê o sistema no teu negócio.</h2>
+      <p>Uma conversa curta e sem compromisso. A escola mostra funcionando, entende o que se repete na tua empresa e diz na hora se serve pra ti.</p>
+      <div><a class="btn btn-wa" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>Quero ver no meu negócio</a></div>
+      <div class="faq">
+        <details><summary>Quanto custa?</summary><p>Depende do que entra: quantas pessoas usam e quais processos a IA assume. Cada empresa é uma conversa, e o valor sai depois de entender o teu negócio. O WhatsApp oficial e o uso da IA são pagos direto à Meta e à Anthropic, na conta da tua empresa.</p></details>
+        <details><summary>A IA pode falar besteira pro meu cliente?</summary><p>Ela só fala o que tu ensinou sobre o teu negócio. Quando não sabe, para e chama uma pessoa do time. E tudo que ela respondeu fica à vista.</p></details>
+        <details><summary>E se eu sair, perco tudo?</summary><p>Não. A conta, o banco de dados, o WhatsApp e a IA ficam no nome da tua empresa. Se sair, leva os dados.</p></details>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer class="rodape faixa">
+  <div class="miolo">
+    <span class="marca" aria-label="teunegócio OS"><span><span class="t">teu</span><span class="n">negócio</span></span><span class="os">OS</span></span>
+    <span>Carreira no Digital · Lajeado e Porto Alegre, RS</span>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // os 472 pontos de quem sumiu e os 23 de quem disse que não tinha orçamento (espalhados entre eles)
+  var p = document.getElementById('pontos'), total = 495, brancos = {}, n = 0
+  while (n < 23) { var k = Math.floor((n + 0.5) * total / 23 + ((n * 37) % 11) - 5); if (!brancos[k]) { brancos[k] = 1; n++ } }
+  var html = ''; for (var i = 0; i < total; i++) html += brancos[i] ? '<i class="nao"></i>' : '<i></i>'
+  p.innerHTML = html
+
+  // o nome da empresa ao vivo no logotipo
+  var ls = function (k, v) { try { if (v === undefined) return localStorage.getItem(k); localStorage.setItem(k, v) } catch (e) { return null } }
+  var campo = document.getElementById('empresa')
+  function slug(t) { return (t || '').trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]+/g, '').slice(0, 16) }
+  function aplica() {
+    var s = slug(campo.value) || 'tuaempresa'
+    document.querySelectorAll('#logo-nome, [data-marca] .n').forEach(function (el) { el.textContent = s })
+    ls('os-empresa', campo.value)
+    liga()
+  }
+  campo.value = ls('os-empresa') || ''
+  campo.addEventListener('input', aplica)
+
+  // o botão do WhatsApp: passa pela rota /wa da escola, que registra o clique e cria o lead já no produto teunegócio OS
+  var q = new URLSearchParams(location.search)
+  function liga() {
+    var emp = campo.value.trim()
+    var msg = 'Olá! Quero ver o teunegócio OS no meu negócio' + (emp ? ' (' + emp + ')' : '') + '.'
+    var u = new URL('https://carreiranodigital.vercel.app/wa')
+    u.searchParams.set('turma', 'teunegociooscheckup'); u.searchParams.set('msg', msg)
+    ;['utm_source', 'utm_medium', 'utm_campaign', 'utm_content', 'fbclid'].forEach(function (k) { if (q.get(k)) u.searchParams.set(k, q.get(k)) })
+    if (!q.get('utm_source')) u.searchParams.set('utm_source', 'site-teunegocio-os')
+    var fbp = (document.cookie.match(/_fbp=([^;]+)/) || [])[1]; if (fbp) u.searchParams.set('fbp', fbp)
+    u.searchParams.set('src', location.href.split('#')[0])
+    document.querySelectorAll('[data-cta]').forEach(function (a) { a.href = u.toString(); a.target = '_blank'; a.rel = 'noopener' })
+  }
+  document.addEventListener('click', function (ev) { if (ev.target.closest('[data-cta]')) { try { fbq('track', 'Contact') } catch (e) {} } })
+  aplica()
+})()
+</script>
+</body>
+</html>
