@@ -170,7 +170,11 @@ async function registrarRecebida(m: any, value: any) {
   // LEAD DO DEU VENDA COM A IA (veio do anúncio de WhatsApp): quem responde é a IA do Deu Venda
   // (lib/ia-deu-venda.ts), e o lead NÃO volta pro time a cada mensagem. Ela mesma passa pro time
   // quando o lead esquenta. Os outros leads seguem o caminho de sempre, logo abaixo.
-  if (leadId && msgIns?.id) {
+  // Respeita o mesmo interruptor geral das outras automações (webhook_logs origem 'ia-automacao'):
+  // desligado, a IA do Deu Venda não responde e o lead segue pro time, pelo caminho de baixo (19/10/2026).
+  const { data: chave } = await supabase.from('webhook_logs').select('payload').eq('org_id', ORG_CND).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
+  const iaDesligada = (chave?.payload as any)?.ligado === false
+  if (leadId && msgIns?.id && !iaDesligada) {
     const { data: lq } = await supabase.from('leads').select('atendido_por, handoff_em, codigo_turma').eq('id', leadId).maybeSingle()
     if (lq && lq.atendido_por === 'ia' && !lq.handoff_em && ehDeuVenda(lq.codigo_turma)) {
       after(async () => { try { await atenderDeuVenda(ORG_CND, conv.id, msgIns.id) } catch { /* melhor esforço */ } })
