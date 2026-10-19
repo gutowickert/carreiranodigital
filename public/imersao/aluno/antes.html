@@ -78,6 +78,21 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 @media (max-width:560px){.passo{grid-template-columns:1fr;gap:10px}.pede div{flex-direction:column;align-items:flex-start}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{.luz,nav.etapas,.ctrl,.pede button{display:none}body{background:#fff;color:#000}.vidro,.passo{box-shadow:none;backdrop-filter:none;background:#fff;border:1px solid #ccc}details.telas{display:none}}
+
+/* 19/10: link direto pra tela de cada passo */
+.ir{display:flex;flex-wrap:wrap;gap:8px}
+.ir a{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:var(--accent-bg);color:var(--accent-soft);border:1px solid var(--border-strong);font:700 13.5px Manrope,system-ui,sans-serif;text-decoration:none}
+.ir a::after{content:"↗";font-weight:800}
+.ir a:hover{border-color:var(--accent)}
+.ir a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 19/10: separação bem clara entre um encontro e outro */
+.divisa{display:flex;align-items:center;gap:14px;margin-top:40px;font:800 13px Manrope,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-soft);scroll-margin-top:64px}
+.divisa::before,.divisa::after{content:"";flex:1;height:2px;border-radius:2px;background:var(--grad);opacity:.7}
+.divisa:first-of-type{margin-top:8px}
+section.etapa>.cab{overflow:hidden}
+section.etapa>.cab::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--grad)}
+section.etapa>.cab h2{font-size:clamp(28px,4.6vw,42px);line-height:1.05}
+@media print{.divisa{break-before:page}}
 </style></head><body>
 <div class="luz" aria-hidden="true"></div>
 <main class="pagina">
@@ -95,6 +110,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
   <div class="prog"><div class="barra"><i id="barra" style="width:0"></i></div><small id="progtxt">0 de 0 passos feitos</small></div>
 </header>
 
+<div class="divisa" aria-hidden="true">Antes do primeiro encontro</div>
 <section class="etapa" id="antes">
   <div class="vidro cab"><span class="olho">Antes do primeiro encontro</span><h2>A preparação</h2>
     <div class="quando"><span class="chip m" data-data="antes"></span><span class="chip">uns 30 minutos, em casa</span></div>
@@ -108,22 +124,26 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="a2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O aplicativo do Claude, no plano Pro<small>10 min</small></h3>
+    <div class="ir"><a href="https://claude.ai/upgrade" target="_blank" rel="noopener">Assinar o plano Pro</a><a href="https://claude.com/download" target="_blank" rel="noopener">Baixar o aplicativo</a></div>
     <ol><li>Entra em <b>claude.ai</b> e cria a tua conta com o e-mail do negócio (ou o teu).</li><li>Assina o plano <b>Pro</b>. A máquina roda dentro do aplicativo e precisa dele.</li><li>Baixa e instala o aplicativo em <b>claude.ai/download</b>, e entra com a mesma conta.</li></ol>
     <div class="trava"><b>Importante:</b> a conta é tua, não da escola. Tudo o que a máquina aprender sobre o teu negócio fica contigo depois da imersão.</div></div></article>
 
   <article class="passo" data-id="a3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O teu Facebook, com e-mail e senha<small>5 min</small></h3>
+    <div class="ir"><a href="https://www.facebook.com/" target="_blank" rel="noopener">Entrar no Facebook</a><a href="https://accountscenter.facebook.com/password_and_security" target="_blank" rel="noopener">Senha e segurança do Facebook</a></div>
     <p>Na aula a gente entra no Facebook pelo computador. Confere que tu sabe o <b>e-mail (ou celular) e a senha</b> do teu Facebook pessoal: sai da conta no computador e entra de novo, pra ter certeza.</p>
     <div class="trava"><b>Tem confirmação por código no celular?</b> Leva o celular carregado: o Facebook pede o código quando tu entra num computador novo.</div>
     <div class="dica">Não precisa criar portfólio, conta de anúncios nem cadastrar cartão. Isso a gente faz junto, no começo do primeiro encontro.</div></div></article>
 
   <article class="passo" data-id="a4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O Instagram do negócio<small>5 min</small></h3>
+    <div class="ir"><a href="https://www.instagram.com/" target="_blank" rel="noopener">Entrar no Instagram</a></div>
     <p>Confere que tu sabe o <b>usuário e a senha</b> do Instagram do teu negócio e que consegue entrar nele. Se ainda não é conta profissional, a gente muda junto na aula.</p>
     <div class="dica">Ainda não tem Instagram do negócio? Cria um antes da aula, com o nome do negócio. Pode estar vazio.</div></div></article>
 
   <article class="passo" data-id="a5"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O WhatsApp Business no celular<small>10 min</small></h3>
+    <div class="ir"><a href="https://play.google.com/store/apps/details?id=com.whatsapp.w4b" target="_blank" rel="noopener">WhatsApp Business no Android</a><a href="https://apps.apple.com/br/app/whatsapp-business/id1386412985" target="_blank" rel="noopener">WhatsApp Business no iPhone</a></div>
     <p>É pra ele que o anúncio vai mandar as pessoas. Tem que ser o aplicativo <b>WhatsApp Business</b> (o ícone com um B), no número que atende os clientes.</p>
     <ol><li>Já usa o WhatsApp Business nesse número? Pronto, pula este passo.</li><li>Usa o WhatsApp comum no número do negócio? Baixa o <b>WhatsApp Business</b> na loja do celular e entra com o <b>mesmo número</b>. Ele pergunta se quer trazer as conversas: diz que sim. Nada se perde.</li></ol>
     <div class="trava"><b>Quem responde:</b> tem que ser um número que tu ou alguém do time responde em até 10 minutos no horário comercial.</div></div></article>

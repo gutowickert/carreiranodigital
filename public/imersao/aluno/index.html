@@ -78,6 +78,21 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 @media (max-width:560px){.passo{grid-template-columns:1fr;gap:10px}.pede div{flex-direction:column;align-items:flex-start}}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 @media print{.luz,nav.etapas,.ctrl,.pede button{display:none}body{background:#fff;color:#000}.vidro,.passo{box-shadow:none;backdrop-filter:none;background:#fff;border:1px solid #ccc}details.telas{display:none}}
+
+/* 19/10: link direto pra tela de cada passo */
+.ir{display:flex;flex-wrap:wrap;gap:8px}
+.ir a{display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;background:var(--accent-bg);color:var(--accent-soft);border:1px solid var(--border-strong);font:700 13.5px Manrope,system-ui,sans-serif;text-decoration:none}
+.ir a::after{content:"↗";font-weight:800}
+.ir a:hover{border-color:var(--accent)}
+.ir a:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+/* 19/10: separação bem clara entre um encontro e outro */
+.divisa{display:flex;align-items:center;gap:14px;margin-top:40px;font:800 13px Manrope,system-ui,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--accent-soft);scroll-margin-top:64px}
+.divisa::before,.divisa::after{content:"";flex:1;height:2px;border-radius:2px;background:var(--grad);opacity:.7}
+.divisa:first-of-type{margin-top:8px}
+section.etapa>.cab{overflow:hidden}
+section.etapa>.cab::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--grad)}
+section.etapa>.cab h2{font-size:clamp(28px,4.6vw,42px);line-height:1.05}
+@media print{.divisa{break-before:page}}
 </style></head><body>
 <div class="luz" aria-hidden="true"></div>
 <main class="pagina">
@@ -118,6 +133,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </nav>
 
 <!-- ======================= ANTES ======================= -->
+<div class="divisa" aria-hidden="true">Antes do primeiro encontro</div>
 <section class="etapa" id="antes">
   <div class="vidro cab"><span class="olho">Antes do primeiro encontro</span><h2>A preparação</h2>
     <div class="quando"><span class="chip m" data-data="antes"></span><span class="chip">uns 30 minutos, em casa</span></div>
@@ -131,23 +147,27 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="a2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O aplicativo do Claude, no plano Pro<small>10 min</small></h3>
+    <div class="ir"><a href="https://claude.ai/upgrade" target="_blank" rel="noopener">Assinar o plano Pro</a><a href="https://claude.com/download" target="_blank" rel="noopener">Baixar o aplicativo</a></div>
     <ol><li>Entra em <b>claude.ai</b> e cria a tua conta com o e-mail do negócio (ou o teu).</li><li>Assina o plano <b>Pro</b>. A máquina roda na aba <b>Code</b> do aplicativo, e ela só existe do Pro pra cima.</li><li>Baixa e instala o aplicativo em <b>claude.com/download</b>, e entra com a mesma conta. Abre uma vez e confere que lá em cima aparecem as abas <b>Chat</b> e <b>Code</b>.</li></ol>
     <div class="dica">Usa Mac? Ele precisa ser do macOS 13 (Ventura) pra frente: confere no menu da maçã → Sobre Este Mac. Mac mais antigo, avisa a escola antes.</div>
     <div class="trava"><b>Importante:</b> a conta é tua, não da escola. Tudo o que a máquina aprender sobre o teu negócio fica contigo depois da imersão.</div></div></article>
 
   <article class="passo" data-id="a3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O teu Facebook, com e-mail e senha<small>5 min</small></h3>
+    <div class="ir"><a href="https://www.facebook.com/" target="_blank" rel="noopener">Entrar no Facebook</a><a href="https://accountscenter.facebook.com/password_and_security" target="_blank" rel="noopener">Senha e segurança do Facebook</a></div>
     <p>Na aula a gente entra no Facebook pelo computador. Confere que tu sabe o <b>e-mail (ou celular) e a senha</b> do teu Facebook pessoal: sai da conta no computador e entra de novo, pra ter certeza.</p>
     <div class="trava"><b>Tem confirmação por código no celular?</b> Leva o celular carregado: o Facebook pede o código quando tu entra num computador novo.</div>
     <div class="dica">Não precisa criar portfólio, conta de anúncios nem cadastrar cartão. Isso a gente faz junto, no começo do primeiro encontro.</div></div></article>
 
   <article class="passo" data-id="a4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O Instagram do negócio<small>5 min</small></h3>
+    <div class="ir"><a href="https://www.instagram.com/" target="_blank" rel="noopener">Entrar no Instagram</a></div>
     <p>Confere que tu sabe o <b>usuário e a senha</b> do Instagram do teu negócio e que consegue entrar nele. Se ainda não é conta profissional, a gente muda junto na aula.</p>
     <div class="dica">Ainda não tem Instagram do negócio? Cria um antes da aula, com o nome do negócio. Pode estar vazio.</div></div></article>
 
   <article class="passo" data-id="a5"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O WhatsApp Business no celular<small>10 min</small></h3>
+    <div class="ir"><a href="https://play.google.com/store/apps/details?id=com.whatsapp.w4b" target="_blank" rel="noopener">WhatsApp Business no Android</a><a href="https://apps.apple.com/br/app/whatsapp-business/id1386412985" target="_blank" rel="noopener">WhatsApp Business no iPhone</a></div>
     <p>É pra ele que o anúncio vai mandar as pessoas. Tem que ser o aplicativo <b>WhatsApp Business</b> (o ícone com um B), no número que atende os clientes.</p>
     <ol><li>Já usa o WhatsApp Business nesse número? Pronto, pula este passo.</li><li>Usa o WhatsApp comum no número do negócio? Baixa o <b>WhatsApp Business</b> na loja do celular e entra com o <b>mesmo número</b>. Ele pergunta se quer trazer as conversas: diz que sim. Nada se perde.</li></ol>
     <div class="trava"><b>Quem responde:</b> tem que ser um número que tu ou alguém do time responde em até 10 minutos no horário comercial.</div></div></article>
@@ -161,6 +181,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </section>
 
 <!-- ======================= ENCONTRO 1 ======================= -->
+<div class="divisa" aria-hidden="true">Encontro 1</div>
 <section class="etapa" id="e1">
   <div class="vidro cab"><span class="olho">Encontro 1</span><h2>Estratégia</h2>
     <div class="quando"><span class="chip m" data-data="e1"></span><span class="chip">3 horas</span></div>
@@ -169,6 +190,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-1"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Instalar a máquina<small>20 min · junto com a turma, o professor mostra no telão</small></h3>
+    <div class="ir"><a href="https://claude.com/download" target="_blank" rel="noopener">Baixar o aplicativo do Claude</a></div>
     <ol><li>Abre o link do <b>Google Drive</b> que o professor manda no grupo e baixa a pasta <b>DEU-VENDA</b> (os três pontinhos → <b>Fazer download</b>). Chega um arquivo <b>.zip</b>.</li><li><b>Extrai o zip na Área de Trabalho</b> (no Mac, a Mesa). Windows: botão direito no zip → <b>Extrair tudo</b> → escolhe a Área de Trabalho. Mac: dois cliques no zip e arrasta a pasta pra Mesa. Confere que ficou uma pasta <b>DEU-VENDA</b> com o <b>instalar</b> dentro. <b>Não roda nada de dentro do zip</b>: não funciona.</li><li><b>Fecha o aplicativo do Claude</b> por inteiro (no Mac, Cmd + Q).</li><li><b>Windows:</b> abre a pasta DEU-VENDA e dá dois cliques no <b>instalar.bat</b>. Se aparecer um aviso azul, clica em <b>Mais informações → Executar assim mesmo</b>; se perguntar se permite alterações, <b>Sim</b>. Espera aparecer <b>PRONTO</b>.<br><b>Mac:</b> abre o <b>Terminal</b> (Cmd + Espaço, escreve Terminal, Enter), digita <code>bash</code> e um espaço, arrasta o arquivo <b>instalar.command</b> da pasta pra dentro da janela e aperta Enter. Se pedir senha, é a de entrar no Mac (ela não aparece enquanto tu digita). Espera o <b>PRONTO</b>.</li><li>Abre o Claude → aba <b>Code</b> → <b>+ Nova sessão</b> → no ambiente, <b>Local</b> → na pasta do projeto, escolhe a <b>DEU-VENDA</b> (a própria pasta, não a Área de Trabalho). Se o Mac perguntar se o Claude pode acessar a Mesa, <b>Permitir</b>.</li><li>Copia pra dentro de <code>DEU-VENDA/fotos</code> as fotos da tua pasta <b>Meu negócio</b>, e o logo pra <code>DEU-VENDA/marca</code>.</li></ol>
     <div class="pede"><div><span>o que tu já sabe do meu negócio?</span><button type="button">copiar</button></div></div>
     <p>O certo é ela responder que ainda não sabe nada e que vai começar pelo teu negócio. Se ela responder como um Claude qualquer, tu abriste a pasta errada: abre uma nova sessão escolhendo a DEU-VENDA.</p>
@@ -177,6 +199,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-port"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O portfólio da empresa na Meta<small>10 min · todos juntos, no telão · business.facebook.com</small></h3>
+    <div class="ir"><a href="https://business.facebook.com/" target="_blank" rel="noopener">Abrir o Business Suite</a><a href="https://business.facebook.com/settings/people" target="_blank" rel="noopener">Pessoas (conferir o acesso total)</a></div>
     <p>É a "casa" do teu negócio no Facebook: junta a página, o Instagram, o WhatsApp e a conta de anúncios num lugar só. Entra em <b>business.facebook.com</b> com o teu Facebook pessoal.</p>
     <ol><li>Se já aparece o nome do teu negócio no seletor do alto à esquerda, tu já tem portfólio. Pula pro item 3.</li><li>Se não: clica no seletor e em <b>Criar um portfólio empresarial</b>. Nome do negócio, teu nome e o e-mail.</li><li>Confere que tu tem <b>acesso total</b>: Configurações → Pessoas → Detalhes na tua linha.</li></ol>
     <details class="telas"><summary>Ver as telas (10)</summary><div class="grade">
@@ -193,6 +216,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-contas"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Página, Instagram e WhatsApp dentro do portfólio<small>10 min · Configurações → Contas</small></h3>
+    <div class="ir"><a href="https://business.facebook.com/settings/pages" target="_blank" rel="noopener">Páginas</a><a href="https://business.facebook.com/settings/instagram-account-v2" target="_blank" rel="noopener">Perfis do Instagram</a><a href="https://business.facebook.com/settings/whatsapp-business-accounts" target="_blank" rel="noopener">Contas do WhatsApp</a></div>
     <ol><li><b>Páginas</b> → Adicionar → escolhe a tua página do Facebook (ou cria uma).</li><li><b>Perfis do Instagram</b> → Adicionar → entra com o Instagram do negócio. Ele precisa ser conta profissional: no Instagram, Configurações → Tipo de conta e ferramentas → Mudar para conta profissional.</li><li><b>Contas do WhatsApp</b> → Adicionar → liga o número do <b>WhatsApp Business</b> que vai receber os clientes.</li></ol>
     <div class="trava"><b>O WhatsApp:</b> tem que ser o aplicativo <b>WhatsApp Business</b> no celular, no número que tu ou alguém do time responde em até 10 minutos no horário comercial. É pra ele que o anúncio vai mandar as pessoas.</div>
     <details class="telas"><summary>Ver as telas (9)</summary><div class="grade">
@@ -208,6 +232,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-conta"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>A conta de anúncios<small>10 min · Configurações → Contas de anúncios</small></h3>
+    <div class="ir"><a href="https://business.facebook.com/settings/ad-accounts" target="_blank" rel="noopener">Contas de anúncios</a></div>
     <p>É a conta onde a campanha vai rodar. Cria (ou confere) a conta. Logo depois vem a forma de pagamento, pra deixar tudo pronto pra campanha do encontro 2.</p>
     <ol><li>Configurações → <b>Contas de anúncios</b>. Se já tem uma, confere se ela é tua. Se não: <b>+ Adicionar</b> → <b>Criar uma nova conta de anúncios</b>.</li><li>No formulário, troca o fuso pra <b>(GMT-03:00) São Paulo</b> e a moeda pra <b>BRL, Real brasileiro</b>. Ele vem em Los Angeles e dólar, e depois não dá pra mudar.</li></ol>
     <details class="telas"><summary>Ver as telas (5)</summary><div class="grade">
@@ -219,6 +244,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-pg"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>A forma de pagamento<small>10 min · fica pronto pro encontro 2 · a Meta pode levar um tempo pra aprovar</small></h3>
+    <div class="ir"><a href="https://business.facebook.com/billing_hub/payment_settings" target="_blank" rel="noopener">Cobrança e pagamentos</a></div>
     <p>Sem forma de pagamento, a campanha fica pronta e não publica. É no Business Suite, com o professor do lado:</p>
     <ol><li>Configurações → <b>Cobrança e pagamentos</b> (abre numa aba nova).</li><li><b>Formas de pagamento</b> → <b>Adicionar</b> → teu cartão.</li></ol>
     <div class="trava"><b>Atenção:</b> o cifrão ($) da barra da esquerda é Monetização, não é pagamento. O caminho certo é Cobrança e pagamentos.</div>
@@ -234,6 +260,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Ligar a tua conta de anúncios na máquina<small>5 min</small></h3>
+    <div class="ir"><a href="https://claude.ai/settings/connectors" target="_blank" rel="noopener">Conectores do Claude</a></div>
     <p>É isso que deixa a máquina olhar os anúncios do teu ramo e, no encontro 2, montar a tua campanha. Ela te passa o caminho; o professor mostra no telão.</p>
     <div class="pede"><div><span>quero conectar a minha conta da Meta</span><button type="button">copiar</button></div></div>
     <p>O caminho, que ela vai te dar um passo por vez: no menu do Claude, <b>Personalizar → Conectores</b> (em inglês, <i>Customize → Connectors</i>) → <b>+ Adicionar</b> → <b>Adicionar conector personalizado</b> → nome <code>Meta Ads</code>, endereço <code>https://mcp.facebook.com/ads</code> → entra com o teu Facebook e escolhe a conta de anúncios do negócio.</p>
@@ -242,11 +269,13 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-dg"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>A chave do editor de vídeo<small>5 min · o professor passa no telão</small></h3>
+    <div class="ir"><a href="https://console.deepgram.com/signup" target="_blank" rel="noopener">Criar a conta na Deepgram</a></div>
     <p>O editor de vídeo usa uma chave de transcrição (Deepgram) pra escrever as legendas. O professor mostra onde ela vai: o arquivo <code>DEU-VENDA/EDITOR-DE-VIDEO/.env</code>. Feito uma vez, o editor está pronto pra quando tu trouxer os vídeos no encontro 2.</p>
     <div class="trava"><b>A chave é digitada no teu computador.</b> Ela não vai pra conversa com a máquina nem pro WhatsApp.</div></div></article>
 
   <article class="passo" data-id="e1-3"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O teu negócio<small>35 min</small></h3>
+    <div class="ir"><a href="https://web.whatsapp.com/" target="_blank" rel="noopener">Abrir o WhatsApp Web</a></div>
     <p>A máquina já sabe o básico do teu ramo e só pergunta o que é teu. Prefere falar? No Windows, aperta <b>Windows + H</b>; no Mac, a tecla <b>Fn</b> duas vezes. Fala à vontade, o computador escreve e ela organiza depois.</p>
     <div class="pede"><div><span>vamos começar pelo meu negócio</span><button type="button">copiar</button></div></div>
     <p>Ela vai te pedir, entre outras coisas:</p>
@@ -256,6 +285,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e1-4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O teu mercado<small>15 min</small></h3>
+    <div class="ir"><a href="https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=BR&media_type=all" target="_blank" rel="noopener">Abrir a Biblioteca de Anúncios</a></div>
     <p>A máquina olha os anúncios que os concorrentes do teu ramo estão rodando agora e te mostra o que todo mundo diz e o que ninguém está dizendo. Esse espaço vazio costuma ser a tua oferta.</p>
     <div class="pede"><div><span>agora olha o meu mercado</span><button type="button">copiar</button></div></div>
     <p>Ela te propõe 3 buscas e pergunta qual marca do teu ramo tu admira de longe. Sem o conector, tu mesmo faz as buscas na Biblioteca de Anúncios, diz quantos anúncios apareceram e manda 3 prints. Sai em <code>negocio/o-meu-mercado.md</code>.</p>
@@ -286,6 +316,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </section>
 
 <!-- ======================= NOITE ======================= -->
+<div class="divisa" aria-hidden="true">Entre o encontro 1 e o 2</div>
 <section class="etapa" id="noite">
   <div class="vidro cab"><span class="olho">Entre o encontro 1 e o 2</span><h2>A noite da gravação</h2>
     <div class="quando"><span class="chip m" data-data="noite"></span><span class="chip">uns 20 minutos</span></div>
@@ -305,6 +336,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </section>
 
 <!-- ======================= ENCONTRO 2 ======================= -->
+<div class="divisa" aria-hidden="true">Encontro 2</div>
 <section class="etapa" id="e2">
   <div class="vidro cab"><span class="olho">Encontro 2</span><h2>Arte, vídeo e campanha</h2>
     <div class="quando"><span class="chip m" data-data="e2"></span><span class="chip">3 horas</span></div>
@@ -340,6 +372,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e2-6"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Subir a campanha<small>30 min · contigo do lado</small></h3>
+    <div class="ir"><a href="https://adsmanager.facebook.com/adsmanager/manage/campaigns" target="_blank" rel="noopener">Abrir o Gerenciador de Anúncios</a></div>
     <div class="pede"><div><span>vamos subir a campanha</span><button type="button">copiar</button></div></div>
     <p>Antes, ela confirma contigo umas perguntas (o que tu quer que a pessoa faça, quanto tu vende, as cidades, quanto pode investir por dia). Depois te mostra um resumo de 5 linhas: o objetivo, o nome, o destino, um conjunto por cidade com o raio e a verba, e as peças. <b>Lê com calma.</b> Só quando estiver certo, tu escreve:</p>
     <div class="pede"><div><span>pode subir</span><button type="button">copiar</button></div></div>
@@ -425,6 +458,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </section>
 
 <!-- ======================= ENCONTRO 3 ======================= -->
+<div class="divisa" aria-hidden="true">Encontro 3</div>
 <section class="etapa" id="e3">
   <div class="vidro cab"><span class="olho">Encontro 3</span><h2>Ajuste e atendimento</h2>
     <div class="quando"><span class="chip m" data-data="e3"></span><span class="chip">3 horas</span></div>
@@ -433,6 +467,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e3-1"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Como está a campanha<small>20 min</small></h3>
+    <div class="ir"><a href="https://adsmanager.facebook.com/adsmanager/manage/campaigns" target="_blank" rel="noopener">Abrir o Gerenciador de Anúncios</a></div>
     <div class="pede"><div><span>como está a minha campanha?</span><button type="button">copiar</button></div></div>
     <p>Com um dia, só dá pra ver se ela está <b>gastando</b> e se as pessoas <b>chegam no WhatsApp</b>. Ainda não dá pra julgar se o anúncio é bom.</p>
     <div class="pede"><div><span>vou te mandar print de duas ou três conversas que chegaram</span><button type="button">copiar</button></div></div>
@@ -464,6 +499,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e3-4"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>O pixel da Meta<small>15 min · eventsmanager.facebook.com</small></h3>
+    <div class="ir"><a href="https://business.facebook.com/events_manager2/" target="_blank" rel="noopener">Abrir o Gerenciador de Eventos</a></div>
     <p>O pixel é o código que conta pra Meta quem visitou o teu site. Ele vai dentro da página antes de ela subir.</p>
     <ol><li>Entra no <b>Gerenciador de Eventos</b> → <b>Conectar dados</b> → <b>Web</b> → Avançar.</li><li>Dá o nome do teu negócio e segue até aparecer o código.</li><li>Copia o código e cola na conversa:</li></ol>
     <div class="pede"><div><span>põe este pixel no meu site</span><button type="button">copiar</button></div></div>
@@ -485,6 +521,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 </section>
 
 <!-- ======================= ENCONTRO 4 ======================= -->
+<div class="divisa" aria-hidden="true">Encontro 4</div>
 <section class="etapa" id="e4">
   <div class="vidro cab"><span class="olho">Encontro 4</span><h2>Resultado</h2>
     <div class="quando"><span class="chip m" data-data="e4"></span><span class="chip">uns 20 dias depois</span></div>
@@ -497,6 +534,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e4-tela"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>Arrumar a tela do Gerenciador<small>15 min · uma vez só, depois fica salva</small></h3>
+    <div class="ir"><a href="https://adsmanager.facebook.com/adsmanager/manage/campaigns" target="_blank" rel="noopener">Abrir o Gerenciador de Anúncios</a></div>
     <p>A tabela que a Meta mostra por padrão foi feita pra quem vende no site. É por isso que aparece "Compra no site" com um tracinho. Arruma uma vez e salva:</p>
     <ol><li>Acima da tabela, à direita: <b>Colunas</b> → rola até o fim → <b>Personalizar colunas</b>.</li><li>Na caixa de <b>pesquisa</b> (à esquerda, em cima), digita o nome de cada métrica e marca o quadradinho. Uma de cada vez. Não procura rolando a lista: são centenas.</li><li>Na coluna da direita, segura nos <b>seis pontinhos</b> e arrasta pra pôr na ordem. O <b>X</b> tira uma coluna.</li><li>Embaixo à direita, a setinha do lado de <b>Salvar</b>: dá um nome curto (o teu nome, ou "meu padrão") e salva. Da próxima vez ela aparece em Colunas → Usados recentemente.</li><li>O <b>período</b> fica no botão com a data, acima da tabela. Hoje: só pra ver se está gastando. Últimos 7 dias: é o que decide.</li></ol>
     <p>As colunas, nesta ordem: anúncio · Veiculação · Orçamento · Valor gasto · <b>Leads</b> · Custo por lead · Cliques no link · CPC · Resultados · Custo por resultado · Finalizações de compra iniciadas · Seguidores no Instagram · Alcance · CPM · <b>Frequência</b> · Compras. Nas que abrem sub-opções, deixa as sub-opções desmarcadas.</p>
@@ -508,6 +546,7 @@ figure{display:grid;gap:6px}figure img{width:100%;border-radius:10px;border:1px 
 
   <article class="passo" data-id="e4-2"><label class="ck"><input type="checkbox"><svg viewBox="0 0 24 24" fill="none"><path d="M5 12l5 5 9-10"/></svg></label><div class="corpo">
     <h3>A leitura<small>50 min</small></h3>
+    <div class="ir"><a href="https://adsmanager.facebook.com/adsmanager/manage/campaigns" target="_blank" rel="noopener">Abrir o Gerenciador de Anúncios</a></div>
     <div class="pede"><div><span>vamos ler a minha campanha dos últimos 20 dias</span><button type="button">copiar</button></div></div>
     <p>A ordem que importa: <b>quanta gente chega</b> → <b>a conversa é quente ou fria</b> → <b>quantos compram</b>. O custo de cada conversa sozinho não diz nada: o que manda é quanto volta pra cada real gasto.</p>
     <div class="tab"><table><thead><tr><th>Se o problema é</th><th>o conserto está</th></tr></thead><tbody>
