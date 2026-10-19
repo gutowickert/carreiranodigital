@@ -8,7 +8,7 @@
 //   POST { acao: 'criar', nome, turma, negocio?, whatsapp? }  + x-senha → cria o aluno e devolve o código
 //   POST { acao: 'editar', c, nome?, turma?, negocio?, whatsapp?, notas? } + x-senha
 //   POST { acao: 'apagar', c }                + x-senha
-// A senha do professor é a mesma do painel do Recado / Oito Posts (RECADO_PAINEL_SENHA).
+// A senha do professor: a do painel do Recado (RECADO_PAINEL_SENHA) ou a só da imersão (IMERSAO_SENHA, pra equipe e sócios).
 import { NextResponse } from 'next/server'
 
 export const dynamic = 'force-dynamic'
@@ -29,7 +29,9 @@ async function banco(caminho: string, opts: any = {}): Promise<any> {
 const TURMAS = ['poa-tarde', 'laj-noite', 'poa-noite']
 const CODIGO = /^[a-z0-9]{6,16}$/
 const PASSO = /^[a-z0-9-]{1,40}$/
-const senhaOk = (s: string | null) => !!s && !!process.env.RECADO_PAINEL_SENHA && s === process.env.RECADO_PAINEL_SENHA.replace(/^"|"$/g, '')
+// 19/10: a IMERSAO_SENHA (só deste painel, pra dividir com os sócios) também entra; a do Recado continua valendo pro Guto
+const semAspas = (v?: string) => (v || '').replace(/^"|"$/g, '').trim()
+const senhaOk = (s: string | null) => !!s && [semAspas(process.env.RECADO_PAINEL_SENHA), semAspas(process.env.IMERSAO_SENHA)].some(v => !!v && s === v)
 const erro = (msg: string, status = 400) => NextResponse.json({ erro: msg }, { status })
 const limpa = (v: any, max = 120) => (typeof v === 'string' ? v.trim().slice(0, max) : '')
 
