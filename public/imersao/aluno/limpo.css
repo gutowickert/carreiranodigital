@@ -1,0 +1,39 @@
+/* 19/10: a página do aluno mais limpa (pedido do Guto: "mais limpos e visuais, pra não pesar e confundir").
+   Um encontro por vez, cada passo enxuto (o "Como fazer" abre com um toque) e sem os efeitos pesados de vidro e luz. */
+.luz{display:none}
+.vidro{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--surface);box-shadow:none}
+nav.etapas{-webkit-backdrop-filter:none;backdrop-filter:none;background:var(--bg)}
+
+/* um encontro por vez */
+.limpo section.etapa{display:none}
+.limpo section.etapa.ativa{display:grid}
+.limpo .divisa{display:none}
+
+/* o passo enxuto */
+.passo .corpo{display:grid;gap:12px;min-width:0}
+details.como{border-top:1px solid var(--border);padding-top:10px}
+details.como>summary{cursor:pointer;list-style:none;font:700 14px Manrope,system-ui,sans-serif;color:var(--accent-soft);display:inline-flex;align-items:center;gap:8px}
+details.como>summary::-webkit-details-marker{display:none}
+details.como>summary::before{content:"+";display:inline-grid;place-items:center;width:22px;height:22px;border-radius:999px;border:1px solid var(--border-strong);font-weight:800}
+details.como[open]>summary::before{content:"−"}
+details.como>summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:6px}
+details.como>.dentro{display:grid;gap:12px;padding-top:12px}
+
+/* o passo feito vira uma linha */
+.passo.feito{padding-block:12px;opacity:.75}
+.passo.feito .corpo>:not(h3){display:none}
+.passo.feito h3{color:var(--green)}
+.passo.feito h3 small{display:none}
+
+/* o passo da vez fica em destaque */
+.passo.agora{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+
+/* "Travou?" vira um botão que abre */
+details.travou{border-radius:16px}
+details.travou>summary{cursor:pointer;list-style:none;padding:16px 20px;font:800 15px Manrope,system-ui,sans-serif;display:flex;align-items:center;gap:10px}
+details.travou>summary::-webkit-details-marker{display:none}
+details.travou>summary::after{content:"+";margin-left:auto;font-weight:800;color:var(--accent-soft)}
+details.travou[open]>summary::after{content:"−"}
+details.travou>.dentro{padding:0 20px 18px;display:grid;gap:12px}
+
+@media print{.limpo section.etapa{display:grid}details.como>.dentro{display:grid}}

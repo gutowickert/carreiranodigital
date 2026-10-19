@@ -93,7 +93,8 @@ section.etapa>.cab{overflow:hidden}
 section.etapa>.cab::before{content:"";position:absolute;left:0;top:0;bottom:0;width:6px;background:var(--grad)}
 section.etapa>.cab h2{font-size:clamp(28px,4.6vw,42px);line-height:1.05}
 @media print{.divisa{break-before:page}}
-</style></head><body>
+</style><link rel="stylesheet" href="/imersao/aluno/limpo.css">
+</head><body>
 <div class="luz" aria-hidden="true"></div>
 <main class="pagina">
 
@@ -191,4 +192,5 @@ section.etapa>.cab h2{font-size:clamp(28px,4.6vw,42px);line-height:1.05}
   var nav=document.querySelectorAll('nav.etapas a');if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting)nav.forEach(function(a){a.classList.toggle('on',a.dataset.e===e.target.id)})})},{rootMargin:'-40% 0px -55% 0px'});document.querySelectorAll('section.etapa').forEach(function(s){io.observe(s)})}
 })()
 </script>
+<script src="/imersao/aluno/limpo.js"></script>
 </body></html>
