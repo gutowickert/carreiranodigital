@@ -8,7 +8,8 @@
 //   1ª confirmação → antes de mudar qualquer arquivo ("tu já viu e aprovou o desenho?").
 //                    Vale por 45 minutos de trabalho; depois pergunta de novo.
 //   2ª confirmação → antes de PUBLICAR (git push), sempre.
-//   Proibido       → forçar envio, desfazer histórico, mexer nas chaves, gravar direto no banco.
+//   Gravar no banco → pede um clique (liberado pelo Guto em 19/10/2026).
+//   Proibido       → forçar envio, desfazer histórico, mexer nas chaves.
 //
 // Pra quem é da lista LIVRES, a trava não faz nada.
 //
@@ -56,7 +57,7 @@ if (ferramenta === 'Bash' || ferramenta === 'PowerShell') {
   if (/\bgit\s+push\b[^|;&]*(--force|-f\b|--force-with-lease)/.test(c) || /\bgit\s+(reset\s+--hard|clean\s+-|rebase\b|filter-branch|checkout\s+--\s|restore\s)/.test(c))
     responder('deny', 'PROIBIDO: forçar o envio ou desfazer histórico pode apagar o trabalho do Guto. Para e chama o Guto ou o Nando.')
   if (/SERVICE_ROLE|service_role/.test(c) || /\bpsql\b/.test(c) || (/supabase/i.test(c) && /\b(insert|update|delete|upsert|drop|alter|truncate)\b/i.test(c)))
-    responder('deny', 'PROIBIDO: gravar direto no banco de dados da escola. Mudança de dado passa pelas telas do sistema; mudança de estrutura, só com o Guto.')
+    responder('ask', `CONFIRMAÇÃO, ${quem}: o Claude vai GRAVAR direto no banco de dados da escola (liberado pelo Guto em 19/10/2026). Ele já te mostrou o que vai mudar, quantos registros e quais? Só aprova se sim.`)
   if (/\bvercel\b/.test(c) && /(--prod|deploy|env\s+(add|rm|pull))/.test(c))
     responder('deny', 'PROIBIDO: a Vercel da escola é do Guto. A publicação acontece sozinha quando o código é enviado (git push).')
   if (/(^|[\s;&|"'])(cat|type|more|less|head|tail|Get-Content)\b[^|;&]*\.env/.test(c))

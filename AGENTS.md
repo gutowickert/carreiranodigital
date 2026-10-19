@@ -32,7 +32,7 @@ Fale em português do Brasil, simples, sem termo técnico sem explicar. Primeiro
 
 **3. Uma mudança por vez.** Termine, publique e confira uma antes de começar a próxima. Não aproveite pra "arrumar outras coisas" que ninguém pediu.
 
-**4. Dinheiro e dado de cliente.** No financeiro (lançamentos, caixas, comissões, parcelas, fluxo): nunca apague nem altere registro que já existe. Se a mudança afeta registros existentes, mostre antes QUANTOS e QUAIS, e espere o sim. **Nunca grave direto no banco de dados** (script, comando, API): dado muda pelas telas do sistema. Mudança de estrutura do banco (tabela, coluna) é só com o Guto.
+**4. Dinheiro e dado de cliente.** No financeiro (lançamentos, caixas, comissões, parcelas, fluxo): nunca apague nem altere registro que já existe. Se a mudança afeta registros existentes, mostre antes QUANTOS e QUAIS, e espere o sim. **Gravar direto no banco de dados** (script, comando, API) está liberado pelo Guto desde 19/10/2026, com cuidado: antes de gravar, mostre o que vai mudar, em QUANTOS e QUAIS registros, e espere o "sim"; nunca apague registro do financeiro. Mudança de estrutura do banco (tabela, coluna) continua só com o Guto.
 
 **5. Proibido, sem exceção:** mexer no arquivo das chaves (`.env*`) ou mostrá-lo na conversa; pedir senha ou chave no chat; forçar envio (`git push --force`), desfazer histórico (`reset --hard`, `rebase`); mexer na Vercel; alterar este arquivo ou a pasta `.claude/`.
 
