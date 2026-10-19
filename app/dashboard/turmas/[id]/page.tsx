@@ -31,8 +31,14 @@ type Matricula = {
   forma_pagamento: string
   parcelas: number
   lead_id: string | null
+  imersao_codigo?: string | null // 19/10: o link do aluno da Imersão Deu Venda (criado sozinho pelo banco na matrícula)
   alunos: { id: string; nome: string; whatsapp: string; email: string; cpf: string }
 }
+
+// 19/10: o link individual do aluno da imersão e a mensagem pronta pra mandar no WhatsApp
+const linkImersao = (cod: string) => `https://carreiranodigital.vercel.app/imersao/aluno?c=${cod}`
+const msgImersao = (nome: string, cod: string) =>
+  `Oi, ${(nome || '').split(' ')[0]}! Este é o teu link da Imersão Deu Venda, só teu: ${linkImersao(cod)}\nAbre agora e faz a parte "Antes do primeiro encontro" (uns 30 minutos). Ali também ficam os passos de cada encontro.`
 
 type Aluno = { id: string; nome: string; whatsapp: string; email: string; cpf: string }
 type Professor = { id: string; nome: string; diaria_reais: number; tipo_pagamento?: 'diaria_fixa' | 'percentual_vendas'; percentual_vendas?: number }
@@ -818,7 +824,7 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                 <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ borderBottom: '1px solid var(--border)' }}>
-                      {['Aluno', 'CPF', 'Contato', 'Data', 'Valor', 'Pagamento', 'Status'].map(h => (
+                      {['Aluno', 'CPF', 'Contato', ...(turma?.codigo?.startsWith('imersaodv') ? ['Link do aluno'] : []), 'Data', 'Valor', 'Pagamento', 'Status'].map(h => (
                         <th key={h} style={{ textAlign: 'left', padding: '12px 20px', fontSize: '11px', color: 'var(--text-faint)', fontWeight: '500' }}>{h}</th>
                       ))}
                     </tr>
@@ -835,6 +841,21 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
                             </a>
                           )}
                         </td>
+                        {turma?.codigo?.startsWith('imersaodv') && (
+                          <td style={{ padding: '12px 20px', fontSize: '12px' }}>
+                            {m.imersao_codigo ? (
+                              <div style={{ display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                <a href={linkImersao(m.imersao_codigo)} target="_blank" rel="noreferrer" style={{ color: 'var(--accent)', fontFamily: 'monospace' }}>?c={m.imersao_codigo}</a>
+                                <button type="button" onClick={e => { const b = e.currentTarget; navigator.clipboard?.writeText(linkImersao(m.imersao_codigo!)).then(() => { b.textContent = 'copiado'; setTimeout(() => { b.textContent = 'copiar' }, 1500) }) }}
+                                  style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', border: '1px solid var(--border)', background: 'transparent', color: 'var(--text-muted)', cursor: 'pointer' }}>copiar</button>
+                                {m.alunos?.whatsapp && (
+                                  <a href={`https://wa.me/55${m.alunos.whatsapp.replace(/\D/g, '').replace(/^55(?=\d{10,11}$)/, '')}?text=${encodeURIComponent(msgImersao(m.alunos.nome, m.imersao_codigo))}`} target="_blank" rel="noreferrer"
+                                    style={{ fontSize: '11px', padding: '3px 8px', borderRadius: '6px', backgroundColor: 'var(--green-bg)', color: 'var(--green-strong)', textDecoration: 'none' }}>mandar no WhatsApp</a>
+                                )}
+                              </div>
+                            ) : <span style={{ color: 'var(--text-faint)' }}>{m.status === 'ativa' ? 'gerando…' : '—'}</span>}
+                          </td>
+                        )}
                         <td style={{ padding: '12px 20px', fontSize: '12px', color: 'var(--text-muted)' }}>{new Date(m.data_compra).toLocaleDateString('pt-BR')}</td>
                         <td style={{ padding: '12px 20px', fontSize: '13px', fontWeight: '600', color: 'var(--green-strong)' }}>
                           {fmt(m.valor_pago)}
