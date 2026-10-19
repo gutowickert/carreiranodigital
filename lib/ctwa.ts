@@ -45,6 +45,9 @@ export function codigoDaCampanha(campanha: string | null, codigos: string[]): st
   const c = campanha.toLowerCase()
   if (/deu\s*venda/.test(c)) return /porto\s*alegre|\bpoa\b/.test(c) ? 'deuvendaportoalegre' : 'deuvendalajeado'
   const semEspaco = c.replace(/[^a-z0-9]/g, '')
+  // 19/10: anúncio direto do teunegócio OS ("TEUNEGOCIO OS - WHATSAPP", "teunegócio OS", "TEU NEGOCIO OS") → o container do OS
+  const semAcento = c.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '')
+  if (semAcento.includes('teunegocio')) return codigos.find(cod => /^teunegocioos/i.test(cod || '')) || null
   return codigos.find(cod => cod && cod.length >= 6 && semEspaco.includes(cod.toLowerCase())) || null
 }
 
