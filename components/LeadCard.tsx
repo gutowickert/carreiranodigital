@@ -1436,13 +1436,14 @@ function ModalGanhoVincular({ lead, turma, onFechar }: ModalGanhoVincularProps) 
     setCarregando(true)
     
     const { data } = await supabase.from('matriculas')
-      .select('id, aluno_id, valor_pago, data_compra, lead_id, alunos(nome, cpf)')
+      .select('id, aluno_id, valor_pago, data_compra, lead_id, forma_pagamento, status, alunos(nome, cpf)')
       .eq('turma_id', turma.id)
       .order('data_compra', { ascending: false })
-    
+
     if (data) {
+      // 19/10: cortesia e matrícula cancelada não são venda pra vincular a um lead (senão escondem o "Cadastrar nova venda")
       const disponiveis = data
-        .filter((m: any) => !m.lead_id || m.lead_id === lead.id)
+        .filter((m: any) => (!m.lead_id || m.lead_id === lead.id) && m.forma_pagamento !== 'cortesia' && m.status !== 'cancelada')
         .map((m: any) => ({
           id: m.id, aluno_id: m.aluno_id, valor_pago: m.valor_pago,
           data_compra: m.data_compra, aluno_nome: m.alunos?.nome, aluno_cpf: m.alunos?.cpf,
