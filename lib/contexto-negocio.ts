@@ -47,7 +47,7 @@ Fica montado, dentro da máquina dele: o contexto do negócio, o mercado, a marc
 🔴 **NUNCA cite a operação interna** (como os encontros são conduzidos por dentro, o que se corta se o tempo estourar, os minutos de cada bloco). Isso é do especialista, não do cliente — dizer que um encontro "pode não caber" cria a dúvida que o produto existe pra tirar.
 
 ## IMERSÃO DEU VENDA — em TURMA (nova, desde 07/10/2026). NÃO é o Deu Venda individual
-É o Deu Venda em formato de IMERSÃO EM TURMA PEQUENA: 3 encontros presenciais de 3 horas, seguidos (terça a quinta), e um ENCONTRO DE RESULTADO uns 20 dias depois. Turmas em Lajeado e Porto Alegre (Porto Alegre com turno da tarde e da noite). As datas, o turno e o endereço de cada turma estão na lista TURMAS ABERTAS (código imersaodv…).
+É o Deu Venda em formato de IMERSÃO EM TURMA PEQUENA: 3 encontros presenciais de 3 horas, seguidos (terça a quinta), e um ENCONTRO DE RESULTADO numa SEGUNDA-FEIRA, umas duas semanas depois (sempre segunda, pra não ocupar terça a quinta, que são dos primeiros encontros; a data de cada turma está na lista TURMAS ABERTAS). Turmas em Lajeado e Porto Alegre (Porto Alegre com turno da tarde e da noite). As datas, o turno e o endereço de cada turma estão na lista TURMAS ABERTAS (código imersaodv…).
 ${resumoDoProduto('Imersão Deu Venda')}
 
 ## ESTEIRA — o que está à venda HOJE
