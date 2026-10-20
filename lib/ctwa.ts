@@ -1,5 +1,6 @@
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { aplicarRateio } from '@/lib/rateio'
+import { ORG_CND } from '@/lib/org'
 import { createHash } from 'crypto'
 
 // ANÚNCIO DIRETO PRO WHATSAPP (Click-to-WhatsApp, "CTWA") — decisão do Guto em 05/10/2026.
@@ -85,7 +86,10 @@ export async function leadDoAnuncio(p: { telefone: string; nome: string | null; 
   const { data: turmas } = await sb.from('turmas').select('id, codigo').not('codigo', 'is', null)
   const codigo = codigoDaCampanha(nomes.campanha, (turmas || []).map((t: any) => t.codigo))
   const turma = codigo ? (turmas || []).find((t: any) => t.codigo.toLowerCase() === codigo.toLowerCase()) : null
-  const dv = ehDeuVenda(turma?.codigo)
+  // 20/10: com a IA desligada (interruptor ia-automacao {ligado:false}), o lead do Deu Venda nasce como os das
+  // outras turmas: etapa Ligação, atendido pelo time, e cai na fila de ligações. Só nasce com a IA se ela estiver ligada.
+  const { data: chave } = await sb.from('webhook_logs').select('payload').eq('org_id', ORG_CND).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
+  const dv = ehDeuVenda(turma?.codigo) && (chave?.payload as any)?.ligado !== false
   const vendedorId = turma ? await aplicarRateio(sb, turma.id) : null
 
   const { data: novo } = await sb.from('leads').insert({
