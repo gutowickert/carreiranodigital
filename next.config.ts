@@ -83,9 +83,9 @@ const nextConfig: NextConfig = {
         { source: '/oito/acessos', destination: '/oito/acessos/index.html' },
         { source: '/oito/acessos/', destination: '/oito/acessos/index.html' },
         // 20/10: os sites da escola. carreiranodigital.com abre o site institucional (public/novo-site);
-        // os endereços curtos valem no domínio e na Vercel. /imersaodeuvenda é Porto Alegre; /imersaodeuvenda/lajeado é Lajeado.
+        // os endereços curtos valem no domínio e na Vercel. /imersaodeuvenda é a página geral (as duas cidades, a do site); /portoalegre e /lajeado são as dos anúncios.
         { source: '/', has: [{ type: 'host' as const, value: '(www\\.)?carreiranodigital\\.com' }], destination: '/novo-site/index.html' },
-        { source: '/imersaodeuvenda', destination: '/imersao/porto-alegre.html' },
+        { source: '/imersaodeuvenda', destination: '/imersao/index.html' },
         { source: '/imersaodeuvenda/:c(portoalegre|porto-alegre)', destination: '/imersao/porto-alegre.html' },
         { source: '/imersaodeuvenda/lajeado', destination: '/imersao/lajeado.html' },
         { source: '/deuvenda', destination: '/imersao/deu-venda.html' },
