@@ -29,7 +29,16 @@ const nextConfig: NextConfig = {
       { source: '/oito/nofeed', destination: '/oito/feedaldia/', permanent: false },
       { source: '/oito/nofeed/:path*', destination: '/oito/feedaldia/:path*', permanent: false },
     ]
-    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: '.*\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...espanholAntigo]
+    // 20/10: o carreiranodigital.com sai da HostGator (WordPress) e vem pra cá. As páginas antigas do WordPress
+    // (cursos que não existem mais) levam pra home; a antiga /deu-venda leva pra página nova. A página velha /deu-venda.html também.
+    const cnd = [{ type: 'host' as const, value: '(www\\.)?carreiranodigital\\.com' }]
+    const wpAntigo = ['pagina-inicial', 'atendimento-com-ia', 'gestor-de-trafego', 'sites', 'videomaker-mobile', 'influencer-local', 'transmissao-ao-vivo', 'designer-digital', 'social-media', 'merilin', 'ianapratica', 'funildigital', 'black-carreira-no-digital', 'mentoriainfo', 'marketingdigital', 'aovivo', 'sitesonline', 'avulsos', 'hello-world']
+    const escola = [
+      { source: `/:p(${wpAntigo.join('|')})`, has: cnd, destination: '/', permanent: false },
+      { source: '/deu-venda', destination: '/deuvenda', permanent: false },
+      { source: '/deu-venda.html', destination: '/deuvenda', permanent: false },
+    ]
+    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: '.*\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...espanholAntigo, ...escola]
   },
   // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
   async rewrites() {
@@ -73,6 +82,14 @@ const nextConfig: NextConfig = {
         { source: '/oito/painel/', destination: '/oito/painel/index.html' },
         { source: '/oito/acessos', destination: '/oito/acessos/index.html' },
         { source: '/oito/acessos/', destination: '/oito/acessos/index.html' },
+        // 20/10: os sites da escola. carreiranodigital.com abre o site institucional (public/novo-site);
+        // os endereços curtos valem no domínio e na Vercel. /imersaodeuvenda é Porto Alegre; /imersaodeuvenda/lajeado é Lajeado.
+        { source: '/', has: [{ type: 'host' as const, value: '(www\\.)?carreiranodigital\\.com' }], destination: '/novo-site/index.html' },
+        { source: '/imersaodeuvenda', destination: '/imersao/porto-alegre.html' },
+        { source: '/imersaodeuvenda/:c(portoalegre|porto-alegre)', destination: '/imersao/porto-alegre.html' },
+        { source: '/imersaodeuvenda/lajeado', destination: '/imersao/lajeado.html' },
+        { source: '/deuvenda', destination: '/imersao/deu-venda.html' },
+        { source: '/teunegocioos', destination: '/teunegocio-os/index.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
         { source: '/rastro', destination: '/rastro/index.html' },
         { source: '/rastro/', destination: '/rastro/index.html' },
