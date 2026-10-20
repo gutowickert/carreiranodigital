@@ -159,6 +159,12 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .rodape .miolo{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
 
 /* celular */
+.quem{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:40px;align-items:center}
+.quem-foto{margin:0;position:relative;overflow:hidden;border-radius:26px;border:1px solid var(--line);background:var(--card)}
+.quem-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
+.quem-foto figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 12px;font-size:12.5px;color:var(--ink2);background:linear-gradient(to top,rgba(15,12,23,.92),transparent)}
+.quem h2{margin:8px 0 14px}.quem p:not(.rot){font-size:17px;line-height:1.65;color:var(--muted);margin-bottom:12px}.quem p b{color:var(--ink)}
+@media (max-width:860px){.quem{grid-template-columns:1fr;gap:24px}.quem-foto{max-width:300px}}
 @media (max-width:860px){
   .hero .miolo,.prova{grid-template-columns:minmax(0,1fr)}
   .cel{width:min(78%,300px)}
@@ -345,6 +351,22 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
         <li>A IA lê a apólice em PDF e a renovação entra na fila <b>30, 15 e 5 dias antes</b></li>
         <li>Uma área do cliente com a marca da corretora</li>
       </ul></div>
+    </div>
+  </div>
+</section>
+
+<!-- 6b · quem implanta (20/10: a bio do Nando volta, como na página antiga do sistema) -->
+<section class="sec faixa" id="quem">
+  <div class="miolo">
+    <div class="quem">
+      <figure class="quem-foto"><img src="/teunegocio-os/midia/nando.jpg" alt="Nando, que desenha e implanta o teunegócio OS" loading="lazy"><figcaption>Nando, na unidade da escola</figcaption></figure>
+      <div>
+        <p class="rot">Quem implanta</p>
+        <h2>Nando</h2>
+        <p><b>É quem desenha, implanta e ajusta cada teunegócio OS.</b> É com ele que tu senta na implantação, e é pra ele que vão os teus pedidos de mudança, sem fila de suporte e sem ticket.</p>
+        <p>O sistema nasceu dentro da Carreira no Digital: <b>é nele que a escola vende as turmas, atende os alunos pelo WhatsApp e automatiza a rotina</b>, todo dia. Tudo que entra no teu sistema já foi testado no dela.</p>
+        <p>Por isso o ajuste é rápido: <b>a base é uma só, testada no dia a dia</b>, e cada empresa recebe por cima o que é só dela.</p>
+      </div>
     </div>
   </div>
 </section>
