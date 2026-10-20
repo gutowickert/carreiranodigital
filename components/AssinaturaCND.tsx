@@ -1,6 +1,6 @@
 // A ASSINATURA DISCRETA da CarreiraNoDigital (a mesma peça dos sistemas dos clientes), aqui na tela
 // da chamada da própria escola — pedido do Nando em 28/09/2026. Leva pra página do Sistema CND.
-const SITE = 'https://carreiranodigital.vercel.app/sistema-cnd.html?utm_source=assinatura'
+const SITE = 'https://www.carreiranodigital.com/teunegocioos?utm_source=site-escola'  // página do teunegócio OS (Nando, 20/10/2026)
 
 export default function AssinaturaCND({ escuro = false }: { escuro?: boolean }) {
   return (
