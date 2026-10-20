@@ -260,6 +260,17 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
 
 /* v4 (19/10): IA no centro */
 .foto-abre{max-width:580px}.foto-abre>img{aspect-ratio:4/3}
+/* 20/10: o momento da IA, com dados oficiais */
+.provas{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+.provas article{background:var(--cartao);border:1px solid var(--borda);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.provas article>b{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(44px,5vw,60px);line-height:1;letter-spacing:-.02em;background:linear-gradient(90deg,#b98cff,#e879f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.provas article>b span{font-size:.55em}
+.provas p{color:var(--suave);font-size:16px;line-height:1.5}.provas p strong{color:var(--tinta)}
+.provas small{margin-top:auto;padding-top:10px;border-top:1px solid var(--borda);font-size:12px;color:var(--suave);opacity:.8;line-height:1.4}
+.provas .destaque,.provas .lacuna{background:linear-gradient(160deg,rgba(123,42,232,.28),rgba(192,38,211,.1));border-color:rgba(201,170,255,.35)}
+.fecho{margin-top:30px;font-size:19px;color:var(--suave);max-width:62ch}.fecho b{color:var(--tinta)}
+@media (max-width:900px){.provas{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.provas{grid-template-columns:1fr}}
 .caminhos.dois{grid-template-columns:repeat(2,1fr)}
 .agenda{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
 .agenda .data{display:flex;flex-direction:column;gap:6px;text-decoration:none;background:var(--cartao);border:1px solid var(--borda);border-radius:22px;padding:20px;transition:transform .15s,border-color .15s}
@@ -304,7 +315,7 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
       <a href="#historia">Quem somos</a>
       <a href="#acreditamos">No que acreditamos</a>
       <a href="#fazemos">O que fazemos</a>
-      <a href="#equipe">Equipe</a>
+      <a href="#momento">O momento da IA</a>
       <a href="#unidades">Unidades</a>
     </nav>
     <a class="btn btn-sec" href="#contato">Contato</a>
@@ -378,21 +389,21 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
   </div>
 </section>
 
-<!-- 5 · a IA na prática -->
-<section>
+<!-- 5 · o momento da IA (dados oficiais, com fonte) -->
+<section id="momento">
   <div class="ct">
-    <div class="roda">
-      <div>
-        <span class="olho rv">A IA na prática</span>
-        <h2 class="rv d1">O dono grava no celular. <span class="grad">A IA faz o resto.</span></h2>
-        <p class="lead rv d2">Um exemplo que saiu das nossas salas: uma dona de ótica gravou um vídeo simples no celular, e a máquina de IA dela editou no padrão da marca, com legenda, cortes e cores.</p>
-      </div>
-      <div class="par-ia rv d1" style="margin:0">
-        <figure><div class="cel"><video data-src="/novo-site/midia/katebruto.mp4" poster="/novo-site/midia/katebruto.jpg" muted loop playsinline preload="none" aria-label="Vídeo gravado no celular por uma dona de ótica"></video></div><figcaption>Gravou no celular</figcaption></figure>
-        <div class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h15M13 6l6 6-6 6"/></svg></div>
-        <figure><div class="cel"><video data-src="/novo-site/midia/kateedit.mp4" poster="/novo-site/midia/kateedit.jpg" muted loop playsinline preload="none" aria-label="O mesmo vídeo editado pela IA"></video></div><figcaption>A IA editou</figcaption></figure>
-      </div>
+    <span class="olho rv">O momento da IA</span>
+    <h2 class="rv d1">A IA já chegou no pequeno negócio. <span class="grad">Os números não deixam dúvida.</span></h2>
+    <p class="lead rv d2">Não é tendência pra daqui a alguns anos. As pesquisas mais recentes do Sebrae, do IBGE e das próprias empresas de IA mostram o que está acontecendo agora.</p>
+    <div class="provas">
+      <article class="rv destaque"><b>52%</b><p>dos donos de pequenos negócios no Brasil <strong>usaram IA no negócio</strong> nas duas semanas antes da entrevista. Nos Estados Unidos, a pesquisa equivalente deu 21%.</p><small>Sebrae e Meta Instituto de Pesquisa, Transformação Digital nos Pequenos Negócios 2026 (7.182 entrevistados) · U.S. Census Bureau</small></article>
+      <article class="rv d1"><b>60%</b><p>dos pequenos negócios <strong>pretendem começar ou ampliar</strong> o uso de IA no próximo semestre.</p><small>Sebrae e Meta Instituto de Pesquisa, 2026</small></article>
+      <article class="rv d2"><b>59%</b><p>das micro e pequenas empresas que usam IA usam <strong>pra marketing e divulgação</strong>. O benefício mais citado: economia de tempo.</p><small>Sebrae e FGV IBRE, 2025</small></article>
+      <article class="rv"><b>41,9%</b><p>das indústrias com 100 ou mais funcionários já usam IA. <strong>Dois anos antes eram 16,9%.</strong> Pra 90% delas, o ganho foi de eficiência.</p><small>IBGE, Pintec Semestral 2024 (divulgada em 2025)</small></article>
+      <article class="rv d1"><b>~900 mi</b><p>de pessoas <strong>usam o ChatGPT toda semana</strong> no mundo. O Brasil está entre os três países que mais usam.</p><small>OpenAI, fevereiro de 2026 · dados de tráfego por país</small></article>
+      <article class="rv d2 lacuna"><b>96% <span>× 46%</span></b><p><strong>96% das micro e pequenas empresas conhecem</strong> ferramentas de IA. Só 46% usam de verdade no negócio.</p><small>Sebrae e FGV IBRE, 2026</small></article>
     </div>
+    <p class="fecho rv">A ferramenta já está na mão de todo mundo. <b>O que separa quem usa de quem só conhece é saber aplicar no próprio negócio.</b> É isso que a escola ensina.</p>
   </div>
 </section>
 
@@ -410,21 +421,8 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
   </div>
 </section>
 
-<!-- 7 · equipe -->
-<section id="equipe">
-  <div class="ct">
-    <span class="olho rv">Equipe</span>
-    <h2 class="rv d1">Quem está do teu lado.</h2>
-    <div class="socios tres">
-      <div class="socio rv"><i>G</i><div><b>Guto Wickert</b><span>Fundador. Conduz a Imersão e a implantação individual do Deu Venda.</span></div></div>
-      <div class="socio rv d1"><i>N</i><div><b>Luis Fernando (Nando)</b><span>Sócio. Implanta o teunegócio OS nos negócios.</span></div></div>
-      <div class="socio rv d2"><i>R</i><div><b>Ricardo (Rick)</b><span>Sócio. Cuida do comercial e de quem chega até a escola.</span></div></div>
-    </div>
-  </div>
-</section>
-
 <!-- 8 · unidades -->
-<section class="faz-sec" id="unidades">
+<section id="unidades">
   <div class="ct">
     <span class="olho rv">Unidades</span>
     <h2 class="rv d1">Presencial, <span class="grad">perto do teu negócio.</span></h2>
