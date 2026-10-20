@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Imersão Deu Venda · projetor</title>
+<link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,300..800&display=swap">
+<style>
+/* Imersão Deu Venda (20/10/2026): a versão do passo a passo pra mostrar no projetor da sala, um passo por tela.
+   O conteúdo sai do manual (index.html desta pasta). Palco fixo de 1920x1080 escalado pra caber em qualquer tela.
+   Teclas: → / espaço / clique avançam · ← volta · F tela cheia · I índice · #numero na URL abre direto naquela tela. */
+:root{--bg:#0f0c17;--surface:#171320;--surface-2:#1f1a2b;--border:#261f36;--border-strong:#372e4c;--text:#f4f1fb;--text-2:#d6d0e6;--muted:#a39cb8;
+--accent:#8b5cf6;--accent-soft:#c4b2ff;--accent-bg:#2a1b4d;--green:#34d399;--green-bg:#0b2e24;--amber:#fbbf24;--amber-bg:#3a2a0a;--blue:#7cb6ff;--blue-bg:#14243f;
+--grad:linear-gradient(135deg,#7c3aed,#c026d3);color-scheme:dark}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font:500 16px/1.4 Manrope,system-ui,sans-serif;-webkit-font-smoothing:antialiased;user-select:none}
+.palco{position:absolute;left:50%;top:50%;width:1920px;height:1080px;transform-origin:center center;overflow:hidden;
+  background:radial-gradient(48% 60% at 0% 0%,rgba(124,58,237,.22),transparent 70%),radial-gradient(40% 55% at 100% 100%,rgba(192,38,211,.16),transparent 70%),var(--bg)}
+h1,h2,h3,.num,.capa-t{font-family:'Bricolage Grotesque',Manrope,sans-serif;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.025em;text-wrap:balance}
+.g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+b{font-weight:800;color:#fff}
+code{font:700 .92em ui-monospace,Consolas,monospace;color:var(--accent-soft);background:var(--surface-2);padding:2px 10px;border-radius:8px;border:1px solid var(--border-strong);white-space:nowrap}
+
+/* topo */
+.topo{position:absolute;top:0;left:0;right:0;height:100px;display:flex;align-items:center;justify-content:space-between;padding:0 64px;z-index:2}
+.topo img{height:50px;display:block}
+.onde{text-align:right;font:700 27px Manrope;color:var(--muted);line-height:1.2}
+.onde strong{color:var(--accent-soft);font-weight:800}
+.onde small{display:block;font:700 21px Manrope;color:var(--muted);opacity:.85;margin-top:3px}
+.barra{position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--surface-2);z-index:2}
+.barra i{display:block;height:100%;background:var(--grad);transition:width .25s}
+
+/* área do conteúdo */
+.tela{position:absolute;top:112px;left:72px;right:72px;bottom:52px;display:grid}
+.olho{font:800 26px Manrope;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-soft)}
+
+/* passo só com texto */
+.t-texto{grid-template-columns:270px 1fr;gap:40px;align-content:center}
+.num{font-weight:800;font-size:300px;line-height:.78;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;text-align:center;padding-top:10px}
+.t-texto .num.dois{font-size:220px}
+.corpo{display:grid;gap:30px;align-content:center;min-width:0}
+.corpo h2{font-weight:800;font-size:86px;line-height:1.02}
+.linhas{list-style:none;display:grid;gap:18px}
+.linhas li{position:relative;padding-left:42px;font-size:40px;line-height:1.28;color:var(--text-2);font-weight:600}
+.linhas li:before{content:"";position:absolute;left:0;top:.42em;width:20px;height:20px;border-radius:6px;background:var(--grad)}
+
+/* passo com print */
+.t-larga{grid-template-rows:auto minmax(0,1fr);gap:22px}
+.t-larga .cab{display:grid;grid-template-columns:170px 1fr;gap:30px;align-items:start}
+.t-larga .num{font-size:190px;padding-top:4px}
+.t-larga .num.dois{font-size:140px}
+.t-larga h2{font-weight:800;font-size:66px;line-height:1.04}
+.t-larga .corpo{gap:14px;align-content:start}
+.t-larga .linhas{gap:8px}
+.t-larga .linhas li{font-size:33px;padding-left:36px}
+.t-larga .linhas li:before{width:16px;height:16px}
+.t-lado{grid-template-columns:560px minmax(0,1fr);gap:40px}
+.t-lado .esq{display:grid;gap:24px;align-content:center;min-width:0}
+.t-lado .num{font-size:170px;text-align:left;padding-top:0}
+.t-lado .num.dois{font-size:150px}
+.t-lado h2{font-weight:800;font-size:64px;line-height:1.04}
+.t-lado .linhas{gap:14px}
+.t-lado .linhas li{font-size:34px;padding-left:36px}
+.t-lado .linhas li:before{width:16px;height:16px}
+figure{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;min-height:0;min-width:0;height:100%}
+figure img{display:block;max-width:100%;max-height:calc(100% - 56px);border-radius:16px;border:2px solid var(--border-strong);background:#fff;box-shadow:0 24px 60px rgba(0,0,0,.55),0 0 0 6px rgba(124,58,237,.18);object-fit:contain}
+figure img.zoom{width:1500px;max-height:none}
+figcaption{font:700 28px Manrope;color:var(--accent-soft);text-align:center;max-width:100%}
+
+/* pedido pra máquina e texto pra copiar */
+.pede{display:grid;gap:14px}
+.pede div{background:var(--accent-bg);border:3px solid var(--accent);border-radius:22px;padding:18px 30px 22px;box-shadow:0 0 0 8px rgba(139,92,246,.12)}
+.pede span{display:block;font:800 22px Manrope;letter-spacing:.14em;text-transform:uppercase;color:var(--accent-soft);margin-bottom:6px}
+.pede q{display:block;quotes:none;font:800 50px/1.15 Manrope;color:#fff}
+.pede q.m{font-size:40px}.pede q.p{font-size:34px}
+.pede div.esc{background:#120d1d;border-color:var(--border-strong);box-shadow:none}
+.pede div.esc q{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+.t-lado .pede q{font-size:38px}.t-lado .pede q.m{font-size:32px}.t-lado .pede q.p{font-size:28px}
+.t-larga .pede div{padding:12px 24px 14px}.t-larga .pede q{font-size:34px}
+
+/* avisos */
+.aviso{border-left:10px solid var(--amber);background:var(--amber-bg);border-radius:0 20px 20px 0;padding:20px 30px;font-size:34px;line-height:1.3;font-weight:600;color:var(--text)}
+.aviso b{color:var(--amber)}
+.aviso.d{border-color:var(--blue);background:var(--blue-bg)}.aviso.d b{color:var(--blue)}
+.t-lado .aviso,.t-larga .aviso{font-size:29px;padding:16px 24px}
+
+/* cartões numerados */
+.cartoes{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(0,1fr))}
+.cartoes div{background:var(--surface);border:2px solid var(--border-strong);border-radius:22px;padding:26px 24px;display:grid;gap:12px;align-content:start}
+.cartoes i{font:800 64px 'Bricolage Grotesque';font-style:normal;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.cartoes p{font-size:38px;line-height:1.22;font-weight:700;color:var(--text)}
+.cartoes p small{display:block;font-size:30px;font-weight:600;color:var(--muted);margin-top:8px}
+
+/* tabela */
+table{border-collapse:separate;border-spacing:0;width:100%;font-size:32px}
+th{font:800 21px Manrope;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:0 22px 12px}
+td{padding:14px 22px;border-top:2px solid var(--border-strong);color:var(--text-2);font-weight:600;vertical-align:top;line-height:1.25}
+td:first-child{color:#fff;font-weight:800}
+table.peq{font-size:27px}table.peq td{padding:10px 20px}
+
+/* colunas (lista de métricas) */
+.metricas{list-style:none;counter-reset:m;display:grid;grid-template-columns:repeat(4,1fr);gap:14px 22px}
+.metricas li{counter-increment:m;font-size:30px;font-weight:700;background:var(--surface);border:2px solid var(--border-strong);border-radius:16px;padding:14px 18px;display:flex;gap:14px;align-items:center}
+.metricas li:before{content:counter(m);font:800 26px Manrope;color:var(--accent-soft);min-width:34px}
+.metricas li.f{border-color:var(--accent);background:var(--accent-bg)}
+
+/* abertura e capa do encontro */
+.t-capa{align-content:center;gap:34px;grid-template-columns:1fr}
+.capa-t{font-weight:800;font-size:150px;line-height:.95}
+.t-capa .sub{font-size:42px;line-height:1.3;color:var(--text-2);font-weight:600;max-width:1500px}
+.sai{display:grid;gap:18px;padding:30px 34px;border-radius:26px;background:var(--surface);border:2px dashed var(--border-strong)}
+.sai>b{font:800 24px Manrope;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
+.sai ul{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:14px 40px}
+.sai li{position:relative;padding-left:46px;font-size:33px;line-height:1.25;font-weight:600;color:var(--text)}
+.sai li:before{content:"✓";position:absolute;left:0;top:0;color:var(--green);font-weight:800}
+.t-abre{align-content:center;justify-items:start;gap:40px}
+.t-abre img{height:120px}
+.t-abre h1{font-weight:800;font-size:132px;line-height:.98;max-width:1600px}
+.t-abre .sub{font-size:42px;color:var(--text-2);font-weight:600}
+.teclas{display:flex;gap:18px;flex-wrap:wrap;font-size:26px;color:var(--muted);font-weight:700}
+.teclas kbd{font:800 24px Manrope;color:#fff;background:var(--surface-2);border:2px solid var(--border-strong);border-bottom-width:5px;border-radius:10px;padding:4px 14px;margin-right:8px}
+
+/* pausa */
+.t-pausa{grid-template-columns:1fr 1fr;gap:70px;align-items:center}
+.t-pausa .capa-t{font-size:170px}
+.t-pausa .sub{font-size:40px;line-height:1.3;color:var(--text-2);font-weight:600;margin-top:26px}
+.pronto{display:grid;gap:16px;padding:34px 36px;border-radius:26px;background:var(--surface);border:2px solid var(--border-strong)}
+.pronto>b{font:800 24px Manrope;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
+.pronto ul{list-style:none;display:grid;gap:12px}
+.pronto li{position:relative;padding-left:48px;font-size:34px;line-height:1.25;font-weight:600}
+.pronto li:before{content:"✓";position:absolute;left:0;color:var(--green);font-weight:800}
+.chips{display:flex;flex-wrap:wrap;gap:14px;margin-top:30px}
+.chips span{font:800 34px Manrope;color:#fff;background:var(--accent-bg);border:3px solid var(--accent);border-radius:999px;padding:10px 28px}
+
+/* índice */
+.indice{position:fixed;inset:0;z-index:10;background:rgba(10,7,18,.96);display:none;overflow:auto;padding:36px 40px 60px}
+.indice.on{display:block}
+.indice .cab-i{display:flex;justify-content:space-between;align-items:center;margin-bottom:26px;gap:20px}
+.indice h2{font-family:'Bricolage Grotesque',Manrope,sans-serif;font-weight:800;font-size:clamp(26px,3vw,44px)}
+.indice .grade-i{display:grid;grid-template-columns:repeat(auto-fill,minmax(205px,1fr));gap:18px}
+.indice section{background:var(--surface);border:1px solid var(--border-strong);border-radius:18px;padding:12px;display:grid;gap:2px;align-content:start}
+.indice button{all:unset;cursor:pointer;display:flex;gap:10px;align-items:baseline;padding:5px 8px;border-radius:10px;font:600 clamp(13px,.92vw,17px)/1.25 Manrope;color:var(--text-2)}
+.indice button:hover,.indice button:focus-visible{background:var(--accent-bg);color:#fff;outline:none}
+.indice button.e{font:800 clamp(16px,1.3vw,21px) Manrope;color:#fff}
+.indice button.e small{font:800 12px Manrope;letter-spacing:.1em;text-transform:uppercase;color:var(--accent-soft)}
+.indice button.e{flex-direction:column;gap:2px}
+.indice button i{font-style:normal;font-weight:800;color:var(--accent-soft);min-width:26px}
+.indice button.pz{color:var(--green)}
+.indice button.agora{background:var(--accent-bg);color:#fff;box-shadow:inset 3px 0 0 var(--accent)}
+.fechar{all:unset;cursor:pointer;font:700 18px Manrope;color:#fff;background:var(--surface-2);border:1px solid var(--border-strong);border-radius:12px;padding:10px 18px}
+
+/* botões na tela (somem sozinhos) */
+.ctrl{position:fixed;right:18px;bottom:22px;z-index:5;display:flex;gap:8px;opacity:0;transition:opacity .3s}
+body.mexeu .ctrl{opacity:1}
+.ctrl button{cursor:pointer;font:700 15px Manrope;color:#fff;background:rgba(31,26,43,.92);border:1px solid var(--border-strong);border-radius:10px;padding:9px 14px}
+.ctrl button:hover{border-color:var(--accent)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head><body>
+<div class="palco" id="palco">
+  <div class="topo"><img src="/imersao/midia/logo.webp" alt="Carreira no Digital"><div class="onde" id="onde"></div></div>
+  <div class="tela" id="tela"></div>
+  <div class="barra"><i id="barra"></i></div>
+</div>
+<div class="ctrl" id="ctrl"><button type="button" data-a="ant" aria-label="Tela anterior">←</button><button type="button" data-a="ind">Índice (I)</button><button type="button" data-a="tc">Tela cheia (F)</button><button type="button" data-a="prox" aria-label="Próxima tela">→</button></div>
+<div class="indice" id="indice" role="dialog" aria-label="Índice"><div class="cab-i"><h2>Pular pra</h2><button type="button" class="fechar" id="fechar">Fechar (Esc)</button></div><div class="grade-i" id="grade"></div></div>
+<script>
+(function(){
+var P='/imersao/aluno/prints/'
+// proporção dos prints (largura / altura): os bem largos vão embaixo do título; os 16:9 vão do lado
+var LARGO=function(f){return !/^(M0[2-9]|M1|M2|L)/.test(f)||/^(M02b|M03b|M03c|M04b)/.test(f)}
+
+/* ===== O conteúdo (fiel ao manual index.html). Cada etapa tem a capa e os passos; cada passo pode ter várias telas.
+   Campos de uma tela: h título · l linhas · img print · cap legenda · p pedidos pra máquina · x texto pra digitar · a aviso [tipo,negrito,texto] · c cartões · tab tabela · met métricas ===== */
+var ETAPAS=[
+{id:'abre',rot:'Imersão Deu Venda',curto:'Abertura',telas:[
+  {tipo:'abre'},
+  {h:'Travou? Pergunta pra tua máquina',sem:1,l:['Ela sabe onde tu parou. Pergunta pra ela antes de chamar o professor.','Ela pedir um print da tua tela é normal: é assim que ela te mostra onde clicar.'],p:['e agora?','o que eu já fiz?','não entendi o que é isso, me explica com o meu negócio','deu erro'],tit:'Travou? Pergunta pra máquina'},
+  {h:'Ela respondeu como um Claude qualquer?',sem:1,l:['Tu abriste a conversa na aba Chat ou fora da pasta.','Vai na aba <b>Code</b> → <b>+ Nova sessão</b> → pasta <b>DEU-VENDA</b>.'],p:['onde eu parei?'],tit:'Resposta de um Claude qualquer'}
+]},
+
+{id:'antes',rot:'Antes',nome:'A preparação',olho:'Antes do primeiro encontro',
+ sub:'O que tu precisa ter em mãos no dia. Portfólio, conta de anúncios, cartão e editor de vídeo a gente liga junto no encontro 1.',
+ saiT:'Chega no encontro 1 com',sai:['o aplicativo do Claude instalado, no plano Pro','o e-mail e a senha do teu Facebook e do Instagram do negócio','o WhatsApp Business no celular, no número que atende os clientes','logo, fotos e preços numa pasta'],
+ passos:[
+  {t:'O computador',telas:[{l:['<b>Notebook com Windows ou Mac</b>, com o carregador.','<b>Google Chrome</b> instalado: a máquina usa ele pra desenhar as artes.','Uns <b>10 GB livres</b> no disco.']}]},
+  {t:'O Claude no plano Pro',telas:[{l:['Cria a tua conta em <b>claude.ai</b>.','Assina o plano <b>Pro</b>: a aba <b>Code</b>, onde a máquina roda, só existe do Pro pra cima.','Instala o aplicativo em <b>claude.com/download</b> e confere as abas <b>Chat</b> e <b>Code</b>.'],a:['t','A conta é tua, não da escola.','O que a máquina aprender do teu negócio fica contigo.']}]},
+  {t:'O teu Facebook, com e-mail e senha',telas:[{l:['Confere que tu sabe o <b>e-mail (ou celular) e a senha</b> do teu Facebook pessoal.','Sai da conta no computador e entra de novo, pra ter certeza.','Tem código no celular? Leva o celular <b>carregado</b>.'],a:['d','Não precisa criar portfólio, conta de anúncios nem cadastrar cartão.','Isso a gente faz junto no encontro 1.']}]},
+  {t:'O Instagram do negócio',telas:[{l:['Confere que tu sabe o <b>usuário e a senha</b> e que consegue entrar.','Ainda não é conta profissional? A gente muda junto na aula.','Não tem Instagram do negócio? Cria um com o nome do negócio. Pode estar vazio.']}]},
+  {t:'O WhatsApp Business no celular',telas:[{l:['Tem que ser o aplicativo <b>WhatsApp Business</b> (o ícone com um B), no número que atende os clientes.','Usa o WhatsApp comum? Baixa o Business e entra com o <b>mesmo número</b>. Traz as conversas: nada se perde.'],a:['t','Quem responde:','tu ou alguém do time, em até 10 minutos no horário comercial.']}]},
+  {t:'A pasta Meu negócio',telas:[{l:['Uma pasta <b>Meu negócio</b> na Área de Trabalho, com:','<b>O logo</b> (PNG com fundo transparente ou SVG) e <b>de 10 a 20 fotos reais</b>.','<b>Os preços</b> do que tu vende e <b>2 ou 3 prints</b> de perfis ou sites que tu acha bonitos.'],a:['d','Sem preço não tem oferta, e sem foto as artes saem genéricas.','']}]},
+  {pausa:1,pronto:['o computador com o Chrome','o Claude no plano Pro','Facebook e Instagram com senha','o WhatsApp Business','a pasta Meu negócio']}
+ ]},
+
+{id:'e1',rot:'Encontro 1',nome:'Estratégia',olho:'Encontro 1',
+ sub:'Hoje a máquina aprende o teu negócio. Tu fala, ela organiza. Responde do jeito que tu explicaria pra um cliente.',
+ saiT:'Tu sai com',sai:['a máquina instalada e tudo ligado: portfólio, Instagram, WhatsApp, conta de anúncios com cartão, conector e editor de vídeo','o teu negócio, o teu mercado e a tua oferta escritos','o texto do anúncio e as respostas pras perguntas que mais chegam','2 ou 3 roteiros de vídeo, prontos pra gravar hoje à noite'],
+ passos:[
+  {t:'Instalar a máquina',telas:[
+    {h:'Baixar a pasta DEU-VENDA',l:['Abre a <b>pasta DEU-VENDA</b> no Google Drive (o link está no teu passo a passo).','Clica em <b>Fazer download de tudo</b>, no alto à direita.','O Drive junta tudo num arquivo <b>.zip</b>.']},
+    {h:'Extrair na Área de Trabalho',l:['<b>Windows:</b> botão direito no zip → <b>Extrair tudo</b> → Área de Trabalho.','<b>Mac:</b> dois cliques no zip e arrasta a pasta pra Mesa.','Confere: uma pasta <b>DEU-VENDA</b> com o <b>instalar</b> dentro.'],a:['t','Não roda nada de dentro do zip:','não funciona.']},
+    {h:'Rodar o instalador',l:['<b>Fecha o Claude</b> por inteiro (no Mac, Cmd + Q).','<b>Windows:</b> dois cliques no <b>instalar.bat</b>. Aviso azul? <b>Mais informações → Executar assim mesmo</b>. Pede permissão? <b>Sim</b>.','<b>Mac:</b> no Terminal, digita <code>bash</code> e um espaço, arrasta o <b>instalar.command</b> pra janela e Enter.'],a:['d','Espera aparecer PRONTO.','No Mac, a senha é a de entrar no computador (ela não aparece enquanto tu digita).']},
+    {h:'Abrir a pasta no Claude',l:['Claude → aba <b>Code</b> → <b>+ Nova sessão</b>.','No ambiente, <b>Local</b>.','Na pasta do projeto, a <b>DEU-VENDA</b> (a própria pasta, não a Área de Trabalho).','O Mac perguntou se o Claude pode acessar a Mesa? <b>Permitir</b>.']},
+    {h:'Fotos e logo pra dentro',l:['As fotos da pasta <b>Meu negócio</b> vão pra <code>DEU-VENDA/fotos</code>.','O logo vai pra <code>DEU-VENDA/marca</code>.']},
+    {h:'O primeiro teste',p:['o que tu já sabe do meu negócio?'],l:['O certo: ela diz que <b>ainda não sabe nada</b> e que vai começar pelo teu negócio.','Respondeu como um Claude qualquer? Pasta errada: nova sessão escolhendo a <b>DEU-VENDA</b>.']},
+    {h:'Quando ela pedir licença',l:['Pra montar arte, vídeo ou ler os teus arquivos: <b>Sim</b> (ou "Sim, e não perguntar de novo").','Pra criar ou mudar campanha: só depois de ler o resumo e dizer <b>"pode subir"</b>.','Na dúvida, <b>Não</b>: nada quebra.']},
+    {h:'Uma sessão nova a cada etapa',l:['<b>+ Nova sessão</b>, sempre na pasta <b>DEU-VENDA</b>.','Conversa muito comprida fica lenta e gasta o limite do teu plano.','Nada se perde: tudo fica salvo na pasta, e ela começa lendo de lá.']}
+  ]},
+  {t:'O portfólio da empresa na Meta',telas:[
+    {h:'Entra no Business Suite',img:'A1-business-suite.jpg',cap:'A entrada do Business Suite.',l:['Entra em <b>business.facebook.com</b> com o teu Facebook pessoal.','É a "casa" do negócio: página, Instagram, WhatsApp e conta de anúncios juntos.']},
+    {h:'O seletor do portfólio',img:'B1-mouse-seletor-portfolio.jpg',cap:'O seletor do portfólio, no alto à esquerda.',l:['Já aparece o nome do teu negócio aqui? Tu já tem portfólio: pula pra conferir o acesso.']},
+    {h:'Criar o portfólio',img:'B2-lista-portfolios-criar.jpg',cap:'Lá embaixo da lista: Criar um portfólio empresarial.',l:['Não tem? Clica no seletor e em <b>Criar um portfólio empresarial</b>.']},
+    {h:'A janela de criação',img:'B3-janela-criar-portfolio.jpg',cap:'A janela de criação.',l:['Nome do negócio, o teu nome e o e-mail.']},
+    {h:'Configurações',img:'A2-mouse-configuracoes.jpg',cap:'Configurações, na engrenagem da barra da esquerda.',l:['Agora confere que tu tem <b>acesso total</b>. Clica na engrenagem.']},
+    {h:'Pessoas',img:'A3-configuracoes.jpg',cap:'Pode abrir direto em Pessoas. É pra lá mesmo.',l:['Configurações pode abrir direto em <b>Pessoas</b>. Tudo bem.']},
+    {h:'Abriu em outro lugar?',img:'C1-mouse-pessoas.jpg',cap:'Usuários → Pessoas.',l:['Abriu em Informações da empresa? Clica em <b>Usuários → Pessoas</b>.']},
+    {h:'A tua linha',img:'C2-lista-pessoas.jpg',cap:'Pessoas: a tua linha tem que estar aqui.',l:['Procura o teu nome na lista.']},
+    {h:'Detalhes',img:'C3-mouse-detalhes-voce.jpg',cap:'Detalhes, no fim da tua linha.',l:['Clica em <b>Detalhes</b>, no fim da tua linha.']},
+    {h:'Acesso total',img:'C4-detalhes-acesso-total.jpg',cap:'Em Detalhes, tem que dizer Acesso total.',l:['Tem que dizer <b>Acesso total</b>.']}
+  ]},
+  {t:'Página, Instagram e WhatsApp no portfólio',telas:[
+    {h:'Contas → Páginas',img:'F1-mouse-paginas.jpg',cap:'Contas → Páginas.',l:['Em Configurações → Contas, clica em <b>Páginas</b>.']},
+    {h:'+ Adicionar',img:'F2-mouse-adicionar.jpg',cap:'+ Adicionar, no alto à direita.',l:['<b>+ Adicionar</b>, no alto à direita.']},
+    {h:'Escolhe a tua página',img:'F3-opcoes-adicionar-pagina.jpg',cap:'Adicionar a que já existe, pedir acesso ou criar nova.',l:['Escolhe a tua página do Facebook (ou cria uma).']},
+    {h:'Perfis do Instagram',img:'G1-mouse-perfis-instagram.jpg',cap:'Contas → Perfis do Instagram.',l:['Agora <b>Perfis do Instagram</b>.']},
+    {h:'+ Adicionar',img:'G2-mouse-adicionar.jpg',cap:'+ Adicionar.',l:['<b>+ Adicionar</b>.']},
+    {h:'Entra com o Instagram',img:'G3-janela-adicionar-instagram.jpg',cap:'A janela pra entrar com o Instagram (pode vir em inglês).',l:['Entra com o Instagram do negócio.','Precisa ser conta profissional: no Instagram, Configurações → Tipo de conta e ferramentas → <b>Mudar para conta profissional</b>.']},
+    {h:'Contas do WhatsApp',img:'H1-mouse-contas-whatsapp.jpg',cap:'Contas → Contas do WhatsApp.',l:['Agora <b>Contas do WhatsApp</b>.']},
+    {h:'+ Adicionar',img:'H2-mouse-adicionar.jpg',cap:'+ Adicionar.',l:['<b>+ Adicionar</b>.']},
+    {h:'Liga o teu número',img:'H3-opcoes-adicionar-whatsapp.jpg',cap:'Vincular o número que tu já usa.',l:['Liga o número do <b>WhatsApp Business</b> que vai receber os clientes.','Alguém responde nele em até 10 minutos no horário comercial.']}
+  ]},
+  {t:'A conta de anúncios',telas:[
+    {h:'Contas de anúncios',img:'D1-mouse-contas-de-anuncios.jpg',cap:'Contas → Contas de anúncios.',l:['É onde a campanha vai rodar.','Já tem uma? Confere se ela é tua.']},
+    {h:'+ Adicionar',img:'D2-mouse-adicionar.jpg',cap:'+ Adicionar, no alto à direita.',l:['Não tem: <b>+ Adicionar</b>.']},
+    {h:'As opções',img:'D3-opcoes-adicionar.jpg',cap:'As opções de + Adicionar.',l:['Abre a lista de opções.']},
+    {h:'Criar uma nova conta',img:'D4a-mouse-criar-nova-conta.jpg',cap:'Criar uma nova conta de anúncios.',l:['<b>Criar uma nova conta de anúncios</b>.']},
+    {h:'Fuso São Paulo e moeda BRL',img:'D4-formulario-nova-conta.jpg',cap:'Aqui: fuso São Paulo e moeda BRL, antes de avançar.',l:['Fuso: <b>(GMT-03:00) São Paulo</b>. Moeda: <b>BRL, Real brasileiro</b>.'],a:['t','Vem em Los Angeles e dólar,','e depois não dá pra mudar.']}
+  ]},
+  {t:'A forma de pagamento',telas:[
+    {h:'Sem cartão, não publica',img:'PG1-sem-forma-de-pagamento.jpg',cap:'O Gerenciador de Anúncios avisa embaixo: Adicione a forma de pagamento.',l:['Sem forma de pagamento, a campanha fica pronta e <b>não publica</b>.','Faz hoje: a Meta pode levar um tempo pra aprovar.']},
+    {h:'Cobrança e pagamentos',img:'E1-mouse-cobranca-e-pagamentos.jpg',cap:'No Business Suite: Configurações → Cobrança e pagamentos.',l:['Configurações → <b>Cobrança e pagamentos</b> (abre numa aba nova).']},
+    {h:'Cuidado com o cifrão',img:'E1b-cifrao-e-monetizacao.jpg',cap:'Cuidado: o $ é Monetização.',a:['t','O $ da barra da esquerda é Monetização,','não é pagamento.']},
+    {h:'A tela de cobrança',img:'E2-cobranca-e-pagamentos.jpg',cap:'A tela de Cobrança e pagamentos.',l:['É esta a tela certa.']},
+    {h:'Formas de pagamento',img:'E3-mouse-formas-de-pagamento.jpg',cap:'Formas de pagamento.',l:['Clica em <b>Formas de pagamento</b>.']},
+    {h:'O botão Adicionar',img:'E4-formas-de-pagamento.jpg',cap:'O botão Adicionar.',l:['<b>Adicionar</b>.']},
+    {h:'O teu cartão',img:'E5-mouse-adicionar-pagamento.jpg',cap:'Adiciona o cartão.',l:['Põe o teu cartão.']},
+    {h:'O aviso amarelo',img:'PG2-informacoes-em-falta.jpg',cap:'Ao criar campanha sem cartão: "Há informações em falta".',l:['Se um dia aparecer <b>"Há informações em falta"</b>, é o cartão que falta.']}
+  ]},
+  {t:'Ligar a conta de anúncios na máquina',telas:[
+    {h:'Conectar a conta da Meta',p:['quero conectar a minha conta da Meta'],l:['É isso que deixa a máquina olhar os anúncios do teu ramo e montar a tua campanha.','Ela te passa o caminho, um passo por vez.']},
+    {h:'O caminho',l:['Menu do Claude: <b>Personalizar → Conectores</b> (<i>Customize → Connectors</i>) → <b>+ Adicionar</b> → <b>Adicionar conector personalizado</b>.','Entra com o teu Facebook e escolhe a conta de anúncios do negócio.'],x:[['Nome','Meta Ads'],['Endereço','https://mcp.facebook.com/ads']]},
+    {h:'Se der problema',a2:[['t','Erro de permissão?','Tu não é administrador da conta de anúncios. Volta no passo 4 ou pede o acesso pra quem criou.'],['d','Conector indisponível?','A Meta está liberando aos poucos. Tu segue sem ele hoje, e no encontro 2 sobe a campanha na mão.']]}
+  ]},
+  {t:'A chave do editor de vídeo',telas:[
+    {l:['O editor usa uma chave da <b>Deepgram</b> pra escrever as legendas.','Cria a conta em <b>console.deepgram.com/signup</b>.','A chave vai no arquivo <code>DEU-VENDA/EDITOR-DE-VIDEO/.env</code>. O professor mostra onde.'],a:['t','A chave é digitada no teu computador.','Ela não vai pra conversa com a máquina nem pro WhatsApp.']}
+  ]},
+  {pausa:1,titulo:'Tudo ligado',pronto:['a máquina instalada','o portfólio da empresa','página, Instagram e WhatsApp','a conta de anúncios e o cartão','o conector da Meta','a chave do editor de vídeo'],seg:'Agora a máquina aprende o teu negócio.'},
+  {t:'O teu negócio',telas:[
+    {h:'Começa a conversa',p:['vamos começar pelo meu negócio'],l:['Prefere falar? <b>Windows + H</b>; no Mac, a tecla <b>Fn</b> duas vezes.','Deixa o <b>web.whatsapp.com</b> aberto: copia de lá as tuas mensagens de verdade.','Ela propôs algo que não é a tua realidade? Corrige. É assim que ela aprende.']},
+    {h:'O que ela vai te pedir',l:['A última venda boa que tu fez, contada como foi.','O que tu vende, o preço, o mínimo e o máximo. E o que tu não faz.','Uma mensagem tua de verdade pra cliente, copiada do WhatsApp.','As perguntas que mais te cansam, e se tem prova de cliente satisfeito.'],a:['d','Sai em','<code>negocio/o-meu-negocio.md</code>']}
+  ]},
+  {t:'O teu mercado',telas:[
+    {h:'Olhar os concorrentes',p:['agora olha o meu mercado'],l:['Ela olha os anúncios do teu ramo: o que todo mundo diz e o que ninguém diz.','Esse espaço vazio costuma ser a tua oferta.','Sem o conector: tu busca na <b>Biblioteca de Anúncios</b>, diz quantos apareceram e manda 3 prints.']},
+    {h:'Como tirar print',l:['<b>Windows:</b> Windows + Shift + S, marca a tela e, na conversa, Ctrl + V.','<b>Mac:</b> Cmd + Ctrl + Shift + 3 e, na conversa, Cmd + V.'],a:['d','Sai em','<code>negocio/o-meu-mercado.md</code>']}
+  ]},
+  {t:'A tua oferta',telas:[
+    {h:'O passo mais importante',p:['vamos fechar a minha oferta'],l:['Se tu só pudesse vender uma coisa nos próximos 30 dias, qual seria?','Quantos clientes novos por semana tu dá conta de atender bem?','Quanto tempo entre conhecer e pagar? E o cliente volta?']},
+    {h:'Tu escolhe, ela escreve',l:['Ela te mostra <b>3 caminhos</b> e <b>tu escolhe</b>.','Depois a oferta vira a página, o texto do anúncio e as respostas do WhatsApp.'],p:['escreve a minha oferta como a página','faz as respostas pro WhatsApp']},
+    {h:'Lê com calma',l:['Saem em <code>negocio/a-pagina-….md</code> e <code>negocio/o-que-responder.md</code>.','Corrige o que não é o teu jeito de falar.'],a:['t','Quem decide é tu:','o preço, o que tu promete e o que tu não promete. Não consegue entregar? Diz não.']}
+  ]},
+  {t:'O endereço do site',telas:[
+    {l:['No encontro 3 o site vai pro ar. O domínio e a hospedagem se compram <b>hoje</b>: levam até 2 dias pra ficar de pé.','Já tem site ou domínio? Anota onde está e quem tem a senha.','Não tem: <b>HostGator</b>, plano compartilhado mais barato. Paga com <b>cartão</b> e desmarca os extras.','<b>.com.br</b> pede CPF ou CNPJ. Guarda o e-mail de "dados de acesso" (olha no spam).']}
+  ]},
+  {t:'Os roteiros dos vídeos',telas:[
+    {h:'As ideias e os roteiros',p:['me dá 20 ideias de vídeo pra anúncio','faz o roteiro dessas 3'],l:['Escolhe 2 ou 3. Cada roteiro: gancho, dor, produto, prova e chamada.','Não gosta de aparecer? Diz isso: tua voz por cima e as tuas mãos trabalhando.']},
+    {h:'Como gravar',p:['como eu gravo?'],l:['Os roteiros ficam em <code>negocio/os-meus-videos.md</code>.','Pra levar pro celular: copia o texto e manda pra ti mesmo no WhatsApp.']},
+    {h:'Antes de ir embora',p:['o que eu já fiz?'],l:['Ela tem que listar: o negócio, o mercado, a oferta, a página, as respostas e os roteiros.'],a:['t','Ainda não comprou o domínio?','Compra hoje: ele leva até 2 dias pra funcionar.']}
+  ]},
+  {pausa:1,titulo:'Fim do encontro 1',pronto:['o teu negócio escrito','o teu mercado','a tua oferta e a página','as respostas pro WhatsApp','2 ou 3 roteiros de vídeo'],seg:'Hoje à noite: gravar os vídeos.'}
+ ]},
+
+{id:'noite',rot:'Noite da gravação',nome:'A noite da gravação',olho:'Entre o encontro 1 e o 2',
+ sub:'A única tarefa fora do encontro, e é curta. Tu grava; amanhã a máquina corta as pausas, põe legenda e a tua marca.',
+ saiT:'Chega no encontro 2 com',sai:['2 ou 3 vídeos gravados no celular, um por roteiro'],
+ passos:[
+  {t:'As 5 regras da gravação',telas:[
+    {h:'As 5 regras da gravação',c:[['Celular em pé','na vertical'],['Uma ideia por vídeo','um roteiro, um vídeo'],['Pode errar','respira e fala a frase inteira de novo'],['Luz de frente','virado pra janela ou pra lâmpada'],['Olha pra lente','não pra tua imagem na tela']]},
+    {h:'Sem decorar',l:['Grava parte por parte: o gancho, para, a dor, para…','Lugar silencioso, sem ventilador ligado.'],a:['d','Voz por cima (tu não aparece):','grava as cenas sem falar e depois a tua voz lendo o roteiro, também com a câmera do celular. Áudio de gravador ou recado de WhatsApp não serve.']}
+  ]},
+  {t:'Gravar e guardar',telas:[
+    {l:['Grava os 2 ou 3 vídeos.','Assiste uma vez <b>com som</b>: dá pra ouvir bem?','Amanhã passa pro computador: pelo cabo, pelo Google Drive ou pelo WhatsApp <b>como Documento</b> (no clipe, "Documento", não "Galeria").'],a:['t','Mandado como vídeo pelo WhatsApp ou baixado do Instagram,','pode chegar sem som. Se a máquina disser "SEM SOM", passa de novo do jeito certo.']}
+  ]},
+  {pausa:1,titulo:'Dúvidas sobre a gravação?',pronto:['celular em pé, luz de frente','uma ideia por vídeo','assiste com som antes de trazer','traz como Documento, não como vídeo']}
+ ]},
+
+{id:'e2',rot:'Encontro 2',nome:'Arte, vídeo e campanha',olho:'Encontro 2',
+ sub:'Hoje tudo vira peça e vai pro ar. Primeiro a marca; depois o vídeo edita sozinho enquanto tu faz as artes.',
+ saiT:'Tu sai com',sai:['o teu padrão de marca guardado na máquina','as artes prontas, em cima das tuas fotos','os vídeos editados, com legenda e a tua marca','a campanha no Facebook e no Instagram no ar (ou em análise da Meta)'],
+ passos:[
+  {t:'O teu padrão de marca',telas:[
+    {p:['vamos fazer o padrão da minha marca'],l:['Ela lê o teu logo, as tuas fotos e os prints que tu acha bonitos.','Propõe <b>3 paletas</b> e duas letras. <b>Tu escolhe.</b>','Combina contigo o que pode e o que não pode aparecer nas fotos.'],a:['d','Vem antes do vídeo,','porque o editor usa a tua marca. Sai em <code>negocio/a-minha-marca.md</code>.']}
+  ]},
+  {t:'Os vídeos pro computador',telas:[
+    {l:['Passa os vídeos do celular pra <code>DEU-VENDA/EDITOR-DE-VIDEO/bruto</code>.','Cada vídeo leva uns minutos. Enquanto isso, segue pro próximo passo.','O editor reclamou da chave? Chama o professor.'],p:['edita esse vídeo']}
+  ]},
+  {t:'As artes',telas:[
+    {h:'Montar as artes',p:['monta a arte do anúncio'],l:['No teu padrão, em cima das tuas fotos, no formato de feed e de story.','Ficam em <code>pecas/prontas</code>, com uma imagem de todas lado a lado.']},
+    {h:'Olha cada peça',l:['O rosto ou o produto ficou tapado pelo texto?','O preço está certo?','Pede o ajuste em português:'],p:['o texto tapou o rosto, põe o texto em cima e a foto embaixo','troca a foto']}
+  ]},
+  {t:'Conferir os vídeos',telas:[
+    {l:['Os vídeos prontos ficam em <code>EDITOR-DE-VIDEO/prontos</code>.','Assiste <b>com som</b>: a máquina não ouve, quem confere o áudio é tu.','Gostou? Vai pro anúncio. Não gostou? Diz o que mudar.']}
+  ]},
+  {pausa:1,titulo:'Peças prontas',pronto:['o padrão da tua marca','as artes de feed e de story','os vídeos editados, conferidos com som'],seg:'Agora a campanha.'},
+  {t:'A campanha, no papel',telas:[
+    {p:['vamos montar a campanha'],l:['Ela fecha contigo quem responde o WhatsApp e em quanto tempo.','A primeira frase que a pessoa manda e o que fazer se ela sumir.','A verba por dia e qual peça vai.'],a:['d','Sai em','<code>negocio/campanha-….md</code>, com os textos e o que falta pra subir.']}
+  ]},
+  {t:'Subir a campanha',telas:[
+    {h:'Ela confirma contigo',p:['vamos subir a campanha'],l:['Umas perguntas: o que a pessoa deve fazer, quanto tu vende, as cidades, quanto pode investir por dia.','Depois um resumo de 5 linhas: objetivo, nome, destino, um conjunto por cidade com raio e verba, e as peças.']},
+    {h:'Lê com calma. Está certo?',p:['pode subir'],l:['Só escreve isso quando o resumo estiver certo.','Ela monta na tua conta e diz se está <b>no ar</b> ou <b>em análise</b>.','A Meta revisa em alguns minutos ou algumas horas.']},
+    {h:'Confere 3 coisas',l:['O botão abre o <b>teu WhatsApp</b>?','O valor por dia é o <b>combinado</b>?','Quem responde sabe que vai começar a chegar gente?','Aprovou? Acha o anúncio no Instagram pelo celular e clica: abre a conversa com a mensagem pronta.'],a:['t','"Informações em falta"?','É a forma de pagamento. Volta no passo do cartão.']},
+    {h:'Sem o conector?',p:['me dá o passo a passo pra subir na mão'],l:['A Meta está liberando o conector aos poucos. A máquina avisa logo no começo.','Ela grava o passo a passo com os teus números em <code>negocio/campanha-…-passo-a-passo.md</code>.','As telas vêm a seguir, no <b>Plano B</b>.']}
+  ]},
+  {pausa:1,titulo:'Campanha no ar',pronto:['a campanha no ar ou em análise','o botão abre o teu WhatsApp','o valor por dia combinado','quem responde está avisado'],seg:'Sem conector? Segue o Plano B, a seguir.'}
+ ]},
+
+{id:'planob',rot:'Plano B',nome:'Subir a campanha na mão',olho:'Encontro 2 · Plano B',
+ sub:'Pra quem a conta ainda não tem o conector. Usa o computador, com o passo a passo que a máquina gerou aberto do lado.',
+ saiT:'Antes de começar, tem que ter',sai:['a forma de pagamento cadastrada','a peça e o texto do anúncio, que saíram da máquina','o número do WhatsApp que vai receber','travou? manda no grupo o número do passo'],
+ passos:[
+  {t:'Entra no Gerenciador',telas:[
+    {img:'M02-visao-geral-atalho.jpg',cap:'A Visão geral da conta. O menu fica à esquerda.',l:['Abre <b>adsmanager.facebook.com</b>: vai abrir a <b>Visão geral da conta</b>.','Confere lá em cima se é a <b>conta certa</b>.']}
+  ]},
+  {t:'Não clica no botão verde do meio',telas:[
+    {img:'M02-visao-geral-atalho.jpg',cap:'O atalho do meio, com valor sugerido. Não clica em Criar anúncio.',l:['O <b>Criar anúncio</b> do meio é o impulsionar disfarçado.','Já vem com verba alta sugerida. Entrega curtida, não cliente.']},
+    {h:'Vai em Campanhas',img:'M02b-mouse-campanhas.jpg',cap:'Campanhas, no menu da esquerda (abre quando tu passa o mouse).',l:['No menu da esquerda, clica em <b>Campanhas</b>.']}
+  ]},
+  {t:'A tela das campanhas',telas:[
+    {img:'M03-lista-campanhas.jpg',cap:'A lista de campanhas, com as abas, o + Criar e o período.',l:['Abas: <b>Campanhas · Conjuntos · Anúncios</b>.','A campanha diz o objetivo e a verba; o conjunto, quem vê; o anúncio, o que a pessoa vê.','O <b>período</b> fica no canto direito.']},
+    {h:'Conferir e publicar',img:'M03b-conferir-e-publicar.jpg',zoom:1,cap:'No alto à direita. Cinza: não tem nada esperando.',l:['Apareceu <b>Conferir e publicar</b>? Tem campanha montada e <b>não publicada</b>.','Se ele aparecer no fim do teu trabalho, tu ainda não terminou.']},
+    {h:'+ Criar',img:'M03c-mouse-criar.jpg',cap:'+ Criar.',l:['O botão verde <b>+ Criar</b>, à esquerda. É esse.']}
+  ]},
+  {t:'O objetivo: Vendas',telas:[
+    {img:'M04-objetivo-vendas.jpg',cap:'Vendas marcado, com o painel da direita.',l:['Tipo de compra: <b>Leilão</b>.','Objetivo: <b>Vendas</b>, mesmo com o destino no WhatsApp.','Pede venda e a Meta vai atrás de quem compra.']},
+    {h:'Continuar',img:'M04b-mouse-continuar.jpg',cap:'O aviso amarelo em cima é a forma de pagamento que falta.',l:['Clica em <b>Continuar</b>.']}
+  ]},
+  {t:'Nome e orçamento da campanha',telas:[
+    {img:'M05-nome-e-orcamento.jpg',cap:'Nome em cima, Orçamento do conjunto de anúncios embaixo.',l:['Orçamento: marca <b>Orçamento do conjunto de anúncios</b>. Depois, <b>Avançar</b>.','"Em rascunho": nada se perde, e ainda <b>não está no ar</b>.'],x:[['Nome, tudo em maiúscula','PRODUTO - ABO - CIDADES']]}
+  ]},
+  {t:'O conjunto de anúncios',telas:[
+    {h:'Nome e conversão',img:'M06-conjunto-conversao.jpg',cap:'Nome do conjunto e Local da conversão.',l:['<b>Um conjunto por cidade</b>, no mínimo R$ 20 por dia cada.','Local da conversão: <b>Destinos das mensagens</b>.'],x:[['Nome do conjunto','CONJUNTO LAJEADO']]},
+    {h:'Só o WhatsApp',img:'M07-destino-whatsapp.jpg',cap:'Destino manual, só o WhatsApp marcado.',l:['<b>Destino manual</b>, só <b>WhatsApp</b> marcado. Confere o número.','"Reduza os custos em 9%": <b>não aceita</b>.']},
+    {h:'Orçamento diário',img:'M08-orcamento-diario.jpg',cap:'A recomendação da Meta tu ignora. Término: Nenhum.',l:['Escreve só o número: <b>20,00</b>.','"Usar orçamento recomendado": não clica.','Data de término: <b>Nenhum</b>.']},
+    {h:'Público: cidade e raio',img:'M09-publico-raio.jpg',cap:'Localizações: a cidade com o raio em km.',l:['A cidade e o <b>raio</b>: 20 km na capital, 30 km no interior.','Idade <b>18 a 65</b>, todos os gêneros, Advantage+ ligado, <b>interesses vazios</b>.']},
+    {h:'Posicionamentos',l:['<b>Manuais</b>: só <b>Facebook e Instagram</b> (Feeds, Stories e Reels).','Desmarca <b>Audience Network, Messenger e Threads</b>.','Depois, <b>Avançar</b>.'],a:['t','Aviso amarelo de limite de gastos?','A campanha sobe e depois para sozinha: ajusta o limite em Cobrança e pagamentos.']}
+  ]},
+  {t:'O anúncio',telas:[
+    {h:'Nome e identidade',img:'M10-anuncio-topo.jpg',cap:'Nome do anúncio, parceria desativada e Identidade.',l:['Nome: o nome do vídeo ou da imagem.','Anúncio em parceria: <b>desativado</b>. Identidade: a tua Página.','"+3 pontos", "Aplicar agora": <b>desconsidera</b>.']},
+    {h:'Fonte e formato',img:'M11-fonte-formato.jpg',cap:'Upload manual e Imagem ou vídeo único.',l:['Fonte do criativo: <b>Upload manual</b>.','Formato: <b>Imagem ou vídeo único</b>.']},
+    {h:'Configurar criativo',img:'M12-configurar-criativo.jpg',cap:'Configurar criativo: imagem ou vídeo.',l:['<b>Configurar criativo</b> → anúncio em imagem ou em vídeo.']},
+    {h:'Carregar a peça',img:'M13-galeria-midia.jpg',cap:'A galeria, com o + Carregar no alto.',l:['<b>+ Carregar</b>: artes em <code>pecas/prontas</code>, vídeos em <code>EDITOR-DE-VIDEO/prontos</code>.','Feed e story da mesma peça no <b>mesmo anúncio</b>.']},
+    {h:'O texto',img:'M14-texto.jpg',cap:'Texto principal, título, descrição e chamada.',l:['Texto principal: a legenda que saiu da máquina. Título curto.','Chamada para ação: <b>Enviar mensagem pelo WhatsApp</b>.']}
+  ]},
+  {t:'Desliga tudo que for de IA',telas:[
+    {h:'Geração de imagem',img:'M15-geracao-imagem-ia.jpg',cap:'Geração de imagem: nenhuma marcada.',l:['Tem "Meta AI" escrito em cima? <b>Desliga.</b>','Não marca nenhuma. Só <b>Avançar</b>.']},
+    {h:'Aprimoramentos',img:'M16-aprimoramentos.jpg',cap:'As quatro chaves desligadas.',l:['As <b>quatro chaves desligadas</b>.']},
+    {h:'Confere a contagem',img:'M17-aprimoramentos-contagem.jpg',cap:'(0/4) e (1/4): Editar e desliga o que sobrou.',l:['De volta no anúncio, olha os números (x/4).','Sobrou alguma? <b>Editar</b> e desliga.']},
+    {h:'Tradução',img:'M18-traducao.jpg',cap:'A primeira opção já vem marcada.',l:['Vem <b>marcada</b>. <b>Desmarca.</b> O teu cliente é daqui.']}
+  ]},
+  {t:'A mensagem que abre a conversa',telas:[
+    {h:'Sem formulário',img:'M19-conversas-modelo.jpg',cap:'O modelo sugerido, com formulário. Embaixo, + Criar modelo.',l:['O modelo com formulário: <b>não usa</b>.','Clica em <b>+ Criar modelo</b>.']},
+    {h:'Iniciar conversas',img:'M20-iniciar-conversas.jpg',cap:'Iniciar conversas, não o formulário.',l:['Escolhe <b>Iniciar conversas</b>.']},
+    {h:'A mensagem pronta',img:'M21-mensagem-pronta.jpg',cap:'Boas-vindas em cima, mensagem pronta no meio.',l:['Mensagem pronta: de onde a pessoa veio. Cada anúncio com a sua.','Boas-vindas curta: "Oi! Como podemos ajudar?"']}
+  ]},
+  {t:'Publicar',telas:[
+    {h:'Rastreamento',img:'M22-rastreamento.jpg',cap:'Rastreamento desmarcado e a prévia no WhatsApp.',l:['Eventos do site, do app e offline: <b>desmarcados</b>.','Confere: o número do WhatsApp, o valor em reais combinado, quem responde avisado.']},
+    {h:'Publicar',img:'M10-anuncio-topo.jpg',cap:'Publicar fica no canto de baixo à direita.',l:['<b>Publicar</b>. Não fecha antes: "Todas as edições salvas" não é publicado.','Na lista: bolinha verde e <b>Ativo</b>. A Meta revisa antes de rodar.']}
+  ]},
+  {pausa:1,titulo:'Fim do encontro 2',pronto:['a campanha publicada','bolinha verde e Ativo (ou em análise)','sem "Conferir e publicar" esperando','o anúncio abre o teu WhatsApp'],seg:'Na próxima: atendimento e site.'}
+ ]},
+
+{id:'e3',rot:'Encontro 3',nome:'Ajuste e atendimento',olho:'Encontro 3',
+ sub:'A campanha tem só um dia. Hoje não é dia de mudar anúncio: é dia de garantir que quem chama seja bem atendido, e de pôr o site no ar.',
+ saiT:'Tu sai com',sai:['a campanha conferida, entregando e sem erro','o WhatsApp Business com respostas prontas, saudação e etiquetas','o site da tua empresa no ar, com o pixel da Meta'],
+ passos:[
+  {t:'Como está a campanha',telas:[
+    {h:'Como está a campanha',p:['como está a minha campanha?'],l:['Com um dia, só dá pra ver se ela está <b>gastando</b> e se as pessoas <b>chegam no WhatsApp</b>.','Ainda não dá pra julgar se o anúncio é bom.']},
+    {h:'As conversas que chegaram',p:['vou te mandar print de duas ou três conversas que chegaram'],l:['Manda mesmo as que não deram em nada.'],a:['t','A regra da primeira semana: não mexe no anúncio.','Só se corrige erro: link quebrado, preço errado, valor por dia errado.']}
+  ]},
+  {t:'O atendimento no WhatsApp Business',telas:[
+    {h:'As respostas prontas',p:['me mostra as respostas prontas pro WhatsApp'],l:['Quem chega do anúncio está quente por poucos minutos.','No celular: WhatsApp Business → <b>Ferramentas comerciais</b> (Android: três pontinhos; iPhone: Configurações).']},
+    {h:'Ferramentas comerciais',l:['<b>Respostas rápidas</b>, com atalho curto: <code>/preco</code> <code>/horario</code> <code>/endereco</code>','<b>Mensagem de saudação</b>: curta, com o teu nome, dizendo que já responde.','<b>Mensagem de ausência</b>: pra fora do horário, dizendo quando tu volta.']},
+    {h:'Etiquetas e perfil',l:['<b>Etiquetas</b>: "Novo do anúncio", "Orçamento enviado", "Fechou" e "Sumiu". Marca cada conversa.','<b>Perfil comercial</b>: endereço, horário, link do site.'],a:['d','O menu muda um pouco entre Android e iPhone.','Não achou? Pede ajuda pro professor ou pra turma.']}
+  ]},
+  {t:'Como responder quem chega',telas:[
+    {h:'Os 5 passos, nesta ordem',c:[['Entende a dor','uma pergunta antes, com o motivo junto'],['Liga o produto à dor','como ele resolve o que ela contou'],['Urgência','só se for verdade'],['O preço','depois do valor'],['Fecha com uma pergunta','que marca']]},
+    {h:'O erro mais comum',l:['Começar pelo 4: a pessoa pergunta "quanto custa?", recebe só o número, compara com o mais barato e some.','Fecha assim: <b>"Tu consegue passar hoje até as 18h?"</b>','Em vez de: "qualquer coisa estou à disposição".']},
+    {h:'Chegou uma pergunta nova?',l:['As respostas que sempre chegam já estão em <code>negocio/o-que-responder.md</code>.'],p:['alguém me perguntou se eu faço entrega em Estrela. Como eu respondo?','guarda essa no o-que-responder']},
+    {h:'As regras do atendimento',l:['<b>Responde em até 10 minutos.</b> Ela mandou mensagem pra três lugares.','<b>Uma insistida no dia seguinte</b>, e para.','<b>Não</b> responde com uma palavra, não manda pro Instagram ou site, não promete o que não está na oferta.','<b>Guarda as conversas que esfriaram</b>: são o assunto do encontro 4.']}
+  ]},
+  {pausa:1,titulo:'Atendimento pronto',pronto:['a campanha conferida','respostas rápidas cadastradas','saudação e ausência','as etiquetas','os 5 passos pra responder'],seg:'Agora o site.'},
+  {t:'A página do teu negócio',telas:[
+    {p:['vamos fazer o meu site'],l:['Primeiro ela mostra <b>só o texto</b>. Tu aprova ou corrige.','Depois monta com a tua marca e as tuas fotos, e pede o link do WhatsApp, o endereço e o horário.','Sai em <code>site/index.html</code>. Abre no navegador pra ver.']}
+  ]},
+  {t:'O pixel da Meta',telas:[
+    {h:'O Gerenciador de Eventos',img:'I1-gerenciador-de-eventos.jpg',cap:'O Gerenciador de Eventos.',l:['O pixel conta pra Meta quem visitou o teu site. Vai dentro da página antes de ela subir.']},
+    {h:'Pode abrir na Visão geral',img:'I0-gerenciador-visao-geral.jpg',cap:'Confere no alto à direita se é o teu negócio.',l:['Confere no alto à direita se é o <b>teu negócio</b>.']},
+    {h:'Ou em Conjuntos de dados',img:'I0b-conjuntos-de-dados.jpg',cap:'Em todas, o Conectar dados fica no alto à esquerda.',l:['Em todas, o <b>Conectar dados</b> fica no alto à esquerda.']},
+    {h:'Conectar dados',img:'I2-mouse-conectar-dados.jpg',cap:'Conectar dados, no menu da esquerda.',l:['Clica em <b>Conectar dados</b>.']},
+    {h:'As opções',img:'I5-conectar-dados-web.jpg',cap:'A janela com as opções: Web é a primeira.',l:['Abre a janela com as opções.']},
+    {h:'Web',img:'I3-mouse-web.jpg',cap:'Web.',l:['Escolhe <b>Web</b>.']},
+    {h:'Avançar',img:'I4-web-marcado-mouse-avancar.jpg',cap:'Com Web marcado, Avançar.',l:['Com Web marcado, <b>Avançar</b>.']},
+    {h:'O código vai pro site',l:['Dá o nome do teu negócio e segue até aparecer o código.','Copia o código e cola na conversa:'],p:['põe este pixel no meu site']}
+  ]},
+  {t:'Pôr o site no ar',telas:[
+    {h:'Subir na HostGator',p:['como eu ponho o site no ar?'],l:['E-mail de "dados de acesso" → <b>Central do Cliente</b> → <b>cPanel</b>.','<b>Gerenciador de Arquivos</b> → <b>public_html</b>. Apaga o <code>index.html</code> e o <code>default.html</code> de lá.','<b>Carregar</b> → o <code>site/index.html</code> da tua pasta DEU-VENDA.']},
+    {h:'Confere no celular',l:['Abre o teu endereço no celular?','O botão do WhatsApp abre a conversa certa?','Tem o <b>cadeado</b> do lado do endereço?'],a:['t','Sem cadeado:','no cPanel, SSL/TLS Status → Run AutoSSL. Pode levar alguns minutos.']}
+  ]},
+  {pausa:1,titulo:'Fim do encontro 3',pronto:['o atendimento pronto no WhatsApp','o site no ar, com cadeado','o pixel da Meta no site'],seg:'Até o encontro 4: marca a etiqueta de cada conversa.'}
+ ]},
+
+{id:'e4',rot:'Encontro 4',nome:'Resultado',olho:'Encontro 4',
+ sub:'A turma volta com os números na mão. Não é pra ver se "deu certo": é pra ver onde está o buraco e qual é o próximo passo.',
+ saiT:'Tu sai com',sai:['a leitura da tua campanha, com os números de verdade','a decisão: continuar, ajustar ou trocar','o calendário do mês no Instagram e a primeira semana de posts','a tua rotina do mês com a máquina'],
+ passos:[
+  {t:'Traz anotado',telas:[
+    {l:['Quantas conversas chegaram do anúncio (conta pelas etiquetas).','Quantas pediram orçamento ou preço.','Quantas compraram, e quanto entrou.','Prints de 3 ou 4 conversas: uma que fechou, uma que sumiu, uma que está pensando.']}
+  ]},
+  {t:'Arrumar a tela do Gerenciador',telas:[
+    {h:'Personalizar colunas',img:'L1-menu-colunas.jpg',cap:'Personalizar colunas fica no fim da lista.',l:['A tabela padrão é pra quem vende no site. Arruma uma vez e salva.','Acima da tabela, à direita: <b>Colunas</b> → rola até o fim → <b>Personalizar colunas</b>.']},
+    {h:'Pesquisa, ordem e salvar',img:'L2-personalizar-colunas.jpg',cap:'Pesquisa à esquerda, escolhidas à direita, Salvar com a setinha.',l:['Na <b>pesquisa</b>, digita cada métrica e marca. Uma de cada vez.','Os <b>seis pontinhos</b> arrastam; o <b>X</b> tira.','Setinha do <b>Salvar</b>: dá um nome curto e salva.']},
+    {h:'As colunas, nesta ordem',met:['anúncio','Veiculação','Orçamento','Valor gasto','*Leads','Custo por lead','Cliques no link','CPC','Resultados','Custo por resultado','Finalizações de compra iniciadas','Seguidores no Instagram','Alcance','CPM','*Frequência','Compras'],l:['Nas que abrem sub-opções, deixa as sub-opções desmarcadas.']},
+    {h:'O período',img:'L3-periodo.jpg',cap:'O seletor de período, com a lista e o calendário.',l:['O botão com a data, acima da tabela.','<b>Hoje</b>: só pra ver se está gastando. <b>Últimos 7 dias</b>: é o que decide.']},
+    {h:'A tabela arrumada',img:'M03-lista-campanhas.jpg',cap:'Gasto, leads e custo por lead lado a lado.',l:['Da próxima vez ela aparece em Colunas → <b>Usados recentemente</b>.']}
+  ]},
+  {t:'A leitura',telas:[
+    {h:'A ordem que importa',p:['vamos ler a minha campanha dos últimos 20 dias'],l:['<b>Quanta gente chega</b> → <b>a conversa é quente ou fria</b> → <b>quantos compram</b>.','O que manda é quanto volta pra cada real gasto.']},
+    {h:'Onde está o conserto',tab:[['Se o problema é','o conserto está'],['viu e não clicou','na peça: a primeira frase, a imagem, o vídeo'],['clicou e não mandou mensagem','no destino: o botão, a mensagem pronta'],['mandou e sumiu','na conversa: quem responde e em quanto tempo'],['conversou e não comprou','na oferta ou no preço']]},
+    {h:'Leads e conversas batem?',l:['A tabela conta o clique, não sabe se a mensagem chegou.','Diz 7 e tu recebeu 3? Número errado, link quebrado, gente que desistiu de escrever ou mensagem noutro aparelho.'],a:['t','Resolve isso','antes de trocar anúncio.']},
+    {h:'Quanto gastar antes de julgar',l:['Pelo menos <b>metade do valor de uma venda</b>.','Produto de R$ 100: uns 3 dias e R$ 50. Produto de R$ 3.000: uma semana e R$ 200 a R$ 300.','Nesse tempo tu procura sinal: conversa quente, alguém que comprou ou que diz que vai fechar.']},
+    {h:'O problema é a resposta?',l:['Então <b>não mexe na campanha</b>. Abre as conversas e lê o teu lado.','Demorou? Soltou o preço sem mostrar valor? Não perguntou nada? Não tentou marcar?','Trocar o anúncio porque a conversa morreu é gastar de novo pra chegar no mesmo lugar.']}
+  ]},
+  {pausa:1,titulo:'Campanha lida',pronto:['os teus números na mão','a tela do Gerenciador arrumada','onde está o buraco','a decisão: continuar, ajustar ou trocar'],seg:'Agora o Instagram.'},
+  {t:'Postagens e calendário do mês',telas:[
+    {h:'O esqueleto da semana',p:['monta o esqueleto da minha semana'],l:['O Instagram é a vitrine que a pessoa olha <b>antes de mandar mensagem</b>.','Quantas vezes por semana tu aguenta postar sem sofrer? Ela aceita o teu número.','Dois posts bons toda semana valem mais que sete numa e sumir na outra.']},
+    {h:'Os tipos de post',tab:[['Tipo','Pra quê'],['Útil','ensina algo que serve mesmo pra quem não comprar'],['Dor ou desejo','a pessoa se reconhece ou se imagina com o resultado'],['Prova','o trabalho acontecendo, o antes e depois. Sempre vídeo'],['Rosto','quem está por trás do negócio. Sempre vídeo'],['Posicionamento','o que o teu negócio é e o que não é'],['Oferta','vender. No máximo 1 a cada 4 posts']]},
+    {h:'As ideias',p:['me dá 30 ideias de conteúdo'],l:['Ela entrega em grupos e sugere quais levaria, com o porquê.','Tu só risca o que não é a tua cara.','<b>O que tu corta ensina a máquina</b>: ela não propõe de novo.']},
+    {h:'O calendário do mês',p:['monta o calendário do mês'],l:['Ela distribui as ideias, marca o que fotografar ou filmar e as datas do teu cliente.','<b>Escreve pronta só a primeira semana.</b>','Toda semana, pede <i>"faz os próximos"</i>: posts com a foto certa e a legenda pronta.']},
+    {h:'Três dicas',l:['O teu trabalho aparece? Filma 10 segundos de <b>antes e depois</b>: vira post e vira anúncio.','<b>Vídeo começa pelo fim</b>: os primeiros 2 segundos decidem se a pessoa fica.','No fim do mês, pergunta <i>"como foi o mês?"</i> e conta quais posts tiveram resposta.']}
+  ]},
+  {t:'O próximo passo e a rotina',telas:[
+    {h:'Como eu estou?',p:['como eu estou?','me dá 5 ideias de conteúdo pra esta semana'],l:['Sai daqui com a decisão da campanha e com a tua rotina com a máquina.']},
+    {h:'A tua rotina com a máquina',tab:[['Quando','Tu pede','Ela te entrega'],['todo dia','(no WhatsApp)','responde com as respostas prontas e marca a etiqueta'],['toda semana','<i>faz os próximos</i>','os posts da semana'],['uma vez por mês','<i>monta o calendário do mês</i>','as vagas do mês, o que filmar, as datas'],['a cada 7 dias','<i>como está a minha campanha?</i>','quanto custou cada conversa e quantas fecharam'],['uma vez por mês','<i>como eu estou?</i>','o painel e a decisão do mês'],['uma vez por mês','<i>me dá ideias de anúncio</i>','um anúncio novo pra somar'],['gravou vídeo','<i>edita esse vídeo</i>','o vídeo pronto, com legenda e marca'],['pergunta nova','<i>guarda essa no o-que-responder</i>','a resposta guardada'],['a cada 3 meses','<i>vamos revisar o meu negócio</i>','a oferta e o preço conferidos']],peq:1}
+  ]},
+  {pausa:1,fim:1,titulo:'Fim da imersão',pronto:['a leitura da campanha','a decisão do que fazer','o calendário do mês','a tua rotina com a máquina'],seg:'Dúvida depois? Pergunta pra máquina primeiro. O grupo da turma segue aberto por 30 dias.'}
+ ]}
+]
+
+/* ===== monta a lista de telas ===== */
+var S=[]
+ETAPAS.forEach(function(e){
+  if(e.id==='abre'){e.telas.forEach(function(t,i){S.push({e:e,t:t,tipo:t.tipo||'passo',sem:1,tit:i?t.tit:'Abertura'})});return}
+  S.push({e:e,tipo:'capa',tit:'Capa: '+e.nome})
+  var reais=e.passos.filter(function(p){return !p.pausa}),N=reais.length,n=0
+  e.passos.forEach(function(p){
+    if(p.pausa){S.push({e:e,tipo:'pausa',t:p,tit:p.titulo||'Pausa · dúvidas'});return}
+    n++;p.n=n
+    p.telas.forEach(function(t,k){S.push({e:e,p:p,t:t,tipo:'passo',n:n,N:N,k:k+1,K:p.telas.length,tit:p.t})})
+  })
+})
+
+var tela=document.getElementById('tela'),onde=document.getElementById('onde'),barra=document.getElementById('barra')
+var esc=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function linhas(l){return l&&l.length?'<ul class="linhas">'+l.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul>':''}
+function pedidos(p){if(!p||!p.length)return '';return '<div class="pede">'+p.map(function(x){var c=x.length>58?'p':x.length>34?'m':'';return '<div><span>Pede pra máquina</span><q class="'+c+'">'+esc(x)+'</q></div>'}).join('')+'</div>'}
+function escreve(x){if(!x||!x.length)return '';return '<div class="pede">'+x.map(function(a){var c=a[1].length>30?'m':'';return '<div class="esc"><span>'+a[0]+'</span><q class="'+c+'">'+esc(a[1])+'</q></div>'}).join('')+'</div>'}
+function aviso(a){return a?'<div class="aviso'+(a[0]==='d'?' d':'')+'"><b>'+a[1]+'</b> '+a[2]+'</div>':''}
+function tabela(t,peq){return '<table'+(peq?' class="peq"':'')+'><thead><tr>'+t[0].map(function(c){return '<th>'+c+'</th>'}).join('')+'</tr></thead><tbody>'+t.slice(1).map(function(r){return '<tr>'+r.map(function(c){return '<td>'+c+'</td>'}).join('')+'</tr>'}).join('')+'</tbody></table>'}
+function cartoes(c){return '<div class="cartoes">'+c.map(function(x,i){return '<div><i>'+(i+1)+'</i><p>'+x[0]+(x[1]?'<small>'+x[1]+'</small>':'')+'</p></div>'}).join('')+'</div>'}
+function miolo(t){return linhas(t.l)+(t.c?cartoes(t.c):'')+(t.tab?tabela(t.tab,t.peq):'')+(t.met?'<ul class="metricas">'+t.met.map(function(m){return m[0]==='*'?'<li class="f">'+m.slice(1)+'</li>':'<li>'+m+'</li>'}).join('')+'</ul>':'')+escreve(t.x)+pedidos(t.p)+aviso(t.a)+(t.a2?t.a2.map(aviso).join(''):'')}
+
+function render(i){
+  var s=S[i],e=s.e,t=s.t||{},h=''
+  tela.className='tela';tela.style.gridTemplateColumns=''
+  if(s.tipo==='abre'){
+    tela.classList.add('t-abre')
+    h='<span class="olho">Imersão Deu Venda · o passo a passo no telão</span><h1>Do zero ao <span class="g">anúncio rodando</span>, um passo de cada vez.</h1><p class="sub">Tu faz no teu notebook, junto com o telão. Cada tela é um passo.</p>'
+      +'<div class="teclas"><span><kbd>→</kbd>avança</span><span><kbd>←</kbd>volta</span><span><kbd>I</kbd>índice</span><span><kbd>F</kbd>tela cheia</span></div>'
+    onde.innerHTML='<strong>Imersão Deu Venda</strong>'
+  }else if(s.tipo==='capa'){
+    tela.classList.add('t-capa')
+    h='<span class="olho">'+e.olho+'</span><div class="capa-t g">'+e.nome+'</div><p class="sub">'+e.sub+'</p>'
+      +'<div class="sai"><b>'+e.saiT+'</b><ul>'+e.sai.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>'
+    onde.innerHTML='<strong>'+e.rot+'</strong>'
+  }else if(s.tipo==='pausa'){
+    tela.classList.add('t-pausa')
+    h='<div><span class="olho">'+(t.fim?'Obrigado, turma':'Pausa · dúvidas')+'</span><div class="capa-t g" style="margin-top:18px">'+(t.titulo||'Pausa')+'</div>'
+      +(t.seg?'<p class="sub"><b>'+t.seg+'</b></p>':'')+'<p class="sub">Travou? Antes de chamar o professor, pergunta pra máquina:</p>'
+      +'<div class="chips"><span>e agora?</span><span>deu erro</span><span>não entendi</span></div></div>'
+      +'<div class="pronto"><b>Confere se ficou pronto</b><ul>'+t.pronto.map(function(x){return '<li>'+x+'</li>'}).join('')+'</ul></div>'
+    onde.innerHTML='<strong>'+e.rot+'</strong> · pausa'
+  }else{
+    var n=s.sem?'':'<div class="num'+(s.n>9?' dois':'')+'">'+s.n+'</div>'
+    var titulo=t.h||s.p.t
+    if(t.img){
+      var larga=LARGO(t.img),fig='<figure><img'+(t.zoom?' class="zoom"':'')+' src="'+P+t.img+'" alt="'+esc(t.cap||'')+'">'+(t.cap?'<figcaption>'+t.cap+'</figcaption>':'')+'</figure>'
+      if(larga){tela.classList.add('t-larga');h='<div class="cab">'+n+'<div class="corpo"><h2>'+titulo+'</h2>'+miolo(t)+'</div></div>'+fig}
+      else{tela.classList.add('t-lado');h='<div class="esq">'+n+'<h2>'+titulo+'</h2>'+miolo(t)+'</div>'+fig}
+    }else{
+      tela.classList.add('t-texto');if(s.sem)tela.style.gridTemplateColumns='1fr'
+      h=n+'<div class="corpo"><h2>'+titulo+'</h2>'+miolo(t)+'</div>'
+    }
+    if(s.sem)onde.innerHTML='<strong>Imersão Deu Venda</strong>'
+    else onde.innerHTML='<strong>'+e.rot+'</strong> · passo '+s.n+' de '+s.N+(s.K>1?'<small>'+s.p.t+' · tela '+s.k+' de '+s.K+'</small>':'<small>'+s.p.t+'</small>')
+  }
+  tela.innerHTML=h
+  barra.style.width=((i+1)*100/S.length)+'%'
+  document.title='Imersão Deu Venda · projetor · '+(i+1)
+}
+
+/* ===== navegação ===== */
+var ls=function(k,v){try{if(v===undefined)return localStorage.getItem(k);localStorage.setItem(k,v)}catch(e){return null}}
+var CH='imersao-dv-projetor',atual=0
+function vai(i,semHist){
+  atual=Math.max(0,Math.min(S.length-1,i));render(atual);ls(CH,String(atual+1))
+  if(!semHist)try{history.replaceState(null,'','#'+(atual+1))}catch(e){location.hash=String(atual+1)}
+  // já carrega o print da próxima tela
+  var px=S[atual+1];if(px&&px.t&&px.t.img){var im=new Image();im.src=P+px.t.img}
+  marcaIndice()
+}
+function doHash(){var m=location.hash.match(/^#(\d+)$/);return m?parseInt(m[1],10)-1:null}
+
+function escala(){var p=document.getElementById('palco'),k=Math.min(innerWidth/1920,innerHeight/1080);p.style.transform='translate(-50%,-50%) scale('+k+')'}
+escala();addEventListener('resize',escala)
+
+function telaCheia(){try{if(document.fullscreenElement)document.exitFullscreen();else document.documentElement.requestFullscreen()}catch(e){}}
+
+/* índice */
+var ind=document.getElementById('indice'),grade=document.getElementById('grade')
+;(function(){
+  var html='',porEtapa={}
+  S.forEach(function(s,i){var id=s.e.id;(porEtapa[id]=porEtapa[id]||[]).push(i)})
+  ETAPAS.forEach(function(e){
+    var is=porEtapa[e.id]||[],vistos={}
+    html+='<section>'
+    is.forEach(function(i){var s=S[i]
+      if(s.tipo==='abre')html+='<button class="e" data-i="'+i+'"><small>Começo</small>Abertura</button>'
+      else if(s.tipo==='capa')html+='<button class="e" data-i="'+i+'"><small>'+e.olho+'</small>'+e.nome+'</button>'
+      else if(s.tipo==='pausa')html+='<button class="pz" data-i="'+i+'"><i>✓</i>'+esc(s.tit)+'</button>'
+      else if(s.sem)html+='<button data-i="'+i+'"><i>·</i>'+esc(s.tit)+'</button>'
+      else if(!vistos[s.n]){vistos[s.n]=1;html+='<button data-i="'+i+'" data-n="'+s.n+'"><i>'+s.n+'</i>'+esc(s.p.t)+'</button>'}
+    })
+    html+='</section>'
+  })
+  grade.innerHTML=html
+  grade.addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;vai(+b.dataset.i);fechaIndice()})
+})()
+function marcaIndice(){
+  var s=S[atual],alvo=null
+  grade.querySelectorAll('button').forEach(function(b){b.classList.remove('agora')})
+  var bs=[].slice.call(grade.querySelectorAll('button'))
+  bs.forEach(function(b){if(+b.dataset.i<=atual)alvo=b})
+  if(alvo)alvo.classList.add('agora')
+}
+function abreIndice(){ind.classList.add('on');var a=grade.querySelector('.agora');if(a){a.focus();a.scrollIntoView({block:'center'})}}
+function fechaIndice(){ind.classList.remove('on')}
+document.getElementById('fechar').onclick=fechaIndice
+
+document.addEventListener('keydown',function(ev){
+  if(ev.ctrlKey||ev.metaKey||ev.altKey)return
+  var k=ev.key
+  if(ind.classList.contains('on')){if(k==='Escape'||k==='i'||k==='I'){fechaIndice();ev.preventDefault()}return}
+  if(k==='ArrowRight'||k==='ArrowDown'||k===' '||k==='PageDown'||k==='Enter'){vai(atual+1);ev.preventDefault()}
+  else if(k==='ArrowLeft'||k==='ArrowUp'||k==='PageUp'||k==='Backspace'){vai(atual-1);ev.preventDefault()}
+  else if(k==='Home'){vai(0);ev.preventDefault()}
+  else if(k==='End'){vai(S.length-1);ev.preventDefault()}
+  else if(k==='f'||k==='F'){telaCheia();ev.preventDefault()}
+  else if(k==='i'||k==='I'){abreIndice();ev.preventDefault()}
+})
+document.getElementById('palco').addEventListener('click',function(ev){
+  // clique no quinto da esquerda volta; no resto, avança
+  if(ev.clientX<innerWidth*0.2)vai(atual-1);else vai(atual+1)
+})
+document.getElementById('ctrl').addEventListener('click',function(ev){var b=ev.target.closest('button');if(!b)return;ev.stopPropagation()
+  var a=b.dataset.a;if(a==='ant')vai(atual-1);else if(a==='prox')vai(atual+1);else if(a==='ind')abreIndice();else if(a==='tc')telaCheia()})
+var tm=null;document.addEventListener('mousemove',function(){document.body.classList.add('mexeu');clearTimeout(tm);tm=setTimeout(function(){document.body.classList.remove('mexeu')},2200)})
+
+// abre: o #numero da URL > a última tela vista > a primeira
+var h0=doHash(),salvo=parseInt(ls(CH)||'',10)
+vai(h0!=null?h0:(salvo>0?salvo-1:0),h0!=null)
+window.addEventListener('hashchange',function(){var x=doHash();if(x!=null&&x!==atual)vai(x,true)})
+})()
+</script>
+</body></html>
