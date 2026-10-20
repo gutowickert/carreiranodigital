@@ -271,6 +271,17 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
 .fecho{margin-top:30px;font-size:19px;color:var(--suave);max-width:62ch}.fecho b{color:var(--tinta)}
 @media (max-width:900px){.provas{grid-template-columns:1fr 1fr}}
 @media (max-width:560px){.provas{grid-template-columns:1fr}}
+/* 20/10: o primeiro ano em números, dentro de Quem somos */
+.ano{margin-top:40px;display:grid;grid-template-columns:.9fr 1.4fr;gap:28px;align-items:center;background:linear-gradient(160deg,rgba(123,42,232,.22),rgba(192,38,211,.08));border:1px solid rgba(201,170,255,.3);border-radius:28px;padding:30px}
+.ano-txt small{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#c9aaff}
+.ano-txt h3{font-size:clamp(22px,2.4vw,28px);line-height:1.2;margin:10px 0}
+.ano-txt p{font-size:14px;color:var(--suave)}
+.ano-num{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ano-num div{background:rgba(10,6,20,.45);border:1px solid var(--borda);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.ano-num b{font-family:'Bricolage Grotesque',sans-serif;font-size:44px;line-height:1;background:linear-gradient(90deg,#b98cff,#e879f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ano-num span{font-size:14px;color:var(--suave);line-height:1.45}.ano-num strong{color:var(--tinta)}
+@media (max-width:860px){.ano{grid-template-columns:1fr;padding:22px}}
+@media (max-width:420px){.ano-num{grid-template-columns:1fr}}
 .caminhos.dois{grid-template-columns:repeat(2,1fr)}
 .agenda{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
 .agenda .data{display:flex;flex-direction:column;gap:6px;text-decoration:none;background:var(--cartao);border:1px solid var(--borda);border-radius:22px;padding:20px;transition:transform .15s,border-color .15s}
@@ -356,6 +367,15 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
       <li class="rv d2"><small>O primeiro ano</small><b>Mais de 500 alunos</b><span>Quase 30 turmas e 8 cidades no itinerante. Lojas, clínicas, restaurantes, prestadores de serviço: cada um aplicando no próprio negócio.</span></li>
       <li class="rv d3"><small>Agora</small><b>A virada pra IA</b><span>O que exigia uma equipe inteira de marketing passou a caber no dia do dono, com a inteligência artificial. A escola mudou junto.</span></li>
     </ol>
+    <div class="ano rv">
+      <div class="ano-txt"><small>O primeiro ano da escola presencial</small><h3>Em um ano: duas unidades próprias e turmas em oito cidades.</h3><p>Números de outubro de 2026, contando só as turmas presenciais.</p></div>
+      <div class="ano-num">
+        <div><b>+500</b><span><strong>alunos formados</strong> presencialmente, cada um aplicando no próprio negócio</span></div>
+        <div><b>~30</b><span><strong>turmas</strong> pequenas, em Lajeado, Porto Alegre e no itinerante</span></div>
+        <div><b>8</b><span><strong>cidades</strong> visitadas pela escola itinerante</span></div>
+        <div><b>2</b><span><strong>unidades próprias</strong>: a sede em Lajeado e a unidade de Porto Alegre</span></div>
+      </div>
+    </div>
   </div>
 </section>
 
@@ -407,22 +427,8 @@ footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-betwe
   </div>
 </section>
 
-<!-- 6 · números -->
-<section class="faz-sec">
-  <div class="ct">
-    <span class="olho rv">O primeiro ano em números</span>
-    <div class="numeros grandes rv d1">
-      <div><b>+500</b><span>alunos presenciais</span></div>
-      <div><b>~30</b><span>turmas</span></div>
-      <div><b>8</b><span>cidades no itinerante</span></div>
-      <div><b>2</b><span>unidades próprias</span></div>
-    </div>
-    <p class="nota rv">Números de outubro de 2026.</p>
-  </div>
-</section>
-
 <!-- 8 · unidades -->
-<section id="unidades">
+<section class="faz-sec" id="unidades">
   <div class="ct">
     <span class="olho rv">Unidades</span>
     <h2 class="rv d1">Presencial, <span class="grad">perto do teu negócio.</span></h2>
