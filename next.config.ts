@@ -90,6 +90,8 @@ const nextConfig: NextConfig = {
         { source: '/imersaodeuvenda/lajeado', destination: '/imersao/lajeado.html' },
         { source: '/deuvenda', destination: '/imersao/deu-venda.html' },
         { source: '/teunegocioos', destination: '/teunegocio-os/index.html' },
+        // 21/10: curso Vídeo com IA (porta de entrada, R$ 497), prévia
+        { source: '/videocomia', destination: '/imersao/video-com-ia.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
         { source: '/rastro', destination: '/rastro/index.html' },
         { source: '/rastro/', destination: '/rastro/index.html' },
