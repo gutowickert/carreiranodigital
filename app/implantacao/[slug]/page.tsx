@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { useParams, useSearchParams } from 'next/navigation'
-import { modeloDe, type Bloco, type Pergunta } from '@/lib/implantacao-modelo'
+import { modeloDe, soDoCliente, type Bloco, type Pergunta } from '@/lib/implantacao-modelo'
 
 // O QUESTIONÁRIO DE IMPLANTAÇÃO, GENÉRICO — a página que o dono da empresa abre pra responder.
 //
@@ -140,7 +140,11 @@ export default function Questionario() {
       <div style={{ padding: '10px 0 4px' }}>
         <div style={marca}>Implantação do CRM</div>
         <h1 style={disp}>{/* nome curto demais no 1º termo ("W Prime Seeds") usa os dois primeiros */}
-        {nome ? `Conhecendo a ${nome.split(' ')[0].length < 3 ? nome.split(' ').slice(0, 2).join(' ') : nome.split(' ')[0]}` : 'Conhecendo teu negócio'}</h1>
+        {/* nome que começa com artigo ("O Mundo do Papelão") vira "Conhecendo o Mundo do Papelão",
+            e não "Conhecendo a O Mundo" (21/10/2026) */}
+        {!nome ? 'Conhecendo teu negócio'
+          : /^(o|a|os|as)\s/i.test(nome) ? `Conhecendo ${nome.charAt(0).toLowerCase()}${nome.slice(1)}`
+          : `Conhecendo a ${nome.split(' ')[0].length < 3 ? nome.split(' ').slice(0, 2).join(' ') : nome.split(' ')[0]}`}</h1>
         <p style={txt}>
           Antes de montar o CRM, a gente precisa entender como a tua empresa vende de verdade — com as
           tuas palavras. É isto que faz o sistema já nascer com a cara do teu negócio, e a IA falar
@@ -150,11 +154,19 @@ export default function Questionario() {
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 14 }}>
           {['salva sozinho', 'pode responder falando', 'volta por este mesmo link'].map(f => <span key={f} style={chip}>{f}</span>)}
         </div>
+        {soDoCliente(String(slug)) ? (
+        <div style={{ ...cartao, marginTop: 16, borderColor: '#cfc8e3' }}>
+          <b style={{ color: '#17122a' }}>Já vem com a nossa sugestão.</b> Cada pergunta explica por que a gente pergunta e o
+          que muda com cada resposta. Onde está escrito <b>(nossa sugestão)</b> é o caminho que a gente recomenda — se
+          concordar, é só marcar.
+        </div>
+        ) : (
         <div style={{ ...cartao, marginTop: 16, borderColor: '#cfc8e3' }}>
           <b style={{ color: '#17122a' }}>Uma parte já vem montada.</b> Onde tiver um bloco roxo, é uma proposta
           nossa a partir do que já sabemos do teu negócio — tu só marca <b>Aprovado</b>, <b>Ajustar</b> ou
           <b> Tirar</b>. É mais rápido que responder do zero, e o que tu mudar vira informação de verdade.
         </div>
+        )}
       </div>
 
       {erro && <div style={{ ...cartao, borderColor: '#b91c1c', color: '#b91c1c' }}>{erro}</div>}
