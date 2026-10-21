@@ -3,7 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 
 const PUB = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY || ''
 const PRIV = process.env.VAPID_PRIVATE_KEY || ''
-const SUBJECT = process.env.VAPID_SUBJECT || 'mailto:contato@carreiranodigital.com.br'
+const SUBJECT = process.env.VAPID_SUBJECT || 'mailto:contato@carreiranodigital.com'
 if (PUB && PRIV) {
   try { webpush.setVapidDetails(SUBJECT, PUB, PRIV) } catch { /* ignore */ }
 }

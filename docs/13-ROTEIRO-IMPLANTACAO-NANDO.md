@@ -53,7 +53,7 @@ No repo novo, apaga (lista do inventário):
 
 **Identidade da escola → config do negócio (`contexto.config`) ou remover:**
 - `lib/kb.ts:39` — telefone (51) 9686-4727, site carreiranodigital.com, sede Lajeado/RS (+ linha 18)
-- `app/termos/page.tsx` e `app/politica-privacidade/page.tsx` — "Carreira No Digital" + contato@carreiranodigital.com.br
+- `app/termos/page.tsx` e `app/politica-privacidade/page.tsx` — "Carreira No Digital" + contato@carreiranodigital.com
 - `app/agentes/page.tsx` — landing dos 10 agentes do curso (**apaga inteira**)
 - nome "Carreira no Digital" / vendedor "Mateus" em: `followup-auto`, `retomar-time`, `wa-oficial/enviar-template`, `migrar-antigos`, `migrar-proxima-turma`, `recuperar-falhas`, `lib/org.ts`
 

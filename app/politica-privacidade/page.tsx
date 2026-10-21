@@ -33,7 +33,7 @@ export default function PoliticaPrivacidade() {
       <p style={p}>Adotamos medidas para proteger seus dados e os mantemos apenas pelo tempo necessário às finalidades descritas ou exigências legais.</p>
 
       <h2 style={h2}>8. Contato</h2>
-      <p style={p}>Dúvidas sobre privacidade ou solicitações relacionadas aos seus dados: <strong>contato@carreiranodigital.com.br</strong>.</p>
+      <p style={p}>Dúvidas sobre privacidade ou solicitações relacionadas aos seus dados: <strong>contato@carreiranodigital.com</strong>.</p>
     </main>
   )
 }

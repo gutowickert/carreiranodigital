@@ -30,7 +30,7 @@ export default function Termos() {
       <p style={p}>Podemos atualizar estes Termos periodicamente. A versão vigente estará sempre disponível nesta página.</p>
 
       <h2 style={h2}>7. Contato</h2>
-      <p style={p}>Dúvidas sobre estes Termos: <strong>contato@carreiranodigital.com.br</strong>.</p>
+      <p style={p}>Dúvidas sobre estes Termos: <strong>contato@carreiranodigital.com</strong>.</p>
     </main>
   )
 }
