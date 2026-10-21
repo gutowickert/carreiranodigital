@@ -72,3 +72,7 @@ Não marca hora sozinho, não cobra dinheiro, não sobe anúncio, e a IA não mu
 | Chamadas | sem custo de telefonia; a transcrição usa a Deepgram (centavos por minuto); servidor de apoio da Cloudflare é grátis até 1 TB/mês | do cliente |
 | Hospedagem (Vercel) | gratuito ou pago conforme o uso | do cliente |
 | A escola | instalação, implantação e a mensalidade combinada em Entregas | — |
+
+## Várias lojas (21/10/2026)
+
+Pra empresa com mais de uma unidade (nasceu no Mundo do Papelão). Em **Ajustes → Lojas** cada loja ganha endereço, WhatsApp, horário e as **cidades que atende** ("Canoas, Esteio, Sapucaia do Sul"; apelido vale, como "NH"). Quando a cidade do cliente entra no cadastro (a IA anota a que ele contou, ou alguém digita), o sistema põe ele na loja certa e passa pra próxima atendente daquela loja, no rodízio. Em **Usuários** se escolhe a loja de cada pessoa; quem é de uma loja vê só os clientes dela no CRM, e o admin filtra por loja. Empresa com uma loja só não vê nada disso.

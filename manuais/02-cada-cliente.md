@@ -162,6 +162,10 @@ Corretora em Lajeado (Jhones, comercial; Eliana "Lana", administrativo e marketi
 
 - **Segurança, 2ª e 3ª rodadas, e senha forte (08/10, linhas 43, 49 e 50):** mais rotas só com login (contatos, relatórios, modelos, registrar o número, o que a IA sabe, fila, cadência), webhook confere a assinatura da Meta em observação (falta a chave `META_APP_SECRET` da GAJA), senha forte e a tela Trocar minha senha.
 
+## O Mundo do Papelão — TRES Embalagens (crm-mundodopapelao)
+
+Lojas de embalagem de papelão (dona: Cristina; braço direito: Fernando; supervisor: Jonas). **No ar desde 21/10/2026: mundodopapelao.vercel.app**, versão 2.0.0, ainda sem WhatsApp ligado. Primeiro cliente com **várias lojas**: Porto Alegre, Canoas, Novo Hamburgo e Cachoeirinha, cada uma com o próprio número e as cidades que atende; a cidade que o cliente conta põe ele na loja certa e no rodízio das atendentes de lá. Funil dela (Novo contato → Entendendo o pedido → Preço passado → Separado → Envio (frete) → Venda concluída / Perdida, mais Recompra), reserva de 48 h, política comercial 5/10/15% (acima de R$ 500/1.000/2.000), entrega por motoboy/Uber e frete pago pelo cliente. Hoje usam Ultrafox (R$ 1.059,20/mês, mensal) e o caixa Adderi. Começa por Novo Hamburgo. Tudo em `Sistema CND/estado/mundo-do-papelao.md`.
+
 ## Jamrock Skateboarding (crm-jamrock)
 
 Loja de skate. **Congelada por decisão do Nando (25/09/2026): nenhuma atualização até instrução específica.** Não recebe a Máquina, o custo por pessoa nem as correções do núcleo até ele liberar.
@@ -173,6 +177,7 @@ Loja de skate. **Congelada por decisão do Nando (25/09/2026): nenhuma atualiza�
 | Escola | carreiranodigital.vercel.app | — | geral, admin e comercial | sim | sim | sim |
 | Dani Fell | espacodanifell.vercel.app | CRM + Tráfego | geral, todos | Anthropic sem crédito em 27/09; Deepgram sim | **no ar (28/09)** — (51) 99923-0533, número novo, app "Sistema Dani Fell"; nome em análise na Meta | sim (28/09) |
 | GAJA | gajaseguros.vercel.app | combo | marketing | nenhuma | indefinido | não |
+| Mundo do Papelão | mundodopapelao.vercel.app | Sistema (lojas) | não | nenhuma | ainda não (Ultrafox até a troca) | não |
 | Jamrock | jamrockskateboardingco.vercel.app | — | não | — | — | não |
 
 ## Onde está cada sistema (contas)
