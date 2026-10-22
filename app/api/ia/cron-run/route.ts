@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { cabecalhoInterno } from '@/lib/exigir-login'
 import { fecharEsquecidas } from '@/lib/chamadas'
+import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { ORG_CND } from '@/lib/org'
 
 export const maxDuration = 60
 
@@ -33,17 +35,24 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    // 22/10 (funil novo, Rick): com a IA desligada (ia-automacao {ligado:false}), virada, posse-funil, roteador-turma
+    // e sem-cidade-perda ficam de fora. Elas moviam etapa, passavam lead pra IA e mandavam modelo com os significados
+    // do funil antigo (oferecer_bolsa hoje é "Lead frio"). Com a IA desligada, o funil só muda pela mão do time.
+    const { data: chave } = await sb.from('webhook_logs').select('payload').eq('org_id', ORG_CND).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
+    const iaLigada = (chave?.payload as any)?.ligado !== false
+    if (!iaLigada) log.push('IA desligada → virada, posse-funil, roteador-turma e sem-cidade-perda puladas')
+
     if (fase === 'manha') {
       await emLote('warming', '/api/ia/resumos', { limit: 10 })
-      if (restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5, data: ontemUTC() })
+      if (iaLigada && restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5, data: ontemUTC() })
       if (restam() > 8000) { const r = await post('/api/ia/reconciliar', { dryRun: false, confirm: true, dias: 3 }); log.push('reconciliar → ' + (r?.ok ? 'ok' : 'erro')) }
       if (restam() > 12000) await emLote('followup', '/api/ia/followup-auto', { dryRun: false, confirm: true, limit: 60 }, 'planejados', 6)
-      if (restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA, ' + (r?.tarefasCadenciaCanceladas ?? '?') + ' tarefas limpas') }
+      if (iaLigada && restam() > 8000) { const r = await post('/api/ia/posse-funil', { dryRun: false, confirm: true }); log.push('posse-funil → ' + (r?.passaramPraIA ?? '?') + ' pra IA, ' + (r?.tarefasCadenciaCanceladas ?? '?') + ' tarefas limpas') }
       if (restam() > 6000) { const r = await post('/api/ia/garantir-tarefas', { dryRun: false, confirm: true }); log.push('garantir-tarefas → ' + (r?.criadas ?? '?') + ' órfãos do time') }
       // roteador de turma: 10d após uma turma começar, rola os órfãos dela pra próxima turma (1 toque de reativação)
-      if (restam() > 6000) { const r = await post('/api/ia/roteador-turma', { dryRun: false, confirm: true }); log.push('roteador-turma → ' + (r?.reativados ?? '?') + ' reativados' + (r?.semProxima?.length ? ` ⚠️ ${r.semProxima.length} turma(s) SEM próxima (decidir)` : '')) }
+      if (iaLigada && restam() > 6000) { const r = await post('/api/ia/roteador-turma', { dryRun: false, confirm: true }); log.push('roteador-turma → ' + (r?.reativados ?? '?') + ' reativados' + (r?.semProxima?.length ? ` ⚠️ ${r.semProxima.length} turma(s) SEM próxima (decidir)` : '')) }
       // sem-cidade → perda em 2 dias: quem recebeu "qual tua cidade?" e não respondeu vira perda (pool de disparo)
-      if (restam() > 6000) { const r = await post('/api/ia/sem-cidade-perda', { dryRun: false, confirm: true }); log.push('sem-cidade-perda → ' + (r?.perdidos ?? '?') + ' perdidos (de ' + (r?.candidatos ?? '?') + ')') }
+      if (iaLigada && restam() > 6000) { const r = await post('/api/ia/sem-cidade-perda', { dryRun: false, confirm: true }); log.push('sem-cidade-perda → ' + (r?.perdidos ?? '?') + ' perdidos (de ' + (r?.candidatos ?? '?') + ')') }
       // RECONFIRMAR OS ENCONTROS DE ENTREGA — 2 dias antes pergunta pro cliente, 1 dia antes
       // insiste e avisa quem atende. Sem isso, quem lembra em cima da hora avisa com o time já na
       // estrada, e o dia se perde. Vai na manhã: mensagem de noite rende menos resposta.
@@ -52,7 +61,7 @@ export async function POST(req: NextRequest) {
     } else { // noite
       // limit 5 (era 10): 10 interpretações LLM numa chamada estouravam os 60s → morria sem processar.
       // Com 5 cada chamada completa; o emLote faz várias rodadas e os passes noturnos escalonados drenam o resto.
-      await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5 })
+      if (iaLigada) await emLote('virada', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5 })
       if (restam() > 6000) await emLote('sync-pool', '/api/ia/sync-pool', { dryRun: false, confirm: true, limit: 800 }, 'inseridos', 3)
     }
     // chamada que ninguém encerrou (aba fechada, bateria): fecha, transcreve e manda pro card do lead
