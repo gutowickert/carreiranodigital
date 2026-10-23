@@ -92,12 +92,13 @@ const nomeDia = (d: string) => DIAS[new Date(d + 'T12:00:00-03:00').getDay()]
 
 type Item = { hora: string; iso: string; titulo: string; detalhe?: string; origem: 'agenda' | 'cliente' | 'aula' }
 
-export async function agendaDoDia(u: Usuario, data: string): Promise<Item[]> {
+// fora: produtos das Entregas que não entram (o Nando saiu do Deu Venda, 23/10/2026)
+export async function agendaDoDia(u: Usuario, data: string, fora: string[] = []): Promise<Item[]> {
   const ini = `${data}T00:00:00-03:00`, fim = `${data}T23:59:59-03:00`
   const [{ data: ev }, { data: marcos }, { data: aulas }] = await Promise.all([
     sb.from('agenda_eventos').select('id, titulo, tipo, inicio, fim, descricao, usuario_id, participantes, concluido, dia_todo')
       .eq('org_id', u.org_id).gte('inicio', ini).lte('inicio', fim).eq('concluido', false).order('inicio'),
-    sb.from('projeto_marcos').select('id, titulo, data_combinada, estado, local, responsavel_id, reconfirmacao_resposta, projetos!inner(cliente, responsavel_id, participantes)')
+    sb.from('projeto_marcos').select('id, titulo, data_combinada, estado, local, responsavel_id, reconfirmacao_resposta, projetos!inner(cliente, responsavel_id, participantes, produto)')
       .eq('org_id', u.org_id).in('estado', ['combinado', 'confirmado']).gte('data_combinada', ini).lte('data_combinada', fim).order('data_combinada'),
     sb.from('agenda_aulas').select('id, titulo, inicio, fim, professor_id, turmas(codigo)')
       .eq('org_id', u.org_id).eq('professor_id', u.id).gte('inicio', ini).lte('inicio', fim).order('inicio'),
@@ -107,6 +108,7 @@ export async function agendaDoDia(u: Usuario, data: string): Promise<Item[]> {
   for (const e of ev || []) if (meu(e)) itens.push({ hora: e.dia_todo ? 'dia todo' : fmtHora(e.inicio), iso: e.inicio, titulo: e.titulo, detalhe: e.descricao || undefined, origem: 'agenda' })
   for (const m of marcos || []) {
     const p: any = m.projetos
+    if (fora.includes(p?.produto)) continue
     if (m.responsavel_id === u.id || p?.responsavel_id === u.id || (Array.isArray(p?.participantes) && p.participantes.includes(u.id))) {
       const local = LOCAIS.find(l => l.chave === m.local)?.nome
       itens.push({ hora: fmtHora(m.data_combinada), iso: m.data_combinada, titulo: `${p?.cliente}: ${m.titulo}`, detalhe: [local, m.estado === 'confirmado' ? 'confirmado' : 'a confirmar'].filter(Boolean).join(' · '), origem: 'cliente' })
@@ -117,11 +119,11 @@ export async function agendaDoDia(u: Usuario, data: string): Promise<Item[]> {
 }
 
 // o que está pendente com os clientes dele: encontro atrasado e encontro de amanhã sem reconfirmação
-async function pendenciasDeEntrega(u: Usuario) {
+async function pendenciasDeEntrega(u: Usuario, fora: string[] = []) {
   const hoje = hojeBR(), amanha = menosDias(hoje, -1)
-  const { data: marcos } = await sb.from('projeto_marcos').select('titulo, estado, data_prevista, data_combinada, natureza, reconfirmacao_resposta, responsavel_id, projetos!inner(cliente, responsavel_id, status)')
+  const { data: marcos } = await sb.from('projeto_marcos').select('titulo, estado, data_prevista, data_combinada, natureza, reconfirmacao_resposta, responsavel_id, projetos!inner(cliente, responsavel_id, status, produto)')
     .eq('org_id', u.org_id).not('estado', 'in', '("concluido","cancelado")')
-  const meus = (marcos || []).filter((m: any) => (m.responsavel_id === u.id || m.projetos?.responsavel_id === u.id) && m.projetos?.status === 'ativo')
+  const meus = (marcos || []).filter((m: any) => (m.responsavel_id === u.id || m.projetos?.responsavel_id === u.id) && m.projetos?.status === 'ativo' && !fora.includes(m.projetos?.produto))
   const atrasados = meus.filter((m: any) => m.natureza === 'encontro' && m.estado === 'previsto' && m.data_prevista && String(m.data_prevista).slice(0, 10) < hoje)
   const semReconfirmar = meus.filter((m: any) => m.estado === 'combinado' && m.data_combinada && new Date(m.data_combinada).toLocaleDateString('en-CA', { timeZone: TZ }) === amanha && !m.reconfirmacao_resposta)
   return {
@@ -216,8 +218,8 @@ export async function relatorioTrafego(u: Usuario) {
 // porque fora da janela de 24h só passa modelo, e ele nem abria. Pra quem está na lista
 // (configuracoes assistente.resumo_845, e-mails separados por vírgula), o bom dia das 7h, os
 // avisos de hora em hora e o relatório de segunda saem, e no lugar vêm:
-//   resumoDoDia    → seg a sex 8:45 (pg_cron): tema do dia, agenda, vendas, leads, clientes em
-//                    vermelho; na sexta, tudo que ficou pra trás.
+//   resumoDoDia    → seg a sex 8:45 (pg_cron): tema do dia, agenda, os clientes dele em vermelho,
+//                    encontros atrasados; na sexta, tudo que ficou pra trás. Sem Deu Venda.
 //   resumoDaSemana → domingo 20h (pg_cron): a semana dia por dia.
 // Janela aberta: texto livre, escrito pela IA (sem crédito, rodízio de frases). Fechada: o modelo
 // de reserva cnd_resumo_agenda, com o resumo numa linha e o botão "Me manda tudo", que abre a
@@ -264,10 +266,15 @@ async function tarefasAtrasadas(u: Usuario) {
     .map((e: any) => `${e.titulo} (${fmtDia(new Date(e.inicio).toLocaleDateString('en-CA', { timeZone: TZ }))})`)
 }
 
-// clientes da entrega em vermelho (o mesmo critério dos avisos de hora em hora)
-async function clientesEmVermelho(org: string) {
-  const m = await montarMonitor(org, 7).catch(() => null)
-  return (m?.cards || []).flatMap(c => c.alertas.filter(a => a.nivel === 'vermelho' && ['parou', 'sem_gasto', 'sem_saldo', 'conta_inativa', 'sem_campanha'].includes(a.chave)).map(a => `${c.cliente}: ${a.titulo}`))
+// clientes da entrega em vermelho (o mesmo critério dos avisos de hora em hora), só os projetos dele
+const PRODUTOS_FORA_DO_RESUMO = ['deu_venda', 'combo']   // o Nando saiu do Deu Venda (23/10/2026)
+async function clientesEmVermelho(u: Usuario) {
+  const [m, { data: meus }] = await Promise.all([
+    montarMonitor(u.org_id, 7).catch(() => null),
+    sb.from('projetos').select('id, responsavel_id, participantes').eq('org_id', u.org_id),
+  ])
+  const ids = new Set((meus || []).filter((p: any) => p.responsavel_id === u.id || (Array.isArray(p.participantes) && p.participantes.includes(u.id))).map((p: any) => p.id))
+  return (m?.cards || []).filter(c => ids.has(c.id) && !PRODUTOS_FORA_DO_RESUMO.includes(c.produto)).flatMap(c => c.alertas.filter(a => a.nivel === 'vermelho' && ['parou', 'sem_gasto', 'sem_saldo', 'conta_inativa', 'sem_campanha'].includes(a.chave)).map(a => `${c.cliente}: ${a.titulo}`))
 }
 
 // a IA reescreve no jeito do Nando; sem chave ou sem crédito, fica o texto montado
@@ -288,25 +295,23 @@ async function escreverComIA(u: Usuario, texto: string, pedido: string) {
 
 export async function montarResumoDoDia(u: Usuario) {
   const hoje = hojeBR(), dow = diaSemana(hoje)
-  const [itens, pend, ontem, esperando, atrasadas, vermelhos] = await Promise.all([
-    agendaDoDia(u, hoje), pendenciasDeEntrega(u), vendasDeOntem(u.org_id), leadsEsperando(u.org_id), tarefasAtrasadas(u), clientesEmVermelho(u.org_id),
+  // sem vendas de ontem e leads esperando: o funil da escola é o do Deu Venda, e ele saiu (23/10/2026)
+  const [itens, pend, atrasadas, vermelhos] = await Promise.all([
+    agendaDoDia(u, hoje, PRODUTOS_FORA_DO_RESUMO), pendenciasDeEntrega(u, PRODUTOS_FORA_DO_RESUMO), tarefasAtrasadas(u), clientesEmVermelho(u),
   ])
   const tema = TEMA_DIA[dow] || 'dia livre'
-  const brl0 = (x: number) => 'R$ ' + x.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-  const linhaOntem = ontem.n ? `Ontem: ${ontem.n} ${ontem.n === 1 ? 'venda' : 'vendas'}, ${brl0(ontem.total)} (${ontem.nomes.slice(0, 4).join(', ')}).` : ''
-  const linhaEsp = esperando.length ? `${esperando.length} ${esperando.length === 1 ? 'lead esperando resposta' : 'leads esperando resposta'}: ${esperando.slice(0, 5).map(x => x.nome).join(', ')}.` : ''
   const partes = [sorteio(ABERTURAS, hoje).replace('{n}', chamar(u)) + ` Hoje é ${nomeDia(hoje)}, ${tema}.`, textoAgenda(itens, hoje)]
-  if (linhaOntem || linhaEsp) partes.push([linhaOntem, linhaEsp].filter(Boolean).join('\n'))
   if (vermelhos.length) partes.push(`Clientes pedindo atenção:\n${vermelhos.map(x => '• ' + x).join('\n')}`)
   if (pend.semReconfirmar.length) partes.push(`Amanhã sem reconfirmação:\n${pend.semReconfirmar.map(x => '• ' + x).join('\n')}`)
-  if (pend.atrasados.length) partes.push(`Encontros que passaram da data prevista e ainda não foram marcados:\n${pend.atrasados.map(x => '• ' + x).join('\n')}`)
+  // encontro atrasado: a lista na segunda e na sexta; nos outros dias só o número (não repetir todo dia)
+  if (pend.atrasados.length) partes.push(dow === 1 || dow === 5 ? `Encontros que passaram da data prevista e ainda não foram marcados:\n${pend.atrasados.map(x => '• ' + x).join('\n')}` : `${pend.atrasados.length} ${pend.atrasados.length === 1 ? 'encontro de cliente segue' : 'encontros de cliente seguem'} sem data marcada.`)
   // sexta é o dia de botar em dia: a lista inteira; nos outros dias, só o tamanho dela
   if (atrasadas.length) partes.push(dow === 5 ? `O que ficou pra trás:\n${atrasadas.map(x => '• ' + x).join('\n')}` : `${atrasadas.length} ${atrasadas.length === 1 ? 'tarefa ficou' : 'tarefas ficaram'} pra trás; vão no resumo de sexta.`)
   partes.push(sorteio(FECHOS, hoje, 3))
   const rascunho = partes.join('\n\n')
 
   const compromissos = itens.length ? itens.slice(0, 4).map(i => `${i.hora} ${i.titulo}`).join('; ') : 'nada marcado'
-  const extras = [linhaEsp, vermelhos.length ? `${vermelhos.length} ${vermelhos.length === 1 ? 'cliente' : 'clientes'} em vermelho.` : '', atrasadas.length ? `${atrasadas.length} ${atrasadas.length === 1 ? 'tarefa' : 'tarefas'} pra trás.` : '']
+  const extras = [vermelhos.length ? `${vermelhos.length} ${vermelhos.length === 1 ? 'cliente' : 'clientes'} em vermelho.` : '', atrasadas.length ? `${atrasadas.length} ${atrasadas.length === 1 ? 'tarefa' : 'tarefas'} pra trás.` : '']
   const linha = umaLinha(`${nomeDia(hoje)} ${fmtDia(hoje)}, ${tema}. ${compromissos}. ${extras.filter(Boolean).join(' ')}`)
   return { rascunho, linha, compromissos: itens.length }
 }
@@ -316,7 +321,7 @@ export async function montarResumoDaSemana(u: Usuario) {
   const hoje = hojeBR(), dow = diaSemana(hoje)
   const segunda = menosDias(hoje, -(dow === 0 ? 1 : 8 - dow))
   const dias = [0, 1, 2, 3, 4].map(i => menosDias(segunda, -i))
-  const [agendas, atrasadas] = await Promise.all([Promise.all(dias.map(d => agendaDoDia(u, d))), tarefasAtrasadas(u)])
+  const [agendas, atrasadas] = await Promise.all([Promise.all(dias.map(d => agendaDoDia(u, d, PRODUTOS_FORA_DO_RESUMO))), tarefasAtrasadas(u)])
   const blocos = dias.map((d, i) => {
     const its = agendas[i]
     const cab = `${nomeDia(d)} ${fmtDia(d)}, ${TEMA_DIA[diaSemana(d)]}`
