@@ -6,6 +6,7 @@ import { temSessao } from '@/lib/quem-eu-vejo'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 import { ROTEIROS, situacaoMarco, dataFimContrato, type Produto } from '@/lib/entrega'
 import { hojeBR } from '@/lib/periodos'
+import { novoEncontro } from '@/lib/marco-acoes'
 import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Ficha do cliente em entrega: o projeto, a linha do tempo, os andamentos e o
@@ -227,6 +228,18 @@ export async function POST(req: Request) {
     // ── o projeto é desta empresa? (tudo abaixo grava em tabela nova)
     const { data: dono } = await sb.from('projetos').select('id').eq('org_id', org).eq('id', projetoId).maybeSingle()
     if (!dono) return NextResponse.json({ ok: false, error: 'projeto não encontrado' }, { status: 200 })
+
+    // ── NOVO ENCONTRO (23/10/2026): a entrega nasce só com o primeiro e o último encontro; os do
+    // meio se criam aqui. Com data e hora nasce combinado (mesmo caminho e mesmo aviso de região do
+    // combinar); só com a data, nasce previsto. A lógica vive em lib/marco-acoes.ts.
+    if (acao === 'novo_encontro') {
+      const r = await novoEncontro(org, projetoId, {
+        titulo: (b.titulo || '').toString(), data: (b.data || '').toString(), hora: (b.hora || '').toString() || null,
+        local: (b.local || '').toString() || null, mesmoAssim: !!b.mesmo_assim, autor: (b.autor || '').toString() || null,
+      })
+      if (!r.ok) return NextResponse.json({ ok: false, error: r.error, ...(r.precisa_confirmar_regiao ? { precisa_confirmar_regiao: true } : {}) }, { status: 200 })
+      return NextResponse.json({ ok: true, id: r.id, titulo: r.titulo, combinado: r.combinado, aviso: r.aviso })
+    }
 
     // ── PLACAR: foto dos números numa data. O ponto A é a base de antes do trabalho.
     // ── ÁREA DO CLIENTE: o link com chave. "trocar" invalida o antigo (link vazou)

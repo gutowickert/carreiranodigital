@@ -36,9 +36,9 @@ import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide
 // mostra e se avisa o que foi visto. Só o que está NA TELA é marcado: com a aba "Comercial" os
 // meus itens nem aparecem, e clicar no dia não pode apagá-los.
 //
-// ENTREGA É SÓ LEITURA AQUI. O marco de entrega se conclui, combina e remarca na ficha da entrega,
-// onde vale a regra de ouro: encontro não fecha sem marcar o próximo com o cliente. Por isso a linha
-// dele não tem bolinha de concluir, e o detalhe só leva pra ficha. Marco PREVISTO (o roteiro
+// ENTREGA: o encontro COMBINA e REMARCA aqui (desde 23/10/2026 também remarca); CONCLUIR é só na
+// ficha da entrega, onde se registra o que aconteceu e se marca/cria o próximo. Por isso a linha
+// dele não tem bolinha de concluir. Marco PREVISTO (o roteiro
 // calculou, ninguém combinou) aparece tracejado e sem hora — é sombra, não reunião marcada.
 
 type Item = {
@@ -1076,9 +1076,16 @@ function Linha({ it, eu, nomeDe, naoLido, ocupado, onConcluir, onAbrir, atrasado
 // A data já vem preenchida com o palpite do roteiro: quase sempre a conversa com o cliente confirma
 // a semana e muda só a hora.
 function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
-  const ini = paraData(it.inicio)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const [quando, setQuando] = useState(`${ini.getFullYear()}-${pad(ini.getMonth() + 1)}-${pad(ini.getDate())}T09:00`)
+  // REMARCAR TAMBÉM (23/10/2026): encontro já combinado ou confirmado muda de hora aqui mesmo. Antes
+  // a agenda só deixava combinar o previsto e mandava "remarcar na ficha" — quem vive na agenda
+  // (o Mateus) não achava onde mudar o horário.
+  const remarcar = it.estado === 'combinado' || it.estado === 'confirmado'
+  // HORA DE BRASÍLIA, não a do aparelho: com o fuso do computador errado, a hora ia gravada 1h fora
+  const dataSP = /^\d{4}-\d{2}-\d{2}$/.test(it.inicio) ? it.inicio : new Date(it.inicio).toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+  const inicial = remarcar && !/^\d{4}-\d{2}-\d{2}$/.test(it.inicio)
+    ? new Date(it.inicio).toLocaleString('sv-SE', { timeZone: 'America/Sao_Paulo' }).replace(' ', 'T').slice(0, 16)
+    : `${dataSP}T09:00`
+  const [quando, setQuando] = useState(inicial)
   const [local, setLocal] = useState(it.local || '')
   const [salvando, setSalvando] = useState(false)
   const [erro, setErro] = useState('')
@@ -1087,13 +1094,13 @@ function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
   const [conflito, setConflito] = useState('')
 
   async function combinar(mesmoAssim = false) {
-    const d = new Date(quando)
+    const d = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(quando) ? new Date(quando + ':00-03:00') : new Date(NaN)
     if (isNaN(+d)) { setErro('Confere a data e a hora.'); return }
     if (!local) { setErro('Escolhe onde vai ser — é o que diz pro time se o dia já está comprometido.'); return }
     setSalvando(true); setErro('')
     const j = await fetchAuth('/api/projetos/marco', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ acao: 'combinar', id: it.id, data_hora: d.toISOString(), local, mesmo_assim: mesmoAssim }),
+      body: JSON.stringify({ acao: remarcar ? 'remarcar' : 'combinar', id: it.id, data_hora: d.toISOString(), local, mesmo_assim: mesmoAssim }),
     }).then(r => r.json()).catch(() => null)
     setSalvando(false)
     if (j?.precisa_confirmar_regiao) { setConflito(j.error); return }
@@ -1105,7 +1112,9 @@ function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
   return (
     <div style={{ background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 'var(--r)', padding: '13px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
       <div style={{ fontSize: 12.5, color: 'var(--text-2)', lineHeight: 1.5 }}>
-        <b style={{ color: 'var(--text)' }}>Ainda não foi combinado com o cliente.</b> O roteiro calculou esta data — acertou o dia com ele? Marca aqui que vira compromisso de verdade.
+        {remarcar
+          ? <><b style={{ color: 'var(--text)' }}>Mudar o dia ou a hora.</b> A hora é a de Brasília. Remarcado, a reconfirmação começa de novo.</>
+          : <><b style={{ color: 'var(--text)' }}>Ainda não foi combinado com o cliente.</b> O roteiro calculou esta data — acertou o dia com ele? Marca aqui que vira compromisso de verdade.</>}
       </div>
       <input type="datetime-local" value={quando} onChange={e => { setQuando(e.target.value); setConflito('') }} style={{ ...inp, width: '100%' }} />
       {/* ⚠️ ONDE É — obrigatório. Dois atendimentos no mesmo dia só cabem na MESMA região; é isto
@@ -1125,7 +1134,7 @@ function Combinar({ it, onPronto }: { it: Item; onPronto: () => void }) {
         </div>
       ) : (
         <button onClick={() => combinar(false)} disabled={salvando} style={{ ...btnPri, opacity: salvando ? .6 : 1 }}>
-          {salvando ? 'Combinando…' : 'Combinar'}
+          {salvando ? (remarcar ? 'Remarcando…' : 'Combinando…') : (remarcar ? 'Remarcar' : 'Combinar')}
         </button>
       )}
 
@@ -1170,13 +1179,13 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
             continua valendo só na ficha. Combinar é o contrário disso: é o que tira o cliente do
             limbo. Fazer isso na agenda é o ponto, porque é na agenda que a pessoa VÊ que está
             faltando. */}
-        {ehPrevisto(it) ? (
+        {/* encontro (reunião com o cliente) combina e remarca aqui; concluir continua sendo na ficha */}
+        {it.tipo === 'encontro' && ['previsto', 'a_remarcar', 'combinado', 'confirmado'].includes(it.estado || '') ? (
           <Combinar it={it} onPronto={onCombinado} />
-        ) : (
-          <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
-            Remarcar e concluir se faz na ficha da entrega — lá, antes de fechar um encontro, o sistema pede o próximo.
-          </p>
-        )}
+        ) : null}
+        <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
+          Concluir se faz na ficha da entrega — lá dá pra registrar o que aconteceu e já marcar ou criar o próximo encontro.
+        </p>
         {aviso && (
           <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: '10px 12px', fontSize: 12.5, color: 'var(--amber)' }}>
             Precisa de ti: {aviso}.

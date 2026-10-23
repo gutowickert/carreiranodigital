@@ -2,7 +2,8 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { ROTEIROS, marcosDoRoteiro, dataFimContrato, LOCAIS, type Produto, type Local } from '@/lib/entrega'
 import { pessoasAtivas } from '@/lib/pessoas-org'
 
-// CRIAR UMA ENTREGA (projeto + os marcos do roteiro). Um caminho só, usado pela tela de
+// CRIAR UMA ENTREGA (projeto + os marcos do roteiro; dos encontros, só o primeiro e o último —
+// desde 23/10/2026 os do meio se criam na ficha, "+ Novo encontro"). Um caminho só, usado pela tela de
 // Entregas e pelo assistente do WhatsApp ("cadastra o Fulano no Deu Venda, sessão terça às
 // 14h na sede de POA"). Antes isso vivia dentro da rota, e o assistente não tinha como.
 

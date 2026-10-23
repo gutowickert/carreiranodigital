@@ -20,12 +20,52 @@ const dataHora = (d?: string | null) => {
   if (isNaN(dt.getTime())) return br(d)
   return dt.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 }
-// input datetime-local espera hora local
+// HORA DE BRASÍLIA, SEMPRE (23/10/2026). Antes o campo de data e hora usava o fuso do aparelho de
+// quem abria a ficha: num computador ou celular com o fuso errado (ou com o horário de verão antigo
+// ainda ligado), a hora digitada era gravada com 1h de diferença — "eu boto 8h e fica 7h". Agora o
+// que se digita é lido como hora de Brasília (o Brasil não tem horário de verão desde 2019: -03:00).
+const TZ = 'America/Sao_Paulo'
+/** instante (ISO) → "AAAA-MM-DDTHH:MM" em hora de Brasília, pro campo datetime-local */
 const paraInput = (d?: string | null) => {
   const base = d ? new Date(d) : new Date()
   if (isNaN(base.getTime())) return ''
-  const off = base.getTimezoneOffset()
-  return new Date(base.getTime() - off * 60000).toISOString().slice(0, 16)
+  return base.toLocaleString('sv-SE', { timeZone: TZ }).replace(' ', 'T').slice(0, 16)
+}
+/** "AAAA-MM-DDTHH:MM" (hora de Brasília) → instante ISO; null se o campo está incompleto */
+const doInput = (v?: string | null): string | null => {
+  if (!v || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(v)) return null
+  const d = new Date(v + ':00-03:00')
+  return isNaN(d.getTime()) ? null : d.toISOString()
+}
+const hojeSP = () => new Date().toLocaleDateString('en-CA', { timeZone: TZ })
+// o palpite pro campo: o dia previsto do roteiro, às 14h
+const palpite = (dataPrevista?: string | null) => `${String(dataPrevista || hojeSP()).slice(0, 10)}T14:00`
+
+const caixaAviso: React.CSSProperties = { background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: 11, fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.5 }
+const falha: React.CSSProperties = { fontSize: 12.5, color: 'var(--red)', margin: 0 }
+
+// Os campos de um encontro novo: título, data, hora (opcional) e onde. Usado no "+ Novo encontro"
+// e no concluir ("já cria um novo encontro").
+type DadosEncontro = { titulo?: string; data?: string; hora?: string; local?: string }
+function CamposEncontro({ v, aoMudar }: { v: DadosEncontro; aoMudar: (v: DadosEncontro) => void }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+      <input style={{ ...inp, minWidth: 160, flex: 1 }} placeholder="Título (ex.: Encontro 2)" value={v.titulo || ''} onChange={e => aoMudar({ ...v, titulo: e.target.value })} aria-label="Título do encontro" />
+      <input type="date" style={inp} value={v.data || ''} onChange={e => aoMudar({ ...v, data: e.target.value })} aria-label="Data do encontro" />
+      <input type="time" style={inp} value={v.hora || ''} onChange={e => aoMudar({ ...v, hora: e.target.value })} aria-label="Hora (opcional)" />
+      <select style={inp} value={v.local || ''} onChange={e => aoMudar({ ...v, local: e.target.value })} aria-label="Onde vai ser">
+        <option value="">Onde vai ser?</option>
+        {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
+      </select>
+      <span style={{ fontSize: 11.5, color: 'var(--text-faint)', width: '100%' }}>Sem hora, o encontro fica só previsto (sombra na agenda). Com hora, já nasce combinado — e aí o lugar é obrigatório.</span>
+    </div>
+  )
+}
+/** confere os campos do encontro novo antes de mandar; devolve o erro ou null */
+const conferirEncontro = (v: DadosEncontro): string | null => {
+  if (!v.data) return 'Escolhe a data do novo encontro.'
+  if (v.hora && !v.local) return 'Com hora marcada, escolhe onde vai ser o encontro.'
+  return null
 }
 
 // o link da área do cliente: ele vê o próprio projeto, sem login
@@ -74,6 +114,8 @@ export default function FichaEntrega() {
   const [agindo, setAgindo] = useState<string | null>(null)   // marcoId em ação
   const [form, setForm] = useState<any>({})
   const [novaPend, setNovaPend] = useState('')
+  // "+ Novo encontro": null = fechado
+  const [novoEnc, setNovoEnc] = useState<(DadosEncontro & { erro?: string; conflito?: string; salvando?: boolean }) | null>(null)
 
   async function carregar() {
     const j = await fetchAuth(`/api/projetos/ficha?id=${id}`).then(r => r.json()).catch(() => null)
@@ -87,17 +129,67 @@ export default function FichaEntrega() {
     const j = await fetchAuth('/api/projetos/marco', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }).then(r => r.json()).catch(() => null)
     if (j?.ok) {
       setAgindo(null); setForm({})
-      if (j.aviso) { setMsg('' + j.aviso); setTimeout(() => setMsg(''), 6000) }
+      if (j.aviso) { setMsg('' + j.aviso); setTimeout(() => setMsg(''), 8000) }
       carregar()
-    } else {
-      // o dia já tem a outra região: mostra o aviso e deixa marcar de propósito — avisa, não proíbe
-      if (j?.precisa_confirmar_regiao) { setForm((f: any) => ({ ...f, conflito: j.error })); return }
-      // a regra de ouro: não fecha encontro sem marcar o próximo
-      if (j?.precisa_proximo) {
-        setForm((f: any) => ({ ...f, exigeProximo: j.precisa_proximo, proxima_data_hora: paraInput(j.precisa_proximo.data_prevista + 'T14:00:00') }))
-        setMsg('' + j.error)
-      } else { setMsg('' + (j?.error || 'falha')); setTimeout(() => setMsg(''), 5000) }
+      return
     }
+    const doPainel = agindo && corpo.id === agindo
+    // o dia já tem a outra região: mostra o aviso e deixa marcar de propósito — avisa, não proíbe.
+    // Guarda o pedido pra o "mesmo assim" mandar igual, só com a confirmação.
+    if (j?.precisa_confirmar_regiao && doPainel) { setForm((f: any) => ({ ...f, conflito: j.error, erro: '', ultimo: corpo })); return }
+    // O ERRO APARECE DENTRO DO PAINEL ABERTO. Antes ia pra faixa do topo da página e sumia em 5s:
+    // quem estava lá embaixo, no encontro, clicava em Salvar e achava que nada acontecia (era o
+    // caso do "não consigo mudar o horário" — p.ex. encontro sem lugar, que o servidor recusa).
+    if (doPainel) { setForm((f: any) => ({ ...f, erro: '' + (j?.error || 'não deu certo — tenta de novo'), conflito: '' })); return }
+    setMsg('' + (j?.error || 'falha')); setTimeout(() => setMsg(''), 5000)
+  }
+
+  // combinar / remarcar: confere no navegador o que dá pra conferir, e manda
+  function salvarHora(m: any) {
+    const iso = doInput(form.data_hora)
+    if (!iso) { setForm({ ...form, erro: 'Confere a data e a hora (as duas precisam estar preenchidas).' }); return }
+    const local = form.local || m.local
+    if (!local) { setForm({ ...form, erro: 'Escolhe onde vai ser o encontro — é o que diz pro time se o dia já está comprometido.' }); return }
+    acao({ acao: form.tipo, id: m.id, data_hora: iso, local })
+  }
+
+  // concluir: os dois extras (marcar o próximo e criar um novo) são opcionais
+  function concluir(m: any, proximo: any) {
+    const corpo: any = { acao: 'concluir', id: m.id, registro: form.registro }
+    if (form.marcarProx && proximo) {
+      const iso = doInput(form.proxima_data_hora)
+      if (!iso) { setForm({ ...form, erro: 'Confere a data e a hora do próximo encontro — ou desmarca a opção.' }); return }
+      const local = form.proxima_local || proximo.local
+      if (!local) { setForm({ ...form, erro: 'Escolhe onde vai ser o próximo encontro.' }); return }
+      corpo.proxima_data_hora = iso; corpo.proxima_local = local
+    }
+    if (form.criarNovo) {
+      const nv: DadosEncontro = form.novo || {}
+      const e = conferirEncontro(nv)
+      if (e) { setForm({ ...form, erro: e }); return }
+      corpo.novo_encontro = { titulo: nv.titulo || '', data: nv.data, hora: nv.hora || '', local: nv.local || '' }
+    }
+    acao(corpo)
+  }
+
+  // + NOVO ENCONTRO: entra na ordem pela data; com hora, já nasce combinado
+  async function criarEncontro(mesmoAssim = false) {
+    if (!novoEnc) return
+    const e = conferirEncontro(novoEnc)
+    if (e) { setNovoEnc({ ...novoEnc, erro: e }); return }
+    setNovoEnc({ ...novoEnc, salvando: true, erro: '' })
+    const j = await fetchAuth('/api/projetos/ficha', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'novo_encontro', projeto_id: id, titulo: novoEnc.titulo || '', data: novoEnc.data, hora: novoEnc.hora || '', local: novoEnc.local || '', mesmo_assim: mesmoAssim }),
+    }).then(r => r.json()).catch(() => null)
+    if (j?.ok) {
+      setNovoEnc(null)
+      setMsg(`${j.titulo} criado${j.combinado ? ' e combinado' : ' (previsto)'}.${j.aviso ? ' ' + j.aviso : ''}`); setTimeout(() => setMsg(''), 6000)
+      carregar()
+      return
+    }
+    if (j?.precisa_confirmar_regiao) { setNovoEnc(v => v && ({ ...v, salvando: false, conflito: j.error })); return }
+    setNovoEnc(v => v && ({ ...v, salvando: false, erro: '' + (j?.error || 'não consegui criar o encontro') }))
   }
 
   async function pendencia(corpo: any) {
@@ -113,6 +205,9 @@ export default function FichaEntrega() {
   const pessoas: { id: string; nome: string }[] = d.pessoas || []
   const donoProjeto = pessoas.find(x => x.id === p.responsavel_id)
   const semDono = marcos.filter((m: any) => m.estado !== 'concluido' && !m.responsavel_id && !p.responsavel_id).length
+  // sugestão de título pro encontro novo: "Encontro N", contando os encontros que já existem, fora o 1º
+  const encontrosVivos = marcos.filter((m: any) => m.natureza === 'encontro' && m.estado !== 'cancelado')
+  const sugestaoTitulo = `Encontro ${Math.max(1, encontrosVivos.length - 1)}`
 
   const juntos: string[] = (p.participantes || []).filter((x: string) => x !== p.responsavel_id)
   async function trocarJuntos(lista: string[]) {
@@ -216,7 +311,31 @@ export default function FichaEntrega() {
             carregar()
           }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)', letterSpacing: 0, textTransform: 'none', fontWeight: 600 }}>aplicar a lista padrão do roteiro</button>
         )}
+        {/* a entrega nasce só com o primeiro e o último encontro: os do meio se criam aqui */}
+        {!novoEnc && p.status !== 'cancelado' && (
+          <button onClick={() => setNovoEnc({ titulo: sugestaoTitulo, data: '', hora: '', local: '' })}
+            style={{ ...btn, background: 'var(--accent)', color: '#fff', letterSpacing: 0, textTransform: 'none', marginLeft: 'auto' }}>+ Novo encontro</button>
+        )}
       </div>
+      {novoEnc && (
+        <div style={{ ...card, padding: 14, marginBottom: 10, display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <div style={{ fontSize: 13.5, fontWeight: 700, color: 'var(--text)' }}>Novo encontro</div>
+          <CamposEncontro v={novoEnc} aoMudar={v => setNovoEnc({ ...novoEnc, ...v, erro: '', conflito: '' })} />
+          {novoEnc.conflito && (
+            <div style={caixaAviso}>
+              {novoEnc.conflito}
+              <div style={{ marginTop: 8 }}>
+                <button onClick={() => criarEncontro(true)} disabled={novoEnc.salvando} style={{ ...btn, background: 'transparent', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Criar mesmo assim</button>
+              </div>
+            </div>
+          )}
+          {novoEnc.erro && <p style={falha}>{novoEnc.erro}</p>}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={() => criarEncontro(false)} disabled={novoEnc.salvando} style={{ ...btn, background: 'var(--accent)', color: '#fff', opacity: novoEnc.salvando ? .6 : 1 }}>{novoEnc.salvando ? 'Criando…' : 'Criar encontro'}</button>
+            <button onClick={() => setNovoEnc(null)} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
+          </div>
+        </div>
+      )}
       {semDono > 0 && (
         <div style={{ background: 'var(--amber-bg)', borderRadius: 8, padding: '9px 11px', marginBottom: 10, fontSize: 12.5, color: 'var(--text-2)' }}>
           <b style={{ color: 'var(--text)' }}>{semDono} {semDono === 1 ? 'tarefa sem dono' : 'tarefas sem dono'}</b> — na agenda aparecem pro grupo todo e ninguém responde por elas. Escolhe o responsável do projeto lá em cima, ou o dono de cada uma.
@@ -228,6 +347,10 @@ export default function FichaEntrega() {
           const cor = m.situacao === 'atrasado' ? 'var(--red)' : m.situacao === 'a_remarcar' || m.situacao === 'confirmar' ? 'var(--amber)'
             : m.estado === 'confirmado' ? 'var(--green)' : m.estado === 'combinado' ? 'var(--blue)' : 'var(--border-strong)'
           const icone = feito ? '✔' : m.ancora ? '🔒' : m.natureza === 'interno' ? '⚙' : m.natureza === 'marco' ? '◆' : '○'
+          // o próximo encontro que já existe (pra oferecer marcar a data dele ao concluir este)
+          const proximo = m.natureza === 'encontro'
+            ? marcos.find((x: any) => x.ordem > m.ordem && x.natureza === 'encontro' && x.estado !== 'concluido' && x.estado !== 'cancelado') || null
+            : null
           return (
             <div key={m.id} style={{ ...card, padding: 14, borderLeft: `3px solid ${cor}`, opacity: feito ? .72 : 1 }}>
               <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, flexWrap: 'wrap' }}>
@@ -235,7 +358,7 @@ export default function FichaEntrega() {
                 <div style={{ flex: 1, minWidth: 180 }}>
                   <div style={{ fontSize: 14.5, fontWeight: 700, color: 'var(--text)' }}>{m.titulo}</div>
                   <div style={{ fontSize: 12, color: 'var(--text-faint)', marginTop: 2 }}>
-                    {m.estado === 'previsto' && <>previsto para ~{br(m.data_prevista)}{m.natureza === 'encontro' && ' · a data se combina no encontro anterior'}</>}
+                    {m.estado === 'previsto' && <>previsto para ~{br(m.data_prevista)}{m.natureza === 'encontro' && ' · sem hora ainda: combina com o cliente'}</>}
                     {m.estado === 'combinado' && <>{dataHora(m.data_combinada)} · <b style={{ color: 'var(--amber)' }}>falta reconfirmar</b></>}
                     {m.estado === 'confirmado' && <>{dataHora(m.data_combinada)} · confirmado</>}
                     {m.estado === 'a_remarcar' && <b style={{ color: 'var(--amber)' }}>sem reconfirmação — precisa remarcar</b>}
@@ -273,15 +396,22 @@ export default function FichaEntrega() {
                       <span style={{ fontSize: 11.5, color: 'var(--text-faint)' }}>{m.natureza === 'marco' ? 'marco' : 'tarefa interna'} · sem hora, conclui quando fizer</span>
                     )}
                     {m.natureza === 'encontro' && (m.estado === 'previsto' || m.estado === 'a_remarcar') && (
-                      <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'combinar', data_hora: paraInput((m.data_prevista || '') + 'T14:00:00') }) }} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Combinar</button>
+                      <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'combinar', data_hora: m.data_combinada ? paraInput(m.data_combinada) : palpite(m.data_prevista), local: m.local || '' }) }} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Combinar</button>
                     )}
-                    {m.estado === 'combinado' && (
+                    {m.natureza === 'encontro' && m.estado === 'combinado' && (
                       <button onClick={() => acao({ acao: 'confirmar', id: m.id })} style={{ ...btn, background: 'var(--green-bg)', color: 'var(--green)' }}>Confirmar</button>
                     )}
-                    {(m.estado === 'combinado' || m.estado === 'confirmado') && (
-                      <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'remarcar', data_hora: paraInput(m.data_combinada) }) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Remarcar</button>
+                    {m.natureza === 'encontro' && (m.estado === 'combinado' || m.estado === 'confirmado') && (
+                      <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'remarcar', data_hora: paraInput(m.data_combinada), local: m.local || '' }) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Remarcar</button>
                     )}
-                    <button onClick={() => { setAgindo(m.id); setForm({ tipo: 'concluir', registro: '' }) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Concluir</button>
+                    <button onClick={() => {
+                      setAgindo(m.id)
+                      setForm({
+                        tipo: 'concluir', registro: '',
+                        marcarProx: false, proxima_data_hora: proximo ? (proximo.data_combinada ? paraInput(proximo.data_combinada) : palpite(proximo.data_prevista)) : '', proxima_local: proximo?.local || m.local || '',
+                        criarNovo: false, novo: { titulo: sugestaoTitulo, data: '', hora: '', local: m.local || '' },
+                      })
+                    }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Concluir</button>
                   </div>
                 )}
               </div>
@@ -292,25 +422,26 @@ export default function FichaEntrega() {
                   {(form.tipo === 'combinar' || form.tipo === 'remarcar') && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                       <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{form.tipo === 'combinar' ? 'Combinado com o cliente para' : 'Nova data'}:</span>
-                        <input type="datetime-local" style={inp} value={form.data_hora || ''} onChange={e => setForm({ ...form, data_hora: e.target.value, conflito: '' })} />
+                        <span style={{ fontSize: 12.5, color: 'var(--text-faint)' }}>{form.tipo === 'combinar' ? 'Combinado com o cliente para' : 'Nova data'} (hora de Brasília):</span>
+                        <input type="datetime-local" style={inp} value={form.data_hora || ''} onChange={e => setForm({ ...form, data_hora: e.target.value, conflito: '', erro: '' })} />
                         {/* ⚠️ ONDE É — obrigatório. Dois atendimentos no mesmo dia só cabem na MESMA
                             região; é isto que deixa o time ver se o dia já está comprometido. */}
-                        <select style={inp} value={form.local || m.local || ''} onChange={e => setForm({ ...form, local: e.target.value, conflito: '' })}>
+                        <select style={inp} value={form.local || ''} onChange={e => setForm({ ...form, local: e.target.value, conflito: '', erro: '' })}>
                           <option value="">Onde vai ser?</option>
                           {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
                         </select>
                       </div>
                       {form.conflito && (
-                        <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: 11, fontSize: 12.5, color: 'var(--amber)', lineHeight: 1.5 }}>
+                        <div style={caixaAviso}>
                           {form.conflito}
                           <div style={{ marginTop: 8 }}>
-                            <button onClick={() => acao({ acao: form.tipo, id: m.id, data_hora: new Date(form.data_hora).toISOString(), local: form.local || m.local, mesmo_assim: true })} style={{ ...btn, background: 'transparent', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Marcar mesmo assim</button>
+                            <button onClick={() => acao({ ...form.ultimo, mesmo_assim: true })} style={{ ...btn, background: 'transparent', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Marcar mesmo assim</button>
                           </div>
                         </div>
                       )}
+                      {form.erro && <p style={falha}>{form.erro}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => acao({ acao: form.tipo, id: m.id, data_hora: new Date(form.data_hora).toISOString(), local: form.local || m.local })} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Salvar</button>
+                        <button onClick={() => salvarHora(m)} style={{ ...btn, background: 'var(--accent)', color: '#fff' }}>Salvar</button>
                         <button onClick={() => { setAgindo(null); setForm({}) }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
                       </div>
                     </div>
@@ -318,21 +449,50 @@ export default function FichaEntrega() {
                   {form.tipo === 'concluir' && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
                       <textarea style={{ ...inp, minHeight: 66, width: '100%' }} placeholder="O que aconteceu? (fica na ficha pra quem pegar esse cliente depois)" value={form.registro || ''} onChange={e => setForm({ ...form, registro: e.target.value })} />
-                      {form.exigeProximo && (
-                        <div style={{ background: 'var(--amber-bg)', border: '1px solid var(--amber)', borderRadius: 8, padding: 11 }}>
-                          <div style={{ fontSize: 12.5, color: 'var(--text)', fontWeight: 600 }}>Marca o próximo antes de fechar</div>
-                          <div style={{ fontSize: 12, color: 'var(--text-2)', margin: '3px 0 8px' }}>{form.exigeProximo.titulo} — a data se combina agora, com o cliente na frente.</div>
-                          <input type="datetime-local" style={inp} value={form.proxima_data_hora || ''} onChange={e => setForm({ ...form, proxima_data_hora: e.target.value })} />
-                          {/* o próximo encontro nasce com lugar: sem isto ele entraria na agenda
-                              sem região, e o problema que a gente acabou de resolver voltaria */}
-                          <select style={{ ...inp, marginTop: 7 }} value={form.proxima_local || ''} onChange={e => setForm({ ...form, proxima_local: e.target.value })}>
-                            <option value="">Onde vai ser o próximo?</option>
-                            {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
-                          </select>
+                      {/* A ANTIGA REGRA DE OURO VIROU CONVITE (23/10/2026): os encontros do meio não
+                          nascem mais com o projeto, então nada aqui é obrigatório. Dá pra concluir sem
+                          marcar nada, marcar a data do próximo que já existe, criar um novo — ou os dois. */}
+                      {m.natureza === 'encontro' && proximo && (
+                        <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 11 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={!!form.marcarProx} onChange={e => setForm({ ...form, marcarProx: e.target.checked, erro: '', conflito: '' })} />
+                            Já marcar a data de “{proximo.titulo}” (opcional)
+                          </label>
+                          {form.marcarProx && (
+                            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap', marginTop: 8 }}>
+                              <input type="datetime-local" style={inp} value={form.proxima_data_hora || ''} onChange={e => setForm({ ...form, proxima_data_hora: e.target.value, erro: '', conflito: '' })} aria-label="Data e hora do próximo encontro" />
+                              <select style={inp} value={form.proxima_local || ''} onChange={e => setForm({ ...form, proxima_local: e.target.value, erro: '', conflito: '' })} aria-label="Onde vai ser o próximo">
+                                <option value="">Onde vai ser o próximo?</option>
+                                {LOCAIS.map(l => <option key={l.chave} value={l.chave}>{l.nome}</option>)}
+                              </select>
+                            </div>
+                          )}
                         </div>
                       )}
+                      {m.natureza === 'encontro' && (
+                        <div style={{ background: 'var(--surface-2)', borderRadius: 8, padding: 11 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 12.5, color: 'var(--text)', fontWeight: 600, cursor: 'pointer' }}>
+                            <input type="checkbox" checked={!!form.criarNovo} onChange={e => setForm({ ...form, criarNovo: e.target.checked, erro: '', conflito: '' })} />
+                            Criar um novo encontro (opcional)
+                          </label>
+                          {form.criarNovo && (
+                            <div style={{ marginTop: 8 }}>
+                              <CamposEncontro v={form.novo || {}} aoMudar={v => setForm({ ...form, novo: v, erro: '', conflito: '' })} />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {form.conflito && (
+                        <div style={caixaAviso}>
+                          {form.conflito}
+                          <div style={{ marginTop: 8 }}>
+                            <button onClick={() => acao({ ...form.ultimo, mesmo_assim: true })} style={{ ...btn, background: 'transparent', color: 'var(--amber)', border: '1px solid var(--amber)' }}>Concluir e marcar mesmo assim</button>
+                          </div>
+                        </div>
+                      )}
+                      {form.erro && <p style={falha}>{form.erro}</p>}
                       <div style={{ display: 'flex', gap: 8 }}>
-                        <button onClick={() => acao({ acao: 'concluir', id: m.id, registro: form.registro, proxima_data_hora: form.proxima_data_hora ? new Date(form.proxima_data_hora).toISOString() : undefined, proxima_local: form.proxima_local || undefined })} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Concluir</button>
+                        <button onClick={() => concluir(m, proximo)} style={{ ...btn, background: 'var(--green)', color: '#fff' }}>Concluir</button>
                         <button onClick={() => { setAgindo(null); setForm({}); setMsg('') }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Cancelar</button>
                       </div>
                     </div>

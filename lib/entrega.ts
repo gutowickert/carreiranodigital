@@ -11,9 +11,14 @@
 //   a_remarcar → passou do prazo de reconfirmar sem resposta. Sai da agenda.
 //   concluido  → aconteceu, com registro do que foi.
 //
-// E a regra de ouro: NÃO SE CONCLUI UM ENCONTRO SEM MARCAR O PRÓXIMO. A data do
-// próximo se define com o cliente na frente — por isso o cliente em entrega
-// nunca fica sem data à frente.
+// OS ENCONTROS (23/10/2026, pedido do Guto): a entrega nasce só com o PRIMEIRO e o
+// ÚLTIMO encontro do roteiro. Os do meio não nascem mais — quem atende cria cada um
+// na ficha ("+ Novo encontro"), na data que combinou com o cliente. Tarefa interna
+// e marco continuam nascendo todos, com as listas.
+//
+// A antiga regra de ouro ("não se conclui um encontro sem marcar o próximo") virou
+// convite: ao concluir, a ficha OFERECE marcar o próximo e criar um novo encontro,
+// mas concluir sem marcar nada funciona.
 
 import { hojeBR } from '@/lib/periodos'
 export type Natureza = 'encontro' | 'interno' | 'marco'
@@ -269,11 +274,25 @@ export function somaDias(dataISO: string, dias: number): string {
   return soData(new Date(d.getTime() + dias * DIA))
 }
 
+/**
+ * Os marcos que NASCEM com o projeto: tudo do roteiro, menos os encontros do meio.
+ * Dos encontros (natureza 'encontro') só ficam o primeiro e o último; se o roteiro tem um
+ * encontro só, fica ele. Tarefa interna e marco nascem todos. A ordem é refeita em sequência
+ * (0, 1, 2…) pra não ficar buraco onde estavam os encontros que não nasceram.
+ */
+export function marcosQueNascem(produto: Produto): MarcoTpl[] {
+  const r = ROTEIROS[produto]
+  if (!r) return []
+  const encontros = r.marcos.filter(m => m.natureza === 'encontro')
+  const pontas = new Set([encontros[0]?.chave, encontros[encontros.length - 1]?.chave].filter(Boolean))
+  return r.marcos.filter(m => m.natureza !== 'encontro' || pontas.has(m.chave))
+}
+
 /** Monta os marcos de um projeto a partir do roteiro do produto e da data de início. */
 export function marcosDoRoteiro(produto: Produto, dataInicio: string) {
   const r = ROTEIROS[produto]
   if (!r) return []
-  return r.marcos.map((m, i) => ({
+  return marcosQueNascem(produto).map((m, i) => ({
     chave: m.chave,
     titulo: m.titulo,
     natureza: m.natureza,

@@ -8,7 +8,8 @@ import { ROTEIROS, marcosDoRoteiro, dataFimContrato, situacaoMarco, segmentosDoP
 import { chamadaPermitida } from '@/lib/exigir-login'
 
 // Projetos = clientes vendidos EM ENTREGA. GET lista com o próximo compromisso
-// de cada um; POST cria o projeto e já gera todos os marcos do roteiro.
+// de cada um; POST cria o projeto e já gera os marcos do roteiro (dos encontros, só o
+// primeiro e o último: os do meio se criam na ficha — ver marcosQueNascem em lib/entrega.ts).
 
 export async function GET(req: Request) {
   if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })

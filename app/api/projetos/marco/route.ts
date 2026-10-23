@@ -2,16 +2,21 @@ import { NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { diasAte, empurrarPosteriores, ROTEIROS, LOCAIS, type Produto } from '@/lib/entrega'
-import { combinarMarco } from '@/lib/marco-acoes'
+import { ROTEIROS, LOCAIS, type Produto } from '@/lib/entrega'
+import { combinarMarco, novoEncontro, conferirNovoEncontro, avisoDeRegiao, type DadosNovoEncontro } from '@/lib/marco-acoes'
 import { isoBR } from '@/lib/periodos'
 import { chamadaPermitida } from '@/lib/exigir-login'
 
 // A máquina de estados do compromisso.
 //   combinar  → data e hora acertadas com o cliente (na sessão anterior)
 //   confirmar → reconfirmado, até 2 dias antes
-//   concluir  → aconteceu. 🔒 NÃO FECHA sem marcar o próximo encontro.
+//   concluir  → aconteceu. Desde 23/10/2026 NÃO obriga mais a marcar o próximo: os encontros do
+//               meio não nascem com o projeto. Oferece (opcional) marcar a data do próximo que já
+//               existe e/ou criar um novo encontro ali mesmo.
 //   remarcar  → nova data; os do meio empurram junto, a âncora não sai do lugar.
+//
+// QUEM PODE: qualquer pessoa logada da empresa (admin, gestor, vendedor). Não há trava por papel
+// nem por responsável do marco — o dono do marco só decide em que agenda ele aparece.
 
 const ok = (o: any) => NextResponse.json({ ok: true, ...o })
 const erro = (m: string, extra?: any) => NextResponse.json({ ok: false, error: m, ...(extra || {}) }, { status: 200 })
@@ -33,7 +38,7 @@ export async function POST(req: Request) {
     if (!marco) return erro('marco não encontrado')
 
     const { data: projeto } = await sb.from('projetos').select('*').eq('id', marco.projeto_id).maybeSingle()
-    const { data: irmaos } = await sb.from('projeto_marcos').select('id, ordem, ancora, estado, data_prevista, natureza, titulo, data_combinada')
+    const { data: irmaos } = await sb.from('projeto_marcos').select('id, ordem, ancora, estado, data_prevista, natureza, titulo, data_combinada, local')
       .eq('projeto_id', marco.projeto_id).order('ordem')
 
     const registrar = (tipo: string, observacao: string) =>
@@ -99,23 +104,45 @@ export async function POST(req: Request) {
     if (acao === 'concluir') {
       const registro = (b.registro || '').toString().trim()
 
-      // 🔒 a regra de ouro: encontro só fecha marcando o próximo encontro
+      // A ANTIGA REGRA DE OURO VIROU CONVITE (23/10/2026). Os encontros do meio não nascem mais
+      // com o projeto, então não dá pra exigir "marca o próximo". Concluir sem marcar nada funciona.
+      // Os dois extras são opcionais e podem vir juntos:
+      //   proxima_data_hora + proxima_local → marca a data do próximo encontro que JÁ existe
+      //   novo_encontro { titulo, data, hora?, local? } → cria um encontro novo ali mesmo
+      // Tudo é conferido ANTES de fechar este (data, lugar, região do dia): um aviso de região no
+      // meio do caminho não pode deixar o encontro fechado e o próximo sem marcar.
       const proximoEncontro = (irmaos || []).find(m =>
         m.ordem > marco.ordem && m.natureza === 'encontro' && m.estado !== 'concluido' && m.estado !== 'cancelado')
+      const inicio = String(projeto?.data_inicio || '').slice(0, 10)
+      const mesmoAssim = !!b.mesmo_assim
+      const autor = (b.autor || '').toString() || null
 
-      if (marco.natureza === 'encontro' && proximoEncontro && !b.proxima_data_hora) {
-        return erro('Antes de fechar, marca o próximo encontro com o cliente.', {
-          precisa_proximo: { id: proximoEncontro.id, titulo: proximoEncontro.titulo, data_prevista: proximoEncontro.data_prevista },
-        })
-      }
-
+      let proxQuando: Date | null = null
+      let proxLocal = ''
       if (b.proxima_data_hora) {
-        const px = new Date(b.proxima_data_hora.toString())
-        const inicio = String(projeto?.data_inicio || '').slice(0, 10)
-        if (isNaN(px.getTime())) return erro('data do próximo encontro inválida')
-        if (inicio && isoBR(px) < inicio) {
+        if (!proximoEncontro) return erro('Não há próximo encontro criado pra marcar. Use "criar um novo encontro".')
+        proxQuando = new Date(b.proxima_data_hora.toString())
+        if (isNaN(proxQuando.getTime())) return erro('data do próximo encontro inválida')
+        if (inicio && isoBR(proxQuando) < inicio) {
           return erro(`A data do próximo encontro é antes do início do projeto (${inicio.split('-').reverse().join('/')}). Confere o dia.`)
         }
+        // o próximo entra na agenda COM lugar: sem região, ninguém vê se o dia já está comprometido
+        proxLocal = (b.proxima_local || proximoEncontro.local || '').toString()
+        if (!LOCAIS.some(l => l.chave === proxLocal)) return erro('Escolhe onde vai ser o próximo encontro (sede ou região, Lajeado ou Porto Alegre).')
+        if (!mesmoAssim) {
+          const av = await avisoDeRegiao(org, isoBR(proxQuando), proxLocal, [proximoEncontro.id])
+          if (av) return erro(av, { precisa_confirmar_regiao: true })
+        }
+      }
+
+      const n = b.novo_encontro && typeof b.novo_encontro === 'object' ? b.novo_encontro : null
+      const dadosNovo: DadosNovoEncontro | null = n ? {
+        titulo: (n.titulo || '').toString(), data: (n.data || '').toString(), hora: (n.hora || '').toString() || null,
+        local: (n.local || '').toString() || null, mesmoAssim, autor,
+      } : null
+      if (dadosNovo) {
+        const p = await conferirNovoEncontro(org, inicio, dadosNovo)
+        if (p) return erro(p.error, p.precisa_confirmar_regiao ? { precisa_confirmar_regiao: true } : undefined)
       }
 
       await sb.from('projeto_marcos').update({
@@ -123,26 +150,21 @@ export async function POST(req: Request) {
       }).eq('id', marcoId)
       await registrar('concluido', `✔️ ${marco.titulo} concluído.${registro ? ' — ' + registro : ''}`)
 
-      // combina o próximo, se veio
-      if (proximoEncontro && b.proxima_data_hora) {
-        const nova = new Date(b.proxima_data_hora.toString())
-        if (!isNaN(nova.getTime())) {
-          const novaData = isoBR(nova)
-          const antes = (proximoEncontro.data_prevista || '').slice(0, 10)
-          const desloc = antes ? diasAte(novaData, antes) : 0
-          // o próximo nasce COM lugar quando quem fechou informou — senão entraria na agenda sem
-          // região, e o problema que isto resolve voltaria pela porta dos fundos
-          const proxLocal = (b.proxima_local || '').toString()
-          await sb.from('projeto_marcos').update({
-            data_combinada: nova.toISOString(), data_prevista: novaData, estado: 'combinado', atualizado_em: agora,
-            ...(LOCAIS.some(l => l.chave === proxLocal) ? { local: proxLocal } : {}),
-          }).eq('id', proximoEncontro.id)
-          if (desloc !== 0 && irmaos?.length) {
-            const { mover } = empurrarPosteriores(irmaos as any, proximoEncontro.ordem, desloc)
-            for (const m of mover) await sb.from('projeto_marcos').update({ data_prevista: m.data_prevista, atualizado_em: agora }).eq('id', m.id)
-          }
-          await registrar('combinado', `📅 Próximo combinado na hora: ${proximoEncontro.titulo} em ${fmt(nova.toISOString())}.`)
-        }
+      const avisos: string[] = []
+      // marca o próximo, se veio — pelo mesmo caminho do combinar (empurra os seguintes, zera a reconfirmação)
+      if (proximoEncontro && proxQuando) {
+        const r = await combinarMarco(org, proximoEncontro.id, proxQuando.toISOString(), proxLocal, {
+          acao: proximoEncontro.data_combinada ? 'remarcar' : 'combinar', mesmoAssim: true, autor,
+        })
+        if (!r.ok) avisos.push(`O encontro foi concluído, mas o próximo não foi marcado: ${r.error}`)
+        else if (r.aviso) avisos.push(r.aviso)
+      }
+      // cria o encontro novo, se veio
+      let criouNovo = false
+      if (dadosNovo && projeto) {
+        const r = await novoEncontro(org, projeto.id, { ...dadosNovo, mesmoAssim: true })
+        if (!r.ok) avisos.push(`O encontro foi concluído, mas o novo encontro não foi criado: ${r.error}`)
+        else { criouNovo = true; if (r.aviso) avisos.push(r.aviso) }
       }
 
       // avança a fase do projeto e fecha se acabou
@@ -152,7 +174,8 @@ export async function POST(req: Request) {
         const patch: any = { atualizado_em: agora }
         const idx = r?.fases.findIndex(f => f.chave === projeto.fase) ?? -1
         if (r && idx >= 0 && idx < r.fases.length - 1) patch.fase = r.fases[idx + 1].chave
-        if (!restantes.length) {
+        // criou um encontro novo agora? então a entrega não acabou, mesmo que este fosse o último
+        if (!restantes.length && !criouNovo) {
           patch.status = projeto.fim_tipo === 'manutencao' ? 'manutencao' : 'concluido'
           patch.fase = r?.fases[r.fases.length - 1]?.chave || projeto.fase
           await registrar('fim', patch.status === 'manutencao'
@@ -162,7 +185,7 @@ export async function POST(req: Request) {
         await sb.from('projetos').update(patch).eq('id', projeto.id)
       }
 
-      return ok({})
+      return ok({ aviso: avisos.length ? avisos.join(' ') : null })
     }
 
     return erro('ação inválida')
