@@ -210,6 +210,147 @@ export async function relatorioTrafego(u: Usuario) {
   return enviarAoTime(u, texto)
 }
 
+// ═══════════════════════════════════════════════════════════ o resumo das 8:45 e a semana de domingo
+
+// Pedido do Nando (23/10/2026): o bom dia das 7h vinha sempre igual ("Luis · 0 · nada marcado")
+// porque fora da janela de 24h só passa modelo, e ele nem abria. Pra quem está na lista
+// (configuracoes assistente.resumo_845, e-mails separados por vírgula), o bom dia das 7h, os
+// avisos de hora em hora e o relatório de segunda saem, e no lugar vêm:
+//   resumoDoDia    → seg a sex 8:45 (pg_cron): tema do dia, agenda, vendas, leads, clientes em
+//                    vermelho; na sexta, tudo que ficou pra trás.
+//   resumoDaSemana → domingo 20h (pg_cron): a semana dia por dia.
+// Janela aberta: texto livre, escrito pela IA (sem crédito, rodízio de frases). Fechada: o modelo
+// de reserva cnd_resumo_agenda, com o resumo numa linha e o botão "Me manda tudo", que abre a
+// janela e faz chegar o texto completo (responder, abaixo).
+
+export const TEMPLATE_RESUMO = 'cnd_resumo_agenda'
+export const BOTAO_RESUMO = 'Me manda tudo'
+export const MODELO_RESUMO_META = {
+  name: TEMPLATE_RESUMO, language: 'pt_BR', category: 'UTILITY',
+  components: [
+    { type: 'BODY', text: 'Olá, {{1}}. Resumo da tua agenda: {{2}}\n\nToca no botão abaixo pra receber os detalhes.',
+      example: { body_text: [['Nando', 'segunda 26/10, dia de leads. 9:00 Andamento dos leads; 14:00 Reunião com a Dani. 2 leads esperando resposta.']] } },
+    { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: BOTAO_RESUMO }] },
+  ],
+}
+
+export async function emailsDoResumo(): Promise<string[]> {
+  const { data } = await sb.from('configuracoes').select('valor').eq('chave', 'assistente.resumo_845').limit(1)
+  return String(data?.[0]?.valor || '').split(',').map(s => s.trim().toLowerCase()).filter(Boolean)
+}
+
+// o tema de cada dia (rotina combinada com o Nando em 22 e 23/10)
+const TEMA_DIA: Record<number, string> = {
+  1: 'dia de olhar o andamento dos leads dos clientes',
+  2: 'dia de pensar inovação pros clientes',
+  3: 'dia de automação pros clientes',
+  4: 'dia de reunião com cliente',
+  5: 'dia de botar em dia o que ficou pra trás',
+}
+const ABERTURAS = ['Bom dia, {n}.', 'Fala, {n}, bom dia.', 'Opa, {n}, bom dia.', 'Bom dia, {n}, bora.', 'E aí, {n}, bom dia.', 'Bom dia, {n}. Café na mão?', 'Bom dia, {n}, vamo que vamo.']
+const FECHOS = ['Qualquer coisa me chama aqui.', 'Me manda o que precisar, texto ou áudio.', 'Se quiser mudar algo na agenda, é só me falar.', 'Tô por aqui.', 'Bom trabalho.']
+const sorteio = <T,>(lista: T[], dia: string, salto = 0) => lista[(Number(dia.replace(/-/g, '')) + salto) % lista.length]
+const diaSemana = (d: string) => new Date(d + 'T12:00:00-03:00').getDay()
+// parâmetro de modelo da Meta: uma linha só, sem tab, sem 4 espaços seguidos
+const umaLinha = (s: string, max = 700) => s.replace(/[\n\t]+/g, ' · ').replace(/ {2,}/g, ' ').trim().slice(0, max)
+
+// o que ficou pra trás: tarefas dele não concluídas dos últimos 30 dias
+async function tarefasAtrasadas(u: Usuario) {
+  const hoje = hojeBR()
+  const { data } = await sb.from('agenda_eventos').select('titulo, inicio, usuario_id, participantes')
+    .eq('org_id', u.org_id).eq('tipo', 'tarefa').eq('concluido', false)
+    .gte('inicio', menosDias(hoje, 30) + 'T00:00:00-03:00').lt('inicio', hoje + 'T00:00:00-03:00').order('inicio')
+  return (data || []).filter((e: any) => e.usuario_id === u.id || (Array.isArray(e.participantes) && e.participantes.includes(u.id)))
+    .map((e: any) => `${e.titulo} (${fmtDia(new Date(e.inicio).toLocaleDateString('en-CA', { timeZone: TZ }))})`)
+}
+
+// clientes da entrega em vermelho (o mesmo critério dos avisos de hora em hora)
+async function clientesEmVermelho(org: string) {
+  const m = await montarMonitor(org, 7).catch(() => null)
+  return (m?.cards || []).flatMap(c => c.alertas.filter(a => a.nivel === 'vermelho' && ['parou', 'sem_gasto', 'sem_saldo', 'conta_inativa', 'sem_campanha'].includes(a.chave)).map(a => `${c.cliente}: ${a.titulo}`))
+}
+
+// a IA reescreve no jeito do Nando; sem chave ou sem crédito, fica o texto montado
+async function escreverComIA(u: Usuario, texto: string, pedido: string) {
+  const key = process.env.ANTHROPIC_API_KEY
+  if (!key) return texto
+  try {
+    const client = new Anthropic({ apiKey: key })
+    const resp: any = await client.messages.create({
+      model: MODELO, max_tokens: 900,
+      system: `Tu escreve a mensagem de WhatsApp que o assistente manda pro ${chamar(u)}, sócio da CarreiraNoDigital. Jeito dele: "tu", curto, informal, direto, sem negrito, sem markdown, sem travessão. ${pedido} Mantém TODOS os horários, nomes, números e itens do rascunho, sem inventar nada e sem tirar nada. Agenda fica em linhas com "•". Varia a abertura e o fecho, nunca do mesmo jeito. Responde só com a mensagem.`,
+      messages: [{ role: 'user', content: texto }],
+    })
+    const out = (resp.content || []).filter((b: any) => b.type === 'text').map((b: any) => b.text).join('\n').trim()
+    return out ? out.replace(/\*\*(.+?)\*\*/g, '$1').replace(/—/g, ',').slice(0, 3900) : texto
+  } catch { return texto }
+}
+
+export async function montarResumoDoDia(u: Usuario) {
+  const hoje = hojeBR(), dow = diaSemana(hoje)
+  const [itens, pend, ontem, esperando, atrasadas, vermelhos] = await Promise.all([
+    agendaDoDia(u, hoje), pendenciasDeEntrega(u), vendasDeOntem(u.org_id), leadsEsperando(u.org_id), tarefasAtrasadas(u), clientesEmVermelho(u.org_id),
+  ])
+  const tema = TEMA_DIA[dow] || 'dia livre'
+  const brl0 = (x: number) => 'R$ ' + x.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+  const linhaOntem = ontem.n ? `Ontem: ${ontem.n} ${ontem.n === 1 ? 'venda' : 'vendas'}, ${brl0(ontem.total)} (${ontem.nomes.slice(0, 4).join(', ')}).` : ''
+  const linhaEsp = esperando.length ? `${esperando.length} ${esperando.length === 1 ? 'lead esperando resposta' : 'leads esperando resposta'}: ${esperando.slice(0, 5).map(x => x.nome).join(', ')}.` : ''
+  const partes = [sorteio(ABERTURAS, hoje).replace('{n}', chamar(u)) + ` Hoje é ${nomeDia(hoje)}, ${tema}.`, textoAgenda(itens, hoje)]
+  if (linhaOntem || linhaEsp) partes.push([linhaOntem, linhaEsp].filter(Boolean).join('\n'))
+  if (vermelhos.length) partes.push(`Clientes pedindo atenção:\n${vermelhos.map(x => '• ' + x).join('\n')}`)
+  if (pend.semReconfirmar.length) partes.push(`Amanhã sem reconfirmação:\n${pend.semReconfirmar.map(x => '• ' + x).join('\n')}`)
+  if (pend.atrasados.length) partes.push(`Encontros que passaram da data prevista e ainda não foram marcados:\n${pend.atrasados.map(x => '• ' + x).join('\n')}`)
+  // sexta é o dia de botar em dia: a lista inteira; nos outros dias, só o tamanho dela
+  if (atrasadas.length) partes.push(dow === 5 ? `O que ficou pra trás:\n${atrasadas.map(x => '• ' + x).join('\n')}` : `${atrasadas.length} ${atrasadas.length === 1 ? 'tarefa ficou' : 'tarefas ficaram'} pra trás; vão no resumo de sexta.`)
+  partes.push(sorteio(FECHOS, hoje, 3))
+  const rascunho = partes.join('\n\n')
+
+  const compromissos = itens.length ? itens.slice(0, 4).map(i => `${i.hora} ${i.titulo}`).join('; ') : 'nada marcado'
+  const extras = [linhaEsp, vermelhos.length ? `${vermelhos.length} ${vermelhos.length === 1 ? 'cliente' : 'clientes'} em vermelho.` : '', atrasadas.length ? `${atrasadas.length} ${atrasadas.length === 1 ? 'tarefa' : 'tarefas'} pra trás.` : '']
+  const linha = umaLinha(`${nomeDia(hoje)} ${fmtDia(hoje)}, ${tema}. ${compromissos}. ${extras.filter(Boolean).join(' ')}`)
+  return { rascunho, linha, compromissos: itens.length }
+}
+
+export async function montarResumoDaSemana(u: Usuario) {
+  // a semana que começa na segunda seguinte (roda domingo à noite)
+  const hoje = hojeBR(), dow = diaSemana(hoje)
+  const segunda = menosDias(hoje, -(dow === 0 ? 1 : 8 - dow))
+  const dias = [0, 1, 2, 3, 4].map(i => menosDias(segunda, -i))
+  const [agendas, atrasadas] = await Promise.all([Promise.all(dias.map(d => agendaDoDia(u, d))), tarefasAtrasadas(u)])
+  const blocos = dias.map((d, i) => {
+    const its = agendas[i]
+    const cab = `${nomeDia(d)} ${fmtDia(d)}, ${TEMA_DIA[diaSemana(d)]}`
+    return its.length ? `${cab}:\n${its.map(x => `• ${x.hora} ${x.titulo}`).join('\n')}` : `${cab}: nada marcado.`
+  })
+  const total = agendas.reduce((a, x) => a + x.length, 0)
+  const partes = [`Boa noite, ${chamar(u)}. Tua semana:`, ...blocos]
+  if (atrasadas.length) partes.push(`E tem ${atrasadas.length} ${atrasadas.length === 1 ? 'coisa' : 'coisas'} pra trás pra sexta:\n${atrasadas.map(x => '• ' + x).join('\n')}`)
+  partes.push('Boa semana. Se quiser mudar algo, me fala.')
+  const rascunho = partes.join('\n\n')
+  const linha = umaLinha(`tua semana tem ${total} ${total === 1 ? 'compromisso' : 'compromissos'}. ` + dias.map((d, i) => `${nomeDia(d).slice(0, 3)}: ${agendas[i].length ? agendas[i].slice(0, 2).map(x => `${x.hora} ${x.titulo}`).join(', ') : 'livre'}`).join('; ') + (atrasadas.length ? `. ${atrasadas.length} pra trás.` : '.'))
+  return { rascunho, linha, compromissos: total }
+}
+
+async function mandarResumo(u: Usuario, r: { rascunho: string; linha: string; compromissos: number }, pedido: string) {
+  if (janelaAberta(u)) {
+    const texto = await escreverComIA(u, r.rascunho, pedido)
+    const env = await enviarAoTime(u, texto)
+    if (env.ok) return { ...env, compromissos: r.compromissos }
+  }
+  // fora da janela: o modelo de reserva; se a Meta ainda não aprovou, o antigo do bom dia
+  const env = await enviarAoTime(u, r.rascunho, { nome: TEMPLATE_RESUMO, params: [chamar(u), r.linha] })
+  if (env.ok) return { ...env, compromissos: r.compromissos }
+  const velho = await enviarAoTime(u, r.rascunho, { nome: TEMPLATE_BOM_DIA, params: [chamar(u), String(r.compromissos), r.linha.slice(0, 120)] })
+  return { ...velho, compromissos: r.compromissos, reserva: env.error }
+}
+
+export async function resumoDoDia(u: Usuario) {
+  return mandarResumo(u, await montarResumoDoDia(u), 'É o resumo da manhã de um dia de semana.')
+}
+export async function resumoDaSemana(u: Usuario) {
+  return mandarResumo(u, await montarResumoDaSemana(u), 'É o resumo de domingo à noite com a semana que vem.')
+}
+
 // ═══════════════════════════════════════════════════════════ responder
 
 // áudio direto do id da mídia (a mensagem não passa por wa_mensagens)
@@ -459,6 +600,11 @@ export async function responder(u: Usuario, m: any, origin: string) {
     return { ok: true }
   }
   await guardar(u, 'usuario', (m.type === 'audio' || m.type === 'voice') ? `🎤 ${texto}` : texto, m.id)
+
+  // o botão do modelo de reserva: a janela acabou de abrir, vai o resumo completo (domingo, a semana)
+  if (texto.trim().toLowerCase() === BOTAO_RESUMO.toLowerCase()) {
+    return diaSemana(hojeBR()) === 0 ? resumoDaSemana(u) : resumoDoDia(u)
+  }
 
   // memória curta: o que foi dito nas últimas 24h
   // memória curta de verdade: 3 horas e 16 mensagens. Com 24h ele revivia um pedido antigo

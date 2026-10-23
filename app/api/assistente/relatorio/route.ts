@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { temSessao } from '@/lib/quem-eu-vejo'
-import { relatorioTrafego, type Usuario } from '@/lib/assistente'
+import { relatorioTrafego, emailsDoResumo, type Usuario } from '@/lib/assistente'
 
 export const maxDuration = 120
 
@@ -32,7 +32,8 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
   if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
-  return NextResponse.json({ ok: true, resultados: await mandar(await usuarios()) })
+  const resumo = await emailsDoResumo()   // quem recebe o resumo das 8:45 fica fora
+  return NextResponse.json({ ok: true, resultados: await mandar((await usuarios()).filter(u => !resumo.includes(u.email.toLowerCase()))) })
 }
 
 export async function POST(req: NextRequest) {
