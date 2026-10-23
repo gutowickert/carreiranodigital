@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { rodarAlertas } from '@/lib/assistente-alertas'
 import type { Usuario } from '@/lib/assistente'
+import { rodarFunilMotor } from '@/lib/funil-motor'
 
 export const maxDuration = 120
 
@@ -39,7 +40,11 @@ export async function GET(req: NextRequest) {
   const auth = req.headers.get('authorization') || ''
   const chave = req.nextUrl.searchParams.get('chave')
   if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
-  return NextResponse.json({ ok: true, resultados: await rodar(await usuarios()) })
+  const resultados = await rodar(await usuarios())
+  // de carona na rodada de hora em hora: o motor do funil novo (lib/funil-motor.ts; desligado por padrão)
+  let funil: any = null
+  try { funil = await rodarFunilMotor() } catch (e: any) { funil = { ok: false, error: e?.message || 'falhou' } }
+  return NextResponse.json({ ok: true, resultados, funil })
 }
 
 export async function POST(req: NextRequest) {
