@@ -8,6 +8,8 @@ import { useEffect, useState, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
+import { aCada } from '@/lib/a-cada'
+import { lerMensagens } from '@/lib/mensagens-leves'
 import BotaoChamada from '@/components/BotaoChamada'
 import ItemLigacao from '@/components/ItemLigacao'
 import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
@@ -1192,22 +1194,22 @@ function ChatLead({ lead }: { lead: Lead }) {
     carregar()
   }
 
+  // o que já está na tela: o intervalo guarda a função do momento em que foi criado, então lê daqui
+  const mensagensRef = useRef<any[]>([])
   async function carregar() {
     const sufixo = (lead.whatsapp || '').replace(/\D/g, '').slice(-8)
     const { data: conv } = await supabase.from('wa_conversas')
       .select('id')
       .or(`lead_id.eq.${lead.id}${sufixo ? `,telefone.ilike.%${sufixo}%` : ''}`)
     const ids = (conv || []).map((c: any) => c.id)
-    if (ids.length === 0) { setMensagens([]); return }
-    const { data: msgs } = await supabase.from('wa_mensagens')
-      .select('*').in('conversa_id', ids).order('criado_em', { ascending: true })
-    setMensagens(msgs || [])
+    if (ids.length === 0) { mensagensRef.current = []; setMensagens([]); return }
+    const lista = await lerMensagens(ids, mensagensRef.current)
+    if (lista) { mensagensRef.current = lista; setMensagens(lista) }
   }
 
   useEffect(() => {
     carregar()
-    const t = setInterval(carregar, 5000)
-    return () => clearInterval(t)
+    return aCada(carregar, 5000)
   }, [lead.id])
 
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])

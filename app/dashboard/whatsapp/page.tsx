@@ -7,6 +7,8 @@ import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import BotaoChamada from '@/components/BotaoChamada'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
+import { aCada } from '@/lib/a-cada'
+import { lerMensagens } from '@/lib/mensagens-leves'
 
 type Conversa = {
   id: string; telefone: string; nome: string | null
@@ -104,14 +106,15 @@ export default function CaixaWhatsApp() {
     .order('ultima_msg_em', { ascending: false, nullsFirst: false })
     .range(de, ate)
 
-  // completo=true: puxa TODAS as páginas (1ª carga). completo=false: só a 1ª página, que é o
-  // que muda no dia a dia — usado no polling de 8s, pra não refazer 3 requisições toda vez.
+  // completo=true: puxa TODAS as páginas (1ª carga). completo=false: só as 100 mais recentes, que é
+  // o que muda no dia a dia — usado no polling de 8s; o resto já carregado fica como está (mescla
+  // abaixo). Eram 1000 (482 KB a cada 8 s por aba) até o banco ficar sem memória em 23/10/2026.
   //
   // ⚠️ Sem paginar, a caixa mostrava só as 1000 conversas mais recentes e o resto sumia — da
   // lista E da busca (que filtrava só o que já tinha vindo). Com ~3 mil conversas, quem estava
   // ~3 semanas sem mensagem desaparecia. Foi o caso do lead Juan, 4h fora do corte.
   async function carregarConversas(completo = false) {
-    const { data: pag1 } = await paginaConversas(0, 999)
+    const { data: pag1 } = await paginaConversas(0, completo ? 999 : 99)
     let lista = pag1 || []
     if (completo) {
       for (let de = 1000; ; de += 1000) {
@@ -136,9 +139,9 @@ export default function CaixaWhatsApp() {
 
   useEffect(() => {
     if (autorizado !== true) return
-    const t = setInterval(carregarConversas, 8000)
-    const td = setInterval(carregarDisparos, 60000) // tarja atualiza mais devagar (quem respondeu disparo muda pouco)
-    return () => { clearInterval(t); clearInterval(td) }
+    const pararConversas = aCada(carregarConversas, 8000)
+    const pararDisparos = aCada(carregarDisparos, 60000) // tarja atualiza mais devagar (quem respondeu disparo muda pouco)
+    return () => { pararConversas(); pararDisparos() }
   }, [autorizado])
 
   // Espelha as não-lidas reais do WhatsApp (ex: lidas no celular) no sistema
@@ -146,8 +149,7 @@ export default function CaixaWhatsApp() {
     if (autorizado !== true) return
     const sync = () => fetchAuth('/api/wa/sync-lidas', { method: 'POST' }).then(() => carregarConversas()).catch(() => {})
     sync()
-    const t = setInterval(sync, 30000)
-    return () => clearInterval(t)
+    return aCada(sync, 30000)
   }, [autorizado])
 
   async function abrir(c: Conversa) {
@@ -319,18 +321,18 @@ function ChatConversa({ conversa, disparoInfo, onEnviou, onConversaChange, onFec
   const fileRef = useRef<HTMLInputElement | null>(null)
   const txtRef = useRef<HTMLTextAreaElement | null>(null)
 
+  // o que já está na tela: o intervalo guarda a função do momento em que foi criado, então lê daqui
+  const mensagensRef = useRef<any[]>([])
   async function carregar() {
-    const { data } = await supabase.from('wa_mensagens')
-      .select('*').eq('conversa_id', conversa.id).order('criado_em', { ascending: true })
-    setMensagens(data || [])
+    const lista = await lerMensagens([conversa.id], mensagensRef.current)
+    if (lista) { mensagensRef.current = lista; setMensagens(lista) }
   }
 
   useEffect(() => {
     setEditInfo(false)
     setSugeridoOrig(''); setSugestao(null)
     carregar()
-    const t = setInterval(carregar, 5000)
-    return () => clearInterval(t)
+    return aCada(carregar, 5000)
   }, [conversa.id])
 
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])

@@ -6,6 +6,8 @@ import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
 import { iniciarGravacaoOpus, type GravadorOpus } from '@/lib/audio'
+import { aCada } from '@/lib/a-cada'
+import { lerMensagens } from '@/lib/mensagens-leves'
 
 // Caixa de entrada do NÚMERO DE DISPAROS (Cloud API / API oficial). Recebe as
 // respostas dos disparos (canal 'oficial'). Responder = mensagem de sessão (24h).
@@ -58,8 +60,7 @@ export default function CaixaDisparos() {
 
   useEffect(() => {
     if (autorizado !== true) return
-    const t = setInterval(carregarConversas, 8000)
-    return () => clearInterval(t)
+    return aCada(carregarConversas, 8000)
   }, [autorizado])
 
   async function abrir(c: Conversa) {
@@ -201,11 +202,12 @@ function ChatDisparo({ conversa, onEnviou, onConversaChange }: { conversa: Conve
     return null
   }
 
+  const mensagensRef = useRef<any[]>([])
   async function carregar() {
-    const { data } = await supabase.from('wa_mensagens').select('*').eq('conversa_id', conversa.id).order('criado_em', { ascending: true })
-    setMensagens(data || [])
+    const lista = await lerMensagens([conversa.id], mensagensRef.current)
+    if (lista) { mensagensRef.current = lista; setMensagens(lista) }
   }
-  useEffect(() => { carregar(); const t = setInterval(carregar, 5000); return () => clearInterval(t) }, [conversa.id])
+  useEffect(() => { carregar(); return aCada(carregar, 5000) }, [conversa.id])
   useEffect(() => { fimRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [mensagens.length])
   // contexto do disparo: qual campanha (cidade) foi enviada pra esse número
   useEffect(() => {
