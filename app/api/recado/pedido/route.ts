@@ -6,12 +6,15 @@ import { recadoGateway as gateway } from '@/lib/recado/gateway'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 import { enviaEmail, moldura, linkFamilia } from '@/lib/recado/email'
 import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
+import { ehAcordo, DESAFIOS, vendaAberta } from '@/lib/recado/acordo'
 
 export const maxDuration = 30
 const PREFIXO: Record<string, string> = { noel: 'NOEL-', fada: 'FADA-', guardiao: 'NOITE-', coragem: 'CORAGEM-', turbo: 'TURBO-', grandao: 'CHUPETA-' }
 const dataOk = (s: any) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || '')) ? String(s) : null
-const codigo = (p: string) => (PREFIXO[p] || 'RECADO-') +Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
+const codigo = (p: string, pac = '') => (ehAcordo(pac) ? 'ACORDO-' : PREFIXO[p] || 'RECADO-') +Array.from(randomBytes(5)).map(b => 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[b % 32]).join('')
 const limpa = (s: any, n = 120) => String(s || '').replace(/[<>]/g, '').trim().slice(0, n)
+// acordo de Natal: os campos obrigatórios de cada desafio (PRODUTO.md, seção 3)
+const CAMPOS_ACORDO: Record<string, string[]> = { chupeta: ['apelido_chupeta', 'quando_usa'], dormir: ['como_e_a_noite'], tela: ['tela_preferida', 'tempo_meta'], irmaos: ['nome_irmao'], comer: ['comida_preferida', 'alergia'], estudo: ['ano_escolar', 'tipo_estudo'] }
 const QUEM = ['mae', 'pai', 'avo', 'avo_m', 'tia', 'tio', 'madrinha', 'padrinho', 'outro']
 
 export async function POST(req: NextRequest) {
@@ -35,14 +38,33 @@ export async function POST(req: NextRequest) {
     else if (b.pacote === 'recado') { crianca.dentinho = limpa(c.dentinho); crianca.como_caiu = limpa(c.como_caiu); crianca.deixa_presente = limpa(c.deixa_presente) }
     // missão: o desafio contado pela mãe e as datas (o trabalhador agenda cada vídeo a partir delas)
     let missao: any = null
-    if (pac.etapas) {
+    // ACORDO DE NATAL (24/10, PRODUTO.md seção 3): o desafio, os campos dele, a recompensa (da família, nunca do Noel) e quem é a família
+    let irs: any[] = []
+    if (ehAcordo(b.pacote)) {
+      if (!vendaAberta(b.pacote)) return NextResponse.json({ erro: b.pacote === 'acordo_completo' ? 'o Acordo Completo foi vendido até 2/12; o Acordo de Natal (4 vídeos) segue até 10/12' : 'as vendas do Acordo de Natal terminaram; o vídeo de Natal continua disponível' }, { status: 400 })
+      if (!wa) return NextResponse.json({ erro: 'no Acordo de Natal o celular é obrigatório (é por ele que vão os avisos)' }, { status: 400 })
+      const m = b.missao || {}, desafio = String(m.desafio || '')
+      if (!DESAFIOS[desafio]) return NextResponse.json({ erro: 'escolhe o desafio do acordo' }, { status: 400 })
+      const campos: any = {}
+      for (const [k, v] of Object.entries(m.campos || {})) if (/^[a-z_]{2,30}$/.test(k) && limpa(v)) campos[k] = limpa(v, 160)
+      const falta = (CAMPOS_ACORDO[desafio] || []).filter(k => !campos[k])
+      if (falta.length || !crianca.adora.length || !limpa(m.familia)) return NextResponse.json({ erro: 'faltou preencher um campo obrigatório do desafio' }, { status: 400 })
+      const modo = ['texto', 'surpresa', 'nenhuma'].includes(m.recompensa_modo) ? m.recompensa_modo : 'nenhuma'
+      missao = { tipo: 'acordo', desafio, desafio_nome: DESAFIOS[desafio], campos, familia: limpa(m.familia, 120), recompensa_modo: modo,
+        recompensa: modo === 'texto' ? limpa(m.recompensa, 100) : '', contar_v1: modo !== 'nenhuma' && !!m.contar_v1 }
+      if (modo === 'texto' && !missao.recompensa) return NextResponse.json({ erro: 'escreve qual vai ser a recompensa (ou marca surpresa)' }, { status: 400 })
+      // irmão no mesmo acordo (+ R$ 47): cada um ganha os seus vídeos, o seu nome, a sua caderneta e o seu diploma (um pedido pra cada, ligado a este)
+      irs = (Array.isArray(b.irmaos_dados) ? b.irmaos_dados : []).map((x: any) => ({ nome: limpa(x?.nome, 40), apelido: limpa(x?.apelido || x?.nome, 40), idade: Math.max(1, Math.min(14, +x?.idade || 0)),
+        genero: x?.genero === 'menino' ? 'menino' : 'menina', adora: String(x?.adora || '').split(',').map((s: string) => limpa(s, 60)).filter(Boolean).slice(0, 3), foto: x?.foto })).filter((x: any) => x.nome && x.adora.length).slice(0, 3)
+      b.irmaos = irs.length
+    } else if (pac.etapas) {
       const m = b.missao || {}
       missao = { tipo: b.pacote, desafio: limpa(m.desafio, 200), evento: limpa(m.evento, 40), data: dataOk(m.data), nome_objeto: limpa(m.nome_objeto, 40),
         presente: limpa(m.presente, 80), medo: limpa(m.medo, 160), ajuda: limpa(m.ajuda, 160), recompensa: limpa(m.recompensa, 80) }
       if ((b.pacote === 'coragem' || b.pacote === 'chupeta') && !missao.data) return NextResponse.json({ erro: 'faltou a data' }, { status: 400 })
     }
     const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
-    let preco = +(pac.preco + irmaos * cfg.irmao).toFixed(2)
+    let preco = +(pac.preco + irmaos * (pac.irmao ?? cfg.irmao)).toFixed(2)
     // cupom (Guto 10/10): grátis entra direto na produção, sem pagamento; % dá desconto e segue pro Asaas
     const codCupom = limpa(b.cupom, 30).toUpperCase().replace(/[^A-Z0-9-]/g, '')
     let cupom: any = null
@@ -56,7 +78,7 @@ export async function POST(req: NextRequest) {
     const dec = (v: any) => { if (v == null) return v; let x = String(v); for (let i = 0; i < 2 && /%[0-9A-F]{2}|\+/i.test(x); i++) { try { x = decodeURIComponent(x.replace(/\+/g, ' ')) } catch { break } } return x.slice(0, 200) }
     if (b.origem) for (const k of ['utm_campaign', 'utm_content']) if (b.origem[k]) b.origem[k] = dec(b.origem[k])
     const origem = { ...(b.origem || {}), ...(cupom ? { cupom: cupom.codigo } : {}), ...(gratis ? { cortesia: true } : {}) }
-    const p: any = { codigo: codigo(b.personagem), personagem: b.personagem, pacote: b.pacote, preco: gratis ? 0 : preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem, visitante: limpa(b.origem?.visitante, 40) || null }
+    const p: any = { codigo: codigo(b.personagem, b.pacote), personagem: b.personagem, pacote: b.pacote, preco: gratis ? 0 : preco, crianca, missao, contato: { responsavel: limpa(ct.responsavel, 60), whatsapp: wa, email: limpa(ct.email, 120) }, origem, visitante: limpa(b.origem?.visitante, 40) || null }
     if (gratis) { p.status = 'pago'; p.pago_em = new Date().toISOString(); p.forma_pagamento = 'cupom' }
     if (b.foto && /^data:image\/(jpeg|png|webp);base64,/.test(b.foto)) {
       const buf = Buffer.from(b.foto.split(',')[1], 'base64'); if (buf.length > 4e6) return NextResponse.json({ erro: 'foto muito grande' }, { status: 400 })
@@ -67,6 +89,20 @@ export async function POST(req: NextRequest) {
     let salvo: any
     try { salvo = await db.insere('pedidos', p) } catch (e) { if (cupom) await db.rpc('recado_devolve_cupom', { c: cupom.codigo }).catch(() => {}); throw e }
     await db.evento(salvo.id, 'criado', { pacote: pac.nome, preco: p.preco, cupom: cupom?.codigo })
+    // acordo com irmão: um pedido por criança, sem preço (o valor está no pedido principal), pago junto com ele (api/recado/pagamento)
+    if (irs.length) {
+      const ligados: any[] = []
+      for (const x of irs) {
+        const campos = { ...missao.campos }; if (missao.desafio === 'irmaos') campos.nome_irmao = crianca.apelido || crianca.nome
+        const f: any = { codigo: codigo(b.personagem, b.pacote), personagem: b.personagem, pacote: b.pacote, preco: 0, missao: { ...missao, campos },
+          crianca: { nome: x.nome, apelido: x.apelido, idade: x.idade, genero: x.genero, adora: x.adora, detalhe_magico: '', irmao_de: crianca.nome },
+          contato: p.contato, origem: { ...origem, irmao_de: p.codigo }, visitante: p.visitante }
+        if (gratis) { f.status = 'pago'; f.pago_em = p.pago_em; f.forma_pagamento = 'cupom' }
+        if (x.foto && /^data:image\/(jpeg|png|webp);base64,/.test(x.foto)) { const buf = Buffer.from(x.foto.split(',')[1], 'base64'); if (buf.length <= 4e6) f.foto_path = await db.sobe(`${f.codigo}/foto.jpg`, buf, 'image/jpeg') }
+        const s = await db.insere('pedidos', f); await db.evento(s.id, 'criado', { irmao_de: p.codigo }); ligados.push({ nome: x.nome, codigo: f.codigo })
+      }
+      await db.atualiza('pedidos', `id=eq.${salvo.id}`, { crianca: { ...crianca, irmaos: ligados } })
+    }
     if (gratis) {
       // cortesia: sem cobrança. O trabalhador pega na fila como qualquer pedido pago.
       const em = await enviaEmail(p.contato.email, `Teu recado de presente está a caminho (${crianca.nome})`,

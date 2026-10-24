@@ -29,6 +29,7 @@ export async function GET(req: NextRequest) {
       const caminho = p.visitante ? await db.busca('site_eventos', `visitante=eq.${encodeURIComponent(p.visitante)}&order=quando.asc&limit=60&select=quando,evento,pagina,utm_campaign`) : []
       const links: any = {}
       for (const k of ['foto_path', 'video_path', 'carta_path', 'certificado_path']) if (p[k]) links[k] = await db.linkAssinado(p[k], 3600).catch(() => null)
+      if (p.missao?.aceite?.caminho) links.aceite = await db.linkAssinado(p.missao.aceite.caminho, 3600).catch(() => null)   // acordo de Natal: o "eu aceito"
       return NextResponse.json({ pedido: p, eventos, etapas, caminho, links }, sem)
     }
     if (q.get('o') === 'conversa') {   // suporte: as mensagens de uma conversa (11/10)
@@ -138,6 +139,11 @@ export async function POST(req: NextRequest) {
       const linha = { mes: mes.slice(0, 8) + '01', faturamento: num(b.faturamento), pedidos: num(b.pedidos), margem_pct: num(b.margem_pct), trafego_pct: num(b.trafego_pct), obs: txt(b.obs, 200) || null }
       await fetch(`${U()}/rest/v1/recado_metas`, { method: 'POST', headers: { apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(linha) })
       return NextResponse.json({ ok: true })
+    }
+    // acordo de Natal (24/10): o "eu aceito" chegou por WhatsApp ou e-mail; marca aqui e o vídeo do acordo é gravado agora
+    if (b.acao === 'acordo_aceite') {
+      const { aceiteChegou } = await import('@/lib/recado/acordo')
+      return NextResponse.json({ ok: true, ...(await aceiteChegou(String(b.id || '').replace(/[^a-f0-9-]/g, ''), { tipo: b.tipo === 'voz' ? 'voz' : 'contado', por: 'painel' })) })
     }
     const id = String(b.id || '').replace(/[^a-f0-9-]/g, '')
     const muda: any = ({ refazer: { status: 'pago', erro: null }, liberar: { status: 'entregue', entregue_em: new Date().toISOString(), erro: null }, reenviar: { status: 'revisao' }, cancelar: { status: 'cancelado' }, marcar_reembolsado: { status: 'reembolsado' } } as any)[b.acao]

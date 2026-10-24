@@ -5,7 +5,9 @@ export const economia = {
   dolar: 5.6, gpuMinPorSeg: 2.8, gpuUsdHora: 0.59, vozReaisPorSeg: 0.018, iaPorVideo: 0.2, whatsPorVideo: 0.05,
   custoMax: 0.15, trafegoMin: 0.15, trafegoMax: 0.2,
   // segundos de fala de cada vídeo do produto
-  videos: { 'fada/recado': [30], 'noel/encanto': [30], 'noel/magico': [30, 20], 'coragem/coragem': [30, 22], 'grandao/chupeta': [30, 22, 22], 'guardiao/dormir': [30, 20, 20, 20, 22] } as Record<string, number[]>,
+  videos: { 'fada/recado': [30], 'noel/encanto': [30], 'noel/magico': [30, 20], 'coragem/coragem': [30, 22], 'grandao/chupeta': [30, 22, 22], 'guardiao/dormir': [30, 20, 20, 20, 22],
+    // acordo de Natal (24/10): proposta, acordo, andamento(s), conquista. O completo comprado no fim de outubro tem 8 domingos (11 vídeos)
+    'noel/acordo': [40, 35, 30, 35], 'noel/acordo_completo': [40, 35, 30, 30, 30, 30, 30, 30, 30, 30, 35] } as Record<string, number[]>,
 }
 const porSeg = economia.gpuMinPorSeg / 60 * economia.gpuUsdHora * economia.dolar + economia.vozReaisPorSeg
 export const custoVideo = (s: number) => s * porSeg + economia.iaPorVideo + economia.whatsPorVideo

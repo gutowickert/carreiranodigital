@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Conte sobre o acordo · Recado Encantado</title>
+<meta name="theme-color" content="#140a24">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,500&family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
+<style>
+:root{--noite:#2a1f6b;--ouro:#f5c451;--rosa:#e0569a;--lilas:#b9a3ff;--creme:#fff8ec;--creme2:#f8edd8;--tinta:#2b2140;--suave:#5f5578;--verde:#1f7a4f}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--creme);color:var(--tinta);font-family:Fredoka,system-ui,sans-serif;font-size:17px;line-height:1.5}
+.topo{background:var(--noite);color:#fff;padding:18px 20px;text-align:center}
+.topo img{height:36px;margin:0 auto;filter:brightness(0) invert(1)}
+.ct{max-width:640px;margin:0 auto;padding:26px 20px 80px}
+.heroi{display:flex;gap:16px;align-items:center;background:var(--noite);color:#fff;border-radius:22px;padding:14px;margin-bottom:18px}
+.heroi img{width:84px;height:84px;border-radius:16px;object-fit:cover;object-position:top;flex:none}
+.heroi b{display:block;font-size:20px;line-height:1.2}.heroi span{color:#d9d2f5;font-size:15px}
+.heroi .preco{margin-left:auto;font-weight:700;font-size:22px;color:var(--ouro);white-space:nowrap}
+h1{font-size:30px;line-height:1.15;margin-bottom:6px}
+.sub{color:var(--suave);margin-bottom:22px}
+.passo{background:#fff;border:1px solid #eadfc8;border-radius:22px;padding:22px;margin-bottom:16px}
+.passo h2{font-size:20px;margin-bottom:14px;display:flex;gap:10px;align-items:center}
+.passo h2 i{font-style:normal;width:32px;height:32px;border-radius:10px;background:var(--noite);color:var(--ouro);display:flex;align-items:center;justify-content:center;font-size:16px;flex:none}
+label{display:block;font-weight:600;font-size:15px;margin:14px 0 6px}
+label small{font-weight:400;color:var(--suave)}
+input[type=text],input[type=tel],input[type=email],input[type=number],select,textarea{width:100%;font:inherit;font-size:17px;padding:13px 14px;border:2px solid #e6dcc6;border-radius:14px;background:#fffdf8;color:var(--tinta)}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--lilas)}
+textarea{min-height:76px;resize:vertical}
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.foto{display:flex;gap:16px;align-items:center}.foto input{min-width:0;max-width:100%;flex:1;font-size:14px}
+.foto .prev{width:110px;height:110px;border-radius:18px;background:var(--creme2) center/cover;flex:none;display:flex;align-items:center;justify-content:center;color:var(--suave);font-size:13px;text-align:center}
+[data-d]{display:none}
+.ok{display:flex;gap:10px;align-items:flex-start;font-weight:400;font-size:15px}
+.ok input{margin-top:4px;width:20px;height:20px;flex:none}
+button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--rosa);color:#fff;font:700 19px Fredoka;cursor:pointer;margin-top:8px;box-shadow:0 12px 30px rgba(224,86,154,.3)}
+button:disabled{opacity:.7}
+.aviso{font-size:14px;color:var(--suave);text-align:center;margin-top:12px}
+.dica{font-size:14px;color:var(--suave);background:var(--creme2);border-radius:12px;padding:10px 12px;margin-top:10px}
+.alerta{font-size:14px;color:#7a4b00;background:#fff3cf;border-radius:12px;padding:10px 12px;margin-top:10px;display:none}
+.pacs{display:grid;gap:10px}.pacs label{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid var(--creme2);border-radius:14px;padding:12px 16px;cursor:pointer;font-weight:600;margin:0}
+.pacs label:has(input:checked){border-color:var(--rosa);background:#fff5f8}.pacs small{display:block;font-weight:400;color:var(--suave)}
+.pacs label.off{opacity:.55;cursor:not-allowed}
+.irmao{border:2px dashed var(--creme2);border-radius:18px;padding:14px;margin-top:12px}
+.irmao .lin{display:flex;justify-content:space-between;align-items:center;font-weight:700}
+.irmao .tira{width:auto;min-height:0;margin:0;padding:8px 14px;font-size:14px;background:var(--creme2);color:var(--tinta);box-shadow:none}
+.mais{background:#fff;color:var(--rosa);border:2px dashed var(--rosa);box-shadow:none;min-height:50px;font-size:16px;margin-top:12px}
+.total{display:flex;justify-content:space-between;font-weight:700;font-size:19px;margin-top:14px;padding-top:12px;border-top:2px dashed var(--creme2)}
+.fechado{display:none;text-align:center;background:#fff;border:2px dashed var(--ouro);border-radius:22px;padding:28px 22px}
+.fechado h1{margin-bottom:10px}.fechado a{display:inline-block;margin-top:16px;background:var(--rosa);color:#fff;text-decoration:none;font-weight:700;padding:14px 26px;border-radius:999px}
+@media (max-width:480px){.dupla{grid-template-columns:1fr}.heroi .preco{font-size:18px}}
+/* ===== visual do Acordo de Natal (24/10): noite de Natal, papel e luz quente ===== */
+:root{--noite:#140a24;--verm:#c41e3a;--verm2:#e0354f;--ouro:#f5c451;--ouro2:#e9a92a;--creme:#fff8ec;--creme2:#f6ead3;--tinta:#2b1d2e;--suave:#6d5a63;--rosa:#c41e3a}
+body{background:var(--creme)}
+.topo{position:relative;overflow:hidden;isolation:isolate;padding:22px 20px 92px;text-align:left;background:var(--noite)}
+.topo .bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 22%;z-index:-2;filter:none;margin:0;height:100%}
+.topo:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,rgba(14,6,26,.92),rgba(14,6,26,.55) 60%,rgba(14,6,26,.25)),linear-gradient(0deg,rgba(14,6,26,.9),transparent 60%)}
+.topo .in{max-width:640px;margin:0 auto}
+.topo .logo{height:34px;margin:0;filter:brightness(0) invert(1)}
+.topo .tt{font-family:Fraunces,Georgia,serif;font-size:clamp(26px,6vw,36px);line-height:1.05;color:#fff;margin-top:26px;max-width:16ch}
+.topo .tt em{font-style:italic;font-weight:500;color:var(--ouro)}
+.topo .ss{color:#e6dcf3;font-size:15px;margin-top:8px}
+.luz{position:absolute;left:0;right:0;top:0;height:38px;z-index:0;background:radial-gradient(circle at 6% 60%,#ffd25e 0 4px,transparent 5px),radial-gradient(circle at 18% 70%,#ff5a6e 0 4px,transparent 5px),radial-gradient(circle at 31% 62%,#7fe0a0 0 4px,transparent 5px),radial-gradient(circle at 44% 70%,#ffd25e 0 4px,transparent 5px),radial-gradient(circle at 57% 62%,#8fc8ff 0 4px,transparent 5px),radial-gradient(circle at 70% 70%,#ff5a6e 0 4px,transparent 5px),radial-gradient(circle at 83% 62%,#ffd25e 0 4px,transparent 5px),radial-gradient(circle at 95% 70%,#7fe0a0 0 4px,transparent 5px);animation:luz 2.6s ease-in-out infinite}
+@keyframes luz{50%{opacity:.45}}
+.ct{margin-top:-64px;position:relative}
+.heroi{background:linear-gradient(135deg,#2a1640,var(--noite));box-shadow:0 20px 50px rgba(20,8,30,.35);border:1px solid rgba(245,196,81,.3)}
+.heroi img{border:2px solid var(--ouro)}
+h1{font-family:Fraunces,Georgia,serif;font-weight:700;letter-spacing:-.01em}
+.passo{border:1.5px solid #ecdcc0;box-shadow:0 10px 30px rgba(60,30,20,.06)}
+.passo h2{font-family:Fraunces,Georgia,serif;font-size:22px}
+.passo h2 i{background:linear-gradient(135deg,var(--verm2),var(--verm));color:#fff;font-family:Fredoka}
+input:focus,select:focus,textarea:focus{border-color:var(--ouro2);box-shadow:0 0 0 4px rgba(245,196,81,.25)}
+.pacs label:has(input:checked){border-color:var(--verm);background:#fff4f5}
+button{background:linear-gradient(180deg,var(--verm2),var(--verm));box-shadow:0 14px 30px rgba(196,30,58,.3)}
+.mais{background:#fff;color:var(--verm);border-color:var(--verm)}
+.irmao .tira{background:var(--creme2)}
+.dica{background:var(--creme2)}
+.total span:last-child{font-family:Fraunces,serif;font-size:24px}
+@media (prefers-reduced-motion:reduce){.luz{animation:none}}
+</style>
+</head>
+<body>
+<header class="topo"><img class="bg" src="/recado/midia/acordo/noel-perto-mao.jpg" alt=""><span class="luz" aria-hidden="true"></span><div class="in"><img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado"><p class="tt">Conta pro Papai Noel <em>sobre o acordo</em></p><p class="ss">Uns 4 minutos. Ele usa tudo pra falar com a criança pelo nome.</p></div></header>
+<div class="ct">
+<div class="fechado" id="fechado"><h1>As vendas do Acordo de Natal terminaram</h1><p>Não dá mais tempo de fazer o acordo com calma até o Natal. Mas o Papai Noel ainda grava um vídeo especial, com o nome e a foto da criança, pronto em até 2 horas.</p><a href="/recado/pedido.html?p=noel">Quero o vídeo de Natal</a></div>
+<form id="f">
+  <div class="heroi"><img src="/recado/midia/noel-perfil.jpg" alt="Papai Noel"><div><b>Acordo de Natal</b><span id="h-desc">com o Papai Noel</span></div><div class="preco" id="h-preco"></div></div>
+  <h1 id="tit">Conte sobre o acordo</h1>
+  <p class="sub">Leva uns 4 minutos. Quanto mais detalhe, mais o Papai Noel parece conhecer a criança.</p>
+
+  <div class="passo"><h2><i>1</i> O desafio</h2>
+    <label for="desafio">O que o Papai Noel vai ajudar a resolver?</label>
+    <select id="desafio">
+      <option value="chupeta">Tirar a chupeta</option><option value="dormir">Dormir na própria cama</option><option value="tela">Menos celular, tablet e TV</option>
+      <option value="irmaos">Brigar menos com o irmão ou a irmã</option><option value="comer">Comer frutas e verduras</option><option value="estudo">Fazer a lição e estudar um pouquinho por dia</option>
+    </select>
+    <div data-d="chupeta">
+      <label for="apelido_chupeta">Como <span class="ela">ela</span> chama a chupeta? <small>(ex.: "Tetê", "pepeta")</small></label><input id="apelido_chupeta" data-campo type="text" placeholder="Ex.: pepeta">
+      <label for="quando_usa">Quando <span class="ela">ela</span> mais usa?</label>
+      <select id="quando_usa" data-campo><option value="na hora de dormir">Só pra dormir</option><option value="na hora de dormir e no carro">Pra dormir e no carro</option><option value="pertinho o dia todo">O dia todo</option><option value="quando bate uma tristeza">Quando chora</option></select>
+      <label for="quantas">Quantas chupetas tem em casa? <small>(opcional, é pro guia: todas vão pra caixinha)</small></label><input id="quantas" data-campo type="text" placeholder="Ex.: 3">
+      <label for="tentativas">Já tentaram tirar antes? Como foi? <small>(opcional, só pra equipe; o Noel nunca fala disso)</small></label><input id="tentativas" data-campo type="text">
+    </div>
+    <div data-d="dormir">
+      <label for="como_e_a_noite">Como é a noite hoje?</label>
+      <select id="como_e_a_noite" data-campo><option value="você gosta de dormir juntinho da sua família">Dorme na cama dos pais desde o começo</option><option value="você gosta de ir visitar outra cama">Começa na cama dela e vem de madrugada</option><option value="você gosta de ter alguém do lado pra pegar no sono">Só dorme com alguém junto</option><option value="a sua caminha fica esperando por você">Outro jeito</option></select>
+      <label for="bichinho">Tem um bichinho ou paninho pra dormir? Como chama? <small>(opcional)</small></label><input id="bichinho" data-campo type="text" placeholder="Ex.: o urso Bento">
+      <label for="medo">Tem medo de alguma coisa? <small>(opcional, pro guia; o Noel nunca confirma que monstro existe)</small></label><input id="medo" data-campo type="text" placeholder="Ex.: do escuro">
+      <label for="divide_quarto">Divide o quarto com alguém? <small>(opcional)</small></label><input id="divide_quarto" data-campo type="text" placeholder="Ex.: com a irmã mais velha">
+    </div>
+    <div data-d="tela">
+      <label for="tela_preferida">Qual tela é o desafio, e o que <span class="ela">ela</span> mais faz nela? <small>(sem nome de marca)</small></label><input id="tela_preferida" data-campo type="text" placeholder="Ex.: assistir desenho no tablet">
+      <label for="tempo_meta">Quanto tempo por dia hoje, mais ou menos, e qual a meta da família? <small>(só pro guia e pra equipe)</small></label><input id="tempo_meta" data-campo type="text" placeholder="Ex.: umas 4 horas; a meta é 1 hora por dia">
+      <label for="dificil_desligar">Quando é mais difícil desligar? <small>(opcional)</small></label><input id="dificil_desligar" data-campo type="text" placeholder="Ex.: na hora de dormir">
+    </div>
+    <div data-d="irmaos">
+      <label for="nome_irmao">Nome e idade do irmão ou da irmã (ou dos irmãos)</label><input id="nome_irmao" data-campo type="text" placeholder="Ex.: Pedro, de 7 anos">
+      <label for="fazer_juntos">O que eles adoram fazer juntos <small>(opcional; o Noel fala do lado bom)</small></label><input id="fazer_juntos" data-campo type="text" placeholder="Ex.: brincar de esconde-esconde">
+      <label for="motivo_briga">Por que mais brigam? <small>(opcional, só pra equipe)</small></label>
+      <select id="motivo_briga" data-campo><option value="">Prefiro não dizer</option><option>brinquedo</option><option>atenção</option><option>tela</option><option>implicância</option></select>
+      <p class="dica">Recomendado: colocar o irmão também no acordo (lá embaixo, + R$ 47), pra ninguém se sentir "o culpado".</p>
+    </div>
+    <div data-d="comer">
+      <label for="comida_preferida">Comida preferida</label><input id="comida_preferida" data-campo type="text" placeholder="Ex.: macarrão com feijão">
+      <label for="fruta_que_ja_come">Frutas ou verduras que já come <small>(opcional, pro Noel elogiar)</small></label><input id="fruta_que_ja_come" data-campo type="text" placeholder="Ex.: banana e cenoura">
+      <label for="recusa">O que mais recusa <small>(opcional, só pra equipe)</small></label><input id="recusa" data-campo type="text">
+      <label for="alergia">Tem alergia, intolerância ou restrição alimentar?</label><input id="alergia" data-campo type="text" placeholder="Ex.: não · ou: sim, a ovo">
+    </div>
+    <div data-d="estudo">
+      <label for="ano_escolar">Ano escolar</label><input id="ano_escolar" data-campo type="text" placeholder="Ex.: primeiro ano">
+      <label for="tipo_estudo">O que vai ser o "estudo"?</label>
+      <select id="tipo_estudo" data-campo><option>lição da escola</option><option>leitura</option><option>caderno de atividades</option></select>
+      <label for="materia_preferida">Matéria preferida <small>(opcional)</small></label><input id="materia_preferida" data-campo type="text" placeholder="Ex.: matemática">
+      <label for="ferias">Quando começam as férias? <small>(opcional; nas férias o acordo vira leitura ou atividades)</small></label><input id="ferias" data-campo type="text" placeholder="Ex.: 12 de dezembro">
+    </div>
+    <p class="alerta" id="pediatra">Se a situação for muito difícil ou te preocupa (sono muito agitado, ronco, criança que come pouquíssimo, perda de peso), converse com o pediatra. O acordo é uma ajuda carinhosa, não um tratamento.</p>
+  </div>
+
+  <div class="passo"><h2><i>2</i> A criança</h2>
+    <div class="dupla"><div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required placeholder="Ex.: Laura"></div>
+    <div><label for="apelido">Como chamam em casa <small>(opcional)</small></label><input id="apelido" name="apelido" type="text" placeholder="Ex.: Laurinha"></div></div>
+    <div class="dupla"><div><label for="idade">Idade</label><input id="idade" name="idade" type="number" min="1" max="12" required></div>
+    <div><label for="genero">É</label><select id="genero" name="genero"><option value="menina">menina</option><option value="menino">menino</option></select></div></div>
+    <p class="alerta" id="idade-aviso"></p>
+    <label>Uma foto de rosto, sorrindo e sozinha na foto</label>
+    <div class="foto"><div class="prev" id="prev">sem foto</div><input id="arquivo" type="file" accept="image/*" required></div>
+    <label for="adora">Do que <span class="ela">ela</span> mais gosta <small>(até 3, separadas por vírgula: pessoas, bicho, brinquedo, desenho)</small></label><input id="adora" name="adora" type="text" required placeholder="Ex.: dinossauros, o cachorro Pipoca, a vovó Lúcia">
+    <label for="detalhe">Um detalhe que só a família sabe <small>(opcional, mas é o que mais encanta)</small></label><input id="detalhe" name="detalhe" type="text" placeholder="Ex.: dorme abraçada com o ursinho Bento">
+    <label for="familia">Quem é a família? <small>(quem mora com a criança e como ela chama cada um)</small></label><input id="familia" name="familia" type="text" required placeholder="Ex.: mamãe e papai · ou: mãe e vó Lúcia">
+  </div>
+
+  <div class="passo"><h2><i>3</i> A recompensa</h2>
+    <div class="pacs">
+      <label><span>Vamos ter uma recompensa<small>passeio, filme, bolo, um brinquedo...</small></span><input type="radio" name="rmodo" value="texto" checked></label>
+      <label><span>Vai ser surpresa<small>o Noel diz que a família está preparando uma surpresa</small></span><input type="radio" name="rmodo" value="surpresa"></label>
+      <label><span>Não vamos ter<small>o Noel não fala de recompensa</small></span><input type="radio" name="rmodo" value="nenhuma"></label>
+    </div>
+    <div id="rbox"><label for="recompensa">Qual vai ser a recompensa no fim do acordo?</label><input id="recompensa" type="text" placeholder="Ex.: um piquenique no parque"></div>
+    <label class="ok" id="rv1"><input type="checkbox" id="contar_v1"> Pode contar a recompensa já na proposta. Se não marcar, o Papai Noel só conta no dia 24.</label>
+    <p class="dica">A recompensa é de vocês, não do Papai Noel, e chega no dia 24 pelo esforço, mesmo que o desafio ainda não esteja 100%. Não precisa ser coisa comprada: passeio, bolo, dormir na barraca na sala, um dia de "sim". O Noel nunca promete o presente de Natal.</p>
+  </div>
+
+  <div class="passo"><h2><i>4</i> O pacote</h2>
+    <div class="pacs">
+      <label><span>Acordo de Natal<small>4 vídeos: a proposta, o acordo firmado, 1 notícia no meio do caminho e a conquista no dia 24, com caderneta e diploma · vendas até 10/12</small></span><span>R$ 97 <input type="radio" name="pacote" value="acordo"></span></label>
+      <label id="lab-completo"><span>Acordo Completo<small id="sm-completo">Uma notícia do Papai Noel todo domingo até o Natal · vendas até 2/12</small></span><span>R$ 147 <input type="radio" name="pacote" value="acordo_completo"></span></label>
+    </div>
+    <label>Irmão ou irmã no mesmo acordo? <small>(+ R$ 47 por criança; cada um ganha os seus vídeos, o seu nome, a sua caderneta e o seu diploma)</small></label>
+    <div id="irmaos"></div>
+    <button type="button" class="mais" id="mais">+ Incluir irmão ou irmã</button>
+    <div class="total"><span>Total</span><span id="total"></span></div>
+  </div>
+
+  <div class="passo"><h2><i>5</i> Pra onde mandamos</h2>
+    <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
+    <div><label for="wa">Celular com WhatsApp</label><input id="wa" name="wa" type="tel" required placeholder="(51) 99999-9999"></div></div>
+    <label for="email">E-mail</label><input id="email" name="email" type="email" required>
+    <label class="ok"><input type="checkbox" required> Sou o responsável pela criança e autorizo usar a foto, o nome e o áudio do "eu aceito" só pra fazer os vídeos e materiais deste acordo. Tudo é apagado até 31/12/2026.</label>
+    <label class="ok"><input type="checkbox" required> Li que o Papai Noel é uma experiência feita com inteligência artificial e acompanhada pela equipe.</label>
+  </div>
+  <details id="cupom-box" style="margin:4px 0 10px"><summary style="cursor:pointer;color:var(--suave);font-size:15px">Tenho um cupom</summary><input id="cupom" name="cupom" type="text" placeholder="Código do cupom" style="margin-top:8px;text-transform:uppercase" autocomplete="off"></details>
+  <button type="submit" id="enviar">Ir pro pagamento</button><p id="erro" style="color:#b0122b;font-weight:600;display:none;margin-top:10px"></p>
+  <p class="aviso">Pagamento por Pix ou cartão. A proposta do Papai Noel chega em até 2 horas na página da família (pedido depois das 21h chega às 8h). Desistiu em até 7 dias? Devolvemos tudo.</p>
+</form>
+</div>
+<script>
+// Formulário do ACORDO DE NATAL (24/10, PRODUTO.md seção 3): ?d=chupeta|dormir|tela|irmaos|comer|estudo &pac=acordo|acordo_completo.
+// Mesma API do pedido das missões. Os campos de cada desafio vão em missao.campos (os nomes são os dos roteiros: {apelido_chupeta}, {quando_usa}...).
+var ATE={acordo:'2026-12-10',acordo_completo:'2026-12-02'},PRECO={acordo:97,acordo_completo:147},IRMAO=47
+var D={chupeta:{t:'O Papai Noel vai ajudar a tirar a chupeta',id:[2,5],ob:['apelido_chupeta','quando_usa'],ped:1},dormir:{t:'O Papai Noel vai ajudar a dormir na própria cama',id:[3,8],ob:['como_e_a_noite'],ped:1},
+  tela:{t:'O Papai Noel vai ajudar a ter menos tela e mais brincadeira',id:[3,10],ob:['tela_preferida','tempo_meta']},irmaos:{t:'O Papai Noel vai ajudar os irmãos a brigarem menos',id:[3,10],ob:['nome_irmao']},
+  comer:{t:'O Papai Noel vai ajudar a comer frutas e verduras',id:[2,10],ob:['comida_preferida','alergia'],ped:1},estudo:{t:'O Papai Noel vai ajudar a estudar um pouquinho por dia',id:[5,10],ob:['ano_escolar','tipo_estudo']}}
+var q=new URLSearchParams(location.search),$=function(i){return document.getElementById(i)},foto=null,hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10)
+if(hoje>ATE.acordo){$('f').style.display='none';$('fechado').style.display='block'}
+var completoAberto=hoje<=ATE.acordo_completo
+if(!completoAberto){var lc=$('lab-completo');lc.classList.add('off');lc.querySelector('input').disabled=true;$('sm-completo').textContent='Vendido até 2/12. O Acordo de Natal (4 vídeos) segue até 10/12.'}
+var d=D[q.get('d')]?q.get('d'):'chupeta';$('desafio').value=d
+function mostra(){d=$('desafio').value;[].forEach.call(document.querySelectorAll('[data-d]'),function(x){x.style.display=x.dataset.d===d?'block':'none'});[].forEach.call(document.querySelectorAll('[data-campo]'),function(x){x.required=D[d].ob.indexOf(x.id)>=0&&x.closest('[data-d]').dataset.d===d})
+  $('tit').textContent=D[d].t;$('h-desc').textContent='com o Papai Noel · '+$('desafio').options[$('desafio').selectedIndex].text.toLowerCase();$('pediatra').style.display=D[d].ped?'block':'none';idade()}
+function idade(){var i=+$('idade').value,f=D[d].id,a=$('idade-aviso');if(i&&(i<f[0]||i>f[1])){a.textContent='Esse desafio é pensado pra crianças de '+f[0]+' a '+f[1]+' anos. Pode seguir, mas o Noel vai falar num jeito pensado pra essa idade.';a.style.display='block'}else a.style.display='none'}
+$('desafio').addEventListener('change',mostra);$('idade').addEventListener('input',idade);mostra()
+document.querySelector('input[name=pacote][value='+(q.get('pac')==='acordo'||!completoAberto?'acordo':'acordo_completo')+']').checked=true
+function rmodo(){var m=document.querySelector('input[name=rmodo]:checked').value;$('rbox').style.display=m==='texto'?'block':'none';$('recompensa').required=m==='texto';$('rv1').style.display=m==='nenhuma'?'none':'flex'}
+function soma(){var pac=document.querySelector('input[name=pacote]:checked').value,t=PRECO[pac]+document.querySelectorAll('.irmao').length*IRMAO,r='R$ '+t.toFixed(2).replace('.',',').replace(',00','');$('total').textContent=r;$('h-preco').textContent=r}
+$('f').addEventListener('change',function(e){if(e.target.name==='pacote')soma();if(e.target.name==='rmodo')rmodo()});soma();rmodo()
+// foto reduzida no próprio celular antes de enviar (a da criança até 1080 px; a dos irmãos até 800 px, pra caber tudo num envio)
+function reduz(fl,max,cb){var img=new Image();img.onload=function(){var s=Math.min(1,max/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);cb(c.toDataURL('image/jpeg',.85))};img.src=URL.createObjectURL(fl)}
+$('arquivo').addEventListener('change',function(e){var fl=e.target.files[0];if(fl)reduz(fl,1080,function(u){foto=u;$('prev').style.backgroundImage='url('+u+')';$('prev').textContent=''})})
+$('mais').addEventListener('click',function(){if(document.querySelectorAll('.irmao').length>=3)return;var dv=document.createElement('div');dv.className='irmao'
+  dv.innerHTML='<div class="lin"><span>Irmão ou irmã no acordo</span><button type="button" class="tira">Tirar</button></div><div class="dupla"><div><label>Nome</label><input type="text" data-k="nome" required></div><div><label>Como chamam em casa <small>(opcional)</small></label><input type="text" data-k="apelido"></div></div>'+
+    '<div class="dupla"><div><label>Idade</label><input type="number" min="1" max="12" data-k="idade" required></div><div><label>É</label><select data-k="genero"><option value="menina">menina</option><option value="menino">menino</option></select></div></div>'+
+    '<label>Do que mais gosta <small>(até 3, separadas por vírgula)</small></label><input type="text" data-k="adora" required><label>Foto de rosto, sozinho na foto</label><div class="foto"><div class="prev">sem foto</div><input type="file" accept="image/*" required></div>'+
+    '<p class="dica">Mesmo desafio, mesmas datas e mesma recompensa do acordo de cima.</p>'
+  dv.querySelector('input[type=file]').addEventListener('change',function(e){var fl=e.target.files[0];if(fl)reduz(fl,800,function(u){dv.__foto=u;var pv=dv.querySelector('.prev');pv.style.backgroundImage='url('+u+')';pv.textContent=''})})
+  dv.querySelector('.tira').onclick=function(){dv.remove();soma();$('mais').style.display='block'};$('irmaos').appendChild(dv);if(document.querySelectorAll('.irmao').length>=3)$('mais').style.display='none';soma()})
+$('f').addEventListener('submit',function(e){e.preventDefault();var fd=new FormData($('f')),bt=$('enviar'),er=$('erro')
+  var campos={};[].forEach.call(document.querySelectorAll('[data-d='+d+'] [data-campo]'),function(x){if(x.value.trim())campos[x.id]=x.value.trim()})
+  var modo=document.querySelector('input[name=rmodo]:checked').value
+  var missao={desafio:d,campos:campos,familia:fd.get('familia'),recompensa_modo:modo,recompensa:$('recompensa').value.trim(),contar_v1:$('contar_v1').checked}
+  var irmaos=[].map.call(document.querySelectorAll('.irmao'),function(x){var o={foto:x.__foto||null};[].forEach.call(x.querySelectorAll('[data-k]'),function(i){o[i.dataset.k]=i.value.trim()});return o})
+  var c={nome:fd.get('nome'),apelido:fd.get('apelido')||fd.get('nome'),idade:+fd.get('idade'),genero:fd.get('genero'),adora:(fd.get('adora')||'').split(',').map(function(s){return s.trim()}).filter(Boolean).slice(0,3),detalhe_magico:fd.get('detalhe')}
+  var origem=window.recadoRastro?window.recadoRastro.origem():{};['utm_source','utm_campaign','utm_content','fbclid'].forEach(function(k){if(q.get(k))origem[k]=q.get(k)})
+  bt.disabled=true;bt.textContent='Preparando o pagamento...';er.style.display='none'
+  fetch('/api/recado/pedido',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({personagem:'noel',pacote:fd.get('pacote'),foto:foto,crianca:c,missao:missao,irmaos_dados:irmaos,contato:{responsavel:fd.get('resp'),whatsapp:fd.get('wa'),email:fd.get('email')},origem:origem,cupom:($('cupom').value||'').trim()})})
+    .then(function(r){return r.json()}).then(function(j){if(j.gratis){try{localStorage.removeItem('recado_cupom')}catch(e){}location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)}else if(j.checkout_url){location.href='/recado/obrigado.html?c='+encodeURIComponent(j.codigo)+'&pagar=1'}else{throw new Error(j.erro||'erro')}})
+    .catch(function(x){bt.disabled=false;bt.textContent='Ir pro pagamento';er.textContent=x.message||'Não deu certo agora. Tenta de novo em instantes.';er.style.display='block'})})
+</script>
+<p style="text-align:center;font-size:14px;opacity:.8;padding:18px 16px 28px;margin:0">Dúvidas antes de pedir? Escreve pra <a href="mailto:contato@recadoencantando.com.br" style="color:inherit;text-decoration:underline">contato@recadoencantando.com.br</a></p>
+<script>(function(){var g=document.getElementById('genero');function p(){document.querySelectorAll('.ela').forEach(function(s){s.textContent=g.value==='menino'?'ele':'ela'})}g.addEventListener('change',p);p()})()</script>
+<script src="/recado/rastro.js"></script>
+<script>(function(){var q=new URLSearchParams(location.search),c=q.get('cupom');try{c=c||localStorage.getItem('recado_cupom')}catch(e){}var i=document.getElementById('cupom'),b=document.getElementById('enviar');function bt(){b.textContent=i.value.trim()?'Confirmar pedido':'Ir pro pagamento'}if(c){i.value=c.toUpperCase();document.getElementById('cupom-box').open=true}i.addEventListener('input',bt);bt()})()</script>
+</body>
+</html>

@@ -67,6 +67,9 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         { source: '/', has: recado, destination: '/recado/index.html' },
+        // Acordo de Natal (24/10): os anúncios apontam pra recadoencantado.com.br/natal (e /acordo, nos textos antigos): a página de venda
+        { source: '/:p(natal|acordo)', has: recado, destination: '/recado/natal.html' },
+        { source: '/:p(natal|acordo)/', has: recado, destination: '/recado/natal.html' },
         { source: '/:path((?!api/|_next/|recado/).+)', has: recado, destination: '/recado/:path' },
         ...oito,
         ...feedaldia,

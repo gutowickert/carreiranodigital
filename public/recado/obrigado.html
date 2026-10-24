@@ -1,7 +1,7 @@
 <!doctype html>
 <html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="robots" content="noindex"><title>Seu recado encantado</title><meta name="theme-color" content="#2a1f6b">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,600;0,9..144,700;1,9..144,500&family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
 <style>
 :root{--noite:#2a1f6b;--rosa:#e6457a;--ouro:#f2c14e;--creme:#fffaf0;--creme2:#f3ead8;--texto:#3a2414;--suave:#8a7766}
 *{box-sizing:border-box;margin:0}body{font-family:Fredoka,system-ui,sans-serif;background:linear-gradient(180deg,var(--noite),#4b2a7a 60%,#7a3e8f);color:var(--texto);min-height:100vh;padding:24px 16px 60px}
@@ -21,7 +21,24 @@ video{width:100%;border-radius:18px;background:#000}
 .msg{background:#fff;border-radius:16px;padding:16px;font-size:17px;line-height:1.45;border-left:5px solid var(--ouro)}
 .como{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.como button{font:600 16px Fredoka;padding:12px 6px;border-radius:14px;border:2px solid var(--creme2);background:#fff;color:var(--texto);cursor:pointer}
 .como button.sim{background:#2fbf71;border-color:#2fbf71;color:#fff}.como button:disabled{opacity:.6}
+/* acordo de Natal (24/10): o "eu aceito" e a resposta da semana */
+.caixa{background:#fff;border:2px dashed var(--ouro);border-radius:18px;padding:16px;display:grid;gap:10px}.caixa p{font-size:16px}.caixa b.t{font-size:19px;color:var(--noite);text-align:center;display:block}
+.caixa .bt{border:0;cursor:pointer;font-family:Fredoka;width:100%}.caixa .bt:disabled{opacity:.6}.caixa .bt.claro{border:2px solid var(--rosa)}.caixa .nota{font-size:14px;color:var(--suave)}
+.arq{display:block;text-align:center;padding:12px;border-radius:999px;border:2px solid var(--rosa);color:var(--rosa);font-weight:700;font-size:17px;cursor:pointer}.arq input{display:none}
 small{display:block;text-align:center;color:var(--creme2);font-size:14px}
+/* acordo de Natal (24/10): a página da família ganha o clima da oficina do Noel (só nos pedidos do acordo) */
+body.acordo{background:linear-gradient(180deg,rgba(20,10,36,.35) 0,rgba(20,10,36,.75) 260px,#140a24 520px),url(/recado/midia/acordo/noel-bracos.jpg) 50% 0/min(100%,720px) auto no-repeat,#140a24;padding-top:200px}
+@media (min-width:721px){body.acordo{background-size:720px auto}}
+body.acordo .logo{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:160px}
+body.acordo .card{border-radius:26px;box-shadow:0 30px 70px rgba(0,0,0,.45);border:1px solid rgba(245,196,81,.25)}
+body.acordo h1{font-family:Fraunces,Georgia,serif;font-style:italic;font-weight:500;color:#c41e3a;font-size:40px}
+body.acordo .passo.feito i{background:linear-gradient(135deg,#f5c451,#e9a92a);color:#3a1a00}
+body.acordo .bt{background:linear-gradient(180deg,#e0354f,#c41e3a)}
+body.acordo .bt.claro{background:#fff;color:#c41e3a;border:2px solid #c41e3a}
+body.acordo .caixa{border:1.5px solid #ecdcc0;background:linear-gradient(180deg,#fffdf7,#fff5e4);box-shadow:0 10px 26px rgba(60,30,20,.08)}
+body.acordo .caixa b.t{font-family:Fraunces,Georgia,serif;font-size:21px;color:#2b1d2e}
+body.acordo .como button.sim{background:#1f7a4f;border-color:#1f7a4f}
+body.acordo small{color:#d9cfee}
 </style></head><body><div class="ct">
 <img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado">
 <div class="card" id="card"><h1 id="tit">Recebemos!</h1><p id="sub">Carregando o teu pedido...</p><div class="passos" id="passos"></div></div>
@@ -74,8 +91,78 @@ function missao(s){
     return cab+'<div style="display:grid;gap:10px">'+corpo+'</div>'}).join('')
   document.getElementById('passos').innerHTML=h
   return fim }
+// ===== ACORDO DE NATAL (24/10): proposta -> "eu aceito" -> acordo -> notícias da semana (domingos) -> conquista (24/12)
+var WHATS_RECADO=''   // número do WhatsApp do Recado (só dígitos, com 55); vazio = não mostra a opção
+var TIPO_AC={proposta:'A proposta do Papai Noel',acordo:'O acordo firmado',andamento:'Notícias da semana',conquista:'A conquista'}
+var SEMANA=[['otimo','Foi ótimo','cumpriu'],['quase','Quase','tentou'],['dificil','Difícil','ainda_nao']],FINAL=[['venceu','Venceu o desafio','cumpriu'],['progresso','Fez muito progresso, ainda está treinando','tentou']]
+function contado(bt){if(!confirm('Confirma que a criança aceitou o acordo, mesmo sem gravar?'))return;bt.disabled=true;window.__gravando=true
+  fetch('/api/recado/acordo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'aceite_contado',c:c})}).then(function(r){return r.json()}).then(function(j){window.__gravando=false;if(j.erro)aviso(j.erro);window.__sig=null;busca()}).catch(function(){window.__gravando=false;bt.disabled=false;aviso('Não deu agora. Tenta de novo em instantes.')})}
+function diaHora(iso){var d=new Date(iso);return d.toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'numeric'})+', às '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function semana(r,bt){bt.parentNode.querySelectorAll('button').forEach(function(b){b.disabled=true})
+  fetch('/api/recado/acordo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'semana',c:c,resposta:r})}).then(function(x){return x.json()}).then(function(j){if(j.erro)alert(j.erro);window.__sig=null;busca()}).catch(function(){window.__sig=null;busca()})}
+function aviso(t){var e=document.getElementById('ac-msg');if(e){e.textContent=t;e.style.display=t?'block':'none'}}
+// sobe o "eu aceito" direto pro armazenamento (vídeo de celular é grande) e avisa o site
+function mandaAceite(arq){
+  if(!arq)return; if(arq.size>50e6){aviso('Esse arquivo é grande demais. Grava um vídeo curtinho (uns 10 segundos) ou um áudio.');return}
+  window.__gravando=true;aviso('Enviando o "eu aceito" pro Polo Norte...');document.querySelectorAll('#ac-box button,#ac-box input').forEach(function(b){b.disabled=true})
+  var tipo=arq.type||'video/mp4'
+  fetch('/api/recado/acordo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'aceite_link',c:c,tipo:tipo})}).then(function(r){return r.json()})
+    .then(function(j){if(j.erro)throw new Error(j.erro);return fetch(j.envio,{method:'PUT',headers:{'Content-Type':tipo.split(';')[0],'x-upsert':'true'},body:arq}).then(function(r){if(!r.ok)throw new Error('O envio não completou. Tenta de novo.');return j.caminho})})
+    .then(function(cam){return fetch('/api/recado/acordo',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({acao:'aceite_ok',c:c,caminho:cam})}).then(function(r){return r.json()})})
+    .then(function(j){if(j.erro)throw new Error(j.erro);window.__gravando=false;window.__sig=null;busca()})
+    .catch(function(x){window.__gravando=false;aviso((x&&x.message)||'Não deu agora. Tenta de novo em instantes.');document.querySelectorAll('#ac-box button,#ac-box input').forEach(function(b){b.disabled=false})})}
+var rec=null
+function gravaAudio(bt){
+  if(rec&&rec.state==='recording'){rec.stop();return}
+  if(!navigator.mediaDevices||!window.MediaRecorder){aviso('Este celular não grava áudio por aqui. Usa o botão de baixo pra escolher um vídeo ou áudio.');return}
+  navigator.mediaDevices.getUserMedia({audio:true}).then(function(st){
+    var tipo=['audio/webm','audio/mp4','audio/ogg'].filter(function(t){return MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(t)})[0]||''
+    var pedacos=[];rec=new MediaRecorder(st,tipo?{mimeType:tipo}:undefined);window.__gravando=true
+    rec.ondataavailable=function(e){if(e.data.size)pedacos.push(e.data)}
+    rec.onstop=function(){st.getTracks().forEach(function(t){t.stop()});clearTimeout(rec.__t);bt.textContent='Gravar o áudio de novo';var b=new Blob(pedacos,{type:(rec.mimeType||tipo||'audio/webm').split(';')[0]});mandaAceite(b)}
+    rec.start();bt.textContent='Gravando... toca aqui pra parar e enviar';aviso('Pode falar! Para sozinho em 20 segundos.');rec.__t=setTimeout(function(){if(rec.state==='recording')rec.stop()},20000)
+  }).catch(function(){aviso('Não consegui usar o microfone. Libera o microfone ou usa o botão de baixo.')})}
+function blocoAceite(s,a){
+  var nome=s.nome
+  var v2=s.etapas.filter(function(e){return e.tipo==='acordo'})[0];if(a.aceite&&v2&&v2.status==='entregue')return ''
+  if(a.aceite)return '<div class="caixa"><b class="t">Recebemos o "eu aceito"!</b><p>'+(a.aceite==='voz'?'O Papai Noel já ouviu. ':'O Papai Noel já sabe que '+nome+' aceitou. ')+(a.acordo_em?'O vídeo do acordo firmado chega '+diaHora(a.acordo_em)+', junto com a Caderneta do Acordo pra imprimir.':'O próximo vídeo é ele firmando o acordo, junto com a caderneta pra imprimir.')+'</p></div>'
+  if(!a.pode_aceitar)return ''
+  return '<div class="caixa" id="ac-box"><b class="t">Agora é a vez de '+nome+' responder</b>'+
+    '<p>Mostra o vídeo e grava '+nome+' dizendo <b>"eu aceito"</b> pro Papai Noel. Pode ser um áudio ou um vídeo curtinho, do jeito que sair: o Noel adora ouvir.</p>'+
+    '<button type="button" class="bt" onclick="gravaAudio(this)">Gravar um áudio agora</button>'+
+    '<label class="arq">Escolher um vídeo ou áudio do celular<input type="file" accept="video/*,audio/*" onchange="mandaAceite(this.files[0])"></label>'+
+    (WHATS_RECADO?'<p class="nota">Se preferir, manda no <a href="https://wa.me/'+WHATS_RECADO+'?text='+encodeURIComponent('Eu aceito! Pedido '+c)+'" target="_blank" rel="noopener" style="color:var(--rosa);font-weight:700">WhatsApp do Recado</a>.</p>':'')+
+    '<button type="button" class="bt claro" onclick="contado(this)">Aceitou, mas ficou com vergonha de gravar</button>'+
+    '<p class="nota">No dia seguinte ao "eu aceito", às 18h, o Noel responde e o acordo fica oficial. Se '+nome+' não quiser hoje, tudo bem: pode mostrar de novo outro dia, sem pressão.</p><p class="nota" id="ac-msg" style="display:none;font-weight:600;color:var(--noite)"></p></div>'}
+function blocoSemana(s,w){
+  var fim=w.proximo==='conquista',per=fim?'Como foi o acordo, no geral?':'Como foi a semana? Olhem juntos as estrelas da caderneta.',agora=Date.now(),OP=fim?FINAL:SEMANA
+  if(w.aberta)return '<div class="caixa"><b class="t">'+per+'</b><p>'+(fim?'No dia 24, às 10h, o Papai Noel comemora o acordo. Ele só fala do que vocês contarem.':'Não tem resposta errada: o Noel comemora, encoraja ou ajuda, do jeito que for. O vídeo chega '+diaHora(w.entrega)+'.')+'</p><div class="como"'+(fim?' style="grid-template-columns:1fr"':'')+'>'+OP.map(function(o){return '<button type="button" class="'+(w.resposta===o[2]?'sim':'')+'" onclick="semana(\''+o[0]+'\',this)">'+o[1]+'</button>'}).join('')+'</div>'+
+    '<p class="nota">'+(w.resposta?'Resposta guardada. Mudou de ideia? Dá pra trocar até '+diaHora(w.corte)+'.':'Responde até '+diaHora(w.corte)+'. '+(fim?'Sem resposta, o Noel usa o último toque do domingo.':'Se não der tempo, o Noel manda um recado de encorajamento, sempre com carinho.'))+'</p></div>'
+  if(agora<Date.parse(w.abre))return '<div class="caixa"><p>'+(fim?'O vídeo da conquista chega na véspera de Natal, às 10h. ':'O próximo vídeo do Papai Noel chega '+diaHora(w.entrega)+'. ')+'A partir de '+diaHora(w.abre)+' aparecem aqui os botões pra contar '+(fim?'como foi o acordo':'como foi a semana')+'.</p></div>'
+  var r=OP.filter(function(o){return o[2]===w.resposta})[0]
+  return '<div class="caixa"><p>'+(r?'Tu contou: <b>'+r[1]+'</b>. ':'')+'O Papai Noel já está preparando o próximo vídeo.</p></div>'}
+function acordo(s){
+  var a=s.acordo||{},ult=s.etapas[s.etapas.length-1],fim=ult.status==='entregue'
+  document.body.classList.add('acordo')
+  if(window.__gravando)return false   // não redesenha no meio da gravação ou do envio
+  var sig=JSON.stringify([s.status,s.etapas.map(function(e){return e.status+e.resposta}),a.aceite,a.pode_aceitar,a.semana])
+  if(sig===window.__sig)return fim; window.__sig=sig
+  document.getElementById('tit').textContent=fim?'Acordo cumprido!':s.status==='aguardando_pagamento'?'Quase lá!':'O Acordo de Natal começou!'
+  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, o Papai Noel grava a proposta pra '+s.nome+'.':'Desafio: '+(a.desafio_nome||'')+'. Cada vídeo do Papai Noel aparece aqui no dia certo, e a gente avisa no teu e-mail.'
+  var h=s.etapas.map(function(e){
+    var cab='<div class="passo '+(e.status==='entregue'?'feito':e.status==='produzindo'||e.status==='pronta'?'agora':'')+'"><i>'+(e.status==='entregue'?'✓':e.ordem)+'</i>'+(TIPO_AC[e.tipo]||'Vídeo')+'<span style="margin-left:auto;font-weight:500;font-size:14px">'+(e.status==='entregue'?'':e.quando?quando(e.quando):'depois do "eu aceito"')+'</span></div>'
+    if(e.status!=='entregue')return cab
+    var corpo='<video controls playsinline preload="metadata" src="'+e.video+'"></video>'
+    if(e.kit)corpo+='<a class="bt claro" href="'+e.kit+'" download>Baixar a Caderneta do Acordo (A4)</a>'
+    if(e.certificado)corpo+='<a class="bt claro" href="'+e.certificado+'" download>Baixar o diploma</a>'
+    if(e.tipo==='proposta')corpo+=blocoAceite(s,a)
+    if(a.semana&&a.semana.ordem===e.ordem)corpo+=blocoSemana(s,a.semana)
+    return cab+'<div style="display:grid;gap:10px">'+corpo+'</div>'}).join('')
+  if(a.irmaos&&a.irmaos.length)h+='<div class="caixa"><p>Os acordos dos irmãos têm a página de cada um:</p>'+a.irmaos.map(function(i){return '<a class="bt claro" href="/recado/obrigado.html?c='+encodeURIComponent(i.codigo)+'">Acordo de '+String(i.nome).replace(/</g,'')+'</a>'}).join('')+'</div>'
+  document.getElementById('passos').innerHTML=h
+  return fim }
 function desenha(s){
-  if(s.etapas)return missao(s)
+  if(s.etapas)return /^acordo/.test(s.pacote)?acordo(s):missao(s)
   var quem=s.pacote==='recado'?'a Fada do Dente':QUEM[s.personagem]||'o Papai Noel'
   if(s.status==='aguardando_pagamento'&&s.pagar){
     document.getElementById('tit').textContent='Falta só o pagamento'

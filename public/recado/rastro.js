@@ -16,11 +16,14 @@
   var M = { chupeta: 'grandao/chupeta', dormir: 'guardiao/dormir', coragem: 'coragem/coragem' }
   var p = location.pathname, m = (p.match(/missao-(\w+)/) || [])[1] || q.get('m'), produto = M[m] || null
   if (!produto && /pedido/.test(p)) produto = q.get('p') === 'fada' ? 'fada/recado' : 'noel/' + (q.get('pac') || 'magico')
+  // acordo de Natal (24/10): o formulário (?pac=) e a página do Natal, que vende o acordo até 10/12; a cópia antiga do Natal é o avulso
+  if (!produto && /\/acordo\.html/.test(p)) produto = 'noel/' + (q.get('pac') === 'acordo_completo' ? 'acordo_completo' : 'acordo')
+  if (!produto && (/\/natal\.html/.test(p) || /^\/(natal|acordo)\/?$/.test(p)) &&new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10) <= '2026-12-10') produto = 'noel/acordo'
   if (!produto && /natal|\/vo\.html/.test(p)) produto = 'noel/magico'
   if (!produto && /\/fada\.html/.test(p)) produto = 'fada/recado'   // a página principal virou a vitrine de todos (10/10): sem produto
   // Pixel da Meta (10/10): PageView em todas, ViewContent na página do produto, InitiateCheckout no envio do formulário,
   // AddPaymentInfo no "Pagar agora" e Purchase na página do pedido quando o pagamento confirma (recadoRastro.compra, 1 vez por pedido).
-  var PIXEL = '1739805330556259', PRECO = { 'grandao/chupeta': 94.9, 'guardiao/dormir': 139.9, 'coragem/coragem': 64.9, 'fada/recado': 39.9, 'noel/encanto': 39.9, 'noel/magico': 64.9 }
+  var PIXEL = '1739805330556259', PRECO = { 'grandao/chupeta': 94.9, 'guardiao/dormir': 139.9, 'coragem/coragem': 64.9, 'fada/recado': 39.9, 'noel/encanto': 39.9, 'noel/magico': 64.9, 'noel/acordo': 97, 'noel/acordo_completo': 147 }
   !function (f, b, e, v, n, t, s) { if (f.fbq) return; n = f.fbq = function () { n.callMethod ? n.callMethod.apply(n, arguments) : n.queue.push(arguments) }; if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0'; n.queue = []; t = b.createElement(e); t.async = !0; t.src = v; s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s) }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js')
   fbq('init', PIXEL); fbq('track', 'PageView')
   var conteudo = function () { return produto ? { content_ids: [produto], content_type: 'product', value: PRECO[produto] || 0, currency: 'BRL' } : {} }
