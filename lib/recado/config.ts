@@ -4,7 +4,7 @@ export const recadoConfig = {
   prazoTexto: 'em até 2 horas',
   pacotes: {
     noel: {
-      encanto: { nome: 'Encanto', preco: 39.9, itens: ['video', 'certificado'] },
+      encanto: { nome: 'Encanto', preco: 49.9, itens: ['video', 'certificado'] },
       magico: { nome: 'Magia Completa', preco: 64.9, itens: ['video', 'certificado', 'carta', 'vespera'] },
       // ACORDO DE NATAL (24/10): o Noel faz um acordo com a criança até o Natal. Quantos domingos entram o trabalhador calcula pela data
       // da compra (fabrica/lib/acordo.js); aqui é o desenho. Venda até RECADO_ACORDO_ATE (lib/recado/acordo.ts). Irmão: R$ 47 cada.
