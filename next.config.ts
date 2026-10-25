@@ -43,7 +43,7 @@ const nextConfig: NextConfig = {
   // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
   async rewrites() {
     // Recado Encantado (frente da escola): quem entra por recadoencantado.com.br vê as páginas de public/recado; a API fica em /api/recado
-    // os dois nomes: recadoencantado (o da marca) e recadoencantando (o que foi registrado em 09/10)
+    // o nosso é recadoencantando.com.br (registrado em 09/10). O recadoencantado.com.br é de outra pessoa (registrado em 15/10) e não aponta pra cá
     const recado = [{ type: 'host' as const, value: '(www\\.)?recadoencant(ado|ando)\\.com\\.br' }]
     // Oito Posts (12/10): três marcas, cada uma no seu domínio, todas servidas de public/oito/<marca>; a API fica em /api/oito
     // 15/10: os domínios das três em espanhol (feeddivino/feedsabroso/feedpeludo) saíram: o espanhol agora é o Feed al Día (logo abaixo)
@@ -66,7 +66,9 @@ const nextConfig: NextConfig = {
     })
     return {
       beforeFiles: [
-        { source: '/', has: recado, destination: '/recado/index.html' },
+        // 25/10 (Guto): até o Natal a página principal é o Natal; a vitrine com todos os produtos fica em /todos
+        { source: '/', has: recado, destination: '/recado/natal.html' },
+        { source: '/:p(todos|produtos)', has: recado, destination: '/recado/index.html' },
         // Acordo de Natal (24/10): os anúncios apontam pra recadoencantado.com.br/natal (e /acordo, nos textos antigos): a página de venda
         { source: '/:p(natal|acordo)', has: recado, destination: '/recado/natal.html' },
         { source: '/:p(natal|acordo)/', has: recado, destination: '/recado/natal.html' },
