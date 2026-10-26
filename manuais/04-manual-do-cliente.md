@@ -6,6 +6,7 @@ A página que o cliente recebe, e a tua versão dela: **a mesma página, com o t
 | --- | --- | --- |
 | Espaço Dani Fell | [espacodanifell.vercel.app/manual.html](https://espacodanifell.vercel.app/manual.html) | [abrir a versão interna](/manuais/dani-fell.html) |
 | GAJA | em construção — sai na etapa "Primeiras modificações" do roteiro Sistema | — |
+| O Mundo do Papelão | ainda não tem — fazer antes da virada (treino da equipe por loja) | — |
 
 A escola não tem manual de cliente: dela só existe o interno (os capítulos acima).
 

@@ -76,3 +76,19 @@ Não marca hora sozinho, não cobra dinheiro, não sobe anúncio, e a IA não mu
 ## Várias lojas (21/10/2026)
 
 Pra empresa com mais de uma unidade (nasceu no Mundo do Papelão). Em **Ajustes → Lojas** cada loja ganha endereço, WhatsApp, horário e as **cidades que atende** ("Canoas, Esteio, Sapucaia do Sul"; apelido vale, como "NH"). Quando a cidade do cliente entra no cadastro (a IA anota a que ele contou, ou alguém digita), o sistema põe ele na loja certa e passa pra próxima atendente daquela loja, no rodízio. Em **Usuários** se escolhe a loja de cada pessoa; quem é de uma loja vê só os clientes dela no CRM, e o admin filtra por loja. Empresa com uma loja só não vê nada disso.
+
+**Cor de cada loja (22/10):** cada loja tem a sua cor (Ajustes → Lojas). A cor aparece no cartão do cliente, nas tarefas, no "Precisa de ti", nos documentos e nos gráficos do **Painel das lojas** (as lojas lado a lado: quem chegou, quem espera resposta, vendas, perdas).
+
+**Estoque por loja pela foto da nota (22/10):** em **Estoque → Receber mercadoria** a loja tira foto (ou manda o PDF) da nota; a IA lê fornecedor, número e itens, a pessoa confere e lança, e entra no saldo daquela loja. A próxima nota do mesmo fornecedor já casa os produtos pelo código; nota repetida avisa. As notas e outros papéis (boleto, contrato) ficam em **Documentos**, num lugar fechado (o link pra abrir vence em 10 minutos). Precisa da chave da IA da empresa; sem ela dá pra lançar à mão.
+
+## Vários números de WhatsApp (26/10/2026)
+
+Pra empresa em que cada loja tem o seu número. Em **Ajustes → Conectar WhatsApp** cada número entra pelo ID da Meta (o sistema confere com a Meta antes de gravar) e escolhe a loja. O cliente é respondido pelo número em que escreveu; cliente novo que escreve no número de uma loja entra nessa loja e na vez da próxima atendente de lá; mensagem que a gente puxa (retomada, recompra) sai pelo número da loja do cliente. Com um número só, nada muda. ⚠️ Número de loja que hoje está no app do celular só entra pela **coexistência** (precisa do Tech Provider da CND): passar ele direto pra API tira o WhatsApp do celular da loja.
+
+## Retomadas e prazos por etapa (26/10/2026)
+
+Em **Ajustes → Retomadas e prazos** cada etapa do funil ganha passos: "retomada em 1 dia", "última retomada em 3 dias", "lembrar a reserva em 36 h", "venceu: retirou?". Cada passo vira uma **tarefa com o texto pronto**, marcada pro horário em que a loja está aberta. Na tarefa, o botão **💬 Mandar** abre a conversa com o texto no campo: a pessoa completa o que está entre [colchetes] e manda, e a tarefa se marca feita sozinha.
+- Conta da **última mensagem sem resposta** (retomadas): se o cliente responde, as retomadas param; quando o time responde de novo, recomeçam do zero. Ou conta da **entrada na etapa** (reserva).
+- **Encerrar sem resposta:** feitas todas as retomadas e passado o prazo sem resposta, o cliente sai sozinho: pessoa vai pra perda com o motivo "Sem resposta"; **empresa vai pra etapa escolhida** (a recompra; empresa não se perde por silêncio). Se o time não fez as retomadas, não encerra: a tarefa fica atrasada e aparece.
+- **Empresa ou pessoa:** campo "Cliente" na ficha; quem manda CNPJ na conversa vira empresa sozinho.
+- Funciona por qualquer caminho em que o cliente mude de etapa (quadro, ficha, IA), porque mora no banco. Nasce vazio: sem passos, nada acontece. Fora das 24 h da última mensagem do cliente a Meta só aceita modelo aprovado.
