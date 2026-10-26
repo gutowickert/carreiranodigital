@@ -10,7 +10,9 @@ export const maxDuration = 60
 
 export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || '', secret = process.env.CRON_SECRET
-  if (!ua.includes('vercel-cron') && !(secret && req.headers.get('authorization') === `Bearer ${secret}`)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
+  // 25/10: o pg_cron do Supabase (sql/08) também chama, a cada 2 h durante o dia, com a chave do vigia
+  const chave = req.nextUrl.searchParams.get('chave'), vigia = !!process.env.RECADO_VIGIA_CHAVE && chave === process.env.RECADO_VIGIA_CHAVE.trim()
+  if (!vigia && !ua.includes('vercel-cron') && !(secret && req.headers.get('authorization') === `Bearer ${secret}`)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
   return NextResponse.json(await sincronizaGastos(3))
 }
 

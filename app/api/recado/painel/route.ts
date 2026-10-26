@@ -2,10 +2,15 @@
 // GET ?o=tudo&dias=N  -> pedidos, funil do site (somado no banco), gastos de anúncio, custos fixos, metas, preços e custo padrão
 // GET ?o=pedido&id=   -> um pedido com eventos e links
 // POST {acao, ...}    -> ações nos pedidos e lançamentos (gasto, custo fixo, meta)
-import { NextRequest, NextResponse } from 'next/server'
+// 25/10 (painel novo): também o ACORDO DE NATAL (pedidos, etapas, prazos), os próximos vídeos, os últimos acontecimentos,
+// o custo real por item (recado_custos, sql/08), as sessões da máquina, o estado das automações e as sugestões de fixos e metas.
+// O gasto da Meta se atualiza sozinho: cron das 6h30 + toda vez que o painel abre e a última leitura tem mais de 2 h.
+import { NextRequest, NextResponse, after } from 'next/server'
 import { recadoDb as db } from '@/lib/recado/db'
 import { recadoConfig as cfg } from '@/lib/recado/config'
-import { economia, custoPadrao } from '@/lib/recado/economia'
+import { economia, custoPadrao, sugestao } from '@/lib/recado/economia'
+import { VENDA_ATE, DESAFIOS } from '@/lib/recado/acordo'
+import { sincronizaGastos } from '@/lib/recado/meta-gasto'
 
 export const maxDuration = 60   // o atendente automático chama o Claude (11/10)
 const autorizado = (req: NextRequest) => !!process.env.RECADO_PAINEL_SENHA && req.headers.get('x-senha') === process.env.RECADO_PAINEL_SENHA
@@ -14,6 +19,52 @@ const U = () => process.env.NEXT_PUBLIC_SUPABASE_URL as string, K = () => proces
 const rpc = async (fn: string, args: any) => {
   const r = await fetch(`${U()}/rest/v1/rpc/${fn}`, { method: 'POST', headers: { apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json' }, body: JSON.stringify(args) })
   if (!r.ok) throw new Error('banco ' + r.status + ': ' + (await r.text()).slice(0, 200)); return r.json()
+}
+const CAMPOS_PEDIDO = 'id,codigo,criado_em,personagem,pacote,preco,status,nome:crianca->>nome,responsavel:contato->>responsavel,pago_em,produzindo_em,entregue_em,forma_pagamento,taxa_gateway,custo,erro,tentativas,origem,visitante,missao'
+const ACORDO_DESDE = '2026-10-24T03:00:00.000Z'   // o acordo entrou no ar em 24/10
+const opcional = (p: Promise<any>) => p.catch(() => null)   // tabela que só existe depois do sql/08: null = ainda não rodou
+
+// o que o painel novo precisa além do básico (25/10)
+async function extrasDoPainel(desde: string, pedidos: any[]) {
+  const [acordoPeds, etapas, eventos, eventosCusto, custos, sessoes, ultMeta] = await Promise.all([
+    db.busca('pedidos', `pacote=like.acordo*&criado_em=gte.${ACORDO_DESDE}&order=criado_em.desc&limit=2000&select=${CAMPOS_PEDIDO}`).catch(() => []),
+    // todas as etapas de missão e acordo desde o lançamento (as do acordo que esperam o "eu aceito" ficam em 2099)
+    db.busca('etapas', `quando=gte.${ACORDO_DESDE}&order=quando.asc&limit=5000&select=pedido_id,ordem,tipo,quando,status,resposta,respondida_em,entregue_em,erro,tentativas,produzir_a_partir,extras`).catch(() => []),
+    db.busca('eventos', 'order=quando.desc&limit=80&select=quando,tipo,detalhe,pedido_id').catch(() => []),
+    // e-mails e mensagens de cada pedido do período: entram no custo real (preço unitário em economia.unit)
+    db.busca('eventos', `quando=gte.${desde}&or=(tipo.like.email*,tipo.eq.lembrete,tipo.eq.entrega,tipo.eq.etapa_entregue)&limit=10000&select=pedido_id,tipo,enviado:detalhe->>enviado`).catch(() => []),
+    opcional(db.busca('custos', `quando=gte.${desde}&limit=20000&select=pedido_id,etapa_ordem,item,quantidade,unidade,valor,usd,quando`)),
+    opcional(db.busca('maquina_sessoes', `ligou_em=gte.${desde}&order=ligou_em.desc&limit=500`)),
+    db.busca('gastos', 'canal=eq.meta_api&order=criado_em.desc&limit=1&select=criado_em').catch(() => []),
+  ])
+  // nome e código de quem aparece nas etapas e nos acontecimentos (pedidos fora do período vêm numa leitura curta)
+  const conhecidos = new Map<string, any>()
+  for (const p of [...pedidos, ...acordoPeds]) conhecidos.set(p.id, p)
+  const faltam = [...new Set([...etapas.map((e: any) => e.pedido_id), ...eventos.map((e: any) => e.pedido_id)])].filter(id => id && !conhecidos.has(id)).slice(0, 150)
+  if (faltam.length) for (const p of await db.busca('pedidos', `id=in.(${faltam.join(',')})&select=id,codigo,personagem,pacote,status,nome:crianca->>nome`).catch(() => [])) conhecidos.set(p.id, p)
+  const quem = (id: string) => { const p = conhecidos.get(id); return p ? { codigo: p.codigo, nome: p.nome, pacote: p.pacote, personagem: p.personagem } : {} }
+  // e-mails e WhatsApp por pedido
+  const envios: Record<string, { email: number; whats: number }> = {}
+  for (const e of eventosCusto as any[]) {
+    const o = envios[e.pedido_id] = envios[e.pedido_id] || { email: 0, whats: 0 }
+    if (/^email|^lembrete$/.test(e.tipo)) o.email++
+    else if (e.enviado === 'true') o.whats++
+  }
+  // o gasto da Meta se atualiza sozinho: se a última leitura passou de 2 h, lê de novo depois de responder (sem atrasar a tela)
+  const ultimo = ultMeta[0]?.criado_em || null, velho = !ultimo || Date.now() - Date.parse(ultimo) > 2 * 3600e3
+  const ligadoMeta = !!process.env.RECADO_META_CONTA
+  if (velho && ligadoMeta) after(() => sincronizaGastos(3).catch(e => console.error('recado/painel meta', e)))
+  return {
+    acordo: { vendaAte: VENDA_ATE, desafios: DESAFIOS, pedidos: acordoPeds },
+    etapas: (etapas as any[]).map(e => ({ ...e, ...quem(e.pedido_id) })),
+    eventos: (eventos as any[]).map(e => ({ ...e, ...quem(e.pedido_id) })),
+    envios, custos, sessoes,
+    automacoes: {
+      metaConta: ligadoMeta, metaUltima: ultimo, metaLendo: velho && ligadoMeta,
+      vigia: !!process.env.RECADO_VIGIA_CHAVE, avisoCelular: !!(process.env.RECADO_NTFY_TOPICO || process.env.RECADO_AVISO_EMAIL),
+      caixa: !!process.env.RECADO_SUPORTE_SENHA, custosReais: custos !== null, sessoesMaquina: sessoes !== null,
+    },
+  }
 }
 
 export async function GET(req: NextRequest) {
@@ -46,7 +97,7 @@ export async function GET(req: NextRequest) {
     // o funil (visitantes por etapa) vem somado do banco: precisa do início do período escolhido no painel, senão "Hoje" mostra 31 dias
     const fd = q.get('funil_desde'), funilDesde = fd && !isNaN(Date.parse(fd)) ? [new Date(fd).toISOString(), INICIO].sort().pop() as string : desde
     const [pedidos, maquina, funil, funilDia, gastos, fixos, metas, cupons] = await Promise.all([
-      db.busca('pedidos', `criado_em=gte.${desde}&order=criado_em.desc&limit=1000&select=id,codigo,criado_em,personagem,pacote,preco,status,nome:crianca->>nome,responsavel:contato->>responsavel,pago_em,produzindo_em,entregue_em,forma_pagamento,taxa_gateway,custo,erro,tentativas,origem,visitante`),
+      db.busca('pedidos', `criado_em=gte.${desde}&order=criado_em.desc&limit=1000&select=${CAMPOS_PEDIDO}`),
       db.busca('maquina', 'id=eq.1'),
       rpc('recado_funil', { desde: funilDesde }),
       rpc('recado_funil_dia', { desde }),
@@ -67,8 +118,11 @@ export async function GET(req: NextRequest) {
     } catch (e) { console.error('recado/painel eventos', e) }
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
-    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`) }
-    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax }, dias, agora: new Date().toISOString() }, sem)
+    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`), videos: (economia.videos[`${per}/${pac}`] || [30]).length }
+    const extra = await extrasDoPainel(desde, pedidos)
+    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, ...extra,
+      regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax, dolar: economia.dolar, gpuUsdHora: economia.gpuUsdHora, unit: economia.unit },
+      sugestao, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
     console.error('recado/painel', e)
     return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 })

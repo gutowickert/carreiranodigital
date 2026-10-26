@@ -11,21 +11,26 @@ const norm = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g,
 // produto pela 1ª palavra da campanha (CHUPETA | mães | teste 1)
 export function produtoDaCampanha(nome: string): string | null {
   const n = norm(nome), p = n.split(/[^A-Z]+/).filter(Boolean)[0] || ''
+  if (p === 'ACORDO' || p === 'NATAL' || /ACORDO DE NATAL/.test(n)) return acordoDe(n)   // 25/10
   if (p === 'CHUPETA') return 'grandao/chupeta'
   if (p === 'CORAGEM') return 'coragem/coragem'
   if (p === 'DORMIR' || p === 'NOITE') return 'guardiao/dormir'
   if (p === 'FADA') return 'fada/recado'
-  if (p === 'NOEL') return /ENCANTO/.test(n) ? 'noel/encanto' : 'noel/magico'
+  if (p === 'NOEL') return /ENCANTO/.test(n) ? 'noel/encanto' : /MAGI/.test(n) ? 'noel/magico' : 'noel/acordo'   // 25/10: o Noel agora é o Acordo de Natal
   return null
 }
+// 25/10: ACORDO DE NATAL. Vem antes de tudo no conjunto: "ACORDO CHUPETA" é do acordo, não da Missão Tchau Chupeta.
+// O gasto fica em noel/acordo (o painel soma Acordo e Completo); "COMPLETO" no nome vai pro completo.
+const acordoDe = (n: string) => /COMPLETO/.test(n) ? 'noel/acordo_completo' : 'noel/acordo'
 // produto por palavra em qualquer lugar do nome do conjunto ("CONJUNTO FADA DO DENTE MÃES")
 export function produtoDoConjunto(nome: string): string | null {
   const n = norm(nome)
+  if (/ACORDO|NATAL/.test(n)) return acordoDe(n)
   if (/CHUPETA|GRANDAO/.test(n)) return 'grandao/chupeta'
   if (/CORAGEM|CAPITA/.test(n)) return 'coragem/coragem'
   if (/GUARDIAO|DORMIR|NOITE/.test(n)) return 'guardiao/dormir'
   if (/FADA|DENTE/.test(n)) return 'fada/recado'
-  if (/NOEL|NATAL/.test(n)) return /ENCANTO/.test(n) ? 'noel/encanto' : 'noel/magico'
+  if (/NOEL/.test(n)) return /ENCANTO/.test(n) ? 'noel/encanto' : /MAGI/.test(n) ? 'noel/magico' : 'noel/acordo'
   return null
 }
 export const doRecado = (l: AnuncioDia) => /RECADO/i.test(l.campaign_name) || !!produtoDaCampanha(l.campaign_name)
