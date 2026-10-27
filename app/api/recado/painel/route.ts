@@ -1,6 +1,7 @@
 // Recado Encantado: dados e ações do painel do negócio. Protegido pela senha RECADO_PAINEL_SENHA (cabeçalho x-senha).
 // GET ?o=tudo&dias=N  -> pedidos, funil do site (somado no banco), gastos de anúncio, custos fixos, metas, preços e custo padrão
 // GET ?o=pedido&id=   -> um pedido com eventos e links
+// GET ?o=organico_seco -> o agendador do orgânico em modo seco (o que publicaria agora, sem publicar)
 // POST {acao, ...}    -> ações nos pedidos e lançamentos (gasto, custo fixo, meta)
 // 25/10 (painel novo): também o ACORDO DE NATAL (pedidos, etapas, prazos), os próximos vídeos, os últimos acontecimentos,
 // o custo real por item (recado_custos, sql/08), as sessões da máquina, o estado das automações e as sugestões de fixos e metas.
@@ -11,6 +12,7 @@ import { recadoConfig as cfg } from '@/lib/recado/config'
 import { economia, custoPadrao, sugestao } from '@/lib/recado/economia'
 import { VENDA_ATE, DESAFIOS } from '@/lib/recado/acordo'
 import { sincronizaGastos } from '@/lib/recado/meta-gasto'
+import { estadoOrganico, acaoOrganico, rodaAgendador } from '@/lib/recado/organico'
 
 export const maxDuration = 60   // o atendente automático chama o Claude (11/10)
 const autorizado = (req: NextRequest) => !!process.env.RECADO_PAINEL_SENHA && req.headers.get('x-senha') === process.env.RECADO_PAINEL_SENHA
@@ -83,6 +85,7 @@ export async function GET(req: NextRequest) {
       if (p.missao?.aceite?.caminho) links.aceite = await db.linkAssinado(p.missao.aceite.caminho, 3600).catch(() => null)   // acordo de Natal: o "eu aceito"
       return NextResponse.json({ pedido: p, eventos, etapas, caminho, links }, sem)
     }
+    if (q.get('o') === 'organico_seco') return NextResponse.json(await rodaAgendador({ seco: true }), sem)   // 27/10
     if (q.get('o') === 'conversa') {   // suporte: as mensagens de uma conversa (11/10)
       const id = String(q.get('id') || '').replace(/[^a-f0-9-]/g, '')
       const [s] = await db.busca('suporte', `id=eq.${id}&select=*`)
@@ -119,8 +122,8 @@ export async function GET(req: NextRequest) {
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
     for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`), videos: (economia.videos[`${per}/${pac}`] || [30]).length }
-    const extra = await extrasDoPainel(desde, pedidos)
-    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, ...extra,
+    const [extra, organico] = await Promise.all([extrasDoPainel(desde, pedidos), estadoOrganico().catch(() => null)])   // orgânico: agendador do Instagram (27/10)
+    return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, ...extra, organico,
       regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax, dolar: economia.dolar, gpuUsdHora: economia.gpuUsdHora, unit: economia.unit },
       sugestao, dias, agora: new Date().toISOString() }, sem)
   } catch (e: any) {
@@ -194,6 +197,8 @@ export async function POST(req: NextRequest) {
       await fetch(`${U()}/rest/v1/recado_metas`, { method: 'POST', headers: { apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json', Prefer: 'resolution=merge-duplicates' }, body: JSON.stringify(linha) })
       return NextResponse.json({ ok: true })
     }
+    // orgânico (27/10): já postei na mão / voltar a agendar / tentar de novo
+    if (/^organico_/.test(b.acao)) { await acaoOrganico(b.acao, String(b.id || '').replace(/[^A-Z0-9]/g, '')); return NextResponse.json({ ok: true }) }
     // acordo de Natal (24/10): o "eu aceito" chegou por WhatsApp ou e-mail; marca aqui e o vídeo do acordo é gravado agora
     if (b.acao === 'acordo_aceite') {
       const { aceiteChegou } = await import('@/lib/recado/acordo')

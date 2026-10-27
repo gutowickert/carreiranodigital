@@ -489,6 +489,14 @@ details summary::before{content:"+ ";color:var(--accent-soft)}details[open] summ
       <div class="lista" id="lsup"></div></div>
   </section>
 
+  <!-- ORGÂNICO (27/10): o agendador do Instagram -->
+  <section class="aba" data-aba="organico" hidden>
+    <div class="box"><h2>Agendador do Instagram <small id="orgest"></small><span class="dir"><button class="bt pq" data-act="orgseco"><svg class="i" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>Ver o que sai no próximo</button></span></h2>
+      <div id="orgaviso" style="display:grid;gap:8px;margin-bottom:12px"></div>
+      <div class="lista" id="lorg"></div>
+      <p class="nota" style="margin-top:12px">Cada post sai às 19h (horário de Brasília) do dia marcado no calendário, sozinho, sem precisar do computador (o P27 sai às 10h, porque o prazo dele é 18h). Postou algum na mão? Toca em <b>Já postei</b> que o agendador pula ele. Do P13 em diante as imagens ainda não existem: quando ficarem prontas, roda <code>node scripts/recado-organico.mjs</code> e publica o site. Os espaços de prova social (P16 e P23) são sempre na mão.</p></div>
+  </section>
+
   <!-- AJUSTES (lançamentos) -->
   <section class="aba" data-aba="lanc" hidden>
     <div class="box"><h2>Gasto com anúncio <small id="metaauto"></small></h2>
@@ -575,7 +583,7 @@ aplicaTema(TEMA)
 try { if (localStorage.getItem('recado_vidro') === 'off') document.documentElement.setAttribute('data-vidro', 'off') } catch (e) {}
 
 var ABAS = [['geral', 'hoje', 'Hoje', 'Hoje'], ['acordo', 'presente', 'Acordo de Natal', 'Acordo de Natal'], ['camp', 'anuncio', 'Anúncios', 'Campanhas'], ['funil', 'funil', 'Funil', 'Funil'],
-  ['produtos', 'caixa', 'Produtos', 'Produtos'], ['fin', 'carteira', 'Dinheiro', 'Dinheiro'], ['pedidos', 'lista', 'Pedidos', 'Pedidos'], ['suporte', 'conversa', 'Suporte', 'Suporte'], ['lanc', 'ajustes', 'Ajustes', 'Ajustes e lançamentos']]
+  ['produtos', 'caixa', 'Produtos', 'Produtos'], ['fin', 'carteira', 'Dinheiro', 'Dinheiro'], ['pedidos', 'lista', 'Pedidos', 'Pedidos'], ['suporte', 'conversa', 'Suporte', 'Suporte'], ['organico', 'calendario', 'Orgânico', 'Orgânico no Instagram'], ['lanc', 'ajustes', 'Ajustes', 'Ajustes e lançamentos']]
 $('abas').innerHTML = ABAS.map(function (a) { return '<button role="tab" data-act="aba" data-v="' + a[0] + '" aria-selected="' + (a[0] === 'geral') + '"' + (a[0] === 'acordo' ? ' class="destaque"' : '') + '>' + ic(a[1]) + '<span>' + a[2] + '</span>' + (a[0] === 'suporte' ? '<span class="badge" id="bsup" hidden></span>' : a[0] === 'pedidos' ? '<span class="badge" id="bped" hidden></span>' : a[0] === 'acordo' ? '<span class="badge" id="bac" hidden style="background:var(--accent)"></span>' : '') + '</button>' }).join('')
 var SEM_PERIODO = ['acordo', 'camp', 'suporte', 'lanc']
 function mudaAba(a) { if (!ABAS.some(function (x) { return x[0] === a })) a = 'geral'; aba = a
@@ -589,7 +597,7 @@ function mudaAba(a) { if (!ABAS.some(function (x) { return x[0] === a })) a = 'g
   window.scrollTo(0, 0) }
 function subtitulo(a) { var pr = { '1': 'hoje', '7': 'últimos 7 dias', '30': 'últimos 30 dias', mes: 'este mês', '90': 'últimos 90 dias' }[per]
   return { geral: 'Um negócio-teste da escola · ' + pr, acordo: 'O produto do momento · desde o lançamento (24/10)', camp: 'Meta ao vivo, cruzada com as vendas do site', funil: 'Do anúncio à compra · ' + pr,
-    produtos: 'Margem e anúncio por produto · ' + pr, fin: 'Custo real de cada pedido · ' + pr, pedidos: 'Pedidos feitos · ' + pr, suporte: 'contato@ e página do pedido', lanc: 'Gasto, custos fixos, metas e cupons' }[a] || '' }
+    produtos: 'Margem e anúncio por produto · ' + pr, fin: 'Custo real de cada pedido · ' + pr, pedidos: 'Pedidos feitos · ' + pr, suporte: 'contato@ e página do pedido', lanc: 'Gasto, custos fixos, metas e cupons', organico: 'Os posts do calendário saem sozinhos no Instagram' }[a] || '' }
 function periodoTxt() { return { '1': 'hoje', '7': '7 dias', '30': '30 dias', mes: 'este mês', '90': '90 dias' }[per] }
 
 // ===================== dados =====================
@@ -678,7 +686,7 @@ function desenha() {
   $('bsup').hidden = !ab; $('bsup').textContent = ab
   var err = D.pedidos.filter(function (p) { return p.status === 'falhou' || p.status === 'revisao' }).length; $('bped').hidden = !err; $('bped').textContent = err
   $('bac').hidden = !A.esperando.length; $('bac').textContent = A.esperando.length; $('bac').title = A.esperando.length + ' esperando o eu aceito'
-  hoje(S, np, A); acordoAba(A); funil(); produtos(porProduto(np.peds, np.gas)); dinheiro(S, np.peds, pr); lista(); suporte(); lancamentos()
+  hoje(S, np, A); acordoAba(A); funil(); produtos(porProduto(np.peds, np.gas)); dinheiro(S, np.peds, pr); lista(); suporte(); lancamentos(); organico()
 }
 
 // ----- alertas automáticos -----
@@ -1052,6 +1060,42 @@ function acao(b) { var a = b.dataset.a, o = { acao: a }; ['id', 'tipo', 'status'
   api('', { method: 'POST', body: JSON.stringify(o) }).then(function (r) { if (r.erro) throw new Error(r.erro); toast(a === 'acordo_aceite' ? '"Eu aceito" marcado: o vídeo do acordo vai ser gravado' : 'Feito'); if (a === 'suporte_status') conversa(o.id); else fecha(); carrega() })
     .catch(function (x) { b.disabled = false; b.dataset.ok = ''; b.innerHTML = b.dataset.txt; toast('Não deu: ' + x.message, true) }) }
 
+// ===================== ORGÂNICO (27/10): o agendador do Instagram =====================
+var ORG_SIT = { publicado: ['bom', 'ok', 'publicado'], pulado: ['', 'usuario', 'postado na mão'], prova_social: ['', 'usuario', 'prova social: na mão'], sem_imagem: ['', 'info', 'sem imagem'],
+  publicando: ['info', 'relogio', 'publicando agora'], erro: ['ruim', 'alerta', 'erro'], esperando_banco: ['at', 'alerta', 'esperando o banco'], falta_token: ['at', 'alerta', 'falta o token'],
+  passou: ['', 'relogio', 'passou da hora'], na_hora: ['marca', 'raio', 'sai na próxima volta'], agendado: ['marca', 'calendario', 'agendado'] }
+function organico() {
+  var O = D.organico
+  if (!O) { $('orgest').textContent = ''; $('orgaviso').innerHTML = ''; $('lorg').innerHTML = vazio('calendario', 'Não consegui ler o agendador', 'Atualiza a página daqui a pouco.'); return }
+  var dias = O.tokenExpira ? Math.round((new Date(O.tokenExpira) - Date.now()) / 864e5) : null
+  $('orgest').textContent = !O.banco ? 'desligado' : !O.token ? 'falta o token' : (O.conta ? '@' + O.conta + ' · ' : '') + 'ligado' + (O.ligadoEm ? ' desde ' + dataHora(O.ligadoEm) : '')
+  var av = []
+  if (!O.banco) av.push(['at', 'Esperando o banco: falta rodar o sql/09-organico.sql no Supabase. Até lá, nada é publicado.'])
+  if (!O.token) av.push(['at', 'Falta o token do Instagram: gera o token na Meta (API com login do Instagram), coloca na Vercel como RECADO_IG_TOKEN e publica o site de novo. Até lá, nada é publicado.'])
+  if (O.token && dias != null) av.push([dias < 10 ? 'at' : '', 'Token ' + (O.fonteToken === 'banco' ? 'renovado sozinho' + (O.tokenRenovado ? ' em ' + dataHora(O.tokenRenovado) : '') : 'da Vercel') + ' · vence em ' + dias + ' dia(s), o agendador renova sozinho quando faltar menos de 10.'])
+  if (O.tokenErro) av.push(['ruim', 'A última renovação do token deu erro: ' + O.tokenErro])
+  $('orgaviso').innerHTML = av.map(function (x) { return '<div class="nota"' + (x[0] === 'ruim' ? ' style="border-color:var(--red);color:var(--red)"' : x[0] === 'at' ? ' style="border-color:var(--amber)"' : '') + '>' + esc(x[1]) + '</div>' }).join('')
+  $('lorg').innerHTML = O.posts.map(function (p) {
+    var st = ORG_SIT[p.situacao] || ['', '', p.situacao], futuro = ['agendado', 'na_hora', 'falta_token', 'esperando_banco', 'passou', 'sem_imagem'].indexOf(p.situacao) >= 0
+    var bts = (p.situacao === 'pulado' ? '<button class="bt pq" data-act="acao" data-a="organico_voltar" data-id="' + p.id + '">Voltar a agendar</button>' : '')
+      + (p.situacao === 'erro' ? '<button class="bt pq" data-act="acao" data-a="organico_tentar" data-id="' + p.id + '">Tentar de novo</button>' : '')
+      + (futuro || p.situacao === 'erro' ? '<button class="bt pq" data-act="acao" data-a="organico_pular" data-id="' + p.id + '">Já postei (pular)</button>' : '')
+    return '<div class="lin"><span class="cor ' + st[0] + '"></span><div><div class="tt"><span class="n">' + esc(p.id + ' · ' + p.assunto) + '</span>' + chip(st[0], st[1], st[2]) + chip('', '', p.tipo === 'carrossel' ? 'carrossel' + (p.imagens ? ' de ' + p.imagens : '') : 'post único') + '</div>'
+      + '<div class="sub">' + esc(p.motivo || p.erro || p.legenda) + '</div></div>'
+      + '<div class="dir"><b>' + dataHora(p.quando) + '</b>' + (p.permalink ? '<a class="bt pq" target="_blank" rel="noopener" href="' + esc(p.permalink) + '">' + ic('link') + 'Ver post</a>' : p.capa ? '<a class="bt pq" target="_blank" rel="noopener" href="' + esc(p.capa) + '">' + ic('link') + 'Imagem</a>' : '') + '</div>'
+      + (bts ? '<div class="x">' + bts + '</div>' : '') + '</div>' }).join('')
+}
+// modo seco: o que o agendador publicaria agora (não publica nada)
+function orgSeco() { var g = $('gav'); g.innerHTML = '<div class="esqueleto"></div>'; abreGav()
+  api('?o=organico_seco').then(function (r) {
+    if (r.erro) throw new Error(r.erro)
+    var h = gtop('O que sai no próximo') + '<p class="nota">Simulação: nada foi publicado.' + (!r.banco ? ' O banco ainda não está pronto (sql/09).' : '') + (!r.token ? ' Ainda falta o token: com ele, sairia isto.' : '') + '</p>'
+    if (!r.publicaria) h += vazio('calendario', 'Nenhum post na hora agora', r.proximo ? 'O próximo é o ' + esc(r.proximo) + '.' : '')
+    else h += '<h2 style="margin:14px 0 6px">' + esc(r.publicaria.id + ' · ' + r.publicaria.assunto) + ' <small>' + dataHora(r.publicaria.quando) + '</small></h2><div class="lista">'
+      + r.chamadas.map(function (c) { return '<div class="lin"><span class="cor marca"></span><div><div class="tt">' + esc(c.passo) + '</div><div class="sub">' + esc(c.metodo + ' ' + c.url) + '</div>' + (c.corpo.image_url ? '<div class="sub"><a target="_blank" rel="noopener" href="' + esc(c.corpo.image_url) + '">' + esc(c.corpo.image_url) + '</a></div>' : '') + (c.corpo.caption ? '<div class="sub" style="white-space:pre-wrap;color:var(--text-2)">' + esc(c.corpo.caption) + '</div>' : '') + '</div></div>' }).join('') + '</div>'
+    g.innerHTML = h
+  }).catch(function (x) { g.innerHTML = gtop('O que sai no próximo') + vazio('alerta', 'Não deu', esc(x.message)) }) }
+
 // ===================== GAVETA DO PEDIDO =====================
 function gtop(t) { return '<div class="gtop"><h2 class="t" id="gtit">' + t + '</h2><button class="fechar" data-act="fecha" aria-label="Fechar">' + ic('x') + '</button></div>' }
 function abreGav() { $('gaveta').classList.add('ab'); document.body.style.overflow = 'hidden'; setTimeout(function () { $('gav').focus() }, 30) }
@@ -1098,6 +1142,7 @@ document.addEventListener('click', function (e) {
   else if (a === 'cp') { cpPer = v; campanhas() }
   else if (a === 'cpatualiza') campanhas()
   else if (a === 'meta') puxaMeta(b)
+  else if (a === 'orgseco') orgSeco()
   else if (a === 'copia') { navigator.clipboard.writeText(v).then(function () { toast('Link copiado') }) }
   else if (a === 'usafixo') { var s = D.sugestao.fixos[+v], f = $('ffixo'); f.nome.value = s.nome; f.valor.value = String(s.valor).replace('.', ','); f.obs.value = s.obs; f.nome.focus(); toast('Confere e toca em Adicionar') }
   else if (a === 'usameta') { var m = D.sugestao.metas[+v], fm = $('fmeta'); fm.mes.value = m.mes; fm.faturamento.value = m.faturamento; fm.pedidos.value = m.pedidos; fm.margem_pct.value = m.margem_pct; fm.trafego_pct.value = m.trafego_pct; fm.faturamento.focus(); toast('Confere e toca em Salvar meta') }
