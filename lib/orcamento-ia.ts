@@ -71,6 +71,15 @@ const MECANICA_ALHEIA: { chave: string; proibido: [RegExp, string][] }[] = [
     ],
   },
   {
+    chave: 'trafego e software',               // por mês; não instala o Sistema CND
+    proibido: [
+      [/\bturmas?\b/i, 'turma'],
+      [/\baulas?\b/i, 'aulas'],
+      [/pagamento\s+[úu]nico/i, 'pagamento único'],
+      [/sistema\s+cnd/i, 'Sistema CND'],
+    ],
+  },
+  {
     chave: 'sistema cnd',                      // é serviço por mês; não tem turma, aula nem pagamento único
     proibido: [
       [/\bturmas?\b/i, 'turma'],

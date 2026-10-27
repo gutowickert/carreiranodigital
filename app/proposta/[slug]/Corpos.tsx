@@ -59,9 +59,12 @@ const ehANL = (nome: string | null) => semAcento(nome).includes('anuncios para n
 // corpo do individual (implantação, 3 meses, 5 encontros) numa proposta de turma é o mesmo erro do
 // Patrick ao contrário (08/10/2026)
 const ehImersaoDV = (nome: string | null) => semAcento(nome).includes('imersao deu venda')
+// serviço mensal sem o Sistema CND: a estratégia, o tráfego e o software que o cliente já tem
+const ehEstrategiaSoftware = (nome: string | null) => semAcento(nome).includes('trafego e software')
 
 /** Escolhe o corpo pelo nome do produto. Sem correspondência, cai no Deu Venda, que é o padrão da casa. */
 export function CorpoDoProduto(p: Props) {
+  if (ehEstrategiaSoftware(p.produtoNome)) return <CorpoEstrategiaSoftware {...p} />
   if (ehServicoMensal(p.produtoNome)) return <CorpoSistemaCND {...p} />
   if (ehImersaoDV(p.produtoNome)) return <CorpoImersaoDV {...p} />
   return ehANL(p.produtoNome) ? <CorpoANL {...p} /> : <CorpoDeuVenda {...p} />
@@ -78,7 +81,7 @@ export function NumerosDaCapa({ produtoNome, vista, parcela, parcelas }: { produ
   // serviço mensal: prazo, valor por mês e implantação — nada de "à vista" nem "pagamento único"
   if (ehServicoMensal(produtoNome)) {
     const nums = [
-      ...(parcelas ? [[`${parcelas} meses`, 'De trabalho']] : []),
+      ...(parcelas ? [[`${parcelas} meses`, 'De trabalho']] : [['Mês a mês', 'Sem fidelidade']]),
       ...(vista ? [[vista, 'Por mês']] : []),
       [parcela || 'Isenta', 'A implantação'],
     ]
@@ -105,6 +108,18 @@ export function NumerosDaCapa({ produtoNome, vista, parcela, parcelas }: { produ
  * desatualizado, é um compromisso que a escola não assumiu — e fica registrado com o aceite.
  */
 export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma, condicao }: Omit<Props, 'cliente'>) {
+  if (ehEstrategiaSoftware(produtoNome)) {
+    return (
+      <>
+        {produtoNome}{vista ? ` · ${vista} por mês` : ''}{parcelas ? ` por ${parcelas} meses` : ' · mês a mês, sem prazo mínimo e sem fidelidade'}
+        {` · implantação ${parcela ? `de ${parcela}` : 'isenta'}`}{condicao ? ` · ${condicao}` : ''}
+        {' '}· prestação de serviço mensal: a Carreira no Digital faz a estratégia e o empacotamento do produto, a gestão do
+        tráfego pago e as melhorias do software que a contratante já usa, priorizadas com ela todo mês, com reuniões e grupo de
+        WhatsApp com o time · o software continua da contratante · custos das ferramentas e verba de anúncio por conta dela ·
+        a Carreira no Digital não garante volume de vendas.
+      </>
+    )
+  }
   if (ehServicoMensal(produtoNome)) {
     return (
       <>
@@ -608,6 +623,117 @@ function CorpoSistemaCND({ cliente, produtoNome, vista, parcela, parcelas, condi
             <strong>A verba de anúncio</strong> vai direto pra Meta, do teu cartão; o valor a gente define junto, olhando
             o teu caixa e o teu ticket. <strong>Os custos da Meta e da IA</strong> no atendimento pelo WhatsApp também
             são pagos direto por ti.
+          </p>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>05</span></div>
+      </section>
+    </>
+  )
+}
+
+/** ESTRATÉGIA, TRÁFEGO E SOFTWARE (27/10/2026): o empacotamento, as campanhas e o software que o cliente já tem. */
+function CorpoEstrategiaSoftware({ cliente, produtoNome, vista, parcela, parcelas, condicao }: Props) {
+  const prazo = parcelas ? `${parcelas} meses` : 'o prazo combinado'
+  return (
+    <>
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O que a gente vai fazer</span></div>
+        <h2 className="disp">Três frentes, juntas.</h2>
+        <p className="corpo">Prestação de serviço: a gente faz o trabalho. O produto já existe e já vende; agora é deixar claro o que se vende e por quanto, levar isso pra mais gente e fazer o sistema que roda o negócio trabalhar mais por ti.</p>
+        <div className="passos">
+          <div className="passo"><div className="n">1 · A estratégia e o empacotamento</div><p className="corpo">A gente monta a estratégia de como o teu produto é vendido: os planos (mensal, anual, premium), o que entra em cada um, a oferta de entrada, o que faz o assinante ficar e como comunicar em cada mercado e idioma.</p></div>
+          <div className="passo"><div className="n">2 · O tráfego</div><p className="corpo">A gente sobe, acompanha e ajusta as campanhas o mês inteiro, testando criativo, público e mercado, e olhando quanto custa cada assinante novo.</p></div>
+          <div className="passo"><div className="n">3 · O teu software</div><p className="corpo">A gente desenvolve melhorias em cima do sistema que tu já usa, sem recomeçar: priorizadas contigo todo mês, com automações com IA e as vendas, o atendimento e os números num painel só.</p></div>
+        </div>
+        <div className="destaque verde">
+          <div className="rot">A gente faz, tu decide</div>
+          <p className="corpo">Quem executa é o nosso time. Tu decide o que muda primeiro e aprova o que entra; a gente faz, entrega e olha o número depois. Uma coisa por vez, pra saber o que deu resultado.</p>
+        </div>
+        <div className="destaque azul">
+          <div className="rot">O que tu já construiu, fica</div>
+          <p className="corpo">O sistema é teu e continua teu. A gente trabalha em cima do que já roda, com o carro andando, sem parar o que está vendendo.</p>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>02</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">A régua do trabalho</span></div>
+        <h2 className="disp">Do ponto A ao ponto B.</h2>
+        <div className="passos">
+          <div className="passo"><div className="n">No início</div><p className="corpo"><strong>Mede o ponto A.</strong> Quantos assinantes, quanto entra por mês, quanto custa cada assinante novo, quantos ficam e quantos cancelam.</p></div>
+          <div className="passo"><div className="n">{parcelas ? `Ao longo de ${prazo}` : 'Todo mês'}</div><p className="corpo">Ajusta o pacote, roda as campanhas, entrega as melhorias do software e <strong>repete o que dá resultado</strong>, mexendo numa coisa por vez.</p></div>
+          <div className="passo"><div className="n">{parcelas ? 'No fim do prazo' : 'A cada 3 meses'}</div><p className="corpo"><strong>A gente senta com o número na mesa</strong>, olha o que foi do ponto A ao ponto B e decide o próximo passo.</p></div>
+        </div>
+        <div className="duas">
+          <ul className="lista">
+            <li>Reuniões pra decidir: semanais no começo, depois uma ou duas por mês</li>
+            <li>Grupo de WhatsApp com o time no dia a dia: dúvida não espera reunião</li>
+          </ul>
+          <ul className="lista">
+            <li>A lista de aprimoramentos combinada e priorizada todo mês</li>
+            <li>O que foi feito fica escrito, pra poder repetir e corrigir</li>
+          </ul>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>03</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">Quem faz o quê</span></div>
+        <h2 className="disp">A gente faz. Tu decide.</h2>
+        <div className="duas">
+          <div className="destaque verde" style={{ margin: 0 }}>
+            <div className="rot">A gente entrega</div>
+            <ul className="lista">
+              <li>A estratégia do empacotamento, pronta: planos, oferta e comunicação</li>
+              <li>O tráfego pago: sobe, acompanha e ajusta</li>
+              <li>O desenvolvimento das melhorias do teu software</li>
+              <li>A leitura dos números, todo mês, com o que fazer a partir deles</li>
+            </ul>
+          </div>
+          <div className="destaque azul" style={{ margin: 0 }}>
+            <div className="rot">Fica contigo</div>
+            <ul className="lista">
+              <li>Decidir as prioridades e aprovar o que entra em cada mês</li>
+              <li>O acesso ao sistema, aos dados e ao gerenciador de anúncios</li>
+              <li>O conteúdo e a operação do dia a dia</li>
+              <li>Os custos das ferramentas e a verba de anúncio</li>
+            </ul>
+          </div>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O investimento</span></div>
+        <h2 className="disp">O que custa.</h2>
+        <div className="preco">
+          <div className="topo" style={{ borderBottom: 0, paddingBottom: 0 }}>
+            <span>{produtoNome}{parcelas ? ` · ${parcelas} meses` : ' · mês a mês'}</span>
+          </div>
+          <div className="preco-linha">
+            {vista && <div className="valor"><b>{vista}</b><span>Por mês</span></div>}
+            <div className="valor alt"><b>{parcela || 'Isenta'}</b><span>A implantação</span></div>
+          </div>
+          {condicao && <p className="corpo"><strong>E mais:</strong> {condicao}.</p>}
+          {!parcelas && <p className="corpo"><strong>Sem prazo mínimo e sem fidelidade:</strong> o serviço é mês a mês, e tu pode encerrar quando quiser.</p>}
+          <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
+            <ul className="lista">
+              <li>A estratégia e o empacotamento, o mês inteiro</li>
+              <li>A gestão do tráfego pago</li>
+              <li>As melhorias do software</li>
+            </ul>
+            <ul className="lista">
+              <li>As reuniões e o grupo de WhatsApp</li>
+              <li>A leitura dos números, todo mês</li>
+            </ul>
+          </div>
+        </div>
+        <div className="destaque azul">
+          <div className="rot">Fora do valor</div>
+          <p className="corpo">
+            <strong>A verba de anúncio</strong> vai direto pra Meta (e pro Google, se entrar), do teu cartão; o valor a gente
+            define junto, olhando o teu caixa e o custo de cada assinante. <strong>As ferramentas que o teu software usa</strong>{' '}
+            (hospedagem, IA, meio de pagamento) também seguem pagas direto por ti.
           </p>
         </div>
         <div className="rodape"><span>Carreira no Digital</span><span>05</span></div>

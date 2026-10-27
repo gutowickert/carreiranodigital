@@ -27,13 +27,13 @@
 // O SISTEMA CND + MARKETING (26/10/2026) é o primeiro SERVIÇO MENSAL com proposta: a CND cuidando
 // junto da estratégia, do tráfego e da operação no Sistema CND. Nasceu da reunião com o Matheus
 // Segatto (Press Kit Studios) e segue o modelo da proposta do Espaço Dani Fell, feita à mão em 02/09.
-const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais', 'imersao deu venda', 'sistema cnd']
+const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais', 'imersao deu venda', 'sistema cnd', 'trafego e software']
 
 const semAcento = (s: string) =>
   (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
 
 // SERVIÇO MENSAL: os campos de preço do orçamento mudam de sentido (ver ehServicoMensal).
-const MENSAIS = ['sistema cnd']
+const MENSAIS = ['sistema cnd', 'trafego e software']
 
 /**
  * É serviço por mês (e não pagamento único)?
@@ -68,6 +68,21 @@ export function temProposta(nomeDoProduto: string | null | undefined): boolean {
 // sem elas a IA inventa uma resposta plausível e o cliente ouve uma coisa do vendedor, outra da
 // proposta e uma terceira do site. Com elas, é tudo a mesma escola falando.
 const RESUMOS: { chave: string; texto: string }[] = [
+  {
+    // ESTRATÉGIA, TRÁFEGO E SOFTWARE (27/10/2026, primeiro: Matheus Segatto, Press Kit Studios): pra quem
+    // já tem um produto digital e um sistema próprio. Não instala o Sistema CND.
+    chave: 'trafego e software',
+    texto: `É PRESTAÇÃO DE SERVIÇO MENSAL (não é curso, aula nem mentoria: o time da Carreira no Digital FAZ o trabalho e o cliente decide e aprova) pra quem já tem um produto digital rodando e um sistema próprio. Três frentes:
+- A ESTRATÉGIA E O EMPACOTAMENTO DO PRODUTO: o que se vende, pra quem e como se cobra. Os planos (mensal, anual, premium), o que entra em cada um, a oferta de entrada, o que faz o assinante ficar, e como comunicar em cada mercado e idioma.
+- O TRÁFEGO PAGO: o time sobe, acompanha e ajusta as campanhas o mês inteiro, testando criativo, público e mercado.
+- O SOFTWARE QUE O CLIENTE JÁ USA: o time desenvolve melhorias em cima do sistema dele, sem recomeçar do zero, priorizadas com ele todo mês: automações com IA, integração das vendas, do atendimento e dos números num painel só.
+- No começo mede onde o negócio está (o ponto A); todo mês ajusta e entrega, um por vez, medindo; a cada 3 meses senta com o número na mesa.
+- Reuniões pra decidir e um grupo de WhatsApp com o time no dia a dia.
+- O sistema é do cliente e continua dele. Os custos das ferramentas que ele usa (hospedagem, IA, meio de pagamento) e a verba de anúncio são do cliente.
+- NÃO instala o Sistema CND.
+- O valor é por mês. A condição exata vem do orçamento: não escreva valor, prazo nem porcentagem.
+- NÃO prometa volume de vendas, número de assinantes nem faturamento.`,
+  },
   {
     chave: 'sistema cnd',
     texto: `É um SERVIÇO MENSAL, não curso nem turma e não implantação de pagamento único. A Carreira no Digital cuida junto com o cliente de três frentes ao mesmo tempo, com um estrategista da escola (o Guto Wickert):
