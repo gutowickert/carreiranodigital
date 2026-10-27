@@ -33,10 +33,10 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     robots: { index: false, follow: false },
     openGraph: {
       title: titulo, description: descricao, siteName: 'Carreira no Digital', type: 'article',
-      // logo leve (69 kB): o de 505 kB era ignorado por alguns aplicativos e o cartão saía sem imagem
-      ...(base ? { url: `${base}/proposta/${slug}`, images: [{ url: `${base}/logo-proposta.png`, width: 512, height: 186, alt: 'Carreira no Digital' }] } : {}),
+      // foto do link com FUNDO ESCURO (27/10): o logo é branco sobre transparente e o WhatsApp punha fundo branco, sumindo o letreiro. Leve (JPG): o de 505 kB era ignorado por alguns aplicativos
+      ...(base ? { url: `${base}/proposta/${slug}`, images: [{ url: `${base}/og-proposta.jpg`, width: 1200, height: 630, type: 'image/jpeg', alt: 'Carreira no Digital' }] } : {}),
     },
-    twitter: { card: 'summary', title: titulo, description: descricao, ...(base ? { images: [`${base}/logo-proposta.png`] } : {}) },
+    twitter: { card: 'summary_large_image', title: titulo, description: descricao, ...(base ? { images: [`${base}/og-proposta.jpg`] } : {}) },
   }
 }
 
