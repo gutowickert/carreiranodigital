@@ -6,6 +6,7 @@ import Abertura from './Abertura'
 import Aceite from './Aceite'
 import { CorpoDoProduto, NumerosDaCapa, LinhaDoAceite, AceiteDaPrevia } from './Corpos'
 import { turmaDoOrcamento } from '@/lib/turma-da-proposta'
+import { ehServicoMensal } from '@/lib/proposta-produtos'
 
 // O CARTÃO QUE O WHATSAPP MOSTRA antes de a pessoa clicar: logo da escola, "Proposta para <nome>" e
 // uma linha do que é. Link pelado, com endereço estranho, é o que faz o cliente achar que é golpe —
@@ -94,6 +95,13 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
   const validade = orc.validade_dias || 15
   // a turma vem do cadastro, não do texto: se ela mudar, a proposta muda junto
   const turma = await turmaDoOrcamento(orc.turma_id || null)
+  // PAGAR AGORA (plantão da IA, 27/10/2026): depois do aceite, o botão leva direto pro link de pagamento
+  // da turma — só quando o preço da proposta é o do link. Preço mexido à mão não bate com o link e o
+  // botão não aparece: aí quem cobra é o time.
+  const { data: tLink } = orc.turma_id ? await sb.from('turmas').select('preco_venda, link_pagamento').eq('id', orc.turma_id).maybeSingle() : { data: null as any }
+  const linkPagamento = tLink?.link_pagamento && Number(tLink.preco_venda) === Number(orc.preco_vista) ? String(tLink.link_pagamento) : null
+  // serviço mensal: a condição além da mensalidade (lib/proposta-produtos, ehServicoMensal)
+  const condicao = String((orc.contexto as any)?.condicao || '').trim() || null
 
   return (
     <div className="folhas">
@@ -179,7 +187,8 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
         .aceite-aviso{margin:0;font-size:12px;line-height:1.5;color:var(--tinta-fraca)}
         .aceite-feito{margin-top:26px;padding:20px;border:1px solid var(--verde-borda);border-radius:12px;background:var(--verde);display:flex;flex-direction:column;gap:8px}
         .aceite-selo{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--verde-tinta)}
-        @media print{.aceite-botao{display:none}}
+        .aceite-pagar{display:inline-block;text-align:center;text-decoration:none;font-size:15.5px;font-weight:700;color:#fff;background:var(--grad);border-radius:8px;padding:13px 18px;margin-top:4px;box-shadow:0 2px 10px rgba(124,58,237,.28)}
+        @media print{.aceite-botao,.aceite-pagar{display:none}}
         .rodape{border-top:1px solid var(--linha);padding-top:12px;display:flex;justify-content:space-between;font-size:11px;color:var(--tinta-fraca)}
         .imprimir{position:fixed;right:16px;bottom:16px;background:var(--grad);color:#fff;border:0;border-radius:999px;padding:12px 20px;font:inherit;font-weight:700;font-size:14px;cursor:pointer;box-shadow:0 14px 26px -14px rgba(124,58,237,.8)}
         @media print{
@@ -207,7 +216,7 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
             <div className="nome">{cliente}</div>
           </div>
         </div>
-        <NumerosDaCapa produtoNome={orc.produto_nome} vista={vista} />
+        <NumerosDaCapa produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} />
       </section>
 
       {/* ───── objeções: a parte escrita a partir da conversa */}
@@ -231,20 +240,20 @@ export default async function Proposta({ params }: { params: Promise<{ slug: str
       {/* ───── o miolo do PRODUTO: o que é, como funciona e o investimento.
              Mora em Corpos.tsx porque é um corpo por produto — com um só, vender outra coisa
              significava mandar um documento que se contradiz: capa de um produto, texto de outro. */}
-      <CorpoDoProduto cliente={cliente} produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
+      <CorpoDoProduto cliente={cliente} produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} condicao={condicao} />
 
       {/* ───── aceite */}
       <section className="folha">
         <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O aceite</span></div>
         <h2 className="disp">Fechado?</h2>
         {/* com turma escolhida a data já está na proposta: "pra marcar a data" fazia parecer que ainda não tinha (08/10/2026) */}
-        <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato {turma ? 'pra confirmar a tua vaga' : 'pra marcar a data'}.</p>
+        <p className="corpo">É só confirmar abaixo. Depois disso a escola entra em contato {turma ? 'pra confirmar a tua vaga' : ehServicoMensal(orc.produto_nome) ? 'pra marcar a primeira reunião' : 'pra marcar a data'}.</p>
         <p className="corpo" style={{ fontSize: 13.5 }}>
-          <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} />
+          <LinhaDoAceite produtoNome={orc.produto_nome} vista={vista} parcela={parcela} parcelas={orc.parcelas} turma={turma} condicao={condicao} />
         </p>
         {previa
           ? <AceiteDaPrevia />
-          : <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} />}
+          : <Aceite slug={slug} nomeSugerido={cliente} aceitoEm={orc.aceito_em || null} aceitoNome={orc.aceito_nome || null} linkPagamento={linkPagamento} />}
         <p className="corpo" style={{ fontSize: 12.5, color: 'var(--tinta-fraca)', marginTop: 14 }}>
           Escola Carreira no Digital · CNPJ 62.512.432/0001-39
         </p>

@@ -17,6 +17,7 @@
 
 import type { TurmaResumo } from '@/lib/turma-da-proposta'
 import { datasDaTurma, maisDias } from '@/lib/turma-da-proposta'
+import { ehServicoMensal } from '@/lib/proposta-produtos'
 
 type Props = {
   cliente: string
@@ -25,6 +26,8 @@ type Props = {
   parcela: string | null
   parcelas: number | null
   turma?: TurmaResumo | null
+  // serviço mensal: a condição além da mensalidade (ex.: "+ 10% de cada assinatura nova")
+  condicao?: string | null
 }
 
 /**
@@ -59,6 +62,7 @@ const ehImersaoDV = (nome: string | null) => semAcento(nome).includes('imersao d
 
 /** Escolhe o corpo pelo nome do produto. Sem correspondência, cai no Deu Venda, que é o padrão da casa. */
 export function CorpoDoProduto(p: Props) {
+  if (ehServicoMensal(p.produtoNome)) return <CorpoSistemaCND {...p} />
   if (ehImersaoDV(p.produtoNome)) return <CorpoImersaoDV {...p} />
   return ehANL(p.produtoNome) ? <CorpoANL {...p} /> : <CorpoDeuVenda {...p} />
 }
@@ -70,7 +74,16 @@ export function CorpoDoProduto(p: Props) {
  * folha de rosto, que é a primeira coisa que o cliente lê. A proposta da turma de 3 dias abria
  * prometendo implantação e acompanhamento mensal, e só se contradizia na página seguinte.
  */
-export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | null; vista: string | null }) {
+export function NumerosDaCapa({ produtoNome, vista, parcela, parcelas }: { produtoNome: string | null; vista: string | null; parcela?: string | null; parcelas?: number | null }) {
+  // serviço mensal: prazo, valor por mês e implantação — nada de "à vista" nem "pagamento único"
+  if (ehServicoMensal(produtoNome)) {
+    const nums = [
+      ...(parcelas ? [[`${parcelas} meses`, 'De trabalho']] : []),
+      ...(vista ? [[vista, 'Por mês']] : []),
+      [parcela || 'Isenta', 'A implantação'],
+    ]
+    return <div className="numeros">{nums.map(([n, r]) => <div className="num" key={r}><b>{n}</b><span>{r}</span></div>)}</div>
+  }
   const nums = ehImersaoDV(produtoNome)
     ? [['3', 'Encontros presenciais'], ['1', 'Encontro de resultado'], ['1', 'Pagamento único']]
     : ehANL(produtoNome)
@@ -91,7 +104,18 @@ export function NumerosDaCapa({ produtoNome, vista }: { produtoNome: string | nu
  * com a contratante ao final" em qualquer proposta. Numa turma de 3 dias isso não é um texto
  * desatualizado, é um compromisso que a escola não assumiu — e fica registrado com o aceite.
  */
-export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma }: Omit<Props, 'cliente'>) {
+export function LinhaDoAceite({ produtoNome, vista, parcela, parcelas, turma, condicao }: Omit<Props, 'cliente'>) {
+  if (ehServicoMensal(produtoNome)) {
+    return (
+      <>
+        {produtoNome || 'Sistema CND + Marketing'}{vista ? ` · ${vista} por mês` : ''}{parcelas ? ` por ${parcelas} meses` : ''}
+        {` · implantação ${parcela ? `de ${parcela}` : 'isenta'}`}{condicao ? ` · ${condicao}` : ''}
+        {' '}· estratégia, tráfego pago e o Sistema CND na operação, com reuniões e WhatsApp aberto com o time · verba de
+        anúncio e custos da Meta e da IA por conta da contratante, direto no cartão dela · a escola faz junto e não
+        garante volume de vendas.
+      </>
+    )
+  }
   const valores = `${vista ? ` · ${vista} à vista no Pix` : ''}${parcela && parcelas ? ` ou ${parcelas}x de ${parcela} no cartão de crédito` : ''}`
   if (ehImersaoDV(produtoNome)) {
     const quando = turma ? ` · encontros ${datasDaTurma(turma.data_inicio, maisDias(turma.data_inicio, 2))} e encontro de resultado em ${diaEMes(turma.data_fim)}, em ${turma.cidade}${turma.turno ? ` (${turma.turno})` : ''}` : ''
@@ -471,6 +495,122 @@ function CorpoDeuVenda({ cliente, produtoNome, vista, parcela, parcelas }: Props
           </p>
         </div>
         <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
+      </section>
+    </>
+  )
+}
+
+// ─────────────────────────────────────────────────────────── SISTEMA CND + MARKETING (serviço mensal)
+//
+// O modelo é a proposta do Espaço Dani Fell (02/09/2026, feita à mão): três frentes ao mesmo tempo,
+// do ponto A ao ponto B, quem faz o quê e o investimento por mês. Entrou em 26/10/2026, quando a
+// reunião com o Matheus Segatto precisou virar proposta e o gerador só sabia escrever curso e
+// implantação. Os números (valor, prazo, implantação, condição) vêm do orçamento — nada aqui é preço.
+function CorpoSistemaCND({ cliente, produtoNome, vista, parcela, parcelas, condicao }: Props) {
+  const prazo = parcelas ? `${parcelas} meses` : 'o prazo combinado'
+  return (
+    <>
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O que a gente vai fazer</span></div>
+        <h2 className="disp">Três frentes, ao mesmo tempo.</h2>
+        <p className="corpo">Elas se puxam. Oferta boa sem tráfego não aparece; tráfego sem uma operação organizada vira contato perdido e dinheiro que ninguém sabe onde está.</p>
+        <div className="passos">
+          <div className="passo"><div className="n">1 · O negócio</div><p className="corpo">Pensar o teu negócio contigo: a oferta, o empacotamento do que tu vende e o funil que leva a pessoa da primeira conversa até a venda.</p></div>
+          <div className="passo"><div className="n">2 · A captação</div><p className="corpo">Estratégia e tráfego pago, rodando e sendo ajustados o mês inteiro. O conteúdo segue contigo, e a gente ajuda com a edição por IA.</p></div>
+          <div className="passo"><div className="n">3 · A operação</div><p className="corpo">O Sistema CND nas vendas: atendimento no WhatsApp com IA, o funil, a cobrança de quem esfriou e os números do negócio num lugar só.</p></div>
+        </div>
+        <div className="destaque verde">
+          <div className="rot">Com um estrategista da escola junto</div>
+          <p className="corpo">Não é agência fazendo por ti: é a gente pensando e fazendo contigo, toda semana no começo. É isso que faz tu entender o teu próprio negócio melhor a cada mês.</p>
+        </div>
+        <div className="destaque azul">
+          <div className="rot">E o que tu já tem, fica</div>
+          <p className="corpo">Se parte disso já roda no teu negócio, a gente aproveita e completa: não começa do zero nem para o que está funcionando. A troca acontece com o carro andando.</p>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>02</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">A régua do trabalho</span></div>
+        <h2 className="disp">Do ponto A ao ponto B.</h2>
+        <div className="passos">
+          <div className="passo"><div className="n">No início</div><p className="corpo"><strong>Mede o ponto A.</strong> Quantas pessoas chegam por mês, quantas viram conversa, quantas compram, quanto custa cada venda e de onde ela vem.</p></div>
+          <div className="passo"><div className="n">Ao longo de {prazo}</div><p className="corpo">Ajusta a oferta, roda o tráfego, organiza a operação e <strong>repete o que dá resultado</strong>, mexendo numa coisa por vez.</p></div>
+          <div className="passo"><div className="n">No fim do prazo</div><p className="corpo"><strong>A gente senta com o número na mesa</strong>, olha o que foi do ponto A ao ponto B e decide o próximo passo.</p></div>
+        </div>
+        <div className="duas">
+          <ul className="lista">
+            <li>Reuniões pra decidir: semanais no começo, depois uma ou duas por mês</li>
+            <li>WhatsApp aberto com o time no dia a dia: dúvida não espera reunião</li>
+          </ul>
+          <ul className="lista">
+            <li>O painel do Sistema CND mostrando os números, sem ninguém precisar perguntar</li>
+            <li>O que funcionou fica escrito, pra poder repetir e corrigir</li>
+          </ul>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>03</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">Quem faz o quê</span></div>
+        <h2 className="disp">A gente faz junto, não por ti.</h2>
+        <div className="duas">
+          <div className="destaque verde" style={{ margin: 0 }}>
+            <div className="rot">A gente entrega</div>
+            <ul className="lista">
+              <li>A estratégia, a oferta e o funil, pensados contigo</li>
+              <li>O tráfego pago: sobe, acompanha e ajusta</li>
+              <li>O Sistema CND instalado e a operação organizada nele</li>
+              <li>A leitura dos números, todo mês, com o que fazer a partir deles</li>
+            </ul>
+          </div>
+          <div className="destaque azul" style={{ margin: 0 }}>
+            <div className="rot">Fica contigo</div>
+            <ul className="lista">
+              <li>O conteúdo: gravar os vídeos do teu jeito</li>
+              <li>Participar das reuniões e decidir junto</li>
+              <li>Investir a verba de anúncio</li>
+              <li>Usar o sistema no dia a dia: é ele que devolve o número</li>
+            </ul>
+          </div>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>04</span></div>
+      </section>
+
+      <section className="folha">
+        <div className="topo"><span>{cliente} · Proposta</span><span className="secao">O investimento</span></div>
+        <h2 className="disp">O que custa.</h2>
+        <div className="preco">
+          <div className="topo" style={{ borderBottom: 0, paddingBottom: 0 }}>
+            <span>{produtoNome || 'Sistema CND + Marketing'}{parcelas ? ` · ${parcelas} meses` : ''}</span>
+          </div>
+          <div className="preco-linha">
+            {vista && <div className="valor"><b>{vista}</b><span>Por mês</span></div>}
+            <div className="valor alt"><b>{parcela || 'Isenta'}</b><span>A implantação</span></div>
+          </div>
+          {condicao && <p className="corpo"><strong>E mais:</strong> {condicao}.</p>}
+          <div className="duas" style={{ borderTop: '1px solid var(--linha)', paddingTop: 14 }}>
+            <ul className="lista">
+              <li>A estratégia e a construção da oferta, o mês inteiro</li>
+              <li>A gestão do tráfego pago</li>
+              <li>As reuniões e o WhatsApp aberto</li>
+            </ul>
+            <ul className="lista">
+              <li>O Sistema CND instalado e a operação nele</li>
+              <li>O atendimento no WhatsApp com IA</li>
+              <li>A leitura dos números, todo mês</li>
+            </ul>
+          </div>
+        </div>
+        <div className="destaque azul">
+          <div className="rot">Fora do valor, e não passa pela gente</div>
+          <p className="corpo">
+            <strong>A verba de anúncio</strong> vai direto pra Meta, do teu cartão; o valor a gente define junto, olhando
+            o teu caixa e o teu ticket. <strong>Os custos da Meta e da IA</strong> no atendimento pelo WhatsApp também
+            são pagos direto por ti.
+          </p>
+        </div>
+        <div className="rodape"><span>Carreira no Digital</span><span>05</span></div>
       </section>
     </>
   )

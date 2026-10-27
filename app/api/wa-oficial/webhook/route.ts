@@ -14,9 +14,12 @@ import { processarFds, naJanela } from '@/lib/ia-fds'
 import { tocarCampainha } from '@/lib/campainha'
 import { lerReferral, leadDoAnuncio, ehDeuVenda } from '@/lib/ctwa'
 import { atenderDeuVenda } from '@/lib/ia-deu-venda'
+import { atenderPlantao, leadDoPlantao } from '@/lib/ia-plantao'
+import { modoPlantao, plantaoLigado } from '@/lib/plantao'
 
-// a IA do fim de semana espera ~45s o lead terminar de escrever antes de agir (lib/ia-fds.ts)
-export const maxDuration = 120
+// a IA do fim de semana espera ~45s o lead terminar de escrever antes de agir (lib/ia-fds.ts); a do
+// plantão espera 30s e, quando manda proposta, ainda escreve a capa (mais uns 60s): por isso 300
+export const maxDuration = 300
 
 // Webhook da API Oficial (Cloud API): recebe STATUS das mensagens enviadas
 // (sent/delivered/read/failed) e atualiza cada envio do disparo pelo wamid.
@@ -166,7 +169,14 @@ async function registrarRecebida(m: any, value: any) {
 
   // LEAD respondeu no canal oficial. MODELO AUTÔNOMO: a IA ATENDE quem responde — NÃO tira o lead da IA.
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.
-  const leadId = leadMatch?.id || conv.lead_id
+  let leadId = leadMatch?.id || conv.lead_id
+  // PLANTÃO LIGADO: quem escreve do nada (sem vir do site nem do anúncio) normalmente não vira lead e
+  // espera o time. Com o time fora, vira lead pra IA atender (lib/ia-plantao.ts, leadDoPlantao) — menos
+  // aluno e quem só está respondendo um disparo (esses seguem na caixa de Disparos).
+  if (!leadId && msgIns?.id && await plantaoLigado()) {
+    const novo = await leadDoPlantao(ORG_CND, tel, nome).catch(() => null)
+    if (novo) { leadId = novo; await supabase.from('wa_conversas').update({ lead_id: novo }).eq('id', conv.id) }
+  }
   // LEAD DO DEU VENDA COM A IA (veio do anúncio de WhatsApp): quem responde é a IA do Deu Venda
   // (lib/ia-deu-venda.ts), e o lead NÃO volta pro time a cada mensagem. Ela mesma passa pro time
   // quando o lead esquenta. Os outros leads seguem o caminho de sempre, logo abaixo.
@@ -174,7 +184,10 @@ async function registrarRecebida(m: any, value: any) {
   // desligado, a IA do Deu Venda não responde e o lead segue pro time, pelo caminho de baixo (19/10/2026).
   const { data: chave } = await supabase.from('webhook_logs').select('payload').eq('org_id', ORG_CND).eq('origem', 'ia-automacao').order('recebido_em', { ascending: false }).limit(1).maybeSingle()
   const iaDesligada = (chave?.payload as any)?.ligado === false
-  if (leadId && msgIns?.id && !iaDesligada) {
+  // PLANTÃO DA IA (lib/ia-plantao.ts, 27/10/2026): em sombra ou ligado, quem responde é ele — a IA antiga
+  // do Deu Venda e a do fim de semana não rodam junto, pra o lead nunca receber duas respostas.
+  const plantao = leadId && msgIns?.id ? await modoPlantao() : 'desligado'
+  if (leadId && msgIns?.id && !iaDesligada && plantao === 'desligado') {
     const { data: lq } = await supabase.from('leads').select('atendido_por, handoff_em, codigo_turma').eq('id', leadId).maybeSingle()
     if (lq && lq.atendido_por === 'ia' && !lq.handoff_em && ehDeuVenda(lq.codigo_turma)) {
       after(async () => { try { await atenderDeuVenda(ORG_CND, conv.id, msgIns.id) } catch { /* melhor esforço */ } })
@@ -195,7 +208,8 @@ async function registrarRecebida(m: any, value: any) {
     try { await classificarTemperatura(leadId, conv.id) } catch { /* não quebra */ }
     // IA DO FIM DE SEMANA (sexta 17h → segunda 5h): tenta marcar a ligação de segunda.
     // Hoje em modo SOMBRA — só registra o que faria (lib/ia-fds.ts, tela /dashboard/ia-fds).
-    if (msgIns?.id && naJanela()) after(async () => { try { await processarFds(conv.id, msgIns.id) } catch { /* melhor esforço */ } })
+    if (msgIns?.id && plantao !== 'desligado') after(async () => { try { await atenderPlantao(ORG_CND, conv.id, msgIns.id) } catch { /* melhor esforço */ } })
+    else if (msgIns?.id && naJanela()) after(async () => { try { await processarFds(conv.id, msgIns.id) } catch { /* melhor esforço */ } })
   }
 }
 

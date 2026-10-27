@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { exigeTurma } from '@/lib/proposta-produtos'
+import { enderecoDe } from '@/lib/orcamento-ia'
 
 export const maxDuration = 60
 
@@ -15,27 +16,6 @@ export const maxDuration = 60
 // enviada uma proposta, por quem e quando. Histórico é leitura, não muda o andamento de ninguém.
 
 // endereço sem ambiguidade visual (sem 0/O, 1/l): vai ser lido em tela de celular
-const ALFABETO = 'abcdefghjkmnpqrstuvwxyz23456789'
-const sorteio = (n = 5) => Array.from({ length: n }, () => ALFABETO[Math.floor(Math.random() * ALFABETO.length)]).join('')
-
-// O endereço leva o nome da pessoa: "/proposta/vinicius-meirer-4f7k2" em vez de "/proposta/gzhgb8nvgw".
-// Código puro tem cara de link encurtado, e é isso que o cliente associa a golpe — o nome dele no
-// endereço diz, antes de abrir, que aquilo foi feito pra ele.
-//
-// ⚠️ O SORTEIO NO FIM NÃO SAI. Sem ele o endereço vira adivinhável: o link é aberto, sem senha, e
-// quem abrir lê o preço e as frases que a pessoa disse na conversa. Com 5 caracteres sorteados são
-// mais de 28 milhões de combinações por nome — tentar na mão não chega a lugar nenhum.
-function enderecoDe(nome: string) {
-  const partes = (nome || '')
-    .normalize('NFD').replace(/\p{Diacritic}/gu, '')
-    .toLowerCase().replace(/[^a-z0-9\s-]/g, ' ').trim()
-    .split(/\s+/).filter(Boolean)
-  // primeiro nome + último sobrenome: nome do meio só alonga o endereço
-  const nomes = partes.length > 1 ? [partes[0], partes[partes.length - 1]] : partes
-  const limpo = nomes.join('-').slice(0, 34)
-  return `${limpo || 'proposta'}-${sorteio()}`
-}
-
 export async function POST(req: Request) {
   try {
     const auth = req.headers.get('authorization')

@@ -3,6 +3,7 @@ import { supabaseAdmin as supabase } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { enviarTexto, enviarMidia, uploadMidia } from '@/lib/whatsapp-oficial'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { timeAssumiu } from '@/lib/plantao'
 
 // Responde uma conversa da caixa "WhatsApp Disparos" (número novo / Cloud API).
 // Texto, foto, documento ou áudio — mensagem de SESSÃO (só entrega dentro de 24h).
@@ -50,6 +51,9 @@ export async function POST(req: NextRequest) {
       await supabase.from('wa_conversas').update({
         ultima_msg: resumo.slice(0, 200), ultima_msg_em: new Date().toISOString(),
       }).eq('org_id', org).eq('id', conversaId)
+      // plantão da IA: o time assumiu este lead
+      const { data: c } = await supabase.from('wa_conversas').select('lead_id').eq('id', conversaId).maybeSingle()
+      await timeAssumiu(c?.lead_id)
     }
     return NextResponse.json({ ok: true, wamid: r.wamid })
   } catch (e: any) {

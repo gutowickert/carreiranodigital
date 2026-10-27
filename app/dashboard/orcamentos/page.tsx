@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { fetchAuth } from '@/lib/api'
+import { ehServicoMensal } from '@/lib/proposta-produtos'
 // o mesmo card do funil, que se carrega sozinho e abre por cima da tela — confere o lead sem sair daqui
 import LeadCardModal from '@/components/LeadCard'
 
@@ -154,6 +155,8 @@ export default function GerarOrcamento() {
   const [usar, setUsar] = useState<Record<string, boolean>>({})
   const [contexto, setContexto] = useState({ o_que_vende: '', regiao: '' })
   const [preco, setPreco] = useState({ vista: '', parcelas: '', parcelado: '' })
+  // serviço mensal (Sistema CND + Marketing): a condição além da mensalidade, escrita por quem vende
+  const [condicao, setCondicao] = useState('')
 
   async function carregar(q = '') {
     setCarregando(true)
@@ -165,6 +168,12 @@ export default function GerarOrcamento() {
     setCarregando(false)
   }
   useEffect(() => { carregar() }, [])
+
+  // ?lead=<id> abre direto o passo 2 desse lead — é por onde o "Montar proposta" das Reuniões chega
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('lead')
+    if (id) preparar(id)
+  }, [])
 
   // busca com respiro: só consulta 400ms depois da última tecla
   useEffect(() => {
@@ -182,7 +191,9 @@ export default function GerarOrcamento() {
     const marcados: Record<string, boolean> = {}
     for (const l of j.fontes.ligacoes) marcados['lig:' + l.id] = true
     for (const c of j.fontes.conversas) marcados['con:' + c.id] = true
+    for (const r of j.fontes.reunioes || []) marcados['reu:' + r.id] = true
     setUsar(marcados)
+    setCondicao('')
     setContexto({ o_que_vende: j.contexto.o_que_vende || '', regiao: j.contexto.regiao || '' })
     setClienteNome(j.lead?.nome || '')
     // ⚠️ A ESCOLHA DO PASSO 1 MANDA. A sugestão vem da turma do lead, que pode ser o curso que ele
@@ -213,6 +224,8 @@ export default function GerarOrcamento() {
       lead_id: dados.lead.id,
       ligacoes: dados.fontes.ligacoes.filter((l: any) => usar['lig:' + l.id]).map((l: any) => l.id),
       conversas: dados.fontes.conversas.filter((c: any) => usar['con:' + c.id]).map((c: any) => c.id),
+      reunioes: (dados.fontes.reunioes || []).filter((r: any) => usar['reu:' + r.id]).map((r: any) => r.id),
+      condicao,
       o_que_vende: contexto.o_que_vende,
       regiao: contexto.regiao,
       preco_vista: preco.vista,
@@ -251,6 +264,7 @@ export default function GerarOrcamento() {
       parcelas: o.parcelas != null ? String(o.parcelas) : '',
       parcelado: o.preco_parcelado != null ? String(o.preco_parcelado) : '',
     })
+    setCondicao(String(o.contexto?.condicao || ''))
     // ⚠️ LEVA A PESSOA ATÉ O QUE ABRIU. O editor nasce bem abaixo desta lista, fora da tela: quem
     // clicava em "editar" via a página parada e concluía que o botão não funcionava. Funcionava —
     // só tinha aberto onde ninguém estava olhando.
@@ -266,6 +280,8 @@ export default function GerarOrcamento() {
 
   // o produto escolhido agora, com a lista de turmas que o servidor mandou
   const produtoEscolhido = (dados?.produtos || []).find((p: any) => p.id === produtoId) || null
+  // serviço mensal: os três campos de preço viram valor por mês, prazo e implantação (lib/proposta-produtos)
+  const mensal = ehServicoMensal(produtoEscolhido?.nome)
 
   // o texto que vale: o que o vendedor escreveu, e na falta dele o que a IA escreveu
   const textoDaObjecao = (o: any) => (o.texto_final ?? o.texto_ia ?? '')
@@ -279,7 +295,7 @@ export default function GerarOrcamento() {
     if (!orc) return
     setSalvando(true); setMsg('')
     // salva antes de publicar: o que está na tela é o que o cliente vai ler
-    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome, turma_id: turmaId || null }) })
+    const s = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, condicao, cliente_nome: clienteNome, turma_id: turmaId || null }) })
       .then(r => r.json()).catch(() => null)
     if (!s?.ok) { setSalvando(false); setMsg(s?.error || 'não consegui salvar antes de publicar'); return }
 
@@ -295,7 +311,7 @@ export default function GerarOrcamento() {
   async function salvarRascunho() {
     if (!orc) return
     setSalvando(true)
-    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, cliente_nome: clienteNome, turma_id: turmaId || null }) })
+    const j = await fetchAuth('/api/orcamentos/salvar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id: orc.id, capa: orc.capa, objecoes: orc.objecoes, preco_vista: preco.vista, parcelas: preco.parcelas, preco_parcelado: preco.parcelado, condicao, cliente_nome: clienteNome, turma_id: turmaId || null }) })
       .then(r => r.json()).catch(() => null)
     setSalvando(false)
     if (!j?.ok) { setMsg(j?.error || 'não consegui salvar'); return }
@@ -397,7 +413,7 @@ export default function GerarOrcamento() {
           {/* sem aviso de erro em cima: senão a tela diz "ninguém por aqui" quando o problema foi o login */}
           {!carregando && !itens.length && !msg && (
             <p style={{ fontSize: 13, color: 'var(--text-faint)', marginTop: 14 }}>
-              Ninguém por aqui. Entram os leads com ligação transcrita ou conversa de WhatsApp nos últimos 30 dias.
+              Ninguém por aqui. Entram os leads com ligação transcrita, conversa de WhatsApp ou reunião por vídeo nos últimos 30 dias.
             </p>
           )}
 
@@ -411,6 +427,7 @@ export default function GerarOrcamento() {
                     {[
                       i.fontes.ligacao && `ligação de ${i.fontes.ligacao.minutos} min em ${dia(i.fontes.ligacao.em)}`,
                       i.fontes.conversa && `${i.fontes.conversa.mensagens} mensagens (${i.fontes.conversa.doCliente} do cliente)`,
+                      i.fontes.reuniao && `reunião${i.fontes.reuniao.minutos ? ` de ${i.fontes.reuniao.minutos} min` : ''} em ${dia(i.fontes.reuniao.em)}`,
                     ].filter(Boolean).join(' · ')}
                   </span>
                 </span>
@@ -497,7 +514,25 @@ export default function GerarOrcamento() {
                       )
                     })}
 
-                    {!dados.fontes.ligacoes.length && !dados.fontes.conversas.length && (
+                    {(dados.fontes.reunioes || []).map((r: any) => {
+                      const chave = 'reu:' + r.id
+                      return (
+                        <button key={chave} onClick={() => setUsar(u => ({ ...u, [chave]: !u[chave] }))}
+                          style={{ display: 'flex', gap: 10, textAlign: 'left', cursor: 'pointer', background: usar[chave] ? 'var(--accent-bg)' : 'var(--surface-2)', border: `1px solid ${usar[chave] ? 'var(--accent)' : 'var(--border)'}`, borderRadius: 'var(--r)', padding: 12 }}>
+                          <span style={{ flex: 'none', width: 18, height: 18, borderRadius: 5, display: 'grid', placeItems: 'center', fontSize: 11, background: usar[chave] ? 'var(--accent)' : 'var(--surface)', border: '1.5px solid var(--border-strong)', color: '#fff' }}>{usar[chave] ? '✓' : ''}</span>
+                          <span style={{ fontSize: 13, color: 'var(--text-2)' }}>
+                            <b style={{ color: 'var(--text)' }}>Reunião{r.minutos ? ` de ${r.minutos} min` : ''} · {dia(r.em)} · {r.titulo}</b>
+                            {r.trecho && (
+                              <span style={{ display: 'block', marginTop: 6, paddingLeft: 10, borderLeft: '2px solid var(--border-strong)', color: 'var(--text-faint)', fontStyle: 'italic' }}>
+                                {r.trecho.slice(0, 180)}…
+                              </span>
+                            )}
+                          </span>
+                        </button>
+                      )
+                    })}
+
+                    {!dados.fontes.ligacoes.length && !dados.fontes.conversas.length && !(dados.fontes.reunioes || []).length && (
                       <p style={{ fontSize: 13, color: 'var(--text-faint)' }}>Nada gravado por aqui. A proposta sai no modelo padrão, sem a página de objeções.</p>
                     )}
                   </div>
@@ -565,21 +600,28 @@ export default function GerarOrcamento() {
                       <SeletorDeTurma produto={produtoEscolhido} valor={turmaId} onMuda={setTurmaId} />
 
                       <label style={{ display: 'block' }}>
-                        <span style={lbl}>À vista{dados.produto?.preco_vista != null ? ` (do cadastro: ${dinheiro(dados.produto.preco_vista)} · ${dados.produto.origem_preco})` : ''}</span>
+                        <span style={lbl}>{mensal ? 'Valor por mês' : 'À vista'}{!mensal && dados.produto?.preco_vista != null ? ` (do cadastro: ${dinheiro(dados.produto.preco_vista)} · ${dados.produto.origem_preco})` : ''}</span>
                         <input style={inp} value={preco.vista} onChange={e => setPreco(p => ({ ...p, vista: e.target.value }))} inputMode="decimal" />
                       </label>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
                         <label style={{ flex: '1 1 110px' }}>
-                          <span style={lbl}>Parcelas</span>
-                          <input style={inp} value={preco.parcelas} placeholder="quantas vezes" inputMode="numeric"
+                          <span style={lbl}>{mensal ? 'Prazo (meses)' : 'Parcelas'}</span>
+                          <input style={inp} value={preco.parcelas} placeholder={mensal ? 'quantos meses' : 'quantas vezes'} inputMode="numeric"
                             onChange={e => setPreco(p => ({ ...p, parcelas: e.target.value }))} />
                         </label>
                         <label style={{ flex: '1 1 140px' }}>
-                          <span style={lbl}>Valor da parcela</span>
-                          <input style={inp} value={preco.parcelado} placeholder="valor de cada parcela" inputMode="decimal"
+                          <span style={lbl}>{mensal ? 'Implantação' : 'Valor da parcela'}</span>
+                          <input style={inp} value={preco.parcelado} placeholder={mensal ? 'em branco = isenta' : 'valor de cada parcela'} inputMode="decimal"
                             onChange={e => setPreco(p => ({ ...p, parcelado: e.target.value }))} />
                         </label>
                       </div>
+                      {mensal && (
+                        <label style={{ display: 'block' }}>
+                          <span style={lbl}>Condição extra (opcional)</span>
+                          <input style={inp} value={condicao} placeholder="ex.: + 10% de cada assinatura nova"
+                            onChange={e => setCondicao(e.target.value)} />
+                        </label>
+                      )}
                       <p style={{ fontSize: 12.5, color: 'var(--blue)', margin: 0 }}>
                         O preço nunca sai da conversa: vem do cadastro. Se tu mudar aqui, fica registrado quem mudou.
                       </p>
@@ -683,7 +725,7 @@ export default function GerarOrcamento() {
                           escrevia "turma" numa proposta de implantação individual, que não tem
                           turma nenhuma — e ler "turma" ali é exatamente onde alguém troca os
                           produtos na cabeça. */}
-                      <div style={rot}>{produtoEscolhido?.exige_turma ? 'Turma, valor e parcelamento' : 'Valor e parcelamento'}</div>
+                      <div style={rot}>{produtoEscolhido?.exige_turma ? 'Turma, valor e parcelamento' : mensal ? 'Valor, prazo e condição' : 'Valor e parcelamento'}</div>
                       <div style={{ marginTop: 10 }}>
                         <SeletorDeTurma produto={produtoEscolhido} valor={turmaId} onMuda={v => { setTurmaId(v); setSalvo('') }} />
                       </div>
@@ -694,23 +736,32 @@ export default function GerarOrcamento() {
                       </label>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 10 }}>
                         <label style={{ flex: '1 1 130px' }}>
-                          <span style={lbl}>À vista</span>
+                          <span style={lbl}>{mensal ? 'Valor por mês' : 'À vista'}</span>
                           <input style={inp} value={preco.vista} inputMode="decimal"
                             onChange={e => { setPreco(p => ({ ...p, vista: e.target.value })); setSalvo('') }} />
                         </label>
                         <label style={{ flex: '0 1 90px' }}>
-                          <span style={lbl}>Parcelas</span>
-                          <input style={inp} value={preco.parcelas} placeholder="quantas vezes" inputMode="numeric"
+                          <span style={lbl}>{mensal ? 'Meses' : 'Parcelas'}</span>
+                          <input style={inp} value={preco.parcelas} placeholder={mensal ? 'prazo' : 'quantas vezes'} inputMode="numeric"
                             onChange={e => { setPreco(p => ({ ...p, parcelas: e.target.value })); setSalvo('') }} />
                         </label>
                         <label style={{ flex: '1 1 130px' }}>
-                          <span style={lbl}>Valor da parcela</span>
-                          <input style={inp} value={preco.parcelado} placeholder="valor de cada parcela" inputMode="decimal"
+                          <span style={lbl}>{mensal ? 'Implantação' : 'Valor da parcela'}</span>
+                          <input style={inp} value={preco.parcelado} placeholder={mensal ? 'em branco = isenta' : 'valor de cada parcela'} inputMode="decimal"
                             onChange={e => { setPreco(p => ({ ...p, parcelado: e.target.value })); setSalvo('') }} />
                         </label>
                       </div>
+                      {mensal && (
+                        <label style={{ display: 'block', marginTop: 10 }}>
+                          <span style={lbl}>Condição extra (opcional)</span>
+                          <input style={inp} value={condicao} placeholder="ex.: + 10% de cada assinatura nova"
+                            onChange={e => { setCondicao(e.target.value); setSalvo('') }} />
+                        </label>
+                      )}
                       <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: '9px 0 0' }}>
-                        Deixa parcelas e valor da parcela em branco pra proposta sair só com o à vista.
+                        {mensal
+                          ? 'Implantação em branco sai como "isenta". A condição extra aparece no investimento e no aceite.'
+                          : 'Deixa parcelas e valor da parcela em branco pra proposta sair só com o à vista.'}
                       </p>
                     </div>
 

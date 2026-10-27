@@ -5,6 +5,7 @@ import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { temProposta, exigeTurma, parcelasDoProduto, parcelaDoProduto } from '@/lib/proposta-produtos'
 import { turmasDoProduto, rotuloDaTurma } from '@/lib/turma-da-proposta'
 import { transcreverAudiosDoLead } from '@/lib/transcrever-audio'
+import { lerTudo } from '@/lib/ler-tudo'
 
 // O rótulo da etapa vem do banco (tabela `etapas`), nunca escrito aqui.
 async function rotulosDasEtapas(org: string): Promise<Record<string, string>> {
@@ -99,6 +100,26 @@ export async function GET(req: Request) {
       })
     }
 
+    // ── reuniões por vídeo deste lead, já encerradas (26/10/2026). O tamanho é o da transcrição
+    // inteira — é ela que o gerador lê; o trecho é o resumo da IA, pra pessoa reconhecer a reunião.
+    const { data: reus } = await sb.from('reunioes')
+      .select('id, codigo, titulo, status, iniciada_em, encerrada_em, resumo')
+      .eq('org_id', org).eq('lead_id', leadId).in('status', ['encerrada', 'resumida'])
+      .order('criado_em', { ascending: false }).limit(5)
+    const reunioesProntas: any[] = []
+    for (const r of reus || []) {
+      // o banco devolve no máximo 1000 linhas: reunião longa passa disso (a do Valler teve 1.480)
+      const falas = await lerTudo<any>((de, ate) => sb.from('reuniao_falas').select('texto').eq('reuniao_id', r.id).order('id').range(de, ate))
+      const caracteres = (falas || []).reduce((n: number, f: any) => n + (f.texto || '').length, 0)
+      if (!caracteres) continue
+      reunioesProntas.push({
+        id: r.id, codigo: r.codigo, titulo: r.titulo, em: r.iniciada_em,
+        minutos: r.iniciada_em && r.encerrada_em ? Math.round((+new Date(r.encerrada_em) - +new Date(r.iniciada_em)) / 60000) : null,
+        caracteres,
+        trecho: String((r.resumo as any)?.resumo || '').slice(0, 300),
+      })
+    }
+
     // ── produto e preço, do cadastro
     const turma: any = (lead as any).turmas || null
     const produto = turma?.produtos || null
@@ -126,6 +147,7 @@ export async function GET(req: Request) {
 
     const rotulo = await rotulosDasEtapas(org)
     const caracteres = ligacoesProntas.reduce((n, l) => n + l.caracteres, 0) + conversasProntas.reduce((n, c) => n + c.caracteres, 0)
+      + reunioesProntas.reduce((n, r) => n + r.caracteres, 0)
 
     return NextResponse.json({
       ok: true,
@@ -137,7 +159,7 @@ export async function GET(req: Request) {
       },
       // `audios` conta o que acabou de virar texto nesta chamada — a tela avisa, senão a pessoa vê
       // o material engordar do nada e não sabe de onde veio.
-      fontes: { ligacoes: ligacoesProntas, conversas: conversasProntas, caracteres, material: caracteres >= 1200 ? 'suficiente' : 'curto', audios },
+      fontes: { ligacoes: ligacoesProntas, conversas: conversasProntas, reunioes: reunioesProntas, caracteres, material: caracteres >= 1200 ? 'suficiente' : 'curto', audios },
       // o que a IA não tem como saber — a tela pergunta, e o que estiver em branco ela não inventa
       contexto: { o_que_vende: lead.negocio || '', regiao: '', problema: lead.maior_problema || '' },
       produto: produto ? {

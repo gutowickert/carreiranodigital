@@ -5,6 +5,7 @@ import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao, datasCurtas } from '@/lib/saudacao'
 import { variavelVazia } from '@/lib/template-vazio'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { timeAssumiu } from '@/lib/plantao'
 
 const money = (n: number) => 'R$' + n.toFixed(2).replace('.', ',').replace(/,00$/, '')
 const familia = (c: string | null) => { const x = (c || '').toLowerCase(); return x.startsWith('fc') ? 'FC' : x.startsWith('anl') ? 'ANL' : '' }
@@ -116,6 +117,7 @@ export async function POST(req: NextRequest) {
       await sb.from('wa_mensagens').insert({ org_id: org, conversa_id: conversaId, zapi_id: r.wamid || null, direcao: 'enviada', tipo: 'texto', texto: textoRender, status: 'enviada', canal: 'oficial', enviado_por: (b.email || null) })
       await sb.from('wa_conversas').update({ ultima_msg: textoRender.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversaId)
     }
+    await timeAssumiu(lead.id)   // plantão da IA: o time assumiu este lead
     return NextResponse.json({ ok: true, template: templateNome, conversaId })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })

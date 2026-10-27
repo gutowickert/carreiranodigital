@@ -1,4 +1,5 @@
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
+import { plantaoLigado } from '@/lib/plantao'
 import { ORG_CND } from '@/lib/org'
 import { enviarTemplate, foneOficial } from '@/lib/whatsapp-oficial'
 import { nomeSaudacao } from '@/lib/saudacao'
@@ -150,7 +151,11 @@ export async function rodarFunilMotor(opts: { simular?: boolean; desde?: string;
 
   let enviados = 0, movidos = 0, falhas = 0, falhasSeguidas = 0
   const feito: Acao[] = []
+  // PLANTÃO DA IA LIGADO = NINGUÉM VIRA PERDA (27/10/2026, Nando): com o time viajando, a perda do dia 10
+  // fica pra depois. O lead segue em "Lead frio" e, quando o plantão desliga, a próxima rodada faz a perda.
+  const semPerda = await plantaoLigado()
   for (const a of acoes) {
+    if (a.move === 'perda' && semPerda) { pulados.push({ lead: a.lead, motivo: 'perda segurada: plantão da IA ligado' }); continue }
     const l = candidatos.find(c => c.l.id === a.leadId)!.l
     const t = a.template ? tpl.get(a.template) : null
     if (a.template && !t) { pulados.push({ lead: a.lead, motivo: `modelo ${a.template} não aprovado/ativo` }); continue }

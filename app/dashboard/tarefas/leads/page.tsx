@@ -31,6 +31,14 @@ const TIPO_LABEL: Record<string, { label: string; cor: string; bg: string }> = {
   // o cliente está com a proposta aberta na tela agora: é a tarefa mais urgente que existe no funil
   proposta_aberta: { label: 'Abriu a proposta — falar agora', cor: 'var(--green)', bg: 'var(--green-bg)' },
   proposta_aceita: { label: '✅ ACEITOU a proposta — dar seguimento', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  // avisos do plantão da IA (lib/plantao-avisos.ts)
+  plantao_diretor: { label: 'Plantão: pediu pro "diretor"', cor: 'var(--red)', bg: 'var(--red-bg)' },
+  plantao_ligacao: { label: 'Plantão: quer ligação', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  plantao_proposta: { label: 'Plantão: proposta enviada', cor: 'var(--accent)', bg: 'var(--accent-bg)' },
+  plantao_aceite: { label: 'Plantão: aceitou a proposta', cor: 'var(--green)', bg: 'var(--green-bg)' },
+  plantao_outro_produto: { label: 'Plantão: outro assunto', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
+  plantao_ajuda: { label: 'Plantão: precisa do time', cor: 'var(--red)', bg: 'var(--red-bg)' },
+  plantao_falha: { label: 'Plantão: IA não respondeu', cor: 'var(--red)', bg: 'var(--red-bg)' },
   // cadência NOVA (D1–D13)
   ligar_1: { label: 'Ligar — 1ª tentativa', cor: 'var(--amber)', bg: 'var(--amber-bg)' },
   ligar_2_audio: { label: 'Ligar — 2ª + áudio', cor: 'var(--amber)', bg: 'var(--amber-bg)' },

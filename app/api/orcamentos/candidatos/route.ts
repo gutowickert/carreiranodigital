@@ -91,8 +91,23 @@ export async function GET(req: Request) {
       .eq('org_id', org).not('lead_id', 'is', null).gte('ultima_msg_em', desde)
       .order('ultima_msg_em', { ascending: false }).limit(200)
 
+    // ── 2b) reuniões por vídeo encerradas (26/10/2026). Reunião de apresentação é o material mais
+    // rico que existe — 46 min com o Matheus Segatto —, então ela sozinha já basta pra proposta.
+    const { data: reunioes } = await sb.from('reunioes')
+      .select('id, lead_id, titulo, iniciada_em, encerrada_em')
+      .eq('org_id', org).not('lead_id', 'is', null).in('status', ['encerrada', 'resumida']).gte('criado_em', desde)
+      .order('criado_em', { ascending: false }).limit(100)
+    const reuniaoDoLead = new Map<string, { id: string; titulo: string; minutos: number | null; em: string }>()
+    for (const r of reunioes || []) {
+      if (reuniaoDoLead.has(r.lead_id as string)) continue   // fica a mais recente
+      reuniaoDoLead.set(r.lead_id as string, {
+        id: r.id, titulo: r.titulo, em: r.iniciada_em,
+        minutos: r.iniciada_em && r.encerrada_em ? Math.round((+new Date(r.encerrada_em) - +new Date(r.iniciada_em)) / 60000) : null,
+      })
+    }
+
     // ── 3) os leads dessas fontes, e a permissão, ANTES de contar qualquer mensagem
-    const idsLead = [...new Set([...ligacaoDoLead.keys(), ...(conversas || []).map(c => c.lead_id as string)])]
+    const idsLead = [...new Set([...ligacaoDoLead.keys(), ...(conversas || []).map(c => c.lead_id as string), ...reuniaoDoLead.keys()])]
     if (!idsLead.length) return NextResponse.json({ ok: true, itens: [], produtos: await produtosOfertaveis(org) })
 
     const leads: any[] = []
@@ -161,6 +176,7 @@ export async function GET(req: Request) {
       .map(l => {
         const ligacao = ligacaoDoLead.get(l.id) || null
         const conversa = conversaDoLead.get(l.id) || null
+        const reuniao = reuniaoDoLead.get(l.id) || null
         const caracteres = (ligacao?.caracteres || 0) + (conversa?.caracteres || 0)
         return {
           lead_id: l.id,
@@ -172,14 +188,14 @@ export async function GET(req: Request) {
           negocio: l.negocio || null,
           // 'upsell' = já comprou, a proposta é do próximo produto; 'retomada' = perdido, a proposta reabre
           intencao: l.etapa === 'ganho' ? 'upsell' : l.etapa === 'perda' ? 'retomada' : 'venda',
-          fontes: { ligacao, conversa },
+          fontes: { ligacao, conversa, reuniao },
           // material curto não bloqueia: a tela avisa e deixa gerar mesmo assim, sem página de objeções
-          material: caracteres >= 1200 ? 'suficiente' : 'curto',
-          ultima_atividade: [ligacao?.em, conversa?.em, l.atualizado_em].filter(Boolean).sort().pop(),
+          material: caracteres >= 1200 || reuniao ? 'suficiente' : 'curto',
+          ultima_atividade: [ligacao?.em, conversa?.em, reuniao?.em, l.atualizado_em].filter(Boolean).sort().pop(),
         }
       })
       // lead que entrou só por conversa curta demais sai da lista (ficou sem fonte nenhuma)
-      .filter(i => i.fontes.ligacao || i.fontes.conversa)
+      .filter(i => i.fontes.ligacao || i.fontes.conversa || i.fontes.reuniao)
       .sort((a, b) => {
         if (a.material !== b.material) return a.material === 'suficiente' ? -1 : 1
         return String(b.ultima_atividade).localeCompare(String(a.ultima_atividade))

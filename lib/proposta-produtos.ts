@@ -24,10 +24,32 @@
 
 // A Imersão Deu Venda (turma, 08/10/2026) casa com 'deu venda' também: por isso, nas listas abaixo que
 // escolhem UM produto (resumo, parcelas, corpo), a chave dela vem ANTES da do Deu Venda individual.
-const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais', 'imersao deu venda']
+// O SISTEMA CND + MARKETING (26/10/2026) é o primeiro SERVIÇO MENSAL com proposta: a CND cuidando
+// junto da estratégia, do tráfego e da operação no Sistema CND. Nasceu da reunião com o Matheus
+// Segatto (Press Kit Studios) e segue o modelo da proposta do Espaço Dani Fell, feita à mão em 02/09.
+const COM_PROPOSTA = ['deu venda', 'anuncios para negocios locais', 'imersao deu venda', 'sistema cnd']
 
 const semAcento = (s: string) =>
   (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+
+// SERVIÇO MENSAL: os campos de preço do orçamento mudam de sentido (ver ehServicoMensal).
+const MENSAIS = ['sistema cnd']
+
+/**
+ * É serviço por mês (e não pagamento único)?
+ *
+ * ⚠️ OS TRÊS CAMPOS DE PREÇO DO ORÇAMENTO MUDAM DE SENTIDO AQUI, sem coluna nova no banco:
+ *   preco_vista     → o valor por mês
+ *   parcelas        → o prazo, em meses
+ *   preco_parcelado → a implantação (vazio = isenta)
+ * e `contexto.condicao` guarda a condição extra (ex.: "+ 10% de cada assinatura nova").
+ * Toda tela e todo texto que mostra preço pergunta isto antes — "à vista" e "x no cartão" numa
+ * mensalidade seria o documento dizendo outra coisa que o combinado.
+ */
+export function ehServicoMensal(nomeDoProduto: string | null | undefined): boolean {
+  const n = semAcento(nomeDoProduto || '')
+  return !!n && MENSAIS.some(p => n.includes(p))
+}
 
 /** Este produto tem uma proposta escrita? */
 export function temProposta(nomeDoProduto: string | null | undefined): boolean {
@@ -46,6 +68,18 @@ export function temProposta(nomeDoProduto: string | null | undefined): boolean {
 // sem elas a IA inventa uma resposta plausível e o cliente ouve uma coisa do vendedor, outra da
 // proposta e uma terceira do site. Com elas, é tudo a mesma escola falando.
 const RESUMOS: { chave: string; texto: string }[] = [
+  {
+    chave: 'sistema cnd',
+    texto: `É um SERVIÇO MENSAL, não curso nem turma e não implantação de pagamento único. A Carreira no Digital cuida junto com o cliente de três frentes ao mesmo tempo, com um estrategista da escola (o Guto Wickert):
+- O NEGÓCIO: a oferta, o empacotamento do que ele vende e o funil, da primeira conversa até a venda.
+- A CAPTAÇÃO: estratégia e tráfego pago rodando e sendo ajustados o mês inteiro. O conteúdo (gravar os vídeos) segue com o cliente; a escola ajuda com a edição por IA.
+- A OPERAÇÃO: o Sistema CND instalado — atendimento no WhatsApp com IA, funil, cobrança de quem esfriou, base dos contatos e o painel com os números do negócio.
+- No começo mede onde o negócio está (o ponto A); ao longo do prazo ajusta e repete o que dá resultado; no fim senta com o número na mesa.
+- Reuniões pra decidir e WhatsApp aberto com o time no dia a dia.
+- A verba de anúncio é do cliente e vai direto pra Meta; os custos da Meta e da IA no WhatsApp também são dele.
+- O valor é por mês, pelo prazo combinado. A condição exata vem do orçamento: não escreva valor, prazo nem porcentagem.
+- NÃO prometa volume de vendas nem número de assinaturas.`,
+  },
   {
     // ANTES do 'deu venda': o nome dela contém o do individual
     chave: 'imersao deu venda',
@@ -138,7 +172,11 @@ const PARCELAS: { chave: string; vezes: number; acrescimo?: number }[] = [
 const PARCELAS_PADRAO = 6
 export const ACRESCIMO_CARTAO = 200
 
+// No serviço mensal o campo de parcelas é o PRAZO: 6 meses é o que a casa propõe (Dani, 02/09).
+const PRAZO_PADRAO_MESES = 6
+
 export function parcelasDoProduto(nomeDoProduto: string | null | undefined): number {
+  if (ehServicoMensal(nomeDoProduto)) return PRAZO_PADRAO_MESES
   const n = semAcento(nomeDoProduto || '')
   return PARCELAS.find(p => n.includes(p.chave))?.vezes || PARCELAS_PADRAO
 }
@@ -146,6 +184,8 @@ export function parcelasDoProduto(nomeDoProduto: string | null | undefined): num
 /** O valor de cada parcela no cartão, pelo número de vezes daquele produto. */
 export function parcelaDoProduto(nomeDoProduto: string | null | undefined, precoVista: number | null): number | null {
   if (precoVista == null) return null
+  // no serviço mensal este campo é a implantação: não existe conta de cartão pra sugerir
+  if (ehServicoMensal(nomeDoProduto)) return null
   const vezes = parcelasDoProduto(nomeDoProduto)
   const n = semAcento(nomeDoProduto || '')
   const acrescimo = PARCELAS.find(p => n.includes(p.chave))?.acrescimo ?? ACRESCIMO_CARTAO

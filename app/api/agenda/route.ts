@@ -248,6 +248,13 @@ export async function GET(req: Request) {
       id: p.id, nome: p.nome, papel: p.papel, setor: p.setor, ativo: p.ativo,
       ordem: filaDeCores.indexOf(p.id) >= 0 ? filaDeCores.indexOf(p.id) : undefined,
     })),
+    // QUEM DÁ PRA CHAMAR (27/10/2026). A lista acima é quem EU ENXERGO, pela hierarquia — e o
+    // Mateus, que não tem ninguém abaixo dele, abria "Quem participa" vazio: não conseguia chamar
+    // ninguém pra reunião nem pra tarefa. Chamar é diferente de enxergar: aqui vai só nome e id de
+    // quem está ativo na empresa, sem papel, setor nem quem responde a quem — a estrutura que a
+    // agenda esconde continua escondida, e o que cada um VÊ segue a regra de sempre. Quem é chamado
+    // passa a ver aquele compromisso (participantes), e só ele.
+    convidaveis: pessoas.filter(p => p.ativo !== false).map(p => ({ id: p.id, nome: p.nome })),
     tenhoTime: abaixo.size > 0 || souDono,
     itens,
     balao: balao.chaves,

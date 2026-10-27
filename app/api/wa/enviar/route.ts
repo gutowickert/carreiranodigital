@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { foneZapi } from '@/lib/zapi'
 import { enviarTexto as enviarTextoOf, enviarMidia as enviarMidiaOf, uploadMidia as uploadMidiaOf, foneOficial } from '@/lib/whatsapp-oficial'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { timeAssumiu } from '@/lib/plantao'
 
 export async function POST(req: NextRequest) {
   if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
@@ -108,6 +109,8 @@ export async function POST(req: NextRequest) {
     })
     const resumoMsg = tipoMsg === 'imagem' ? '📷 Imagem' : tipoMsg === 'documento' ? `📎 ${anexoNome || 'documento'}` : tipoMsg === 'audio' ? '🎤 Áudio' : (texto || '').trim()
     await supabase.from('wa_conversas').update({ ultima_msg: (resumoMsg || '').slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversa.id)
+    // PLANTÃO DA IA: alguém do time escreveu pro lead → a IA sai deste lead (só com o plantão ligado)
+    await timeAssumiu(leadId || conversa.lead_id)
 
     return NextResponse.json({ ok: true, conversaId: conversa.id, canal: 'oficial' })
   } catch (e: any) {

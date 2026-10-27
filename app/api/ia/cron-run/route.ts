@@ -3,6 +3,7 @@ import { cabecalhoInterno } from '@/lib/exigir-login'
 import { fecharEsquecidas } from '@/lib/chamadas'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { ORG_CND } from '@/lib/org'
+import { fecharVendasDasTurmasQueComecaram } from '@/lib/turmas-vendas'
 
 export const maxDuration = 60
 
@@ -43,6 +44,8 @@ export async function POST(req: NextRequest) {
     if (!iaLigada) log.push('IA desligada → virada, posse-funil, roteador-turma e sem-cidade-perda puladas')
 
     if (fase === 'manha') {
+      // primeiro de tudo: turma que já começou sai de "em vendas", pra nada abaixo (nem a IA) oferecer turma passada
+      try { const f = await fecharVendasDasTurmasQueComecaram(ORG_CND); if (f.length) log.push('turmas que começaram → confirmada: ' + f.join(', ')) } catch { log.push('fechar turmas: erro') }
       await emLote('warming', '/api/ia/resumos', { limit: 10 })
       if (iaLigada && restam() > 12000) await emLote('virada-ontem', '/api/ia/virada', { dryRun: false, confirm: true, limit: 5, data: ontemUTC() })
       if (restam() > 8000) { const r = await post('/api/ia/reconciliar', { dryRun: false, confirm: true, dias: 3 }); log.push('reconciliar → ' + (r?.ok ? 'ok' : 'erro')) }

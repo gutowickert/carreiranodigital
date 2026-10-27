@@ -11,11 +11,13 @@ import { useState } from 'react'
 // ⚠️ É REGISTRO DE ACEITE, NÃO ASSINATURA DIGITAL. Sem certificado, sem validade de documento
 // assinado. A página diz isso pro cliente em vez de deixar ele achar que assinou um contrato.
 
-export default function Aceite({ slug, nomeSugerido, aceitoEm, aceitoNome }: {
+export default function Aceite({ slug, nomeSugerido, aceitoEm, aceitoNome, linkPagamento }: {
   slug: string
   nomeSugerido: string
   aceitoEm: string | null
   aceitoNome: string | null
+  // o link de pagamento da turma, só quando o preço da proposta é o do link (page.tsx)
+  linkPagamento?: string | null
 }) {
   const [nome, setNome] = useState(nomeSugerido === 'você' ? '' : nomeSugerido)
   const [enviando, setEnviando] = useState(false)
@@ -54,9 +56,16 @@ export default function Aceite({ slug, nomeSugerido, aceitoEm, aceitoNome }: {
           <strong>{feito.nome}</strong> confirmou a leitura e o aceite desta proposta
           {feito.em ? <> em {quando(feito.em)}</> : null}.
         </p>
-        <p className="corpo" style={{ margin: 0, fontSize: 13 }}>
-          A escola entra em contato pra combinar a data. Se precisar mudar alguma coisa, é só falar com quem te enviou.
-        </p>
+        {linkPagamento ? <>
+          <p className="corpo" style={{ margin: 0, fontSize: 13 }}>
+            Pra garantir a tua vaga, é só finalizar o pagamento. Lá tu escolhe Pix ou cartão e em quantas vezes.
+          </p>
+          <a className="aceite-pagar" href={linkPagamento} target="_blank" rel="noreferrer">Pagar agora</a>
+        </> : (
+          <p className="corpo" style={{ margin: 0, fontSize: 13 }}>
+            A escola entra em contato pra combinar a data. Se precisar mudar alguma coisa, é só falar com quem te enviou.
+          </p>
+        )}
       </div>
     )
   }

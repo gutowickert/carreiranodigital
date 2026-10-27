@@ -28,7 +28,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays,
   '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
   '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/ia-fds': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
-  '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Video, '/dashboard/reunioes': Presentation, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
+  '/dashboard/ia-plantao': Bot, '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Video, '/dashboard/reunioes': Presentation, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
   '/dashboard/produtos': Package, '/dashboard/crm/resultados': Trophy, '/dashboard/turmas-mensagens': CalendarClock,
   '/dashboard/tarefas/leads': ListChecks, '/dashboard/fechamento': ClipboardCheck, '/dashboard/entregas': PackageCheck,
   '/dashboard/orcamentos': FileText,
@@ -91,6 +91,7 @@ const grupos: Grupo[] = [
       { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
       { nome: 'Chamadas', href: '/dashboard/chamadas' },
       { nome: 'Reuniões', href: '/dashboard/reunioes' },
+      { nome: 'Plantão da IA', href: '/dashboard/ia-plantao' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
       { nome: 'Gerar orçamento', href: '/dashboard/orcamentos' },
       { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
@@ -226,6 +227,8 @@ function itemPermitido(href: string, p: Perfil): boolean {
   if (href === '/dashboard/minha-semana') return true
   // Reuniões por vídeo: todo o time vê (decisão do Nando, 08/10/2026)
   if (href === '/dashboard/reunioes') return true
+  // Plantão da IA (27/10/2026): quem atende o WhatsApp vê os avisos do plantão e o que a IA respondeu
+  if (href === '/dashboard/ia-plantao') return p.papel === 'admin' || p.papel === 'gestor' || p.wa_caixa === true
   // A Máquina lê o sistema inteiro: só admin e comercial (decisão do dono, 25/09/2026). A rota
   // confere a mesma regra (lib/maquina-acesso) — o menu é só a primeira porta.
   if (href === '/dashboard/maquina') return p.papel !== 'professor' && p.setor !== 'professor' && (p.papel === 'admin' || p.setor === 'comercial')
@@ -308,6 +311,8 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // PROPOSTAS (08/10/2026): os aceites sem seguimento (faixa verde no topo) e o balão do que é novo
   const [aceites, setAceites] = useState<any[]>([])
   const [propBalao, setPropBalao] = useState(0)
+  // PLANTÃO DA IA (27/10/2026): avisos que a IA deixou pro time (diretor, ligação, aceite...) e ainda abertos
+  const [plantaoAvisos, setPlantaoAvisos] = useState(0)
   const waPrevRef = useRef(-1)
   // BALÕES DE TRABALHO PARADO (09/10/2026; o Nando aprovou em 08/10: "se faz sentido e facilitará para
   // os atendentes, sim"). Telas com coisa pra uma pessoa fazer que não avisavam ninguém:
@@ -465,6 +470,27 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     }
   }, [vePropostas])
 
+  const vePlantao = !!perfil && itemPermitido('/dashboard/ia-plantao', perfil)
+  useEffect(() => {
+    if (!vePlantao) return
+    let ativo = true
+    let antes = -1
+    async function checar() {
+      if (document.hidden) return
+      const j = await fetchAuth('/api/ia-plantao?contar=1').then(r => r.json()).catch(() => null)
+      if (!ativo || !j?.ok) return
+      const n = Number(j.abertos || 0)
+      if (antes >= 0 && n > antes) bipe()   // aviso novo enquanto a tela está aberta: um bipe
+      antes = n
+      setPlantaoAvisos(n)
+    }
+    const aoVoltar = () => { if (!document.hidden) checar() }
+    checar()
+    const t = setInterval(checar, 60000)
+    document.addEventListener('visibilitychange', aoVoltar)
+    return () => { ativo = false; clearInterval(t); document.removeEventListener('visibilitychange', aoVoltar) }
+  }, [vePlantao])
+
   async function deiSeguimento(id: string) {
     setAceites(a => a.filter(x => x.id !== id))
     await fetchAuth('/api/orcamentos/novidades', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }) }).catch(() => null)
@@ -549,7 +575,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const abaAtiva = (href: string) => href === '/dashboard' ? pathname === '/dashboard' : (pathname === href || pathname.startsWith(href + '/'))
   const naAba = abas.some(a => abaAtiva(a.href))
   // o balão da agenda aparece também na Minha semana: é lá que o que é novo pra ti fica listado
-  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : href === '/dashboard/orcamentos' ? propBalao : 0
+  const balaoDe = (href: string) => href === '/dashboard/whatsapp' ? waUnread : (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') ? agendaBalao : href === '/dashboard/orcamentos' ? propBalao : href === '/dashboard/ia-plantao' ? plantaoAvisos : 0
   // BALÃO QUE NÃO SE ESCONDE (08/10/2026, pedido do Nando olhando a Wood Arte; o mesmo do núcleo,
   // adaptado aos balões da escola): o número de cada tela morava só no item do menu. Com o grupo FECHADO
   // (ou dentro do "Mais" no celular) o item some e o número some junto. Agora toda contagem sai daqui,
@@ -559,6 +585,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     if (href === '/dashboard/whatsapp') return { n: waUnread, acao: false }
     if (href === '/dashboard/whatsapp-disparos') return { n: dispUnread, acao: false }
     if (href === '/dashboard/orcamentos') return { n: propBalao, acao: false }
+    if (href === '/dashboard/ia-plantao') return { n: plantaoAvisos, acao: true }
     if (href === '/dashboard/agenda' || href === '/dashboard/minha-semana') return { n: agendaBalao, acao: true }
     if (href === '/dashboard/tarefas/leads') return { n: tarefasVenc, acao: true }
     if (href === '/dashboard/producao') return { n: producaoAtras, acao: true }
@@ -813,6 +840,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                               </span>
                             )}
                             {m.href === '/dashboard/tarefas/leads' && pilula(tarefasVenc, true, 'Tarefas vencidas de leads que estão com o time')}
+                            {m.href === '/dashboard/ia-plantao' && pilula(plantaoAvisos, true, 'Avisos do plantão da IA esperando alguém do time')}
                             {m.href === '/dashboard/producao' && pilula(producaoAtras, true, 'Pedidos com o prazo vencido e ainda não entregues')}
                             {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
                             {/* propostas: verde, é cliente andando na direção da venda */}

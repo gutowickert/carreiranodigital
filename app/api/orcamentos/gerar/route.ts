@@ -5,6 +5,8 @@ import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { temProposta, resumoDoProduto, exigeTurma } from '@/lib/proposta-produtos'
 import { logIaUso } from '@/lib/ia-uso'
+import { falasDaReuniao, transcricaoEmTexto } from '@/lib/reunioes'
+import { MODELO, MAX_OBJECOES, MAX_CARACTERES_MATERIAL, SYSTEM, mecanicaDoOutroProduto, normal, citacaoConfere, jsonDaResposta } from '@/lib/orcamento-ia'
 
 // 120 e não 60: se a primeira resposta vier cortada, tenta de novo sozinho (ver abaixo)
 export const maxDuration = 120
@@ -23,115 +25,6 @@ export const maxDuration = 120
 //     curso; capa de curso não cita implantação nem meses de acompanhamento. Pedir isso no texto do
 //     pedido não basta — o pedido é conselho, isto é porta.
 //
-// Modelo: Sonnet 5, escolhido pelo custo (é o mais barato que dá conta deste texto).
-
-const MODELO = 'claude-sonnet-5'
-const MAX_OBJECOES = 4
-const MAX_CARACTERES_MATERIAL = 60_000   // teto de material lido: ligação de 40 min dá ~35 mil
-
-// ⚠️ NÃO DIZ MAIS "vende implantação com acompanhamento". Dizia, e isso era o Deu Venda descrito
-// como se fosse a escola inteira: com o segundo produto no ar, a IA escrevia capa de implantação
-// pra uma turma de 3 dias. O que a escola vende NAQUELA proposta vai no pedido, por produto.
-const SYSTEM = `Tu escreves parte de uma proposta comercial brasileira, para uma escola de marketing digital presencial.
-
-O QUE TU ESCREVE: só a capa e as respostas às objeções que a pessoa levantou. O resto da proposta já existe pronto.
-
-REGRAS DURAS:
-- Cada objeção precisa vir de uma FRASE EXATA que a pessoa disse no material. Copia a frase no campo "citacao", igual, sem corrigir português.
-- Se não houver objeção clara no material, devolve a lista vazia. Não inventa objeção.
-- NUNCA escreve preço, valor, parcela, desconto ou prazo de pagamento. Isso entra depois, do cadastro.
-- NUNCA promete resultado, número de vendas ou garantia.
-- Não inventa detalhe do negócio do cliente que não esteja no material ou no contexto informado.
-- Escreve em português do Brasil, falando com a pessoa por "tu", tom direto e sem jargão. Frases curtas.
-- Reconhece a objeção antes de responder; nada de resposta de manual.
-
-⚠️ NÃO DESCREVA A MECÂNICA DO PRODUTO. Nada de quantos encontros, quantos dias, quantos meses,
-quantas aulas, o que está incluído ou como é a entrega. Isso JÁ está escrito nas páginas seguintes
-da proposta, que não passam por ti e não mudam. Se tu reescrever a estrutura com tuas palavras,
-ela vai sair diferente a cada geração — e um dia vai sair errada, com o número de um produto
-dentro da proposta do outro. Tu escreve sobre O NEGÓCIO DA PESSOA e sobre o que ela ganha; a
-estrutura do que a escola entrega não é tua.
-
-COMO SE ESCREVEM OS NOMES (a transcrição erra estes, e o erro chega até aqui):
-- A ferramenta de IA chama-se **Claude**. No material ela aparece como "cloud", "clod", "cláudio",
-  "claudia" ou "claude" minúsculo — é tudo a mesma coisa, e no TÍTULO e no TEXTO escreve-se Claude.
-- Chama-se **Hotmart**, **Kiwify**, **Meta**, **Instagram**, **WhatsApp**.
-- ⚠️ NA CITAÇÃO NÃO SE CORRIGE NADA. Ela é a frase que a pessoa falou, e é o que prova que a
-  objeção veio da conversa. Fica exatamente como está no material, com erro e tudo.
-
-FORMATO DA RESPOSTA: só um JSON, sem texto em volta:
-{"capa":{"titulo":"...","subtitulo":"..."},"objecoes":[{"titulo":"...","citacao":"...","texto":"..."}]}
-- titulo da capa: até 90 caracteres, dizendo o que a pessoa ganha, no vocabulário do negócio dela.
-- subtitulo: 2 ou 3 frases sobre o que MUDA NO NEGÓCIO DELA — a situação dela hoje e onde ela chega.
-- objecoes: no máximo ${MAX_OBJECOES}, da mais importante para a menos.
-- titulo da objeção: como o vendedor descreveria o ponto, em até 60 caracteres.
-- texto: 2 a 5 frases respondendo aquela objeção.`
-
-// A MECÂNICA DE CADA PRODUTO, e o que ela NÃO pode encostar.
-//
-// ⚠️ POR QUE ISTO EXISTE. A proposta tem duas partes: o corpo fixo, que descreve o produto e nunca
-// muda, e a capa, que a IA escreve pra cada cliente. O pedido mandava a capa "explicar o que
-// acontece na prática" — ou seja, reescrever a mecânica do produto com palavras novas a cada
-// geração. Duas gerações seguidas pro mesmo lead saíram "durante 3 meses" e "em mais três
-// encontros mensais": as duas certas, por sorte. A terceira podia sair com o número do outro
-// produto, e aí o documento se contradiz na página seguinte — com o cliente lendo.
-//
-// Isto não é análise de texto: é uma lista curta do que é INCONFUNDIVELMENTE do outro lado. O
-// Deu Venda não tem dias de curso nem turma; o ANL não tem implantação nem acompanhamento mensal.
-const MECANICA_ALHEIA: { chave: string; proibido: [RegExp, string][] }[] = [
-  {
-    chave: 'anuncios para negocios locais',   // é turma; não tem implantação nem mês de acompanhamento
-    proibido: [
-      [/implanta[çc][ãa]o/i, 'implantação'],
-      [/acompanhamento\s+mensal/i, 'acompanhamento mensal'],
-      [/encontros?\s+mensa/i, 'encontros mensais'],
-      [/(\d+|tr[êe]s)\s*meses/i, 'meses de acompanhamento'],
-    ],
-  },
-  {
-    chave: 'deu venda',                        // é 1 a 1; não tem turma nem dias de aula
-    proibido: [
-      [/\bturmas?\b/i, 'turma'],
-      [/(\d+|tr[êe]s)\s*dias?\s+(presenciais|de\s+(curso|treinamento|imers[ãa]o|aula))/i, 'dias de curso'],
-      [/\baulas?\b/i, 'aulas'],
-    ],
-  },
-]
-
-/** Devolve o termo proibido encontrado, ou null. */
-function mecanicaDoOutroProduto(produtoNome: string | null, texto: string): string | null {
-  const n = (produtoNome || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
-  const regra = MECANICA_ALHEIA.find(r => n.includes(r.chave))
-  if (!regra) return null
-  for (const [re, nome] of regra.proibido) if (re.test(texto)) return nome
-  return null
-}
-
-// normaliza pra comparar citação com o material: sem acento, sem pontuação, espaços colapsados
-const normal = (s: string) =>
-  (s || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim()
-
-// a IA às vezes corta a frase no meio; aceita se um pedaço grande da citação existir no material
-function citacaoConfere(citacao: string, materialNormal: string): boolean {
-  const c = normal(citacao)
-  if (c.length < 12) return false
-  if (materialNormal.includes(c)) return true
-  const palavras = c.split(' ')
-  for (let tam = Math.min(palavras.length, 12); tam >= 6; tam--) {
-    for (let i = 0; i + tam <= palavras.length; i++) {
-      if (materialNormal.includes(palavras.slice(i, i + tam).join(' '))) return true
-    }
-  }
-  return false
-}
-
-function jsonDaResposta(raw: string): any {
-  try { return JSON.parse(raw) } catch { /* segue */ }
-  const a = raw.indexOf('{'), z = raw.lastIndexOf('}')
-  if (a >= 0 && z > a) { try { return JSON.parse(raw.slice(a, z + 1)) } catch { /* segue */ } }
-  return null
-}
-
 export async function POST(req: Request) {
   try {
     const auth = req.headers.get('authorization')
@@ -159,7 +52,22 @@ export async function POST(req: Request) {
     // ── o material marcado na tela
     const idsLigacao: string[] = Array.isArray(b.ligacoes) ? b.ligacoes.map(String) : []
     const idsConversa: string[] = Array.isArray(b.conversas) ? b.conversas.map(String) : []
+    const idsReuniao: string[] = Array.isArray(b.reunioes) ? b.reunioes.map(String) : []
     const pedacos: string[] = []
+
+    // A REUNIÃO POR VÍDEO (26/10/2026): a apresentação do Matheus Segatto foi de 46 min e virou
+    // proposta à mão, porque o gerador só lia ligação e WhatsApp. Entra a transcrição inteira, com o
+    // nome de quem falou; só reunião DESTE lead, e só depois de encerrada.
+    if (idsReuniao.length) {
+      const { data: reus } = await sb.from('reunioes')
+        .select('id, titulo, iniciada_em, encerrada_em, status').eq('org_id', org).eq('lead_id', leadId).in('id', idsReuniao)
+      for (const r of reus || []) {
+        if (!['encerrada', 'resumida'].includes(r.status)) continue
+        const t = transcricaoEmTexto(r, await falasDaReuniao(r))
+        const min = r.iniciada_em && r.encerrada_em ? Math.round((+new Date(r.encerrada_em) - +new Date(r.iniciada_em)) / 60000) : null
+        if (t) pedacos.push(`REUNIÃO POR VÍDEO "${r.titulo}"${min ? ` de ${min} min` : ''} em ${String(r.iniciada_em || '').slice(0, 10)}:\n${t}`)
+      }
+    }
 
     if (idsLigacao.length) {
       const { data: ligs } = await sb.from('ligacoes')
@@ -231,6 +139,9 @@ export async function POST(req: Request) {
     const contexto = {
       o_que_vende: (b.o_que_vende || '').toString().slice(0, 300),
       regiao: (b.regiao || '').toString().slice(0, 200),
+      // serviço mensal: a condição além da mensalidade (ex.: "+ 10% de cada assinatura nova").
+      // Quem escreve é o vendedor; a IA não lê nem escreve isto.
+      condicao: (b.condicao || '').toString().trim().slice(0, 300),
     }
 
     // NOME QUE SAI NA PROPOSTA. O cadastro do lead costuma trazer o apelido do WhatsApp — o do José
@@ -355,7 +266,7 @@ export async function POST(req: Request) {
       preco_parcelado: precoParcelado,
       parcelas,
       contexto,
-      fontes: { ligacoes: idsLigacao, conversas: idsConversa, caracteres: material.length },
+      fontes: { ligacoes: idsLigacao, conversas: idsConversa, reunioes: idsReuniao, caracteres: material.length },
       capa,
       objecoes,
       situacao: 'rascunho',

@@ -178,6 +178,10 @@ export default function Reunioes() {
                   </span>
                 ) : <button style={{ ...btn, color: 'var(--text-faint)' }} title="Excluir esta reunião" onClick={e => { e.stopPropagation(); setExcluindo(r.codigo) }}>Excluir</button>}
                 <button style={btn} onClick={e => { e.stopPropagation(); setAberta(r.codigo) }}>Convidar</button>
+                {/* a reunião vira proposta (26/10/2026): abre Orçamentos já no lead, com a transcrição marcada */}
+                {r.lead_id && ['encerrada', 'resumida'].includes(r.status) && (
+                  <a href={`/dashboard/orcamentos?lead=${r.lead_id}`} style={btn} onClick={e => e.stopPropagation()}>Montar proposta</a>
+                )}
                 {['encerrada', 'resumida', 'erro'].includes(r.status)
                   ? <button style={btnForte} onClick={e => { e.stopPropagation(); reabrir(r) }}>Reabrir</button>
                   : <a href={r.link_host} target="_blank" rel="noopener" style={btnForte} onClick={e => e.stopPropagation()}>{r.status === 'marcada' ? 'Abrir a reunião' : 'Entrar'}</a>}

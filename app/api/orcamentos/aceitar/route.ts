@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server'
+import { NextResponse, after } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { enviarPush } from '@/lib/push'
+import { aposAceitePlantao } from '@/lib/ia-plantao'
 
 export const maxDuration = 30
 
@@ -77,6 +78,9 @@ export async function POST(req: Request) {
         })
       }
     } catch { /* idem */ }
+
+    // PLANTÃO DA IA: com ele ligado, a IA manda o link de pagamento pelo WhatsApp e avisa o time
+    after(async () => { try { await aposAceitePlantao(orc.id) } catch { /* não derruba o aceite */ } })
 
     return NextResponse.json({ ok: true, aceito_em: agora, aceito_nome: nome })
   } catch {

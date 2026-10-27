@@ -6,6 +6,7 @@ import { nomeSaudacao } from '@/lib/saudacao'
 import { meuPerfil } from '@/lib/quem-eu-vejo'
 import { variavelVazia } from '@/lib/template-vazio'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { timeAssumiu } from '@/lib/plantao'
 
 export const maxDuration = 30
 
@@ -99,6 +100,8 @@ export async function POST(req: NextRequest) {
       await sb.from('wa_conversas').update({ ultima_msg: textoRender.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conv.id)
     }
     await sb.from('lead_andamentos').insert({ lead_id: leadId, tipo: 'ia_followup', observacao: `📄 Template MANUAL (card)${enviadoPor ? ' por ' + enviadoPor : ''} — ${tpl.nome_meta}` })
+
+    await timeAssumiu(leadId)   // plantão da IA: o time assumiu este lead
 
     return NextResponse.json({ ok: true, texto: textoRender, template: tpl.nome_meta })
   } catch (e: any) {

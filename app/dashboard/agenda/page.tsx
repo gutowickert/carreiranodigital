@@ -243,6 +243,8 @@ const somaDias = (d: Date, n: number) => { const x = new Date(d); x.setDate(x.ge
 export default function Agenda() {
   const [eu, setEu] = useState<Eu | null>(null)
   const [pessoas, setPessoas] = useState<Pessoa[]>([])
+  // quem dá pra CHAMAR (participante): a empresa toda, só nome — diferente de quem eu enxergo (route.ts)
+  const [convidaveis, setConvidaveis] = useState<{ id: string; nome: string }[]>([])
   const [tenhoTime, setTenhoTime] = useState(false)
   const [itens, setItens] = useState<Item[]>([])
   const [abasDeArea, setAbasDeArea] = useState<Aba[]>([])
@@ -295,7 +297,7 @@ export default function Agenda() {
       const r = await fetchAuth('/api/agenda')
       if (!r.ok) { setErro(r.status === 401 ? 'Sessão expirada — recarregue a página.' : 'Não deu pra carregar a agenda.'); setCarregando(false); return }
       const d = await r.json()
-      setEu(d.eu); setPessoas(d.pessoas || []); montarCores(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
+      setEu(d.eu); setPessoas(d.pessoas || []); setConvidaveis(d.convidaveis || []); montarCores(d.pessoas || []); setTenhoTime(!!d.tenhoTime); setItens(d.itens || [])
       setAbasDeArea(Array.isArray(d.abas) ? d.abas : [])
       const b = new Set<string>(d.balao || [])
       setBalao(b); setBalaoPronto(!!d.balaoPronto)
@@ -330,7 +332,7 @@ export default function Agenda() {
 
   // `nomeDe` olha TODO mundo, inclusive quem saiu — item antigo ainda precisa do nome de quem era.
   // `ativos` é só quem pode ser escolhido agora: gente desativada não entra em lista de escolha.
-  const nomeDe = (id: string | null) => (id ? pessoas.find(p => p.id === id)?.nome || 'outra pessoa' : null)
+  const nomeDe = (id: string | null) => (id ? (pessoas.find(p => p.id === id) || convidaveis.find(p => p.id === id))?.nome || 'outra pessoa' : null)
   const ativos = useMemo(() => pessoas.filter(p => p.ativo !== false), [pessoas])
   const hj = chaveDia(new Date())
 
@@ -774,7 +776,7 @@ export default function Agenda() {
             onCombinado={() => { setDetalhe(null); carregar() }} />
         )}
         {(novo || editar) && eu && (
-          <ModalCompromisso eu={eu} ativos={ativos} diaSugerido={diaAberto} inicial={editar}
+          <ModalCompromisso eu={eu} ativos={ativos} convidaveis={convidaveis} diaSugerido={diaAberto} inicial={editar}
             onFechar={() => { setNovo(false); setEditar(null) }}
             onSalvo={() => { setNovo(false); setEditar(null); carregar() }} />
         )}
@@ -1254,8 +1256,8 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
 }
 
 // Criar E editar compromisso — o mesmo formulário. Com `inicial`, abre preenchido e salva por cima.
-function ModalCompromisso({ eu, ativos, diaSugerido, inicial, onFechar, onSalvo }: {
-  eu: Eu; ativos: Pessoa[]; diaSugerido: string | null; inicial?: Item | null; onFechar: () => void; onSalvo: () => void
+function ModalCompromisso({ eu, ativos, convidaveis, diaSugerido, inicial, onFechar, onSalvo }: {
+  eu: Eu; ativos: Pessoa[]; convidaveis: { id: string; nome: string }[]; diaSugerido: string | null; inicial?: Item | null; onFechar: () => void; onSalvo: () => void
 }) {
   const base = new Date()
   if (diaSugerido) { const [a, m, d] = diaSugerido.split('-').map(Number); base.setFullYear(a, m - 1, d) }
@@ -1325,7 +1327,8 @@ function ModalCompromisso({ eu, ativos, diaSugerido, inicial, onFechar, onSalvo 
     onSalvo()
   }
 
-  const escolhiveis = ativos.filter(p => p.id !== dono)
+  // chamar pode qualquer pessoa ativa da empresa; o "Organiza" (o dono) continua só entre quem eu enxergo
+  const escolhiveis = (convidaveis.length ? convidaveis : ativos).filter(p => p.id !== dono)
 
   return (
     <Modal titulo={inicial ? 'Editar compromisso' : 'Novo compromisso'} onFechar={onFechar}>

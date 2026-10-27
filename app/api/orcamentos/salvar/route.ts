@@ -86,6 +86,8 @@ export async function POST(req: Request) {
     if (b.preco_vista !== undefined) patch.preco_vista = b.preco_vista === '' || b.preco_vista == null ? null : Number(String(b.preco_vista).replace(',', '.'))
     if (b.parcelas !== undefined) patch.parcelas = b.parcelas === '' || b.parcelas == null ? null : Number(b.parcelas)
     if (b.preco_parcelado !== undefined) patch.preco_parcelado = b.preco_parcelado === '' || b.preco_parcelado == null ? null : Number(String(b.preco_parcelado).replace(',', '.'))
+    // serviço mensal: a condição além da mensalidade mora no contexto (lib/proposta-produtos, ehServicoMensal)
+    if (typeof b.condicao === 'string') patch.contexto = { ...((orc.contexto as any) || {}), condicao: b.condicao.trim().slice(0, 300) }
 
     const { data, error } = await sb.from('orcamentos').update(patch).eq('org_id', org).eq('id', id).select('*').single()
     if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 200 })
@@ -102,6 +104,7 @@ export async function POST(req: Request) {
         const agora = (patch.parcelas ?? orc.parcelas) ? `${patch.parcelas ?? orc.parcelas}x ${dinheiro(patch.preco_parcelado ?? orc.preco_parcelado)}` : 'sem parcelamento'
         mudou.push(`parcelado ${antes} → ${agora}`)
       }
+      if (patch.contexto && (patch.contexto.condicao || '') !== ((orc.contexto as any)?.condicao || '')) mudou.push(`condição → ${patch.contexto.condicao || 'nenhuma'}`)
       if (patch.capa && JSON.stringify(patch.capa) !== JSON.stringify(orc.capa)) mudou.push('texto da capa')
       if (patch.objecoes && JSON.stringify(patch.objecoes) !== JSON.stringify(orc.objecoes)) mudou.push('objeções')
       if (patch.cliente_nome !== undefined && patch.cliente_nome !== orc.cliente_nome) mudou.push(`nome do cliente → ${patch.cliente_nome}`)

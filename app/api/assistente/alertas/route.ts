@@ -4,6 +4,8 @@ import { temSessao } from '@/lib/quem-eu-vejo'
 import { rodarAlertas } from '@/lib/assistente-alertas'
 import { emailsDoResumo, type Usuario } from '@/lib/assistente'
 import { rodarFunilMotor } from '@/lib/funil-motor'
+import { cutucarPlantao, resumoDoPlantao } from '@/lib/ia-plantao'
+import { ORG_CND } from '@/lib/org'
 
 export const maxDuration = 120
 
@@ -46,7 +48,11 @@ export async function GET(req: NextRequest) {
   // de carona na rodada de hora em hora: o motor do funil novo (lib/funil-motor.ts; desligado por padrão)
   let funil: any = null
   try { funil = await rodarFunilMotor() } catch (e: any) { funil = { ok: false, error: e?.message || 'falhou' } }
-  return NextResponse.json({ ok: true, resultados, funil })
+  // e o plantão da IA (lib/ia-plantao.ts; desligado por padrão): a retomada de quem parou de responder e
+  // o resumo das 8h e das 19h pro time
+  let plantao: any = null
+  try { plantao = { cutucada: await cutucarPlantao(ORG_CND), resumo: await resumoDoPlantao(ORG_CND) } } catch (e: any) { plantao = { ok: false, error: e?.message || 'falhou' } }
+  return NextResponse.json({ ok: true, resultados, funil, plantao })
 }
 
 export async function POST(req: NextRequest) {
