@@ -12,7 +12,7 @@ import { aCada } from '@/lib/a-cada'
 import { lerMensagens } from '@/lib/mensagens-leves'
 import BotaoChamada from '@/components/BotaoChamada'
 import ItemLigacao from '@/components/ItemLigacao'
-import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, CalendarDays, ArrowRight, Flame, Check, Link2, Mic } from 'lucide-react'
+import { X, Phone, MessageCircle, Circle, CircleDot, Paperclip, Sparkles, FileText, RotateCcw, ArrowRight, Check, Link2, Mic } from 'lucide-react'
 import { hojeBR } from '@/lib/periodos'
 
 type Lead = {
@@ -509,22 +509,6 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
     onFechar()
   }
 
-  // Move o lead pra etapa "Agendado" (vira coluna no kanban) e cria a tarefa de chamar no dia
-  async function confirmarAgendado() {
-    if (!lead || !agendadoData) return
-    const dataIso = new Date(`${agendadoData}T${agendadoHora || '09:00'}:00-03:00`).toISOString()
-    await moverEtapa(lead, 'agendado', { dataAgendada: dataIso })
-    onFechar()
-  }
-
-  // Move o lead pra "Ligação Boa" (quente — a IA não toca). Data/hora OBRIGATÓRIA → gera a tarefa nesse horário.
-  async function confirmarLigBoa() {
-    if (!lead || !ligBoaData) return
-    const dataIso = new Date(`${ligBoaData}T${ligBoaHora || '09:00'}:00-03:00`).toISOString()
-    await moverEtapa(lead, 'ligacao_boa', { dataAgendada: dataIso })
-    onFechar()
-  }
-
   // Move o lead pra etapa "Próxima turma" (vira coluna no kanban) e cria a tarefa de chamar no dia
   async function confirmarProxTurma() {
     if (!lead || !proxTurmaData) return
@@ -842,17 +826,11 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                   style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
                   → Aguardando pagamento
                 </button>
-                <button onClick={() => { setMostrarAgendado(!mostrarAgendado); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--blue)', background: 'var(--blue-bg)', color: 'var(--blue)', fontSize: 11, cursor: 'pointer' }}>
-                  <CalendarDays size={14} /> Agendar contato
-                </button>
+                {/* 28/10 (funil novo, Rick): saíram "Agendar contato" (movia pra Agendado, etapa escondida — o lead sumia
+                    do quadro; use Agendar ligação) e "Ligação Boa" (ligacao_boa agora é "Proposta enviada", botão acima) */}
                 <button onClick={() => { setMostrarProxTurma(!mostrarProxTurma); setMostrarAgendado(false); setMostrarLigBoa(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
                   style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--accent-soft)', background: 'var(--accent-bg)', color: 'var(--accent-soft)', fontSize: 11, cursor: 'pointer' }}>
                   <ArrowRight size={14} /> Próxima turma
-                </button>
-                <button onClick={() => { setMostrarLigBoa(!mostrarLigBoa); setMostrarAgendado(false); setMostrarProxTurma(false); setMostrarPrazo(false); setMostrarPag(false); setMostrarGanho(false); setMostrarPerda(false) }}
-                  style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--amber)', background: 'var(--amber-bg)', color: 'var(--amber)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
-                  <Flame size={14} /> Ligação Boa
                 </button>
                 <button onClick={() => { setMostrarGanho(!mostrarGanho); setMostrarPrazo(false); setMostrarPerda(false); setMostrarPag(false); setMostrarAgendado(false); setMostrarProxTurma(false) }}
                   style={{ padding: '6px 12px', borderRadius: 'var(--r-sm)', border: '1px solid var(--green-strong)', background: 'var(--green-bg)', color: 'var(--green-strong)', fontSize: 11, cursor: 'pointer', fontWeight: 600 }}>
@@ -888,35 +866,6 @@ export function ModalLead({ aberto, lead, novoLead, turmas, vendedores, motivosP
                   <button onClick={confirmarAguardandoPag} disabled={!pagData}
                     style={{ ...btnPrimary, background: 'var(--blue)', marginTop: 8, width: '100%', opacity: pagData ? 1 : 0.5 }}>
                     Mover e criar tarefa de acompanhamento
-                  </button>
-                </div>
-              )}
-
-              {mostrarAgendado && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--blue-bg)', borderRadius: 'var(--r)', border: '1px solid var(--blue)' }}>
-                  <label style={labelStyle}>Chamar o lead em: *</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="date" style={{ ...inp, flex: 1 }} value={agendadoData} onChange={e => setAgendadoData(e.target.value)} />
-                    <input type="time" style={{ ...inp, width: 110 }} value={agendadoHora} onChange={e => setAgendadoHora(e.target.value)} />
-                  </div>
-                  <button onClick={confirmarAgendado} disabled={!agendadoData}
-                    style={{ ...btnPrimary, background: 'var(--blue)', marginTop: 8, width: '100%', opacity: agendadoData ? 1 : 0.5 }}>
-                    Agendar contato
-                  </button>
-                </div>
-              )}
-
-              {mostrarLigBoa && (
-                <div style={{ marginTop: 12, padding: 12, background: 'var(--amber-bg)', borderRadius: 'var(--r)', border: '1px solid var(--amber)' }}>
-                  <label style={labelStyle}>Cliente quente (vai fechar) — atenção especial. Chamar em: *</label>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="date" style={{ ...inp, flex: 1 }} value={ligBoaData} onChange={e => setLigBoaData(e.target.value)} />
-                    <input type="time" style={{ ...inp, width: 110 }} value={ligBoaHora} onChange={e => setLigBoaHora(e.target.value)} />
-                  </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>A IA não toca neste lead — fica em Ligação Boa até você tirar na mão.</div>
-                  <button onClick={confirmarLigBoa} disabled={!ligBoaData}
-                    style={{ ...btnPrimary, background: 'var(--amber)', marginTop: 8, width: '100%', opacity: ligBoaData ? 1 : 0.5 }}>
-                    Mover pra Ligação Boa
                   </button>
                 </div>
               )}
