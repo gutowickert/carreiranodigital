@@ -38,7 +38,7 @@ export async function GET(req: Request) {
   const org = await orgDaRequest(req.headers.get('authorization'))
   const hoje = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
   const { data: turmas } = await sb.from('turmas')
-    .select('id, codigo, produto_id, produtos(nome), cidades(nome)')
+    .select('id, codigo, produto_id, data_fim, produtos(nome), cidades(nome)')
     .eq('org_id', org).gte('data_inicio', hoje).not('status', 'in', '(cancelada,realizada)')
     .order('data_inicio')
   const ids = (turmas || []).map((t: any) => t.id)
@@ -58,8 +58,14 @@ export async function GET(req: Request) {
     const ds = (datasPorTurma[t.id] || []).slice().sort((a, b) => (a.data < b.data ? -1 : 1))
     if (!ds.length) continue
     const cidade = t.cidades?.nome || '—'
-    const ehFC = /forma/i.test(t.produtos?.nome || '')
+    const produto = t.produtos?.nome || ''
+    const ehFC = /forma/i.test(produto)
+    // a Imersão vem antes de qualquer teste de "Deu Venda" (o nome dela contém "Deu Venda")
+    const ehImersaoDV = /imers/i.test(produto) && /deu venda/i.test(produto)
+    const ehANL = /an[uú]ncios/i.test(produto)
     const D = (d: any) => ({ data: d.data, hi: d.horario_inicio, hf: d.horario_fim })
+    const h = parseInt((ds[0].horario_inicio || '').slice(0, 2))
+    const turno = isNaN(h) ? '' : h < 12 ? 'manhã' : h < 18 ? 'tarde' : 'noite'
 
     let msg = ''
     if (ehFC) {
@@ -79,12 +85,22 @@ export async function GET(req: Request) {
         if (desc) msg += `\n${desc}`
         msg += '\n'
       }
-    } else {
+    } else if (ehImersaoDV) {
+      // o encontro de resultado é o data_fim da turma (não está em turma_datas)
+      msg = `A Imersão Deu Venda em ${cidade} será nestes dias! 🎯\n\n${bloco(ds.map(D))}`
+      msg += `\n\nSão 3 encontros presenciais de 3 horas`
+      if (t.data_fim && t.data_fim > ds[ds.length - 1].data) {
+        const sem = new Date(`${t.data_fim}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' }).replace('-feira', '')
+        msg += `, e depois tem o encontro de resultado na ${sem}, ${t.data_fim.slice(8, 10)}/${t.data_fim.slice(5, 7)}.`
+      } else msg += '.'
+    } else if (ehANL) {
       msg = `O curso de Anúncios para Negócios Locais em ${cidade} será nestes dias! 🎯\n\n${bloco(ds.map(D))}`
       msg += `\n\nSão 3 dias práticos: você aprende a criar e rodar anúncios no Meta (Facebook/Instagram) e sai com campanha no ar, com leads chegando no WhatsApp.`
+    } else {
+      msg = `O curso ${produto ? `de ${produto} ` : ''}em ${cidade} será nestes dias! 🎯\n\n${bloco(ds.map(D))}`
     }
 
-    out.push({ codigo: t.codigo, cidade, produto: t.produtos?.nome || '', tipo: ehFC ? 'FC' : 'ANL', inicio: ds[0].data, mensagem: msg.trim() })
+    out.push({ codigo: t.codigo, cidade, produto, turno, inicio: ds[0].data, mensagem: msg.trim() })
   }
   return NextResponse.json({ ok: true, turmas: out })
 }
