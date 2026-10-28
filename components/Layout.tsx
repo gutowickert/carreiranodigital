@@ -94,7 +94,6 @@ const grupos: Grupo[] = [
       { nome: 'Plantão da IA', href: '/dashboard/ia-plantao' },
       { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
       { nome: 'Gerar orçamento', href: '/dashboard/orcamentos' },
-      { nome: 'Lotes Abertos', href: '/dashboard/lotes' },
       { nome: 'Produtos', href: '/dashboard/produtos' },
       { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
       { nome: 'Fechamento de Turma', href: '/dashboard/fechamento' },
