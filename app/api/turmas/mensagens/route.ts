@@ -86,12 +86,15 @@ export async function GET(req: Request) {
         msg += '\n'
       }
     } else if (ehImersaoDV) {
-      // o encontro de resultado é o data_fim da turma (não está em turma_datas)
-      msg = `A Imersão Deu Venda em ${cidade} será nestes dias! 🎯\n\n${bloco(ds.map(D))}`
+      // o encontro de resultado é o data_fim da turma; pode estar em turma_datas (com horário) ou não
+      const encontros = ds.filter(d => d.data !== t.data_fim)
+      const res = ds.find(d => d.data === t.data_fim)
+      msg = `A Imersão Deu Venda em ${cidade} será nestes dias! 🎯\n\n${bloco((encontros.length ? encontros : ds).map(D))}`
       msg += `\n\nSão 3 encontros presenciais de 3 horas`
-      if (t.data_fim && t.data_fim > ds[ds.length - 1].data) {
+      if (t.data_fim && t.data_fim > encontros[encontros.length - 1]?.data) {
         const sem = new Date(`${t.data_fim}T12:00:00`).toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' }).replace('-feira', '')
-        msg += `, e depois tem o encontro de resultado na ${sem}, ${t.data_fim.slice(8, 10)}/${t.data_fim.slice(5, 7)}.`
+        const hor = res && hhmm(res.horario_inicio) && hhmm(res.horario_fim) ? `, das ${hhmm(res.horario_inicio)} às ${hhmm(res.horario_fim)}` : ''
+        msg += `, e depois tem o encontro de resultado na ${sem}, ${t.data_fim.slice(8, 10)}/${t.data_fim.slice(5, 7)}${hor}.`
       } else msg += '.'
     } else if (ehANL) {
       msg = `O curso de Anúncios para Negócios Locais em ${cidade} será nestes dias! 🎯\n\n${bloco(ds.map(D))}`

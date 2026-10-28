@@ -242,8 +242,13 @@ export async function sugerirAtendimento(input: { leadId?: string; conversaId?: 
   const diasPara = (d: string) => Math.round((new Date(d + 'T12:00:00-03:00').getTime() - new Date(hoje + 'T12:00:00-03:00').getTime()) / 864e5)
   const ofertas = (tv || []).map((t: any) => {
     const ds = datasPorTurma[t.id] || []
-    let dias = ds.map((d: any) => `${brData(d.data)} (${diaSem(d.data)})`).join(', ')
-    let hor = ds[0]?.horario_inicio ? `${ds[0].horario_inicio.slice(0, 5)} às ${(ds[0].horario_fim || '').slice(0, 5)}` : ''
+    // 28/10/2026: as turmas da Imersão passaram a ter turma_datas, com o encontro de resultado (= data_fim) junto;
+    // ele vai marcado, senão a IA lê 4 encontros seguidos
+    const ehResultado = (d: any) => /^imersaodv/i.test(t.codigo || '') && d.data === t.data_fim
+    const enc = ds.filter((d: any) => !ehResultado(d)), res = ds.find(ehResultado)
+    let dias = enc.map((d: any) => `${brData(d.data)} (${diaSem(d.data)})`).join(', ') +
+      (res ? ` + ENCONTRO DE RESULTADO ${brData(res.data)} (${diaSem(res.data)})${res.horario_inicio ? `, ${res.horario_inicio.slice(0, 5)} às ${(res.horario_fim || '').slice(0, 5)}` : ''}` : '')
+    let hor = enc[0]?.horario_inicio ? `${enc[0].horario_inicio.slice(0, 5)} às ${(enc[0].horario_fim || '').slice(0, 5)}` : ''
     // ⚠️ AS TURMAS DA IMERSÃO NÃO TÊM turma_datas (13/10/2026): os dias e o turno estão só na observação
     // ("· TARDE (14:00–17:15). Encontros 20, 21 e 22/10; resultado 03/11"). Sem isto a lista ia sem dia e
     // sem horário, e a IA inventou "o horário é combinado conforme a disponibilidade".
