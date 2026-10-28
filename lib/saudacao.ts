@@ -5,7 +5,7 @@
 const cap = (s: string) => s ? s.charAt(0).toUpperCase() + s.slice(1) : s
 
 // marcadores comuns de nome de NEGÓCIO (não é pessoa)
-const EMPRESA = /\b(ltda|eireli|mei|s\.?a\.?|cia|neg[óo]cios?|digitais?|ag[êe]ncia|e-?commerce|solu[çc][õo]es|modas?|moda|motors?|motore|ve[íi]culos?|pe[çc]as?|comercial|cl[íi]nica|st[uú]dio|studio|loja|shop|store|market|distribui|represent|servi[çc]os?|autope[çc]as?|transport|imports?|grupo|assessoria|consultoria|delivery|festa|coquetel|terapeuta|integrativa|est[eé]tica|barbearia|construtora|imobili|contabil|advocacia|restaurante|lanchonete|padaria|farm[áa]cia|joalheria|[óo]tica|papelaria)\b/i
+const EMPRESA = /\b(ltda|eireli|mei|s\.?a\.?|cia|neg[óo]cios?|digitais?|ag[êe]ncia|e-?commerce|solu[çc][õo]es|modas?|moda|motors?|motore|ve[íi]culos?|pe[çc]as?|comercial|cl[íi]nica|st[uú]dio|studio|loja|shop|store|market|distribui|represent|servi[çc]os?|autope[çc]as?|transport|transportes?|log[íi]stica|imports?|grupo|assessoria|consultoria|delivery|festa|coquetel|terapeuta|integrativa|est[eé]tica|barbearia|construtora|imobili|contabil|advocacia|restaurante|lanchonete|padaria|farm[áa]cia|joalheria|[óo]tica|papelaria)\b/i
 
 // cargo/função/título (não é nome de pessoa) — "Secretária do Pablo", "Financeiro", "Dr. Fulano"
 const CARGO = /\b(secret[áa]ri[ao]|recep[çc][ãa]o|recepcionista|financeiro|atendimento|gerente|ger[êe]ncia|diretor[a]?|propriet[áa]ri[ao]|respons[áa]vel|vendedor[a]?|s[óo]ci[ao]|dono|dona|equipe|marketing|suporte|rh|dp|adm|administra|assistente)\b/i
@@ -32,7 +32,7 @@ const limpaNome = (s: string | null): string => (s || '')
 
 // RÓTULO de pessoa que vem ANTES do nome (profissão/título): "Arquiteta Cintia", "Dr João", "Corretor Léo".
 // Nesses, o nome real é o PRÓXIMO token — pula o rótulo em vez de cumprimentar pela profissão.
-const ROTULO_PESSOA = /^(arquitet[oa]|advogad[oa]|corretor[a]?|m[ée]dic[oa]|dentista|nutri(cionista)?|personal|coach|psic[óo]log[oa]|fisio(terapeuta)?|contador[a]?|engenheir[oa]|enfermeir[oa]|veterin[áa]ri[oa]|esteticista|cabeleireir[oa]|manicure|designer|consultor[a]?|terapeuta|professor[a]?|pastor[a]?|delegad[oa]|dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i
+const ROTULO_PESSOA = /^(arquitet[oa]|advogad[oa]|corretor[a]?|m[ée]dic[oa]|dentista|nutri(cionista)?|personal|coach|psic[óo]log[oa]|fisio(terapeuta)?|massoterapeut[ao]|fonoaudi[óo]log[oa]|pod[óo]log[oa]|biom[ée]dic[oa]|maquiador[a]?|fot[óo]graf[oa]|contador[a]?|engenheir[oa]|enfermeir[oa]|veterin[áa]ri[oa]|esteticista|cabeleireir[oa]|manicure|designer|consultor[a]?|terapeuta|professor[a]?|pastor[a]?|delegad[oa]|dr|dra|sr|sra|srta|prof|profa|pr|pra|rev)\.?$/i
 const CONECTOR = /^(de|do|da|dos|das|e)$/i
 
 // 1º nome de PESSOA (capitalizado) ou null se o começo for empresa/cargo/genérico
@@ -44,6 +44,7 @@ const primeiroSePessoa = (s: string): string | null => {
   const p = toks[i] || ''
   if (p.length < 2 || /^\d/.test(p) || /^(lead|whatsapp|contato|cliente)$/i.test(p) || EMPRESA.test(p) || CARGO.test(p)) return null
   if (/^\p{Lu}+$/u.test(p) && p.length <= 2) return null // sigla/iniciais em maiúsculas (ex.: "SW", "AB") → não é primeiro nome
+  if (/^\p{Lu}{3,}$/u.test(p) && EMPRESA.test(s)) return null // sigla de empresa ("SET LOG Transporte…" saía "Oi Set"); "MARIA SILVA" segue
   return cap(p.toLowerCase())
 }
 
