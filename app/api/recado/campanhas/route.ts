@@ -16,8 +16,11 @@ export async function GET(req: NextRequest) {
   if (!process.env.RECADO_PAINEL_SENHA || req.headers.get('x-senha') !== process.env.RECADO_PAINEL_SENHA) return NextResponse.json({ erro: 'senha' }, { status: 401 })
   try {
     const INICIO = process.env.RECADO_PAINEL_INICIO || '2026-10-11T03:00:00.000Z'
-    const p = req.nextUrl.searchParams.get('p') || 'hoje', ate = hojeBR()
-    const dia0 = p === '7d' ? isoBR(new Date(Date.now() - 6 * 86400e3)) : p === 'zero' ? isoBR(new Date(INICIO)) : ate
+    // 27/10 (painel novo): também ?desde=AAAA-MM-DD&ate=AAAA-MM-DD (o seletor de período do painel: hoje, 7d, 30d, este mês, datas)
+    const q = req.nextUrl.searchParams, ehDia = (v: string | null): v is string => !!v && /^\d{4}-\d{2}-\d{2}$/.test(v)
+    const p = q.get('p') || 'hoje', hoje = hojeBR(), qa = q.get('ate'), qd = q.get('desde')
+    const ate = ehDia(qa) && qa < hoje ? qa : hoje
+    const dia0 = ehDia(qd) ? [qd, ate].sort()[0] : p === '7d' ? isoBR(new Date(Date.now() - 6 * 86400e3)) : p === '30d' ? isoBR(new Date(Date.now() - 29 * 86400e3)) : p === 'zero' ? isoBR(new Date(INICIO)) : ate
     const desdeTs = [`${dia0}T03:00:00.000Z`, INICIO].sort().pop() as string   // nunca antes do ponto zero
     const desdeDia = desdeTs > `${dia0}T03:00:00.000Z` ? isoBR(new Date(desdeTs)) : dia0
     const dias = Math.max(1, Math.round((Date.parse(ate) - Date.parse(desdeDia)) / 86400e3) + 1)
@@ -41,9 +44,10 @@ export async function GET(req: NextRequest) {
     const conj = new Map<string, any>(), ads = new Map<string, any>()
     for (const l of meta.linhas) {
       const prod = produtoDe(l)
-      const c = conj.get(l.adset_name) || { nome: l.adset_name, campanha: l.campaign_name, produto: prod, produtoNome: nomeProd(prod), gasto: 0, impressoes: 0, cliques: 0, lpv: 0 }
-      c.gasto += l.gasto; c.impressoes += l.impressoes; c.cliques += l.cliques; c.lpv += l.visitas; conj.set(l.adset_name, c)
-      const a = ads.get(l.ad_id) || { nome: l.ad_name, conjunto: l.adset_name, produto: prod, gasto: 0, impressoes: 0, cliques: 0 }
+      const ck = l.campaign_name + '|' + l.adset_name   // 27/10: o mesmo nome de conjunto pode existir em duas campanhas
+      const c = conj.get(ck) || { nome: l.adset_name, campanha: l.campaign_name, produto: prod, produtoNome: nomeProd(prod), gasto: 0, impressoes: 0, cliques: 0, lpv: 0 }
+      c.gasto += l.gasto; c.impressoes += l.impressoes; c.cliques += l.cliques; c.lpv += l.visitas; conj.set(ck, c)
+      const a = ads.get(l.ad_id) || { nome: l.ad_name, conjunto: l.adset_name, campanha: l.campaign_name, produto: prod, gasto: 0, impressoes: 0, cliques: 0 }
       a.gasto += l.gasto; a.impressoes += l.impressoes; a.cliques += l.cliques; ads.set(l.ad_id, a)
     }
     const visitasProd = (prod: string) => (funil as any[]).filter(f => f.produto === prod && f.evento === 'visita' && campanhas.has(f.campanha)).reduce((s, f) => s + (+f.visitantes || 0), 0)
@@ -58,6 +62,6 @@ export async function GET(req: NextRequest) {
     const anuncios = [...ads.values()].map(a => fecha(a, pagos.filter(x => x.origem?.utm_content === a.nome), peds.filter(x => x.origem?.utm_content === a.nome).length)).sort((a, b) => b.gasto - a.gasto)
     const t = conjuntos.reduce((s, c) => ({ gasto: s.gasto + c.gasto, impressoes: s.impressoes + c.impressoes, cliques: s.cliques + c.cliques, visitas: s.visitas + c.visitas, pedidos: s.pedidos + c.pedidos, vendas: s.vendas + c.vendas, receita: s.receita + c.receita }), { gasto: 0, impressoes: 0, cliques: 0, visitas: 0, pedidos: 0, vendas: 0, receita: 0 })
     const total = { ...t, gasto: +t.gasto.toFixed(2), receita: +t.receita.toFixed(2), ctr: t.impressoes ? +(t.cliques / t.impressoes * 100).toFixed(2) : 0, cpc: t.cliques ? +(t.gasto / t.cliques).toFixed(2) : null, cpa: t.vendas ? +(t.gasto / t.vendas).toFixed(2) : null, roas: t.gasto ? +(t.receita / t.gasto).toFixed(2) : null }
-    return NextResponse.json({ atualizado: new Date().toISOString(), periodo: p, desde: desdeTs, conjuntos, anuncios, total }, sem)
+    return NextResponse.json({ atualizado: new Date().toISOString(), periodo: p, desde: desdeTs, desdeDia, ate, conjuntos, anuncios, total, meta: { linhasConta: meta.brutas, linhasRecado: meta.linhas.length } }, sem)
   } catch (e: any) { return NextResponse.json({ erro: String(e.message || e).slice(0, 200) }, { status: 500 }) }
 }

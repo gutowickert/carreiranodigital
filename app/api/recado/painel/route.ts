@@ -115,7 +115,7 @@ export async function GET(req: NextRequest) {
     const ev: any[] = []
     try {
       for (let o = 0; o < 50000; o += 1000) {
-        const l = await db.busca('site_eventos', `quando=gte.${funilDesde}&select=quando,visitante,evento,produto,campanha:utm_campaign,anuncio:utm_content,campo:dados->>campo,pct:dados->>pct&order=quando.asc&offset=${o}&limit=1000`)
+        const l = await db.busca('site_eventos', `quando=gte.${funilDesde}&select=quando,visitante,evento,produto,fonte:utm_source,medio:utm_medium,campanha:utm_campaign,anuncio:utm_content,campo:dados->>campo,pct:dados->>pct&order=quando.asc&offset=${o}&limit=1000`)
         ev.push(...l); if (l.length < 1000) break
       }
     } catch (e) { console.error('recado/painel eventos', e) }

@@ -42,7 +42,8 @@ export async function lerMeta(desde: string, ate: string) {
   if (!conta) return { ok: false as const, erro: 'falta a conta de anúncios do Recado (RECADO_META_CONTA)', linhas: [] as AnuncioDia[] }
   const r = await getAnunciosDia(conta, desde, ate)
   if (!r.ok) return { ok: false as const, erro: r.error || 'falha ao ler a Meta', linhas: [] as AnuncioDia[] }
-  return { ok: true as const, linhas: r.linhas.filter(doRecado) }
+  // brutas: quantas linhas a conta devolveu antes de separar o que é do Recado (o painel usa pra explicar o "sem gasto")
+  return { ok: true as const, linhas: r.linhas.filter(doRecado), brutas: r.linhas.length }
 }
 
 // grava o gasto dos últimos N dias em recado_gastos (canal meta_api, refeito a cada leitura; lançamentos à mão não são tocados)
