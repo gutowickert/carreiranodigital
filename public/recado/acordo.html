@@ -81,7 +81,7 @@ button{background:linear-gradient(180deg,var(--verm2),var(--verm));box-shadow:0 
 </style>
 </head>
 <body>
-<header class="topo"><img class="bg" src="/recado/midia/acordo/noel-perto-mao.jpg" alt=""><span class="luz" aria-hidden="true"></span><div class="in"><img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado"><p class="tt">Conta pro Papai Noel <em>sobre o acordo</em></p><p class="ss">Uns 4 minutos. Ele usa tudo pra falar com a criança pelo nome.</p></div></header>
+<header class="topo"><img class="bg" src="/recado/midia/acordo/noel-perto-mao.jpg" alt=""><span class="luz" aria-hidden="true"></span><div class="in"><img class="logo" src="/recado/midia/logo.png" alt="Recado Encantado"><p class="tt">Conta pro Papai Noel <em>sobre o acordo</em></p><p class="ss">Uns 4 minutos. Ele usa tudo pra falar com a criança pelo nome.</p><p class="ss" style="margin-top:6px;font-weight:700">A partir de R$ 97 · paga só no fim · 7 dias pra desistir</p></div></header>
 <div class="ct">
 <div class="fechado" id="fechado"><h1>As vendas do Acordo de Natal terminaram</h1><p>Não dá mais tempo de fazer o acordo com calma até o Natal. Mas o Papai Noel ainda grava um vídeo especial, com o nome e a foto da criança, pronto em até 2 horas.</p><a href="/recado/pedido.html?p=noel">Quero o vídeo de Natal</a></div>
 <form id="f">
@@ -137,31 +137,37 @@ button{background:linear-gradient(180deg,var(--verm2),var(--verm));box-shadow:0 
     <p class="alerta" id="pediatra">Se a situação for muito difícil ou te preocupa (sono muito agitado, ronco, criança que come pouquíssimo, perda de peso), converse com o pediatra. O acordo é uma ajuda carinhosa, não um tratamento.</p>
   </div>
 
-  <div class="passo"><h2><i>2</i> A criança</h2>
+  <div class="passo"><h2><i>2</i> Teu contato</h2>
+    <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required autocomplete="name"></div>
+    <div><label for="wa">Celular com WhatsApp</label><input id="wa" name="wa" type="tel" required placeholder="(51) 99999-9999" autocomplete="tel"></div></div>
+    <p class="dica">É por aqui que a gente avisa quando o vídeo do Papai Noel ficar pronto. Se a página fechar no meio, a gente te chama pra terminar.</p>
+  </div>
+
+  <div class="passo"><h2><i>3</i> A criança</h2>
     <div class="dupla"><div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required placeholder="Ex.: Laura"></div>
     <div><label for="apelido">Como chamam em casa <small>(opcional)</small></label><input id="apelido" name="apelido" type="text" placeholder="Ex.: Laurinha"></div></div>
     <div class="dupla"><div><label for="idade">Idade</label><input id="idade" name="idade" type="number" min="1" max="12" required></div>
     <div><label for="genero">É</label><select id="genero" name="genero"><option value="menina">menina</option><option value="menino">menino</option></select></div></div>
     <p class="alerta" id="idade-aviso"></p>
     <label>Uma foto de rosto, sorrindo e sozinha na foto</label>
-    <div class="foto"><div class="prev" id="prev">sem foto</div><input id="arquivo" type="file" accept="image/*" required></div>
+    <div class="foto"><div class="prev" id="prev">sem foto</div><input id="arquivo" name="foto" type="file" accept="image/*" required></div>
     <label for="adora">Do que <span class="ela">ela</span> mais gosta <small>(até 3, separadas por vírgula: pessoas, bicho, brinquedo, desenho)</small></label><input id="adora" name="adora" type="text" required placeholder="Ex.: dinossauros, o cachorro Pipoca, a vovó Lúcia">
     <label for="detalhe">Um detalhe que só a família sabe <small>(opcional, mas é o que mais encanta)</small></label><input id="detalhe" name="detalhe" type="text" placeholder="Ex.: dorme abraçada com o ursinho Bento">
     <label for="familia">Quem é a família? <small>(quem mora com a criança e como ela chama cada um)</small></label><input id="familia" name="familia" type="text" required placeholder="Ex.: mamãe e papai · ou: mãe e vó Lúcia">
   </div>
 
-  <div class="passo"><h2><i>3</i> A recompensa</h2>
+  <div class="passo"><h2><i>4</i> A recompensa</h2>
     <div class="pacs">
-      <label><span>Vamos ter uma recompensa<small>passeio, filme, bolo, um brinquedo...</small></span><input type="radio" name="rmodo" value="texto" checked></label>
-      <label><span>Vai ser surpresa<small>o Noel diz que a família está preparando uma surpresa</small></span><input type="radio" name="rmodo" value="surpresa"></label>
+      <label><span>Vamos ter uma recompensa<small>passeio, filme, bolo, um brinquedo...</small></span><input type="radio" name="rmodo" value="texto"></label>
+      <label><span>Vai ser surpresa<small>o Noel diz que a família está preparando uma surpresa</small></span><input type="radio" name="rmodo" value="surpresa" checked></label>
       <label><span>Não vamos ter<small>o Noel não fala de recompensa</small></span><input type="radio" name="rmodo" value="nenhuma"></label>
     </div>
-    <div id="rbox"><label for="recompensa">Qual vai ser a recompensa no fim do acordo?</label><input id="recompensa" type="text" placeholder="Ex.: um piquenique no parque"></div>
+    <div id="rbox"><label for="recompensa">Qual vai ser a recompensa no fim do acordo?</label><input id="recompensa" name="recompensa" type="text" placeholder="Ex.: um piquenique no parque"></div>
     <label class="ok" id="rv1"><input type="checkbox" id="contar_v1"> Pode contar a recompensa já na proposta. Se não marcar, o Papai Noel só conta no dia 24.</label>
     <p class="dica">A recompensa é de vocês, não do Papai Noel, e chega no dia 24 pelo esforço, mesmo que o desafio ainda não esteja 100%. Não precisa ser coisa comprada: passeio, bolo, dormir na barraca na sala, um dia de "sim". O Noel nunca promete o presente de Natal.</p>
   </div>
 
-  <div class="passo"><h2><i>4</i> O pacote</h2>
+  <div class="passo"><h2><i>5</i> O pacote</h2>
     <div class="pacs">
       <label><span>Acordo de Natal<small>4 vídeos: a proposta, o acordo firmado, 1 notícia no meio do caminho e a conquista no dia 24, com caderneta e diploma · vendas até 10/12</small></span><span>R$ 97 <input type="radio" name="pacote" value="acordo"></span></label>
       <label id="lab-completo"><span>Acordo Completo<small id="sm-completo">Uma notícia do Papai Noel todo domingo até o Natal · vendas até 2/12</small></span><span>R$ 147 <input type="radio" name="pacote" value="acordo_completo"></span></label>
@@ -172,9 +178,7 @@ button{background:linear-gradient(180deg,var(--verm2),var(--verm));box-shadow:0 
     <div class="total"><span>Total</span><span id="total"></span></div>
   </div>
 
-  <div class="passo"><h2><i>5</i> Pra onde mandamos</h2>
-    <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
-    <div><label for="wa">Celular com WhatsApp</label><input id="wa" name="wa" type="tel" required placeholder="(51) 99999-9999"></div></div>
+  <div class="passo"><h2><i>6</i> Pra onde mandamos</h2>
     <label for="email">E-mail</label><input id="email" name="email" type="email" required>
     <label class="ok"><input type="checkbox" required> Sou o responsável pela criança e autorizo usar a foto, o nome e o áudio do "eu aceito" só pra fazer os vídeos e materiais deste acordo. Tudo é apagado até 31/12/2026.</label>
     <label class="ok"><input type="checkbox" required> Li que o Papai Noel é uma experiência feita com inteligência artificial e acompanhada pela equipe.</label>
@@ -200,7 +204,7 @@ function mostra(){d=$('desafio').value;[].forEach.call(document.querySelectorAll
   $('tit').textContent=D[d].t;$('h-desc').textContent='com o Papai Noel · '+$('desafio').options[$('desafio').selectedIndex].text.toLowerCase();$('pediatra').style.display=D[d].ped?'block':'none';idade()}
 function idade(){var i=+$('idade').value,f=D[d].id,a=$('idade-aviso');if(i&&(i<f[0]||i>f[1])){a.textContent='Esse desafio é pensado pra crianças de '+f[0]+' a '+f[1]+' anos. Pode seguir, mas o Noel vai falar num jeito pensado pra essa idade.';a.style.display='block'}else a.style.display='none'}
 $('desafio').addEventListener('change',mostra);$('idade').addEventListener('input',idade);mostra()
-document.querySelector('input[name=pacote][value='+(q.get('pac')==='acordo'||!completoAberto?'acordo':'acordo_completo')+']').checked=true
+document.querySelector('input[name=pacote][value='+(q.get('pac')==='acordo_completo'&&completoAberto?'acordo_completo':'acordo')+']').checked=true
 function rmodo(){var m=document.querySelector('input[name=rmodo]:checked').value;$('rbox').style.display=m==='texto'?'block':'none';$('recompensa').required=m==='texto';$('rv1').style.display=m==='nenhuma'?'none':'flex'}
 function soma(){var pac=document.querySelector('input[name=pacote]:checked').value,t=PRECO[pac]+document.querySelectorAll('.irmao').length*IRMAO,r='R$ '+t.toFixed(2).replace('.',',').replace(',00','');$('total').textContent=r;$('h-preco').textContent=r}
 $('f').addEventListener('change',function(e){if(e.target.name==='pacote')soma();if(e.target.name==='rmodo')rmodo()});soma();rmodo()
@@ -229,6 +233,10 @@ $('f').addEventListener('submit',function(e){e.preventDefault();var fd=new FormD
 <p style="text-align:center;font-size:14px;opacity:.8;padding:18px 16px 28px;margin:0">Dúvidas antes de pedir? Escreve pra <a href="mailto:contato@recadoencantando.com.br" style="color:inherit;text-decoration:underline">contato@recadoencantando.com.br</a></p>
 <script>(function(){var g=document.getElementById('genero');function p(){document.querySelectorAll('.ela').forEach(function(s){s.textContent=g.value==='menino'?'ele':'ela'})}g.addEventListener('change',p);p()})()</script>
 <script src="/recado/rastro.js"></script>
+<script>(function(){var foi=false;function manda(){if(foi)return;var n=document.getElementById('resp').value.trim(),w=document.getElementById('wa').value.replace(/\D/g,'');if(!n||w.length<10)return;foi=true
+  var r=window.recadoRastro||{},v=r.visitante||'',u=(r.utm||{}),q=new URLSearchParams(location.search);if(!v)return
+  try{fetch('/api/recado/contato',{method:'POST',headers:{'Content-Type':'text/plain'},body:JSON.stringify({visitante:v,nome:n,wa:w,desafio:document.getElementById('desafio').value,anuncio:u.utm_content||q.get('utm_content')||''}),keepalive:true})}catch(e){}}
+  ['resp','wa'].forEach(function(id){document.getElementById(id).addEventListener('blur',manda)})})()</script>
 <script>(function(){var q=new URLSearchParams(location.search),c=q.get('cupom');try{c=c||localStorage.getItem('recado_cupom')}catch(e){}var i=document.getElementById('cupom'),b=document.getElementById('enviar');function bt(){b.textContent=i.value.trim()?'Confirmar pedido':'Ir pro pagamento'}if(c){i.value=c.toUpperCase();document.getElementById('cupom-box').open=true}i.addEventListener('input',bt);bt()})()</script>
 </body>
 </html>
