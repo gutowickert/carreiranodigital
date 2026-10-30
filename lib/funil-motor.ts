@@ -53,10 +53,11 @@ function diaAlvo(entrada: Date, n: number) {
 }
 
 // O passo de UM lead (sem banco — dá pra testar com casos inventados). null = nada a fazer agora.
-export function decidirPasso(x: { etapa: string; entrada: Date; anterior: string | null; enviados: Set<string>; agora: Date; conversou: boolean; semNome: boolean }): { faz: string; template?: string; move?: string } | null {
+export function decidirPasso(x: { etapa: string; entrada: Date; anterior: string | null; enviados: Set<string>; agora: Date; conversou: boolean; semNome: boolean; doPlantao?: boolean }): { faz: string; template?: string; move?: string } | null {
   const sufixo = x.semNome ? '_sem_nome' : ''
   const hoje = isoBR(x.agora)
-  if (x.etapa === 'atendimento_inicial' && ![...x.enviados].some(e => e.startsWith('cnd_funil_retomada'))) {
+  // quem entrou pela IA do plantão já tem a retomada dela (cutucarPlantao); "tentamos falar contigo" não seria verdade
+  if (x.etapa === 'atendimento_inicial' && !x.doPlantao && ![...x.enviados].some(e => e.startsWith('cnd_funil_retomada'))) {
     // ~20h depois da entrada; se a próxima rodada no horário já passar das 24h, vai nesta
     if (+x.agora < +x.entrada + 20 * H && +proximaRodada(x.agora) <= +x.entrada + 24 * H) return null
     const tipo = x.anterior === 'ligacao_boa' ? 'proposta' : x.conversou ? 'conversa' : 'ligacao'
@@ -116,7 +117,7 @@ export async function rodarFunilMotor(opts: { simular?: boolean; desde?: string;
   }
 
   // quem entrou em Atendimento inicial pela mão do time depois do `desde`, e cuja etapa atual foi o motor que pôs
-  const candidatos: { l: any; entrada: Date; anterior: string | null; enviados: Set<string>; tocadoHoje: boolean }[] = []
+  const candidatos: { l: any; entrada: Date; anterior: string | null; enviados: Set<string>; tocadoHoje: boolean; doPlantao: boolean }[] = []
   for (const l of vivos) {
     const as = ands.get(l.id) || []
     const mudancas = as.filter(a => a.tipo === 'mudanca_etapa')
@@ -128,7 +129,7 @@ export async function rodarFunilMotor(opts: { simular?: boolean; desde?: string;
     const meus = as.filter(a => a.tipo === 'ia_followup' && (a.observacao || '').startsWith(MARCA) && a.criado_em >= ent.criado_em)
     const enviados = new Set<string>()
     for (const a of meus) { const m = (a.observacao || '').match(/cnd_funil_[a-z0-9_]+/); if (m) enviados.add(m[0].replace(/_sem_nome(_v2)?$/, '')) }
-    candidatos.push({ l, entrada: new Date(ent.criado_em), anterior: ent.etapa_anterior || null, enviados, tocadoHoje: meus.some(a => isoBR(new Date(a.criado_em)) === hoje) })
+    candidatos.push({ l, entrada: new Date(ent.criado_em), anterior: ent.etapa_anterior || null, enviados, tocadoHoje: meus.some(a => isoBR(new Date(a.criado_em)) === hoje), doPlantao: (ent.observacao || '').startsWith('🤖 IA do plantão') })
   }
   const dossies = await dossiesLote(sb, ORG_CND, candidatos.map(c => c.l))
 
@@ -145,7 +146,7 @@ export async function rodarFunilMotor(opts: { simular?: boolean; desde?: string;
     // do anúncio de WhatsApp é automática e não conta.
     const primeiraNossa = (d?.mensagens || []).find(m => m.quem === 'nos')?.em
     const conversou = !!d?.temLigacaoAtendida || (!!primeiraNossa && (d?.mensagens || []).some(m => m.quem === 'cliente' && m.em > primeiraNossa))
-    const passo = decidirPasso({ etapa: l.etapa, entrada, anterior: c.anterior, enviados: c.enviados, agora, conversou, semNome: nomeSaudacao(l.nome) === 'tudo bem' })
+    const passo = decidirPasso({ etapa: l.etapa, entrada, anterior: c.anterior, enviados: c.enviados, agora, conversou, semNome: nomeSaudacao(l.nome) === 'tudo bem', doPlantao: c.doPlantao })
     if (passo) acoes.push({ lead: l.nome, leadId: l.id, etapa: l.etapa, ...passo })
   }
 
