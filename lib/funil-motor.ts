@@ -15,7 +15,7 @@ import { hojeBR, isoBR } from '@/lib/periodos'
 // Respondeu (mensagem ou ligação atendida > 1 min) depois da entrada → para; o lead é do time.
 // Só mexe no que ELE moveu: lead que o time pôs à mão em Urgência/Lead frio fica com o time.
 // Interruptor próprio: webhook_logs origem 'funil-motor' {modo: desligado|simulacao|ligado, desde}. Sem linha = desligado.
-// Só pega quem entrou em Atendimento inicial depois do `desde`. Roda de hora em hora (rota dos alertas), seg–sáb 9h–19h.
+// Só pega quem entrou em Atendimento inicial depois do `desde`. Roda de hora em hora (rota dos alertas), seg–sáb 9h–19h, menos feriado nacional.
 
 const MARCA = '⚙️ Funil automático'
 const MOTIVO_SEM_RESPOSTA = 'f972b270-691a-4e24-bd79-3b7583970a51'
@@ -33,16 +33,21 @@ export async function configFunilMotor(): Promise<{ modo: Modo; desde: string | 
   return { modo, desde: p.desde || null }
 }
 
-// seg–sáb, das 9h às 19h59 de Brasília (a rodada das 19h ainda vale)
-function noHorario(d: Date) {
+// Feriados nacionais: o motor para, como no domingo. Os móveis (Carnaval, Sexta-feira Santa) precisam de atualização todo ano.
+const FERIADOS_FIXOS = ['01-01', '04-21', '05-01', '09-07', '10-12', '11-02', '11-15', '11-20', '12-25']
+const FERIADOS_MOVEIS = ['2027-02-08', '2027-02-09', '2027-03-26']
+const ehFeriado = (iso: string) => FERIADOS_FIXOS.includes(iso.slice(5)) || FERIADOS_MOVEIS.includes(iso)
+
+// seg–sáb sem feriado, das 9h às 19h59 de Brasília (a rodada das 19h ainda vale)
+export function noHorario(d: Date) {
   const p = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', weekday: 'short', hour: 'numeric', hourCycle: 'h23' }).formatToParts(d)
   const dia = p.find(x => x.type === 'weekday')?.value, h = Number(p.find(x => x.type === 'hour')?.value)
-  return dia !== 'Sun' && h >= 9 && h <= 19
+  return dia !== 'Sun' && !ehFeriado(isoBR(d)) && h >= 9 && h <= 19
 }
 // próxima rodada (de hora em hora) que cai no horário
 function proximaRodada(d: Date) {
   const t = new Date(d.getTime() + H)
-  for (let i = 0; i < 80 && !noHorario(t); i++) t.setTime(t.getTime() + H)
+  for (let i = 0; i < 120 && !noHorario(t); i++) t.setTime(t.getTime() + H)
   return t
 }
 // dia N contado da entrada, no calendário de Brasília (ancorado ao meio-dia)
