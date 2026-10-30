@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Layout from '@/components/Layout'
 import { supabase } from '@/lib/supabase'
 import { fetchAuth } from '@/lib/api'
+import GravarEncontro from '@/components/GravarEncontro'
 import { Vazio } from '@/components/ui'
 import { LOCAIS, REGIOES } from '@/lib/entrega'
 import { ChevronLeft, ChevronRight, Plus, CalendarDays, Pencil, X } from 'lucide-react'
@@ -1185,6 +1186,7 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
         {it.tipo === 'encontro' && ['previsto', 'a_remarcar', 'combinado', 'confirmado'].includes(it.estado || '') ? (
           <Combinar it={it} onPronto={onCombinado} />
         ) : null}
+        {it.tipo === 'encontro' && it.estado !== 'concluido' && <div><GravarEncontro contextoTipo="encontro" contextoId={it.id} titulo={it.titulo} onPronto={onCombinado} /></div>}
         <p style={{ fontSize: 12, color: 'var(--text-faint)', lineHeight: 1.5 }}>
           Concluir se faz na ficha da entrega — lá dá pra registrar o que aconteceu e já marcar ou criar o próximo encontro.
         </p>
@@ -1223,6 +1225,7 @@ function ModalDetalhe({ it, eu, ativos, nomeDe, ocupado, podeNaoLido, onNaoLido,
         </div>
       )}
 
+      {it.fonte === 'agenda' && !it.concluido && <div><GravarEncontro contextoTipo="agenda" contextoId={it.id} titulo={it.titulo} onPronto={onCombinado} /></div>}
       {pedindo ? (
         <>
           <p style={{ fontSize: 12.5, color: 'var(--text-muted)', lineHeight: 1.55 }}>

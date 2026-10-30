@@ -1,5 +1,6 @@
 'use client'
 import { fetchAuth } from '@/lib/api'
+import GravarEncontro from '@/components/GravarEncontro'
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
@@ -539,6 +540,8 @@ if (!alunoId) { setMensagem('Selecione ou cadastre um aluno.'); setSalvando(fals
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          {/* GRAVAR A AULA (29/10/2026): a IA guarda o que foi prometido aos alunos e as dúvidas da turma */}
+          <GravarEncontro contextoTipo="turma" contextoId={turma.id} titulo={`Aula · ${turma.produtos?.nome || ''}`} compacto />
           {ehAdmin && (
             <>
               <button onClick={abrirEdicao} style={btnSecondary}>Editar</button>

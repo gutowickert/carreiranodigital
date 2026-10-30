@@ -16,7 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
-  Server, Video, CreditCard, Presentation, KeyRound, BarChart3,
+  Server, Video, CreditCard, Presentation, KeyRound, BarChart3, Mic,
   type LucideIcon,
 } from 'lucide-react'
 import { CANAL_CAMPAINHA } from '@/lib/campainha'
@@ -25,7 +25,7 @@ const CND_ID = '00000000-0000-0000-0000-0000000000cd'
 
 // Um ícone por tela (Lucide). Tela sem ícone aqui recebe um ponto — e é sinal pra cadastrar.
 const ICONES: Record<string, LucideIcon> = {
-  '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays,
+  '/dashboard': LayoutDashboard, '/dashboard/minha-semana': ListChecks, '/dashboard/agenda': CalendarDays, '/dashboard/gravacoes': Mic,
   '/dashboard/maquina': Sparkles, '/dashboard/agente-interno': Bot, '/dashboard/followup-ia': Sparkles, '/dashboard/mapa-funil': Map,
   '/dashboard/qualidade-ia': BadgeCheck, '/dashboard/ia-fds': BadgeCheck, '/dashboard/automacao-ia': Workflow, '/dashboard/ia-uso': Coins,
   '/dashboard/ia-plantao': Bot, '/dashboard/ligacoes': Phone, '/dashboard/chamadas': Video, '/dashboard/reunioes': Presentation, '/dashboard/whatsapp': MessageCircle, '/dashboard/crm': Columns3, '/dashboard/lotes': Layers,
@@ -72,6 +72,8 @@ const grupos: Grupo[] = [
       // o que a pessoa tem pra entregar (marketing, clientes, aulas, pedidos) — aberta a todos
       { nome: 'Minha semana', href: '/dashboard/minha-semana' },
       { nome: 'Agenda', href: '/dashboard/agenda' },
+      // GRAVAÇÕES (29/10/2026): gravar encontro/aula/reunião e a lista do que nós prometemos — todo o time
+      { nome: 'Gravações', href: '/dashboard/gravacoes' },
     ],
   },
   {
@@ -226,6 +228,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
   if (href === '/dashboard/minha-semana') return true
   // Reuniões por vídeo: todo o time vê (decisão do Nando, 08/10/2026)
   if (href === '/dashboard/reunioes') return true
+  if (href === '/dashboard/gravacoes') return true
   // Plantão da IA (27/10/2026): quem atende o WhatsApp vê os avisos do plantão e o que a IA respondeu
   if (href === '/dashboard/ia-plantao') return p.papel === 'admin' || p.papel === 'gestor' || p.wa_caixa === true
   // A Máquina lê o sistema inteiro: só admin e comercial (decisão do dono, 25/09/2026). A rota

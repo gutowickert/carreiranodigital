@@ -5,6 +5,7 @@ import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import { fetchAuth } from '@/lib/api'
 import BotaoChamada from '@/components/BotaoChamada'
+import GravarEncontro from '@/components/GravarEncontro'
 import { MetaBloco, Placar, Registros, Nota } from './Resultados'
 import { BuscarLead, type LeadAchado } from '@/components/BuscarLead'
 import { LOCAIS } from '@/lib/entrega'
@@ -412,6 +413,8 @@ export default function FichaEntrega() {
                         criarNovo: false, novo: { titulo: sugestaoTitulo, data: '', hora: '', local: m.local || '' },
                       })
                     }} style={{ ...btn, background: 'var(--surface-2)', color: 'var(--text-2)' }}>Concluir</button>
+                    {/* GRAVAR (29/10/2026): grava o encontro presencial e a IA conclui com o registro, marca o próximo e anota os compromissos */}
+                    {m.natureza === 'encontro' && <GravarEncontro contextoTipo="encontro" contextoId={m.id} titulo={m.titulo} compacto onPronto={carregar} />}
                   </div>
                 )}
               </div>
