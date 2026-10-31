@@ -7,7 +7,9 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 //
 //   modo: 'desligado' (padrão) | 'sombra' (escreve o que faria e não manda) | 'ligado'
 //   de / ate: ISO opcionais — fora da janela conta como desligado, pra ele se desligar sozinho
-export type ConfigPlantao = { modo: 'desligado' | 'sombra' | 'ligado'; de?: string | null; ate?: string | null }
+//   volta: ISO opcional — quando o time volta a ligar (é o que a IA promete). Sem ele, vale o primeiro dia
+//   útil depois do `ate`; sem os dois, a IA não promete data (31/10: prometia "amanhã" com o time viajando).
+export type ConfigPlantao = { modo: 'desligado' | 'sombra' | 'ligado'; de?: string | null; ate?: string | null; volta?: string | null }
 const PADRAO: ConfigPlantao = { modo: 'desligado' }
 
 export async function configPlantao(): Promise<ConfigPlantao> {

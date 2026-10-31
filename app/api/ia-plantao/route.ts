@@ -99,7 +99,7 @@ export async function GET(req: NextRequest) {
 
   const { data: p } = await sb.from('usuarios_perfil').select('papel').eq('id', eu.id).maybeSingle()
   return NextResponse.json({
-    ok: true, config, modoAgora: await modoPlantao(), volta: voltaDoTime(config).toISOString(), modelo: MODELO_PLANTAO,
+    ok: true, config, modoAgora: await modoPlantao(), volta: voltaDoTime(config)?.toISOString() ?? null, modelo: MODELO_PLANTAO,
     souAdmin: p?.papel === 'admin',
     avisos: await avisosAbertos(), pausados,
     registros: (logs || []).map(l => ({ id: l.id, evento: l.evento, status: l.status, em: l.recebido_em, ...(l.payload as any) })),

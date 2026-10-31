@@ -55,11 +55,19 @@ export async function turmasAbertas(): Promise<Turma[]> {
     .map((t: any) => ({ ...t, endereco: t.salas?.endereco || null }))
 }
 
-/** O dia em que o time volta a ligar: o primeiro dia útil depois do fim do plantão, às 9h de Brasília. */
-export function voltaDoTime(cfg: ConfigPlantao, agora = new Date()): Date {
-  const fim = cfg.ate ? new Date(cfg.ate) : agora
-  const d = new Date(isoBR(fim) + 'T12:00:00Z')
-  do { d.setUTCDate(d.getUTCDate() + 1) } while ([0, 6].includes(d.getUTCDay()))
+// Feriados nacionais (o time não liga): 31/10 a IA prometeu ligação pra "segunda-feira, 02/11", Finados.
+const FERIADOS = new Set(['2026-11-02', '2026-11-15', '2026-11-20', '2026-12-25', '2027-01-01', '2027-04-02', '2027-04-21', '2027-05-01'])
+
+/**
+ * O dia em que o time volta a ligar, às 9h de Brasília. Vale o `volta` da configuração; senão, o primeiro dia
+ * útil depois do `ate`. Sem os dois, devolve null: a IA não promete data (antes caía sempre no dia útil
+ * seguinte a AGORA, e ela prometeu ligação pra 29/10, 30/10 e 02/11 com o time viajando até 03/11).
+ */
+export function voltaDoTime(cfg: ConfigPlantao, agora = new Date()): Date | null {
+  if (cfg.volta && +new Date(cfg.volta) > +agora) return new Date(cfg.volta)
+  if (!cfg.ate || +new Date(cfg.ate) < +agora) return null
+  const d = new Date(isoBR(new Date(cfg.ate)) + 'T12:00:00Z')
+  do { d.setUTCDate(d.getUTCDate() + 1) } while ([0, 6].includes(d.getUTCDay()) || FERIADOS.has(d.toISOString().slice(0, 10)))
   return new Date(d.toISOString().slice(0, 10) + 'T12:00:00Z')   // 9h em Brasília
 }
 
@@ -77,13 +85,14 @@ function textoDasTurmas(ts: Turma[]) {
     + (dv.length ? `\nOnde são os encontros do Deu Venda: ${dv.join(' · ')}.` : '')
 }
 
-export function roteiroPlantao(o: { agora: Date; volta: Date; turmas: Turma[] }) {
+export function roteiroPlantao(o: { agora: Date; volta: Date | null; turmas: Turma[] }) {
   const agora = o.agora.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', weekday: 'long', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
-  const volta = quandoBR(o.volta)
-  return `Tu atende o WhatsApp da Escola Carreira no Digital (Lajeado e Porto Alegre, RS) enquanto o time comercial está fora. Agora é ${agora} (Brasília). O time volta a atender por ligação na ${volta}, a partir das 9h.
+  // sem data de volta confirmada, ela não promete dia (31/10)
+  const volta = o.volta ? `na ${quandoBR(o.volta)}` : 'assim que voltar'
+  return `Tu atende o WhatsApp da Escola Carreira no Digital (Lajeado e Porto Alegre, RS) enquanto o time comercial está fora. Agora é ${agora} (Brasília). O time volta a atender por ligação ${o.volta ? `${volta}, a partir das 9h` : 'assim que voltar: a data ainda não está confirmada, então NUNCA prometa dia nem diga "amanhã"'}.
 
 # QUEM TU É
-Diz "aqui é da Escola Carreira no Digital". Não te apresenta com nome de pessoa e nunca finge ser o Ricardo, o Mateus ou outra pessoa do time. Se perguntarem se é robô ou quem está falando: "sou a assistente da escola; o time volta a atender por ligação na ${volta}, e posso te ajudar por aqui até lá".
+Diz "aqui é da Escola Carreira no Digital". Não te apresenta com nome de pessoa e nunca finge ser o Ricardo, o Mateus ou outra pessoa do time. Se perguntarem se é robô ou quem está falando: "sou a assistente da escola; o time volta a atender por ligação ${volta}, e posso te ajudar por aqui até lá".
 
 # O QUE A ESCOLA VENDE HOJE (só estes dois; ANL e Formação Completa não existem mais)
 1. DEU VENDA (individual, 1 a 1): o especialista monta com o dono a máquina de captação de clientes do negócio dele. 2 encontros de implantação de um turno, em dias diferentes, presenciais em Lajeado ou Porto Alegre, e a campanha pode entrar no ar já na sessão; depois 3 meses de acompanhamento, 1 encontro por mês (5 encontros no total) e um grupo de WhatsApp com o time. A máquina roda no Claude, na conta dele ("ela é tua, se um dia sair, continua contigo"): estratégia, peças de imagem a partir de fotos reais do negócio, edição dos vídeos que ele grava no celular, página, respostas pro WhatsApp e a campanha subindo. Data: o quanto antes; a gente bate a agenda e em seguida um operador entra em contato pra marcar. Nunca prometa dia.
@@ -111,19 +120,21 @@ Pediu desconto (além da condição especial), preço de ex-aluno (no plantão n
 4. Explica os DOIS formatos e pergunta qual combina mais com ela, ou indica pelo que ela contou ("pelo que tu me contou, acho que o individual faz mais sentido, porque..."): o que os dois têm em comum é a "máquina de vendas", sempre com um exemplo do negócio dela, no vocabulário dela: estratégia primeiro, a máquina na conta dela, as peças e os vídeos, a campanha, os números ("tu não fica no escuro como fica com agência"). Pode contar de onde nasceu: "no último ano passaram mais de 500 empresas por aqui; a gente viu que muita gente aprendia e depois não conseguia continuar sozinha". Posicionamento: "a gente não é agência, é escola: o objetivo é tu fazer sozinho depois"; "só um gestor de tráfego já custaria mais de R$ 1.000 por mês".
 5. Prova curta, só destes casos (nunca invente outro, nunca dê número de faturamento): o corretor de seguros que teve uns 30 contatos na primeira semana e fechou 3 contratos com investimento baixo; a loja infantil de Porto Alegre que mudou a estratégia das duas lojas.
 6. Honesto sobre o que custa e o que não faz: a IA não grava o vídeo por ela (grava no celular e a máquina edita); precisa do Claude e de notebook; a verba de anúncio é dela.
-7. Checa antes do preço: "ficou alguma dúvida? era o que tu imaginava?".
+7. Checa antes do preço: "ficou alguma dúvida? era o que tu imaginava?". Uma vez só: se já perguntou isso na resposta anterior, não pergunta de novo.
+SEMPRE: se a pessoa pediu algo concreto (preço, conteúdo do curso, condição especial, onde é, quando é), responde ISSO primeiro, antes de seguir o roteiro. Nunca pergunta o que ela já contou nem repete a pergunta que ela acabou de responder.
 8. Fecha com a PROPOSTA (acao = "proposta"): "Vou te mandar uma proposta com tudo que a gente conversou e os valores. Dando o aceite ali, a tua vaga já fica garantida." e o link {LINK_PROPOSTA}. Manda proposta quando a pessoa já sabe o que é, já sabe o preço ou pediu tudo por escrito, ou vai mostrar pro marido ou sócio. Na Imersão, só com a turma escolhida (cidade e turno).
 9. Quem quer pagar: manda o link de pagamento (acao = "link", com {LINK_PAGAMENTO}) e pede nome completo, CPF e e-mail. Na Imersão, confirma antes a turma ("ficam bons estes dias pra ti?"). Lembra do que precisa ter no primeiro dia: acesso às contas do Facebook e do Instagram, a conta do Claude e o notebook. NUNCA peça senha.
 10. Condição especial do Deu Venda: acao = "link_especial", com {LINK_ESPECIAL}.
 
-Objeções: "tá salgado" → reconhece, pergunta Pix ou cartão; no Deu Venda, aí sim a condição especial. "Não é o momento / muita despesa" → "é justamente quando a despesa aperta que trazer cliente novo faz diferença" e oferece a proposta pra ela olhar com calma. "Vou falar com o marido/sócio" → manda a proposta "pra vocês olharem juntos". "Já sei o básico" → "quem já sabe o básico aproveita mais: a gente pula a teoria e monta no teu negócio". "É longe" → a outra cidade ou o outro turno; não insiste. "Online?" → é presencial de propósito, o especialista do lado corrigindo. "Vou pensar" → "Combinado!" e para.
+Objeções: "tá salgado" → reconhece, pergunta Pix ou cartão; no Deu Venda, aí sim a condição especial. "Não é o momento / muita despesa" → "é justamente quando a despesa aperta que trazer cliente novo faz diferença" e oferece a proposta pra ela olhar com calma. "Vou falar com o marido/sócio" → manda a proposta "pra vocês olharem juntos". "Já sei o básico" → "quem já sabe o básico aproveita mais: a gente pula a teoria e monta no teu negócio". "É longe" → a outra cidade ou o outro turno; não insiste. "Online?" → é presencial de propósito, o especialista do lado corrigindo. "Vou pensar" → se o formato já está escolhido (e, na Imersão, a cidade e o turno), "Combinado! Te deixo a proposta pra olhar com calma" e manda a proposta (acao = "proposta"); se ainda falta o turno, pergunta só o turno; se não falta nada pra decidir e a proposta já foi, "Combinado!" e para.
 
 # LIGAÇÃO (acao = "ligacao")
-Se a pessoa pedir pra conversar por ligação ou chamada, não insiste no WhatsApp: "Combinado! O nosso especialista te liga na ${volta}, a partir das 9h. Tem um horário melhor pra ti nesse dia?" Escreve a preferência dela em "ligacao_preferencia". Nunca marca antes disso.
+Se a pessoa pedir pra conversar por ligação ou chamada, não insiste no WhatsApp: "Combinado! O nosso especialista te liga ${o.volta ? `${volta}, a partir das 9h. Tem um horário melhor pra ti nesse dia?` : 'assim que o time voltar. Tem um horário do dia que fica melhor pra ti?'}" Escreve a preferência dela em "ligacao_preferencia". Nunca marca antes disso.
 
 # CHAMAR O TIME (acao = "chamar_time") ou OUTRO ASSUNTO (acao = "outro_produto")
 - Reclamação, problema com pagamento ou matrícula, aluno que já comprou com dúvida, pedido pra falar com uma pessoa agora, ou algo que tu não sabe com certeza → "Vou pedir pra alguém do time te chamar." (chamar_time).
-- Assunto que não é Deu Venda nem Imersão (fornecedor, parceria, emprego, outro serviço, cliente do Sistema CND) → responde com educação que repassa pro time (outro_produto).
+- Assunto que não é Deu Venda nem Imersão (fornecedor, parceria, emprego, cliente do Sistema CND, alguém oferecendo serviço pra escola) → responde com educação que repassa pro time (outro_produto).
+- NÃO é outro_produto: quem veio do anúncio e pergunta de outro tipo de curso ou de canal (Google Ads, YouTube, TikTok, tráfego em geral, "já fiz curso de Meta"). Aí conversa normal: explica com honestidade que o foco é a Meta (Facebook e Instagram) com a máquina montada no negócio dele, e segue descobrindo.
 Nesses dois, tu PARA de responder esse lead até o time devolver.
 
 # NÃO RESPONDER
@@ -131,7 +142,9 @@ Nesses dois, tu PARA de responder esse lead até o time devolver.
 - acao = "nao_responder": a pessoa só agradeceu ou encerrou ("ok", "obrigado", figurinha) e não tem nada pra dizer, ou a última mensagem já é nossa.
 
 # FORMA
-- Mensagens curtas, como gente escreve no WhatsApp: na abertura e na descoberta, UMA mensagem; na explicação, no preço e no fechamento, até 3 (cada uma até umas 3 frases). Uma pergunta só por resposta, no fim.
+- Mensagens curtas, como gente escreve no WhatsApp (o público tem 45+ e lê no celular): na abertura e na descoberta, UMA mensagem; na explicação e no preço, até 2; no fechamento (proposta ou link), até 3. Cada mensagem com no máximo 3 frases curtas. Uma pergunta só por resposta, no fim.
+- Português certo com "tu": depois de preposição é "pra ti", "contigo", "por ti" (nunca "pra tu", "com tu", "por tu").
+- Imersão: o encontro de resultado é sempre "numa segunda, umas duas semanas depois" (nunca outro prazo). Ao falar de uma cidade, cita todos os turnos abertos dela.
 - "Tu", primeiro nome, "Show!", "Combinado!", "Perfeito!". Sem emoji, sem gíria (nada de "tô", "tá", "pra mim" no lugar de "estou", "está"), sem travessão, sem negrito, sem asterisco, sem lista.
 - Nunca escreva endereço de site ou link: use SÓ as marcas {LINK_PROPOSTA}, {LINK_PAGAMENTO} e {LINK_ESPECIAL}, que o sistema troca pelo link certo.
 - Nunca repita o que já foi dito na conversa (explicação, preço, proposta, link): se já foi, segue dali.
@@ -168,7 +181,7 @@ export type DecisaoPlantao = {
 }
 
 /** A decisão em si (sem banco, sem WhatsApp) — dá pra testar com conversas de exemplo. */
-export async function decidirPlantao(key: string, o: { agora: Date; volta: Date; turmas: Turma[]; ficha: string; conversa: string }) {
+export async function decidirPlantao(key: string, o: { agora: Date; volta: Date | null; turmas: Turma[]; ficha: string; conversa: string }) {
   const client = new Anthropic({ apiKey: key })
   // o Sonnet 5.5 não aceita tool_choice forçado: pede no texto, e tenta de novo se ele não usar a ferramenta
   const pedir = () => client.messages.create({
@@ -230,7 +243,7 @@ function linhaDaMensagem(m: any) {
 }
 
 /** O que a IA precisa saber do lead além da conversa: de onde veio, o que já foi mandado, o que está pendente. */
-async function fichaDoLead(lead: any, turmas: Turma[], volta: Date) {
+async function fichaDoLead(lead: any, turmas: Turma[], volta: Date | null) {
   const [{ data: orcs }, { data: tarefas }, { data: notas }] = await Promise.all([
     sb.from('orcamentos').select('produto_nome, slug, situacao, aceito_em, publicado_em, turma_id').eq('lead_id', lead.id).eq('situacao', 'publicado').order('publicado_em', { ascending: false }).limit(3),
     sb.from('tarefas_lead').select('tipo, descricao, data_vencimento').eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false).in('tipo', ['ligar_agendado', 'plantao_diretor']),
@@ -253,7 +266,7 @@ async function fichaDoLead(lead: any, turmas: Turma[], volta: Date) {
     if (t.tipo === 'ligar_agendado') linhas.push(`- O time já tem uma ligação na fila pra ${horaBR(t.data_vencimento)} (interno: só fala disso se a pessoa combinou esse horário na conversa)`)
     if (t.tipo === 'plantao_diretor') linhas.push(`- PEDIDO COM O DIRETOR, esperando resposta: ${String(t.descricao || '').slice(0, 200)}. Não ofereça outra condição.`)
   }
-  linhas.push(`- O time volta a ligar na ${quandoBR(volta)}, a partir das 9h.`)
+  linhas.push(volta ? `- O time volta a ligar na ${quandoBR(volta)}, a partir das 9h.` : '- A data de volta do time não está confirmada: não prometa dia.')
   return linhas.join('\n')
 }
 
@@ -391,6 +404,11 @@ export async function atenderPlantao(org: string, conversaId: string, msgId: str
   // ── manda (ligado)
   const to = foneOficial(lead.whatsapp || conv.telefone || '')
   if (!to) return
+  // A PESSOA ESCREVEU DE NOVO ENQUANTO A IA PENSAVA (31/10: Jocimar perguntou o conteúdo e recebeu a proposta
+  // sem resposta; Thiago recebeu a mesma explicação duas vezes): esta resposta já está velha. Não manda; a
+  // chamada da mensagem nova responde tudo junto (ela passa pela trava de cima porque esta não gravou nada).
+  const { data: novas } = await sb.from('wa_mensagens').select('id').eq('conversa_id', conversaId).eq('direcao', 'recebida').gt('criado_em', ultima.criado_em).limit(1)
+  if (novas?.length) { await registrar(org, 'refeito', { ...base, motivo: 'chegou mensagem nova enquanto a IA escrevia', ultima: ultima.texto }); return }
   for (const texto of finais) {
     const env = await enviar(to, texto, { preview: /https?:\/\//.test(texto) })
     if (!env.ok) {
@@ -407,13 +425,17 @@ export async function atenderPlantao(org: string, conversaId: string, msgId: str
 }
 
 /** O que muda no lead depois que a resposta saiu (só com o plantão ligado). */
-async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: string, turma: Turma | null, proposta: any, volta: Date) {
+async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: string, turma: Turma | null, proposta: any, voltaCfg: Date | null) {
   const agora = new Date().toISOString()
+  // a tarefa de ligação precisa de dia: sem volta confirmada, fica pro próximo dia útil (o time remarca)
+  const volta = voltaCfg || (() => { const d = new Date(hojeBR() + 'T12:00:00Z'); do { d.setUTCDate(d.getUTCDate() + 1) } while ([0, 6].includes(d.getUTCDay()) || FERIADOS.has(d.toISOString().slice(0, 10))); return d })()
   const nome = lead.nome || 'Lead'
   const patch: any = { atualizado_em: agora }
   if (d.negocio && !lead.negocio) patch.negocio = d.negocio.slice(0, 200)
   // a turma do lead é por onde a matrícula do Herospark cai no lugar certo: grava antes do link
-  if (turma && (lead.codigo_turma !== turma.codigo) && (acao === 'link' || acao === 'link_especial' || acao === 'proposta' || turma.codigo.startsWith('imersaodv'))) {
+  // 31/10 (Thiago): a cidade do Deu Venda decidida na conversa também vale — antes só mudava com proposta ou
+  // link, e ele ficou marcado em Lajeado depois de dizer que faria em Porto Alegre.
+  if (turma && (lead.codigo_turma !== turma.codigo) && (acao === 'link' || acao === 'link_especial' || acao === 'proposta' || turma.codigo.startsWith('imersaodv') || !!d.cidade || !!d.turma)) {
     patch.codigo_turma = turma.codigo
     patch.turma_id = turma.id
   }
@@ -428,6 +450,9 @@ async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: st
 
   const prod = turma ? (turma.codigo.startsWith('imersaodv') ? `Imersão (${turma.codigo})` : 'Deu Venda') : 'produto ainda indefinido'
   if (acao === 'diretor') {
+    // pedido ao diretor já aberto: não avisa de novo (31/10, Eliana: o mesmo pedido foi duas vezes)
+    const { data: jaDir } = await sb.from('tarefas_lead').select('id').eq('lead_id', lead.id).eq('tipo', 'plantao_diretor').eq('concluida', false).eq('cancelada', false).limit(1)
+    if (jaDir?.length) return
     await avisarTime({ org, tipo: 'diretor', leadId: lead.id, nome, detalhe: `${prod}. Pediu: ${d.pedido_ao_diretor || '(ver conversa)'}. ${d.resumo_pro_time || ''}` })
   } else if (acao === 'ligacao') {
     const { data: ja } = await sb.from('tarefas_lead').select('id').eq('lead_id', lead.id).eq('tipo', 'ligar_agendado').eq('concluida', false).eq('cancelada', false).limit(1)
@@ -485,6 +510,62 @@ function horaBrasilia(d: Date) {
   return Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/Sao_Paulo', hour: 'numeric', hourCycle: 'h23' }).format(d))
 }
 
+/** Vai ter uma rodada da cutucada (de hora em hora, das 9h às 20h) com a pessoa entre 20 e 23,5 h sem responder? */
+function rodadaNaFaixa(agora: Date, idade: number) {
+  for (let k = 1; k <= 24; k++) {
+    const id = idade + k * H
+    if (id > 23.5 * H) return false
+    const h = horaBrasilia(new Date(+agora + k * H))
+    if (id >= 20 * H && h >= 9 && h <= 20) return true
+  }
+  return false
+}
+
+// Nome que parece de empresa não vira "Oi, Harmonizze!" (31/10): vai só "Oi!".
+const PARECE_EMPRESA = /ltda|\bme\b|im[oó]ve|est[eé]tica|design|comunica|studio|est[uú]dio|cl[ií]nica|loja|store|house|criativ|sorriso|bem estar|&|\d/i
+
+// O TEXTO DA CUTUCADA (31/10, do Guto): antes era fixo — "Ficou alguma dúvida do que eu te expliquei?" — e ia
+// até pra quem só mandou a mensagem pronta do anúncio e nunca respondeu a primeira pergunta (a IA não tinha
+// explicado nada). Agora a IA escreve a retomada lendo a conversa, presa ao que de fato aconteceu; se a
+// chamada falhar ou o texto sair fora das regras, vale o texto fixo do caso, que também olha se a pessoa
+// chegou a responder.
+type CasoCutucada = 'link' | 'proposta' | 'conversa'
+const EMOJI = /[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u
+export async function textoCutucada(leadId: string, caso: CasoCutucada, oi: string, msgs: any[]): Promise<string> {
+  const primeiraNossa = msgs.findIndex(m => m.direcao === 'enviada')
+  const respondeuAlgumaVez = primeiraNossa >= 0 && msgs.slice(primeiraNossa + 1).some(m => m.direcao === 'recebida')
+  const fixo = caso === 'link'
+    ? `${oi} Conseguiste finalizar a inscrição pelo link? Se travou em alguma parte, me avisa que eu te ajudo.`
+    : caso === 'proposta'
+      ? `${oi} Conseguiste dar uma olhada na proposta? Se ficou alguma dúvida, me fala que eu te explico.`
+      : respondeuAlgumaVez
+        ? `${oi} Ficou alguma dúvida? Se quiser, me conta mais do teu negócio que eu te mostro como ficaria pra ti.`
+        : `${oi} Vi que tu chamou querendo saber mais. Pra eu te explicar do jeito certo, me conta: qual é o teu negócio e como tu atrai cliente hoje?`
+  const key = process.env.ANTHROPIC_API_KEY
+  if (!key) return fixo
+  try {
+    const client = new Anthropic({ apiKey: key })
+    const r = await client.messages.create({
+      model: MODELO_PLANTAO, max_tokens: 300,
+      system: `Tu escreve UMA mensagem curta de retomada no WhatsApp da Escola CarreiraNoDigital, pra uma pessoa que parou de responder há quase 24 horas.
+Regras:
+- Começa exatamente com "${oi}" e tem no máximo 2 frases curtas depois disso.
+- Português do Rio Grande do Sul ("tu"), tom gentil, sem pressão, sem emoji, sem gíria. Nunca diga que é robô ou IA.
+- Fala SÓ do que aconteceu de verdade na conversa. Nunca diga "o que eu te expliquei" se nada foi explicado; se a pessoa nunca respondeu a nossa pergunta, retome a pergunta de um jeito leve e diferente, mostrando por que ela importa.
+- Não invente preço, data, turma, desconto nem promessa. Não repita a nossa última mensagem com as mesmas palavras.
+- Hoje a escola só vende o Deu Venda (individual) e a Imersão Deu Venda (turma pequena). Cursos antigos que aparecerem no histórico (Formação Completa, ANL e outros) não existem mais: nunca fale deles.
+- Termine com uma pergunta simples, que dê pra responder em uma linha.
+${caso === 'proposta' ? '- A pessoa recebeu uma proposta: retome a proposta.' : caso === 'link' ? '- A pessoa recebeu o link de pagamento: pergunte se conseguiu finalizar e ofereça ajuda.' : ''}
+Responda só com o texto da mensagem, nada mais.`,
+      messages: [{ role: 'user', content: `A conversa ("Lead:" é a pessoa; "Escola:" somos nós):\n\n${msgs.map(linhaDaMensagem).join('\n')}` }],
+    })
+    await logIaUso('ia-plantao-cutucada', MODELO_PLANTAO, r.usage, { lead_id: leadId })
+    const t = r.content.map((b: any) => (b.type === 'text' ? b.text : '')).join('').trim().replace(/^"|"$/g, '')
+    if (!t.startsWith(oi) || t.length > 320 || EMOJI.test(t) || (/expliquei/i.test(t) && !respondeuAlgumaVez)) return fixo
+    return t
+  } catch { return fixo }
+}
+
 /**
  * A CUTUCADA: quem conversou com a IA e parou de responder recebe UMA retomada, entre 20 e 23 horas
  * depois da última mensagem dele (ainda dentro da janela de 24 h do WhatsApp, que só aceita texto livre
@@ -514,21 +595,30 @@ export async function cutucarPlantao(org: string) {
     if ((await pausadoNoPlantao(leadId)).pausado) continue
     const { data: conv } = await sb.from('wa_conversas').select('id').eq('lead_id', leadId).order('ultima_msg_em', { ascending: false }).limit(1).maybeSingle()
     if (!conv) continue
-    const { data: ult } = await sb.from('wa_mensagens').select('direcao, criado_em').eq('conversa_id', conv.id).order('criado_em', { ascending: false }).limit(15)
+    const { data: ult } = await sb.from('wa_mensagens').select('direcao, tipo, texto, criado_em').eq('conversa_id', conv.id).order('criado_em', { ascending: false }).limit(MSGS_NA_CONVERSA)
     const ultimaDele = (ult || []).find(m => m.direcao === 'recebida')
-    if (!ultimaDele || ult?.[0]?.direcao === 'recebida') continue   // a última é dele: a IA responde pelo webhook
+    if (!ultimaDele) continue
+    // a última é dele: a IA responde pelo webhook. Exceção (31/10, Cleusa e Priscilla): ele só agradeceu e a
+    // IA decidiu não responder ("Obrigada", joinha) — aí a retomada vale, senão ninguém mais fala com ele.
+    if (ult?.[0]?.direcao === 'recebida') {
+      const { count } = await sb.from('webhook_logs').select('id', { count: 'exact', head: true }).eq('origem', ORIGEM).eq('evento', 'nao_responder')
+        .eq('payload->>lead_id', leadId).gte('recebido_em', ultimaDele.criado_em)
+      if (!count) continue
+    }
     const idade = +agora - +new Date(ultimaDele.criado_em)
-    if (idade < 20 * H || idade > 23 * H) continue
+    // JANELA (31/10): era só entre 20 e 23 h depois da última mensagem dele, e a rodada só roda das 9h às 20h:
+    // quem parou de responder de madrugada ou cedo (Jean Boni pediu o valor às 9h) nunca era retomado.
+    // Agora: entre 20 e 23,5 h; ou antes, a partir de 10 h, se nenhuma rodada no horário cair nessa faixa.
+    if (idade > 23.5 * H || idade < 10 * H) continue
+    if (idade < 20 * H && rodadaNaFaixa(agora, idade)) continue
     if (x.cutucadaEm && +new Date(x.cutucadaEm) > +new Date(ultimaDele.criado_em)) continue
     const { data: orc } = await sb.from('orcamentos').select('aceito_em').eq('lead_id', leadId).eq('situacao', 'publicado').order('publicado_em', { ascending: false }).limit(1).maybeSingle()
-    const primeiro = lead.nome && lead.nome !== 'Lead WhatsApp' ? String(lead.nome).trim().split(/\s+/)[0] : ''
+    const primeiro0 = lead.nome && lead.nome !== 'Lead WhatsApp' && !PARECE_EMPRESA.test(lead.nome) && String(lead.nome).trim().length > 1 ? String(lead.nome).trim().split(/\s+/)[0] : ''
+    const primeiro = primeiro0 ? primeiro0.charAt(0).toUpperCase() + primeiro0.slice(1) : ''   // "natália" vira "Natália"
     const oi = primeiro ? `Oi, ${primeiro}!` : 'Oi!'
-    const texto = x.acao === 'link' || x.acao === 'link_especial' || orc?.aceito_em
-      ? `${oi} Conseguiste finalizar a inscrição pelo link? Se travou em alguma parte, me avisa que eu te ajudo.`
-      : orc
-        ? `${oi} Conseguiste dar uma olhada na proposta? Se ficou alguma dúvida, me fala que eu te explico.`
-        : `${oi} Ficou alguma dúvida do que eu te expliquei? Se quiser, me conta mais do teu negócio que eu te mostro como ficaria pra ti.`
-    const reg = { lead_id: leadId, nome: lead.nome, sombra: modo === 'sombra', cutucada: true, acao: 'cutucada', mensagens: [texto] }
+    const caso: CasoCutucada = x.acao === 'link' || x.acao === 'link_especial' || orc?.aceito_em ? 'link' : orc ? 'proposta' : 'conversa'
+    const texto = await textoCutucada(lead.id, caso, oi, ((ult || []) as any[]).slice().reverse())
+    const reg = { lead_id: leadId, nome: lead.nome, sombra: modo === 'sombra', cutucada: true, acao: 'cutucada', caso, mensagens: [texto] }
     if (modo === 'ligado') {
       const env = await enviar(foneOficial(lead.whatsapp || ''), texto)
       if (!env.ok) { await registrar(org, 'cutucada', { ...reg, erro: env.error }, 'erro'); continue }

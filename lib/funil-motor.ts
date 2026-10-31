@@ -134,7 +134,9 @@ export async function rodarFunilMotor(opts: { simular?: boolean; desde?: string;
     const meus = as.filter(a => a.tipo === 'ia_followup' && (a.observacao || '').startsWith(MARCA) && a.criado_em >= ent.criado_em)
     const enviados = new Set<string>()
     for (const a of meus) { const m = (a.observacao || '').match(/cnd_funil_[a-z0-9_]+/); if (m) enviados.add(m[0].replace(/_sem_nome(_v2)?$/, '')) }
-    candidatos.push({ l, entrada: new Date(ent.criado_em), anterior: ent.etapa_anterior || null, enviados, tocadoHoje: meus.some(a => isoBR(new Date(a.criado_em)) === hoje), doPlantao: (ent.observacao || '').startsWith('🤖 IA do plantão') })
+    candidatos.push({ l, entrada: new Date(ent.criado_em), anterior: ent.etapa_anterior || null, enviados, tocadoHoje: meus.some(a => isoBR(new Date(a.criado_em)) === hoje), doPlantao: (ent.observacao || '').startsWith('🤖 IA do plantão') || as.some(a => a.tipo === 'ia_followup' && (a.observacao || '').startsWith('🤖 IA do plantão') && a.criado_em >= ent.criado_em) })
+    // ↑ 31/10 (Paulo Alexander): a IA tinha conversado com ele, mas a entrada em Atendimento inicial não tinha a
+    // marca do plantão, e o motor mandou "tentamos falar contigo". Conversou com a IA depois da entrada = do plantão.
   }
   const dossies = await dossiesLote(sb, ORG_CND, candidatos.map(c => c.l))
 

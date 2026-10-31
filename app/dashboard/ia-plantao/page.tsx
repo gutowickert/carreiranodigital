@@ -12,7 +12,7 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const botao: React.CSSProperties = { background: 'none', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '6px 12px', color: 'var(--text-2)', cursor: 'pointer', fontSize: 12.5 }
 const TZ = 'America/Sao_Paulo'
 const quando = (s: string) => new Date(s).toLocaleString('pt-BR', { timeZone: TZ, weekday: 'short', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }).replace('.', '')
-const diaDe = (s: string) => new Date(s).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit' })
+const diaDe = (s: string | null) => s ? new Date(s).toLocaleDateString('pt-BR', { timeZone: TZ, weekday: 'long', day: '2-digit', month: '2-digit' }) : 'a volta do time (sem data)'
 // o campo de data e hora do navegador não tem fuso: o que se digita é hora de Brasília
 const paraCampo = (iso?: string | null) => iso ? new Date(new Date(iso).getTime() - 3 * 36e5).toISOString().slice(0, 16) : ''
 const doCampo = (v: string) => v ? new Date(v + ':00-03:00').toISOString() : null
