@@ -122,6 +122,7 @@ export async function POST(req: NextRequest) {
       modo: b.modo,
       de: b.de !== undefined ? valida(b.de) : atual.de ?? null,
       ate: b.ate !== undefined ? valida(b.ate) : atual.ate ?? null,
+      volta: b.volta !== undefined ? valida(b.volta) : atual.volta ?? null,   // a data que a IA promete (31/10): salvar o interruptor não apaga
       mudou_em: agora, mudou_por: p?.nome || eu.id,
     }
     const { data: ja } = await sb.from('configuracoes').select('chave').eq('chave', 'ia.plantao').maybeSingle()
