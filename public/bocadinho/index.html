@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#1f3a32">
+<title>Bocadinho Doceria — o negócio</title>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;1,9..144,300;1,9..144,400&family=Nunito+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--v:#1f3a32;--v2:#2c4a41;--cr:#f3ece0;--ow:#faf6ef;--ou:#c2a46b;--ou2:#9c7c45;--tx2:#4d5f56;--line:#e0d5c2}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--ow);color:var(--v);font:17px/1.6 'Nunito Sans',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+img{max-width:100%;display:block}
+.pal{font-family:Fraunces,Georgia,serif;font-weight:300;letter-spacing:-.01em;line-height:1.08}
+.eb{font-weight:800;font-size:13px;letter-spacing:.32em;text-transform:uppercase;color:var(--ou2)}
+.verde .eb{color:var(--ou)}
+section{padding:96px 20px}
+.in{max-width:1080px;margin:0 auto}
+h2{font:300 clamp(34px,5vw,58px)/1.08 Fraunces,Georgia,serif;margin:14px 0 22px;letter-spacing:-.01em}
+h3{font-size:19px;margin:0 0 6px}
+p{margin:0 0 14px}
+.lead{font-size:19px;color:var(--tx2);max-width:680px}
+.verde{background:var(--v);color:var(--cr)}.verde .lead,.verde .mut{color:#c9d3cc}
+.creme{background:var(--cr)}
+.mut{color:var(--tx2);font-size:15px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:56px;align-items:center}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.card{background:var(--ow);border:1px solid var(--line);border-radius:16px;padding:24px}
+.creme .card{background:var(--ow)}
+.verde .card{background:var(--v2);border-color:#3d5e53}
+.foto{border-radius:16px;overflow:hidden;box-shadow:0 24px 50px rgba(20,38,31,.18)}
+.foto img{width:100%;height:100%;object-fit:cover}
+.num{font:300 54px/1 Fraunces,Georgia,serif;color:var(--ou2)}
+.verde .num{color:var(--ou)}
+table{width:100%;border-collapse:collapse;font-size:16px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--line)}
+.verde th,.verde td{border-color:#3d5e53}
+th{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--ou2)}
+.verde th{color:var(--ou)}
+td.n,th.n{text-align:right;white-space:nowrap}
+tr.b td{font-weight:800}
+.tbl{overflow-x:auto}.tbl table.larga{min-width:620px}
+ul,ol{padding-left:22px;margin:8px 0}
+li{margin:4px 0}
+a{color:var(--ou2);font-weight:700}
+.verde a{color:var(--ou)}
+/* topo */
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;padding:0;background:var(--v);color:var(--cr)}
+.hero .txt{display:flex;flex-direction:column;justify-content:center;padding:64px clamp(24px,6vw,96px)}
+.hero h1{font:300 clamp(60px,9vw,120px)/.95 Fraunces,Georgia,serif;margin:22px 0 10px;letter-spacing:-.02em}
+.hero .doc{font-weight:800;letter-spacing:.6em;color:var(--ou);font-size:15px}
+.hero p{font-size:20px;color:#c9d3cc;max-width:460px;margin-top:30px}
+.hero .ft{min-height:60vh}
+.hero .ft img{width:100%;height:100%;object-fit:cover}
+nav.idx{position:sticky;top:0;z-index:5;background:rgba(250,246,239,.94);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);display:flex;gap:6px;overflow-x:auto;padding:10px 16px}
+nav.idx a{white-space:nowrap;text-decoration:none;color:var(--v);font-size:13px;font-weight:800;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--ow)}
+.galeria{display:grid;grid-template-columns:2fr 1fr 1fr;grid-template-rows:280px 280px;gap:14px}
+.galeria .foto:first-child{grid-row:span 2}
+.pill{display:inline-block;border:1px solid var(--ou);color:var(--ou2);border-radius:999px;padding:4px 14px;font-size:13px;font-weight:800;margin:0 6px 6px 0}
+.verde .pill{color:var(--ou)}
+.passo{display:flex;flex-direction:column;gap:6px;border-top:2px solid var(--ou);padding-top:16px}
+.fala{background:var(--cr);border-radius:18px 18px 18px 4px;padding:14px 18px;margin:0 0 12px;max-width:520px}
+.fala.dir{border-radius:18px 18px 4px 18px;margin-left:auto;background:#e6dcc7}
+footer{padding:40px 20px;text-align:center;font-size:14px;color:var(--tx2)}
+@media (max-width:820px){.hero,.g2{grid-template-columns:1fr}.g3,.g4{grid-template-columns:1fr 1fr}.galeria{grid-template-columns:1fr 1fr;grid-template-rows:220px 160px 160px}.galeria .foto:first-child{grid-column:span 2;grid-row:auto}section{padding:72px 16px}}
+@media (max-width:520px){.g3,.g4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header class="hero">
+ <div class="txt">
+  <div class="eb" style="color:var(--ou)">Projeto completo · Estrela · RS</div>
+  <h1>bocadinho</h1>
+  <div class="doc">DOCERIA</div>
+  <p>Mini cookies do tamanho de uma moeda, brownie em cubinhos e molhos pra mergulhar, numa caixa que dá orgulho de presentear. Marca, produto, preço, vendas e sistema: tudo pronto pra começar.</p>
+ </div>
+ <div class="ft"><img src="img/cena1-heroi.jpg" alt="Caixa Bocadinho fechada com fita verde e caixa aberta com mini cookies, brownies e potinhos de molho"></div>
+</header>
+
+<nav class="idx"><a href="#ideia">A ideia</a><a href="#marca">Marca</a><a href="#cardapio">Cardápio</a><a href="#custos">Custos</a><a href="#investimento">Investimento</a><a href="#simulacao">Simulação</a><a href="#vendas">Vendas</a><a href="#anuncios">Anúncios</a><a href="#instagram">Instagram</a><a href="#whatsapp">WhatsApp</a><a href="#operacao">Operação</a><a href="#legal">Legal</a><a href="#calendario">Calendário</a><a href="#proximos">Próximos passos</a></nav>
+
+<section id="ideia"><div class="in g2">
+ <div>
+  <div class="eb">A ideia</div>
+  <h2>A gente não vende cookie. Vende o momento de abrir a caixa e mergulhar.</h2>
+  <p class="lead">O diferencial é a experiência: abrir a caixa, ver os cookies em fileira, escolher o molho. É isso que faz filmar, postar e cobrar mais que um cookie comum.</p>
+  <div class="g3" style="margin-top:28px">
+   <div class="passo"><h3>Do tamanho de uma moeda</h3><p class="mut">Mini cookies crocantes por fora, macios por dentro.</p></div>
+   <div class="passo"><h3>Molhos pra mergulhar</h3><p class="mut">Avelã, doce de leite, Ninho e pistache, em potinhos com rótulo.</p></div>
+   <div class="passo"><h3>Brownie em cubinhos</h3><p class="mut">Desde o dia 1, junto na caixa ou numa caixinha só dele.</p></div>
+  </div>
+  <p class="mut" style="margin-top:20px">Pesquisa de 30/10/2026: <b>nenhuma cookieria em Estrela</b>, e ninguém no Vale do Taquari vende mini cookie com molho em caixa de presente.</p>
+ </div>
+ <div class="foto" style="aspect-ratio:1"><img src="img/cena2-mergulho.jpg" alt="Mini cookie sendo mergulhado no molho de avelã"></div>
+</div></section>
+
+<section id="marca" class="verde"><div class="in">
+ <div class="g2">
+  <div>
+   <div class="eb">A marca</div>
+   <h2>Bocadinho Doceria</h2>
+   <p class="lead">“Come só um bocadinho.” É o jeito da vó oferecer doce, e ninguém come um só. A marca junta o aconchego de casa com o acabamento de uma confeitaria fina.</p>
+   <ul class="lead" style="font-size:17px">
+    <li><b style="color:var(--cr)">Símbolo:</b> o cookie com uma mordidinha, em traço fino dourado</li>
+    <li><b style="color:var(--cr)">Cores:</b> verde inglês, creme e dourado, a paleta das confeitarias clássicas</li>
+    <li><b style="color:var(--cr)">Letra:</b> Fraunces fina no nome, Nunito Sans nos textos</li>
+    <li><b style="color:var(--cr)">Jeito de falar:</b> carinhoso, poucas palavras, humor leve</li>
+   </ul>
+   <p class="mut" style="margin-top:18px">Conferido em 31/10: nenhuma “Bocadinho” registrada no INPI em doces (só “Bom Bocadinho”, na área de comércio). Livres: <b style="color:var(--cr)">@bocadinho.doceria</b> e <b style="color:var(--cr)">bocadinhodoceria.com.br</b>.</p>
+  </div>
+  <div class="foto" style="aspect-ratio:1;box-shadow:none"><img src="img/logo-creme.jpg" alt="Logo Bocadinho Doceria"></div>
+ </div>
+ <div class="g4" style="margin-top:48px">
+  <div class="foto" style="aspect-ratio:1;box-shadow:none"><img src="img/perfil.jpg" alt="Foto de perfil do Instagram"></div>
+  <div class="foto" style="aspect-ratio:1;box-shadow:none;background:#fff"><img src="impressao/selo.png" alt="Selo da caixa" style="object-fit:contain;padding:14px"></div>
+  <div class="foto" style="aspect-ratio:1;box-shadow:none;background:#fff"><img src="impressao/rot-avela.png" alt="Rótulo avelã" style="object-fit:contain;padding:14px"></div>
+  <div class="foto" style="aspect-ratio:1;box-shadow:none;background:#fff"><img src="impressao/rot-pistache.png" alt="Rótulo pistache" style="object-fit:contain;padding:14px"></div>
+ </div>
+</div></section>
+
+<section class="creme"><div class="in">
+ <div class="eb">A experiência</div>
+ <h2>O que faz valer o preço</h2>
+ <div class="galeria">
+  <div class="foto"><img src="img/cena6-flatlay.jpg" alt="Caixa aberta com cookies, brownies, potinhos e café"></div>
+  <div class="foto"><img src="img/cena3-presente.jpg" alt="Caixa fechada com sacola kraft e cartão Só um bocadinho?"></div>
+  <div class="foto"><img src="img/cena5-brownie.jpg" alt="Caixinha de brownie com doce de leite"></div>
+  <div class="foto"><img src="img/cena7-moeda.jpg" alt="Mini cookie ao lado de uma moeda de 1 real"></div>
+  <div class="foto"><img src="img/cena4-empresas.jpg" alt="Caixinhas de presente para empresas"></div>
+ </div>
+ <div class="g3" style="margin-top:36px">
+  <div class="card"><h3>Caixa creme + fita de cetim verde</h3><p class="mut">Caixa lisa do Mercado Livre, fita em cruz e o selo verde com dourado fechando. Sem gráfica no começo.</p></div>
+  <div class="card"><h3>Por dentro</h3><p class="mut">Papel manteiga, cookies em fileiras num saquinho (segura a crocância), brownies e potinhos com rótulo.</p></div>
+  <div class="card"><h3>Cartão “Só um bocadinho?”</h3><p class="mut">Com o @ e a validade. Nas caixas maiores, sacola kraft.</p></div>
+ </div>
+ <p class="mut" style="margin-top:14px">As fotos acima são simulações feitas por IA com a identidade real da marca. Servem pra apresentar e testar anúncio; depois, as fotos de verdade da cozinha substituem.</p>
+</div></section>
+
+<section id="cardapio"><div class="in">
+ <div class="eb">Cardápio de lançamento</div>
+ <h2>Cinco caixas, preço de presente</h2>
+ <div class="tbl"><table>
+  <tr><th>Caixa</th><th>O que vem</th><th class="n">Preço</th></tr>
+  <tr><td><b>Bocadinho</b></td><td>16 mini cookies + 1 molho</td><td class="n">R$ 39,90</td></tr>
+  <tr><td><b>Pra dividir</b></td><td>30 mini cookies + 4 brownies + 2 molhos</td><td class="n">R$ 79,90</td></tr>
+  <tr><td><b>Família</b></td><td>50 mini cookies + 9 brownies + 3 molhos</td><td class="n">R$ 129,90</td></tr>
+  <tr><td><b>Caixinha de brownie</b></td><td>12 cubinhos de brownie + 1 doce de leite</td><td class="n">R$ 39,90</td></tr>
+  <tr><td><b>Mimo de empresa</b></td><td>8 mini cookies + 1 molho + cartão da empresa (mín. 20)</td><td class="n">R$ 22,90 cada</td></tr>
+ </table></div>
+ <p class="mut" style="margin-top:16px">Molhos: avelã, doce de leite ou Ninho · pistache +R$ 5 · molho extra R$ 8. Retirada grátis no centro de Estrela · entrega em Estrela R$ 8 · Lajeado e Teutônia R$ 15. Encomenda com 1 dia de antecedência, Pix na hora do pedido.</p>
+ <h3 style="margin-top:40px">Por que esse preço: quem vende mini cookie cobra caro, e vende</h3>
+ <div class="tbl"><table>
+  <tr><th>Marca (cidade)</th><th>Produto</th><th class="n">Preço</th></tr>
+  <tr><td>La Cookies (RJ)</td><td>12 mini cookies recheados</td><td class="n">R$ 49,90</td></tr>
+  <tr><td>La Cookies (RJ)</td><td>12 mini com Nutella</td><td class="n">R$ 78,90</td></tr>
+  <tr><td>Uva Sem Caroço (Recife)</td><td>10 mini cookies</td><td class="n">R$ 42,90</td></tr>
+  <tr><td>Zitta</td><td>Mini box com 5 de pistache</td><td class="n">R$ 64,50</td></tr>
+  <tr><td>Cookie do Foca (Porto Alegre)</td><td>1 cookie grande de Nutella</td><td class="n">R$ 20,90</td></tr>
+  <tr class="b"><td>Bocadinho Doceria (Estrela)</td><td>16 mini + molho, caixa de presente</td><td class="n">R$ 39,90</td></tr>
+ </table></div>
+ <p class="mut" style="margin-top:12px">Preços de apps de entrega e lojas, pesquisados em 30/10/2026.</p>
+</div></section>
+
+<section id="custos" class="creme"><div class="in">
+ <div class="eb">Custo de cada caixa</div>
+ <h2>Com o trabalho deles pago, sobra mais de 60%</h2>
+ <div class="tbl"><table class="larga">
+  <tr><th>Caixa</th><th class="n">Ingredientes + embalagem</th><th class="n">Mão de obra</th><th class="n">Custo total</th><th class="n">Preço</th><th class="n">Sobra</th></tr>
+  <tr><td>Bocadinho</td><td class="n">R$ 10,76</td><td class="n">R$ 4,71</td><td class="n">R$ 15,47</td><td class="n">R$ 39,90</td><td class="n"><b>R$ 24,43</b></td></tr>
+  <tr><td>Pra dividir</td><td class="n">R$ 20,71</td><td class="n">R$ 9,04</td><td class="n">R$ 29,75</td><td class="n">R$ 79,90</td><td class="n"><b>R$ 50,15</b></td></tr>
+  <tr><td>Família</td><td class="n">R$ 34,66</td><td class="n">R$ 14,72</td><td class="n">R$ 49,38</td><td class="n">R$ 129,90</td><td class="n"><b>R$ 80,52</b></td></tr>
+  <tr><td>Caixinha de brownie</td><td class="n">R$ 9,51</td><td class="n">R$ 4,19</td><td class="n">R$ 13,70</td><td class="n">R$ 39,90</td><td class="n"><b>R$ 26,20</b></td></tr>
+  <tr><td>Mimo de empresa</td><td class="n">R$ 5,78</td><td class="n">R$ 2,52</td><td class="n">R$ 8,30</td><td class="n">R$ 22,90</td><td class="n"><b>R$ 14,60</b></td></tr>
+ </table></div>
+ <p class="mut" style="margin-top:16px">1 mini cookie custa R$ 0,28 de ingrediente, 1 cubo de brownie R$ 0,43 e o molho de avelã R$ 3,01. Mão de obra a R$ 20 por hora (estimativa). Preços de mercado de set–out/2026: índice Custo por Prato, Zaffari, Colibri Festas e Mercado Livre. Pix sem taxa; no cartão de crédito são 3,86% a mais.</p>
+</div></section>
+
+<section id="investimento"><div class="in g2">
+ <div>
+  <div class="eb">Investimento pra começar</div>
+  <div class="pal" style="font-size:clamp(70px,10vw,120px);margin:14px 0">R$ 2.671</div>
+  <p class="lead">Tudo pra sair do zero e vender o primeiro mês, com anúncio. Sem reforma: cozinha de casa e o forno que já têm.</p>
+  <p class="mut">A lista com o link de cada item está no <a href="kit.html">kit de trabalho</a>.</p>
+ </div>
+ <div class="tbl"><table>
+  <tr><th>O quê</th><th class="n">Quanto</th></tr>
+  <tr><td>Embalagens (1ª leva, ~150 caixas)</td><td class="n">R$ 816</td></tr>
+  <tr><td>Ingredientes (testes + 1ª produção)</td><td class="n">R$ 755</td></tr>
+  <tr><td>Utensílios (boleador, tapetes, formas, balança)</td><td class="n">R$ 310</td></tr>
+  <tr><td>Marca no INPI + site</td><td class="n">R$ 190</td></tr>
+  <tr><td>Anúncios do 1º mês (R$ 20/dia)</td><td class="n">R$ 600</td></tr>
+  <tr class="b"><td>Total</td><td class="n">R$ 2.671</td></tr>
+ </table><p class="mut" style="margin-top:10px">Utensílios, cartão, papel e INPI são estimativas.</p></div>
+</div></section>
+
+<section id="simulacao" class="verde"><div class="in">
+ <div class="eb">Simulação de um mês</div>
+ <h2>Com 19 pedidos, o mês se paga</h2>
+ <div class="g3">
+  <div class="card"><h3>Começo devagar</h3><div class="num">40</div><p class="mut">pedidos no mês</p><p>Vendas R$ 2.356<br>Pra eles <b>R$ 1.056</b></p></div>
+  <div class="card" style="background:var(--ou);border-color:var(--ou);color:var(--v)"><h3>O esperado</h3><div class="num" style="color:var(--v)">90</div><p style="color:var(--v2)">pedidos no mês</p><p>Vendas R$ 5.301<br>Pra eles <b>R$ 3.229</b></p></div>
+  <div class="card"><h3>Dezembro forte</h3><div class="num">150</div><p class="mut">pedidos + 50 mimos de empresa</p><p>Vendas R$ 9.980<br>Pra eles <b>R$ 6.242</b></p></div>
+ </div>
+ <p class="mut" style="margin-top:20px">“Pra eles” = mão de obra (R$ 20/h) + lucro, já descontados anúncio e MEI (R$ 82,05). Pedido médio R$ 58,90: metade Bocadinho, um quarto Pra dividir, 10% Família, 15% brownie. No mês esperado são uns 1.800 mini cookies, cerca de 35 horas de trabalho. Em dezembro o anúncio sobe pra R$ 35 por dia. É uma estimativa, não uma promessa.</p>
+</div></section>
+
+<section id="vendas"><div class="in">
+ <div class="eb">Como a venda acontece</div>
+ <h2>Do anúncio à recompra, tudo pelo WhatsApp</h2>
+ <div class="g4" style="grid-template-columns:repeat(5,1fr)">
+  <div class="passo"><div class="num" style="font-size:40px">1</div><h3>Vê</h3><p class="mut">Anúncio ou post no Instagram.</p></div>
+  <div class="passo"><div class="num" style="font-size:40px">2</div><h3>Chama</h3><p class="mut">O botão abre o WhatsApp com o código do anúncio.</p></div>
+  <div class="passo"><div class="num" style="font-size:40px">3</div><h3>Pede</h3><p class="mut">Recebe o cardápio, escolhe a caixa e o dia.</p></div>
+  <div class="passo"><div class="num" style="font-size:40px">4</div><h3>Paga</h3><p class="mut">Pix na hora; o pedido só entra pago.</p></div>
+  <div class="passo"><div class="num" style="font-size:40px">5</div><h3>Volta</h3><p class="mut">Retira ou recebe; dias depois, compra de novo.</p></div>
+ </div>
+ <div class="g2" style="margin-top:56px;align-items:start">
+  <div><h3>Tráfego pago: uma campanha, R$ 20 por dia</h3><p class="mut">Seis vídeos competindo num conjunto só. A Meta mostra mais o que gera conversa. Depois de 7 dias, pausa os que trazem conversa duas vezes mais cara.</p></div>
+  <div class="tbl"><table>
+   <tr><td>Objetivo</td><td>Engajamento → conversas no WhatsApp</td></tr>
+   <tr><td>Onde</td><td>Estrela + 20 km (Lajeado, Teutônia, Colinas, Bom Retiro)</td></tr>
+   <tr><td>Quem</td><td>22 a 60 anos, público aberto</td></tr>
+   <tr><td>Verba</td><td>R$ 20/dia · dezembro R$ 35/dia</td></tr>
+   <tr><td>Meta</td><td>Até R$ 5 por conversa (estimativa)</td></tr>
+  </table></div>
+ </div>
+</div></section>
+
+<section id="anuncios" class="creme"><div class="in">
+ <div class="eb">Anúncios</div>
+ <h2>Seis roteiros, sempre com “Estrela e região” e o público</h2>
+ <div class="g3" id="ads"></div>
+ <p class="mut" style="margin-top:16px">Vídeo vertical de 20 a 30 segundos, narração por cima, legenda grande. Cenas e narração completas no <a href="kit.html#roteiros">kit de trabalho</a>.</p>
+</div></section>
+
+<section id="instagram"><div class="in g2">
+ <div>
+  <div class="eb">Instagram @bocadinho.doceria</div>
+  <h2>O perfil mostra a cozinha, não fica pedindo pra comprar</h2>
+  <div class="g2" style="gap:14px;align-items:start">
+   <div class="card"><h3>A fornada</h3><p class="mut">Massa, forno, o barulho do cookie quebrando.</p></div>
+   <div class="card"><h3>O mergulho</h3><p class="mut">Câmera lenta do cookie entrando no molho.</p></div>
+   <div class="card"><h3>Quem faz</h3><p class="mut">O casal, a cozinha de casa, por que começaram.</p></div>
+   <div class="card"><h3>Ideias de tardinha</h3><p class="mut">Mesa de café, presente pra professora.</p></div>
+  </div>
+  <p class="mut" style="margin-top:14px">3 posts por semana + stories nos dias de fornada. Os 9 primeiros posts, com legenda, estão no kit.</p>
+ </div>
+ <div class="g2" style="gap:14px">
+  <div class="foto" style="aspect-ratio:4/5"><img src="img/post-lancamento.jpg" alt="Post de lançamento"></div>
+  <div class="foto" style="aspect-ratio:9/16"><img src="img/story-cardapio.jpg" alt="Story do cardápio"></div>
+ </div>
+</div></section>
+
+<section id="whatsapp" class="verde"><div class="in g2" style="align-items:start">
+ <div>
+  <div class="eb">Atendimento</div>
+  <h2>Responder rápido vende mais que desconto</h2>
+  <ul class="lead" style="font-size:17px">
+   <li>WhatsApp Business com o catálogo das 5 caixas</li>
+   <li>Etiquetas: Novo · Cardápio enviado · Pedido · Pago · Entregue</li>
+   <li>Respostas rápidas: /cardapio /pedido /pix /pronto</li>
+   <li>Meta: responder em até 10 minutos no horário comercial</li>
+  </ul>
+ </div>
+ <div style="color:var(--v)">
+  <p class="fala">Oi! Aqui é a Bocadinho Doceria. Que bom te ver por aqui! Te mando o cardápio: qual caixa combina com o teu momento?</p>
+  <p class="fala dir">Pra fechar: qual caixa, qual molho, que dia e se é retirada no centro ou entrega?</p>
+  <p class="fala">Conseguiu mergulhar? Se tirar uma foto, manda pra gente, a gente adora ver!</p>
+ </div>
+</div></section>
+
+<section id="operacao"><div class="in">
+ <div class="eb">Operação</div>
+ <h2>Encomenda até 18h, fornada no dia seguinte</h2>
+ <div class="g3">
+  <div class="card"><h3>Na véspera</h3><p class="mut">O sistema soma os pedidos pagos: quantos cookies, brownies, potinhos e caixas. A massa pode ficar pronta na geladeira.</p></div>
+  <div class="card"><h3>De manhã</h3><p class="mut">Fornada, brownie, molhos nos potinhos. Esfriar bem antes de fechar: é o que segura a crocância.</p></div>
+  <div class="card"><h3>À tarde</h3><p class="mut">Montar as caixas, marcar “Pronto” (o estoque baixa sozinho) e entregar das 15h às 19h.</p></div>
+ </div>
+ <p class="mut" style="margin-top:14px">1 receita de 1,2 kg rende 160 mini cookies. 1 forma 20×30 rende 96 cubos de brownie. Antes de vender: testar tamanho e tempo no forno de casa (8 a 10 min a 180 °C pra começar).</p>
+ <div class="g2" style="margin-top:56px">
+  <div>
+   <div class="eb">O sistema</div>
+   <h2 style="font-size:40px">Um sistema próprio, no celular, já funcionando</h2>
+   <ul class="mut" style="font-size:16px">
+    <li><b>Conversas e pedidos</b> com a origem (A1 a A6, Instagram, indicação); o botão abre o WhatsApp com cardápio, Pix ou “tá pronto”</li>
+    <li><b>Produção do dia:</b> quantas receitas, formas, potinhos e caixas</li>
+    <li><b>Estoque e caixa:</b> embalagens baixam sozinhas; entradas, gastos e sobra do mês</li>
+    <li><b>Funil e anúncio:</b> conversa → cardápio → pedido → pago, custo por pedido e qual anúncio vende</li>
+   </ul>
+   <p><a href="sistema.html">Abrir o sistema →</a> <span class="mut">(com senha)</span></p>
+  </div>
+  <div class="card"><div class="eb" style="margin-bottom:10px">Os 4 números da semana</div>
+   <table>
+    <tr><td><span class="num" style="font-size:34px">R$ 5</span></td><td>por conversa, no máximo. Mais caro: trocar o vídeo.</td></tr>
+    <tr><td><span class="num" style="font-size:34px">30%</span></td><td>das conversas viram pedido. Menos: olhar o atendimento.</td></tr>
+    <tr><td><span class="num" style="font-size:34px">R$ 55</span></td><td>de pedido médio. Oferecer a caixa maior e o molho extra.</td></tr>
+    <tr><td><span class="num" style="font-size:34px">25%</span></td><td>dos clientes voltam em até 60 dias. É aqui que o lucro mora.</td></tr>
+   </table></div>
+ </div>
+</div></section>
+
+<section id="legal" class="creme"><div class="in">
+ <div class="eb">Pra vender certinho</div>
+ <h2>Cinco coisas antes da primeira venda</h2>
+ <div class="tbl"><table>
+  <tr><th>O quê</th><th>Como</th><th class="n">Custo</th></tr>
+  <tr><td>Abrir o MEI</td><td>gov.br, na hora; confirmar a ocupação de confeitaria</td><td class="n">R$ 82,05/mês</td></tr>
+  <tr><td>Vigilância Sanitária</td><td>Ligar na prefeitura de Estrela: a cozinha de casa precisa de vistoria?</td><td class="n">a confirmar</td></tr>
+  <tr><td>Curso de boas práticas</td><td>Manipulação de alimentos (costuma ser pedido)</td><td class="n">baixo</td></tr>
+  <tr><td>Rótulo</td><td>Ingredientes, validade, lote, CNPJ, tabela nutricional e “ALÉRGICOS: CONTÉM trigo, ovo, leite, soja; pode conter castanhas”</td><td class="n">no adesivo</td></tr>
+  <tr><td>Registrar a marca</td><td>INPI, classe 30 (doces), em nome do MEI</td><td class="n">≈ R$ 150</td></tr>
+ </table></div>
+ <p class="mut" style="margin-top:12px">RDC 429/2020 e RDC 727/2022 valem pra MEI. Atividade de baixo risco no RS pode dispensar alvará, mas continua fiscalizada.</p>
+</div></section>
+
+<section id="calendario"><div class="in">
+ <div class="eb">Calendário até o Natal</div>
+ <h2>Lançar em 3 semanas e pegar dezembro inteiro</h2>
+ <div class="g4">
+  <div class="passo"><span class="eb">3 a 9/11</span><h3>Preparar</h3><p class="mut">MEI, @bocadinho.doceria, WhatsApp Business, compras, testes de receita.</p></div>
+  <div class="passo"><span class="eb">10 a 16/11</span><h3>Gravar e provar</h3><p class="mut">Fotos e vídeos de verdade, 9 primeiros posts, 20 caixas de degustação pra amigos e empresas.</p></div>
+  <div class="passo"><span class="eb">17 a 30/11</span><h3>Lançar</h3><p class="mut">Anúncios no ar, primeiros pedidos, visitas a empresas. Black Friday 27/11: molho extra de presente, sem desconto.</p></div>
+  <div class="passo"><span class="eb">1 a 23/12</span><h3>Dezembro</h3><p class="mut">Amigo secreto, empresas, professores, Natal. Encomendas de Natal até 20/12.</p></div>
+ </div>
+</div></section>
+
+<section id="proximos" class="verde"><div class="in g2">
+ <div>
+  <div class="eb">Esta semana</div>
+  <h2 style="font-size:clamp(44px,6vw,72px)">Só um bocadinho de coragem.</h2>
+  <p class="lead">O resto já está desenhado.</p>
+ </div>
+ <ol class="lead" style="font-size:19px;color:var(--cr)">
+  <li>Dizer “sim” pro nome e pro cardápio</li>
+  <li>Criar o @bocadinho.doceria e o WhatsApp Business</li>
+  <li>Abrir o MEI e ligar pra Vigilância de Estrela</li>
+  <li>Comprar a 1ª leva de embalagens (<a href="kit.html#compras">lista pronta</a>)</li>
+  <li>Testar a receita no tamanho moeda</li>
+  <li>Marcar o dia de gravar fotos e vídeos</li>
+ </ol>
+</div></section>
+
+<footer>Bocadinho Doceria · Estrela · RS · projeto preparado em outubro de 2026 · <a href="kit.html">kit de trabalho</a> · <a href="sistema.html">sistema</a></footer>
+
+<script>
+const ADS=[['A1','Mimo pra ti','Se tu é de Estrela e região e não resiste a um docinho no fim da tarde, olha isso: mini cookies do tamanho de uma moeda, saídos do forno hoje, com molho de avelã pra mergulhar.'],['A2','Amigo secreto','Tirou alguém no amigo secreto e é de Estrela e região? Esse é o presente que todo mundo vai querer ter tirado. Caixa pronta, com fita e cartão, a partir de R$ 39,90.'],['A3','Empresas','Empresário de Estrela e região: o presente de fim de ano da tua equipe pode ser esse. Mimo com o cartão da tua empresa, a partir de 20 unidades.'],['A4','Visita de domingo','Vai receber a família no domingo e mora em Estrela e região? Leva a caixa Família: 50 mini cookies, brownie e três molhos. Ninguém come um bocadinho só.'],['A5','Pra quem tu ama','Pra quem é de Estrela e região e quer surpreender alguém sem motivo: uma caixa com fita, cartão escrito à mão e chocolate pra mergulhar. A gente entrega.'],['A6','Do tamanho de uma moeda','Quem é de Estrela e região e ama chocolate precisa ver isso: um cookie do tamanho de uma moeda. Agora imagina 30 deles, e um potinho de doce de leite.']]
+document.getElementById('ads').innerHTML=ADS.map(([c,n,t])=>`<div class="card"><span class="pill">${c}</span><h3>${n}</h3><p class="mut" style="margin:0">“${t}”</p></div>`).join('')
+</script>
+</body>
+</html>
