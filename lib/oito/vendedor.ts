@@ -194,6 +194,9 @@ export async function respondeVenda(cv: any) {
 
 // depois que o cliente escreve (o webhook espera uns segundos pra juntar mensagens seguidas)
 export async function atendeConversa(id: string) {
+  // 02/11: a conversa do teste grátis da Maia é atendida pela Maia (lib/maia/demo.ts), não pelo agente do Oito
+  const fase = (await db.um('wa_conversas', { id }))?.fase
+  if (fase === 'maia') { const { atendeMaia } = await import('@/lib/maia/demo'); return atendeMaia(id) }
   // 15/10: o agente do WhatsApp (agente.ts) faz o funil inteiro; o vendedor antigo fica só de reserva
   try { const { atende } = await import('./agente'); return await atende(id) } catch (e: any) {
     await db.atualiza('wa_conversas', { id }, { modo: 'humano' })

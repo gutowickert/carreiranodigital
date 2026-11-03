@@ -39,9 +39,17 @@ export async function recebe(m: any, nome: string | null, imagem?: { buf: Buffer
       texto = texto.replace('(mandou uma imagem)', `(mandou a imagem #${midias.length})`).replace(/\(mandou um arquivo de imagem\)/, `(mandou a imagem #${midias.length})`)
     } catch (e: any) { texto += ' [a imagem não pôde ser baixada]' }
   }
+  // 02/11 (Maia): quem chega pelo site da Maia entra no teste grátis dela; nessa fase o áudio é transcrito
+  const { pedeMaia, transcreve } = await import('@/lib/maia/demo')
+  const viraMaia = cv.fase !== 'maia' && pedeMaia(texto) && (!cv.fase || cv.fase === 'novo' || /demonstra/i.test(texto))
+  if (viraMaia) { await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'maia', modo: 'ia', optout: false, ia_respostas: 0 }); cv.fase = 'maia'; cv.modo = 'ia'; cv.optout = false }
+  const ehMaia = cv.fase === 'maia'
+  if (ehMaia && (m.type === 'audio' || m.type === 'voice') && m.audio?.id) {
+    try { const { buf, mime } = await baixaMidia(m.audio.id); const t = await transcreve(buf, mime); if (t) texto = '(áudio) ' + t } catch {}
+  }
   await db.insere('wa_msgs', { conversa_id: cv.id, autor: 'cliente', tipo: m.type, texto, wamid: m.id, status: 'recebido' }).catch(() => null)
   const agora = new Date(), sair = SAIR.has(texto.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))
-  const marca = !cv.marca ? marcaDoTexto(texto) : null
+  const marca = !cv.marca && !ehMaia ? marcaDoTexto(texto) : null
   await db.atualiza('wa_conversas', { id: cv.id }, {
     ultima_msg: texto.slice(0, 200), ultima_msg_em: agora.toISOString(), atualizado_em: agora.toISOString(), janela_ate: new Date(agora.getTime() + 24 * 3600e3).toISOString(),
     nao_lidas: (cv.nao_lidas || 0) + 1, proximo_followup_em: null, ...(nome && !cv.nome ? { nome } : {}), ...(marca ? { marca } : {}), ...(sair ? { optout: true, modo: 'encerrada' } : {}),

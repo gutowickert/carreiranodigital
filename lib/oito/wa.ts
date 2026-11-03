@@ -50,6 +50,18 @@ export function enviaModelo(para: string, nome: string, idioma: string, corpo: s
 // imagem por link público (o post pronto, a fatura...), com legenda
 export const enviaImagem = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'image', image: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
 
+// 02/11 (Maia): sobe um arquivo (o áudio da Maia, em Ogg Opus) pra Meta e manda como áudio de WhatsApp
+export async function sobeMidia(buf: Buffer, mime: string, nome: string): Promise<{ ok: boolean; id?: string; erro?: string }> {
+  if (!waLigado()) return { ok: false, erro: 'WhatsApp do Oito não configurado' }
+  const fd = new FormData()
+  fd.append('messaging_product', 'whatsapp'); fd.append('type', mime)
+  fd.append('file', new Blob([new Uint8Array(buf)], { type: mime }), nome)
+  const r = await fetch(`${GRAPH}/${PHONE()}/media`, { method: 'POST', headers: { Authorization: 'Bearer ' + TOKEN() }, body: fd, signal: AbortSignal.timeout(30000) })
+  const j: any = await r.json().catch(() => ({}))
+  return r.ok && j.id ? { ok: true, id: j.id } : { ok: false, erro: String(j?.error?.message || r.status) }
+}
+export const enviaAudio = (para: string, mediaId: string) => manda({ to: fone(para), type: 'audio', audio: { id: mediaId } })
+
 // baixa uma mídia recebida (foto, logo): a Meta dá um endereço temporário, que só abre com o token
 export async function baixaMidia(id: string) {
   const r = await fetch(`${GRAPH}/${id}`, { headers: { Authorization: 'Bearer ' + TOKEN() }, signal: AbortSignal.timeout(15000) })
