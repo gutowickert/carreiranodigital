@@ -117,23 +117,20 @@ a:focus-visible,button:focus-visible,summary:focus-visible{outline:3px solid var
 .sec{padding-block:90px}
 .sec .cab{text-align:center;max-width:700px;margin:0 auto 40px}
 .sec .cab p{color:var(--mu);font-size:19px;margin:14px 0 0}
-.abas{display:flex;justify-content:center;gap:8px;flex-wrap:wrap;margin-bottom:30px}
-.aba{position:relative;overflow:hidden;border:1px solid var(--ln);background:var(--s1);color:var(--mu);font:600 16px var(--f-tx);padding:12px 20px;border-radius:999px;cursor:pointer;display:flex;align-items:center;gap:10px}
-.aba b{font:700 13px var(--f-dis);color:var(--mu)}
-.aba.on{color:var(--tx);border-color:#3a3a4c;background:var(--s2)}
-.aba.on b{color:var(--coral)}
-.aba .prog{position:absolute;left:0;bottom:0;height:2px;width:0;background:var(--coral)}
-.aba.on .prog{animation:prog 7s linear forwards}
-@keyframes prog{to{width:100%}}
-.vit{grid-template-columns:.8fr 1.2fr;gap:48px;align-items:center}
-.vit .txt h3{font:700 clamp(26px,3.2vw,36px)/1.12 var(--f-dis);margin:0 0 14px;letter-spacing:-1px}
-.vit .txt p{color:var(--mu);font-size:18px;margin:0 0 20px}
-.vit .txt ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:10px}
-.vit .txt li{display:flex;gap:10px;align-items:center;font-weight:600}
-.vit .txt li:before,.pl li:before{content:"";width:20px;height:20px;flex:none;border-radius:50%;background:var(--verde-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2333d699' stroke-width='3'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
-.painel-aba{display:none}.painel-aba.on{display:grid}
+.passos{display:flex;flex-direction:column;gap:96px}
+.passo{display:grid;grid-template-columns:.75fr 1.25fr;gap:56px;align-items:center}
+.passo:nth-child(even) .txt{order:2}
+.passo .num{display:inline-block;font:700 13px var(--f-dis);letter-spacing:.08em;text-transform:uppercase;color:var(--coral2);margin-bottom:12px}
+.passo .txt h3{font:700 clamp(26px,3.2vw,36px)/1.12 var(--f-dis);margin:0 0 14px;letter-spacing:-1px}
+.passo .txt p{color:var(--mu);font-size:19px;margin:0}
+.pl li:before{content:"";width:20px;height:20px;flex:none;border-radius:50%;background:var(--verde-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2333d699' stroke-width='3'%3E%3Cpath d='M5 12l5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
 .tela-grande{min-height:420px;min-width:0}
-.cria{padding:20px;display:grid;grid-template-columns:150px 1fr;gap:16px}
+.cria{padding:18px}
+.cria .ads{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.cria .adc{margin:0;background:var(--s2);border:1px solid var(--ln);border-radius:14px;overflow:hidden;animation:entra .5s both}
+.cria .adc:nth-child(2){animation-delay:.12s}.cria .adc:nth-child(3){animation-delay:.24s}
+.cria .adc img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+.cria figcaption{padding:9px 12px;font-size:13px;font-weight:600;color:var(--mu)}
 .mat h4,.res h4{margin:0 0 10px;font-size:13px;color:var(--mu);font-weight:600}
 .mat .th{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .mat .th div{aspect-ratio:1;border-radius:8px;background-size:cover;background-position:center}
@@ -219,17 +216,18 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
   .dash{grid-template-columns:1fr}.lado{display:none}
   .palco .cel{position:relative;right:auto;bottom:auto;width:260px;margin:-60px auto 0}
   .kpis{grid-template-columns:1fr 1fr}
-  .duas-c,.vit,.joinha .in,.melhora,.atende,.cria{grid-template-columns:1fr}
+  .duas-c,.passo,.joinha .in,.melhora,.atende,.cria{grid-template-columns:1fr}
+  .passos{gap:64px}.passo{gap:22px}.passo:nth-child(even) .txt{order:0}
+  .palco .duas-c,.cria .mat,.selos-at .sa:nth-child(n+2),.melhora .log .lg-i:nth-child(n+2){display:none}
+  .tela-grande{min-height:0}
   .nums .in{grid-template-columns:1fr 1fr;row-gap:28px}
   .planos{grid-template-columns:1fr}
   .atende .cel{max-width:260px;width:100%;margin:0 auto}
   .mat .th{grid-template-columns:repeat(4,1fr)}
   .sec{padding-block:64px}
-  .vit{gap:24px}
 }
 @media (max-width:520px){
-  .res .ads{grid-template-columns:1fr 1fr}.res .ads .adc:nth-child(3){display:none}
-  .aba{padding:10px 14px;font-size:15px}
+  .cria{padding:10px}.cria .ads{gap:8px}.cria figcaption{font-size:11px;padding:7px 8px}
   .cta{width:100%}.barra .cta{width:auto}
 }
 @media (prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition:none!important}}
@@ -247,7 +245,7 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 <section class="fx hero" id="inicio"><div class="in">
 <div class="verbos"><span><b>Cria</b> os anúncios</span><span><b>Atende</b> no WhatsApp</span><span><b>Mede</b> as vendas</span><span><b>Melhora</b> todo mês</span></div>
 <h1>Mais vendas pela internet. <span class="co">Ela faz tudo por ti.</span></h1>
-<p>A Maia é uma IA que cuida do marketing do teu negócio e te entrega o resultado pronto, no WhatsApp.</p>
+<p>A IA que faz o teu marketing e te entrega o resultado no WhatsApp.</p>
 <a class="cta" href="https://wa.me/5551993767137?text=Oi!%20Quero%20a%20demonstra%C3%A7%C3%A3o%20gr%C3%A1tis%20da%20Maia" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2zm4.5 12.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.3-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.9 11.9 0 0 0 4.6 4c1.7.7 2.4.8 3.2.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3z"/></svg>Ver a Maia no meu negócio</a>
 
 <div class="palco">
@@ -301,29 +299,21 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 </div></section>
 
 <section class="fx sec" id="como"><div class="in">
-<div class="cab"><h2>Ela faz o trabalho. <span class="co">Tu vê a venda.</span></h2><p>Quatro coisas, todo mês, sem tu mexer em nada.</p></div>
-<div class="abas" role="tablist" aria-label="O que a Maia faz">
-<button class="aba on" role="tab" aria-selected="true"><b>1</b>Cria<span class="prog"></span></button>
-<button class="aba" role="tab" aria-selected="false"><b>2</b>Atende<span class="prog"></span></button>
-<button class="aba" role="tab" aria-selected="false"><b>3</b>Mede<span class="prog"></span></button>
-<button class="aba" role="tab" aria-selected="false"><b>4</b>Melhora<span class="prog"></span></button>
+<div class="cab"><h2>Ela faz o trabalho. <span class="co">Tu vê a venda.</span></h2></div>
+<div class="passos">
+
+<div class="passo">
+<div class="txt"><span class="num">1 · Cria</span><h3>Teus anúncios, prontos.</h3><p>Tu manda as fotos. Ela cria e coloca no ar.</p></div>
+<div class="janela tela-grande"><div class="jtop"><i></i><i></i><i></i><span>Maia · Anúncios dos clientes</span></div>
+<div class="cria"><div class="ads" id="ads">
+<figure class="adc"><img src="/maia/img/ad-otica-24x.jpg" alt="Anúncio de imagem da ótica: óculos em até 24x" loading="lazy"><figcaption>Ótica · imagem</figcaption></figure>
+<figure class="adc"><img src="/maia/img/ad-papelao.jpg" alt="Anúncio em vídeo de embalagens: pra quem vende pela internet" loading="lazy"><figcaption>Embalagens · vídeo</figcaption></figure>
+<figure class="adc"><img src="/maia/img/ad-otica-video.jpg" alt="Anúncio em vídeo da ótica: pai e mãe de Gravataí e região" loading="lazy"><figcaption>Ótica · vídeo</figcaption></figure>
+</div></div></div>
 </div>
 
-<div class="painel-aba vit on" role="tabpanel">
-<div class="txt"><h3>Teus anúncios, prontos.</h3><p>Tu manda umas fotos. Ela cria os anúncios, escreve os textos e coloca no ar.</p><ul><li>Feitos com o teu material</li><li>Falando com quem é da tua região</li><li>Novos todo mês</li></ul></div>
-<div class="janela tela-grande"><div class="jtop"><i></i><i></i><i></i><span>Maia · Criando os anúncios de dezembro</span></div>
-<div class="cria">
-<div class="mat"><h4>Teu material</h4><div class="th"><div style="background-image:url(/maia/img/salao.jpg)"></div><div style="background-image:url(/maia/img/loja.jpg)"></div><div style="background-image:url(/maia/img/doceria.jpg)"></div><div style="background-image:url(/maia/img/pet.jpg)"></div></div></div>
-<div class="res"><h4>Anúncios criados pela Maia</h4><div class="ads" id="ads">
-<div class="adc"><div class="img" style="background-image:url(/maia/img/salao.jpg)"></div><div class="tx"><b>Lajeado e região: pele pronta pras festas</b>Limpeza de pele R$ 180</div><span class="ok">pronto</span><div class="brilho"></div></div>
-<div class="adc"><div class="img" style="background-image:url(/maia/img/loja.jpg)"></div><div class="tx"><b>Mulher de Lajeado: sobrancelha em 40 min</b>R$ 60, no centro</div><span class="ok">pronto</span><div class="brilho"></div></div>
-<div class="adc"><div class="img" style="background-image:url(/maia/img/doceria.jpg)"></div><div class="tx"><b>Presente de Natal pra quem é de Lajeado</b>Vale-presente a partir de R$ 90</div><span class="ok">pronto</span><div class="brilho"></div></div>
-</div><div class="passo-ia" id="passoIa"><i></i><span>Escrevendo os textos...</span></div></div>
-</div></div>
-</div>
-
-<div class="painel-aba vit" role="tabpanel">
-<div class="txt"><h3>Cliente respondido em segundos.</h3><p>De dia e de madrugada, no teu número de sempre. Quando o cliente quer comprar, ela te passa.</p><ul><li>Sabe teus preços e horários</li><li>Chama de volta quem sumiu</li><li>Diz que é uma IA</li></ul></div>
+<div class="passo">
+<div class="txt"><span class="num">2 · Atende</span><h3>Cliente respondido em segundos.</h3><p>De dia e de madrugada, no teu WhatsApp.</p></div>
 <div class="janela tela-grande"><div class="jtop"><i></i><i></i><i></i><span>Maia · Atendimento</span></div>
 <div class="atende">
 <div class="cel"><div class="tela"><div class="topo"><div class="av" style="background:#ffd0c4">B</div><div><b>Bella Estética</b><small>atendido pela Maia</small></div></div>
@@ -339,8 +329,8 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 </div></div>
 </div>
 
-<div class="painel-aba vit" role="tabpanel">
-<div class="txt"><h3>Cada venda, contada.</h3><p>Tu sabe quanto gastou, quantos chamaram, quantos compraram e de qual anúncio veio cada real.</p><ul><li>Resumo toda segunda</li><li>Relatório todo mês</li><li>Pergunta quando quiser</li></ul></div>
+<div class="passo">
+<div class="txt"><span class="num">3 · Mede</span><h3>Cada venda, contada.</h3><p>Quanto gastou, quantos compraram e de onde veio cada venda.</p></div>
 <div class="janela tela-grande"><div class="jtop"><i></i><i></i><i></i><span>Maia · Vendas de novembro</span></div>
 <div class="corpo">
 <div class="kpis">
@@ -358,8 +348,8 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 </div></div>
 </div>
 
-<div class="painel-aba vit" role="tabpanel">
-<div class="txt"><h3>Todo mês, melhor.</h3><p>Ela corta o que não vende, coloca mais no que vende e aprende com cada venda. A venda fica mais barata com o tempo.</p><ul><li>Ajusta os anúncios todo dia</li><li>Troca o que cansou</li><li>Nada muda sem o teu joinha</li></ul></div>
+<div class="passo">
+<div class="txt"><span class="num">4 · Melhora</span><h3>Todo mês, melhor.</h3><p>Corta o que não vende. Põe mais no que vende.</p></div>
 <div class="janela tela-grande"><div class="jtop"><i></i><i></i><i></i><span>Maia · 3 meses</span></div>
 <div class="melhora">
 <div class="caixa graf"><h4>Vendas por mês e custo de cada venda</h4>
@@ -380,6 +370,7 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 <div class="lg-i" style="animation-delay:.4s"><span class="ic" style="background:rgba(255,196,85,.14);color:var(--amar)">↻</span><div>Anúncio novo no lugar do que cansou<small>o público já tinha visto 4 vezes</small></div></div>
 </div>
 </div></div>
+</div>
 </div>
 </div></section>
 
@@ -409,24 +400,23 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 </div></section>
 
 <section class="fx sec" id="planos"><div class="in">
-<div class="cab"><h2>Simples assim.</h2><p>Preço fixo. Sem fidelidade. Tudo no teu nome.</p></div>
+<div class="cab"><h2>Simples assim.</h2><p>Preço fixo. Sem fidelidade.</p></div>
 <div class="planos">
 <div class="pl">
 <h3>Essencial</h3>
-<div class="pr"><s>R$ 697</s><b>R$ 597</b><span>/mês</span></div>
-<ul><li>Anúncios criados e no ar</li><li>Atendimento 24h no WhatsApp</li><li>Vendas medidas</li><li>Melhora todo mês</li></ul>
+<div class="pr"><b>R$ 697</b><span>/mês</span></div>
+<ul><li>Anúncios criados e no ar</li><li>Atendimento 24h no WhatsApp</li><li>Vendas medidas e relatório</li></ul>
 <a class="cta" href="https://wa.me/5551993767137?text=Oi!%20Quero%20a%20demonstra%C3%A7%C3%A3o%20gr%C3%A1tis%20da%20Maia%20(Essencial)" target="_blank" rel="noopener">Quero a demonstração</a>
 </div>
 <div class="pl top">
 <span class="tag">Mais completa</span>
 <h3>Completa</h3>
-<div class="pr"><s>R$ 997</s><b>R$ 897</b><span>/mês</span></div>
-<ul><li>Tudo do Essencial</li><li>8 posts por mês no Instagram</li><li>4 vídeos editados por mês</li><li>Campanha de datas especiais</li></ul>
+<div class="pr"><b>R$ 997</b><span>/mês</span></div>
+<ul><li>Tudo do Essencial</li><li>8 posts por mês no Instagram</li><li>4 vídeos editados por mês</li></ul>
 <a class="cta" href="https://wa.me/5551993767137?text=Oi!%20Quero%20a%20demonstra%C3%A7%C3%A3o%20gr%C3%A1tis%20da%20Maia%20(Completa)" target="_blank" rel="noopener">Quero a demonstração</a>
 </div>
 </div>
-<div class="lanc"><b>Preço de lançamento</b> pros primeiros que entrarem: sem a adesão de R$ 497 e R$ 100 a menos por mês.</div>
-<div class="selos"><span>Sem fidelidade</span><span>Conta e WhatsApp no teu nome</span><span>Nada sobe sem teu joinha</span></div>
+<div class="lanc"><b>Sem taxa de adesão</b> pros primeiros que entrarem <s style="opacity:.6;margin-left:6px">R$ 497</s></div>
 <p class="custo">Verba do anúncio (a partir de R$ 20/dia) e taxa do WhatsApp pagas direto à Meta.</p>
 </div></section>
 
@@ -435,9 +425,7 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 <div class="faq">
 <details><summary>Preciso entender de anúncio?</summary><p>Não. Tu aprova uma vez por mês, pelo WhatsApp. Quem cria, sobe e ajusta é a Maia.</p></details>
 <details><summary>Vou perder meu número de WhatsApp?</summary><p>Não. Ela trabalha no teu número de sempre e tu continua vendo todas as conversas no teu celular.</p></details>
-<details><summary>E se ela responder errado?</summary><p>Na primeira semana tu vê cada conversa e corrige com uma mensagem. Ela aprende e não erra de novo.</p></details>
 <details><summary>Quanto gasto além da mensalidade?</summary><p>A verba do anúncio, que tu define, e centavos de taxa do WhatsApp. Os dois direto no teu cartão, na Meta.</p></details>
-<details><summary>Como é a demonstração grátis?</summary><p>Tu chama no WhatsApp, conta teu negócio, e vê a Maia criando teus anúncios e atendendo um cliente teu, na hora.</p></details>
 </div>
 </div></section>
 
@@ -448,7 +436,7 @@ footer .in{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
 <div class="wa-num">WhatsApp <code id="numero">(51) 99376-7137</code><button type="button" id="copiar">Copiar</button></div>
 </div></section>
 
-<footer class="fx"><div class="in"><span>Maia · uma IA da Carreira no Digital · RS</span><span>* Números e imagens de exemplo. Os teus chegam no teu WhatsApp.</span></div></footer>
+<footer class="fx"><div class="in"><span>Maia · uma IA da Carreira no Digital · RS</span><span>* Números de exemplo. Anúncios de clientes reais da Carreira no Digital.</span></div></footer>
 
 <script>
 (function(){
@@ -457,17 +445,12 @@ document.getElementById('copiar').onclick=function(){var b=this;function sel(){v
   try{navigator.clipboard.writeText('51993767137').then(function(){b.textContent='Copiado';setTimeout(function(){b.textContent='Copiar'},2000)},sel)}catch(e){sel()}};
 function fmt(n,p){return (p||'')+Math.round(n).toLocaleString('pt-BR')}
 function conta(el){var a=+el.dataset.c,p=el.dataset.p||'',i=performance.now();(function f(t){var k=Math.min(1,(t-i)/1300);el.textContent=fmt(a*(1-Math.pow(1-k,3)),p);if(k<1)requestAnimationFrame(f)})(i)}
-function reanima(root){root.querySelectorAll('[data-c]').forEach(conta);root.querySelectorAll('.barras div,.venda,.lg-i,.graf .bv,.graf .lc').forEach(function(e){e.style.animation='none';void e.getBoundingClientRect();e.style.animation=''})}
-var abas=[].slice.call(document.querySelectorAll('.aba')),pains=[].slice.call(document.querySelectorAll('.painel-aba')),atual=0,timer=null;
+function reanima(root){root.querySelectorAll('[data-c]').forEach(conta);root.querySelectorAll('.barras div,.venda,.lg-i,.graf .bv,.graf .lc,.cria .adc').forEach(function(e){e.style.animation='none';void e.getBoundingClientRect();e.style.animation=''})}
+var pains=[].slice.call(document.querySelectorAll('.passo'));
 var passos=['Lendo o teu material...','Escrevendo os textos...','Montando os anúncios...','Pronto pro teu joinha'];
-function cria(){var ads=[].slice.call(document.querySelectorAll('#ads .adc')),st=document.querySelector('#passoIa span');ads.forEach(function(a){a.classList.remove('pronto')});
-  passos.forEach(function(t,k){setTimeout(function(){st.textContent=t},k*1100)});ads.forEach(function(a,k){setTimeout(function(){a.classList.add('pronto')},1200+k*900)})}
-function vai(i){atual=i;abas.forEach(function(a,j){a.classList.toggle('on',j===i);a.setAttribute('aria-selected',j===i);var p=a.querySelector('.prog');p.style.animation='none';void p.offsetWidth;p.style.animation=''});
-  pains.forEach(function(p,j){p.classList.toggle('on',j===i)});if(!reduz){reanima(pains[i]);if(i===0)cria()}
-  clearTimeout(timer);if(!reduz)timer=setTimeout(function(){vai((atual+1)%abas.length)},7000)}
-abas.forEach(function(a,j){a.onclick=function(){vai(j)}});
-if(reduz){document.querySelectorAll('#ads .adc').forEach(function(a){a.classList.add('pronto')});document.querySelector('#passoIa span').textContent='Pronto pro teu joinha';return}
-vai(0);
+function cria(){}
+if(reduz)return
+document.querySelectorAll('#ads .adc').forEach(function(a){a.classList.add('pronto')});
 function roteiro(id,passos,ini){var box=document.getElementById(id);if(!box)return;var i=0;
   function msg(p){var d=document.createElement('div');d.className='m '+p[0];d.textContent=p[1];if(p[2]){var h=document.createElement('i');h.textContent=p[2];d.appendChild(h)}return d}
   function poda(){while(box.children.length>6)box.removeChild(box.firstChild)}
@@ -480,7 +463,8 @@ roteiro('chatCliente',[['eu','Tem sábado?','23:15'],['ela','Tem! 9h ou 10h30?',
 roteiro('chatAprova',[['eu','👍','09:20'],['ela','No ar a partir de 1º de dezembro. Te mando o resumo na segunda.','09:20'],['h','segunda'],['ela','Primeira semana de dezembro: 41 conversas, 9 vendas 🎉','08:00']],4000);
 var novas=[['Pedro','vídeo limpeza de pele','R$ 180'],['Juliana','vale-presente','R$ 300'],['Ana','foto sobrancelha','R$ 60'],['Rita','vídeo limpeza de pele','R$ 180']],vi=0,vh=document.getElementById('vendasHoje');
 setInterval(function(){var v=novas[vi++%novas.length];var d=document.createElement('div');d.className='venda';var a=document.createElement('span');a.textContent=v[0];var s=document.createElement('small');s.textContent=v[1];a.appendChild(s);var b=document.createElement('b');b.textContent=v[2];d.appendChild(a);d.appendChild(b);vh.insertBefore(d,vh.firstChild);while(vh.children.length>3)vh.removeChild(vh.lastChild)},4500);
-if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){reanima(e.target);io.unobserve(e.target)}})},{threshold:.3});io.observe(document.querySelector('.palco .janela'))}
+if('IntersectionObserver' in window){var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){reanima(e.target);io.unobserve(e.target)}})},{threshold:.3});io.observe(document.querySelector('.palco .janela'));
+  var io2=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){var i=pains.indexOf(e.target);reanima(e.target);if(i===0)cria();io2.unobserve(e.target)}})},{threshold:.35});pains.forEach(function(p){io2.observe(p)})}
 })();
 </script>
 
