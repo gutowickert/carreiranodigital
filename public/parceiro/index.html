@@ -1,0 +1,609 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<title>Guia de Vendas da Escola</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Manrope:wght@400..800&display=swap">
+<style>
+/* Layout: uma esteira desenhada no topo (porta de entrada → três caminhos), depois uma ficha por produto com foto, e no fim o "ouviu isso, oferece aquilo". */
+:root{
+  --fundo:#0e0719; --fundo2:#160b28; --cartao:#1c1230; --borda:#33264b;
+  --tinta:#f5f1fb; --suave:#bdb1d1; --fraco:#8d80a3;
+  --roxo:#8b4dff; --magenta:#d946ef; --maia:#b39bff; --os:#34d399; --ok:#22c55e;
+  --grad:linear-gradient(120deg,#7b2ae8,#c026d3);
+  --display:'Bricolage Grotesque',Manrope,system-ui,sans-serif;
+  --texto:Manrope,system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:dark;
+}
+@media (prefers-color-scheme: light){:root:not([data-theme="dark"]){
+  --fundo:#f7f4fc; --fundo2:#efe9f8; --cartao:#ffffff; --borda:#e0d6ef;
+  --tinta:#1a1029; --suave:#5d5170; --fraco:#857a96;
+  --roxo:#6d28d9; --magenta:#a21caf; --maia:#7c3aed; --os:#059669; --ok:#15803d;
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --fundo:#f7f4fc; --fundo2:#efe9f8; --cartao:#ffffff; --borda:#e0d6ef;
+  --tinta:#1a1029; --suave:#5d5170; --fraco:#857a96;
+  --roxo:#6d28d9; --magenta:#a21caf; --maia:#7c3aed; --os:#059669; --ok:#15803d;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fundo);color:var(--tinta);font-family:var(--texto);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:var(--display);font-weight:800;letter-spacing:-.02em;line-height:1.05;text-wrap:balance}
+a{color:inherit}
+.ct{max-width:1100px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+section{padding-block:64px}
+.olho{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--maia)}
+.lead{font-size:clamp(17px,2.2vw,20px);color:var(--suave);max-width:60ch}
+.lead b{color:var(--tinta)}
+
+/* abertura */
+.abre{padding-block:56px 40px;position:relative;overflow:hidden}
+.abre::before{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:#7b2ae8;filter:blur(120px);opacity:.28;top:-220px;left:-160px;pointer-events:none}
+.abre .ct{position:relative;display:flex;flex-direction:column;gap:20px}
+.marca{display:flex;align-items:center;gap:10px;font-size:14px;font-weight:800;color:var(--suave)}
+.marca i{width:10px;height:10px;border-radius:50%;background:var(--grad)}
+.abre h1{font-size:clamp(38px,6.6vw,72px);max-width:16ch}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}
+.numeros div{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:14px 16px}
+.numeros b{display:block;font-family:var(--display);font-size:clamp(24px,3.6vw,32px);line-height:1.1;font-variant-numeric:tabular-nums}
+.numeros span{font-size:13px;font-weight:600;color:var(--suave)}
+
+/* quem compra */
+.quem{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:28px}
+.quem > div{background:var(--cartao);border:1px solid var(--borda);border-radius:20px;padding:24px;display:flex;flex-direction:column;gap:10px;min-width:0}
+.quem h3{font-size:22px}
+.quem p{color:var(--suave)}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chips span{font-size:14px;font-weight:700;border:1px solid var(--borda);border-radius:999px;padding:6px 12px}
+
+/* esteira */
+.esteira-sec{background:var(--fundo2)}
+.esteira{display:grid;grid-template-columns:1fr 64px 1.25fr;align-items:center;margin-top:34px}
+.porta{background:var(--cartao);border:2px solid var(--roxo);border-radius:24px;padding:26px;display:flex;flex-direction:column;gap:10px}
+.passo{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--fraco)}
+.porta h3{font-size:30px}
+.porta p{color:var(--suave)}
+.porta .valor{font-family:var(--display);font-size:28px;font-weight:800;color:var(--tinta)}
+.liga{display:flex;align-items:center;justify-content:center;color:var(--fraco)}
+.liga svg{width:44px;height:44px}
+.caminhos{display:flex;flex-direction:column;gap:12px}
+.caminho{display:grid;grid-template-columns:1fr auto;gap:4px 16px;align-items:center;background:var(--cartao);border:1px solid var(--borda);border-left:4px solid var(--cor);border-radius:18px;padding:18px 20px;text-decoration:none}
+.caminho:hover{border-color:var(--cor)}
+.caminho:focus-visible{outline:3px solid var(--cor);outline-offset:3px}
+.caminho .pergunta{grid-column:1/-1;font-size:14px;font-weight:700;color:var(--cor)}
+.caminho h3{font-size:22px}
+.caminho .v{font-family:var(--display);font-weight:800;font-size:20px;white-space:nowrap;text-align:right}
+.caminho .v small{display:block;font-family:var(--texto);font-size:12px;font-weight:700;color:var(--fraco)}
+.caminho .o{grid-column:1/-1;color:var(--suave);font-size:15px}
+.nota-esteira{margin-top:22px;color:var(--suave);font-size:15px;max-width:70ch}
+.nota-esteira b{color:var(--tinta)}
+
+/* produtos */
+.produto{border-top:1px solid var(--borda)}
+.prod{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px;align-items:start}
+.foto{position:sticky;top:24px;border-radius:24px;overflow:hidden;border:1px solid var(--borda);background:var(--cartao)}
+.foto img{display:block;width:100%;aspect-ratio:4/5;object-fit:cover}
+.foto figcaption{font-size:13px;color:var(--fraco);padding:10px 14px}
+.info{display:flex;flex-direction:column;gap:22px;min-width:0}
+.info .olho{color:var(--cor)}
+.info h2{font-size:clamp(34px,5vw,52px)}
+.info .lead{margin-top:-8px}
+.fatos{display:flex;flex-wrap:wrap;gap:8px}
+.fatos span{font-size:14px;font-weight:700;background:var(--cartao);border:1px solid var(--borda);border-radius:12px;padding:8px 12px}
+.bloco h3{font-family:var(--texto);font-size:13px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--fraco);margin-bottom:10px}
+.lista{list-style:none;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.lista li{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--suave);min-width:0}
+.lista li::before{content:"";flex:none;width:8px;height:8px;margin-top:8px;border-radius:50%;background:var(--cor)}
+.lista li b{color:var(--tinta)}
+.preco{display:flex;flex-wrap:wrap;gap:12px}
+.preco div{flex:1 1 180px;background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:16px 18px}
+.preco b{display:block;font-family:var(--display);font-size:clamp(28px,4vw,36px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.preco span{font-size:14px;color:var(--suave)}
+.preco small{display:block;font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cor);margin-bottom:4px}
+.fala{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.fala div{border:1px dashed var(--borda);border-radius:18px;padding:16px 18px;min-width:0}
+.fala small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fraco);margin-bottom:6px}
+.fala p{font-size:15px;color:var(--suave)}
+.fala q{color:var(--tinta);font-weight:700}
+.link{font-size:14px;color:var(--suave)}
+.link b{color:var(--tinta);user-select:all}
+.cuidado{font-size:14px;color:var(--suave);background:color-mix(in srgb,var(--cor) 10%,transparent);border-radius:14px;padding:12px 14px}
+.cuidado b{color:var(--tinta)}
+
+/* qual oferecer */
+.qual-sec{background:var(--fundo2)}
+.tabela{overflow-x:auto;margin-top:28px;border:1px solid var(--borda);border-radius:20px;background:var(--cartao)}
+table{width:100%;border-collapse:collapse;min-width:620px}
+th,td{text-align:left;padding:14px 18px;border-bottom:1px solid var(--borda);font-size:15px;vertical-align:top}
+th{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fraco)}
+tr:last-child td{border-bottom:0}
+td:first-child{color:var(--tinta);font-weight:700}
+td:last-child{white-space:nowrap;font-weight:800}
+.t1{color:var(--roxo)} .t2{color:var(--magenta)} .t3{color:var(--maia)} .t4{color:var(--os)}
+
+/* regras */
+.regras{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
+.regras li{background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:18px;min-width:0}
+.regras b{display:block;font-size:17px;margin-bottom:4px}
+.regras span{font-size:15px;color:var(--suave)}
+.fecha{margin-top:28px;display:flex;flex-wrap:wrap;gap:20px;align-items:center;background:var(--grad);color:#fff;border-radius:24px;padding:26px}
+.fecha h3{font-size:clamp(24px,3.4vw,32px);flex:1 1 320px}
+.fecha p{font-weight:700;font-size:17px}
+.fecha p span{display:block;font-family:var(--display);font-size:28px;font-weight:800;user-select:all}
+footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13px}
+
+/* comissão e projeção */
+.ganho{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
+.ganho div{background:var(--cartao);border:1px solid var(--borda);border-top:4px solid var(--cor);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.ganho small{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cor)}
+.ganho b{font-family:var(--display);font-size:clamp(26px,3.4vw,32px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.ganho span{font-size:14px;color:var(--suave)}
+.regra-com{margin-top:16px;font-size:15px;color:var(--suave);max-width:75ch}
+.regra-com b{color:var(--tinta)}
+.sim{display:grid;grid-template-columns:.85fr 1.15fr;gap:20px;margin-top:40px;align-items:start}
+.painel{background:var(--cartao);border:1px solid var(--borda);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.cenarios{display:flex;flex-wrap:wrap;gap:8px}
+.cenarios button{font:inherit;font-size:14px;font-weight:800;color:var(--tinta);background:transparent;border:1px solid var(--borda);border-radius:999px;padding:8px 14px;cursor:pointer}
+.cenarios button[aria-pressed="true"]{background:var(--grad);border-color:transparent;color:#fff}
+.cenarios button:focus-visible,.campo input:focus-visible{outline:3px solid var(--maia);outline-offset:2px}
+.campo{display:grid;grid-template-columns:1fr 92px;gap:10px;align-items:center}
+.campo label{font-size:15px;font-weight:700}
+.campo label span{display:block;font-size:13px;font-weight:600;color:var(--fraco)}
+.campo input{width:100%;font:inherit;font-weight:800;font-size:17px;text-align:right;color:var(--tinta);background:var(--fundo);border:1px solid var(--borda);border-radius:12px;padding:8px 10px;font-variant-numeric:tabular-nums}
+.res{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.res div{background:var(--cartao);border:1px solid var(--borda);border-radius:16px;padding:14px 16px;min-width:0}
+.res div.forte{background:var(--grad);border-color:transparent;color:#fff}
+.res div.forte span{color:rgba(255,255,255,.85)}
+.res b{display:block;font-family:var(--display);font-size:clamp(22px,3vw,30px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
+.res span{font-size:13px;font-weight:600;color:var(--suave)}
+.grafico{background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:14px 14px 8px;margin-top:10px}
+.grafico svg{display:block;width:100%;height:auto}
+.legenda{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--suave);padding:6px 4px 4px}
+.legenda i{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.direita{display:flex;flex-direction:column;gap:10px;min-width:0}
+.obs{font-size:13px;color:var(--fraco)}
+.carteira{margin-top:56px;padding-top:40px;border-top:1px solid var(--borda);display:flex;flex-direction:column;gap:16px}
+.res4{grid-template-columns:repeat(4,1fr)}
+@media (max-width:880px){.res4{grid-template-columns:1fr 1fr}}
+
+@media (max-width:880px){
+  .ganho{grid-template-columns:1fr 1fr}
+  .sim{grid-template-columns:1fr}
+  .esteira{grid-template-columns:1fr;gap:6px}
+  .liga svg{transform:rotate(90deg)}
+  .prod{grid-template-columns:1fr;gap:24px}
+  .foto{position:static;max-width:440px}
+  .foto img{aspect-ratio:16/11}
+  .regras{grid-template-columns:1fr 1fr}
+}
+@media (max-width:600px){
+  section{padding-block:48px}
+  .numeros{grid-template-columns:1fr 1fr}
+  .quem,.lista,.fala,.regras{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="abre">
+  <div class="ct">
+    <p class="marca"><i></i>Carreira no Digital · guia de quem vende</p>
+    <h1>Quatro produtos. Um caminho pro dono de negócio <span class="grad">vender mais com IA.</span></h1>
+    <p class="lead">A escola ensina o dono de negócio local a fazer o marketing com inteligência artificial, ou faz por ele. Presencial em <b>Lajeado e Porto Alegre</b>. Aqui está o que cada produto é, pra quem serve, quanto custa e como puxar a conversa.</p>
+    <div class="numeros">
+      <div><b>+500</b><span>alunos no 1º ano da escola</span></div>
+      <div><b>+1.000</b><span>anúncios testados</span></div>
+      <div><b>R$ 1,5 mi</b><span>investidos em anúncio nos próprios negócios</span></div>
+      <div><b>+15 mil</b><span>vendas com anúncio em 3 anos</span></div>
+    </div>
+  </div>
+</header>
+
+<section>
+  <div class="ct">
+    <p class="olho">Pra quem tu vende</p>
+    <div class="quem">
+      <div>
+        <h3>O dono de negócio local</h3>
+        <p>Atende bem quem chega. O problema é o dia em que ninguém chega. Já pagou alguém pra fazer anúncio e não viu retorno, e não entende o suficiente pra cobrar.</p>
+        <div class="chips"><span>Loja</span><span>Ótica</span><span>Clínica</span><span>Corretora</span><span>Oficina</span><span>Salão</span><span>Doceria</span><span>Prestador de serviço</span></div>
+      </div>
+      <div>
+        <h3>A pergunta que separa tudo</h3>
+        <p>Antes de falar de produto, descobre uma coisa: <b style="color:var(--tinta)">ele quer aprender a fazer, ou quer que alguém faça por ele?</b> A resposta diz qual produto oferecer. A tabela no fim da página ajuda.</p>
+        <p>As frases que mais aparecem: “todo mundo já foi pro digital, menos eu”, “já paguei e não deu em nada”, “não entendo disso, qualquer um me enrola”.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="esteira-sec" id="esteira">
+  <div class="ct">
+    <p class="olho">A nossa esteira</p>
+    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">Uma porta de entrada e três caminhos depois.</h2>
+    <div class="esteira">
+      <a class="porta" href="#imersao" style="text-decoration:none">
+        <span class="passo">Porta de entrada</span>
+        <h3>Imersão Deu Venda</h3>
+        <p>Em turma, 4 encontros presenciais. Sai com anúncio no ar e a máquina de IA montada.</p>
+        <span class="valor">R$ 1.497</span>
+      </a>
+      <div class="liga" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="caminhos">
+        <a class="caminho" href="#individual" style="--cor:var(--magenta)">
+          <span class="pergunta">Quer fazer sozinho, com alguém do lado</span>
+          <h3>Deu Venda individual</h3><span class="v">R$ 2.997<small>uma vez</small></span>
+          <span class="o">Um a um, só o negócio dele na mesa, e 3 meses de acompanhamento.</span>
+        </a>
+        <a class="caminho" href="#maia" style="--cor:var(--maia)">
+          <span class="pergunta">Não tem tempo, quer que façam por ele</span>
+          <h3>Maia</h3><span class="v">R$ 697<small>por mês</small></span>
+          <span class="o">A agência inteira numa IA: anuncia, atende no WhatsApp e conta as vendas.</span>
+        </a>
+        <a class="caminho" href="#os" style="--cor:var(--os)">
+          <span class="pergunta">Tem time e perde tempo com tarefa repetida</span>
+          <h3>teunegócio OS</h3><span class="v">Sob consulta<small>por empresa</small></span>
+          <span class="o">O sistema da empresa, com o nome dela, e a IA fazendo o repetitivo.</span>
+        </a>
+      </div>
+    </div>
+    <p class="nota-esteira">A Imersão é por onde a maioria entra, mas <b>cada produto também se vende sozinho</b>. Um dono sem tempo pode ir direto pra Maia. Uma empresa com equipe pode ir direto pro OS. Pra quem já fez a Imersão, a escola ainda oferece o <b>acompanhamento individual de 3 meses por R$ 1.997</b>.</p>
+  </div>
+</section>
+
+<section class="produto" id="imersao" style="--cor:var(--roxo)">
+  <div class="ct prod">
+    <figure class="foto"><img src="img/aula.jpg" alt="Aula da Imersão: o professor ajuda uma aluna no celular, com o Claude projetado na tela"><figcaption>Sala da Imersão, com o Claude na tela.</figcaption></figure>
+    <div class="info">
+      <p class="olho">1 · Porta de entrada · em turma</p>
+      <h2>Imersão Deu Venda</h2>
+      <p class="lead">Em 4 encontros, o negócio sai com <b>anúncio rodando e vídeo editado pela IA</b>. Não é aula pra assistir: cada um traz o notebook e faz no próprio negócio.</p>
+      <div class="fatos"><span>4 encontros de 3 horas</span><span>Turma pequena</span><span>Anúncio no ar no 2º encontro</span><span>Presencial em Lajeado e Porto Alegre</span></div>
+      <div class="bloco">
+        <h3>Como funciona</h3>
+        <ul class="lista">
+          <li><span><b>Encontro 1, estratégia:</b> o negócio, o mercado, a oferta e pra quem falar.</span></li>
+          <li><span><b>Encontro 2, arte, vídeo e campanha:</b> os vídeos editados pela IA e o anúncio no ar.</span></li>
+          <li><span><b>Encontro 3, ajuste e atendimento:</b> a campanha ajustada, o WhatsApp organizado e o site no ar.</span></li>
+          <li><span><b>Encontro 4, resultados:</b> umas 2 semanas depois, numa segunda, com os números na mão.</span></li>
+        </ul>
+      </div>
+      <div class="bloco">
+        <h3>O que ele leva</h3>
+        <ul class="lista">
+          <li><span>A máquina de IA montada no Claude, com o negócio dele guardado. É dele e continua usando.</span></li>
+          <li><span>A edição de vídeo: grava no celular e a máquina corta, legenda e põe a marca.</span></li>
+          <li><span>Artes, posts, roteiros e o site da empresa, no padrão da marca dele.</span></li>
+          <li><span>30 dias no grupo da turma, com o time da escola no WhatsApp.</span></li>
+        </ul>
+      </div>
+      <div class="preco">
+        <div><small>Investimento</small><b>R$ 1.497</b><span>ou 6x de R$ 249,50 no cartão</span></div>
+        <div><small>Próximas turmas</small><b style="font-size:22px">10 a 12/11</b><span>Porto Alegre, tarde e noite · Lajeado de 17 a 19/11, à noite</span></div>
+      </div>
+      <div class="fala">
+        <div><small>Pra puxar a conversa</small><p><q>Em três noites tu sai com o teu anúncio no ar, feito por ti, com a IA editando os teus vídeos.</q></p></div>
+        <div><small>Se ele disser “já paguei e não deu”</small><p>Aqui ele não terceiriza: aprende fazendo, vê a campanha subir e volta 2 semanas depois pra olhar o resultado.</p></div>
+      </div>
+      <p class="cuidado">A verba do anúncio é do aluno e vai direto pra Meta. Quanto investir se define no 1º encontro. <b>Leva:</b> notebook, celular com WhatsApp Business e acesso ao Facebook e ao Instagram do negócio.</p>
+      <p class="link">Página: <b>carreiranodigital.com/imersaodeuvenda</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="produto" id="individual" style="--cor:var(--magenta)">
+  <div class="ct prod">
+    <figure class="foto"><img src="img/kateedit.jpg" alt="Vídeo de uma dona de ótica, pronto pra anunciar, com legenda e a marca"><figcaption>Vídeo gravado no celular por uma dona de ótica e editado pela máquina.</figcaption></figure>
+    <div class="info">
+      <p class="olho">2 · Quer fazer, com alguém do lado</p>
+      <h2>Deu Venda individual</h2>
+      <p class="lead">A mesma máquina de IA, montada <b>um a um</b>, só com o negócio dele na mesa. A primeira campanha entra no ar com ele olhando, e depois são 3 meses de acompanhamento até a estratégia acertar.</p>
+      <div class="fatos"><span>Um a um, presencial</span><span>2 encontros de implantação</span><span>3 meses de acompanhamento</span><span>Data combinada com ele</span></div>
+      <div class="bloco">
+        <h3>Os cinco encontros</h3>
+        <ul class="lista">
+          <li><span><b>1 · Implanta:</b> o negócio, a oferta, o mercado e o padrão da marca.</span></li>
+          <li><span><b>2 · Implanta:</b> as peças com as fotos reais e a campanha no ar.</span></li>
+          <li><span><b>3 · Mês 1:</b> a leitura dos números, quanto custou cada conversa.</span></li>
+          <li><span><b>4 · Mês 2:</b> o ajuste com dado de verdade.</span></li>
+          <li><span><b>5 · Mês 3:</b> o plano dos próximos meses, pra seguir sozinho.</span></li>
+          <li><span>Entre os encontros, um grupo de WhatsApp com o time da escola.</span></li>
+        </ul>
+      </div>
+      <div class="preco">
+        <div><small>Investimento</small><b>R$ 2.997</b><span>ou 10x de R$ 299,70 no cartão. Os 3 meses estão inclusos.</span></div>
+      </div>
+      <div class="fala">
+        <div><small>Pra quem oferecer</small><p>Quem não quer turma, tem agenda difícil ou quer atenção só pro negócio dele. Muitas vezes é o lead da Imersão que pede “e se for só eu?”.</p></div>
+        <div><small>Pra quem não é</small><p>Quem quer que façam tudo sem participar (esse é da Maia), ou quem ainda não sabe o que vende nem por quanto.</p></div>
+      </div>
+      <p class="cuidado"><b>Fora do valor:</b> a verba de anúncio, domínio e hospedagem do site e o CRM. A escola ensina e acompanha, quem opera é ele. <b>Não se promete número de vendas.</b></p>
+      <p class="link">Página: <b>carreiranodigital.com/deuvenda</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="produto" id="maia" style="--cor:var(--maia)">
+  <div class="ct prod">
+    <figure class="foto"><img src="img/ad-otica-24x.jpg" alt="Anúncio real de uma ótica cliente da escola"><figcaption>Anúncio de uma cliente real, do tipo que a Maia cria.</figcaption></figure>
+    <div class="info">
+      <p class="olho">3 · Quer que façam por ele</p>
+      <h2>Maia</h2>
+      <p class="lead">A <b>agência inteira numa IA</b>. Ela cria os anúncios, atende os clientes no WhatsApp a qualquer hora e conta quantas conversas viraram venda. O dono só fala com ela pelo WhatsApp.</p>
+      <div class="fatos"><span>Sem reunião</span><span>Sem fidelidade</span><span>Atende 24 horas</span><span>Sempre diz que é uma IA</span></div>
+      <div class="bloco">
+        <h3>A rotina do dono</h3>
+        <ul class="lista">
+          <li><span><b>Uma vez por mês:</b> aprova os criativos com um joinha.</span></li>
+          <li><span><b>Toda semana:</b> recebe os números e pergunta o que quiser.</span></li>
+          <li><span><b>Ela cria</b> os anúncios em cima das fotos do negócio.</span></li>
+          <li><span><b>Ela atende, mede e melhora</b> a campanha com o que funcionou.</span></li>
+        </ul>
+      </div>
+      <div class="preco">
+        <div><small>Essencial</small><b>R$ 697<span style="font-size:16px">/mês</span></b><span>Anúncio, atendimento e venda contada.</span></div>
+        <div><small>Completa</small><b>R$ 997<span style="font-size:16px">/mês</span></b><span>Tudo da Essencial, mais 8 posts e 4 vídeos do Instagram por mês.</span></div>
+      </div>
+      <div class="fala">
+        <div><small>Pra puxar a conversa</small><p><q>Tu já pensou ter uma pessoa que faz o teu anúncio, responde todo cliente na hora e te diz no fim da semana quanto vendeu? Ela custa menos que um salário.</q></p></div>
+        <div><small>O melhor argumento</small><p>O teste grátis. Ele manda <b style="color:var(--tinta)">“Quero a demonstração grátis da Maia”</b> pro WhatsApp da escola e conversa com ela na hora.</p></div>
+      </div>
+      <p class="cuidado"><b>Implantação de R$ 497</b> (aluno da escola não paga). A verba do anúncio e a taxa do WhatsApp o cliente paga direto pra Meta, na conta dele. <b>Antes de prometer data de início, confirma com o Guto.</b></p>
+      <p class="link">Página: <b>carreiranodigital.vercel.app/maia</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="produto" id="os" style="--cor:var(--os)">
+  <div class="ct prod">
+    <figure class="foto"><img src="img/painel.jpg" alt="Tela do painel do teunegócio OS com vendas, leads, conversão e compromissos da semana" style="object-position:left top"><figcaption>Tela real do sistema. Onde diz “Tua marca”, entra o nome da empresa.</figcaption></figure>
+    <div class="info">
+      <p class="olho">4 · Empresa com time e processo</p>
+      <h2>teunegócio OS</h2>
+      <p class="lead">O <b>sistema da empresa, com o nome dela</b>, e a IA fazendo o que se repete: responder a mesma pergunta o dia todo, voltar no cliente que ficou de pensar, pedir aprovação. Em uso em até 17 dias.</p>
+      <div class="fatos"><span>Em uso em até 17 dias</span><span>Cada um do time com seu login</span><span>90 dias ajustando junto</span><span>Os dados ficam no nome da empresa</span></div>
+      <div class="bloco">
+        <h3>O que tem dentro</h3>
+        <ul class="lista">
+          <li><span><b>O dia numa tela:</b> o que vendeu, quem chegou e o que fazer primeiro.</span></li>
+          <li><span><b>O funil:</b> cada cliente vira um card com a etapa e o próximo passo.</span></li>
+          <li><span><b>A agenda do time,</b> com confirmação automática antes de cada horário.</span></li>
+          <li><span><b>O placar do mês:</b> quanto vendeu, quanto converteu e onde trava.</span></li>
+        </ul>
+      </div>
+      <div class="preco">
+        <div><small>Prova, na própria escola</small><b>13,3%</b><span>dos contatos viraram venda</span></div>
+        <div><small>Mensagens por dia</small><b>107</b><span>saindo pela IA</span></div>
+        <div><small>Do contato à venda</small><b>6 dias</b><span>em média</span></div>
+      </div>
+      <div class="fala">
+        <div><small>Pra puxar a conversa</small><p><q>O teu cliente não foi embora pelo preço. Ele sumiu porque ninguém voltou nele no dia certo.</q> Na escola, foram 472 que sumiram contra 23 que disseram não ter orçamento.</p></div>
+        <div><small>Onde já roda</small><p>Uma clínica de saúde (agenda, financeiro e ficha do paciente) e uma corretora de seguros (a IA lê a apólice e agenda a renovação).</p></div>
+      </div>
+      <p class="cuidado"><b>Preço:</b> depende de quantas pessoas usam e de quais processos a IA assume. O próximo passo é sempre uma conversa curta com o <b>Nando</b>, que implanta. O WhatsApp oficial e a IA são pagos direto pra Meta e pra Anthropic, na conta da empresa.</p>
+      <p class="link">Página: <b>carreiranodigital.com/teunegocioos</b></p>
+    </div>
+  </div>
+</section>
+
+<section class="qual-sec" id="qual">
+  <div class="ct">
+    <p class="olho">Ouviu isso, oferece aquilo</p>
+    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">Qual produto oferecer.</h2>
+    <div class="tabela">
+      <table>
+        <thead><tr><th>O que ele diz</th><th>O que está por trás</th><th>Oferece</th></tr></thead>
+        <tbody>
+          <tr><td>“Quero aprender a fazer o meu anúncio.”</td><td>Quer autonomia e preço de entrada.</td><td class="t1">Imersão</td></tr>
+          <tr><td>“Todo mundo já foi pro digital, menos eu.”</td><td>Sente que está atrasado e não sabe por onde começar.</td><td class="t1">Imersão</td></tr>
+          <tr><td>“Não consigo ir em turma, minha agenda é louca.”</td><td>Quer fazer, mas no tempo dele.</td><td class="t2">Deu Venda individual</td></tr>
+          <tr><td>“Quero alguém olhando o meu negócio comigo.”</td><td>Quer atenção só pra ele e acompanhamento.</td><td class="t2">Deu Venda individual</td></tr>
+          <tr><td>“Não tenho tempo pra isso.”</td><td>Quer o resultado, não o trabalho.</td><td class="t3">Maia</td></tr>
+          <tr><td>“O cliente chama e ninguém responde a tempo.”</td><td>Perde venda no atendimento.</td><td class="t3">Maia</td></tr>
+          <tr><td>“A minha agência só me manda relatório.”</td><td>Paga e não vê venda contada.</td><td class="t3">Maia</td></tr>
+          <tr><td>“Minha equipe perde o dia respondendo e anotando.”</td><td>Tem time e processo repetido.</td><td class="t4">teunegócio OS</td></tr>
+          <tr><td>“Cliente fica de pensar e a gente esquece dele.”</td><td>Não tem funil nem retorno no dia certo.</td><td class="t4">teunegócio OS</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="ganho">
+  <div class="ct">
+    <p class="olho">Quanto tu ganha</p>
+    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">15% em cada venda. 5% em cada mensalidade.</h2>
+    <div class="ganho">
+      <div style="--cor:var(--roxo)"><small>Imersão</small><b>R$ 224,55</b><span>por vaga vendida (15% de R$ 1.497)</span></div>
+      <div style="--cor:var(--magenta)"><small>Deu Venda individual</small><b>R$ 449,55</b><span>por venda (15% de R$ 2.997)</span></div>
+      <div style="--cor:var(--maia)"><small>Maia</small><b>R$ 74,55</b><span>na implantação (15% de R$ 497), e todo mês R$ 34,85 na Essencial ou R$ 49,85 na Completa</span></div>
+      <div style="--cor:var(--os)"><small>teunegócio OS</small><b>15% + 5%</b><span>15% da implantação e 5% da mensalidade. O valor sai depois da conversa com o Nando.</span></div>
+    </div>
+    <p class="regra-com">A comissão é sobre o valor que o cliente paga. Nas mensalidades, tu recebe <b>5% todo mês, enquanto o cliente seguir pagando</b>. Por isso a Maia é a que mais cresce: cada cliente que tu traz soma no mês seguinte.</p>
+
+    <div class="sim">
+      <div class="painel">
+        <div class="cenarios" role="group" aria-label="Cenários">
+          <button type="button" data-c="comeco" aria-pressed="false">Começando</button>
+          <button type="button" data-c="bom" aria-pressed="true">Bom ritmo</button>
+          <button type="button" data-c="forte" aria-pressed="false">Forte</button>
+        </div>
+        <div class="campo"><label for="q-im">Vagas da Imersão<span>por mês</span></label><input id="q-im" type="number" min="0" max="99" step="1" value="6"></div>
+        <div class="campo"><label for="q-dv">Deu Venda individual<span>por mês</span></label><input id="q-dv" type="number" min="0" max="99" step="1" value="2"></div>
+        <div class="campo"><label for="q-mai">Clientes novos da Maia<span>por mês</span></label><input id="q-mai" type="number" min="0" max="99" step="1" value="4"></div>
+        <div class="campo"><label for="q-comp">Quantos pegam a Completa<span>% dos clientes da Maia</span></label><input id="q-comp" type="number" min="0" max="100" step="5" value="40"></div>
+        <div class="campo"><label for="q-os">Clientes novos do OS<span>por mês</span></label><input id="q-os" type="number" min="0" max="99" step="1" value="1"></div>
+        <div class="campo"><label for="q-osad">Taxa de adesão do OS<span>R$ por cliente</span></label><input id="q-osad" type="number" min="0" step="100" placeholder="R$"></div>
+        <div class="campo"><label for="q-osmes">Mensalidade do OS<span>R$ por cliente</span></label><input id="q-osmes" type="number" min="0" step="50" placeholder="R$"></div>
+        <div class="campo"><label for="q-sai">Clientes que cancelam<span>% por mês, na Maia e no OS</span></label><input id="q-sai" type="number" min="0" max="50" step="1" value="5"></div>
+        <p class="obs">O valor do OS muda de empresa pra empresa: preenche com o que for fechado com o Nando.</p>
+      </div>
+      <div class="direita">
+        <div class="res">
+          <div><b id="r-m1">–</b><span>tu ganha no 1º mês</span></div>
+          <div><b id="r-m12">–</b><span>tu ganha no 12º mês</span></div>
+          <div class="forte"><b id="r-ano">–</b><span>tu ganha em 12 meses</span></div>
+          <div><b id="r-esc">–</b><span>a escola fatura em 12 meses</span></div>
+        </div>
+        <div class="grafico">
+          <svg id="graf" viewBox="0 0 640 280" role="img" aria-label="Comissão do vendedor mês a mês, por 12 meses"></svg>
+          <div class="legenda"><span><i style="background:var(--roxo)"></i>Vendas e adesões do mês (15%)</span><span><i style="background:var(--maia)"></i>Mensalidades da Maia e do OS (5%)</span></div>
+        </div>
+        <p class="obs" id="r-ativos"></p>
+      </div>
+    </div>
+
+    <div class="carteira" id="carteira">
+      <p class="olho">A carteira dele</p>
+      <h2 style="font-size:clamp(28px,4.4vw,40px)">A recorrência: o que entra todo mês sem vender nada novo.</h2>
+      <p class="lead">Cada cliente da Maia e do OS que ele traz vira mensalidade, e 5% dela é dele todo mês. A carteira cresce enquanto ele vende mais do que os clientes cancelam, e para de crescer num teto. Os números seguem os campos do simulador acima, em 24 meses.</p>
+      <div class="res res4">
+        <div><b id="c-cli12">–</b><span>clientes na carteira no 12º mês</span></div>
+        <div><b id="c-rec12">–</b><span>de recorrência por mês no 12º mês</span></div>
+        <div class="forte"><b id="c-rec24">–</b><span>de recorrência por mês no 24º mês</span></div>
+        <div><b id="c-teto">–</b><span id="c-teto-txt">por mês, o teto da carteira</span></div>
+      </div>
+      <div class="grafico">
+        <svg id="graf2" viewBox="0 0 640 260" role="img" aria-label="Comissão recorrente do vendedor por mês, em 24 meses"></svg>
+        <div class="legenda"><span><i style="background:var(--maia)"></i>5% das mensalidades da Maia</span><span><i style="background:var(--os)"></i>5% das mensalidades do OS</span><span><i style="background:var(--fraco)"></i>Teto da carteira</span></div>
+      </div>
+      <div class="tabela" style="margin-top:0">
+        <table>
+          <thead><tr><th>Mês</th><th>Clientes Maia</th><th>Clientes OS</th><th>Mensalidades da carteira</th><th>Recorrência dele no mês</th><th>Recorrência somada até aqui</th></tr></thead>
+          <tbody id="c-tab"></tbody>
+        </table>
+      </div>
+      <p class="obs" id="c-obs"></p>
+    </div>
+  </div>
+</section>
+
+<section id="regras">
+  <div class="ct">
+    <p class="olho">Combinados de quem vende pela escola</p>
+    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">O que a gente promete e o que não promete.</h2>
+    <ul class="regras">
+      <li><b>Nunca número de vendas</b><span>A escola ensina, monta e acompanha. Não garante volume de venda.</span></li>
+      <li><b>A verba é do cliente</b><span>O dinheiro do anúncio vai direto pra Meta, na conta dele. Não passa pela escola.</span></li>
+      <li><b>A IA se apresenta</b><span>A Maia sempre diz que é uma IA. Nada de vender como se fosse uma pessoa.</span></li>
+      <li><b>Preço de aluno é de aluno</b><span>A condição sem taxa de adesão da Maia vale pra quem já fez curso na escola.</span></li>
+      <li><b>Data, só confirmada</b><span>Turma e início da Maia: confirma com o Guto antes de passar.</span></li>
+      <li><b>O fechamento é no WhatsApp</b><span>Tu abre a conversa e passa o contato pro WhatsApp da escola.</span></li>
+    </ul>
+    <div class="fecha">
+      <h3>Achou alguém? Manda pro WhatsApp da escola.</h3>
+      <p>Carreira no Digital<span>(51) 99376-7137</span></p>
+    </div>
+  </div>
+</section>
+
+<footer>Carreira no Digital · Lajeado: Rua Alberto Torres, 526, Centro · Porto Alegre: Av. Carlos Gomes, 1340, sala 904, Três Figueiras</footer>
+
+<script>
+(function(){
+  var PRECO={im:1497,dv:2997,impl:497,ess:697,comp:997}, VENDA=0.15, MES=0.05;
+  var CEN={comeco:{im:3,dv:1,mai:2,comp:40,sai:5,os:0},bom:{im:6,dv:2,mai:4,comp:40,sai:5,os:1},forte:{im:10,dv:3,mai:8,comp:40,sai:5,os:2}};
+  var ids=['im','dv','mai','comp','sai','os','osad','osmes'], $=function(i){return document.getElementById(i)};
+  var brl=function(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})};
+  function ler(k){var n=parseFloat($('q-'+k).value);return isFinite(n)&&n>0?n:0}
+  function conta(){
+    var im=ler('im'),dv=ler('dv'),mai=ler('mai'),comp=Math.min(ler('comp'),100)/100,sai=Math.min(ler('sai'),100)/100;
+    var os=ler('os'),osad=ler('osad'),osmes=ler('osmes');
+    var ticket=PRECO.ess*(1-comp)+PRECO.comp*comp, vendaMes=im*PRECO.im+dv*PRECO.dv+mai*PRECO.impl+os*osad;
+    var ativos=0,ativosOs=0,meses=[],ano=0,esc=0;
+    for(var m=0;m<12;m++){
+      ativos=ativos*(1-sai)+mai; ativosOs=ativosOs*(1-sai)+os;
+      var rec=ativos*ticket+ativosOs*osmes, a=vendaMes*VENDA, b=rec*MES;
+      meses.push([a,b]); ano+=a+b; esc+=vendaMes+rec;
+    }
+    $('r-m1').textContent=brl(meses[0][0]+meses[0][1]);
+    $('r-m12').textContent=brl(meses[11][0]+meses[11][1]);
+    $('r-ano').textContent=brl(ano);
+    $('r-esc').textContent=brl(esc);
+    $('r-ativos').textContent='No 12º mês, cerca de '+Math.round(ativos)+' clientes pagando a Maia e '+Math.round(ativosOs)+' pagando o OS. Conta feita com a primeira mensalidade paga no mês da venda.'+(os>0&&!osad&&!osmes?' Preenche a adesão e a mensalidade do OS pra ele entrar na conta.':'');
+    desenha(meses);
+    carteira(mai,os,ticket,osmes,sai);
+  }
+  function carteira(mai,os,ticket,osmes,sai){
+    var a=0,o=0,soma=0,serie=[],linhas='',marcos=[1,3,6,9,12,18,24];
+    for(var m=1;m<=24;m++){
+      a=a*(1-sai)+mai; o=o*(1-sai)+os;
+      var rm=a*ticket*MES, ro=o*osmes*MES; soma+=rm+ro;
+      serie.push([rm,ro]);
+      if(marcos.indexOf(m)>-1){
+        linhas+='<tr><td>'+m+'º</td><td>'+Math.round(a)+'</td><td>'+Math.round(o)+'</td><td>'+brl(a*ticket+o*osmes)+'</td><td>'+brl(rm+ro)+'</td><td>'+brl(soma)+'</td></tr>';
+      }
+      if(m===12){$('c-cli12').textContent=Math.round(a+o);$('c-rec12').textContent=brl(rm+ro)}
+      if(m===24){$('c-rec24').textContent=brl(rm+ro)}
+    }
+    $('c-tab').innerHTML=linhas;
+    var teto=sai>0?(mai/sai*ticket+os/sai*osmes)*MES:0;
+    if(sai>0){
+      $('c-teto').textContent=brl(teto);
+      $('c-teto-txt').textContent='por mês, o teto da carteira (perto de '+Math.round((mai+os)/sai)+' clientes)';
+      $('c-obs').textContent='O teto é onde os clientes novos de cada mês empatam com os que cancelam. Com '+Math.round(sai*100)+'% de cancelamento por mês, um cliente fica em média '+Math.round(1/sai)+' meses. Só a recorrência dos 24 meses soma '+brl(soma)+'.';
+    } else {
+      $('c-teto').textContent='Sem teto';
+      $('c-teto-txt').textContent='sem cancelamento, a carteira só cresce';
+      $('c-obs').textContent='Só a recorrência dos 24 meses soma '+brl(soma)+'.';
+    }
+    var W=640,H=260,L=56,R=8,T=12,B=28,max=teto;
+    serie.forEach(function(x){max=Math.max(max,x[0]+x[1])});
+    var passo=[50,100,250,500,1000,2000,2500,5000,10000,20000,25000,50000].find(function(p){return max/p<=4})||100000;
+    var topo=Math.max(passo,Math.ceil(max/passo)*passo), y=function(v){return T+(H-T-B)*(1-v/topo)}, x=function(i){return L+(W-L-R)*i/23};
+    var s='';
+    for(var v=0;v<=topo+0.1;v+=passo){
+      s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" style="stroke:var(--borda)" stroke-width="1"/>';
+      s+='<text x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" style="fill:var(--fraco)">'+(v>=1000?'R$ '+(v/1000).toLocaleString('pt-BR')+' mil':'R$ '+v)+'</text>';
+    }
+    var base=serie.map(function(p,i){return x(i)+','+y(p[0])}).join(' ');
+    var cima=serie.map(function(p,i){return x(i)+','+y(p[0]+p[1])}).join(' ');
+    var baseVolta=serie.map(function(p,i){return x(i)+','+y(p[0])}).reverse().join(' ');
+    s+='<polygon points="'+x(0)+','+y(0)+' '+base+' '+x(23)+','+y(0)+'" style="fill:var(--maia);fill-opacity:.55"/>';
+    s+='<polygon points="'+cima+' '+baseVolta+'" style="fill:var(--os);fill-opacity:.6"/>';
+    s+='<polyline points="'+cima+'" style="fill:none;stroke:var(--tinta)" stroke-width="2"/>';
+    var fim=serie[23][0]+serie[23][1];
+    s+='<circle cx="'+x(23)+'" cy="'+y(fim)+'" r="4" style="fill:var(--tinta)"/>';
+    if(teto>0)s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(teto)+'" y2="'+y(teto)+'" style="stroke:var(--fraco)" stroke-width="1.5" stroke-dasharray="5 5"/>';
+    [1,6,12,18,24].forEach(function(m){s+='<text x="'+x(m-1)+'" y="'+(H-8)+'" text-anchor="middle" font-size="11" style="fill:var(--fraco)">'+m+'º</text>'});
+    $('graf2').innerHTML=s;
+  }
+  function desenha(meses){
+    var W=640,H=280,L=56,R=8,T=12,B=30,max=0;
+    meses.forEach(function(x){max=Math.max(max,x[0]+x[1])});
+    var passo=[100,250,500,1000,2000,2500,5000,10000,20000,25000,50000].find(function(p){return max/p<=4})||100000;
+    var topo=Math.max(passo,Math.ceil(max/passo)*passo), y=function(v){return T+(H-T-B)*(1-v/topo)};
+    var s='', bw=(W-L-R)/12, w=bw*0.62;
+    for(var v=0;v<=topo+0.1;v+=passo){
+      s+='<line x1="'+L+'" x2="'+(W-R)+'" y1="'+y(v)+'" y2="'+y(v)+'" style="stroke:var(--borda)" stroke-width="1"/>';
+      s+='<text x="'+(L-8)+'" y="'+(y(v)+4)+'" text-anchor="end" font-size="11" style="fill:var(--fraco)">'+(v>=1000?'R$ '+(v/1000).toLocaleString('pt-BR')+' mil':'R$ '+v)+'</text>';
+    }
+    meses.forEach(function(x,i){
+      var cx=L+bw*i+(bw-w)/2, y0=y(0), ya=y(x[0]), yb=y(x[0]+x[1]);
+      s+='<rect x="'+cx+'" y="'+ya+'" width="'+w+'" height="'+Math.max(0,y0-ya)+'" style="fill:var(--roxo)" rx="2"/>';
+      s+='<rect x="'+cx+'" y="'+yb+'" width="'+w+'" height="'+Math.max(0,ya-yb)+'" style="fill:var(--maia)" rx="2"/>';
+      s+='<text x="'+(cx+w/2)+'" y="'+(H-10)+'" text-anchor="middle" font-size="11" style="fill:var(--fraco)">'+(i+1)+'º</text>';
+    });
+    $('graf').innerHTML=s;
+  }
+  document.querySelectorAll('.cenarios button').forEach(function(b){
+    b.addEventListener('click',function(){
+      var c=CEN[b.dataset.c]; ids.forEach(function(k){if(k in c)$('q-'+k).value=c[k]});
+      document.querySelectorAll('.cenarios button').forEach(function(o){o.setAttribute('aria-pressed',o===b?'true':'false')});
+      conta();
+    });
+  });
+  ids.forEach(function(k){$('q-'+k).addEventListener('input',function(){
+    document.querySelectorAll('.cenarios button').forEach(function(o){o.setAttribute('aria-pressed','false')});
+    conta();
+  })});
+  conta();
+})();
+</script>
+</body>
+</html>
