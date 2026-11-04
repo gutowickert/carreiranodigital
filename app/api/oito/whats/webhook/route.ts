@@ -35,6 +35,7 @@ export async function POST(req: Request) {
   const b = JSON.parse(corpo || '{}')
   const meuNumero = process.env.OITO_WA_PHONE_ID
   const responder = new Set<string>()
+  const maiaResponder = new Set<string>()
   for (const entry of b.entry || []) for (const ch of entry.changes || []) {
     const v = ch.value || {}
     if (meuNumero && v.metadata?.phone_number_id && v.metadata.phone_number_id !== meuNumero) continue
@@ -46,6 +47,18 @@ export async function POST(req: Request) {
     // mensagens recebidas (15/10: a entrada grava, guarda as imagens e descobre a marca; o agente responde)
     for (const m of v.messages || []) {
       const nome = v.contacts?.find((x: any) => fone(x.wa_id) === fone(m.from))?.profile?.name || null
+      // 03/11 (Maia): o dono de um negócio cliente da Maia fala com a Maia dele, não com o agente do Oito.
+      // Só com MAIA_LIGADA=1 (as tabelas maia_* precisam existir no banco).
+      if (process.env.MAIA_LIGADA === '1') {
+        const { negocioDoTelefone } = await import('@/lib/maia/canal')
+        const neg = await negocioDoTelefone(m.from).catch(() => null)
+        if (neg) {
+          const { recebeDoDono } = await import('@/lib/maia/dono')
+          const r = await recebeDoDono(neg, m, nome)
+          if (r) { marcaLida(m.id).catch(() => null); if (r.responder) maiaResponder.add(r.cv.id) }
+          continue
+        }
+      }
       const r = await recebe(m, nome)
       if (!r) continue
       marcaLida(m.id).catch(() => null)
@@ -53,6 +66,17 @@ export async function POST(req: Request) {
       else if (!r.sair) avisaDono('WhatsApp: mensagem nova', `${r.cv.nome || r.cv.telefone}: ${r.texto.slice(0, 160)}`)
     }
   }
+  // a Maia responde o dono do mesmo jeito: espera ele terminar de mandar (fotos e vídeos costumam vir em sequência)
+  if (maiaResponder.size) after(async () => {
+    await espera(15000)
+    const { maiaDb } = await import('@/lib/maia/db')
+    const { respondeDono } = await import('@/lib/maia/dono')
+    for (const id of maiaResponder) {
+      const ult = (await maiaDb.lista('msgs', { conversa_id: id, autor: 'dono' }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
+      if (ult && Date.now() - new Date(ult.criado_em).getTime() < 14000) continue
+      await respondeDono(id).catch(async (e: any) => { const { avisaEquipe } = await import('@/lib/maia/canal'); await avisaEquipe('a Maia falhou com um dono', String(e?.message || e).slice(0, 160)) })
+    }
+  })
   // espera uns segundos (a pessoa costuma mandar 2 ou 3 mensagens seguidas) e responde só se nada mais chegou
   if (responder.size) after(async () => {
     await espera(12000)

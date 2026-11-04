@@ -49,6 +49,8 @@ export function enviaModelo(para: string, nome: string, idioma: string, corpo: s
 
 // imagem por link público (o post pronto, a fatura...), com legenda
 export const enviaImagem = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'image', image: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
+// 03/11 (Maia): o vídeo editado vai pro dono aprovar
+export const enviaVideo = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'video', video: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
 
 // 02/11 (Maia): sobe um arquivo (o áudio da Maia, em Ogg Opus) pra Meta e manda como áudio de WhatsApp
 export async function sobeMidia(buf: Buffer, mime: string, nome: string): Promise<{ ok: boolean; id?: string; erro?: string }> {

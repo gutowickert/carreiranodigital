@@ -1,0 +1,126 @@
+// Maia: a API do painel de operação da equipe (03/11). Senha no cabeçalho x-senha (lib/maia/acesso.ts).
+//   GET  ?acao=resumo | negocios | negocio&id= | fila | pecas&negocio= | leads&negocio= | conversas&negocio= | msgs&conversa= | campanhas&negocio= | numeros&negocio=&de=&ate=
+//   POST {acao, ...}: criar_negocio, atualizar_negocio, gerar_anuncios, aprovar_peca, ajustar_peca, descartar_peca, pedir_joinha,
+//        criar_campanha, ativar_campanha, pausar_campanha, lead_novo, lead_etapa, lead_ganho, lead_perdido,
+//        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina
+import { maiaDb as db } from '@/lib/maia/db'
+import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
+import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/aprovacao'
+import { geraAnuncios } from '@/lib/maia/pecas'
+import { criaCampanhaPausada, ativa, pausa, metaReal } from '@/lib/maia/meta'
+import { novoLead, mudaEtapa, ganhou, perdeu, numeros, type Etapa } from '@/lib/maia/funil'
+import { conversaDoDono, mandaTexto } from '@/lib/maia/canal'
+import { comoDono, comoCliente } from '@/lib/maia/simula'
+import { roda } from '@/lib/maia/rotina'
+import { fone } from '@/lib/oito/wa'
+
+export const maxDuration = 300
+const ok = (d: any) => Response.json(d)
+const erro = (m: string, s = 400) => Response.json({ erro: m }, { status: s })
+
+async function comLinks(pecas: any[]) {
+  return Promise.all(pecas.map(async p => ({ ...p, arquivo_url: await db.link(p.arquivo_path) })))
+}
+
+export async function GET(req: Request) {
+  if (!equipeOk(req)) return naoAutorizado()
+  const u = new URL(req.url), q = (k: string) => u.searchParams.get(k) || ''
+  const acao = q('acao') || 'resumo'
+  try {
+    if (acao === 'resumo') {
+      const [negs, pecas, leads, camps] = await Promise.all([db.lista('negocios'), db.lista('pecas'), db.lista('leads'), db.lista('campanhas')])
+      const semana = new Date(Date.now() - 7 * 86400e3).toISOString()
+      return ok({
+        modo: db.modo(), meta_real: metaReal(),
+        negocios: negs.length, ativos: negs.filter(n => n.status === 'ativo').length,
+        pra_equipe: pecas.filter(p => p.status === 'revisao_equipe').length,
+        com_dono: pecas.filter(p => p.status === 'com_dono').length,
+        pra_ligar: pecas.filter(p => p.status === 'aprovada' && (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && !p.campanha_id).length,
+        campanhas_pausadas: camps.filter(c => c.status === 'criada_pausada').length,
+        campanhas_ativas: camps.filter(c => c.status === 'ativa').length,
+        leads_semana: leads.filter(l => l.criado_em >= semana).length,
+        vendas_semana: leads.filter(l => l.ganho_em && l.ganho_em >= semana).length,
+        receita_semana: leads.filter(l => l.ganho_em && l.ganho_em >= semana).reduce((s, l) => s + (Number(l.valor) || 0), 0),
+        retomadas_vencidas: leads.filter(l => l.proximo_followup_em && l.proximo_followup_em <= new Date().toISOString() && !['ganho', 'perdido'].includes(l.etapa)).length,
+      })
+    }
+    if (acao === 'negocios') {
+      const [negs, pecas, leads] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas'), db.lista('leads')])
+      return ok(negs.map(n => ({ ...n, pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
+    }
+    if (acao === 'negocio') return ok(await db.um('negocios', { id: q('id') }))
+    if (acao === 'fila') {
+      const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
+      const pecas = (await db.lista('pecas', {}, { ordem: 'criado_em' })).filter(p => ['revisao_equipe', 'gerando', 'ajuste_equipe', 'ajuste_dono', 'erro'].includes(p.status))
+      return ok((await comLinks(pecas)).map(p => ({ ...p, negocio_nome: nome(p.negocio_id) })))
+    }
+    if (acao === 'pecas') return ok(await comLinks(await db.lista('pecas', { negocio_id: q('negocio') }, { ordem: 'criado_em', desc: true })))
+    if (acao === 'leads') return ok(await db.lista('leads', { negocio_id: q('negocio') }, { ordem: 'atualizado_em', desc: true }))
+    if (acao === 'conversas') return ok(await db.lista('conversas', { negocio_id: q('negocio') }, { ordem: 'ultima_msg_em', desc: true }))
+    if (acao === 'msgs') return ok(await db.lista('msgs', { conversa_id: q('conversa') }, { ordem: 'criado_em' }))
+    if (acao === 'campanhas') return ok(await db.lista('campanhas', { negocio_id: q('negocio') }, { ordem: 'criado_em', desc: true }))
+    if (acao === 'numeros') {
+      const ate = q('ate') || new Date().toISOString(), de = q('de') || new Date(Date.now() - 30 * 86400e3).toISOString()
+      return ok(await numeros(q('negocio'), de, ate))
+    }
+    return erro('ação desconhecida')
+  } catch (e: any) { return erro(e.message, 500) }
+}
+
+export async function POST(req: Request) {
+  if (!equipeOk(req)) return naoAutorizado()
+  const b = await req.json().catch(() => ({}))
+  const por = String(b.por || 'equipe')
+  try {
+    switch (b.acao) {
+      case 'criar_negocio': {
+        if (!b.nome || !b.dono_whatsapp) return erro('nome e WhatsApp do dono são obrigatórios')
+        const n = await db.insere('negocios', {
+          nome: b.nome, nicho: b.nicho || null, cidade: b.cidade || null, regiao: b.regiao || (b.cidade ? b.cidade + ' e região' : null),
+          dono_nome: b.dono_nome || null, dono_whatsapp: fone(b.dono_whatsapp), plano: b.plano === 'completa' ? 'completa' : 'essencial',
+          contexto: b.contexto || {}, marca: b.marca || {}, meta: b.meta || {}, verba_dia: b.verba_dia || null,
+        })
+        await db.evento('negocio_criado', n.id, { por })
+        return ok(n)
+      }
+      case 'atualizar_negocio': {
+        const campos: any = {}
+        for (const k of ['nome', 'nicho', 'cidade', 'regiao', 'dono_nome', 'plano', 'status', 'contexto', 'marca', 'meta', 'verba_dia', 'aprovacao_equipe', 'ativa_sozinha', 'equipe_whatsapp']) if (k in b) campos[k] = b[k]
+        if (b.dono_whatsapp) campos.dono_whatsapp = fone(b.dono_whatsapp)
+        return ok((await db.atualiza('negocios', { id: b.id }, campos))[0])
+      }
+      case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
+      case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))
+      case 'ajustar_peca': if (!b.nota) return erro('escreve o ajuste'); return ok(await equipeAjuste(b.peca_id, b.nota, por))
+      case 'descartar_peca': return ok(await descarta(b.peca_id, por))
+      case 'pedir_joinha': await pedeJoinha(b.negocio_id); return ok({ ok: true })
+      case 'criar_campanha': return ok(await criaCampanhaPausada(b.negocio_id, { peca_ids: b.peca_ids, verba_dia: b.verba_dia, raio_km: b.raio_km, idade_min: b.idade_min, idade_max: b.idade_max, por }))
+      case 'ativar_campanha': return ok(await ativa(b.campanha_id, por))
+      case 'pausar_campanha': return ok(await pausa(b.campanha_id, por))
+      case 'lead_novo': return ok(await novoLead(b.negocio_id, { nome: b.nome, telefone: b.telefone, origem: b.origem || 'outro', produto: b.produto }, 'equipe'))
+      case 'lead_etapa': { const l = await db.um('leads', { id: b.lead_id }); return ok(await mudaEtapa(l, b.etapa as Etapa, 'equipe', { valor: b.valor, produto: b.produto })) }
+      case 'lead_ganho': { const l = await db.um('leads', { id: b.lead_id }); return ok(await ganhou(l, b.valor, b.produto, 'equipe')) }
+      case 'lead_perdido': { const l = await db.um('leads', { id: b.lead_id }); return ok(await perdeu(l, b.motivo || 'sem motivo', 'equipe')) }
+      case 'mandar_ao_dono': {
+        const neg = await db.um('negocios', { id: b.negocio_id }); const cv = await conversaDoDono(neg)
+        return ok(await mandaTexto(cv, String(b.texto || ''), 'equipe'))
+      }
+      case 'assumir': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'humano' }))[0])
+      case 'devolver': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'ia' }))[0])
+      case 'simular_dono': {
+        const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
+        return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))
+      }
+      case 'simular_cliente': return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto, anuncio: b.anuncio }))
+      case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio }))
+      // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
+      case 'teste_vencer_retomadas': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const ls = (await db.lista('leads')).filter(l => l.proximo_followup_em)
+        for (const l of ls) await db.atualiza('leads', { id: l.id }, { proximo_followup_em: new Date(Date.now() - 60e3).toISOString() })
+        return ok({ vencidas: ls.length })
+      }
+      default: return erro('ação desconhecida')
+    }
+  } catch (e: any) { return erro(e.message, 500) }
+}

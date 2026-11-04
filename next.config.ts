@@ -6,6 +6,8 @@ const ES_PASTAS: [string, string][] = [['divino', 'salon'], ['sabroso', 'restaur
 const ES_DOMINIOS = [...new Set([process.env.OITO_DOMINIO_FEEDALDIA, process.env.OITO_DOMINIO_NOFEED, 'feedaldia.com'].filter(Boolean).map(d => String(d).replace(/^www\./, '')))]
 
 const nextConfig: NextConfig = {
+  // 03/11 (Maia): pasta de build separada pra rodar dois servidores de teste na mesma cópia (só em teste)
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -95,6 +97,8 @@ const nextConfig: NextConfig = {
         { source: '/imersaodeuvenda/lajeado', destination: '/imersao/lajeado.html' },
         { source: '/deuvenda', destination: '/imersao/deu-venda.html' },
         { source: '/teunegocioos', destination: '/teunegocio-os/index.html' },
+        // 03/11: o painel de operação da Maia (equipe da escola, com senha)
+        { source: '/maia/operacao', destination: '/maia/operacao/index.html' },
         // 21/10: curso Vídeo com IA (porta de entrada, R$ 497), prévia
         { source: '/videocomia', destination: '/imersao/video-com-ia.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria

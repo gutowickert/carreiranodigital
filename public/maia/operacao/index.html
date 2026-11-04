@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Maia · Operação</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700;12..96,800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f6f4fb; --card:#ffffff; --card2:#f1edf9; --ln:#e2dbef; --tx:#17121f; --mu:#5f5873;
+  --roxo:#7c3aed; --lilas:#6d4bd8; --grad:linear-gradient(100deg,#7c3aed,#c026d3);
+  --verde:#0f8a58; --verde-bg:#e3f6ec; --verm:#c62a3c; --verm-bg:#fde8eb; --ambar:#a76200; --ambar-bg:#fdf1dc; --azul:#2563c9; --azul-bg:#e4edfc;
+  --sombra:0 1px 2px rgba(23,18,31,.06),0 4px 16px rgba(23,18,31,.05);
+  --raio:16px; --nav-h:68px;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#0f0c17; --card:#1a1426; --card2:#221b31; --ln:#2e2740; --tx:#f5f2fc; --mu:#a9a2bd;
+    --roxo:#8b5cf6; --lilas:#b39bff; --grad:linear-gradient(100deg,#a78bfa,#e879f9);
+    --verde:#3ddc97; --verde-bg:rgba(61,220,151,.13); --verm:#ff6b7d; --verm-bg:rgba(255,107,125,.13); --ambar:#ffbe55; --ambar-bg:rgba(255,190,85,.13); --azul:#7fb0ff; --azul-bg:rgba(127,176,255,.13);
+    --sombra:none;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.5 'DM Sans',system-ui,sans-serif;overflow-x:hidden;min-height:100vh}
+h1,h2,h3,.tit{font-family:'Bricolage Grotesque','DM Sans',sans-serif;letter-spacing:-.01em;line-height:1.15;margin:0}
+h1{font-size:1.6rem;font-weight:800} h2{font-size:1.25rem;font-weight:700} h3{font-size:1.05rem;font-weight:700}
+a{color:var(--lilas)}
+.num,.n{font-variant-numeric:tabular-nums}
+.mu{color:var(--mu)} .peq{font-size:.88rem}
+button,input,select,textarea{font:inherit;color:inherit}
+input,select,textarea{width:100%;background:var(--card2);border:1px solid var(--ln);border-radius:12px;padding:12px 14px;min-height:48px;outline:none}
+textarea{min-height:96px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--roxo);box-shadow:0 0 0 3px color-mix(in srgb,var(--roxo) 25%,transparent)}
+label{display:block;font-weight:600;font-size:.9rem;margin:0 0 6px}
+.campo{margin-bottom:14px;min-width:0}
+.grade2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:0 14px}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:48px;padding:10px 18px;border-radius:12px;border:1px solid var(--ln);background:var(--card2);font-weight:600;cursor:pointer;text-align:center;line-height:1.2}
+.btn:hover{border-color:var(--roxo)}
+.btn:disabled{opacity:.55;cursor:wait}
+.btn.pri{background:var(--roxo);border-color:var(--roxo);color:#fff}
+.btn.grad{background:var(--grad);border:0;color:#fff}
+.btn.ok{background:var(--verde);border-color:var(--verde);color:#fff}
+@media (prefers-color-scheme: dark){.btn.ok{color:#06281a}}
+.btn.perigo{color:var(--verm);border-color:color-mix(in srgb,var(--verm) 45%,transparent);background:transparent}
+.btn.perigo.cheio{background:var(--verm);color:#fff;border-color:var(--verm)}
+.btn.leve{background:transparent}
+.btn.peq{min-height:40px;padding:8px 12px;font-size:.9rem}
+.btns{display:flex;flex-wrap:wrap;gap:10px}
+.btns .btn{flex:1 1 auto}
+
+/* topo */
+header.topo{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-bottom:1px solid var(--ln)}
+.topo-in{max-width:1180px;margin:0 auto;padding:10px 16px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.marca{display:flex;align-items:center;gap:10px;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.15rem;margin-right:auto}
+.marca i{width:30px;height:30px;border-radius:9px;background:var(--grad);display:inline-block;position:relative}
+.marca i::after{content:'M';position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-style:normal;font-size:.95rem}
+.marca span{color:var(--mu);font-weight:600}
+.selos{display:flex;gap:6px;flex-wrap:wrap}
+.selo{font-size:.75rem;font-weight:800;letter-spacing:.04em;padding:5px 10px;border-radius:999px;border:1.5px solid}
+.selo.teste{color:var(--ambar);background:var(--ambar-bg);border-color:var(--ambar)}
+.selo.sim{color:var(--azul);background:var(--azul-bg);border-color:var(--azul)}
+.selo.real{color:var(--verm);background:var(--verm-bg);border-color:var(--verm)}
+
+nav.abas{display:flex;gap:4px}
+nav.abas a{display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;color:var(--mu);text-decoration:none;font-weight:600;position:relative}
+nav.abas a.on{color:var(--tx);background:var(--card)}
+nav.abas a svg{width:20px;height:20px}
+nav.abas .bolha{position:absolute;top:4px;right:4px;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--verm);color:#fff;font-size:.7rem;font-weight:700;display:grid;place-items:center;font-variant-numeric:tabular-nums}
+nav.abas .bolha:empty{display:none}
+@media (max-width:760px){
+  header.topo{backdrop-filter:none;-webkit-backdrop-filter:none;background:var(--bg)}
+  nav.abas{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--ln);padding:6px 6px calc(6px + env(safe-area-inset-bottom));gap:2px}
+  nav.abas a{flex:1;flex-direction:column;gap:2px;padding:8px 2px;font-size:.74rem;min-height:56px;justify-content:center}
+  nav.abas a.on{background:var(--card2);color:var(--roxo)}
+  nav.abas .bolha{right:calc(50% - 22px)}
+  main{padding-bottom:calc(var(--nav-h) + 30px + env(safe-area-inset-bottom)) !important}
+  .so-desk{display:none !important}
+}
+@media (min-width:761px){ nav.abas a svg{display:none} nav.abas .bolha{position:static} }
+
+main{max-width:1180px;margin:0 auto;padding:20px 16px 60px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:var(--raio);padding:18px;box-shadow:var(--sombra);min-width:0}
+.card+.card{margin-top:14px}
+.pilha>*+*{margin-top:14px}
+.cab{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.cab p{margin:4px 0 0}
+.vazio{padding:28px 18px;text-align:center;color:var(--mu);border:1.5px dashed var(--ln);border-radius:var(--raio)}
+.carregando{padding:30px;text-align:center;color:var(--mu)}
+.erro-box{padding:14px 16px;border-radius:12px;background:var(--verm-bg);color:var(--verm);font-weight:600;overflow-wrap:anywhere}
+.aviso{padding:12px 14px;border-radius:12px;background:var(--ambar-bg);color:var(--ambar);font-size:.92rem;font-weight:500}
+.dica{padding:12px 14px;border-radius:12px;background:var(--card2);color:var(--mu);font-size:.92rem}
+
+/* hoje */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,168px),1fr));gap:12px}
+@media (max-width:420px){.kpis{grid-template-columns:1fr 1fr}}
+.kpi{display:block;text-decoration:none;color:inherit;background:var(--card);border:1px solid var(--ln);border-radius:var(--raio);padding:14px 16px;box-shadow:var(--sombra);transition:border-color .15s,transform .15s;min-width:0}
+.kpi:hover{border-color:var(--roxo);transform:translateY(-1px)}
+.kpi b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:2rem;font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi span{display:block;color:var(--mu);font-size:.88rem;line-height:1.3;margin-top:4px}
+.kpi b.longo{font-size:1.45rem}
+.kpi.alerta{border-color:color-mix(in srgb,var(--ambar) 60%,transparent)} .kpi.alerta b{color:var(--ambar)}
+.kpi.bom b{color:var(--verde)}
+.kpi.dest{background:var(--grad);border:0;color:#fff} .kpi.dest span{color:rgba(255,255,255,.85)}
+.secao-t{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--mu);margin:22px 0 10px}
+
+/* status */
+.st{display:inline-flex;align-items:center;gap:6px;font-size:.78rem;font-weight:700;padding:4px 10px;border-radius:999px;white-space:nowrap;background:var(--card2);color:var(--mu)}
+.st::before{content:'';width:7px;height:7px;border-radius:50%;background:currentColor}
+.st.verde{background:var(--verde-bg);color:var(--verde)}
+.st.verm{background:var(--verm-bg);color:var(--verm)}
+.st.ambar{background:var(--ambar-bg);color:var(--ambar)}
+.st.azul{background:var(--azul-bg);color:var(--azul)}
+.st.roxo{background:color-mix(in srgb,var(--roxo) 15%,transparent);color:var(--lilas)}
+.tags{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+
+/* peças */
+.pecas{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,340px),1fr));gap:16px;align-items:start}
+.peca{background:var(--card);border:1px solid var(--ln);border-radius:var(--raio);overflow:hidden;box-shadow:var(--sombra);min-width:0}
+.peca .midia{background:var(--card2);aspect-ratio:4/5;display:grid;place-items:center;position:relative;overflow:hidden}
+.peca .midia img,.peca .midia video{width:100%;height:100%;object-fit:contain;display:block;background:#000}
+.peca .midia .sem{color:var(--mu);text-align:center;padding:20px}
+.oficina{display:flex;flex-direction:column;align-items:center;gap:10px}
+.gira{width:34px;height:34px;border-radius:50%;border:3px solid var(--ln);border-top-color:var(--roxo);animation:gira 1s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.peca .corpo{padding:16px}
+.peca .gancho{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:1.2rem;line-height:1.2;margin:8px 0}
+.peca .texto{white-space:pre-wrap;margin:0 0 10px;overflow-wrap:anywhere}
+.peca .cta{display:inline-block;font-weight:700;color:var(--lilas);margin-bottom:10px}
+.peca .meta{font-size:.85rem;color:var(--mu)}
+.notas{margin:10px 0;display:grid;gap:6px}
+.nota{font-size:.88rem;padding:8px 12px;border-radius:10px;background:var(--ambar-bg);color:var(--tx);border-left:3px solid var(--ambar);overflow-wrap:anywhere}
+.nota b{color:var(--ambar)}
+.peca .acoes{padding:0 16px 16px;display:grid;gap:10px}
+.confirma{padding:12px;border-radius:12px;background:var(--verm-bg);display:grid;gap:10px}
+.confirma p{margin:0;font-weight:600;color:var(--verm)}
+.barra-joinha{position:sticky;top:64px;z-index:10;margin-bottom:14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:12px 14px;border-radius:var(--raio);background:var(--card);border:1.5px solid var(--roxo);box-shadow:var(--sombra)}
+.barra-joinha p{margin:0;flex:1 1 200px}
+
+/* negócios */
+.lista-neg{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,300px),1fr));gap:12px}
+.neg{display:block;text-decoration:none;color:inherit}
+.neg:hover{border-color:var(--roxo)}
+.neg .linha{display:flex;gap:10px;align-items:flex-start;justify-content:space-between}
+.mini{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;font-size:.88rem;color:var(--mu)}
+.mini b{color:var(--tx);font-variant-numeric:tabular-nums}
+.voltar{display:inline-flex;align-items:center;gap:6px;color:var(--mu);text-decoration:none;font-weight:600;margin-bottom:10px;min-height:40px}
+.subabas{display:flex;flex-wrap:wrap;gap:6px;margin:16px 0}
+.subabas a{padding:9px 14px;border-radius:999px;border:1px solid var(--ln);text-decoration:none;color:var(--mu);font-weight:600;font-size:.92rem;min-height:40px;display:inline-flex;align-items:center}
+.subabas a.on{background:var(--roxo);border-color:var(--roxo);color:#fff}
+.chave{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-top:1px solid var(--ln)}
+.chave:first-child{border-top:0}
+.chave .txt{flex:1;min-width:0}
+.chave .txt b{display:block}
+.chave .txt small{display:block;color:var(--mu);font-size:.85rem;line-height:1.35;margin-top:2px}
+.sw{position:relative;width:56px;height:32px;flex:0 0 auto;margin-top:2px}
+.sw input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;min-height:0;width:100%;height:100%;z-index:1}
+.sw span{position:absolute;inset:0;border-radius:999px;background:var(--ln);transition:.2s}
+.sw span::after{content:'';position:absolute;top:4px;left:4px;width:24px;height:24px;border-radius:50%;background:#fff;transition:.2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.sw input:checked+span{background:var(--roxo)}
+.sw input:checked+span::after{transform:translateX(24px)}
+.sw input:focus-visible+span{outline:3px solid color-mix(in srgb,var(--roxo) 40%,transparent)}
+.kv{display:grid;gap:10px}
+.kv-linha{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr) auto;gap:8px;align-items:start}
+@media (max-width:560px){.kv-linha{grid-template-columns:minmax(0,1fr) auto}.kv-linha textarea{grid-column:1/-1;grid-row:2}}
+.kv-linha textarea{min-height:48px}
+.x{width:48px;min-height:48px;border-radius:12px;border:1px solid var(--ln);background:transparent;color:var(--mu);cursor:pointer;font-size:1.2rem}
+.cores{display:flex;gap:10px;flex-wrap:wrap}
+.cor{display:flex;align-items:center;gap:8px;flex:1 1 140px}
+.cor input[type=color]{width:52px;padding:4px;flex:0 0 52px}
+.form-dobra summary{cursor:pointer;font-weight:700;min-height:44px;display:flex;align-items:center;list-style:none}
+.form-dobra summary::-webkit-details-marker{display:none}
+.form-dobra summary::before{content:'＋';margin-right:8px;color:var(--roxo)}
+.form-dobra[open] summary::before{content:'－'}
+
+/* funil */
+.kanban{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px;align-items:start}
+@media (max-width:1100px){.kanban{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (max-width:760px){.kanban{grid-template-columns:1fr}}
+.coluna{background:var(--card2);border-radius:var(--raio);padding:10px;min-width:0}
+.coluna h3{display:flex;justify-content:space-between;align-items:center;font-size:.95rem;padding:4px 4px 10px}
+.coluna h3 .n{font-size:.85rem;color:var(--mu);font-family:'DM Sans',sans-serif}
+.lead{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:12px;min-width:0}
+.lead+.lead{margin-top:8px}
+.lead b.nome{display:block;overflow-wrap:anywhere}
+.lead .det{font-size:.85rem;color:var(--mu);display:grid;gap:2px;margin:6px 0;overflow-wrap:anywhere}
+.lead .valor{font-weight:700;color:var(--verde);font-variant-numeric:tabular-nums}
+.lead .acoes{display:grid;gap:8px;margin-top:8px}
+.lead select{min-height:44px;padding:8px 10px}
+.lead .vence{color:var(--ambar);font-weight:600}
+.coluna.ganho h3{color:var(--verde)} .coluna.perdido h3{color:var(--verm)}
+
+/* números */
+.periodo{display:inline-flex;border:1px solid var(--ln);border-radius:12px;overflow:hidden}
+.periodo button{border:0;background:transparent;padding:10px 16px;min-height:44px;cursor:pointer;font-weight:600;color:var(--mu)}
+.periodo button.on{background:var(--roxo);color:#fff}
+table.tab{width:100%;border-collapse:collapse;font-size:.94rem}
+table.tab th,table.tab td{text-align:left;padding:10px 8px;border-top:1px solid var(--ln)}
+table.tab th{color:var(--mu);font-weight:600;font-size:.82rem;border-top:0}
+table.tab td.n,table.tab th.n{text-align:right;font-variant-numeric:tabular-nums}
+.barra{height:8px;border-radius:4px;background:var(--card2);overflow:hidden;margin-top:6px}
+.barra i{display:block;height:100%;background:var(--roxo);border-radius:4px}
+
+/* conversa */
+.chat{background:var(--card2);border-radius:var(--raio);padding:14px;display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow-y:auto}
+.bal{max-width:min(82%,560px);padding:9px 12px 6px;border-radius:14px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:var(--sombra);font-size:.95rem}
+.bal .quem{display:block;font-size:.75rem;font-weight:700;margin-bottom:2px}
+.bal .hora{display:block;text-align:right;font-size:.7rem;color:var(--mu);margin-top:2px;font-variant-numeric:tabular-nums}
+.bal.dono{align-self:flex-start;background:var(--card);border-top-left-radius:4px}
+.bal.dono .quem{color:var(--azul)}
+.bal.maia{align-self:flex-end;background:color-mix(in srgb,var(--roxo) 16%,var(--card));border-top-right-radius:4px}
+.bal.maia .quem{color:var(--lilas)}
+.bal.equipe{align-self:flex-end;background:color-mix(in srgb,var(--verde) 14%,var(--card));border-top-right-radius:4px}
+.bal.equipe .quem{color:var(--verde)}
+.bal.sistema,.bal.cliente{align-self:center;background:transparent;box-shadow:none;color:var(--mu);font-size:.85rem;text-align:center}
+.enviar{display:flex;gap:8px;margin-top:10px;align-items:flex-end}
+.enviar textarea{min-height:52px;flex:1}
+
+/* simulador e respostas */
+.resp{margin-top:14px;display:grid;gap:8px}
+.resp .bal{max-width:100%}
+.ferr{display:flex;flex-wrap:wrap;gap:6px}
+.ferr code{font-size:.8rem;padding:4px 8px;border-radius:8px;background:var(--card2);border:1px solid var(--ln)}
+pre.json{background:var(--card2);border-radius:12px;padding:12px;overflow:auto;font-size:.82rem;max-height:340px;white-space:pre-wrap;overflow-wrap:anywhere}
+
+/* toast */
+#toasts{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:50;display:grid;gap:8px;width:min(92vw,440px)}
+@media (max-width:760px){#toasts{bottom:calc(var(--nav-h) + 16px + env(safe-area-inset-bottom))}}
+.toast{padding:13px 16px;border-radius:12px;background:var(--tx);color:var(--bg);font-weight:600;box-shadow:0 8px 30px rgba(0,0,0,.25);animation:sobe .2s ease-out;overflow-wrap:anywhere}
+.toast.erro{background:var(--verm);color:#fff}
+@keyframes sobe{from{opacity:0;transform:translateY(8px)}}
+
+/* login */
+.login{min-height:100vh;display:grid;place-items:center;padding:20px 16px}
+.login .card{width:min(100%,400px)}
+.login h1{margin:14px 0 6px}
+.login .marca{margin:0}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+'use strict';
+var API = '/api/maia/operacao';
+var CHAVE = 'maia_op_senha';
+var ETAPAS = ['novo','conversando','interessado','proposta','ganho','perdido'];
+var ETAPA_NOME = {novo:'Novo',conversando:'Conversando',interessado:'Interessado',proposta:'Proposta',ganho:'Ganho',perdido:'Perdido'};
+var ORIGEM_NOME = {anuncio:'Anúncio',organico:'Orgânico',indicacao:'Indicação',dono:'Pelo dono',outro:'Outro'};
+var PECA_ST = {
+  gerando:['na oficina','azul'], revisao_equipe:['esperando a equipe','ambar'], ajuste_equipe:['refazendo (ajuste da equipe)','azul'],
+  com_dono:['esperando o 👍 do dono','ambar'], ajuste_dono:['refazendo (ajuste do dono)','azul'], aprovada:['aprovada','verde'],
+  no_ar:['no ar','verde'], descartada:['descartada',''], erro:['deu erro','verm']
+};
+var PECA_TIPO = {anuncio_imagem:'Anúncio (imagem)',anuncio_video:'Anúncio (vídeo)',post:'Post',video:'Vídeo',relatorio:'Relatório',texto:'Texto'};
+var CAMP_ST = {rascunho:['rascunho',''],criada_pausada:['montada, pausada','ambar'],ativa:['ligada','verde'],pausada:['pausada','ambar'],encerrada:['encerrada',''],erro:['deu erro','verm']};
+var NEG_ST = {implantacao:['implantação','azul'],ativo:['ativo','verde'],pausado:['pausado','ambar'],cancelado:['cancelado','verm']};
+
+var S = { senha:null, resumo:null, aprovadasSessao:{}, confirmar:null, ajustando:null, periodo:7, leadAcao:null, cacheNeg:{} };
+
+/* ---------- utilidades ---------- */
+function lsGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function lsSet(k,v){ try{ if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){} }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function $(sel,el){ return (el||document).querySelector(sel); }
+function $$(sel,el){ return Array.prototype.slice.call((el||document).querySelectorAll(sel)); }
+function real(v){ if(v==null||v==='') return '—'; var n=Number(v); if(isNaN(n)) return esc(v); return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }
+function inteiro(v){ if(v==null) return '—'; return Number(v).toLocaleString('pt-BR'); }
+function pct(v){ if(v==null) return '—'; return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%'; }
+function vezes(v){ if(v==null) return '—'; return Number(v).toLocaleString('pt-BR',{maximumFractionDigits:2})+'×'; }
+function quando(iso){
+  if(!iso) return '—'; var d=new Date(iso); if(isNaN(d)) return esc(iso);
+  return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+}
+function hora(iso){ if(!iso) return ''; var d=new Date(iso); return isNaN(d)?'':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+function vencido(iso){ return iso && new Date(iso) <= new Date(); }
+function st(map,k){ var x=map[k]||[k||'?','']; return '<span class="st '+x[1]+'">'+esc(x[0])+'</span>'; }
+function urlArquivo(u){ if(!u) return null; try{ return new URL(u, location.origin).href; }catch(e){ return u; } }
+function ehVideo(p,u){ return p.tipo==='anuncio_video'||p.tipo==='video'||/\.(mp4|mov|webm)(\?|$|&)/i.test(decodeURIComponent(u||'')); }
+function toast(msg,erro){
+  var t=document.createElement('div'); t.className='toast'+(erro?' erro':''); t.textContent=msg;
+  $('#toasts').appendChild(t); setTimeout(function(){ t.remove(); }, erro?7000:3500);
+}
+function falhou(e){ toast('não deu: '+(e&&e.message||e), true); }
+function carregando(txt){ return '<div class="carregando"><div class="gira" style="margin:0 auto 10px"></div>'+esc(txt||'carregando…')+'</div>'; }
+function caixaErro(e){ return '<div class="erro-box">não deu: '+esc(e&&e.message||e)+'</div>'; }
+
+/* ---------- API ---------- */
+function api(arg){
+  var opts={headers:{'x-senha':S.senha||''}}, url=API;
+  if(typeof arg==='string'){ url+='?'+arg; }
+  else { opts.method='POST'; opts.headers['content-type']='application/json'; opts.body=JSON.stringify(arg); }
+  return fetch(url,opts).then(function(r){
+    return r.text().then(function(t){
+      var j=null; try{ j=t?JSON.parse(t):null; }catch(e){}
+      if(r.status===401){ sair('A senha não confere. Entra de novo.'); throw new Error('senha errada'); }
+      if(!r.ok) throw new Error((j&&j.erro)||('erro '+r.status+(t&&!j?': '+t.slice(0,140):'')));
+      if(j&&j.erro&&j.ok===false) throw new Error(j.erro);
+      return j;
+    });
+  }, function(){ throw new Error('sem conexão com o servidor'); });
+}
+function q(o){ return Object.keys(o).map(function(k){return encodeURIComponent(k)+'='+encodeURIComponent(o[k]);}).join('&'); }
+
+// botão que espera: desliga, troca o texto, roda e volta
+function espera(btn,txt,fn){
+  if(btn&&btn.disabled) return Promise.resolve();
+  var antes=btn?btn.innerHTML:''; if(btn){ btn.disabled=true; btn.textContent=txt||'um instante…'; }
+  return Promise.resolve().then(fn).catch(falhou).then(function(r){ if(btn&&document.body.contains(btn)){ btn.disabled=false; btn.innerHTML=antes; } return r; });
+}
+
+/* ---------- login ---------- */
+function telaLogin(msg){
+  document.body.dataset.tela='login';
+  $('#app').innerHTML='<div class="login"><form class="card" id="f-login">'+
+    '<div class="marca"><i></i>Maia <span>· Operação</span></div>'+
+    '<h1>Entrar</h1><p class="mu" style="margin:0 0 16px">O painel da equipe. Digita a senha uma vez e o celular guarda.</p>'+
+    (msg?'<div class="erro-box" style="margin-bottom:14px">'+esc(msg)+'</div>':'')+
+    '<div class="campo"><label for="senha">Senha</label><input id="senha" type="password" autocomplete="current-password" required></div>'+
+    '<button class="btn grad" style="width:100%">Entrar</button></form></div>';
+  $('#senha').focus();
+  $('#f-login').onsubmit=function(ev){
+    ev.preventDefault(); S.senha=$('#senha').value.trim(); var b=$('#f-login button');
+    espera(b,'conferindo…',function(){ return api('acao=resumo').then(function(r){ S.resumo=r; lsSet(CHAVE,S.senha); montar(); }); });
+  };
+}
+function sair(msg){ lsSet(CHAVE,null); S.senha=null; telaLogin(msg); }
+
+/* ---------- casca ---------- */
+var ICONES={
+  hoje:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3 8 4-16 3 8h4"/></svg>',
+  aprovar:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="4"/><path d="m8 12 3 3 5-6"/></svg>',
+  negocios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9h18l-1.5-5h-15z"/><path d="M5 9v11h14V9"/><path d="M10 20v-6h4v6"/></svg>',
+  rotina:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>'
+};
+function montar(){
+  document.body.dataset.tela='app';
+  $('#app').innerHTML='<header class="topo"><div class="topo-in">'+
+    '<div class="marca"><i></i>Maia <span>· Operação</span></div><div class="selos" id="selos"></div>'+
+    '<nav class="abas" id="abas">'+
+      '<a href="#hoje" data-aba="hoje">'+ICONES.hoje+'Hoje</a>'+
+      '<a href="#aprovar" data-aba="aprovar">'+ICONES.aprovar+'Aprovar<span class="bolha" id="bolha-fila"></span></a>'+
+      '<a href="#negocios" data-aba="negocios">'+ICONES.negocios+'Negócios</a>'+
+      '<a href="#rotina" data-aba="rotina">'+ICONES.rotina+'Rotina</a>'+
+    '</nav></div></header><main id="tela"></main>';
+  pintaSelos(); rota();
+}
+function pintaSelos(){
+  var r=S.resumo; if(!r||!$('#selos')) return;
+  var h='';
+  if(r.modo==='local') h+='<span class="selo teste">MODO TESTE (local)</span>';
+  if(r.meta_real===false) h+='<span class="selo sim">META SIMULADA</span>';
+  if(r.meta_real===true) h+='<span class="selo real">META DE VERDADE</span>';
+  $('#selos').innerHTML=h;
+  var b=$('#bolha-fila'); if(b) b.textContent=r.pra_equipe?String(r.pra_equipe):'';
+}
+function atualizaResumo(){ return api('acao=resumo').then(function(r){ S.resumo=r; pintaSelos(); return r; }).catch(function(){}); }
+
+function rota(){
+  if(!S.senha) return telaLogin();
+  if(!$('#tela')) return montar();
+  var h=(location.hash||'#hoje').slice(1).split('/');
+  var aba=h[0]||'hoje';
+  $$('#abas a').forEach(function(a){ a.classList.toggle('on', a.dataset.aba===aba || (aba==='negocio'&&a.dataset.aba==='negocios')); });
+  S.confirmar=null; S.ajustando=null; S.leadAcao=null;
+  window.scrollTo(0,0);
+  if(aba==='aprovar') return telaAprovar();
+  if(aba==='negocios') return telaNegocios(h[1]==='novo');
+  if(aba==='negocio') return telaNegocio(h[1], h[2]||'pecas');
+  if(aba==='rotina') return telaRotina();
+  return telaHoje();
+}
+window.addEventListener('hashchange', rota);
+
+/* ---------- 1. HOJE ---------- */
+function telaHoje(){
+  var t=$('#tela'); t.innerHTML='<div class="cab"><div><h1>Hoje</h1><p class="mu">O que precisa da equipe agora.</p></div><button class="btn leve peq" id="b-atual">Atualizar</button></div><div id="hoje-c">'+carregando()+'</div>';
+  $('#b-atual').onclick=function(){ telaHoje(); };
+  Promise.all([api('acao=resumo'), api('acao=negocios')]).then(function(res){
+    var r=res[0], negs=res[1]||[]; S.resumo=r; pintaSelos();
+    function k(n,txt,href,cls){ return '<a class="kpi '+(cls||'')+'" href="'+href+'"><b class="num'+(String(n).length>8?' longo':'')+'">'+n+'</b><span>'+txt+'</span></a>'; }
+    var h='<div class="secao-t">Precisa de ação</div><div class="kpis">'+
+      k(r.pra_equipe,'peças pra equipe aprovar','#aprovar', r.pra_equipe?'dest':'')+
+      k(r.com_dono,'peças com o dono (esperando 👍)','#negocios', r.com_dono?'alerta':'')+
+      k(r.pra_ligar,'anúncios aprovados prontos pra virar campanha','#negocios', r.pra_ligar?'alerta':'')+
+      k(r.retomadas_vencidas,'retomadas vencidas (clientes sem resposta)','#rotina', r.retomadas_vencidas?'alerta':'')+
+      '</div><div class="secao-t">Campanhas</div><div class="kpis">'+
+      k(r.campanhas_pausadas,'campanhas montadas e pausadas','#negocios', r.campanhas_pausadas?'alerta':'')+
+      k(r.campanhas_ativas,'campanhas ligadas','#negocios','')+
+      '</div><div class="secao-t">Últimos 7 dias</div><div class="kpis">'+
+      k(inteiro(r.leads_semana),'contatos novos','#negocios','')+
+      k(inteiro(r.vendas_semana),'vendas','#negocios', r.vendas_semana?'bom':'')+
+      k(real(r.receita_semana),'receita das vendas','#negocios', r.receita_semana?'bom':'')+
+      k(inteiro(r.ativos)+' / '+inteiro(r.negocios),'negócios ativos / total','#negocios','')+
+      '</div>';
+    h+='<div class="secao-t">Negócios</div>';
+    if(!negs.length) h+='<div class="vazio">Nenhum negócio ainda. <a href="#negocios/novo">Cadastra o primeiro</a>.</div>';
+    else h+='<div class="lista-neg">'+negs.map(cardNeg).join('')+'</div>';
+    $('#hoje-c').innerHTML=h;
+  }).catch(function(e){ $('#hoje-c').innerHTML=caixaErro(e); });
+}
+function cardNeg(n){
+  return '<a class="card neg" href="#negocio/'+esc(n.id)+'"><div class="linha"><div style="min-width:0"><h3>'+esc(n.nome)+'</h3><div class="mu peq">'+esc([n.nicho,n.cidade].filter(Boolean).join(' · ')||'—')+'</div></div>'+st(NEG_ST,n.status)+'</div>'+
+    '<div class="mini"><span><b>'+(n.pra_equipe||0)+'</b> pra aprovar</span><span><b>'+(n.leads||0)+'</b> contatos</span><span><b>'+(n.ganhos||0)+'</b> vendas</span><span>plano <b>'+esc(n.plano||'—')+'</b></span></div></a>';
+}
+
+/* ---------- 2. APROVAR ---------- */
+function telaAprovar(){
+  var t=$('#tela');
+  t.innerHTML='<div class="cab"><div><h1>Aprovar</h1><p class="mu">Primeiro a equipe aprova, depois vai pro dono dar o 👍.</p></div><button class="btn leve peq" id="b-atual">Atualizar</button></div><div id="joinha"></div><div id="fila">'+carregando()+'</div>';
+  $('#b-atual').onclick=function(){ carregaFila(); };
+  carregaFila();
+}
+function carregaFila(){
+  return api('acao=fila').then(function(fila){
+    S.fila=fila||[]; pintaFila(); atualizaResumo();
+  }).catch(function(e){ $('#fila').innerHTML=caixaErro(e); });
+}
+function pintaJoinha(){
+  var box=$('#joinha'); if(!box) return;
+  var ids=Object.keys(S.aprovadasSessao).filter(function(k){ return S.aprovadasSessao[k].n>0; });
+  box.innerHTML=ids.map(function(id){ var x=S.aprovadasSessao[id];
+    return '<div class="barra-joinha"><p><b>'+esc(x.nome)+'</b>: '+x.n+' peça'+(x.n>1?'s':'')+' aprovada'+(x.n>1?'s':'')+' e enviada'+(x.n>1?'s':'')+' pro dono.</p>'+
+      '<button class="btn grad" data-joinha="'+esc(id)+'">Pedir o 👍 do dono</button></div>'; }).join('');
+  $$('[data-joinha]',box).forEach(function(b){ b.onclick=function(){
+    var id=b.dataset.joinha;
+    espera(b,'mandando…',function(){ return api({acao:'pedir_joinha',negocio_id:id}).then(function(){ toast('Pronto: pedi o 👍 pro dono de '+S.aprovadasSessao[id].nome+'.'); delete S.aprovadasSessao[id]; pintaJoinha(); }); });
+  }; });
+}
+function pintaFila(){
+  pintaJoinha();
+  var f=S.fila||[], box=$('#fila'); if(!box) return;
+  if(!f.length){ box.innerHTML='<div class="vazio">Nada esperando a equipe. 🎉</div>'; return; }
+  var esperando=f.filter(function(p){return p.status==='revisao_equipe';}), outras=f.filter(function(p){return p.status!=='revisao_equipe';});
+  var h='';
+  if(esperando.length) h+='<div class="secao-t" style="margin-top:0">Esperando a equipe ('+esperando.length+')</div><div class="pecas">'+esperando.map(function(p){return cardPeca(p,true);}).join('')+'</div>';
+  if(outras.length) h+='<div class="secao-t">Na oficina e outros ('+outras.length+')</div><div class="pecas">'+outras.map(function(p){return cardPeca(p,true);}).join('')+'</div>';
+  box.innerHTML=h;
+  ligaPecas(box, function(){ pintaFila(); }, carregaFila);
+}
+function midiaPeca(p){
+  var u=urlArquivo(p.arquivo_url);
+  if(p.status==='gerando'||p.status==='ajuste_equipe'||p.status==='ajuste_dono'){
+    if(!u) return '<div class="midia"><div class="oficina"><div class="gira"></div><b>na oficina</b><span class="mu peq">a arte está sendo feita</span></div></div>';
+  }
+  if(!u) return '<div class="midia" style="aspect-ratio:3/1"><div class="sem">'+(p.tipo==='relatorio'||p.tipo==='texto'?'peça só de texto':'sem arquivo')+'</div></div>';
+  if(ehVideo(p,u)) return '<div class="midia"><video src="'+esc(u)+'" controls playsinline preload="metadata"></video></div>';
+  return '<div class="midia"><img src="'+esc(u)+'" alt="'+esc(p.gancho||'arte da peça')+'" loading="lazy"></div>';
+}
+function cardPeca(p,comNegocio){
+  var h='<article class="peca" data-peca="'+esc(p.id)+'">'+midiaPeca(p)+'<div class="corpo">'+
+    '<div class="tags">'+st(PECA_ST,p.status)+'<span class="st">'+esc(PECA_TIPO[p.tipo]||p.tipo)+'</span><span class="st">versão '+(p.versao||1)+'</span></div>'+
+    (comNegocio&&p.negocio_nome?'<div class="meta" style="margin-top:8px">Negócio: <a href="#negocio/'+esc(p.negocio_id)+'">'+esc(p.negocio_nome)+'</a></div>':'')+
+    (p.gancho?'<div class="gancho">'+esc(p.gancho)+'</div>':'')+
+    (p.texto?'<p class="texto">'+esc(p.texto)+'</p>':'')+
+    (p.cta?'<div class="cta">'+esc(p.cta)+' →</div>':'')+
+    ((p.nota_equipe||p.nota_dono)?'<div class="notas">'+(p.nota_equipe?'<div class="nota"><b>Ajuste pedido pela equipe:</b> '+esc(p.nota_equipe)+'</div>':'')+(p.nota_dono?'<div class="nota"><b>Ajuste pedido pelo dono:</b> '+esc(p.nota_dono)+'</div>':'')+'</div>':'')+
+    '<div class="meta">'+(p.titulo?esc(p.titulo)+' · ':'')+'criada '+quando(p.criado_em)+(p.aprovado_equipe_por?' · aprovada por '+esc(p.aprovado_equipe_por):'')+'</div>'+
+    '</div><div class="acoes">'+acoesPeca(p)+'</div></article>';
+  return h;
+}
+function acoesPeca(p){
+  if(S.confirmar===p.id) return '<div class="confirma"><p>Descartar esta peça? Ela some da fila e não vai pro dono.</p><div class="btns"><button class="btn perigo cheio" data-a="descartar-sim">Sim, descartar</button><button class="btn" data-a="cancelar">Voltar</button></div></div>';
+  if(S.ajustando===p.id) return '<div class="campo" style="margin:0"><label>O que mudar?</label><textarea data-nota placeholder="Ex.: o gancho tá longo, troca a foto pela da vitrine, tira o emoji…"></textarea></div><div class="btns"><button class="btn pri" data-a="ajustar-mandar">Mandar refazer</button><button class="btn" data-a="cancelar">Voltar</button></div>';
+  if(p.status==='revisao_equipe') return '<button class="btn ok" data-a="aprovar">Aprovar e mandar pro dono</button><div class="btns"><button class="btn" data-a="ajustar">Pedir ajuste</button><button class="btn perigo" data-a="descartar">Descartar</button></div>';
+  if(p.status==='descartada'||p.status==='no_ar') return '';
+  if(p.status==='gerando'||p.status==='ajuste_equipe'||p.status==='ajuste_dono') return '<p class="mu peq" style="margin:0">Quando a oficina terminar, aparece aqui pra aprovar.</p><button class="btn perigo peq" data-a="descartar">Descartar</button>';
+  return '<button class="btn perigo peq" data-a="descartar">Descartar</button>';
+}
+// liga os botões dos cartões de peça (fila ou aba Peças)
+function ligaPecas(box, repinta, recarrega){
+  $$('[data-peca]',box).forEach(function(card){
+    var id=card.dataset.peca;
+    var p=(S.fila||[]).concat(S.pecas||[]).filter(function(x){return x.id===id;})[0];
+    $$('[data-a]',card).forEach(function(b){ b.onclick=function(){
+      var a=b.dataset.a;
+      if(a==='cancelar'){ S.confirmar=null; S.ajustando=null; return repinta(); }
+      if(a==='descartar'){ S.confirmar=id; S.ajustando=null; return repinta(); }
+      if(a==='ajustar'){ S.ajustando=id; S.confirmar=null; repinta(); var ta=$('[data-peca="'+id+'"] [data-nota]'); if(ta) ta.focus(); return; }
+      if(a==='descartar-sim') return espera(b,'descartando…',function(){ return api({acao:'descartar_peca',peca_id:id}).then(function(){ S.confirmar=null; toast('Peça descartada.'); return recarrega(); }); });
+      if(a==='ajustar-mandar'){
+        var nota=($('[data-nota]',card).value||'').trim(); if(!nota){ toast('não deu: escreve o que mudar',true); return; }
+        return espera(b,'mandando pra Maia refazer…',function(){ return api({acao:'ajustar_peca',peca_id:id,nota:nota}).then(function(){ S.ajustando=null; toast('Pedido de ajuste enviado. A nova versão volta pra fila.'); return recarrega(); }); });
+      }
+      if(a==='aprovar') return espera(b,'mandando pro dono…',function(){ return api({acao:'aprovar_peca',peca_id:id}).then(function(r){
+        if(r&&r.status==='com_dono'&&p){ var x=S.aprovadasSessao[p.negocio_id]||(S.aprovadasSessao[p.negocio_id]={n:0,nome:p.negocio_nome||(S.negAtual&&S.negAtual.nome)||'negócio'}); x.n++; }
+        toast(r&&r.status==='aprovada'?'Aprovada e enviada pro dono.':'Aprovada! Foi pro dono.'+(r&&r.ok===false?' (o envio no WhatsApp falhou)':''));
+        return recarrega();
+      }); });
+    }; });
+  });
+}
+
+/* ---------- 3. NEGÓCIOS ---------- */
+function telaNegocios(abrirNovo){
+  var t=$('#tela');
+  t.innerHTML='<div class="cab"><div><h1>Negócios</h1><p class="mu">Cada cliente da Maia.</p></div></div>'+
+    '<details class="card form-dobra" id="novo"'+(abrirNovo?' open':'')+'><summary>Novo negócio</summary><div style="margin-top:14px">'+formNovo()+'</div></details>'+
+    '<div class="secao-t">Todos</div><div id="negs">'+carregando()+'</div>';
+  ligaFormNovo();
+  api('acao=negocios').then(function(negs){
+    $('#negs').innerHTML=(negs&&negs.length)?'<div class="lista-neg">'+negs.map(cardNeg).join('')+'</div>':'<div class="vazio">Nenhum negócio ainda. Usa o formulário acima.</div>';
+  }).catch(function(e){ $('#negs').innerHTML=caixaErro(e); });
+}
+function formNovo(){
+  return '<form id="f-novo"><div class="grade2">'+
+    cmp('nome','Nome do negócio *','text','Ex.: Studio Bela Pele',true)+
+    cmp('nicho','Nicho','text','Ex.: estética facial')+
+    cmp('cidade','Cidade','text','Ex.: Lajeado')+
+    cmp('regiao','Região (vai no gancho)','text','Ex.: Lajeado e região')+
+    cmp('dono_nome','Nome do dono','text','Ex.: Carla Souza')+
+    cmp('dono_whatsapp','WhatsApp do dono *','tel','Ex.: 51 99999-0000',true)+
+    '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial">Essencial</option><option value="completa">Completa</option></select></div>'+
+    cmp('verba_dia','Verba por dia (R$)','number','Ex.: 20')+
+    cmp('ad_account_id','ID da conta de anúncio','text','act_123…')+
+    cmp('page_id','ID da página','text','1234…')+
+    '</div><div class="campo"><label>Cores da marca</label><div class="cores">'+
+      corCampo('cor_primaria','Primária','#7c3aed')+corCampo('cor_secundaria','Secundária','#e879f9')+corCampo('cor_texto','Texto','#17121f')+
+    '</div></div><button class="btn grad" style="width:100%">Cadastrar negócio</button></form>';
+}
+function cmp(nome,rot,tipo,ph,obr,val){
+  return '<div class="campo"><label for="n-'+nome+'">'+esc(rot)+'</label><input id="n-'+nome+'" name="'+nome+'" type="'+tipo+'"'+(tipo==='number'?' inputmode="decimal" step="any" min="0"':'')+' placeholder="'+esc(ph||'')+'"'+(obr?' required':'')+(val!=null?' value="'+esc(val)+'"':'')+'></div>';
+}
+function corCampo(nome,rot,val){ return '<label class="cor" style="font-weight:500"><input type="color" name="'+nome+'" value="'+esc(val)+'">'+esc(rot)+'</label>'; }
+function ligaFormNovo(){
+  var f=$('#f-novo'); if(!f) return;
+  f.onsubmit=function(ev){
+    ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
+    var corpo={acao:'criar_negocio',nome:d.nome.trim(),nicho:d.nicho,cidade:d.cidade,regiao:d.regiao,dono_nome:d.dono_nome,dono_whatsapp:d.dono_whatsapp,plano:d.plano,
+      verba_dia:d.verba_dia?Number(d.verba_dia):null,
+      meta:{ad_account_id:d.ad_account_id||undefined,page_id:d.page_id||undefined},
+      marca:{cores:{primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}}};
+    espera($('button',f),'cadastrando…',function(){ return api(corpo).then(function(n){ toast('Negócio cadastrado.'); location.hash='#negocio/'+n.id+'/dados'; }); });
+  };
+}
+
+var SUBS=[['pecas','Peças'],['funil','Funil'],['numeros','Números'],['campanhas','Campanhas'],['conversa','Conversa com o dono'],['simulador','Simulador'],['dados','Dados e contexto']];
+function telaNegocio(id,sub){
+  var t=$('#tela');
+  t.innerHTML='<a class="voltar" href="#negocios">← Negócios</a><div id="neg-topo">'+carregando()+'</div>';
+  api(q({acao:'negocio',id:id})).then(function(n){
+    if(!n){ $('#neg-topo').innerHTML='<div class="vazio">Esse negócio não existe.</div>'; return; }
+    S.negAtual=n;
+    $('#neg-topo').innerHTML='<div class="cab" style="margin-bottom:6px"><div style="min-width:0"><h1>'+esc(n.nome)+'</h1><p class="mu">'+esc([n.nicho,n.regiao||n.cidade,n.dono_nome?'dono: '+n.dono_nome:null,'plano '+(n.plano||'essencial')].filter(Boolean).join(' · '))+'</p></div>'+st(NEG_ST,n.status)+'</div>'+
+      '<nav class="subabas">'+SUBS.map(function(s){return '<a href="#negocio/'+esc(id)+'/'+s[0]+'" class="'+(s[0]===sub?'on':'')+'">'+s[1]+'</a>';}).join('')+'</nav><div id="sub"></div>';
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados}[sub]||subPecas;
+    f(n,$('#sub'));
+  }).catch(function(e){ $('#neg-topo').innerHTML=caixaErro(e); });
+}
+
+/* --- dados e contexto --- */
+function subDados(n,box){
+  var m=n.meta||{}, cores=(n.marca&&n.marca.cores)||{};
+  box.innerHTML='<div class="card"><h2>Controles</h2><div style="margin-top:8px">'+
+      '<div class="chave"><div class="txt"><b>Equipe aprova tudo</b><small>Tudo que a Maia cria passa pela equipe antes de ir pro dono.</small></div><label class="sw"><input type="checkbox" data-sw="aprovacao_equipe"'+(n.aprovacao_equipe!==false?' checked':'')+'><span></span></label></div>'+
+      '<div class="chave"><div class="txt"><b>Liga campanha com o 👍 do dono</b><small>Ligado: a campanha liga sozinha quando o dono aprova, sem a equipe. <b style="display:inline;color:var(--ambar)">Fica desligado por segurança</b> até a gente confiar nesse negócio.</small></div><label class="sw"><input type="checkbox" data-sw="ativa_sozinha"'+(n.ativa_sozinha?' checked':'')+'><span></span></label></div>'+
+      '<div class="chave"><div class="txt"><b>Status</b><small>Implantação enquanto monta; ativo quando está rodando.</small></div><select id="d-status" style="width:auto;min-width:160px">'+Object.keys(NEG_ST).map(function(k){return '<option value="'+k+'"'+(n.status===k?' selected':'')+'>'+NEG_ST[k][0]+'</option>';}).join('')+'</select></div>'+
+    '</div></div>'+
+    '<form class="card" id="f-dados"><h2 style="margin-bottom:14px">Dados</h2><div class="grade2">'+
+      cmp('nome','Nome do negócio','text','',true,n.nome)+cmp('nicho','Nicho','text','',false,n.nicho||'')+
+      cmp('cidade','Cidade','text','',false,n.cidade||'')+cmp('regiao','Região (vai no gancho)','text','',false,n.regiao||'')+
+      cmp('dono_nome','Nome do dono','text','',false,n.dono_nome||'')+cmp('dono_whatsapp','WhatsApp do dono','tel','',false,n.dono_whatsapp||'')+
+      '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial"'+(n.plano!=='completa'?' selected':'')+'>Essencial</option><option value="completa"'+(n.plano==='completa'?' selected':'')+'>Completa</option></select></div>'+
+      cmp('verba_dia','Verba por dia (R$)','number','',false,n.verba_dia==null?'':n.verba_dia)+
+      cmp('ad_account_id','ID da conta de anúncio','text','act_…',false,m.ad_account_id||'')+cmp('page_id','ID da página','text','',false,m.page_id||'')+
+    '</div><div class="campo"><label>Cores da marca</label><div class="cores">'+corCampo('cor_primaria','Primária',cores.primaria||'#7c3aed')+corCampo('cor_secundaria','Secundária',cores.secundaria||'#e879f9')+corCampo('cor_texto','Texto',cores.texto||'#17121f')+'</div></div>'+
+    '<button class="btn pri" style="width:100%">Salvar dados</button></form>'+
+    '<div class="card"><h2>O que a Maia sabe do negócio</h2><p class="mu peq" style="margin:4px 0 14px">Serviços, preços, público, horário, tom… Uma linha por assunto. Lista ou objeto pode ir em JSON.</p><div class="kv" id="kv"></div>'+
+    '<div class="btns" style="margin-top:12px"><button class="btn" id="kv-mais">+ Adicionar assunto</button><button class="btn pri" id="kv-salvar">Salvar o que ela sabe</button></div></div>';
+  $$('[data-sw]',box).forEach(function(i){ i.onchange=function(){
+    var campo=i.dataset.sw, val=i.checked, c={acao:'atualizar_negocio',id:n.id}; c[campo]=val;
+    api(c).then(function(r){ Object.assign(n,r||{}); toast(campo==='ativa_sozinha'?(val?'Atenção: agora a campanha liga sozinha com o 👍 do dono.':'Desligado: só a equipe liga campanha.'):(val?'A equipe aprova tudo antes do dono.':'Agora vai direto pro dono, sem a equipe.')); })
+      .catch(function(e){ i.checked=!val; falhou(e); });
+  }; });
+  $('#d-status').onchange=function(){ var s=this; api({acao:'atualizar_negocio',id:n.id,status:s.value}).then(function(){ toast('Status: '+NEG_ST[s.value][0]+'.'); }).catch(function(e){ s.value=n.status; falhou(e); }).then(function(){ n.status=s.value; }); };
+  var f=$('#f-dados');
+  f.onsubmit=function(ev){
+    ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
+    var meta=Object.assign({},n.meta||{},{ad_account_id:d.ad_account_id||undefined,page_id:d.page_id||undefined});
+    var marca=Object.assign({},n.marca||{},{cores:{primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}});
+    var c={acao:'atualizar_negocio',id:n.id,nome:d.nome,nicho:d.nicho||null,cidade:d.cidade||null,regiao:d.regiao||null,dono_nome:d.dono_nome||null,plano:d.plano,verba_dia:d.verba_dia?Number(d.verba_dia):null,meta:meta,marca:marca};
+    if(d.dono_whatsapp) c.dono_whatsapp=d.dono_whatsapp;
+    espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ Object.assign(n,r||{}); toast('Dados salvos.'); }); });
+  };
+  var kv=$('#kv');
+  function linha(k,v){
+    var d=document.createElement('div'); d.className='kv-linha';
+    var txt=(v!=null&&typeof v==='object')?JSON.stringify(v,null,1):(v==null?'':String(v));
+    d.innerHTML='<input placeholder="assunto (ex.: precos)" value="'+esc(k)+'" aria-label="assunto"><textarea rows="1" placeholder="o que ela precisa saber" aria-label="valor">'+esc(txt)+'</textarea><button class="x" title="tirar" aria-label="tirar">×</button>';
+    $('.x',d).onclick=function(){ d.remove(); };
+    kv.appendChild(d);
+  }
+  var ctx=n.contexto||{}; Object.keys(ctx).forEach(function(k){ linha(k,ctx[k]); });
+  if(!Object.keys(ctx).length){ ['servicos','precos','publico','horario','tom'].forEach(function(k){ linha(k,''); }); }
+  $('#kv-mais').onclick=function(){ linha('',''); $$('.kv-linha input',kv).pop().focus(); };
+  $('#kv-salvar').onclick=function(){
+    var novo={};
+    $$('.kv-linha',kv).forEach(function(l){
+      var k=$('input',l).value.trim(), v=$('textarea',l).value.trim(); if(!k||!v) return;
+      if(/^[\[{]/.test(v)){ try{ novo[k]=JSON.parse(v); return; }catch(e){} }
+      if(/^-?\d+(\.\d+)?$/.test(v)) novo[k]=Number(v); else if(v==='sim'||v==='true') novo[k]=true; else if(v==='não'||v==='false') novo[k]=false; else novo[k]=v;
+    });
+    var b=this; espera(b,'salvando…',function(){ return api({acao:'atualizar_negocio',id:n.id,contexto:novo}).then(function(r){ n.contexto=(r&&r.contexto)||novo; toast('A Maia já sabe disso.'); }); });
+  };
+}
+
+/* --- peças do negócio --- */
+function subPecas(n,box){
+  box.innerHTML='<details class="card form-dobra"><summary>Criar anúncios</summary><form id="f-gerar" style="margin-top:12px"><p class="mu peq" style="margin:0 0 12px">A Maia escreve os anúncios usando as fotos e vídeos que o dono mandou e manda pra oficina fazer a arte.</p><div class="grade2">'+
+    '<div class="campo"><label for="g-qtd">Quantos</label><select id="g-qtd" name="quantidade">'+[1,2,3,4,5,6].map(function(x){return '<option'+(x===3?' selected':'')+'>'+x+'</option>';}).join('')+'</select></div>'+
+    cmp('tema','Tema (opcional)','text','Ex.: Dia das Mães, promoção de inverno')+
+    '</div><button class="btn grad" style="width:100%">Criar anúncios</button></form></details>'+
+    '<div id="joinha"></div><div id="pecas-c">'+carregando()+'</div>';
+  var f=$('#f-gerar');
+  f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
+    espera($('button',f),'a Maia está escrevendo…',function(){ return api({acao:'gerar_anuncios',negocio_id:n.id,quantidade:Number(d.quantidade),tema:d.tema||undefined}).then(function(r){
+      if(r&&r.ok===false) throw new Error(r.erro||'não gerou');
+      var qt=(r&&r.pecas?r.pecas.length:0);
+      if(!qt) toast('A Maia não criou nenhum anúncio: as fotos e vídeos do dono podem não servir pra esse negócio. Pede fotos melhores pra ele.',true);
+      else toast(qt+' anúncio(s) criado(s). Foram pra oficina fazer a arte.');
+      return carrega(); }); });
+  };
+  function carrega(){ return api(q({acao:'pecas',negocio:n.id})).then(function(ps){ S.pecas=(ps||[]).map(function(p){ p.negocio_nome=n.nome; return p; }); pinta(); }).catch(function(e){ $('#pecas-c').innerHTML=caixaErro(e); }); }
+  function pinta(){
+    var ps=S.pecas||[], c=$('#pecas-c'); if(!c) return;
+    var comDono=ps.filter(function(p){return p.status==='com_dono';}).length;
+    $('#joinha').innerHTML=comDono?'<div class="barra-joinha"><p><b>'+comDono+'</b> peça'+(comDono>1?'s':'')+' com o dono esperando o 👍.</p><button class="btn grad" id="b-joinha">Pedir o 👍 do dono</button></div>':'';
+    if($('#b-joinha')) $('#b-joinha').onclick=function(){ espera(this,'mandando…',function(){ return api({acao:'pedir_joinha',negocio_id:n.id}).then(function(){ delete S.aprovadasSessao[n.id]; toast('Pedi o 👍 pro dono.'); }); }); };
+    if(!ps.length){ c.innerHTML='<div class="vazio">Nenhuma peça ainda. O dono manda fotos no WhatsApp e tu clicas em “Criar anúncios”.</div>'; return; }
+    var ordem=['revisao_equipe','gerando','ajuste_equipe','ajuste_dono','com_dono','aprovada','no_ar','erro','descartada'], h='';
+    ordem.forEach(function(s){ var g=ps.filter(function(p){return p.status===s;}); if(!g.length) return;
+      h+='<div class="secao-t">'+esc((PECA_ST[s]||[s])[0])+' ('+g.length+')</div><div class="pecas">'+g.map(function(p){return cardPeca(p,false);}).join('')+'</div>'; });
+    c.innerHTML=h; ligaPecas(c,pinta,carrega);
+  }
+  carrega();
+}
+
+/* --- funil --- */
+function subFunil(n,box){
+  box.innerHTML='<details class="card form-dobra"><summary>Novo contato no funil</summary><form id="f-lead" style="margin-top:12px"><div class="grade2">'+
+    cmp('nome','Nome','text','Ex.: Ana Paula',true)+cmp('telefone','Telefone','tel','Ex.: 51 99999-0000')+cmp('produto','Produto ou serviço','text','Ex.: limpeza de pele')+
+    '<div class="campo"><label for="l-origem">De onde veio</label><select id="l-origem" name="origem">'+Object.keys(ORIGEM_NOME).map(function(k){return '<option value="'+k+'"'+(k==='outro'?' selected':'')+'>'+ORIGEM_NOME[k]+'</option>';}).join('')+'</select></div>'+
+    '</div><button class="btn grad" style="width:100%">Pôr no funil</button></form></details><div id="funil-c" style="margin-top:14px">'+carregando()+'</div>';
+  var f=$('#f-lead');
+  f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
+    espera($('button',f),'salvando…',function(){ return api({acao:'lead_novo',negocio_id:n.id,nome:d.nome,telefone:d.telefone||undefined,produto:d.produto||undefined,origem:d.origem}).then(function(){ f.reset(); toast('Contato no funil.'); return carrega(); }); });
+  };
+  function carrega(){ return api(q({acao:'leads',negocio:n.id})).then(function(ls){ S.leads=ls||[]; pinta(); }).catch(function(e){ $('#funil-c').innerHTML=caixaErro(e); }); }
+  function cardLead(l){
+    var ab=S.leadAcao&&S.leadAcao.id===l.id?S.leadAcao.tipo:null, a='';
+    if(ab==='ganho') a='<div class="campo" style="margin:0"><label>Valor da venda (R$)</label><input type="number" inputmode="decimal" step="any" min="0" data-valor value="'+(l.valor!=null?esc(l.valor):'')+'"></div><input data-prod placeholder="produto (opcional)" value="'+esc(l.produto||'')+'"><div class="btns"><button class="btn ok peq" data-l="ganho-ok">Confirmar venda</button><button class="btn peq" data-l="cancelar">Voltar</button></div>';
+    else if(ab==='perdido') a='<div class="campo" style="margin:0"><label>Por que perdeu?</label><input data-motivo placeholder="Ex.: achou caro, comprou em outro lugar"></div><div class="btns"><button class="btn perigo cheio peq" data-l="perdido-ok">Marcar perdido</button><button class="btn peq" data-l="cancelar">Voltar</button></div>';
+    else a='<label class="peq mu" style="margin:0;font-weight:500">Etapa</label><select data-etapa aria-label="mudar etapa">'+ETAPAS.map(function(e){return '<option value="'+e+'"'+(l.etapa===e?' selected':'')+'>'+ETAPA_NOME[e]+'</option>';}).join('')+'</select>'+
+      (l.etapa!=='ganho'&&l.etapa!=='perdido'?'<div class="btns"><button class="btn ok peq" data-l="ganho">Ganho</button><button class="btn perigo peq" data-l="perdido">Perdido</button></div>':'');
+    return '<div class="lead" data-lead="'+esc(l.id)+'"><b class="nome">'+esc(l.nome||'sem nome')+'</b><div class="det">'+
+      (l.telefone?'<span class="num">'+esc(l.telefone)+'</span>':'')+
+      (l.produto?'<span>'+esc(l.produto)+'</span>':'')+
+      (l.valor!=null?'<span class="valor">'+real(l.valor)+'</span>':'')+
+      '<span>'+esc(ORIGEM_NOME[l.origem]||l.origem||'—')+'</span>'+
+      (l.motivo_perda&&l.etapa==='perdido'?'<span>motivo: '+esc(l.motivo_perda)+'</span>':'')+
+      (l.proximo_followup_em?'<span class="'+(vencido(l.proximo_followup_em)?'vence':'')+'">retomada: '+quando(l.proximo_followup_em)+(vencido(l.proximo_followup_em)?' (vencida)':'')+(l.followups?' · '+l.followups+'ª feita':'')+'</span>':'')+
+      (l.resumo?'<span>'+esc(l.resumo)+'</span>':'')+
+      '</div><div class="acoes">'+a+'</div></div>';
+  }
+  function pinta(){
+    var ls=S.leads||[], c=$('#funil-c'); if(!c) return;
+    if(!ls.length){ c.innerHTML='<div class="vazio">Funil vazio. Os contatos entram quando um cliente chama no WhatsApp, quando o dono conta uma venda, ou pelo botão acima.</div>'; return; }
+    c.innerHTML='<div class="kanban">'+ETAPAS.map(function(e){ var g=ls.filter(function(l){return l.etapa===e;});
+      return '<section class="coluna '+e+'"><h3>'+ETAPA_NOME[e]+' <span class="n">'+g.length+(e==='ganho'&&g.length?' · '+real(g.reduce(function(s,l){return s+(Number(l.valor)||0);},0)):'')+'</span></h3>'+(g.length?g.map(cardLead).join(''):'<div class="mu peq" style="padding:4px 6px 8px">—</div>')+'</section>'; }).join('')+'</div>';
+    $$('[data-lead]',c).forEach(function(el){
+      var id=el.dataset.lead;
+      var sel=$('[data-etapa]',el); if(sel) sel.onchange=function(){
+        var e=sel.value; if(e==='ganho'||e==='perdido'){ S.leadAcao={id:id,tipo:e}; return pinta(); }
+        sel.disabled=true; api({acao:'lead_etapa',lead_id:id,etapa:e}).then(function(){ toast('Movido pra '+ETAPA_NOME[e]+'.'); return carrega(); }).catch(function(x){ falhou(x); pinta(); });
+      };
+      $$('[data-l]',el).forEach(function(b){ b.onclick=function(){
+        var a=b.dataset.l;
+        if(a==='cancelar'){ S.leadAcao=null; return pinta(); }
+        if(a==='ganho'||a==='perdido'){ S.leadAcao={id:id,tipo:a}; pinta(); var i=$('[data-lead="'+id+'"] input'); if(i) i.focus(); return; }
+        if(a==='ganho-ok'){ var v=$('[data-valor]',el).value, pr=$('[data-prod]',el).value.trim();
+          return espera(b,'salvando…',function(){ return api({acao:'lead_ganho',lead_id:id,valor:v===''?null:Number(v),produto:pr||undefined}).then(function(){ S.leadAcao=null; toast('Venda registrada! 🎉'); return carrega(); }); }); }
+        if(a==='perdido-ok'){ var m=$('[data-motivo]',el).value.trim();
+          return espera(b,'salvando…',function(){ return api({acao:'lead_perdido',lead_id:id,motivo:m||'sem motivo'}).then(function(){ S.leadAcao=null; toast('Marcado como perdido.'); return carrega(); }); }); }
+      }; });
+    });
+  }
+  carrega();
+}
+
+/* --- números --- */
+function subNumeros(n,box){
+  box.innerHTML='<div class="cab" style="margin-bottom:12px"><h2>Números</h2><div class="periodo" id="per"><button data-d="7">7 dias</button><button data-d="30">30 dias</button></div></div><div id="num-c">'+carregando()+'</div>';
+  function carrega(){
+    $$('#per button').forEach(function(b){ b.classList.toggle('on', Number(b.dataset.d)===S.periodo); });
+    var de=new Date(Date.now()-S.periodo*86400e3).toISOString(), ate=new Date().toISOString();
+    $('#num-c').innerHTML=carregando();
+    api(q({acao:'numeros',negocio:n.id,de:de,ate:ate})).then(function(r){
+      function k(v,t,cls){ return '<div class="kpi '+(cls||'')+'"><b class="num'+(String(v).length>8?' longo':'')+'">'+v+'</b><span>'+t+'</span></div>'; }
+      var h='<div class="kpis">'+
+        k(real(r.gasto),'investimento nos anúncios')+k(inteiro(r.leads_novos),'contatos novos')+k(inteiro(r.ganhos),'vendas',r.ganhos?'bom':'')+k(real(r.receita),'receita',r.receita?'bom':'')+
+        k(pct(r.conversao),'conversão (vendas ÷ contatos)')+k(real(r.custo_por_venda),'custo por venda')+k(vezes(r.retorno),'retorno (receita ÷ investimento)',r.retorno>=1?'bom':'')+
+        k(real(r.ticket_medio),'ticket médio')+k(real(r.custo_por_lead),'custo por contato')+k(inteiro(r.conversas_meta),'conversas iniciadas (Meta)')+
+        k(inteiro(r.em_aberto),'contatos em aberto')+k(inteiro(r.perdidos),'perdidos',r.perdidos?'alerta':'')+
+        '</div><p class="mu peq">Período: '+esc(r.periodo&&r.periodo.de)+' até '+esc(r.periodo&&r.periodo.ate)+(r.retomadas_pendentes?' · '+r.retomadas_pendentes+' retomada(s) agendada(s)':'')+'</p>';
+      var orig=r.por_origem||{}, ks=Object.keys(orig).sort(function(a,b){return orig[b].receita-orig[a].receita||orig[b].leads-orig[a].leads;});
+      h+='<div class="grade2" style="gap:14px;margin-top:6px"><div class="card"><h3>De onde vieram</h3>'+(ks.length?'<table class="tab" style="margin-top:8px"><thead><tr><th>Origem</th><th class="n">Contatos</th><th class="n">Vendas</th><th class="n">Receita</th></tr></thead><tbody>'+
+        ks.map(function(k2){ var o=orig[k2]; return '<tr><td style="overflow-wrap:anywhere">'+esc(ORIGEM_NOME[k2]||k2)+'</td><td class="n">'+o.leads+'</td><td class="n">'+o.ganhos+'</td><td class="n">'+real(o.receita)+'</td></tr>'; }).join('')+'</tbody></table>':'<p class="mu">Nada no período.</p>')+'</div>';
+      var mot=r.motivos_perda||{}, mk=Object.keys(mot).sort(function(a,b){return mot[b]-mot[a];}), mx=mk.length?mot[mk[0]]:1;
+      h+='<div class="card"><h3>Por que perdeu</h3>'+(mk.length?mk.map(function(m){ return '<div style="margin-top:12px"><div style="display:flex;justify-content:space-between;gap:10px"><span style="overflow-wrap:anywhere">'+esc(m)+'</span><b class="num">'+mot[m]+'</b></div><div class="barra"><i style="width:'+Math.round(mot[m]/mx*100)+'%;background:var(--verm)"></i></div></div>'; }).join(''):'<p class="mu">Nenhuma perda no período.</p>')+'</div></div>';
+      $('#num-c').innerHTML=h;
+    }).catch(function(e){ $('#num-c').innerHTML=caixaErro(e); });
+  }
+  $$('#per button').forEach(function(b){ b.onclick=function(){ S.periodo=Number(b.dataset.d); carrega(); }; });
+  carrega();
+}
+
+/* --- campanhas --- */
+function subCampanhas(n,box){
+  box.innerHTML='<div class="aviso">A campanha sobe <b>pausada</b>. Só liga depois do 👍 do dono em todas as peças dela'+(n.ativa_sozinha?' (este negócio está configurado pra ligar sozinho com o 👍).':'.')+'</div>'+
+    '<details class="card form-dobra" style="margin-top:14px"><summary>Montar campanha pausada</summary><form id="f-camp" style="margin-top:12px"><p class="mu peq" style="margin:0 0 12px">Usa os anúncios que o dono já aprovou com 👍. Precisa do ID da conta de anúncio e da página (em “Dados e contexto”).</p><div class="grade2">'+
+    cmp('verba_dia','Verba por dia (R$)','number','',true,n.verba_dia||'')+cmp('raio_km','Raio em km','number','',true,15)+
+    '</div><button class="btn grad" style="width:100%">Montar campanha pausada</button></form></details><div id="camp-c" style="margin-top:14px">'+carregando()+'</div>';
+  var f=$('#f-camp');
+  f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
+    espera($('button',f),'montando…',function(){ return api({acao:'criar_campanha',negocio_id:n.id,verba_dia:Number(d.verba_dia),raio_km:Number(d.raio_km)}).then(function(){ toast('Campanha montada e pausada.'); return carrega(); }); });
+  };
+  var conf=null;
+  function carrega(){ return api(q({acao:'campanhas',negocio:n.id})).then(function(cs){ S.camps=cs||[]; pinta(); }).catch(function(e){ $('#camp-c').innerHTML=caixaErro(e); }); }
+  function pinta(){
+    var cs=S.camps||[], c=$('#camp-c'); if(!c) return;
+    if(!cs.length){ c.innerHTML='<div class="vazio">Nenhuma campanha ainda.</div>'; return; }
+    c.innerHTML='<div class="pilha">'+cs.map(function(k){
+      var pub=k.publico||{}, ac='';
+      if(k.status==='criada_pausada'||k.status==='pausada') ac= conf===k.id
+        ? '<div class="confirma" style="background:var(--verde-bg)"><p style="color:var(--verde)">Ligar agora? Começa a gastar '+real(k.verba_dia)+' por dia.</p><div class="btns"><button class="btn ok" data-c="ligar-sim">Sim, ligar</button><button class="btn" data-c="nao">Voltar</button></div></div>'
+        : '<div class="btns"><button class="btn ok" data-c="ligar">Ligar campanha</button></div>';
+      if(k.status==='ativa') ac='<div class="btns"><button class="btn perigo" data-c="pausar">Pausar</button></div>';
+      return '<div class="card" data-camp="'+esc(k.id)+'"><div class="cab" style="margin-bottom:8px"><h3 style="overflow-wrap:anywhere;min-width:0">'+esc(k.nome||'Campanha')+'</h3><div class="tags">'+st(CAMP_ST,k.status)+(k.simulada?'<span class="st azul">simulada</span>':'')+'</div></div>'+
+        '<div class="mini" style="margin-top:0"><span><b>'+real(k.verba_dia)+'</b>/dia</span><span><b>'+((k.peca_ids||[]).length)+'</b> anúncio(s)</span>'+(pub.raio_km?'<span>raio <b>'+esc(pub.raio_km)+' km</b></span>':'')+(pub.cidade?'<span>'+esc(pub.cidade)+'</span>':'')+'<span>criada '+quando(k.criado_em)+'</span>'+(k.ativada_em?'<span>ligada '+quando(k.ativada_em)+' por '+esc(k.ativada_por||'?')+'</span>':'')+'</div>'+
+        (k.erro?'<div class="erro-box" style="margin-top:10px">'+esc(k.erro)+'</div>':'')+(ac?'<div style="margin-top:12px">'+ac+'</div>':'')+'</div>';
+    }).join('')+'</div>';
+    $$('[data-camp]',c).forEach(function(el){ var id=el.dataset.camp;
+      $$('[data-c]',el).forEach(function(b){ b.onclick=function(){ var a=b.dataset.c;
+        if(a==='ligar'){ conf=id; return pinta(); } if(a==='nao'){ conf=null; return pinta(); }
+        if(a==='ligar-sim') return espera(b,'ligando…',function(){ return api({acao:'ativar_campanha',campanha_id:id}).then(function(){ conf=null; toast('Campanha ligada.'); return carrega(); }); });
+        if(a==='pausar') return espera(b,'pausando…',function(){ return api({acao:'pausar_campanha',campanha_id:id}).then(function(){ toast('Campanha pausada.'); return carrega(); }); });
+      }; });
+    });
+  }
+  carrega();
+}
+
+/* --- conversa com o dono --- */
+var QUEM={dono:'Dono',maia:'Maia',equipe:'Equipe',sistema:'Sistema',cliente:'Cliente'};
+function balao(m,nomeDono){
+  var a=m.autor||'sistema', t=m.texto||(m.tipo&&m.tipo!=='texto'?'('+m.tipo+')':'');
+  return '<div class="bal '+esc(a)+'"><span class="quem">'+esc(a==='dono'&&nomeDono?nomeDono:QUEM[a]||a)+'</span>'+esc(t)+'<span class="hora">'+hora(m.criado_em)+'</span></div>';
+}
+function subConversa(n,box){
+  box.innerHTML='<div id="cv-c">'+carregando()+'</div>';
+  var cv=null;
+  function carrega(){
+    return api(q({acao:'conversas',negocio:n.id})).then(function(cs){
+      cv=(cs||[]).filter(function(c){return c.canal==='dono';})[0]||null;
+      if(!cv) return pinta([]);
+      return api(q({acao:'msgs',conversa:cv.id})).then(pinta);
+    }).catch(function(e){ $('#cv-c').innerHTML=caixaErro(e); });
+  }
+  function pinta(msgs){
+    var c=$('#cv-c'); if(!c) return;
+    var humano=cv&&cv.modo==='humano';
+    c.innerHTML='<div class="card"><div class="cab" style="margin-bottom:12px"><div style="min-width:0"><h2>'+esc(n.dono_nome||'Dono')+'</h2><p class="mu peq num">'+esc(n.dono_whatsapp||'')+' · '+(cv?(humano?'<b style="color:var(--ambar)">a equipe assumiu</b>':'a Maia está respondendo'):'sem conversa ainda')+'</p></div>'+
+      '<div class="btns">'+(cv?(humano?'<button class="btn pri peq" id="b-devolver">Devolver pra Maia</button>':'<button class="btn peq" id="b-assumir">Assumir a conversa</button>'):'')+'<button class="btn leve peq" id="b-rec">Atualizar</button></div></div>'+
+      '<div class="chat" id="chat">'+(msgs.length?msgs.map(function(m){return balao(m,n.dono_nome);}).join(''):'<div class="mu" style="text-align:center;padding:20px">Nenhuma mensagem ainda.</div>')+'</div>'+
+      '<form class="enviar" id="f-msg"><textarea name="texto" placeholder="Mensagem da equipe pro dono…" aria-label="mensagem" required></textarea><button class="btn pri">Mandar</button></form>'+
+      '<p class="mu peq" style="margin:8px 0 0">Vai como mensagem da equipe no WhatsApp da Maia.'+(humano?'':' Dica: assume a conversa antes, se não quiser que a Maia responda junto.')+'</p></div>';
+    var ch=$('#chat'); ch.scrollTop=ch.scrollHeight;
+    $('#b-rec').onclick=function(){ carrega(); };
+    if($('#b-assumir')) $('#b-assumir').onclick=function(){ espera(this,'…',function(){ return api({acao:'assumir',conversa_id:cv.id}).then(function(){ toast('A equipe assumiu. A Maia para de responder o dono.'); return carrega(); }); }); };
+    if($('#b-devolver')) $('#b-devolver').onclick=function(){ espera(this,'…',function(){ return api({acao:'devolver',conversa_id:cv.id}).then(function(){ toast('Devolvido pra Maia.'); return carrega(); }); }); };
+    var f=$('#f-msg');
+    f.onsubmit=function(ev){ ev.preventDefault(); var t=f.texto.value.trim(); if(!t) return;
+      espera($('button',f),'…',function(){ return api({acao:'mandar_ao_dono',negocio_id:n.id,texto:t}).then(function(){ f.reset(); return carrega(); }); }); };
+  }
+  carrega();
+}
+
+/* --- simulador --- */
+function mostraResposta(el,r,quem){
+  if(!r){ el.innerHTML='<div class="dica">A Maia não respondeu (a mensagem foi ignorada ou a conversa está com a equipe).</div>'; return; }
+  var resp=r.respondeu, h='';
+  if(r.recebido) h+='<div class="bal dono" style="align-self:flex-start"><span class="quem">'+esc(quem)+' (o que chegou)</span>'+esc(r.recebido)+'</div>';
+  if(!resp) h+='<div class="dica">'+(r.recebido!=null?'Mídia guardada. A Maia não responde na hora a foto/vídeo (o dono costuma mandar vários): manda um texto depois.':'Sem resposta da Maia.')+'</div>';
+  else {
+    var ms=resp.mensagens||[];
+    h+=ms.length?ms.map(function(m){ return '<div class="bal maia"><span class="quem">Maia</span>'+esc(typeof m==='string'?m:(m.texto||JSON.stringify(m)))+'</div>'; }).join(''):'<div class="dica">A Maia não mandou texto (veja a conversa).</div>';
+    h+='<div><b class="peq">Ferramentas que ela usou:</b> <div class="ferr" style="margin-top:6px">'+((resp.ferramentas||[]).length?resp.ferramentas.map(function(f){return '<code>'+esc(f)+'</code>';}).join(''):'<span class="mu peq">nenhuma</span>')+'</div></div>';
+    if(resp.etapa) h+='<div class="peq">Etapa do contato agora: '+st({novo:['novo',''],conversando:['conversando','azul'],interessado:['interessado','azul'],proposta:['proposta','ambar'],ganho:['ganho','verde'],perdido:['perdido','verm']},resp.etapa)+'</div>';
+  }
+  h+='<details><summary class="mu peq" style="cursor:pointer">ver resposta completa</summary><pre class="json">'+esc(JSON.stringify(r,null,2))+'</pre></details>';
+  el.innerHTML=h;
+}
+function subSimulador(n,box){
+  var rnd=String(Math.floor(Math.random()*1e7)).padStart(7,'0');
+  box.innerHTML='<div class="dica" style="margin-bottom:14px">Teste: nada sai pra Meta nem pro WhatsApp de verdade quando o telefone começa com 55000. Cada mensagem aciona a IA (custa um pouquinho).</div>'+
+    '<div class="grade2" style="gap:14px;align-items:start">'+
+    '<form class="card" id="f-sdono"><h2>Falar como o dono</h2><p class="mu peq" style="margin:4px 0 14px">Como se fosse '+esc(n.dono_nome||'o dono')+' no WhatsApp.</p>'+
+      '<div class="campo"><label for="s-texto">Mensagem</label><textarea id="s-texto" name="texto" placeholder="Ex.: oi Maia, vendi 2 limpezas de pele hoje pra Ana e pra Bia, 180 cada"></textarea></div>'+
+      '<div class="campo"><label for="s-arq">Ou uma foto / vídeo</label><input id="s-arq" name="arquivo" type="file" accept="image/*,video/*,audio/*"></div>'+
+      '<div class="campo"><label for="s-leg">Legenda da foto/vídeo</label><input id="s-leg" name="legenda" placeholder="opcional"></div>'+
+      '<button class="btn grad" style="width:100%">Mandar como dono</button><div class="resp" id="r-dono"></div></form>'+
+    '<form class="card" id="f-scli"><h2>Falar como um cliente do negócio</h2><p class="mu peq" style="margin:4px 0 14px">Como alguém que viu o anúncio e chamou.</p>'+
+      '<div class="grade2"><div class="campo"><label for="c-tel">Telefone (fictício)</label><input id="c-tel" name="telefone" class="num" value="55000'+rnd+'"></div><div class="campo"><label for="c-nome">Nome</label><input id="c-nome" name="nome" placeholder="Ex.: Júlia"></div></div>'+
+      '<div class="campo"><label for="c-texto">Mensagem</label><textarea id="c-texto" name="texto" required placeholder="Ex.: oi, quanto custa a limpeza de pele?"></textarea></div>'+
+      '<button class="btn grad" style="width:100%">Mandar como cliente</button><div class="resp" id="r-cli"></div></form></div>';
+  var fd=$('#f-sdono');
+  fd.onsubmit=function(ev){ ev.preventDefault();
+    var texto=fd.texto.value.trim(), arq=fd.arquivo.files[0], leg=fd.legenda.value.trim();
+    if(!texto&&!arq){ toast('não deu: escreve uma mensagem ou escolhe um arquivo',true); return; }
+    espera($('button',fd),arq?'enviando o arquivo…':'a Maia está pensando…',function(){
+      var p=arq?lerB64(arq).then(function(b64){ return {acao:'simular_dono',negocio_id:n.id,arquivo_b64:b64,mime:arq.type||'image/jpeg',legenda:leg||texto||undefined}; })
+               :Promise.resolve({acao:'simular_dono',negocio_id:n.id,texto:texto});
+      return p.then(api).then(function(r){ mostraResposta($('#r-dono'),r,'Dono'); fd.texto.value=''; fd.arquivo.value=''; fd.legenda.value=''; });
+    });
+  };
+  var fc=$('#f-scli');
+  fc.onsubmit=function(ev){ ev.preventDefault();
+    var tel=fc.telefone.value.replace(/\D/g,'');
+    if(!/^55000/.test(tel)){ toast('não deu: no simulador o telefone tem que começar com 55000',true); return; }
+    espera($('button',fc),'a Maia está pensando…',function(){
+      return api({acao:'simular_cliente',negocio_id:n.id,telefone:tel,nome:fc.nome.value.trim()||undefined,texto:fc.texto.value.trim()}).then(function(r){ mostraResposta($('#r-cli'),r,'Cliente'); fc.texto.value=''; });
+    });
+  };
+}
+function lerB64(file){
+  return new Promise(function(ok,falha){
+    if(file.size>25*1024*1024) return falha(new Error('arquivo grande demais (máx. 25 MB)'));
+    var r=new FileReader(); r.onload=function(){ ok(String(r.result).split(',')[1]||''); }; r.onerror=function(){ falha(new Error('não consegui ler o arquivo')); }; r.readAsDataURL(file);
+  });
+}
+
+/* ---------- 4. ROTINA ---------- */
+function telaRotina(){
+  var t=$('#tela');
+  t.innerHTML='<div class="cab"><div><h1>Rotina</h1><p class="mu">O que roda sozinho todo dia: retomadas dos clientes que pararam de responder, resumo da semana pros donos e números da Meta.</p></div></div>'+
+    '<div class="card"><div class="chave" style="padding-top:0"><div class="txt"><b>Forçar o resumo da semana</b><small>Gera o relatório da semana agora, mesmo fora do dia certo. Vai pra fila da equipe aprovar.</small></div><label class="sw"><input type="checkbox" id="r-forcar"><span></span></label></div>'+
+    '<button class="btn grad" id="b-rodar" style="width:100%;margin-top:6px">Rodar a rotina agora</button></div><div id="rot-c" style="margin-top:14px"></div>';
+  $('#b-rodar').onclick=function(){
+    var b=this; espera(b,'rodando… pode levar um pouco',function(){
+      return api({acao:'rodar_rotina',forcar_relatorio:$('#r-forcar').checked}).then(function(r){ pintaRotina(r); atualizaResumo(); });
+    });
+  };
+}
+function pintaRotina(r){
+  var nomes={retomadas:'Retomadas',relatorios:'Resumos da semana',metricas:'Números da Meta'}, h='<div class="card"><h2>Resultado</h2>';
+  var ks=Object.keys(r||{});
+  if(!ks.length) h+='<p class="mu">Rodou e não tinha nada pra fazer.</p>';
+  ks.forEach(function(k){
+    var v=r[k], erro=/_erro$/.test(k), base=k.replace(/_erro$/,'');
+    h+='<div class="chave"><div class="txt"><b>'+esc(nomes[base]||base)+(erro?' — deu erro':'')+'</b>'+
+      (erro?'<div class="erro-box" style="margin-top:6px">não deu: '+esc(v)+'</div>':'<small>'+resumoValor(v)+'</small>')+'</div></div>';
+  });
+  h+='<details style="margin-top:10px"><summary class="mu peq" style="cursor:pointer">ver resultado completo</summary><pre class="json">'+esc(JSON.stringify(r,null,2))+'</pre></details></div>';
+  $('#rot-c').innerHTML=h;
+}
+function resumoValor(v){
+  if(v==null) return 'nada';
+  if(Array.isArray(v)) return v.length?v.length+' item(ns)':'nada pra fazer';
+  if(typeof v==='object'){ var ks=Object.keys(v); if(!ks.length) return 'nada pra fazer';
+    return ks.map(function(k){ var x=v[k]; return esc(k.replace(/_/g,' '))+': '+(Array.isArray(x)?x.length:(typeof x==='object'&&x!==null?JSON.stringify(x).slice(0,80):esc(x))); }).join(' · '); }
+  return esc(v);
+}
+
+/* ---------- início ---------- */
+S.senha=lsGet(CHAVE);
+if(!S.senha) telaLogin();
+else { montar(); atualizaResumo(); }
+})();
+</script>
+</body>
+</html>

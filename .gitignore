@@ -42,3 +42,12 @@ next-env.d.ts
 
 .vercel
 .env*
+
+# Maia: testes locais (03/11)
+.maia-local/
+.maia-teste/
+.maia-fotos-teste/
+.next-teste/
+maia-oficina/node_modules/
+maia-oficina/saida/
+maia-oficina/.env

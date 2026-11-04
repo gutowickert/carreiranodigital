@@ -1,0 +1,185 @@
+// Maia: a conversa com o DONO do negócio, no WhatsApp da Maia (03/11).
+// O dono manda fotos e vídeos curtos, aprova com 👍, pergunta os números, conta as vendas ("fechei com a Ana, 180").
+// Ela responde na hora (isso é conversa, não passa pela equipe). O que ela GERA (anúncios, vídeos, relatório) vai pra equipe antes.
+import crypto from 'node:crypto'
+import { maiaDb as db, maiaLocal } from './db'
+import { comFerramentas, emJson, JEITO, type Ferramenta } from './ia'
+import { conversaDoDono, conversa, mandaTexto, avisaEquipe } from './canal'
+import { donoAprova, donoAjuste, pecaDaMensagem } from './aprovacao'
+import { geraAnuncios } from './pecas'
+import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
+import { baixaMidia } from '@/lib/oito/wa'
+
+const MAX_IA_DIA = 120
+const ehJoinha = (t: string) => /^\s*(👍|👍🏻|👍🏼|👍🏽|👍🏾|👍🏿|ok|aprovado|aprovo|aprova|pode subir|pode|show|top|perfeito|manda ver|bora)\s*[!.]*\s*$/i.test(t)
+
+// hoje no Brasil (o servidor é UTC)
+const hojeBR = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+function periodo(p: string): [string, string] {
+  const h = hojeBR(), d = (n: number) => new Date(Date.parse(h) - n * 86400e3).toISOString().slice(0, 10)
+  if (p === 'hoje') return [h + 'T03:00:00.000Z', new Date().toISOString()]
+  if (p === 'ontem') return [d(1) + 'T03:00:00.000Z', h + 'T03:00:00.000Z']
+  if (p === 'mes') return [h.slice(0, 8) + '01T03:00:00.000Z', new Date().toISOString()]
+  if (p === '30dias') return [d(30) + 'T03:00:00.000Z', new Date().toISOString()]
+  return [d(7) + 'T03:00:00.000Z', new Date().toISOString()]
+}
+
+// o que a Maia viu numa foto (pra escolher a certa na hora de criar o anúncio)
+async function descreveFoto(buf: Buffer, mime: string, neg: any) {
+  try {
+    const r = await emJson<{ descricao: string }>('Tu descreves fotos de pequenos negócios pra uma redatora de anúncios. Objetivo, em português, até 25 palavras: o que aparece, a qualidade da foto (nítida, escura, tremida) e se serve pra anúncio.',
+      `Foto do negócio ${neg.nome} (${neg.nicho || ''}). Devolve {"descricao":"..."}`, [{ b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }])
+    return r.descricao
+  } catch { return null }
+}
+
+// uma mensagem que chegou do dono. m = a mensagem no formato da Meta; midia = já baixada (simulação) ou baixa da Meta
+export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?: { buf: Buffer; mime: string }) {
+  if (m.id && (await db.um('msgs', { wamid: m.id }))) return null   // a Meta repete eventos
+  const cv = await conversaDoDono(neg)
+  let texto = m.type === 'text' ? m.text?.body || '' : m.type === 'reaction' ? `(reagiu ${m.reaction?.emoji || ''})` : m.type === 'button' ? m.button?.text || '' : m.type === 'interactive' ? m.interactive?.button_reply?.title || '' : ''
+  let midia_id: string | null = null
+  const idMeta = m.image?.id || m.video?.id || m.audio?.id || (/image\/|video\//.test(m.document?.mime_type || '') ? m.document.id : null)
+  if (midia || idMeta) {
+    try {
+      const { buf, mime } = midia || await baixaMidia(idMeta)
+      if (/audio/.test(mime)) {
+        const { transcreve } = await import('./demo')
+        texto = '(áudio) ' + ((await transcreve(buf, mime)) || '[não deu pra entender o áudio]')
+      } else {
+        const tipo = /video/.test(mime) ? 'video' : 'foto'
+        const ext = tipo === 'video' ? 'mp4' : /png/.test(mime) ? 'png' : 'jpg'
+        const caminho = await db.sobe(`${neg.id}/midias/${crypto.randomUUID().slice(0, 8)}.${ext}`, buf, mime)
+        const legenda = m.image?.caption || m.video?.caption || m.document?.caption || null
+        const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : null
+        const md = await db.insere('midias', { negocio_id: neg.id, tipo, path: caminho, mime, legenda, descricao })
+        midia_id = md.id
+        texto = `(mandou ${tipo === 'video' ? 'um vídeo' : 'uma foto'}${descricao ? ': ' + descricao : ''})${legenda ? ' ' + legenda : ''}`
+      }
+    } catch (e: any) { texto += ' [a mídia não pôde ser baixada: ' + String(e?.message || '').slice(0, 80) + ']' }
+  }
+  await db.insere('msgs', { conversa_id: cv.id, negocio_id: neg.id, autor: 'dono', tipo: m.type || 'texto', texto, midia_id, wamid: m.id || null, status: 'recebido' }).catch(() => null)
+  await db.atualiza('conversas', { id: cv.id }, { ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString(), janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString(), nao_lidas: (cv.nao_lidas || 0) + 1, ...(nome && !cv.nome ? { nome } : {}) })
+
+  // o 👍 em cima da mensagem de uma peça aprova aquela peça, sem precisar da IA
+  if (m.type === 'reaction' && /👍/.test(m.reaction?.emoji || '') && m.reaction?.message_id) {
+    const p = await pecaDaMensagem(neg.id, m.reaction.message_id)
+    if (p && p.status === 'com_dono') { await donoAprova(neg.id, p.id); return { cv, texto, responder: true, aprovou: [p.id] } }
+  }
+  return { cv, texto, responder: cv.modo === 'ia' }
+}
+
+function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
+  const lead = async (q: any) => (await achaLead(neg.id, { telefone: q.telefone, nome: q.nome, id: q.lead_id })) as any
+  return [
+    { name: 'salvar_contexto', description: 'Guarda o que tu aprendeu do negócio (serviços, preços, público, diferencial, horário, endereço, formas de pagamento, tom, o que evitar, verba por dia, perguntas frequentes). Só o que o dono disse.',
+      input_schema: { type: 'object', properties: { campos: { type: 'object', description: 'chave → valor, ex.: {"servicos":"...","preco_medio":"R$ 180"}' }, verba_dia: { type: 'number' } }, required: ['campos'] },
+      roda: async ({ campos, verba_dia }) => { const n = await db.um('negocios', { id: neg.id }); await db.atualiza('negocios', { id: neg.id }, { contexto: { ...(n?.contexto || {}), ...campos }, ...(verba_dia ? { verba_dia } : {}) }); return { ok: true } } },
+    { name: 'criar_anuncios', description: 'Cria anúncios novos com as fotos e vídeos que o dono mandou. Eles vão pra revisão da equipe e depois chegam pro dono aprovar (leva umas horas). Usa quando o dono pedir ou quando chegarem fotos/vídeos novos e ele topar.',
+      input_schema: { type: 'object', properties: { quantidade: { type: 'number' }, tema: { type: 'string', description: 'ex.: Natal, promoção de terça, produto novo' } } },
+      roda: async ({ quantidade, tema }) => geraAnuncios(neg, { quantidade, tema }) },
+    { name: 'pecas_com_o_dono', description: 'Lista os anúncios que já foram mandados pro dono e esperam o 👍.',
+      input_schema: { type: 'object', properties: {} },
+      roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, gancho: p.gancho })) },
+    { name: 'aprovar_pecas', description: 'O dono aprovou (👍, "pode", "aprovado"). Sem peca_id aprova todas as que estão com ele.',
+      input_schema: { type: 'object', properties: { peca_id: { type: 'string' } } },
+      roda: async ({ peca_id }) => { const r = await donoAprova(neg.id, peca_id); ctx.aprovou.push(...r.map(x => x.id)); return { aprovadas: r.length } } },
+    { name: 'pedir_ajuste', description: 'O dono quer mudar um anúncio. Manda o pedido do jeito que ele falou; a peça é refeita e passa pela equipe de novo.',
+      input_schema: { type: 'object', properties: { peca_id: { type: 'string' }, nota: { type: 'string' } }, required: ['nota'] },
+      roda: async ({ peca_id, nota }) => donoAjuste(neg.id, peca_id || null, nota) },
+    { name: 'numeros', description: 'Os números do negócio (do sistema): investimento, conversas, contatos novos, vendas, receita, custo por venda, retorno, de onde veio cada venda e motivos de perda.',
+      input_schema: { type: 'object', properties: { periodo: { type: 'string', enum: ['hoje', 'ontem', 'semana', 'mes', '30dias'] } }, required: ['periodo'] },
+      roda: async ({ periodo: p }) => { const [de, ate] = periodo(p); return numeros(neg.id, de, ate) } },
+    { name: 'registrar_venda', description: 'O dono contou que vendeu ("fechei com a Ana, 180"). Marca o contato como GANHO com o valor. Se o contato não existe, cria (origem dono).',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, valor: { type: 'number' }, produto: { type: 'string' }, veio_do_anuncio: { type: 'boolean', description: 'só se o dono disse de onde veio' } } },
+      roda: async (q) => { let l = await lead(q); if (!l) l = await novoLead(neg.id, { nome: q.nome, telefone: q.telefone, produto: q.produto, origem: q.veio_do_anuncio === true ? 'anuncio' : q.veio_do_anuncio === false ? 'dono' : 'outro' }, 'dono'); const g = await ganhou(l, q.valor, q.produto, 'dono'); return { ok: true, lead: g.id, nome: g.nome, valor: g.valor } } },
+    { name: 'registrar_perda', description: 'O dono contou que um contato não vai comprar. Marca PERDIDO com o motivo (preço, sumiu, comprou no concorrente, sem orçamento, outro).',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, motivo: { type: 'string' } }, required: ['motivo'] },
+      roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato. Pergunta o nome ou o telefone.' }; await perdeu(l, q.motivo, 'dono'); return { ok: true } } },
+    { name: 'novo_contato', description: 'Registra um contato que chegou por fora (indicação, loja, Instagram) pra entrar no funil.',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, produto: { type: 'string' }, origem: { type: 'string', enum: ['anuncio', 'organico', 'indicacao', 'dono', 'outro'] }, etapa: { type: 'string', enum: ['novo', 'conversando', 'interessado', 'proposta'] } }, required: ['nome'] },
+      roda: async (q) => { const l = await novoLead(neg.id, q, 'dono'); if (q.etapa && q.etapa !== 'novo') await mudaEtapa(l, q.etapa as Etapa, 'dono'); return { ok: true, lead: l.id } } },
+    { name: 'mudar_etapa', description: 'Muda a etapa de um contato no funil (conversando, interessado, proposta).',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, valor: { type: 'number' }, produto: { type: 'string' } }, required: ['etapa'] },
+      roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato' }; await mudaEtapa(l, q.etapa, 'dono', { valor: q.valor, produto: q.produto }); return { ok: true } } },
+    { name: 'listar_contatos', description: 'Os contatos do funil, filtrando por etapa. Bom pra "quem tá em aberto?" ou "quem eu preciso chamar?".',
+      input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['novo', 'conversando', 'interessado', 'proposta', 'ganho', 'perdido', 'abertos', 'retomar_hoje'] } } },
+      roda: async ({ etapa }) => {
+        let l = await db.lista('leads', { negocio_id: neg.id }, { ordem: 'atualizado_em', desc: true })
+        if (etapa === 'abertos') l = l.filter(x => !['ganho', 'perdido'].includes(x.etapa))
+        else if (etapa === 'retomar_hoje') l = l.filter(x => x.proximo_followup_em && x.proximo_followup_em <= new Date(Date.now() + 86400e3).toISOString())
+        else if (etapa) l = l.filter(x => x.etapa === etapa)
+        return l.slice(0, 25).map(x => ({ nome: x.nome, telefone: x.telefone, etapa: x.etapa, produto: x.produto, valor: x.valor, retomar_em: x.proximo_followup_em, resumo: x.resumo }))
+      } },
+    { name: 'agendar_retomada', description: 'Agenda pra lembrar o dono (ou, quando o WhatsApp do negócio estiver ligado, pra Maia) de chamar um contato de novo.',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
+      roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato' }; await agendaFollowup(l, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
+    { name: 'responder_cliente', description: 'Repassa pro CLIENTE do negócio a resposta que o dono deu a uma pergunta dele (as perguntas esperando estão no pedido). Escreve a mensagem pronta, como a assistente do negócio.',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, mensagem: { type: 'string' } }, required: ['mensagem'] },
+      roda: async (q) => {
+        const l = await lead(q); if (!l || !l.telefone) return { erro: 'não achei esse cliente' }
+        const ccv = await conversa(neg.id, 'cliente', l.telefone, { nome: l.nome, lead_id: l.id })
+        await mandaTexto(ccv, q.mensagem)
+        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem: q.mensagem } })
+        return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)' }
+      } },
+    { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
+      input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
+      roda: async ({ motivo }) => { await avisaEquipe('o dono chamou', `${neg.nome}: ${motivo}`, neg.id, true); return { ok: true } } },
+  ]
+}
+
+const REGRAS = `${JEITO}
+
+AGORA: tu estás no WhatsApp com a dona ou o dono de um negócio que é TEU CLIENTE (ele paga a Maia). Tu és o time de marketing dele.
+O QUE TU FAZ POR ELE: cria os anúncios com as fotos e vídeos curtos que ele manda, edita os vídeos, cuida do Instagram (plano Completa), sobe e ajusta as campanhas, atende os clientes dele (quando o WhatsApp do negócio estiver ligado), conta cada venda e manda o resumo toda segunda.
+COMO FUNCIONA A APROVAÇÃO: tudo que tu cria passa primeiro pela equipe da Carreira no Digital e depois chega pra ele dar o 👍. Campanha só liga depois do 👍 dele e da equipe. Diz isso quando ele pedir anúncio ("a equipe dá uma olhada e eu te mando hoje ainda/amanhã cedo").
+REGRAS:
+- Responde na hora, curto, do jeito de WhatsApp. Nunca reclama, nunca enrola.
+- Número só do sistema (ferramenta numeros). Nunca inventa número. Se não tem dado, diz.
+- Quando ele contar uma venda ou uma perda, registra (registrar_venda / registrar_perda) e confirma com o valor.
+- Quando chegar foto ou vídeo, agradece em uma linha. Se já tiver 3 ou mais mídias novas (ou um vídeo bom), pergunta se ele quer que tu já crie os anúncios, ou cria se ele já pediu.
+- Vídeo bom pra anúncio: 10 a 30 segundos, celular em pé, com luz, mostrando o produto ou o serviço. Dá a dica se ele pedir.
+- Aprende o negócio aos poucos (salvar_contexto): uma pergunta por vez, sem questionário.
+- Reclamação, cancelamento, troca de plano, cobrança ou o que tu não sabe: chamar_equipe e diz que o Guto responde ali mesmo.
+- Nunca fala de preço da Maia, desconto ou contrato: isso é com a equipe.
+FORMATO DA RESPOSTA FINAL: uma a três mensagens, cada uma entre <msg> e </msg>. Nada fora das marcas.`
+
+// a Maia responde o dono (o webhook chama uns segundos depois da última mensagem dele)
+export async function respondeDono(conversa_id: string) {
+  const cv = await db.um('conversas', { id: conversa_id })
+  if (!cv || cv.canal !== 'dono' || cv.modo !== 'ia') return null
+  const neg = await db.um('negocios', { id: cv.negocio_id })
+  if (!neg) return null
+  if ((cv.ia_respostas || 0) > MAX_IA_DIA * 30) { await avisaEquipe('conversa longa demais', neg.nome, neg.id); return null }
+  const msgs = await db.lista('msgs', { conversa_id }, { ordem: 'criado_em' })
+  const hist = msgs.slice(-30).map(x => `${x.autor === 'dono' ? 'DONO' : x.autor === 'equipe' ? 'EQUIPE DA ESCOLA' : 'MAIA'}: ${x.texto}`).join('\n')
+  const pend = await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })
+  // perguntas de clientes que a Maia passou pro dono e ainda não foram repassadas
+  const evs = await db.lista('lead_eventos', { negocio_id: neg.id })
+  const abertas = evs.filter(e => e.tipo === 'pergunta_cliente' && !evs.some(x => x.tipo === 'pergunta_respondida' && x.lead_id === e.lead_id && x.criado_em > e.criado_em))
+  const perguntas = await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))
+  const ultima = msgs.filter(x => x.autor === 'dono').slice(-1)[0]
+  const ctx = { aprovou: [] as string[] }
+  // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
+  if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
+  const pedido = `HOJE: ${hojeBR()}
+NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${neg.plano} · status ${neg.status}
+DONO: ${neg.dono_nome || cv.nome || '?'}
+O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
+ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
+PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo)
+MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}
+
+CONVERSA:
+${hist}
+
+Responde a(s) última(s) mensagem(ns) do dono.`
+  const r = await comFerramentas(REGRAS, pedido, ferramentas(neg, ctx))
+  const partes = [...r.texto.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(Boolean)
+  const saida = (partes.length ? partes : [r.texto.replace(/<\/?msg>/g, '').trim()]).filter(Boolean).slice(0, 3)
+  for (const t of saida) await mandaTexto(cv, t)
+  await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
+  if (maiaLocal()) for (const u of r.usadas) console.log(`  [ferramenta] ${u.nome} ${JSON.stringify(u.entrada).slice(0, 120)} → ${JSON.stringify(u.saida).slice(0, 160)}`)
+  return { mensagens: saida, ferramentas: r.usadas.map(u => u.nome) }
+}
