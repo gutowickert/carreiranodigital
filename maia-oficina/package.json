@@ -1,0 +1,16 @@
+{
+  "name": "maia-oficina",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Oficina da Maia: gera as artes de anúncio e edita os vídeos curtos dos donos de negócio",
+  "main": "oficina.js",
+  "scripts": {
+    "start": "node oficina.js",
+    "uma-vez": "node oficina.js --uma-vez"
+  },
+  "engines": { "node": ">=20" },
+  "type": "commonjs",
+  "dependencies": {
+    "puppeteer-core": "^25.16.0"
+  }
+}

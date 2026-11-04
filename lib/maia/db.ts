@@ -121,5 +121,11 @@ export const maiaDb = {
     const j = await req(`/storage/v1/object/sign/maia/${caminho}`, { method: 'POST', body: JSON.stringify({ expiresIn: segundos }) })
     return U() + '/storage/v1' + j.signedURL
   },
+  // link de envio direto pro armazenamento (a oficina manda o vídeo sem passar pela Vercel). No modo local: null (vai em base64).
+  async linkEnvio(caminho: string): Promise<string | null> {
+    if (maiaLocal()) return null
+    const j = await req(`/storage/v1/object/upload/sign/maia/${caminho}`, { method: 'POST', body: '{}', headers: { 'x-upsert': 'true' } })
+    return U() + '/storage/v1' + j.url
+  },
   arquivoLocal: (caminho: string) => path.join(PASTA(), 'arquivos', caminho),
 }

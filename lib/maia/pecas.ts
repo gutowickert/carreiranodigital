@@ -55,7 +55,7 @@ export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
 }
 
 // a oficina terminou uma tarefa: guarda o arquivo e a peça vai pra revisão da equipe
-export async function oficinaEntregou(tarefa: any, arquivo: { buf: Buffer; mime: string } | null, erro?: string) {
+export async function oficinaEntregou(tarefa: any, arquivo: { buf?: Buffer; caminho?: string; mime: string } | null, erro?: string) {
   if (erro || !arquivo) {
     const tent = (tarefa.tentativas || 0) + 1
     await db.atualiza('tarefas', { id: tarefa.id }, { status: tent >= 3 ? 'erro' : 'fila', tentativas: tent, resultado: { erro } })
@@ -63,7 +63,7 @@ export async function oficinaEntregou(tarefa: any, arquivo: { buf: Buffer; mime:
     return
   }
   const ext = /mp4/.test(arquivo.mime) ? 'mp4' : /png/.test(arquivo.mime) ? 'png' : 'jpg'
-  const caminho = await db.sobe(`${tarefa.negocio_id}/pecas/${tarefa.peca_id}-${Date.now()}.${ext}`, arquivo.buf, arquivo.mime)
+  const caminho = arquivo.caminho || await db.sobe(`${tarefa.negocio_id}/pecas/${tarefa.peca_id}-${Date.now()}.${ext}`, arquivo.buf!, arquivo.mime)
   await db.atualiza('tarefas', { id: tarefa.id }, { status: 'feito', resultado: { arquivo: caminho } })
   const peca = await db.um('pecas', { id: tarefa.peca_id })
   const neg = await db.um('negocios', { id: tarefa.negocio_id })

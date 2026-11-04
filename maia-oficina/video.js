@@ -1,0 +1,252 @@
+// O VÍDEO do anúncio (vertical 1080x1920). Regras do Guto pra vídeo de cliente, que aqui são lei:
+//   - o vídeo fica na sequência em que foi gravado: NÃO corta o meio e NÃO reordena;
+//   - nada de texto inventado: a legenda é a fala transcrita, o cartão final é o gancho, o CTA e o nome;
+//   - pode tirar o silêncio morto do começo e do fim.
+// O que faz: legenda no tempo da fala (Deepgram nova-3, pt-BR) na parte de baixo, com a palavra falada em destaque;
+// vídeo deitado vira vertical com fundo desfocado; cartão final de 2,5 s nas cores da marca;
+// trilha bem baixa só se tiver um arquivo em trilhas/. Sai MP4 H.264 + AAC com faststart.
+// (A base veio do editor da ótica Tempo de Visão: a conversão do HDR do iPhone, a legenda palavra a palavra
+//  feita de PNGs do Chrome e a camada montada com o "concat" do ffmpeg.)
+const crypto = require('crypto')
+const { P, ff, sonda, COR_HDR, abreNavegador, coresDaMarca, fontesDaMarca, RESERVA, carregaPagina, esc, numeroDe, fs, path } = require('./comum')
+const { separaGancho } = require('./arte')
+
+const W = 1080, H = 1920, FPS = 30
+const FINAL = 2.5, TRANSICAO = 0.3
+const MAXIMO = 60 - FINAL          // o vídeo inteiro fica em ~60 s
+const ANTES = 0.3, DEPOIS = 0.5    // folga antes da 1ª palavra e depois da última (pra não comer o som)
+const FAIXA = 420                  // altura da faixa da legenda
+
+// ── transcrição: palavras com o tempo de cada uma
+// "termos" = o nome do negócio: ajuda a transcrição a escrever certo (ex.: "Tempo de Visão" e não "tempo de visão")
+async function transcreve(wav, chave, pastaCache, log, termos = []) {
+  const buf = fs.readFileSync(wav)
+  const cache = path.join(pastaCache, 'transcricao-' + crypto.createHash('sha1').update(buf).digest('hex').slice(0, 16) + '.json')
+  if (fs.existsSync(cache)) return JSON.parse(fs.readFileSync(cache, 'utf8'))
+  let ultimo = ''
+  for (const modelo of ['nova-3', 'nova-2']) {
+    const extra = termos.filter(Boolean).map(t => (modelo === 'nova-3' ? '&keyterm=' : '&keywords=') + encodeURIComponent(t)).join('')
+    const r = await fetch(`https://api.deepgram.com/v1/listen?model=${modelo}&language=pt-BR&punctuate=true&smart_format=true${extra}`, {
+      method: 'POST', headers: { Authorization: 'Token ' + chave, 'Content-Type': 'audio/wav' }, body: buf,
+    })
+    if (r.ok) {
+      const j = await r.json()
+      const alt = j.results && j.results.channels && j.results.channels[0].alternatives[0] || {}
+      const palavras = (alt.words || []).map(w => ({ txt: w.punctuated_word || w.word, ini: w.start, fim: w.end }))
+      const res = { modelo, texto: alt.transcript || '', palavras }
+      fs.writeFileSync(cache, JSON.stringify(res))
+      return res
+    }
+    ultimo = r.status + ' ' + (await r.text()).slice(0, 160)
+    log(`  a transcrição com ${modelo} não deu (${r.status}); ${modelo === 'nova-3' ? 'tentando nova-2' : 'desisto'}`)
+    if (r.status === 401 || r.status === 402 || r.status === 403) break
+  }
+  throw new Error('a transcrição falhou: ' + ultimo)
+}
+
+// ── as legendas: blocos curtos (até 4 palavras / ~22 letras), quebrando nas pausas e no fim de frase
+function montaBlocos(palavras) {
+  const blocos = []; let bl = null, ant = null
+  for (const p of palavras) {
+    const pausa = ant && p.ini - ant.fim > 0.6
+    if (bl && (pausa || bl.p.length >= 4 || (bl.p.map(x => x.txt).join(' ') + ' ' + p.txt).length > 22)) { blocos.push(bl); bl = null }
+    if (!bl) bl = { p: [] }
+    bl.p.push(p); ant = p
+    if (/[.?!,;:]$/.test(p.txt)) { blocos.push(bl); bl = null }
+  }
+  if (bl) blocos.push(bl)
+  blocos.forEach((b, i) => {
+    b.t0 = Math.max(0, b.p[0].ini - 0.05)
+    const prox = blocos[i + 1], fimFala = b.p[b.p.length - 1].fim
+    b.t1 = prox && prox.p[0].ini - fimFala < 0.6 ? Math.max(0, prox.p[0].ini - 0.05) : fimFala + 0.3
+  })
+  return blocos
+}
+
+const htmlLegenda = (b, ativa, cores, fontes) => {
+  const ws = b.p.map((p, j) => j === ativa
+    ? `<span class="w a">${esc(p.txt)}</span>`
+    : `<span class="w"${j > ativa ? ' style="visibility:hidden"' : ''}>${esc(p.txt)}</span>`).join(' ')
+  return `<!doctype html><html><head><meta charset="utf-8"><link href="${fontes.link}" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0}html,body{width:${W}px;height:${FAIXA}px;background:transparent;overflow:hidden}
+#l{position:absolute;left:70px;right:70px;top:20px;max-height:${FAIXA - 40}px;text-align:center;font-family:"${fontes.texto}",${RESERVA};font-weight:800;font-size:80px;line-height:1.24;color:#fff;
+ text-shadow:0 0 4px #000,0 3px 3px #000,0 4px 18px rgba(0,0,0,.85);-webkit-text-stroke:2px rgba(0,0,0,.55);paint-order:stroke fill;overflow:hidden}
+.w{display:inline-block}
+.a{background:${cores.botao};color:${cores.textoBotao};padding:0 16px;border-radius:14px;text-shadow:none;-webkit-text-stroke:0;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+</style></head><body><div id="l">${ws}</div></body></html>`
+}
+
+const htmlCartao = ({ gancho, cta, nome, logo, cores, fontes }) => {
+  const { etiqueta, titulo } = separaGancho(gancho), C = cores, n = titulo.length
+  const tam = n <= 22 ? 140 : n <= 40 ? 124 : n <= 64 ? 104 : 86
+  return `<!doctype html><html><head><meta charset="utf-8"><link href="${fontes.link}" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{width:${W}px;height:${H}px;overflow:hidden;font-family:"${fontes.texto}",${RESERVA};-webkit-font-smoothing:antialiased;
+ background:radial-gradient(circle at 20% 15%, ${C.secundaria}44, transparent 55%), radial-gradient(circle at 85% 90%, ${C.botao}33, transparent 50%), ${C.primaria}}
+.faixa{position:absolute;left:0;right:0;height:22px;background:${C.botao}}
+#caixa{position:absolute;left:80px;right:80px;top:300px;height:1150px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:44px;overflow:hidden}
+#caixa>*{flex:none}
+#logo{height:190px;max-width:520px;background:#fff;border-radius:28px;padding:20px 28px;display:flex;align-items:center;justify-content:center;flex:none}
+#logo img{max-height:150px;max-width:464px;object-fit:contain}
+#etq{display:inline-block;max-width:100%;background:${C.botao};color:${C.textoBotao};font-weight:800;font-size:50px;line-height:1.15;padding:14px 32px;border-radius:18px;margin-bottom:28px}
+#tit{font-family:"${fontes.titulo}",${RESERVA};font-weight:900;font-size:${tam}px;line-height:1.05;letter-spacing:-.015em;color:${C.texto};max-height:600px;padding-top:.08em;padding-bottom:.1em;overflow:hidden;overflow-wrap:break-word;width:100%}
+#cta{max-width:100%;white-space:nowrap;background:${C.botao};color:${C.textoBotao};font-weight:800;font-size:66px;line-height:1.12;padding:32px 72px;border-radius:999px;box-shadow:0 16px 40px rgba(0,0,0,.3);overflow:hidden;overflow-wrap:break-word}
+#nome{color:${C.texto};opacity:.92;font-weight:700;font-size:58px;line-height:1.15;max-width:100%;overflow-wrap:break-word}
+</style></head><body><div class="faixa" style="top:0"></div><div class="faixa" style="bottom:0"></div>
+<div id="caixa">${logo ? `<div id="logo"><img src="${logo}"></div>` : ''}
+<div style="width:100%">${etiqueta ? `<div id="etq">${esc(etiqueta)}</div>` : ''}<div id="tit">${esc(titulo)}</div></div>
+${cta ? `<div id="cta">${esc(cta)}</div>` : ''}<div id="nome">${esc(nome)}</div></div></body></html>`
+}
+
+// encolhe o texto até caber (mesma ideia da arte)
+const encolhe = (pg, itens) => pg.evaluate(itens => {
+  // passou do espaço? (mede as linhas de verdade; folga pequena pro acento do Ó/É, que sobe acima da linha)
+  const passa = (el, tf) => {
+    const t = tf || parseFloat(getComputedStyle(el).fontSize) || 20, q = el.getBoundingClientRect(), rg = document.createRange()
+    rg.selectNodeContents(el)
+    const fora = [...rg.getClientRects()].some(x => x.right > q.right + 2 || x.left < q.left - 2)
+    return fora || el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + Math.max(2, t * 0.15)
+  }
+  const out = {}
+  for (const [id, min, caixa] of itens) {
+    const el = document.getElementById(id); if (!el) continue
+    const box = document.getElementById(caixa || id)
+    const t0 = parseFloat(getComputedStyle(el).fontSize)
+    let t = t0
+    // o que é pra caber numa linha só (o botão do CTA) tenta numa linha até ~2/3 do tamanho; depois deixa quebrar
+    if (getComputedStyle(el).whiteSpace === 'nowrap') {
+      while ((passa(box, t) || passa(el)) && t > t0 * 0.66) { t -= 2; el.style.fontSize = t + 'px' }
+      if (passa(box, t) || passa(el)) { el.style.whiteSpace = 'normal'; t = t0; el.style.fontSize = t + 'px' }
+    }
+    while ((passa(box, t) || passa(el)) && t > min) { t -= 2; el.style.fontSize = t + 'px' }
+    if (passa(box, t) || passa(el)) { el.style.overflowWrap = 'anywhere'; while ((passa(box, t) || passa(el)) && t > 18) { t -= 2; el.style.fontSize = t + 'px' } }
+    out[id] = t
+  }
+  return out
+}, itens)
+
+// a camada de legenda: uma lista de PNGs com quanto tempo cada um fica na tela → um .mov com transparência
+function camada(segs, dur, pasta, nome) {
+  let tt = 0; const L = []
+  const poe = (arq, d) => { if (d > 0.001) { L.push(`file '${arq}'\nduration ${d.toFixed(4)}`); tt += d } }
+  for (const s of segs) { poe('vazio.png', s.t0 - tt); poe(s.arq, s.t1 - tt) }
+  poe('vazio.png', dur - tt); L.push("file 'vazio.png'")
+  fs.writeFileSync(path.join(pasta, nome + '.txt'), L.join('\n'))
+  const saida = path.join(pasta, nome + '.mov')
+  ff(['-f', 'concat', '-safe', '0', '-i', path.join(pasta, nome + '.txt'), '-vf', `fps=${FPS},format=rgba`, '-c:v', 'qtrle', '-t', dur.toFixed(3), saida])
+  return saida
+}
+
+function escolheTrilha(chave) {
+  const pasta = P('trilhas')
+  if (!fs.existsSync(pasta)) return null
+  const l = fs.readdirSync(pasta).filter(x => /\.(mp3|m4a|aac|wav|ogg|opus|flac)$/i.test(x)).sort()
+  return l.length ? path.join(pasta, l[numeroDe(chave) % l.length]) : null
+}
+
+async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chaveDeepgram, saida, pasta, navegador, log = console.log }) {
+  fs.mkdirSync(pasta, { recursive: true })
+  const s = sonda(video)
+  if (!s.video) throw new Error('o arquivo não tem imagem de vídeo')
+  const cores = coresDaMarca(marca || {}), fontes = fontesDaMarca(marca || {})
+  log(`  vídeo: ${s.w}x${s.h}, ${s.dur.toFixed(1)} s${s.hdr ? ', HDR' : ''}${s.audio ? '' : ', sem som'}`)
+
+  // 1. a fala, com o tempo de cada palavra
+  let palavras = []
+  if (s.audio && chaveDeepgram) {
+    const wav = path.join(pasta, 'voz.wav')
+    ff(['-i', video, '-vn', '-ac', '1', '-ar', '16000', wav])
+    const t = await transcreve(wav, chaveDeepgram, pasta, log, nome ? [nome] : [])
+    palavras = t.palavras
+    log(`  transcrição (${t.modelo}): ${palavras.length} palavras${t.texto ? ' — "' + t.texto.slice(0, 90) + (t.texto.length > 90 ? '…' : '') + '"' : ''}`)
+  } else if (s.audio) log('  sem DEEPGRAM_API_KEY: vai sem legenda')
+
+  // 2. só tira o silêncio do começo e do fim; o meio fica inteiro
+  let a = 0, b = s.dur
+  if (palavras.length) {
+    a = Math.max(0, palavras[0].ini - ANTES)
+    b = Math.min(s.dur, palavras[palavras.length - 1].fim + DEPOIS)
+  }
+  if (b - a > MAXIMO) {
+    // passou de ~60 s: corta no FIM (nunca no meio), de preferência num fim de frase
+    const cabe = palavras.filter(p => p.fim + DEPOIS <= a + MAXIMO)
+    const frase = [...cabe].reverse().find(p => /[.?!]$/.test(p.txt))
+    const ult = frase && frase.fim - a > MAXIMO * 0.6 ? frase : cabe[cabe.length - 1]
+    b = ult ? Math.min(s.dur, ult.fim + DEPOIS) : a + MAXIMO
+    log(`  AVISO: o vídeo passava de ${MAXIMO.toFixed(1)} s; cortei o final em ${(b - a).toFixed(1)} s`)
+  }
+  const DUR = +(b - a).toFixed(3), TOTAL = +(DUR + FINAL).toFixed(3)
+  const fala = palavras.filter(p => p.ini >= a - 0.01 && p.fim <= b + 0.2).map(p => ({ txt: p.txt, ini: p.ini - a, fim: Math.min(p.fim, b) - a }))
+  log(`  trecho usado: ${a.toFixed(2)} a ${b.toFixed(2)} s (${DUR.toFixed(1)} s) + cartão final ${FINAL} s`)
+
+  // 3. o enquadramento: em pé = preenche a tela; deitado/quadrado = vídeo inteiro no meio com fundo desfocado
+  const deitado = s.w / s.h > 0.8
+  const altFrente = deitado ? Math.round(W * s.h / s.w / 2) * 2 : H
+  const legY = deitado ? Math.min(1500, Math.max(1240, Math.round(H / 2 + altFrente / 2 + 30))) : 1240
+
+  // 4. as imagens: cartão final e legendas (Chrome)
+  const blocos = fala.length ? montaBlocos(fala) : []
+  const br = navegador || await abreNavegador()
+  const segs = []
+  try {
+    const pg = await br.newPage()
+    await pg.setViewport({ width: W, height: H })
+    await carregaPagina(pg, htmlCartao({ gancho, cta, nome, logo, cores, fontes }), fontes)
+    await encolhe(pg, [['etq', 26], ['tit', 50, 'caixa'], ['tit', 50], ['cta', 30], ['nome', 28, 'caixa']])
+    await pg.screenshot({ path: path.join(pasta, 'cartao.png') })
+    if (blocos.length) {
+      await pg.setViewport({ width: W, height: FAIXA })
+      await carregaPagina(pg, '<html><body style="background:transparent"></body></html>', fontes)
+      await pg.screenshot({ path: path.join(pasta, 'vazio.png'), omitBackground: true })
+      let n = 0
+      for (const bl of blocos) {
+        for (let j = 0; j < bl.p.length; j++) {
+          const t0 = j === 0 ? bl.t0 : bl.p[j].ini, t1 = j + 1 < bl.p.length ? bl.p[j + 1].ini : bl.t1
+          if (t1 - t0 < 0.01) continue
+          const arq = `l${n++}.png`
+          await carregaPagina(pg, htmlLegenda(bl, j, cores, fontes), fontes)
+          await encolhe(pg, [['l', 40]])
+          await pg.screenshot({ path: path.join(pasta, arq), omitBackground: true })
+          segs.push({ arq, t0: Math.max(t0, segs.length ? segs[segs.length - 1].t1 : 0), t1: Math.min(t1, DUR) })
+        }
+      }
+    }
+    await pg.close()
+  } finally { if (!navegador) await br.close() }
+  log(`  legendas: ${blocos.length} blocos, ${segs.length} quadros`)
+  const leg = segs.length ? camada(segs.filter(x => x.t1 > x.t0), DUR, pasta, 'legendas') : null
+
+  // 5. a montagem final (um ffmpeg só)
+  const trilha = escolheTrilha(chave || gancho || 'x')
+  if (trilha) log('  trilha: ' + path.basename(trilha))
+  const ins = ['-ss', a.toFixed(3), '-t', DUR.toFixed(3), '-i', video,
+    '-loop', '1', '-framerate', String(FPS), '-t', (FINAL + TRANSICAO).toFixed(3), '-i', path.join(pasta, 'cartao.png')]
+  let k = 2
+  const iLeg = leg ? (ins.push('-i', leg), k++) : -1
+  const iTri = trilha ? (ins.push('-stream_loop', '-1', '-i', trilha), k++) : -1
+  const iMudo = !s.audio ? (ins.push('-f', 'lavfi', '-t', TOTAL.toFixed(3), '-i', 'anullsrc=r=48000:cl=stereo'), k++) : -1
+
+  const cor = s.hdr ? COR_HDR() : ''
+  let f = deitado
+    ? `[0:v]${cor}fps=${FPS},split[v0a][v0b];[v0a]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=10:3,scale=${W}:${H},eq=brightness=-0.07:saturation=1.1[fundo];[v0b]scale=${W}:${altFrente}[frente];[fundo][frente]overlay=0:(H-h)/2,setsar=1,format=yuv420p[base];`
+    : `[0:v]${cor}fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,format=yuv420p[base];`
+  f += leg ? `[base][${iLeg}:v]overlay=0:${legY}:eof_action=pass,format=yuv420p,settb=AVTB[vm];` : `[base]settb=AVTB[vm];`
+  f += `[1:v]scale=${W}:${H},setsar=1,format=yuv420p,settb=AVTB[vc];`
+  f += `[vm][vc]xfade=transition=fade:duration=${TRANSICAO}:offset=${(DUR - TRANSICAO).toFixed(3)},format=yuv420p[v];`
+  // a voz: tira o grave de fundo e põe no volume padrão do Instagram (-16 LUFS), com fade curtinho nas pontas
+  const voz = s.audio
+    ? `[0:a]highpass=f=80,loudnorm=I=-16:TP=-1.5:LRA=11,aresample=48000,aformat=channel_layouts=stereo,afade=t=in:d=0.05,afade=t=out:st=${Math.max(0, DUR - 0.35).toFixed(3)}:d=0.35,apad=whole_dur=${TOTAL.toFixed(3)}`
+    : `[${iMudo}:a]anull`
+  if (trilha) {
+    const vol = fala.length ? 0.08 : 0.22 // com fala: bem baixinha
+    f += `${voz}[voz];[${iTri}:a]aresample=48000,aformat=channel_layouts=stereo,volume=${vol},afade=t=in:d=0.8,afade=t=out:st=${(TOTAL - 1.5).toFixed(3)}:d=1.5,atrim=0:${TOTAL.toFixed(3)}[m];[voz][m]amix=inputs=2:duration=first:normalize=0,alimiter=limit=0.95[a]`
+  } else f += `${voz}[a]`
+  fs.writeFileSync(path.join(pasta, 'filtro.txt'), f)
+  ff([...ins, '-filter_complex', f, '-map', '[v]', '-map', '[a]', '-t', TOTAL.toFixed(3),
+    '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-maxrate', '4500k', '-bufsize', '9M', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(FPS),
+    '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
+    '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', saida])
+  return { duracao: TOTAL, cortado: { de: +a.toFixed(2), ate: +b.toFixed(2) }, palavras: fala.length, blocos: blocos.length, deitado, legY, trilha: trilha ? path.basename(trilha) : null }
+}
+
+module.exports = { editarVideo, montaBlocos }

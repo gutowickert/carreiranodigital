@@ -1,0 +1,5 @@
+Trilha de fundo dos vídeos (opcional).
+Se tiver um arquivo de música aqui (.mp3, .m4a, .wav, .ogg...), a oficina põe bem baixinho atrás da voz.
+Se tiver vários, cada peça usa sempre o mesmo (escolhido pelo id da peça).
+Use só música com licença pra anúncio. A oficina não baixa música de lugar nenhum.
+Pasta vazia = vídeo sem trilha.
