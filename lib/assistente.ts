@@ -57,13 +57,14 @@ function janelaAberta(u: Usuario) {
 export async function enviarAoTime(u: Usuario, texto: string, template?: { nome: string; params: string[] }) {
   if (janelaAberta(u)) {
     const r = await enviarTexto(u.whatsapp, texto)
-    if (r.ok) { await guardar(u, 'assistente', texto); return { ok: true, via: 'texto' } }
+    // o wamid fica junto: é por ele que a falha de entrega (Webhook Logs 'wa-falha') casa com a mensagem
+    if (r.ok) { await guardar(u, 'assistente', texto, r.wamid || undefined); return { ok: true, via: 'texto' } }
     // a Meta recusou (janela fechou no meio): tenta o template
     if (!template) return { ok: false, error: r.error }
   }
   if (!template) return { ok: false, error: 'janela de 24h fechada e sem template pra esse aviso' }
   const r = await enviarTemplate(u.whatsapp, template.nome, 'pt_BR', [{ type: 'body', parameters: template.params.map(t => ({ type: 'text', text: t })) }])
-  if (r.ok) await guardar(u, 'assistente', `[template ${template.nome}] ${template.params.join(' · ')}`)
+  if (r.ok) await guardar(u, 'assistente', `[template ${template.nome}] ${template.params.join(' · ')}`, r.wamid || undefined)
   return { ok: r.ok, via: 'template', error: r.error }
 }
 

@@ -253,7 +253,7 @@ async function fichaDoLead(lead: any, turmas: Turma[], volta: Date | null) {
   const resumo = lead.resumo_ia && typeof lead.resumo_ia === 'object' ? [...(lead.resumo_ia.resumo || []), lead.resumo_ia.ondeParou].filter(Boolean).join(' · ') : ''
   const linhas = [
     'FICHA DO LEAD (pistas do cadastro; a conversa manda mais que isto):',
-    `- Nome no cadastro: ${lead.nome && lead.nome !== 'Lead WhatsApp' ? lead.nome : 'não informado (não use nome)'}`,
+    `- Nome no cadastro: ${nomeDeGente(lead.nome) ? lead.nome : `${lead.nome && lead.nome !== 'Lead WhatsApp' ? `"${lead.nome}" (é perfil, @ ou empresa, não nome de pessoa: NÃO use como nome)` : 'não informado (não use nome)'}`}`,
     `- Chegou por: ${[lead.origem, lead.utm_campaign && `campanha "${lead.utm_campaign}"`, lead.mensagem_inicial && `primeira mensagem "${String(lead.mensagem_inicial).slice(0, 120)}"`].filter(Boolean).join(', ') || 'não sei'}`,
     `- Turma no cadastro: ${turma ? turma.codigo : lead.codigo_turma || 'nenhuma'} (pista; quem chega pela campanha da Imersão costuma vir marcado como Deu Venda)`,
     `- Etapa no funil: ${lead.etapa}`,
@@ -477,15 +477,23 @@ async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: st
 export async function aposAceitePlantao(orcamentoId: string) {
   const modo = await modoPlantao()
   if (modo === 'desligado') return
-  const { data: orc } = await sb.from('orcamentos').select('id, org_id, lead_id, produto_nome, turma_id, preco_vista, cliente_nome, slug').eq('id', orcamentoId).maybeSingle()
+  const { data: orc } = await sb.from('orcamentos').select('id, org_id, lead_id, produto_nome, turma_id, preco_vista, cliente_nome, slug, contexto').eq('id', orcamentoId).maybeSingle()
   if (!orc?.lead_id) return
+  // O TIME NA CONVERSA, A IA FORA (04/11/2026, Thiago: o time mandou a proposta e atendia, e a IA mandou o
+  // link por cima). O link só sai sozinho em proposta que a PRÓPRIA IA mandou e com o lead sem o time.
+  // Proposta do time: o aceite já avisa o time (rota do aceite), e quem cobra é quem está atendendo.
+  const daIA = (orc.contexto as any)?.origem === 'plantao-ia'
+  if (!daIA || (await pausadoNoPlantao(orc.lead_id)).pausado) {
+    await registrar(orc.org_id, 'aceite', { lead_id: orc.lead_id, orcamento: orc.slug, mensagens: [], motivo: daIA ? 'o time está na conversa' : 'proposta do time' })
+    return
+  }
   const { data: lead } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma').eq('id', orc.lead_id).maybeSingle()
   const { data: turma } = orc.turma_id ? await sb.from('turmas').select('id, codigo, preco_venda, link_pagamento').eq('id', orc.turma_id).maybeSingle() : { data: null as any }
   const nome = lead?.nome || orc.cliente_nome || 'Cliente'
   const linkVale = !!turma?.link_pagamento && Number(orc.preco_vista) === Number(turma.preco_venda)
-  const primeiro = String(nome).trim().split(/\s+/)[0]
+  const primeiro = nomeDeGente(lead?.nome) || nomeDeGente(orc.cliente_nome)
   const texto = linkVale
-    ? `${primeiro}, recebi o teu aceite. Pra garantir a tua vaga, é só finalizar o pagamento por aqui: ${turma.link_pagamento}\nDepois me manda o teu nome completo, CPF e e-mail que eu deixo tudo certo.`
+    ? `${primeiro ? `${primeiro}, recebi` : 'Recebi'} o teu aceite. Pra garantir a tua vaga, é só finalizar o pagamento por aqui: ${turma.link_pagamento}\nDepois me manda o teu nome completo, CPF e e-mail que eu deixo tudo certo.`
     : null
   const base = { lead_id: orc.lead_id, nome, sombra: modo === 'sombra', orcamento: orc.slug, link_vale: linkVale, mensagens: texto ? [texto] : [] }
 
@@ -523,6 +531,16 @@ function rodadaNaFaixa(agora: Date, idade: number) {
 
 // Nome que parece de empresa não vira "Oi, Harmonizze!" (31/10): vai só "Oi!".
 const PARECE_EMPRESA = /ltda|\bme\b|im[oó]ve|est[eé]tica|design|comunica|studio|est[uú]dio|cl[ií]nica|loja|store|house|criativ|sorriso|bem estar|&|\d/i
+// NOME DE GENTE (04/11/2026, o aceite do Thiago saiu "@thiago.pessamiglio, recebi o teu aceite"): o cadastro
+// traz o nome do perfil do WhatsApp, que muitas vezes é @ do Instagram, emoji ou nome de empresa. Só vale
+// o primeiro nome quando parece nome de pessoa; senão, cumprimenta sem nome.
+export function nomeDeGente(nome: string | null | undefined): string {
+  const n = String(nome || '').replace(/\p{Extended_Pictographic}|\uFE0F/gu, '').trim()
+  if (!n || n === 'Lead WhatsApp' || /[@._\d]/.test(n) || PARECE_EMPRESA.test(n)) return ''
+  const p = n.split(/\s+/)[0]
+  if (p.length < 2 || !/^\p{L}+$/u.test(p)) return ''
+  return p.charAt(0).toUpperCase() + p.slice(1).toLowerCase()
+}
 
 // O TEXTO DA CUTUCADA (31/10, do Guto): antes era fixo — "Ficou alguma dúvida do que eu te expliquei?" — e ia
 // até pra quem só mandou a mensagem pronta do anúncio e nunca respondeu a primeira pergunta (a IA não tinha
@@ -613,8 +631,7 @@ export async function cutucarPlantao(org: string) {
     if (idade < 20 * H && rodadaNaFaixa(agora, idade)) continue
     if (x.cutucadaEm && +new Date(x.cutucadaEm) > +new Date(ultimaDele.criado_em)) continue
     const { data: orc } = await sb.from('orcamentos').select('aceito_em').eq('lead_id', leadId).eq('situacao', 'publicado').order('publicado_em', { ascending: false }).limit(1).maybeSingle()
-    const primeiro0 = lead.nome && lead.nome !== 'Lead WhatsApp' && !PARECE_EMPRESA.test(lead.nome) && String(lead.nome).trim().length > 1 ? String(lead.nome).trim().split(/\s+/)[0] : ''
-    const primeiro = primeiro0 ? primeiro0.charAt(0).toUpperCase() + primeiro0.slice(1) : ''   // "natália" vira "Natália"
+    const primeiro = nomeDeGente(lead.nome)   // sem @, emoji nem empresa; "natália" vira "Natália"
     const oi = primeiro ? `Oi, ${primeiro}!` : 'Oi!'
     const caso: CasoCutucada = x.acao === 'link' || x.acao === 'link_especial' || orc?.aceito_em ? 'link' : orc ? 'proposta' : 'conversa'
     const texto = await textoCutucada(lead.id, caso, oi, ((ult || []) as any[]).slice().reverse())

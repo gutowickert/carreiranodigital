@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { timeAssumiu } from '@/lib/plantao'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
@@ -82,6 +83,8 @@ export async function POST(req: Request) {
         observacao: `📄 Proposta enviada por ${quem.eu.nome}: /proposta/${slug}`,
       })
     } catch { /* histórico não pode derrubar a publicação */ }
+    // PLANTÃO DA IA: proposta publicada pelo time = o time assumiu esse lead, e a IA sai dele (04/11/2026)
+    await timeAssumiu(orc.lead_id)
 
     return NextResponse.json({ ok: true, slug, url: `${new URL(req.url).origin}/proposta/${slug}`, orcamento: data })
   } catch (e: any) {

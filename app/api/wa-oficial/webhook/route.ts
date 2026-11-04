@@ -295,6 +295,17 @@ export async function POST(req: NextRequest) {
           // TAMBÉM atualiza a mensagem de ATENDIMENTO (card): assim entregue/lido/FALHOU fica visível,
           // e o time enxerga quando uma mensagem NÃO foi entregue (ex.: fora da janela de 24h).
           await supabase.from('wa_mensagens').update({ status: novo }).eq('zapi_id', wamid)
+          // O MOTIVO DA FALHA (04/11/2026: o bom dia das 7h50 e o resumo das 8h45 do agente pararam de chegar,
+          // a Meta aceitava o envio e falhava na entrega, e o código do erro era jogado fora). Toda falha fica
+          // em Webhook Logs (origem 'wa-falha'), com o código da Meta e se o destino é alguém do time.
+          if (novo === 'falha') {
+            const destino = String(st.recipient_id || '')
+            const { data: doTime } = destino ? await supabase.from('usuarios_perfil').select('nome').ilike('whatsapp', `%${destino.slice(-8)}`).limit(1) : { data: null as any }
+            await supabase.from('webhook_logs').insert({
+              org_id: ORG_CND, origem: 'wa-falha', evento: doTime?.length ? 'time' : 'lead', status: 'erro',
+              payload: { wamid, erro, codigo: st.errors?.[0]?.code || null, detalhe: st.errors?.[0]?.error_data?.details || null, destino: destino.slice(-4), time: doTime?.[0]?.nome || null },
+            }).then(() => null, () => null)
+          }
         }
       }
     }
