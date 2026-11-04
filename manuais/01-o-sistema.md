@@ -85,6 +85,15 @@ Pra empresa com mais de uma unidade (nasceu no Mundo do Papelão). Em **Ajustes 
 
 Pra empresa em que cada loja tem o seu número. Em **Ajustes → Conectar WhatsApp** cada número entra pelo ID da Meta (o sistema confere com a Meta antes de gravar) e escolhe a loja. O cliente é respondido pelo número em que escreveu; cliente novo que escreve no número de uma loja entra nessa loja e na vez da próxima atendente de lá; mensagem que a gente puxa (retomada, recompra) sai pelo número da loja do cliente. Com um número só, nada muda. ⚠️ Número de loja que hoje está no app do celular só entra pela **coexistência** (precisa do Tech Provider da CND): passar ele direto pra API tira o WhatsApp do celular da loja.
 
+## Conectar o WhatsApp pelo botão (04/11/2026)
+
+A CND virou **Tech Provider** da Meta: o cliente liga o WhatsApp dele ao sistema sozinho, em **Ajustes → Conectar WhatsApp**, sem a gente entrar no portfólio dele. Dois botões:
+
+- **Conectar o WhatsApp do celular** (coexistência): o número que já está no app WhatsApp Business **continua no celular** e passa a aparecer no sistema também. O que a equipe responde pelo celular entra na conversa do sistema, e a IA fica quieta depois disso, igual a quando respondem pelo sistema. Na conexão vêm as conversas dos últimos 180 dias e o nome que a empresa deu pra cada contato na agenda do app (a Meta só deixa puxar uma vez, logo depois de conectar).
+- **Conectar um número novo**: um número que não está em nenhum WhatsApp. A Meta manda um código, e o sistema mostra um PIN de 6 dígitos pra guardar.
+
+Quem clica precisa ser administrador do portfólio da empresa no Facebook. Até a Meta terminar a verificação do acesso (pedida em 04/11), só quem tem função no app da CND consegue conectar.
+
 ## Retomadas e prazos por etapa (26/10/2026)
 
 Em **Ajustes → Retomadas e prazos** cada etapa do funil ganha passos: "retomada em 1 dia", "última retomada em 3 dias", "lembrar a reserva em 36 h", "venceu: retirou?". Cada passo vira uma **tarefa com o texto pronto**, marcada pro horário em que a loja está aberta. Na tarefa, o botão **💬 Mandar** abre a conversa com o texto no campo: a pessoa completa o que está entre [colchetes] e manda, e a tarefa se marca feita sozinha.
