@@ -33,6 +33,9 @@ const ORIGEM = 'ia-plantao'
 // Claude ~R$ 100 por mês · "só um gestor de tráfego já custaria mais de R$ 1.000 por mês".
 const VALORES_OK = new Set([2797, 2997, 299.7, 466.17, 1497, 249.5, 100, 1000])
 
+// motivo de perda "Não tem interesse" (motivos_perda da escola)
+const MOTIVO_SEM_INTERESSE = '00d31cdb-1162-46c1-8a22-c4d1786bfdd2'
+
 const PRODUTO_NOME = { deu_venda: 'Deu Venda', imersao: 'Imersão Deu Venda' } as const
 
 // O envio do plantão. PLANTAO_ENVIO_FALSO=1 só existe na máquina de quem testa (lá não tem a chave do
@@ -137,6 +140,10 @@ Se a pessoa pedir pra conversar por ligação ou chamada, não insiste no WhatsA
 - NÃO é outro_produto: quem veio do anúncio e pergunta de outro tipo de curso ou de canal (Google Ads, YouTube, TikTok, tráfego em geral, "já fiz curso de Meta"). Aí conversa normal: explica com honestidade que o foco é a Meta (Facebook e Instagram) com a máquina montada no negócio dele, e segue descobrindo.
 Nesses dois, tu PARA de responder esse lead até o time devolver.
 
+# SEM INTERESSE (acao = "sem_interesse")
+A pessoa diz CLARAMENTE que não quer: "não tenho interesse", "não quero", "não preciso", "pode me tirar da lista", "parem de mandar". Responde UMA linha educada, sem pergunta e sem tentar convencer: "Sem problema, Eloi! Se um dia quiser trazer mais cliente pro teu negócio, é só chamar por aqui." (sem nome se não tiver nome). O sistema encerra o atendimento.
+NÃO é sem interesse (é objeção, segue conversando): "vou pensar", "agora não dá", "tá caro", "depois eu vejo", "não sei se é pra mim", dúvida, ou só ter escolhido outro formato.
+
 # NÃO RESPONDER
 - acao = "robo": a mensagem é resposta automática de outra empresa (menu, "obrigado pelo contato, em breve retornaremos", horário de atendimento). Não responde nada.
 - acao = "nao_responder": a pessoa só agradeceu ou encerrou ("ok", "obrigado", figurinha) e não tem nada pra dizer, ou a última mensagem já é nossa.
@@ -160,7 +167,7 @@ const FERRAMENTA: Anthropic.Tool = {
     type: 'object',
     properties: {
       mensagens: { type: 'array', items: { type: 'string' }, description: 'De 1 a 3 mensagens curtas, na ordem. Vazio só com acao robo ou nao_responder.' },
-      acao: { type: 'string', enum: ['conversar', 'proposta', 'link', 'link_especial', 'ligacao', 'diretor', 'chamar_time', 'outro_produto', 'robo', 'nao_responder'] },
+      acao: { type: 'string', enum: ['conversar', 'proposta', 'link', 'link_especial', 'ligacao', 'diretor', 'chamar_time', 'outro_produto', 'sem_interesse', 'robo', 'nao_responder'] },
       produto: { type: 'string', enum: ['deu_venda', 'imersao', 'nao_sei'], description: 'o produto que esta conversa está indo' },
       turma: { type: 'string', description: 'Imersão: o código da turma escolhida (ex.: imersaodvlajeado112601). Deu Venda: "deuvendalajeado" ou "deuvendaportoalegre", pela cidade onde a pessoa faria os encontros. Vazio se ainda não sabe.' },
       negocio: { type: 'string', description: 'o que a pessoa vende, com as palavras dela; vazio se não disse' },
@@ -439,8 +446,16 @@ async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: st
     patch.codigo_turma = turma.codigo
     patch.turma_id = turma.id
   }
+  // SEM INTERESSE (04/11/2026, Nando, o Eloi: "a gente nem entra nesse caso, já pode ir pra perda"). A IA já
+  // mandou a linha de despedida; o lead vai direto pra Perda, motivo "Não tem interesse", sem aviso pro time.
+  // Se ele escrever de novo um dia, a IA atende normalmente (Perda não fica pausado).
+  if (acao === 'sem_interesse') {
+    Object.assign(patch, { etapa: 'perda', data_perda: agora, motivo_perda_id: MOTIVO_SEM_INTERESSE })
+    await sb.from('lead_andamentos').insert({ lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: 'perda', observacao: '🤖 IA do plantão: a pessoa disse que não tem interesse — movido para Perda' })
+    await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: agora, atualizado_em: agora }).eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false).not('tipo', 'like', 'plantao_%')
+  }
   // com o plantão ligado, a IA faz o movimento que o time fazia à mão: Ligação → Atendimento inicial
-  if (lead.etapa === 'aguardando_atendimento') {
+  else if (lead.etapa === 'aguardando_atendimento') {
     patch.etapa = 'atendimento_inicial'
     await sb.from('lead_andamentos').insert({ lead_id: lead.id, vendedor_id: lead.vendedor_id, tipo: 'mudanca_etapa', etapa_anterior: lead.etapa, etapa_nova: 'atendimento_inicial', observacao: '🤖 IA do plantão atendeu — movido para Atendimento Inicial' })
     await sb.from('tarefas_lead').update({ cancelada: true, cancelada_em: agora, atualizado_em: agora }).eq('lead_id', lead.id).eq('concluida', false).eq('cancelada', false).neq('tipo', 'ligar_agendado').not('tipo', 'like', 'plantao_%')

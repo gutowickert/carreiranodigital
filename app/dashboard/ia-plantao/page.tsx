@@ -42,6 +42,7 @@ const ACAO: Record<string, [string, string]> = {
   diretor: ['Levou pro "diretor"', 'var(--red)'],
   chamar_time: ['Chamou o time e parou', 'var(--red)'],
   outro_produto: ['Outro assunto: parou', 'var(--amber)'],
+  sem_interesse: ['Sem interesse: foi pra Perda', 'var(--text-muted)'],
   cutucada: ['Retomada (sem resposta há 20h)', 'var(--text-2)'],
 }
 const EVENTO: Record<string, [string, string]> = {
