@@ -8,16 +8,33 @@ export type Ferramenta = {
   roda: (entrada: any) => Promise<any>
 }
 
+// 06/11: as regras (system) e as ferramentas vão com cache: elas se repetem em toda volta da conversa, e o que vem do cache custa ~10%.
+// E cada chamada anota o uso (tokens) em maia_eventos 'uso_ia', pra saber o custo real por conversa.
 async function chama(corpo: any) {
+  const { uso, ...resto } = corpo
+  const c = { model: MODELO(), max_tokens: 2000, ...resto }
+  if (typeof c.system === 'string' && c.system) c.system = [{ type: 'text', text: c.system, cache_control: { type: 'ephemeral' } }]
+  if (Array.isArray(c.tools) && !c.tools.length) delete c.tools
+  if (Array.isArray(c.tools) && c.tools.length) c.tools = c.tools.map((t: any, i: number) => i === c.tools.length - 1 ? { ...t, cache_control: { type: 'ephemeral' } } : t)
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY as string, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
-    body: JSON.stringify({ model: MODELO(), max_tokens: 2000, ...corpo }),
+    body: JSON.stringify(c),
     signal: AbortSignal.timeout(90000),
   })
   const j: any = await r.json().catch(() => ({}))
   if (!r.ok) throw new Error('IA ' + r.status + ' ' + JSON.stringify(j).slice(0, 300))
+  anotaUso(c.model, j.usage, uso)
   return j
+}
+
+function anotaUso(modelo: string, u: any, uso?: { tipo?: string; negocio_id?: string | null; conversa_id?: string | null }) {
+  if (!u) return
+  import('./db').then(({ maiaDb }) => maiaDb.evento('uso_ia', uso?.negocio_id || null, {
+    tipo: uso?.tipo || 'outro', conversa_id: uso?.conversa_id || null, modelo,
+    entrada: u.input_tokens || 0, saida: u.output_tokens || 0,
+    cache_lido: u.cache_read_input_tokens || 0, cache_gravado: u.cache_creation_input_tokens || 0,
+  })).catch(() => { /* anotar o uso nunca derruba a resposta */ })
 }
 
 // conversa com ferramentas: a IA pode chamar várias, uma depois da outra, até responder o texto final
@@ -28,13 +45,15 @@ export const limpaFerramentaEmTexto = (t: string) => t
   .replace(/<\/?(invoke|parameter|function_calls)\b[^>]*>/gi, '')
   .trim()
 
-export async function comFerramentas(sistema: string, pedido: string | any[], ferramentas: Ferramenta[], maxVoltas = 6) {
+// op.modelo: outro modelo só pra essa conversa (ex.: o atendimento do cliente num modelo menor); op.uso: o que anotar no custo
+export async function comFerramentas(sistema: string, pedido: string | any[], ferramentas: Ferramenta[], maxVoltas = 6, op: { modelo?: string; uso?: { tipo?: string; negocio_id?: string | null; conversa_id?: string | null } } = {}) {
+  const extra: any = { uso: op.uso, ...(op.modelo ? { model: op.modelo } : {}) }
   const msgs: any[] = [{ role: 'user', content: pedido }]
   const usadas: { nome: string; entrada: any; saida: any }[] = []
   // o texto pode vir junto com o pedido de ferramenta (antes dela) ou só no fim: junta tudo
   const textos: string[] = []
   for (let volta = 0; volta < maxVoltas; volta++) {
-    const j = await chama({ system: sistema, messages: msgs, tools: ferramentas.map(({ roda, ...f }) => f) })
+    const j = await chama({ ...extra, system: sistema, messages: msgs, tools: ferramentas.map(({ roda, ...f }) => f) })
     msgs.push({ role: 'assistant', content: j.content })
     let t = (j.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('').trim()
     const pedidos = (j.content || []).filter((c: any) => c.type === 'tool_use')
@@ -49,7 +68,7 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
       // se a resposta final veio vazia depois das ferramentas, pede o texto
       if (!textos.length && usadas.length) {
         msgs.push({ role: 'user', content: 'Agora escreve a resposta pra mandar, no formato pedido.' })
-        const k = await chama({ system: sistema, messages: msgs, tools: ferramentas.map(({ roda, ...f }) => f), tool_choice: { type: 'none' } })
+        const k = await chama({ ...extra, system: sistema, messages: msgs, tools: ferramentas.map(({ roda, ...f }) => f), tool_choice: { type: 'none' } })
         const t2 = (k.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('').trim()
         if (t2) textos.push(t2)
       }

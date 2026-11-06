@@ -59,6 +59,9 @@ COMO ATENDER:
 - Nunca insiste depois de um não. Nunca promete o que o negócio não disse que faz.
 FORMATO: uma ou duas mensagens, cada uma entre <msg> e </msg>.`
 
+// texto que é relatório pra equipe e não mensagem pro cliente (fala do cliente na 3ª pessoa, de etapa, de ferramenta)
+const RELATORIO = /\b([Rr]espondi|[Aa]visei|[Mm]andei|[Pp]erguntei|[Dd]isse|[Ee]xpliquei)( pr[ao]| a| o| à)? [A-ZÁÉÍÓÚ][a-zà-ú]+\b|\b[Dd]eixei a conversa\b|\betapa\s*["“']|\b(a|o) cliente\b|\b([Ee]la|[Ee]le) (perguntou|pediu|quer saber)\b|perguntar_ao_dono|mudar_etapa/
+
 export async function respondeCliente(conversa_id: string) {
   const cv = await db.um('conversas', { id: conversa_id })
   if (!cv || cv.canal !== 'cliente' || cv.modo !== 'ia') return null
@@ -68,9 +71,24 @@ export async function respondeCliente(conversa_id: string) {
   const msgs = await db.lista('msgs', { conversa_id }, { ordem: 'criado_em' })
   const hist = msgs.slice(-30).map(x => `${x.autor === 'cliente' ? 'CLIENTE' : x.autor === 'dono' || x.autor === 'equipe' ? 'DONO' : 'TU'}: ${x.texto}`).join('\n')
   const ctx = { humano: false }
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx))
-  const partes = [...r.texto.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(Boolean)
-  const enviadas = (partes.length ? partes : [r.texto]).filter(Boolean).slice(0, 2)
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx), 6,
+    // 06/11: o atendimento do cliente pode rodar num modelo menor (MAIA_MODELO_CLIENTE), que custa bem menos por conversa
+    { modelo: process.env.MAIA_MODELO_CLIENTE || undefined, uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
+  // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
+  // em vez da mensagem pro cliente. Isso nunca sai: só vale o que vem entre <msg>, e relatório é barrado.
+  // Se não vier mensagem boa, pede de novo uma vez (sem ferramentas); se ainda falhar, não manda nada e chama a equipe.
+  const boas = (t: string) => [...t.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(m => m && !RELATORIO.test(m))
+  let partes = boas(r.texto)
+  if (!partes.length) {
+    const r2 = await comFerramentas(regras(neg), `CONVERSA:\n${hist}\n\nTua resposta anterior não foi uma mensagem pro cliente. Ela vai DIRETO pro WhatsApp do cliente: escreve só o que tu dirias pra ele, em 1 ou 2 mensagens, cada uma entre <msg> e </msg>. Não conta o que tu fez nem fala do sistema.`, [], 1,
+      { modelo: process.env.MAIA_MODELO_CLIENTE || undefined, uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
+    partes = boas(r2.texto)
+  }
+  const enviadas = partes.slice(0, 2)
+  if (!enviadas.length) {
+    await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} no ${neg.nome}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
+    return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
+  }
   for (const t of enviadas) await mandaTexto(cv, t)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })

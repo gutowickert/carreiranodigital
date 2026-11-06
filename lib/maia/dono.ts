@@ -180,7 +180,7 @@ CONVERSA:
 ${hist}
 
 Responde a(s) última(s) mensagem(ns) do dono.`
-  const r = await comFerramentas(REGRAS, pedido, ferramentas(neg, ctx))
+  const r = await comFerramentas(REGRAS, pedido, ferramentas(neg, ctx), 6, { uso: { tipo: 'dono', negocio_id: neg?.id || null, conversa_id: cv?.id || null } })
   const partes = [...r.texto.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(Boolean)
   const saida = (partes.length ? partes : [r.texto.replace(/<\/?msg>/g, '').trim()]).filter(Boolean).slice(0, 3)
   for (const t of saida) await mandaTexto(cv, t)

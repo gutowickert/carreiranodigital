@@ -61,6 +61,7 @@ export async function GET(req: Request) {
       const w = n ? waDoNegocio(n) : null
       return ok(await statusModelos(w && w.waba ? { token: w.token, waba: w.waba } : null))
     }
+    if (acao === 'custo_ia') { const { custoIA } = await import('@/lib/maia/custo'); return ok(await custoIA(+(q('dias') || 30))) }
     if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
