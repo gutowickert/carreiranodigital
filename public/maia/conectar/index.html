@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Conectar o WhatsApp à Maia</title>
+<style>
+:root{--bg:#f5f0e6;--card:#fff;--tx:#141826;--mu:#5b5a55;--ln:#e6dfd1;--coral:#ff7a59;--verde:#11865a;--verm:#c62a3c;color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#141826;--card:#1d2235;--tx:#f5f0e6;--mu:#b8b3a8;--ln:#2c3350;--verde:#3ddc97;--verm:#ff6b7d;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:520px;margin:0 auto;padding:36px 16px 48px}
+.marca{font-weight:800;font-size:22px;letter-spacing:-.02em}.marca b{color:var(--coral)}
+h1{font-size:28px;line-height:1.15;margin:18px 0 8px}
+p{color:var(--mu);margin:0 0 14px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:16px;padding:18px 20px;margin:18px 0}
+ol{margin:0;padding-left:20px}li{margin:6px 0}
+button{width:100%;border:0;border-radius:12px;padding:16px;font:700 17px system-ui;background:#25D366;color:#fff;cursor:pointer}
+button[disabled]{opacity:.6;cursor:default}
+#status{margin-top:14px;font-size:15px}
+.ok{color:var(--verde)}.erro{color:var(--verm)}
+</style>
+</head>
+<body>
+<main>
+  <div class="marca">Ma<b>ia</b></div>
+  <h1 id="titulo">Conectar o teu WhatsApp</h1>
+  <p id="sub">Carregando…</p>
+  <div class="card">
+    <ol>
+      <li>Tu entra com o teu Facebook e escolhe o número do WhatsApp Business do negócio.</li>
+      <li><b>O número continua no teu celular</b>, no app WhatsApp Business, do jeito que está. Tu segue respondendo por ali quando quiser.</li>
+      <li>A Maia passa a ver as conversas e, quando a equipe ligar, atende os teus clientes por esse número. Quando tu responde alguém pelo celular, ela fica quieta naquela conversa.</li>
+    </ol>
+  </div>
+  <button id="botao" disabled>Carregando…</button>
+  <div id="status"></div>
+</main>
+<script>
+(function () {
+  const q = new URLSearchParams(location.search), n = q.get('n') || '', t = q.get('t') || ''
+  const $ = id => document.getElementById(id)
+  const status = (txt, cls) => { $('status').textContent = txt; $('status').className = cls || '' }
+  let cfg = null, sessao = {}
+
+  window.addEventListener('message', ev => {
+    try { if (!/facebook\.com$/.test(new URL(ev.origin).hostname)) return } catch { return }
+    try {
+      const d = typeof ev.data === 'string' ? JSON.parse(ev.data) : ev.data
+      if (d && d.type === 'WA_EMBEDDED_SIGNUP' && d.data) sessao = { phone_number_id: d.data.phone_number_id || sessao.phone_number_id, waba_id: d.data.waba_id || sessao.waba_id, evento: d.event }
+    } catch { /* não é JSON */ }
+  })
+
+  fetch('/api/maia/conectar?n=' + encodeURIComponent(n) + '&t=' + encodeURIComponent(t)).then(r => r.json()).then(j => {
+    if (!j.ok) { $('sub').textContent = j.erro || 'Link inválido.'; $('botao').textContent = 'Link inválido'; return }
+    cfg = j
+    $('titulo').textContent = 'Conectar o WhatsApp do ' + j.negocio
+    $('sub').textContent = (j.dono ? j.dono + ', ' : '') + (j.conectado ? 'esse negócio já tem um número conectado. Se conectar de novo, o novo substitui.' : 'leva uns 2 minutos.')
+    window.fbAsyncInit = function () { FB.init({ appId: j.app_id, autoLogAppEvents: true, xfbml: false, version: 'v25.0' }); $('botao').disabled = false; $('botao').textContent = 'Conectar meu WhatsApp' }
+    const s = document.createElement('script'); s.async = true; s.defer = true; s.crossOrigin = 'anonymous'; s.src = 'https://connect.facebook.net/pt_BR/sdk.js'; document.body.appendChild(s)
+  }).catch(() => { $('sub').textContent = 'Não consegui carregar. Tenta de novo em instantes.' })
+
+  $('botao').onclick = function () {
+    if (!cfg || !window.FB) return
+    sessao = {}
+    $('botao').disabled = true; status('Abrindo o login do Facebook…')
+    const fim = async resp => {
+      const code = resp && resp.authResponse && resp.authResponse.code
+      if (!code) { $('botao').disabled = false; status('O login não terminou. Tenta de novo.', 'erro'); return }
+      status('Conectando o número à Maia…')
+      await new Promise(r => setTimeout(r, 1200))   // o número e a conta chegam por mensagem da janela do Facebook
+      const r = await fetch('/api/maia/conectar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n, t, code, phone_number_id: sessao.phone_number_id, waba_id: sessao.waba_id }) }).then(x => x.json()).catch(() => null)
+      $('botao').disabled = false
+      if (r && r.ok) { status('Pronto! O WhatsApp está conectado à Maia. A equipe vai testar e te avisa quando ela começar a atender.', 'ok'); $('botao').textContent = 'Conectado' }
+      else status('Não deu certo: ' + ((r && r.erro) || 'sem resposta') + '. Se continuar, fala com a equipe.', 'erro')
+    }
+    try {
+      FB.login(resp => { fim(resp) }, { config_id: cfg.config_id, response_type: 'code', override_default_response_type: true, extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' } })
+    } catch (e) { $('botao').disabled = false; status('Erro ao abrir o login: ' + (e && e.message || e), 'erro') }
+  }
+})()
+</script>
+</body>
+</html>

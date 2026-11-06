@@ -20,7 +20,7 @@ export async function equipeAprova(peca_id: string, por: string) {
   }
   const link = await db.link(peca.arquivo_path)
   const legenda = `${peca.gancho}\n\n${peca.texto}\n\n${peca.cta}`
-  r = peca.tipo === 'anuncio_video' || peca.tipo === 'video' ? await mandaVideo(cv, link!, legenda) : await mandaImagem(cv, link!, legenda)
+  r = peca.tipo === 'anuncio_video' || peca.tipo === 'video' ? await mandaVideo(cv, link!, legenda, 'maia', peca.id) : await mandaImagem(cv, link!, legenda, 'maia', peca.id)
   await db.atualiza('pecas', { id: peca.id }, { status: 'com_dono', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), enviado_dono_em: new Date().toISOString(), wamid_envio: r.wamid || null })
   return { ok: r.ok, status: 'com_dono' }
 }

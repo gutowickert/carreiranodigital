@@ -565,6 +565,9 @@ function subDados(n,box){
       '<div class="chave"><div class="txt"><b>Liga campanha com o 👍 do dono</b><small>Ligado: a campanha liga sozinha quando o dono aprova, sem a equipe. <b style="display:inline;color:var(--ambar)">Fica desligado por segurança</b> até a gente confiar nesse negócio.</small></div><label class="sw"><input type="checkbox" data-sw="ativa_sozinha"'+(n.ativa_sozinha?' checked':'')+'><span></span></label></div>'+
       '<div class="chave"><div class="txt"><b>Status</b><small>Implantação enquanto monta; ativo quando está rodando.</small></div><select id="d-status" style="width:auto;min-width:160px">'+Object.keys(NEG_ST).map(function(k){return '<option value="'+k+'"'+(n.status===k?' selected':'')+'>'+NEG_ST[k][0]+'</option>';}).join('')+'</select></div>'+
     '</div></div>'+
+    '<div class="card" id="c-wa"><h2>WhatsApp do negócio (clientes)</h2><p class="mu peq" style="margin:4px 0 10px">'+(n.wa_phone_id?'Conectado'+((m.wa&&m.wa.conectado_em)?' em '+esc(String(m.wa.conectado_em).slice(0,10)):'')+((m.wa&&m.wa.inscrito===false)?' · <b style="display:inline;color:var(--verm)">webhook não inscrito</b>':''):'Ainda não conectado. Gera o link e manda pro dono: ele entra com o Facebook e o número continua no celular dele.')+'</p>'+
+      '<div class="chave"><div class="txt"><b>A Maia atende os clientes</b><small>Começa desligado. Liga depois de testar com um número conhecido. O dono pode seguir respondendo pelo celular: quando ele responde, ela fica quieta 2 h naquela conversa.</small></div><label class="sw"><input type="checkbox" id="sw-atende"'+((m.wa&&m.wa.atende)?' checked':'')+(n.wa_phone_id?'':' disabled')+'><span></span></label></div>'+
+      '<button class="btn" id="b-link" style="width:100%;margin-top:8px">Gerar link pro dono conectar</button><div id="wa-link" class="peq" style="margin-top:10px;word-break:break-all"></div></div>'+
     '<form class="card" id="f-dados"><h2 style="margin-bottom:14px">Dados</h2><div class="grade2">'+
       cmp('nome','Nome do negócio','text','',true,n.nome)+cmp('nicho','Nicho','text','',false,n.nicho||'')+
       cmp('cidade','Cidade','text','',false,n.cidade||'')+cmp('regiao','Região (vai no gancho)','text','',false,n.regiao||'')+
@@ -581,6 +584,8 @@ function subDados(n,box){
     api(c).then(function(r){ Object.assign(n,r||{}); toast(campo==='ativa_sozinha'?(val?'Atenção: agora a campanha liga sozinha com o 👍 do dono.':'Desligado: só a equipe liga campanha.'):(val?'A equipe aprova tudo antes do dono.':'Agora vai direto pro dono, sem a equipe.')); })
       .catch(function(e){ i.checked=!val; falhou(e); });
   }; });
+  $('#b-link').onclick=function(){ var b=this; espera(b,'gerando…',function(){ return api({acao:'link_conectar',negocio_id:n.id}).then(function(r){ $('#wa-link').innerHTML='<b>Link (vale '+r.vale_dias+' dias):</b> '+esc(r.link); if(navigator.clipboard) navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado. Manda pro dono.'); }); }); }); };
+  $('#sw-atende').onchange=function(){ var i=this, val=i.checked; api({acao:'atendimento_clientes',negocio_id:n.id,ligado:val}).then(function(r){ n.meta=n.meta||{}; n.meta.wa=Object.assign({},n.meta.wa||{},{atende:val}); toast(val?(r.chave_geral?'A Maia começou a atender os clientes desse negócio.':'Ligado no negócio, mas a chave geral (MAIA_CLIENTES_LIGADO) ainda está desligada na Vercel.'):'Atendimento desligado: a Maia só observa.'); }).catch(function(e){ i.checked=!val; falhou(e); }); };
   $('#d-status').onchange=function(){ var s=this; api({acao:'atualizar_negocio',id:n.id,status:s.value}).then(function(){ toast('Status: '+NEG_ST[s.value][0]+'.'); }).catch(function(e){ s.value=n.status; falhou(e); }).then(function(){ n.status=s.value; }); };
   var f=$('#f-dados');
   f.onsubmit=function(ev){
@@ -853,7 +858,13 @@ function telaRotina(){
   var t=$('#tela');
   t.innerHTML='<div class="cab"><div><h1>Rotina</h1><p class="mu">O que roda sozinho todo dia: retomadas dos clientes que pararam de responder, resumo da semana pros donos e números da Meta.</p></div></div>'+
     '<div class="card"><div class="chave" style="padding-top:0"><div class="txt"><b>Forçar o resumo da semana</b><small>Gera o relatório da semana agora, mesmo fora do dia certo. Vai pra fila da equipe aprovar.</small></div><label class="sw"><input type="checkbox" id="r-forcar"><span></span></label></div>'+
-    '<button class="btn grad" id="b-rodar" style="width:100%;margin-top:6px">Rodar a rotina agora</button></div><div id="rot-c" style="margin-top:14px"></div>';
+    '<button class="btn grad" id="b-rodar" style="width:100%;margin-top:6px">Rodar a rotina agora</button></div><div id="rot-c" style="margin-top:14px"></div>'+
+    '<div class="card" style="margin-top:14px"><h2>Meta: as 500 chamadas</h2><p class="mu peq" style="margin:4px 0 10px">Pra liberar os anúncios nas contas dos clientes, a Meta exige 500 leituras bem-sucedidas em 15 dias, com menos de 15% de erro. A rotina faz isso toda hora nas contas da CND e da escola.</p><div id="rot-ch">'+carregando()+'</div></div>'+
+    '<div class="card" style="margin-top:14px"><h2>Modelos de mensagem</h2><p class="mu peq" style="margin:4px 0 10px">Fora da janela de 24 h, o WhatsApp só deixa mandar modelo aprovado. O do dono (maia_novidades) fica no número da Maia; os de cliente são criados na conta de cada negócio quando ele conecta.</p><div id="rot-mod">'+carregando()+'</div><button class="btn" id="b-mod" style="width:100%;margin-top:10px">Pedir aprovação do modelo do dono</button></div>';
+  api('acao=chamadas').then(function(r){ $('#rot-ch').innerHTML='<div class="chave"><div class="txt"><b>'+r.ok+' de 500 bem-sucedidas</b><small>'+(r.faltam?'faltam '+r.faltam:'meta batida')+' · erro '+(r.taxa_erro==null?'—':r.taxa_erro+'%')+' · '+r.rodadas+' rodadas em 15 dias'+(r.ultimo?' · última '+esc(String(r.ultimo).slice(0,16).replace('T',' ')):'')+'</small>'+((r.ultimos_erros||[]).length?'<div class="erro-box" style="margin-top:6px">'+esc(r.ultimos_erros.join(' · '))+'</div>':'')+'</div></div>'; }).catch(function(e){ $('#rot-ch').innerHTML=caixaErro(e); });
+  function pintaMod(){ api('acao=modelos').then(function(r){ $('#rot-mod').innerHTML=(r.modelos||[]).length?r.modelos.map(function(m){ return '<div class="chave"><div class="txt"><b>'+esc(m.name)+'</b><small>'+esc(m.status)+(m.rejected_reason&&m.rejected_reason!=='NONE'?' · '+esc(m.rejected_reason):'')+'</small></div></div>'; }).join(''):'<p class="mu peq">Nenhum modelo da Maia ainda.</p>'; }).catch(function(e){ $('#rot-mod').innerHTML=caixaErro(e); }); }
+  pintaMod();
+  $('#b-mod').onclick=function(){ var b=this; espera(b,'pedindo…',function(){ return api({acao:'criar_modelo_dono'}).then(function(r){ toast(r.ok?'Pedido de aprovação enviado ('+(r.status||'')+').':'Não deu: '+(r.erro||'?'), !r.ok); pintaMod(); }); }); };
   $('#b-rodar').onclick=function(){
     var b=this; espera(b,'rodando… pode levar um pouco',function(){
       return api({acao:'rodar_rotina',forcar_relatorio:$('#r-forcar').checked}).then(function(r){ pintaRotina(r); atualizaResumo(); });
@@ -861,7 +872,7 @@ function telaRotina(){
   };
 }
 function pintaRotina(r){
-  var nomes={retomadas:'Retomadas',relatorios:'Resumos da semana',metricas:'Números da Meta'}, h='<div class="card"><h2>Resultado</h2>';
+  var nomes={retomadas:'Retomadas',confirmacoes:'Confirmação de vendas com o dono',relatorios:'Resumos da semana',metricas:'Números da Meta',chamadas:'Leituras da Meta (as 500 chamadas)'}, h='<div class="card"><h2>Resultado</h2>';
   var ks=Object.keys(r||{});
   if(!ks.length) h+='<p class="mu">Rodou e não tinha nada pra fazer.</p>';
   ks.forEach(function(k){

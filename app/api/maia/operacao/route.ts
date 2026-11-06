@@ -2,7 +2,8 @@
 //   GET  ?acao=resumo | negocios | negocio&id= | fila | pecas&negocio= | leads&negocio= | conversas&negocio= | msgs&conversa= | campanhas&negocio= | numeros&negocio=&de=&ate=
 //   POST {acao, ...}: criar_negocio, atualizar_negocio, gerar_anuncios, aprovar_peca, ajustar_peca, descartar_peca, pedir_joinha,
 //        criar_campanha, ativar_campanha, pausar_campanha, lead_novo, lead_etapa, lead_ganho, lead_perdido,
-//        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina
+//        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina,
+//        link_conectar, atendimento_clientes, criar_modelo_dono (05/11). GET também: modelos, chamadas
 import { maiaDb as db } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/aprovacao'
@@ -21,6 +22,9 @@ const erro = (m: string, s = 400) => Response.json({ erro: m }, { status: s })
 async function comLinks(pecas: any[]) {
   return Promise.all(pecas.map(async p => ({ ...p, arquivo_url: await db.link(p.arquivo_path) })))
 }
+
+// a chave do WhatsApp do negócio nunca sai pro painel
+const semChave = (n: any) => n && n.meta?.wa ? { ...n, meta: { ...n.meta, wa: { ...n.meta.wa, token: n.meta.wa.token ? '(guardada)' : null } } } : n
 
 export async function GET(req: Request) {
   if (!equipeOk(req)) return naoAutorizado()
@@ -46,9 +50,18 @@ export async function GET(req: Request) {
     }
     if (acao === 'negocios') {
       const [negs, pecas, leads] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas'), db.lista('leads')])
-      return ok(negs.map(n => ({ ...n, pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
+      return ok(negs.map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
     }
-    if (acao === 'negocio') return ok(await db.um('negocios', { id: q('id') }))
+    if (acao === 'negocio') return ok(semChave(await db.um('negocios', { id: q('id') })))
+    // 05/11: situação dos modelos de mensagem (do número da Maia, ou de um negócio com ?negocio=) e o placar das 500 chamadas
+    if (acao === 'modelos') {
+      const { statusModelos } = await import('@/lib/maia/modelos')
+      const { waDoNegocio } = await import('@/lib/maia/wa-negocio')
+      const n = q('negocio') ? await db.um('negocios', { id: q('negocio') }) : null
+      const w = n ? waDoNegocio(n) : null
+      return ok(await statusModelos(w && w.waba ? { token: w.token, waba: w.waba } : null))
+    }
+    if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
       const pecas = (await db.lista('pecas', {}, { ordem: 'criado_em' })).filter(p => ['revisao_equipe', 'gerando', 'ajuste_equipe', 'ajuste_dono', 'erro'].includes(p.status))
@@ -87,7 +100,9 @@ export async function POST(req: Request) {
         const campos: any = {}
         for (const k of ['nome', 'nicho', 'cidade', 'regiao', 'dono_nome', 'plano', 'status', 'contexto', 'marca', 'meta', 'verba_dia', 'aprovacao_equipe', 'ativa_sozinha', 'equipe_whatsapp']) if (k in b) campos[k] = b[k]
         if (b.dono_whatsapp) campos.dono_whatsapp = fone(b.dono_whatsapp)
-        return ok((await db.atualiza('negocios', { id: b.id }, campos))[0])
+        // 05/11: a conexão do WhatsApp (com a chave) não vem do painel: mantém a que está guardada
+        if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = { ...(campos.meta || {}), wa: atual?.meta?.wa } ; if (!campos.meta.wa) delete campos.meta.wa }
+        return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
       }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))
@@ -111,7 +126,23 @@ export async function POST(req: Request) {
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
         return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))
       }
-      case 'simular_cliente': return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto, anuncio: b.anuncio }))
+      case 'simular_cliente': return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto, anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null) }))
+      // 05/11 (Tech Provider): o link que o dono abre pra conectar o WhatsApp do negócio
+      case 'link_conectar': {
+        const { assinaLink } = await import('@/lib/maia/conectar')
+        const base = process.env.MAIA_URL_PUBLICA || new URL(req.url).origin
+        return ok({ link: `${base}/maia/conectar?n=${b.negocio_id}&t=${assinaLink(b.negocio_id)}`, vale_dias: 14 })
+      }
+      // liga ou desliga o atendimento dos clientes pelo WhatsApp do negócio (começa desligado depois de conectar)
+      case 'atendimento_clientes': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        if (b.ligado && !n.wa_phone_id) return erro('o WhatsApp desse negócio ainda não foi conectado')
+        await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), wa: { ...(n.meta?.wa || {}), atende: !!b.ligado } } })
+        await db.evento(b.ligado ? 'atendimento_ligado' : 'atendimento_desligado', n.id, { por: b.por || null })
+        return ok({ atende: !!b.ligado, chave_geral: process.env.MAIA_CLIENTES_LIGADO === '1' })
+      }
+      case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
       case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio }))
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {

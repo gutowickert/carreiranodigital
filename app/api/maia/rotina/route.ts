@@ -7,6 +7,8 @@ export const maxDuration = 300
 export async function GET(req: Request) {
   const cron = /vercel-cron/i.test(req.headers.get('user-agent') || '')
   const segredo = process.env.CRON_SECRET && req.headers.get('authorization') === 'Bearer ' + process.env.CRON_SECRET
-  if (!cron && !segredo) return Response.json({ erro: 'não autorizado' }, { status: 401 })
+  // 05/11: o agendador do banco (pg_cron, de hora em hora) manda a chave da rotina
+  const chave = process.env.MAIA_ROTINA_CHAVE && req.headers.get('x-chave') === process.env.MAIA_ROTINA_CHAVE
+  if (!cron && !segredo && !chave) return Response.json({ erro: 'não autorizado' }, { status: 401 })
   return Response.json(await roda())
 }

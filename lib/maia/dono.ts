@@ -4,7 +4,7 @@
 import crypto from 'node:crypto'
 import { maiaDb as db, maiaLocal } from './db'
 import { comFerramentas, emJson, JEITO, type Ferramenta } from './ia'
-import { conversaDoDono, conversa, mandaTexto, avisaEquipe } from './canal'
+import { soltaFilaDoDono, conversaDoDono, conversa, mandaTexto, avisaEquipe } from './canal'
 import { donoAprova, donoAjuste, pecaDaMensagem } from './aprovacao'
 import { geraAnuncios } from './pecas'
 import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
@@ -61,6 +61,9 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   await db.insere('msgs', { conversa_id: cv.id, negocio_id: neg.id, autor: 'dono', tipo: m.type || 'texto', texto, midia_id, wamid: m.id || null, status: 'recebido' }).catch(() => null)
   await db.atualiza('conversas', { id: cv.id }, { ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString(), janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString(), nao_lidas: (cv.nao_lidas || 0) + 1, ...(nome && !cv.nome ? { nome } : {}) })
 
+  // 05/11: a janela de 24 h abriu: entrega o que estava esperando na fila (fora da janela só sai modelo aprovado)
+  await soltaFilaDoDono({ ...cv, janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString() }).catch(() => 0)
+
   // o 👍 em cima da mensagem de uma peça aprova aquela peça, sem precisar da IA
   if (m.type === 'reaction' && /👍/.test(m.reaction?.emoji || '') && m.reaction?.message_id) {
     const p = await pecaDaMensagem(neg.id, m.reaction.message_id)
@@ -92,7 +95,7 @@ function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
       roda: async ({ periodo: p }) => { const [de, ate] = periodo(p); return numeros(neg.id, de, ate) } },
     { name: 'registrar_venda', description: 'O dono contou que vendeu ("fechei com a Ana, 180"). Marca o contato como GANHO com o valor. Se o contato não existe, cria (origem dono).',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, valor: { type: 'number' }, produto: { type: 'string' }, veio_do_anuncio: { type: 'boolean', description: 'só se o dono disse de onde veio' } } },
-      roda: async (q) => { let l = await lead(q); if (!l) l = await novoLead(neg.id, { nome: q.nome, telefone: q.telefone, produto: q.produto, origem: q.veio_do_anuncio === true ? 'anuncio' : q.veio_do_anuncio === false ? 'dono' : 'outro' }, 'dono'); const g = await ganhou(l, q.valor, q.produto, 'dono'); return { ok: true, lead: g.id, nome: g.nome, valor: g.valor } } },
+      roda: async (q) => { let l = await lead(q); const jaTinha = !!l; if (!l) l = await novoLead(neg.id, { nome: q.nome, telefone: q.telefone, produto: q.produto, origem: q.veio_do_anuncio === true ? 'anuncio' : q.veio_do_anuncio === false ? 'dono' : 'outro' }, 'dono'); const g = await ganhou(l, q.valor, q.produto, 'dono'); return { ok: true, lead: g.id, nome: g.nome, valor: g.valor, origem: g.origem, ja_estava_no_funil: jaTinha } } },
     { name: 'registrar_perda', description: 'O dono contou que um contato não vai comprar. Marca PERDIDO com o motivo (preço, sumiu, comprou no concorrente, sem orçamento, outro).',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, motivo: { type: 'string' } }, required: ['motivo'] },
       roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato. Pergunta o nome ou o telefone.' }; await perdeu(l, q.motivo, 'dono'); return { ok: true } } },
@@ -138,6 +141,7 @@ REGRAS:
 - Responde na hora, curto, do jeito de WhatsApp. Nunca reclama, nunca enrola.
 - Número só do sistema (ferramenta numeros). Nunca inventa número. Se não tem dado, diz.
 - Quando ele contar uma venda ou uma perda, registra (registrar_venda / registrar_perda) e confirma com o valor.
+- De onde veio o contato: se ele já estava no funil (veio do anúncio, do Instagram etc.), tu JÁ SABE, não pergunta. Só pergunta a origem de contato novo que o dono trouxe agora, e no máximo uma vez.
 - Quando chegar foto ou vídeo, agradece em uma linha. Se já tiver 3 ou mais mídias novas (ou um vídeo bom), pergunta se ele quer que tu já crie os anúncios, ou cria se ele já pediu.
 - Vídeo bom pra anúncio: 10 a 30 segundos, celular em pé, com luz, mostrando o produto ou o serviço. Dá a dica se ele pedir.
 - Aprende o negócio aos poucos (salvar_contexto): uma pergunta por vez, sem questionário.
@@ -158,7 +162,8 @@ export async function respondeDono(conversa_id: string) {
   // perguntas de clientes que a Maia passou pro dono e ainda não foram repassadas
   const evs = await db.lista('lead_eventos', { negocio_id: neg.id })
   const abertas = evs.filter(e => e.tipo === 'pergunta_cliente' && !evs.some(x => x.tipo === 'pergunta_respondida' && x.lead_id === e.lead_id && x.criado_em > e.criado_em))
-  const perguntas = await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))
+  // 05/11: pergunta de quem já fechou ou desistiu não fica esperando o dono
+  const perguntas = (await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return l && (l.etapa === 'ganho' || l.etapa === 'perdido') ? null : `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))).filter(Boolean)
   const ultima = msgs.filter(x => x.autor === 'dono').slice(-1)[0]
   const ctx = { aprovou: [] as string[] }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)

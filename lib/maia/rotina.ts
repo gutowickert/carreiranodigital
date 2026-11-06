@@ -3,7 +3,9 @@
 //   - segunda de manhã: o resumo da semana de cada negócio, que vai pra revisão da equipe antes de ir pro dono
 //   - números da Meta: sincroniza o gasto e as conversas do dia
 import { maiaDb as db } from './db'
-import { conversa, conversaDoDono, mandaTexto } from './canal'
+import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, janelaAbertaCv } from './canal'
+import { atendimentoLigado } from './wa-negocio'
+import { contaChamadas } from './chamadas'
 import { followupsVencidos, registraFollowup, encerraSemResposta, numeros } from './funil'
 import { textoRetomada } from './atendente'
 import { geraRelatorio } from './pecas'
@@ -22,10 +24,11 @@ export async function retomadas() {
     if ((lead.followups || 0) >= 3) { await encerraSemResposta(lead); feitos.push({ lead: lead.id, encerrado: true }); continue }
     const { ultimo } = await registraFollowup(lead)
     const numero = (lead.followups || 0) + 1
-    if (neg.wa_phone_id) {
-      // o canal do negócio (depois do Tech Provider): a Maia manda a retomada pro cliente. Fora da janela de 24 h vai precisar de modelo aprovado.
+    if (atendimentoLigado(neg) && lead.telefone) {
+      // 05/11: o canal do negócio. Dentro da janela de 24 h, a retomada escrita pela Maia; fora dela, o modelo aprovado (maia_retomada).
       const cv = await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id })
-      await mandaTexto(cv, await textoRetomada(neg, lead, numero))
+      if (janelaAbertaCv(cv)) await mandaTexto(cv, await textoRetomada(neg, lead, numero))
+      else await mandaModeloCliente(cv, 'maia_retomada', [String(lead.nome || '').split(' ')[0] || 'tudo bem', neg.nome, lead.produto || 'o que tu tinha perguntado'], '(modelo maia_retomada) retomada ' + numero)
     } else {
       (lembretes[neg.id] ||= []).push(`${lead.nome || lead.telefone || 'contato'}${lead.produto ? ' (' + lead.produto + ')' : ''}${ultimo ? ', última tentativa' : ''}`)
     }
@@ -81,5 +84,7 @@ export async function roda(opc: { forcarRelatorio?: boolean } = {}) {
   try { r.confirmacoes = await confirmaVendas(opc.forcarRelatorio) } catch (e: any) { r.confirmacoes_erro = e.message }
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
   try { if (horaBR() % 6 === 0 || opc.forcarRelatorio) r.metricas = await sincronizaMetricas() } catch (e: any) { r.metricas_erro = e.message }
+  // 05/11: as leituras da Marketing API que contam pras 500 chamadas do acesso completo
+  try { r.chamadas = await contaChamadas() } catch (e: any) { r.chamadas_erro = e.message }
   return r
 }

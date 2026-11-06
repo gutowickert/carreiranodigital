@@ -99,6 +99,7 @@ const nextConfig: NextConfig = {
         { source: '/teunegocioos', destination: '/teunegocio-os/index.html' },
         // 03/11: o painel de operação da Maia (equipe da escola, com senha)
         { source: '/maia/operacao', destination: '/maia/operacao/index.html' },
+        { source: '/maia/conectar', destination: '/maia/conectar/index.html' },
         // 21/10: curso Vídeo com IA (porta de entrada, R$ 497), prévia
         { source: '/videocomia', destination: '/imersao/video-com-ia.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria

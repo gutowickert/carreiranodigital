@@ -21,6 +21,13 @@ async function chama(corpo: any) {
 }
 
 // conversa com ferramentas: a IA pode chamar várias, uma depois da outra, até responder o texto final
+const FERRAMENTA_EM_TEXTO = /<\/?(invoke|parameter|function_calls)\b/i
+export const limpaFerramentaEmTexto = (t: string) => t
+  .replace(/<function_calls>[\s\S]*?<\/function_calls>/gi, '')
+  .replace(/<invoke\b[\s\S]*?<\/invoke>/gi, '')
+  .replace(/<\/?(invoke|parameter|function_calls)\b[^>]*>/gi, '')
+  .trim()
+
 export async function comFerramentas(sistema: string, pedido: string | any[], ferramentas: Ferramenta[], maxVoltas = 6) {
   const msgs: any[] = [{ role: 'user', content: pedido }]
   const usadas: { nome: string; entrada: any; saida: any }[] = []
@@ -29,9 +36,15 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
   for (let volta = 0; volta < maxVoltas; volta++) {
     const j = await chama({ system: sistema, messages: msgs, tools: ferramentas.map(({ roda, ...f }) => f) })
     msgs.push({ role: 'assistant', content: j.content })
-    const t = (j.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('').trim()
-    if (t) textos.push(t)
+    let t = (j.content || []).filter((c: any) => c.type === 'text').map((c: any) => c.text).join('').trim()
     const pedidos = (j.content || []).filter((c: any) => c.type === 'tool_use')
+    // 05/11: às vezes o modelo ESCREVE a chamada de ferramenta como texto (<invoke ...>). Isso nunca pode ir pro cliente:
+    // pede de novo, usando a ferramenta de verdade
+    if (FERRAMENTA_EM_TEXTO.test(t)) {
+      if (!pedidos.length && volta < maxVoltas - 1) { msgs.push({ role: 'user', content: 'Tu escreveu a chamada da ferramenta como texto. Usa as ferramentas de verdade e depois escreve só a mensagem, no formato pedido.' }); continue }
+      t = limpaFerramentaEmTexto(t)
+    }
+    if (t) textos.push(t)
     if (!pedidos.length || j.stop_reason !== 'tool_use') {
       // se a resposta final veio vazia depois das ferramentas, pede o texto
       if (!textos.length && usadas.length) {
@@ -41,7 +54,7 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
         if (t2) textos.push(t2)
       }
       // vale o texto da última volta; se ela veio vazia, o último que veio antes (sem repetir os dois)
-      return { texto: t || textos[textos.length - 1] || '', usadas }
+      return { texto: limpaFerramentaEmTexto(t || textos[textos.length - 1] || ''), usadas }
     }
     const respostas: any[] = []
     for (const p of pedidos) {
