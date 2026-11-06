@@ -6,11 +6,16 @@ import { maiaDb as db } from './db'
 import { comFerramentas, JEITO, type Ferramenta } from './ia'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
+import { anotaClique } from './conversoes'
+import { origemDoTexto } from './social'
 
 // uma mensagem de cliente que chegou no WhatsApp do negócio. referral = o anúncio de onde veio (CTWA), quando vier
-export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: string | null; texto: string; wamid?: string | null; referral?: { source_id?: string; headline?: string } | null }) {
+export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: string | null; texto: string; wamid?: string | null; referral?: { source_id?: string; headline?: string; ctwa_clid?: string | null; source_url?: string | null } | null }) {
   if (d.wamid && (await db.um('msgs', { wamid: d.wamid }))) return null
-  let lead = await novoLead(neg.id, { telefone: d.telefone, nome: d.nome, origem: d.referral?.source_id ? 'anuncio' : 'organico', anuncio_ref: d.referral?.source_id || null })
+  // 06/11: sem anúncio, o texto pronto do link do perfil ("Vim pelo Instagram") marca a origem (só na 1ª mensagem: lead que já existe fica como está)
+  let lead = await novoLead(neg.id, { telefone: d.telefone, nome: d.nome, origem: d.referral?.source_id ? 'anuncio' : origemDoTexto(d.texto) || 'organico', anuncio_ref: d.referral?.source_id || null })
+  // 06/11: veio do clique no anúncio: guarda o ctwa_clid e avisa a Meta (LeadSubmitted). Nunca derruba o atendimento.
+  if (d.referral?.ctwa_clid) await anotaClique(neg, lead, d.referral).catch(() => null)
   lead = await clienteRespondeu(lead)
   const cv = await conversa(neg.id, 'cliente', d.telefone, { nome: d.nome, lead_id: lead.id })
   if (!cv.lead_id) await db.atualiza('conversas', { id: cv.id }, { lead_id: lead.id })

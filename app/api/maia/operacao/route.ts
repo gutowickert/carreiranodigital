@@ -4,6 +4,7 @@
 //        criar_campanha, ativar_campanha, pausar_campanha, lead_novo, lead_etapa, lead_ganho, lead_perdido,
 //        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina,
 //        link_conectar, atendimento_clientes, criar_modelo_dono (05/11). GET também: modelos, chamadas
+//   06/11 (demonstração grátis): GET amostras · POST simular_demo, rodar_demo, teste_demo_sumiu (só no modo de teste)
 import { maiaDb as db } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/aprovacao'
@@ -14,6 +15,7 @@ import { conversaDoDono, mandaTexto } from '@/lib/maia/canal'
 import { comoDono, comoCliente } from '@/lib/maia/simula'
 import { roda } from '@/lib/maia/rotina'
 import { fone } from '@/lib/oito/wa'
+import { ehDemo, painelAmostras, vagasDaSemana } from '@/lib/maia/demo-amostra'
 
 export const maxDuration = 300
 const ok = (d: any) => Response.json(d)
@@ -32,12 +34,16 @@ export async function GET(req: Request) {
   const acao = q('acao') || 'resumo'
   try {
     if (acao === 'resumo') {
-      const [negs, pecas, leads, camps] = await Promise.all([db.lista('negocios'), db.lista('pecas'), db.lista('leads'), db.lista('campanhas')])
+      const [todosNegs, todasPecas, leads, camps] = await Promise.all([db.lista('negocios'), db.lista('pecas'), db.lista('leads'), db.lista('campanhas')])
+      // 06/11: as amostras da demonstração moram em negócios marcados (contexto.demo): contam só no que é da equipe aprovar
+      const demo = new Set(todosNegs.filter(ehDemo).map(n => n.id))
+      const negs = todosNegs.filter(n => !demo.has(n.id)), pecas = todasPecas.filter(p => !demo.has(p.negocio_id))
       const semana = new Date(Date.now() - 7 * 86400e3).toISOString()
       return ok({
         modo: db.modo(), meta_real: metaReal(),
         negocios: negs.length, ativos: negs.filter(n => n.status === 'ativo').length,
-        pra_equipe: pecas.filter(p => p.status === 'revisao_equipe').length,
+        pra_equipe: todasPecas.filter(p => p.status === 'revisao_equipe').length,
+        amostras_semana: await vagasDaSemana(),
         com_dono: pecas.filter(p => p.status === 'com_dono').length,
         pra_ligar: pecas.filter(p => p.status === 'aprovada' && (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && !p.campanha_id).length,
         campanhas_pausadas: camps.filter(c => c.status === 'criada_pausada').length,
@@ -50,7 +56,7 @@ export async function GET(req: Request) {
     }
     if (acao === 'negocios') {
       const [negs, pecas, leads] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas'), db.lista('leads')])
-      return ok(negs.map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
+      return ok(negs.filter(n => !ehDemo(n)).map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
     }
     if (acao === 'negocio') return ok(semChave(await db.um('negocios', { id: q('id') })))
     // 05/11: situação dos modelos de mensagem (do número da Maia, ou de um negócio com ?negocio=) e o placar das 500 chamadas
@@ -65,9 +71,12 @@ export async function GET(req: Request) {
     if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
+      // 06/11: a peça de amostra da demonstração vai marcada, com o nome do lead
+      const demo = (id: string) => { const n = negs.find(x => x.id === id); return ehDemo(n) ? { lead: n!.contexto.demo.lead, telefone: n!.contexto.demo.telefone, entrega: n!.contexto.demo.entrega } : null }
       const pecas = (await db.lista('pecas', {}, { ordem: 'criado_em' })).filter(p => ['revisao_equipe', 'gerando', 'ajuste_equipe', 'ajuste_dono', 'erro'].includes(p.status))
-      return ok((await comLinks(pecas)).map(p => ({ ...p, negocio_nome: nome(p.negocio_id) })))
+      return ok((await comLinks(pecas)).map(p => ({ ...p, negocio_nome: nome(p.negocio_id), demo: demo(p.negocio_id) })))
     }
+    if (acao === 'amostras') return ok(await painelAmostras())
     if (acao === 'pecas') return ok(await comLinks(await db.lista('pecas', { negocio_id: q('negocio') }, { ordem: 'criado_em', desc: true })))
     if (acao === 'leads') return ok(await db.lista('leads', { negocio_id: q('negocio') }, { ordem: 'atualizado_em', desc: true }))
     if (acao === 'conversas') return ok(await db.lista('conversas', { negocio_id: q('negocio') }, { ordem: 'ultima_msg_em', desc: true }))
@@ -151,6 +160,38 @@ export async function POST(req: Request) {
         const ls = (await db.lista('leads')).filter(l => l.proximo_followup_em)
         for (const l of ls) await db.atualiza('leads', { id: l.id }, { proximo_followup_em: new Date(Date.now() - 60e3).toISOString() })
         return ok({ vencidas: ls.length })
+      }
+      // 06/11: a demonstração grátis simulada (telefone 55000..., nada sai pra Meta), pelo mesmo caminho do webhook do Oito
+      case 'simular_demo': {
+        const tel = String(b.telefone || '').replace(/\D/g, '')
+        if (!/^55000\d{6,}$/.test(tel)) return erro('telefone de simulação começa com 55000')
+        const { recebe } = await import('@/lib/oito/entrada')
+        const { atendeConversa } = await import('@/lib/oito/vendedor')
+        const { oitoDb } = await import('@/lib/oito/db')
+        const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg' } : undefined
+        const tipo = arquivo ? (/^video\//.test(arquivo.mime) ? 'video' : 'image') : 'text'
+        const m: any = {
+          id: 'sim-in-' + crypto.randomUUID(), from: tel, type: tipo,
+          ...(tipo === 'text' ? { text: { body: String(b.texto || '') } } : tipo === 'video' ? { video: { caption: b.texto || '' } } : { image: { caption: b.texto || '' } }),
+          ...(b.anuncio ? { referral: { source_type: 'ad', source_id: 'simulado' } } : {}),
+        }
+        const r = await recebe(m, b.nome || null, arquivo)
+        if (!r) return erro('repetida', 409)
+        const antes = (await oitoDb.lista('wa_msgs', { conversa_id: r.cv.id })).length
+        if (r.responder && !b.sem_resposta) await atendeConversa(r.cv.id)
+        const msgs = await oitoDb.lista('wa_msgs', { conversa_id: r.cv.id }, { ordem: 'criado_em' })
+        const cv = await oitoDb.um('wa_conversas', { id: r.cv.id })
+        return ok({ fase: cv?.fase, etapa: cv?.etapa, modo: cv?.modo, maia: cv?.rascunho?.maia, novas: msgs.slice(antes).map(x => ({ autor: x.autor, tipo: x.tipo, texto: x.texto })) })
+      }
+      case 'rodar_demo': { const { rotinaDemo } = await import('@/lib/maia/demo-amostra'); return ok(await rotinaDemo()) }
+      // só no modo de teste: faz de conta que o lead sumiu há 22 h (pra testar a retomada única sem esperar)
+      case 'teste_demo_sumiu': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const { oitoDb } = await import('@/lib/oito/db')
+        const cv = await oitoDb.um('wa_conversas', { telefone: String(b.telefone || '').replace(/\D/g, '') })
+        if (!cv) return erro('conversa não existe')
+        await oitoDb.atualiza('wa_conversas', { id: cv.id }, { janela_ate: new Date(Date.now() + 2 * 3600e3).toISOString() })
+        return ok({ ok: true })
       }
       default: return erro('ação desconhecida')
     }

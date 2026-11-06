@@ -11,6 +11,8 @@ export async function equipeAprova(peca_id: string, por: string) {
   if (!peca) throw new Error('peça não existe')
   if (peca.status !== 'revisao_equipe') throw new Error('a peça não está esperando a equipe (' + peca.status + ')')
   const neg = await db.um('negocios', { id: peca.negocio_id })
+  // 06/11: amostra da demonstração grátis: aprovada pela equipe, vai direto pro lead pelo número do Oito (sem joinha)
+  if (neg?.contexto?.demo) { const { entregaAmostra } = await import('./demo-amostra'); return entregaAmostra(peca, neg, por) }
   const cv = await conversaDoDono(neg)
   let r: any
   if (peca.tipo === 'relatorio' || peca.tipo === 'texto') {

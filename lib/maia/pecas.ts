@@ -45,6 +45,8 @@ Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titu
 export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
   const neg = await db.um('negocios', { id: peca.negocio_id })
   const m = peca.midia_ids?.[0] ? await db.um('midias', { id: peca.midia_ids[0] }) : null
+  // 06/11: post do Instagram/Facebook (lib/maia/social.ts) refaz só a legenda, sem regra de anúncio e sem a oficina
+  if (peca.tipo === 'post' || peca.tipo === 'video') { const { refazPost } = await import('./social'); const p = await refazPost(peca, nota, quem); if (p) return p }
   const r = await emJson<{ gancho: string; texto: string; cta: string; trocar_midia: boolean }>(`${JEITO}\n${REGRA_GANCHO}`,
     `${contextoTxt(neg)}\n\nANÚNCIO ATUAL:\nGancho: ${peca.gancho}\nTexto: ${peca.texto}\nCTA: ${peca.cta}\nMídia: ${m?.descricao || m?.legenda || '-'}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\n\nRefaz respeitando o pedido. Se o pedido for só da imagem (cor, foto, corte), mantém o texto. Devolve: {"gancho":"...","texto":"...","cta":"...","trocar_midia":false}`)
   const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: r.gancho, texto: r.texto, cta: r.cta, status: 'gerando', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })

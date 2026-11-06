@@ -70,7 +70,8 @@ export async function POST(req: Request) {
 
     for (const m of v.messages || []) {
       const nome = v.contacts?.find((x: any) => String(x.wa_id) === String(m.from))?.profile?.name || null
-      const referral = m.referral ? { source_id: m.referral.source_id, headline: m.referral.headline } : null
+      // 06/11: o ctwa_clid (o id do clique no anúncio) vai junto: é com ele que a venda volta pra Meta (lib/maia/conversoes.ts)
+      const referral = m.referral ? { source_id: m.referral.source_id, headline: m.referral.headline, ctwa_clid: m.referral.ctwa_clid || null, source_url: m.referral.source_url || null } : null
       const r = await recebeDoCliente(neg, { telefone: m.from, nome, texto: textoDe(m), wamid: m.id, referral }).catch(async (e: any) => { await avisaEquipe('erro na entrada de cliente', String(e?.message || e).slice(0, 160), neg.id); return null })
       if (!r) continue
       if (atendimentoLigado(neg)) { marcaLidaNeg(waDoNegocio(neg)!, m.id).catch(() => null); if (r.responder) responder.set(r.cv.id, neg.id) }

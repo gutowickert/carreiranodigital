@@ -10,6 +10,8 @@ export const maxDuration = 120
 
 export async function GET(req: Request) {
   if (!oficinaOk(req)) return naoAutorizado()
+  // 06/11: a oficina está de pé (a amostra da demonstração vê isso pra avisar a equipe quando ela cair)
+  await (await import('@/lib/maia/demo-amostra')).marcaOficinaViva().catch(() => null)
   const fila = (await db.lista('tarefas', { status: 'fila' }, { ordem: 'criado_em' })).filter(t => t.tipo === 'arte' || t.tipo === 'video')
   // tarefa presa (pegou e não devolveu em 20 min) volta pra fila
   const presas = (await db.lista('tarefas', { status: 'rodando' })).filter(t => t.pego_em && Date.now() - Date.parse(t.pego_em) > 20 * 60e3)

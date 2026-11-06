@@ -165,6 +165,13 @@ a.lin:hover{background:var(--card2)}
   .lin .dir .vai{display:none}
 }
 .mais-b{margin-top:8px;width:100%}
+/* 06/11: amostras da demonstração (Aprovar) */
+.amo{margin-bottom:16px}
+.amo-cab{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.amo-cab .kpi-num small{font-family:'Manrope',sans-serif;font-size:.42em;font-weight:700;color:var(--text-muted);letter-spacing:0;margin-left:6px}
+.medidor{height:8px;border-radius:999px;background:var(--surface-2);overflow:hidden;margin-top:12px}
+.medidor i{display:block;height:100%;border-radius:999px;background:var(--accent)}
+.medidor.cheio i{background:var(--amber)}
 
 /* ===== chips ===== */
 .chip{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:999px;font-weight:700;font-size:12px;line-height:1.5;white-space:nowrap;background:var(--surface-2);color:var(--text-2)}
@@ -522,6 +529,7 @@ var PECA_ST = {
   com_dono:['esperando o joinha do dono','aten'], ajuste_dono:['refazendo (ajuste do dono)','info'], aprovada:['aprovada','bom'],
   no_ar:['no ar','bom'], descartada:['descartada',''], erro:['deu erro','ruim']
 };
+var AMOSTRA_ST = {fila:['na fila','info'],producao:['em produção','info'],oficina:['na oficina','info'],esperando_oficina:['esperando a oficina','ruim'],pra_aprovar:['esperando a equipe','aten'],esperando_lead:['aprovada, esperando o lead voltar','aten'],enviada:['entregue ao lead','bom'],descartada:['descartada',''],sem_peca:['sem peça (ver as fotos)','ruim'],falta_cidade:['esperando a cidade do lead','aten'],erro:['deu erro','ruim']};
 var PECA_TIPO = {anuncio_imagem:'Anúncio (imagem)',anuncio_video:'Anúncio (vídeo)',post:'Post',video:'Vídeo',relatorio:'Relatório',texto:'Texto'};
 var CAMP_ST = {rascunho:['rascunho',''],criada_pausada:['montada, pausada','aten'],ativa:['no ar','bom'],pausada:['pausada','aten'],encerrada:['encerrada',''],erro:['deu erro','ruim']};
 var NEG_ST = {implantacao:['implantação','info'],ativo:['ativo','bom'],pausado:['pausado','aten'],cancelado:['cancelado','ruim']};
@@ -857,6 +865,7 @@ function pintaOps(r){
 // a fila do que precisa de gente, por urgência (vermelho, âmbar, azul)
 function itensUrgentes(cart){
   var it=[], nome={}; cart.negs.forEach(function(n){ nome[n.id]=n.nome; });
+  (cart.fila||[]).forEach(function(p){ if(p.demo&&!nome[p.negocio_id]) nome[p.negocio_id]='Amostra da demonstração · '+p.demo.lead; });
   var porNegEq={};
   (cart.fila||[]).forEach(function(p){
     if(p.status==='erro') it.push({nivel:'ruim',icone:'alerta',t:'Peça deu erro na oficina',s:(nome[p.negocio_id]||'?')+' · '+(p.titulo||PECA_TIPO[p.tipo]||'peça'),href:'#aprovar/'+p.negocio_id,quando:p.atualizado_em||p.criado_em});
@@ -933,15 +942,37 @@ function pintaCart(cart){
 /* ---------- 2. APROVAR ---------- */
 function telaAprovar(filtro){
   var t=$('#tela'); S.filtroFila=filtro||null;
-  t.innerHTML=cab('Aprovar','Primeiro a equipe aprova, depois vai pro dono dar o joinha no WhatsApp.','<button class="btn" id="b-atual">'+ic('rotina')+'Atualizar</button>')+'<div id="joinha"></div><div id="filtros"></div><div id="fila">'+esqCards(3)+'</div>';
+  t.innerHTML=cab('Aprovar','Primeiro a equipe aprova, depois vai pro dono dar o joinha no WhatsApp. A amostra da demonstração vai direto pro lead.','<button class="btn" id="b-atual">'+ic('rotina')+'Atualizar</button>')+'<div id="joinha"></div><section class="box amo" id="amostras" aria-label="Amostras da demonstração">'+esqLinhas(2)+'</section><div id="filtros"></div><div id="fila">'+esqCards(3)+'</div>';
   $('#b-atual').onclick=function(){ var b=this; espera(b,'atualizando…',carregaFila); };
   pintaJoinha();
   carregaFila();
 }
 function carregaFila(){
   return api('acao=fila').then(function(fila){
-    S.fila=fila||[]; if(S.cart) S.cart.fila=S.fila; pintaFila(); atualizaResumo();
+    S.fila=fila||[]; if(S.cart) S.cart.fila=S.fila; pintaFila(); atualizaResumo(); if($('#amostras')) carregaAmostras();
   }).catch(function(e){ if($('#fila')) $('#fila').innerHTML=caixaErro(e); });
+}
+// 06/11: as amostras da demonstração grátis (o lead mandou as fotos; a equipe aprova; vai pro lead). Até 10 por semana.
+function carregaAmostras(){
+  return api('acao=amostras').then(function(a){ S.amostras=a; pintaAmostras(); }).catch(function(e){ var b=$('#amostras'); if(b) b.innerHTML=caixaErro(e); });
+}
+function diaCurto(iso){ if(!iso) return ''; var d=new Date(iso+'T12:00:00'); return isNaN(d)?'':d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.',''); }
+function pintaAmostras(){
+  var box=$('#amostras'), a=S.amostras; if(!box||!a) return;
+  var cheio=a.usadas>=a.limite, larg=Math.min(100,Math.round(a.usadas/Math.max(1,a.limite)*100));
+  var todas=a.lista||[], mostra=S.amoTudo?todas:todas.slice(0,6);
+  function quandoTxt(x){ return x.status==='enviada'?'entregue '+haQuanto(x.entregue_em):x.status==='descartada'?'pedida '+haQuanto(x.pedido_em):'chega '+esc(diaCurto(x.entrega)); }
+  box.innerHTML='<div class="amo-cab"><div><div class="kpi-rot">Amostras da demonstração</div><div class="kpi-num"><span>'+inteiro(a.usadas)+'</span><small> de '+inteiro(a.limite)+' nesta semana</small></div>'+
+      '<div class="kpi-pe">'+(cheio?'Semana cheia: quem mandar foto agora entra na fila, com a data avisada.':'Cada uma passa pela equipe antes de ir pro lead.')+'</div></div>'+
+      '<div>'+chip(a.oficina_viva?'oficina ligada':'oficina desligada',a.oficina_viva?'bom':'ruim')+'</div></div>'+
+    '<div class="medidor'+(cheio?' cheio':'')+'" role="meter" aria-label="amostras da semana" aria-valuemin="0" aria-valuemax="'+a.limite+'" aria-valuenow="'+a.usadas+'"><i style="width:'+larg+'%"></i></div>'+
+    (todas.length?'<div class="lista" style="margin-top:8px">'+mostra.map(function(x){ var e=AMOSTRA_ST[x.status]||[x.status,''];
+        return '<a class="lin" href="#aprovar/'+esc(x.negocio_id)+'"><span class="cor '+esc(e[1])+'"></span><div><div class="t"><span>'+esc(x.lead)+'</span>'+(x.simulado?chip('teste',''):'')+'</div>'+
+          '<div class="sub">'+esc(x.negocio)+(x.produto?' · '+esc(x.produto):'')+(x.cidade?' · '+esc(x.cidade):'')+'</div></div>'+
+          '<div class="dir">'+st(AMOSTRA_ST,x.status)+'<small>'+quandoTxt(x)+'</small></div></a>'; }).join('')+'</div>'+
+      (todas.length>6?'<button class="btn fantasma peq mais-b" id="b-amo">'+(S.amoTudo?'Mostrar menos':'Ver todas ('+todas.length+')')+'</button>':'')
+    :'<p class="mu peq" style="margin:12px 0 0">Nenhuma amostra pedida ainda. Quando um lead da demonstração mandar as fotos, aparece aqui.</p>');
+  if($('#b-amo')) $('#b-amo').onclick=function(){ S.amoTudo=!S.amoTudo; pintaAmostras(); };
 }
 function pintaJoinha(){
   var box=$('#joinha'); if(!box) return;
@@ -989,16 +1020,16 @@ function cardPeca(p,comNegocio){
   var soTexto=!p.arquivo_url && p.texto && !(p.status==='gerando'||p.status==='ajuste_equipe'||p.status==='ajuste_dono');
   var tit=String(p.titulo||'').replace(/(\d{4})-(\d{2})-(\d{2})/g,'$3/$2');
   if(soTexto) return '<article class="card peca" data-peca="'+esc(p.id)+'"><div class="corpo" style="padding-bottom:14px">'+
-    (comNegocio&&p.negocio_nome?'<a class="neg-n" href="#negocio/'+esc(p.negocio_id)+'">'+ic('negocios')+esc(p.negocio_nome)+'</a>':'')+
-    '<div class="tags">'+st(PECA_ST,p.status)+'<span class="chip">'+esc(PECA_TIPO[p.tipo]||p.tipo)+'</span>'+((p.versao||1)>1?'<span class="chip info">versão '+p.versao+'</span>':'')+'</div>'+
+    (comNegocio&&p.negocio_nome?'<a class="neg-n" href="#negocio/'+esc(p.negocio_id)+'">'+ic(p.demo?'pessoa':'negocios')+esc(p.demo?p.demo.lead+' · '+p.negocio_nome:p.negocio_nome)+'</a>':'')+
+    '<div class="tags">'+(p.demo?'<span class="chip marca">'+ic('brilho')+'amostra da demonstração</span>':'')+st(PECA_ST,p.status)+'<span class="chip">'+esc(PECA_TIPO[p.tipo]||p.tipo)+'</span>'+((p.versao||1)>1?'<span class="chip info">versão '+p.versao+'</span>':'')+'</div>'+
     '<div class="gancho">'+esc(p.gancho||tit||'Mensagem pro dono')+'</div>'+
     ((p.nota_equipe||p.nota_dono)?'<div class="notas">'+(p.nota_equipe?'<div class="nota"><b>Ajuste pedido pela equipe:</b> '+esc(p.nota_equipe)+'</div>':'')+(p.nota_dono?'<div class="nota"><b>Ajuste pedido pelo dono:</b> '+esc(p.nota_dono)+'</div>':'')+'</div>':'')+
     '<div class="meta">criada '+haQuanto(p.criado_em)+(p.aprovado_equipe_por?' · aprovada por '+esc(p.aprovado_equipe_por):'')+'</div></div>'+
     '<div class="midia txt" style="padding-top:16px;border-top:1px solid var(--border)"><div class="bal maia esq"><span class="quem">Maia, no WhatsApp do dono</span>'+esc(p.texto)+'</div></div>'+
     '<div class="acoes" style="padding-top:14px">'+acoesPeca(p)+'</div></article>';
   return '<article class="card peca" data-peca="'+esc(p.id)+'">'+midiaPeca(p)+'<div class="corpo">'+
-    (comNegocio&&p.negocio_nome?'<a class="neg-n" href="#negocio/'+esc(p.negocio_id)+'">'+ic('negocios')+esc(p.negocio_nome)+'</a>':'')+
-    '<div class="tags"><span class="chip">'+esc(PECA_TIPO[p.tipo]||p.tipo)+'</span>'+((p.versao||1)>1?'<span class="chip info">versão '+p.versao+'</span>':'')+'</div>'+
+    (comNegocio&&p.negocio_nome?'<a class="neg-n" href="#negocio/'+esc(p.negocio_id)+'">'+ic(p.demo?'pessoa':'negocios')+esc(p.demo?p.demo.lead+' · '+p.negocio_nome:p.negocio_nome)+'</a>':'')+
+    '<div class="tags">'+(p.demo?'<span class="chip marca">'+ic('brilho')+'amostra da demonstração</span>':'')+'<span class="chip">'+esc(PECA_TIPO[p.tipo]||p.tipo)+'</span>'+((p.versao||1)>1?'<span class="chip info">versão '+p.versao+'</span>':'')+'</div>'+
     (p.gancho?'<div class="gancho">'+esc(p.gancho)+'</div>':(soTexto&&p.titulo?'<div class="gancho">'+esc(p.titulo)+'</div>':''))+
     (p.texto&&!soTexto?'<p class="texto">'+esc(p.texto)+'</p>':'')+
     (p.cta?'<span class="cta">'+esc(p.cta)+ic('vai')+'</span>':'')+
@@ -1007,9 +1038,9 @@ function cardPeca(p,comNegocio){
     '</div><div class="acoes">'+acoesPeca(p)+'</div></article>';
 }
 function acoesPeca(p){
-  if(S.confirmar===p.id) return '<div class="confirma" role="alert"><p>Descartar esta peça? Ela some da fila e não vai pro dono.</p><div class="btns"><button class="btn perigo cheio" data-a="descartar-sim">Sim, descartar</button><button class="btn" data-a="cancelar">Voltar</button></div></div>';
+  if(S.confirmar===p.id) return '<div class="confirma" role="alert"><p>Descartar esta peça? Ela some da fila e não vai pro '+(p.demo?'lead':'dono')+'.</p><div class="btns"><button class="btn perigo cheio" data-a="descartar-sim">Sim, descartar</button><button class="btn" data-a="cancelar">Voltar</button></div></div>';
   if(S.ajustando===p.id) return '<div class="campo" style="margin:0"><label for="nota-'+esc(p.id)+'">O que mudar?</label><textarea id="nota-'+esc(p.id)+'" data-nota placeholder="Ex.: o gancho tá longo, troca a foto pela da vitrine, tira o emoji…"></textarea></div><div class="btns"><button class="btn ok" data-a="ajustar-mandar">'+ic('enviar')+'Mandar refazer</button><button class="btn" data-a="cancelar">Voltar</button></div>';
-  if(p.status==='revisao_equipe') return '<button class="btn verde larga" data-a="aprovar">'+ic('check')+'Aprovar e mandar pro dono</button><div class="btns"><button class="btn" data-a="ajustar">Pedir ajuste</button><button class="btn perigo" data-a="descartar">Descartar</button></div>';
+  if(p.status==='revisao_equipe') return '<button class="btn verde larga" data-a="aprovar">'+ic('check')+(p.demo?'Aprovar e mandar pro lead':'Aprovar e mandar pro dono')+'</button><div class="btns"><button class="btn" data-a="ajustar">Pedir ajuste</button><button class="btn perigo" data-a="descartar">Descartar</button></div>';
   if(p.status==='descartada'||p.status==='no_ar') return '';
   if(p.status==='gerando'||p.status==='ajuste_equipe'||p.status==='ajuste_dono') return '<p class="mu peq">Quando a oficina terminar, aparece aqui pra aprovar.</p><button class="btn perigo peq" data-a="descartar">Descartar</button>';
   return '<button class="btn perigo peq" data-a="descartar">Descartar</button>';
@@ -1029,10 +1060,11 @@ function ligaPecas(box, repinta, recarrega){
         var nota=($('[data-nota]',card).value||'').trim(); if(!nota){ toast('Não deu: escreve o que mudar',true); return; }
         return espera(b,'mandando pra Maia refazer…',function(){ return api({acao:'ajustar_peca',peca_id:id,nota:nota}).then(function(){ S.ajustando=null; S.cart=null; toast('Pedido de ajuste enviado. A nova versão volta pra fila.'); return recarrega(); }); });
       }
-      if(a==='aprovar') return espera(b,'mandando pro dono…',function(){ return api({acao:'aprovar_peca',peca_id:id}).then(function(r){
+      if(a==='aprovar') return espera(b,p&&p.demo?'mandando pro lead…':'mandando pro dono…',function(){ return api({acao:'aprovar_peca',peca_id:id}).then(function(r){
         if(r&&r.status==='com_dono'&&p){ var x=S.aprovadasSessao[p.negocio_id]||(S.aprovadasSessao[p.negocio_id]={n:0,nome:p.negocio_nome||(S.negAtual&&S.negAtual.nome)||'negócio'}); x.n++; }
         S.cart=null;
-        toast(r&&r.status==='aprovada'?'Aprovada e enviada pro dono.':'Aprovada! Foi pro dono.'+(r&&r.ok===false?' (o envio no WhatsApp falhou)':''));
+        if(p&&p.demo) toast(r&&r.esperando_lead?'Aprovada. O lead está fora das 24 h: mandei o aviso e a amostra vai quando ele responder.':(r&&r.ok===false?'Aprovada, mas o envio pro lead falhou'+(r.erro?': '+r.erro:''):'Aprovada e enviada pro lead no WhatsApp.'), r&&r.ok===false);
+        else toast(r&&r.status==='aprovada'?'Aprovada e enviada pro dono.':'Aprovada! Foi pro dono.'+(r&&r.ok===false?' (o envio no WhatsApp falhou)':''));
         return recarrega();
       }); });
     }; });

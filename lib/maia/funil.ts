@@ -34,10 +34,16 @@ export async function novoLead(negocio_id: string, d: { telefone?: string | null
   const tel = d.telefone ? fone(d.telefone) : null
   if (tel) { const ja = await db.um('leads', { negocio_id, telefone: tel }); if (ja) return ja }
   let lead: any
+  const linha = { negocio_id, telefone: tel, nome: d.nome || null, origem: d.origem || 'anuncio', anuncio_ref: d.anuncio_ref || null, produto: d.produto || null, resumo: d.resumo || null, ultimo_contato_em: new Date().toISOString() }
   try {
-    lead = await db.insere('leads', { negocio_id, telefone: tel, nome: d.nome || null, origem: d.origem || 'anuncio', anuncio_ref: d.anuncio_ref || null, produto: d.produto || null, resumo: d.resumo || null, ultimo_contato_em: new Date().toISOString() })
-  } catch (e: any) { if (tel && /duplicate|23505/.test(e.message)) return db.um('leads', { negocio_id, telefone: tel }); throw e }
-  await marca(lead, 'criado', autor, { para: 'novo', detalhe: { origem: lead.origem } })
+    lead = await db.insere('leads', linha)
+  } catch (e: any) {
+    if (tel && /duplicate|23505/.test(e.message)) return db.um('leads', { negocio_id, telefone: tel })
+    // 06/11: 'instagram'/'facebook' só valem no banco depois do db/maia-social.sql. Até lá ele recusa (23514): entra 'organico' e a origem certa fica no evento
+    if (/23514|check/i.test(e.message) && linha.origem !== 'organico') lead = await db.insere('leads', { ...linha, origem: 'organico' })
+    else throw e
+  }
+  await marca(lead, 'criado', autor, { para: 'novo', detalhe: { origem: linha.origem } })
   return lead
 }
 
@@ -54,6 +60,8 @@ export async function mudaEtapa(lead: any, etapa: Etapa, autor: Autor, extra: { 
 export async function ganhou(lead: any, valor: number | null | undefined, produto: string | null | undefined, autor: Autor) {
   const [l] = await db.atualiza('leads', { id: lead.id }, { etapa: 'ganho', valor: valor ?? null, ...(produto ? { produto } : {}), ganho_em: new Date().toISOString(), proximo_followup_em: null })
   await marca(lead, 'ganho', autor, { de: lead.etapa, para: 'ganho', valor: valor ?? null, detalhe: { produto: produto || lead.produto || null } })
+  // 06/11: se o lead veio de um clique no anúncio de WhatsApp, a venda volta pra Meta (Purchase). Nunca derruba a venda.
+  try { const { vendaNaMeta } = await import('./conversoes'); await vendaNaMeta(l || lead, valor) } catch { /* melhor esforço */ }
   return l
 }
 

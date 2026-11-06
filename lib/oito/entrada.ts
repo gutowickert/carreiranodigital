@@ -21,8 +21,9 @@ export function textoDe(m: any) {
   return `(${m.type})`
 }
 
-// m: a mensagem no formato da Meta; imagem: {id} da Meta ou {buf, mime} já baixada (simulação)
-export async function recebe(m: any, nome: string | null, imagem?: { buf: Buffer; mime: string }) {
+// m: a mensagem no formato da Meta; imagem: {id} da Meta ou {buf, mime} já baixada (simulação; 06/11: pode ser vídeo, na demo da Maia)
+export async function recebe(m: any, nome: string | null, arquivo?: { buf: Buffer; mime: string }) {
+  const imagem = arquivo && !/^video\//.test(arquivo.mime) ? arquivo : undefined
   if (await db.um('wa_msgs', { wamid: m.id })) return null   // a Meta repete eventos
   const cv = await conversaDe(m.from, { nome })
   if (ehSimulado(cv.telefone) && !cv.simulado) { await db.atualiza('wa_conversas', { id: cv.id }, { simulado: true }); cv.simulado = true }
@@ -42,8 +43,23 @@ export async function recebe(m: any, nome: string | null, imagem?: { buf: Buffer
   // 02/11 (Maia): quem chega pelo site da Maia entra no teste grátis dela; nessa fase o áudio é transcrito
   const { pedeMaia, transcreve } = await import('@/lib/maia/demo')
   const viraMaia = cv.fase !== 'maia' && pedeMaia(texto) && (!cv.fase || cv.fase === 'novo' || /demonstra/i.test(texto))
-  if (viraMaia) { await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'maia', modo: 'ia', optout: false, ia_respostas: 0 }); cv.fase = 'maia'; cv.modo = 'ia'; cv.optout = false }
+  if (viraMaia) {
+    // 06/11: o começo da demonstração (de onde veio: o anúncio de WhatsApp manda referral; e quantas mídias já tinha antes)
+    const r = cv.rascunho || {}, maia = { inicio: new Date().toISOString(), origem: m.referral ? 'anuncio' : 'site', anuncio: m.referral?.source_id || null, base: (r.midias || []).length }
+    await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'maia', modo: 'ia', optout: false, ia_respostas: 0, rascunho: { ...r, maia } }); cv.fase = 'maia'; cv.modo = 'ia'; cv.optout = false; cv.rascunho = { ...r, maia }
+  }
   const ehMaia = cv.fase === 'maia'
+  // 06/11 (Maia): na demonstração o vídeo curto também é guardado (vira o anúncio em vídeo da amostra)
+  if (ehMaia && m.type === 'video' && (m.video?.id || arquivo)) {
+    try {
+      const { buf, mime } = arquivo && /^video\//.test(arquivo.mime) ? arquivo : await baixaMidia(m.video.id)
+      const ext = /quicktime/.test(mime) ? 'mov' : /3gpp/.test(mime) ? '3gp' : 'mp4'
+      const path = await db.sobe(`whats/${cv.telefone}/${crypto.randomUUID().slice(0, 8)}.${ext}`, buf, mime)
+      const r = cv.rascunho || {}, midias = [...(r.midias || []), { path, mime, em: new Date().toISOString() }]
+      await db.atualiza('wa_conversas', { id: cv.id }, { rascunho: { ...r, midias } }); cv.rascunho = { ...r, midias }
+      texto = texto.replace('(mandou um vídeo)', `(mandou o vídeo #${midias.length})`)
+    } catch (e: any) { texto += ' [o vídeo não pôde ser baixado]' }
+  }
   if (ehMaia && (m.type === 'audio' || m.type === 'voice') && m.audio?.id) {
     try { const { buf, mime } = await baixaMidia(m.audio.id); const t = await transcreve(buf, mime); if (t) texto = '(áudio) ' + t } catch {}
   }

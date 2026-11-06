@@ -2,6 +2,7 @@
 //   - retomadas vencidas: manda pro cliente (quando o canal do negócio existir) ou junta num lembrete pro dono (hoje)
 //   - segunda de manhã: o resumo da semana de cada negócio, que vai pra revisão da equipe antes de ir pro dono
 //   - números da Meta: sincroniza o gasto e as conversas do dia
+//   - 06/11: social media (lib/maia/social.ts), atrás de MAIA_SOCIAL_LIGADO=1
 import { maiaDb as db } from './db'
 import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, janelaAbertaCv } from './canal'
 import { atendimentoLigado } from './wa-negocio'
@@ -10,6 +11,7 @@ import { followupsVencidos, registraFollowup, encerraSemResposta, numeros } from
 import { textoRetomada } from './atendente'
 import { geraRelatorio } from './pecas'
 import { sincronizaMetricas } from './meta'
+import { rotinaSocial, socialLigado } from './social'
 
 const horaBR = (d = new Date()) => (d.getUTCHours() + 21) % 24
 const diaSemanaBR = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).getUTCDay()
@@ -86,5 +88,10 @@ export async function roda(opc: { forcarRelatorio?: boolean } = {}) {
   try { if (horaBR() % 6 === 0 || opc.forcarRelatorio) r.metricas = await sincronizaMetricas() } catch (e: any) { r.metricas_erro = e.message }
   // 05/11: as leituras da Marketing API que contam pras 500 chamadas do acesso completo
   try { r.chamadas = await contaChamadas() } catch (e: any) { r.chamadas_erro = e.message }
+  // 06/11: social media (plano Completa): publica o que venceu, lê os resultados 1x por dia (7h) e a análise do mês no dia 1. Só com MAIA_SOCIAL_LIGADO=1
+  try { if (socialLigado()) r.social = await rotinaSocial({ forcar: opc.forcarRelatorio }) } catch (e: any) { r.social_erro = e.message }
+  // 06/11: a demonstração grátis: a retomada única de 24 h e a fila das amostras (lib/maia/demo-amostra.ts)
+  // só com MAIA_DEMO_ROTINA=1: ela manda mensagem pra lead de verdade (retomada e amostra da fila), então liga junto com o teste
+  try { if (process.env.MAIA_DEMO_ROTINA === '1') { const { rotinaDemo } = await import('./demo-amostra'); r.demo = await rotinaDemo() } } catch (e: any) { r.demo_erro = e.message }
   return r
 }

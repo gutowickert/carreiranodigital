@@ -31,6 +31,10 @@ async function get(caminho: string, params: Record<string, string> = {}) {
   return j
 }
 
+// 06/11 (demonstração): só leitura, pros números da campanha do teste (demo-amostra.ts)
+export const leMeta = get
+export const contaAct = act
+
 // a cidade do negócio vira a chave de cidade da Meta (raio em volta dela)
 async function chaveCidade(cidade: string) {
   if (!metaReal()) return { key: 'sim_cidade', name: cidade }
