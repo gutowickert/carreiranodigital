@@ -111,21 +111,44 @@ export async function leadDoAnuncio(p: { telefone: string; nome: string | null; 
 
 // ─── Conversions API for Business Messaging (WhatsApp) ───────────────────────────────────────────
 // action_source 'business_messaging' + messaging_channel 'whatsapp' + o ctwa_clid do clique. A Meta só
-// aceita se o conjunto de dados (pixel) estiver LIGADO à conta do WhatsApp Business no Gerenciador de
-// Eventos. Usa CAPI_WA_DATASET_ID se existir; senão o pixel da escola. Tudo vai pro webhook_logs
+// aceita num conjunto de dados LIGADO à conta do WhatsApp Business. Tudo vai pro webhook_logs
 // (origem 'capi-wa-<evento>') pra dar pra auditar o que foi e o que falhou.
+//
+// ⚠️ O CONJUNTO DE DADOS DA CONTA DO WHATSAPP (06/11/2026). Ia pro pixel do site (FB_PIXEL_ID), que não é
+// ligado ao WhatsApp: os 78 LeadSubmitted de 19/10 a 05/11 foram TODOS recusados (erro 2804132, "não há uma
+// conta do WhatsApp Business vinculada a este conjunto de dados") e o Gerenciador nunca viu um lead de
+// anúncio de WhatsApp. A própria Meta manda pedir o conjunto da conta: POST /<WABA>/dataset devolve o
+// conjunto ligado a ela (cria se não houver, devolve o mesmo se já houver). Vale CAPI_WA_DATASET_ID se
+// estiver na Vercel; senão pergunta uma vez e guarda na memória da instância.
 const sha = (v: string) => createHash('sha256').update(v.trim().toLowerCase()).digest('hex')
+let datasetCache: string | null = null
+
+async function datasetDoWhatsapp(waba: string): Promise<{ id: string | null; erro?: string }> {
+  if (process.env.CAPI_WA_DATASET_ID) return { id: process.env.CAPI_WA_DATASET_ID }
+  if (datasetCache) return { id: datasetCache }
+  const token = process.env.WA_OFICIAL_TOKEN
+  if (!token) return { id: null, erro: 'falta WA_OFICIAL_TOKEN pra pedir o conjunto de dados da conta do WhatsApp' }
+  try {
+    const res = await fetch(`https://graph.facebook.com/v25.0/${waba}/dataset`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } })
+    const j: any = await res.json().catch(() => ({}))
+    if (j?.id) { datasetCache = String(j.id); return { id: datasetCache } }
+    return { id: null, erro: 'a Meta não devolveu o conjunto de dados: ' + JSON.stringify(j?.error || j).slice(0, 300) }
+  } catch (e: any) { return { id: null, erro: e?.message || 'fetch falhou' } }
+}
 
 export async function eventoMensagens(
   evento: 'LeadSubmitted' | 'QualifiedLead' | 'Purchase',
   p: { leadId: string; ctwaClid: string | null; telefone?: string | null; codigoTurma?: string | null; valor?: number | null; eventId?: string },
 ): Promise<{ ok: boolean; erro?: string }> {
-  const dataset = process.env.CAPI_WA_DATASET_ID || process.env.FB_PIXEL_ID
-  const token = process.env.FB_CAPI_TOKEN
   const waba = process.env.WA_OFICIAL_WABA_ID
-  let r: { ok: boolean; erro?: string }
+  // a chave da conta do WhatsApp fala com o conjunto dela; a do pixel fica de reserva
+  const tokens = [process.env.WA_OFICIAL_TOKEN, process.env.FB_CAPI_TOKEN].filter(Boolean) as string[]
+  let r: { ok: boolean; erro?: string; dataset?: string | null }
+  const ds = p.ctwaClid && waba ? await datasetDoWhatsapp(waba) : { id: null as string | null }
+  const dataset = ds.id
   if (!p.ctwaClid) r = { ok: false, erro: 'lead sem ctwa_clid (não veio de anúncio de WhatsApp)' }
-  else if (!dataset || !token || !waba) r = { ok: false, erro: 'faltam CAPI_WA_DATASET_ID/FB_PIXEL_ID, FB_CAPI_TOKEN ou WA_OFICIAL_WABA_ID' }
+  else if (!waba || !tokens.length) r = { ok: false, erro: 'faltam WA_OFICIAL_WABA_ID ou as chaves da Meta' }
+  else if (!dataset) r = { ok: false, erro: ds.erro || 'sem conjunto de dados da conta do WhatsApp' }
   else {
     const user_data: any = { whatsapp_business_account_id: waba, ctwa_clid: p.ctwaClid, external_id: [sha(p.leadId)] }
     const dig = (p.telefone || '').replace(/\D/g, '')
@@ -138,18 +161,22 @@ export async function eventoMensagens(
     if (p.codigoTurma) { cd.content_ids = [p.codigoTurma]; cd.content_type = 'product' }
     if (evento === 'Purchase') { cd.currency = 'BRL'; cd.value = Number(p.valor) || 0 }
     if (Object.keys(cd).length) ev.custom_data = cd
-    try {
-      const res = await fetch(`https://graph.facebook.com/v25.0/${dataset}/events?access_token=${encodeURIComponent(token)}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ data: [ev], ...(process.env.FB_TEST_EVENT_CODE ? { test_event_code: process.env.FB_TEST_EVENT_CODE } : {}) }),
-      })
-      const j: any = await res.json().catch(() => ({}))
-      r = res.ok ? { ok: true } : { ok: false, erro: JSON.stringify(j?.error || j).slice(0, 500) }
-    } catch (e: any) { r = { ok: false, erro: e?.message || 'fetch falhou' } }
+    r = { ok: false, erro: 'sem resposta', dataset }
+    for (const token of tokens) {
+      try {
+        const res = await fetch(`https://graph.facebook.com/v25.0/${dataset}/events?access_token=${encodeURIComponent(token)}`, {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: [ev], ...(process.env.FB_TEST_EVENT_CODE ? { test_event_code: process.env.FB_TEST_EVENT_CODE } : {}) }),
+        })
+        const j: any = await res.json().catch(() => ({}))
+        r = res.ok ? { ok: true, dataset } : { ok: false, erro: JSON.stringify(j?.error || j).slice(0, 500), dataset }
+        if (r.ok) break
+      } catch (e: any) { r = { ok: false, erro: e?.message || 'fetch falhou', dataset } }
+    }
   }
   try {
-    await sb.from('webhook_logs').insert({ origem: 'capi-wa-' + evento.toLowerCase(), evento: p.codigoTurma || evento, status: r.ok ? 'processado' : 'erro', payload: { lead_id: p.leadId, ok: r.ok, erro: r.erro || null, valor: p.valor ?? null } })
+    await sb.from('webhook_logs').insert({ origem: 'capi-wa-' + evento.toLowerCase(), evento: p.codigoTurma || evento, status: r.ok ? 'processado' : 'erro', payload: { lead_id: p.leadId, ok: r.ok, erro: r.erro || null, valor: p.valor ?? null, dataset: r.dataset || null } })
   } catch { /* log é best-effort */ }
-  return r
+  return { ok: r.ok, erro: r.erro }
 }
 
