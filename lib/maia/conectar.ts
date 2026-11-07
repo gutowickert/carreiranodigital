@@ -1,7 +1,8 @@
 // Maia: o link assinado que a equipe manda pro dono conectar o WhatsApp (05/11). Vale 14 dias.
 import { createHmac, timingSafeEqual } from 'crypto'
 
-const SEGREDO = () => process.env.MAIA_CONECTAR_SEGREDO || process.env.MAIA_PAINEL_SENHA || process.env.RECADO_PAINEL_SENHA || ''
+// 07/11 (segurança): a senha do Recado não assina mais o link (quem tem a senha do Recado não pode gerar link de conexão da Maia)
+const SEGREDO = () => process.env.MAIA_CONECTAR_SEGREDO || process.env.MAIA_PAINEL_SENHA || ''
 const VALIDADE_DIAS = 14
 
 export function assinaLink(negocio_id: string, ate = Date.now() + VALIDADE_DIAS * 86400e3) {
