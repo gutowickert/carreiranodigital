@@ -33,6 +33,8 @@ export async function POST(req: Request) {
   const corpo = await req.text()
   if (!assinaturaOk(corpo, req.headers.get('x-hub-signature-256'))) return NextResponse.json({ erro: 'assinatura' }, { status: 401 })
   const b = JSON.parse(corpo || '{}')
+  // 07/11 (Maia, segurança): a assinatura foi conferida DE VERDADE (com o segredo), e não só "passou porque o segredo falta"
+  const assinado = !!process.env.META_APP_SECRET
   const meuNumero = process.env.OITO_WA_PHONE_ID
   const responder = new Set<string>()
   const maiaResponder = new Set<string>()
@@ -49,7 +51,10 @@ export async function POST(req: Request) {
       const nome = v.contacts?.find((x: any) => fone(x.wa_id) === fone(m.from))?.profile?.name || null
       // 03/11 (Maia): o dono de um negócio cliente da Maia fala com a Maia dele, não com o agente do Oito.
       // Só com MAIA_LIGADA=1 (as tabelas maia_* precisam existir no banco).
-      if (process.env.MAIA_LIGADA === '1') {
+      // 07/11 (segurança): só com a assinatura da Meta conferida e só no número da Maia (OITO_WA_PHONE_ID). Sem isso o "from"
+      // pode ser forjado e alguém se passaria pelo dono (veria números e contatos e mandaria mensagem pros clientes dele)
+      const maiaPode = (assinado && !!meuNumero && v.metadata?.phone_number_id === meuNumero) || (process.env.MAIA_LOCAL === '1' && !process.env.VERCEL)
+      if (process.env.MAIA_LIGADA === '1' && maiaPode) {
         const { negocioDoTelefone } = await import('@/lib/maia/canal')
         const neg = await negocioDoTelefone(m.from).catch(() => null)
         if (neg) {

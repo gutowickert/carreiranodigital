@@ -5,7 +5,7 @@
 //          respondeu pelo celular (coexistência: a Maia fica quieta 2 h naquela conversa) e o status das enviadas
 import { NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
-import { maiaDb as db } from '@/lib/maia/db'
+import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
 import { conversa, avisaEquipe } from '@/lib/maia/canal'
 import { recebeDoCliente, respondeCliente } from '@/lib/maia/atendente'
 import { atendimentoLigado, waDoNegocio, marcaLidaNeg } from '@/lib/maia/wa-negocio'
@@ -23,7 +23,9 @@ export async function GET(req: Request) {
 
 function assinaturaOk(corpo: string, cab: string | null) {
   const seg = process.env.MAIA_META_APP_SECRET || process.env.META_APP_SECRET
-  if (!seg) return true
+  // 07/11 (segurança): sem o segredo do app, só aceita no modo local de teste. Em produção recusa tudo: sem a assinatura,
+  // qualquer um forjaria mensagem de "cliente" pra qualquer negócio (basta saber o phone_number_id) e gastaria a IA dele
+  if (!seg) return maiaLocal()
   if (!cab) return false
   const a = Buffer.from(cab), b = Buffer.from('sha256=' + createHmac('sha256', seg).update(corpo, 'utf8').digest('hex'))
   return a.length === b.length && timingSafeEqual(a, b)

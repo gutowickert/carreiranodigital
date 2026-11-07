@@ -10,7 +10,9 @@ type Linha = Record<string, any>
 type Filtro = Record<string, string | number | boolean | null>
 type Opc = { ordem?: string; desc?: boolean; limite?: number; campos?: string }
 
-export const maiaLocal = () => process.env.MAIA_LOCAL === '1'
+// 07/11 (segurança): o modo local nunca vale na Vercel, mesmo com MAIA_LOCAL=1 lá: ele abre /api/maia/arquivo sem senha
+// e deixa o webhook aceitar evento sem assinatura
+export const maiaLocal = () => process.env.MAIA_LOCAL === '1' && !process.env.VERCEL
 const PASTA = () => path.join(process.cwd(), process.env.MAIA_LOCAL_PASTA || '.maia-local')
 
 const arq = (tab: string) => path.join(PASTA(), tab + '.json')
