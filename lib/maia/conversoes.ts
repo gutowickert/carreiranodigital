@@ -10,13 +10,14 @@
 import { createHash } from 'node:crypto'
 import { maiaDb as db } from './db'
 import { metaReal } from './meta'
+import { tokenWa } from './segredo'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
 export const capiLigado = () => process.env.MAIA_CAPI_LIGADO === '1'
 const sha = (v: string) => createHash('sha256').update(v).digest('hex')
 type Res = { ok: boolean; erro?: string; pulou?: string; simulado?: boolean; dataset_id?: string }
 
-const tokenDe = (neg: any) => String(neg?.meta?.wa?.token || process.env.MAIA_CAPI_TOKEN || '')
+const tokenDe = (neg: any) => String(tokenWa(neg) || process.env.MAIA_CAPI_TOKEN || '')
 const wabaDe = (neg: any) => String(neg?.meta?.wa?.waba_id || '')
 
 async function graph(metodo: 'GET' | 'POST', caminho: string, token: string, corpo?: any) {

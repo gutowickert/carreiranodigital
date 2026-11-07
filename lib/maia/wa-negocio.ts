@@ -3,11 +3,16 @@
 // Daí a Maia atende os clientes do negócio por esse número, com a chave dele. Os eventos chegam em /api/maia/whats/webhook.
 // Trava: só sai mensagem pra cliente com MAIA_CLIENTES_LIGADO=1 E o atendimento ligado no negócio (meta.wa.atende = true),
 // que a equipe liga no painel depois de testar.
+// 07/11: a chave fica cifrada no banco quando há MAIA_CRIPTO_CHAVE (lib/maia/segredo.ts)
+import { tokenWa } from './segredo'
+
 const GRAPH = 'https://graph.facebook.com/v25.0'
 
 export type WaNegocio = { phone: string; token: string; waba?: string | null }
-export const waDoNegocio = (neg: any): WaNegocio | null =>
-  neg?.wa_phone_id && neg?.meta?.wa?.token ? { phone: String(neg.wa_phone_id), token: String(neg.meta.wa.token), waba: neg.meta.wa.waba_id || null } : null
+export const waDoNegocio = (neg: any): WaNegocio | null => {
+  const token = neg?.wa_phone_id ? tokenWa(neg) : ''
+  return token ? { phone: String(neg.wa_phone_id), token, waba: neg.meta?.wa?.waba_id || null } : null
+}
 export const atendimentoLigado = (neg: any) => process.env.MAIA_CLIENTES_LIGADO === '1' && neg?.meta?.wa?.atende === true && !!waDoNegocio(neg)
 
 type Envio = { ok: boolean; wamid?: string; erro?: string; codigo?: number }

@@ -18,6 +18,7 @@ import { conversaDoDono, mandaImagem, mandaVideo, mandaTexto, avisaEquipe } from
 import { donoAprova } from './aprovacao'
 import { comFerramentas, JEITO } from './ia'
 import { isoBR } from '@/lib/periodos'
+import { tokenSocial, tokenWa } from './segredo'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
 export const socialLigado = () => process.env.MAIA_SOCIAL_LIGADO === '1'
@@ -42,7 +43,7 @@ async function graph(metodo: 'GET' | 'POST', caminho: string, token: string, par
   if (!r.ok || j.error) throw new Error('Meta: ' + String(j?.error?.error_user_msg || j?.error?.message || r.status).slice(0, 300))
   return j
 }
-const tokenBase = (neg: any) => String(neg?.meta?.social_token || process.env.MAIA_SOCIAL_TOKEN || process.env.MAIA_ADS_TOKEN || process.env.FB_ADS_TOKEN || '')
+const tokenBase = (neg: any) => String(tokenSocial(neg) || process.env.MAIA_SOCIAL_TOKEN || process.env.MAIA_ADS_TOKEN || process.env.FB_ADS_TOKEN || '')
 const chavesPagina = new Map<string, string>()
 // a chave da página (é ela que publica no Facebook e, no login do Facebook, no Instagram ligado à página)
 async function tokenPagina(neg: any) {
@@ -418,8 +419,8 @@ export async function linkDoPerfil(negocio_id: string, rede: Rede = 'instagram')
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
   let numero = String(neg.meta?.wa?.numero || neg.contexto?.whatsapp || '').replace(/\D/g, '')
-  if (!numero && metaReal() && neg.wa_phone_id && neg.meta?.wa?.token) {
-    const j = await graph('GET', String(neg.wa_phone_id), String(neg.meta.wa.token), { fields: 'display_phone_number' }).catch(() => null)
+  if (!numero && metaReal() && neg.wa_phone_id && tokenWa(neg)) {
+    const j = await graph('GET', String(neg.wa_phone_id), tokenWa(neg), { fields: 'display_phone_number' }).catch(() => null)
     numero = String(j?.display_phone_number || '').replace(/\D/g, '')
     if (numero) await db.atualiza('negocios', { id: neg.id }, { meta: { ...(neg.meta || {}), wa: { ...(neg.meta?.wa || {}), numero } } })
   }

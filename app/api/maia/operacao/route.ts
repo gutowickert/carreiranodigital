@@ -16,6 +16,7 @@ import { comoDono, comoCliente } from '@/lib/maia/simula'
 import { roda } from '@/lib/maia/rotina'
 import { fone } from '@/lib/oito/wa'
 import { ehDemo, painelAmostras, vagasDaSemana } from '@/lib/maia/demo-amostra'
+import { cifra, semChaves } from '@/lib/maia/segredo'
 
 export const maxDuration = 300
 const ok = (d: any) => Response.json(d)
@@ -25,8 +26,19 @@ async function comLinks(pecas: any[]) {
   return Promise.all(pecas.map(async p => ({ ...p, arquivo_url: await db.link(p.arquivo_path) })))
 }
 
-// a chave do WhatsApp do negócio nunca sai pro painel
-const semChave = (n: any) => n && n.meta?.wa ? { ...n, meta: { ...n.meta, wa: { ...n.meta.wa, token: n.meta.wa.token ? '(guardada)' : null } } } : n
+// as chaves do negócio (WhatsApp e social) nunca saem pro painel (07/11: a do social também)
+const semChave = semChaves
+// o meta que veio do painel, sem deixar ele trocar nem apagar as chaves guardadas: a do WhatsApp só vem da conexão;
+// a do social só muda se vier uma nova de verdade (e vai cifrada)
+function metaSeguro(novo: any, atual: any) {
+  const m: any = { ...(novo || {}) }
+  if (atual?.wa) m.wa = atual.wa; else delete m.wa
+  const st = typeof m.social_token === 'string' ? m.social_token.trim() : ''
+  if (st && st !== '(guardada)') m.social_token = cifra(st)
+  else if (atual?.social_token) m.social_token = atual.social_token
+  else delete m.social_token
+  return m
+}
 
 export async function GET(req: Request) {
   if (!equipeOk(req)) return naoAutorizado()
@@ -101,17 +113,17 @@ export async function POST(req: Request) {
         const n = await db.insere('negocios', {
           nome: b.nome, nicho: b.nicho || null, cidade: b.cidade || null, regiao: b.regiao || (b.cidade ? b.cidade + ' e região' : null),
           dono_nome: b.dono_nome || null, dono_whatsapp: fone(b.dono_whatsapp), plano: b.plano === 'completa' ? 'completa' : 'essencial',
-          contexto: b.contexto || {}, marca: b.marca || {}, meta: b.meta || {}, verba_dia: b.verba_dia || null,
+          contexto: b.contexto || {}, marca: b.marca || {}, meta: metaSeguro(b.meta, null), verba_dia: b.verba_dia || null,
         })
         await db.evento('negocio_criado', n.id, { por })
-        return ok(n)
+        return ok(semChave(n))
       }
       case 'atualizar_negocio': {
         const campos: any = {}
         for (const k of ['nome', 'nicho', 'cidade', 'regiao', 'dono_nome', 'plano', 'status', 'contexto', 'marca', 'meta', 'verba_dia', 'aprovacao_equipe', 'ativa_sozinha', 'equipe_whatsapp']) if (k in b) campos[k] = b[k]
         if (b.dono_whatsapp) campos.dono_whatsapp = fone(b.dono_whatsapp)
         // 05/11: a conexão do WhatsApp (com a chave) não vem do painel: mantém a que está guardada
-        if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = { ...(campos.meta || {}), wa: atual?.meta?.wa } ; if (!campos.meta.wa) delete campos.meta.wa }
+        if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
         return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
       }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
