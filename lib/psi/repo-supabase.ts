@@ -3,7 +3,8 @@
 // Regra da casa: erro de banco vira mensagem curta, SEM o conteúdo do paciente (nada clínico em log).
 import { supabase } from '@/lib/supabase'
 import type { Repo } from './repo'
-import type { Anexo, Atendimento, Bloco, DocumentoEmitido, Evolucao, Local, Paciente, Perfil } from './tipos'
+import { FINANCEIRO_PENDENTE } from './repo'
+import type { Anexo, Atendimento, Bloco, Despesa, DocumentoEmitido, Evolucao, Local, Paciente, Perfil } from './tipos'
 
 const BUCKET = 'psi-anexos'
 
@@ -29,8 +30,36 @@ async function todas<T>(consulta: (de: number, ate: number) => PromiseLike<{ dat
 const num = (v: unknown) => (v === null || v === undefined || v === '' ? null : Number(v))
 const hhmm = (h?: string | null) => (h ? h.slice(0, 5) : null)
 const fixAtend = (a: Atendimento): Atendimento => ({ ...a, hora: hhmm(a.hora), valor: num(a.valor) })
-const fixLocal = (l: Local): Local => ({ ...l, valor_sessao: num(l.valor_sessao) })
-const fixPac = (p: Paciente): Paciente => ({ ...p, hora_fixa: hhmm(p.hora_fixa) })
+const fixLocal = (l: Local): Local => ({
+  ...l, valor_sessao: num(l.valor_sessao), modelo: l.modelo === 'salario' ? 'salario' : 'sessao',
+  salario_mensal: num(l.salario_mensal), repasse_pct: num(l.repasse_pct), imposto_pct: num(l.imposto_pct),
+})
+const fixPac = (p: Paciente): Paciente => ({ ...p, hora_fixa: hhmm(p.hora_fixa), valor_sessao: num(p.valor_sessao) })
+const fixDesp = (d: Despesa): Despesa => ({ ...d, valor: Number(d.valor) || 0 })
+
+// As colunas do financeiro e da confirmação (db/psi-financeiro.sql). Enquanto o arquivo não for rodado,
+// o banco recusa a gravação inteira (código PGRST204 / 42703): grava de novo SEM essas colunas, pra
+// nenhuma tela que já funcionava quebrar. O financeiro avisa que falta instalar.
+const COLUNAS_NOVAS: Record<string, string[]> = {
+  psi_locais: ['modelo', 'salario_mensal', 'repasse_pct', 'imposto_pct'],
+  psi_pacientes: ['valor_sessao'],
+  psi_atendimentos: ['confirmacao', 'confirmado_em'],
+}
+const colunaFaltando = (e: { code?: string } | null) => !!e?.code && ['PGRST204', '42703'].includes(e.code)
+const tabelaFaltando = (e: { code?: string } | null) => !!e?.code && ['42P01', 'PGRST205'].includes(e.code)
+
+async function gravar<T>(tabela: string, linha: Record<string, unknown>, onde: string): Promise<T> {
+  const tenta = (l: Record<string, unknown>) =>
+    (l.id ? supabase.from(tabela).update(l).eq('id', l.id as string) : supabase.from(tabela).insert(l)).select().single()
+  let { data, error } = await tenta(linha)
+  if (error && colunaFaltando(error) && COLUNAS_NOVAS[tabela]) {
+    const sem = { ...linha }
+    for (const c of COLUNAS_NOVAS[tabela]) delete sem[c]
+    ;({ data, error } = await tenta(sem))
+  }
+  if (error) falha(onde, error)
+  return data as T
+}
 
 export function repoSupabase(): Repo {
   return {
@@ -69,10 +98,7 @@ export function repoSupabase(): Repo {
       return (data || []).map(fixLocal)
     },
     async salvarLocal(l) {
-      const q = l.id ? supabase.from('psi_locais').update(l).eq('id', l.id) : supabase.from('psi_locais').insert(l)
-      const { data, error } = await q.select().single()
-      if (error) falha('salvar o local', error)
-      return fixLocal(data as Local)
+      return fixLocal(await gravar<Local>('psi_locais', l, 'salvar o local'))
     },
     async apagarLocal(id) {
       const { error } = await supabase.from('psi_locais').delete().eq('id', id)
@@ -106,10 +132,7 @@ export function repoSupabase(): Repo {
       return data ? fixPac(data as Paciente) : null
     },
     async salvarPaciente(p) {
-      const q = p.id ? supabase.from('psi_pacientes').update(p).eq('id', p.id) : supabase.from('psi_pacientes').insert(p)
-      const { data, error } = await q.select().single()
-      if (error) falha('salvar o paciente', error)
-      return fixPac(data as Paciente)
+      return fixPac(await gravar<Paciente>('psi_pacientes', p, 'salvar o paciente'))
     },
 
     async atendimentos(f) {
@@ -132,10 +155,7 @@ export function repoSupabase(): Repo {
       return r.map(fixAtend)
     },
     async salvarAtendimento(a) {
-      const q = a.id ? supabase.from('psi_atendimentos').update(a).eq('id', a.id) : supabase.from('psi_atendimentos').insert(a)
-      const { data, error } = await q.select().single()
-      if (error) falha('salvar o atendimento', error)
-      return fixAtend(data as Atendimento)
+      return fixAtend(await gravar<Atendimento>('psi_atendimentos', a, 'salvar o atendimento'))
     },
     async apagarAtendimento(id) {
       // a evolução ligada fica (prontuário não some); só solta a ligação
@@ -203,6 +223,24 @@ export function repoSupabase(): Repo {
       const { data, error } = await supabase.from('psi_documentos').insert(d).select().single()
       if (error) falha('guardar a cópia do documento', error)
       return data as DocumentoEmitido
+    },
+
+    async despesas() {
+      const { data, error } = await supabase.from('psi_despesas').select('*').order('recorrente', { ascending: false }).order('nome')
+      if (tabelaFaltando(error)) throw new Error(FINANCEIRO_PENDENTE)
+      if (error) falha('carregar as despesas', error)
+      return (data || []).map(fixDesp)
+    },
+    async salvarDespesa(d) {
+      const { criado_em: _c, ...linha } = d
+      try { return fixDesp(await gravar<Despesa>('psi_despesas', linha, 'salvar a despesa')) } catch (e) {
+        if ((e as Error).message === EM_PREPARACAO) throw new Error(FINANCEIRO_PENDENTE)
+        throw e
+      }
+    },
+    async apagarDespesa(id) {
+      const { error } = await supabase.from('psi_despesas').delete().eq('id', id)
+      if (error) falha('apagar a despesa', error)
     },
 
     async registrar(acao, pacienteId, detalhe) {

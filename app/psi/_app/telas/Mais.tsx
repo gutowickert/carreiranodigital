@@ -1,14 +1,16 @@
 'use client'
-// MAIS: meus dados (nome, CRP — vão nos documentos), locais e valores, rotina da semana, histórico de
+// MAIS: financeiro, confirmar amanhã, meus dados (nome, CRP — vão nos documentos), locais e valores, rotina da semana, histórico de
 // acessos (auditoria), o que vem depois (WhatsApp/Maia, desligado) e sair.
 import { useEffect, useState } from 'react'
-import { BellOff, CalendarClock, ChevronRight, History, LogOut, MapPin, Plus, Trash2, UserRound } from 'lucide-react'
+import { BellOff, CalendarClock, ChevronRight, History, LogOut, MapPin, Phone, Plus, Trash2, UserRound, Wallet } from 'lucide-react'
 import { useBase } from '../App'
 import { ir, voltar } from '../rotas'
+import { useDespesas } from '../usar'
 import { Campo, Chips, Topo, useAviso, Vazio } from '../ui'
-import type { Bloco, EventoAuditoria, Local, Perfil, TipoLocal } from '@/lib/psi/tipos'
+import type { Bloco, EventoAuditoria, Local, ModeloLocal, Perfil, TipoLocal } from '@/lib/psi/tipos'
 import { ROTULO_TIPO_LOCAL } from '@/lib/psi/tipos'
-import { DIAS, DIAS_CURTOS, dataBR, dinheiro } from '@/lib/psi/datas'
+import { DIAS, DIAS_CURTOS, dataBR, dinheiro, mesAtual, mesSomar } from '@/lib/psi/datas'
+import { despesaNoMes, ehSalario, lerValor, valorCampo } from '@/lib/psi/financeiro'
 import { textoBloco } from '@/lib/psi/agenda'
 import { desligarModoExemplo } from '@/lib/psi/repo'
 
@@ -18,8 +20,10 @@ export const CORES_LOCAIS = ['#b07a5e', '#c08f8b', '#8c9877', '#6f8796', '#a27b5
 export function Mais() {
   const { repo } = useBase()
   const itens: [string, React.ReactNode, string, string][] = [
+    ['#/financeiro', <Wallet key="f" size={21} />, 'Financeiro', 'Entradas, saídas e o que sobra no mês'],
+    ['#/confirmar', <Phone key="c" size={21} />, 'Confirmar amanhã', 'WhatsApp pronto pros pacientes de amanhã'],
     ['#/meus-dados', <UserRound key="1" size={21} />, 'Meus dados', 'Nome e CRP que vão nos documentos'],
-    ['#/locais', <MapPin key="2" size={21} />, 'Locais e valores', 'APAE, clínicas, empresa; valor por sessão'],
+    ['#/locais', <MapPin key="2" size={21} />, 'Locais e valores', 'Salário fixo ou por atendimento, repasse, imposto, aluguel'],
     ['#/rotina', <CalendarClock key="3" size={21} />, 'Rotina da semana', 'Os dias e horários fixos de cada local'],
     ['#/acessos', <History key="4" size={21} />, 'Histórico de acessos', 'Quem abriu ou alterou prontuário, e quando'],
     ['#/futuro', <BellOff key="5" size={21} />, 'Lembretes por WhatsApp', 'Desligado (vem depois)'],
@@ -69,6 +73,9 @@ export function MeusDados() {
 
 export function Locais() {
   const { locais } = useBase()
+  const resumo = (l: Local) => ehSalario(l)
+    ? ['Salário fixo', l.salario_mensal ? dinheiro(l.salario_mensal) + '/mês' : 'sem valor', l.imposto_pct ? `imposto ${pct(l.imposto_pct)}` : '']
+    : [l.valor_sessao ? `${dinheiro(l.valor_sessao)}/sessão` : 'sem valor', l.repasse_pct ? `repasse ${pct(l.repasse_pct)}` : '', l.imposto_pct ? `imposto ${pct(l.imposto_pct)}` : '']
   return (
     <>
       <Topo titulo="Locais e valores" voltarPara="#/mais" direita={<a className="psi-btn psi-btn-principal psi-btn-pequeno" href="#/local/novo"><Plus size={17} />Novo</a>} />
@@ -78,25 +85,61 @@ export function Locais() {
             <span className="psi-ponto" style={{ background: l.cor, width: 16, height: 16 }} />
             <span className="psi-item-txt">
               <strong>{l.nome}</strong>
-              <small>{[ROTULO_TIPO_LOCAL[l.tipo], l.cidade, l.valor_sessao ? `${dinheiro(l.valor_sessao)}/sessão` : 'sem valor', l.ativo ? '' : 'desativado'].filter(Boolean).join(' · ')}</small>
+              <small>{[...resumo(l), l.cidade, l.ativo ? '' : 'desativado'].filter(Boolean).join(' · ')}</small>
             </span>
             <ChevronRight size={19} color="var(--suave)" />
           </a>
         ))}
       </div>
+      <p className="psi-muted psi-pequeno" style={{ marginTop: 12 }}>Os valores entram no <a href="#/financeiro">Financeiro</a>: salário fixo conta o mês inteiro; por atendimento conta cada sessão realizada.</p>
     </>
   )
 }
 
+const pct = (v?: number | null) => `${String(v ?? 0).replace('.', ',')}%`
+const num = (s: string) => lerValor(s)
+
 export function LocalForm({ id }: { id: string | null }) {
   const { repo, locais, recarregar } = useBase()
   const aviso = useAviso()
+  const desp = useDespesas()
   const existente = locais.find(l => l.id === id)
-  const [l, setL] = useState<Partial<Local>>(existente || { nome: '', tipo: 'clinica', cor: CORES_LOCAIS.find(c => !locais.some(x => x.cor === c)) || CORES_LOCAIS[0], ativo: true, cobra_falta: false, ordem: locais.length + 1 })
+  const [l, setL] = useState<Partial<Local>>(existente || { nome: '', tipo: 'clinica', modelo: 'sessao', cor: CORES_LOCAIS.find(c => !locais.some(x => x.cor === c)) || CORES_LOCAIS[0], ativo: true, cobra_falta: false, ordem: locais.length + 1 })
+  // os números ficam como texto enquanto ela digita (vírgula, campo vazio)
+  const [t, setT] = useState({ valor: valorCampo(existente?.valor_sessao), salario: valorCampo(existente?.salario_mensal), repasse: valorCampo(existente?.repasse_pct), imposto: valorCampo(existente?.imposto_pct) })
+  const mes = mesAtual()
+  // o aluguel / custo fixo do local é uma despesa recorrente ligada a ele (psi_despesas)
+  const fixa = (id && desp.lista?.find(d => d.local_id === id && d.recorrente && despesaNoMes(d, mes))) || null
+  const [aluguel, setAluguel] = useState<string | null>(null)
+  if (aluguel === null && desp.lista) setAluguel(valorCampo(fixa?.valor))
+  const salario = l.modelo === 'salario'
+
+  async function salvarAluguel(localId: string) {
+    if (desp.pendente || aluguel === null) return
+    const v = num(aluguel) || 0
+    const anterior = mesSomar(mes, -1)
+    if (fixa) {
+      if (v === fixa.valor) return
+      const deste = !fixa.desde || fixa.desde >= mes
+      // mudou ou tirou: o que já passou fica com o valor antigo
+      if (deste && v) await repo.salvarDespesa({ id: fixa.id, nome: fixa.nome, valor: v })
+      else if (deste) await repo.apagarDespesa(fixa.id)
+      else await repo.salvarDespesa({ id: fixa.id, nome: fixa.nome, valor: fixa.valor, ate: anterior })
+      if (v && !deste) await repo.salvarDespesa({ nome: fixa.nome, valor: v, local_id: localId, recorrente: true, desde: mes, ativo: true })
+    } else if (v) {
+      await repo.salvarDespesa({ nome: 'Aluguel da sala', valor: v, local_id: localId, recorrente: true, desde: mes, ativo: true })
+    }
+  }
+
   async function salvar() {
     if (!l.nome?.trim()) { aviso('Falta o nome.'); return }
     try {
-      await repo.salvarLocal({ ...l, nome: l.nome.trim(), valor_sessao: l.valor_sessao === undefined || l.valor_sessao === null || Number.isNaN(l.valor_sessao) ? null : Number(l.valor_sessao) } as Local)
+      const r = await repo.salvarLocal({
+        ...l, nome: l.nome.trim(), modelo: salario ? 'salario' : 'sessao',
+        valor_sessao: salario ? null : num(t.valor), salario_mensal: salario ? num(t.salario) : null,
+        repasse_pct: salario ? null : num(t.repasse), imposto_pct: num(t.imposto),
+      } as Local)
+      await salvarAluguel(r.id)
       await recarregar(); aviso('Salvo.'); voltar('#/locais')
     } catch (e) { aviso((e as Error).message) }
   }
@@ -104,6 +147,9 @@ export function LocalForm({ id }: { id: string | null }) {
     if (!existente || !confirm(`Apagar o local ${existente.nome}?`)) return
     try { await repo.apagarLocal(existente.id); await recarregar(); aviso('Local apagado.'); ir('#/locais', true) } catch (e) { aviso((e as Error).message) }
   }
+  const campoNum = (k: keyof typeof t, ph: string) => (
+    <input className="psi-input" inputMode="decimal" value={t[k]} onChange={e => setT({ ...t, [k]: e.target.value })} placeholder={ph} />
+  )
   return (
     <>
       <Topo titulo={existente ? existente.nome : 'Novo local'} voltarPara="#/locais"
@@ -111,11 +157,39 @@ export function LocalForm({ id }: { id: string | null }) {
       <Campo rotulo="Nome"><input className="psi-input" value={l.nome || ''} onChange={e => setL({ ...l, nome: e.target.value })} /></Campo>
       <Campo rotulo="Tipo"><Chips rolar opcoes={(Object.keys(ROTULO_TIPO_LOCAL) as TipoLocal[]).map(t => ({ valor: t, rotulo: ROTULO_TIPO_LOCAL[t] }))} valor={l.tipo} mudar={v => setL({ ...l, tipo: v })} /></Campo>
       <Campo rotulo="Cidade"><input className="psi-input" value={l.cidade || ''} onChange={e => setL({ ...l, cidade: e.target.value })} /></Campo>
-      <div className="psi-grade-2">
-        <Campo rotulo="Valor por sessão (R$)"><input className="psi-input" inputMode="decimal" value={l.valor_sessao ?? ''} onChange={e => setL({ ...l, valor_sessao: e.target.value === '' ? null : Number(e.target.value.replace(',', '.')) })} placeholder="opcional" /></Campo>
-        <Campo rotulo="Falta é cobrada?"><Chips opcoes={[{ valor: 'nao', rotulo: 'Não' }, { valor: 'sim', rotulo: 'Sim' }]} valor={l.cobra_falta ? 'sim' : 'nao'} mudar={v => setL({ ...l, cobra_falta: v === 'sim' })} /></Campo>
-      </div>
+
+      <div className="psi-secao"><h2>Como paga</h2></div>
+      <Chips opcoes={[{ valor: 'sessao', rotulo: 'Por atendimento' }, { valor: 'salario', rotulo: 'Salário fixo' }]} valor={salario ? 'salario' : 'sessao'} mudar={v => setL({ ...l, modelo: v as ModeloLocal })} />
+      <p className="psi-muted psi-pequeno" style={{ margin: '8px 0 14px' }}>{salario
+        ? 'Entra o salário do mês inteiro, não importa quantos atendimentos. Os atendimentos continuam contando na planilha.'
+        : 'Entra cada atendimento realizado. O valor do paciente (se tiver) vale mais que o do local.'}</p>
+      {salario ? (
+        <div className="psi-grade-2">
+          <Campo rotulo="Salário por mês (R$)">{campoNum('salario', '0,00')}</Campo>
+          <Campo rotulo="Imposto (%)" ajuda="Sobre o salário">{campoNum('imposto', 'opcional')}</Campo>
+        </div>
+      ) : (
+        <>
+          <div className="psi-grade-2">
+            <Campo rotulo="Valor por sessão (R$)">{campoNum('valor', 'opcional')}</Campo>
+            <Campo rotulo="Falta é cobrada?"><Chips opcoes={[{ valor: 'nao', rotulo: 'Não' }, { valor: 'sim', rotulo: 'Sim' }]} valor={l.cobra_falta ? 'sim' : 'nao'} mudar={v => setL({ ...l, cobra_falta: v === 'sim' })} /></Campo>
+          </div>
+          <div className="psi-grade-2">
+            <Campo rotulo="Repasse pro local (%)" ajuda="O que fica pro local de cada atendimento">{campoNum('repasse', 'opcional')}</Campo>
+            <Campo rotulo="Imposto (%)" ajuda="Sobre o que entra daqui">{campoNum('imposto', 'opcional')}</Campo>
+          </div>
+        </>
+      )}
+      {desp.pendente ? (
+        <p className="psi-muted psi-pequeno" style={{ marginTop: 0 }}>Aluguel e custos fixos: o financeiro ainda não foi instalado no banco.</p>
+      ) : (
+        <Campo rotulo="Aluguel ou custo fixo por mês (R$)" ajuda="Entra nas saídas do Financeiro todo mês. Mudar o valor vale a partir deste mês; o que já passou não muda.">
+          <input className="psi-input" inputMode="decimal" value={aluguel ?? ''} disabled={aluguel === null} onChange={e => setAluguel(e.target.value)} placeholder="sem custo fixo" />
+        </Campo>
+      )}
       <Campo rotulo="Forma de pagamento (opcional)"><input className="psi-input" value={l.forma_pagamento || ''} onChange={e => setL({ ...l, forma_pagamento: e.target.value })} placeholder="Ex.: repasse mensal, pix na sessão" /></Campo>
+
+      <div className="psi-secao"><h2>Na agenda</h2></div>
       <Campo rotulo="Cor na agenda">
         <div className="psi-chips">
           {CORES_LOCAIS.map(c => <button key={c} type="button" aria-label={c} aria-pressed={l.cor === c} onClick={() => setL({ ...l, cor: c })}
@@ -144,7 +218,7 @@ export function Rotina() {
   return (
     <>
       <Topo titulo="Rotina da semana" voltarPara="#/mais" direita={<button className="psi-btn psi-btn-principal psi-btn-pequeno" onClick={() => setEditar({ dia_semana: 1 })}><Plus size={17} />Novo</button>} />
-      <p className="psi-muted psi-pequeno" style={{ marginTop: -4 }}>Sem horário = o dia é daquele local, e cada paciente tem o seu horário (como Mauri e Conecta).</p>
+      <p className="psi-muted psi-pequeno" style={{ marginTop: -4 }}>Sem horário = o dia é daquele local, e cada paciente tem o seu horário (como SESM e Conecta).</p>
       {editar && (
         <div className="psi-cartao" style={{ marginBottom: 14 }}>
           <Campo rotulo="Local"><Chips rolar opcoes={locais.filter(l => l.ativo).map(l => ({ valor: l.id, rotulo: l.nome, cor: l.cor }))} valor={editar.local_id} mudar={v => setEditar({ ...editar, local_id: v })} /></Campo>
@@ -178,7 +252,7 @@ export function Rotina() {
 }
 
 const ROTULO_ACAO: Record<string, string> = { criar: 'Criou', alterar: 'Alterou', apagar: 'Apagou', ver: 'Abriu o prontuário', exportar: 'Exportou relatório', documento: 'Gerou documento', entrar: 'Entrou no sistema', compartilhar: 'Compartilhou documento' }
-const ROTULO_TABELA: Record<string, string> = { psi_pacientes: 'paciente', psi_evolucoes: 'evolução', psi_atendimentos: 'atendimento', psi_anexos: 'arquivo', psi_documentos: 'documento', psi_consentimentos: 'consentimento', psi_locais: 'local', psi_blocos: 'rotina' }
+const ROTULO_TABELA: Record<string, string> = { psi_pacientes: 'paciente', psi_evolucoes: 'evolução', psi_atendimentos: 'atendimento', psi_anexos: 'arquivo', psi_documentos: 'documento', psi_consentimentos: 'consentimento', psi_locais: 'local', psi_blocos: 'rotina', psi_despesas: 'despesa' }
 
 export function Auditoria() {
   const { repo, pacientes } = useBase()

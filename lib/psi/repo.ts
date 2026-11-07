@@ -3,7 +3,7 @@
 //  · Exemplo (modo de teste): guarda no próprio aparelho (localStorage) com pacientes INVENTADOS.
 //    Serve pra testar e mostrar sem tocar no banco. A tela mostra uma faixa "modo de teste".
 import type {
-  Anexo, Atendimento, Bloco, DocumentoEmitido, Evolucao, EventoAuditoria, Local, Paciente, Perfil, VersaoEvolucao,
+  Anexo, Atendimento, Bloco, Despesa, DocumentoEmitido, Evolucao, EventoAuditoria, Local, Paciente, Perfil, VersaoEvolucao,
 } from './tipos'
 
 export type AcaoRegistro = 'ver' | 'exportar' | 'documento' | 'entrar' | 'compartilhar'
@@ -55,9 +55,17 @@ export interface Repo {
   documentos(pacienteId: string): Promise<DocumentoEmitido[]>
   salvarDocumento(d: Omit<DocumentoEmitido, 'id' | 'criado_em'>): Promise<DocumentoEmitido>
 
+  // financeiro (db/psi-financeiro.sql). Sem a tabela no banco: erro FINANCEIRO_PENDENTE (a tela avisa).
+  despesas(): Promise<Despesa[]>
+  salvarDespesa(d: Partial<Despesa> & { nome: string; valor: number }): Promise<Despesa>
+  apagarDespesa(id: string): Promise<void>
+
   registrar(acao: AcaoRegistro, pacienteId?: string | null, detalhe?: string): Promise<void>
   auditoria(limite?: number): Promise<EventoAuditoria[]>
 }
+
+// o db/psi-financeiro.sql ainda não foi rodado: as telas do financeiro mostram um aviso simples
+export const FINANCEIRO_PENDENTE = 'psi-financeiro-pendente'
 
 const CHAVE_MODO = 'psi_modo_exemplo'
 

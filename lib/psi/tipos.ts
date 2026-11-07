@@ -6,6 +6,10 @@ export type Presenca = 'agendado' | 'realizado' | 'faltou' | 'desmarcou' | 'rema
 export type Modalidade = 'presencial' | 'online'
 export type TipoEvolucao = 'sessao' | 'avaliacao' | 'devolutiva' | 'contato' | 'encerramento' | 'anotacao'
 export type TipoDocumento = 'declaracao' | 'atestado' | 'relatorio' | 'outro'
+// como o local paga: salário fixo por mês (APAE, Mercado) ou por atendimento (SESM, Conecta)
+export type ModeloLocal = 'salario' | 'sessao'
+// a confirmação do dia anterior (tela "Confirmar amanhã")
+export type Confirmacao = 'a_confirmar' | 'confirmado' | 'desmarcou'
 
 export interface Perfil {
   owner_id?: string
@@ -29,6 +33,11 @@ export interface Local {
   ativo: boolean
   ordem: number
   observacoes?: string | null
+  // financeiro (db/psi-financeiro.sql). Sem as colunas no banco, o app lê como 'sessao' e sem valores.
+  modelo: ModeloLocal
+  salario_mensal?: number | null   // modelo 'salario': quanto entra por mês
+  repasse_pct?: number | null      // % de cada atendimento que fica pro local (Conecta: 20)
+  imposto_pct?: number | null      // % de imposto sobre o que entra desse local (APAE: 6)
 }
 
 export interface Paciente {
@@ -58,6 +67,7 @@ export interface Paciente {
   encerramento_em?: string | null
   encerramento_motivo?: string | null
   encerramento_texto?: string | null
+  valor_sessao?: number | null     // quanto ela cobra DESTE paciente (senão vale o valor do local)
   criado_em?: string
 }
 
@@ -72,6 +82,23 @@ export interface Atendimento {
   modalidade: Modalidade
   valor?: number | null
   pago: boolean
+  observacao?: string | null
+  confirmacao?: Confirmacao | null  // "Confirmar amanhã" (db/psi-financeiro.sql)
+  confirmado_em?: string | null
+  criado_em?: string
+}
+
+// Custo do consultório: fixo todo mês (aluguel, contador) ou avulso (só num mês). Meses em 'YYYY-MM'.
+export interface Despesa {
+  id: string
+  nome: string
+  valor: number
+  local_id?: string | null   // ligada a um local (aluguel da SESM) ou geral (contador)
+  recorrente: boolean        // true = vale todo mês de `desde` até `ate` (se tiver); false = só no `mes`
+  desde?: string | null      // 'YYYY-MM'
+  ate?: string | null        // 'YYYY-MM' (inclusive)
+  mes?: string | null        // 'YYYY-MM' (avulsa)
+  ativo: boolean
   observacao?: string | null
   criado_em?: string
 }
@@ -176,12 +203,21 @@ export const ROTULO_DOCUMENTO: Record<TipoDocumento, string> = {
   outro: 'Documento',
 }
 
-// Os 4 locais com que o sistema nasce (ela pode editar tudo depois)
+// Os 4 locais com que o sistema nasce (ela pode editar tudo depois). O que ela passou em 07/11:
+// APAE salário fixo (~R$ 2.300, 6% de imposto só sobre ela), Mercado salário fixo (R$ 2.500),
+// SESM (era "Clínica Mauri") e Conecta cobram por atendimento; a Conecta fica com 20% de cada um.
+// O aluguel da SESM e o contador são despesas (psi_despesas), não campos do local.
 export const LOCAIS_INICIAIS: Omit<Local, 'id'>[] = [
-  { nome: 'APAE', tipo: 'instituicao', cidade: null, valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#b07a5e', ativo: true, ordem: 1 },
-  { nome: 'Clínica Conecta', tipo: 'clinica', cidade: 'Estrela', valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#c08f8b', ativo: true, ordem: 2 },
-  { nome: 'Clínica Mauri', tipo: 'clinica', cidade: 'Lajeado', valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#8c9877', ativo: true, ordem: 3 },
-  { nome: 'Mercado Montanha', tipo: 'empresa', cidade: null, valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#6f8796', ativo: true, ordem: 4 },
+  { nome: 'APAE', tipo: 'instituicao', cidade: null, valor_sessao: null, forma_pagamento: 'Salário mensal', cobra_falta: false, cor: '#b07a5e', ativo: true, ordem: 1, modelo: 'salario', salario_mensal: 2300, repasse_pct: null, imposto_pct: 6 },
+  { nome: 'Clínica Conecta', tipo: 'clinica', cidade: 'Estrela', valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#c08f8b', ativo: true, ordem: 2, modelo: 'sessao', salario_mensal: null, repasse_pct: 20, imposto_pct: null },
+  { nome: 'SESM', tipo: 'clinica', cidade: 'Lajeado', valor_sessao: null, forma_pagamento: null, cobra_falta: false, cor: '#8c9877', ativo: true, ordem: 3, modelo: 'sessao', salario_mensal: null, repasse_pct: null, imposto_pct: null },
+  { nome: 'Mercado Montanha', tipo: 'empresa', cidade: null, valor_sessao: null, forma_pagamento: 'Salário mensal', cobra_falta: false, cor: '#6f8796', ativo: true, ordem: 4, modelo: 'salario', salario_mensal: 2500, repasse_pct: null, imposto_pct: null },
+]
+
+// Os custos fixos que nascem junto (o aluguel fica ligado ao local pelo nome)
+export const DESPESAS_INICIAIS: { nome: string; valor: number; local: string | null }[] = [
+  { nome: 'Aluguel da sala', valor: 370, local: 'SESM' },
+  { nome: 'Contador', valor: 200, local: null },
 ]
 
 // A rotina fixa: um bloco por local e dia da semana. Sem hora = só o dia (horário de cada paciente).
@@ -194,13 +230,13 @@ export interface Bloco {
   ativo: boolean
 }
 
-// A rotina que ela passou (06/11). Mauri (qua) e Conecta (qui) NÃO têm horário fixo ("depende dos
+// A rotina que ela passou (06/11). SESM (qua) e Conecta (qui) NÃO têm horário fixo ("depende dos
 // pacientes"): o bloco só marca o DIA do local; a agenda mostra o horário de cada paciente marcado.
 export const BLOCOS_INICIAIS: { local: string; dia_semana: number; hora_inicio: string | null; hora_fim: string | null }[] = [
   { local: 'APAE', dia_semana: 1, hora_inicio: '07:30', hora_fim: '11:30' },
   { local: 'APAE', dia_semana: 5, hora_inicio: '07:30', hora_fim: '11:30' },
   { local: 'Mercado Montanha', dia_semana: 2, hora_inicio: '08:00', hora_fim: '15:00' },
-  { local: 'Clínica Mauri', dia_semana: 3, hora_inicio: null, hora_fim: null },
+  { local: 'SESM', dia_semana: 3, hora_inicio: null, hora_fim: null },
   { local: 'Clínica Conecta', dia_semana: 4, hora_inicio: null, hora_fim: null },
 ]
 

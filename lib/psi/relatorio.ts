@@ -2,6 +2,7 @@
 // quantas vezes; no fim, o total. Só entra atendimento REALIZADO (falta e desmarcação não contam).
 import type { Atendimento, Local, Paciente } from './tipos'
 import { diaMes } from './datas'
+import { cobravel, ehSalario, valorDoAtendimento } from './financeiro'
 
 export interface LinhaRelatorio {
   paciente: string
@@ -44,12 +45,15 @@ export interface ResumoLocal {
   recebido: number
 }
 
-export function resumoMes(mes: string, locais: Local[], atendimentos: Atendimento[]): ResumoLocal[] {
+// O dinheiro segue as mesmas regras do Financeiro (lib/psi/financeiro.ts): local de salário não tem
+// "a receber" por sessão; nos outros, o valor do atendimento, senão o do paciente, senão o do local.
+export function resumoMes(mes: string, locais: Local[], atendimentos: Atendimento[], pacientes: Paciente[] = []): ResumoLocal[] {
+  const pac = new Map(pacientes.map(p => [p.id, p]))
   return locais.map(local => {
     const doLocal = atendimentos.filter(a => a.local_id === local.id && a.data.startsWith(mes))
     const conta = (p: string) => doLocal.filter(a => a.presenca === p).length
-    const cobraveis = doLocal.filter(a => a.presenca === 'realizado' || (local.cobra_falta && a.presenca === 'faltou'))
-    const valor = (a: Atendimento) => a.valor ?? local.valor_sessao ?? 0
+    const cobraveis = ehSalario(local) ? [] : doLocal.filter(a => cobravel(a, local))
+    const valor = (a: Atendimento) => valorDoAtendimento(a, local, pac.get(a.paciente_id))
     return {
       local,
       realizados: conta('realizado'), faltas: conta('faltou'), desmarcados: conta('desmarcou'), remarcados: conta('remarcado'),

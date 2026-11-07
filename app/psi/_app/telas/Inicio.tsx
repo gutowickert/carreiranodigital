@@ -2,7 +2,7 @@
 // A TELA INICIAL: onde ela está hoje, os próximos pacientes, o que falta registrar, e o atalho
 // grande da planilha da APAE (do dia 25 em diante, com lembrete).
 import { useMemo } from 'react'
-import { AlertCircle, ChevronRight, FileSpreadsheet, MapPin, Plus } from 'lucide-react'
+import { AlertCircle, ChevronRight, FileSpreadsheet, MapPin, Phone, Plus, Wallet } from 'lucide-react'
 import { useBase } from '../App'
 import { useAgora, useAtendimentos } from '../usar'
 import { link } from '../rotas'
@@ -11,15 +11,17 @@ import { montarDia, semRegistro, textoBloco } from '@/lib/psi/agenda'
 import type { ItemAgenda } from '@/lib/psi/agenda'
 import { dataLonga, diaMes, hojeBR, mesAtual, MESES, somarDias, dinheiro } from '@/lib/psi/datas'
 import { resumoMes } from '@/lib/psi/relatorio'
+import { diasAConfirmar, situacao } from '@/lib/psi/confirmar'
+import { tituloDia } from './Confirmar'
 
 export default function Inicio() {
   const { perfil, locais, blocos, pacientes } = useBase()
   const hoje = hojeBR()
   const agora = useAgora()
   const mes = mesAtual()
-  // 14 dias pra trás (o que ficou sem registro) até hoje; e o mês inteiro pro resumo
+  // 14 dias pra trás (o que ficou sem registro), o mês inteiro pro resumo e a semana que vem (confirmar)
   const de = [somarDias(hoje, -14), mes + '-01'].sort()[0]
-  const { lista } = useAtendimentos(de, hoje)
+  const { lista } = useAtendimentos(de, somarDias(hoje, 7))
 
   const apae = locais.find(l => /apae/i.test(l.nome) && l.ativo)
   const dia = Number(hoje.slice(8, 10))
@@ -32,7 +34,10 @@ export default function Inicio() {
     return semRegistro(datas, hoje, agora, blocos, pacientes, lista, locais).reverse()
   }, [lista, hoje, agora, blocos, pacientes, locais])
   const proximos = d ? d.todos.filter(i => (!i.atendimento || i.atendimento.presenca === 'agendado') && (i.hora || '99') > agora) : []
-  const resumo = lista ? resumoMes(mes, locais, lista) : []
+  const resumo = lista ? resumoMes(mes, locais, lista, pacientes) : []
+  const confirmar = useMemo(() => lista ? diasAConfirmar(hoje, blocos, pacientes, lista, locais) : [], [lista, hoje, blocos, pacientes, locais])
+  const aConfirmar = confirmar.flatMap(x => x.itens)
+  const confirmados = aConfirmar.filter(i => situacao(i) === 'confirmado').length
   const tot = resumo.reduce((s, r) => ({ r: s.r + r.realizados, f: s.f + r.faltas, v: s.v + r.aReceber }), { r: 0, f: 0, v: 0 })
   const primeiroNome = (perfil.nome || '').split(' ')[0]
 
@@ -67,6 +72,17 @@ export default function Inicio() {
         <ChevronRight size={22} />
       </a>
 
+      {aConfirmar.length > 0 && (
+        <a className="psi-atalho psi-atalho-claro" href="#/confirmar" style={{ marginTop: 12 }}>
+          <span className="psi-atalho-ic"><Phone size={24} /></span>
+          <span style={{ flex: 1 }}>
+            <strong>{confirmar[0].data === somarDias(hoje, 1) && confirmar.length === 1 ? 'Confirmar amanhã' : `Confirmar até ${tituloDia(confirmar[confirmar.length - 1].data, hoje).toLowerCase()}`}</strong>
+            <span>{aConfirmar.length} paciente{aConfirmar.length === 1 ? '' : 's'}, {confirmados} confirmado{confirmados === 1 ? '' : 's'}</span>
+          </span>
+          <ChevronRight size={22} />
+        </a>
+      )}
+
       <Secao titulo="Onde estou hoje" />
       {d && d.blocos.length === 0 && <div className="psi-cartao psi-muted">Hoje não tem horário fixo na rotina.</div>}
       {d && d.blocos.map(b => (
@@ -97,6 +113,11 @@ export default function Inicio() {
         <div className="psi-numero"><b>{tot.f}</b><small>faltas</small></div>
         <div className="psi-numero"><b style={{ fontSize: tot.v >= 10000 ? 18 : 21 }}>{dinheiro(tot.v)}</b><small>a receber</small></div>
       </div>
+      <a className="psi-atalho psi-atalho-claro" href="#/financeiro" style={{ marginTop: 12 }}>
+        <span className="psi-atalho-ic"><Wallet size={24} /></span>
+        <span style={{ flex: 1 }}><strong>Financeiro de {nomeMesAtual}</strong><span>Salários, atendimentos, despesas e o que sobra no mês.</span></span>
+        <ChevronRight size={22} />
+      </a>
     </>
   )
 }

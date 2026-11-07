@@ -6,7 +6,8 @@ import { CalendarDays, FileSpreadsheet, Home, MoreHorizontal, Users } from 'luci
 import type { Repo } from '@/lib/psi/repo'
 import { abrirRepo, desligarModoExemplo } from '@/lib/psi/repo'
 import type { Bloco, Local, Paciente, Perfil } from '@/lib/psi/tipos'
-import { BLOCOS_INICIAIS, LOCAIS_INICIAIS, NOME_PADRAO } from '@/lib/psi/tipos'
+import { BLOCOS_INICIAIS, DESPESAS_INICIAIS, LOCAIS_INICIAIS, NOME_PADRAO } from '@/lib/psi/tipos'
+import { mesAtual } from '@/lib/psi/datas'
 import { AvisoProvider, Carregando, Logo } from './ui'
 import { useRota } from './rotas'
 import Inicio from './telas/Inicio'
@@ -18,6 +19,8 @@ import PacienteForm from './telas/PacienteForm'
 import EvolucaoTela from './telas/Evolucao'
 import DocumentoTela from './telas/Documento'
 import Relatorios from './telas/Relatorios'
+import Financeiro from './telas/Financeiro'
+import Confirmar from './telas/Confirmar'
 import { Mais, Locais, LocalForm, Rotina, MeusDados, Auditoria, Futuro } from './telas/Mais'
 
 export interface Base {
@@ -55,6 +58,11 @@ export default function App() {
           const loc = locais.find(l => l.nome === b.local)
           if (loc) blocos.push(await repo.salvarBloco({ local_id: loc.id, dia_semana: b.dia_semana, hora_inicio: b.hora_inicio, hora_fim: b.hora_fim, ativo: true }))
         }
+        // e os custos fixos (aluguel da SESM, contador). Sem o db/psi-financeiro.sql, fica pra depois.
+        try {
+          if ((await repo.despesas()).length === 0) for (const d of DESPESAS_INICIAIS)
+            await repo.salvarDespesa({ nome: d.nome, valor: d.valor, local_id: d.local ? locais.find(l => l.nome === d.local)?.id || null : null, recorrente: true, desde: mesAtual(), ativo: true })
+        } catch {}
       }
       setBase({ perfil, locais, blocos, pacientes }); setErro('')
     } catch (e) { setErro((e as Error).message) }
@@ -105,6 +113,8 @@ function Telas() {
   else if (a === 'evolucao' && b) tela = <EvolucaoTela id={b} q={q} />
   else if (a === 'documento' && b && c) tela = <DocumentoTela pacienteId={b} tipo={c} />
   else if (a === 'relatorios') tela = <Relatorios q={q} />
+  else if (a === 'financeiro') tela = <Financeiro q={q} />
+  else if (a === 'confirmar') tela = <Confirmar />
   else if (a === 'mais') tela = <Mais />
   else if (a === 'locais') tela = <Locais />
   else if (a === 'local' && b) tela = <LocalForm id={b === 'novo' ? null : b} />
@@ -114,7 +124,7 @@ function Telas() {
   else if (a === 'futuro') tela = <Futuro />
   else tela = <Inicio />
 
-  const aba = !a ? 'inicio' : a === 'agenda' || a === 'registrar' ? 'agenda' : a === 'pacientes' || a === 'paciente' || a === 'evolucao' || a === 'documento' ? 'pacientes' : a === 'relatorios' ? 'relatorios' : 'mais'
+  const aba = !a ? 'inicio' : a === 'agenda' || a === 'registrar' || a === 'confirmar' ? 'agenda' : a === 'pacientes' || a === 'paciente' || a === 'evolucao' || a === 'documento' ? 'pacientes' : a === 'relatorios' ? 'relatorios' : 'mais'
   const itens: [string, string, React.ReactNode, string][] = [
     ['inicio', '#/', <Home key="i" size={22} />, 'Início'],
     ['agenda', '#/agenda', <CalendarDays key="a" size={22} />, 'Agenda'],

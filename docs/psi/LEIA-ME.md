@@ -12,15 +12,17 @@ Pesquisa sobre os concorrentes e as regras do CFP e da LGPD: `docs/psi/PESQUISA.
 
 | Tela | O que faz |
 |---|---|
-| **Início** | Mostra onde ela está hoje (os locais do dia), os próximos pacientes e os atendimentos que **faltam registrar**. Tem o botão grande **"Planilha da APAE — mês"** e um resumo do mês: realizados, faltas e quanto tem a receber. Do dia 25 em diante aparece o aviso "Hora de gerar a planilha da APAE". |
-| **Agenda** | Abre no **dia** e tem também a visão da **semana**. Cada local aparece como um bloco com a sua cor. **Blocos fixos:** APAE na segunda e na sexta, das 07:30 às 11:30, e Mercado Montanha na terça, das 08:00 às 15:00. **Mauri (quarta) e Conecta (quinta):** sem horário fixo; aparece o dia do local e cada paciente fica no seu próprio horário. No bloco há o botão "Marcar paciente", com a opção "toda semana neste horário". Tocar no paciente leva direto pro registro. |
-| **Registrar atendimento** | Tudo numa tela só: paciente (busca, ou cadastro rápido de um paciente novo), dia, hora, local e presença (**realizado, faltou, desmarcou, remarcado**). Se foi realizado, já abre o campo da **evolução**. Também marca se a sessão já foi paga ou ainda está a receber. |
+| **Início** | Mostra onde ela está hoje (os locais do dia), os próximos pacientes e os atendimentos que **faltam registrar**. Tem o botão grande **"Planilha da APAE — mês"**, o cartão **"Confirmar amanhã"** (quantos pacientes e quantos já confirmaram) e um resumo do mês: realizados, faltas e quanto tem a receber, com o atalho pro **Financeiro**. Do dia 25 em diante aparece o aviso "Hora de gerar a planilha da APAE". |
+| **Agenda** | Abre no **dia** e tem também a visão da **semana**. Cada local aparece como um bloco com a sua cor. **Blocos fixos:** APAE na segunda e na sexta, das 07:30 às 11:30, e Mercado Montanha na terça, das 08:00 às 15:00. **SESM (quarta) e Conecta (quinta):** sem horário fixo; aparece o dia do local e cada paciente fica no seu próprio horário. No bloco há o botão "Marcar paciente", com a opção "toda semana neste horário". Tocar no paciente leva direto pro registro. |
+| **Registrar atendimento** | Tudo numa tela só: paciente (busca, ou cadastro rápido de um paciente novo), dia, hora, local e presença (**realizado, faltou, desmarcou, remarcado**). Se foi realizado, já abre o campo da **evolução**. Nos locais por atendimento mostra o **valor** da sessão (vem do paciente; sem ele, do local; dá pra mudar) e se já foi pago ou está a receber. Nos locais de salário não aparece valor. O cadastro rápido de paciente novo já pede o valor da sessão. |
+| **Confirmar amanhã** | Os pacientes do próximo dia com atendimento (numa sexta: sábado, domingo e segunda) **só dos locais por atendimento** (modelo "Por atendimento"; APAE e Mercado ficam de fora). Entram também os de horário fixo, que aparecem sozinhos na agenda. Cada linha: hora, nome, local, telefone (do responsável, se for menor) e a situação: **a confirmar, confirmado ou desmarcou**. Botão **WhatsApp** abre o WhatsApp dela com a mensagem pronta (o texto fica em `lib/psi/confirmar.ts`); botão **Ligar**. **Confirmado** e **Desmarcou** com um toque (desmarcou muda a presença do atendimento). O sistema não manda nada sozinho. |
 | **Pacientes** | Busca instantânea pelo nome, sem precisar acertar acento nem maiúscula. Filtro por local com um toque. |
 | **Prontuário** | Tem quatro abas. **Evoluções:** linha do tempo com a data, o tipo e o local. **Prontuário:** identificação, demanda, objetivos, histórico, procedimentos e encerramento. **Atendimentos.** **Arquivos e documentos:** anexos e cópia de cada documento que ela emitiu. |
 | **Evolução** | **Corrigir** guarda a versão anterior inteira. **Apagar** exige um motivo: a evolução sai da linha do tempo, mas continua guardada no banco e no histórico. |
 | **Documentos** | Declaração, atestado psicológico e relatório psicológico, no modelo da Resolução CFP 06/2019. O formulário já vem preenchido com o que o sistema sabe, como o último atendimento, a demanda e o número de sessões. Gera o PDF com o logo, o nome e o CRP dela e abre o **Compartilhar** do celular. A cópia fica guardada no prontuário. |
-| **Relatórios** | **Planilha por local:** é o pedido da APAE. Mostra o nome do paciente, as datas dos atendimentos do mês e a quantidade por paciente, com o total no fim. Sai em **PDF** ou **planilha (Excel)** pelo Compartilhar, ou em CSV. **Resumo do mês:** realizados, faltas e desmarcações de cada local, valor a receber e valor já recebido. |
-| **Mais** | **Meus dados:** nome, CRP e cidade que vão nos documentos. **Locais e valores:** valor por sessão, forma de pagamento, se cobra a falta e a cor do local. **Rotina da semana.** **Histórico de acessos:** quem abriu ou alterou cada prontuário, e quando. **Lembretes por WhatsApp:** aparece como desligado. |
+| **Relatórios** | **Planilha por local:** é o pedido da APAE. Mostra o nome do paciente, as datas dos atendimentos do mês e a quantidade por paciente, com o total no fim. Sai em **PDF** ou **planilha (Excel)** pelo Compartilhar, ou em CSV. **Resumo do mês:** realizados, faltas e desmarcações de cada local, valor a receber e valor já recebido (só dos locais por atendimento; as contas são as mesmas do Financeiro). Botão pro Financeiro do mês. |
+| **Financeiro** | Por mês, com setas. Em cima, **o que sobrou**, bem grande, com o que entrou e o que saiu. **Entradas:** o salário dos locais de salário fixo e os atendimentos realizados dos locais por atendimento (e as faltas, se o local cobra falta). **Saídas:** repasse (Conecta 20% dos atendimentos), imposto (APAE 6% do salário), despesas fixas (aluguel da SESM, contador) e avulsas do mês. **Dos atendimentos:** a receber x já recebido, com o botão **Recebido** em cada um e **Tudo recebido** por local. **Lançar despesa:** fixa (todo mês) ou só no mês, geral ou de um local. |
+| **Mais** | **Meus dados:** nome, CRP e cidade que vão nos documentos. **Financeiro** e **Confirmar amanhã**. **Locais e valores:** como o local paga (**salário fixo** ou **por atendimento**), salário do mês, valor por sessão, % de repasse pro local, % de imposto, aluguel ou custo fixo do mês, forma de pagamento, se cobra a falta e a cor do local. **Rotina da semana.** **Histórico de acessos:** quem abriu ou alterou cada prontuário, e quando. **Lembretes por WhatsApp:** aparece como desligado. |
 
 **Segurança e regras (CFP e LGPD)**
 - Cada login só enxerga o que é seu. Essa trava fica no próprio banco, nas tabelas `psi_*`. Ninguém da escola vê os dados dela pelo sistema.
@@ -29,6 +31,13 @@ Pesquisa sobre os concorrentes e as regras do CFP e da LGPD: `docs/psi/PESQUISA.
 - Os anexos ficam num armazenamento **privado**. Cada vez que ela abre um arquivo, o sistema gera um link que vale só 5 minutos.
 - O "modo offline" do aplicativo guarda só as telas. Os dados dos pacientes não ficam guardados no aparelho.
 
+**Como o Financeiro conta** (`lib/psi/financeiro.ts`)
+- **Salário fixo:** entra o salário do mês inteiro, não importa quantos atendimentos. Os atendimentos continuam valendo pra planilha da APAE.
+- **Por atendimento:** entra cada atendimento realizado (e a falta, se o local cobra falta). O valor é o gravado no atendimento; sem ele, o do paciente; sem ele, o do local. Ao marcar como recebido, o valor fica gravado no atendimento.
+- **Repasse:** a % do local sobre os atendimentos dele. **Imposto:** a % do local sobre tudo que entrou dele.
+- **Despesas** (`psi_despesas`): fixa vale todo mês de "a partir de" até "até"; avulsa vale só no mês dela. O aluguel do local é uma despesa fixa ligada a ele: mudar o valor em Locais fecha a antiga no mês anterior e abre uma nova, então os meses que já passaram não mudam.
+- O salário e as % ficam no local: se mudarem, os meses antigos passam a mostrar o valor novo.
+
 ---
 
 ## Passo 1: aplicar o banco (uma vez)
@@ -36,6 +45,7 @@ Pesquisa sobre os concorrentes e as regras do CFP e da LGPD: `docs/psi/PESQUISA.
 1. Entre no Supabase da escola, no menu **SQL Editor**, e clique em **New query**.
 2. Cole o conteúdo inteiro de `db/psi.sql` e clique em **Run**.
 3. Pronto. Se rodar de novo não estraga nada: o arquivo só cria o que ainda não existe.
+4. Depois rode também `db/psi-financeiro.sql` (o financeiro e a confirmação), do mesmo jeito. Enquanto ele não for rodado, o resto do app funciona normalmente e a tela Financeiro mostra o aviso "O financeiro ainda não foi instalado". O fim do arquivo lista o que preencher nos dados dela (modelo, salário, %, valores, despesas).
 
 Os 4 locais e a rotina da semana não precisam ser criados à mão. O sistema cria tudo sozinho no **primeiro acesso** dela.
 
@@ -78,7 +88,7 @@ Ninguém da equipe é afetado, mesmo que abra o /psi.
 
 ## Testar sem banco (modo de teste)
 
-Abra `/psi?exemplo=1`. Aparece uma faixa amarela avisando que é o modo de teste. Os pacientes são **inventados** e ficam guardados só naquele aparelho, sem tocar no banco. Pra sair, use o botão "Sair do teste" ou abra `/psi?exemplo=0`.
+Abra `/psi?exemplo=1`. Aparece uma faixa amarela avisando que é o modo de teste. Os locais já vêm com os modelos certos (APAE e Mercado de salário, SESM e Conecta por atendimento), com aluguel da SESM e contador de exemplo. Os pacientes e os valores das sessões são **inventados** e ficam guardados só naquele aparelho, sem tocar no banco. Pra sair, use o botão "Sair do teste" ou abra `/psi?exemplo=0`.
 
 Pra rodar no computador: `npm run dev` e depois abrir `http://localhost:3000/psi?exemplo=1`.
 
@@ -118,4 +128,5 @@ Pra rodar no computador: `npm run dev` e depois abrir `http://localhost:3000/psi
 - `app/psi/`: a página, o visual (`psi.css`) e as telas (`_app/telas/`).
 - `lib/psi/`: tipos, datas, agenda, relatório, documentos (modelos do CFP), exportação (PDF, planilha, compartilhar) e o acesso ao banco. O acesso ao banco tem duas versões: `repo-supabase.ts` (o banco de verdade) e `repo-exemplo.ts` (o modo de teste).
 - `public/psi/`: logo, ícones, `manifest.webmanifest` e `sw.js`.
-- `db/psi.sql`: o banco.
+- `db/psi.sql`: o banco. `db/psi-financeiro.sql`: o financeiro (modelo do local, valor do paciente, despesas) e a confirmação do dia anterior.
+- `lib/psi/financeiro.ts`: as contas do Financeiro. `lib/psi/confirmar.ts`: quem confirmar e o texto da mensagem do WhatsApp.

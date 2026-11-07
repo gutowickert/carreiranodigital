@@ -1,6 +1,7 @@
 'use client'
 // REGISTRAR ATENDIMENTO numa tela só: paciente, dia/hora, local, presença e (se realizado) a evolução.
 // Também serve pra MARCAR (modo=marcar): escolhe paciente e horário, com "toda semana" opcional.
+// O valor da sessão vem do paciente, senão do local; em local de salário fica vazio (não é receita por sessão).
 import { useEffect, useMemo, useState } from 'react'
 import { Repeat, Trash2, UserPlus } from 'lucide-react'
 import { useBase } from '../App'
@@ -9,6 +10,7 @@ import { Busca, Campo, Chips, chipsLocais, Topo, useAviso, Vazio, iniciais } fro
 import type { Atendimento, Evolucao, Presenca, TipoEvolucao } from '@/lib/psi/tipos'
 import { ROTULO_EVOLUCAO } from '@/lib/psi/tipos'
 import { DIAS, agoraHoraBR, dataLonga, diaDaSemana, hojeBR, normalizar } from '@/lib/psi/datas'
+import { ehSalario, lerValor, valorCampo, valorPadrao } from '@/lib/psi/financeiro'
 
 const PRESENCAS: [Presenca, string][] = [['realizado', 'Realizado'], ['faltou', 'Faltou'], ['desmarcou', 'Desmarcou'], ['remarcado', 'Remarcado']]
 
@@ -34,6 +36,9 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
   const [novaHora, setNovaHora] = useState('')
   const [salvando, setSalvando] = useState(false)
   const [pago, setPago] = useState(false)
+  const [valor, setValor] = useState('')          // o valor desta sessão (texto, com vírgula)
+  const [valorMexido, setValorMexido] = useState(false)
+  const [valorNovo, setValorNovo] = useState('')  // cadastro rápido: o valor da sessão do paciente novo
 
   // editando um atendimento que já existe (veio da agenda ou do paciente)
   useEffect(() => {
@@ -43,6 +48,7 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
       if (a) {
         setAtendimento(a); setPacId(a.paciente_id); setData(a.data); setHora(a.hora || ''); setLocalId(a.local_id || '')
         setPresenca(a.presenca === 'agendado' ? null : a.presenca); setPago(a.pago)
+        if (a.valor != null) { setValor(valorCampo(a.valor)); setValorMexido(true) }
         const e = await repo.evolucaoDoAtendimento(a.id)
         if (e) { setEvolucao(e); setTexto(e.texto); setTipoEvo(e.tipo) }
       }
@@ -53,6 +59,11 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
   const paciente = pacientes.find(p => p.id === pacId) || null
   // escolheu o paciente: o local dele vem junto (se ainda não tinha)
   useEffect(() => { if (paciente && !localId && paciente.local_id) setLocalId(paciente.local_id) }, [paciente, localId])
+  const local = locais.find(l => l.id === localId) || null
+  // trocou paciente ou local: o valor sugerido acompanha (se ela não digitou um)
+  useEffect(() => { if (!valorMexido) setValor(valorCampo(valorPadrao(paciente, local))) }, [paciente, local, valorMexido])
+  const valorFinal = ehSalario(local) ? null : lerValor(valor)
+  const cobra = presenca === 'realizado' || (presenca === 'faltou' && !!local?.cobra_falta)
 
   const sugestoes = useMemo(() => {
     const t = normalizar(busca)
@@ -65,7 +76,8 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
   async function cadastrarRapido() {
     const nome = busca.trim()
     if (nome.length < 3) return
-    const novo = await repo.salvarPaciente({ nome, local_id: localId || null, status: 'ativo', modalidade: 'presencial', data_inicio: data })
+    const novo = await repo.salvarPaciente({ nome, local_id: localId || null, status: 'ativo', modalidade: 'presencial', data_inicio: data, valor_sessao: ehSalario(local) ? null : lerValor(valorNovo) })
+    setValorNovo('')
     await recarregar()
     setPacId(novo.id); setBusca('')
     aviso('Paciente cadastrado. Complete os dados depois, no prontuário.')
@@ -77,7 +89,6 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
     if (!paciente) return
     setSalvando(true)
     try {
-      const local = locais.find(l => l.id === localId) || null
       if (marcar && toda) {
         // horário fixo semanal: fica no paciente e aparece sozinho na agenda toda semana
         await repo.salvarPaciente({ id: paciente.id, nome: paciente.nome, recorrente: true, dia_semana: diaDaSemana(data), hora_fixa: hora || null, local_id: localId || paciente.local_id })
@@ -88,13 +99,14 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
           ...(atendimento ? { id: atendimento.id } : {}),
           paciente_id: paciente.id, data, hora: hora || null, local_id: localId || null,
           presenca: marcar ? 'agendado' : presenca!, modalidade: paciente.modalidade || 'presencial', pago,
-          ...(atendimento ? {} : { valor: local?.valor_sessao ?? null, duracao_min: 50 }),
+          valor: marcar ? (atendimento?.valor ?? valorPadrao(paciente, local)) : valorFinal,
+          ...(atendimento ? {} : { duracao_min: 50 }),
         })
         if (!marcar && presenca === 'realizado' && texto.trim()) {
           await repo.salvarEvolucao({ ...(evolucao ? { id: evolucao.id } : {}), paciente_id: paciente.id, atendimento_id: a.id, local_id: localId || null, data, tipo: tipoEvo, texto: texto.trim() })
         }
         if (!marcar && presenca === 'remarcado' && novaData) {
-          await repo.salvarAtendimento({ paciente_id: paciente.id, data: novaData, hora: novaHora || hora || null, local_id: localId || null, presenca: 'agendado', modalidade: paciente.modalidade || 'presencial', valor: local?.valor_sessao ?? null, duracao_min: 50, pago: false })
+          await repo.salvarAtendimento({ paciente_id: paciente.id, data: novaData, hora: novaHora || hora || null, local_id: localId || null, presenca: 'agendado', modalidade: paciente.modalidade || 'presencial', valor: valorPadrao(paciente, local), duracao_min: 50, pago: false })
         }
         aviso(marcar ? 'Marcado na agenda.' : presenca === 'realizado' ? (texto.trim() ? 'Atendimento e evolução salvos.' : 'Atendimento salvo. A evolução pode ser escrita depois.') : 'Registrado.')
       }
@@ -136,6 +148,12 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
                 <span className="psi-item-txt"><strong>{p.nome}</strong><small>{locais.find(l => l.id === p.local_id)?.nome || 'sem local'}</small></span>
               </button>
             ))}
+            {busca.trim().length >= 3 && !sugestoes.some(p => normalizar(p.nome) === normalizar(busca)) && !ehSalario(local) && (
+              <div className="psi-item" style={{ cursor: 'default' }}>
+                <span className="psi-item-txt"><strong>Valor da sessão do paciente novo (R$)</strong><small>{local?.valor_sessao ? `Vazio = o valor do local (${valorCampo(local.valor_sessao)})` : 'Opcional'}</small></span>
+                <input className="psi-input" style={{ width: 110, flex: 'none' }} inputMode="decimal" value={valorNovo} onChange={e => setValorNovo(e.target.value)} placeholder="0,00" aria-label="Valor da sessão" />
+              </div>
+            )}
             {busca.trim().length >= 3 && !sugestoes.some(p => normalizar(p.nome) === normalizar(busca)) && (
               <button className="psi-item" onClick={cadastrarRapido}>
                 <span className="psi-avatar" style={{ background: 'var(--areia)', color: 'var(--cacau)' }}><UserPlus size={18} /></span>
@@ -173,9 +191,13 @@ export default function Registrar({ q }: { q: URLSearchParams }) {
             </div>
           </Campo>
 
-          {(presenca === 'realizado' || presenca === 'faltou') && locais.find(l => l.id === localId)?.valor_sessao ? (
-            <Campo rotulo="Pagamento"><Chips opcoes={[{ valor: 'nao', rotulo: 'A receber' }, { valor: 'sim', rotulo: 'Já recebido' }]} valor={pago ? 'sim' : 'nao'} mudar={v => setPago(v === 'sim')} /></Campo>
-          ) : null}
+          {cobra && local && !ehSalario(local) && (
+            <div className="psi-grade-2">
+              <Campo rotulo="Valor (R$)"><input className="psi-input" inputMode="decimal" value={valor} onChange={e => { setValor(e.target.value); setValorMexido(true) }} placeholder="0,00" /></Campo>
+              <Campo rotulo="Pagamento"><Chips opcoes={[{ valor: 'nao', rotulo: 'A receber' }, { valor: 'sim', rotulo: 'Recebido' }]} valor={pago ? 'sim' : 'nao'} mudar={v => setPago(v === 'sim')} /></Campo>
+            </div>
+          )}
+          {cobra && ehSalario(local) && <p className="psi-muted psi-pequeno" style={{ margin: '-4px 0 12px' }}>{local!.nome} paga salário fixo: esta sessão não tem valor separado.</p>}
 
           {presenca === 'remarcado' && (
             <div className="psi-grade-2">

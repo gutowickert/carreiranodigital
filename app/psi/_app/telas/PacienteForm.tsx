@@ -8,7 +8,8 @@ import { ir, voltar } from '../rotas'
 import { Campo, Chips, chipsLocais, Topo, useAviso, Vazio } from '../ui'
 import type { Paciente, StatusPaciente } from '@/lib/psi/tipos'
 import { ROTULO_STATUS } from '@/lib/psi/tipos'
-import { DIAS_CURTOS, hojeBR } from '@/lib/psi/datas'
+import { DIAS_CURTOS, dinheiro, hojeBR } from '@/lib/psi/datas'
+import { ehSalario, lerValor, valorCampo } from '@/lib/psi/financeiro'
 
 const VAZIO: Partial<Paciente> = { nome: '', status: 'ativo', modalidade: 'presencial', recorrente: false, local_id: null }
 
@@ -17,8 +18,9 @@ export default function PacienteForm({ id }: { id: string | null }) {
   const aviso = useAviso()
   const [p, setP] = useState<Partial<Paciente> | null>(id ? null : { ...VAZIO, data_inicio: hojeBR() })
   const [salvando, setSalvando] = useState(false)
+  const [valor, setValor] = useState('')   // o valor da sessão como texto (vírgula, vazio)
 
-  useEffect(() => { if (id) repo.paciente(id).then(x => setP(x || { ...VAZIO })) }, [id, repo])
+  useEffect(() => { if (id) repo.paciente(id).then(x => { setP(x || { ...VAZIO }); setValor(valorCampo(x?.valor_sessao)) }) }, [id, repo])
   if (!p) return <><Topo titulo="Paciente" voltarPara="#/pacientes" /><Vazio>Carregando…</Vazio></>
 
   const m = <K extends keyof Paciente>(k: K, v: Paciente[K] | null) => setP(x => ({ ...x!, [k]: v === '' ? null : v }))
@@ -30,7 +32,7 @@ export default function PacienteForm({ id }: { id: string | null }) {
     try {
       const { criado_em: _c, ...dados } = p as Paciente
       if ((dados.status === 'alta' || dados.status === 'encerrado') && !dados.encerramento_em) dados.encerramento_em = hojeBR()
-      const r = await repo.salvarPaciente({ ...dados, nome: dados.nome.trim() })
+      const r = await repo.salvarPaciente({ ...dados, nome: dados.nome.trim(), valor_sessao: lerValor(valor) })
       await recarregar()
       aviso('Salvo.')
       if (id) voltar(`#/paciente/${r.id}`); else ir(`#/paciente/${r.id}`, true)
@@ -39,6 +41,7 @@ export default function PacienteForm({ id }: { id: string | null }) {
   }
 
   const encerrando = p.status === 'alta' || p.status === 'encerrado'
+  const local = locais.find(l => l.id === p.local_id) || null
 
   return (
     <>
@@ -52,6 +55,13 @@ export default function PacienteForm({ id }: { id: string | null }) {
         <Campo rotulo="Início"><input className="psi-input" type="date" {...txt('data_inicio')} /></Campo>
       </div>
       <Campo rotulo="Local"><Chips rolar opcoes={chipsLocais(locais)} valor={p.local_id} mudar={v => m('local_id', v)} /></Campo>
+      {ehSalario(local) ? (
+        <p className="psi-muted psi-pequeno" style={{ margin: '-4px 0 14px' }}>{local!.nome} paga salário fixo: não precisa de valor por sessão.</p>
+      ) : (
+        <Campo rotulo="Valor da sessão (R$)" ajuda={local?.valor_sessao ? `Vazio = o valor do local (${dinheiro(local.valor_sessao)}).` : 'Quanto você cobra deste paciente por sessão.'}>
+          <input className="psi-input" inputMode="decimal" value={valor} onChange={e => setValor(e.target.value)} placeholder={local?.valor_sessao ? valorCampo(local.valor_sessao) : 'opcional'} />
+        </Campo>
+      )}
       <div className="psi-grade-2">
         <Campo rotulo="Telefone"><input className="psi-input" type="tel" inputMode="tel" {...txt('telefone')} /></Campo>
         <Campo rotulo="CPF (opcional)"><input className="psi-input" inputMode="numeric" {...txt('cpf')} /></Campo>

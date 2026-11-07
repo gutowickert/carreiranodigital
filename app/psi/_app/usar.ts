@@ -1,6 +1,7 @@
 'use client'
 import { useCallback, useEffect, useState } from 'react'
-import type { Atendimento } from '@/lib/psi/tipos'
+import type { Atendimento, Despesa } from '@/lib/psi/tipos'
+import { FINANCEIRO_PENDENTE } from '@/lib/psi/repo'
 import { useBase } from './App'
 
 /** os atendimentos de um período; `recarregar` depois de gravar */
@@ -21,4 +22,21 @@ export function useAgora() {
   const [h, setH] = useState(calc)
   useEffect(() => { const t = setInterval(() => setH(calc()), 60_000); return () => clearInterval(t) }, [])
   return h
+}
+
+/** as despesas (fixas e avulsas). `pendente` = o db/psi-financeiro.sql ainda não foi rodado. */
+export function useDespesas() {
+  const { repo } = useBase()
+  const [lista, setLista] = useState<Despesa[] | null>(null)
+  const [pendente, setPendente] = useState(false)
+  const [erro, setErro] = useState('')
+  const recarregar = useCallback(async () => {
+    try { setLista(await repo.despesas()); setPendente(false); setErro('') } catch (e) {
+      const m = (e as Error).message
+      if (m === FINANCEIRO_PENDENTE) setPendente(true); else setErro(m)
+      setLista([])
+    }
+  }, [repo])
+  useEffect(() => { recarregar() }, [recarregar])
+  return { lista, pendente, erro, recarregar }
 }

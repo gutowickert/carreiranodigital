@@ -1,15 +1,16 @@
 'use client'
 // RELATÓRIOS: a "planilha" do mês por local (o pedido da APAE: nome, datas, quantidade e total),
 // pronta em PDF ou planilha com o Compartilhar do celular; e o resumo do mês (atendimentos, faltas,
-// valor a receber por local).
+// valor a receber por local). Entradas, saídas e o que sobra ficam na tela Financeiro (mesmas contas).
 import { useEffect, useMemo, useState } from 'react'
-import { ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Share2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, FileDown, FileSpreadsheet, Share2, Wallet } from 'lucide-react'
 import { useBase } from '../App'
 import { useAtendimentos } from '../usar'
 import { ir, link } from '../rotas'
 import { Chips, Topo, useAviso, Vazio } from '../ui'
 import { datasCurtas, montarRelatorio, resumoMes } from '@/lib/psi/relatorio'
 import { limitesMes, mesAtual, mesSomar, nomeMes, dinheiro } from '@/lib/psi/datas'
+import { ehSalario } from '@/lib/psi/financeiro'
 import { baixar, compartilhar, csvRelatorio, nomeArquivo, pdfRelatorio, xlsxRelatorio } from '@/lib/psi/exportar'
 
 export default function Relatorios({ q }: { q: URLSearchParams }) {
@@ -26,7 +27,7 @@ export default function Relatorios({ q }: { q: URLSearchParams }) {
   const trocar = (m: Record<string, string | null>) => ir(link('/relatorios', { aba: aba === 'resumo' ? 'resumo' : null, mes: mes === mesAtual() ? null : mes, local: localId, ...m }), true)
   const local = locais.find(l => l.id === localId) || null
   const rel = useMemo(() => lista ? montarRelatorio(mes, local, lista, pacientes) : null, [lista, mes, local, pacientes])
-  const resumo = useMemo(() => lista ? resumoMes(mes, locais.filter(l => l.ativo), lista) : null, [lista, mes, locais])
+  const resumo = useMemo(() => lista ? resumoMes(mes, locais.filter(l => l.ativo), lista, pacientes) : null, [lista, mes, locais, pacientes])
   useEffect(() => { /* o mês trocou: rola pro topo */ window.scrollTo(0, 0) }, [mes])
 
   const base = `${nomeArquivo(`atendimentos ${local?.nome || ''} ${mes}`)}`
@@ -87,7 +88,9 @@ export default function Relatorios({ q }: { q: URLSearchParams }) {
               <div key={r.local.id} className="psi-cartao" style={{ borderLeft: `6px solid ${r.local.cor}` }}>
                 <div className="psi-linha" style={{ justifyContent: 'space-between', marginBottom: 10 }}>
                   <b style={{ color: 'var(--cacau)', fontSize: 16 }}>{r.local.nome}</b>
-                  {r.local.valor_sessao ? <span className="psi-muted psi-pequeno">{dinheiro(r.local.valor_sessao)}/sessão</span> : <a className="psi-pequeno" href={`#/local/${r.local.id}`}>pôr valor</a>}
+                  {ehSalario(r.local)
+                    ? <span className="psi-muted psi-pequeno">Salário fixo{r.local.salario_mensal ? ` · ${dinheiro(r.local.salario_mensal)}` : ''}</span>
+                    : r.local.valor_sessao ? <span className="psi-muted psi-pequeno">{dinheiro(r.local.valor_sessao)}/sessão</span> : <a className="psi-pequeno" href={`#/local/${r.local.id}`}>pôr valor</a>}
                 </div>
                 <div className="psi-numeros">
                   <div className="psi-numero"><b>{r.realizados}</b><small>realizados</small></div>
@@ -107,7 +110,9 @@ export default function Relatorios({ q }: { q: URLSearchParams }) {
                 <b>Total do mês</b>
                 <span><b>{resumo.reduce((s, r) => s + r.realizados, 0)}</b> realizados · <b>{dinheiro(resumo.reduce((s, r) => s + r.aReceber, 0))}</b> a receber</span>
               </div>
+              <div className="psi-muted" style={{ fontSize: 12.5, marginTop: 4 }}>O "a receber" é só dos atendimentos dos locais por sessão. Os salários ficam no Financeiro.</div>
             </div>
+            <a className="psi-btn psi-btn-contorno psi-btn-bloco" style={{ marginTop: 12 }} href={link('/financeiro', { mes: mes === mesAtual() ? null : mes })}><Wallet size={18} />Ver o financeiro do mês</a>
           </>
         )
       )}

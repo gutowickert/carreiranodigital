@@ -35,7 +35,7 @@ create table if not exists psi_perfil (
   atualizado_em timestamptz not null default now()
 );
 
--- ---------- LOCAIS DE ATENDIMENTO (APAE, Conecta, Mauri, Mercado Montanha...) ----------
+-- ---------- LOCAIS DE ATENDIMENTO (APAE, Conecta, SESM, Mercado Montanha...) ----------
 create table if not exists psi_locais (
   id              uuid primary key default gen_random_uuid(),
   owner_id        uuid not null default auth.uid() references auth.users(id),
@@ -54,7 +54,7 @@ create table if not exists psi_locais (
 );
 
 -- ---------- A ROTINA FIXA DA SEMANA (blocos por local, na agenda) ----------
--- Ex.: APAE seg e sex 07:30–11:30. Sem horário = só o DIA do local (Mauri, Conecta): cada paciente tem o seu.
+-- Ex.: APAE seg e sex 07:30–11:30. Sem horário = só o DIA do local (SESM, Conecta): cada paciente tem o seu.
 create table if not exists psi_blocos (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null default auth.uid() references auth.users(id),
@@ -446,7 +446,7 @@ create policy psi_anexos_cria on storage.objects for insert to authenticated
 --   from auth.users u,
 --        (values ('APAE','instituicao',null,1,'#b07a5e'),
 --                ('Clínica Conecta','clinica','Estrela',2,'#c08f8b'),
---                ('Clínica Mauri','clinica','Lajeado',3,'#8c9877'),
+--                ('SESM','clinica','Lajeado',3,'#8c9877'),
 --                ('Mercado Montanha','empresa',null,4,'#6f8796')) as l(nome,tipo,cidade,ordem,cor)
 --  where u.email = 'EMAIL-DELA@exemplo.com'
 --    and not exists (select 1 from psi_locais x where x.owner_id = u.id);
@@ -457,7 +457,7 @@ create policy psi_anexos_cria on storage.objects for insert to authenticated
 --   from psi_locais l
 --   join (values ('APAE',1,'07:30','11:30'), ('APAE',5,'07:30','11:30'),
 --                ('Mercado Montanha',2,'08:00','15:00'),
---                ('Clínica Mauri',3,null,null),          -- sem horário fixo: depende dos pacientes
+--                ('SESM',3,null,null),                  -- sem horário fixo: depende dos pacientes
 --                ('Clínica Conecta',4,null,null)) as b(nome,dia,ini,fim) on b.nome = l.nome
 --   join auth.users u on u.id = l.owner_id and u.email = 'EMAIL-DELA@exemplo.com'
 --  where not exists (select 1 from psi_blocos x where x.owner_id = l.owner_id);

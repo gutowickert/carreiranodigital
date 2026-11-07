@@ -225,3 +225,24 @@ textarea.psi-input { min-height: 140px; resize: vertical; line-height: 1.5; }
 .psi-entrar { min-height: 100dvh; display: flex; flex-direction: column; justify-content: center; max-width: 420px; margin: 0 auto; padding: 24px; }
 .psi-entrar .psi-logo { align-self: center; }
 .psi-entrar h1 { font-family: var(--f-titulo); color: var(--cacau); font-weight: 600; font-size: 30px; margin: 14px 0 4px; }
+
+/* ---------- financeiro ---------- */
+.psi-resultado { background: linear-gradient(135deg, #7A5B49 0%, var(--cacau) 100%); color: #FFF8F2; border-radius: 20px; padding: 18px 18px 16px; box-shadow: 0 10px 24px rgba(107, 79, 63, .22); }
+.psi-resultado > small { display: block; font-size: 14px; opacity: .85; font-weight: 600; }
+.psi-resultado > b { display: block; font-family: var(--f-titulo); font-weight: 600; font-size: 44px; line-height: 1.1; letter-spacing: -.01em; margin: 4px 0 12px; font-variant-numeric: tabular-nums; }
+.psi-resultado > b[data-negativo="1"] { color: #F7C9B8; }
+.psi-resultado-linha { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 14.5px; padding-top: 10px; border-top: 1px solid rgba(255, 248, 242, .22); }
+.psi-resultado-linha strong { font-size: 16px; }
+.psi-resultado > p { margin: 10px 0 0; font-size: 12.5px; opacity: .8; }
+.psi-valor { font-variant-numeric: tabular-nums; font-weight: 800; color: var(--cacau); white-space: nowrap; flex: none; font-size: 15.5px; }
+.psi-secao .psi-valor { font-size: 16px; }
+
+/* ---------- confirmar amanhã ---------- */
+.psi-conf { padding: 12px 14px; }
+.psi-conf + .psi-conf { border-top: 1px solid var(--linha); }
+.psi-conf-topo { display: flex; align-items: center; gap: 10px; }
+.psi-conf-acoes { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.psi-conf-acoes .psi-btn { min-height: 46px; font-size: 14.5px; padding: 0 10px; }
+.psi-pill[data-p="confirmado"] { background: var(--ok-bg); color: #4A6640; }
+.psi-pill[data-p="a_confirmar"] { background: #FBE9C9; color: #7A5418; }
+.psi-numeros-2 { grid-template-columns: 1fr 1fr; }

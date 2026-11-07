@@ -3,12 +3,14 @@
 // (só é marcada), toda edição guarda a versão anterior, e cada mudança entra na trilha de auditoria.
 import type { Repo } from './repo'
 import type {
-  Anexo, Atendimento, Bloco, DocumentoEmitido, Evolucao, EventoAuditoria, Local, Paciente, Perfil, Presenca, VersaoEvolucao,
+  Anexo, Atendimento, Bloco, Despesa, DocumentoEmitido, Evolucao, EventoAuditoria, Local, Paciente, Perfil, Presenca, VersaoEvolucao,
 } from './tipos'
-import { BLOCOS_INICIAIS, LOCAIS_INICIAIS } from './tipos'
-import { diaDaSemana, hojeBR, somarDias } from './datas'
+import { BLOCOS_INICIAIS, DESPESAS_INICIAIS, LOCAIS_INICIAIS } from './tipos'
+import { diaDaSemana, hojeBR, mesSomar, somarDias } from './datas'
+import { valorPadrao } from './financeiro'
 
-const CHAVE = 'psi_exemplo_v1'
+// v2 (07/11): locais com o financeiro (salário / por atendimento) e a SESM no lugar da Mauri
+const CHAVE = 'psi_exemplo_v2'
 
 interface Banco {
   perfil: Perfil | null
@@ -21,6 +23,7 @@ interface Banco {
   anexos: (Anexo & { dataUrl?: string })[]
   documentos: DocumentoEmitido[]
   auditoria: EventoAuditoria[]
+  despesas: Despesa[]
 }
 
 const uid = () => (typeof crypto !== 'undefined' && 'randomUUID' in crypto) ? crypto.randomUUID() : 'x' + Math.random().toString(36).slice(2) + Date.now().toString(36)
@@ -30,10 +33,14 @@ const agora = () => new Date().toISOString()
 function semear(): Banco {
   const hoje = hojeBR()
   const locais: Local[] = LOCAIS_INICIAIS.map((l, i) => ({ ...l, id: `local-${i + 1}` }))
-  locais[1].valor_sessao = 120; locais[1].forma_pagamento = 'Repasse da clínica no dia 10'
-  locais[2].valor_sessao = 130; locais[2].forma_pagamento = 'Pix do paciente na sessão'; locais[2].cobra_falta = true
-  locais[3].valor_sessao = 90;  locais[3].forma_pagamento = 'Nota fiscal mensal pra empresa'
+  // valores INVENTADOS (os modelos, as % e os salários seguem os iniciais)
+  locais[1].valor_sessao = 130; locais[1].forma_pagamento = 'Repasse da clínica no dia 10'
+  locais[2].valor_sessao = 150; locais[2].forma_pagamento = 'Pix do paciente na sessão'; locais[2].cobra_falta = true
   const porNome = (n: string) => locais.find(l => l.nome === n)!.id
+  // os custos fixos (aluguel da SESM, contador) valendo desde 3 meses atrás, e uma despesa avulsa no mês
+  const despesas: Despesa[] = DESPESAS_INICIAIS.map((d, i) => ({ id: 'despesa-' + (i + 1), nome: d.nome, valor: d.valor, local_id: d.local ? porNome(d.local) : null,
+    recorrente: true, desde: mesSomar(hoje.slice(0, 7), -3), ate: null, mes: null, ativo: true }))
+  despesas.push({ id: 'despesa-3', nome: 'Livros de ludoterapia', valor: 180, local_id: null, recorrente: false, mes: hoje.slice(0, 7), ativo: true })
   const blocos: Bloco[] = BLOCOS_INICIAIS.map((b, i) => ({ id: `bloco-${i + 1}`, local_id: porNome(b.local), dia_semana: b.dia_semana, hora_inicio: b.hora_inicio, hora_fim: b.hora_fim, ativo: true }))
 
   const inicio = somarDias(hoje, -75)
@@ -55,12 +62,12 @@ function semear(): Banco {
     p('Fernanda Lima', 'Mercado Montanha', 2, '09:00', { data_nascimento: '1991-12-01' }),
     p('Jéssica Toledo', 'Mercado Montanha', 2, '10:00', { data_nascimento: '1996-07-15' }),
     p('Paulo Henz', 'Mercado Montanha', 2, '13:00', { data_nascimento: '1978-10-03' }),
-    p('Mariana Costa', 'Clínica Mauri', 3, '14:00', { data_nascimento: '1988-01-29', demanda: 'Luto pela perda do pai; dificuldade de retomar a rotina.', objetivos: 'Elaboração do luto.' }),
-    p('Eduardo Weber', 'Clínica Mauri', 3, '15:00', { data_nascimento: '1975-03-22' }),
+    p('Mariana Costa', 'SESM', 3, '14:00', { data_nascimento: '1988-01-29', valor_sessao: 170, demanda: 'Luto pela perda do pai; dificuldade de retomar a rotina.', objetivos: 'Elaboração do luto.' }),
+    p('Eduardo Weber', 'SESM', 3, '15:00', { data_nascimento: '1975-03-22' }),
     p('Camila Duarte', 'Clínica Conecta', 4, '14:00', { data_nascimento: '2000-09-18', demanda: 'Crises de ansiedade antes de provas.' }),
-    p('Gustavo Pereira', 'Clínica Conecta', 4, '15:00', { data_nascimento: '1993-04-04' }),
+    p('Gustavo Pereira', 'Clínica Conecta', 4, '15:00', { data_nascimento: '1993-04-04', valor_sessao: 110 }),
     p('Sofia Ramos', 'Clínica Conecta', 4, '16:00', { data_nascimento: '2008-12-12', responsavel_nome: 'Lúcia Ramos', responsavel_parentesco: 'mãe' }),
-    p('Antônio Becker', 'Clínica Mauri', 3, '16:00', { status: 'alta', recorrente: false, encerramento_em: somarDias(hoje, -20), encerramento_motivo: 'Alta', encerramento_texto: 'Objetivos alcançados; combinado retorno se precisar.' }),
+    p('Antônio Becker', 'SESM', 3, '16:00', { status: 'alta', recorrente: false, encerramento_em: somarDias(hoje, -20), encerramento_motivo: 'Alta', encerramento_texto: 'Objetivos alcançados; combinado retorno se precisar.' }),
   ]
 
   // histórico: toda semana, cada paciente recorrente no seu dia; a maioria realizado
@@ -86,7 +93,7 @@ function semear(): Banco {
       const r = sorte()
       const presenca: Presenca = r < 0.8 ? 'realizado' : r < 0.9 ? 'faltou' : 'desmarcou'
       const a: Atendimento = { id: uid(), paciente_id: pac.id, local_id: pac.local_id, data: d, hora: pac.hora_fixa || null, duracao_min: 50,
-        presenca, modalidade: 'presencial', valor: loc.valor_sessao ?? null, pago: d < somarDias(hoje, -30), criado_em: d + 'T15:00:00Z' }
+        presenca, modalidade: 'presencial', valor: valorPadrao(pac, loc), pago: d < somarDias(hoje, -30) || (!!valorPadrao(pac, loc) && sorte() < 0.4), criado_em: d + 'T15:00:00Z' }
       atendimentos.push(a)
       if (presenca === 'realizado') evolucoes.push({ id: uid(), paciente_id: pac.id, atendimento_id: a.id, local_id: pac.local_id, data: d, tipo: 'sessao',
         texto: textos[Math.floor(sorte() * textos.length)], versao: 1, criado_em: d + 'T15:05:00Z', atualizado_em: d + 'T15:05:00Z' })
@@ -96,11 +103,11 @@ function semear(): Banco {
   const avulso = p('Rafael Nunes', 'Clínica Conecta', 4, '17:00', { recorrente: false, dia_semana: null, hora_fixa: null, data_inicio: hoje })
   pacientes.push(avulso)
   let prox = somarDias(hoje, 1); while (diaDaSemana(prox) !== 4) prox = somarDias(prox, 1)
-  atendimentos.push({ id: uid(), paciente_id: avulso.id, local_id: avulso.local_id, data: prox, hora: '17:00', duracao_min: 50, presenca: 'agendado', modalidade: 'presencial', valor: 120, pago: false })
+  atendimentos.push({ id: uid(), paciente_id: avulso.id, local_id: avulso.local_id, data: prox, hora: '17:00', duracao_min: 50, presenca: 'agendado', modalidade: 'presencial', valor: 130, pago: false, confirmacao: 'confirmado', confirmado_em: agora() })
 
   return {
     perfil: { nome: 'Morgana Schena Wickert', crp: '07/00000 (exemplo)', telefone: '(51) 99999-0000', email: 'exemplo@exemplo.com', cidade: 'Lajeado/RS' },
-    locais, blocos, pacientes, atendimentos, evolucoes, versoes: [], anexos: [], documentos: [], auditoria: [],
+    locais, blocos, pacientes, atendimentos, evolucoes, versoes: [], anexos: [], documentos: [], auditoria: [], despesas,
   }
 }
 
@@ -110,7 +117,7 @@ function ler(): Banco {
   if (cache) return cache
   try {
     const s = localStorage.getItem(CHAVE)
-    if (s) { cache = JSON.parse(s) as Banco; return cache }
+    if (s) { cache = JSON.parse(s) as Banco; cache.despesas = cache.despesas || []; return cache }
   } catch {}
   cache = semear(); gravar(); return cache
 }
@@ -244,6 +251,13 @@ export function repoExemplo(): Repo {
       ler().documentos.push(novo); auditar('criar', 'psi_documentos', novo.id, d.paciente_id); gravar()
       return novo
     },
+
+    async despesas() { await espera(); return [...ler().despesas].sort((a, b) => Number(b.recorrente) - Number(a.recorrente) || a.nome.localeCompare(b.nome)) },
+    async salvarDespesa(d) {
+      const r = upsert(ler().despesas, d, 'psi_despesas', () => null, { recorrente: true, ativo: true, local_id: null } as Partial<Despesa>)
+      gravar(); return r
+    },
+    async apagarDespesa(id) { const b = ler(); b.despesas = b.despesas.filter(x => x.id !== id); auditar('apagar', 'psi_despesas', id, null); gravar() },
 
     async registrar(acao, pid, detalhe) { auditar(acao, pid ? 'psi_pacientes' : null, null, pid || null, undefined, detalhe); gravar() },
     async auditoria(limite = 200) { return ler().auditoria.slice(0, limite) },
