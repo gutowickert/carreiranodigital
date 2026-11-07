@@ -1,0 +1,18 @@
+{
+  "id": "/psi",
+  "name": "Morgana Schena Wickert · Consultório",
+  "short_name": "Consultório",
+  "description": "Agenda, atendimentos e prontuário da Morgana Schena Wickert, psicóloga.",
+  "lang": "pt-BR",
+  "start_url": "/psi",
+  "scope": "/psi",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F6EFE8",
+  "theme_color": "#F6EFE8",
+  "icons": [
+    { "src": "/psi/icone-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/psi/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/psi/icone-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
