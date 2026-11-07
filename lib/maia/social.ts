@@ -91,6 +91,8 @@ export async function criaPost(negocio_id: string, d: { quando: string; tipo: Ti
   const quando = quandoIso(d.quando)
   if (!quando) throw new Error('data/hora inválida (ex.: 2026-11-10T18:00)')
   const midias = (d.midias || []).filter(m => m && (m.url || m.caminho)).map(m => ({ ...m, tipo: m.tipo || (/\.(mp4|mov)(\?|$)/i.test(m.url || m.caminho || '') ? 'video' : 'foto') }))
+  // 07/11 (segurança): arquivo do armazenamento só da pasta DESTE negócio (nunca a foto de outro cliente no post)
+  if (midias.some(m => m.caminho && (!String(m.caminho).startsWith(neg.id + '/') || String(m.caminho).includes('..')))) throw new Error('mídia de fora da pasta deste negócio')
   if (d.tipo === 'foto' && (midias.length !== 1 || midias[0].tipo !== 'foto')) throw new Error('post de foto leva 1 foto')
   if (d.tipo === 'reels' && (midias.length !== 1 || midias[0].tipo !== 'video')) throw new Error('reels leva 1 vídeo')
   if (d.tipo === 'carrossel' && (midias.length < 2 || midias.length > 10)) throw new Error('carrossel leva de 2 a 10 fotos ou vídeos')
