@@ -4,7 +4,7 @@ import './psi.css'
 
 // PSI — o consultório da Morgana (psicóloga). Área separada do sistema da escola, com o próprio
 // manifest (instala como app próprio na tela inicial), a própria cor e nenhum menu da escola.
-const fraunces = Fraunces({ subsets: ['latin'], weight: ['500', '600'], variable: '--f-fraunces', display: 'swap' })
+const fraunces = Fraunces({ subsets: ['latin'], variable: '--f-fraunces', display: 'swap' })
 
 export const metadata: Metadata = {
   title: 'Morgana Schena Wickert · Consultório',
