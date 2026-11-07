@@ -158,18 +158,20 @@ function Entrar({ repo, entrou }: { repo: Repo; entrou: () => void }) {
   }
   return (
     <form className="psi-entrar" onSubmit={enviar}>
-      <Logo tamanho={90} />
-      <h1>Consultório</h1>
-      <p className="psi-muted" style={{ margin: '0 0 24px' }}>Agenda, atendimentos e prontuário.</p>
-      <label className="psi-campo"><span>E-mail</span>
-        <input className="psi-input" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" inputMode="email" required />
-      </label>
-      <label className="psi-campo"><span>Senha</span>
-        <input className="psi-input" type="password" value={senha} onChange={e => setSenha(e.target.value)} autoComplete="current-password" required />
-      </label>
-      {erro && <p style={{ color: 'var(--falta)', margin: '0 0 12px', fontWeight: 600 }}>{erro}</p>}
-      <button className="psi-btn psi-btn-principal psi-btn-bloco" disabled={indo || !email || !senha}>{indo ? 'Entrando…' : 'Entrar'}</button>
-      <p className="psi-muted psi-pequeno" style={{ marginTop: 18 }}>Esqueceu a senha? Peça pro Guto trocar.</p>
+      <Logo tamanho={124} />
+      <div className="psi-cartao psi-entrar-cartao">
+        <h1>Consultório</h1>
+        <p className="psi-muted" style={{ margin: '0 0 20px' }}>Agenda, atendimentos e prontuário.</p>
+        <label className="psi-campo"><span>E-mail</span>
+          <input className="psi-input" type="email" value={email} onChange={e => setEmail(e.target.value)} autoComplete="email" inputMode="email" required />
+        </label>
+        <label className="psi-campo"><span>Senha</span>
+          <input className="psi-input" type="password" value={senha} onChange={e => setSenha(e.target.value)} autoComplete="current-password" required />
+        </label>
+        {erro && <p style={{ color: 'var(--falta)', margin: '0 0 12px', fontWeight: 600 }}>{erro}</p>}
+        <button className="psi-btn psi-btn-principal psi-btn-bloco" disabled={indo || !email || !senha}>{indo ? 'Entrando…' : 'Entrar'}</button>
+      </div>
+      <p className="psi-muted psi-pequeno" style={{ marginTop: 18, textAlign: 'center' }}>Esqueceu a senha? Peça pro Guto trocar.</p>
     </form>
   )
 }

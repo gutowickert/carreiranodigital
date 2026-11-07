@@ -43,11 +43,12 @@ export default function Inicio() {
 
   return (
     <>
-      <header className="psi-topo" style={{ alignItems: 'center' }}>
-        <Logo tamanho={44} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h1 style={{ fontSize: 22 }}>{primeiroNome ? `Olá, ${primeiroNome}` : 'Olá'}</h1>
-          <div className="psi-muted psi-pequeno">{dataLonga(hoje).charAt(0).toUpperCase() + dataLonga(hoje).slice(1)}</div>
+      {/* a capa: a logo dela grande, em destaque, e o "olá" numa pílula de vidro logo abaixo */}
+      <header className="psi-capa">
+        <Logo tamanho={100} />
+        <div className="psi-capa-ola">
+          <b>{primeiroNome ? `Olá, ${primeiroNome}` : 'Olá'}</b>
+          <span>{dataLonga(hoje).charAt(0).toUpperCase() + dataLonga(hoje).slice(1)}</span>
         </div>
       </header>
 
