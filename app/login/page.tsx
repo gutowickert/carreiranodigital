@@ -20,10 +20,11 @@ export default function Login() {
   async function entrar(e: React.FormEvent) {
     e.preventDefault()
     setErro(''); setCarregando(true)
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha })
     setCarregando(false)
     if (error) { setErro('E-mail ou senha inválidos.'); return }
-    router.push('/dashboard')
+    // login só do consultório (07/11/2026) vai direto pro /psi
+    router.push((data.user?.app_metadata as Record<string, unknown> | undefined)?.papel === 'psi' ? '/psi' : '/dashboard')
   }
 
   return (

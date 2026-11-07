@@ -337,11 +337,19 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
     async function checar() {
       const { data: { session } } = await supabase.auth.getSession()
       if (!session) { router.replace('/login'); return }
+      // login só do consultório (a Morgana, 07/11/2026): o painel da escola não é dela; vai pro /psi
+      if ((session.user.app_metadata as Record<string, unknown> | undefined)?.papel === 'psi') { router.replace('/psi'); return }
       const { data: p } = await supabase.from('usuarios_perfil')
         .select('id, nome, email, papel, setor, crm_interno, crm_externo, leads_escopo, wa_caixa')
         .eq('id', session.user.id).single()
       if (!ativo) return
-      if (!p) { await supabase.auth.signOut(); router.replace('/login'); return }
+      if (!p) {
+        // sem perfil na escola mas com perfil no consultório: é a Morgana sem a marca no login ainda. Vai pro /psi sem deslogar.
+        const { data: psi } = await supabase.from('psi_perfil').select('owner_id').eq('owner_id', session.user.id).maybeSingle()
+        if (!ativo) return
+        if (psi) { router.replace('/psi'); return }
+        await supabase.auth.signOut(); router.replace('/login'); return
+      }
       // professor não usa o painel admin — vai pro portal dele
       if ((p as any).setor === 'professor' || (p as any).papel === 'professor') { router.replace('/professor'); return }
       setPerfil(p as Perfil)

@@ -48,7 +48,20 @@ Os 4 locais e a rotina da semana não precisam ser criados à mão. O sistema cr
 
 **Trocar a senha:** no mesmo lugar (Authentication > Users), clique nos três pontinhos do usuário dela e escolha "Send password recovery" ou "Reset password".
 
-> **Atenção, Guto:** o login dela fica no mesmo Supabase da escola. Os dados do consultório estão protegidos: só ela vê. Mas o contrário eu não conferi. O sistema da escola (`lib/org.ts`) trata **quem não tem empresa como se fosse da escola**, então ela talvez consiga abrir telas do /dashboard da escola com esse login. Na prática ela só vai usar o /psi, mas vale conferir: entre no /dashboard com o login dela uma vez e veja o que aparece. Se aparecer coisa da escola, a saída é ela ter um projeto Supabase próprio. A mudança no código é pequena: só o `lib/psi/repo-supabase.ts` passaria a usar o endereço e a chave pública desse projeto novo.
+**Trava da escola (obrigatório, uma vez):** rode `db/psi-acesso.sql` no SQL Editor. Ele marca o login dela como "só do consultório" (`papel = psi`). A marca entra sozinha no primeiro acesso dela ao /psi. Se quiser, dá pra marcar à mão logo depois de criar o login: a linha comentada está no próprio arquivo.
+
+**O que a trava faz** (o login dela fica no mesmo Supabase da escola):
+- **APIs da escola** (`proxy.ts`): qualquer chamada a `/api/...` com o login dela é recusada (erro 403). O proxy só lê o token, então quem é da escola não sente diferença.
+- **Painel e login** (`components/Layout.tsx`, `app/login/page.tsx`): se ela abrir /dashboard ou /login, é mandada pro /psi.
+- **"Sem empresa = escola"** (`lib/org.ts`, `lib/exigir-login.ts`): essa regra não vale pra ela. Pra essas funções, ela não está logada no sistema da escola e não tem empresa.
+
+**Quem é tratado como "só do consultório":**
+- quem tem a marca `papel = psi` no login; OU
+- quem tem perfil no consultório e **não** tem perfil na escola (`usuarios_perfil`).
+
+Ninguém da equipe é afetado, mesmo que abra o /psi.
+
+**Falta conferir uma coisa no banco:** as tabelas que o navegador lê direto usam a regra `meu_org()`, e a definição dela não está no código. O fim do `db/psi-acesso.sql` tem a consulta pra conferir. Se essa regra devolver "escola" pra quem não tem empresa, me avise antes de criar o login dela.
 
 ## Passo 3: instalar o ícone no celular
 

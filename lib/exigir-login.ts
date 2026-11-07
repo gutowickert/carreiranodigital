@@ -1,4 +1,5 @@
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { ehUsuarioPsi } from '@/lib/psi/acesso'
 
 // QUEM ESTÁ CHAMANDO (06/10/2026, achado na Wood Arte): rotas que gastam IA ou mandam WhatsApp não
 // podem ficar abertas. A rota de simular conversa respondia a qualquer um na internet — bastava saber
@@ -9,6 +10,8 @@ export async function usuarioLogado(req: Request): Promise<string | null> {
   if (!auth) return null
   try {
     const { data } = await supabaseDoUsuario(auth).auth.getUser()
+    // login só do consultório (/psi) não conta como logado no sistema da escola
+    if (await ehUsuarioPsi(data.user)) return null
     return data.user?.id || null
   } catch { return null }
 }
@@ -41,6 +44,7 @@ export async function emailLogado(req: Request): Promise<string> {
   if (!auth) return ''
   try {
     const { data } = await supabaseDoUsuario(auth).auth.getUser()
+    if (await ehUsuarioPsi(data.user)) return ''
     return (data.user?.email || '').toLowerCase()
   } catch { return '' }
 }

@@ -59,6 +59,8 @@ export function repoSupabase(): Repo {
       if (!dono) throw new Error('Entre de novo pra salvar.')
       const { error } = await supabase.from('psi_perfil').upsert({ ...resto, owner_id: dono }, { onConflict: 'owner_id' })
       if (error) falha('salvar seus dados', error)
+      // o banco marca o login como 'só do consultório' (db/psi-acesso.sql); renovar o login traz a marca pro token
+      try { await supabase.auth.refreshSession() } catch {}
     },
 
     async locais() {

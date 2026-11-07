@@ -1,15 +1,19 @@
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { supabaseDoUsuario } from '@/lib/supabase-user'
+import { ehUsuarioPsi, ORG_NENHUMA } from '@/lib/psi/acesso'
 
 // Org nº 1 (Carreira no Digital) — id fixo criado na Fase 0.
 export const ORG_CND = '00000000-0000-0000-0000-0000000000cd'
 
 // Resolve o org a partir do TOKEN do request (header Authorization). É o que as rotas de
 // leitura usam pra escopar por cliente. Sem token válido → CnD (preserva o comportamento atual).
+// EXCEÇÃO (07/11/2026): login só do consultório (/psi, a Morgana) NÃO cai na escola: vira uma org
+// que não existe, e a rota não acha nada (ver lib/psi/acesso.ts).
 export async function orgDaRequest(authorization?: string | null): Promise<string> {
   try {
     if (!authorization) return ORG_CND
     const { data } = await supabaseDoUsuario(authorization).auth.getUser()
+    if (await ehUsuarioPsi(data.user)) return ORG_NENHUMA
     return (data.user?.app_metadata?.org_id as string) || ORG_CND
   } catch { return ORG_CND }
 }
@@ -21,6 +25,7 @@ export async function orgDoUsuario(opts: { email?: string | null; authId?: strin
     const email = (opts.email || '').toLowerCase().trim()
     const authId = (opts.authId || '').trim()
     if (!email && !authId) return ORG_CND
+    if (authId && await ehUsuarioPsi({ id: authId })) return ORG_NENHUMA
     let q = sb.from('usuarios_perfil').select('org_id')
     q = authId ? q.eq('auth_id', authId) : q.ilike('email', email)
     const { data } = await q.maybeSingle()
