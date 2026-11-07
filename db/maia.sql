@@ -200,3 +200,9 @@ alter table maia_metricas_dia enable row level security;
 alter table maia_eventos enable row level security;
 
 -- arquivos: criar o bucket privado "maia" no Storage (fotos, vídeos e peças prontas).
+-- 07/11 (segurança): em SQL, pra não depender de marcar certo na tela. SEM nenhuma policy em storage.objects pro bucket "maia":
+-- só o servidor (chave de serviço) lê e grava; quem vê, vê por link assinado com prazo.
+insert into storage.buckets (id, name, public) values ('maia', 'maia', false) on conflict (id) do update set public = false;
+-- conferência depois de aplicar (as duas têm que voltar vazias):
+--   select tablename from pg_tables where schemaname = 'public' and tablename like 'maia\_%' and not rowsecurity;
+--   select policyname, tablename from pg_policies where tablename like 'maia\_%' or (tablename = 'objects' and qual ilike '%''maia''%');
