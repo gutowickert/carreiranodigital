@@ -1,5 +1,5 @@
 // A agenda: monta o dia juntando três coisas
-//  1. os BLOCOS da rotina (APAE seg/qua 07:30–11:30...), com a cor do local;
+//  1. os BLOCOS da rotina (APAE seg/sex 07:30–11:30...), com a cor do local;
 //  2. os ATENDIMENTOS gravados naquele dia (agendados ou já registrados);
 //  3. as sessões PREVISTAS dos pacientes com horário fixo semanal que ainda não têm atendimento no dia.
 // Uma sessão prevista não existe no banco: vira atendimento quando ela toca e registra.

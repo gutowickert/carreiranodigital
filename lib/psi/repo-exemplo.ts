@@ -47,7 +47,7 @@ function semear(): Banco {
     p('Helena Prates', 'APAE', 1, '08:30', { data_nascimento: '2012-09-02', responsavel_nome: 'Carlos Prates', responsavel_parentesco: 'pai', demanda: 'Ansiedade em situações novas.' }),
     p('Miguel Fontana', 'APAE', 1, '09:30', { data_nascimento: '2010-01-20', responsavel_nome: 'Rita Fontana', responsavel_parentesco: 'mãe' }),
     p('Laura Bettio', 'APAE', 1, '10:30', { data_nascimento: '2014-06-11', responsavel_nome: 'Paula Bettio', responsavel_parentesco: 'mãe' }),
-    p('Bernardo Kunz', 'APAE', 3, '07:30', { data_nascimento: '2011-11-30', responsavel_nome: 'Ivo Kunz', responsavel_parentesco: 'avô' }),
+    p('Bernardo Kunz', 'APAE', 5, '07:30', { data_nascimento: '2011-11-30', responsavel_nome: 'Ivo Kunz', responsavel_parentesco: 'avô' }),
     p('Alice Schmitt', 'APAE', 3, '08:30', { data_nascimento: '2015-02-17', responsavel_nome: 'Janete Schmitt', responsavel_parentesco: 'mãe' }),
     p('Theo Lorenzon', 'APAE', 3, '09:30', { data_nascimento: '2013-08-08', responsavel_nome: 'Márcia Lorenzon', responsavel_parentesco: 'mãe' }),
     p('Valentina Rech', 'APAE', 3, '10:30', { data_nascimento: '2017-04-25', responsavel_nome: 'Diego Rech', responsavel_parentesco: 'pai' }),

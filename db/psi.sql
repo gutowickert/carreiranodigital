@@ -54,7 +54,7 @@ create table if not exists psi_locais (
 );
 
 -- ---------- A ROTINA FIXA DA SEMANA (blocos por local, na agenda) ----------
--- Ex.: APAE seg e qua 07:30–11:30. Sem horário = só o DIA do local (Mauri, Conecta): cada paciente tem o seu.
+-- Ex.: APAE seg e sex 07:30–11:30. Sem horário = só o DIA do local (Mauri, Conecta): cada paciente tem o seu.
 create table if not exists psi_blocos (
   id            uuid primary key default gen_random_uuid(),
   owner_id      uuid not null default auth.uid() references auth.users(id),
@@ -455,7 +455,7 @@ create policy psi_anexos_cria on storage.objects for insert to authenticated
 -- insert into psi_blocos (owner_id, local_id, dia_semana, hora_inicio, hora_fim)
 -- select l.owner_id, l.id, b.dia, b.ini::time, b.fim::time
 --   from psi_locais l
---   join (values ('APAE',1,'07:30','11:30'), ('APAE',3,'07:30','11:30'),
+--   join (values ('APAE',1,'07:30','11:30'), ('APAE',5,'07:30','11:30'),
 --                ('Mercado Montanha',2,'08:00','15:00'),
 --                ('Clínica Mauri',3,null,null),          -- sem horário fixo: depende dos pacientes
 --                ('Clínica Conecta',4,null,null)) as b(nome,dia,ini,fim) on b.nome = l.nome

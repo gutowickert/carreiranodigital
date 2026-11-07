@@ -198,7 +198,7 @@ export interface Bloco {
 // pacientes"): o bloco só marca o DIA do local; a agenda mostra o horário de cada paciente marcado.
 export const BLOCOS_INICIAIS: { local: string; dia_semana: number; hora_inicio: string | null; hora_fim: string | null }[] = [
   { local: 'APAE', dia_semana: 1, hora_inicio: '07:30', hora_fim: '11:30' },
-  { local: 'APAE', dia_semana: 3, hora_inicio: '07:30', hora_fim: '11:30' },
+  { local: 'APAE', dia_semana: 5, hora_inicio: '07:30', hora_fim: '11:30' },
   { local: 'Mercado Montanha', dia_semana: 2, hora_inicio: '08:00', hora_fim: '15:00' },
   { local: 'Clínica Mauri', dia_semana: 3, hora_inicio: null, hora_fim: null },
   { local: 'Clínica Conecta', dia_semana: 4, hora_inicio: null, hora_fim: null },
