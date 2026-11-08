@@ -7,7 +7,7 @@
 // Áudio: o que chega é transcrito (Deepgram); a resposta vai em áudio também quando a pessoa mandou áudio
 // ou na proposta, se ELEVENLABS_API_KEY estiver no servidor (voz "Maia" criada no Voice Design, MAIA_VOZ_ID).
 import { oitoDb as db } from '@/lib/oito/db'
-import { enviaTexto, registraSaida, enviaAudio, sobeMidia } from '@/lib/oito/wa'
+import { enviaTexto, registraSaida, enviaAudio, sobeMidia, ehSimulado } from '@/lib/oito/wa'
 import { avisaDono } from '@/lib/oito/servico'
 import { oferta, textoOferta } from './oferta'
 
@@ -33,7 +33,7 @@ O ROTEIRO (vai no ritmo da pessoa, não pula etapa, não despeja tudo de uma vez
 4. A AMOSTRA, logo em seguida, com esta frase (pode mudar só o começo): "${FRASE_AMOSTRA}" Se ele não tiver vídeo, as 2 fotos bastam. O bloco SITUAÇÃO DA AMOSTRA diz se tem vaga nesta semana; se não tiver, avisa a data que ele diz. Quem confere as fotos quando chegam é o sistema: tu não avalia foto e não diz que recebeu.
 5. ENQUANTO A AMOSTRA NÃO CHEGA, o TESTE DO ATENDIMENTO: "Finge que tu é um cliente teu que viu esse anúncio e me manda uma mensagem." Quando ele mandar, responde COMO SE FOSSE O ATENDIMENTO DO NEGÓCIO DELE (simpática, objetiva, usando o que ele contou, oferecendo horário ou fechando o pedido). Depois sai do personagem: "Isso é o que eu faria com cada cliente, de dia e de madrugada."
 6. A PROPOSTA (depois que a amostra chegou, ou antes se ele perguntar o preço): primeiro o resumo REAL da semana da campanha que trouxe ele, com os números do bloco NÚMEROS REAIS (diz que é a campanha de verdade, desta semana, e que é assim que ele recebe o dele toda segunda). Esse resumo vai também em áudio (campo "audio"). Depois a oferta (bloco A OFERTA). Pergunta se ele quer começar.
-7. Se ele quiser começar, pedir pra falar com alguém, pedir desconto além do que está na oferta, ou tiver dúvida que tu não sabe: passar_para_humano true e diz que o Guto, da Carreira no Digital, continua a conversa ali mesmo, ainda hoje.
+7. Se ele quiser começar, pedir pra falar com alguém, pedir desconto além do que está na oferta, ou tiver dúvida que tu não sabe: passar_para_humano true e diz que o Guto, da Carreira no Digital, continua a conversa ali mesmo, no prazo do bloco PASSAGEM PRO GUTO (não promete outro).
 
 A OFERTA (só isto, sem inventar condição):
 ${textoOferta()}
@@ -43,6 +43,7 @@ REGRAS:
 - No teste do atendimento e nos ganchos, usa SÓ o que ele te contou (produto, preço, cidade, como funciona). O que ele não contou (o que inclui o serviço, horários, endereço, formas de pagamento), tu NÃO inventa: no atendimento de teste diz "isso eu confirmo com o [nome do dono] e já te respondo".
 - No teste do atendimento tu PODES explicar de forma geral como esse tipo de serviço costuma funcionar, deixando claro que os detalhes do jeito dele o dono confirma. Diz "vou confirmar" no máximo UMA vez por assunto.
 - No teste do atendimento, quando o "cliente" pergunta o preço: primeiro uma ou duas frases curtas do que ele ganha (só com o que o dono te contou), logo em seguida o preço. Sem enrolar e sem esconder o preço.
+- Quando o DONO pergunta o preço da Maia (regra fixa da casa, VALOR ANTES DO PREÇO): primeiro uma ou duas frases curtas do que ele ganha no negócio DELE (os anúncios feitos e no ar, cada cliente atendido no WhatsApp 24 horas, cada venda contada), e só depois o número, na mesma mensagem. Nunca abre a mensagem pelo nome do plano nem pelo R$. No áudio também.
 - SEMPRE "tu", nunca "você", inclusive no teste do atendimento.
 - Nunca promete venda, faturamento nem devolução de dinheiro. Pode dizer o que tu FAZ, e que ele vai VER cada número.
 - Se ele sair do roteiro (pergunta de preço, de como funciona, objeção), responde direto e volta pro roteiro.
@@ -84,19 +85,32 @@ export function leResposta(txt: string) {
   return { mensagens: todas('msg').slice(0, 3), audio: uma('audio'), etapa: uma('etapa').toLowerCase().replace(/[^a-z_]/g, ''), passar_para_humano: /^s/i.test(uma('humano')), resumo: uma('resumo'), entrevista }
 }
 
+// 08/11: quando o Guto pega a conversa (o aviso chega na hora, mas de noite ninguém responde "ainda hoje")
+async function quandoGuto(agora = new Date()) {
+  const { podeFalar, proximaJanela, horaLocal } = await import('./horario')
+  if (podeFalar(null, agora)) return 'ainda hoje'
+  const p = horaLocal(proximaJanela(null, agora)), h = horaLocal(agora)
+  const dias = Math.round((Date.parse(p.data) - Date.parse(h.data)) / 86400e3)
+  return `${dias <= 0 ? 'hoje' : dias === 1 ? 'amanhã' : ['domingo', 'segunda', 'terça', 'quarta', 'quinta', 'sexta', 'sábado'][p.diaSemana]} de manhã`
+}
+
 // 06/11: o que a IA precisa saber da amostra pra falar certo (tem vaga? já foi? quando chega?)
 async function situacaoAmostra(mx: any) {
   const a = await import('./demo-amostra')
+  // 08/11 (validação): sem a oficina de pé, nenhuma data é prometida (a peça fica parada até alguém ligar a oficina)
+  const viva = await a.oficinaViva().catch(() => false)
+  const quando = (iso: string) => viva ? 'chega ' + a.diaTxt(iso) : 'chega nesta conversa assim que a equipe terminar (NÃO promete dia nem "amanhã")'
   if (mx.amostra) {
     const { maiaDb } = await import('./db')
     const n = await maiaDb.um('negocios', { id: mx.amostra })
     const d = n?.contexto?.demo
     if (d?.status === 'enviada') return 'a amostra JÁ FOI ENTREGUE (arte e texto pro negócio dele, mais acima na conversa). Agora é a PROPOSTA.'
-    if (d?.status === 'falta_cidade') return 'as fotos já chegaram, mas falta a CIDADE do negócio (vai no anúncio). Se ele ainda não disse, pergunta a cidade. Quando ele disser, confirma que agora a amostra vai pra equipe e chega ' + a.diaTxt(d.entrega) + '. Não pede foto de novo.'
+    if (d?.status === 'falta_cidade') return 'as fotos já chegaram, mas falta a CIDADE do negócio (vai no anúncio). Se ele ainda não disse, pergunta a cidade. Quando ele disser, confirma que agora a amostra vai pra equipe e ' + quando(d.entrega) + '. Não pede foto de novo.'
     if (d?.status === 'fila') return `as fotos já chegaram; a amostra está na fila e chega ${a.diaTxt(d.entrega)}. Não pede foto de novo.`
-    if (d) return `as fotos já chegaram e a amostra está sendo feita (chega ${a.diaTxt(d.entrega)}, revisada pela equipe). Não pede foto de novo. Segue com o teste do atendimento.`
+    if (d) return `as fotos já chegaram e a amostra está sendo feita (${quando(d.entrega)}, revisada pela equipe). Não pede foto de novo. Segue com o teste do atendimento.`
   }
   const v = await a.proximaVaga()
+  if (v.agora && !viva) return 'ainda não pediu (ou ele ainda não mandou as fotos). TEM vaga, mas a produção não está garantida pra amanhã: usa a frase da amostra trocando "Amanhã te devolvo" por "a equipe monta e te devolve aqui". NÃO promete dia nem "amanhã".'
   return v.agora ? 'ainda não pediu (ou ele ainda não mandou as fotos). TEM vaga nesta semana: usa a frase da amostra como está.'
     : `ainda não pediu. NÃO tem vaga nesta semana (as ${a.LIMITE_SEMANA()} amostras que a equipe revisa já foram): pede as fotos do mesmo jeito, mas troca "Amanhã te devolvo" por "a tua fica pronta ${a.diaTxt(v.entrega)}" e explica em meia frase que a equipe revisa cada uma.`
 }
@@ -141,7 +155,10 @@ export async function atendeMaia(id: string) {
   const ultimaFoiAudio = /^\(áudio\)/.test(String(msgs.filter((x: any) => x.autor === 'cliente').slice(-1)[0]?.texto || ''))
   const [situacao, numeros] = await Promise.all([situacaoAmostra(mxa).catch(() => 'sem informação: não promete data.'), amostra.blocoNumeros().catch(() => 'Campanha: sem número agora (não fala de número da campanha).')])
   const sabe = Object.entries(mxa.entrevista || {}).map(([k, v]) => `${k}: ${v}`).join('; ')
+  // 08/11 (validação): "ainda hoje" só dentro do horário (9h às 20h; domingo das 10h); de noite, o próximo dia
+  const passagem = await quandoGuto().catch(() => 'assim que ele puder (não promete hora)')
   const pedido = `${cv.nome ? 'Nome no WhatsApp: ' + cv.nome + '\n' : ''}O QUE TU JÁ SABE DO NEGÓCIO DELE: ${sabe || 'nada ainda'}
+PASSAGEM PRO GUTO (se precisar): ele continua a conversa ${passagem}.
 SITUAÇÃO DA AMOSTRA: ${situacao}
 NÚMEROS REAIS (pra proposta; não usa nenhum outro):
 ${numeros}
@@ -171,12 +188,19 @@ CONVERSA ATÉ AGORA:\n${historico}\n\nResponde a(s) última(s) mensagem(ns). Res
     const txt = (j.content || []).map((x: any) => x.text || '').join('')
     const o = leResposta(txt)
     if (!o.mensagens.length) throw new Error('resposta sem mensagem: ' + txt.slice(0, 120))
+    // 08/11 (validação): regra fixa da casa, valor antes do preço, conferida depois da resposta (a mesma do atendimento, preco.ts)
+    // (só quando a última mensagem dele pergunta de preço: na entrevista a Maia repete o preço DELE e isso não é resposta de preço)
+    const ultimaDele = String(msgs.filter((x: any) => x.autor === 'cliente').slice(-1)[0]?.texto || '')
+    if (/quanto|pre[cç]o|valor|custa|caro|plano|mensalidade|pagar/i.test(ultimaDele)) {
+      try { const { valorAntesDoPreco } = await import('./preco'); o.mensagens = (await valorAntesDoPreco(REGRAS(), o.mensagens, { modelos: [MODELO] })).msgs } catch { /* fica a original */ }
+    }
     // áudio primeiro (quando houver), depois os textos
     const querAudio = (o.audio || '').trim() && (ultimaFoiAudio || o.etapa === 'proposta')
     if (querAudio) {
       const ogg = await fala(o.audio as string).catch(() => null)
       if (ogg) {
-        const up = await sobeMidia(ogg, 'audio/ogg', 'maia.ogg')
+        // 08/11: conversa simulada (55000...) não sobe nada pra Meta; o áudio fica registrado do mesmo jeito
+        const up = ehSimulado(cv.telefone) ? { ok: true, id: 'sim-audio' } : await sobeMidia(ogg, 'audio/ogg', 'maia.ogg')
         if (up.ok && up.id) await registraSaida(cv, 'ia', '(áudio) ' + o.audio, await enviaAudio(cv.telefone, up.id), 'audio')
       }
     }

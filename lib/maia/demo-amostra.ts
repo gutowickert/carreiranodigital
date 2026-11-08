@@ -206,11 +206,15 @@ export async function midiasNovas(cv: any): Promise<string[] | null> {
 
   // basta: o pedido de amostra (com vaga nesta semana, ou na fila com a data certa)
   const vaga = await proximaVaga()
+  // 08/11 (validação da demo): "amanhã" só com a oficina de pé (MAIA_OFICINA_LIGADA=1 ou ela perguntou a fila há menos de 10 min).
+  // Sem a oficina a peça fica parada em "esperando a oficina": a Maia não promete dia, a equipe recebe o aviso urgente
+  const viva = await oficinaViva()
   neg = await criaPedido(cv, mx, boas, vids.slice(0, 1), vaga)
   const temVideo = vids.length > 0
   const peca = temVideo ? 'com arte, vídeo editado e texto' : 'com arte e texto'
   // sem a cidade o gancho sai sem a região: pergunta antes de mandar pra oficina (cidadeChegou continua quando ele responder)
   if (neg.contexto.demo.status === 'falta_cidade') msgs.push('Recebi ✅ Só me diz uma coisa: o teu negócio fica em que cidade? Ela vai no anúncio.')
+  else if (vaga.agora && !viva) msgs.push(`Recebi ✅ Agora a equipe da Carreira no Digital monta o teu anúncio pronto, ${peca}, e revisa antes de chegar em ti. Assim que ficar pronto, ele chega aqui nesta conversa.`)
   else if (vaga.agora) msgs.push(`Recebi ✅ Amanhã te devolvo o anúncio pronto, ${peca}, pro teu negócio. A equipe da Carreira no Digital revisa antes de chegar em ti.`)
   else msgs.push(`Recebi ✅ Essa semana a equipe já tá revisando as ${LIMITE_SEMANA()} amostras que dá pra fazer com cuidado. A tua entrou na fila e chega ${diaTxt(vaga.entrega)}: o anúncio pronto, ${peca}.`)
   if (ruins.length) msgs.push(`(Uma das fotos ficou ${ruins[0].problema || 'ruim'}, então usei as outras.)`)

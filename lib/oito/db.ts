@@ -24,6 +24,9 @@ const PADRAO: Record<string, Linha> = {
   posts: { status: 'pronto' },
   fotos: { usos: 0 },
   eventos: { detalhe: {} },
+  // 08/11: os mesmos padrões das colunas do banco (sem isso, no modo local, a conversa nova nascia sem modo e o agente não respondia)
+  wa_conversas: { modo: 'ia', fase: 'novo', followup_etapa: 0, optout: false, nao_lidas: 0, ia_respostas: 0, rascunho: {}, simulado: false },
+  wa_msgs: { tipo: 'texto' },
 }
 
 // ---------- modo Supabase ----------
