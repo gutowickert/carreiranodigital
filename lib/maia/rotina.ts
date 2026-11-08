@@ -13,6 +13,7 @@ import { geraRelatorio } from './pecas'
 import { sincronizaMetricas } from './meta'
 import { rotinaSocial, socialLigado } from './social'
 import { podeFalar } from './horario'
+import { nomeDoModelo } from './modelos'
 
 const horaBR = (d = new Date()) => (d.getUTCHours() + 21) % 24
 const diaSemanaBR = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).getUTCDay()
@@ -34,7 +35,11 @@ export async function retomadas(relogio = new Date()) {
       // 05/11: o canal do negócio. Dentro da janela de 24 h, a retomada escrita pela Maia; fora dela, o modelo aprovado (maia_retomada).
       const cv = await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id })
       if (janelaAbertaCv(cv)) await mandaTexto(cv, await textoRetomada(neg, lead, numero))
-      else await mandaModeloCliente(cv, 'maia_retomada', [String(lead.nome || '').split(' ')[0] || 'tudo bem', neg.nome, lead.produto || 'o que tu tinha perguntado'], '(modelo maia_retomada) retomada ' + numero)
+      else {
+        // 08/11 (T2): o modelo no tom do negócio (maia_retomada_voce no "você", o padrão)
+        const modelo = nomeDoModelo(neg, 'maia_retomada'), voce = modelo.endsWith('_voce')
+        await mandaModeloCliente(cv, modelo, [String(lead.nome || '').split(' ')[0] || 'tudo bem', neg.nome, lead.produto || (voce ? 'o que você tinha perguntado' : 'o que tu tinha perguntado')], `(modelo ${modelo}) retomada ` + numero)
+      }
     } else {
       (lembretes[neg.id] ||= []).push(`${lead.nome || lead.telefone || 'contato'}${lead.produto ? ' (' + lead.produto + ')' : ''}${ultimo ? ', última tentativa' : ''}`)
     }

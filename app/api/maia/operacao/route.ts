@@ -261,6 +261,19 @@ export async function POST(req: Request) {
         return ok({ atendimento: at })
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
+      // 08/11 (T2): pede de novo os modelos do negócio (as versões "tu" e "você") pra quem já conectou o WhatsApp antes deles
+      // existirem. No modo local nada vai pra Meta (volta "simulado")
+      case 'pedir_modelos_negocio': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { criaModelosDoNegocio } = await import('@/lib/maia/modelos')
+        const { waDoNegocio } = await import('@/lib/maia/wa-negocio')
+        const w = waDoNegocio(n)
+        if (db.modo() !== 'local' && !w?.waba) return erro('o WhatsApp desse negócio ainda não foi conectado')
+        const modelos = await criaModelosDoNegocio(w?.waba ? { token: w.token, waba: w.waba } : null, n)
+        await db.evento('pedir_modelos_negocio', n.id, { por })
+        return ok({ modelos })
+      }
       // 07/11 (piloto): `relogio` (a hora da janela das 9h às 20h) só vale no modo de teste
       case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, forcarGuarda: db.modo() === 'local' && !!b.forcar_guarda, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
       // 08/11 (teste completo): só no modo de teste: as regras sem IA das correções, pra conferir sem gastar IA
@@ -274,6 +287,7 @@ export async function POST(req: Request) {
           motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), quer_comprar: at.querComprar(t, neg), recusa_firme: at.recusaFirme(t), sem_detalhe: at.semPedirDetalhes(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
           fora_do_tom: tom.foraDoTom(neg, t), acerta_tom: tom.acertaTom(neg, t), cta: tom.ctaNoTom(neg, t),
           dias_texto: hor.diasDoTexto(t), dias: hor.diasDoNegocio(neg, b.agora ? new Date(b.agora) : new Date()),
+          modelo_retomada: (await import('@/lib/maia/modelos')).nomeDoModelo(neg, 'maia_retomada'),
         })
       }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
