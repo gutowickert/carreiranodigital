@@ -239,7 +239,7 @@ NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${
 DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
 ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
-PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo)
+PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo. Se tu já lembrou o dono delas numa das tuas últimas mensagens da CONVERSA, não repete a lista: responde só o que ele falou agora. Lembra de novo só se ele perguntar o que falta)
 TOM COM OS CLIENTES (vale no responder_cliente; contigo e com o dono é o teu jeito de sempre): ${descreveTom(tomDoNegocio(neg))}${tomDoNegocio(neg).pessoa === 'voce' ? ' (no responder_cliente: "você", "seu", "sua", "pra você"; nunca "tu", "teu", "pra ti")' : ''}
 MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}
 CONVERSAS DE CLIENTE QUE ESTÃO COM O DONO (tu não responde): ${comGente.length ? comGente.join(', ') : 'nenhuma'}${devolvidas.length ? `\n(o sistema já devolveu pra ti as conversas com: ${devolvidas.join(', ')}. Só confirma pro dono.)` : ''}

@@ -63,8 +63,11 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
     const pedidos = (j.content || []).filter((c: any) => c.type === 'tool_use')
     // 05/11: às vezes o modelo ESCREVE a chamada de ferramenta como texto (<invoke ...>). Isso nunca pode ir pro cliente:
     // pede de novo, usando a ferramenta de verdade
+    // 08/11 (reteste r5): só pede de novo quando veio uma CHAMADA INTEIRA escrita (<invoke name=...>). Tag solta no fim
+    // ("</invoke>") só é limpa: pedir de novo fazia a IA explicar o erro ("o que escapou foi uma tag solta...") e isso ia pro dono
     if (FERRAMENTA_EM_TEXTO.test(t)) {
-      if (!pedidos.length && volta < maxVoltas - 1) { msgs.push({ role: 'user', content: 'Tu escreveu a chamada da ferramenta como texto. Usa as ferramentas de verdade e depois escreve só a mensagem, no formato pedido.' }); continue }
+      const chamadaInteira = /<invoke\b[^>]*\bname=/i.test(t)
+      if (chamadaInteira && !pedidos.length && volta < maxVoltas - 1) { msgs.push({ role: 'user', content: 'Tu escreveu a chamada da ferramenta como texto. Usa as ferramentas de verdade e depois escreve só a mensagem, no formato pedido. Não comenta sobre isso: o que tu escrever vai direto pra pessoa.' }); continue }
       t = limpaFerramentaEmTexto(t)
     }
     if (t) textos.push(t)
