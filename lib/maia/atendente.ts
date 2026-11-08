@@ -42,6 +42,13 @@ export function respostaPassou(t: string, perguntou = false): boolean {
   return false
 }
 
+// 08/11 (reteste, #17): na passagem pro dono a IA às vezes ainda pedia "me conta o que aconteceu", mas quem responde agora é o
+// dono (ela não volta). Na passagem, a frase que pede detalhe ao cliente sai: fica só o aviso de que a pessoa vai falar com ele
+const PEDE_DETALHE = /\b(me (conta|conte|contar|diz|diga|dizer|explica|explique|explicar|fala|fale|falar|passa|passe|manda|mande|mandar|envia|envie|enviar|adianta|adiante)|pode(ria)? (me )?(contar|dizer|explicar|detalhar|descrever|adiantar|mandar|enviar|passar|informar)|consegue (me )?(contar|dizer|explicar|detalhar|descrever|adiantar|mandar|enviar|passar|informar)|conta (pra|para) (mim|gente|nos)|o que (aconteceu|houve|ocorreu)|qual (foi|e) o (problema|numero do pedido|pedido)|mais detalhes|algum detalhe)\b/
+export function semPedirDetalhes(t: string): string {
+  return String(t || '').split(/(?<=[.!?])\s+/).filter(f => !PEDE_DETALHE.test(semAc(f))).join(' ').trim()
+}
+
 // uma mensagem de cliente que chegou no WhatsApp do negócio. referral = o anúncio de onde veio (CTWA), quando vier
 // 07/11 (piloto): d.tipo 'audio' ou 'image' com d.midia (o arquivo já baixado) vira texto: transcrição ou descrição (midia-cliente.ts)
 export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: string | null; texto: string; wamid?: string | null; referral?: { source_id?: string; headline?: string; ctwa_clid?: string | null; source_url?: string | null } | null; tipo?: string | null; midia?: MidiaCliente | null; legenda?: string | null }) {
@@ -259,7 +266,7 @@ export async function respondeCliente(conversa_id: string) {
   const ferrs = ferramentas(neg, cv, lead, ctx)
   // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
   const gatilho = gatilhoHumano(textoCliente)
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
     { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
@@ -273,7 +280,12 @@ export async function respondeCliente(conversa_id: string) {
     partes = boas(r2.texto)
   }
   // 08/11 (teste completo): confere o tom do negócio antes de mandar (fora do tom: reescreve; quase nunca acontece aqui)
-  const enviadas = await Promise.all(partes.slice(0, 2).map(m => noTomDoNegocio(neg, m, { negocio_id: neg.id, conversa_id: cv.id })))
+  let enviadas = await Promise.all(partes.slice(0, 2).map(m => noTomDoNegocio(neg, m, { negocio_id: neg.id, conversa_id: cv.id })))
+  // 08/11 (reteste, #17): na passagem pro dono, nada de pedir detalhes ao cliente (quem responde agora é a pessoa)
+  if (enviadas.length && (ctx.humano || gatilho || respostaPassou(enviadas.join(' '), r.usadas.some(u => u.nome === 'perguntar_ao_dono' && u.saida?.ok)))) {
+    enviadas = enviadas.map(semPedirDetalhes).filter(Boolean)
+    if (!enviadas.length) enviadas = [`Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`]
+  }
   if (!enviadas.length) {
     await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} no ${neg.nome}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }

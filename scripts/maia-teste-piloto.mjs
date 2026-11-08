@@ -35,6 +35,7 @@ const b64 = (n = 2048) => Buffer.from(Array.from({ length: n }, (_, i) => (i * 3
 const cvDe = async (negocio, tel) => (await ver('conversas', { negocio })).find(c => c.telefone === tel)
 const msgsDe = async (cv) => cv ? ver('msgs', { conversa: cv.id }) : []
 const hojeAs = (h) => new Date().toISOString().slice(0, 10) + `T${String(h + 3).padStart(2, '0')}:00:00.000Z`   // h em Brasília (UTC-3)
+const PEDE_DETALHE = /\b(me (conta|conte|diz|diga|explica|explique|fala|fale|passa|manda|mande)|pode(ria)? (me )?(contar|dizer|explicar|detalhar|adiantar)|o que (aconteceu|houve))\b/i
 const TU = /\b(tu|teu|tua|teus|tuas|contigo)\b/i
 
 async function main() {
@@ -244,6 +245,8 @@ async function main() {
 
   // ---------- 08/11: as correções do TESTE COMPLETO da Maia em produção (testes/maia-08-11) ----------
   await correcoes0811()
+  // ---------- 08/11 (tarde): as pendências de código antes da passagem pro Nando ----------
+  await pendencias0811()
 
   const falhas = relatorio.filter(x => !x.ok)
   log(`\n${relatorio.length - falhas.length} de ${relatorio.length} conferências passaram.`)
@@ -285,6 +288,8 @@ async function correcoes0811() {
   anota(!(await leadDe('5500044440101')).proximo_followup_em, '1. conversa com gente não fica com retomada automática marcada')
   r = await cliente(C.id, '5500044440102', 'Rafael', 'Quero meu dinheiro de volta.')
   anota((await cvDe(C.id, '5500044440102')).modo === 'humano', '1. "quero meu dinheiro de volta": passou pro dono')
+  log('    Rafael: Quero meu dinheiro de volta.\n    maia: ' + fala(r))
+  anota(!PEDE_DETALHE.test(fala(r)), 'P1. na passagem (devolução) a Maia não pede detalhes ao cliente (quem responde é o dono)')
 
   // 4. áudio normal, respondido certo: NÃO passa pro dono
   r = await cliente(C.id, '5500044440103', 'Tiago', '', { arquivo_b64: b64(), mime: 'audio/ogg', simulado: { transcricao: 'Oi, tudo bem. Eu queria saber se vocês entregam em Lajeado, e quanto fica a entrega. Queria 1 caixa de 4 cookies.' } })
@@ -384,5 +389,13 @@ async function correcoes0811() {
   const base = (C.nome + JSON.stringify(C.contexto)).toLowerCase()
   const daFoto = [...new Set(tab('midias').filter(m => m.negocio_id === C.id).flatMap(m => [...String(m.descricao || '').matchAll(/(?<=[\p{L},;]\s)(\p{Lu}\p{Ll}{3,})/gu)].map(x => x[1])).filter(w => !base.includes(w.toLowerCase())))]
   anota(ps.every(p => !daFoto.some(n => new RegExp(n, 'i').test(`${p.gancho} ${p.texto} ${p.cta}`))), '8c. nenhum nome que só aparece na foto entrou no anúncio (' + (daFoto.join(', ') || 'nenhum na foto') + ')')
+}
+// 08/11 (tarde): uma conferência pra cada pendência de código (PASSAGEM-NANDO, seção 5)
+async function pendencias0811() {
+  log('\n=== 08/11 (tarde): pendências de código')
+  const fn = (texto, extra = {}) => op('teste_funcoes', { texto, ...extra })
+  const sd = await fn('Entendo, sinto muito! Vou passar sua conversa pra uma pessoa da equipe. Enquanto isso, pode me contar o que aconteceu com o pedido?')
+  anota(/passar sua conversa/.test(sd.sem_detalhe) && !/aconteceu/.test(sd.sem_detalhe), 'P1. na passagem, a frase que pede detalhe sai: "' + sd.sem_detalhe + '"')
+  //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })
