@@ -270,6 +270,10 @@ async function correcoes0811() {
   anota(!(await fn('Tu é robô?')).gatilho && !(await fn('Quero um bolo pra uma pessoa')).gatilho && !(await fn('Vocês fazem bolo de aniversário pra 50 pessoas?')).gatilho, '1. "tu é robô?", "bolo pra uma pessoa" e "bolo pra 50 pessoas" NÃO viram passagem')
   anota((await fn('Claro! Vou passar sua conversa para uma pessoa da equipe, que te responde por aqui.')).passou && !(await fn('Vou confirmar com o dono e te respondo hoje até as 14h.')).passou, '1. resposta que diz "vou passar sua conversa" é reconhecida; "vou confirmar com o dono" não')
   anota((await fn('Tá caro, não quero.')).recusou && !(await fn('Vocês fazem bolo de aniversário pra 50 pessoas?')).recusou, '3. "tá caro, não quero" é recusa; perguntar o que não faz não é')
+  // 08/11 (noite): a conferência depois da resposta que põe o valor antes do preço (preco.ts), sem IA
+  anota((await fn('Oi! Eu sou a assistente virtual do Bocadinho 😊 A caixa com 6 cookies sai R$ 45, e você escolhe entre chocolate, red velvet e pistache.')).preco_antes
+    && !(await fn('Oi! Eu sou a assistente virtual do Bocadinho 😊 A caixa vem com 6 cookies artesanais, nos sabores chocolate, red velvet e pistache. Ela sai R$ 45.')).preco_antes
+    && (await fn('Quanto custa a caixa de 16?')).pergunta_preco, 'valor antes do preço: a conferência reconhece a frase do R$ antes do valor (e não confunde com a ordem certa)')
   anota((await fn('Ah, tá caro pra mim, vou comprar na internet mesmo. Obrigada, não quero.')).recusa_firme && !(await fn('Não quero glúten no brownie')).recusa_firme, '3. recusa firme vira perdido pelo sistema; "não quero glúten" não')
   const CX = { contexto: { precos: 'caixa 4 cookies R$ 28; caixa 16 cookies R$ 98; brownie R$ 12' } }
   anota((await fn('Queria 1 caixa de 4 cookies.', CX)).quer_comprar && (await fn('Perfeito, quero 1. Já te mando o pix', CX)).quer_comprar && !(await fn('Quero uma informação', CX)).quer_comprar, '3. "queria 1 caixa" e "quero 1." viram proposta; "quero uma informação" não')

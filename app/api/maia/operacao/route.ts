@@ -292,6 +292,7 @@ export async function POST(req: Request) {
           modelo_retomada: (await import('@/lib/maia/modelos')).nomeDoModelo(neg, 'maia_retomada'),
           aviso: (await import('@/lib/maia/lgpd')).avisoPrivacidade({ nome: 'Negócio Teste', ...neg }), ja_avisa: (await import('@/lib/maia/lgpd')).respostaJaAvisa(t),
           voz_ligada: (await import('@/lib/maia/voz')).vozLigada(), tira_nome: b.nome ? (await import('@/lib/maia/lgpd')).tiraNome(String(b.nome), b.outros || []).troca(t) : null,
+          pergunta_preco: at.perguntaPreco(t), preco_antes: (await import('@/lib/maia/preco')).precoAntesDoValor(t),
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)

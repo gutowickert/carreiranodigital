@@ -4,7 +4,8 @@
 // (painel e testes), e o cérebro já fica pronto e testado.
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
-import { respondeMisto } from './misto'
+import { respondeMisto, modeloBarato, modeloForte } from './misto'
+import { valorAntesDoPreco } from './preco'
 import { limiteRespostas, respostasHoje } from './limite'
 import { vozLigada, audioDaResposta } from './voz'
 import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
@@ -301,6 +302,13 @@ export async function respondeCliente(conversa_id: string) {
   }
   // 08/11 (teste completo): confere o tom do negócio antes de mandar (fora do tom: reescreve; quase nunca acontece aqui)
   let enviadas = await Promise.all(partes.slice(0, 2).map(m => noTomDoNegocio(neg, m, { negocio_id: neg.id, conversa_id: cv.id })))
+  // 08/11 (regra fixa da casa, conferência depois da resposta): perguntou o preço e a frase com o R$ veio antes do valor?
+  // Reescreve mudando só a ordem (preco.ts). O preço nunca some nem vai pra outra mensagem
+  let reordenou = false
+  if (precoAgora && !gatilho && !ctx.humano) {
+    const v = await valorAntesDoPreco(jeitoAtendimento(neg), enviadas, { modelos: [...new Set([modeloBarato(), modeloForte()])], uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id, fase: 'preco' } })
+    enviadas = v.msgs; reordenou = v.reescreveu
+  }
   // 08/11 (reteste, #17): na passagem pro dono, nada de pedir detalhes ao cliente (quem responde agora é a pessoa)
   if (enviadas.length && (ctx.humano || gatilho || respostaPassou(enviadas.join(' '), r.usadas.some(u => u.nome === 'perguntar_ao_dono' && u.saida?.ok)))) {
     enviadas = enviadas.map(semPedirDetalhes).filter(Boolean)
@@ -363,7 +371,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez, audio: caminhoAudio }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez, audio: caminhoAudio, reordenou_preco: reordenou }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
