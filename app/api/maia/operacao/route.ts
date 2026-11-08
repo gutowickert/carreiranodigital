@@ -58,6 +58,8 @@ export async function GET(req: Request) {
       const semana = new Date(Date.now() - 7 * 86400e3).toISOString()
       return ok({
         modo: db.modo(), meta_real: metaReal(),
+        // 08/11 (T16): qual banco a Maia está usando (local, proprio = MAIA_SUPABASE_URL, escola = o de sempre)
+        banco: (await import('@/lib/maia/db')).bancoDaMaia(),
         negocios: negs.length, ativos: negs.filter(n => n.status === 'ativo').length,
         pra_equipe: todasPecas.filter(p => p.status === 'revisao_equipe').length,
         amostras_semana: await vagasDaSemana(),

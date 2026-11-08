@@ -1,5 +1,5 @@
 // Maia: banco e arquivos (03/11). O mesmo jeito do Oito (lib/oito/db.ts), com as tabelas maia_* e a pasta "maia" do storage.
-//   Supabase (produção): chave de serviço, só no servidor
+//   Supabase (produção): chave de serviço, só no servidor. 08/11 (T16): banco próprio da Maia com MAIA_SUPABASE_URL/_SERVICE_KEY
 //   local (MAIA_LOCAL=1): arquivos JSON em .maia-local/, pra testar tudo sem tocar no banco
 // Só igualdade nos filtros: o resto é feito em JS (a escala por negócio é pequena).
 import fs from 'node:fs'
@@ -38,8 +38,12 @@ const PADRAO: Record<string, Linha> = {
 const SERIAL = new Set(['lead_eventos', 'eventos'])
 const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads'])
 
-const U = () => process.env.NEXT_PUBLIC_SUPABASE_URL as string
-const K = () => process.env.SUPABASE_SERVICE_ROLE_KEY as string
+// 08/11 (T16): o banco PRÓPRIO da Maia quando existir (MAIA_SUPABASE_URL + MAIA_SUPABASE_SERVICE_KEY, as duas juntas);
+// senão, o da escola, como até hoje. A cópia dos dados do banco antigo pro novo: scripts/maia-copiar-banco.mjs
+const proprio = () => !!(process.env.MAIA_SUPABASE_URL && process.env.MAIA_SUPABASE_SERVICE_KEY)
+const U = () => (proprio() ? process.env.MAIA_SUPABASE_URL : process.env.NEXT_PUBLIC_SUPABASE_URL) as string
+const K = () => (proprio() ? process.env.MAIA_SUPABASE_SERVICE_KEY : process.env.SUPABASE_SERVICE_ROLE_KEY) as string
+export const bancoDaMaia = () => (maiaLocal() ? 'local' : proprio() ? 'proprio' : 'escola')
 const H = (extra: Record<string, string> = {}) => ({ apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json', ...extra })
 async function req(caminho: string, opts: any = {}): Promise<any> {
   const r = await fetch(U() + caminho, { ...opts, headers: H(opts.headers), cache: 'no-store' })

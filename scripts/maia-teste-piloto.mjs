@@ -524,6 +524,7 @@ async function pendencias0811() {
   anota(antigo.ok && pc2?.status === 'revisao_equipe' && pc2.arquivo_path, 'P7. a oficina antiga (arquivo em base64) continua sendo aceita')
   const outro = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk2.tarefa_id, caminho: Tn.id + '/pecas/x.jpg' }) })
   anota(outro.status === 400, 'P7. caminho de outro negócio é recusado')
-  //__PENDENCIAS__
+  // P8 (T16). o painel mostra qual banco a Maia usa (local aqui; "proprio" com MAIA_SUPABASE_URL/_SERVICE_KEY; senão "escola")
+  anota((await ver('resumo')).banco === 'local', 'P8. o resumo diz qual banco a Maia está usando (aqui: local)')
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })
