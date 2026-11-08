@@ -58,6 +58,10 @@ async function main() {
   anota(r?.respondeu?.aviso_privacidade === true && /assistente virtual \(IA\)/.test((r.respondeu.mensagens || []).slice(-1)[0] || ''), '1ª resposta termina com o aviso de privacidade')
   anota(!TU.test(fala(r)), 'tom padrão: trata o cliente por "você" (nenhum "tu/teu/tua/contigo")')
   anota(/45/.test(semAviso1), 'respondeu o preço da base (R$ 45)')
+  // 08/11 (regra fixa da casa): primeiro o valor (o que vem na caixa), depois o número
+  // a frase com o preço não pode ser a primeira depois da apresentação: antes dela vem o que tem na caixa (sabores)
+  const antesDoPreco = semAviso1.slice(0, Math.max(0, semAviso1.indexOf('R$ 45'))).split(/(?<=[.!?])\s+/).slice(0, -1).join(' ')
+  anota(/chocolate|red velvet|pistache|sabor/i.test(antesDoPreco), 'valor antes do preço: falou dos sabores numa frase antes da frase com o R$ 45')
   r = await cliente(A.id, T1, 'Ana', 'E vocês entregam aqui em Estrela?')
   log('    Ana: E vocês entregam aqui em Estrela?\n    maia: ' + fala(r))
   const msgsAna = await msgsDe(await cvDe(A.id, T1))
