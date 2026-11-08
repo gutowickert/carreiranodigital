@@ -250,6 +250,7 @@ Fora da Vercel:
 | 3ec5ef0 | franquia por plano: Essencial 500, Completa 1.000 (código, painel, site e oferta) |
 | ad9569e | LGPD: prazo de guarda de 12 meses depois da última mensagem |
 | 8e69d2a | modelo de cláusula LGPD pro contrato (`docs/maia/TERMO-LGPD-CONTRATO.md`) |
+| 4367b4f | o cliente nunca fica sem prazo quando a pergunta vai pro dono |
 
 Detalhes: `docs/maia-piloto/LEIA-ME.md` e `docs/maia-painel-dono/LEIA-ME.md`.
 
