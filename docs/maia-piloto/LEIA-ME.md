@@ -30,6 +30,7 @@ Variável nova do painel: `MAIA_PAINEL_DONO_SEGREDO` (se faltar, usa `MAIA_CONEC
   "tom": { "pessoa": "voce", "gaucho": false, "estilo": "leve" },
   "privacidade": { "ligado": true, "texto": "…", "link": "https://…" },
   "franquia": 1000,
+  "guarda_meses": 12,
   "fuso": "America/Sao_Paulo"
 }
 ```
@@ -81,11 +82,11 @@ Ele só muda pela ação `config_atendimento` do painel. Salvar os outros dados 
 - Regra nova (06/11): **público + situação primeiro**, região com leveza e só quando ajuda.
 - **Como ligar:** já vem ligado.
 
-### 7. Contador das 1.000 conversas
+### 7. Contador das conversas (08/11: franquia por plano)
 - **O que é uma "conversa":** cada contato diferente (telefone) que mandou **pelo menos uma mensagem** pro WhatsApp do negócio no mês do calendário (do dia 1 às 0h, no fuso do negócio). O mesmo cliente escrevendo 30 vezes no mês = 1 conversa. Voltou no mês seguinte = conta de novo.
 - Não contam: conversas simuladas (telefone 55000..., painel, testes), a conversa do dono com a Maia, e retomada que o cliente não respondeu.
 - Contato apagado a pedido continua contando no mês em que conversou.
-- Painel → negócio → Dados → card **"Conversas do mês"**: uso, % da franquia, custo de IA do mês e por conversa. Campo da franquia no card do jeito de atender (padrão 1.000).
+- Painel → negócio → Dados → card **"Conversas do mês"**: uso, % da franquia, custo de IA do mês e por conversa. Campo da franquia no card do jeito de atender; vazio = a do plano (**Essencial 500, Completa 1.000**, Gestora sem franquia; decisão de 08/11).
 - A equipe é avisada **uma vez em 80% e uma em 100%**. **Nunca bloqueia o atendimento.**
 - API: `GET /api/maia/operacao?acao=uso_mes[&negocio=<id>]`.
 - **Como ligar:** já vem ligado.
@@ -94,6 +95,7 @@ Ele só muda pela ação `config_atendimento` do painel. Salvar os outros dados 
 - **(a) Aviso de privacidade** no fim da 1ª resposta a um cliente novo: atendimento por IA, mensagens guardadas só pra atender, dá pra pedir pra apagar. Segue o tom (você/tu). Configurável por negócio (ligado, texto próprio, link https).
 - **(b) Apagar dados:** Painel → negócio → Conversas → conversa do cliente → **"Apagar dados"** (pede confirmação). Apaga conversa, mensagens, contato do funil, histórico, as fotos e áudios dele e os registros técnicos ligados. **Só do negócio dele**: pedir com a conversa de outro negócio dá erro. O telefone dele nos recados da Maia pro dono vira `[apagado]`. Fica um registro `contato_apagado` só com contagens (sem nome nem telefone).
 - Se o cliente pedir pra apagar, a Maia passa a conversa pro dono e a equipe apaga pelo painel.
+- **(c) Prazo de guarda (08/11):** a rotina, 1x por dia, apaga sozinha as conversas sem mensagem há mais de 12 meses (`meta.atendimento.guarda_meses` troca por negócio), com `contato_apagado` motivo "prazo". Modelo da cláusula pro contrato: `docs/maia/TERMO-LGPD-CONTRATO.md`.
 - **Como ligar:** já vem ligado (aviso ligado por padrão).
 
 ### 9. Escola: a brecha do "vercel-cron"
@@ -116,7 +118,7 @@ PORT=3195 MAIA_LOCAL=1 MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_PAINEL_SENHA=tes
 node scripts/maia-teste.mjs http://localhost:3195 teste123                       # 45 conferências
 MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_CONECTAR_SEGREDO=seg123 node scripts/maia-teste-painel-dono.mjs http://localhost:3195 teste123   # 35 (usa os negócios do teste acima)
 # pasta limpa de novo, depois:
-node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123                # 54 conferências
+node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123                # 61 conferências (08/11: + franquia por plano e prazo de guarda)
 ```
 
 No modo de teste há ações que só funcionam localmente: `teste_fechar_janela`, `teste_modelos_status`, `teste_humano_antigo`, `teste_pergunta_antiga` e o `relogio` do `rodar_rotina`.

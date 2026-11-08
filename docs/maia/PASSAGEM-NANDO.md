@@ -15,12 +15,12 @@ O que não deu pra confirmar no código ou nos documentos está marcado como **c
 1. **O que é:** a Maia é uma "agência numa IA". O dono fala com ela no WhatsApp (número 51 99376-7137, o mesmo do Oito). Ela cria anúncios com as fotos dele, monta a campanha (sempre pausada), atende os clientes do negócio no WhatsApp do próprio negócio e mede as vendas.
 2. **Onde está:** Next.js no repositório `carreiranodigital` (Vercel, www.carreiranodigital.com), Supabase da escola (14 tabelas `maia_*`), pg_cron de hora em hora, oficina de arte e vídeo em `maia-oficina/` (vai pra Railway).
 3. **No ar (main 086776e):** site `/maia`, painel da equipe `/maia/operacao`, `/maia/conectar`, a conversa com o dono (MAIA_LIGADA=1 desde 07/11), a rotina horária e a demonstração. Webhooks recusam sem assinatura (401 conferido).
-4. **Pronto e não publicado:** a branch `maia-ajustes-piloto` (23 commits): painel do dono, áudio e foto do cliente, tom por negócio ("você" padrão), retomada só de dia, `maia_resposta`, conversa volta sozinha pra Maia, gancho novo, contador das 1.000 conversas, LGPD mínima e a brecha "vercel-cron" fechada. Testes 45/45, 54/54 e 35/35. Sem SQL novo.
+4. **Pronto e não publicado:** a branch `maia-ajustes-piloto` (23 commits): painel do dono, áudio e foto do cliente, tom por negócio ("você" padrão), retomada só de dia, `maia_resposta`, conversa volta sozinha pra Maia, gancho novo, contador das conversas com franquia por plano (Essencial 500, Completa 1.000), LGPD (aviso, apagar dados, guarda de 12 meses) e a brecha "vercel-cron" fechada. Testes 45/45, 35/35 e 61/61. Sem SQL novo. O Guto deu ok pra publicar (08/11).
 5. **Bloqueio pra publicar:** `CRON_SECRET` precisa existir na Vercel (Production). Sem ela, 12 crons da escola e do Recado param.
 6. **Falta pro 1º cliente:** segredo do app Sistema CND (2069913353660247) na Vercel, webhook dos negócios no app, modelos de mensagem aprovados, oficina na Railway, as 20 conversas simuladas, conectar o WhatsApp do piloto e ligar `MAIA_CLIENTES_LIGADO` (e `MAIA_META_REAL`, lembrando o Guto).
-7. **Falta pra venda aberta:** CAPI ligada, permissões do social, Maia Gestora dentro do sistema, demonstração com amostra, banco próprio da Maia, termo LGPD no contrato.
+7. **Falta pra venda aberta:** CAPI ligada, permissões do social, Maia Gestora dentro do sistema, demonstração com amostra, banco próprio da Maia (antes de 07/12), termo LGPD no contrato (modelo pronto, revisar com advogado).
 8. **Regras que não mudam:** tudo que a Maia gera passa pela equipe antes do dono; campanha nasce pausada e quem liga é o Guto; nenhuma mensagem a cliente nem gasto sem "sim" explícito; SQL de estrutura só o Guto ou tu no SQL Editor; publicar em produção só com ok do Guto.
-9. **Decisão pendente que te afeta:** quem é o 1º cliente (recomendação: Bocadinho ou um aluno com WhatsApp Business no celular) e a franquia do Essencial (500 ou 1.000).
+9. **Decisão pendente que te afeta:** só quem é o 1º cliente (recomendação: Bocadinho ou um aluno com WhatsApp Business no celular). O resto foi decidido em 08/11 (seção 8.1).
 10. **Segunda-feira (09/11), primeira coisa:** conferir na Vercel se `CRON_SECRET` existe e se o `META_APP_SECRET` é do app 2069913353660247 (senão, criar `MAIA_META_APP_SECRET`). Depois, configurar o webhook dos negócios no app e pedir o `maia_novidades`. Ver a seção 6.
 
 ---
@@ -247,6 +247,9 @@ Fora da Vercel:
 | 87f5fa0 | piloto: teste dos ajustes (`scripts/maia-teste-piloto.mjs`) |
 | 7408d71 | piloto: LEIA-ME dos ajustes |
 | c7d7110 | merge do painel do dono com os ajustes do piloto |
+| 3ec5ef0 | franquia por plano: Essencial 500, Completa 1.000 (código, painel, site e oferta) |
+| ad9569e | LGPD: prazo de guarda de 12 meses depois da última mensagem |
+| 8e69d2a | modelo de cláusula LGPD pro contrato (`docs/maia/TERMO-LGPD-CONTRATO.md`) |
 
 Detalhes: `docs/maia-piloto/LEIA-ME.md` e `docs/maia-painel-dono/LEIA-ME.md`.
 
@@ -277,13 +280,13 @@ node scripts/maia-teste.mjs http://localhost:3195 teste123            # 45 confe
 MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_CONECTAR_SEGREDO=seg123 \
   node scripts/maia-teste-painel-dono.mjs http://localhost:3195 teste123   # 35
 # 3) pasta limpa de novo (pare o servidor, apague a pasta, suba de novo)
-node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123      # 54
+node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123      # 61
 # extras
 node scripts/maia-teste-social.mjs http://localhost:3195 teste123      # 49 (social simulado)
 node scripts/maia-teste-oficina.mjs                                     # oficina (conferir argumentos no arquivo)
 ```
 
-Resultados em 07/11: **45/45, 35/35, 54/54**. O `maia-teste.mjs` roda a rotina "às 14h de hoje" (senão, à noite, a retomada não sai).
+Resultados em 08/11: **45/45, 35/35, 61/61**. O `maia-teste.mjs` roda a rotina "às 14h de hoje" (senão, à noite, a retomada não sai).
 
 ### 3.4 Riscos conhecidos
 
@@ -321,7 +324,7 @@ git merge-base --is-ancestor origin/main maia-ajustes-piloto && echo "fast-forwa
 # se o main andou: NÃO rebase (tem merge no meio). Faça merge e rode os testes de novo:
 #   git merge origin/main
 npm ci && npx next build                                         # tem que passar sem erro
-# rodar os 3 testes da seção 3.3 (45/35/54)
+# rodar os 3 testes da seção 3.3 (45/35/61)
 git push origin maia-ajustes-piloto:main                         # fast-forward do main
 ```
 
@@ -497,13 +500,11 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 - **Enquanto não libera:** a Completa é vendida com a equipe postando (decisão de 08/11).
 - **Aceite:** 4 permissões aprovadas; 1º post publicado sozinho no dia marcado.
 
-### T11 · Contador, custo e franquia · P1 · G decide, N implementa · 1 h
+### T11 · Contador, custo e franquia · P1 · ✅ FEITO NO CÓDIGO (08/11, commit 3ec5ef0)
 
-- Já pronto na branch: card "Conversas do mês", `GET acao=uso_mes`, aviso em 80% e 100%, nunca bloqueia.
-- **Decisão pendente do Guto:** franquia do Essencial 500 e Completa 1.000 (recomendação). Como mudar:
-  - por negócio: campo da franquia no card do jeito de atender (`meta.atendimento.franquia`);
-  - padrão do código: `FRANQUIA_PADRAO` em `lib/maia/uso.ts`. Pra depender do plano: `franquiaDo(neg)` passa a olhar `neg.plano` (`essencial` → 500, `completa` → 1000) quando não houver valor no negócio;
-  - texto da oferta: `MAIA_OFERTA` ou `lib/maia/oferta.ts` + `public/maia/index.html`.
+- Pronto na branch: card "Conversas do mês", `GET acao=uso_mes`, aviso em 80% e 100%, nunca bloqueia.
+- **Franquia por plano (decisão de 08/11):** `franquiaDo(neg)` em `lib/maia/uso.ts` usa a do negócio (`meta.atendimento.franquia`) se houver; senão Essencial 500, Completa 1.000, Gestora sem franquia. Valores em `lib/maia/oferta.ts` (`conversas_essencial`, `conversas_completa`; `MAIA_OFERTA` troca). Site `/maia` e oferta da demonstração já dizem 500 / 1.000.
+- Falta (N): o modelo misto e conferir a tabela de preço, abaixo.
 - **Modelo:** piloto com `MAIA_MODELO_CLIENTE=claude-sonnet-5-5`. Depois, mistura: modelo barato (`claude-haiku-5-5`) na resposta comum e o intermediário só quando a resposta envolve mudar etapa/venda (proposta, ganho, perdido) ou pergunta ao dono. Implementação sugerida em `atendente.ts`: 1ª chamada no barato; se ela pedir ferramenta de etapa/venda, refazer a decisão no intermediário (ou um classificador curto antes). Medir com `custo_ia`.
 - **Conferir a tabela de preço** (`MAIA_PRECOS`, `MAIA_DOLAR`) com a fatura da Anthropic no fim do mês.
 - **Aceite:** custo ≤ R$ 0,70 por conversa; IA + equipe ≤ 40% da mensalidade.
@@ -544,17 +545,17 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 - **Regra de ouro:** o aviso aponta, o dono decide. Nada mexe em verba, pausa anúncio ou manda mensagem pro cliente final.
 - **Aceite:** ≥ 70% dos avisos marcados "ajudou".
 
-### T16 · Banco próprio da Maia · P2 · N · 2–3 dias
+### T16 · Banco próprio da Maia · P1 · N · 2–3 dias · **fazer ANTES de 07/12** (decisão de 08/11)
 
 - **Por quê:** hoje a `SUPABASE_SERVICE_ROLE_KEY` da escola vê tudo da Maia e vice-versa.
 - **O que mudar:** novo projeto Supabase; aplicar `db/maia.sql`, `maia-social.sql`, `maia-gestora.sql`, bucket `maia` privado e `maia-cron.sql`; `lib/maia/db.ts` passa a usar `MAIA_SUPABASE_URL`/`MAIA_SUPABASE_SERVICE_KEY` (variáveis novas); copiar os dados `maia_*` e o bucket; o webhook do Oito continua lendo o banco da escola pro Oito e o novo pra Maia. **Atenção:** `MAIA_CRIPTO_CHAVE` é a mesma (as chaves cifradas são copiadas como estão).
 - **Papel limitado:** a Gestora lê os CRMs com papel só de leitura; a escola não precisa de acesso ao banco da Maia.
-- **Aceite:** testes 45/35/54 contra o banco novo (staging), depois troca com a Maia pausada por 10 min.
+- **Aceite:** testes 45/35/61 contra o banco novo (staging), depois troca com a Maia pausada por 10 min.
 
-### T17 · LGPD · P1 · G (contrato) + N · ½ dia
+### T17 · LGPD · P1 · ✅ FEITO NO CÓDIGO (08/11, commits ad9569e e 8e69d2a) · G (contrato)
 
-- Termo com o dono no contrato: a CND trata os dados como operadora, o dono é o controlador; uso das conversas pra atender e melhorar o atendimento dele; prazo de guarda (sugestão: 12 meses depois da última mensagem); pedido de apagar em até 7 dias.
-- Código: rotina mensal que apaga mensagens e mídias de conversas sem mensagem há mais de 12 meses (registro `contato_apagado` com contagens).
+- **Termo:** modelo da cláusula em `docs/maia/TERMO-LGPD-CONTRATO.md` (CND operadora, dono controlador, guarda de 12 meses, apagar em 7 dias, fim do contrato em 30 dias). **Revisar com advogado** e pôr no contrato do piloto.
+- **Código:** a rotina, 1x por dia, apaga as conversas sem mensagem há mais de 12 meses (mensagens, mídias, contato) com `contato_apagado` motivo "prazo" e só contagens. Prazo por negócio em `meta.atendimento.guarda_meses`. Botão "Apagar dados" e aviso de privacidade já estavam na branch.
 - **Aceite:** termo assinado pelo piloto; teste de 20 tentativas de tirar dado de outro negócio com 0 sucessos.
 
 ### Ordem resumida
@@ -705,15 +706,17 @@ O que **não** precisa dele: configurar Meta, Railway, logs, código em branch, 
 | 08/11 | Vender a Completa com a equipe postando até a Meta liberar o social |
 | 08/11 | Os 4 cases não são piloto do atendimento (já usam WhatsApp oficial pelo teunegócio OS; Dani e Wood já têm IA no número; duas IAs no mesmo número não pode). Entram pela Gestora e pelo tráfego |
 | 08/11 | Modelo intermediário só no piloto; depois mistura (barato no atendimento, intermediário nas decisões de etapa/venda) |
+| 08/11 | Franquia: Essencial 500 conversas/mês, Completa 1.000 (extras R$ 99 a cada 100 e R$ 249 a cada 300). Já no código e no site (T11) |
+| 08/11 | Ok pra publicar a branch `maia-ajustes-piloto` (seguir a parte 4) |
+| 08/11 | Sim pra `ELEVENLABS_API_KEY`: o Guto põe na Vercel (sem código novo; só a demonstração usa, T14) |
+| 08/11 | LGPD: termo no contrato (modelo em `docs/maia/TERMO-LGPD-CONTRATO.md`, revisar com advogado) e guarda de 12 meses depois da última mensagem (já no código, T17) |
+| 08/11 | Banco próprio da Maia antes de 07/12 (T16, Nando) |
 
 ### 8.2 Pendentes do Guto
 
+Só fica pendente:
+
 1. Quem é o 1º cliente (recomendação: Bocadinho, se já vende e usa WhatsApp Business no celular; senão, um aluno do Deu Venda).
-2. Franquia: Essencial 500 e Completa 1.000? (recomendação: sim).
-3. Ok pra publicar a branch `maia-ajustes-piloto`.
-4. Sim pra `ELEVENLABS_API_KEY` (só a demonstração usa).
-5. Termo LGPD no contrato e prazo de guarda (sugestão: 12 meses).
-6. Quando fazer o banco próprio da Maia (sugestão: antes de 07/12).
 
 ---
 
