@@ -5,8 +5,8 @@
 // chamando ele (MAIA_MODELO_DONO) e, quando ele responde, a fila é entregue (soltaFilaDoDono, chamada na entrada do dono).
 // Telefones de simulação (começam com 55000) nunca saem pra Meta (mesma regra do Oito).
 import { maiaDb as db, maiaLocal } from './db'
-import { enviaTexto, enviaImagem, enviaVideo, enviaModelo, fone, ehSimulado } from '@/lib/oito/wa'
-import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVideoNeg, enviaModeloNeg } from './wa-negocio'
+import { enviaTexto, enviaImagem, enviaVideo, enviaModelo, enviaBotoes, fone, ehSimulado } from '@/lib/oito/wa'
+import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVideoNeg, enviaModeloNeg, enviaAudioNeg } from './wa-negocio'
 export { janelaAbertaCv }
 
 type Envio = { ok: boolean; wamid?: string; erro?: string; na_fila?: boolean }
@@ -48,6 +48,30 @@ export async function mandaImagem(cv: any, link: string, legenda: string, autor:
 }
 export async function mandaVideo(cv: any, link: string, legenda: string, autor: 'maia' | 'equipe' = 'maia', peca_id: string | null = null) {
   return registra(cv, autor, '(vídeo) ' + legenda, await sai(cv, { tipo: 'video', texto: legenda, link, peca_id }), 'video')
+}
+
+// 08/11 (T12): a resposta em áudio pro cliente (só no canal do cliente, dentro da janela). caminho = arquivo no armazenamento
+export async function mandaAudioCliente(cv: any, caminho: string, texto: string) {
+  let r: Envio
+  if (simuladaCv(cv)) r = simulado()
+  else {
+    const neg = await db.um('negocios', { id: cv.negocio_id })
+    const atual = (await db.um('conversas', { id: cv.id })) || cv
+    if (!atendimentoLigado(neg)) r = simulado()
+    else if (!janelaAberta(atual)) r = { ok: false, erro: 'fora da janela de 24 h' }
+    else r = await enviaAudioNeg(waDoNegocio(neg)!, cv.telefone, (await db.link(caminho, 3 * 86400))!)
+  }
+  return registra(cv, 'maia', '(áudio) ' + texto, r, 'audio')
+}
+
+// 08/11 (T12): mensagem pro DONO com botões de resposta rápida (no máximo 3, título até 20 letras). Dentro da janela de 24 h
+// vai com os botões; fora dela, vai pra fila como texto (ele responde escrevendo "fechou" / "não fechou")
+export async function mandaBotoes(cv: any, texto: string, botoes: { id: string; titulo: string }[]) {
+  const comBotoes = `${texto} [${botoes.map(b => b.titulo).join('] [')}]`
+  if (simuladaCv(cv)) return registra(cv, 'maia', comBotoes, simulado(), 'botoes')
+  const atual = (await db.um('conversas', { id: cv.id })) || cv
+  if (!janelaAberta(atual)) { await enfileira(atual, { tipo: 'texto', texto }); return registra(cv, 'maia', texto, { ok: true, na_fila: true }) }
+  return registra(cv, 'maia', comBotoes, await enviaBotoes(cv.telefone, texto, botoes), 'botoes')
 }
 
 // o cliente do negócio fora da janela de 24 h: só modelo aprovado na conta do negócio (maia_retomada, maia_resposta)

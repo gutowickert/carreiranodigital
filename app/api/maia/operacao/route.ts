@@ -208,7 +208,7 @@ export async function POST(req: Request) {
       }
       case 'simular_dono': {
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
-        return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))
+        return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao, botao: b.botao && b.botao.id ? { id: String(b.botao.id), titulo: String(b.botao.titulo || '') } : undefined }))
       }
       case 'simular_cliente': {
         // 07/11 (piloto): áudio ou foto do cliente simulado (arquivo_b64 + mime). `simulado` (transcrição/descrição de mentira) só vale no modo de teste
@@ -288,7 +288,34 @@ export async function POST(req: Request) {
           fora_do_tom: tom.foraDoTom(neg, t), acerta_tom: tom.acertaTom(neg, t), cta: tom.ctaNoTom(neg, t),
           dias_texto: hor.diasDoTexto(t), dias: hor.diasDoNegocio(neg, b.agora ? new Date(b.agora) : new Date()),
           modelo_retomada: (await import('@/lib/maia/modelos')).nomeDoModelo(neg, 'maia_retomada'),
+          aviso: (await import('@/lib/maia/lgpd')).avisoPrivacidade({ nome: 'Negócio Teste', ...neg }), ja_avisa: (await import('@/lib/maia/lgpd')).respostaJaAvisa(t),
+          voz_ligada: (await import('@/lib/maia/voz')).vozLigada(), tira_nome: b.nome ? (await import('@/lib/maia/lgpd')).tiraNome(String(b.nome), b.outros || []).troca(t) : null,
         })
+      }
+      // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
+      case 'teste_resumo_negocios': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const { negociosDoResumo } = await import('@/lib/maia/rotina')
+        return ok((await negociosDoResumo(new Date(Date.now() - 7 * 86400e3))).map(n => ({ id: n.id, status: n.status })))
+      }
+      // 08/11 (T12), só no modo de teste: gera o áudio de um texto com a ElevenLabs (o mesmo da resposta em áudio) e guarda o arquivo
+      case 'teste_voz': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { audioDaResposta } = await import('@/lib/maia/voz')
+        return ok({ caminho: await audioDaResposta(n, { id: String(b.conversa_id || 'teste-voz') }, String(b.texto || '')) })
+      }
+      // 08/11 (T12), só no modo de teste: faz de conta que a Maia já respondeu N vezes hoje nessa conversa (pro limite de respostas)
+      case 'teste_respostas_hoje': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const cv = await db.um('conversas', { id: b.conversa_id })
+        if (!cv) return erro('conversa não existe')
+        for (let i = 0; i < Math.min(Number(b.n) || 40, 200); i++) {
+          await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'cliente', tipo: 'texto', texto: `(teste) pergunta ${i + 1}`, status: 'recebido' })
+          await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'maia', tipo: 'texto', texto: `(teste) resposta ${i + 1}`, status: 'enviado' })
+        }
+        return ok({ ok: true })
       }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {

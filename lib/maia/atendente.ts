@@ -5,10 +5,12 @@
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { respondeMisto } from './misto'
+import { limiteRespostas, respostasHoje } from './limite'
+import { vozLigada, audioDaResposta } from './voz'
 import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
 import { prazoResposta, diasDoNegocio } from './horario'
-import { avisoPrivacidade } from './lgpd'
-import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
+import { avisoPrivacidade, respostaJaAvisa } from './lgpd'
+import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente, mandaAudioCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
 import { origemDoTexto } from './social'
@@ -250,9 +252,18 @@ export async function respondeCliente(conversa_id: string) {
   // é fixa (sem IA: nenhuma chance de fingir que ouviu ou viu)
   // 07/11 (piloto, LGPD): 1ª resposta pra esse cliente (ninguém do negócio falou com ele ainda) leva o aviso de privacidade no fim
   const primeira = !msgs.some(x => x.autor === 'maia' || x.autor === 'dono' || x.autor === 'equipe')
-  const aviso = primeira ? avisoPrivacidade(neg) : null
+  let aviso = primeira ? avisoPrivacidade(neg) : null
   const ultNossa = msgs.map(x => x.autor).lastIndexOf('maia')
   const novas = msgs.slice(ultNossa + 1).filter(x => x.autor === 'cliente')
+  // 08/11 (T12): mais de 40 respostas da Maia hoje nessa conversa: passa pro dono e avisa a equipe (limite.ts)
+  const limite = limiteRespostas(neg)
+  if (respostasHoje(msgs) >= limite) {
+    await passaConversa(neg, cv, lead, { humano: false }, `a conversa passou de ${limite} respostas da Maia hoje`, 'sistema')
+    const t = `Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`
+    await mandaTexto(cv, t)
+    await avisaEquipe('conversa passou do limite', `${neg.nome}: a conversa com ${lead.nome || cv.telefone} passou de ${limite} respostas da Maia hoje. Passei pro dono (modo humano). Vale olhar no painel.`, neg.id)
+    return { mensagens: [t], ferramentas: ['limite_respostas'], etapa: lead.etapa, humano: true, limite: true }
+  }
   if (novas.length && novas.every(x => midiaFalhou(x.texto))) {
     const audio = novas.some(x => String(x.texto).includes(NAO_OUVIU)), foto = novas.some(x => String(x.texto).includes(NAO_VIU))
     const oque = audio && foto ? 'abrir o áudio e a foto' : audio ? 'ouvir esse áudio' : 'ver essa foto'
@@ -292,7 +303,12 @@ export async function respondeCliente(conversa_id: string) {
     await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} no ${neg.nome}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
   }
-  for (const t of enviadas) await mandaTexto(cv, t)
+  // 08/11 (T12): a resposta da IA já trouxe um aviso de privacidade: o do sistema não vai junto (seria repetido)
+  if (aviso && respostaJaAvisa(enviadas.join(' '))) aviso = null
+  // 08/11 (T12): o cliente mandou áudio e a voz está ligada (MAIA_VOZ_RESPOSTA=1): a resposta vai em áudio (voz.ts); senão, texto
+  const caminhoAudio = vozLigada() && novas.some(x => x.tipo === 'audio') ? await audioDaResposta(neg, cv, enviadas.join(' ')).catch(() => null) : null
+  if (caminhoAudio) await mandaAudioCliente(cv, caminhoAudio, enviadas.join(' '))
+  else for (const t of enviadas) await mandaTexto(cv, t)
   const usadas = r.usadas.map(u => u.nome)
   // 08/11 (teste completo, #14): o cliente pediu gente (ou reclamou, ou pediu devolução) ou a resposta disse que passou pra uma
   // pessoa, e a IA não chamou a ferramenta: o SISTEMA passa. Se a resposta não falou da passagem, vai uma frase curta dizendo
@@ -340,7 +356,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez, audio: caminhoAudio }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
