@@ -5,7 +5,7 @@
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
-import { prazoResposta } from './horario'
+import { prazoResposta, diasDoNegocio } from './horario'
 import { avisoPrivacidade } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
@@ -158,6 +158,7 @@ COMO ATENDER:
   · "vou pensar", "te aviso", "semana que vem" → retomar_depois.
 - SEMPRE escreve a resposta pro cliente, mesmo quando usa ferramenta.
 - Nunca insiste depois de um não. Nunca promete o que o negócio não disse que faz.
+- DIA E HORÁRIO: o pedido traz HOJE e AMANHÃ (dia da semana e data) e se o negócio abre. Retirada, entrega, visita ou encomenda só num dia em que o negócio abre e respeitando a antecedência que está no que tu sabe. O cliente pediu pra um dia em que não abre (ou sem a antecedência): diz que nesse dia não dá e oferece o próximo dia que dá. Nunca aceita dia fechado. "Amanhã", "sábado" etc.: confere no calendário do pedido antes de responder.
 - Nunca diz que vai confirmar ou verificar algo sem chamar perguntar_ao_dono NESSA MESMA resposta.
 - Nunca diz que passou a conversa pra alguém ou que alguém vai entrar em contato sem chamar passar_para_o_dono NESSA MESMA resposta. Reclamação, cliente irritado ou pedido de dinheiro de volta: chama passar_para_o_dono na primeira mensagem.
 - Não supõe o gênero do cliente ("chateado/chateada"): usa palavras neutras se não souber.
@@ -198,7 +199,7 @@ export async function respondeCliente(conversa_id: string) {
   const ferrs = ferramentas(neg, cv, lead, ctx)
   // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
   const gatilho = gatilhoHumano(textoCliente)
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
     { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
@@ -256,6 +257,6 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const msgs = cv ? (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em' })).filter(m => m.texto).slice(-12) : []
   const { emJson } = await import('./ia')
   const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).`,
-    `Cliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`)
+    `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`)
   return noTomDoNegocio(neg, r.texto, { negocio_id: neg.id, conversa_id: cv?.id || null })
 }

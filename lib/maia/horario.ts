@@ -50,3 +50,57 @@ export function prazoResposta(neg: any, agora = new Date(), horas = 2) {
   const dia = dias <= 0 ? 'hoje' : dias === 1 ? 'amanhã' : SEMANA[a.diaSemana]
   return { quando: alvo.toISOString(), texto: `${dia} até as ${horaCheia}h` }
 }
+
+// ---- 08/11 (teste completo, #20): a IA não sabia que dia é hoje ----
+// Era domingo e a Maia aceitou "retirar amanhã" (segunda) numa doceria que abre de terça a sábado. Agora o pedido da IA leva
+// HOJE e AMANHÃ (data e dia da semana no fuso do negócio) e, quando dá pra saber, se o negócio abre nesses dias.
+// Os dias que abre: meta.atendimento.dias (lista 0=domingo … 6=sábado, campo estruturado do cadastro) ou, sem ele, lidos do
+// texto do horário na base ("terça a sábado, das 10h às 19h", "seg a sex", "todos os dias, menos segunda").
+const NOMES_DIA: [RegExp, number][] = [[/\bdom(ingo)?s?\b/, 0], [/\bseg(unda)?s?(-feira)?\b/, 1], [/\bter(ca)?s?(-feira)?\b/, 2], [/\bqua(rta)?s?(-feira)?\b/, 3], [/\bqui(nta)?s?(-feira)?\b/, 4], [/\bsex(ta)?s?(-feira)?\b/, 5], [/\bsab(ado)?s?\b/, 6]]
+const DIA_RE = '(dom(?:ingo)?|seg(?:unda)?|ter(?:ca)?|qua(?:rta)?|qui(?:nta)?|sex(?:ta)?|sab(?:ado)?)(?:s|-feira)?'
+const numDia = (w: string) => { for (const [re, n] of NOMES_DIA) if (re.test(w)) return n; return -1 }
+const semAcento = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+
+export function diasDoTexto(texto: string): number[] | null {
+  const s = semAcento(texto)
+  if (!s.trim()) return null
+  const abre = new Set<number>()
+  // o que vem depois de "fechado/exceto/menos/não abre" fecha
+  const corte = s.search(/\b(fechad[oa]s?|exceto|menos|nao abr\w*|nao funcion\w*|nao atend\w*)\b/)
+  const parteAbre = corte >= 0 ? s.slice(0, corte) : s, parteFecha = corte >= 0 ? s.slice(corte) : ''
+  if (/\b(todos os dias|todo dia|diariamente|7 dias|sete dias)\b/.test(parteAbre)) for (let d = 0; d < 7; d++) abre.add(d)
+  let resto = parteAbre
+  for (const m of parteAbre.matchAll(new RegExp(`${DIA_RE}\\s*(?:a|ate|-|à|as)\\s*${DIA_RE}`, 'g'))) {
+    const a = numDia(m[1]), b = numDia(m[2])
+    if (a < 0 || b < 0) continue
+    for (let d = a; ; d = (d + 1) % 7) { abre.add(d); if (d === b) break }
+    resto = resto.replace(m[0], ' ')
+  }
+  for (const m of resto.matchAll(new RegExp(DIA_RE, 'g'))) { const d = numDia(m[1]); if (d >= 0) abre.add(d) }
+  for (const m of parteFecha.matchAll(new RegExp(DIA_RE, 'g'))) { const d = numDia(m[1]); if (d >= 0) abre.delete(d) }
+  return abre.size ? [...abre].sort() : null
+}
+
+// os dias que o negócio abre (null = não dá pra saber; aí a IA lê o horário da base)
+export function diasQueAbre(neg: any): number[] | null {
+  const est = neg?.meta?.atendimento?.dias
+  if (Array.isArray(est) && est.length && est.every((d: any) => Number.isInteger(d) && d >= 0 && d <= 6)) return [...new Set<number>(est)].sort()
+  const ctx = neg?.contexto || {}
+  const txt = Object.entries(ctx).filter(([k]) => /horario|funcionamento|atendimento|abre|dias/i.test(k)).map(([, v]) => typeof v === 'string' ? v : JSON.stringify(v)).join(' ; ')
+  return txt ? diasDoTexto(txt) : null
+}
+
+const ddmm = (data: string) => `${data.slice(8, 10)}/${data.slice(5, 7)}`
+// "HOJE: domingo, 08/11 (fechado) · AMANHÃ: segunda, 09/11 (fechado) · PRÓXIMO DIA ABERTO: terça, 10/11"
+export function diasDoNegocio(neg: any, agora = new Date()) {
+  const fuso = fusoDo(neg), abre = diasQueAbre(neg)
+  const dia = (n: number) => { const h = horaLocal(new Date(agora.getTime() + n * 86400e3), fuso); return { data: ddmm(h.data), semana: SEMANA[h.diaSemana], diaSemana: h.diaSemana, abre: abre ? abre.includes(h.diaSemana) : null } }
+  const hoje = dia(0), amanha = dia(1)
+  let proximo = null as null | ReturnType<typeof dia>
+  if (abre) for (let n = 1; n <= 7; n++) { const d = dia(n); if (d.abre) { proximo = d; break } }
+  const marca = (d: { abre: boolean | null }) => d.abre === null ? '' : d.abre ? ' (o negócio abre)' : ' (o negócio NÃO abre)'
+  const texto = `HOJE: ${hoje.semana}, ${hoje.data}${marca(hoje)} · AMANHÃ: ${amanha.semana}, ${amanha.data}${marca(amanha)}` +
+    (proximo && !amanha.abre ? ` · PRÓXIMO DIA QUE ABRE: ${proximo.semana}, ${proximo.data}` : '') +
+    (abre ? '' : ' (os dias que o negócio abre estão no horário do que tu sabe do negócio)')
+  return { hoje, amanha, proximo, dias: abre, texto }
+}

@@ -238,6 +238,8 @@ export async function POST(req: Request) {
         if (b.tom) at.tom = tomValido(b.tom)
         if (b.privacidade) { const { privacidadeValida } = await import('@/lib/maia/lgpd'); at.privacidade = privacidadeValida(b.privacidade) }
         if (b.guarda_meses !== undefined) { const g = Math.round(Number(b.guarda_meses)); if (g >= 1 && g <= 60) at.guarda_meses = g; else delete at.guarda_meses }
+        // 08/11 (teste completo): os dias que o negócio abre (0 = domingo … 6 = sábado). Sem isso a Maia lê do horário da base
+        if (b.dias !== undefined) { const d = Array.isArray(b.dias) ? [...new Set(b.dias.map(Number).filter((x: number) => Number.isInteger(x) && x >= 0 && x <= 6))] : []; if (d.length) at.dias = d.sort(); else delete at.dias }
         if (b.franquia !== undefined) { const f = Math.round(Number(b.franquia)); if (f > 0) at.franquia = f; else delete at.franquia }
         await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), atendimento: at } })
         await db.evento('config_atendimento', n.id, { por, mudou: Object.keys(b).filter(k => !['acao', 'negocio_id', 'por'].includes(k)) })

@@ -23,6 +23,7 @@ function regraGancho(neg: any) {
 - A região entra com leveza e só quando ajuda (entrega, atendimento perto, quem é da cidade). NUNCA abre todo anúncio com "<cidade> e região" (decisão de 06/11).
 - Deixa claro O QUE É e PRA QUEM É. Uma promessa concreta, sem exagero e sem promessa de resultado que o negócio não garante.
 - Usa SÓ o que o dono contou (preço, condição, prazo). Não inventa preço, desconto nem brinde.
+- Nada de "hoje", "amanhã", "essa semana" nem dia da semana no anúncio: ele roda por dias e semanas (no domingo, "amanhã" vira uma segunda em que o negócio pode estar fechado). Prazo vai como regra: "com 1 dia de antecedência".
 - Gancho curto (até 9 palavras), pra ir em cima da foto. Texto do anúncio com até 3 frases curtas, sem hashtag, no máximo 1 emoji.
 - CTA de WhatsApp curto e do tipo certo: produto pronto ou encomenda → ${voce ? '"Peça pelo WhatsApp", "Chame no WhatsApp", "Encomende pelo WhatsApp"' : '"Pede pelo WhatsApp", "Chama no WhatsApp", "Encomenda pelo WhatsApp"'}; serviço com hora marcada → ${voce ? '"Agende pelo WhatsApp"' : '"Agenda pelo WhatsApp"'}; "orçamento" SÓ quando o preço não é fixo.`
 }
@@ -45,7 +46,8 @@ export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: 
 Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor do cliente, a ocasião). Usa uma mídia por anúncio, a melhor pra cada ângulo; vídeo vira anuncio_video.
 Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","gancho":"...","texto":"...","cta":"..."}]}`)
   const criadas: any[] = []
-  for (const p of (r.pecas || []).slice(0, qtd)) {
+  const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd))
+  for (const p of lote) {
     const m = midias.find(x => x.id === p.midia_id) || midias[0]
     const tipo = m.tipo === 'video' ? 'anuncio_video' : 'anuncio_imagem'
     const tx = noTom(neg, p)
@@ -56,6 +58,26 @@ Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titu
   }
   await db.evento('pecas_geradas', neg.id, { quantas: criadas.length, tema: opc.tema || null })
   return { ok: true, pecas: criadas.map(c => ({ id: c.id, tipo: c.tipo, gancho: c.gancho })) }
+}
+
+// 08/11 (teste completo): "Quer cookies amanhã? Encomenda hoje." num anúncio que roda no domingo e na segunda (fechado).
+// Peça com dia relativo (hoje/amanhã/essa semana/dia da semana) é reescrita uma vez; se ainda vier, a frase sai do texto.
+const DIA_RELATIVO = /\b(hoje|amanh[ãa]|depois de amanh[ãa]|essa semana|esta semana|neste (fim de semana|sábado|domingo)|nesse (fim de semana|sábado|domingo))(?![\p{L}])/iu
+async function semDiaRelativo<T extends { gancho?: string; texto?: string; cta?: string }>(neg: any, pecas: T[]): Promise<T[]> {
+  const ruins = pecas.map((p, i) => [p, i] as const).filter(([p]) => DIA_RELATIVO.test(`${p.gancho} ${p.texto} ${p.cta}`))
+  if (!ruins.length) return pecas
+  try {
+    const r = await emJson<{ pecas: { i: number; gancho: string; texto: string; cta: string }[] }>(`${ESCRITORA}
+${regraGancho(neg)}`,
+      `${contextoTxt(neg)}
+
+Estes anúncios falam de "hoje"/"amanhã"/dia da semana, e o anúncio roda por dias: reescreve SEM nenhum dia relativo, mantendo o ângulo e as informações.
+${JSON.stringify(ruins.map(([p, i]) => ({ i, gancho: p.gancho, texto: p.texto, cta: p.cta })))}
+Devolve {"pecas":[{"i":0,"gancho":"...","texto":"...","cta":"..."}]}`)
+    for (const x of r.pecas || []) if (pecas[x.i]) pecas[x.i] = { ...pecas[x.i], gancho: x.gancho || pecas[x.i].gancho, texto: x.texto || pecas[x.i].texto, cta: x.cta || pecas[x.i].cta }
+  } catch { /* segue pro corte abaixo */ }
+  // último recurso: tira a frase do texto (o gancho fica, a equipe vê na revisão)
+  return pecas.map(p => ({ ...p, texto: DIA_RELATIVO.test(p.texto || '') ? String(p.texto).split(/(?<=[.!?])\s+/).filter(f => !DIA_RELATIVO.test(f)).join(' ') || p.texto : p.texto }))
 }
 
 // refaz uma peça com o ajuste pedido (pela equipe ou pelo dono): novo texto e nova arte, versão + 1

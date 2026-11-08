@@ -10,6 +10,7 @@ import { geraAnuncios } from './pecas'
 import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
 import { baixaMidia } from '@/lib/oito/wa'
 import { descreveTom, tomDoNegocio } from './tom'
+import { diasDoNegocio } from './horario'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
@@ -180,7 +181,7 @@ export async function respondeDono(conversa_id: string) {
   const { pedeDevolver, devolvePeloDono } = await import('./humano')
   const devolvidas = ultima && pedeDevolver(ultima.texto || '') ? await devolvePeloDono(neg, ultima.texto) : []
   const comGente = (await db.lista('conversas', { negocio_id: neg.id, canal: 'cliente', modo: 'humano' })).map(c => c.nome || c.telefone)
-  const pedido = `HOJE: ${hojeBR()}
+  const pedido = `${diasDoNegocio(neg).texto} (data: ${hojeBR()})
 NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${neg.plano} · status ${neg.status}
 DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
