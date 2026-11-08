@@ -77,6 +77,11 @@ export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|p
 // 08/11 (teste completo, #19): o motivo da passagem tem que dizer alguma coisa ("Não" não é motivo)
 export const motivoClaro = (m: string) => { const s = semAc(m).replace(/[^a-z0-9 ]+/g, ' ').trim(); return s.length >= 12 && s.split(/\s+/).length >= 3 && !/^(nao|sim|ok|nada|outro|sem motivo|n a)$/.test(s) }
 export const motivoDePassagem = (m: string) => /\b(reclama\w*|pessoa|humano|atendente|devolu\w*|reembols\w*|dinheiro de volta|estorn\w*|apagar|dados|irritad\w*|brav[oa]|delicad\w*|ameac\w*|processo|procon|juridic\w*|advogad\w*|cancel\w*|errad\w*|estragad\w*|insatisf\w*|ofend\w*|agressiv\w*)\b/.test(semAc(m))
+// 07/11 (piloto): disse que vai confirmar
+export const prometeuConfirmar = (t: string) => /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(t)
+// 08/11 (teste completo, #3 parcelamento): "não tenho essa informação" e parecidos, sem perguntar pro dono, deixavam o cliente
+// sem resposta. Agora isso também chama o dono (pela rede de segurança) e o cliente ganha o prazo
+export const naoSabe = (t: string) => /\b(nao tenho (essa|esta|a|essas|estas|esse|este|o|os|as)? ?(informac\w*|info|dado|detalhe|resposta|certeza)|nao tenho (o|a) (preco|valor|prazo)|nao (sei|saberia) (te |lhe )?(dizer|informar|responder|confirmar|se)|nao (consta|esta|aparece) (aqui|no que eu sei|na minha base)|nao tenho como (confirmar|saber|informar)|sem essa informac\w*|essa informac\w* (eu )?nao tenho)\b/.test(semAc(t))
 // pergunta "pro dono" que na verdade é recado interno (etapa, funil, engano)
 export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
@@ -160,6 +165,7 @@ COMO ATENDER:
 - Nunca insiste depois de um não. Nunca promete o que o negócio não disse que faz.
 - DIA E HORÁRIO: o pedido traz HOJE e AMANHÃ (dia da semana e data) e se o negócio abre. Retirada, entrega, visita ou encomenda só num dia em que o negócio abre e respeitando a antecedência que está no que tu sabe. O cliente pediu pra um dia em que não abre (ou sem a antecedência): diz que nesse dia não dá e oferece o próximo dia que dá. Nunca aceita dia fechado. "Amanhã", "sábado" etc.: confere no calendário do pedido antes de responder.
 - Nunca diz que vai confirmar ou verificar algo sem chamar perguntar_ao_dono NESSA MESMA resposta.
+- Nunca responde só "não tenho essa informação" ou "não sei": se é coisa do negócio que tu não sabe (parcelamento, ingrediente, prazo, um produto), chama perguntar_ao_dono e diz que confirma até o PRAZO DE RESPOSTA.
 - Nunca diz que passou a conversa pra alguém ou que alguém vai entrar em contato sem chamar passar_para_o_dono NESSA MESMA resposta. Reclamação, cliente irritado ou pedido de dinheiro de volta: chama passar_para_o_dono na primeira mensagem.
 - Não supõe o gênero do cliente ("chateado/chateada"): usa palavras neutras se não souber.
 - ÁUDIO E FOTO: "(áudio) ..." é a transcrição do que o cliente falou; "(mandou uma foto: ...)" é o que aparece na foto. Se vier "${NAO_OUVIU}" ou "${NAO_VIU}", tu NÃO ouviu nem viu: diz com honestidade que não conseguiu ouvir/ver e pede pra escrever. Nunca finge que ouviu ou viu.
@@ -232,7 +238,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   let sistemaPerguntou = false
   // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
-  if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(enviadas.join(' '))) {
+  if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && (prometeuConfirmar(enviadas.join(' ')) || naoSabe(enviadas.join(' ')))) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
     if (pergunta) { const p = await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); if (p?.ok) { sistemaPerguntou = true; usadas.push('perguntar_ao_dono (sistema)') } }
   }
@@ -240,7 +246,8 @@ export async function respondeCliente(conversa_id: string) {
   let prazoExtra: string | null = null
   // 08/11 (teste completo, #12): só quando a pergunta foi MESMO pro dono (pergunta recusada pela ferramenta não promete retorno)
   if ((perguntouIA || sistemaPerguntou) && !/até[^.?!]{0,25}\s(as|às) \d{1,2}h/i.test(enviadas.join(' '))) {
-    prazoExtra = `Te dou o retorno ${prazoResposta(neg).texto}.`
+    // quem só disse "não tenho essa informação" ganha a frase inteira (vai confirmar + prazo)
+    prazoExtra = sistemaPerguntou && !prometeuConfirmar(enviadas.join(' ')) ? `Vou confirmar isso aqui e te dou o retorno ${prazoResposta(neg).texto}.` : `Te dou o retorno ${prazoResposta(neg).texto}.`
     await mandaTexto(cv, prazoExtra)
   }
   if (aviso) await mandaTexto(cv, aviso)
