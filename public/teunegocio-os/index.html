@@ -10,171 +10,223 @@
 <meta property="og:title" content="teunegócio OS · a IA trabalhando dentro do teu negócio">
 <meta property="og:description" content="Um sistema com o nome da tua empresa e uma IA dentro, em uso em até 17 dias.">
 <meta property="og:image" content="/teunegocio-os/midia/tour.jpg">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@700;900&family=Manrope:wght@400;500;600;700;800&display=swap">
+<meta name="theme-color" content="#f7f5fc">
+<link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <style>
-/* Layout: página curta de venda (decisão de 05/10: 5 blocos + vitrine). Fundo violeta da marca; o verde é só do bloco OS e do que a IA fez.
-   Momentos: o nome da empresa ao vivo no logotipo (topo), 472 x 23 em pontos (prova), as telas reais com "Tua marca". */
+/* Layout (v2, 08/11): a mesma família do site da Maia. Fundo claro, faixas de cor clara, números grandes, telas reais em moldura,
+   celular com a conversa. O verde continua sendo a cor do OS e do que a IA fez. Fontes da escola servidas de /maia/fontes. */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
 :root{
-  --bg:#140726; --bg2:#1c0d33; --card:#21113b; --line:#36235a; --ink:#f6f1ff; --ink2:#cbbde6; --muted:#9a8bb8;
-  --lilas:#c9aaff; --lilas-forte:#a77bff; --verde:#22c55e; --verde-tinta:#06220f; --perigo:#ff8a9a;
-  --display:"Poppins","Segoe UI",Arial,sans-serif; --body:"Manrope","Segoe UI",Arial,sans-serif;
-  color-scheme:dark;
+  --bg:#f7f5fc; --s1:#ffffff; --s2:#f3f0fa; --s3:#ebe6f5; --ln:#ebe6f5;
+  --tx:#1b1530; --tx2:#423a5c; --mu:#6b6485; --ac:#7c3aed; --ac2:#6d28d9; --ac-bg:#f1ebfe; --ac-line:#c4b5fd;
+  --grad:linear-gradient(100deg,#7c3aed,#a855f7);
+  --verde:#15803d; --verde-bg:#dcfce7; --os:#22c55e; --os-t:#06220f; --perigo:#c2410c;
+  --la:#ea580c; --la-tx:#c2410c; --la-bg:#fff1e6; --menta-bg:#e9f8ef; --azul-bg:#eef0ff; --anil:#4f46e5;
+  --wa:#efeae2; --wa-top:#f0f2f5; --wa-eu:#d9fdd3; --wa-ela:#ffffff; --wa-tx:#111b21; --wa-mu:#667781;
+  --f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
 }
-*{box-sizing:border-box}
+*{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased}
-img,video{max-width:100%;display:block}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-tx);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 86;letter-spacing:-.03em;line-height:1.04;text-wrap:balance}
 a{color:inherit}
-.faixa{padding-left:max(18px,env(safe-area-inset-left,0px));padding-right:max(18px,env(safe-area-inset-right,0px))}
-.miolo{max-width:1120px;margin:0 auto}
-h1,h2,h3{margin:0;text-wrap:balance}
-p{margin:0}
-.rot{font:800 12px var(--body);letter-spacing:.14em;text-transform:uppercase;color:var(--lilas)}
+img,video{display:block;max-width:100%;height:auto}
+.ct{max-width:1120px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+section{padding-block:84px}
+.olho{font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.lead{font-size:clamp(17px,2.1vw,20px);color:var(--mu);max-width:56ch}
+h2{font-size:clamp(30px,4.6vw,48px)}
+.cab{display:flex;flex-direction:column;gap:12px;margin-bottom:38px;max-width:760px}
 
 /* a marca */
-.marca{font:900 22px/1 var(--display);letter-spacing:-.02em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
-.marca .t{color:var(--lilas)} .marca .n{color:#fff}
-.marca .os{background:var(--verde);color:var(--verde-tinta);border-radius:7px;padding:2px 7px 4px;font-size:.82em}
+.marca{font:800 22px/1 var(--f-dis);letter-spacing:-.03em;display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.marca .t{color:var(--ac)} .marca .n{color:var(--tx)}
+.marca .os{background:var(--os);color:var(--os-t);border-radius:7px;padding:2px 7px 4px;font-size:.82em}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:999px;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.04)}
+.btn-wa{background:#1fa855;color:#fff;box-shadow:0 12px 30px rgba(31,168,85,.3)}
+.btn-wa svg{width:22px;height:22px;flex:none}
+.btn-leve{background:var(--s1);color:var(--tx);border:1.5px solid var(--ac-line)}
+.btn-pq{min-height:42px;padding:0 18px;font-size:15px;box-shadow:none}
+.btn:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
 
 /* topo */
-.barra{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
-body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:21;background:var(--bg)}
-.barra .miolo{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-block:12px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;border-radius:999px;font:800 16px var(--body);text-decoration:none;padding:15px 26px;border:0;cursor:pointer;transition:transform .15s,box-shadow .15s}
-.btn-wa{background:var(--verde);color:var(--verde-tinta);box-shadow:0 10px 30px -10px rgba(34,197,94,.6)}
-.btn-wa:hover{transform:translateY(-2px)}
-.btn-wa svg{width:20px;height:20px}
-.btn-leve{background:transparent;color:var(--ink);border:1.5px solid var(--line)}
-.btn-pq{padding:10px 18px;font-size:14.5px}
-.btn:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--lilas);outline-offset:3px}
+.barra{position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--ln);padding-top:env(safe-area-inset-top,0px)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+.barra .ct{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:64px}
 
-/* 1 · hero */
-.hero{padding-block:56px 72px;position:relative;overflow:hidden}
-.hero::after{content:"";position:absolute;inset:auto -20% -40% 30%;height:90%;background:radial-gradient(closest-side,rgba(167,123,255,.28),transparent);pointer-events:none}
-.hero .miolo{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:48px;align-items:center;position:relative;z-index:1}
-.hero h1{font:900 clamp(38px,5.4vw,64px)/1.03 var(--display);letter-spacing:-.03em;margin-top:12px}
-.hero h1 em{font-style:normal;color:var(--lilas)}
-.hero .sub{font-size:clamp(18px,2vw,21px);color:var(--ink2);margin-top:20px;max-width:34ch}
-.nome{margin-top:30px;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:grid;gap:12px;max-width:520px}
-.nome label{font:700 14px var(--body);color:var(--muted)}
-.nome input{width:100%;font:700 18px var(--body);color:var(--ink);background:var(--bg);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px}
-.nome .vira{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--muted)}
+/* 1 · abertura */
+.hero{padding-block:56px 80px;position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;width:680px;height:680px;border-radius:50%;background:radial-gradient(circle,rgba(134,239,172,.32),transparent 65%);top:-280px;right:-200px;pointer-events:none}
+.hero::after{content:"";position:absolute;width:560px;height:560px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.3),transparent 65%);bottom:-320px;left:-220px;pointer-events:none}
+.hero .ct{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:56px;align-items:center;position:relative;z-index:1}
+.hero h1{font-size:clamp(40px,5.8vw,68px);margin-top:14px}
+.hero h1 em{font-style:normal;background:linear-gradient(100deg,#15803d,#22c55e);-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero .sub{font-size:clamp(18px,2vw,21px);color:var(--mu);margin-top:20px;max-width:36ch}
+.nome{margin-top:28px;background:#fff;border:1px solid var(--ln);border-radius:24px;padding:18px 20px;display:grid;gap:12px;max-width:520px;box-shadow:0 20px 44px -30px rgba(76,29,149,.4)}
+.nome label{font-weight:700;font-size:14px;color:var(--mu)}
+.nome input{width:100%;font:700 18px var(--f-tx);color:var(--tx);background:var(--s2);border:1.5px solid var(--ln);border-radius:14px;padding:12px 14px}
+.nome .vira{display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;color:var(--mu)}
 .nome .vira .marca{font-size:clamp(20px,5vw,26px);max-width:100%}
 .hero .acoes{display:flex;gap:12px;flex-wrap:wrap;margin-top:26px}
-.hero .miuda{font-size:14px;color:var(--muted);margin-top:12px}
-.cel{justify-self:center;width:min(100%,330px);aspect-ratio:720/900;border-radius:34px;padding:10px;background:linear-gradient(160deg,#3a2560,#1a0d30);box-shadow:0 40px 80px -30px rgba(0,0,0,.8),0 0 0 1px #4a3373;position:relative}
-.cel video,.cel img{width:100%;height:100%;object-fit:cover;border-radius:26px;background:#0d0619}
-.cel .etiqueta{position:absolute;left:-14px;bottom:56px;background:var(--verde);color:var(--verde-tinta);font:800 13px var(--body);padding:8px 12px;border-radius:12px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6)}
-.cel .etiqueta2{position:absolute;right:-12px;top:70px;background:#fff;color:#1a0733;font:800 13px var(--body);padding:8px 12px;border-radius:12px;box-shadow:0 10px 24px -8px rgba(0,0,0,.6)}
+.hero .miuda{font-size:14px;color:var(--mu);margin-top:12px;font-weight:600}
+.palco{position:relative;justify-self:center;width:min(100%,360px);padding:0 10px}
+.cel{border-radius:38px;padding:10px;background:#0b0a10;box-shadow:0 30px 80px rgba(23,18,31,.35)}
+.cel video,.cel img{width:100%;aspect-ratio:720/900;object-fit:cover;border-radius:29px;background:var(--s3)}
+.selo{position:absolute;display:flex;align-items:center;gap:8px;background:#fff;color:var(--tx);border-radius:999px;padding:9px 14px;font-size:13.5px;font-weight:700;box-shadow:0 14px 30px rgba(27,21,48,.18);white-space:nowrap;z-index:3}
+.selo i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18);flex:none}
+.selo.ok{background:var(--os);color:var(--os-t)}
+.selo.ok i{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.3)}
+.palco .s1{right:-14px;top:64px}
+.palco .s2{left:-14px;bottom:70px}
 
-/* seções */
-.sec{padding-block:84px}
-.sec+.sec{border-top:1px solid var(--line)}
-.cab{display:grid;gap:12px;margin-bottom:40px;max-width:720px}
-.cab h2{font:900 clamp(30px,4.4vw,48px)/1.08 var(--display);letter-spacing:-.02em}
-.cab p{font-size:19px;color:var(--ink2)}
-
-/* 2 · o que se repete */
-.trocas{display:grid;gap:16px}
-.troca{display:grid;grid-template-columns:minmax(0,1fr) 56px minmax(0,1.2fr);align-items:stretch;gap:0;background:var(--card);border:1px solid var(--line);border-radius:22px;overflow:hidden}
-.troca .antes{padding:22px 24px;display:grid;gap:6px;align-content:center}
-.troca .antes small{font:800 11px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--perigo)}
-.troca .antes p{font:700 19px/1.35 var(--body);color:var(--ink2)}
-.troca .seta{display:grid;place-items:center;color:var(--lilas);font:900 26px var(--display)}
-.troca .depois{padding:18px;background:var(--bg2);display:grid;gap:8px;align-content:center}
-.bolha{max-width:88%;padding:9px 13px;border-radius:14px;font:600 14.5px/1.4 var(--body)}
-.bolha.cli{background:#2e1c4f;justify-self:start;border-bottom-left-radius:4px}
-.bolha.ia{background:#e9fbe9;color:#0d3a1a;justify-self:end;border-bottom-right-radius:4px}
-.bolha small{display:block;font:700 10.5px var(--body);opacity:.65;margin-top:2px}
-.tag-ia{justify-self:end;font:800 11px var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--verde)}
-.troca .depois .bolha{animation:entra .5s both}
-.troca .depois .bolha:nth-child(2){animation-delay:.25s}.troca .depois .bolha:nth-child(3){animation-delay:.5s}
-@keyframes entra{from{opacity:.0;transform:translateY(6px)}to{opacity:1;transform:none}}
-.mais{margin-top:18px;color:var(--muted);font-size:16px}
+/* 2 · o que muda */
+.trocas{display:flex;flex-direction:column;gap:18px}
+.troca{display:grid;grid-template-columns:minmax(0,1fr) 64px minmax(0,1.15fr);align-items:center;border-radius:32px;padding:26px;background:var(--ac-bg)}
+.troca:nth-child(2){background:var(--la-bg)}.troca:nth-child(3){background:var(--menta-bg)}
+.troca .antes{display:grid;gap:10px;padding:6px 10px}
+.troca .antes small{justify-self:start;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--perigo);background:#fff;border-radius:999px;padding:4px 11px}
+.troca .antes p{font-family:var(--f-dis);font-weight:800;font-size:clamp(21px,2.4vw,27px);line-height:1.2;letter-spacing:-.02em}
+.troca .seta{width:48px;height:48px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;color:var(--ac);justify-self:center;box-shadow:0 10px 24px -12px rgba(27,21,48,.3)}
+.troca .seta svg{width:22px;height:22px}
+.zap{background:var(--wa);border-radius:22px;overflow:hidden;box-shadow:0 20px 40px -24px rgba(27,21,48,.45)}
+.zap .wtop{display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--wa-top);color:var(--wa-tx)}
+.zap .wtop .av{width:30px;height:30px;border-radius:50%;background:var(--os);color:var(--os-t);font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center}
+.zap .wtop b{display:block;font-size:13.5px;line-height:1.2}
+.zap .wtop span{font-size:11px;color:var(--wa-mu)}
+.zap .msgs{display:grid;gap:7px;padding:14px 12px}
+.bolha{max-width:86%;padding:8px 11px 6px;border-radius:10px;font-size:14.5px;line-height:1.4;color:var(--wa-tx);box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.bolha.cli{background:var(--wa-ela);justify-self:start}
+.bolha.ia{background:var(--wa-eu);justify-self:end}
+.bolha small{display:block;text-align:right;font-size:10.5px;color:var(--wa-mu);margin-top:2px}
+.tag-ia{justify-self:end;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:800;color:var(--verde);background:var(--verde-bg);border-radius:10px;padding:6px 10px}
+.tag-ia::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--os)}
+.troca .zap .bolha{animation:entra .5s both}
+.troca .zap .bolha:nth-child(2){animation-delay:.25s}
+@keyframes entra{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.mais-txt{margin-top:22px;display:flex;gap:14px;align-items:center;background:#fff;border:1px solid var(--ln);border-radius:22px;padding:18px 22px;color:var(--tx2);font-size:16px}
+.mais-txt .ic{flex:none;width:44px;height:44px;border-radius:14px;background:var(--verde-bg);color:var(--verde);display:flex;align-items:center;justify-content:center}
+.mais-txt .ic svg{width:22px;height:22px}
 
 /* 3 · a prova */
-.prova{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:40px;align-items:center}
-.pontos{display:grid;grid-template-columns:repeat(auto-fill,minmax(11px,1fr));gap:4px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
-.pontos i{display:block;aspect-ratio:1;border-radius:50%;background:var(--lilas-forte);opacity:.85}
-.pontos i.nao{background:#fff;opacity:1;box-shadow:0 0 0 2px var(--bg)}
-.legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;font:700 14px var(--body);color:var(--ink2)}
+.prova-sec{background:var(--s2)}
+.prova{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);gap:40px;align-items:center}
+.pontos-box{background:#fff;border-radius:30px;padding:24px;box-shadow:0 24px 50px -36px rgba(76,29,149,.45)}
+.pontos{display:grid;grid-template-columns:repeat(auto-fill,minmax(11px,1fr));gap:4px}
+.pontos i{display:block;aspect-ratio:1;border-radius:50%;background:#a78bfa;opacity:.9}
+.pontos i.nao{background:var(--la);opacity:1}
+.legenda{display:flex;gap:18px;flex-wrap:wrap;margin-top:16px;font-weight:700;font-size:14px;color:var(--tx2)}
 .legenda span{display:inline-flex;align-items:center;gap:8px}
 .legenda i{width:12px;height:12px;border-radius:50%;display:inline-block}
-.placar{display:grid;gap:14px}
-.placar .num{font:900 clamp(54px,7vw,84px)/1 var(--display);letter-spacing:-.03em;color:var(--ink)}
-.num .x{color:var(--muted);font-size:.5em;margin-inline:6px}
-.placar p{font-size:18px;color:var(--ink2)}
-.placar p b{color:var(--ink)}
-.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:6px}
-.mini div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px}
-.mini b{display:block;font:900 22px var(--display);color:var(--lilas)}
-.mini span{font-size:12.5px;color:var(--muted);line-height:1.3;display:block}
+.placar{display:grid;gap:16px}
+.placar .num{font-family:var(--f-dis);font-weight:800;font-size:clamp(64px,8.4vw,104px);line-height:.9;letter-spacing:-.05em;color:var(--ac)}
+.num .x{color:var(--mu);font-size:.42em;margin-inline:8px;vertical-align:middle}
+.num .b{color:var(--la)}
+.placar p{font-size:18px;color:var(--tx2)}
+.placar p b{color:var(--tx)}
+.mini{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.mini div{border-radius:20px;padding:14px;background:var(--verde-bg);min-width:0}
+.mini div:nth-child(2){background:var(--ac-bg)}.mini div:nth-child(3){background:var(--la-bg)}
+.mini b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(24px,2.6vw,32px);line-height:1;letter-spacing:-.03em;color:var(--verde);white-space:nowrap}
+.mini div:nth-child(2) b{color:var(--ac)}.mini div:nth-child(3) b{color:var(--la-tx)}
+.mini span{font-size:12.5px;color:var(--tx2);line-height:1.3;display:block;margin-top:6px;font-weight:600}
 
-/* 4 · o teu nome */
-.telas{display:grid;grid-auto-flow:column;grid-auto-columns:min(78%,560px);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:14px;scrollbar-color:var(--line) transparent}
-.tela{scroll-snap-align:start;background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:grid}
-.tela .topo-tela{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid var(--line);font:700 13px var(--body);color:var(--muted)}
-.tela .topo-tela i{width:9px;height:9px;border-radius:50%;background:#4a3373;display:inline-block}
+/* 4 · o teu nome: as telas reais em moldura */
+.telas{display:grid;grid-auto-flow:column;grid-auto-columns:min(80%,560px);gap:18px;overflow-x:auto;scroll-snap-type:x mandatory;padding:6px 4px 22px;scrollbar-color:var(--ac-line) transparent}
+.tela{scroll-snap-align:start;background:#fff;border-radius:24px;overflow:hidden;display:grid;margin:0;box-shadow:0 22px 44px -30px rgba(27,21,48,.45);border:1px solid var(--ln)}
+.tela .topo-tela{display:flex;align-items:center;gap:7px;padding:11px 14px;border-bottom:1px solid var(--ln);background:var(--s2)}
+.tela .topo-tela i{width:9px;height:9px;border-radius:50%;background:var(--s3);display:inline-block}
 .tela .topo-tela .marca{font-size:14px;margin-left:6px}
 .tela img{aspect-ratio:16/9;object-fit:cover;object-position:top left;width:100%}
-.tela.cel-tela img{aspect-ratio:16/9;object-fit:contain;background:#eef2f7}
-.tela p{padding:14px 16px;font-size:15px;color:var(--ink2)}
-.tela p b{color:var(--ink)}
-.dica-rola{font-size:13.5px;color:var(--muted);margin-top:8px}
+.tela.cel-tela img{object-fit:contain;background:#eef2f7}
+.tela p{padding:14px 16px 16px;font-size:15px;color:var(--mu)}
+.tela p b{color:var(--tx)}
+.dica-rola{display:inline-flex;align-items:center;gap:8px;font-size:13.5px;font-weight:700;color:var(--ac);margin-top:4px}
 
 /* 5 · como começa */
+.como-sec{background:linear-gradient(180deg,var(--bg),#fff 18%,#fff 82%,var(--bg))}
 .passos{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-.passo{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:grid;gap:10px;align-content:start}
-.passo .n{font:900 46px/1 var(--display);color:var(--lilas)}
-.passo h3{font:800 21px var(--body)}
-.passo p{color:var(--ink2);font-size:16px}
-.linha17{margin-top:26px;background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
-.trilho{position:relative;height:10px;border-radius:99px;background:#2e1c4f;margin:16px 0 12px}
-.trilho i{position:absolute;inset:0 auto 0 0;width:19%;border-radius:99px;background:linear-gradient(90deg,var(--lilas-forte),var(--verde))}
-.marcos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;font-size:13.5px;color:var(--ink2)}
-.marcos b{display:block;font:800 14px var(--body);color:var(--ink)}
+.passo{border-radius:30px;padding:28px;display:grid;gap:10px;align-content:start;background:var(--ac-bg)}
+.passo:nth-child(2){background:var(--la-bg)}.passo:nth-child(3){background:var(--menta-bg)}
+.passo .n{font-family:var(--f-dis);font-weight:800;font-size:clamp(60px,7vw,84px);line-height:.85;letter-spacing:-.05em;color:var(--ac)}
+.passo:nth-child(2) .n{color:var(--la)}.passo:nth-child(3) .n{color:var(--verde)}
+.passo h3{font-size:24px;margin-top:6px}
+.passo p{color:var(--tx2);font-size:16px}
+.linha17{margin-top:18px;background:#fff;border:1px solid var(--ln);border-radius:30px;padding:26px;box-shadow:0 22px 44px -36px rgba(27,21,48,.4)}
+.linha17 .topo17{display:flex;align-items:baseline;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.linha17 .grande{font-family:var(--f-dis);font-weight:800;font-size:clamp(34px,4vw,48px);letter-spacing:-.04em;line-height:1;color:var(--verde)}
+.linha17 .grande small{font-family:var(--f-tx);font-size:15px;font-weight:700;letter-spacing:0;color:var(--mu)}
+.trilho{position:relative;height:12px;border-radius:99px;background:var(--s3);margin:18px 0 14px}
+.trilho i{position:absolute;inset:0 auto 0 0;width:19%;border-radius:99px;background:linear-gradient(90deg,#a78bfa,#22c55e)}
+.marcos{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;font-size:14px;color:var(--mu)}
+.marcos div{border-radius:16px;padding:12px;background:var(--s2)}
+.marcos div:nth-child(2){background:var(--verde-bg)}
+.marcos b{display:block;font-weight:800;font-size:15px;color:var(--tx)}
 
-/* 6 · casos */
-.casos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-.caso{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:24px;display:grid;gap:12px;align-content:start}
-.caso h3{font:800 22px var(--body)}
-.caso ul{margin:0;padding-left:20px;display:grid;gap:7px;color:var(--ink2);font-size:16px}
-.caso .q{font:800 12px var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+/* 6 · onde já roda */
+.casos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.caso{background:#fff;border:1px solid var(--ln);border-radius:30px;padding:28px;display:grid;gap:14px;align-content:start;box-shadow:0 22px 44px -36px rgba(27,21,48,.4)}
+.caso .ic{width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--menta-bg);color:var(--verde)}
+.caso:nth-child(2) .ic{background:var(--azul-bg);color:var(--anil)}
+.caso .ic svg{width:28px;height:28px}
+.caso h3{font-size:clamp(24px,2.6vw,30px)}
+.caso ul{list-style:none;display:grid;gap:10px;color:var(--tx2);font-size:16px}
+.caso li{display:flex;gap:10px;align-items:flex-start}
+.caso li::before{content:"";flex:none;width:22px;height:22px;margin-top:1px;border-radius:50%;background:var(--verde-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
+.caso li b{color:var(--tx)}
+.caso .q{justify-self:start;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mu);background:var(--s2);border-radius:999px;padding:5px 12px}
 
-/* 7 · fechamento */
-.fim{text-align:left}
-.fim .caixa-fim{background:linear-gradient(150deg,#2a1450,#1a0d30);border:1px solid #4a3373;border-radius:28px;padding:clamp(28px,5vw,56px);display:grid;gap:22px}
-.fim h2{font:900 clamp(32px,5vw,56px)/1.05 var(--display);letter-spacing:-.02em}
-.fim p{font-size:19px;color:var(--ink2);max-width:52ch}
-.faq{display:grid;gap:10px;margin-top:8px}
-.faq details{background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:14px;padding:14px 18px}
-.faq summary{cursor:pointer;font:800 16px var(--body);list-style:none;display:flex;justify-content:space-between;gap:12px}
+/* quem implanta */
+.quem-sec{background:linear-gradient(135deg,#eafaf0 0%,#f4eeff 100%)}
+.quem{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.2fr);gap:52px;align-items:center}
+.quem-foto{margin:0;position:relative;max-width:400px;width:100%;justify-self:center}
+.quem-foto .img{border-radius:32px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(27,21,48,.5)}
+.quem-foto img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.quem-foto .selo{left:16px;bottom:16px}
+.quem h2{margin:10px 0 16px}
+.quem p:not(.olho){font-size:17px;line-height:1.65;color:var(--tx2);margin-bottom:12px}
+.quem p b{color:var(--tx)}
+
+/* 7 · o próximo passo */
+.caixa-fim{background:radial-gradient(circle at 12% 18%,#e3f8ea 0,transparent 45%),radial-gradient(circle at 88% 85%,#ede4ff 0,transparent 50%),#fff;border:2px solid var(--ac-line);border-radius:36px;padding:clamp(28px,5vw,56px);display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:40px;align-items:start;box-shadow:0 40px 80px -50px rgba(76,29,149,.5)}
+.caixa-fim h2{font-size:clamp(34px,5vw,56px);margin:10px 0 16px}
+.caixa-fim .txt p{font-size:18px;color:var(--tx2);max-width:46ch;margin-bottom:24px}
+.faq{display:grid;gap:10px}
+.faq details{background:var(--s2);border:1px solid var(--ln);border-radius:18px;padding:0 18px}
+.faq summary{cursor:pointer;list-style:none;padding:16px 0;font-weight:800;font-size:16px;display:flex;justify-content:space-between;gap:12px}
 .faq summary::-webkit-details-marker{display:none}
-.faq summary::after{content:"+";color:var(--lilas);font-weight:900}
+.faq summary::after{content:"+";font-family:var(--f-dis);color:var(--ac);font-size:20px;line-height:1}
 .faq details[open] summary::after{content:"−"}
-.faq details p{margin-top:8px;font-size:16px}
-.rodape{padding-block:34px calc(34px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--line);color:var(--muted);font-size:14px}
-.rodape .miolo{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
+.faq details p{padding-bottom:16px;font-size:15.5px;color:var(--mu)}
+.rodape{padding-block:30px calc(34px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--ln);color:var(--mu);font-size:14px}
+.rodape .ct{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center}
 
-/* celular */
-.quem{display:grid;grid-template-columns:minmax(0,300px) 1fr;gap:40px;align-items:center}
-.quem-foto{margin:0;position:relative;overflow:hidden;border-radius:26px;border:1px solid var(--line);background:var(--card)}
-.quem-foto img{width:100%;aspect-ratio:4/5;object-fit:cover;display:block}
-.quem-foto figcaption{position:absolute;left:0;right:0;bottom:0;padding:24px 16px 12px;font-size:12.5px;color:var(--ink2);background:linear-gradient(to top,rgba(15,12,23,.92),transparent)}
-.quem h2{margin:8px 0 14px}.quem p:not(.rot){font-size:17px;line-height:1.65;color:var(--muted);margin-bottom:12px}.quem p b{color:var(--ink)}
-@media (max-width:860px){.quem{grid-template-columns:1fr;gap:24px}.quem-foto{max-width:300px}}
-@media (max-width:860px){
-  .hero .miolo,.prova{grid-template-columns:minmax(0,1fr)}
-  .cel{width:min(78%,300px)}
-  .troca{grid-template-columns:minmax(0,1fr)}
-  .troca .seta{transform:rotate(90deg);padding-block:2px}
+@media (max-width:900px){
+  .hero .ct,.prova,.quem,.caixa-fim{grid-template-columns:minmax(0,1fr);gap:40px}
+  .troca{grid-template-columns:minmax(0,1fr);gap:14px;padding:22px 18px}
+  .troca .seta{transform:rotate(90deg)}
   .passos,.casos{grid-template-columns:minmax(0,1fr)}
   .marcos{grid-template-columns:repeat(2,minmax(0,1fr))}
   .barra .btn-pq span{display:none}
 }
-@media (max-width:420px){.barra .marca{font-size:19px}}
+@media (max-width:600px){
+  section{padding-block:60px}
+  .palco{width:min(100%,320px)}
+  .palco .s1{right:-4px}.palco .s2{left:-4px}
+  .mini{grid-template-columns:1fr 1fr 1fr;gap:8px}
+  .mini div{padding:12px 10px}
+  .pontos-box{padding:16px}
+  .hero .acoes .btn{width:100%}
+  .caso,.passo{padding:22px}
+  .linha17{padding:20px}
+  .mais-txt{align-items:flex-start}
+}
+@media (max-width:420px){.barra .marca{font-size:19px}.mini b{font-size:22px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
 </style>
 <!-- Pixel da escola (o mesmo da vitrine). Contato = clique no botão do WhatsApp. -->
@@ -186,8 +238,8 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 </head>
 <body>
 
-<header class="barra faixa">
-  <div class="miolo">
+<header class="barra">
+  <div class="ct">
     <span class="marca" aria-label="teunegócio OS"><span><span class="t">teu</span><span class="n">negócio</span></span><span class="os">OS</span></span>
     <a class="btn btn-wa btn-pq" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg><span>Falar com a escola</span></a>
   </div>
@@ -195,10 +247,10 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 
 <main>
 <!-- 1 · a frase, o nome ao vivo e o vídeo -->
-<section class="hero faixa">
-  <div class="miolo">
+<section class="hero">
+  <div class="ct">
     <div>
-      <p class="rot">Carreira no Digital · com IA trabalhando dentro</p>
+      <p class="olho">Carreira no Digital · com IA trabalhando dentro</p>
       <h1>A IA trabalhando <em>dentro</em> do teu negócio.</h1>
       <p class="sub">A gente estuda o que se repete na tua empresa e coloca a IA pra fazer. Tudo num sistema com o teu nome, em uso em até 17 dias.</p>
       <div class="nome">
@@ -212,70 +264,79 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
       </div>
       <p class="miuda">Uma conversa curta e sem compromisso. A escola mostra funcionando e diz na hora se serve pra ti.</p>
     </div>
-    <div class="cel" aria-label="O sistema funcionando, em 26 segundos">
-      <video src="/teunegocio-os/midia/tour.mp4" poster="/teunegocio-os/midia/tour.jpg" autoplay muted loop playsinline preload="metadata"></video>
-      <span class="etiqueta2">22h · cliente chamou</span>
-      <span class="etiqueta">✓ a IA respondeu</span>
+    <div class="palco" aria-label="O sistema funcionando, em 26 segundos">
+      <div class="cel"><video src="/teunegocio-os/midia/tour.mp4" poster="/teunegocio-os/midia/tour.jpg" autoplay muted loop playsinline preload="metadata"></video></div>
+      <span class="selo s1"><i></i>22h · cliente chamou</span>
+      <span class="selo ok s2"><i></i>a IA respondeu</span>
     </div>
   </div>
 </section>
 
 <!-- 2 · o que muda -->
-<section class="sec faixa" id="muda">
-  <div class="miolo">
+<section id="muda">
+  <div class="ct">
     <div class="cab">
-      <p class="rot">O que muda</p>
+      <p class="olho">O que muda</p>
       <h2>O que se repete, a IA faz.</h2>
-      <p>Três exemplos de verdade. Cada empresa tem o seu processo repetitivo, e é ele que a gente estuda primeiro.</p>
+      <p class="lead">Três exemplos de verdade. Cada empresa tem o seu processo repetitivo, e é ele que a gente estuda primeiro.</p>
     </div>
     <div class="trocas">
       <div class="troca">
         <div class="antes"><small>Antes</small><p>Alguém do time responde a mesma pergunta o dia inteiro.</p></div>
-        <div class="seta" aria-hidden="true">→</div>
-        <div class="depois">
-          <div class="bolha cli">Vocês atendem sábado?<small>22:14</small></div>
-          <div class="bolha ia">Atendemos sim, das 8h às 12h. Quer que eu reserve um horário?<small>22:14 · IA</small></div>
-          <span class="tag-ia">a IA respondeu na hora, do teu jeito</span>
+        <div class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="zap">
+          <div class="wtop"><span class="av">OS</span><div><b>Tua empresa</b><span>IA · online</span></div></div>
+          <div class="msgs">
+            <div class="bolha cli">Vocês atendem sábado?<small>22:14</small></div>
+            <div class="bolha ia">Atendemos sim, das 8h às 12h. Quer que eu reserve um horário?<small>22:14 · IA</small></div>
+            <span class="tag-ia">a IA respondeu na hora, do teu jeito</span>
+          </div>
         </div>
       </div>
       <div class="troca">
         <div class="antes"><small>Antes</small><p>Lembrar de voltar em cada cliente que ficou de pensar.</p></div>
-        <div class="seta" aria-hidden="true">→</div>
-        <div class="depois">
-          <div class="bolha ia">Oi, Carla! Conseguiu ver o orçamento? Se quiser, separo um horário pra sexta.<small>2 dias depois · IA</small></div>
-          <div class="bolha cli">Pode ser sexta às 10h!<small>agora</small></div>
-          <span class="tag-ia">a IA voltou no dia certo</span>
+        <div class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="zap">
+          <div class="wtop"><span class="av">OS</span><div><b>Tua empresa</b><span>IA · online</span></div></div>
+          <div class="msgs">
+            <div class="bolha ia">Oi, Carla! Conseguiu ver o orçamento? Se quiser, separo um horário pra sexta.<small>2 dias depois · IA</small></div>
+            <div class="bolha cli">Pode ser sexta às 10h!<small>agora</small></div>
+            <span class="tag-ia">a IA voltou no dia certo</span>
+          </div>
         </div>
       </div>
       <div class="troca">
         <div class="antes"><small>Antes</small><p>Mandar a arte, esperar, cobrar a aprovação.</p></div>
-        <div class="seta" aria-hidden="true">→</div>
-        <div class="depois">
-          <div class="bolha ia">Olha a prévia do teu brinde com a logo. Aprova?<small>IA · com a imagem</small></div>
-          <div class="bolha cli">Aprovado! 👍<small>agora</small></div>
-          <span class="tag-ia">pedido liberado pra produção · numa empresa de brindes</span>
+        <div class="seta" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+        <div class="zap">
+          <div class="wtop"><span class="av">OS</span><div><b>Tua empresa</b><span>IA · online</span></div></div>
+          <div class="msgs">
+            <div class="bolha ia">Olha a prévia do teu brinde com a logo. Aprova?<small>IA · com a imagem</small></div>
+            <div class="bolha cli">Aprovado! 👍<small>agora</small></div>
+            <span class="tag-ia">pedido liberado pra produção · numa empresa de brindes</span>
+          </div>
         </div>
       </div>
     </div>
-    <p class="mais">E o que o teu negócio precisar. A IA só fala o que tu ensinou e, quando não sabe, chama alguém do time.</p>
+    <p class="mais-txt"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><span>E o que o teu negócio precisar. A IA só fala o que tu ensinou e, quando não sabe, chama alguém do time.</span></p>
   </div>
 </section>
 
 <!-- 3 · a prova -->
-<section class="sec faixa" id="prova">
-  <div class="miolo">
+<section class="prova-sec" id="prova">
+  <div class="ct">
     <div class="cab">
-      <p class="rot">A prova</p>
+      <p class="olho">A prova</p>
       <h2>Teu cliente não foi embora pelo preço.</h2>
-      <p>Em três meses, na própria escola, cada ponto é uma pessoa que sumiu sem responder.</p>
+      <p class="lead">Em três meses, na própria escola, cada ponto é uma pessoa que sumiu sem responder.</p>
     </div>
     <div class="prova">
-      <div>
-        <div class="pontos" id="pontos" role="img" aria-label="472 pontos lilases de quem sumiu sem responder e 23 pontos brancos de quem disse que não tinha orçamento"></div>
-        <div class="legenda"><span><i style="background:var(--lilas-forte)"></i>472 sumiram sem responder</span><span><i style="background:#fff"></i>23 disseram que não tinham orçamento</span></div>
+      <div class="pontos-box">
+        <div class="pontos" id="pontos" role="img" aria-label="472 pontos lilases de quem sumiu sem responder e 23 pontos laranja de quem disse que não tinha orçamento"></div>
+        <div class="legenda"><span><i style="background:#a78bfa"></i>472 sumiram sem responder</span><span><i style="background:var(--la)"></i>23 disseram que não tinham orçamento</span></div>
       </div>
       <div class="placar">
-        <p class="num">472<span class="x">×</span>23</p>
+        <p class="num">472<span class="x">×</span><span class="b">23</span></p>
         <p><b>Quem some não disse não.</b> Ninguém voltou nele no dia certo. É isso que o sistema não deixa acontecer.</p>
         <div class="mini">
           <div><b>13,3%</b><span>dos contatos viraram venda</span></div>
@@ -288,39 +349,39 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 </section>
 
 <!-- 4 · o nome dele -->
-<section class="sec faixa" id="nome">
-  <div class="miolo">
+<section id="nome">
+  <div class="ct">
     <div class="cab">
-      <p class="rot">Ele tem o teu nome</p>
+      <p class="olho">Ele tem o teu nome</p>
       <h2>Um sistema só, com a tua marca. E tudo conversa.</h2>
-      <p>Telas reais. Onde aparece "Tua marca", entra a tua.</p>
+      <p class="lead">Telas reais. Onde aparece "Tua marca", entra a tua.</p>
     </div>
     <div class="telas">
-      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/painel.jpg" alt="O painel do dia: faturamento, leads e tarefas" loading="lazy"><p><b>O teu dia numa tela.</b> O que vendeu, quem chegou e o que fazer primeiro.</p></figure>
-      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/funil.jpg" alt="O funil com as etapas do negócio" loading="lazy"><p><b>O funil do teu jeito.</b> Cada cliente vira um card sozinho, com a etapa e o próximo passo.</p></figure>
-      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/agenda.jpg" alt="A agenda do time" loading="lazy"><p><b>A agenda do time.</b> Com a confirmação automática antes de cada horário.</p></figure>
-      <figure class="tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/resultados.jpg" alt="Os resultados do mês" loading="lazy"><p><b>O placar do mês.</b> Quanto vendeu, quanto converteu e onde trava.</p></figure>
-      <figure class="tela cel-tela" style="margin:0"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/corretora.jpg" alt="A área do cliente no celular" loading="lazy"><p><b>E o teu cliente acompanha pelo celular,</b> com a tua marca.</p></figure>
+      <figure class="tela"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/painel.jpg" alt="O painel do dia: faturamento, leads e tarefas" loading="lazy"><p><b>O teu dia numa tela.</b> O que vendeu, quem chegou e o que fazer primeiro.</p></figure>
+      <figure class="tela"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/funil.jpg" alt="O funil com as etapas do negócio" loading="lazy"><p><b>O funil do teu jeito.</b> Cada cliente vira um card sozinho, com a etapa e o próximo passo.</p></figure>
+      <figure class="tela"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/agenda.jpg" alt="A agenda do time" loading="lazy"><p><b>A agenda do time.</b> Com a confirmação automática antes de cada horário.</p></figure>
+      <figure class="tela"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/resultados.jpg" alt="Os resultados do mês" loading="lazy"><p><b>O placar do mês.</b> Quanto vendeu, quanto converteu e onde trava.</p></figure>
+      <figure class="tela cel-tela"><div class="topo-tela"><i></i><i></i><i></i><span class="marca" data-marca><span class="n">tuaempresa</span><span class="os">OS</span></span></div><img src="/teunegocio-os/midia/corretora.jpg" alt="A área do cliente no celular" loading="lazy"><p><b>E o teu cliente acompanha pelo celular,</b> com a tua marca.</p></figure>
     </div>
-    <p class="dica-rola">Arrasta pro lado pra ver as outras telas →</p>
+    <p class="dica-rola">Arrasta pro lado pra ver as outras telas <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:16px;height:16px"><path d="M5 12h14M13 6l6 6-6 6"/></svg></p>
   </div>
 </section>
 
 <!-- 5 · como começa -->
-<section class="sec faixa" id="comeca">
-  <div class="miolo">
+<section class="como-sec" id="comeca">
+  <div class="ct">
     <div class="cab">
-      <p class="rot">Como começa</p>
+      <p class="olho">Como começa</p>
       <h2>Três passos. Em uso em até 17 dias.</h2>
-      <p>Não é sistema de cem dias. A base já roda todo dia na escola: a gente ajusta o que é teu.</p>
+      <p class="lead">Não é sistema de cem dias. A base já roda todo dia na escola: a gente ajusta o que é teu.</p>
     </div>
     <div class="passos">
-      <div class="passo"><span class="n">1</span><h3>A gente estuda o teu dia</h3><p>O que se repete, onde trava e o que toma o tempo do time. E mede o ponto de partida.</p></div>
-      <div class="passo"><span class="n">2</span><h3>A IA assume o repetitivo</h3><p>Num sistema com o teu nome, cada um do time com o seu login.</p></div>
-      <div class="passo"><span class="n">3</span><h3>90 dias ajustando junto</h3><p>Apareceu outro processo pra automatizar? Tu pede, a gente faz.</p></div>
+      <div class="passo"><span class="n">01</span><h3>A gente estuda o teu dia</h3><p>O que se repete, onde trava e o que toma o tempo do time. E mede o ponto de partida.</p></div>
+      <div class="passo"><span class="n">02</span><h3>A IA assume o repetitivo</h3><p>Num sistema com o teu nome, cada um do time com o seu login.</p></div>
+      <div class="passo"><span class="n">03</span><h3>90 dias ajustando junto</h3><p>Apareceu outro processo pra automatizar? Tu pede, a gente faz.</p></div>
     </div>
     <div class="linha17">
-      <p class="rot">Os primeiros 90 dias</p>
+      <div class="topo17"><p class="olho">Os primeiros 90 dias</p><p class="grande">17 dias <small>até estar em uso</small></p></div>
       <div class="trilho" aria-hidden="true"><i></i></div>
       <div class="marcos">
         <div><b>Dias 0 a 3</b>o ponto de partida medido</div>
@@ -333,52 +394,52 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 </section>
 
 <!-- 6 · em quem já roda -->
-<section class="sec faixa" id="casos">
-  <div class="miolo">
+<section id="casos">
+  <div class="ct">
     <div class="cab">
-      <p class="rot">Onde já roda</p>
+      <p class="olho">Onde já roda</p>
       <h2>Dois negócios diferentes. A mesma base.</h2>
     </div>
     <div class="casos">
-      <div class="caso"><p class="q">Uma clínica de saúde</p><h3>Da agenda de papel ao sistema</h3><ul>
-        <li>A agenda foi pro sistema, com <b>confirmação automática 1 ou 2 dias antes</b></li>
-        <li>O financeiro que a clínica não tinha</li>
-        <li>A ficha que o paciente preenche no celular, salvando a cada resposta</li>
-        <li>A jornada do tratamento, sessão a sessão</li>
+      <div class="caso"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14c1.5-1.5 3-3.2 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.8 0-3 .5-4.5 2-1.5-1.5-2.7-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4 3 5.5l7 7Z"/><path d="M3.2 12h3.6l1.7-3 3 6 1.7-3h7.6"/></svg></span><p class="q">Uma clínica de saúde</p><h3>Da agenda de papel ao sistema</h3><ul>
+        <li><span>A agenda foi pro sistema, com <b>confirmação automática 1 ou 2 dias antes</b></span></li>
+        <li><span>O financeiro que a clínica não tinha</span></li>
+        <li><span>A ficha que o paciente preenche no celular, salvando a cada resposta</span></li>
+        <li><span>A jornada do tratamento, sessão a sessão</span></li>
       </ul></div>
-      <div class="caso"><p class="q">Uma corretora de seguros</p><h3>A operação inteira num lugar só</h3><ul>
-        <li>O operacional da empresa montado dentro do sistema</li>
-        <li>A IA lê a apólice em PDF e a renovação entra na fila <b>30, 15 e 5 dias antes</b></li>
-        <li>Uma área do cliente com a marca da corretora</li>
+      <div class="caso"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><p class="q">Uma corretora de seguros</p><h3>A operação inteira num lugar só</h3><ul>
+        <li><span>O operacional da empresa montado dentro do sistema</span></li>
+        <li><span>A IA lê a apólice em PDF e a renovação entra na fila <b>30, 15 e 5 dias antes</b></span></li>
+        <li><span>Uma área do cliente com a marca da corretora</span></li>
       </ul></div>
     </div>
   </div>
 </section>
 
-<!-- 6b · quem implanta (20/10: a bio do Nando volta, como na página antiga do sistema) -->
-<section class="sec faixa" id="quem">
-  <div class="miolo">
-    <div class="quem">
-      <figure class="quem-foto"><img src="/teunegocio-os/midia/nando.jpg" alt="Nando, que desenha e implanta o teunegócio OS" loading="lazy"><figcaption>Nando, na unidade da escola</figcaption></figure>
-      <div>
-        <p class="rot">Quem implanta</p>
-        <h2>Nando</h2>
-        <p><b>É quem desenha, implanta e ajusta cada teunegócio OS.</b> É com ele que tu senta na implantação, e é pra ele que vão os teus pedidos de mudança, sem fila de suporte e sem ticket.</p>
-        <p>O sistema nasceu dentro da Carreira no Digital: <b>é nele que a escola vende as turmas, atende os alunos pelo WhatsApp e automatiza a rotina</b>, todo dia. Tudo que entra no teu sistema já foi testado no dela.</p>
-        <p>Por isso o ajuste é rápido: <b>a base é uma só, testada no dia a dia</b>, e cada empresa recebe por cima o que é só dela.</p>
-      </div>
+<!-- 6b · quem implanta -->
+<section class="quem-sec" id="quem">
+  <div class="ct quem">
+    <figure class="quem-foto"><div class="img"><img src="/teunegocio-os/midia/nando.webp" alt="Nando, que desenha e implanta o teunegócio OS" width="720" height="900" loading="lazy"></div><figcaption class="selo"><i></i>Nando, na unidade da escola</figcaption></figure>
+    <div>
+      <p class="olho">Quem implanta</p>
+      <h2>Nando</h2>
+      <p><b>É quem desenha, implanta e ajusta cada teunegócio OS.</b> É com ele que tu senta na implantação, e é pra ele que vão os teus pedidos de mudança, sem fila de suporte e sem ticket.</p>
+      <p>O sistema nasceu dentro da Carreira no Digital: <b>é nele que a escola vende as turmas, atende os alunos pelo WhatsApp e automatiza a rotina</b>, todo dia. Tudo que entra no teu sistema já foi testado no dela.</p>
+      <p>Por isso o ajuste é rápido: <b>a base é uma só, testada no dia a dia</b>, e cada empresa recebe por cima o que é só dela.</p>
     </div>
   </div>
 </section>
 
 <!-- 7 · o próximo passo -->
-<section class="sec faixa fim" id="falar">
-  <div class="miolo">
+<section id="falar">
+  <div class="ct">
     <div class="caixa-fim">
-      <p class="rot">O próximo passo</p>
-      <h2>Vê o sistema no teu negócio.</h2>
-      <p>Uma conversa curta e sem compromisso. A escola mostra funcionando, entende o que se repete na tua empresa e diz na hora se serve pra ti.</p>
-      <div><a class="btn btn-wa" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>Quero ver no meu negócio</a></div>
+      <div class="txt">
+        <p class="olho">O próximo passo</p>
+        <h2>Vê o sistema no teu negócio.</h2>
+        <p>Uma conversa curta e sem compromisso. A escola mostra funcionando, entende o que se repete na tua empresa e diz na hora se serve pra ti.</p>
+        <a class="btn btn-wa" data-cta href="#"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.2 14.1c-.2.6-1.3 1.2-1.8 1.2-.5.1-1 .2-3.3-.7-2.8-1.1-4.6-4-4.7-4.2-.1-.2-1.1-1.5-1.1-2.8s.7-2 1-2.3c.2-.3.5-.3.7-.3h.5c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .5l-.4.6-.4.4c-.1.2-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.1 1.3 2.4 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.7-.1 1.3Z"/></svg>Quero ver no meu negócio</a>
+      </div>
       <div class="faq">
         <details><summary>Quanto custa?</summary><p>Depende do que entra: quantas pessoas usam e quais processos a IA assume. Cada empresa é uma conversa, e o valor sai depois de entender o teu negócio. O WhatsApp oficial e o uso da IA são pagos direto à Meta e à Anthropic, na conta da tua empresa.</p></details>
         <details><summary>A IA pode falar besteira pro meu cliente?</summary><p>Ela só fala o que tu ensinou sobre o teu negócio. Quando não sabe, para e chama uma pessoa do time. E tudo que ela respondeu fica à vista.</p></details>
@@ -389,8 +450,8 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 </section>
 </main>
 
-<footer class="rodape faixa">
-  <div class="miolo">
+<footer class="rodape">
+  <div class="ct">
     <span class="marca" aria-label="teunegócio OS"><span><span class="t">teu</span><span class="n">negócio</span></span><span class="os">OS</span></span>
     <span>Carreira no Digital · Lajeado e Porto Alegre, RS</span>
   </div>

@@ -1,0 +1,480 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta name="robots" content="noindex">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Carreira no Digital · escola de inteligência artificial para negócios</title>
+<meta name="description" content="Carreira no Digital, escola de inteligência artificial para negócios em Lajeado e Porto Alegre. A gente ajuda donos de negócio a vender mais no digital, automatizar processos e reduzir custos com IA.">
+<meta name="theme-color" content="#0e0719">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Bricolage+Grotesque:opsz,wdth,wght@12..96,75..100,400..800&display=swap">
+<style>
+:root{
+  --fundo:#0e0719; --fundo2:#160b28; --cartao:rgba(255,255,255,.06); --borda:rgba(255,255,255,.12);
+  --tinta:#f5f1fb; --suave:#bdb1d1; --fraco:#8d80a3;
+  --roxo:#7b2ae8; --magenta:#c026d3; --lilas:#c9aaff; --verde:#22c55e; --wa:#25d366;
+  --grad:linear-gradient(120deg,#7b2ae8,#c026d3);
+  --raio:22px; --gut:20px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--fundo);color:var(--tinta);font-family:Manrope,system-ui,sans-serif;font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,video{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3{font-family:'Bricolage Grotesque',Manrope,sans-serif;font-weight:800;letter-spacing:-.02em;line-height:1.04;text-wrap:balance}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ct{max-width:1120px;margin:0 auto;padding:0 var(--gut)}
+section{padding:80px 0;position:relative}
+.olho{display:inline-block;font-size:13px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--lilas);margin-bottom:14px}
+h2{font-size:clamp(30px,5vw,48px);margin-bottom:14px}
+.lead{font-size:clamp(17px,2.3vw,20px);color:var(--suave);max-width:60ch}
+.lead b{color:var(--tinta)}
+.centro{text-align:center}.centro .lead{margin:0 auto}
+
+/* faixa de protótipo */
+.proto{background:#fde68a;color:#3b2a00;font-size:13px;font-weight:700;text-align:center;padding:8px var(--gut)}
+
+/* topo */
+.topo{position:sticky;top:0;z-index:40;background:rgba(14,7,25,.84);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--borda)}
+.topo .ct{display:flex;align-items:center;gap:22px;min-height:62px}
+.topo .logo{height:30px;width:auto;flex:none}
+.menu{display:flex;gap:20px;flex:1;justify-content:center}
+.menu a{font-size:14px;font-weight:700;color:var(--suave);text-decoration:none;white-space:nowrap}
+.menu a:hover{color:var(--tinta)}
+
+/* botões */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:54px;padding:0 24px;border-radius:999px;font-weight:800;font-size:16px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.06);transform:translateY(-1px)}
+.btn:focus-visible,.menu a:focus-visible{outline:3px solid var(--lilas);outline-offset:3px}
+.btn svg{width:22px;height:22px;flex:none}
+.btn-wa{background:var(--wa);color:#05301a;box-shadow:0 10px 30px rgba(37,211,102,.28)}
+.btn-roxo{background:var(--grad);color:#fff;box-shadow:0 10px 30px rgba(123,42,232,.35)}
+.btn-sec{background:rgba(255,255,255,.08);color:var(--tinta);border:1px solid var(--borda)}
+.topo .btn{min-height:40px;padding:0 16px;font-size:14px;flex:none}
+
+/* abertura */
+.abre{padding-top:56px;overflow:hidden}
+.luz{position:absolute;border-radius:50%;filter:blur(90px);pointer-events:none}
+.luz.a{width:440px;height:440px;background:#7b2ae8;top:-140px;left:-140px;opacity:.45}
+.luz.b{width:380px;height:380px;background:#c026d3;bottom:-160px;right:-90px;opacity:.3}
+.abre .ct{display:grid;grid-template-columns:1.1fr .9fr;gap:48px;align-items:center;position:relative}
+.abre h1{font-size:clamp(38px,6.6vw,70px);margin-bottom:18px}
+.botoes{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 24px}
+.sedes-mini{display:flex;flex-wrap:wrap;gap:10px}
+.sedes-mini span{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--suave);background:var(--cartao);border:1px solid var(--borda);border-radius:999px;padding:8px 14px}
+.sedes-mini svg{width:18px;height:18px;color:var(--lilas)}
+.dupla{display:grid;grid-template-columns:1fr 1fr;gap:14px;max-width:460px;margin:0 auto;position:relative}
+.cel{position:relative;aspect-ratio:9/16;border-radius:30px;padding:8px;background:#05020b;border:1px solid var(--borda);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cel video,.cel img{width:100%;height:100%;object-fit:cover;border-radius:23px}
+.dupla .cel:last-child{transform:translateY(34px);box-shadow:0 30px 80px rgba(0,0,0,.55),0 0 0 6px rgba(123,42,232,.14)}
+.rotulo{position:absolute;left:50%;transform:translateX(-50%);bottom:-14px;white-space:nowrap;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:6px 12px;background:rgba(22,11,40,.95);border:1px solid var(--borda)}
+.rotulo.ok{background:var(--verde);color:#05301a;border-color:var(--verde)}
+
+.foto-abre{position:relative;max-width:440px;margin:0 auto;width:100%}
+.foto-abre>img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:28px;border:1px solid var(--borda);box-shadow:0 30px 80px rgba(0,0,0,.55)}
+.cartao-sede{position:absolute;left:-28px;bottom:28px;display:flex;align-items:center;gap:12px;background:rgba(22,11,40,.94);border:1px solid var(--borda);border-radius:18px;padding:10px 16px 10px 10px;box-shadow:0 14px 34px rgba(0,0,0,.45)}
+.cartao-sede img{width:64px;height:48px;object-fit:cover;border-radius:10px}
+.cartao-sede b{display:block;font-size:16px}
+.cartao-sede span{font-size:13px;color:var(--suave)}
+@media (max-width:560px){.cartao-sede{left:10px;bottom:14px}}
+
+/* o que a escola faz */
+.faz-sec{background:var(--fundo2)}
+.faz{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:38px}
+.faz article{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);overflow:hidden;display:flex;flex-direction:column}
+.faz .mid{aspect-ratio:4/5;background:#05020b;overflow:hidden}
+.faz .mid video,.faz .mid img{width:100%;height:100%;object-fit:cover}
+.faz .mid img.topo-img{object-position:top}
+.faz .txt{padding:18px}
+.faz h3{font-size:21px;margin-bottom:6px}
+.faz p{color:var(--suave);font-size:15px;line-height:1.45}
+
+/* caminhos */
+.caminhos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:40px;align-items:stretch}
+.cam{position:relative;background:var(--cartao);border:1px solid var(--borda);border-radius:26px;padding:26px;display:flex;flex-direction:column;gap:16px}
+.cam.dest{background:linear-gradient(170deg,rgba(123,42,232,.32),rgba(192,38,211,.12));border-color:rgba(201,170,255,.4)}
+.cam .tipo{align-self:flex-start;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:999px;padding:5px 12px;background:rgba(255,255,255,.1);color:var(--lilas)}
+.cam.dest .tipo{background:var(--verde);color:#05301a}
+.cam h3{font-size:30px}
+.cam .pra{color:var(--suave);font-size:16px}
+.cam dl{display:grid;gap:12px;border-top:1px solid var(--borda);padding-top:16px}
+.cam dt{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fraco)}
+.cam dd{font-size:15px;color:var(--tinta);margin-top:2px}
+.cam .btn{margin-top:auto}
+.cam .prox{display:flex;gap:8px;align-items:center;font-size:13px;font-weight:700;color:#b8f5cf}
+.cam .prox svg{width:16px;height:16px;flex:none}
+.degrau{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:800;color:var(--fraco);letter-spacing:.06em;text-transform:uppercase}
+.degrau i{display:flex;gap:4px}
+.degrau i b{width:10px;height:10px;border-radius:3px;background:rgba(255,255,255,.14)}
+.degrau i b.on{background:var(--lilas)}
+.duvida{margin-top:26px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px;background:var(--fundo2);border:1px dashed rgba(201,170,255,.4);border-radius:22px;padding:20px 24px}
+.duvida p{font-size:17px;color:var(--suave)}
+.duvida p b{color:var(--tinta)}
+
+/* sedes */
+.sedes{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:36px}
+.sede{border-radius:26px;overflow:hidden;border:1px solid var(--borda);background:var(--cartao)}
+.sede img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.sede div{padding:18px 20px}
+.sede b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:24px}
+.sede span{color:var(--suave);font-size:15px}
+
+/* resultados */
+.res-sec{background:var(--fundo2)}
+.res{display:grid;grid-template-columns:.8fr 1.2fr;gap:44px;align-items:center;margin-top:36px}
+.depo{max-width:320px;margin:0 auto;width:100%}
+.depo .cel{padding:7px}
+.depo video{background:#000}
+.depo figcaption{margin-top:14px;text-align:center;font-weight:800;font-size:15px}
+.depo figcaption span{display:block;font-weight:600;font-size:13px;color:var(--fraco)}
+.casos{display:grid;gap:14px}
+.caso{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;background:var(--fundo);border:1px solid var(--borda);border-radius:20px;padding:18px 20px}
+.caso .de-para{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:clamp(22px,3.4vw,30px);line-height:1;white-space:nowrap}
+.caso .de-para small{display:block;font-family:Manrope,sans-serif;font-size:12px;font-weight:700;color:var(--fraco);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.caso p{color:var(--suave);font-size:15px}
+.numeros{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:20px}
+.numeros div{background:var(--fundo);border:1px solid var(--borda);border-radius:16px;padding:14px}
+.numeros b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(22px,3.2vw,30px);line-height:1.05;font-variant-numeric:tabular-nums}
+.numeros span{font-size:13px;color:var(--suave);font-weight:600}
+
+/* quem */
+.quem{display:grid;grid-template-columns:.75fr 1.25fr;gap:44px;align-items:center;margin-top:10px}
+.quem figure{border-radius:26px;overflow:hidden;border:1px solid var(--borda);max-width:400px}
+.quem figure img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.quem p{color:var(--suave);max-width:58ch}
+.quem p b{color:var(--tinta)}
+.quem p+p{margin-top:12px}
+.socios{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:22px}
+.socio{display:flex;gap:14px;align-items:center;background:var(--cartao);border:1px solid var(--borda);border-radius:18px;padding:14px}
+.socio i{flex:none;width:48px;height:48px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center;font-style:normal;font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px}
+.socio b{display:block;font-size:16px}
+.socio span{font-size:14px;color:var(--suave)}
+
+/* a escola roda assim */
+.roda{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.roda ul{list-style:none;display:grid;gap:10px;margin-top:22px}
+.roda li{display:flex;gap:12px;align-items:flex-start;color:var(--suave)}
+.roda li svg{flex:none;width:22px;height:22px;color:var(--verde);margin-top:2px}
+.roda li b{color:var(--tinta)}
+.tela{position:relative}
+.tela img{border-radius:18px;border:1px solid var(--borda);box-shadow:0 30px 70px rgba(0,0,0,.5)}
+.tela .cel{position:absolute;width:38%;right:-12px;bottom:-30px;padding:6px;border-radius:24px}
+.tela .cel video{border-radius:18px}
+
+/* fim */
+.fim{text-align:center;overflow:hidden}
+.fim .botoes{justify-content:center}
+footer{border-top:1px solid var(--borda);padding:30px 0 110px;color:var(--fraco);font-size:13px}
+footer .ct{display:flex;flex-wrap:wrap;gap:12px 28px;justify-content:space-between}
+.fixo{position:fixed;left:0;right:0;bottom:0;z-index:45;padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(14,7,25,.96) 35%);display:none;gap:10px}
+.fixo .btn{flex:1;min-height:50px;font-size:15px;padding:0 14px}
+.aviso{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);opacity:0;z-index:60;background:#fde68a;color:#3b2a00;font-weight:700;font-size:14px;border-radius:14px;padding:12px 16px;max-width:calc(100% - 32px);box-shadow:0 14px 40px rgba(0,0,0,.4);transition:opacity .25s,transform .25s;pointer-events:none}
+.aviso.on{opacity:1;transform:translateX(-50%)}
+
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
+.rv.vis{opacity:1;transform:none}
+.d1{transition-delay:.08s}.d2{transition-delay:.16s}.d3{transition-delay:.24s}
+
+@media (max-width:980px){
+  .menu{display:none}
+  .topo .ct{justify-content:space-between}
+  .faz{grid-template-columns:1fr 1fr}
+  .caminhos{grid-template-columns:1fr}
+  .numeros{grid-template-columns:1fr 1fr}
+}
+@media (max-width:860px){
+  .abre .ct,.res,.quem,.roda{grid-template-columns:1fr;gap:34px}
+  .tela{margin-right:12px}
+}
+@media (max-width:560px){
+  section{padding:60px 0}
+  .topo .btn{display:none}
+  .faz{grid-template-columns:1fr}
+  .faz .mid{aspect-ratio:1/1}
+  .sedes,.socios{grid-template-columns:1fr}
+  .caso{grid-template-columns:1fr;gap:8px}
+  .fixo{display:flex}
+  .dupla{gap:10px;max-width:340px}
+}
+@media (prefers-reduced-motion:reduce){
+  *{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+  .rv{opacity:1;transform:none}
+}
+
+/* v3 (07/10): estrutura de posicionamento do site antigo */
+.mercado-grid{display:grid;grid-template-columns:1.2fr .8fr;gap:44px;align-items:center}
+.stats{display:grid;gap:12px}
+.stats div{background:var(--cartao);border:1px solid var(--borda);border-radius:20px;padding:18px 20px;display:grid;grid-template-columns:120px 1fr;gap:16px;align-items:center}
+.stats b{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.stats span{color:var(--suave);font-size:15px;line-height:1.45}
+.pilares{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:36px}
+.pilares div{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:22px}
+.pilares svg{width:28px;height:28px;color:var(--lilas);margin-bottom:12px}
+.pilares b{display:block;font-size:18px;margin-bottom:6px}
+.pilares span{color:var(--suave);font-size:15px;line-height:1.5}
+.par-ia{display:grid;grid-template-columns:1fr auto 1fr;gap:20px;align-items:center;max-width:620px;margin:36px auto 10px}
+.par-ia figure{text-align:center}
+.par-ia .cel{width:min(240px,38vw);margin:0 auto;padding:7px;border-radius:28px}
+.par-ia .cel video{border-radius:22px}
+.par-ia figcaption{margin-top:12px;font-weight:800;font-size:15px}
+.par-ia .seta{width:46px;height:46px;border-radius:50%;background:var(--grad);display:flex;align-items:center;justify-content:center}
+.par-ia .seta svg{width:22px;height:22px}
+.quem-e{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-top:30px;max-width:900px;margin-left:auto;margin-right:auto}
+.quem-e span{font-size:15px;font-weight:700;background:var(--fundo);border:1px solid var(--borda);border-radius:999px;padding:10px 18px}
+.cam .itens{list-style:none;display:grid;gap:9px;border-top:1px solid var(--borda);padding-top:16px}
+.cam .itens li{display:flex;gap:10px;align-items:flex-start;font-size:15px}
+.cam .itens svg{flex:none;width:18px;height:18px;color:var(--verde);margin-top:3px}
+.passos{list-style:none;display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-top:34px;counter-reset:p}
+.passos li{counter-increment:p;background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:20px}
+.passos li::before{content:counter(p);display:flex;align-items:center;justify-content:center;width:40px;height:40px;border-radius:12px;background:var(--grad);font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:20px;margin-bottom:14px}
+.passos b{display:block;font-size:17px;margin-bottom:6px}
+.passos span{color:var(--suave);font-size:14px;line-height:1.5}
+.vendas{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.vendas div{background:var(--fundo2);border:1px solid var(--borda);border-radius:20px;padding:20px}
+.vendas small{display:block;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--fraco);margin-bottom:8px}
+.vendas b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(30px,4vw,42px);line-height:1;font-variant-numeric:tabular-nums}
+.vendas span{color:#b8f5cf;font-weight:700;font-size:14px}
+.sede small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lilas);margin-bottom:4px}
+.compara{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:34px}
+.compara .col{border-radius:24px;padding:24px;border:1px solid var(--borda)}
+.compara .nao{background:var(--cartao)}
+.compara .sim{background:linear-gradient(160deg,rgba(123,42,232,.3),rgba(192,38,211,.12));border-color:rgba(201,170,255,.35)}
+.compara h3{font-size:24px;margin-bottom:14px}
+.compara ul{list-style:none;display:grid;gap:10px}
+.compara li{display:flex;gap:10px;align-items:flex-start;font-size:16px}
+.compara svg{flex:none;width:20px;height:20px;margin-top:3px}
+.compara .nao svg{color:#f87171}.compara .nao li{color:var(--suave)}
+.compara .sim svg{color:var(--verde)}
+.fim .olho{display:block}
+@media (max-width:980px){.pilares{grid-template-columns:1fr 1fr}.passos{grid-template-columns:1fr 1fr}}
+@media (max-width:860px){.mercado-grid{grid-template-columns:1fr;gap:28px}}
+@media (max-width:560px){
+  .pilares,.passos,.vendas,.compara{grid-template-columns:1fr}
+  .stats div{grid-template-columns:1fr;gap:6px}
+  .par-ia{gap:10px}.par-ia .seta{width:36px;height:36px}
+}
+
+.btn{text-align:center;line-height:1.2}
+.cam .btn{white-space:nowrap;padding:0 18px}
+
+/* v4 (19/10): IA no centro */
+.foto-abre{max-width:580px}.foto-abre>img{aspect-ratio:4/3}
+/* 20/10: o momento da IA, com dados oficiais */
+.provas{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:34px}
+.provas article{background:var(--cartao);border:1px solid var(--borda);border-radius:24px;padding:24px;display:flex;flex-direction:column;gap:10px}
+.provas article>b{font-family:'Bricolage Grotesque',sans-serif;font-size:clamp(44px,5vw,60px);line-height:1;letter-spacing:-.02em;background:linear-gradient(90deg,#b98cff,#e879f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.provas article>b span{font-size:.55em}
+.provas p{color:var(--suave);font-size:16px;line-height:1.5}.provas p strong{color:var(--tinta)}
+.provas small{margin-top:auto;padding-top:10px;border-top:1px solid var(--borda);font-size:12px;color:var(--suave);opacity:.8;line-height:1.4}
+.provas .destaque,.provas .lacuna{background:linear-gradient(160deg,rgba(123,42,232,.28),rgba(192,38,211,.1));border-color:rgba(201,170,255,.35)}
+.fecho{margin-top:30px;font-size:19px;color:var(--suave);max-width:62ch}.fecho b{color:var(--tinta)}
+@media (max-width:900px){.provas{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.provas{grid-template-columns:1fr}}
+/* 20/10: o primeiro ano em números, dentro de Quem somos */
+.ano{margin-top:40px;display:grid;grid-template-columns:.9fr 1.4fr;gap:28px;align-items:center;background:linear-gradient(160deg,rgba(123,42,232,.22),rgba(192,38,211,.08));border:1px solid rgba(201,170,255,.3);border-radius:28px;padding:30px}
+.ano-txt small{font-size:13px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#c9aaff}
+.ano-txt h3{font-size:clamp(22px,2.4vw,28px);line-height:1.2;margin:10px 0}
+.ano-txt p{font-size:14px;color:var(--suave)}
+.ano-num{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ano-num div{background:rgba(10,6,20,.45);border:1px solid var(--borda);border-radius:20px;padding:18px;display:flex;flex-direction:column;gap:6px}
+.ano-num b{font-family:'Bricolage Grotesque',sans-serif;font-size:44px;line-height:1;background:linear-gradient(90deg,#b98cff,#e879f9);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ano-num span{font-size:14px;color:var(--suave);line-height:1.45}.ano-num strong{color:var(--tinta)}
+@media (max-width:860px){.ano{grid-template-columns:1fr;padding:22px}}
+@media (max-width:420px){.ano-num{grid-template-columns:1fr}}
+.caminhos.dois{grid-template-columns:repeat(2,1fr)}
+.agenda{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:34px}
+.agenda .data{display:flex;flex-direction:column;gap:6px;text-decoration:none;background:var(--cartao);border:1px solid var(--borda);border-radius:22px;padding:20px;transition:transform .15s,border-color .15s}
+.agenda .data:hover{transform:translateY(-2px);border-color:rgba(201,170,255,.5)}
+.agenda small{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lilas)}
+.agenda b{font-family:'Bricolage Grotesque',sans-serif;font-size:24px;line-height:1.1}
+.agenda span{color:var(--suave);font-size:15px}
+.stats div{grid-template-columns:1fr;gap:6px}.stats b{font-size:30px}
+@media (max-width:560px){.stats div{grid-template-columns:1fr}}
+.nota{margin-top:14px;font-size:13px;color:var(--fraco)}
+.linha{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:36px;position:relative}
+.linha li{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:22px;display:flex;flex-direction:column;gap:8px;position:relative}
+.linha li::before{content:"";width:12px;height:12px;border-radius:50%;background:var(--grad);box-shadow:0 0 0 6px rgba(123,42,232,.18)}
+.linha small{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lilas)}
+.linha b{font-family:'Bricolage Grotesque',sans-serif;font-size:22px;line-height:1.15}
+.linha span{color:var(--suave);font-size:15px;line-height:1.5}
+.frentes{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:36px}
+.frentes article{background:var(--fundo);border:1px solid var(--borda);border-radius:var(--raio);padding:24px;display:flex;flex-direction:column;gap:10px}
+.frentes small{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--lilas)}
+.frentes h3{font-size:26px}
+.frentes p{color:var(--suave);font-size:15px;line-height:1.5}
+.frentes .mais{margin-top:auto;display:inline-flex;align-items:center;gap:6px;font-weight:800;font-size:15px;color:var(--lilas);text-decoration:none}
+.frentes .mais svg{width:16px;height:16px}
+.numeros.grandes div{padding:22px}.numeros.grandes b{font-size:clamp(34px,5vw,52px)}
+.socios.tres{grid-template-columns:repeat(3,1fr)}
+.btn-sec svg{width:20px;height:20px}
+@media (max-width:980px){.linha,.frentes{grid-template-columns:1fr 1fr}.socios.tres{grid-template-columns:1fr}}
+@media (max-width:560px){.linha,.frentes{grid-template-columns:1fr}}
+.roda li span{color:var(--suave)}
+.roda li span b{color:var(--tinta)}
+.tela img{width:100%;aspect-ratio:4/5;object-fit:cover}
+@media (max-width:980px){.agenda{grid-template-columns:1fr 1fr}.caminhos.dois{grid-template-columns:1fr}}
+@media (max-width:560px){.agenda{grid-template-columns:1fr}}
+</style>
+<link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/marca/icone-192.png"><link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+</head>
+<body>
+
+<header class="topo">
+  <div class="ct">
+    <a href="#inicio" aria-label="Carreira no Digital, início"><img class="logo" src="/novo-site/midia/logo.webp" alt="Carreira no Digital"></a>
+    <nav class="menu" aria-label="Menu">
+      <a href="#historia">Quem somos</a>
+      <a href="#acreditamos">No que acreditamos</a>
+      <a href="#fazemos">O que fazemos</a>
+      <a href="#momento">O momento da IA</a>
+      <a href="#unidades">Unidades</a>
+    </nav>
+    <a class="btn btn-sec" href="#contato">Contato</a>
+  </div>
+</header>
+
+<main id="inicio">
+
+<!-- 1 · abertura -->
+<section class="abre">
+  <div class="luz a"></div><div class="luz b"></div>
+  <div class="ct">
+    <div>
+      <span class="olho rv">Carreira no Digital · Lajeado e Porto Alegre</span>
+      <h1 class="rv d1">Uma escola de inteligência artificial <span class="grad">para quem tem um negócio.</span></h1>
+      <p class="lead rv d2">A gente ajuda donos de negócio a vender mais no digital, automatizar o que toma tempo e gastar menos pra fazer tudo isso. <b>Colocando a IA pra trabalhar dentro da empresa, presencialmente, com gente do lado.</b></p>
+      <div class="botoes rv d3">
+        <a class="btn btn-roxo" href="#historia">Conhecer a escola</a>
+        <a class="btn btn-sec" href="#fazemos">O que fazemos</a>
+      </div>
+    </div>
+    <div class="foto-abre rv d2">
+      <img src="/novo-site/midia/sede-poa.jpg" alt="A sala da escola em Porto Alegre">
+      <div class="cartao-sede"><img src="/novo-site/midia/sede.jpg" alt="Sede da escola em Lajeado"><div><b>2 unidades próprias</b><span>Lajeado e Porto Alegre</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 2 · a história -->
+<section class="faz-sec" id="historia">
+  <div class="ct">
+    <span class="olho rv">Quem somos</span>
+    <h2 class="rv d1">Nascemos de quem tocou negócio. <span class="grad">E viramos escola de IA.</span></h2>
+    <p class="lead rv d2">A Carreira no Digital não nasceu numa agência nem numa sala de aula. Os fundadores viveram o balcão, o caixa e a correria de ter uma empresa, e aprenderam a vender pela internet fazendo.</p>
+    <ol class="linha">
+      <li class="rv"><small>Antes da escola</small><b>Mais de 15 anos de empresa</b><span>Os fundadores tocaram negócio físico por muitos anos e depois ensinaram online, com milhares de alunos. Foi ali que entenderam o que faz alguém aprender de verdade.</span></li>
+      <li class="rv d1"><small>O começo</small><b>A escola presencial</b><span>Lajeado primeiro, depois Porto Alegre. Turma pequena, no negócio real do aluno, com quem sabe do lado.</span></li>
+      <li class="rv d2"><small>O primeiro ano</small><b>Mais de 500 alunos</b><span>Quase 30 turmas e 8 cidades no itinerante. Lojas, clínicas, restaurantes, prestadores de serviço: cada um aplicando no próprio negócio.</span></li>
+      <li class="rv d3"><small>Agora</small><b>A virada pra IA</b><span>O que exigia uma equipe inteira de marketing passou a caber no dia do dono, com a inteligência artificial. A escola mudou junto.</span></li>
+    </ol>
+    <div class="ano rv">
+      <div class="ano-txt"><small>O primeiro ano da escola presencial</small><h3>Em um ano: duas unidades próprias e turmas em oito cidades.</h3><p>Números de outubro de 2026, contando só as turmas presenciais.</p></div>
+      <div class="ano-num">
+        <div><b>+500</b><span><strong>alunos formados</strong> presencialmente, cada um aplicando no próprio negócio</span></div>
+        <div><b>~30</b><span><strong>turmas</strong> pequenas, em Lajeado, Porto Alegre e no itinerante</span></div>
+        <div><b>8</b><span><strong>cidades</strong> visitadas pela escola itinerante</span></div>
+        <div><b>2</b><span><strong>unidades próprias</strong>: a sede em Lajeado e a unidade de Porto Alegre</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 3 · no que acreditamos -->
+<section id="acreditamos">
+  <div class="ct">
+    <span class="olho rv">No que acreditamos</span>
+    <h2 class="rv d1">A IA trabalha. <span class="grad">Quem decide é o dono.</span></h2>
+    <p class="lead rv d2">A inteligência artificial é a ferramenta. O centro é o teu negócio: o teu produto, o teu cliente, o teu jeito de atender.</p>
+    <div class="pilares">
+      <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg><b>Junto contigo, não por ti</b><span>A gente monta do teu lado e te ensina a mexer. Tu sai sabendo fazer, sem depender de ninguém.</span></div>
+      <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg><b>No negócio real</b><span>Nada de exercício genérico. É o teu público, a tua oferta e a tua cidade, desde o primeiro encontro.</span></div>
+      <div class="rv d2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg><b>A IA fica tua</b><span>A máquina que a gente monta fica na tua conta. Ela continua trabalhando pra ti depois.</span></div>
+      <div class="rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><b>A gente usa o que ensina</b><span>A própria escola roda assim: vídeos, anúncios, atendimento e números, todo dia. Só ensinamos o que já funciona aqui.</span></div>
+      <div class="rv d1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg><b>Sem promessa milagrosa</b><span>A gente ensina o método e acompanha. Não promete número de cliente: cada negócio tem o seu ritmo.</span></div>
+      <div class="rv d2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg><b>Presencial de verdade</b><span>Olho no olho, dúvida respondida na hora. Turma pequena e acompanhamento de perto.</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- 4 · o que fazemos -->
+<section class="faz-sec" id="fazemos">
+  <div class="ct">
+    <span class="olho rv">O que fazemos</span>
+    <h2 class="rv d1">Vender mais, automatizar, gastar menos. <span class="grad">Em três frentes.</span></h2>
+    <div class="frentes">
+      <article class="rv"><small>Formação em turma</small><h3>Imersão Deu Venda</h3><p>Em turma pequena, o dono monta a sua máquina de IA: estratégia, vídeos, artes e a campanha no ar.</p><a class="mais" href="/imersaodeuvenda?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></article>
+      <article class="rv d1"><small>Implantação individual</small><h3>Deu Venda</h3><p>Um a um: a máquina de IA montada só pro negócio, com acompanhamento de perto por três meses.</p><a class="mais" href="/deuvenda?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></article>
+      <article class="rv d2"><small>Tecnologia</small><h3>teunegócio OS</h3><p>O sistema operacional do negócio: a IA atende no WhatsApp, organiza as vendas e automatiza as tarefas repetitivas do dia a dia, e o dono acompanha tudo num painel.</p><a class="mais" href="/teunegocioos?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a></article>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · o momento da IA (dados oficiais, com fonte) -->
+<section id="momento">
+  <div class="ct">
+    <span class="olho rv">O momento da IA</span>
+    <h2 class="rv d1">A IA já chegou no pequeno negócio. <span class="grad">Os números não deixam dúvida.</span></h2>
+    <p class="lead rv d2">Não é tendência pra daqui a alguns anos. As pesquisas mais recentes do Sebrae, do IBGE e das próprias empresas de IA mostram o que está acontecendo agora.</p>
+    <div class="provas">
+      <article class="rv destaque"><b>52%</b><p>dos donos de pequenos negócios no Brasil <strong>usaram IA no negócio</strong> nas duas semanas antes da entrevista. Nos Estados Unidos, a pesquisa equivalente deu 21%.</p><small>Sebrae e Meta Instituto de Pesquisa, Transformação Digital nos Pequenos Negócios 2026 (7.182 entrevistados) · U.S. Census Bureau</small></article>
+      <article class="rv d1"><b>60%</b><p>dos pequenos negócios <strong>pretendem começar ou ampliar</strong> o uso de IA no próximo semestre.</p><small>Sebrae e Meta Instituto de Pesquisa, 2026</small></article>
+      <article class="rv d2"><b>59%</b><p>das micro e pequenas empresas que usam IA usam <strong>pra marketing e divulgação</strong>. O benefício mais citado: economia de tempo.</p><small>Sebrae e FGV IBRE, 2025</small></article>
+      <article class="rv"><b>41,9%</b><p>das indústrias com 100 ou mais funcionários já usam IA. <strong>Dois anos antes eram 16,9%.</strong> Pra 90% delas, o ganho foi de eficiência.</p><small>IBGE, Pintec Semestral 2024 (divulgada em 2025)</small></article>
+      <article class="rv d1"><b>~900 mi</b><p>de pessoas <strong>usam o ChatGPT toda semana</strong> no mundo. O Brasil está entre os três países que mais usam.</p><small>OpenAI, fevereiro de 2026 · dados de tráfego por país</small></article>
+      <article class="rv d2 lacuna"><b>96% <span>× 46%</span></b><p><strong>96% das micro e pequenas empresas conhecem</strong> ferramentas de IA. Só 46% usam de verdade no negócio.</p><small>Sebrae e FGV IBRE, 2026</small></article>
+    </div>
+    <p class="fecho rv">A ferramenta já está na mão de todo mundo. <b>O que separa quem usa de quem só conhece é saber aplicar no próprio negócio.</b> É isso que a escola ensina.</p>
+  </div>
+</section>
+
+<!-- 8 · unidades -->
+<section class="faz-sec" id="unidades">
+  <div class="ct">
+    <span class="olho rv">Unidades</span>
+    <h2 class="rv d1">Presencial, <span class="grad">perto do teu negócio.</span></h2>
+    <div class="sedes">
+      <div class="sede rv"><img src="/novo-site/midia/sede.jpg" alt="Sede da escola em Lajeado" loading="lazy"><div><small>Unidade sede</small><b>Lajeado</b><span>Rua Alberto Torres, 526, Centro, Lajeado/RS</span></div></div>
+      <div class="sede rv d1"><img src="/novo-site/midia/sede-poa.jpg" alt="Sede da escola em Porto Alegre" loading="lazy"><div><small>Unidade</small><b>Porto Alegre</b><span>Av. Carlos Gomes, 1340, Sala 904, Três Figueiras, Porto Alegre/RS</span></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- 9 · contato -->
+<section class="fim" id="contato">
+  <div class="luz a" style="left:auto;right:-160px;top:-60px;opacity:.3"></div>
+  <div class="ct" style="position:relative">
+    <span class="olho rv">Contato</span>
+    <h2 class="rv d1">Vamos conversar sobre o teu negócio.</h2>
+    <p class="lead rv d2" style="margin:0 auto">Chama a escola no WhatsApp ou passa numa das nossas unidades.</p>
+    <div class="botoes rv d3">
+      <a class="btn btn-wa" href="#" data-wa data-msg="Olá! Vim pelo site da escola e quero conversar sobre o meu negócio."><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2a8.2 8.2 0 0 1-4.2-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.3-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5a1 1 0 0 0-.7.3 3 3 0 0 0-.9 2.2 5.2 5.2 0 0 0 1.1 2.8 11.8 11.8 0 0 0 4.6 4c1.7.7 2.3.8 3.1.7.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>WhatsApp da escola</a>
+      <a class="btn btn-sec" href="https://www.instagram.com/carreiranodigital/" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".8"/></svg>@carreiranodigital</a>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<footer><div class="ct"><span>Carreira no Digital · escola de inteligência artificial para negócios · Lajeado e Porto Alegre</span><span>Imersão Deu Venda · Deu Venda · teunegócio OS</span></div></footer>
+
+<script>
+(function(){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target);}});},{threshold:.12});
+  [].forEach.call(document.querySelectorAll('.rv'),function(el){io.observe(el);});
+  var vo=new IntersectionObserver(function(es){es.forEach(function(e){var v=e.target;if(e.isIntersecting){if(!v.getAttribute('src')){v.src=v.getAttribute('data-src');}v.play&&v.play().catch(function(){});}else{v.pause&&v.pause();}});},{threshold:.3});
+  [].forEach.call(document.querySelectorAll('video[data-src]'),function(v){vo.observe(v);});
+  // botão de WhatsApp: vai pelo /wa do CRM, que registra a origem (site da escola) e abre a conversa
+  var q=new URLSearchParams(location.search);
+  [].forEach.call(document.querySelectorAll('[data-wa]'),function(b){
+    var p=new URLSearchParams();
+    p.set('msg',b.getAttribute('data-msg')||'Olá! Vim pelo site da escola.');
+    p.set('utm_source',q.get('utm_source')||'site-escola');
+    ['utm_medium','utm_campaign','utm_content'].forEach(function(k){if(q.get(k))p.set(k,q.get(k));});
+    b.href='https://carreiranodigital.vercel.app/wa?'+p.toString();b.target='_blank';b.rel='noopener';
+  });
+})();
+</script>
+</body>
+</html>
