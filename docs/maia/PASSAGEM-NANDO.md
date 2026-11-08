@@ -207,9 +207,16 @@ Chave nova ou trocada só vale depois de um novo deploy (Vercel → Deployments 
 | `MAIA_OFICINA_LIGADA` | `1` quando a oficina estiver sempre de pé (a demonstração promete data) | **não ligar ainda** (depois de T4 estável) |
 | `MAIA_PRECOS`, `MAIA_DOLAR`, `MAIA_OFERTA`, `MAIA_SEM_AVISO` | preço da IA, oferta, silenciar avisos | opcional |
 | `MAIA_LOCAL`, `MAIA_LOCAL_PASTA`, `MAIA_DEMO_TESTE_NUMEROS`, `MAIA_LOCAL_DEEPGRAM` | só no PC de teste | **nunca** na Vercel |
+| `MAIA_MODELO_MISTO` | (branch `maia-pendencias`, T11) modelo misto no atendimento. **Padrão ligado**; `0` desliga (aí tudo vai no `MAIA_MODELO_CLIENTE`) | opcional |
+| `MAIA_MODELO_CLIENTE_FORTE` | (T11) o modelo que refaz a decisão de venda/passagem. Padrão `claude-sonnet-5-5` | opcional |
+| `MAIA_LIMITE_RESPOSTAS` | (T12) respostas da Maia por conversa por dia antes de passar pro dono. Padrão 40 (por negócio: `meta.atendimento.limite_respostas`) | opcional |
+| `MAIA_VOZ_RESPOSTA` | (T12) `1`: responde em áudio (ElevenLabs) quem mandou áudio. Precisa de `ELEVENLABS_API_KEY`. Voz: `meta.atendimento.voz_id` ou `MAIA_VOZ_ID` | **desligado** (decisão do Guto) |
+| `MAIA_SUPABASE_URL`, `MAIA_SUPABASE_SERVICE_KEY` | (T16) banco próprio da Maia. As duas juntas; sem elas usa o banco da escola | **não pôr ainda** (só na troca do T16) |
+
+Com o modelo misto ligado (padrão), o `MAIA_MODELO_CLIENTE` volta a ser o modelo BARATO (deixar vazio = haiku). Se ficar `claude-sonnet-5-5`, o misto não faz nada (os dois modelos iguais).
 
 Fora da Vercel:
-- **Railway (oficina):** `MAIA_URL=https://www.carreiranodigital.com`, `MAIA_OFICINA_CHAVE` (igual à da Vercel), `DEEPGRAM_API_KEY`, `OFICINA_MAX_MB=4.5`. `CHROME_PATH`/`FFMPEG` já vêm do Dockerfile.
+- **Railway (oficina):** `MAIA_URL=https://www.carreiranodigital.com`, `MAIA_OFICINA_CHAVE` (igual à da Vercel), `DEEPGRAM_API_KEY`. `CHROME_PATH`/`FFMPEG` já vêm do Dockerfile. O `OFICINA_MAX_MB` não precisa mais com a oficina nova (o vídeo vai direto pro armazenamento, T4 passo 5); só pôr se rodar a oficina antiga.
 - **Banco:** o `cron.job` `maia-rotina` manda `x-chave` = `MAIA_ROTINA_CHAVE`. Trocar uma = trocar a outra (`db/maia-cron.sql`).
 - **Gestora (futuro):** `MAIA_CRM_<CLIENTE>_URL` e `MAIA_CRM_<CLIENTE>_LEITURA` (chaves só de leitura dos CRMs).
 
@@ -285,9 +292,12 @@ node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123      # 61
 # extras
 node scripts/maia-teste-social.mjs http://localhost:3195 teste123      # 49 (social simulado)
 node scripts/maia-teste-oficina.mjs                                     # oficina (conferir argumentos no arquivo)
+node scripts/maia-teste-tela-equipe.mjs http://localhost:3195 teste123  # 14: a tela do painel da equipe no Chrome (logo, cores, dias), sem IA
+SO_PENDENCIAS=1 node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123   # só as conferências das pendências de 08/11
 ```
 
 Resultados em 08/11: **45/45, 35/35, 61/61**. O `maia-teste.mjs` roda a rotina "às 14h de hoje" (senão, à noite, a retomada não sai).
+Na branch `maia-correcoes` o piloto foi a **99/99** (com `FOTOS=<pasta com fotos>`). Na branch `maia-pendencias` ele ganhou as conferências P1 a P8 (uma ou mais por pendência). Com `FOTOS=`, antes de a IA ficar sem crédito: **111/112** (a que faltou era a própria conferência nova do custo, corrigida depois). Ver a seção 5.0.
 
 ### 3.4 Riscos conhecidos
 
@@ -364,6 +374,25 @@ curl -s -o /dev/null -w "%{http_code}\n" $U/api/maia/rotina                    #
 Prioridade: **P0** = antes do dia 1 do piloto; **P1** = Fase 1 (até 06/12); **P2** = antes da venda aberta.
 Dono: **N** = Nando, **G** = Guto, **C** = cliente.
 
+### 5.0 O que ficou pronto no CÓDIGO em 08/11 (branch `maia-pendencias`, sem push)
+
+A branch nasceu da `maia-correcoes` (commit 3f84b8b). Publicar junto com ela (seção 4). Sem SQL novo pro banco atual.
+
+| Item | O que foi feito | Commit | O que continua com o Nando |
+|---|---|---|---|
+| #17 do reteste | Na passagem pro dono, a Maia só avisa que a pessoa vai falar com o cliente: a frase que pede detalhe ("me conta o que aconteceu") sai | 8c35b49 | nada |
+| Legenda de post | Legenda do Instagram/Facebook no tom do negócio ("você" no padrão), na criação e quando a IA refaz | b14b3b1, 2e403e0 | nada |
+| T2 | `maia_retomada_voce` e `maia_resposta_voce` em `lib/maia/modelos.ts`; a conexão pede as 4 versões; no envio vale o tom do negócio (se o `_voce` não estiver aprovado, usa o outro, pra resposta não ficar presa); botão "Pedir os modelos de mensagem de novo" no painel (`pedir_modelos_negocio`). No modo local nada vai pra Meta | a43f452, 8f5ec51 | Na Meta: pedir os modelos dos negócios já conectados pelo botão e conferir "APPROVED"; pedir o `maia_novidades` |
+| T11 | Modelo misto: resposta comum no haiku; quando a IA quer mudar pra proposta, marcar ganho/perdido ou passar pro dono, a resposta é descartada ANTES da ferramenta rodar e refeita no sonnet (pedido de pessoa, reclamação e devolução já vão direto pro sonnet). As duas chamadas ficam no custo (`acao=custo_ia` mostra `cliente_por_modelo` e `cliente_reais_por_conversa`). `MAIA_MODELO_MISTO=0` desliga | 363e632 | Medir de novo no piloto real; conferir `MAIA_PRECOS`/`MAIA_DOLAR` com a fatura |
+| T12 | Tom nos anúncios: já estava feito (conferido). Apagar contato troca nome e telefone por `[apagado]` nos recados pro dono e nos avisos da equipe. Limite de 40 respostas da Maia por conversa por dia (passa pro dono e avisa a equipe). Pergunta das 18h com botões "Fechou"/"Não fechou" (o clique vira ganho/perdido sem IA; fora da janela vai o texto de antes). Aviso de privacidade: se a base tem aviso próprio (assunto "privacidade"/"lgpd" ou texto sobre LGPD), vai esse e não o padrão; se a resposta da IA já avisou, o do sistema não vai junto. Resumo da semana também pro negócio em piloto ("implantação" com atendimento ligado ou contato na semana). Resposta em áudio pela ElevenLabs atrás de `MAIA_VOZ_RESPOSTA=1` (desligado) | 92d7d50 | Testar os botões no WhatsApp de verdade (só funcionam dentro da janela de 24 h); decidir a voz do negócio e se liga o áudio |
+| Dias que o negócio abre | Campo na aba Dados do painel da equipe (7 caixas; nenhuma = lê do horário da base). Teste no Chrome de verdade (`scripts/maia-teste-tela-equipe.mjs`): logo, "usar as cores da marca" e dias, 14/14. A caixa "usar as cores" aparecia como um quadrado grande: corrigido | 83f5e97 | nada |
+| T4 passo 5 | A fila dá o link assinado de envio (`createSignedUploadUrl` no bucket `maia`, pasta do negócio); a oficina faz o PUT e avisa só `{tarefa_id, caminho}`; o sistema confere se o arquivo chegou. O modo antigo (base64 e `arquivo_path`) continua aceito. No modo local o link é da própria API, então o mesmo caminho é testado no PC. A oficina tenta de novo quando a conexão cai (era o "fetch failed" do reteste) | a467bca | Subir a oficina NOVA na Railway (T4 passos 1 a 4) sem `OFICINA_MAX_MB`; conferir um vídeo de 30 s em produção |
+| T16 (código) | `lib/maia/db.ts` usa `MAIA_SUPABASE_URL`/`MAIA_SUPABASE_SERVICE_KEY` se as duas existirem, senão o banco da escola. `scripts/maia-copiar-banco.mjs` copia as tabelas `maia_*` e o bucket; por padrão SÓ MOSTRA o que faria (`--executar` copia). Testado contra um banco de mentira, **não foi rodado contra banco nenhum**. O resumo do painel mostra `banco: local / proprio / escola` | 75bd191 | Tudo no Supabase e na Vercel (ver T16 abaixo) |
+
+**Testes desta branch:** build ok. `maia-teste` e `painel-dono` não rodaram até o fim porque a conta da Anthropic ficou **sem crédito** no meio do trabalho (o primeiro passo deles usa a IA). Antes disso, com os itens #17, legenda, T2 e T11 já no código: 45/45, 44/44 e piloto 111/112. Depois, sem IA: as conferências novas que não usam IA passam todas (30 de 36; as 6 que faltam dependem da IA) e a tela 14/14. **Quando o crédito voltar: rodar os 3 testes completos (seção 3.3) antes de publicar.**
+
+**Custo do modelo misto (T11), 8 das 20 conversas do reteste, IA de verdade, modo local:** misto R$ 0,083 por conversa; nas mesmas 8 conversas, só haiku R$ 0,038 e só sonnet R$ 0,135 (nas 20 do reteste: R$ 0,037 e R$ 0,119). O misto custa ~2,2 vezes o haiku e ~60% do sonnet. Ficou caro nas conversas de venda porque a chamada do haiku é jogada fora e o sonnet começa sem cache. As 8 escolhidas têm muita decisão de venda (4 de 8 chamaram o sonnet), então numa semana normal a média deve ficar mais perto do haiku. Mesmo assim, bem abaixo do teto de R$ 0,70. Resultado em `testes/maia-08-11-reteste/mede-misto-resultado.json`.
+
 ### T1 · Segredo do app e webhook dos negócios · P0 · N · 30 min
 
 - **Objetivo:** conexão e webhook dos negócios funcionando no app Sistema CND (2069913353660247).
@@ -376,13 +405,13 @@ Dono: **N** = Nando, **G** = Guto, **C** = cliente.
 - **Aceite:** a Meta verifica o webhook (GET responde o `hub.challenge`); POST sem assinatura dá 401; o teste de webhook da Meta ("Testar" no campo `messages`) chega com 200 nos logs da Vercel.
 - **Depende de:** nada.
 
-### T2 · Modelos de mensagem · P0 · N · 1 h + espera da Meta
+### T2 · Modelos de mensagem · P0 · N · 1 h + espera da Meta · ✅ CÓDIGO FEITO (08/11, maia-pendencias): falta a parte da Meta
 
 - **Objetivo:** dono e clientes alcançáveis fora da janela de 24 h, no tom certo.
 - **Passos:**
   1. `maia_novidades` (dono, WABA do Oito): Painel → "Pedir aprovação do modelo do dono" (`criar_modelo_dono`). Status: `GET /api/maia/operacao?acao=modelos`.
-  2. Criar a versão "você" dos modelos do negócio em `lib/maia/modelos.ts`: `maia_retomada_voce` e `maia_resposta_voce` ("Você tinha falado...", "da sua pergunta"). Na conexão, pedir as duas versões; no envio, escolher pelo `tomDo(neg).pessoa`. Hoje o código usa os nomes fixos `maia_retomada`/`maia_resposta`: procurar onde eles são mandados (`grep -rn "maia_retomada\|maia_resposta" lib`) e trocar pelo nome conforme o tom.
-  3. Pra negócios já conectados: botão/ação pra pedir os modelos de novo (hoje só pede na conexão; **conferir** se já existe ação, senão criar `pedir_modelos_negocio` no painel).
+  2. ✅ (08/11, a43f452) Criar a versão "você" dos modelos do negócio em `lib/maia/modelos.ts`: `maia_retomada_voce` e `maia_resposta_voce` ("Você tinha falado...", "da sua pergunta"). Na conexão, pedir as duas versões; no envio, escolher pelo `tomDo(neg).pessoa`. Hoje o código usa os nomes fixos `maia_retomada`/`maia_resposta`: procurar onde eles são mandados (`grep -rn "maia_retomada\|maia_resposta" lib`) e trocar pelo nome conforme o tom.
+  3. ✅ (08/11, botão "Pedir os modelos de mensagem de novo" na aba Dados, ação `pedir_modelos_negocio`) Pra negócios já conectados: botão/ação pra pedir os modelos de novo (hoje só pede na conexão; **conferir** se já existe ação, senão criar `pedir_modelos_negocio` no painel).
   4. Teste local: `maia-teste-piloto.mjs` com um negócio "você" e outro "tu".
 - **Aceite:** `maia_novidades` "APPROVED"; num negócio em "você" a retomada fora de 24 h usa o modelo `_voce`; testes passam.
 - **Depende de:** T1 (pra os do negócio).
@@ -395,7 +424,7 @@ Dono: **N** = Nando, **G** = Guto, **C** = cliente.
 - **Aceite:** `GET /api/maia/operacao?acao=chamadas` mostra o placar subindo e erro < 15%.
 - **Depende de:** nada.
 
-### T4 · Oficina na Railway · P0 · N · 1–2 h
+### T4 · Oficina na Railway · P0 · N · 1–2 h · ✅ passo 5 FEITO NO CÓDIGO (08/11, maia-pendencias)
 
 - **Objetivo:** peça sai de "gerando" sozinha.
 - **Passos:**
@@ -403,7 +432,7 @@ Dono: **N** = Nando, **G** = Guto, **C** = cliente.
   2. Variables: `MAIA_URL`, `MAIA_OFICINA_CHAVE`, `DEEPGRAM_API_KEY`, `OFICINA_MAX_MB=4.5`. Máquina de 1 GB (2 GB se o vídeo travar). Sem domínio nem porta.
   3. Logs: "oficina ligada". Criar um anúncio de teste (dono de teste) e ver "entregue ✔" nos logs e a peça em `revisao_equipe`.
   4. Testar um vídeo de 20–30 s: conferir qualidade depois da compressão.
-  5. **Vídeo sem compressão excessiva (P1):** trocar a entrega base64 por upload direto: `GET /api/maia/oficina` devolve um link assinado de upload do Supabase (`createSignedUploadUrl` no bucket `maia`, pasta do negócio); a oficina faz PUT do arquivo e o POST só manda `{tarefa_id, caminho}`. Remover `OFICINA_MAX_MB` depois.
+  5. **✅ Feito no código (08/11, a467bca). Vídeo sem compressão excessiva (P1):** trocar a entrega base64 por upload direto: `GET /api/maia/oficina` devolve um link assinado de upload do Supabase (`createSignedUploadUrl` no bucket `maia`, pasta do negócio); a oficina faz PUT do arquivo e o POST só manda `{tarefa_id, caminho}`. Remover `OFICINA_MAX_MB` depois.
   6. Ligar `MAIA_OFICINA_LIGADA=1` só depois de 1 semana estável.
 - **Arquivos:** `maia-oficina/*`, `app/api/maia/oficina/route.ts`, `lib/maia/pecas.ts`.
 - **Aceite:** arte e vídeo entregues ✔ em produção; vídeo de 30 s com legenda sem perda visível.
@@ -501,16 +530,16 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 - **Enquanto não libera:** a Completa é vendida com a equipe postando (decisão de 08/11).
 - **Aceite:** 4 permissões aprovadas; 1º post publicado sozinho no dia marcado.
 
-### T11 · Contador, custo e franquia · P1 · ✅ FEITO NO CÓDIGO (08/11, commit 3ec5ef0)
+### T11 · Contador, custo e franquia · P1 · ✅ FEITO NO CÓDIGO (08/11, commit 3ec5ef0; modelo misto em 363e632)
 
 - Pronto na branch: card "Conversas do mês", `GET acao=uso_mes`, aviso em 80% e 100%, nunca bloqueia.
 - **Franquia por plano (decisão de 08/11):** `franquiaDo(neg)` em `lib/maia/uso.ts` usa a do negócio (`meta.atendimento.franquia`) se houver; senão Essencial 500, Completa 1.000, Gestora sem franquia. Valores em `lib/maia/oferta.ts` (`conversas_essencial`, `conversas_completa`; `MAIA_OFERTA` troca). Site `/maia` e oferta da demonstração já dizem 500 / 1.000.
-- Falta (N): o modelo misto e conferir a tabela de preço, abaixo.
-- **Modelo:** piloto com `MAIA_MODELO_CLIENTE=claude-sonnet-5-5`. Depois, mistura: modelo barato (`claude-haiku-5-5`) na resposta comum e o intermediário só quando a resposta envolve mudar etapa/venda (proposta, ganho, perdido) ou pergunta ao dono. Implementação sugerida em `atendente.ts`: 1ª chamada no barato; se ela pedir ferramenta de etapa/venda, refazer a decisão no intermediário (ou um classificador curto antes). Medir com `custo_ia`.
+- **Modelo misto: ✅ feito (08/11, 363e632, `lib/maia/misto.ts`).** Haiku na resposta comum; mudar pra proposta, ganho, perdido ou passar pro dono é refeito no sonnet antes da ferramenta rodar; pedido de pessoa/reclamação/devolução vai direto pro sonnet. Ligado por padrão (`MAIA_MODELO_MISTO=0` desliga; `MAIA_MODELO_CLIENTE_FORTE` troca o modelo forte). Custo medido: ver a seção 5.0 (R$ 0,083 por conversa nas 8 de teste, contra R$ 0,038 só haiku e R$ 0,135 só sonnet).
+- Falta (N): conferir a tabela de preço, abaixo, e medir o custo real nas primeiras semanas (`GET acao=custo_ia`: `cliente_por_modelo`).
 - **Conferir a tabela de preço** (`MAIA_PRECOS`, `MAIA_DOLAR`) com a fatura da Anthropic no fim do mês.
 - **Aceite:** custo ≤ R$ 0,70 por conversa; IA + equipe ≤ 40% da mensalidade.
 
-### T12 · Itens que ficaram de fora dos ajustes · P1 · N · 1–2 dias
+### T12 · Itens que ficaram de fora dos ajustes · P1 · ✅ FEITO NO CÓDIGO (08/11, maia-pendencias, 92d7d50)
 
 | Item | O que fazer | Onde |
 |---|---|---|
@@ -522,6 +551,8 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 | Maia respondendo em áudio | só se o cliente mandar áudio; ElevenLabs, voz do negócio a definir | `atendente.ts`, `demo.ts` |
 | Aviso de privacidade redundante | não repetir quando o negócio já tem aviso próprio no texto da base, e só uma vez por contato (conferir no piloto) | `lgpd.ts` |
 | Retomada só de negócio "ativo" no resumo | o resumo só sai pra `status=ativo`: no piloto, mudar à mão | `rotina.ts` |
+
+**Como ficou (08/11, 92d7d50):** tom nos anúncios já estava feito (`pecas.ts` usa o tom do negócio desde 055001c); nome e telefone viram `[apagado]` nos recados e nos `aviso_equipe` (o primeiro nome sozinho só sai se nenhum outro contato do negócio tem o mesmo); limite em `lib/maia/limite.ts` (40, `MAIA_LIMITE_RESPOSTAS`); botões em `rotina.ts` + `dono.ts` (`respostaDeVenda`, só contato do próprio negócio); aviso de privacidade próprio em `lgpd.ts` (`avisoDaBase`, `respostaJaAvisa`); o resumo da semana vai também pro negócio em "implantação" que já atende ou teve contato na semana (`negociosDoResumo`; status "piloto" não existe no banco e não foi criado); áudio em `lib/maia/voz.ts` atrás de `MAIA_VOZ_RESPOSTA=1` (desligado; testado gerando o arquivo .ogg pela ElevenLabs no modo local). **Falta (N):** testar os botões no WhatsApp real e decidir a voz.
 
 ### T13 · Pendências do painel do dono · P1 · N · 2 h
 
@@ -546,12 +577,19 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 - **Regra de ouro:** o aviso aponta, o dono decide. Nada mexe em verba, pausa anúncio ou manda mensagem pro cliente final.
 - **Aceite:** ≥ 70% dos avisos marcados "ajudou".
 
-### T16 · Banco próprio da Maia · P1 · N · 2–3 dias · **fazer ANTES de 07/12** (decisão de 08/11)
+### T16 · Banco próprio da Maia · P1 · N · 2–3 dias · ✅ código e script de cópia prontos (08/11, 75bd191) · **fazer ANTES de 07/12** (decisão de 08/11)
 
 - **Por quê:** hoje a `SUPABASE_SERVICE_ROLE_KEY` da escola vê tudo da Maia e vice-versa.
 - **O que mudar:** novo projeto Supabase; aplicar `db/maia.sql`, `maia-social.sql`, `maia-gestora.sql`, bucket `maia` privado e `maia-cron.sql`; `lib/maia/db.ts` passa a usar `MAIA_SUPABASE_URL`/`MAIA_SUPABASE_SERVICE_KEY` (variáveis novas); copiar os dados `maia_*` e o bucket; o webhook do Oito continua lendo o banco da escola pro Oito e o novo pra Maia. **Atenção:** `MAIA_CRIPTO_CHAVE` é a mesma (as chaves cifradas são copiadas como estão).
 - **Papel limitado:** a Gestora lê os CRMs com papel só de leitura; a escola não precisa de acesso ao banco da Maia.
 - **Aceite:** testes 45/35/61 contra o banco novo (staging), depois troca com a Maia pausada por 10 min.
+- **Código pronto (08/11, 75bd191):** `lib/maia/db.ts` já troca de banco sozinho quando `MAIA_SUPABASE_URL` e `MAIA_SUPABASE_SERVICE_KEY` existem (o resumo do painel mostra `banco: proprio`). Só esse arquivo fala com as tabelas `maia_*`.
+- **Passos do Nando:**
+  1. Criar o projeto no Supabase e rodar, no SQL Editor do banco NOVO: `db/maia.sql`, `db/maia-social.sql`, `db/maia-gestora.sql` (**tirando o `REFERENCES public.projetos(id) ON DELETE SET NULL`** da coluna `projeto_id`: a tabela `projetos` só existe no banco da escola) e `db/maia-cron.sql` (apontando pra mesma URL e `MAIA_ROTINA_CHAVE`).
+  2. Com as variáveis no PC (nunca colar as chaves em arquivo): `node scripts/maia-copiar-banco.mjs` (só mostra contagens e arquivos). Conferir.
+  3. Pausar a Maia (`MAIA_LIGADA=0`, rotina parada), rodar `node scripts/maia-copiar-banco.mjs --executar`, depois `db/maia-banco-novo-sequencias.sql` no banco novo.
+  4. Vercel: `MAIA_SUPABASE_URL` + `MAIA_SUPABASE_SERVICE_KEY`, mesmo `MAIA_CRIPTO_CHAVE`, Redeploy, religar. Desligar o cron `maia-rotina` do banco antigo.
+  5. Depois de 1 semana estável, apagar as tabelas `maia_*` e o bucket do banco antigo (com o ok do Guto).
 
 ### T17 · LGPD · P1 · ✅ FEITO NO CÓDIGO (08/11, commits ad9569e e 8e69d2a) · G (contrato)
 
