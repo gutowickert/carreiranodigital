@@ -396,6 +396,19 @@ async function pendencias0811() {
   const fn = (texto, extra = {}) => op('teste_funcoes', { texto, ...extra })
   const sd = await fn('Entendo, sinto muito! Vou passar sua conversa pra uma pessoa da equipe. Enquanto isso, pode me contar o que aconteceu com o pedido?')
   anota(/passar sua conversa/.test(sd.sem_detalhe) && !/aconteceu/.test(sd.sem_detalhe), 'P1. na passagem, a frase que pede detalhe sai: "' + sd.sem_detalhe + '"')
+  // P2. legenda de post (social) no tom do negócio ("você")
+  const S = await op('criar_negocio', { nome: 'Doceria Social (teste pendências)', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Sol', dono_whatsapp: '5500077779011', plano: 'completa', contexto: { produtos: 'cookies artesanais; caixa com 6 R$ 45' } })
+  const soc = async (acao, corpo) => { const x = await fetch(URL_ + '/api/maia/social', { method: 'POST', headers: { 'x-senha': SENHA, 'content-type': 'application/json' }, body: JSON.stringify({ acao, ...corpo }) }); return x.json() }
+  const quandoPost = new Date(Date.now() + 3 * 86400e3).toISOString().slice(0, 16)
+  await soc('criar_post', { negocio_id: S.id, quando: quandoPost, tipo: 'foto', midias: [{ url: 'https://exemplo.com/cookie.jpg', tipo: 'foto' }], legenda: 'Ó, tu já provou o nosso cookie de pistache? Pede o teu pelo WhatsApp!', tema: 'pistache' })
+  const postS = tab('pecas').find(p => p.negocio_id === S.id)
+  anota(postS && !TU.test(postS.texto) && /você|seu|Peça/i.test(postS.texto), 'P2. legenda escrita em "tu" num negócio "você" foi acertada: "' + (postS?.texto || '-') + '"')
+  if (postS) {
+    await op('ajustar_peca', { peca_id: postS.id, nota: 'deixa mais curta e convida pra encomendar a caixa com 6' })
+    const p2 = tab('pecas').find(p => p.id === postS.id)
+    log('    legenda refeita pela IA: ' + (p2?.texto || '-').replace(/\n+/g, ' / '))
+    anota(p2 && p2.versao > 1 && !TU.test(p2.texto), 'P2. a legenda refeita pela IA saiu em "você"')
+  }
   //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })
