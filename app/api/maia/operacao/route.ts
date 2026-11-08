@@ -182,7 +182,8 @@ export async function POST(req: Request) {
         return ok({ atendimento: at })
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
-      case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio }))
+      // 07/11 (piloto): `relogio` (a hora da janela das 9h às 20h) só vale no modo de teste
+      case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {
         if (db.modo() !== 'local') return erro('só no modo de teste')

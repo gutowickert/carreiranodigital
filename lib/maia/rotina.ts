@@ -12,11 +12,13 @@ import { textoRetomada } from './atendente'
 import { geraRelatorio } from './pecas'
 import { sincronizaMetricas } from './meta'
 import { rotinaSocial, socialLigado } from './social'
+import { podeFalar } from './horario'
 
 const horaBR = (d = new Date()) => (d.getUTCHours() + 21) % 24
 const diaSemanaBR = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).getUTCDay()
 
-export async function retomadas() {
+// 07/11 (piloto): `relogio` é a hora usada pra janela de 9h às 20h (horario.ts). Só o teste local passa outra.
+export async function retomadas(relogio = new Date()) {
   const vencidos = await followupsVencidos()
   const lembretes: Record<string, string[]> = {}
   const feitos: any[] = []
@@ -24,6 +26,8 @@ export async function retomadas() {
     const neg = await db.um('negocios', { id: lead.negocio_id })
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
     if ((lead.followups || 0) >= 3) { await encerraSemResposta(lead); feitos.push({ lead: lead.id, encerrado: true }); continue }
+    // fora da janela (de madrugada, domingo cedo): não manda nem conta a tentativa; sai na próxima rodada dentro da janela
+    if (!podeFalar(neg, relogio)) { feitos.push({ lead: lead.id, adiada: true }); continue }
     const { ultimo } = await registraFollowup(lead)
     const numero = (lead.followups || 0) + 1
     if (atendimentoLigado(neg) && lead.telefone) {
@@ -46,7 +50,7 @@ export async function retomadas() {
 
 // a venda de loja e de serviço acontece fora do WhatsApp: quem recebeu orçamento ou marcou horário há mais de um dia,
 // a Maia pergunta pro dono se fechou (uma vez a cada 2 dias por contato). A resposta dele vira ganho ou perda no funil.
-export async function confirmaVendas(forcar = false) {
+export async function confirmaVendas(forcar = false, relogio = new Date()) {
   if (!forcar && !(horaBR() === 18)) return []
   const agora = Date.now(), feitos: any[] = []
   const porNegocio: Record<string, any[]> = {}
@@ -59,6 +63,7 @@ export async function confirmaVendas(forcar = false) {
   for (const [negocio_id, leads] of Object.entries(porNegocio)) {
     const neg = await db.um('negocios', { id: negocio_id })
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
+    if (!podeFalar(neg, relogio)) continue   // 07/11: pergunta pro dono só de dia, mesmo forçada
     const cv = await conversaDoDono(neg)
     const linhas = leads.slice(0, 6).map(l => `${l.nome || l.telefone}${l.produto ? ' (' + l.produto + (l.valor ? ', R$ ' + l.valor : '') + ')' : ''}`)
     await mandaTexto(cv, `Pra eu contar certinho as vendas: ${linhas.join('; ')}. ${leads.length === 1 ? 'Fechou?' : 'Quem fechou e quem não fechou?'}`)
@@ -80,10 +85,11 @@ export async function relatoriosDaSemana(forcar = false) {
   return feitos
 }
 
-export async function roda(opc: { forcarRelatorio?: boolean } = {}) {
+export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date } = {}) {
   const r: any = {}
-  try { r.retomadas = await retomadas() } catch (e: any) { r.retomadas_erro = e.message }
-  try { r.confirmacoes = await confirmaVendas(opc.forcarRelatorio) } catch (e: any) { r.confirmacoes_erro = e.message }
+  const relogio = opc.relogio || new Date()
+  try { r.retomadas = await retomadas(relogio) } catch (e: any) { r.retomadas_erro = e.message }
+  try { r.confirmacoes = await confirmaVendas(opc.forcarRelatorio, relogio) } catch (e: any) { r.confirmacoes_erro = e.message }
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
   try { if (horaBR() % 6 === 0 || opc.forcarRelatorio) r.metricas = await sincronizaMetricas() } catch (e: any) { r.metricas_erro = e.message }
   // 05/11: as leituras da Marketing API que contam pras 500 chamadas do acesso completo
