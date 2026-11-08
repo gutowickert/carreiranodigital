@@ -259,6 +259,9 @@ async function correcoes0811() {
   anota(!(await fn('Tu é robô?')).gatilho && !(await fn('Quero um bolo pra uma pessoa')).gatilho && !(await fn('Vocês fazem bolo de aniversário pra 50 pessoas?')).gatilho, '1. "tu é robô?", "bolo pra uma pessoa" e "bolo pra 50 pessoas" NÃO viram passagem')
   anota((await fn('Claro! Vou passar sua conversa para uma pessoa da equipe, que te responde por aqui.')).passou && !(await fn('Vou confirmar com o dono e te respondo hoje até as 14h.')).passou, '1. resposta que diz "vou passar sua conversa" é reconhecida; "vou confirmar com o dono" não')
   anota((await fn('Tá caro, não quero.')).recusou && !(await fn('Vocês fazem bolo de aniversário pra 50 pessoas?')).recusou, '3. "tá caro, não quero" é recusa; perguntar o que não faz não é')
+  anota((await fn('Ah, tá caro pra mim, vou comprar na internet mesmo. Obrigada, não quero.')).recusa_firme && !(await fn('Não quero glúten no brownie')).recusa_firme, '3. recusa firme vira perdido pelo sistema; "não quero glúten" não')
+  const CX = { contexto: { precos: 'caixa 4 cookies R$ 28; caixa 16 cookies R$ 98; brownie R$ 12' } }
+  anota((await fn('Queria 1 caixa de 4 cookies.', CX)).quer_comprar && (await fn('Perfeito, quero 1. Já te mando o pix', CX)).quer_comprar && !(await fn('Quero uma informação', CX)).quer_comprar, '3. "queria 1 caixa" e "quero 1." viram proposta; "quero uma informação" não')
   anota((await fn('Aviso: marquei a cliente Marina como PERDIDA por engano. Pode reabrir o card dela no funil?')).interna && !(await fn('Tem cookie de limão?')).interna, '3. "marquei por engano... reabrir o card" é recado interno (não vai pro dono)')
   anota(!(await fn('Não')).motivo_claro && (await fn('Cliente pediu pra falar com uma pessoa')).motivo_claro, '4. motivo "Não" é recusado; motivo claro passa')
   anota((await fn('Sobre parcelar no cartão, eu não tenho essa informação aqui.')).nao_sabe && !(await fn('Não consigo passar contatos de outras pessoas.')).nao_sabe, '6. "não tenho essa informação" é pego pela rede de segurança')
@@ -377,5 +380,9 @@ async function correcoes0811() {
   const precoP = ps.filter(p => /pre[cç]o/i.test(p.titulo || ''))
   anota(!precoP.length || precoP.every(p => /R\$\s?\d/.test(p.gancho) || ts.find(t => t.peca_id === p.id)?.dados?.preco), '8d. anúncio de preço mostra o preço na arte (gancho ou etiqueta)')
   anota(ps.every(p => !/potinh|pote(s)? de (creme|cobertura)|cobertura/i.test(`${p.gancho} ${p.texto}`)), '8c. nada de "potinhos de creme" (só aparece na foto, não está na base)')
+  // nome próprio que só aparece na descrição das fotos (a marca na embalagem) não entra no anúncio
+  const base = (C.nome + JSON.stringify(C.contexto)).toLowerCase()
+  const daFoto = [...new Set(tab('midias').filter(m => m.negocio_id === C.id).flatMap(m => [...String(m.descricao || '').matchAll(/(?<=[\p{L},;]\s)(\p{Lu}\p{Ll}{3,})/gu)].map(x => x[1])).filter(w => !base.includes(w.toLowerCase())))]
+  anota(ps.every(p => !daFoto.some(n => new RegExp(n, 'i').test(`${p.gancho} ${p.texto} ${p.cta}`))), '8c. nenhum nome que só aparece na foto entrou no anúncio (' + (daFoto.join(', ') || 'nenhum na foto') + ')')
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })

@@ -88,7 +88,15 @@ export function recusaFirme(t: string): string | null {
 
 // 08/11 (teste completo, etapa): o cliente disse que quer, com quantidade ("quero 2 caixas", "vou querer 1", "pode separar").
 // Se a IA não mexeu no funil, o sistema põe em "proposta" (a mesma pergunta não pode deixar um em conversando e outro em proposta)
-export const querComprar = (t: string) => /(quero|vou querer|vou levar|vou pegar|me ve|me manda|separa|reserva)s+(d+|uma?|duas|dois|tres|quatro|cinco|seis|meia duzia)|(fechado|pode (fazer|separar|reservar|anotar|mandar fazer|preparar))/.test(semAc(t))
+export function querComprar(t: string, neg: any = null) {
+  const s = semAc(t)
+  if (!/\?/.test(s) && /\b(fechado|pode (fazer|separar|reservar|anotar|mandar fazer|preparar))\b/.test(s)) return true
+  // quantidade + algo que o negócio vende ("quero 2 caixas", "queria 1 caixa de 4"): "quero uma informação" não conta
+  const base = semAc(JSON.stringify(neg?.contexto || {}))
+  // "quero 1." sozinho (depois de saber o preço) também vale
+  return [...s.matchAll(/\b(quero|queria|vou querer|vou levar|vou pegar|me ve|me manda|separa|reserva)\s+(\d+|uma?|duas|dois|tres|quatro|cinco|seis|meia duzia)(?:\s+(\p{L}+)|\s*(?=[.!,;]|$))/gu)]
+    .some(m => !m[3] || (/^\d+$/.test(m[2]) && m[3] !== 'informacao') || (m[3].length >= 4 && base.includes(m[3].slice(0, 5))))
+}
 
 // 08/11 (teste completo, #12): o cliente recusou com todas as letras? (só aí vale "perdido")
 export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|pedir|fechar|precisar)|preciso mais|tenho (mais )?interesse|me interessa|vai dar|da pra mim|compensa|obrigad[oa]?,? (nao|mas nao))|desist\w*|deixa (pra la|quieto)|esquece|comprei (em outr|no concorrente|la)|ja comprei|sem interesse|fica pra (proxima|outra))\b/.test(semAc(t))
@@ -127,7 +135,7 @@ async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: str
   await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por, motivo })
   if (lead?.id) await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: null }).catch(() => null)
   const dcv = await conversaDoDono(neg)
-  await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${motivo}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia").`)
+  await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${motivo.trim().replace(/[.!?\s]+$/, '')}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia").`)
 }
 
 function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
@@ -166,7 +174,7 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         const jaFoi = await perguntaRepetida(lead, String(pergunta || ''))
         if (jaFoi) return { ok: true, prazo: prazo.texto, obs: 'o dono já foi avisado disso há pouco; não mandei de novo' }
         const dcv = await conversaDoDono(neg)
-        await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
+        await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${String(pergunta).trim().replace(/[.\s]+$/, '')}${/\?$/.test(String(pergunta).trim()) ? '' : '.'} Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
         return { ok: true, prazo: prazo.texto } } },
     { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, pede devolução, pede pra apagar os dados, ou é um caso delicado. NUNCA numa conversa normal (preço, entrega, áudio que tu entendeu). O motivo é uma frase clara pro dono.',
@@ -292,7 +300,7 @@ export async function respondeCliente(conversa_id: string) {
   const firme = recusaFirme(textoCliente)
   if (!ctx.humano && lead && ['novo', 'conversando', 'interessado', 'proposta'].includes(lead.etapa) && firme && !r.usadas.some(u => u.nome === 'venda_perdida')) {
     lead = await perdeu(lead, firme, 'maia'); usadas.push('venda_perdida (sistema)')
-  } else if (!ctx.humano && lead && ['novo', 'conversando', 'interessado'].includes(lead.etapa) && querComprar(textoCliente) && !r.usadas.some(u => ['venda_fechada', 'venda_perdida'].includes(u.nome) || (u.nome === 'mudar_etapa' && u.entrada?.etapa === 'proposta'))) {
+  } else if (!ctx.humano && lead && ['novo', 'conversando', 'interessado'].includes(lead.etapa) && querComprar(textoCliente, neg) && !r.usadas.some(u => ['venda_fechada', 'venda_perdida'].includes(u.nome) || (u.nome === 'mudar_etapa' && u.entrada?.etapa === 'proposta'))) {
     lead = await mudaEtapa(lead, 'proposta', 'maia', { resumo: textoCliente.slice(0, 160) }); usadas.push('mudar_etapa proposta (sistema)')
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)

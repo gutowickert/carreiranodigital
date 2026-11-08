@@ -23,6 +23,7 @@ function regraGancho(neg: any) {
 - A região entra com leveza e só quando ajuda (entrega, atendimento perto, quem é da cidade). NUNCA abre todo anúncio com "<cidade> e região" (decisão de 06/11).
 - Deixa claro O QUE É e PRA QUEM É. Uma promessa concreta, sem exagero e sem promessa de resultado que o negócio não garante.
 - Usa SÓ o que o dono contou (preço, condição, prazo). Não inventa preço, desconto nem brinde.
+- O nome do negócio é o que está em NEGÓCIO. Nome ou marca que aparece na foto (embalagem, logo, placa) não entra no texto.
 - A descrição da foto/vídeo serve SÓ pra escolher a mídia. Detalhe do produto (o que vem junto, sabor, recheio, acompanhamento, embalagem, quantidade) só se estiver em O QUE A MAIA SABE. A foto pode mostrar coisas que NÃO vêm no produto (potinhos, molhos, decoração, cenário): não cita nada disso.
 - Anúncio de PREÇO: o preço da base vai NO GANCHO (o gancho é o texto que aparece grande na arte), ex.: "Caixa com 4 cookies por R$ 28".
 - Nada de "hoje", "amanhã", "essa semana" nem dia da semana no anúncio: ele roda por dias e semanas (no domingo, "amanhã" vira uma segunda em que o negócio pode estar fechado). Prazo vai como regra: "com 1 dia de antecedência".
@@ -53,7 +54,7 @@ Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor
 "angulo": produto, preco, presente, ocasiao, dor, encomenda, lembrete ou prova. "preco_na_arte": o preço da base que vai em destaque na arte (ex.: "R$ 28") quando o ângulo é preço; senão null.
 Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","angulo":"...","gancho":"...","texto":"...","cta":"...","preco_na_arte":null}]}`)
   const criadas: any[] = []
-  const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd))
+  const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd), nomesDaFoto(neg, midias))
   for (const p of lote) {
     const m = midias.find(x => x.id === p.midia_id) || midias[0]
     const tipo = m.tipo === 'video' ? 'anuncio_video' : 'anuncio_imagem'
@@ -103,23 +104,31 @@ function precoNaArte(neg: any, p: NovaPeca, gancho: string) {
 }
 
 // 08/11 (teste completo): "Quer cookies amanhã? Encomenda hoje." num anúncio que roda no domingo e na segunda (fechado).
-// Peça com dia relativo (hoje/amanhã/essa semana/dia da semana) é reescrita uma vez; se ainda vier, a frase sai do texto.
+// E (reteste): "Viu a Bocadinho no Instagram?" num negócio que se chama Doceria Simulada: o nome veio da embalagem na foto.
+// Peça com dia relativo ou com nome que só aparece na foto é reescrita uma vez; se ainda vier, sai a frase (ou a palavra).
 const DIA_RELATIVO = /\b(hoje|amanh[ãa]|depois de amanh[ãa]|essa semana|esta semana|neste (fim de semana|sábado|domingo)|nesse (fim de semana|sábado|domingo))(?![\p{L}])/iu
-async function semDiaRelativo<T extends { gancho?: string; texto?: string; cta?: string }>(neg: any, pecas: T[]): Promise<T[]> {
-  const ruins = pecas.map((p, i) => [p, i] as const).filter(([p]) => DIA_RELATIVO.test(`${p.gancho} ${p.texto} ${p.cta}`))
+const semAc = (x: any) => String(x || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+// nomes próprios que só aparecem na descrição das fotos (marca na embalagem, logo, placa) e não no cadastro nem na base
+export function nomesDaFoto(neg: any, midias: any[]): string[] {
+  const conhecido = semAc(`${neg.nome} ${neg.cidade || ''} ${neg.regiao || ''} ${JSON.stringify(neg.contexto || {})}`)
+  const achados = new Set<string>()
+  for (const m of midias) for (const x of String(m.descricao || '').matchAll(/(?<=[\p{L},;]\s)(\p{Lu}\p{Ll}{3,})/gu)) if (!conhecido.includes(semAc(x[1]))) achados.add(x[1])
+  return [...achados]
+}
+const temNome = (t: string, nomes: string[]) => nomes.some(n => new RegExp('(?<![\\p{L}])' + n + '(?![\\p{L}])', 'iu').test(t))
+async function semDiaRelativo<T extends { gancho?: string; texto?: string; cta?: string }>(neg: any, pecas: T[], nomes: string[] = []): Promise<T[]> {
+  const ruim = (p: T) => DIA_RELATIVO.test(`${p.gancho} ${p.texto} ${p.cta}`) || temNome(`${p.gancho} ${p.texto} ${p.cta}`, nomes)
+  const ruins = pecas.map((p, i) => [p, i] as const).filter(([p]) => ruim(p))
   if (!ruins.length) return pecas
   try {
-    const r = await emJson<{ pecas: { i: number; gancho: string; texto: string; cta: string }[] }>(`${ESCRITORA}
-${regraGancho(neg)}`,
-      `${contextoTxt(neg)}
-
-Estes anúncios falam de "hoje"/"amanhã"/dia da semana, e o anúncio roda por dias: reescreve SEM nenhum dia relativo, mantendo o ângulo e as informações.
-${JSON.stringify(ruins.map(([p, i]) => ({ i, gancho: p.gancho, texto: p.texto, cta: p.cta })))}
-Devolve {"pecas":[{"i":0,"gancho":"...","texto":"...","cta":"..."}]}`)
+    const r = await emJson<{ pecas: { i: number; gancho: string; texto: string; cta: string }[] }>(`${ESCRITORA}\n${regraGancho(neg)}`,
+      `${contextoTxt(neg)}\n\nReescreve estes anúncios mantendo o ângulo e as informações, SEM nenhum dia relativo ("hoje", "amanhã", dia da semana: o anúncio roda por dias)${nomes.length ? ` e SEM os nomes ${nomes.map(n => `"${n}"`).join(', ')} (só aparecem na foto; o negócio se chama "${neg.nome}")` : ''}.\n${JSON.stringify(ruins.map(([p, i]) => ({ i, gancho: p.gancho, texto: p.texto, cta: p.cta })))}\nDevolve {"pecas":[{"i":0,"gancho":"...","texto":"...","cta":"..."}]}`)
     for (const x of r.pecas || []) if (pecas[x.i]) pecas[x.i] = { ...pecas[x.i], gancho: x.gancho || pecas[x.i].gancho, texto: x.texto || pecas[x.i].texto, cta: x.cta || pecas[x.i].cta }
   } catch { /* segue pro corte abaixo */ }
-  // último recurso: tira a frase do texto (o gancho fica, a equipe vê na revisão)
-  return pecas.map(p => ({ ...p, texto: DIA_RELATIVO.test(p.texto || '') ? String(p.texto).split(/(?<=[.!?])\s+/).filter(f => !DIA_RELATIVO.test(f)).join(' ') || p.texto : p.texto }))
+  // último recurso: tira a frase do texto; o nome da foto vira o nicho ("a doceria"). A equipe vê na revisão
+  const tira = (t: string) => String(t || '').split(/(?<=[.!?])\s+/).filter(f => !DIA_RELATIVO.test(f) && !temNome(f, nomes)).join(' ') || t
+  const troca = (t: string) => nomes.reduce((a, n) => a.replace(new RegExp('(?<![\\p{L}])' + n + '(?![\\p{L}])', 'giu'), neg.nicho || 'a loja'), String(t || ''))
+  return pecas.map(p => ruim(p) ? { ...p, gancho: troca(p.gancho || ''), texto: tira(p.texto || '') } : p)
 }
 
 // refaz uma peça com o ajuste pedido (pela equipe ou pelo dono): novo texto e nova arte, versão + 1

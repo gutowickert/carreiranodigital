@@ -271,7 +271,7 @@ export async function POST(req: Request) {
         const t = String(b.texto || '')
         return ok({
           gatilho: at.gatilhoHumano(t), passou: at.respostaPassou(t, !!b.perguntou), recusou: at.recusou(t), interna: at.perguntaInterna(t),
-          motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
+          motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), quer_comprar: at.querComprar(t, neg), recusa_firme: at.recusaFirme(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
           fora_do_tom: tom.foraDoTom(neg, t), acerta_tom: tom.acertaTom(neg, t), cta: tom.ctaNoTom(neg, t),
           dias_texto: hor.diasDoTexto(t), dias: hor.diasDoNegocio(neg, b.agora ? new Date(b.agora) : new Date()),
         })
