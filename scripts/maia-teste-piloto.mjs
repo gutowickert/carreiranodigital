@@ -499,6 +499,9 @@ async function pendencias0811() {
     const arq = ra?.respondeu?.audio ? path.join(PASTA, 'arquivos', ra.respondeu.audio) : ''
     anota(arq && fs.existsSync(arq) && fs.statSync(arq).size > 1000 && mOt.some(m => m.autor === 'maia' && m.tipo === 'audio' && /45/.test(m.texto)), 'P5. voz ligada: a resposta virou áudio (ElevenLabs) e o arquivo foi gerado: ' + (arq ? path.basename(arq) + ' ' + (fs.existsSync(arq) ? fs.statSync(arq).size : 0) + ' bytes' : '-'))
   }
+  // P6. o campo dos dias que o negócio abre tem tela no painel da equipe (o clique de verdade: scripts/maia-teste-tela-equipe.mjs)
+  const htmlOp = await (await fetch(URL_ + '/maia/operacao/')).text()
+  anota(/name="dias"/.test(htmlOp) && /Dias que o negócio abre/.test(htmlOp) && /c\.dias=new FormData\(f\)\.getAll\('dias'\)/.test(htmlOp), 'P6. painel da equipe: o campo "dias que o negócio abre" está na tela e vai no config_atendimento')
   //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })
