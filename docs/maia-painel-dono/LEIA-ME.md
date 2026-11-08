@@ -42,3 +42,10 @@ node scripts/maia-prints-painel-dono.mjs http://localhost:3190 teste123 Ótica  
 ## Prints
 
 `1-topo.png`, `2-funil.png`, `3-retomadas.png`, `4-atendimento.png`, `5-conversa.png`, `6-anuncios.png` e `lado-a-lado.png` (430 px de largura, dados do teste local).
+
+## Visual novo e retorno do anúncio (08/11)
+
+Fundo claro, a Maia falando no topo e o **retorno do anúncio** como número-herói ("a cada R$ 1 investido, voltaram R$ X"),
+com tendência contra o período anterior e mini-gráficos. Abrir `/maia/painel` sem link nem cookie mostra
+"Abre o painel pelo link que a Maia te mandou"; "Esse link venceu" só quando um link existiu e foi recusado.
+Detalhes, paleta e prints novos: `docs/maia-visual/`.
