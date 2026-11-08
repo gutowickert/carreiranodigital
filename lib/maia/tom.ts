@@ -37,3 +37,54 @@ JEITO DE FALAR COM O CLIENTE:
 - Mensagens de WhatsApp curtas, uma ideia por mensagem. Sem negrito, sem travessão, sem lista longa. Nunca bajula.
 - Sempre diz que é uma IA se perguntarem. Nunca promete o que o negócio não disse que faz. Nunca inventa o que não sabe do negócio: diz que confirma.`
 }
+
+// ---- 08/11 (teste completo): conferir e acertar o tom do que vai pro CLIENTE ----
+// No teste, o repasse da resposta do dono (responder_cliente, escrito com o jeito da Maia com o dono) saiu em "tu" num negócio
+// em "você": "Qual tu prefere?", "não é seguro pra ti", "teu pedido". E as peças forçavam "tu" ("Pede o teu orçamento").
+const TU_PALAVRAS = /\b(tu|teu|tua|teus|tuas|contigo|ti)\b/i
+const VOCE_PALAVRAS = /(?<![\p{L}])(você|vocês|voce|vc)(?![\p{L}])/iu
+const GAUCHO_PALAVRAS = /(^|[\s,.!?])(bah|tri|guri|guria|ó|tchê|barbaridade)(?=[\s,.!?]|$)/i
+// o que está fora do tom do negócio (lista vazia = está certo)
+export function foraDoTom(neg: any, texto: string): string[] {
+  const t = tomDoNegocio(neg), s = String(texto || ''), erros: string[] = []
+  if (t.pessoa === 'voce' && TU_PALAVRAS.test(s.replace(/\bpra ti\b|\bpara ti\b/gi, ' tu '))) erros.push('usa "tu/teu/tua" num negócio que fala "você"')
+  if (t.pessoa === 'tu' && VOCE_PALAVRAS.test(s)) erros.push('usa "você" num negócio que fala "tu"')
+  if (!t.gaucho && GAUCHO_PALAVRAS.test(s)) erros.push('tem jeito gaúcho ("ó", "bah", "tri") num negócio neutro')
+  return erros
+}
+
+// o acerto sem IA (rede de segurança), só pro "você": troca as formas de "tu" mais comuns e tira o "Ó," do começo
+const comCaixa = (orig: string, novo: string) => orig[0] === orig[0].toUpperCase() && orig[0] !== orig[0].toLowerCase() ? novo[0].toUpperCase() + novo.slice(1) : novo
+export function acertaTom(neg: any, texto: string): string {
+  const t = tomDoNegocio(neg)
+  let s = String(texto || '')
+  if (t.pessoa === 'voce') {
+    s = s.replace(/\b(pra|para) ti\b/gi, (m, p) => `${p} você`)
+      .replace(/\bcontigo\b/gi, m => comCaixa(m, 'com você'))
+      .replace(/\b(teu|tua|teus|tuas)\b/gi, m => comCaixa(m, ({ teu: 'seu', tua: 'sua', teus: 'seus', tuas: 'suas' } as any)[m.toLowerCase()]))
+      .replace(/\btu\b/gi, m => comCaixa(m, 'você'))
+  }
+  if (!t.gaucho) s = s.replace(/(^|[.!?]\s+)(Ó|Bah|Tchê)[,!]?\s+(\S)/g, (m, a, _b, c) => a + c.toUpperCase()).replace(/,\s*viu\?/g, '?')
+  return s
+}
+
+// o imperativo do CTA no "você" ("Pede o teu orçamento" → "Peça seu orçamento"; "Chama no WhatsApp" → "Chame no WhatsApp")
+const IMPERATIVO: Record<string, string> = { pede: 'peça', chama: 'chame', agenda: 'agende', garante: 'garanta', encomenda: 'encomende', vem: 'venha', manda: 'mande', aproveita: 'aproveite', escolhe: 'escolha', reserva: 'reserve', fala: 'fale', experimenta: 'experimente', prova: 'prove', corre: 'corra', compra: 'compre', marca: 'marque', conhece: 'conheça', faz: 'faça', liga: 'ligue', clica: 'clique', toca: 'toque', descobre: 'descubra', pega: 'pegue', presenteia: 'presenteie', retira: 'retire' }
+export function ctaNoTom(neg: any, cta: string): string {
+  let s = acertaTom(neg, cta)
+  if (tomDoNegocio(neg).pessoa === 'voce') s = s.replace(/^(\s*)(\p{L}+)/u, (m, esp, w) => IMPERATIVO[w.toLowerCase()] ? esp + comCaixa(w, IMPERATIVO[w.toLowerCase()]) : m).replace(/\b(Peça|Garanta|Reserve|Escolha|Pegue|Retire) o seu\b/g, '$1 seu').replace(/\b(Peça|Garanta|Reserve|Escolha|Pegue|Retire) a sua\b/g, '$1 sua')
+  return s
+}
+
+// o texto no tom do negócio: se algo está fora do tom, a IA reescreve (sem mudar nenhuma informação) e o acerto sem IA confere
+export async function noTomDoNegocio(neg: any, texto: string, uso?: { negocio_id?: string | null; conversa_id?: string | null }): Promise<string> {
+  if (!foraDoTom(neg, texto).length) return texto
+  try {
+    const { emJson } = await import('./ia')
+    const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTua tarefa agora: reescrever UMA mensagem pro cliente nesse jeito de falar. Muda SÓ o jeito (pessoa, regionalismo); não tira nem acrescenta nenhuma informação, valor, dia ou horário.`,
+      `MENSAGEM: ${texto}\nDevolve {"texto":"..."}`, [], { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', ...(uso || {}) } })
+    const novo = String(r?.texto || '').trim()
+    if (novo) return acertaTom(neg, novo)
+  } catch { /* sem IA: o acerto sem IA resolve o principal */ }
+  return acertaTom(neg, texto)
+}

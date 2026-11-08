@@ -89,12 +89,12 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
 }
 
 // pedido simples que volta em JSON (com fotos opcionais pra ela ver)
-export async function emJson<T = any>(sistema: string, pedido: string, imagens: { b64: string; mime: string }[] = []): Promise<T> {
+export async function emJson<T = any>(sistema: string, pedido: string, imagens: { b64: string; mime: string }[] = [], op: { modelo?: string; uso?: { tipo?: string; negocio_id?: string | null; conversa_id?: string | null } } = {}): Promise<T> {
   const conteudo: any[] = [
     ...imagens.map(i => ({ type: 'image', source: { type: 'base64', media_type: i.mime, data: i.b64 } })),
     { type: 'text', text: pedido + '\n\nResponde SÓ com o JSON, sem nada antes ou depois.' },
   ]
-  const j = await chama({ system: sistema, max_tokens: 4000, messages: [{ role: 'user', content: conteudo }] })
+  const j = await chama({ system: sistema, max_tokens: 4000, messages: [{ role: 'user', content: conteudo }], ...(op.modelo ? { model: op.modelo } : {}), uso: op.uso })
   const txt = (j.content || []).map((c: any) => c.text || '').join('')
   const a = txt.indexOf('{') >= 0 && (txt.indexOf('[') < 0 || txt.indexOf('{') < txt.indexOf('[')) ? txt.indexOf('{') : txt.indexOf('[')
   const b = Math.max(txt.lastIndexOf('}'), txt.lastIndexOf(']'))

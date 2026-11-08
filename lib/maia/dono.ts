@@ -9,6 +9,7 @@ import { donoAprova, donoAjuste, pecaDaMensagem } from './aprovacao'
 import { geraAnuncios } from './pecas'
 import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
 import { baixaMidia } from '@/lib/oito/wa'
+import { descreveTom, tomDoNegocio } from './tom'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
@@ -110,14 +111,18 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'agendar_retomada', description: 'Agenda pra lembrar o dono (ou, quando o WhatsApp do negócio estiver ligado, pra Maia) de chamar um contato de novo.',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
       roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato' }; await agendaFollowup(l, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
-    { name: 'responder_cliente', description: 'Repassa pro CLIENTE do negócio a resposta que o dono deu a uma pergunta dele (as perguntas esperando estão no pedido). Escreve a mensagem pronta, como a assistente do negócio.',
+    { name: 'responder_cliente', description: 'Repassa pro CLIENTE do negócio a resposta que o dono deu a uma pergunta dele (as perguntas esperando estão no pedido). Escreve a mensagem pronta, como a assistente do negócio, no TOM COM OS CLIENTES que vem no pedido (não no teu jeito com o dono).',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, mensagem: { type: 'string' } }, required: ['mensagem'] },
       roda: async (q) => {
         const l = await lead(q); if (!l || !l.telefone) return { erro: 'não achei esse cliente' }
         const ccv = await conversa(neg.id, 'cliente', l.telefone, { nome: l.nome, lead_id: l.id })
+        // 08/11 (teste completo): o repasse sai no tom do NEGÓCIO com os clientes ("você"/"tu", gaúcho ou não), nunca no jeito da
+        // Maia com o dono ("Qual tu prefere?" num negócio em "você"). Fora do tom: reescreve; o acerto sem IA confere no fim
+        const { noTomDoNegocio } = await import('./tom')
+        const mensagem = await noTomDoNegocio(neg, String(q.mensagem || ''), { negocio_id: neg.id, conversa_id: ccv.id })
         // 07/11 (piloto): depois de 24 h da última mensagem do cliente, vai pelo modelo maia_resposta (a resposta espera na fila)
-        const env = await mandaRespostaCliente(ccv, q.mensagem, 'maia')
-        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem: q.mensagem, como: env.como } })
+        const env = await mandaRespostaCliente(ccv, mensagem, 'maia')
+        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem, como: env.como } })
         return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)',
           ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
       } },
@@ -181,6 +186,7 @@ DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
 ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
 PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo)
+TOM COM OS CLIENTES (vale no responder_cliente; contigo e com o dono é o teu jeito de sempre): ${descreveTom(tomDoNegocio(neg))}${tomDoNegocio(neg).pessoa === 'voce' ? ' (no responder_cliente: "você", "seu", "sua", "pra você"; nunca "tu", "teu", "pra ti")' : ''}
 MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}
 CONVERSAS DE CLIENTE QUE ESTÃO COM O DONO (tu não responde): ${comGente.length ? comGente.join(', ') : 'nenhuma'}${devolvidas.length ? `\n(o sistema já devolveu pra ti as conversas com: ${devolvidas.join(', ')}. Só confirma pro dono.)` : ''}
 

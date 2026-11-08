@@ -4,7 +4,7 @@
 // (painel e testes), e o cérebro já fica pronto e testado.
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
-import { jeitoAtendimento, tomDoNegocio } from './tom'
+import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
 import { prazoResposta } from './horario'
 import { avisoPrivacidade } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
@@ -188,7 +188,8 @@ export async function respondeCliente(conversa_id: string) {
       { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
     partes = boas(r2.texto)
   }
-  const enviadas = partes.slice(0, 2)
+  // 08/11 (teste completo): confere o tom do negócio antes de mandar (fora do tom: reescreve; quase nunca acontece aqui)
+  const enviadas = await Promise.all(partes.slice(0, 2).map(m => noTomDoNegocio(neg, m, { negocio_id: neg.id, conversa_id: cv.id })))
   if (!enviadas.length) {
     await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} no ${neg.nome}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
@@ -231,5 +232,5 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const { emJson } = await import('./ia')
   const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).`,
     `Cliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`)
-  return r.texto
+  return noTomDoNegocio(neg, r.texto, { negocio_id: neg.id, conversa_id: cv?.id || null })
 }
