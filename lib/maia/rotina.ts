@@ -4,7 +4,7 @@
 //   - números da Meta: sincroniza o gasto e as conversas do dia
 //   - 06/11: social media (lib/maia/social.ts), atrás de MAIA_SOCIAL_LIGADO=1
 import { maiaDb as db } from './db'
-import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, janelaAbertaCv } from './canal'
+import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, mandaBotoes, janelaAbertaCv } from './canal'
 import { atendimentoLigado } from './wa-negocio'
 import { contaChamadas } from './chamadas'
 import { followupsVencidos, registraFollowup, encerraSemResposta, numeros } from './funil'
@@ -13,6 +13,7 @@ import { geraRelatorio } from './pecas'
 import { sincronizaMetricas } from './meta'
 import { rotinaSocial, socialLigado } from './social'
 import { podeFalar } from './horario'
+import { nomeDoModelo } from './modelos'
 
 const horaBR = (d = new Date()) => (d.getUTCHours() + 21) % 24
 const diaSemanaBR = (d = new Date()) => new Date(d.getTime() - 3 * 3600e3).getUTCDay()
@@ -34,7 +35,11 @@ export async function retomadas(relogio = new Date()) {
       // 05/11: o canal do negócio. Dentro da janela de 24 h, a retomada escrita pela Maia; fora dela, o modelo aprovado (maia_retomada).
       const cv = await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id })
       if (janelaAbertaCv(cv)) await mandaTexto(cv, await textoRetomada(neg, lead, numero))
-      else await mandaModeloCliente(cv, 'maia_retomada', [String(lead.nome || '').split(' ')[0] || 'tudo bem', neg.nome, lead.produto || 'o que tu tinha perguntado'], '(modelo maia_retomada) retomada ' + numero)
+      else {
+        // 08/11 (T2): o modelo no tom do negócio (maia_retomada_voce no "você", o padrão)
+        const modelo = nomeDoModelo(neg, 'maia_retomada'), voce = modelo.endsWith('_voce')
+        await mandaModeloCliente(cv, modelo, [String(lead.nome || '').split(' ')[0] || 'tudo bem', neg.nome, lead.produto || (voce ? 'o que você tinha perguntado' : 'o que tu tinha perguntado')], `(modelo ${modelo}) retomada ` + numero)
+      }
     } else {
       (lembretes[neg.id] ||= []).push(`${lead.nome || lead.telefone || 'contato'}${lead.produto ? ' (' + lead.produto + ')' : ''}${ultimo ? ', última tentativa' : ''}`)
     }
@@ -65,19 +70,33 @@ export async function confirmaVendas(forcar = false, relogio = new Date()) {
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
     if (!podeFalar(neg, relogio)) continue   // 07/11: pergunta pro dono só de dia, mesmo forçada
     const cv = await conversaDoDono(neg)
-    const linhas = leads.slice(0, 6).map(l => `${l.nome || l.telefone}${l.produto ? ' (' + l.produto + (l.valor ? ', R$ ' + l.valor : '') + ')' : ''}`)
-    await mandaTexto(cv, `Pra eu contar certinho as vendas: ${linhas.join('; ')}. ${leads.length === 1 ? 'Fechou?' : 'Quem fechou e quem não fechou?'}`)
+    const linha = (l: any) => `${l.nome || l.telefone}${l.produto ? ' (' + l.produto + (l.valor ? ', R$ ' + l.valor : '') + ')' : ''}`
+    const linhas = leads.slice(0, 6).map(linha)
+    // 08/11 (T12): dentro da janela de 24 h, uma pergunta por contato com os botões "Fechou" / "Não fechou" (o clique vira
+    // ganho ou perdido na hora: dono.ts, respostaDeVenda). Fora da janela, o texto de sempre (vai pra fila; ele responde escrevendo)
+    if (janelaAbertaCv(cv) || /^55000/.test(String(cv.telefone || ''))) {
+      for (const l of leads.slice(0, 6)) await mandaBotoes(cv, `Pra eu contar certinho as vendas: ${linha(l)}. Fechou?`, [{ id: `venda:${l.id}:sim`, titulo: 'Fechou' }, { id: `venda:${l.id}:nao`, titulo: 'Não fechou' }])
+    } else await mandaTexto(cv, `Pra eu contar certinho as vendas: ${linhas.join('; ')}. ${leads.length === 1 ? 'Fechou?' : 'Quem fechou e quem não fechou?'}`)
     for (const l of leads) await db.insere('lead_eventos', { negocio_id, lead_id: l.id, tipo: 'pergunta_dono', autor: 'maia' })
     feitos.push({ negocio: negocio_id, perguntou: leads.length })
   }
   return feitos
 }
 
+// 08/11 (T12): quem recebe o resumo da semana. O negócio em PILOTO fica em "implantação" até a 1ª campanha (meta.ts muda pra
+// ativo): ele também recebe quando já atende clientes (atendimento ligado) ou teve contato no funil na semana.
+// Demonstração, pausado e cancelado ficam de fora
+export async function negociosDoResumo(de: Date) {
+  const { ehDemo } = await import('./demo-amostra')
+  const leadsSemana = (await db.lista('leads')).filter(l => (l.atualizado_em || l.criado_em) >= de.toISOString())
+  return (await db.lista('negocios')).filter(n => !ehDemo(n) && (n.status === 'ativo' || (n.status === 'implantacao' && (n.meta?.wa?.atende === true || leadsSemana.some(l => l.negocio_id === n.id)))))
+}
+
 export async function relatoriosDaSemana(forcar = false) {
   if (!forcar && !(diaSemanaBR() === 1 && horaBR() === 7)) return []
   const ate = new Date(), de = new Date(ate.getTime() - 7 * 86400e3)
   const feitos: any[] = []
-  for (const neg of await db.lista('negocios', { status: 'ativo' })) {
+  for (const neg of await negociosDoResumo(de)) {
     const n = await numeros(neg.id, de.toISOString(), ate.toISOString())
     const p = await geraRelatorio(neg, n)
     feitos.push({ negocio: neg.id, peca: p.id })

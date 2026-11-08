@@ -14,7 +14,7 @@
 | `DEEPGRAM_API_KEY` | chave da transcrição (sem ela o vídeo sai sem legenda) |
 | `CHROME_PATH` | só se o Chrome estiver em outro lugar. Padrão: `C:\Program Files\Google\Chrome\Application\chrome.exe` no Windows e `/usr/bin/chromium` no Linux |
 | `FFMPEG` | só se o ffmpeg não estiver no caminho padrão. Padrão: `ffmpeg` |
-| `OFICINA_MAX_MB` | opcional: tamanho máximo do envio. Se o vídeo passar disso, a oficina comprime de novo pra caber (ver "Cuidados") |
+| `OFICINA_MAX_MB` | só pro modo antigo (sistema sem link de envio): tamanho máximo do envio em base64. Com o link de envio direto não é usado (ver "Cuidados") |
 
 Tem um modelo em `.env.exemplo`.
 
@@ -41,12 +41,12 @@ Opções do teste: `--marca '{"cores":{"primaria":"#5b3a1e","secundaria":"#f0b42
 ## Subir na Railway (ainda não foi feito)
 
 1. Na Railway: New Project → Deploy from GitHub repo → escolhe o repositório. Em Settings → Root Directory, põe `maia-oficina`. Ela acha o `Dockerfile` sozinha. Dentro dele já vêm o Node 22, o Chromium, o ffmpeg e as fontes.
-2. Em Variables, põe `MAIA_URL`, `MAIA_OFICINA_CHAVE` e `DEEPGRAM_API_KEY` (e `OFICINA_MAX_MB=4.5` se o sistema estiver na Vercel).
+2. Em Variables, põe `MAIA_URL`, `MAIA_OFICINA_CHAVE` e `DEEPGRAM_API_KEY`. O `OFICINA_MAX_MB` não precisa mais (o vídeo vai direto pro armazenamento).
 3. Não precisa de domínio nem de porta, porque a oficina não recebe visita, só pergunta a fila. Uma máquina de 1 GB de memória dá conta. Vídeo pesa mais, então se travar, sobe pra 2 GB.
 4. Pra ver se está funcionando, abre os Logs: tem que aparecer "oficina ligada" e, a cada tarefa, "entregue ✔".
 
 ## Cuidados
 
-- **Tamanho do envio:** um vídeo de 20 s fica com ~10 MB, e a entrega vai em base64 dentro do JSON (fica ~33% maior). A Vercel recusa pedido com mais de ~4,5 MB. Por isso, com `OFICINA_MAX_MB=4.5` a oficina comprime o vídeo pra caber, só que a qualidade cai. O certo é o sistema dar um link de upload direto pro armazenamento.
+- **Tamanho do envio (08/11):** agora o sistema dá um link de envio direto pro armazenamento (link assinado do Supabase, no bucket `maia`, na pasta do negócio). A oficina faz o PUT do arquivo inteiro, sem comprimir de novo, e avisa o sistema só com `{tarefa_id, caminho}`; o sistema confere se o arquivo chegou antes de aceitar. Assim o vídeo não passa pela Vercel (que corta em ~4,5 MB) e não perde qualidade. O modo antigo (arquivo em base64 dentro do JSON, com `OFICINA_MAX_MB` comprimindo pra caber) continua aceito enquanto alguma oficina antiga existir. Depois que a oficina nova estiver na Railway, dá pra tirar o `OFICINA_MAX_MB`.
 - **Rosto:** a oficina não detecta rosto. Os layouts deixam o terço de cima da foto livre e a legenda fica sempre embaixo, que é onde funciona na maioria das fotos e vídeos de celular. Foto com o rosto embaixo pode ficar com texto em cima.
 - **Transcrição:** a legenda é o que a Deepgram ouviu (o nome do negócio vai como dica pra ela escrever certo). Se ela errar uma palavra, o erro aparece na legenda, porque a oficina não corrige nem inventa.

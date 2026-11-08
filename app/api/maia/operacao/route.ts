@@ -58,6 +58,8 @@ export async function GET(req: Request) {
       const semana = new Date(Date.now() - 7 * 86400e3).toISOString()
       return ok({
         modo: db.modo(), meta_real: metaReal(),
+        // 08/11 (T16): qual banco a Maia está usando (local, proprio = MAIA_SUPABASE_URL, escola = o de sempre)
+        banco: (await import('@/lib/maia/db')).bancoDaMaia(),
         negocios: negs.length, ativos: negs.filter(n => n.status === 'ativo').length,
         pra_equipe: todasPecas.filter(p => p.status === 'revisao_equipe').length,
         amostras_semana: await vagasDaSemana(),
@@ -208,7 +210,7 @@ export async function POST(req: Request) {
       }
       case 'simular_dono': {
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
-        return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))
+        return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao, botao: b.botao && b.botao.id ? { id: String(b.botao.id), titulo: String(b.botao.titulo || '') } : undefined }))
       }
       case 'simular_cliente': {
         // 07/11 (piloto): áudio ou foto do cliente simulado (arquivo_b64 + mime). `simulado` (transcrição/descrição de mentira) só vale no modo de teste
@@ -261,6 +263,19 @@ export async function POST(req: Request) {
         return ok({ atendimento: at })
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
+      // 08/11 (T2): pede de novo os modelos do negócio (as versões "tu" e "você") pra quem já conectou o WhatsApp antes deles
+      // existirem. No modo local nada vai pra Meta (volta "simulado")
+      case 'pedir_modelos_negocio': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { criaModelosDoNegocio } = await import('@/lib/maia/modelos')
+        const { waDoNegocio } = await import('@/lib/maia/wa-negocio')
+        const w = waDoNegocio(n)
+        if (db.modo() !== 'local' && !w?.waba) return erro('o WhatsApp desse negócio ainda não foi conectado')
+        const modelos = await criaModelosDoNegocio(w?.waba ? { token: w.token, waba: w.waba } : null, n)
+        await db.evento('pedir_modelos_negocio', n.id, { por })
+        return ok({ modelos })
+      }
       // 07/11 (piloto): `relogio` (a hora da janela das 9h às 20h) só vale no modo de teste
       case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, forcarGuarda: db.modo() === 'local' && !!b.forcar_guarda, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
       // 08/11 (teste completo): só no modo de teste: as regras sem IA das correções, pra conferir sem gastar IA
@@ -271,10 +286,51 @@ export async function POST(req: Request) {
         const t = String(b.texto || '')
         return ok({
           gatilho: at.gatilhoHumano(t), passou: at.respostaPassou(t, !!b.perguntou), recusou: at.recusou(t), interna: at.perguntaInterna(t),
-          motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), quer_comprar: at.querComprar(t, neg), recusa_firme: at.recusaFirme(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
+          motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), quer_comprar: at.querComprar(t, neg), recusa_firme: at.recusaFirme(t), sem_detalhe: at.semPedirDetalhes(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
           fora_do_tom: tom.foraDoTom(neg, t), acerta_tom: tom.acertaTom(neg, t), cta: tom.ctaNoTom(neg, t),
           dias_texto: hor.diasDoTexto(t), dias: hor.diasDoNegocio(neg, b.agora ? new Date(b.agora) : new Date()),
+          modelo_retomada: (await import('@/lib/maia/modelos')).nomeDoModelo(neg, 'maia_retomada'),
+          aviso: (await import('@/lib/maia/lgpd')).avisoPrivacidade({ nome: 'Negócio Teste', ...neg }), ja_avisa: (await import('@/lib/maia/lgpd')).respostaJaAvisa(t),
+          voz_ligada: (await import('@/lib/maia/voz')).vozLigada(), tira_nome: b.nome ? (await import('@/lib/maia/lgpd')).tiraNome(String(b.nome), b.outros || []).troca(t) : null,
         })
+      }
+      // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
+      // 08/11 (T4), só no modo de teste: põe uma peça (com a foto ou o vídeo do dono) direto na fila da oficina, sem IA,
+      // pra testar a entrega da oficina (link de envio direto e o modo antigo em base64)
+      case 'teste_tarefa_oficina': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n || !b.arquivo_b64) return erro('falta o negócio ou o arquivo')
+        const video = /video/.test(String(b.mime || ''))
+        const caminho = await db.sobe(`${n.id}/midias/teste-${Date.now().toString(36)}.${video ? 'mp4' : /png/.test(String(b.mime)) ? 'png' : 'jpg'}`, Buffer.from(String(b.arquivo_b64), 'base64'), String(b.mime || 'image/jpeg'))
+        const m = await db.insere('midias', { negocio_id: n.id, tipo: video ? 'video' : 'foto', path: caminho, mime: b.mime || 'image/jpeg', descricao: 'teste da oficina' })
+        const peca = await db.insere('pecas', { negocio_id: n.id, tipo: video ? 'anuncio_video' : 'anuncio_imagem', status: 'gerando', titulo: 'teste da oficina', gancho: b.gancho || 'Caixa com 6 cookies por R$ 45', texto: b.texto || 'Cookies artesanais feitos no dia.', cta: b.cta || 'Peça pelo WhatsApp', midia_ids: [m.id] })
+        const t = await db.insere('tarefas', { negocio_id: n.id, tipo: video ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: m.id } })
+        return ok({ peca_id: peca.id, tarefa_id: t.id })
+      }
+      case 'teste_resumo_negocios': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const { negociosDoResumo } = await import('@/lib/maia/rotina')
+        return ok((await negociosDoResumo(new Date(Date.now() - 7 * 86400e3))).map(n => ({ id: n.id, status: n.status })))
+      }
+      // 08/11 (T12), só no modo de teste: gera o áudio de um texto com a ElevenLabs (o mesmo da resposta em áudio) e guarda o arquivo
+      case 'teste_voz': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { audioDaResposta } = await import('@/lib/maia/voz')
+        return ok({ caminho: await audioDaResposta(n, { id: String(b.conversa_id || 'teste-voz') }, String(b.texto || '')) })
+      }
+      // 08/11 (T12), só no modo de teste: faz de conta que a Maia já respondeu N vezes hoje nessa conversa (pro limite de respostas)
+      case 'teste_respostas_hoje': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const cv = await db.um('conversas', { id: b.conversa_id })
+        if (!cv) return erro('conversa não existe')
+        for (let i = 0; i < Math.min(Number(b.n) || 40, 200); i++) {
+          await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'cliente', tipo: 'texto', texto: `(teste) pergunta ${i + 1}`, status: 'recebido' })
+          await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'maia', tipo: 'texto', texto: `(teste) resposta ${i + 1}`, status: 'enviado' })
+        }
+        return ok({ ok: true })
       }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {

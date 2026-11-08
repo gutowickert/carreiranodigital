@@ -17,6 +17,7 @@ import { metaReal } from './meta'
 import { conversaDoDono, mandaImagem, mandaVideo, mandaTexto, avisaEquipe } from './canal'
 import { donoAprova } from './aprovacao'
 import { comFerramentas, JEITO } from './ia'
+import { tomDoNegocio, textoNoTom } from './tom'
 import { isoBR } from '@/lib/periodos'
 import { tokenSocial, tokenWa } from './segredo'
 
@@ -98,7 +99,8 @@ export async function criaPost(negocio_id: string, d: { quando: string; tipo: Ti
   if (d.tipo === 'carrossel' && (midias.length < 2 || midias.length > 10)) throw new Error('carrossel leva de 2 a 10 fotos ou vídeos')
   // o Instagram só aceita JPEG na foto
   if (midias.some(m => m.tipo === 'foto' && /\.(png|webp|gif|heic)(\?|$)/i.test(m.url || m.caminho || ''))) throw new Error('foto tem que ser JPEG (o Instagram não aceita PNG/WEBP)')
-  const legenda = String(d.legenda || '').trim()
+  // 08/11 (pendência): a legenda fala com o público do negócio: no tom dele ("você" por padrão), sem IA
+  const legenda = textoNoTom(neg, String(d.legenda || '').trim())
   if (!legenda) throw new Error('falta a legenda')
   if (legenda.length > 2200) throw new Error('legenda passa de 2.200 caracteres (limite do Instagram)')
   if ((legenda.match(/#[\p{L}\d_]+/gu) || []).length > 30) throw new Error('mais de 30 hashtags (limite do Instagram)')
@@ -156,15 +158,27 @@ export async function aprovaDono(post_id: string | number) {
   return sincroniza(await umPost(post_id))
 }
 
+// 08/11 (pendência): a legenda do post fala com o PÚBLICO do negócio, então vale o tom do negócio (tom.ts), não o "tu"
+// gaúcho da Maia com o dono. Negócio em "você" (o padrão): legenda em "você"
+export function jeitoDaLegenda(neg: any) {
+  const t = tomDoNegocio(neg)
+  const pessoa = t.pessoa === 'voce'
+    ? 'trata o leitor por "você" (seu, sua, pra você). NUNCA "tu", "teu", "tua", "pra ti" nem "contigo". Imperativo do "você": "Peça", "Chame", "Venha"'
+    : 'trata o leitor por "tu" (teu, tua, pra ti), do jeito do Sul. Imperativo: "Pede", "Chama", "Vem"'
+  const regiao = t.gaucho ? 'pode ter um toque gaúcho leve, sem forçar' : 'português neutro, sem regionalismo (nada de "ó", "bah", "tri", "guri")'
+  return `Tu és a social media do negócio e escreves a legenda do post pro público dele, em português do Brasil. (Estas instruções falam contigo usando "tu"; na legenda vale só o JEITO DE FALAR abaixo.)
+JEITO DE FALAR: ${pessoa}; ${regiao}; ${t.estilo === 'formal' ? 'educado e profissional, sem gíria' : 'leve e direto'}. Sem negrito e sem travessão.`
+}
+
 // o ajuste pedido (equipe ou dono) num post: a IA reescreve só a legenda e volta pra revisão da equipe. null = não é post da agenda.
 export async function refazPost(peca: any, nota: string, quem: 'equipe' | 'dono') {
   const post = (await posts(peca.negocio_id)).find(p => p.detalhe?.peca_id === peca.id)
   if (!post) return null
   const neg = await db.um('negocios', { id: peca.negocio_id })
   const { emJson } = await import('./ia')
-  const r = await emJson<{ legenda: string }>(`${JEITO}\nAgora tu és a social media do negócio. Legenda de Instagram: começa com uma frase que prende, conteúdo útil, até 2.200 caracteres, no máximo 5 hashtags, sem inventar preço nem promoção.`,
+  const r = await emJson<{ legenda: string }>(`${jeitoDaLegenda(neg)}\nLegenda de Instagram: começa com uma frase que prende, conteúdo útil, até 2.200 caracteres, no máximo 5 hashtags, sem inventar preço nem promoção.`,
     `NEGÓCIO: ${neg?.nome} (${neg?.nicho || ''}, ${neg?.cidade || ''}). O QUE A MAIA SABE: ${JSON.stringify(neg?.contexto || {})}\nTEMA: ${post.detalhe.tema || '-'} · FORMATO: ${post.detalhe.formato || post.detalhe.tipo}\nLEGENDA ATUAL:\n${legendaDe(peca)}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\nDevolve {"legenda":"..."}`)
-  const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: String(r.legenda || peca.texto).slice(0, 2200), status: 'revisao_equipe', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
+  const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: textoNoTom(neg, String(r.legenda || peca.texto)).slice(0, 2200), status: 'revisao_equipe', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
   await salva(post, { status: 'rascunho' })
   return nova
 }

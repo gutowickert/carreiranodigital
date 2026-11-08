@@ -209,6 +209,8 @@ select option{background:var(--surface);color:var(--text)}
 textarea{min-height:92px;resize:vertical;line-height:1.5}
 input[type=color]{padding:3px;width:44px;flex:0 0 44px;min-height:40px;cursor:pointer}
 input[type=file]{padding:9px}
+/* 08/11: caixa de marcar do tamanho normal, na linha do texto (a de "usar as cores da marca" virava um quadrado grande) */
+input[type=checkbox]:not(.sw input){width:18px;height:18px;min-height:0;flex:0 0 18px;padding:0;margin:0 6px 0 0;border-radius:4px;vertical-align:-3px;accent-color:var(--accent)}
 label{display:block;font-weight:700;font-size:13px;color:var(--text-2);margin:0 0 6px}
 .campo{margin-bottom:14px;min-width:0}
 .grade2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:0 14px}
@@ -1338,7 +1340,9 @@ function subDados(n,box){
     '<div class="card" id="c-wa"><h2 style="margin-bottom:12px">WhatsApp do negócio (clientes)</h2>'+
       '<div class="wa-estado '+(waOn?'on':'off')+'"><span class="q">'+ic('celular')+'</span><div style="min-width:0"><b>'+(waOn?'Conectado':'Ainda não conectado')+'</b><small>'+(waOn?((m.wa&&m.wa.conectado_em)?'desde '+esc(String(m.wa.conectado_em).slice(0,10)):'número ligado na conta do negócio')+((m.wa&&m.wa.inscrito===false)?' · <b style="display:inline;color:var(--red)">webhook não inscrito</b>':''):'Gera o link e manda pro dono: ele entra com o Facebook e o número continua no celular dele.')+'</small></div></div>'+
       '<div class="chave" style="border-top:0"><div class="txt"><b>A Maia atende os clientes</b><small>Começa desligado. Liga depois de testar com um número conhecido. O dono pode seguir respondendo pelo celular: quando ele responde, ela fica quieta 2 h naquela conversa.</small></div><label class="sw"><span class="sr">A Maia atende os clientes</span><input type="checkbox" id="sw-atende"'+((m.wa&&m.wa.atende)?' checked':'')+(waOn?'':' disabled')+'><span></span></label></div>'+
-      '<button class="btn larga" id="b-link">'+ic('link')+'Gerar link pro dono conectar</button><div id="wa-link" class="link-box"></div></div>'+
+      '<button class="btn larga" id="b-link">'+ic('link')+'Gerar link pro dono conectar</button><div id="wa-link" class="link-box"></div>'+
+      // 08/11 (T2): quem conectou antes das versões "você" pede os modelos de novo (tu e você). Já aprovado não muda nada
+      (waOn?'<button class="btn larga" id="b-modelos-neg" style="margin-top:8px">'+ic('check')+'Pedir os modelos de mensagem de novo</button><div id="modelos-neg" class="link-box"></div>':'')+'</div>'+
     cardAtendimento(n)+
     // 07/11: o painel do dono (link mágico de 30 dias). "Trocar link" cancela todos os links antigos desse negócio
     '<div class="card" id="c-painel-dono"><h2 style="margin-bottom:8px">Painel do dono</h2><p class="mu peq" style="margin:0 0 12px">Resultados, funil, retomadas, conversas e anúncios, só desse negócio. O dono também recebe o link pedindo "meu painel" pra Maia e no resumo da semana. Vale 30 dias.</p>'+
@@ -1363,6 +1367,7 @@ function subDados(n,box){
       .catch(function(e){ i.checked=!val; falhou(e); });
   }; });
   $('#b-link').onclick=function(){ var b=this; espera(b,'gerando…',function(){ return api({acao:'link_conectar',negocio_id:n.id}).then(function(r){ $('#wa-link').innerHTML='<b>Link (vale '+r.vale_dias+' dias):</b> '+esc(r.link); if(navigator.clipboard) navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado. Manda pro dono.'); },function(){}); }); }); };
+  if($('#b-modelos-neg')) $('#b-modelos-neg').onclick=function(){ var b=this; espera(b,'pedindo…',function(){ return api({acao:'pedir_modelos_negocio',negocio_id:n.id}).then(function(r){ var l=(r.modelos||[]); $('#modelos-neg').innerHTML=l.map(function(x){ return '<b>'+esc(x.nome)+'</b>: '+esc(x.ok?(x.status||'pedido'):('não deu: '+(x.erro||'?'))); }).join('<br>'); toast(l.every(function(x){return x.ok;})?'Modelos pedidos. A Meta aprova em minutos ou horas.':'Algum modelo não foi pedido: confere a lista.', !l.every(function(x){return x.ok;})); }); }); };
   function mostraLinkPainel(r,msg){ $('#painel-link').innerHTML='<b>Link do painel (vale '+r.vale_dias+' dias):</b> '+esc(r.link); if(navigator.clipboard) navigator.clipboard.writeText(r.link).then(function(){ toast(msg); },function(){ toast(msg); }); else toast(msg); }
   $('#b-painel').onclick=function(){ var b=this; espera(b,'gerando…',function(){ return api({acao:'link_painel_dono',negocio_id:n.id}).then(function(r){ mostraLinkPainel(r,'Link copiado. Manda pro dono.'); }); }); };
   $('#b-painel-trocar').onclick=function(){ if(!confirm('Trocar o link do painel? Todos os links antigos desse negócio param de abrir na hora.')) return; var b=this; espera(b,'trocando…',function(){ return api({acao:'painel_dono_revogar',negocio_id:n.id}).then(function(r){ n.meta=Object.assign({},n.meta||{},{painel_versao:r.versao}); mostraLinkPainel(r,'Links antigos cancelados. O novo foi copiado.'); }); }); };
@@ -1414,6 +1419,10 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-priv">Aviso de privacidade na 1ª resposta</label><select id="t-priv" name="priv_ligado">'+opt('sim','sim',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+opt('nao','não',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+'</select></div>'+
     '<div class="campo"><label for="t-plink">Link da política (opcional)</label><input id="t-plink" name="priv_link" type="url" placeholder="https://…" value="'+esc((a.privacidade&&a.privacidade.link)||'')+'"></div>'+
     '</div><div class="campo"><label for="t-ptexto">Texto do aviso (vazio = o padrão)</label><textarea id="t-ptexto" name="priv_texto" rows="2" placeholder="Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do negócio. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.">'+esc((a.privacidade&&a.privacidade.texto)||'')+'</textarea></div>'+
+    // 08/11: os dias em que o negócio abre (meta.atendimento.dias). Nenhum marcado = a Maia lê do horário que está na base
+    '<fieldset class="campo" id="t-dias" style="border:0;padding:0;margin:0 0 12px"><legend style="padding:0;margin-bottom:6px">Dias que o negócio abre <small class="mu peq">(o horário fica em "O que a Maia sabe", no assunto horario; nenhum dia marcado = a Maia lê os dias de lá também)</small></legend><div style="display:flex;flex-wrap:wrap;gap:6px 14px">'+
+      ['dom','seg','ter','qua','qui','sex','sáb'].map(function(rot,i){ return '<label style="display:inline-flex;align-items:center;gap:6px;min-height:32px"><input type="checkbox" name="dias" value="'+i+'"'+((a.dias||[]).indexOf(i)>=0?' checked':'')+'> '+rot+'</label>'; }).join('')+
+    '</div></fieldset>'+
     '<button class="btn ok larga">'+ic('check')+'Salvar o jeito de atender</button></form>'+
     '<div class="card" id="uso-mes" aria-live="polite"><h2 style="margin-bottom:10px">Conversas do mês</h2><div class="esq" style="height:34px;width:50%"></div></div>';
 }
@@ -1433,6 +1442,7 @@ function ligaCardAtendimento(n){
   pintaUso(n);
   f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
     var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):0,guarda_meses:d.guarda_meses?Number(d.guarda_meses):0,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
+    c.dias=new FormData(f).getAll('dias').map(Number);
     espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); pintaUso(n); }); });
   };
 }

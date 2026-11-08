@@ -95,7 +95,29 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
     const p = await pecaDaMensagem(neg.id, m.reaction.message_id)
     if (p && p.status === 'com_dono') { await donoAprova(neg.id, p.id); return { cv, texto, responder: true, aprovou: [p.id] } }
   }
+  // 08/11 (T12): o clique em "Fechou" / "Não fechou" da pergunta das 18h (rotina.ts) vira ganho ou perdido, sem precisar da IA
+  const venda = /^venda:([\w-]+):(sim|nao)$/.exec(String(m.interactive?.button_reply?.id || m.button?.payload || ''))
+  if (venda) { const r = await respostaDeVenda(neg, cv, venda[1], venda[2] === 'sim'); if (r) return { cv, texto, responder: false, venda: r } }
   return { cv, texto, responder: cv.modo === 'ia' }
+}
+
+// o dono clicou num botão de venda. Só contato DESTE negócio; o que já estava ganho ou perdido não muda
+export async function respostaDeVenda(neg: any, cv: any, lead_id: string, fechou: boolean) {
+  const lead = await db.um('leads', { id: lead_id, negocio_id: neg.id })
+  if (!lead) return null
+  const nome = lead.nome || lead.telefone || 'o contato'
+  if (lead.etapa === 'ganho' || lead.etapa === 'perdido') {
+    await mandaTexto(cv, `${nome} já estava marcado como ${lead.etapa === 'ganho' ? 'venda' : 'não fechou'}. Se mudou, me conta que eu ajusto.`)
+    return { lead: lead.id, etapa: lead.etapa, mudou: false }
+  }
+  if (fechou) {
+    const l = await ganhou(lead, lead.valor, lead.produto, 'dono')
+    await mandaTexto(cv, `Anotado: ${nome} fechou${l.valor ? ', R$ ' + l.valor : ''}. 💰${l.valor ? '' : ' Se quiser, me diz o valor que eu guardo.'}`)
+    return { lead: lead.id, etapa: 'ganho', mudou: true }
+  }
+  await perdeu(lead, 'o dono disse que não fechou', 'dono')
+  await mandaTexto(cv, `Anotado: ${nome} não fechou. Se souber o motivo (preço, sumiu, comprou em outro lugar), me conta que eu guardo.`)
+  return { lead: lead.id, etapa: 'perdido', mudou: true }
 }
 
 function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferramenta[] {

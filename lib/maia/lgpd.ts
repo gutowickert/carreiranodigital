@@ -7,11 +7,27 @@ import { maiaDb as db } from './db'
 import { tomDoNegocio } from './tom'
 import { ehSimulado, fone } from '@/lib/oito/wa'
 
+// 08/11 (T12): o aviso que o PRÓPRIO negócio já tem, escrito na base ("O que a Maia sabe": um assunto "privacidade", "lgpd",
+// "aviso"... ou um texto que fala de LGPD/privacidade dos dados). Com ele, a Maia manda ESSE aviso (uma vez) e não o padrão por cima
+const CHAVE_AVISO = /privacidade|lgpd|protecao.?de.?dados|aviso.?(de.?)?dados|politica.?de.?dados/
+const TEXTO_AVISO = /\b(lgpd|privacidade|prote[cç][aã]o de dados|lei geral de prote)/i
+const semAcento = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+export function avisoDaBase(neg: any): string | null {
+  const ctx = neg?.contexto || {}
+  for (const [k, v] of Object.entries(ctx)) {
+    if (typeof v !== 'string' || v.trim().length < 20) continue
+    if (CHAVE_AVISO.test(semAcento(k)) || (TEXTO_AVISO.test(v) && /\bdados\b/i.test(v))) return v.trim().slice(0, 600)
+  }
+  return null
+}
+// a resposta da IA já trouxe um aviso de privacidade? (aí o do sistema não vai junto: seria repetido)
+export const respostaJaAvisa = (t: string) => TEXTO_AVISO.test(t) || /\bapag\w* (os |seus |teus |suas |tuas )?dados\b/i.test(t)
+
 export function avisoPrivacidade(neg: any): string | null {
   const p = neg?.meta?.atendimento?.privacidade || {}
   if (p.ligado === false) return null
   const voce = tomDoNegocio(neg).pessoa === 'voce'
-  const texto = String(p.texto || '').trim() || (voce
+  const texto = String(p.texto || '').trim() || avisoDaBase(neg) || (voce
     ? `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do ${neg.nome}. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.`
     : `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do ${neg.nome}. Tuas mensagens ficam guardadas só pra te atender. Se quiser que a gente apague teus dados, é só pedir aqui.`)
   const link = /^https:\/\/\S+$/.test(String(p.link || '').trim()) ? String(p.link).trim() : ''
@@ -24,7 +40,21 @@ export function privacidadeValida(p: any) {
   return { ligado: p?.ligado !== false && p?.ligado !== 'nao', ...(String(p?.texto || '').trim() ? { texto: String(p.texto).trim().slice(0, 600) } : {}), ...(/^https:\/\/\S+$/.test(link) ? { link: link.slice(0, 300) } : {}) }
 }
 
-const TIPOS_LIGADOS = ['midia_cliente', 'fila_cliente', 'modo_humano', 'conversa_devolvida', 'modelo_cliente', 'capi']
+// 08/11 (T12): troca o nome do contato apagado por [apagado]. O nome completo sempre; o primeiro nome sozinho ("Pra Helena: ...")
+// só se nenhum outro contato do negócio tem o mesmo primeiro nome (senão apagaria o recado de outra pessoa)
+const esc = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+export function tiraNome(nome: string, outros: string[] = []) {
+  const n = String(nome || '').trim().replace(/\s+/g, ' ')
+  const primeiro = n.split(' ')[0] || ''
+  const alvos: string[] = []
+  if (n.length >= 3) alvos.push(n)
+  if (primeiro.length >= 3 && primeiro !== n && !outros.some(o => semAcento(String(o).trim().split(/\s+/)[0] || '') === semAcento(primeiro))) alvos.push(primeiro)
+  else if (primeiro.length >= 3 && primeiro === n && outros.some(o => semAcento(String(o).trim().split(/\s+/)[0] || '') === semAcento(primeiro))) alvos.pop()
+  const re = alvos.length ? new RegExp(`(?<![\\p{L}\\p{N}])(${alvos.map(esc).join('|')})(?![\\p{L}\\p{N}])`, 'gu') : null
+  return { tem: !!re, troca: (t: string) => (re ? String(t || '').replace(re, '[apagado]') : String(t || '')) }
+}
+
+const TIPOS_LIGADOS = ['midia_cliente', 'voz_resposta','fila_cliente', 'modo_humano', 'conversa_devolvida', 'modelo_cliente', 'capi']
 
 export async function apagaContato(negocio_id: string, q: { conversa_id?: string | null; lead_id?: string | null }, por = 'equipe', motivo = 'pedido') {
   if (!negocio_id) throw new Error('falta o negócio')
@@ -62,12 +92,24 @@ export async function apagaContato(negocio_id: string, q: { conversa_id?: string
   // o telefone dele nos recados da Maia pro dono ("Fulano (5551...) precisa de ti") vira [apagado]
   let recados = 0
   const dcv = neg.dono_whatsapp ? await db.um('conversas', { negocio_id, canal: 'dono', telefone: fone(neg.dono_whatsapp) }) : null
-  if (dcv && telefone.length >= 8) {
+  // 08/11 (T12): o NOME dele também vira [apagado], nos recados pro dono e nos avisos pra equipe (aviso_equipe) desse negócio
+  const tira = tiraNome(lead?.nome || cv?.nome || '', (await db.lista('leads', { negocio_id })).map(l => String(l.nome || '')))
+  if (dcv && (telefone.length >= 8 || tira.tem)) {
     for (const m of await db.lista('msgs', { conversa_id: dcv.id, negocio_id })) {
-      if (String(m.texto || '').includes(telefone)) { await db.atualiza('msgs', { id: m.id }, { texto: String(m.texto).split(telefone).join('[apagado]') }); recados++ }
+      let t = String(m.texto || '')
+      if (telefone.length >= 8) t = t.split(telefone).join('[apagado]')
+      t = tira.troca(t)
+      if (t !== String(m.texto || '')) { await db.atualiza('msgs', { id: m.id }, { texto: t }); recados++ }
     }
   }
-  const r = { mes, contou, msgs: msgs.length, midias, registros, contato: !!lead, recados }
+  let avisos = 0
+  for (const e of await db.lista('eventos', { negocio_id, tipo: 'aviso_equipe' })) {
+    const d = e.detalhe || {}, tit = String(d.titulo || ''), tx = String(d.texto || '')
+    let nt = tira.troca(tit), nx = tira.troca(tx)
+    if (telefone.length >= 8) { nt = nt.split(telefone).join('[apagado]'); nx = nx.split(telefone).join('[apagado]') }
+    if (nt !== tit || nx !== tx) { await db.atualiza('eventos', { id: e.id }, { detalhe: { ...d, titulo: nt, texto: nx } }); avisos++ }
+  }
+  const r = { mes, contou, msgs: msgs.length, midias, registros, contato: !!lead, recados, avisos }
   await db.evento('contato_apagado', negocio_id, { por, motivo, ...r })
   return { ok: true, ...r }
 }

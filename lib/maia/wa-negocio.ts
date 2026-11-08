@@ -33,7 +33,9 @@ async function manda(w: WaNegocio, corpo: any): Promise<Envio> {
 export const enviaTextoNeg = (w: WaNegocio, para: string, texto: string) => manda(w, { to: so(para), type: 'text', text: { body: texto.slice(0, 4000), preview_url: /https?:\/\//.test(texto) } })
 export const enviaImagemNeg = (w: WaNegocio, para: string, link: string, legenda?: string) => manda(w, { to: so(para), type: 'image', image: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
 export const enviaVideoNeg = (w: WaNegocio, para: string, link: string, legenda?: string) => manda(w, { to: so(para), type: 'video', video: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
-export const marcaLidaNeg = (w: WaNegocio, wamid: string) => manda(w, { status: 'read', message_id: wamid })
+// 08/11 (T12): a resposta em áudio (Ogg Opus) por link
+export const enviaAudioNeg = (w: WaNegocio, para: string, link: string) => manda(w, { to: so(para), type: 'audio', audio: { link } })
+export const marcaLidaNeg =(w: WaNegocio, wamid: string) => manda(w, { status: 'read', message_id: wamid })
 export function enviaModeloNeg(w: WaNegocio, para: string, nome: string, corpo: string[], idioma = 'pt_BR') {
   const components = corpo.length ? [{ type: 'body', parameters: corpo.map(t => ({ type: 'text', text: String(t).replace(/[\n\t]+/g, ' ').slice(0, 900) })) }] : []
   return manda(w, { to: so(para), type: 'template', template: { name: nome, language: { code: idioma }, ...(components.length ? { components } : {}) } })

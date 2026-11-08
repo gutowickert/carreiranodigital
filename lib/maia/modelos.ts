@@ -3,7 +3,18 @@
 //   na conta de cada negócio (ao conectar): maia_retomada   → a retomada do cliente que parou de responder
 //                                           maia_resposta   → a resposta do dono pra uma pergunta do cliente, chegando depois de 24 h
 // A Meta aprova em minutos ou horas. Status: GET /api/maia/operacao?acao=modelos
+// 08/11 (T2): cada modelo do negócio tem a versão "tu" (maia_retomada, maia_resposta) e a versão "você" (maia_retomada_voce,
+// maia_resposta_voce). Na conexão (e na ação pedir_modelos_negocio do painel) pede as 4; no envio, vale o tom do negócio (nomeDoModelo).
+// No modo local nada vai pra Meta: o pedido é só anotado (modelos_pedidos) e volta "simulado".
+import { tomDoNegocio } from './tom'
+import { maiaLocal } from './db'
 const GRAPH = 'https://graph.facebook.com/v25.0'
+
+// o nome do modelo no tom do negócio: "você" → maia_retomada_voce; "tu" → maia_retomada
+export type ModeloCliente = 'maia_retomada' | 'maia_resposta'
+export const nomeDoModelo = (neg: any, base: ModeloCliente) => tomDoNegocio(neg).pessoa === 'voce' ? `${base}_voce` : base
+// a ordem de preferência no envio: o do tom do negócio e, se ele não estiver aprovado, o outro (a mensagem chega, mesmo no outro tom)
+export const modelosEmOrdem = (neg: any, base: ModeloCliente) => { const n = nomeDoModelo(neg, base); return n === base ? [base, `${base}_voce`] : [n, base] }
 
 type Modelo = { name: string; category: 'UTILITY' | 'MARKETING'; language: string; components: any[] }
 
@@ -30,7 +41,23 @@ const modelosDoNegocio = (neg: any): Modelo[] => [
       { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Pode mandar' }] },
     ],
   },
+  // 08/11 (T2): as versões em "você" (o tom padrão dos negócios)
+  {
+    name: 'maia_retomada_voce', category: 'MARKETING', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: 'Oi, {{1}}! Aqui é a assistente virtual do {{2}}. Você tinha falado com a gente sobre {{3}}. Ainda posso ajudar você?', example: { body_text: [['Ana', neg?.nome || 'Ótica Tempo de Visão', 'óculos de grau']] } },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Sim, quero' }, { type: 'QUICK_REPLY', text: 'Agora não' }] },
+    ],
+  },
+  {
+    name: 'maia_resposta_voce', category: 'UTILITY', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: 'Oi, {{1}}! Aqui é a assistente virtual do {{2}}. Já tenho a resposta da sua pergunta sobre {{3}}. Posso mandar?', example: { body_text: [['Ana', neg?.nome || 'Ótica Tempo de Visão', 'o prazo de entrega']] } },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Pode mandar' }] },
+    ],
+  },
 ]
+export const nomesDosModelosDoNegocio = () => modelosDoNegocio(null).map(m => m.name)
 
 async function cria(token: string, waba: string, m: Modelo) {
   const r = await fetch(`${GRAPH}/${waba}/message_templates`, { method: 'POST', headers: { Authorization: 'Bearer ' + token, 'Content-Type': 'application/json' }, body: JSON.stringify(m) })
@@ -40,9 +67,14 @@ async function cria(token: string, waba: string, m: Modelo) {
   return { nome: m.name, ok: true, status: j?.status || 'já existia' }
 }
 
-export async function criaModelosDoNegocio(w: { token: string; waba: string }, neg: any) {
-  const out = []
-  for (const m of modelosDoNegocio(neg)) out.push(await cria(w.token, w.waba, m))
+export async function criaModelosDoNegocio(w: { token: string; waba: string } | null, neg: any) {
+  const out: any[] = []
+  // modo local: nada vai pra Meta (só anota o que seria pedido)
+  if (maiaLocal() || !w) {
+    if (!maiaLocal()) throw new Error('o WhatsApp desse negócio ainda não foi conectado')
+    for (const m of modelosDoNegocio(neg)) out.push({ nome: m.name, ok: true, status: 'simulado', texto: m.components[0].text })
+  } else for (const m of modelosDoNegocio(neg)) out.push(await cria(w.token, w.waba, m))
+  if (neg?.id) await import('./db').then(({ maiaDb }) => maiaDb.evento('modelos_pedidos', neg.id, { modelos: out.map(o => ({ nome: o.nome, ok: o.ok, status: (o as any).status || null, erro: (o as any).erro || null })), simulado: maiaLocal() || !w }))
   return out
 }
 

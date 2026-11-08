@@ -17,6 +17,14 @@ const log = (...a) => console.log(`[${hora()}]`, ...a)
 // link relativo (modo local: "/api/maia/arquivo?p=...") ganha o endereço do sistema na frente
 const absoluto = u => !u ? null : /^https?:\/\//i.test(u) ? u : URL_BASE() + (u.startsWith('/') ? '' : '/') + u
 
+// 08/11: "fetch failed" depois de um trabalho longo (o vídeo leva uns segundos) é a conexão antiga que o servidor já fechou
+// (o Node reaproveita a conexão). Tenta de novo, até 3 vezes, antes de dar erro
+async function tenta(url, opts) {
+  for (let i = 1; ; i++) {
+    try { return await fetch(url, opts) } catch (e) { if (i >= 3) throw e; log(`  (a conexão caiu: ${e.message}; tentando de novo)`); await new Promise(r => setTimeout(r, 800 * i)) }
+  }
+}
+
 async function baixa(url, destinoSemExt, mimeSugerido) {
   const r = await fetch(absoluto(url), { headers: { 'x-chave': CHAVE() } })
   if (!r.ok) throw new Error(`não consegui baixar a mídia (${r.status})`)
@@ -50,7 +58,7 @@ async function fazTarefa(job, navegador) {
     // 08/11 (teste completo): o texto do anúncio vai pro vídeo (texto na tela quando não tem fala); layout e preço vêm da fila
     const base = { gancho: peca.gancho || '', cta: peca.cta || '', texto: peca.texto || '', nome: neg.nome || '', marca, logo, chave: peca.id, navegador, layout: tarefa.layout || null, preco: tarefa.preco || null }
     if (tarefa.ajuste) log('  pedido de ajuste: ' + String(tarefa.ajuste).slice(0, 200) + ' (a versão nova troca o layout)')
-    let saida, mime
+    let saida, mime, duracao = 0
     const arqMidia = midia && midia.url ? (await baixa(midia.url, path.join(pasta, 'midia'), midia.mime)).arq : null
     if (tarefa.tipo === 'arte') {
       if (!arqMidia) log('  sem foto do dono: a arte sai só com as cores da marca')
@@ -62,16 +70,21 @@ async function fazTarefa(job, navegador) {
       saida = path.join(pasta, 'video.mp4'); mime = 'video/mp4'
       const r = await editarVideo({ ...base, video: arqMidia, chaveDeepgram: process.env.DEEPGRAM_API_KEY, saida, pasta, log })
       log(`  vídeo pronto: ${r.duracao.toFixed(1)} s, ${(fs.statSync(saida).size / 1e6).toFixed(1)} MB`)
-      saida = cabeNoEnvio(saida, r.duracao)
+      duracao = r.duracao
     } else throw new Error('tipo de tarefa que a oficina não faz: ' + tarefa.tipo)
-    // em produção a fila manda um link de envio direto pro armazenamento (o vídeo não passa pela Vercel, que corta em ~4,5 MB);
-    // sem link (modo de teste local), vai junto, em base64
+    // 08/11 (T4, passo 5): a fila manda um link de envio direto pro armazenamento (o link assinado do Supabase; no modo local,
+    // o da própria API). A oficina faz o PUT do arquivo inteiro, sem compressão extra, e avisa só {tarefa_id, caminho}.
+    // Sistema antigo, sem link: vai junto em base64 (aí sim comprime pra caber no limite da Vercel, OFICINA_MAX_MB)
     const up = job.upload && job.upload[tarefa.tipo === 'video' ? 'video' : 'arte']
     if (up && up.url) {
-      const r = await fetch(up.url, { method: 'PUT', headers: { 'content-type': mime, 'x-upsert': 'true' }, body: fs.readFileSync(saida) })
+      const r = await tenta(absoluto(up.url), { method: 'PUT', headers: { 'content-type': mime, 'x-upsert': 'true' }, body: fs.readFileSync(saida) })
       if (!r.ok) throw new Error(`o armazenamento não aceitou o arquivo (${r.status}): ${(await r.text()).slice(0, 200)}`)
-      await devolve({ tarefa_id: tarefa.id, arquivo_path: up.caminho, mime })
-    } else await devolve({ tarefa_id: tarefa.id, arquivo_b64: fs.readFileSync(saida).toString('base64'), mime })
+      log(`  enviado direto pro armazenamento (${(fs.statSync(saida).size / 1e6).toFixed(1)} MB)`)
+      await devolve({ tarefa_id: tarefa.id, caminho: up.caminho })
+    } else {
+      if (tarefa.tipo === 'video') saida = cabeNoEnvio(saida, duracao)
+      await devolve({ tarefa_id: tarefa.id, arquivo_b64: fs.readFileSync(saida).toString('base64'), mime })
+    }
     log('  entregue ✔')
   } catch (e) {
     log('  deu erro: ' + e.message)
@@ -115,7 +128,7 @@ async function descreveVideo(d) {
 }
 
 async function devolve(corpo) {
-  const r = await fetch(URL_BASE() + '/api/maia/oficina', { method: 'POST', headers: { 'content-type': 'application/json', 'x-chave': CHAVE() }, body: JSON.stringify(corpo) })
+  const r = await tenta(URL_BASE() + '/api/maia/oficina', { method: 'POST', headers: { 'content-type': 'application/json', 'x-chave': CHAVE() }, body: JSON.stringify(corpo) })
   if (!r.ok) throw new Error(`o sistema não aceitou a entrega (${r.status}): ${(await r.text()).slice(0, 200)}`)
 }
 

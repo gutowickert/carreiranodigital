@@ -1,5 +1,5 @@
 // Maia: banco e arquivos (03/11). O mesmo jeito do Oito (lib/oito/db.ts), com as tabelas maia_* e a pasta "maia" do storage.
-//   Supabase (produção): chave de serviço, só no servidor
+//   Supabase (produção): chave de serviço, só no servidor. 08/11 (T16): banco próprio da Maia com MAIA_SUPABASE_URL/_SERVICE_KEY
 //   local (MAIA_LOCAL=1): arquivos JSON em .maia-local/, pra testar tudo sem tocar no banco
 // Só igualdade nos filtros: o resto é feito em JS (a escala por negócio é pequena).
 import fs from 'node:fs'
@@ -15,7 +15,10 @@ type Opc = { ordem?: string; desc?: boolean; limite?: number; campos?: string }
 export const maiaLocal = () => process.env.MAIA_LOCAL === '1' && !process.env.VERCEL
 const PASTA = () => path.join(/*turbopackIgnore: true*/ process.cwd(), process.env.MAIA_LOCAL_PASTA || '.maia-local')
 
-const arq = (tab: string) => path.join(PASTA(), tab + '.json')
+// 08/11 (T4): a "assinatura" do link de envio no modo local (imita o link assinado do Supabase: só vale pra aquele caminho)
+export const assinaEnvioLocal = (caminho: string) => crypto.createHmac('sha256', 'maia-local-envio:' + (process.env.MAIA_OFICINA_CHAVE || '')).update(caminho).digest('hex').slice(0, 32)
+
+const arq = (tab: string) =>path.join(PASTA(), tab + '.json')
 const le = (tab: string): Linha[] => { try { return JSON.parse(fs.readFileSync(arq(tab), 'utf8')) } catch { return [] } }
 const grava = (tab: string, l: Linha[]) => { fs.mkdirSync(PASTA(), { recursive: true }); fs.writeFileSync(arq(tab), JSON.stringify(l, null, 1)) }
 const casa = (l: Linha, f: Filtro) => Object.entries(f).every(([k, v]) => (v === null ? l[k] == null : String(l[k]) === String(v)))
@@ -35,8 +38,12 @@ const PADRAO: Record<string, Linha> = {
 const SERIAL = new Set(['lead_eventos', 'eventos'])
 const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads'])
 
-const U = () => process.env.NEXT_PUBLIC_SUPABASE_URL as string
-const K = () => process.env.SUPABASE_SERVICE_ROLE_KEY as string
+// 08/11 (T16): o banco PRÓPRIO da Maia quando existir (MAIA_SUPABASE_URL + MAIA_SUPABASE_SERVICE_KEY, as duas juntas);
+// senão, o da escola, como até hoje. A cópia dos dados do banco antigo pro novo: scripts/maia-copiar-banco.mjs
+const proprio = () => !!(process.env.MAIA_SUPABASE_URL && process.env.MAIA_SUPABASE_SERVICE_KEY)
+const U = () => (proprio() ? process.env.MAIA_SUPABASE_URL : process.env.NEXT_PUBLIC_SUPABASE_URL) as string
+const K = () => (proprio() ? process.env.MAIA_SUPABASE_SERVICE_KEY : process.env.SUPABASE_SERVICE_ROLE_KEY) as string
+export const bancoDaMaia = () => (maiaLocal() ? 'local' : proprio() ? 'proprio' : 'escola')
 const H = (extra: Record<string, string> = {}) => ({ apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json', ...extra })
 async function req(caminho: string, opts: any = {}): Promise<any> {
   const r = await fetch(U() + caminho, { ...opts, headers: H(opts.headers), cache: 'no-store' })
@@ -143,11 +150,22 @@ export const maiaDb = {
     const j = await req(`/storage/v1/object/sign/maia/${caminho}`, { method: 'POST', body: JSON.stringify({ expiresIn: segundos }) })
     return U() + '/storage/v1' + j.signedURL
   },
-  // link de envio direto pro armazenamento (a oficina manda o vídeo sem passar pela Vercel). No modo local: null (vai em base64).
+  // link de envio direto pro armazenamento (a oficina manda o vídeo sem passar pela Vercel): o createSignedUploadUrl do Supabase
+  // (bucket maia, na pasta do negócio; vale 2 h). 08/11 (T4, passo 5): no modo local também tem link (a rota /api/maia/arquivo
+  // aceita PUT com a assinatura local), pra testar o mesmo caminho da produção. Relativo no modo local: a rota da oficina completa.
   async linkEnvio(caminho: string): Promise<string | null> {
-    if (maiaLocal()) return null
+    if (maiaLocal()) return `/api/maia/arquivo?p=${encodeURIComponent(caminho)}&envio=${assinaEnvioLocal(caminho)}`
     const j = await req(`/storage/v1/object/upload/sign/maia/${caminho}`, { method: 'POST', body: '{}', headers: { 'x-upsert': 'true' } })
     return U() + '/storage/v1' + j.url
+  },
+  // 08/11 (T4): o arquivo chegou mesmo no armazenamento? (a oficina diz que mandou: confere antes de aceitar a entrega)
+  async existe(caminho: string): Promise<boolean> {
+    if (maiaLocal()) return fs.existsSync(path.join(PASTA(), 'arquivos', caminho))
+    const i = caminho.lastIndexOf('/'), dir = caminho.slice(0, i), nome = caminho.slice(i + 1)
+    const r = await fetch(`${U()}/storage/v1/object/list/maia`, { method: 'POST', headers: H(), body: JSON.stringify({ prefix: dir, limit: 100, offset: 0, search: nome }) })
+    if (!r.ok) return false
+    const itens: any[] = await r.json().catch(() => [])
+    return itens.some(x => x?.name === nome)
   },
   arquivoLocal: (caminho: string) => path.join(PASTA(), 'arquivos', caminho),
 }

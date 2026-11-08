@@ -1,6 +1,9 @@
 // Maia: a fila da oficina (03/11). O trabalhador (maia-oficina/, com Chrome e ffmpeg, fora da Vercel) pergunta aqui o que fazer.
 //   GET  → a próxima tarefa (arte ou vídeo) com tudo que precisa: a peça, a marca do negócio e o link da mídia do dono
-//   POST {tarefa_id, arquivo_b64, mime} → guarda o resultado; a peça vai pra revisão da equipe.  {tarefa_id, erro} → tenta de novo (até 3)
+//   POST {tarefa_id, caminho} → a oficina já mandou o arquivo direto pro armazenamento (PUT no link "upload" do GET); a peça
+//        vai pra revisão da equipe. {tarefa_id, erro} → tenta de novo (até 3)
+//   08/11 (T4, passo 5): o modo antigo continua valendo enquanto a oficina antiga existir: {tarefa_id, arquivo_path, mime}
+//        (mesmo envio direto, nome antigo do campo) e {tarefa_id, arquivo_b64, mime} (o arquivo junto, até ~4,5 MB na Vercel)
 // Chave no cabeçalho x-chave (MAIA_OFICINA_CHAVE).
 import { maiaDb as db } from '@/lib/maia/db'
 import { oficinaOk, naoAutorizado } from '@/lib/maia/acesso'
@@ -32,9 +35,11 @@ export async function GET(req: Request) {
   const logo = neg?.marca?.logo_path ? await db.link(neg.marca.logo_path) : null
   // onde a oficina vai deixar o resultado (envio direto pro armazenamento; no modo local não tem e vai em base64)
   const base = `${t.negocio_id}/pecas/${t.peca_id}-${Date.now()}`
+  // no modo local o link vem relativo (/api/maia/arquivo?...&envio=): ganha o endereço do sistema
+  const comOrigem = (u: string | null) => (u && u.startsWith('/') ? new URL(req.url).origin + u : u)
   const upload = t.tipo === 'video'
-    ? { video: { caminho: base + '.mp4', url: await db.linkEnvio(base + '.mp4') } }
-    : { arte: { caminho: base + '.jpg', url: await db.linkEnvio(base + '.jpg') } }
+    ? { video: { caminho: base + '.mp4', url: comOrigem(await db.linkEnvio(base + '.mp4')) } }
+    : { arte: { caminho: base + '.jpg', url: comOrigem(await db.linkEnvio(base + '.jpg')) } }
   return Response.json({
     upload,
     // 08/11 (teste completo): o layout escolhido no lote (8e) e o preço da base em destaque (8d)
@@ -56,13 +61,18 @@ export async function POST(req: Request) {
   const t = await db.um('tarefas', { id: b.tarefa_id })
   if (!t) return Response.json({ erro: 'tarefa não existe' }, { status: 404 })
   if (b.erro) { await oficinaEntregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }
-  // a oficina já mandou direto pro armazenamento: só confere que o caminho é desta tarefa
-  if (b.arquivo_path) {
-    if (!String(b.arquivo_path).startsWith(`${t.negocio_id}/pecas/${t.peca_id}-`)) return Response.json({ erro: 'caminho não é desta tarefa' }, { status: 400 })
-    await oficinaEntregou(t, { caminho: String(b.arquivo_path), mime: b.mime || 'image/jpeg' })
+  // a oficina já mandou direto pro armazenamento: confere que o caminho é desta tarefa e que o arquivo chegou mesmo
+  const caminho = b.caminho || b.arquivo_path
+  if (caminho) {
+    const c = String(caminho)
+    if (!c.startsWith(`${t.negocio_id}/pecas/${t.peca_id}-`) || c.includes('..')) return Response.json({ erro: 'caminho não é desta tarefa' }, { status: 400 })
+    if (!(await db.existe(c))) return Response.json({ erro: 'o arquivo não chegou no armazenamento' }, { status: 400 })
+    await oficinaEntregou(t, { caminho: c, mime: b.mime || (/\.mp4$/.test(c) ? 'video/mp4' : /\.png$/.test(c) ? 'image/png' : 'image/jpeg') })
+    await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: b.caminho ? 'link' : 'link (campo antigo)' })
     return Response.json({ ok: true })
   }
   if (!b.arquivo_b64) return Response.json({ erro: 'sem arquivo' }, { status: 400 })
   await oficinaEntregou(t, { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/png' })
+  await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: 'base64 (oficina antiga)' })
   return Response.json({ ok: true })
 }

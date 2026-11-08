@@ -31,10 +31,13 @@ async function ver(acao, q = {}) {
 const fala = (r) => (r?.respondeu?.mensagens || []).join(' / ')
 const ferr = (r) => (r?.respondeu?.ferramentas || [])
 const cliente = (negocio_id, telefone, nome, texto, extra = {}) => op('simular_cliente', { negocio_id, telefone, nome, texto, ...extra })
+// 08/11: chamada que depende da IA de verdade: se a IA falhar (sem crédito, fora do ar), anota e segue (as conferências que dependem dela falham sozinhas)
+const semIA = (p) => p.catch(e => { console.log('    (a IA falhou aqui: ' + String(e.message).slice(0, 90) + ')'); return null })
 const b64 = (n = 2048) => Buffer.from(Array.from({ length: n }, (_, i) => (i * 37) % 256)).toString('base64')
 const cvDe = async (negocio, tel) => (await ver('conversas', { negocio })).find(c => c.telefone === tel)
 const msgsDe = async (cv) => cv ? ver('msgs', { conversa: cv.id }) : []
 const hojeAs = (h) => new Date().toISOString().slice(0, 10) + `T${String(h + 3).padStart(2, '0')}:00:00.000Z`   // h em Brasília (UTC-3)
+const PEDE_DETALHE = /\b(me (conta|conte|diz|diga|explica|explique|fala|fale|passa|manda|mande)|pode(ria)? (me )?(contar|dizer|explicar|detalhar|adiantar)|o que (aconteceu|houve))\b/i
 const TU = /\b(tu|teu|tua|teus|tuas|contigo)\b/i
 
 async function main() {
@@ -43,6 +46,8 @@ async function main() {
   if (res.modo !== 'local') throw new Error('o sistema NÃO está em modo local: teste cancelado pra não mexer no banco')
   if (res.meta_real) throw new Error('Meta real ligada: teste cancelado')
   anota(true, 'modo local, Meta simulada')
+  // SO_PENDENCIAS=1: roda só as conferências das pendências de 08/11 (pra conferir rápido; o teste completo roda tudo)
+  if (process.env.SO_PENDENCIAS === '1') { await pendencias0811(); const f = relatorio.filter(x => !x.ok); log(`\n${relatorio.length - f.length} de ${relatorio.length} conferências passaram.`); return }
 
   const A = await op('criar_negocio', { nome: 'Bocadinho (teste piloto)', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Lia', dono_whatsapp: '5500077779001', plano: 'essencial',
     contexto: { produtos: 'Cookies artesanais. Caixa com 6 cookies R$ 45. Caixa com 12 cookies R$ 85. Sabores: chocolate, red velvet, pistache.', pagamento: 'pix ou cartão na retirada', entrega: 'retirada em Estrela; entrega em Estrela por R$ 8', horario: 'encomendas com 1 dia de antecedência' } })
@@ -145,23 +150,23 @@ async function main() {
   r = await op('simular_dono', { negocio_id: A.id, texto: 'Faço sim, sem glúten a caixa com 6 sai R$ 55.' })
   log('    dono: Faço sim, sem glúten a caixa com 6 sai R$ 55.\n    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
   let mG = await msgsDe(await cvDe(A.id, T6))
-  anota(ferr(r).includes('responder_cliente') && mG.some(m => /^\(modelo maia_resposta\)/.test(m.texto)) && mG.some(m => m.status === 'na_fila'), 'dono respondeu depois de 24 h: saiu o modelo maia_resposta e a resposta ficou na fila')
+  anota(ferr(r).includes('responder_cliente') && mG.some(m => /^\(modelo maia_resposta_voce\)/.test(m.texto)) && mG.some(m => m.status === 'na_fila'), 'dono respondeu depois de 24 h: saiu o modelo maia_resposta_voce (negócio em "você") e a resposta ficou na fila')
   r = await cliente(A.id, T6, 'Gabi', 'Pode mandar')
   mG = await msgsDe(await cvDe(A.id, T6))
   anota(!r.respondeu && !mG.some(m => m.status === 'na_fila') && mG.some(m => /55/.test(m.texto) && m.status === 'enviado'), 'o cliente respondeu: a resposta guardada foi entregue (e a Maia não respondeu por cima)')
 
-  await op('teste_modelos_status', { negocio_id: A.id, status: { maia_resposta: 'PENDING' } })
+  await op('teste_modelos_status', { negocio_id: A.id, status: { maia_resposta: 'PENDING', maia_resposta_voce: 'PENDING' } })
   const cvAna = await cvDe(A.id, T1)
   await op('teste_fechar_janela', { conversa_id: cvAna.id })
   const qtdDono = (await msgsDe(donoA)).length
   const env = await op('mandar_ao_cliente', { negocio_id: A.id, conversa_id: cvAna.id, texto: 'Oi Ana, aqui é a equipe: a entrega em Estrela sai amanhã às 10h.' })
   const donoDepois = await msgsDe(donoA)
-  anota(env.na_fila && env.modelo === null && !(await msgsDe(cvAna)).some(m => /^\(modelo maia_resposta\)/.test(m.texto)), 'modelo NÃO aprovado: nada de modelo, a mensagem ficou guardada')
+  anota(env.na_fila && env.modelo === null && !(await msgsDe(cvAna)).some(m => /^\(modelo maia_resposta(_voce)?\)/.test(m.texto)), 'modelo NÃO aprovado: nada de modelo, a mensagem ficou guardada')
   anota(donoDepois.length > qtdDono && /ficou guardada/.test(donoDepois.slice(-1)[0].texto), 'o dono foi avisado (e a equipe, em aviso_equipe)')
   anota(tab('eventos').some(e => e.tipo === 'aviso_equipe' && e.negocio_id === A.id && /maia_resposta não aprovado/.test(e.detalhe?.titulo || '')), 'a equipe foi avisada do modelo não aprovado')
   const ehOutroNeg = await opErro('mandar_ao_cliente', { negocio_id: B.id, conversa_id: cvAna.id, texto: 'x' })
   anota(!!ehOutroNeg, 'a equipe não manda mensagem numa conversa de outro negócio')
-  await op('teste_modelos_status', { negocio_id: A.id, status: { maia_resposta: 'APPROVED' } })
+  await op('teste_modelos_status', { negocio_id: A.id, status: { maia_resposta: 'APPROVED', maia_resposta_voce: 'APPROVED' } })
 
   // ---------- 5. volta pra Maia: 24 h sem ninguém, e "devolve pra Maia" do dono ----------
   log('\n=== conversa volta pra Maia')
@@ -248,6 +253,8 @@ async function main() {
 
   // ---------- 08/11: as correções do TESTE COMPLETO da Maia em produção (testes/maia-08-11) ----------
   await correcoes0811()
+  // ---------- 08/11 (tarde): as pendências de código antes da passagem pro Nando ----------
+  await pendencias0811()
 
   const falhas = relatorio.filter(x => !x.ok)
   log(`\n${relatorio.length - falhas.length} de ${relatorio.length} conferências passaram.`)
@@ -289,6 +296,8 @@ async function correcoes0811() {
   anota(!(await leadDe('5500044440101')).proximo_followup_em, '1. conversa com gente não fica com retomada automática marcada')
   r = await cliente(C.id, '5500044440102', 'Rafael', 'Quero meu dinheiro de volta.')
   anota((await cvDe(C.id, '5500044440102')).modo === 'humano', '1. "quero meu dinheiro de volta": passou pro dono')
+  log('    Rafael: Quero meu dinheiro de volta.\n    maia: ' + fala(r))
+  anota(!PEDE_DETALHE.test(fala(r)), 'P1. na passagem (devolução) a Maia não pede detalhes ao cliente (quem responde é o dono)')
 
   // 4. áudio normal, respondido certo: NÃO passa pro dono
   r = await cliente(C.id, '5500044440103', 'Tiago', '', { arquivo_b64: b64(), mime: 'audio/ogg', simulado: { transcricao: 'Oi, tudo bem. Eu queria saber se vocês entregam em Lajeado, e quanto fica a entrega. Queria 1 caixa de 4 cookies.' } })
@@ -388,5 +397,138 @@ async function correcoes0811() {
   const base = (C.nome + JSON.stringify(C.contexto)).toLowerCase()
   const daFoto = [...new Set(tab('midias').filter(m => m.negocio_id === C.id).flatMap(m => [...String(m.descricao || '').matchAll(/(?<=[\p{L},;]\s)(\p{Lu}\p{Ll}{3,})/gu)].map(x => x[1])).filter(w => !base.includes(w.toLowerCase())))]
   anota(ps.every(p => !daFoto.some(n => new RegExp(n, 'i').test(`${p.gancho} ${p.texto} ${p.cta}`))), '8c. nenhum nome que só aparece na foto entrou no anúncio (' + (daFoto.join(', ') || 'nenhum na foto') + ')')
+}
+// 08/11 (tarde): uma conferência pra cada pendência de código (PASSAGEM-NANDO, seção 5)
+async function pendencias0811() {
+  log('\n=== 08/11 (tarde): pendências de código')
+  const fn = (texto, extra = {}) => op('teste_funcoes', { texto, ...extra })
+  const sd = await fn('Entendo, sinto muito! Vou passar sua conversa pra uma pessoa da equipe. Enquanto isso, pode me contar o que aconteceu com o pedido?')
+  anota(/passar sua conversa/.test(sd.sem_detalhe) && !/aconteceu/.test(sd.sem_detalhe), 'P1. na passagem, a frase que pede detalhe sai: "' + sd.sem_detalhe + '"')
+  // P2. legenda de post (social) no tom do negócio ("você")
+  const S = await op('criar_negocio', { nome: 'Doceria Social (teste pendências)', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Sol', dono_whatsapp: '5500077779011', plano: 'completa', contexto: { produtos: 'cookies artesanais; caixa com 6 R$ 45' } })
+  const soc = async (acao, corpo) => { const x = await fetch(URL_ + '/api/maia/social', { method: 'POST', headers: { 'x-senha': SENHA, 'content-type': 'application/json' }, body: JSON.stringify({ acao, ...corpo }) }); return x.json() }
+  const quandoPost = new Date(Date.now() + 3 * 86400e3).toISOString().slice(0, 16)
+  await soc('criar_post', { negocio_id: S.id, quando: quandoPost, tipo: 'foto', midias: [{ url: 'https://exemplo.com/cookie.jpg', tipo: 'foto' }], legenda: 'Ó, tu já provou o nosso cookie de pistache? Pede o teu pelo WhatsApp!', tema: 'pistache' })
+  const postS = tab('pecas').find(p => p.negocio_id === S.id)
+  anota(postS && !TU.test(postS.texto) && /Peça seu/.test(postS.texto), 'P2. legenda escrita em "tu" num negócio "você" foi acertada: "' + (postS?.texto || '-') + '"')
+  if (postS) {
+    await semIA(op('ajustar_peca', { peca_id: postS.id, nota: 'deixa mais curta e convida pra encomendar a caixa com 6' }))
+    const p2 = tab('pecas').find(p => p.id === postS.id)
+    log('    legenda refeita pela IA: ' + (p2?.texto || '-').replace(/\n+/g, ' / '))
+    anota(p2 && p2.versao > 1 && !TU.test(p2.texto), 'P2. a legenda refeita pela IA saiu em "você"')
+  }
+  // P3 (T2). modelos "você": pedidos na conexão (e pelo painel) e escolhidos pelo tom no envio
+  const pm = await op('pedir_modelos_negocio', { negocio_id: S.id })
+  const nomes = (pm.modelos || []).map(m => m.nome)
+  anota(['maia_retomada', 'maia_resposta', 'maia_retomada_voce', 'maia_resposta_voce'].every(x => nomes.includes(x)) && pm.modelos.every(m => m.status === 'simulado'), 'P3. pedir_modelos_negocio pede as 4 versões (tu e você), simulado no modo local: ' + nomes.join(', '))
+  const mv = (pm.modelos || []).filter(m => /_voce$/.test(m.nome))
+  anota(mv.length === 2 && mv.every(m => !TU.test(m.texto) && /Você|sua/.test(m.texto)), 'P3. as versões _voce falam "você" ("Você tinha falado...", "da sua pergunta")')
+  anota(tab('eventos').some(e => e.tipo === 'modelos_pedidos' && e.negocio_id === S.id && e.detalhe?.simulado), 'P3. o pedido ficou anotado (modelos_pedidos), sem ir pra Meta')
+  anota((await fn('x', { tom: { pessoa: 'voce' } })).modelo_retomada === 'maia_retomada_voce' && (await fn('x', { tom: { pessoa: 'tu' } })).modelo_retomada === 'maia_retomada', 'P3. retomada fora das 24 h: "você" → maia_retomada_voce; "tu" → maia_retomada')
+  const Tn = await op('criar_negocio', { nome: 'Barbearia Tu (teste pendências)', nicho: 'barbearia', cidade: 'Lajeado', dono_nome: 'Leo', dono_whatsapp: '5500077779012', contexto: { servicos: 'corte R$ 40' } })
+  await op('config_atendimento', { negocio_id: Tn.id, tom: { pessoa: 'tu', gaucho: true } })
+  await semIA(cliente(Tn.id, '5500044440301', 'Caio', 'Oi, quanto é o corte?'))
+  const cvCaio = await cvDe(Tn.id, '5500044440301')
+  await op('teste_fechar_janela', { conversa_id: cvCaio.id })
+  const envTu = await op('mandar_ao_cliente', { negocio_id: Tn.id, conversa_id: cvCaio.id, texto: 'Oi Caio, aqui é a equipe: amanhã tem horário às 10h.' })
+  anota(envTu.modelo === 'maia_resposta' && (await msgsDe(cvCaio)).some(m => /^\(modelo maia_resposta\)/.test(m.texto)), 'P3. negócio em "tu": a resposta depois de 24 h vai pelo maia_resposta')
+  await semIA(cliente(S.id, '5500044440302', 'Duda', 'Oi, a caixa com 6 é quanto?'))
+  const cvDuda = await cvDe(S.id, '5500044440302')
+  await op('teste_fechar_janela', { conversa_id: cvDuda.id })
+  await op('teste_modelos_status', { negocio_id: S.id, status: { maia_resposta_voce: 'PENDING', maia_resposta: 'APPROVED' } })
+  const envV = await op('mandar_ao_cliente', { negocio_id: S.id, conversa_id: cvDuda.id, texto: 'Oi Duda, aqui é a equipe: a caixa com 6 sai R$ 45.' })
+  anota(envV.modelo === 'maia_resposta', 'P3. negócio em "você" com o _voce ainda não aprovado: usa o outro aprovado (a resposta não fica presa)')
+  // P4 (T11). modelo misto: resposta comum no barato; decisão de venda/passagem refeita no forte; as duas chamadas no custo
+  const usoCli = tab('eventos').filter(e => e.tipo === 'uso_ia' && e.detalhe?.tipo === 'cliente')
+  const fases = (f, m) => usoCli.filter(e => e.detalhe?.fase === f && (!m || String(e.detalhe?.modelo).includes(m))).length
+  anota(fases('barato', 'haiku') > 0 && fases('direto', 'sonnet') > 0, `P4. resposta comum no haiku (${fases('barato', 'haiku')} chamadas) e pedido de pessoa/devolução direto no sonnet (${fases('direto', 'sonnet')})`)
+  anota(fases('refeito', 'sonnet') > 0, `P4. decisão de venda (proposta/ganho/perdido) refeita no sonnet: ${fases('refeito', 'sonnet')} chamadas anotadas`)
+  const ci = await ver('custo_ia', { dias: 1 })
+  log('    custo do cliente por modelo: ' + JSON.stringify(ci.cliente_por_modelo) + ' · por conversa: R$ ' + ci.cliente_reais_por_conversa)
+  anota(Object.keys(ci.cliente_por_modelo || {}).some(k => /haiku.*barato/.test(k)) && Object.keys(ci.cliente_por_modelo || {}).some(k => /sonnet/.test(k)), 'P4. custo_ia separa o custo do cliente por modelo e fase')
+  // P5 (T12). a tabela de itens que ficaram de fora
+  log('\n=== T12')
+  // tom nos anúncios: já conferido acima ("2. as peças saíram em você", com FOTOS=) e no CTA sem IA
+  anota((await fn('Pede o teu orçamento no WhatsApp', { tom: { pessoa: 'voce' } })).cta === 'Peça seu orçamento no WhatsApp', 'P5. tom nos anúncios: CTA no "você" (o texto das peças usa tomDoNegocio desde 08/11)')
+  // limite de 40 respostas por conversa por dia + nome [apagado] nos recados e avisos
+  await semIA(cliente(S.id, '5500044440303', 'Zuleica Prado', 'Oi, vocês fazem caixa de presente?'))
+  const cvZu =await cvDe(S.id, '5500044440303')
+  await op('teste_respostas_hoje', { conversa_id: cvZu.id, n: 40 })
+  const rz = await cliente(S.id, '5500044440303', 'Zuleica Prado', 'E mais uma pergunta...')
+  const cvZu2 = await cvDe(S.id, '5500044440303')
+  anota(rz?.respondeu?.limite && cvZu2.modo === 'humano', 'P5. passou de 40 respostas hoje: a conversa foi pro dono (modo humano), sem chamar a IA')
+  anota(tab('eventos').some(e => e.tipo === 'aviso_equipe' && e.negocio_id === S.id && /passou do limite/.test(e.detalhe?.titulo || '') && /Zuleica/.test(e.detalhe?.texto || '')), 'P5. a equipe foi avisada da conversa longa')
+  const donoS = async () => msgsDe((await ver('conversas', { negocio: S.id })).find(c => c.canal === 'dono'))
+  anota((await donoS()).some(m => /Zuleica Prado/.test(m.texto)), 'P5. (antes de apagar) o recado pro dono tem o nome dela')
+  await op('apagar_contato', { negocio_id: S.id, conversa_id: cvZu2.id, confirmar: true })
+  anota(!(await donoS()).some(m => /Zuleica|5500044440303/.test(m.texto)) && (await donoS()).some(m => /\[apagado\]/.test(m.texto)), 'P5. apagar contato: nome e telefone viraram [apagado] nos recados pro dono')
+  anota(!tab('eventos').some(e => e.tipo === 'aviso_equipe' && /Zuleica/.test(JSON.stringify(e.detalhe || {}))), 'P5. apagar contato: o nome sumiu também dos avisos da equipe (aviso_equipe)')
+  anota((await fn('Pra Helena: caixa de 8 não tenho. A Helenita quer 2.', { nome: 'Helena Souza', outros: ['Ana Lima'] })).tira_nome === 'Pra [apagado]: caixa de 8 não tenho. A Helenita quer 2.' && (await fn('Pra Ana: oi', { nome: 'Ana Souza', outros: ['Ana Lima'] })).tira_nome === 'Pra Ana: oi', 'P5. o primeiro nome sozinho só sai se nenhum outro contato do negócio tem o mesmo nome')
+  // botões "Fechou" / "Não fechou" na pergunta das 18h + resumo do negócio em piloto (implantação)
+  const Pv0 = await op('criar_negocio', { nome: 'Negócio Vazio (teste pendências)', nicho: 'loja', cidade: 'Estrela', dono_nome: 'Zé', dono_whatsapp: '5500077779014' })
+  const lp = await op('lead_novo', { negocio_id: S.id, nome: 'Vera', telefone: '5500044440304', produto: 'caixa com 6' })
+  await op('lead_etapa', { lead_id: lp.id, etapa: 'proposta', valor: 45, produto: 'caixa com 6' })
+  const rotS = await op('rodar_rotina', { forcar_relatorio: true, relogio: hojeAs(18) })
+  const btn = (await donoS()).filter(m => m.tipo === 'botoes' && /Vera/.test(m.texto))
+  anota(btn.length === 1 && /\[Fechou\] \[Não fechou\]/.test(btn[0].texto), 'P5. a pergunta das 18h foi com os botões: ' + (btn[0]?.texto || '-'))
+  const clique = await op('simular_dono', { negocio_id: S.id, botao: { id: `venda:${lp.id}:sim`, titulo: 'Fechou' } })
+  const vera = (await ver('leads', { negocio: S.id })).find(l => l.id === lp.id)
+  anota(clique.venda?.etapa === 'ganho' && vera.etapa === 'ganho' && Number(vera.valor) === 45 && !clique.respondeu, 'P5. o clique em "Fechou" virou venda de R$ 45 na hora (sem IA)')
+  const leadTn = await op('lead_novo', { negocio_id: Tn.id, nome: 'Outro', telefone: '5500044440305' })
+  await op('lead_etapa', { lead_id: leadTn.id, etapa: 'proposta' })
+  const intruso = await semIA(op('simular_dono', { negocio_id: S.id, botao: { id: `venda:${leadTn.id}:nao`, titulo: 'Não fechou' } }))
+  anota(!intruso?.venda && (await ver('leads', { negocio: Tn.id })).find(l => l.id === leadTn.id).etapa === 'proposta', 'P5. botão com contato de OUTRO negócio não mexe em nada')
+  const negS = await ver('negocio', { id: S.id })
+  const resumoP = await op('teste_resumo_negocios')
+  anota(negS.status === 'implantacao' && resumoP.some(x => x.id === S.id) && !resumoP.some(x => x.id === Pv0.id), 'P5. o resumo da semana inclui o negócio em piloto (implantação, com contatos na semana); o recém-criado sem nada fica de fora')
+  log('    resumos gerados nessa rotina: ' + (rotS.relatorios || []).length + (rotS.relatorios_erro ? ' (erro: ' + rotS.relatorios_erro.slice(0, 80) + ')' : ''))
+  // aviso de privacidade: o do próprio negócio, sem repetir
+  const avB = await fn('x', { contexto: { privacidade: 'Seus dados são usados só pra este atendimento, conforme a LGPD. Peça pra apagar quando quiser.' } })
+  anota(/conforme a LGPD/.test(avB.aviso || '') && !/Um aviso rápido/.test(avB.aviso || ''), 'P5. a base tem aviso próprio: a Maia usa esse (e não o padrão por cima)')
+  anota((await fn('Oi! Seus dados ficam guardados conforme a LGPD.')).ja_avisa && !(await fn('Oi! A caixa com 6 sai R$ 45.')).ja_avisa, 'P5. se a resposta da IA já avisou da privacidade, o aviso do sistema não vai junto')
+  const Pv = await op('criar_negocio', { nome: 'Ótica Própria (teste pendências)', nicho: 'ótica', cidade: 'Lajeado', dono_nome: 'Ivo', dono_whatsapp: '5500077779013', contexto: { servicos: 'exame de vista R$ 80', privacidade: 'Aviso da Ótica Própria: seus dados são usados só pra este atendimento, conforme a LGPD. Peça pra apagar quando quiser.' } })
+  const rpv = await semIA(cliente(Pv.id, '5500044440306', 'Nina', 'Quanto é o exame de vista?'))
+  const mpv = await msgsDe(await cvDe(Pv.id, '5500044440306'))
+  log('    Nina: Quanto é o exame de vista?\n    maia: ' + fala(rpv))
+  anota(mpv.filter(m => m.autor === 'maia' && /LGPD|privacidade/i.test(m.texto)).length === 1 && !mpv.some(m => /Um aviso rápido/.test(m.texto)), 'P5. na conversa, o aviso de privacidade saiu 1 vez (o próprio do negócio) e o padrão não')
+  // resposta em áudio (ElevenLabs): desligada por padrão; com MAIA_VOZ_RESPOSTA=1 no servidor, gera o arquivo .ogg
+  const tv = await op('teste_voz', { negocio_id: S.id, texto: 'Oi! A caixa com 6 cookies sai R$ 45. Quer que eu anote o seu pedido?' }).catch(e => ({ erro: e.message }))
+  const arqV = tv.caminho ? path.join(PASTA, 'arquivos', tv.caminho) : ''
+  anota(arqV && fs.existsSync(arqV) && fs.statSync(arqV).size > 1000 && /\.ogg$/.test(arqV), 'P5. ElevenLabs: o áudio da resposta foi gerado e guardado (' + (arqV ? path.basename(arqV) + ', ' + fs.statSync(arqV).size + ' bytes' : tv.erro || 'sem arquivo: falta ELEVENLABS_API_KEY?') + ')')
+  const voz = (await fn('x')).voz_ligada
+  const ra = await semIA(cliente(S.id, '5500044440307', 'Otto', '', { arquivo_b64: b64(), mime: 'audio/ogg', simulado: { transcricao: 'Oi, quanto é a caixa com 6 cookies?' } }))
+  const mOt =await msgsDe(await cvDe(S.id, '5500044440307'))
+  if (!voz) anota(!ra?.respondeu?.audio && mOt.some(m => m.autor === 'maia' && m.tipo === 'texto' && /45/.test(m.texto)) && !mOt.some(m => m.autor === 'maia' && m.tipo === 'audio'), 'P5. voz desligada (padrão): o cliente mandou áudio e a resposta foi em texto')
+  else {
+    const arq = ra?.respondeu?.audio ? path.join(PASTA, 'arquivos', ra.respondeu.audio) : ''
+    anota(arq && fs.existsSync(arq) && fs.statSync(arq).size > 1000 && mOt.some(m => m.autor === 'maia' && m.tipo === 'audio' && /45/.test(m.texto)), 'P5. voz ligada: a resposta virou áudio (ElevenLabs) e o arquivo foi gerado: ' + (arq ? path.basename(arq) + ' ' + (fs.existsSync(arq) ? fs.statSync(arq).size : 0) + ' bytes' : '-'))
+  }
+  // P6. o campo dos dias que o negócio abre tem tela no painel da equipe (o clique de verdade: scripts/maia-teste-tela-equipe.mjs)
+  const htmlOp = await (await fetch(URL_ + '/maia/operacao/')).text()
+  anota(/name="dias"/.test(htmlOp) && /Dias que o negócio abre/.test(htmlOp) && /c\.dias=new FormData\(f\)\.getAll\('dias'\)/.test(htmlOp), 'P6. painel da equipe: o campo "dias que o negócio abre" está na tela e vai no config_atendimento')
+  // P7 (T4, passo 5). a oficina entrega por link de envio direto ({tarefa_id, caminho}); o modo antigo (base64) continua valendo
+  const CHO = { 'x-chave': process.env.OFICINA || 'oficina123' }
+  const JPG = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64')
+  const pegaMinha = async (tid) => { for (let i = 0; i < 40; i++) { const j = await (await fetch(URL_ + '/api/maia/oficina', { headers: CHO })).json(); if (!j.tarefa) return null; if (j.tarefa.id === tid) return j } return null }
+  const tk1 = await op('teste_tarefa_oficina', { negocio_id: S.id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' })
+  const job = await pegaMinha(tk1.tarefa_id)
+  const up = job?.upload?.arte
+  anota(up?.url && /^http/.test(up.url) && /envio=/.test(up.url) && up.caminho.startsWith(S.id + '/pecas/'), 'P7. a fila dá o link de envio direto na pasta do negócio: ' + (up?.caminho || '-'))
+  const ruim = await fetch(up.url.replace(/envio=\w+/, 'envio=errada'), { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: JPG })
+  const naoChegou = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk1.tarefa_id, caminho: up.caminho }) })
+  anota(ruim.status === 403 && naoChegou.status === 400, 'P7. link com assinatura errada é recusado, e avisar sem o arquivo ter chegado também')
+  const put = await fetch(up.url, { method: 'PUT', headers: { 'content-type': 'image/jpeg', 'x-upsert': 'true' }, body: JPG })
+  const entrega = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk1.tarefa_id, caminho: up.caminho }) })
+  const pc1 = tab('pecas').find(p => p.id === tk1.peca_id)
+  anota(put.ok && entrega.ok && pc1?.status === 'revisao_equipe' && pc1.arquivo_path === up.caminho && fs.existsSync(path.join(PASTA, 'arquivos', up.caminho)), 'P7. PUT do arquivo + POST só com {tarefa_id, caminho}: a peça foi pra revisão da equipe com o arquivo')
+  const tk2 = await op('teste_tarefa_oficina', { negocio_id: S.id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' })
+  await pegaMinha(tk2.tarefa_id)
+  const antigo = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk2.tarefa_id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' }) })
+  const pc2 = tab('pecas').find(p => p.id === tk2.peca_id)
+  anota(antigo.ok && pc2?.status === 'revisao_equipe' && pc2.arquivo_path, 'P7. a oficina antiga (arquivo em base64) continua sendo aceita')
+  const outro = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk2.tarefa_id, caminho: Tn.id + '/pecas/x.jpg' }) })
+  anota(outro.status === 400, 'P7. caminho de outro negócio é recusado')
+  // P8 (T16). o painel mostra qual banco a Maia usa (local aqui; "proprio" com MAIA_SUPABASE_URL/_SERVICE_KEY; senão "escola")
+  anota((await ver('resumo')).banco === 'local', 'P8. o resumo diz qual banco a Maia está usando (aqui: local)')
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })

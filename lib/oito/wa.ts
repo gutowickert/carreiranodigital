@@ -51,6 +51,8 @@ export function enviaModelo(para: string, nome: string, idioma: string, corpo: s
 export const enviaImagem = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'image', image: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
 // 03/11 (Maia): o vídeo editado vai pro dono aprovar
 export const enviaVideo = (para: string, link: string, legenda?: string) => manda({ to: fone(para), type: 'video', video: { link, ...(legenda ? { caption: legenda.slice(0, 1000) } : {}) } })
+// 08/11 (Maia): mensagem com botões de resposta rápida (até 3; só dentro da janela de 24 h). O clique volta com o id do botão
+export const enviaBotoes = (para: string, texto: string, botoes: { id: string; titulo: string }[]) => manda({ to: fone(para), type: 'interactive', interactive: { type: 'button', body: { text: texto.slice(0, 1024) }, action: { buttons: botoes.slice(0, 3).map(b => ({ type: 'reply', reply: { id: b.id.slice(0, 256), title: b.titulo.slice(0, 20) } })) } } })
 
 // 02/11 (Maia): sobe um arquivo (o áudio da Maia, em Ogg Opus) pra Meta e manda como áudio de WhatsApp
 export async function sobeMidia(buf: Buffer, mime: string, nome: string): Promise<{ ok: boolean; id?: string; erro?: string }> {

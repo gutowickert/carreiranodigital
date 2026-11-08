@@ -8,11 +8,13 @@ import type { MidiaSimulada } from './midia-cliente'
 let seq = 0
 const wamid = () => 'simin-' + Date.now() + '-' + (++seq)
 
-export async function comoDono(negocio_id: string, d: { texto?: string; arquivo?: { buf: Buffer; mime: string; legenda?: string }; reacao?: { emoji: string; wamid: string } }) {
+export async function comoDono(negocio_id: string, d: { texto?: string; arquivo?: { buf: Buffer; mime: string; legenda?: string }; reacao?: { emoji: string; wamid: string }; botao?: { id: string; titulo?: string } }) {
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
   let m: any
   if (d.reacao) m = { id: wamid(), type: 'reaction', reaction: { emoji: d.reacao.emoji, message_id: d.reacao.wamid } }
+  // 08/11 (T12): o clique num botão de resposta rápida (o mesmo formato que a Meta manda)
+  else if (d.botao) m = { id: wamid(), type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: d.botao.id, title: d.botao.titulo || '' } } }
   else if (d.arquivo) m = /video/.test(d.arquivo.mime) ? { id: wamid(), type: 'video', video: { caption: d.arquivo.legenda } } : /audio/.test(d.arquivo.mime) ? { id: wamid(), type: 'audio', audio: {} } : { id: wamid(), type: 'image', image: { caption: d.arquivo.legenda } }
   else m = { id: wamid(), type: 'text', text: { body: d.texto || '' } }
   const r = await recebeDoDono(neg, m, neg.dono_nome, d.arquivo ? { buf: d.arquivo.buf, mime: d.arquivo.mime } : undefined)
@@ -20,7 +22,7 @@ export async function comoDono(negocio_id: string, d: { texto?: string; arquivo?
   // a mídia sozinha não pede resposta na hora (o dono costuma mandar várias): o teste chama responder quando quiser
   if (d.arquivo && !/audio/.test(d.arquivo.mime)) return { recebido: r.texto, respondeu: null }
   const resp = r.responder ? await respondeDono(r.cv.id) : null
-  return { recebido: r.texto, respondeu: resp }
+  return { recebido: r.texto, respondeu: resp, ...((r as any).venda ? { venda: (r as any).venda } : {}) }
 }
 
 export async function responderDono(negocio_id: string) {

@@ -5,8 +5,8 @@
 // chamando ele (MAIA_MODELO_DONO) e, quando ele responde, a fila é entregue (soltaFilaDoDono, chamada na entrada do dono).
 // Telefones de simulação (começam com 55000) nunca saem pra Meta (mesma regra do Oito).
 import { maiaDb as db, maiaLocal } from './db'
-import { enviaTexto, enviaImagem, enviaVideo, enviaModelo, fone, ehSimulado } from '@/lib/oito/wa'
-import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVideoNeg, enviaModeloNeg } from './wa-negocio'
+import { enviaTexto, enviaImagem, enviaVideo, enviaModelo, enviaBotoes, fone, ehSimulado } from '@/lib/oito/wa'
+import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVideoNeg, enviaModeloNeg, enviaAudioNeg } from './wa-negocio'
 export { janelaAbertaCv }
 
 type Envio = { ok: boolean; wamid?: string; erro?: string; na_fila?: boolean }
@@ -48,6 +48,30 @@ export async function mandaImagem(cv: any, link: string, legenda: string, autor:
 }
 export async function mandaVideo(cv: any, link: string, legenda: string, autor: 'maia' | 'equipe' = 'maia', peca_id: string | null = null) {
   return registra(cv, autor, '(vídeo) ' + legenda, await sai(cv, { tipo: 'video', texto: legenda, link, peca_id }), 'video')
+}
+
+// 08/11 (T12): a resposta em áudio pro cliente (só no canal do cliente, dentro da janela). caminho = arquivo no armazenamento
+export async function mandaAudioCliente(cv: any, caminho: string, texto: string) {
+  let r: Envio
+  if (simuladaCv(cv)) r = simulado()
+  else {
+    const neg = await db.um('negocios', { id: cv.negocio_id })
+    const atual = (await db.um('conversas', { id: cv.id })) || cv
+    if (!atendimentoLigado(neg)) r = simulado()
+    else if (!janelaAberta(atual)) r = { ok: false, erro: 'fora da janela de 24 h' }
+    else r = await enviaAudioNeg(waDoNegocio(neg)!, cv.telefone, (await db.link(caminho, 3 * 86400))!)
+  }
+  return registra(cv, 'maia', '(áudio) ' + texto, r, 'audio')
+}
+
+// 08/11 (T12): mensagem pro DONO com botões de resposta rápida (no máximo 3, título até 20 letras). Dentro da janela de 24 h
+// vai com os botões; fora dela, vai pra fila como texto (ele responde escrevendo "fechou" / "não fechou")
+export async function mandaBotoes(cv: any, texto: string, botoes: { id: string; titulo: string }[]) {
+  const comBotoes = `${texto} [${botoes.map(b => b.titulo).join('] [')}]`
+  if (simuladaCv(cv)) return registra(cv, 'maia', comBotoes, simulado(), 'botoes')
+  const atual = (await db.um('conversas', { id: cv.id })) || cv
+  if (!janelaAberta(atual)) { await enfileira(atual, { tipo: 'texto', texto }); return registra(cv, 'maia', texto, { ok: true, na_fila: true }) }
+  return registra(cv, 'maia', comBotoes, await enviaBotoes(cv.telefone, texto, botoes), 'botoes')
 }
 
 // o cliente do negócio fora da janela de 24 h: só modelo aprovado na conta do negócio (maia_retomada, maia_resposta)
@@ -94,19 +118,23 @@ export async function mandaRespostaCliente(cv: any, texto: string, autor: 'maia'
   await db.evento('fila_cliente', atual.negocio_id, { conversa_id: atual.id, msg_id: msg.id, enviado: false })
   const lead = atual.lead_id ? await db.um('leads', { id: atual.lead_id }) : null
   const nome = String(lead?.nome || atual.nome || '').split(' ')[0]
-  if (await modeloAprovado(neg, atual, 'maia_resposta')) {
+  // 08/11 (T2): o modelo no tom do negócio (maia_resposta_voce no "você"); se ele não estiver aprovado, o da outra versão
+  const { modelosEmOrdem } = await import('./modelos')
+  let modelo: string | null = null
+  for (const nm of modelosEmOrdem(neg, 'maia_resposta')) if (await modeloAprovado(neg, atual, nm)) { modelo = nm; break }
+  if (modelo) {
     // um modelo só por conversa enquanto o cliente não responde (o resto espera junto na fila)
     const ja = (await db.lista('eventos', { negocio_id: atual.negocio_id, tipo: 'modelo_cliente' }, { ordem: 'criado_em', desc: true, limite: 20 }))
       .find(e => e.detalhe?.conversa_id === atual.id && e.detalhe?.ok && Date.now() - Date.parse(e.criado_em) < 24 * 3600e3)
-    if (ja) return { ok: true, na_fila: true, como: 'fila' as const, modelo: 'maia_resposta' }
+    if (ja) return { ok: true, na_fila: true, como: 'fila' as const, modelo }
     if (!assunto && lead) {
       const perg = (await db.lista('lead_eventos', { lead_id: lead.id, tipo: 'pergunta_cliente' }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
       assunto = perg?.detalhe?.pergunta || lead.produto || null
     }
-    const r = await mandaModeloCliente(atual, 'maia_resposta', [nome || 'tudo bem', neg?.nome || '', String(assunto || 'o que você perguntou').slice(0, 120)], '(modelo maia_resposta) avisando que a resposta está pronta')
-    await db.evento('modelo_cliente', atual.negocio_id, { conversa_id: atual.id, modelo: 'maia_resposta', ok: r.ok, erro: r.erro || null })
-    if (!r.ok) await avisaEquipe('o modelo maia_resposta não saiu', `${neg?.nome}: ${r.erro || '?'} (a resposta pro cliente ficou guardada e sai quando ele escrever)`, atual.negocio_id)
-    return { ok: true, na_fila: true, como: 'modelo' as const, modelo: 'maia_resposta', modelo_ok: r.ok }
+    const r = await mandaModeloCliente(atual, modelo, [nome || 'tudo bem', neg?.nome || '', String(assunto || (/_voce$/.test(modelo) ? 'o que você perguntou' : 'o que tu perguntou')).slice(0, 120)], `(modelo ${modelo}) avisando que a resposta está pronta`)
+    await db.evento('modelo_cliente', atual.negocio_id, { conversa_id: atual.id, modelo, ok: r.ok, erro: r.erro || null })
+    if (!r.ok) await avisaEquipe(`o modelo ${modelo} não saiu`, `${neg?.nome}: ${r.erro || '?'} (a resposta pro cliente ficou guardada e sai quando ele escrever)`, atual.negocio_id)
+    return { ok: true, na_fila: true, como: 'modelo' as const, modelo, modelo_ok: r.ok }
   }
   await avisaEquipe('maia_resposta não aprovado', `${neg?.nome}: uma resposta pro cliente ${nome || atual.telefone} ficou guardada (passou 24 h da última mensagem dele e o modelo maia_resposta não está aprovado). Sai quando ele escrever de novo.`, atual.negocio_id)
   if (neg?.dono_whatsapp) await mandaTexto(await conversaDoDono(neg), `Ó, a resposta pro ${nome || 'cliente'} ficou guardada: já passou 24 h da última mensagem dele e o WhatsApp só deixa mandar com o modelo aprovado, que ainda não saiu. Ela vai assim que ele escrever de novo, e a equipe já está vendo.`).catch(() => null)

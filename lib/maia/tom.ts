@@ -70,6 +70,14 @@ export function acertaTom(neg: any, texto: string): string {
 
 // o imperativo do CTA no "você" ("Pede o teu orçamento" → "Peça seu orçamento"; "Chama no WhatsApp" → "Chame no WhatsApp")
 const IMPERATIVO: Record<string, string> = { pede: 'peça', chama: 'chame', agenda: 'agende', garante: 'garanta', encomenda: 'encomende', vem: 'venha', manda: 'mande', aproveita: 'aproveite', escolhe: 'escolha', reserva: 'reserve', fala: 'fale', experimenta: 'experimente', prova: 'prove', corre: 'corra', compra: 'compre', marca: 'marque', conhece: 'conheça', faz: 'faça', liga: 'ligue', clica: 'clique', toca: 'toque', descobre: 'descubra', pega: 'pegue', presenteia: 'presenteie', retira: 'retire' }
+// 08/11 (pendência, legenda de post): num texto livre, só os imperativos que não confundem com outra palavra
+// ("Faz tempo", "Vem aí", "Prova disso" ficam como estão), no começo de cada frase
+const IMPERATIVO_SEGURO = ['pede', 'chama', 'garante', 'encomenda', 'aproveita', 'escolhe', 'reserva', 'experimenta', 'manda', 'clica', 'descobre', 'presenteia']
+export function textoNoTom(neg: any, texto: string): string {
+  let s = acertaTom(neg, texto)
+  if (tomDoNegocio(neg).pessoa === 'voce') s = s.replace(/(^|[.!?]\s+|\n\s*)(\p{L}+)/gu, (m, pre, w) => IMPERATIVO_SEGURO.includes(w.toLowerCase()) ? pre + comCaixa(w, IMPERATIVO[w.toLowerCase()]) : m).replace(/\b(Peça|Garanta|Reserve|Escolha|Encomende) o seu\b/g, '$1 seu').replace(/\b(Peça|Garanta|Reserve|Escolha|Encomende) a sua\b/g, '$1 sua')
+  return s
+}
 export function ctaNoTom(neg: any, cta: string): string {
   let s = acertaTom(neg, cta)
   if (tomDoNegocio(neg).pessoa === 'voce') s = s.replace(/^(\s*)(\p{L}+)/u, (m, esp, w) => IMPERATIVO[w.toLowerCase()] ? esp + comCaixa(w, IMPERATIVO[w.toLowerCase()]) : m).replace(/\b(Peça|Garanta|Reserve|Escolha|Pegue|Retire) o seu\b/g, '$1 seu').replace(/\b(Peça|Garanta|Reserve|Escolha|Pegue|Retire) a sua\b/g, '$1 sua')
