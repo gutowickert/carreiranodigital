@@ -220,7 +220,8 @@ export async function dadosDoPainel(neg: any) {
     const nota = evs.filter(e => e.lead_id === l.id && e.tipo === 'nota' && e.detalhe?.motivo).slice(-1)[0]
     return nota?.detalhe?.motivo || (l.followups ? `retomada ${Math.min((l.followups || 0) + 1, 3)} de 3 (parou de responder)` : 'parou de responder')
   }
-  const agendadas = leads.filter(l => ABERTAS.includes(l.etapa) && l.proximo_followup_em)
+  const comGenteR = new Set(convs.filter(c => c.modo === 'humano').map(c => c.lead_id))
+  const agendadas = leads.filter(l => ABERTAS.includes(l.etapa) && l.proximo_followup_em && !comGenteR.has(l.id))
     .sort((a, b) => (a.proximo_followup_em < b.proximo_followup_em ? -1 : 1))
     .map(l => ({ lead_id: l.id, nome: l.nome || l.telefone, telefone: l.telefone, etapa: l.etapa, produto: l.produto, quando: l.proximo_followup_em, atrasada: l.proximo_followup_em <= agora, motivo: motivoDe(l), numero: (l.followups || 0) + 1 }))
   const feitas = evs.filter(e => e.tipo === 'followup' && recente(e.criado_em, 30)).reverse().map(e => {
@@ -231,9 +232,12 @@ export async function dadosDoPainel(neg: any) {
 
   // 4) o funil em colunas (as abertas que já levaram retomada vão pra "retomada")
   const coluna = (l: any) => l.etapa === 'ganho' ? 'ganho' : l.etapa === 'perdido' ? 'perdido' : (l.followups || 0) > 0 ? 'retomada' : l.etapa === 'novo' ? 'novo' : l.etapa === 'proposta' ? 'proposta' : 'conversa'
+  const comGente = new Set(convs.filter(c => c.modo === 'humano').map(c => c.lead_id || leads.find(x => x.telefone === c.telefone)?.id).filter(Boolean))
   const proxima = (l: any) => {
     if (l.etapa === 'ganho') return `vendeu${l.valor ? ' R$ ' + l.valor : ''}`
     if (l.etapa === 'perdido') return l.motivo_perda || 'perdido'
+    // 08/11 (teste completo, #14): conversa com gente vem antes de tudo: é "contigo", nunca "a Maia retoma amanhã"
+    if (comGente.has(l.id)) return 'contigo: a Maia passou a conversa'
     const esp = esperando.find(x => x.lead_id === l.id)
     if (esp?.tipo === 'fechou') return 'a Maia perguntou se fechou: responde no WhatsApp'
     if (esp?.tipo === 'pergunta') return 'a Maia espera a tua resposta'
