@@ -298,6 +298,7 @@ SO_PENDENCIAS=1 node scripts/maia-teste-piloto.mjs http://localhost:3195 teste12
 
 Resultados em 08/11: **45/45, 35/35, 61/61**. O `maia-teste.mjs` roda a rotina "às 14h de hoje" (senão, à noite, a retomada não sai).
 Na branch `maia-correcoes` o piloto foi a **99/99** (com `FOTOS=<pasta com fotos>`). Na branch `maia-pendencias` ele ganhou as conferências P1 a P8 (uma ou mais por pendência). Com `FOTOS=`, antes de a IA ficar sem crédito: **111/112** (a que faltou era a própria conferência nova do custo, corrigida depois). Ver a seção 5.0.
+**08/11 à noite, com as três frentes juntas (correções + pendências + Gestora), IA de verdade, pastas limpas:** `maia-teste` **45/45**, `painel-dono` **44/44**, `piloto` com `FOTOS=` **137/137**, `tela-equipe` **14/14**, `gestora` com servidor **49/49** (19 das regras + 30 de ponta a ponta). Valor antes do preço: 8 perguntas de preço em 2 negócios, duas rodadas: 7/8 e 8/8, com a conferência depois da resposta (`lib/maia/preco.ts`; `testes/maia-08-11-reteste/preco.mjs`). Reteste das 20 conversas (r6): **20/20**, conteúdo 6/6 texto e 6/6 arte (`testes/maia-08-11-reteste/`).
 
 ### 3.4 Riscos conhecidos
 
