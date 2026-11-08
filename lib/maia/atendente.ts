@@ -4,7 +4,7 @@
 // (painel e testes), e o cérebro já fica pronto e testado.
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
-import { jeitoAtendimento } from './tom'
+import { jeitoAtendimento, tomDoNegocio } from './tom'
 import { prazoResposta } from './horario'
 import { avisoPrivacidade } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
@@ -12,6 +12,33 @@ import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, 
 import { anotaClique } from './conversoes'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
+
+const semAc = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+
+// 08/11 (teste completo, #14 Olívia): o que o CLIENTE escreveu que pede gente de verdade NA HORA. Não depende da IA lembrar
+// da ferramenta: o sistema passa a conversa sozinho (modo humano + aviso pro dono). Devolve o motivo, ou null.
+export function gatilhoHumano(texto: string): string | null {
+  const s = semAc(texto)
+  if (/\b(falar|fala|falo|conversar|atendimento|atendid[oa]|chama|chamar|chame|passa|passar|me passe|transfer\w*)\b[^.?!]{0,20}\b(com )?(uma pessoa|pessoa de verdade|alguem de verdade|um humano|humano|humana|atendente|o dono|a dona|o responsavel|a responsavel|o gerente|a gerente|alguem da (loja|equipe|empresa))\b/.test(s)
+    || /\b(quero|preciso de|tem) (um|uma|alguma?|algum) (pessoa|atendente|humano)\b/.test(s)
+    || /\b(nao quero|chega de) (falar com )?(robo|maquina|bot|uma ia|ia)\b/.test(s)) return 'o cliente pediu pra falar com uma pessoa'
+  if (/\b(dinheiro de volta|reembolso|reembolsar|estorno|estornar|devolucao|devolver (o|meu) dinheiro|quero devolver|cancelar (o|meu) pedido)\b/.test(s)) return 'o cliente pediu devolução ou reembolso'
+  if (/\b(veio|chegou|recebi)\b[^.?!]{0,20}\b(errad|estragad|quebrad|faltando|amassad|mofad|vencid)|\b(nao chegou|nao entregaram|ninguem entregou|atrasou|que absurdo|absurdo|reclama\w*|pessim\w*|horrivel|decepcion\w*|procon|nunca mais compro|falta de respeito|descaso)\b/.test(s)) return 'reclamação do cliente'
+  if (/\b(apag\w*|exclu\w*|delet\w*|remov\w*)\b[^.?!]{0,25}\b(meus dados|meu numero|meu telefone|meu cadastro|minhas mensagens|minhas informacoes|meu contato)\b/.test(s)) return 'o cliente pediu pra apagar os dados dele'
+  return null
+}
+
+// 08/11 (teste completo): a RESPOSTA da IA diz que passou (ou vai passar) a conversa pra uma pessoa. Se ela disse e não chamou a
+// ferramenta, o sistema passa (o cliente nunca fica esperando uma pessoa que não vem). "perguntou": a IA perguntou algo ao dono
+// nessa resposta (aí "o dono vai cuidar" é sobre a pergunta, não é passar a conversa)
+export function respostaPassou(t: string, perguntou = false): boolean {
+  const s = semAc(t)
+  if (/\b(passar|passei|passando|transferir|transferi|transferindo|encaminhar|encaminhei|encaminhando|repassar|repassei)\b[^.?!]{0,25}\b(conversa|atendimento)\b/.test(s)) return true
+  if (/\b(passar|passei|transferir|transferi|encaminhar|encaminhei)\b (voce|vc|te|o senhor|a senhora)\b[^.?!]{0,6}\b(pra|para|a|com)\b/.test(s)) return true
+  if (/\b(uma pessoa|um atendente|uma atendente|alguem da (nossa )?(equipe|loja|empresa)|alguem de verdade|um humano)\b[^.?!]{0,25}\b(vai|ja vai|ira|responde|retorna|entra em contato|fala com)\b/.test(s)) return true
+  if (!perguntou && /\b(o dono|a dona|o responsavel|a responsavel|a equipe)\b[^.?!]{0,12}\b(vai|ja vai|ira)\b[^.?!]{0,12}\b(cuidar|atender|entrar em contato|falar com|chamar)/.test(s)) return true
+  return false
+}
 
 // uma mensagem de cliente que chegou no WhatsApp do negócio. referral = o anúncio de onde veio (CTWA), quando vier
 // 07/11 (piloto): d.tipo 'audio' ou 'image' com d.midia (o arquivo já baixado) vira texto: transcrição ou descrição (midia-cliente.ts)
@@ -43,7 +70,21 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
-function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean }): Ferramenta[] {
+type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string }
+
+// passa a conversa pro dono: modo humano, sem retomada automática (quem fala agora é gente) e um aviso só pro dono
+async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: string, por: 'maia' | 'sistema') {
+  ctx.humano = true
+  const atual = await db.um('conversas', { id: cv.id })
+  if (atual?.modo === 'humano') return
+  await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' })
+  await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por, motivo })
+  if (lead?.id) await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: null }).catch(() => null)
+  const dcv = await conversaDoDono(neg)
+  await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${motivo}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia").`)
+}
+
+function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
   return [
     { name: 'mudar_etapa', description: 'Atualiza a etapa do cliente no funil: conversando (tirando dúvida), interessado (quer, falta decidir), proposta (recebeu preço/orçamento/horário).',
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
@@ -73,7 +114,7 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; compr
         return { ok: true, prazo: prazo.texto } } },
     { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, ou é um caso delicado.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async ({ motivo }) => { ctx.humano = true; await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' }); await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por: 'maia' }); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) precisa de ti: ${motivo}`); return { ok: true } } },
+      roda: async ({ motivo }) => { await passaConversa(neg, cv, lead, ctx, String(motivo || ''), 'maia'); return { ok: true } } },
   ]
 }
 
@@ -129,9 +170,12 @@ export async function respondeCliente(conversa_id: string) {
     await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
     return { mensagens: aviso ? [t, aviso] : [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
   }
-  const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)) }
+  const textoCliente = (novas.length ? novas : msgs.filter(x => x.autor === 'cliente').slice(-1)).map(x => x.texto).join(' / ')
+  const ctx: Ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)), textoCliente }
   const ferrs = ferramentas(neg, cv, lead, ctx)
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
+  // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
+  const gatilho = gatilhoHumano(textoCliente)
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
     { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
@@ -150,8 +194,18 @@ export async function respondeCliente(conversa_id: string) {
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
   }
   for (const t of enviadas) await mandaTexto(cv, t)
-  // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
   const usadas = r.usadas.map(u => u.nome)
+  // 08/11 (teste completo, #14): o cliente pediu gente (ou reclamou, ou pediu devolução) ou a resposta disse que passou pra uma
+  // pessoa, e a IA não chamou a ferramenta: o SISTEMA passa. Se a resposta não falou da passagem, vai uma frase curta dizendo
+  const perguntouIA = r.usadas.some(u => u.nome === 'perguntar_ao_dono' && u.saida?.ok)
+  const disse = respostaPassou(enviadas.join(' '), perguntouIA)
+  let passouExtra: string | null = null
+  if (!ctx.humano && (gatilho || disse)) {
+    await passaConversa(neg, cv, lead, ctx, gatilho ? `${gatilho}: "${textoCliente.slice(0, 160)}"` : `eu disse ao cliente que ia passar pra uma pessoa ("${enviadas.join(' ').slice(0, 120)}")`, 'sistema')
+    usadas.push('passar_para_o_dono (sistema)')
+    if (!disse) { passouExtra = `Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`; await mandaTexto(cv, passouExtra) }
+  }
+  // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
   if (!ctx.humano && !ctx.comprovante && !usadas.includes('perguntar_ao_dono') && !usadas.includes('passar_para_o_dono') && /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(enviadas.join(' '))) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
     if (pergunta) { await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); usadas.push('perguntar_ao_dono (sistema)') }
@@ -167,7 +221,7 @@ export async function respondeCliente(conversa_id: string) {
   lead = await db.um('leads', { id: lead.id })
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
