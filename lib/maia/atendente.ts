@@ -62,6 +62,9 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
     await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'comprovante', autor: 'maia', detalhe: {} }).catch(() => null)
     const dcv = await conversaDoDono(neg)
     await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) mandou um comprovante de pagamento. Confere se caiu e me diz aqui: aí eu marco a venda.`).catch(() => null)
+    // 08/11 (teste completo, #20): o comprovante já é a pergunta pro dono (com prazo e lembrete). Se a IA também chamar
+    // perguntar_ao_dono sobre o pagamento, não sai um 2º aviso (dedup em perguntar_ao_dono)
+    await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta: 'mandou um comprovante de pagamento: confere se caiu', comprovante: true, prazo: prazoResposta(neg).quando } }).catch(() => null)
   }
   await db.atualiza('conversas', { id: cv.id }, { ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString(), janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString(), nao_lidas: (cv.nao_lidas || 0) + 1 })
   // 07/11 (piloto): a janela abriu: entrega as respostas do dono/equipe que esperavam (depois de 24 h, maia_resposta).
@@ -82,6 +85,21 @@ export const prometeuConfirmar = (t: string) => /\b(vou|vamos|deixa eu|preciso) 
 // 08/11 (teste completo, #3 parcelamento): "não tenho essa informação" e parecidos, sem perguntar pro dono, deixavam o cliente
 // sem resposta. Agora isso também chama o dono (pela rede de segurança) e o cliente ganha o prazo
 export const naoSabe = (t: string) => /\b(nao tenho (essa|esta|a|essas|estas|esse|este|o|os|as)? ?(informac\w*|info|dado|detalhe|resposta|certeza)|nao tenho (o|a) (preco|valor|prazo)|nao (sei|saberia) (te |lhe )?(dizer|informar|responder|confirmar|se)|nao (consta|esta|aparece) (aqui|no que eu sei|na minha base)|nao tenho como (confirmar|saber|informar)|sem essa informac\w*|essa informac\w* (eu )?nao tenho)\b/.test(semAc(t))
+// 08/11 (teste completo, #20): a pergunta já foi pro dono há pouco (mesma conversa e mesmo assunto, sem resposta ainda)?
+const palavras = (t: string) => new Set(semAc(t).replace(/[^a-z0-9 ]+/g, ' ').split(/\s+/).filter(w => w.length >= 4))
+export function parecidas(a: string, b: string) {
+  const x = palavras(a), y = palavras(b)
+  if (!x.size || !y.size) return false
+  let comum = 0; for (const w of x) if (y.has(w)) comum++
+  return comum / Math.min(x.size, y.size) >= 0.6
+}
+const sobrePagamento = (t: string) => /\b(comprovante|pagamento|pagou|pago|paguei|pix|caiu|transferencia|deposito)\b/.test(semAc(t))
+async function perguntaRepetida(lead: any, pergunta: string) {
+  const evs = await db.lista('lead_eventos', { lead_id: lead.id })
+  return evs.some(e => e.tipo === 'pergunta_cliente' && Date.now() - Date.parse(e.criado_em) < 30 * 60e3
+    && !evs.some(x => x.tipo === 'pergunta_respondida' && x.criado_em > e.criado_em)
+    && ((e.detalhe?.comprovante && sobrePagamento(pergunta)) || parecidas(String(e.detalhe?.pergunta || ''), pergunta)))
+}
 // pergunta "pro dono" que na verdade é recado interno (etapa, funil, engano)
 export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
@@ -129,6 +147,10 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         // coisa do sistema: não vai pro dono nem fica pendente no painel dele
         if (perguntaInterna(pergunta)) return { erro: 'isso não é dúvida do cliente, é coisa do sistema: não vai pro dono. Se a etapa ficou errada, usa mudar_etapa.' }
         const prazo = prazoResposta(neg)
+        // 08/11 (teste completo, #20): o dono recebeu 2 avisos do mesmo comprovante. A mesma dúvida do mesmo cliente (ou o
+        // pagamento, quando já tem comprovante esperando) em 30 min não vai de novo: o cliente ganha o prazo igual
+        const jaFoi = await perguntaRepetida(lead, String(pergunta || ''))
+        if (jaFoi) return { ok: true, prazo: prazo.texto, obs: 'o dono já foi avisado disso há pouco; não mandei de novo' }
         const dcv = await conversaDoDono(neg)
         await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
