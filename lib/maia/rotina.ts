@@ -102,6 +102,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   try { r.chamadas = await contaChamadas() } catch (e: any) { r.chamadas_erro = e.message }
   // 06/11: social media (plano Completa): publica o que venceu, lê os resultados 1x por dia (7h) e a análise do mês no dia 1. Só com MAIA_SOCIAL_LIGADO=1
   try { if (socialLigado()) r.social = await rotinaSocial({ forcar: opc.forcarRelatorio }) } catch (e: any) { r.social_erro = e.message }
+  // 08/11 (T15): a Maia Gestora (lib/maia/gestora-rotina.ts): 7h todas as regras, de 2 em 2 h (9h–19h) as urgentes da Meta. Só lê. Só com MAIA_GESTORA_LIGADA=1
+  try { if (process.env.MAIA_GESTORA_LIGADA === '1') { const { rotinaGestora } = await import('./gestora-rotina'); r.gestora = await rotinaGestora({ relogio }) } } catch (e: any) { r.gestora_erro = e.message }
   // 06/11: a demonstração grátis: a retomada única de 24 h e a fila das amostras (lib/maia/demo-amostra.ts)
   // só com MAIA_DEMO_ROTINA=1: ela manda mensagem pra lead de verdade (retomada e amostra da fila), então liga junto com o teste
   try { if (process.env.MAIA_DEMO_ROTINA === '1') { const { rotinaDemo } = await import('./demo-amostra'); r.demo = await rotinaDemo() } } catch (e: any) { r.demo_erro = e.message }
