@@ -3,7 +3,8 @@
 // O canal de verdade (o WhatsApp do próprio negócio) só abre com o Tech Provider. Até lá roda na simulação
 // (painel e testes), e o cérebro já fica pronto e testado.
 import { maiaDb as db } from './db'
-import { comFerramentas, JEITO, type Ferramenta } from './ia'
+import { comFerramentas, type Ferramenta } from './ia'
+import { jeitoAtendimento } from './tom'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
@@ -63,7 +64,8 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; compr
   ]
 }
 
-const regras = (neg: any) => `${JEITO}
+// 07/11 (piloto): o jeito de falar com o cliente vem do cadastro do negócio (tom.ts), não do JEITO da Maia com o dono
+const regras = (neg: any) => `${jeitoAtendimento(neg)}
 
 AGORA: tu és a ASSISTENTE VIRTUAL do negócio "${neg.nome}" (${neg.nicho || ''}, ${neg.cidade || ''}) e estás atendendo um CLIENTE dele no WhatsApp. Tu falas em nome do negócio.
 O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(neg.contexto || {})}
@@ -140,7 +142,7 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const cv = await db.um('conversas', { negocio_id: neg.id, canal: 'cliente', telefone: lead.telefone || '' })
   const msgs = cv ? (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em' })).filter(m => m.texto).slice(-12) : []
   const { emJson } = await import('./ia')
-  const r = await emJson<{ texto: string }>(`${JEITO}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).`,
+  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).`,
     `Cliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`)
   return r.texto
 }

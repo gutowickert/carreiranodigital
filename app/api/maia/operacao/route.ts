@@ -33,6 +33,8 @@ const semChave = semChaves
 function metaSeguro(novo: any, atual: any) {
   const m: any = { ...(novo || {}) }
   if (atual?.wa) m.wa = atual.wa; else delete m.wa
+  // 07/11 (piloto): o jeito de atender (tom, aviso de privacidade, franquia, fuso) só muda pela ação config_atendimento
+  if (atual?.atendimento) m.atendimento = atual.atendimento; else delete m.atendimento
   const st = typeof m.social_token === 'string' ? m.social_token.trim() : ''
   if (st && st !== '(guardada)') m.social_token = cifra(st)
   else if (atual?.social_token) m.social_token = atual.social_token
@@ -167,6 +169,17 @@ export async function POST(req: Request) {
         await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), wa: { ...(n.meta?.wa || {}), atende: !!b.ligado } } })
         await db.evento(b.ligado ? 'atendimento_ligado' : 'atendimento_desligado', n.id, { por: b.por || null })
         return ok({ atende: !!b.ligado, chave_geral: process.env.MAIA_CLIENTES_LIGADO === '1' })
+      }
+      // 07/11 (piloto): o jeito de atender os clientes do negócio (fica em meta.atendimento; sem coluna nova)
+      case 'config_atendimento': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { tomValido } = await import('@/lib/maia/tom')
+        const at: any = { ...(n.meta?.atendimento || {}) }
+        if (b.tom) at.tom = tomValido(b.tom)
+        await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), atendimento: at } })
+        await db.evento('config_atendimento', n.id, { por, mudou: Object.keys(b).filter(k => !['acao', 'negocio_id', 'por'].includes(k)) })
+        return ok({ atendimento: at })
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
       case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio }))
