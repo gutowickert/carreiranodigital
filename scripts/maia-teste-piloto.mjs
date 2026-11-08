@@ -227,6 +227,23 @@ async function main() {
   await op('apagar_contato', { negocio_id: A.id, conversa_id: cvHugo.id, confirmar: true })
   anota((await ver('uso_mes', { negocio: A.id })).conversas === 1, 'contato apagado continua contando nas conversas do mês')
 
+  // ---------- 08/11: prazo de guarda (12 meses sem mensagem) ----------
+  log('
+=== prazo de guarda (LGPD)')
+  const cvBetoG = await cvDe(A.id, T2), cvAnaG = await cvDe(A.id, T1)
+  await op('teste_conversa_antiga', { conversa_id: cvBetoG.id, meses: 13 })
+  await op('config_atendimento', { negocio_id: B.id, guarda_meses: 24 })
+  await op('teste_conversa_antiga', { conversa_id: cvDudaB.id, meses: 13 })
+  const pastaBeto = path.join(PASTA, 'arquivos', A.id, 'clientes', cvBetoG.id)
+  rot = await op('rodar_rotina', { relogio: hojeAs(3), forcar_guarda: true })
+  anota(!tab('conversas').some(c => c.id === cvBetoG.id) && !tab('msgs').some(m => m.conversa_id === cvBetoG.id) && !tab('leads').some(l => l.negocio_id === A.id && l.telefone === T2) && !fs.existsSync(pastaBeto), 'conversa sem mensagem há 13 meses: mensagens, mídias e contato apagados')
+  anota(tab('conversas').some(c => c.id === cvAnaG.id), 'conversa recente ficou')
+  anota(tab('conversas').some(c => c.id === cvDudaB.id), 'negócio com prazo de 24 meses: a de 13 meses ficou')
+  const evG = tab('eventos').filter(e => e.tipo === 'contato_apagado' && e.detalhe?.motivo === 'prazo')
+  anota(evG.length === 1 && !JSON.stringify(evG[0].detalhe).includes(T2) && !/Beto/.test(JSON.stringify(evG[0].detalhe)), 'registro com motivo "prazo", só contagens')
+  rot = await op('rodar_rotina', { relogio: hojeAs(4) })
+  anota(Array.isArray(rot.guarda) && rot.guarda.length === 0, 'a guarda roda 1x por dia (a 2ª rodada do dia não faz nada)')
+
   const falhas = relatorio.filter(x => !x.ok)
   log(`\n${relatorio.length - falhas.length} de ${relatorio.length} conferências passaram.`)
   if (falhas.length) log('Falharam:\n' + falhas.map(f => ' - ' + f.o).join('\n'))

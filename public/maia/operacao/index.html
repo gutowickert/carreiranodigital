@@ -1247,6 +1247,7 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-gaucho">Jeito gaúcho</label><select id="t-gaucho" name="gaucho">'+opt('nao','não (neutro)',t.gaucho?'sim':'nao')+opt('sim','sim, leve',t.gaucho?'sim':'nao')+'</select></div>'+
     '<div class="campo"><label for="t-estilo">Estilo</label><select id="t-estilo" name="estilo">'+opt('leve','leve',t.estilo||'leve')+opt('formal','formal',t.estilo||'leve')+'</select></div>'+
     '<div class="campo"><label for="t-franquia">Conversas por mês (vazio = a do plano)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" placeholder="'+(n.plano==='completa'?'1000 (Completa)':n.plano==='gestao'?'sem franquia (Gestora)':'500 (Essencial)')+'" value="'+esc(a.franquia||'')+'"></div>'+
+    '<div class="campo"><label for="t-guarda">Guardar as conversas por (meses)</label><input id="t-guarda" name="guarda_meses" type="number" min="1" max="60" class="num" placeholder="12" value="'+esc(a.guarda_meses||'')+'"></div>'+
     '<div class="campo"><label for="t-priv">Aviso de privacidade na 1ª resposta</label><select id="t-priv" name="priv_ligado">'+opt('sim','sim',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+opt('nao','não',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+'</select></div>'+
     '<div class="campo"><label for="t-plink">Link da política (opcional)</label><input id="t-plink" name="priv_link" type="url" placeholder="https://…" value="'+esc((a.privacidade&&a.privacidade.link)||'')+'"></div>'+
     '</div><div class="campo"><label for="t-ptexto">Texto do aviso (vazio = o padrão)</label><textarea id="t-ptexto" name="priv_texto" rows="2" placeholder="Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do negócio. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.">'+esc((a.privacidade&&a.privacidade.texto)||'')+'</textarea></div>'+
@@ -1268,7 +1269,7 @@ function ligaCardAtendimento(n){
   var f=$('#f-atend'); if(!f) return;
   pintaUso(n);
   f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
-    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):0,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
+    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):0,guarda_meses:d.guarda_meses?Number(d.guarda_meses):0,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
     espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); pintaUso(n); }); });
   };
 }
@@ -1598,6 +1599,7 @@ var TAREFAS=[
   ['retomadas','Retomadas','relogio','Volta a chamar os clientes que pararam de responder. Só das 9h às 20h (domingo a partir das 10h); fora disso fica pra próxima rodada.'],
   ['confirmacoes','Confirmação de vendas com o dono','festa','Pergunta pro dono se as vendas combinadas fecharam.'],
   ['devolvidas','Conversas que voltam pra Maia','robo','Conversa que estava com o dono ou a equipe volta pra Maia depois de 24 h sem ninguém falar nela.'],
+  ['guarda','Prazo de guarda (LGPD)','relogio','1x por dia apaga as conversas de cliente sem mensagem há mais de 12 meses (ou o prazo do negócio).'],
   ['franquia','Conversas do mês (franquia)','barras','Conta as conversas de cada negócio no mês e avisa a equipe em 80% e 100%. Não bloqueia nada.'],
   ['perguntas','Perguntas esperando o dono','relogio','Lembra o dono em 1 h e avisa a equipe em 3 h quando um cliente espera resposta.'],
   ['relatorios','Resumos da semana','arquivo','Escreve o resumo da semana de cada negócio. Vai pra fila da equipe aprovar.'],

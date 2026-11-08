@@ -237,6 +237,7 @@ export async function POST(req: Request) {
         const at: any = { ...(n.meta?.atendimento || {}) }
         if (b.tom) at.tom = tomValido(b.tom)
         if (b.privacidade) { const { privacidadeValida } = await import('@/lib/maia/lgpd'); at.privacidade = privacidadeValida(b.privacidade) }
+        if (b.guarda_meses !== undefined) { const g = Math.round(Number(b.guarda_meses)); if (g >= 1 && g <= 60) at.guarda_meses = g; else delete at.guarda_meses }
         if (b.franquia !== undefined) { const f = Math.round(Number(b.franquia)); if (f > 0) at.franquia = f; else delete at.franquia }
         await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), atendimento: at } })
         await db.evento('config_atendimento', n.id, { por, mudou: Object.keys(b).filter(k => !['acao', 'negocio_id', 'por'].includes(k)) })
@@ -244,7 +245,7 @@ export async function POST(req: Request) {
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
       // 07/11 (piloto): `relogio` (a hora da janela das 9h às 20h) só vale no modo de teste
-      case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
+      case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, forcarGuarda: db.modo() === 'local' && !!b.forcar_guarda, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {
         if (db.modo() !== 'local') return erro('só no modo de teste')
@@ -253,6 +254,14 @@ export async function POST(req: Request) {
         return ok({ vencidas: ls.length })
       }
       // 07/11 (piloto), só no modo de teste: fecha a janela de 24 h de uma conversa e anota o status dos modelos do negócio
+      // 08/11, só no modo de teste: faz uma conversa (e as mensagens dela) ficar com N meses sem mensagem
+      case 'teste_conversa_antiga': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const antes = new Date(Date.now() - (Number(b.meses) || 13) * 31 * 86400e3).toISOString()
+        await db.atualiza('conversas', { id: b.conversa_id }, { ultima_msg_em: antes, criado_em: antes })
+        for (const m of await db.lista('msgs', { conversa_id: b.conversa_id })) await db.atualiza('msgs', { id: m.id }, { criado_em: antes })
+        return ok({ ok: true })
+      }
       case 'teste_fechar_janela': {
         if (db.modo() !== 'local') return erro('só no modo de teste')
         await db.atualiza('conversas', { id: b.conversa_id }, { janela_ate: new Date(Date.now() - 3600e3).toISOString() })

@@ -26,7 +26,7 @@ export function privacidadeValida(p: any) {
 
 const TIPOS_LIGADOS = ['midia_cliente', 'fila_cliente', 'modo_humano', 'conversa_devolvida', 'modelo_cliente', 'capi']
 
-export async function apagaContato(negocio_id: string, q: { conversa_id?: string | null; lead_id?: string | null }, por = 'equipe') {
+export async function apagaContato(negocio_id: string, q: { conversa_id?: string | null; lead_id?: string | null }, por = 'equipe', motivo = 'pedido') {
   if (!negocio_id) throw new Error('falta o negócio')
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
@@ -68,6 +68,29 @@ export async function apagaContato(negocio_id: string, q: { conversa_id?: string
     }
   }
   const r = { mes, contou, msgs: msgs.length, midias, registros, contato: !!lead, recados }
-  await db.evento('contato_apagado', negocio_id, { por, ...r })
+  await db.evento('contato_apagado', negocio_id, { por, motivo, ...r })
   return { ok: true, ...r }
+}
+
+// ---- 08/11: prazo de guarda (decisão do Guto: 12 meses depois da última mensagem) ----
+// A rotina, 1x por dia, apaga as conversas de cliente sem NENHUMA mensagem (dele ou nossa) há mais de N meses: mensagens,
+// mídias, contato do funil e histórico (a mesma apagaContato do painel), com motivo "prazo" e só contagens no registro.
+// Por negócio em meta.atendimento.guarda_meses (padrão 12). Não manda mensagem pra ninguém, então não tem horário.
+export const GUARDA_MESES = 12
+export const guardaMesesDo = (neg: any) => { const m = Number(neg?.meta?.atendimento?.guarda_meses); return m >= 1 ? Math.round(m) : GUARDA_MESES }
+
+export async function apagaVencidos(agora = new Date(), forcar = false) {
+  const dia = agora.toISOString().slice(0, 10)
+  if (!forcar && (await db.lista('eventos', { tipo: 'guarda_rodou' }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]?.detalhe?.dia === dia) return []
+  const feitos: any[] = []
+  for (const neg of await db.lista('negocios')) {
+    const limite = new Date(agora); limite.setMonth(limite.getMonth() - guardaMesesDo(neg))
+    for (const cv of await db.lista('conversas', { negocio_id: neg.id, canal: 'cliente' })) {
+      const ult = (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]?.criado_em || cv.ultima_msg_em || cv.criado_em
+      if (!ult || ult >= limite.toISOString()) continue
+      try { const r = await apagaContato(neg.id, { conversa_id: cv.id }, 'rotina', 'prazo'); feitos.push({ negocio: neg.id, msgs: r.msgs, midias: r.midias }) } catch { /* segue com os outros */ }
+    }
+  }
+  await db.evento('guarda_rodou', null, { dia, apagados: feitos.length })
+  return feitos
 }
