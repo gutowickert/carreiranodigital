@@ -263,6 +263,19 @@ export async function POST(req: Request) {
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
       // 07/11 (piloto): `relogio` (a hora da janela das 9h às 20h) só vale no modo de teste
       case 'rodar_rotina': return ok(await roda({ forcarRelatorio: !!b.forcar_relatorio, forcarGuarda: db.modo() === 'local' && !!b.forcar_guarda, relogio: db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : undefined }))
+      // 08/11 (teste completo): só no modo de teste: as regras sem IA das correções, pra conferir sem gastar IA
+      case 'teste_funcoes': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const at = await import('@/lib/maia/atendente'), tom = await import('@/lib/maia/tom'), hor = await import('@/lib/maia/horario')
+        const neg = b.negocio_id ? await db.um('negocios', { id: b.negocio_id }) : { meta: { atendimento: { tom: b.tom || {} } }, contexto: b.contexto || {} }
+        const t = String(b.texto || '')
+        return ok({
+          gatilho: at.gatilhoHumano(t), passou: at.respostaPassou(t, !!b.perguntou), recusou: at.recusou(t), interna: at.perguntaInterna(t),
+          motivo_claro: at.motivoClaro(t), motivo_passagem: at.motivoDePassagem(t), nao_sabe: at.naoSabe(t), parecidas: b.outro ? at.parecidas(t, String(b.outro)) : null,
+          fora_do_tom: tom.foraDoTom(neg, t), acerta_tom: tom.acertaTom(neg, t), cta: tom.ctaNoTom(neg, t),
+          dias_texto: hor.diasDoTexto(t), dias: hor.diasDoNegocio(neg, b.agora ? new Date(b.agora) : new Date()),
+        })
+      }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {
         if (db.modo() !== 'local') return erro('só no modo de teste')

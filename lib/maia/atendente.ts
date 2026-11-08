@@ -73,7 +73,11 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
-type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string; perdeuAgora?: boolean }
+type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string }
+
+// 08/11 (teste completo, etapa): o cliente disse que quer, com quantidade ("quero 2 caixas", "vou querer 1", "pode separar").
+// Se a IA não mexeu no funil, o sistema põe em "proposta" (a mesma pergunta não pode deixar um em conversando e outro em proposta)
+export const querComprar = (t: string) => /(quero|vou querer|vou levar|vou pegar|me ve|me manda|separa|reserva)s+(d+|uma?|duas|dois|tres|quatro|cinco|seis|meia duzia)|(fechado|pode (fazer|separar|reservar|anotar|mandar fazer|preparar))/.test(semAc(t))
 
 // 08/11 (teste completo, #12): o cliente recusou com todas as letras? (só aí vale "perdido")
 export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|pedir|fechar|precisar)|preciso mais|tenho (mais )?interesse|me interessa|vai dar|da pra mim|compensa|obrigad[oa]?,? (nao|mas nao))|desist\w*|deixa (pra la|quieto)|esquece|comprei (em outr|no concorrente|la)|ja comprei|sem interesse|fica pra (proxima|outra))\b/.test(semAc(t))
@@ -121,9 +125,8 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
       // 07/11 (juntou as duas correções): no teste a IA chamou venda_perdida e, na mesma resposta, mudar_etapa, e o perdido voltava pra "conversando".
       // Contato já ganho ou perdido não volta pelo atendimento (se o cliente voltar a falar, quem reabre é o dono ou a equipe)
-      // 08/11 (teste completo, #12): o perdido que ELA marcou nessa mesma resposta pode ser desfeito aqui (a correção é pela
-      // ferramenta, nunca um recado pro dono "marquei por engano, pode reabrir?")
-      roda: async (q) => { if (lead.etapa === 'ganho' || (lead.etapa === 'perdido' && !ctx.perdeuAgora)) return { ok: false, aviso: `esse cliente já está ${lead.etapa}: a etapa não muda` }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); ctx.perdeuAgora = false; return { ok: true } } },
+      // 08/11 (teste completo, #12): o perdido errado não acontece mais (venda_perdida só com recusa), então aqui continua a trava
+      roda: async (q) => { if (lead.etapa === 'ganho' || lead.etapa === 'perdido') return { ok: false, aviso: `esse cliente já está ${lead.etapa}: a etapa não muda` }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
     { name: 'venda_fechada', description: 'O cliente fechou: agendou e confirmou, pagou ou fez o pedido. Marca GANHO com o valor.',
       input_schema: { type: 'object', properties: { valor: { type: 'number' }, produto: { type: 'string' } }, required: ['produto'] },
       roda: async (q) => {
@@ -135,7 +138,7 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       // 08/11 (teste completo, #12 Marina): só marca perdido se o CLIENTE recusou com todas as letras
       roda: async (q) => {
         if (!recusou(ctx.textoCliente || '')) return { erro: 'não marcado: o cliente não disse que não quer. Pergunta sobre algo que o negócio não faz NÃO é perda: diz o que tem e segue em conversando.' }
-        lead = await perdeu(lead, q.motivo, 'maia'); ctx.perdeuAgora = true; return { ok: true } } },
+        lead = await perdeu(lead, q.motivo, 'maia'); return { ok: true } } },
     { name: 'retomar_depois', description: 'O cliente pediu pra falar depois ("vou ver e te aviso", "semana que vem"). Agenda a retomada.',
       input_schema: { type: 'object', properties: { em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
       roda: async (q) => { lead = await agendaFollowup(lead, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
@@ -275,6 +278,9 @@ export async function respondeCliente(conversa_id: string) {
   if (aviso) await mandaTexto(cv, aviso)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })
+  if (!ctx.humano && lead && ['novo', 'conversando', 'interessado'].includes(lead.etapa) && querComprar(textoCliente) && !r.usadas.some(u => ['venda_fechada', 'venda_perdida'].includes(u.nome) || (u.nome === 'mudar_etapa' && u.entrada?.etapa === 'proposta'))) {
+    lead = await mudaEtapa(lead, 'proposta', 'maia', { resumo: textoCliente.slice(0, 160) }); usadas.push('mudar_etapa proposta (sistema)')
+  }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
   return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano }
