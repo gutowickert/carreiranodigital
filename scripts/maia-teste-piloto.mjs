@@ -502,6 +502,28 @@ async function pendencias0811() {
   // P6. o campo dos dias que o negócio abre tem tela no painel da equipe (o clique de verdade: scripts/maia-teste-tela-equipe.mjs)
   const htmlOp = await (await fetch(URL_ + '/maia/operacao/')).text()
   anota(/name="dias"/.test(htmlOp) && /Dias que o negócio abre/.test(htmlOp) && /c\.dias=new FormData\(f\)\.getAll\('dias'\)/.test(htmlOp), 'P6. painel da equipe: o campo "dias que o negócio abre" está na tela e vai no config_atendimento')
+  // P7 (T4, passo 5). a oficina entrega por link de envio direto ({tarefa_id, caminho}); o modo antigo (base64) continua valendo
+  const CHO = { 'x-chave': process.env.OFICINA || 'oficina123' }
+  const JPG = Buffer.from('/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/wAALCAABAAEBAREA/8QAFAABAAAAAAAAAAAAAAAAAAAACf/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8AKp//2Q==', 'base64')
+  const pegaMinha = async (tid) => { for (let i = 0; i < 40; i++) { const j = await (await fetch(URL_ + '/api/maia/oficina', { headers: CHO })).json(); if (!j.tarefa) return null; if (j.tarefa.id === tid) return j } return null }
+  const tk1 = await op('teste_tarefa_oficina', { negocio_id: S.id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' })
+  const job = await pegaMinha(tk1.tarefa_id)
+  const up = job?.upload?.arte
+  anota(up?.url && /^http/.test(up.url) && /envio=/.test(up.url) && up.caminho.startsWith(S.id + '/pecas/'), 'P7. a fila dá o link de envio direto na pasta do negócio: ' + (up?.caminho || '-'))
+  const ruim = await fetch(up.url.replace(/envio=\w+/, 'envio=errada'), { method: 'PUT', headers: { 'content-type': 'image/jpeg' }, body: JPG })
+  const naoChegou = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk1.tarefa_id, caminho: up.caminho }) })
+  anota(ruim.status === 403 && naoChegou.status === 400, 'P7. link com assinatura errada é recusado, e avisar sem o arquivo ter chegado também')
+  const put = await fetch(up.url, { method: 'PUT', headers: { 'content-type': 'image/jpeg', 'x-upsert': 'true' }, body: JPG })
+  const entrega = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk1.tarefa_id, caminho: up.caminho }) })
+  const pc1 = tab('pecas').find(p => p.id === tk1.peca_id)
+  anota(put.ok && entrega.ok && pc1?.status === 'revisao_equipe' && pc1.arquivo_path === up.caminho && fs.existsSync(path.join(PASTA, 'arquivos', up.caminho)), 'P7. PUT do arquivo + POST só com {tarefa_id, caminho}: a peça foi pra revisão da equipe com o arquivo')
+  const tk2 = await op('teste_tarefa_oficina', { negocio_id: S.id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' })
+  await pegaMinha(tk2.tarefa_id)
+  const antigo = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk2.tarefa_id, arquivo_b64: JPG.toString('base64'), mime: 'image/jpeg' }) })
+  const pc2 = tab('pecas').find(p => p.id === tk2.peca_id)
+  anota(antigo.ok && pc2?.status === 'revisao_equipe' && pc2.arquivo_path, 'P7. a oficina antiga (arquivo em base64) continua sendo aceita')
+  const outro = await fetch(URL_ + '/api/maia/oficina', { method: 'POST', headers: { ...CHO, 'content-type': 'application/json' }, body: JSON.stringify({ tarefa_id: tk2.tarefa_id, caminho: Tn.id + '/pecas/x.jpg' }) })
+  anota(outro.status === 400, 'P7. caminho de outro negócio é recusado')
   //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })

@@ -293,6 +293,19 @@ export async function POST(req: Request) {
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
+      // 08/11 (T4), só no modo de teste: põe uma peça (com a foto ou o vídeo do dono) direto na fila da oficina, sem IA,
+      // pra testar a entrega da oficina (link de envio direto e o modo antigo em base64)
+      case 'teste_tarefa_oficina': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n || !b.arquivo_b64) return erro('falta o negócio ou o arquivo')
+        const video = /video/.test(String(b.mime || ''))
+        const caminho = await db.sobe(`${n.id}/midias/teste-${Date.now().toString(36)}.${video ? 'mp4' : /png/.test(String(b.mime)) ? 'png' : 'jpg'}`, Buffer.from(String(b.arquivo_b64), 'base64'), String(b.mime || 'image/jpeg'))
+        const m = await db.insere('midias', { negocio_id: n.id, tipo: video ? 'video' : 'foto', path: caminho, mime: b.mime || 'image/jpeg', descricao: 'teste da oficina' })
+        const peca = await db.insere('pecas', { negocio_id: n.id, tipo: video ? 'anuncio_video' : 'anuncio_imagem', status: 'gerando', titulo: 'teste da oficina', gancho: b.gancho || 'Caixa com 6 cookies por R$ 45', texto: b.texto || 'Cookies artesanais feitos no dia.', cta: b.cta || 'Peça pelo WhatsApp', midia_ids: [m.id] })
+        const t = await db.insere('tarefas', { negocio_id: n.id, tipo: video ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: m.id } })
+        return ok({ peca_id: peca.id, tarefa_id: t.id })
+      }
       case 'teste_resumo_negocios': {
         if (db.modo() !== 'local') return erro('só no modo de teste')
         const { negociosDoResumo } = await import('@/lib/maia/rotina')
