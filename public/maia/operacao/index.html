@@ -1724,6 +1724,7 @@ function subSimulador(n,box){
       '<div class="grade2"><div class="campo"><label for="c-tel">Telefone (fictício)</label><input id="c-tel" name="telefone" class="num" value="55000'+rnd+'"></div><div class="campo"><label for="c-nome">Nome</label><input id="c-nome" name="nome" placeholder="Ex.: Júlia"></div></div>'+
       '<div class="campo"><label for="c-texto">Mensagem</label><textarea id="c-texto" name="texto" placeholder="Ex.: oi, quanto custa a limpeza de pele?"></textarea></div>'+
       '<div class="campo"><label for="c-arq">Ou uma foto / áudio do cliente</label><input id="c-arq" name="arquivo" type="file" accept="image/*,audio/*"></div>'+
+      '<label class="peq" style="display:flex;gap:8px;align-items:center;margin:0 0 12px"><input type="checkbox" name="esperar"> Esperar 12 s e juntar as mensagens picadas (igual ao WhatsApp de verdade)</label>'+
       '<button class="btn ok larga">'+ic('enviar')+'Mandar como cliente</button><div class="resp" id="r-cli"></div></form></div>';
   var fd=$('#f-sdono');
   fd.onsubmit=function(ev){ ev.preventDefault();
@@ -1741,6 +1742,13 @@ function subSimulador(n,box){
     if(!/^55000/.test(tel)){ toast('Não deu: no simulador o telefone tem que começar com 55000',true); return; }
     var arqC=fc.arquivo.files[0], txtC=fc.texto.value.trim();
     if(!txtC&&!arqC){ toast('Não deu: escreve uma mensagem ou escolhe um arquivo',true); return; }
+    // 08/11: com "esperar", não trava o botão: dá pra mandar 2 ou 3 mensagens seguidas e só a última responde (pra todas)
+    if(fc.esperar.checked&&!arqC){
+      fc.texto.value=''; $('#r-cli').innerHTML='<div class="dica">'+ic('info')+'<span>Esperando 12 s pra ver se vem mais mensagem…</span></div>';
+      api({acao:'simular_cliente',negocio_id:n.id,telefone:tel,nome:fc.nome.value.trim()||undefined,texto:txtC,esperar:true})
+        .then(function(r){ S.cart=null; if(r&&r.juntou) return; mostraResposta($('#r-cli'),r,'Cliente'); }).catch(falhou);
+      return;
+    }
     espera($('button',fc),'a Maia está pensando…',function(){
       var base={acao:'simular_cliente',negocio_id:n.id,telefone:tel,nome:fc.nome.value.trim()||undefined,texto:txtC};
       var p=arqC?lerB64(arqC).then(function(b64){ return Object.assign(base,{arquivo_b64:b64,mime:arqC.type||'image/jpeg',legenda:txtC||undefined}); }):Promise.resolve(base);

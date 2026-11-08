@@ -30,13 +30,25 @@ export async function responderDono(negocio_id: string) {
 
 // 07/11 (piloto): o cliente simulado também manda áudio e foto. No modo de teste, `simulado` diz o que "seria" a transcrição
 // ou a descrição (sem chamar o Deepgram), ou falhar: true pra testar a resposta honesta de quando não deu pra ouvir/ver
-export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null; arquivo?: { buf: Buffer; mime: string; legenda?: string; simulado?: MidiaSimulada | null } }) {
+// 08/11 (teste completo, #11): esperar_ms = a mesma espera do webhook de verdade (12 s): a mensagem fica guardada e só a
+// ÚLTIMA de uma rajada responde, pra todas juntas. As outras voltam { juntou: true }. Só simulação.
+export const ESPERA_WEBHOOK_MS = 12000
+export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null; esperar_ms?: number | null; arquivo?: { buf: Buffer; mime: string; legenda?: string; simulado?: MidiaSimulada | null } }) {
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
   const tipo = d.arquivo ? (/audio/.test(d.arquivo.mime) ? 'audio' : 'image') : null
-  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto || '', wamid: wamid(), referral: d.anuncio ? { source_id: d.anuncio } : null,
+  const id = wamid()
+  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto || '', wamid: id, referral: d.anuncio ? { source_id: d.anuncio } : null,
     ...(d.arquivo ? { tipo, midia: { buf: d.arquivo.buf, mime: d.arquivo.mime, simulado: d.arquivo.simulado || null }, legenda: d.arquivo.legenda || null } : {}) })
   if (!r) return null
+  if (d.esperar_ms && d.esperar_ms > 0) {
+    await new Promise(ok => setTimeout(ok, Math.min(d.esperar_ms!, 30000)))
+    const ult = (await db.lista('msgs', { conversa_id: (r.cv as any).id }, { ordem: 'criado_em', desc: true, limite: 20 })).find(x => x.autor === 'cliente')
+    if (ult && ult.wamid !== id) return { lead: r.lead.id, respondeu: null, juntou: true }
+    // o dono falou nessa conversa nas últimas 2 h (eco do celular): a Maia fica quieta, igual ao webhook
+    const atual = await db.um('conversas', { id: (r.cv as any).id })
+    if (!atual || atual.modo !== 'ia') return { lead: r.lead.id, respondeu: null }
+  }
   const resp = r.responder ? await respondeCliente((r.cv as any).id) : null
   return { lead: r.lead.id, respondeu: resp }
 }

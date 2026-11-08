@@ -13,7 +13,7 @@ import { geraAnuncios } from '@/lib/maia/pecas'
 import { criaCampanhaPausada, ativa, pausa, metaReal } from '@/lib/maia/meta'
 import { novoLead, mudaEtapa, ganhou, perdeu, numeros, type Etapa } from '@/lib/maia/funil'
 import { conversaDoDono, mandaTexto } from '@/lib/maia/canal'
-import { comoDono, comoCliente } from '@/lib/maia/simula'
+import { comoDono, comoCliente, ESPERA_WEBHOOK_MS } from '@/lib/maia/simula'
 import { roda } from '@/lib/maia/rotina'
 import { fone } from '@/lib/oito/wa'
 import { ehDemo, painelAmostras, vagasDaSemana } from '@/lib/maia/demo-amostra'
@@ -200,7 +200,9 @@ export async function POST(req: Request) {
       case 'simular_cliente': {
         // 07/11 (piloto): áudio ou foto do cliente simulado (arquivo_b64 + mime). `simulado` (transcrição/descrição de mentira) só vale no modo de teste
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda, simulado: b.simulado || null } : undefined
-        return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto || '', anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null), arquivo }))
+        return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto || '', anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null), arquivo,
+          // 08/11: esperar: true = a espera de 12 s do webhook de verdade (junta as mensagens picadas numa resposta só)
+          esperar_ms: b.esperar === true ? ESPERA_WEBHOOK_MS : Number(b.esperar) > 0 ? Math.min(Number(b.esperar), 30000) : null }))
       }
       // 05/11 (Tech Provider): o link que o dono abre pra conectar o WhatsApp do negócio
       case 'link_conectar': {
