@@ -1241,7 +1241,10 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-gaucho">Jeito gaúcho</label><select id="t-gaucho" name="gaucho">'+opt('nao','não (neutro)',t.gaucho?'sim':'nao')+opt('sim','sim, leve',t.gaucho?'sim':'nao')+'</select></div>'+
     '<div class="campo"><label for="t-estilo">Estilo</label><select id="t-estilo" name="estilo">'+opt('leve','leve',t.estilo||'leve')+opt('formal','formal',t.estilo||'leve')+'</select></div>'+
     '<div class="campo"><label for="t-franquia">Conversas por mês (franquia)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" value="'+esc(a.franquia||1000)+'"></div>'+
-    '</div><button class="btn ok larga">'+ic('check')+'Salvar o jeito de atender</button></form>'+
+    '<div class="campo"><label for="t-priv">Aviso de privacidade na 1ª resposta</label><select id="t-priv" name="priv_ligado">'+opt('sim','sim',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+opt('nao','não',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+'</select></div>'+
+    '<div class="campo"><label for="t-plink">Link da política (opcional)</label><input id="t-plink" name="priv_link" type="url" placeholder="https://…" value="'+esc((a.privacidade&&a.privacidade.link)||'')+'"></div>'+
+    '</div><div class="campo"><label for="t-ptexto">Texto do aviso (vazio = o padrão)</label><textarea id="t-ptexto" name="priv_texto" rows="2" placeholder="Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do negócio. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.">'+esc((a.privacidade&&a.privacidade.texto)||'')+'</textarea></div>'+
+    '<button class="btn ok larga">'+ic('check')+'Salvar o jeito de atender</button></form>'+
     '<div class="card" id="uso-mes" aria-live="polite"><h2 style="margin-bottom:10px">Conversas do mês</h2><div class="esq" style="height:34px;width:50%"></div></div>';
 }
 /* conversa do mês = contato diferente que mandou pelo menos 1 mensagem no mês (simuladas à parte; ver lib/maia/uso.ts) */
@@ -1259,7 +1262,7 @@ function ligaCardAtendimento(n){
   var f=$('#f-atend'); if(!f) return;
   pintaUso(n);
   f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
-    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):undefined};
+    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):undefined,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
     espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); pintaUso(n); }); });
   };
 }
@@ -1498,7 +1501,7 @@ function subConversa(n,box){
     var nm=dono?(n.dono_nome||'Dono'):(cv.nome||cv.telefone||'Cliente');
     var nomes={dono:dono?nm:(n.dono_nome||'Dono'),cliente:dono?'Cliente':nm};
     c.innerHTML='<div class="cv-topo"><span class="av '+(dono?'dono':'')+'">'+inicial(nm)+'</span><div class="tx"><b>'+esc(nm)+'</b><small class="num">'+esc(dono?(n.dono_whatsapp||''):(cv.telefone||''))+' · '+(cv?(humano?'<b style="display:inline;color:var(--amber)">a equipe assumiu</b>':'a Maia está respondendo'):'sem conversa ainda')+'</small></div>'+
-      '<div class="btns" style="flex:0 1 auto">'+(cv?(humano?'<button class="btn ok peq" id="b-devolver">'+ic('robo')+'Devolver pra Maia</button>':'<button class="btn peq" id="b-assumir">'+ic('pessoa')+'Assumir a conversa</button>'):'')+'<button class="btn fantasma peq" id="b-rec" aria-label="Atualizar a conversa">'+ic('rotina')+'</button></div></div>'+
+      '<div class="btns" style="flex:0 1 auto">'+(cv?(humano?'<button class="btn ok peq" id="b-devolver">'+ic('robo')+'Devolver pra Maia</button>':'<button class="btn peq" id="b-assumir">'+ic('pessoa')+'Assumir a conversa</button>'):'')+(cv&&!dono?'<button class="btn fantasma peq" id="b-apagar" title="LGPD: apaga conversa, mensagens, contato do funil e mídias desse cliente, só desse negócio">'+ic('x')+'Apagar dados</button>':'')+'<button class="btn fantasma peq" id="b-rec" aria-label="Atualizar a conversa">'+ic('rotina')+'</button></div></div>'+
       '<div class="chat" id="chat" aria-live="polite">'+(msgs.length?bolhasComDia(msgs,nomes,dono?'dono':'cliente'):'<div class="vazio"><div class="q">'+ic('msg')+'</div><b>Nenhuma mensagem ainda</b><p>'+(dono?'Quando o dono falar com a Maia no WhatsApp, aparece aqui.':'Nada nessa conversa ainda.')+'</p></div>')+'</div>'+
       (dono?'<form class="enviar" id="f-msg"><textarea name="texto" placeholder="Mensagem da equipe pro dono…" aria-label="Mensagem da equipe pro dono" required></textarea><button class="btn ok" aria-label="Mandar">'+ic('enviar')+'Mandar</button></form>'+
         '<p class="cv-nota">Vai como mensagem da equipe no WhatsApp da Maia.'+(humano?'':' Dica: assume a conversa antes, se não quiser que a Maia responda junto.')+'</p>'
@@ -1508,6 +1511,10 @@ function subConversa(n,box){
     $('#b-rec').onclick=function(){ carrega(); };
     if($('#b-assumir')) $('#b-assumir').onclick=function(){ espera(this,'…',function(){ return api({acao:'assumir',conversa_id:cv.id}).then(function(){ S.cart=null; toast(dono?'A equipe assumiu. A Maia para de responder o dono.':'A equipe assumiu. A Maia para de responder esse cliente.'); return carrega(); }); }); };
     if($('#b-devolver')) $('#b-devolver').onclick=function(){ espera(this,'…',function(){ return api({acao:'devolver',conversa_id:cv.id}).then(function(){ S.cart=null; toast('Devolvido pra Maia.'); return carrega(); }); }); };
+    if($('#b-apagar')) $('#b-apagar').onclick=function(){
+      if(!confirm('Apagar TODOS os dados de '+nm+' neste negócio?\n\nConversa, mensagens, contato do funil, histórico e as fotos e áudios que ele mandou. Não dá pra desfazer.')) return;
+      espera(this,'apagando…',function(){ return api({acao:'apagar_contato',negocio_id:n.id,conversa_id:cv.id,confirmar:true}).then(function(r){ S.cart=null; S.cvSel=null; toast('Dados apagados: '+plural(r.msgs,'mensagem','mensagens')+', '+plural(r.midias,'arquivo')+'.'); return carrega(); }); });
+    };
     var fcl=$('#f-cli');
     if(fcl) fcl.onsubmit=function(ev){ ev.preventDefault(); var t=fcl.texto.value.trim(); if(!t) return;
       espera($('button',fcl),'…',function(){ return api({acao:'mandar_ao_cliente',negocio_id:n.id,conversa_id:cv.id,texto:t}).then(function(r){ fcl.reset(); toast(r&&r.na_fila?(r.modelo?'Passou 24 h: foi o modelo maia_resposta. A mensagem sai quando o cliente responder.':'Passou 24 h e o modelo maia_resposta não está aprovado: a mensagem ficou guardada.'):'Mandado.'); return carrega(); }); }); };

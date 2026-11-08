@@ -6,6 +6,7 @@ import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { jeitoAtendimento } from './tom'
 import { prazoResposta } from './horario'
+import { avisoPrivacidade } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
@@ -93,6 +94,7 @@ COMO ATENDER:
 - Nunca diz que passou a conversa pra alguém ou que alguém vai entrar em contato sem chamar passar_para_o_dono NESSA MESMA resposta. Reclamação, cliente irritado ou pedido de dinheiro de volta: chama passar_para_o_dono na primeira mensagem.
 - Não supõe o gênero do cliente ("chateado/chateada"): usa palavras neutras se não souber.
 - ÁUDIO E FOTO: "(áudio) ..." é a transcrição do que o cliente falou; "(mandou uma foto: ...)" é o que aparece na foto. Se vier "${NAO_OUVIU}" ou "${NAO_VIU}", tu NÃO ouviu nem viu: diz com honestidade que não conseguiu ouvir/ver e pede pra escrever. Nunca finge que ouviu ou viu.
+- O cliente pediu pra apagar os dados dele (LGPD): diz que o pedido foi anotado e que o negócio apaga, e chama passar_para_o_dono com o motivo "pediu pra apagar os dados". O aviso de privacidade da 1ª resposta o sistema manda sozinho: tu não repete.
 - "${COMPROVANTE}": tu NUNCA confirma pagamento nem diz que "caiu". Diz que recebeu o comprovante e que o dono confere e confirma. Não usa venda_fechada (o dono já foi avisado).
 FORMATO: uma ou duas mensagens, cada uma entre <msg> e </msg>.`
 
@@ -109,16 +111,19 @@ export async function respondeCliente(conversa_id: string) {
   const hist = msgs.slice(-30).map(x => `${x.autor === 'cliente' ? 'CLIENTE' : x.autor === 'dono' || x.autor === 'equipe' ? 'DONO' : 'TU'}: ${x.texto}`).join('\n')
   // 07/11 (piloto): o que o cliente mandou desde a nossa última resposta. Se é só áudio/foto que não deu pra abrir, a resposta
   // é fixa (sem IA: nenhuma chance de fingir que ouviu ou viu)
+  // 07/11 (piloto, LGPD): 1ª resposta pra esse cliente (ninguém do negócio falou com ele ainda) leva o aviso de privacidade no fim
+  const primeira = !msgs.some(x => x.autor === 'maia' || x.autor === 'dono' || x.autor === 'equipe')
+  const aviso = primeira ? avisoPrivacidade(neg) : null
   const ultNossa = msgs.map(x => x.autor).lastIndexOf('maia')
   const novas = msgs.slice(ultNossa + 1).filter(x => x.autor === 'cliente')
   if (novas.length && novas.every(x => midiaFalhou(x.texto))) {
-    const primeira = !msgs.some(x => x.autor === 'maia' || x.autor === 'dono' || x.autor === 'equipe')
     const audio = novas.some(x => String(x.texto).includes(NAO_OUVIU)), foto = novas.some(x => String(x.texto).includes(NAO_VIU))
     const oque = audio && foto ? 'abrir o áudio e a foto' : audio ? 'ouvir esse áudio' : 'ver essa foto'
     const t = `${primeira ? `Oi! Aqui é a assistente virtual do ${neg.nome}. ` : ''}Não consegui ${oque}. Consegue me escrever o que precisa, por favor?`
     await mandaTexto(cv, t)
+    if (aviso) await mandaTexto(cv, aviso)
     await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-    return { mensagens: [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
+    return { mensagens: aviso ? [t, aviso] : [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
   }
   const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)) }
   const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx), 6,
@@ -140,11 +145,12 @@ export async function respondeCliente(conversa_id: string) {
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
   }
   for (const t of enviadas) await mandaTexto(cv, t)
+  if (aviso) await mandaTexto(cv, aviso)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: enviadas, ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa }
+  return { mensagens: aviso ? [...enviadas, aviso] : enviadas, ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, aviso_privacidade: !!aviso }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.

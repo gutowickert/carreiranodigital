@@ -165,6 +165,13 @@ export async function POST(req: Request) {
         return ok(r)
       }
       // 07/11 (piloto): assumir anota quando (a conversa volta pra Maia sozinha depois de 24 h sem o dono/equipe falar)
+      // 07/11 (piloto, LGPD): apaga os dados de um contato SÓ do negócio dele (conversa, mensagens, funil, mídias). Pede confirmar: true
+      case 'apagar_contato': {
+        if (!b.negocio_id) return erro('falta o negócio')
+        if (b.confirmar !== true) return erro('confirma o pedido (confirmar: true)')
+        const { apagaContato } = await import('@/lib/maia/lgpd')
+        return ok(await apagaContato(String(b.negocio_id), { conversa_id: b.conversa_id || null, lead_id: b.lead_id || null }, por))
+      }
       case 'assumir': { const [c] = await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'humano' }); if (c) await db.evento('modo_humano', c.negocio_id, { conversa_id: c.id, por }); return ok(c) }
       case 'devolver': { const [c] = await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'ia' }); if (c) await db.evento('conversa_devolvida', c.negocio_id, { conversa_id: c.id, motivo: 'painel', por }); return ok(c) }
       // só no modo de teste: faz de conta que a conversa foi assumida há 25 h
@@ -214,6 +221,7 @@ export async function POST(req: Request) {
         const { tomValido } = await import('@/lib/maia/tom')
         const at: any = { ...(n.meta?.atendimento || {}) }
         if (b.tom) at.tom = tomValido(b.tom)
+        if (b.privacidade) { const { privacidadeValida } = await import('@/lib/maia/lgpd'); at.privacidade = privacidadeValida(b.privacidade) }
         if (b.franquia !== undefined) { const f = Math.round(Number(b.franquia)); if (f > 0) at.franquia = f; else delete at.franquia }
         await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), atendimento: at } })
         await db.evento('config_atendimento', n.id, { por, mudou: Object.keys(b).filter(k => !['acao', 'negocio_id', 'por'].includes(k)) })

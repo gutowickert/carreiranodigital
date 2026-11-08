@@ -99,6 +99,26 @@ export const maiaDb = {
     await req(`/rest/v1/maia_${tab}?${qs(f)}`, { method: 'DELETE' })
   },
 
+  // 07/11 (piloto, LGPD): apaga uma pasta inteira do armazenamento (ex.: as mídias de um contato). Devolve quantos arquivos.
+  async apagaPasta(prefixo: string): Promise<number> {
+    const p = prefixo.replace(/^\/+|\/+$/g, '')
+    if (!p || p.split('/').length < 3) throw new Error('pasta curta demais pra apagar')   // nunca apaga a pasta do negócio inteiro
+    if (maiaLocal()) {
+      const dir = path.join(PASTA(), 'arquivos', p)
+      if (!fs.existsSync(dir)) return 0
+      const n = fs.readdirSync(dir).length
+      fs.rmSync(dir, { recursive: true, force: true }); return n
+    }
+    const l = await fetch(`${U()}/storage/v1/object/list/maia`, { method: 'POST', headers: H(), body: JSON.stringify({ prefix: p, limit: 1000, offset: 0 }) })
+    if (!l.ok) throw new Error('storage ' + l.status)
+    const itens: any[] = await l.json()
+    const caminhos = itens.filter(i => i?.name && i.id).map(i => `${p}/${i.name}`)
+    if (!caminhos.length) return 0
+    const r = await fetch(`${U()}/storage/v1/object/maia`, { method: 'DELETE', headers: H(), body: JSON.stringify({ prefixes: caminhos }) })
+    if (!r.ok) throw new Error('storage ' + r.status + ': ' + (await r.text()).slice(0, 200))
+    return caminhos.length
+  },
+
   evento(tipo: string, negocio_id: string | null, detalhe: any = {}) {
     return maiaDb.insere('eventos', { tipo, negocio_id, detalhe }).catch(() => null)
   },
