@@ -402,7 +402,7 @@ async function pendencias0811() {
   const quandoPost = new Date(Date.now() + 3 * 86400e3).toISOString().slice(0, 16)
   await soc('criar_post', { negocio_id: S.id, quando: quandoPost, tipo: 'foto', midias: [{ url: 'https://exemplo.com/cookie.jpg', tipo: 'foto' }], legenda: 'Ó, tu já provou o nosso cookie de pistache? Pede o teu pelo WhatsApp!', tema: 'pistache' })
   const postS = tab('pecas').find(p => p.negocio_id === S.id)
-  anota(postS && !TU.test(postS.texto) && /você|seu|Peça/i.test(postS.texto), 'P2. legenda escrita em "tu" num negócio "você" foi acertada: "' + (postS?.texto || '-') + '"')
+  anota(postS && !TU.test(postS.texto) && /Peça seu/.test(postS.texto), 'P2. legenda escrita em "tu" num negócio "você" foi acertada: "' + (postS?.texto || '-') + '"')
   if (postS) {
     await op('ajustar_peca', { peca_id: postS.id, nota: 'deixa mais curta e convida pra encomendar a caixa com 6' })
     const p2 = tab('pecas').find(p => p.id === postS.id)
@@ -437,7 +437,7 @@ async function pendencias0811() {
   anota(fases('refeito', 'sonnet') > 0, `P4. decisão de venda (proposta/ganho/perdido) refeita no sonnet: ${fases('refeito', 'sonnet')} chamadas anotadas`)
   const ci = await ver('custo_ia', { dias: 1 })
   log('    custo do cliente por modelo: ' + JSON.stringify(ci.cliente_por_modelo) + ' · por conversa: R$ ' + ci.cliente_reais_por_conversa)
-  anota(Object.keys(ci.cliente_por_modelo || {}).some(k => /haiku · barato/.test(k)) && Object.keys(ci.cliente_por_modelo || {}).some(k => /sonnet/.test(k)), 'P4. custo_ia separa o custo do cliente por modelo e fase')
+  anota(Object.keys(ci.cliente_por_modelo || {}).some(k => /haiku.*barato/.test(k)) && Object.keys(ci.cliente_por_modelo || {}).some(k => /sonnet/.test(k)), 'P4. custo_ia separa o custo do cliente por modelo e fase')
   //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })

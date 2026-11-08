@@ -17,7 +17,7 @@ import { metaReal } from './meta'
 import { conversaDoDono, mandaImagem, mandaVideo, mandaTexto, avisaEquipe } from './canal'
 import { donoAprova } from './aprovacao'
 import { comFerramentas, JEITO } from './ia'
-import { tomDoNegocio, acertaTom } from './tom'
+import { tomDoNegocio, textoNoTom } from './tom'
 import { isoBR } from '@/lib/periodos'
 import { tokenSocial, tokenWa } from './segredo'
 
@@ -100,7 +100,7 @@ export async function criaPost(negocio_id: string, d: { quando: string; tipo: Ti
   // o Instagram só aceita JPEG na foto
   if (midias.some(m => m.tipo === 'foto' && /\.(png|webp|gif|heic)(\?|$)/i.test(m.url || m.caminho || ''))) throw new Error('foto tem que ser JPEG (o Instagram não aceita PNG/WEBP)')
   // 08/11 (pendência): a legenda fala com o público do negócio: no tom dele ("você" por padrão), sem IA
-  const legenda = acertaTom(neg, String(d.legenda || '').trim())
+  const legenda = textoNoTom(neg, String(d.legenda || '').trim())
   if (!legenda) throw new Error('falta a legenda')
   if (legenda.length > 2200) throw new Error('legenda passa de 2.200 caracteres (limite do Instagram)')
   if ((legenda.match(/#[\p{L}\d_]+/gu) || []).length > 30) throw new Error('mais de 30 hashtags (limite do Instagram)')
@@ -178,7 +178,7 @@ export async function refazPost(peca: any, nota: string, quem: 'equipe' | 'dono'
   const { emJson } = await import('./ia')
   const r = await emJson<{ legenda: string }>(`${jeitoDaLegenda(neg)}\nLegenda de Instagram: começa com uma frase que prende, conteúdo útil, até 2.200 caracteres, no máximo 5 hashtags, sem inventar preço nem promoção.`,
     `NEGÓCIO: ${neg?.nome} (${neg?.nicho || ''}, ${neg?.cidade || ''}). O QUE A MAIA SABE: ${JSON.stringify(neg?.contexto || {})}\nTEMA: ${post.detalhe.tema || '-'} · FORMATO: ${post.detalhe.formato || post.detalhe.tipo}\nLEGENDA ATUAL:\n${legendaDe(peca)}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\nDevolve {"legenda":"..."}`)
-  const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: acertaTom(neg, String(r.legenda || peca.texto)).slice(0, 2200), status: 'revisao_equipe', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
+  const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: textoNoTom(neg, String(r.legenda || peca.texto)).slice(0, 2200), status: 'revisao_equipe', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
   await salva(post, { status: 'rascunho' })
   return nova
 }
