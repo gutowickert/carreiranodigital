@@ -74,6 +74,9 @@ type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string; perd
 
 // 08/11 (teste completo, #12): o cliente recusou com todas as letras? (só aí vale "perdido")
 export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|pedir|fechar|precisar)|preciso mais|tenho (mais )?interesse|me interessa|vai dar|da pra mim|compensa|obrigad[oa]?,? (nao|mas nao))|desist\w*|deixa (pra la|quieto)|esquece|comprei (em outr|no concorrente|la)|ja comprei|sem interesse|fica pra (proxima|outra))\b/.test(semAc(t))
+// 08/11 (teste completo, #19): o motivo da passagem tem que dizer alguma coisa ("Não" não é motivo)
+export const motivoClaro = (m: string) => { const s = semAc(m).replace(/[^a-z0-9 ]+/g, ' ').trim(); return s.length >= 12 && s.split(/\s+/).length >= 3 && !/^(nao|sim|ok|nada|outro|sem motivo|n a)$/.test(s) }
+export const motivoDePassagem = (m: string) => /\b(reclama\w*|pessoa|humano|atendente|devolu\w*|reembols\w*|dinheiro de volta|estorn\w*|apagar|dados|irritad\w*|brav[oa]|delicad\w*|ameac\w*|processo|procon|juridic\w*|advogad\w*|cancel\w*|errad\w*|estragad\w*|insatisf\w*|ofend\w*|agressiv\w*)\b/.test(semAc(m))
 // pergunta "pro dono" que na verdade é recado interno (etapa, funil, engano)
 export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
@@ -125,9 +128,14 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
         return { ok: true, prazo: prazo.texto } } },
-    { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, ou é um caso delicado.',
+    { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, pede devolução, pede pra apagar os dados, ou é um caso delicado. NUNCA numa conversa normal (preço, entrega, áudio que tu entendeu). O motivo é uma frase clara pro dono.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async ({ motivo }) => { await passaConversa(neg, cv, lead, ctx, String(motivo || ''), 'maia'); return { ok: true } } },
+      // 08/11 (teste completo, #19 Tiago): a IA passou um áudio respondido certinho com o motivo "Não", e o dono recebeu
+      // "Tiago precisa de ti: Não". Agora: motivo claro E um gatilho de verdade (na conversa ou no motivo); senão ela segue atendendo
+      roda: async ({ motivo }) => {
+        const m = String(motivo || '').trim()
+        if (!motivoClaro(m) || !(gatilhoHumano(ctx.textoCliente || '') || motivoDePassagem(m))) return { erro: 'não passou: passar_para_o_dono é só com motivo claro (o cliente pediu uma pessoa, reclamou, pediu devolução, pediu pra apagar os dados, ou é um caso delicado). Tu segue atendendo normalmente.' }
+        await passaConversa(neg, cv, lead, ctx, m, 'maia'); return { ok: true } } },
   ]
 }
 
