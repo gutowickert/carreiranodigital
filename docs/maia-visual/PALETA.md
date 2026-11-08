@@ -46,4 +46,12 @@ Os da escola: fundo `#0f0c17`, superfícies `#171320` / `#1f1a2b`, borda `#261f3
 |---|---|
 | `maia-avatar.webp` (192 px) | rosto oficial recortado, pros avatares |
 | `maia-rosto.webp` (720 px) | rosto oficial, foto grande do site |
-| `maia-cena-estrategista.webp`, `-designer`, `-editora`, `-atendendo`, `-numeros`, `-resultado` (880 px) | quadros do vídeo `maia-como-funciona-v1.mp4` (a parte de baixo, sem a legenda) |
+| `maia-cena-*.webp` (880 px) | quadros do vídeo antigo; **fora do site desde 08/11** (a Maia mudava de um quadro pro outro) |
+| `maia-estrategista`, `-trafego`, `-editora`, `-vendedora`, `-analista` (.webp, 640 px) | a faixa "Sete profissionais": a mesma Maia do avatar, no escritório claro (geradas em 08/11 com a foto `maia.jpg` de referência) |
+| `maia-escritorio.webp` (720×900) | "Prazer, Maia": ela no escritório, da cintura pra cima, acenando |
+| `maia-passo-cria`, `-atende`, `-mede`, `-melhora` (.webp, 560×700) | os 4 passos de "Como a Maia trabalha" (outro recorte das fotos da faixa) |
+| `maia-tchau.webp` (420 px) | o círculo do fim da página |
+
+## Cores de apoio do site (08/11)
+
+Pra dar vida aos passos sem escurecer: laranja da Maia `#ea580c` (número grande) e `#c2410c` (texto, 5,2:1 no branco) sobre `#fff1e6`; faixas claras lilás `#f1ebfe`, pêssego `#fff1e6`, menta `#e9f8ef` e azul `#eef0ff` (anil `#4f46e5`). Sempre fundo claro.
