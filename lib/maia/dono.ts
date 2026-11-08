@@ -28,6 +28,35 @@ async function descreveFoto(buf: Buffer, mime: string, neg: any) {
   } catch { return null }
 }
 
+// 08/11 (teste completo, 8f): o que se ouve no vídeo do dono (a Vercel não tem ffmpeg; o Deepgram aceita o mp4 direto)
+async function falaDoVideo(buf: Buffer, mime: string) {
+  if (maiaLocal() && process.env.MAIA_LOCAL_DEEPGRAM !== '1') return 'vídeo (a fala não foi ouvida no modo de teste)'
+  try {
+    const { transcreve } = await import('./demo')
+    const t = (await transcreve(buf, mime || 'video/mp4')).trim()
+    return t ? `vídeo com fala: "${t.slice(0, 400)}"` : 'vídeo sem fala'
+  } catch { return 'vídeo' }
+}
+
+// a oficina tirou 3 quadros do vídeo (começo, meio, fim): a IA descreve e junta com a fala. Sem quadros, marca e segue
+export async function descreveVideo(midia_id: string, quadros_b64: string[], duracao: number | null) {
+  const m = await db.um('midias', { id: midia_id })
+  if (!m) return { erro: 'mídia não existe' }
+  const neg = await db.um('negocios', { id: m.negocio_id })
+  const fala = String(m.descricao || '').replace(/\s*\(Quadros: descrevendo\)\s*$/, '')
+  let quadros = 'não deu pra ver'
+  if (quadros_b64.length) {
+    try {
+      const r = await emJson<{ descricao: string }>('Tu descreves vídeos curtos de pequenos negócios pra uma redatora de anúncios. Recebes 3 quadros (começo, meio e fim) do mesmo vídeo. Objetivo, em português, até 35 palavras: o que aparece, o que acontece, a qualidade (nítido, escuro, tremido) e se serve pra anúncio. Só o que se vê: não inventa produto, sabor nem preço.',
+        `Vídeo do negócio ${neg?.nome || ''} (${neg?.nicho || ''}). Devolve {"descricao":"..."}`, quadros_b64.map(b64 => ({ b64, mime: 'image/jpeg' })), { uso: { tipo: 'outro', negocio_id: m.negocio_id } })
+      quadros = String(r?.descricao || '').trim() || quadros
+    } catch { /* fica "não deu pra ver" */ }
+  }
+  const descricao = `${duracao ? 'Vídeo de ' + Math.round(duracao) + ' s' : 'Vídeo'}. Quadros: ${quadros}. ${fala && !/^vídeo$/i.test(fala) ? fala.charAt(0).toUpperCase() + fala.slice(1) : ''}`.trim()
+  await db.atualiza('midias', { id: m.id }, { descricao: descricao.slice(0, 900), ...(duracao ? { duracao: Math.round(duracao * 10) / 10 } : {}) })
+  return { ok: true, descricao }
+}
+
 // uma mensagem que chegou do dono. m = a mensagem no formato da Meta; midia = já baixada (simulação) ou baixa da Meta
 export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?: { buf: Buffer; mime: string }) {
   if (m.id && (await db.um('msgs', { wamid: m.id }))) return null   // a Meta repete eventos
@@ -46,7 +75,9 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
         const ext = tipo === 'video' ? 'mp4' : /png/.test(mime) ? 'png' : 'jpg'
         const caminho = await db.sobe(`${neg.id}/midias/${crypto.randomUUID().slice(0, 8)}.${ext}`, buf, mime)
         const legenda = m.image?.caption || m.video?.caption || m.document?.caption || null
-        const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : null
+        // 08/11 (teste completo, 8f): vídeo também ganha descrição: a fala (Deepgram, aqui mesmo) e depois os quadros (a oficina
+        // tira 3 quadros com o ffmpeg e o sistema descreve: descreveVideo)
+        const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : await falaDoVideo(buf, mime)
         const md = await db.insere('midias', { negocio_id: neg.id, tipo, path: caminho, mime, legenda, descricao })
         midia_id = md.id
         texto = `(mandou ${tipo === 'video' ? 'um vídeo' : 'uma foto'}${descricao ? ': ' + descricao : ''})${legenda ? ' ' + legenda : ''}`

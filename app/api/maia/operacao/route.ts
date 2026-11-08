@@ -138,6 +138,19 @@ export async function POST(req: Request) {
         if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
         return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
       }
+      // 08/11 (teste completo, 8b): o logo do negócio (vai na barra da arte e no cartão final do vídeo)
+      case 'subir_logo': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const mime = String(b.mime || '')
+        if (!/^image\/(png|jpeg|webp)$/.test(mime) || !b.arquivo_b64) return erro('manda o logo em PNG, JPG ou WEBP')
+        const buf = Buffer.from(String(b.arquivo_b64), 'base64')
+        if (buf.length > 5 * 1024 * 1024) return erro('logo grande demais (máx. 5 MB)')
+        const caminho = await db.sobe(`${n.id}/marca/logo-${Date.now().toString(36)}.${mime.split('/')[1].replace('jpeg', 'jpg')}`, buf, mime)
+        const [atual] = await db.atualiza('negocios', { id: n.id }, { marca: { ...(n.marca || {}), logo_path: caminho } })
+        await db.evento('logo_novo', n.id, { por })
+        return ok(semChave(atual))
+      }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))
       case 'ajustar_peca': if (!b.nota) return erro('escreve o ajuste'); return ok(await equipeAjuste(b.peca_id, b.nota, por))

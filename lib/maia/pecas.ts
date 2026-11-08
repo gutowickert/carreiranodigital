@@ -6,7 +6,7 @@ import { emJson, JEITO } from './ia'
 import { avisaEquipe } from './canal'
 import { tomDoNegocio, acertaTom, ctaNoTom } from './tom'
 
-export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'post'; midia_id: string; titulo: string; gancho: string; texto: string; cta: string }
+export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'post'; midia_id: string; titulo: string; gancho: string; texto: string; cta: string; angulo?: string; preco_na_arte?: string | null }
 
 // 08/11 (teste completo): o anúncio fala com o CLIENTE do negócio, então vale o tom do negócio (tom.ts), não o jeito da Maia
 // com o dono. No teste, as 6 peças de uma doceria em "você" saíram em "tu" ("Pede o teu orçamento", "Ó o teu lembrete").
@@ -23,6 +23,8 @@ function regraGancho(neg: any) {
 - A região entra com leveza e só quando ajuda (entrega, atendimento perto, quem é da cidade). NUNCA abre todo anúncio com "<cidade> e região" (decisão de 06/11).
 - Deixa claro O QUE É e PRA QUEM É. Uma promessa concreta, sem exagero e sem promessa de resultado que o negócio não garante.
 - Usa SÓ o que o dono contou (preço, condição, prazo). Não inventa preço, desconto nem brinde.
+- A descrição da foto/vídeo serve SÓ pra escolher a mídia. Detalhe do produto (o que vem junto, sabor, recheio, acompanhamento, embalagem, quantidade) só se estiver em O QUE A MAIA SABE. A foto pode mostrar coisas que NÃO vêm no produto (potinhos, molhos, decoração, cenário): não cita nada disso.
+- Anúncio de PREÇO: o preço da base vai NO GANCHO (o gancho é o texto que aparece grande na arte), ex.: "Caixa com 4 cookies por R$ 28".
 - Nada de "hoje", "amanhã", "essa semana" nem dia da semana no anúncio: ele roda por dias e semanas (no domingo, "amanhã" vira uma segunda em que o negócio pode estar fechado). Prazo vai como regra: "com 1 dia de antecedência".
 - Gancho curto (até 9 palavras), pra ir em cima da foto. Texto do anúncio com até 3 frases curtas, sem hashtag, no máximo 1 emoji.
 - CTA de WhatsApp curto e do tipo certo: produto pronto ou encomenda → ${voce ? '"Peça pelo WhatsApp", "Chame no WhatsApp", "Encomende pelo WhatsApp"' : '"Pede pelo WhatsApp", "Chama no WhatsApp", "Encomenda pelo WhatsApp"'}; serviço com hora marcada → ${voce ? '"Agende pelo WhatsApp"' : '"Agenda pelo WhatsApp"'}; "orçamento" SÓ quando o preço não é fixo.`
@@ -41,23 +43,63 @@ export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: 
   if (!midias.length) return { ok: false, erro: 'o dono ainda não mandou fotos nem vídeos' }
   const lista = midias.map(m => `- ${m.id} · ${m.tipo}${m.duracao ? ' ' + Math.round(m.duracao) + 's' : ''} · ${m.descricao || m.legenda || 'sem descrição'}`).join('\n')
   const qtd = Math.min(opc.quantidade || 3, 6)
+  // 08/11 (teste completo, 8e): o que já saiu com cada mídia (pra não repetir a mesma foto com o mesmo layout)
+  const usados = await layoutsUsados(neg.id)
+  const recentes = (await db.lista('pecas', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 12 })).filter(p => !['descartada', 'erro'].includes(p.status) && p.tipo !== 'relatorio' && p.gancho)
+  const recentesTxt = recentes.length ? `\nANÚNCIOS QUE JÁ EXISTEM (não repete o mesmo gancho nem o mesmo ângulo com a mesma mídia): ${recentes.map(p => `"${p.gancho}" (mídia ${p.midia_ids?.[0] || '-'})`).join('; ')}` : ''
   const r = await emJson<{ pecas: NovaPeca[] }>(`${ESCRITORA}\nTu também és a estrategista: escolhes o ângulo de cada anúncio.\n${regraGancho(neg)}`,
     `${contextoTxt(neg)}\n\nFOTOS E VÍDEOS QUE O DONO MANDOU:\n${lista}\n\n${opc.tema ? 'TEMA PEDIDO: ' + opc.tema + '\n' : ''}NUNCA usa uma mídia que não é do próprio negócio ou que a descrição diz que não serve pra anúncio (documento, print, orçamento de outra empresa, foto tremida ou escura). Se nenhuma servir, devolve {"pecas":[]}.
-Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor do cliente, a ocasião). Usa uma mídia por anúncio, a melhor pra cada ângulo; vídeo vira anuncio_video.
-Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","gancho":"...","texto":"...","cta":"..."}]}`)
+Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor do cliente, a ocasião). Usa uma mídia por anúncio, a melhor pra cada ângulo; vídeo vira anuncio_video. Varia as mídias: só repete uma se não tiver outra que sirva pro ângulo.${recentesTxt}
+"angulo": produto, preco, presente, ocasiao, dor, encomenda, lembrete ou prova. "preco_na_arte": o preço da base que vai em destaque na arte (ex.: "R$ 28") quando o ângulo é preço; senão null.
+Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","angulo":"...","gancho":"...","texto":"...","cta":"...","preco_na_arte":null}]}`)
   const criadas: any[] = []
   const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd))
   for (const p of lote) {
     const m = midias.find(x => x.id === p.midia_id) || midias[0]
     const tipo = m.tipo === 'video' ? 'anuncio_video' : 'anuncio_imagem'
     const tx = noTom(neg, p)
+    // 08/11 (teste completo, 8d): anúncio de preço sem o preço na arte → o preço da base vai em destaque (etiqueta da arte)
+    const preco = precoNaArte(neg, p, tx.gancho)
+    // 8e: o layout da arte é escolhido aqui (não mais pelo sorteio do id): a mesma mídia nunca repete o layout
+    const layout = tipo === 'anuncio_imagem' ? escolheLayout(usados, m.id) : null
     const peca = await db.insere('pecas', { negocio_id: neg.id, tipo, status: 'gerando', titulo: p.titulo, gancho: tx.gancho, texto: tx.texto, cta: tx.cta, midia_ids: [m.id] })
-    await db.insere('tarefas', { negocio_id: neg.id, tipo: tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: m.id } })
+    await db.insere('tarefas', { negocio_id: neg.id, tipo: tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: m.id, ...(layout ? { layout } : {}), ...(preco ? { preco } : {}), ...(p.angulo ? { angulo: p.angulo } : {}) } })
     await db.atualiza('midias', { id: m.id }, { usos: (m.usos || 0) + 1 })
     criadas.push(peca)
   }
   await db.evento('pecas_geradas', neg.id, { quantas: criadas.length, tema: opc.tema || null })
   return { ok: true, pecas: criadas.map(c => ({ id: c.id, tipo: c.tipo, gancho: c.gancho })) }
+}
+
+// ---- 08/11 (teste completo, 8d e 8e) ----
+export const LAYOUTS = ['cabecalho', 'base', 'faixa']
+// mídia → layouts que já saíram com ela (peças dos últimos 30 dias que não foram descartadas)
+async function layoutsUsados(negocio_id: string) {
+  const usados = new Map<string, string[]>()
+  const vivas = new Set((await db.lista('pecas', { negocio_id })).filter(p => !['descartada', 'erro'].includes(p.status) && Date.now() - Date.parse(p.criado_em || 0) < 30 * 86400e3).map(p => p.id))
+  for (const t of await db.lista('tarefas', { negocio_id }, { ordem: 'criado_em' })) {
+    if (t.tipo !== 'arte' || !vivas.has(t.peca_id) || !t.dados?.layout || !t.dados?.midia_id) continue
+    usados.set(t.dados.midia_id, [...(usados.get(t.dados.midia_id) || []), t.dados.layout])
+  }
+  return usados
+}
+function escolheLayout(usados: Map<string, string[]>, midia_id: string) {
+  const ja = usados.get(midia_id) || []
+  const total = (l: string) => [...usados.values()].flat().filter(x => x === l).length
+  const livre = LAYOUTS.filter(l => !ja.includes(l))
+  const l = (livre.length ? livre : LAYOUTS).slice().sort((a, b) => total(a) - total(b) || ja.filter(x => x === a).length - ja.filter(x => x === b).length)[0]
+  usados.set(midia_id, [...ja, l])
+  return l
+}
+// o preço que vai em destaque na arte: só quando o ângulo é preço, o gancho não tem o preço e o valor existe na base
+function precoNaArte(neg: any, p: NovaPeca, gancho: string) {
+  const ehPreco = /^pre[cç]o/i.test(p.angulo || '') || /\bpre[cç]o\b/i.test(p.titulo || '')
+  if (!ehPreco || /R\$\s?\d/.test(gancho)) return null
+  const cand = String(p.preco_na_arte || '').match(/R\$\s?\d+(?:[.,]\d{2})?/)?.[0] || String(p.texto || '').match(/R\$\s?\d+(?:[.,]\d{2})?/)?.[0]
+  if (!cand) return null
+  // o valor (parte inteira) tem que estar na base: nunca um preço inventado
+  const inteiro = (cand.match(/\d+/) || [''])[0]
+  return inteiro && JSON.stringify(neg.contexto || {}).split(/\D+/).includes(inteiro) ? cand.replace(/R\$\s?/, 'R$ ') : null
 }
 
 // 08/11 (teste completo): "Quer cookies amanhã? Encomenda hoje." num anúncio que roda no domingo e na segunda (fechado).
@@ -87,11 +129,13 @@ export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
   // 06/11: post do Instagram/Facebook (lib/maia/social.ts) refaz só a legenda, sem regra de anúncio e sem a oficina
   if (peca.tipo === 'post' || peca.tipo === 'video') { const { refazPost } = await import('./social'); const p = await refazPost(peca, nota, quem); if (p) return p }
   const r = await emJson<{ gancho: string; texto: string; cta: string; trocar_midia: boolean }>(`${ESCRITORA}\n${regraGancho(neg)}`,
-    `${contextoTxt(neg)}\n\nANÚNCIO ATUAL:\nGancho: ${peca.gancho}\nTexto: ${peca.texto}\nCTA: ${peca.cta}\nMídia: ${m?.descricao || m?.legenda || '-'}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\n\nRefaz respeitando o pedido. Se o pedido for só da imagem (cor, foto, corte), mantém o texto. Devolve: {"gancho":"...","texto":"...","cta":"...","trocar_midia":false}`)
+    `${contextoTxt(neg)}\n\nANÚNCIO ATUAL:\nGancho: ${peca.gancho}\nTexto: ${peca.texto}\nCTA: ${peca.cta}\nMídia (só pra tu saber o que aparece; não vira detalhe do produto): ${m?.descricao || m?.legenda || '-'}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\n\nRefaz respeitando o pedido. Se o pedido for só da imagem (cor, foto, corte), mantém o texto. Devolve: {"gancho":"...","texto":"...","cta":"...","trocar_midia":false}`)
   const tx = noTom(neg, r)
   const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: tx.gancho, texto: tx.texto, cta: tx.cta, status: 'gerando', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
   if (peca.tipo === 'anuncio_imagem' || peca.tipo === 'anuncio_video' || peca.tipo === 'post') {
-    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota } })
+    const antes = (await db.lista('tarefas', { peca_id: peca.id }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]?.dados || {}
+    const preco = /R\$\s?\d/.test(tx.gancho) ? null : antes.preco || null
+    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota, ...(antes.layout ? { layout: antes.layout } : {}), ...(preco ? { preco } : {}) } })
   } else await db.atualiza('pecas', { id: peca.id }, { status: 'revisao_equipe' })
   return nova
 }

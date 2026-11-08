@@ -83,17 +83,19 @@ const contraste = (a, b) => { const x = luz(a), y = luz(b); return (Math.max(x, 
 const textoSobre = fundo => contraste(fundo, '#ffffff') >= contraste(fundo, '#141414') ? '#ffffff' : '#141414'
 
 // as cores do negócio. Aceita {cores:{primaria,secundaria,texto}} e também cor_primaria/cor_secundaria soltas.
-// Sem marca: escuro neutro com destaque roxo.
+// 08/11 (teste completo, 8b): sem marca, um NEUTRO ELEGANTE (grafite quente com areia), nunca o roxo da Maia: o anúncio é
+// do negócio do cliente, não da Maia
+const NEUTRO = { primaria: '#1f1d1a', destaque: '#d8c3a0' }
 function coresDaMarca(marca = {}) {
   const c = marca.cores || {}
   const pega = (...k) => k.map(x => c[x] != null ? c[x] : marca[x]).find(hexOk)
-  const primaria = hex(pega('primaria', 'cor_primaria', 'principal') || '#111114')
-  const secundaria = hex(pega('secundaria', 'cor_secundaria', 'destaque') || (pega('primaria', 'cor_primaria') ? primaria : '#7c3aed'))
+  const primaria = hex(pega('primaria', 'cor_primaria', 'principal') || NEUTRO.primaria)
+  const secundaria = hex(pega('secundaria', 'cor_secundaria', 'destaque') || (pega('primaria', 'cor_primaria') ? primaria : NEUTRO.destaque))
   let texto = pega('texto', 'cor_texto')
   texto = texto && contraste(hex(texto), primaria) >= 4.5 ? hex(texto) : textoSobre(primaria)
-  // o botão do CTA precisa aparecer em cima da barra: se a secundária some na primária, usa o roxo ou o branco
+  // o botão do CTA precisa aparecer em cima da barra: se a secundária some na primária, usa a areia neutra ou o branco
   let botao = secundaria
-  if (contraste(botao, primaria) < 1.6) botao = contraste('#7c3aed', primaria) >= 1.6 ? '#7c3aed' : '#ffffff'
+  if (contraste(botao, primaria) < 1.6) botao = contraste(NEUTRO.destaque, primaria) >= 1.6 ? NEUTRO.destaque : '#ffffff'
   return { primaria, secundaria, texto, botao, textoBotao: textoSobre(botao), textoSecundaria: textoSobre(secundaria) }
 }
 

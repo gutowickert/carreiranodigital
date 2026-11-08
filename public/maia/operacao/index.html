@@ -1267,9 +1267,10 @@ function formNovo(){
     cmp('verba_dia','Verba por dia (R$)','number','Ex.: 20')+
     cmp('ad_account_id','ID da conta de anúncio','text','act_123…')+
     cmp('page_id','ID da página','text','1234…')+
-    '</div><div class="campo"><label>Cores da marca</label><div class="cores">'+
-      corCampo('cor_primaria','Primária','#7c3aed')+corCampo('cor_secundaria','Secundária','#e879f9')+corCampo('cor_texto','Texto','#17121f')+
-    '</div></div><button class="btn ok larga">'+ic('check')+'Cadastrar negócio</button></form>';
+    '</div><div class="campo"><label><input type="checkbox" name="usa_cores"> Usar as cores da marca do cliente (sem marcar: neutro elegante, grafite e areia)</label><div class="cores">'+
+      corCampo('cor_primaria','Primária','#1f1d1a')+corCampo('cor_secundaria','Destaque','#d8c3a0')+corCampo('cor_texto','Texto','#ffffff')+
+    '</div></div><div class="campo"><label for="n-logo">Logo (opcional, PNG ou JPG)</label><input id="n-logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"></div>'+
+    '<button class="btn ok larga">'+ic('check')+'Cadastrar negócio</button></form>';
 }
 function cmp(nome,rot,tipo,ph,obr,val){
   return '<div class="campo"><label for="n-'+nome+'">'+esc(rot)+'</label><input id="n-'+nome+'" name="'+nome+'" type="'+tipo+'"'+(tipo==='number'?' inputmode="decimal" step="any" min="0"':'')+' placeholder="'+esc(ph||'')+'"'+(obr?' required':'')+(val!=null?' value="'+esc(val)+'"':'')+'></div>';
@@ -1282,8 +1283,9 @@ function ligaFormNovo(){
     var corpo={acao:'criar_negocio',nome:d.nome.trim(),nicho:d.nicho,cidade:d.cidade,regiao:d.regiao,dono_nome:d.dono_nome,dono_whatsapp:d.dono_whatsapp,plano:d.plano,
       verba_dia:d.verba_dia?Number(d.verba_dia):null,
       meta:{ad_account_id:d.ad_account_id||undefined,page_id:d.page_id||undefined},
-      marca:{cores:{primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}}};
-    espera($('button',f),'cadastrando…',function(){ return api(corpo).then(function(n){ toast('Negócio cadastrado.'); S.cart=null; S.negs=null; api('acao=negocios').then(function(x){ S.negs=x||[]; pintaMenuNegs(); }); location.hash='#negocio/'+n.id+'/dados'; }); });
+      marca:d.usa_cores?{cores:{primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}}:{}};
+    var logo=f.logo.files[0];
+    espera($('button',f),'cadastrando…',function(){ return api(corpo).then(function(n){ return logo?lerB64(logo).then(function(b64){ return api({acao:'subir_logo',negocio_id:n.id,arquivo_b64:b64,mime:logo.type||'image/png'}); }).then(function(){ return n; }):n; }).then(function(n){ toast('Negócio cadastrado.'); S.cart=null; S.negs=null; api('acao=negocios').then(function(x){ S.negs=x||[]; pintaMenuNegs(); }); location.hash='#negocio/'+n.id+'/dados'; }); });
   };
 }
 
@@ -1349,7 +1351,8 @@ function subDados(n,box){
       '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial"'+(n.plano!=='completa'?' selected':'')+'>Essencial</option><option value="completa"'+(n.plano==='completa'?' selected':'')+'>Completa</option></select></div>'+
       cmp('verba_dia','Verba por dia (R$)','number','',false,n.verba_dia==null?'':n.verba_dia)+
       cmp('ad_account_id','ID da conta de anúncio','text','act_…',false,m.ad_account_id||'')+cmp('page_id','ID da página','text','',false,m.page_id||'')+
-    '</div><div class="campo"><label>Cores da marca</label><div class="cores">'+corCampo('cor_primaria','Primária',cores.primaria||'#7c3aed')+corCampo('cor_secundaria','Secundária',cores.secundaria||'#e879f9')+corCampo('cor_texto','Texto',cores.texto||'#17121f')+'</div></div>'+
+    '</div><div class="campo"><label><input type="checkbox" name="usa_cores"'+(cores.primaria?' checked':'')+'> Usar as cores da marca do cliente (sem marcar: neutro elegante, grafite e areia)</label><div class="cores">'+corCampo('cor_primaria','Primária',cores.primaria||'#1f1d1a')+corCampo('cor_secundaria','Destaque',cores.secundaria||'#d8c3a0')+corCampo('cor_texto','Texto',cores.texto||'#ffffff')+'</div></div>'+
+    '<div class="campo"><label for="n-logo">Logo '+((n.marca&&n.marca.logo_path)?'(já tem um; escolher outro troca)':'(opcional, PNG ou JPG)')+'</label><input id="n-logo" name="logo" type="file" accept="image/png,image/jpeg,image/webp"></div>'+
     '<button class="btn ok larga">'+ic('check')+'Salvar dados</button></form>'+
     '</div>'+
     '<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>O que a Maia sabe do negócio</h2><p class="mu peq" style="margin-top:4px">Serviços, preços, público, horário, tom… Uma linha por assunto. Lista ou objeto pode ir em JSON.</p></div></div><div class="kv" id="kv"></div>'+
@@ -1370,10 +1373,11 @@ function subDados(n,box){
   f.onsubmit=function(ev){
     ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
     var meta=Object.assign({},n.meta||{},{ad_account_id:d.ad_account_id||undefined,page_id:d.page_id||undefined});
-    var marca=Object.assign({},n.marca||{},{cores:{primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}});
+    var marca=Object.assign({},n.marca||{}); if(d.usa_cores) marca.cores={primaria:d.cor_primaria,secundaria:d.cor_secundaria,texto:d.cor_texto}; else delete marca.cores;
+    var logo=f.logo.files[0];
     var c={acao:'atualizar_negocio',id:n.id,nome:d.nome,nicho:d.nicho||null,cidade:d.cidade||null,regiao:d.regiao||null,dono_nome:d.dono_nome||null,plano:d.plano,verba_dia:d.verba_dia?Number(d.verba_dia):null,meta:meta,marca:marca};
     if(d.dono_whatsapp) c.dono_whatsapp=d.dono_whatsapp;
-    espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ Object.assign(n,r||{}); S.cart=null; S.negs=null; recarregaCab(n); api('acao=negocios').then(function(x){ S.negs=x||[]; pintaMenuNegs(); }); toast('Dados salvos.'); }); });
+    espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ return logo?lerB64(logo).then(function(b64){ return api({acao:'subir_logo',negocio_id:n.id,arquivo_b64:b64,mime:logo.type||'image/png'}); }):r; }).then(function(r){ Object.assign(n,r||{}); f.logo.value=''; S.cart=null; S.negs=null; recarregaCab(n); api('acao=negocios').then(function(x){ S.negs=x||[]; pintaMenuNegs(); }); toast('Dados salvos.'); }); });
   };
   var kv=$('#kv');
   function linha(k,v){

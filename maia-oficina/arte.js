@@ -78,7 +78,7 @@ html,body{width:${W}px;height:${H}px;overflow:hidden;background:${C.primaria};fo
 </style></head><body data-layout="${layout}">
 ${foto ? `<img id="foto" src="${foto}">` : '<div id="vazio"></div>'}
 <div id="sombra"></div>
-<div id="caixa">${etiqueta ? `<div id="etq">${esc(etiqueta)}</div>` : ''}<div id="tit">${esc(titulo)}</div></div>
+<div id="caixa">${etiqueta ? `<div id="etq"${/^R\$\s?\d/.test(etiqueta) ? ' style="font-size:64px;padding:14px 30px;font-weight:900"' : ''}>${esc(etiqueta)}</div>` : ''}<div id="tit">${esc(titulo)}</div></div>
 <div id="barra"><div id="marca">${logo ? `<div id="logo"><img src="${logo}"></div>` : ''}<div id="nome">${esc(nome)}</div></div>${cta ? `<div id="cta">${esc(cta)}</div>` : ''}</div>
 </body></html>`
 }
@@ -151,9 +151,13 @@ async function ajusta(pg) {
 }
 
 // gera a arte e grava em "saida" (.jpg ou .png). Devolve o relatório do ajuste.
-async function gerarArte({ foto, gancho, cta, nome, marca, logo, chave, versao, saida, navegador }) {
+// 08/11 (teste completo): "layout" = o que o sistema escolheu pro lote (a mesma foto não repete layout); a versão seguinte
+// troca a partir dele. "preco" = o preço da base em destaque (anúncio de preço cujo gancho não tem o preço): vai na etiqueta
+async function gerarArte({ foto, gancho, cta, nome, marca, logo, chave, versao, saida, navegador, layout: pedido, preco }) {
   const cores = coresDaMarca(marca || {}), fontes = fontesDaMarca(marca || {})
-  const layout = LAYOUTS[(numeroDe(chave || gancho) + Math.max(0, (+versao || 1) - 1)) % LAYOUTS.length]
+  const ini = LAYOUTS.includes(pedido) ? LAYOUTS.indexOf(pedido) : numeroDe(chave || gancho)
+  const layout = LAYOUTS[(ini + Math.max(0, (+versao || 1) - 1)) % LAYOUTS.length]
+  if (preco && !/R\$\s?\d/.test(gancho || '') && !separaGancho(gancho).etiqueta) gancho = `${preco}: ${gancho}`
   const fotoUri = preparaFoto(foto, path.dirname(saida))
   const br = navegador || await abreNavegador()
   try {

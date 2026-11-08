@@ -17,7 +17,15 @@ export async function GET(req: Request) {
   const presas = (await db.lista('tarefas', { status: 'rodando' })).filter(t => t.pego_em && Date.now() - Date.parse(t.pego_em) > 20 * 60e3)
   for (const t of presas) await db.atualiza('tarefas', { id: t.id }, { status: 'fila', tentativas: (t.tentativas || 0) + 1 })
   const t = fila[0]
-  if (!t) return Response.json({ tarefa: null })
+  // 08/11 (teste completo, 8f): sem arte nem vídeo na fila, a oficina (que tem o ffmpeg) tira 3 quadros dos vídeos do dono
+  // que ainda não foram descritos. A Vercel não tem ffmpeg; a fala do vídeo já foi transcrita quando ele chegou (dono.ts)
+  if (!t) {
+    const v = (await db.lista('midias', { tipo: 'video' }, { ordem: 'criado_em', desc: true, limite: 30 }))
+      .find(m => !/Quadros:/.test(m.descricao || '') && Date.now() - Date.parse(m.criado_em || 0) < 3 * 86400e3)
+    if (!v) return Response.json({ tarefa: null })
+    await db.atualiza('midias', { id: v.id }, { descricao: `${v.descricao || 'vídeo'} (Quadros: descrevendo)` })
+    return Response.json({ tarefa: null, descrever: { midia_id: v.id, url: await db.link(v.path), mime: v.mime } })
+  }
   await db.atualiza('tarefas', { id: t.id }, { status: 'rodando', pego_em: new Date().toISOString() })
   const [peca, neg] = await Promise.all([db.um('pecas', { id: t.peca_id }), db.um('negocios', { id: t.negocio_id })])
   const midia = t.dados?.midia_id ? await db.um('midias', { id: t.dados.midia_id }) : null
@@ -29,7 +37,8 @@ export async function GET(req: Request) {
     : { arte: { caminho: base + '.jpg', url: await db.linkEnvio(base + '.jpg') } }
   return Response.json({
     upload,
-    tarefa: { id: t.id, tipo: t.tipo, ajuste: t.dados?.ajuste || null },
+    // 08/11 (teste completo): o layout escolhido no lote (8e) e o preço da base em destaque (8d)
+    tarefa: { id: t.id, tipo: t.tipo, ajuste: t.dados?.ajuste || null, layout: t.dados?.layout || null, preco: t.dados?.preco || null },
     peca: peca && { id: peca.id, tipo: peca.tipo, gancho: peca.gancho, texto: peca.texto, cta: peca.cta, versao: peca.versao },
     negocio: neg && { id: neg.id, nome: neg.nome, nicho: neg.nicho, cidade: neg.cidade, regiao: neg.regiao, marca: { ...(neg.marca || {}), logo_url: logo }, whatsapp: neg.contexto?.whatsapp_publico || null },
     midia: midia && { id: midia.id, tipo: midia.tipo, mime: midia.mime, url: await db.link(midia.path), legenda: midia.legenda },
@@ -39,6 +48,11 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   if (!oficinaOk(req)) return naoAutorizado()
   const b = await req.json().catch(() => ({}))
+  // 08/11 (8f): os quadros do vídeo do dono que a oficina tirou
+  if (b.midia_id && Array.isArray(b.quadros_b64)) {
+    const { descreveVideo } = await import('@/lib/maia/dono')
+    return Response.json(await descreveVideo(String(b.midia_id), b.quadros_b64.slice(0, 3).map(String), Number(b.duracao) || null))
+  }
   const t = await db.um('tarefas', { id: b.tarefa_id })
   if (!t) return Response.json({ erro: 'tarefa não existe' }, { status: 404 })
   if (b.erro) { await oficinaEntregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }

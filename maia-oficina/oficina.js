@@ -5,7 +5,7 @@
 //   node oficina.js --teste-arte  <foto>  "<gancho>" "<cta>" "<nome>"   → grava em saida/
 //   node oficina.js --teste-video <video> "<gancho>" "<cta>" "<nome>"   → grava em saida/
 // Opcional nos testes: --marca '{"cores":{"primaria":"#0b3d91","secundaria":"#f5a623"}}'  --logo <arquivo>  --id <id da peça>
-const { P, fs, path, ff, dataUri, mimeDoArquivo } = require('./comum')
+const { P, fs, path, ff, sonda, COR_HDR, dataUri, mimeDoArquivo } = require('./comum')
 const { gerarArte } = require('./arte')
 const { editarVideo } = require('./video')
 
@@ -47,8 +47,9 @@ async function fazTarefa(job, navegador) {
     const neg = negocio || {}
     const marca = neg.marca || {}
     const logo = await logoComoDataUri(marca.logo_url, pasta)
-    const base = { gancho: peca.gancho || '', cta: peca.cta || '', nome: neg.nome || '', marca, logo, chave: peca.id, navegador }
-    if (tarefa.ajuste) log('  pedido de ajuste da equipe: ' + String(tarefa.ajuste).slice(0, 200) + ' (a versão nova troca o layout)')
+    // 08/11 (teste completo): o texto do anúncio vai pro vídeo (texto na tela quando não tem fala); layout e preço vêm da fila
+    const base = { gancho: peca.gancho || '', cta: peca.cta || '', texto: peca.texto || '', nome: neg.nome || '', marca, logo, chave: peca.id, navegador, layout: tarefa.layout || null, preco: tarefa.preco || null }
+    if (tarefa.ajuste) log('  pedido de ajuste: ' + String(tarefa.ajuste).slice(0, 200) + ' (a versão nova troca o layout)')
     let saida, mime
     const arqMidia = midia && midia.url ? (await baixa(midia.url, path.join(pasta, 'midia'), midia.mime)).arq : null
     if (tarefa.tipo === 'arte') {
@@ -92,6 +93,27 @@ function cabeNoEnvio(arq, dur) {
   return menor
 }
 
+// 08/11 (teste completo, 8f): 3 quadros do vídeo do dono (começo, meio e fim) pro sistema descrever
+async function descreveVideo(d) {
+  const pasta = P('trabalho', 'descrever-' + String(d.midia_id).replace(/[^\w-]+/g, '_'))
+  fs.mkdirSync(pasta, { recursive: true })
+  try {
+    log('descrevendo o vídeo ' + d.midia_id)
+    const { arq } = await baixa(d.url, path.join(pasta, 'video'), d.mime || 'video/mp4')
+    const s = sonda(arq)
+    const quadros = [0.15, 0.5, 0.85].map((f, i) => {
+      const saida = path.join(pasta, `q${i}.jpg`)
+      ff(['-ss', Math.max(0, s.dur * f).toFixed(2), '-i', arq, '-frames:v', '1', '-vf', (s.hdr ? COR_HDR() : '') + 'scale=640:-2,format=yuvj420p', '-q:v', '4', saida])
+      return fs.readFileSync(saida).toString('base64')
+    })
+    await devolve({ midia_id: d.midia_id, quadros_b64: quadros, duracao: s.dur })
+    log('  vídeo descrito ✔')
+  } catch (e) {
+    log('  não deu pra descrever o vídeo: ' + e.message)
+    await devolve({ midia_id: d.midia_id, quadros_b64: [], duracao: null }).catch(() => null)
+  } finally { if (!process.env.MANTER_TRABALHO) fs.rmSync(pasta, { recursive: true, force: true }) }
+}
+
 async function devolve(corpo) {
   const r = await fetch(URL_BASE() + '/api/maia/oficina', { method: 'POST', headers: { 'content-type': 'application/json', 'x-chave': CHAVE() }, body: JSON.stringify(corpo) })
   if (!r.ok) throw new Error(`o sistema não aceitou a entrega (${r.status}): ${(await r.text()).slice(0, 200)}`)
@@ -115,6 +137,7 @@ async function laco(umaVez) {
   while (!parar) {
     try {
       const job = await pergunta(); erros = 0
+      if (job && job.descrever) { ocupado = true; await descreveVideo(job.descrever); ocupado = false; continue }
       if (job && job.tarefa) {
         ocupado = true
         log(`tarefa ${job.tarefa.id}: ${job.tarefa.tipo} — "${(job.peca && job.peca.gancho || '').slice(0, 60)}" (${job.negocio && job.negocio.nome || '?'})`)

@@ -16,6 +16,11 @@ const FINAL = 2.5, TRANSICAO = 0.3
 const MAXIMO = 60 - FINAL          // o vídeo inteiro fica em ~60 s
 const ANTES = 0.3, DEPOIS = 0.5    // folga antes da 1ª palavra e depois da última (pra não comer o som)
 const FAIXA = 420                  // altura da faixa da legenda
+// 08/11 (teste completo, 8a): o vídeo do teste ficou 15 s sem NENHUM texto (sem fala = sem legenda; o gancho só no cartão
+// final). Agora tem texto na tela desde o 1º quadro: o GANCHO em cima nos primeiros segundos e, sem fala, as frases do texto
+// do anúncio embaixo, uma por vez (com fala, a legenda da fala como sempre). Nada inventado: só o texto da peça aprovada.
+const GANCHO_ATE = 3.5             // segundos com o gancho em cima
+const FAIXA_TOPO = 560, TOPO_Y = 210
 
 // ── transcrição: palavras com o tempo de cada uma
 // "termos" = o nome do negócio: ajuda a transcrição a escrever certo (ex.: "Tempo de Visão" e não "tempo de visão")
@@ -76,6 +81,35 @@ const htmlLegenda = (b, ativa, cores, fontes) => {
 </style></head><body><div id="l">${ws}</div></body></html>`
 }
 
+// o gancho em cima (caixa na cor da marca, como o cabeçalho da arte)
+const htmlTopo = (gancho, cores, fontes) => `<!doctype html><html><head><meta charset="utf-8"><link href="${fontes.link}" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0}html,body{width:${W}px;height:${FAIXA_TOPO}px;background:transparent;overflow:hidden}
+#c{position:absolute;left:60px;right:60px;top:10px;max-height:${FAIXA_TOPO - 40}px;display:flex;justify-content:center}
+#g{display:inline-block;max-width:100%;background:${cores.primaria};color:${cores.texto};border-left:16px solid ${cores.botao};border-radius:10px 28px 28px 10px;
+ padding:30px 42px 34px;font-family:"${fontes.titulo}",${RESERVA};font-weight:900;font-size:84px;line-height:1.08;letter-spacing:-.01em;text-align:left;
+ box-shadow:0 18px 50px rgba(0,0,0,.4);overflow:hidden;overflow-wrap:break-word;max-height:${FAIXA_TOPO - 40}px}
+</style></head><body><div id="c"><div id="g">${esc(gancho)}</div></div></body></html>`
+
+// uma frase do texto do anúncio na faixa de baixo (vídeo sem fala): mesmo estilo da legenda, inteira na tela
+const htmlFrase = (txt, cores, fontes) => `<!doctype html><html><head><meta charset="utf-8"><link href="${fontes.link}" rel="stylesheet"><style>
+*{box-sizing:border-box;margin:0;padding:0}html,body{width:${W}px;height:${FAIXA}px;background:transparent;overflow:hidden}
+#l{position:absolute;left:70px;right:70px;top:20px;max-height:${FAIXA - 40}px;text-align:center;font-family:"${fontes.texto}",${RESERVA};font-weight:800;font-size:72px;line-height:1.2;color:#fff;
+ text-shadow:0 0 4px #000,0 3px 3px #000,0 4px 18px rgba(0,0,0,.85);-webkit-text-stroke:2px rgba(0,0,0,.55);paint-order:stroke fill;overflow:hidden}
+</style></head><body><div id="l">${esc(txt)}</div></body></html>`
+
+// o texto do anúncio em frases curtas (até ~40 letras), na ordem
+function frasesDoTexto(texto) {
+  const out = []
+  for (const f of String(texto || '').replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).map(x => x.trim()).filter(Boolean)) {
+    // frase comprida: divide em partes de tamanho parecido (nada de uma palavra sozinha numa tela)
+    const ws = f.split(' '), partes = Math.ceil(f.length / 40), alvo = f.length / partes
+    let atual = ''
+    for (const w of ws) { if (atual && (atual + ' ' + w).length > alvo + 6 && out.length < 99) { out.push(atual); atual = w } else atual = (atual + ' ' + w).trim() }
+    if (atual) out.push(atual)
+  }
+  return out
+}
+
 const htmlCartao = ({ gancho, cta, nome, logo, cores, fontes }) => {
   const { etiqueta, titulo } = separaGancho(gancho), C = cores, n = titulo.length
   const tam = n <= 22 ? 140 : n <= 40 ? 124 : n <= 64 ? 104 : 86
@@ -126,11 +160,11 @@ const encolhe = (pg, itens) => pg.evaluate(itens => {
 }, itens)
 
 // a camada de legenda: uma lista de PNGs com quanto tempo cada um fica na tela → um .mov com transparência
-function camada(segs, dur, pasta, nome) {
+function camada(segs, dur, pasta, nome, vazio = 'vazio.png') {
   let tt = 0; const L = []
   const poe = (arq, d) => { if (d > 0.001) { L.push(`file '${arq}'\nduration ${d.toFixed(4)}`); tt += d } }
-  for (const s of segs) { poe('vazio.png', s.t0 - tt); poe(s.arq, s.t1 - tt) }
-  poe('vazio.png', dur - tt); L.push("file 'vazio.png'")
+  for (const s of segs) { poe(vazio, s.t0 - tt); poe(s.arq, s.t1 - tt) }
+  poe(vazio, dur - tt); L.push(`file '${vazio}'`)
   fs.writeFileSync(path.join(pasta, nome + '.txt'), L.join('\n'))
   const saida = path.join(pasta, nome + '.mov')
   ff(['-f', 'concat', '-safe', '0', '-i', path.join(pasta, nome + '.txt'), '-vf', `fps=${FPS},format=rgba`, '-c:v', 'qtrle', '-t', dur.toFixed(3), saida])
@@ -144,7 +178,7 @@ function escolheTrilha(chave) {
   return l.length ? path.join(pasta, l[numeroDe(chave) % l.length]) : null
 }
 
-async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chaveDeepgram, saida, pasta, navegador, log = console.log }) {
+async function editarVideo({ video, gancho, cta, texto, nome, marca, logo, chave, chaveDeepgram, saida, pasta, navegador, log = console.log }) {
   fs.mkdirSync(pasta, { recursive: true })
   const s = sonda(video)
   if (!s.video) throw new Error('o arquivo não tem imagem de vídeo')
@@ -187,13 +221,41 @@ async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chave
   // 4. as imagens: cartão final e legendas (Chrome)
   const blocos = fala.length ? montaBlocos(fala) : []
   const br = navegador || await abreNavegador()
-  const segs = []
+  const segs = [], segsTopo = []
+  // sem fala: as frases do texto do anúncio embaixo, depois do gancho, até o fim (cada uma pelo menos 2,2 s)
+  const frases = !blocos.length ? frasesDoTexto(texto) : []
+  const iniFrases = gancho ? Math.min(GANCHO_ATE, DUR * 0.4) : 0.2
+  const porFrase = frases.length ? Math.max(2.2, (DUR - 0.2 - iniFrases) / frases.length) : 0
   try {
     const pg = await br.newPage()
     await pg.setViewport({ width: W, height: H })
     await carregaPagina(pg, htmlCartao({ gancho, cta, nome, logo, cores, fontes }), fontes)
     await encolhe(pg, [['etq', 26], ['tit', 50, 'caixa'], ['tit', 50], ['cta', 30], ['nome', 28, 'caixa']])
     await pg.screenshot({ path: path.join(pasta, 'cartao.png') })
+    // o gancho em cima, do 1º quadro até ~3,5 s
+    if (gancho) {
+      await pg.setViewport({ width: W, height: FAIXA_TOPO })
+      await carregaPagina(pg, '<html><body style="background:transparent"></body></html>', fontes)
+      await pg.screenshot({ path: path.join(pasta, 'vazio-topo.png'), omitBackground: true })
+      await carregaPagina(pg, htmlTopo(gancho, cores, fontes), fontes)
+      await encolhe(pg, [['g', 44, 'c']])
+      await pg.screenshot({ path: path.join(pasta, 'topo.png'), omitBackground: true })
+      segsTopo.push({ arq: 'topo.png', t0: 0, t1: Math.min(GANCHO_ATE, Math.max(1.5, DUR - 0.3)) })
+    }
+    if (frases.length) {
+      await pg.setViewport({ width: W, height: FAIXA })
+      await carregaPagina(pg, '<html><body style="background:transparent"></body></html>', fontes)
+      await pg.screenshot({ path: path.join(pasta, 'vazio.png'), omitBackground: true })
+      for (let i = 0; i < frases.length; i++) {
+        const t0 = iniFrases + i * porFrase, t1 = Math.min(DUR - 0.1, t0 + porFrase)
+        if (t1 - t0 < 1.2) break
+        const arq = `f${i}.png`
+        await carregaPagina(pg, htmlFrase(frases[i], cores, fontes), fontes)
+        await encolhe(pg, [['l', 40]])
+        await pg.screenshot({ path: path.join(pasta, arq), omitBackground: true })
+        segs.push({ arq, t0, t1 })
+      }
+    }
     if (blocos.length) {
       await pg.setViewport({ width: W, height: FAIXA })
       await carregaPagina(pg, '<html><body style="background:transparent"></body></html>', fontes)
@@ -213,8 +275,9 @@ async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chave
     }
     await pg.close()
   } finally { if (!navegador) await br.close() }
-  log(`  legendas: ${blocos.length} blocos, ${segs.length} quadros`)
+  log(`  legendas: ${blocos.length} blocos, ${segs.length} quadros${frases.length ? ` (sem fala: ${segs.length} frase(s) do texto)` : ''}${segsTopo.length ? ', gancho em cima até ' + segsTopo[0].t1.toFixed(1) + ' s' : ''}`)
   const leg = segs.length ? camada(segs.filter(x => x.t1 > x.t0), DUR, pasta, 'legendas') : null
+  const topo = segsTopo.length ? camada(segsTopo, DUR, pasta, 'topo', 'vazio-topo.png') : null
 
   // 5. a montagem final (um ffmpeg só)
   const trilha = escolheTrilha(chave || gancho || 'x')
@@ -223,6 +286,7 @@ async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chave
     '-loop', '1', '-framerate', String(FPS), '-t', (FINAL + TRANSICAO).toFixed(3), '-i', path.join(pasta, 'cartao.png')]
   let k = 2
   const iLeg = leg ? (ins.push('-i', leg), k++) : -1
+  const iTopo = topo ? (ins.push('-i', topo), k++) : -1
   const iTri = trilha ? (ins.push('-stream_loop', '-1', '-i', trilha), k++) : -1
   const iMudo = !s.audio ? (ins.push('-f', 'lavfi', '-t', TOTAL.toFixed(3), '-i', 'anullsrc=r=48000:cl=stereo'), k++) : -1
 
@@ -230,7 +294,10 @@ async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chave
   let f = deitado
     ? `[0:v]${cor}fps=${FPS},split[v0a][v0b];[v0a]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=10:3,scale=${W}:${H},eq=brightness=-0.07:saturation=1.1[fundo];[v0b]scale=${W}:${altFrente}[frente];[fundo][frente]overlay=0:(H-h)/2,setsar=1,format=yuv420p[base];`
     : `[0:v]${cor}fps=${FPS},scale=${W}:${H}:force_original_aspect_ratio=increase,crop=${W}:${H},setsar=1,format=yuv420p[base];`
-  f += leg ? `[base][${iLeg}:v]overlay=0:${legY}:eof_action=pass,format=yuv420p,settb=AVTB[vm];` : `[base]settb=AVTB[vm];`
+  let atual = '[base]'
+  if (leg) { f += `${atual}[${iLeg}:v]overlay=0:${legY}:eof_action=pass,format=yuv420p[comleg];`; atual = '[comleg]' }
+  if (topo) { f += `${atual}[${iTopo}:v]overlay=0:${TOPO_Y}:eof_action=pass,format=yuv420p[comtopo];`; atual = '[comtopo]' }
+  f += `${atual}settb=AVTB[vm];`
   f += `[1:v]scale=${W}:${H},setsar=1,format=yuv420p,settb=AVTB[vc];`
   f += `[vm][vc]xfade=transition=fade:duration=${TRANSICAO}:offset=${(DUR - TRANSICAO).toFixed(3)},format=yuv420p[v];`
   // a voz: tira o grave de fundo e põe no volume padrão do Instagram (-16 LUFS), com fade curtinho nas pontas
@@ -246,7 +313,7 @@ async function editarVideo({ video, gancho, cta, nome, marca, logo, chave, chave
     '-c:v', 'libx264', '-preset', 'medium', '-crf', '23', '-maxrate', '4500k', '-bufsize', '9M', '-profile:v', 'high', '-pix_fmt', 'yuv420p', '-r', String(FPS),
     '-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709',
     '-c:a', 'aac', '-b:a', '160k', '-ar', '48000', '-ac', '2', '-movflags', '+faststart', saida])
-  return { duracao: TOTAL, cortado: { de: +a.toFixed(2), ate: +b.toFixed(2) }, palavras: fala.length, blocos: blocos.length, deitado, legY, trilha: trilha ? path.basename(trilha) : null }
+  return { duracao: TOTAL, cortado: { de: +a.toFixed(2), ate: +b.toFixed(2) }, palavras: fala.length, blocos: blocos.length, frases: frases.length, gancho_em_cima: segsTopo.length ? segsTopo[0].t1 : 0, deitado, legY, trilha: trilha ? path.basename(trilha) : null }
 }
 
-module.exports = { editarVideo, montaBlocos }
+module.exports = { editarVideo, montaBlocos, frasesDoTexto }
