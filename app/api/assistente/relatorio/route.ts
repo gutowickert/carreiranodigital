@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { relatorioTrafego, emailsDoResumo, type Usuario } from '@/lib/assistente'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 120
 
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || ''
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
-  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
+  if (!(cronOk(req))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
   const resumo = await emailsDoResumo()   // quem recebe o resumo das 8:45 fica fora
   return NextResponse.json({ ok: true, resultados: await mandar((await usuarios()).filter(u => !resumo.includes(u.email.toLowerCase()))) })
 }

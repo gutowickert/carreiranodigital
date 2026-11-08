@@ -5,6 +5,7 @@
 // Conta em RECADO_META_CONTA; a chave é a da escola (FB_ADS_TOKEN), com a conta do Recado atribuída ao usuário do sistema.
 import { NextRequest, NextResponse } from 'next/server'
 import { sincronizaGastos } from '@/lib/recado/meta-gasto'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 60
 
@@ -12,7 +13,7 @@ export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || '', secret = process.env.CRON_SECRET
   // 25/10: o pg_cron do Supabase (sql/08) também chama, a cada 2 h durante o dia, com a chave do vigia
   const chave = req.nextUrl.searchParams.get('chave'), vigia = !!process.env.RECADO_VIGIA_CHAVE && chave === process.env.RECADO_VIGIA_CHAVE.trim()
-  if (!vigia && !ua.includes('vercel-cron') && !(secret && req.headers.get('authorization') === `Bearer ${secret}`)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
+  if (!vigia && !cronOk(req)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
   return NextResponse.json(await sincronizaGastos(3))
 }
 

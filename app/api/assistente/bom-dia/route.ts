@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { bomDia, resumoDoDia, emailsDoResumo, type Usuario } from '@/lib/assistente'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 120
 
 // O BOM DIA DO ASSISTENTE: agenda do dia, pendências com clientes, pelo WhatsApp de quem
 // pediu (usuarios_perfil.assistente_bom_dia). Cron da Vercel às 10h UTC = 7h em Brasília.
-//   GET  → cron (user-agent vercel-cron ou CRON_SECRET)
+//   GET  → cron da Vercel (Bearer CRON_SECRET; desde 07/11 o user-agent não vale mais)
 //   POST → com login: manda agora pra quem chamou ({ email }) ou pra todos ({ todos: true }). Pra testar.
 // Quem está em configuracoes assistente.resumo_845 (o Nando, 23/10/2026) NÃO recebe este: recebe o
 // resumo de seg a sex 8:45, que o pg_cron chama com ?turno=resumo&chave=... (lib/assistente.ts).
@@ -38,7 +39,7 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
   const chave = req.nextUrl.searchParams.get('chave')
-  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
+  if (!(cronOk(req) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
   // ?turno=resumo (8:45, seg a sex) → só a lista do resumo; o das 7h → todo mundo menos ela
   const resumo = await emailsDoResumo()
   const doResumo = req.nextUrl.searchParams.get('turno') === 'resumo'

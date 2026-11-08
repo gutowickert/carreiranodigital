@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { resumoDaSemana, emailsDoResumo, MODELO_RESUMO_META, TEMPLATE_RESUMO, type Usuario } from '@/lib/assistente'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 120
 
 // A SEMANA DE DOMINGO: domingo 20h (pg_cron, 23h UTC), a semana que vem dia por dia, pra quem está
 // em configuracoes assistente.resumo_845 (lib/assistente.ts, resumoDaSemana).
-//   GET  → pg_cron (?chave=...), Vercel (vercel-cron) ou CRON_SECRET
+//   GET  → pg_cron (?chave=...) ou cron da Vercel (Bearer CRON_SECRET; desde 07/11 o user-agent não vale mais)
 //   POST → com login: { email } manda agora (teste)
 //   ?modelo=ver | ?modelo=criar (com a chave) → consulta ou pede à Meta o modelo de reserva cnd_resumo_agenda
 
@@ -45,7 +46,7 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
   const chave = req.nextUrl.searchParams.get('chave')
-  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
+  if (!(cronOk(req) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
 
   const modelo = req.nextUrl.searchParams.get('modelo')
   if (modelo) {

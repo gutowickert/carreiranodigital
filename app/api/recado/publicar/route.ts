@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { rodaAgendador } from '@/lib/recado/organico'
 import { avisaDono } from '@/lib/recado/avisa-dono'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -13,7 +14,7 @@ export const dynamic = 'force-dynamic'
 function autorizado(req: NextRequest) {
   const chave = req.nextUrl.searchParams.get('chave'), ua = req.headers.get('user-agent') || '', secret = process.env.CRON_SECRET
   if (process.env.RECADO_VIGIA_CHAVE && chave === process.env.RECADO_VIGIA_CHAVE.trim()) return true
-  return ua.includes('vercel-cron') || !!(secret && req.headers.get('authorization') === `Bearer ${secret}`)
+  return cronOk(req)
 }
 
 export async function GET(req: NextRequest) {

@@ -6,6 +6,7 @@ import { sugerirAtendimento } from '@/lib/atendimento-ia'
 import { gerarProxima } from '@/lib/fluxo'
 import { ORG_CND } from '@/lib/org'
 import { turmasForaDoMotor, leadForaDoMotor } from '@/lib/cadencia'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 300
 
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || ''
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
-  const permitido = ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`)
+  const permitido = cronOk(req)
   if (!permitido) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
 
   const cfg = await getConfigIA()

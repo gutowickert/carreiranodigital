@@ -6,12 +6,13 @@ import { emailsDoResumo, type Usuario } from '@/lib/assistente'
 import { rodarFunilMotor } from '@/lib/funil-motor'
 import { cutucarPlantao, resumoDoPlantao } from '@/lib/ia-plantao'
 import { ORG_CND } from '@/lib/org'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 120
 
 // OS AVISOS POR EVENTO, de hora em hora (cron da Vercel, 11h a 22h UTC = 8h a 19h em Brasília).
 // Venda fechada, campanha de cliente parada ou sem saldo, lead esperando resposta há 2h.
-//   GET  → cron (user-agent vercel-cron ou CRON_SECRET), pra quem tem assistente_bom_dia
+//   GET  → cron da Vercel (Bearer CRON_SECRET; desde 07/11 o user-agent não vale mais), pra quem tem assistente_bom_dia
 //   POST → com login: { email } roda agora pra uma pessoa (teste)
 
 async function usuarios(email?: string) {
@@ -41,7 +42,7 @@ export async function GET(req: NextRequest) {
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
   const chave = req.nextUrl.searchParams.get('chave')
-  if (!(ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
+  if (!(cronOk(req) || await chaveOk(chave))) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
   // quem recebe o resumo das 8:45 não recebe aviso solto: o que importa vai no resumo
   const resumo = await emailsDoResumo()
   const resultados = await rodar((await usuarios()).filter(u => !resumo.includes(u.email.toLowerCase())))

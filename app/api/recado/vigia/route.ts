@@ -14,6 +14,7 @@ import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
 import { economia, custoPadrao } from '@/lib/recado/economia'
 import { recadoConfig as cfg } from '@/lib/recado/config'
 import { hojeBR, isoBR } from '@/lib/periodos'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 60
 const min = (iso: any) => (iso ? (Date.now() - Date.parse(iso)) / 60e3 : 0)
@@ -23,7 +24,7 @@ const PARADO = '2099'   // o V2 do acordo espera o "eu aceito" nesta data
 function autorizado(req: NextRequest) {
   const chave = req.nextUrl.searchParams.get('chave'), ua = req.headers.get('user-agent') || '', secret = process.env.CRON_SECRET
   if (process.env.RECADO_VIGIA_CHAVE && chave === process.env.RECADO_VIGIA_CHAVE.trim()) return true
-  return ua.includes('vercel-cron') || !!(secret && req.headers.get('authorization') === `Bearer ${secret}`)
+  return cronOk(req)
 }
 
 // janela de 3 h por tipo de aviso (o estado mora na tabela de chave/valor do suporte, que já existe)

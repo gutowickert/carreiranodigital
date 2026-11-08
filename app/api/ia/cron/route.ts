@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { cabecalhoInterno } from '@/lib/exigir-login'
 import { POST as reconciliar } from '../reconciliar/route'
 import { POST as followup } from '../followup-auto/route'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 300
 
@@ -16,7 +17,7 @@ export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || ''
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
-  const permitido = ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`)
+  const permitido = cronOk(req)
   if (!permitido) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
 
   let reconc: any = null, motor: any = null

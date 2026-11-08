@@ -4,6 +4,7 @@ import { orgDaRequest } from '@/lib/org'
 import { temSessao } from '@/lib/quem-eu-vejo'
 import { sincronizarProjeto } from '@/lib/trafego-cliente'
 import { chamadaPermitida } from '@/lib/exigir-login'
+import { cronOk } from '@/lib/cron-auth'
 
 export const maxDuration = 300
 
@@ -34,7 +35,7 @@ export async function GET(req: NextRequest) {
   const ua = req.headers.get('user-agent') || ''
   const secret = process.env.CRON_SECRET
   const auth = req.headers.get('authorization') || ''
-  const permitido = ua.includes('vercel-cron') || (!!secret && auth === `Bearer ${secret}`)
+  const permitido = cronOk(req)
   if (!permitido) return NextResponse.json({ ok: false, error: 'não autorizado' }, { status: 401 })
 
   const { data: projetos } = await sb.from('projetos').select(SELECT)
