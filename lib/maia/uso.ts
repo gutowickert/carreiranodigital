@@ -1,4 +1,4 @@
-// Maia: o contador das conversas do mês, por negócio (07/11, piloto). A oferta promete 1.000 conversas por mês.
+// Maia: o contador das conversas do mês, por negócio (07/11, piloto). A oferta promete 500 (Essencial) ou 1.000 (Completa) por mês.
 //
 // O QUE CONTA COMO "CONVERSA": cada CONTATO diferente (telefone) que mandou pelo menos UMA mensagem pro WhatsApp do negócio
 // dentro do mês do calendário (do dia 1 às 0h até o fim do mês, no fuso do negócio; padrão Brasília). O mesmo cliente
@@ -7,14 +7,23 @@
 // e as retomadas que a Maia manda (só conta se o cliente escreveu).
 // Contato apagado a pedido (LGPD) continua contando no mês em que conversou (maia_eventos 'contato_apagado', sem dado pessoal).
 //
-// A franquia é 1.000 (meta.atendimento.franquia troca por negócio). A equipe é avisada em 80% e 100%. NUNCA bloqueia o atendimento.
+// A franquia (08/11, decisão do Guto) vem do plano: Essencial 500, Completa 1.000 (lib/maia/oferta.ts); plano 'gestao' (Maia Gestora,
+// só leitura) não tem franquia e não conta. meta.atendimento.franquia troca por negócio. A equipe é avisada em 80% e 100%.
+// NUNCA bloqueia o atendimento.
 import { maiaDb as db } from './db'
 import { ehSimulado } from '@/lib/oito/wa'
 import { fusoDo, horaLocal } from './horario'
 import { custoDoNegocio } from './custo'
+import { oferta } from './oferta'
 
-export const FRANQUIA_PADRAO = 1000
-export const franquiaDo = (neg: any) => { const f = Number(neg?.meta?.atendimento?.franquia); return f > 0 ? Math.round(f) : FRANQUIA_PADRAO }
+// a franquia do negócio: a do cadastro, se tiver; senão a do plano. null = sem franquia (plano gestao)
+export function franquiaDo(neg: any): number | null {
+  const f = Number(neg?.meta?.atendimento?.franquia)
+  if (f > 0) return Math.round(f)
+  if (neg?.plano === 'gestao') return null
+  const o = oferta()
+  return neg?.plano === 'completa' ? o.conversas_completa : o.conversas_essencial
+}
 
 // o começo do mês (dia 1, 0h) no fuso do negócio, em UTC
 export function inicioDoMes(neg: any, agora = new Date()) {
@@ -44,7 +53,7 @@ export async function usoDoMes(neg: any, agora = new Date()) {
   const custo = await custoDoNegocio(neg.id, desde)
   return {
     negocio_id: neg.id, nome: neg.nome, mes, desde,
-    conversas, simuladas: simuladas.size, franquia, pct: Math.round(conversas / franquia * 1000) / 10,
+    conversas, simuladas: simuladas.size, franquia, pct: franquia ? Math.round(conversas / franquia * 1000) / 10 : null,
     custo_ia: custo.reais, custo_ia_por_tipo: custo.por_tipo,
     custo_por_conversa: conversas ? Math.round(custo.reais / conversas * 100) / 100 : null,
   }
@@ -57,6 +66,7 @@ export async function avisaFranquia(agora = new Date()) {
   for (const neg of await db.lista('negocios')) {
     if (neg.status === 'cancelado' || neg.contexto?.demo) continue
     const u = await usoDoMes(neg, agora)
+    if (u.franquia == null || u.pct == null) continue   // plano sem franquia (gestao)
     const avisos = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'franquia_aviso' })).filter(e => e.detalhe?.mes === u.mes)
     for (const nivel of [100, 80]) {
       if (u.pct < nivel) continue

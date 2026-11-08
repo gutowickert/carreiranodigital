@@ -98,7 +98,9 @@ async function main() {
   anota(/Não consegui ver essa foto/.test(fala(r)), 'foto que não deu pra ver: diz com honestidade')
 
   const T5 = '5500044440005'
-  await cliente(A.id, T5, 'Fábio', 'Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.')
+  r = await cliente(A.id, T5, 'Fábio', 'Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.')
+  log('    Fábio: Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.
+    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
   r = await cliente(A.id, T5, 'Fábio', '', { arquivo_b64: b64(), mime: 'image/jpeg', simulado: { descricao: 'comprovante de pix de R$ 85,00 para Bocadinho', comprovante: true } })
   log('    Fábio (comprovante)\n    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
   const leadF = (await ver('leads', { negocio: A.id })).find(l => l.telefone === T5)
@@ -179,7 +181,14 @@ async function main() {
   log('\n=== contador das conversas do mês')
   let uso = await ver('uso_mes', { negocio: A.id })
   const simA = new Set(tab('conversas').filter(c => c.negocio_id === A.id && c.canal === 'cliente').map(c => c.telefone)).size
-  anota(uso.conversas === 0 && uso.simuladas === simA && uso.franquia === 1000, `simuladas contam à parte: ${uso.simuladas} simulada(s), ${uso.conversas} real(is), franquia ${uso.franquia}`)
+  anota(uso.conversas === 0 && uso.simuladas === simA && uso.franquia === 500, `simuladas contam à parte: ${uso.simuladas} simulada(s), ${uso.conversas} real(is), franquia ${uso.franquia} (Essencial)`)
+  // 08/11: franquia pelo plano: Completa 1.000, Gestora sem franquia
+  await op('atualizar_negocio', { id: B.id, plano: 'completa' })
+  anota((await ver('uso_mes', { negocio: B.id })).franquia === 1000, 'plano Completa: franquia de 1.000')
+  await op('atualizar_negocio', { id: B.id, plano: 'gestao' })
+  const usoG = await ver('uso_mes', { negocio: B.id })
+  anota(usoG.franquia === null && usoG.pct === null, 'plano Gestora: sem franquia')
+  await op('atualizar_negocio', { id: B.id, plano: 'essencial' })
   anota(typeof uso.custo_ia === 'number' && uso.custo_ia > 0, `custo de IA do mês do negócio: R$ ${uso.custo_ia}`)
   // um contato "de verdade" (fora do 55000) no modo local: nada sai, mas conta
   const TR = '5551000000001'

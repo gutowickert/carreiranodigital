@@ -1246,7 +1246,7 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-pessoa">Tratamento</label><select id="t-pessoa" name="pessoa">'+opt('voce','você',t.pessoa||'voce')+opt('tu','tu',t.pessoa||'voce')+'</select></div>'+
     '<div class="campo"><label for="t-gaucho">Jeito gaúcho</label><select id="t-gaucho" name="gaucho">'+opt('nao','não (neutro)',t.gaucho?'sim':'nao')+opt('sim','sim, leve',t.gaucho?'sim':'nao')+'</select></div>'+
     '<div class="campo"><label for="t-estilo">Estilo</label><select id="t-estilo" name="estilo">'+opt('leve','leve',t.estilo||'leve')+opt('formal','formal',t.estilo||'leve')+'</select></div>'+
-    '<div class="campo"><label for="t-franquia">Conversas por mês (franquia)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" value="'+esc(a.franquia||1000)+'"></div>'+
+    '<div class="campo"><label for="t-franquia">Conversas por mês (vazio = a do plano)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" placeholder="'+(n.plano==='completa'?'1000 (Completa)':n.plano==='gestao'?'sem franquia (Gestora)':'500 (Essencial)')+'" value="'+esc(a.franquia||'')+'"></div>'+
     '<div class="campo"><label for="t-priv">Aviso de privacidade na 1ª resposta</label><select id="t-priv" name="priv_ligado">'+opt('sim','sim',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+opt('nao','não',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+'</select></div>'+
     '<div class="campo"><label for="t-plink">Link da política (opcional)</label><input id="t-plink" name="priv_link" type="url" placeholder="https://…" value="'+esc((a.privacidade&&a.privacidade.link)||'')+'"></div>'+
     '</div><div class="campo"><label for="t-ptexto">Texto do aviso (vazio = o padrão)</label><textarea id="t-ptexto" name="priv_texto" rows="2" placeholder="Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do negócio. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.">'+esc((a.privacidade&&a.privacidade.texto)||'')+'</textarea></div>'+
@@ -1259,7 +1259,7 @@ function pintaUso(n){
   api(q({acao:'uso_mes',negocio:n.id})).then(function(u){
     var p=Math.min(100,u.pct||0), cor=u.pct>=100?'var(--red)':u.pct>=80?'var(--amber)':'var(--green)';
     el.innerHTML='<h2 style="margin-bottom:10px">Conversas do mês <small class="mu peq">'+esc(u.mes)+'</small></h2>'+
-      '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b class="num" style="font-size:28px">'+inteiro(u.conversas)+'</b><span class="mu">de '+inteiro(u.franquia)+' · '+pct(u.pct)+'</span></div>'+
+      '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b class="num" style="font-size:28px">'+inteiro(u.conversas)+'</b><span class="mu">'+(u.franquia?'de '+inteiro(u.franquia)+' · '+pct(u.pct):'sem franquia (plano Gestora)')+'</span></div>'+
       '<div role="img" aria-label="'+pct(u.pct)+' da franquia" style="height:8px;border-radius:99px;background:var(--surface-2);margin:10px 0;overflow:hidden"><i style="display:block;height:100%;width:'+p+'%;background:'+cor+'"></i></div>'+
       '<p class="mu peq" style="margin:0">Custo de IA no mês: <b>'+real(u.custo_ia)+'</b>'+(u.custo_por_conversa!=null?' · '+real(u.custo_por_conversa)+' por conversa':'')+(u.simuladas?' · '+plural(u.simuladas,'conversa simulada','conversas simuladas')+' (não contam)':'')+'. Passar da franquia não bloqueia o atendimento: a equipe é avisada em 80% e 100%.</p>';
   }).catch(function(e){ el.innerHTML='<h2 style="margin-bottom:10px">Conversas do mês</h2>'+caixaErro(e); });
@@ -1268,7 +1268,7 @@ function ligaCardAtendimento(n){
   var f=$('#f-atend'); if(!f) return;
   pintaUso(n);
   f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
-    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):undefined,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
+    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):0,privacidade:{ligado:d.priv_ligado!=='nao',texto:d.priv_texto||'',link:d.priv_link||''}};
     espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); pintaUso(n); }); });
   };
 }
