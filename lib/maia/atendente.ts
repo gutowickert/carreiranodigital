@@ -5,7 +5,7 @@
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { jeitoAtendimento } from './tom'
-import { conversa, mandaTexto, conversaDoDono, avisaEquipe } from './canal'
+import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
 import { origemDoTexto } from './social'
@@ -35,7 +35,10 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
     await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) mandou um comprovante de pagamento. Confere se caiu e me diz aqui: aí eu marco a venda.`).catch(() => null)
   }
   await db.atualiza('conversas', { id: cv.id }, { ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString(), janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString(), nao_lidas: (cv.nao_lidas || 0) + 1 })
-  return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' }
+  // 07/11 (piloto): a janela abriu: entrega as respostas do dono/equipe que esperavam (depois de 24 h, maia_resposta).
+  // Se entregou, a Maia não responde por cima ("Pode mandar" → a resposta já foi)
+  const entregues = await soltaFilaDoCliente({ ...cv, lead_id: lead.id }).catch(() => 0)
+  return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
 function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean }): Ferramenta[] {

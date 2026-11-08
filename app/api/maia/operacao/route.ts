@@ -144,6 +144,16 @@ export async function POST(req: Request) {
         const neg = await db.um('negocios', { id: b.negocio_id }); const cv = await conversaDoDono(neg)
         return ok(await mandaTexto(cv, String(b.texto || ''), 'equipe'))
       }
+      // 07/11 (piloto): a equipe responde o cliente pelo WhatsApp do negócio. Depois de 24 h vai pelo modelo maia_resposta (fila)
+      case 'mandar_ao_cliente': {
+        const cv = await db.um('conversas', { id: b.conversa_id })
+        if (!cv || cv.canal !== 'cliente') return erro('conversa de cliente não existe')
+        if (b.negocio_id && cv.negocio_id !== b.negocio_id) return erro('essa conversa é de outro negócio')
+        const t = String(b.texto || '').trim()
+        if (!t) return erro('escreve a mensagem')
+        const { mandaRespostaCliente } = await import('@/lib/maia/canal')
+        return ok(await mandaRespostaCliente(cv, t, 'equipe'))
+      }
       case 'assumir': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'humano' }))[0])
       case 'devolver': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'ia' }))[0])
       case 'simular_dono': {
@@ -190,6 +200,17 @@ export async function POST(req: Request) {
         const ls = (await db.lista('leads')).filter(l => l.proximo_followup_em)
         for (const l of ls) await db.atualiza('leads', { id: l.id }, { proximo_followup_em: new Date(Date.now() - 60e3).toISOString() })
         return ok({ vencidas: ls.length })
+      }
+      // 07/11 (piloto), só no modo de teste: fecha a janela de 24 h de uma conversa e anota o status dos modelos do negócio
+      case 'teste_fechar_janela': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        await db.atualiza('conversas', { id: b.conversa_id }, { janela_ate: new Date(Date.now() - 3600e3).toISOString() })
+        return ok({ ok: true })
+      }
+      case 'teste_modelos_status': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        await db.evento('modelos_status', b.negocio_id, b.status || {})
+        return ok({ ok: true })
       }
       // 06/11: a demonstração grátis simulada (telefone 55000..., nada sai pra Meta), pelo mesmo caminho do webhook do Oito
       case 'simular_demo': {

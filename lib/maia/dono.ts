@@ -4,7 +4,7 @@
 import crypto from 'node:crypto'
 import { maiaDb as db, maiaLocal } from './db'
 import { comFerramentas, emJson, JEITO, type Ferramenta } from './ia'
-import { soltaFilaDoDono, conversaDoDono, conversa, mandaTexto, avisaEquipe } from './canal'
+import { soltaFilaDoDono, conversaDoDono, conversa, mandaTexto, mandaRespostaCliente, avisaEquipe } from './canal'
 import { donoAprova, donoAjuste, pecaDaMensagem } from './aprovacao'
 import { geraAnuncios } from './pecas'
 import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
@@ -122,9 +122,11 @@ function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
       roda: async (q) => {
         const l = await lead(q); if (!l || !l.telefone) return { erro: 'não achei esse cliente' }
         const ccv = await conversa(neg.id, 'cliente', l.telefone, { nome: l.nome, lead_id: l.id })
-        await mandaTexto(ccv, q.mensagem)
-        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem: q.mensagem } })
-        return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)' }
+        // 07/11 (piloto): depois de 24 h da última mensagem do cliente, vai pelo modelo maia_resposta (a resposta espera na fila)
+        const env = await mandaRespostaCliente(ccv, q.mensagem, 'maia')
+        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem: q.mensagem, como: env.como } })
+        return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)',
+          ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
       } },
     { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },

@@ -1488,11 +1488,15 @@ function subConversa(n,box){
       '<div class="chat" id="chat" aria-live="polite">'+(msgs.length?bolhasComDia(msgs,nomes,dono?'dono':'cliente'):'<div class="vazio"><div class="q">'+ic('msg')+'</div><b>Nenhuma mensagem ainda</b><p>'+(dono?'Quando o dono falar com a Maia no WhatsApp, aparece aqui.':'Nada nessa conversa ainda.')+'</p></div>')+'</div>'+
       (dono?'<form class="enviar" id="f-msg"><textarea name="texto" placeholder="Mensagem da equipe pro dono…" aria-label="Mensagem da equipe pro dono" required></textarea><button class="btn ok" aria-label="Mandar">'+ic('enviar')+'Mandar</button></form>'+
         '<p class="cv-nota">Vai como mensagem da equipe no WhatsApp da Maia.'+(humano?'':' Dica: assume a conversa antes, se não quiser que a Maia responda junto.')+'</p>'
-        :'<p class="cv-so">Essa conversa é do cliente com o WhatsApp do negócio. Daqui tu acompanha e decide quem responde: a Maia, ou o dono pelo celular (assume a conversa pra ela ficar quieta).</p>');
+        :'<form class="enviar" id="f-cli"><textarea name="texto" placeholder="Mensagem da equipe pro cliente…" aria-label="Mensagem da equipe pro cliente" required></textarea><button class="btn ok" aria-label="Mandar">'+ic('enviar')+'Mandar</button></form>'+
+          '<p class="cv-nota">Vai pelo WhatsApp do negócio. Passou 24 h da última mensagem do cliente: sai o modelo maia_resposta e a mensagem espera ele responder.'+(humano?'':' Assume a conversa antes, se não quiser que a Maia responda junto.')+'</p>');
     var ch=$('#chat'); ch.scrollTop=ch.scrollHeight;
     $('#b-rec').onclick=function(){ carrega(); };
     if($('#b-assumir')) $('#b-assumir').onclick=function(){ espera(this,'…',function(){ return api({acao:'assumir',conversa_id:cv.id}).then(function(){ S.cart=null; toast(dono?'A equipe assumiu. A Maia para de responder o dono.':'A equipe assumiu. A Maia para de responder esse cliente.'); return carrega(); }); }); };
     if($('#b-devolver')) $('#b-devolver').onclick=function(){ espera(this,'…',function(){ return api({acao:'devolver',conversa_id:cv.id}).then(function(){ S.cart=null; toast('Devolvido pra Maia.'); return carrega(); }); }); };
+    var fcl=$('#f-cli');
+    if(fcl) fcl.onsubmit=function(ev){ ev.preventDefault(); var t=fcl.texto.value.trim(); if(!t) return;
+      espera($('button',fcl),'…',function(){ return api({acao:'mandar_ao_cliente',negocio_id:n.id,conversa_id:cv.id,texto:t}).then(function(r){ fcl.reset(); toast(r&&r.na_fila?(r.modelo?'Passou 24 h: foi o modelo maia_resposta. A mensagem sai quando o cliente responder.':'Passou 24 h e o modelo maia_resposta não está aprovado: a mensagem ficou guardada.'):'Mandado.'); return carrega(); }); }); };
     var f=$('#f-msg');
     if(f){
       f.texto.onkeydown=function(ev){ if(ev.key==='Enter'&&(ev.ctrlKey||ev.metaKey)){ ev.preventDefault(); f.requestSubmit?f.requestSubmit():f.onsubmit(ev); } };

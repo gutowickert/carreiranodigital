@@ -61,6 +61,74 @@ export async function mandaModeloCliente(cv: any, nome: string, params: string[]
   return registra(cv, 'maia', registro, r, 'modelo')
 }
 
+// ---- 07/11 (piloto): a resposta do dono ou da equipe pro cliente, mesmo depois de 24 h ----
+// Dentro da janela de 24 h: texto normal. Fora dela o WhatsApp recusa texto livre: a resposta fica guardada (msgs 'na_fila' +
+// maia_eventos 'fila_cliente') e sai o modelo aprovado maia_resposta ("Já tenho a resposta da sua pergunta... Posso te mandar?").
+// Quando o cliente responde, a janela abre e a fila é entregue (soltaFilaDoCliente, chamada na entrada do cliente).
+// Sem o modelo aprovado: a resposta fica na fila (sai quando o cliente escrever) e a equipe e o dono são avisados. Nunca se perde.
+
+// o status dos modelos do negócio na Meta, guardado por 1 h em maia_eventos 'modelos_status'.
+// Conversa simulada (ou negócio sem WhatsApp ligado): vale o último status anotado (o teste anota), senão "aprovado".
+async function modeloAprovado(neg: any, cv: any, nome: string) {
+  const ult = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'modelos_status' }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
+  if (simuladaCv(cv) || !atendimentoLigado(neg)) return (ult?.detalhe?.[nome] || 'APPROVED') === 'APPROVED'
+  if (ult && Date.now() - Date.parse(ult.criado_em) < 3600e3 && ult.detalhe?.[nome] === 'APPROVED') return true
+  const w = waDoNegocio(neg)
+  if (!w?.waba) return false
+  try {
+    const { statusModelos } = await import('./modelos')
+    const s: any = await statusModelos({ token: w.token, waba: w.waba })
+    if (!s.ok) return false
+    const st: Record<string, string> = {}
+    for (const m of s.modelos || []) st[m.name] = m.status
+    await db.evento('modelos_status', neg.id, st)
+    return st[nome] === 'APPROVED'
+  } catch { return false }
+}
+
+export async function mandaRespostaCliente(cv: any, texto: string, autor: 'maia' | 'equipe' = 'maia', assunto?: string | null) {
+  const atual = (await db.um('conversas', { id: cv.id })) || cv
+  if (janelaAberta(atual)) return { ...(await mandaTexto(atual, texto, autor)), como: 'texto' as const }
+  const neg = await db.um('negocios', { id: atual.negocio_id })
+  const msg = await db.insere('msgs', { conversa_id: atual.id, negocio_id: atual.negocio_id, autor, tipo: 'texto', texto, status: 'na_fila' })
+  await db.evento('fila_cliente', atual.negocio_id, { conversa_id: atual.id, msg_id: msg.id, enviado: false })
+  const lead = atual.lead_id ? await db.um('leads', { id: atual.lead_id }) : null
+  const nome = String(lead?.nome || atual.nome || '').split(' ')[0]
+  if (await modeloAprovado(neg, atual, 'maia_resposta')) {
+    // um modelo só por conversa enquanto o cliente não responde (o resto espera junto na fila)
+    const ja = (await db.lista('eventos', { negocio_id: atual.negocio_id, tipo: 'modelo_cliente' }, { ordem: 'criado_em', desc: true, limite: 20 }))
+      .find(e => e.detalhe?.conversa_id === atual.id && e.detalhe?.ok && Date.now() - Date.parse(e.criado_em) < 24 * 3600e3)
+    if (ja) return { ok: true, na_fila: true, como: 'fila' as const, modelo: 'maia_resposta' }
+    if (!assunto && lead) {
+      const perg = (await db.lista('lead_eventos', { lead_id: lead.id, tipo: 'pergunta_cliente' }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]
+      assunto = perg?.detalhe?.pergunta || lead.produto || null
+    }
+    const r = await mandaModeloCliente(atual, 'maia_resposta', [nome || 'tudo bem', neg?.nome || '', String(assunto || 'o que você perguntou').slice(0, 120)], '(modelo maia_resposta) avisando que a resposta está pronta')
+    await db.evento('modelo_cliente', atual.negocio_id, { conversa_id: atual.id, modelo: 'maia_resposta', ok: r.ok, erro: r.erro || null })
+    if (!r.ok) await avisaEquipe('o modelo maia_resposta não saiu', `${neg?.nome}: ${r.erro || '?'} (a resposta pro cliente ficou guardada e sai quando ele escrever)`, atual.negocio_id)
+    return { ok: true, na_fila: true, como: 'modelo' as const, modelo: 'maia_resposta', modelo_ok: r.ok }
+  }
+  await avisaEquipe('maia_resposta não aprovado', `${neg?.nome}: uma resposta pro cliente ${nome || atual.telefone} ficou guardada (passou 24 h da última mensagem dele e o modelo maia_resposta não está aprovado). Sai quando ele escrever de novo.`, atual.negocio_id)
+  if (neg?.dono_whatsapp) await mandaTexto(await conversaDoDono(neg), `Ó, a resposta pro ${nome || 'cliente'} ficou guardada: já passou 24 h da última mensagem dele e o WhatsApp só deixa mandar com o modelo aprovado, que ainda não saiu. Ela vai assim que ele escrever de novo, e a equipe já está vendo.`).catch(() => null)
+  return { ok: true, na_fila: true, como: 'fila' as const, modelo: null }
+}
+
+// o cliente escreveu (a janela abriu): entrega as respostas guardadas, na ordem
+export async function soltaFilaDoCliente(cv: any) {
+  const fila = (await db.lista('eventos', { negocio_id: cv.negocio_id, tipo: 'fila_cliente' }, { ordem: 'criado_em' })).filter(e => !e.detalhe?.enviado && e.detalhe?.conversa_id === cv.id)
+  let entregues = 0
+  for (const e of fila) {
+    const m = await db.um('msgs', { id: e.detalhe.msg_id })
+    if (!m) { await db.atualiza('eventos', { id: e.id }, { detalhe: { ...e.detalhe, enviado: true, sumiu: true } }); continue }
+    const r = await sai(cv, { tipo: 'texto', texto: m.texto })
+    await db.atualiza('msgs', { id: m.id }, { status: r.ok ? 'enviado' : 'falhou', wamid: r.wamid || null, criado_em: new Date().toISOString() })
+    await db.atualiza('eventos', { id: e.id }, { detalhe: { ...e.detalhe, enviado: true, ok: r.ok } })
+    if (r.ok) entregues++
+    else await avisaEquipe('resposta guardada não saiu', `${String(m.texto).slice(0, 120)} (${r.erro || '?'})`, cv.negocio_id)
+  }
+  return entregues
+}
+
 // ---- a fila do dono (fora da janela de 24 h) ----
 const resumoFila = (itens: Saida[]) => {
   const pecas = itens.filter(i => i.tipo !== 'texto').length
