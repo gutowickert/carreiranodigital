@@ -99,8 +99,7 @@ async function main() {
 
   const T5 = '5500044440005'
   r = await cliente(A.id, T5, 'Fábio', 'Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.')
-  log('    Fábio: Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.
-    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
+  log('    Fábio: Quero uma caixa de 12 cookies pra retirar amanhã. Vou pagar no pix.\n    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
   r = await cliente(A.id, T5, 'Fábio', '', { arquivo_b64: b64(), mime: 'image/jpeg', simulado: { descricao: 'comprovante de pix de R$ 85,00 para Bocadinho', comprovante: true } })
   log('    Fábio (comprovante)\n    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
   const leadF = (await ver('leads', { negocio: A.id })).find(l => l.telefone === T5)
@@ -228,8 +227,7 @@ async function main() {
   anota((await ver('uso_mes', { negocio: A.id })).conversas === 1, 'contato apagado continua contando nas conversas do mês')
 
   // ---------- 08/11: prazo de guarda (12 meses sem mensagem) ----------
-  log('
-=== prazo de guarda (LGPD)')
+  log('\n=== prazo de guarda (LGPD)')
   const cvBetoG = await cvDe(A.id, T2), cvAnaG = await cvDe(A.id, T1)
   await op('teste_conversa_antiga', { conversa_id: cvBetoG.id, meses: 13 })
   await op('config_atendimento', { negocio_id: B.id, guarda_meses: 24 })
