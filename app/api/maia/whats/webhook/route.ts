@@ -8,7 +8,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
 import { conversa, avisaEquipe } from '@/lib/maia/canal'
 import { recebeDoCliente, respondeCliente } from '@/lib/maia/atendente'
-import { atendimentoLigado, waDoNegocio, marcaLidaNeg } from '@/lib/maia/wa-negocio'
+import { atendimentoLigado, waDoNegocio, marcaLidaNeg, baixaMidiaNeg } from '@/lib/maia/wa-negocio'
 
 export const maxDuration = 120
 const VERIFY = () => process.env.MAIA_WA_VERIFY_TOKEN || 'maia-wa-2026'
@@ -50,6 +50,8 @@ export async function POST(req: Request) {
   if (!assinaturaOk(corpo, req.headers.get('x-hub-signature-256'))) return NextResponse.json({ erro: 'assinatura' }, { status: 401 })
   const b = JSON.parse(corpo || '{}')
   const responder = new Map<string, string>()   // conversa → negócio
+  // 07/11 (piloto): áudio e foto do cliente são baixados, guardados e transcritos/descritos depois de responder 200 pra Meta
+  const comMidia: { neg: any; m: any; nome: string | null; referral: any }[] = []
   for (const entry of b.entry || []) for (const ch of entry.changes || []) {
     const v = ch.value || {}
     const phoneId = v.metadata?.phone_number_id
@@ -74,6 +76,7 @@ export async function POST(req: Request) {
       const nome = v.contacts?.find((x: any) => String(x.wa_id) === String(m.from))?.profile?.name || null
       // 06/11: o ctwa_clid (o id do clique no anúncio) vai junto: é com ele que a venda volta pra Meta (lib/maia/conversoes.ts)
       const referral = m.referral ? { source_id: m.referral.source_id, headline: m.referral.headline, ctwa_clid: m.referral.ctwa_clid || null, source_url: m.referral.source_url || null } : null
+      if ((m.type === 'audio' || m.type === 'image') && !(m.id && (await db.um('msgs', { wamid: m.id }).catch(() => null)))) { comMidia.push({ neg, m, nome, referral }); continue }
       const r = await recebeDoCliente(neg, { telefone: m.from, nome, texto: textoDe(m), wamid: m.id, referral }).catch(async (e: any) => { await avisaEquipe('erro na entrada de cliente', String(e?.message || e).slice(0, 160), neg.id); return null })
       if (!r) continue
       if (atendimentoLigado(neg)) { marcaLidaNeg(waDoNegocio(neg)!, m.id).catch(() => null); if (r.responder) responder.set(r.cv.id, neg.id) }
@@ -81,7 +84,16 @@ export async function POST(req: Request) {
   }
 
   // espera o cliente terminar de mandar e responde só se nada mais chegou e o dono não falou nas últimas 2 h
-  if (responder.size) after(async () => {
+  if (responder.size || comMidia.length) after(async () => {
+    for (const { neg, m, nome, referral } of comMidia) {
+      const w = waDoNegocio(neg), id = m.audio?.id || m.image?.id
+      // sem conseguir baixar, segue sem o arquivo: a Maia diz que não conseguiu ouvir/ver (nunca finge)
+      const midia = w && id ? await baixaMidiaNeg(w, id).catch(() => null) : null
+      const r = await recebeDoCliente(neg, { telefone: m.from, nome, texto: textoDe(m), wamid: m.id, referral, tipo: m.type, midia, legenda: m.image?.caption || null })
+        .catch(async (e: any) => { await avisaEquipe('erro na entrada de cliente', String(e?.message || e).slice(0, 160), neg.id); return null })
+      if (!r) continue
+      if (atendimentoLigado(neg)) { marcaLidaNeg(waDoNegocio(neg)!, m.id).catch(() => null); if (r.responder) responder.set(r.cv.id, neg.id) }
+    }
     await espera(12000)
     for (const [id, negocio_id] of responder) {
       const msgs = await db.lista('msgs', { conversa_id: id }, { ordem: 'criado_em', desc: true, limite: 20 })

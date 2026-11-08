@@ -3,6 +3,7 @@
 import { maiaDb as db } from './db'
 import { recebeDoDono, respondeDono } from './dono'
 import { recebeDoCliente, respondeCliente } from './atendente'
+import type { MidiaSimulada } from './midia-cliente'
 
 let seq = 0
 const wamid = () => 'simin-' + Date.now() + '-' + (++seq)
@@ -27,10 +28,14 @@ export async function responderDono(negocio_id: string) {
   return cv ? respondeDono(cv.id) : null
 }
 
-export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null }) {
+// 07/11 (piloto): o cliente simulado também manda áudio e foto. No modo de teste, `simulado` diz o que "seria" a transcrição
+// ou a descrição (sem chamar o Deepgram), ou falhar: true pra testar a resposta honesta de quando não deu pra ouvir/ver
+export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null; arquivo?: { buf: Buffer; mime: string; legenda?: string; simulado?: MidiaSimulada | null } }) {
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
-  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto, wamid: wamid(), referral: d.anuncio ? { source_id: d.anuncio } : null })
+  const tipo = d.arquivo ? (/audio/.test(d.arquivo.mime) ? 'audio' : 'image') : null
+  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto || '', wamid: wamid(), referral: d.anuncio ? { source_id: d.anuncio } : null,
+    ...(d.arquivo ? { tipo, midia: { buf: d.arquivo.buf, mime: d.arquivo.mime, simulado: d.arquivo.simulado || null }, legenda: d.arquivo.legenda || null } : {}) })
   if (!r) return null
   const resp = r.responder ? await respondeCliente((r.cv as any).id) : null
   return { lead: r.lead.id, respondeu: resp }

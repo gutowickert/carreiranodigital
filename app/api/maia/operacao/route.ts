@@ -148,7 +148,11 @@ export async function POST(req: Request) {
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
         return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))
       }
-      case 'simular_cliente': return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto, anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null) }))
+      case 'simular_cliente': {
+        // 07/11 (piloto): áudio ou foto do cliente simulado (arquivo_b64 + mime). `simulado` (transcrição/descrição de mentira) só vale no modo de teste
+        const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda, simulado: b.simulado || null } : undefined
+        return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto || '', anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null), arquivo }))
+      }
       // 05/11 (Tech Provider): o link que o dono abre pra conectar o WhatsApp do negócio
       case 'link_conectar': {
         const { assinaLink } = await import('@/lib/maia/conectar')
