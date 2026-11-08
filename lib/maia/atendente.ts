@@ -43,20 +43,22 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
-function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean }): Ferramenta[] {
+function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean; fechou?: boolean }): Ferramenta[] {
   return [
     { name: 'mudar_etapa', description: 'Atualiza a etapa do cliente no funil: conversando (tirando dúvida), interessado (quer, falta decidir), proposta (recebeu preço/orçamento/horário).',
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
-      roda: async (q) => { lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
+      // 07/11 (piloto): no teste, a IA marcou "perdido" e logo depois "conversando" na mesma resposta. Depois de ganho/perdido
+      // nessa resposta, a etapa não volta atrás (numa mensagem nova do cliente, pode reabrir normalmente)
+      roda: async (q) => { if (ctx.fechou) return { ok: true, ignorado: 'a venda já foi marcada como ganha ou perdida nesta resposta' }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
     { name: 'venda_fechada', description: 'O cliente fechou: agendou e confirmou, pagou ou fez o pedido. Marca GANHO com o valor.',
       input_schema: { type: 'object', properties: { valor: { type: 'number' }, produto: { type: 'string' } }, required: ['produto'] },
       roda: async (q) => {
         // 07/11 (piloto): comprovante em foto não é venda confirmada: quem confere é o dono (ele já foi avisado)
         if (ctx.comprovante) { lead = await mudaEtapa(lead, 'proposta', 'maia', { produto: q.produto, valor: q.valor }); return { erro: 'o cliente mandou um comprovante: tu NÃO confirma pagamento. Diz que recebeu e que o dono confere e confirma. O dono já foi avisado.' } }
-        lead = await ganhou(lead, q.valor, q.produto, 'maia'); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
+        lead = await ganhou(lead, q.valor, q.produto, 'maia'); ctx.fechou = true; const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
     { name: 'venda_perdida', description: 'O cliente disse claramente que não vai comprar. Marca PERDIDO com o motivo (preço, comprou em outro lugar, não precisa mais, sem orçamento, fora da região).',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async (q) => { lead = await perdeu(lead, q.motivo, 'maia'); return { ok: true } } },
+      roda: async (q) => { lead = await perdeu(lead, q.motivo, 'maia'); ctx.fechou = true; return { ok: true } } },
     { name: 'retomar_depois', description: 'O cliente pediu pra falar depois ("vou ver e te aviso", "semana que vem"). Agenda a retomada.',
       input_schema: { type: 'object', properties: { em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
       roda: async (q) => { lead = await agendaFollowup(lead, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
@@ -91,6 +93,7 @@ COMO ATENDER:
   · "vou pensar", "te aviso", "semana que vem" → retomar_depois.
 - SEMPRE escreve a resposta pro cliente, mesmo quando usa ferramenta.
 - Nunca insiste depois de um não. Nunca promete o que o negócio não disse que faz.
+- Nunca diz que vai confirmar ou verificar algo sem chamar perguntar_ao_dono NESSA MESMA resposta.
 - Nunca diz que passou a conversa pra alguém ou que alguém vai entrar em contato sem chamar passar_para_o_dono NESSA MESMA resposta. Reclamação, cliente irritado ou pedido de dinheiro de volta: chama passar_para_o_dono na primeira mensagem.
 - Não supõe o gênero do cliente ("chateado/chateada"): usa palavras neutras se não souber.
 - ÁUDIO E FOTO: "(áudio) ..." é a transcrição do que o cliente falou; "(mandou uma foto: ...)" é o que aparece na foto. Se vier "${NAO_OUVIU}" ou "${NAO_VIU}", tu NÃO ouviu nem viu: diz com honestidade que não conseguiu ouvir/ver e pede pra escrever. Nunca finge que ouviu ou viu.
@@ -125,8 +128,9 @@ export async function respondeCliente(conversa_id: string) {
     await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
     return { mensagens: aviso ? [t, aviso] : [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
   }
-  const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)) }
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx), 6,
+  const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)), fechou: false }
+  const ferrs = ferramentas(neg, cv, lead, ctx)
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
     { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
@@ -145,12 +149,18 @@ export async function respondeCliente(conversa_id: string) {
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
   }
   for (const t of enviadas) await mandaTexto(cv, t)
+  // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
+  const usadas = r.usadas.map(u => u.nome)
+  if (!ctx.humano && !ctx.comprovante && !usadas.includes('perguntar_ao_dono') && !usadas.includes('passar_para_o_dono') && /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(enviadas.join(' '))) {
+    const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
+    if (pergunta) { await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); usadas.push('perguntar_ao_dono (sistema)') }
+  }
   if (aviso) await mandaTexto(cv, aviso)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: aviso ? [...enviadas, aviso] : enviadas, ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, aviso_privacidade: !!aviso }
+  return { mensagens: aviso ? [...enviadas, aviso] : enviadas, ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
