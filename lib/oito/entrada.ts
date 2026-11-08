@@ -8,6 +8,24 @@ import { marcaDoTexto } from './agente'
 
 const SAIR = new Set(['sair', 'parar', 'pare', 'stop', 'cancelar', 'descadastrar', 'salir', 'no mas', 'no más'])
 
+// 08/11: números da equipe (não recebem a demonstração; o Guto escreve aqui pra manter a janela dos relatórios aberta).
+// MAIA_FONES_EQUIPE (só dígitos, separados por vírgula) + o WhatsApp do perfil do Guto
+let equipeCache: { em: number; fones: string[] } | null = null
+export async function ehEquipe(tel: string) {
+  const so = (x: any) => String(x || '').replace(/D/g, '')
+  if (!equipeCache || Date.now() - equipeCache.em > 10 * 60e3) {
+    const fones = String(process.env.MAIA_FONES_EQUIPE || '').split(',').map(so).filter(Boolean)
+    try {
+      const { supabaseAdmin } = await import('@/lib/supabase-admin')
+      const { data } = await supabaseAdmin.from('usuarios_perfil').select('whatsapp').eq('email', 'guto.wickert@gmail.com').limit(1)
+      const w = so(data?.[0]?.whatsapp); if (w) fones.push(w.length <= 11 ? '55' + w : w)
+    } catch { /* modo local sem banco: só a variável */ }
+    equipeCache = { em: Date.now(), fones }
+  }
+  const t = so(tel), fim = (x: string) => x.slice(-8)
+  return !!t && equipeCache.fones.some(f => f === t || fim(f) === fim(t))
+}
+
 export function textoDe(m: any) {
   if (m.type === 'text') return m.text?.body || ''
   if (m.type === 'button') return m.button?.text || m.button?.payload || ''
@@ -43,7 +61,11 @@ export async function recebe(m: any, nome: string | null, arquivo?: { buf: Buffe
   }
   // 02/11 (Maia): quem chega pelo site da Maia entra no teste grátis dela; nessa fase o áudio é transcrito
   const { pedeMaia, transcreve } = await import('@/lib/maia/demo')
-  const viraMaia = cv.fase !== 'maia' && pedeMaia(texto) && (!cv.fase || cv.fase === 'novo' || /demonstra/i.test(texto))
+  // 08/11 (Guto): o Oito acabou; o número agora é só da Maia: TODO mundo que escreve cai na demonstração dela
+  // (quem já tinha pedido pra sair só volta se pedir a Maia). A equipe (o Guto) nunca: o número dele é o canal dos relatórios
+  const equipe = await ehEquipe(cv.telefone)
+  if (equipe && (cv.fase === 'maia' || cv.modo === 'ia')) { await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'equipe', modo: 'humano' }); cv.fase = 'equipe'; cv.modo = 'humano' }
+  const viraMaia = !equipe && cv.fase !== 'maia' && (pedeMaia(texto) || !cv.optout)
   if (viraMaia) {
     // 06/11: o começo da demonstração (de onde veio: o anúncio de WhatsApp manda referral; e quantas mídias já tinha antes)
     const r = cv.rascunho || {}, maia = { inicio: new Date().toISOString(), origem: m.referral ? 'anuncio' : 'site', anuncio: m.referral?.source_id || null, base: (r.midias || []).length }
@@ -74,5 +96,5 @@ export async function recebe(m: any, nome: string | null, arquivo?: { buf: Buffe
     nao_lidas: (cv.nao_lidas || 0) + 1, proximo_followup_em: null, ...(nome && !cv.nome ? { nome } : {}), ...(marca ? { marca } : {}), ...(sair ? { optout: true, modo: 'encerrada' } : {}),
   })
   await db.evento('wa_recebida', { cliente_id: cv.cliente_id || null, marca: cv.marca || marca || null, detalhe: { conversa: cv.id, simulado: !!cv.simulado } })
-  return { cv, texto, sair, responder: !sair && cv.modo === 'ia' }
+  return { cv, texto, sair, responder: !sair && !equipe && cv.modo === 'ia' }
 }

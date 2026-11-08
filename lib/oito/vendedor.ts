@@ -87,7 +87,8 @@ export async function rodaFollowups() {
     if (!cv) { await agendaFollowup(c); novos.push(c.codigo) }
   }
   const agora = new Date().toISOString(), envios: string[] = []
-  const vencidos = (await db.lista('wa_conversas', {}, { ordem: 'proximo_followup_em', limite: 300 })).filter(cv => cv.proximo_followup_em && cv.proximo_followup_em <= agora).slice(0, 20)
+  // 08/11: o Oito acabou e o número é da Maia: conversa que virou Maia (ou é da equipe) não recebe lembrete do Oito
+  const vencidos = (await db.lista('wa_conversas', {}, { ordem: 'proximo_followup_em', limite: 300 })).filter(cv => cv.proximo_followup_em && cv.proximo_followup_em <= agora && cv.fase !== 'maia' && cv.fase !== 'equipe').slice(0, 20)
   for (const cv of vencidos) envios.push(cv.telefone.slice(-4) + ': ' + (await passoFollowup(cv).catch(e => 'erro ' + e.message)))
   const retomadas = await retomaConversas().catch((e: any) => ['erro ' + e.message])
   return { ligado: true, novos, envios, retomadas }

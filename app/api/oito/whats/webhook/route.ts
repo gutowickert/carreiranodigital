@@ -68,7 +68,7 @@ export async function POST(req: Request) {
       if (!r) continue
       marcaLida(m.id).catch(() => null)
       if (r.responder) responder.add(r.cv.id)
-      else if (!r.sair) avisaDono('WhatsApp: mensagem nova', `${r.cv.nome || r.cv.telefone}: ${r.texto.slice(0, 160)}`)
+      else if (!r.sair && r.cv.fase !== 'equipe') avisaDono('WhatsApp: mensagem nova', `${r.cv.nome || r.cv.telefone}: ${r.texto.slice(0, 160)}`)
     }
   }
   // a Maia responde o dono do mesmo jeito: espera ele terminar de mandar (fotos e vídeos costumam vir em sequência)
