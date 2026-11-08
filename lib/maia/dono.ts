@@ -49,7 +49,7 @@ export async function descreveVideo(midia_id: string, quadros_b64: string[], dur
     try {
       const r = await emJson<{ descricao: string }>('Tu descreves vídeos curtos de pequenos negócios pra uma redatora de anúncios. Recebes 3 quadros (começo, meio e fim) do mesmo vídeo. Objetivo, em português, até 35 palavras: o que aparece, o que acontece, a qualidade (nítido, escuro, tremido) e se serve pra anúncio. Só o que se vê: não inventa produto, sabor nem preço.',
         `Vídeo do negócio ${neg?.nome || ''} (${neg?.nicho || ''}). Devolve {"descricao":"..."}`, quadros_b64.map(b64 => ({ b64, mime: 'image/jpeg' })), { uso: { tipo: 'outro', negocio_id: m.negocio_id } })
-      quadros = String(r?.descricao || '').trim() || quadros
+      quadros = String(r?.descricao || '').trim().replace(/[.\s]+$/, '') || quadros
     } catch { /* fica "não deu pra ver" */ }
   }
   const descricao = `${duracao ? 'Vídeo de ' + Math.round(duracao) + ' s' : 'Vídeo'}. Quadros: ${quadros}. ${fala && !/^vídeo$/i.test(fala) ? fala.charAt(0).toUpperCase() + fala.slice(1) : ''}`.trim()

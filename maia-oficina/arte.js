@@ -151,12 +151,11 @@ async function ajusta(pg) {
 }
 
 // gera a arte e grava em "saida" (.jpg ou .png). Devolve o relatório do ajuste.
-// 08/11 (teste completo): "layout" = o que o sistema escolheu pro lote (a mesma foto não repete layout); a versão seguinte
-// troca a partir dele. "preco" = o preço da base em destaque (anúncio de preço cujo gancho não tem o preço): vai na etiqueta
+// 08/11 (teste completo): "layout" = o que o sistema escolheu (a mesma foto não repete layout; a versão nova de um ajuste
+// também vem escolhida, diferente da anterior e das outras peças com a mesma foto). Sem ele, o sorteio antigo pelo id. "preco" = o preço da base em destaque (anúncio de preço cujo gancho não tem o preço): vai na etiqueta
 async function gerarArte({ foto, gancho, cta, nome, marca, logo, chave, versao, saida, navegador, layout: pedido, preco }) {
   const cores = coresDaMarca(marca || {}), fontes = fontesDaMarca(marca || {})
-  const ini = LAYOUTS.includes(pedido) ? LAYOUTS.indexOf(pedido) : numeroDe(chave || gancho)
-  const layout = LAYOUTS[(ini + Math.max(0, (+versao || 1) - 1)) % LAYOUTS.length]
+  const layout = LAYOUTS.includes(pedido) ? pedido : LAYOUTS[(numeroDe(chave || gancho) + Math.max(0, (+versao || 1) - 1)) % LAYOUTS.length]
   if (preco && !/R\$\s?\d/.test(gancho || '') && !separaGancho(gancho).etiqueta) gancho = `${preco}: ${gancho}`
   const fotoUri = preparaFoto(foto, path.dirname(saida))
   const br = navegador || await abreNavegador()

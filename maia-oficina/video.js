@@ -102,7 +102,7 @@ function frasesDoTexto(texto) {
   const out = []
   for (const f of String(texto || '').replace(/\s+/g, ' ').split(/(?<=[.!?])\s+/).map(x => x.trim()).filter(Boolean)) {
     // frase comprida: divide em partes de tamanho parecido (nada de uma palavra sozinha numa tela)
-    const ws = f.split(' '), partes = Math.ceil(f.length / 40), alvo = f.length / partes
+    const ws = f.split(' '), partes = Math.ceil(f.length / 46), alvo = f.length / partes
     let atual = ''
     for (const w of ws) { if (atual && (atual + ' ' + w).length > alvo + 6 && out.length < 99) { out.push(atual); atual = w } else atual = (atual + ' ' + w).trim() }
     if (atual) out.push(atual)
@@ -230,7 +230,8 @@ async function editarVideo({ video, gancho, cta, texto, nome, marca, logo, chave
     const pg = await br.newPage()
     await pg.setViewport({ width: W, height: H })
     await carregaPagina(pg, htmlCartao({ gancho, cta, nome, logo, cores, fontes }), fontes)
-    await encolhe(pg, [['etq', 26], ['tit', 50, 'caixa'], ['tit', 50], ['cta', 30], ['nome', 28, 'caixa']])
+    // 08/11 (reteste): o CTA encolhe ANTES do título (um CTA comprido passava da caixa e o título encolhia até sumir)
+    await encolhe(pg, [['etq', 26], ['cta', 30], ['tit', 50, 'caixa'], ['tit', 50], ['nome', 28, 'caixa']])
     await pg.screenshot({ path: path.join(pasta, 'cartao.png') })
     // o gancho em cima, do 1º quadro até ~3,5 s
     if (gancho) {

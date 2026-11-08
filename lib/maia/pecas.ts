@@ -74,11 +74,11 @@ Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titu
 // ---- 08/11 (teste completo, 8d e 8e) ----
 export const LAYOUTS = ['cabecalho', 'base', 'faixa']
 // mídia → layouts que já saíram com ela (peças dos últimos 30 dias que não foram descartadas)
-async function layoutsUsados(negocio_id: string) {
+async function layoutsUsados(negocio_id: string, menos: string | null = null) {
   const usados = new Map<string, string[]>()
   const vivas = new Set((await db.lista('pecas', { negocio_id })).filter(p => !['descartada', 'erro'].includes(p.status) && Date.now() - Date.parse(p.criado_em || 0) < 30 * 86400e3).map(p => p.id))
   for (const t of await db.lista('tarefas', { negocio_id }, { ordem: 'criado_em' })) {
-    if (t.tipo !== 'arte' || !vivas.has(t.peca_id) || !t.dados?.layout || !t.dados?.midia_id) continue
+    if (t.tipo !== 'arte' || !vivas.has(t.peca_id) || t.peca_id === menos || !t.dados?.layout || !t.dados?.midia_id) continue
     usados.set(t.dados.midia_id, [...(usados.get(t.dados.midia_id) || []), t.dados.layout])
   }
   return usados
@@ -135,7 +135,13 @@ export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
   if (peca.tipo === 'anuncio_imagem' || peca.tipo === 'anuncio_video' || peca.tipo === 'post') {
     const antes = (await db.lista('tarefas', { peca_id: peca.id }, { ordem: 'criado_em', desc: true, limite: 1 }))[0]?.dados || {}
     const preco = /R\$\s?\d/.test(tx.gancho) ? null : antes.preco || null
-    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota, ...(antes.layout ? { layout: antes.layout } : {}), ...(preco ? { preco } : {}) } })
+    // 08/11 (reteste): a versão nova troca o layout, mas nunca pra um que outra peça já usa com a mesma foto
+    let layout: string | null = null
+    if (peca.tipo !== 'anuncio_video' && peca.midia_ids?.[0]) {
+      const ja = (await layoutsUsados(peca.negocio_id, peca.id)).get(peca.midia_ids[0]) || []
+      layout = LAYOUTS.find(l => l !== antes.layout && !ja.includes(l)) || LAYOUTS.find(l => l !== antes.layout) || null
+    }
+    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota, ...(layout ? { layout } : {}), ...(preco ? { preco } : {}) } })
   } else await db.atualiza('pecas', { id: peca.id }, { status: 'revisao_equipe' })
   return nova
 }
