@@ -20,7 +20,7 @@ Com estas, o código pode ir pro ar sem abrir nada. O que acontece quando falta 
 | `MAIA_ROTINA_CHAVE` | chave que o agendador do banco (pg_cron) manda pra `/api/maia/rotina` | uma senha longa inventada | **igual** ao `COLOCA_A_CHAVE` do `db/maia-cron.sql` antes de rodar | rotina só abre com `CRON_SECRET`; sem as duas, fica fechada | não |
 | `CRON_SECRET` | segredo dos crons da Vercel (a escola usa) | uma senha longa inventada | a Vercel manda sozinha como `Authorization: Bearer ...` nos crons | a rotina da Maia segue pela `MAIA_ROTINA_CHAVE`. **Desde 07/11 o user-agent `vercel-cron` NÃO vale mais como senha na Maia** | provável |
 | `META_APP_SECRET` | segredo do app da Meta que assina os webhooks do WhatsApp (escola/Oito) | o "Chave secreta do app" | Meta for Developers > app do WhatsApp do Oito > Configurações do app > Básico > Chave secreta | webhook da Maia (`/api/maia/whats/webhook`) recusa tudo (seguro). O do Oito aceita sem assinatura (risco do Oito) e **não deixa nenhuma mensagem ir pra Maia** | o manual de 08/10 diz que faltava na Vercel do Guto: **conferir** |
-| `MAIA_CONECTAR_SEGREDO` | assina o link de 14 dias que o dono abre pra conectar o WhatsApp | uma senha longa inventada | só no servidor | usa a `MAIA_PAINEL_SENHA` (funciona; separado é melhor: trocar a senha do painel não invalida os links) | não |
+| `MAIA_CONECTAR_SEGREDO` | assina o link de 14 dias que o dono abre pra conectar o WhatsApp e (desde 07/11, com uma chave derivada só pra isso) o link de 30 dias do **painel do dono** | uma senha longa inventada | só no servidor. **Trocar = todos os links de painel e de conexão param de abrir** (cada dono pede um novo pra Maia) | usa a `MAIA_PAINEL_SENHA` (funciona; separado é melhor: trocar a senha do painel não invalida os links) | não |
 | `MAIA_WA_VERIFY_TOKEN` | palavra que a Meta confere ao cadastrar o webhook dos negócios | uma senha longa inventada | **igual** ao "Verificar token" que se digita na Meta ao configurar o webhook `/api/maia/whats/webhook` (e vai na inscrição de cada conta) | usa `maia-wa-2026`, que está no código (público). Baixo risco, mas trocar | não |
 | `MAIA_URL_PUBLICA` | endereço oficial do site | `https://www.carreiranodigital.com` | — | links e o webhook dos negócios usam o endereço de quem chamou (pode ser uma prévia `*.vercel.app`) | não |
 | `NEXT_PUBLIC_SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | banco (o mesmo da escola) | — | já usadas pela escola | nada da Maia funciona | **sim** |
@@ -91,6 +91,8 @@ Desde 07/11 o código ignora `MAIA_LOCAL` na Vercel, mas não custa não pôr.
 | `MAIA_OFERTA` | JSON que muda os planos/preços que a Maia fala |
 | `MAIA_SOCIAL_ESPERA_MS` | `5000` |
 | `MAIA_SEM_AVISO` | `1` silencia os avisos no celular (só pra teste) |
+| `MAIA_PAINEL_DONO_SEGREDO` | (07/11) segredo próprio dos links do painel do dono. Sem ela, usa o `MAIA_CONECTAR_SEGREDO`. Pôr uma nova = todos os links do painel param de abrir (de todos os negócios). Pra cancelar os de um negócio só, é o botão "Trocar link" no painel da equipe |
+| `MAIA_WA_NUMERO` | (07/11) o número da Maia no botão "Fale com a Maia no WhatsApp" do painel do dono. Padrão `5551993767137` (o do Oito, o mesmo do site `/maia`) |
 
 ## Fora da Vercel: a oficina (`maia-oficina/`, no PC ou na Railway)
 
