@@ -290,6 +290,17 @@ export async function respondeCliente(conversa_id: string) {
     usadas.push('passar_para_o_dono (sistema)')
     if (!disse) { passouExtra = `Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`; await mandaTexto(cv, passouExtra) }
   }
+  // 08/11 (reteste r3, #20): o cliente pediu "amanhã"/"hoje" num dia em que o negócio NÃO abre e a resposta não disse isso
+  // (numa rodada a IA respondeu "vou confirmar se a gente abre"): o sistema avisa com o calendário certo
+  let diaExtra: string | null = null
+  if (!ctx.humano) {
+    const dd = diasDoNegocio(neg), pede = semAc(textoCliente)
+    const alvo = /\bamanha\b/.test(pede) && dd.amanha.abre === false ? { d: dd.amanha, quando: 'amanhã' } : /\bhoje\b/.test(pede) && dd.hoje.abre === false ? { d: dd.hoje, quando: 'hoje' } : null
+    if (alvo && !/\bnao (abr|funcion|atend|trabalh|vamos estar|estamos|estaremos|da pra|consigo|conseguimos)|fechad/.test(semAc(enviadas.join(' ')))) {
+      diaExtra = `Só um aviso: ${alvo.quando} (${alvo.d.semana}, ${alvo.d.data}) a gente não abre.${dd.proximo ? ` O próximo dia é ${dd.proximo.semana}, ${dd.proximo.data}.` : ''}`
+      await mandaTexto(cv, diaExtra)
+    }
+  }
   let sistemaPerguntou = false
   // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
   if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && (prometeuConfirmar(enviadas.join(' ')) || naoSabe(enviadas.join(' '))) && !foraDoAssunto(textoCliente) && !foraDoAssunto(enviadas.join(' '))) {
@@ -315,7 +326,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
