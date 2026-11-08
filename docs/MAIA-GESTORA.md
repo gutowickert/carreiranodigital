@@ -91,3 +91,14 @@
 - Dani e Gaja recebendo.
 - Medir pro case: quanto dinheiro parado voltou (leads quentes que fecharam depois do aviso), quantas horas a conta ficou parada antes x depois, a primeira resposta antes x depois.
 - Próximo passo (não antes): sugestão de verba com base na venda do CRM ("passa R$ 10 do anúncio X pro Y?"), que só acontece com o "sim" do dono.
+
+---
+
+## 7. No sistema (T15, 08/11)
+
+- `lib/maia/gestora.ts`: as regras (funções puras, sem import), o `analisa()` de um negócio, as mensagens e o modelo `maia_aviso` (pronto, não pedido).
+- `lib/maia/gestora-crm.ts`: as leituras, **só GET** e só a janela de datas (leads e vendas de 180 dias, andamentos 45, conversas 30, mensagens 21, erros 30). Escola: o banco do sistema (`crm.mesmo_banco`). Os outros: `MAIA_CRM_<CLIENTE>_URL` / `_LEITURA` (o nome tem que começar com `MAIA_CRM_`). Sem a chave: o CRM é pulado e a nota diz qual chave falta; as regras da Meta rodam igual. Meta: `trafego_anuncios_dia` + Graph (`/insights`, GET) com `MAIA_ADS_TOKEN` ou `FB_ADS_TOKEN`.
+- `lib/maia/gestora-rotina.ts`: chamada em `roda()` com `MAIA_GESTORA_LIGADA=1`. 7h tudo (grava `maia_avisos` e `maia_crm_dia`, UMA mensagem pra equipe); segunda 7h também `maia_funil_semana` e o resumo; 9h, 11h, 13h, 15h, 17h e 19h só "gasto sem conversa" e "parou de gastar", e só o que é novo. A equipe recebe pelo `avisaEquipe` (sem nome de ninguém). O dono só recebe se o id do negócio estiver em `MAIA_GESTORA_DONOS` (padrão: ninguém). Fora da janela de 24 h, com `MAIA_GESTORA_MODELO_AVISO=1` usa o `maia_aviso`; sem ele, a fila normal do dono (`maia_novidades`).
+- Quem é vigiado: os negócios com `maia_negocios.gestora` preenchido (`db/maia-gestora-4-cases.sql`), menos pausados e cancelados.
+- Aba **Avisos**: `/maia/operacao/avisos.html` (link no menu do painel), API `/api/maia/gestora`. "Resolvido", "Ignorar", "Ajudou?", "Ver quem" (busca o primeiro nome + inicial no CRM na hora; saúde nunca), "Prévia de hoje" (só calcula).
+- Teste: `node --no-warnings scripts/maia-teste-gestora.mjs` (regras; com `VIGIA=<pasta do protótipo>` compara com o `regras.js`) e, com a URL de um servidor em modo local, de ponta a ponta com dados inventados (comando no topo do arquivo).

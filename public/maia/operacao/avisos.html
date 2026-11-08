@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f7f5fc">
+<link rel="icon" href="/maia/img/maia-avatar.webp">
+<title>Maia · Avisos</title>
+<script>
+(function(){ try{ if(localStorage.getItem('maia_op_tema')==='dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){} })();
+</script>
+<style>
+/* Maia Gestora (T15, 08/11): a aba "Avisos" do painel da equipe. Página à parte (mesma senha e o mesmo visual claro do
+   /maia/operacao), pra não mexer no painel principal. Os avisos por negócio, com "resolvido", "ignorar" e "ajudou?". */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+:root{
+  --bg:#f7f5fc; --surface:#ffffff; --surface-2:#f3f0fa; --border:#ebe6f5; --border-strong:#dcd5ec;
+  --text:#1b1530; --text-2:#423a5c; --text-muted:#6b6485; --text-faint:#77708f;
+  --accent:#7c3aed; --accent-soft:#6d28d9; --accent-bg:#f1ebfe;
+  --green:#15803d; --green-bg:#dcfce7; --red:#b91c1c; --red-bg:#fee2e2; --amber:#b45309; --amber-bg:#fef3c7; --blue:#1d4ed8; --blue-bg:#dbeafe;
+  --sombra:0 1px 2px rgba(23,18,42,.04),0 6px 22px rgba(23,18,42,.06); --raio:18px; color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0f0c17; --surface:#171320; --surface-2:#211b2e; --border:#261f36; --border-strong:#372e4c;
+  --text:#f4f1fb; --text-2:#c9c2da; --text-muted:#9a93ae; --text-faint:#8a83a0;
+  --accent:#8b5cf6; --accent-soft:#c4b5fd; --accent-bg:#2a1b4d;
+  --green:#4ade80; --green-bg:#0d2e20; --red:#fb7185; --red-bg:#3b1520; --amber:#fbbf24; --amber-bg:#3a2a0a; --blue:#7fb0ff; --blue-bg:#14243f;
+  --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+h1,h2{font-family:'Bricolage Grotesque','Manrope',sans-serif;font-variation-settings:'opsz' 48,'wdth' 92;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin:0}
+h1{font-size:26px} h2{font-size:17px}
+p{margin:0} a{color:var(--accent-soft)}
+button,input{font:inherit;color:inherit}
+.mu{color:var(--text-muted)} .peq{font-size:13px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topo{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.topo img{width:36px;height:36px;border-radius:11px;object-fit:cover}
+.topo b{font-family:'Bricolage Grotesque',sans-serif;font-size:18px}
+.topo .dir{margin-left:auto;display:flex;gap:8px}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 72px}
+.cab{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.cab small{display:block;font:600 13.5px/1.4 'Manrope',sans-serif;color:var(--text-muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);font-weight:700;font-size:13.5px;cursor:pointer;text-decoration:none;color:var(--text-2)}
+.btn:hover{border-color:var(--accent);color:var(--accent-soft)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.mini{padding:5px 11px;font-size:12.5px}
+.btn.on{background:var(--accent-bg);border-color:var(--accent);color:var(--accent-soft)}
+.btn[disabled]{opacity:.55;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:16px}
+@media (max-width:760px){.kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.kpi{background:var(--surface);border-radius:var(--raio);box-shadow:var(--sombra);padding:14px 16px;min-width:0}
+.kpi span{font-size:12px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.06em}
+.kpi b{display:block;font-family:'Bricolage Grotesque',sans-serif;font-size:30px;line-height:1.15;font-variant-numeric:tabular-nums}
+.filtros{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.card{background:var(--surface);border-radius:var(--raio);box-shadow:var(--sombra);padding:16px 18px;margin-bottom:16px;min-width:0}
+.card-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+.chip.urgente{background:var(--red-bg);color:var(--red)} .chip.atencao{background:var(--amber-bg);color:var(--amber)} .chip.info{background:var(--blue-bg);color:var(--blue)}
+.chip.bom{background:var(--green-bg);color:var(--green)}
+.aviso{border-top:1px solid var(--border);padding:12px 0}
+.aviso:first-of-type{border-top:0}
+.aviso.fechado{opacity:.6}
+.aviso .t{display:flex;gap:8px;align-items:flex-start;flex-wrap:wrap}
+.aviso .t b{flex:1 1 260px;min-width:0}
+.aviso p{margin-top:4px;color:var(--text-2);font-size:14px}
+.aviso .acao{margin-top:6px;font-size:14px}
+.aviso .acao::before{content:'→ ';color:var(--accent)}
+.botoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.quem{margin-top:6px;font-size:13.5px;color:var(--text-2);background:var(--surface-2);border-radius:10px;padding:6px 10px}
+.nota{font-size:13px;color:var(--text-muted);background:var(--surface-2);border-radius:12px;padding:8px 12px;margin-top:8px}
+.erro{background:var(--red-bg);color:var(--red);border-radius:12px;padding:10px 14px;margin:10px 0}
+.vazio{color:var(--text-muted);padding:10px 0}
+.login{max-width:360px;margin:12vh auto;background:var(--surface);border-radius:var(--raio);box-shadow:var(--sombra);padding:24px;display:grid;gap:12px}
+.login input{padding:10px 12px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface)}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;display:none;max-width:calc(100% - 32px)}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+</style>
+</head>
+<body>
+<header><div class="topo"><img src="/maia/img/maia-avatar.webp" alt="" width="36" height="36"><div><b>Maia</b><div class="mu peq">Gestora · avisos</div></div>
+  <div class="dir"><a class="btn mini" href="/maia/operacao">← Painel</a></div></div></header>
+<main id="tela"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script>
+(function(){
+'use strict';
+var API='/api/maia/gestora', CHAVE='maia_op_senha';
+var NIVEL={urgente:'urgente',atencao:'atenção',info:'pra saber'};
+var ST={revisao_equipe:'com a equipe',novo:'novo',enviado:'foi pro dono',resolvido:'resolvido',ignorado:'ignorado'};
+var S={senha:null,dados:null,filtro:'',tudo:false};
+function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function $(s,el){ return (el||document).querySelector(s); }
+function toast(m){ var t=$('#toast'); t.textContent=m; t.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(function(){ t.style.display='none'; },3500); }
+function dataBR(d){ return String(d||'').slice(0,10).split('-').reverse().join('/'); }
+function api(arg){
+  var o={headers:{'x-senha':S.senha||''}}, url=API;
+  if(typeof arg==='string') url+='?'+arg; else { o.method='POST'; o.headers['content-type']='application/json'; o.body=JSON.stringify(arg); }
+  return fetch(url,o).then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){
+    if(r.status===401){ ls(CHAVE,null); S.senha=null; login('A senha não confere.'); throw new Error('senha'); }
+    if(!r.ok) throw new Error(j.erro||('erro '+r.status)); return j; }); });
+}
+function login(msg){
+  $('#tela').innerHTML='<form class="login" id="f"><h1>Avisos da Maia</h1><p class="mu peq">A mesma senha do painel da equipe.</p>'+(msg?'<div class="erro">'+esc(msg)+'</div>':'')+
+    '<label class="peq" for="s">Senha</label><input id="s" type="password" autocomplete="current-password" required><button class="btn pri">Entrar</button></form>';
+  $('#f').onsubmit=function(e){ e.preventDefault(); S.senha=$('#s').value.trim(); carrega().then(function(){ ls(CHAVE,S.senha); }); };
+}
+function carrega(){
+  return api('acao=avisos&dias=14').then(function(d){ S.dados=d; pinta(); }).catch(function(e){ if(e.message!=='senha') $('#tela').innerHTML='<div class="erro">Não deu: '+esc(e.message)+'</div>'; });
+}
+function aberto(a){ return a.status!=='resolvido'&&a.status!=='ignorado'; }
+function pinta(){
+  var d=S.dados, negs=d.negocios||[], p=d.placar||{};
+  var pct=p.marcados?Math.round(p.ajudou/p.marcados*100)+'%':'—';
+  var h='<div class="cab"><div><h1>Avisos<small>O que a Maia Gestora achou nos anúncios e nos CRMs. Ela só lê: o aviso aponta, o dono decide.</small></h1></div>'+
+    '<div class="botoes"><button class="btn" id="b-previa">Prévia de hoje</button><button class="btn pri" id="b-rodar">Rodar as regras agora</button></div></div>';
+  if(!d.ligada) h+='<div class="nota">A rotina sozinha está desligada (MAIA_GESTORA_LIGADA). Os botões acima rodam na hora.</div>';
+  h+='<div class="kpis"><div class="kpi"><span>Negócios</span><b>'+negs.length+'</b></div><div class="kpi"><span>Abertos</span><b>'+(p.abertos||0)+'</b></div>'+
+    '<div class="kpi"><span>Marcados</span><b>'+(p.marcados||0)+'</b></div><div class="kpi"><span>Ajudou</span><b>'+pct+'</b></div></div>';
+  var r=d.ultima_rodada;
+  if(r) h+='<div class="nota">Última rodada: '+esc(new Date(r.em).toLocaleString('pt-BR'))+' ('+esc(r.modo)+'). '+(r.negocios||[]).map(function(n){ return esc(n.nome)+': '+(n.erro?'erro':(n.avisos||0)+' aviso(s)')+((n.notas||[]).length?' · '+esc(n.notas.join(' · ')):''); }).join('<br>')+'</div>';
+  h+='<div class="filtros" role="group" aria-label="Filtrar"><button class="btn mini '+(S.filtro?'':'on')+'" data-f="">Todos</button>'+negs.map(function(n){ var ab=n.avisos.filter(aberto).length; return '<button class="btn mini '+(S.filtro===n.id?'on':'')+'" data-f="'+esc(n.id)+'">'+esc(n.nome)+' '+ab+'</button>'; }).join('')+
+    '<button class="btn mini '+(S.tudo?'on':'')+'" id="b-tudo">'+(S.tudo?'Mostrando os fechados':'Ver os fechados')+'</button></div>';
+  if(!negs.length) h+='<div class="card vazio">Nenhum negócio na Gestora ainda. Ela vigia os negócios que têm a configuração dela (maia_negocios.gestora).</div>';
+  negs.filter(function(n){ return !S.filtro||n.id===S.filtro; }).forEach(function(n){
+    var avs=n.avisos.filter(function(a){ return S.tudo||aberto(a); });
+    h+='<section class="card" aria-label="'+esc(n.nome)+'"><div class="card-cab"><h2>'+esc(n.nome)+'</h2><div>'+(n.saude?'<span class="chip">saúde: sem nomes</span> ':'')+'<span class="chip">CRM: '+esc(n.crm)+'</span> '+(n.direto?'<span class="chip bom">dono recebe direto</span>':'<span class="chip">só a equipe recebe</span>')+'</div></div>';
+    if(!avs.length) h+='<div class="vazio">Nada aberto. '+(n.avisos.length?'':'Nenhum aviso nos últimos 14 dias.')+'</div>';
+    avs.forEach(function(a){
+      h+='<div class="aviso'+(aberto(a)?'':' fechado')+'" data-id="'+esc(a.id)+'"><div class="t"><span class="chip '+esc(a.nivel)+'">'+esc(NIVEL[a.nivel]||a.nivel)+'</span><b>'+esc(a.titulo)+'</b><span class="mu peq">'+dataBR(a.dia)+' · '+esc(ST[a.status]||a.status)+'</span></div>'+
+        (a.texto?'<p>'+esc(a.texto)+'</p>':'')+(a.acao?'<div class="acao">'+esc(a.acao)+'</div>':'')+
+        '<div class="botoes">'+(aberto(a)?'<button class="btn mini" data-st="resolvido">Resolvido</button><button class="btn mini" data-st="ignorado">Ignorar</button>':'<button class="btn mini" data-st="aberto">Reabrir</button>')+
+        '<span class="mu peq" style="margin-left:6px">Ajudou?</span><button class="btn mini '+(a.util===true?'on':'')+'" data-u="1" aria-pressed="'+(a.util===true)+'">Sim</button><button class="btn mini '+(a.util===false?'on':'')+'" data-u="0" aria-pressed="'+(a.util===false)+'">Não</button>'+
+        (a.pessoas&&!n.saude?'<button class="btn mini" data-quem="1">Ver quem ('+a.pessoas+')</button>':'')+'</div><div class="quem" hidden></div></div>';
+    });
+    h+='</section>';
+  });
+  $('#tela').innerHTML=h;
+  Array.prototype.forEach.call(document.querySelectorAll('[data-f]'),function(b){ b.onclick=function(){ S.filtro=b.dataset.f; pinta(); }; });
+  $('#b-tudo').onclick=function(){ S.tudo=!S.tudo; pinta(); };
+  Array.prototype.forEach.call(document.querySelectorAll('.aviso'),function(el){
+    var id=el.dataset.id;
+    Array.prototype.forEach.call(el.querySelectorAll('[data-st]'),function(b){ b.onclick=function(){ b.disabled=true; api({acao:'marcar',id:id,status:b.dataset.st}).then(function(){ toast(b.dataset.st==='aberto'?'Reaberto.':'Marcado: '+b.dataset.st+'.'); return carrega(); }).catch(function(e){ b.disabled=false; toast('Não deu: '+e.message); }); }; });
+    Array.prototype.forEach.call(el.querySelectorAll('[data-u]'),function(b){ b.onclick=function(){ var on=b.classList.contains('on'); var v=on?null:b.dataset.u==='1'; api({acao:'util',id:id,util:v}).then(function(){ toast(v===null?'Desmarcado.':'Obrigado: isso calibra os limites.'); return carrega(); }).catch(function(e){ toast('Não deu: '+e.message); }); }; });
+    var q=el.querySelector('[data-quem]');
+    if(q) q.onclick=function(){ var box=el.querySelector('.quem'); box.hidden=false; box.textContent='buscando no CRM…';
+      api('acao=pessoas&id='+encodeURIComponent(id)).then(function(r){ box.textContent=(r.nomes||[]).length?r.nomes.join('; '):'Não deu pra ler os nomes agora (o CRM não respondeu ou falta a chave).'; }).catch(function(e){ box.textContent='Não deu: '+e.message; }); };
+  });
+  $('#b-previa').onclick=function(){ var b=this; b.disabled=true; b.textContent='lendo…';
+    api({acao:'rodar',modo:'dia',previa:true}).then(function(r){ b.disabled=false; b.textContent='Prévia de hoje';
+      toast('Hoje sairiam '+(r.total||0)+' aviso(s). Nada foi gravado.');
+      var n=document.createElement('div'); n.className='nota'; n.innerHTML='<b>Prévia</b>: '+(r.negocios||[]).map(function(x){ return esc(x.nome)+': '+(x.erro?'erro ('+esc(x.erro)+')':(x.avisos||0)+' ('+(x.urgentes||0)+' urgente)'+((x.notas||[]).length?' · '+esc(x.notas.join(' · ')):'')); }).join('<br>');
+      $('.kpis').after(n); }).catch(function(e){ b.disabled=false; b.textContent='Prévia de hoje'; toast('Não deu: '+e.message); }); };
+  $('#b-rodar').onclick=function(){ var b=this; if(!confirm('Rodar todas as regras agora? Grava os avisos novos e avisa a equipe (o dono só se estiver na lista).')) return; b.disabled=true; b.textContent='rodando…';
+    api({acao:'rodar',modo:'dia'}).then(function(r){ toast('Rodou: '+(r.total||0)+' aviso(s).'); return carrega(); }).catch(function(e){ b.disabled=false; b.textContent='Rodar as regras agora'; toast('Não deu: '+e.message); }); };
+}
+S.senha=ls(CHAVE);
+if(S.senha) carrega(); else login();
+})();
+</script>
+</body>
+</html>
