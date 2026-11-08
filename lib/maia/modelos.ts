@@ -68,7 +68,7 @@ async function cria(token: string, waba: string, m: Modelo) {
 }
 
 export async function criaModelosDoNegocio(w: { token: string; waba: string } | null, neg: any) {
-  const out = []
+  const out: any[] = []
   // modo local: nada vai pra Meta (só anota o que seria pedido)
   if (maiaLocal() || !w) {
     if (!maiaLocal()) throw new Error('o WhatsApp desse negócio ainda não foi conectado')
