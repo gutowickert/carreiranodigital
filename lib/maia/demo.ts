@@ -189,7 +189,11 @@ CONVERSA ATÉ AGORA:\n${historico}\n\nResponde a(s) última(s) mensagem(ns). Res
     const o = leResposta(txt)
     if (!o.mensagens.length) throw new Error('resposta sem mensagem: ' + txt.slice(0, 120))
     // 08/11 (validação): regra fixa da casa, valor antes do preço, conferida depois da resposta (a mesma do atendimento, preco.ts)
-    try { const { valorAntesDoPreco } = await import('./preco'); o.mensagens = (await valorAntesDoPreco(REGRAS(), o.mensagens, { modelos: [MODELO] })).msgs } catch { /* fica a original */ }
+    // (só quando a última mensagem dele pergunta de preço: na entrevista a Maia repete o preço DELE e isso não é resposta de preço)
+    const ultimaDele = String(msgs.filter((x: any) => x.autor === 'cliente').slice(-1)[0]?.texto || '')
+    if (/quanto|pre[cç]o|valor|custa|caro|plano|mensalidade|pagar/i.test(ultimaDele)) {
+      try { const { valorAntesDoPreco } = await import('./preco'); o.mensagens = (await valorAntesDoPreco(REGRAS(), o.mensagens, { modelos: [MODELO] })).msgs } catch { /* fica a original */ }
+    }
     // áudio primeiro (quando houver), depois os textos
     const querAudio = (o.audio || '').trim() && (ultimaFoiAudio || o.etapa === 'proposta')
     if (querAudio) {
