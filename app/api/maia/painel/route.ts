@@ -15,8 +15,10 @@ export const maxDuration = 60
 
 const CAB = { 'Cache-Control': 'no-store', 'Referrer-Policy': 'no-referrer' }
 const ok = (d: any, extra: Record<string, string> = {}) => Response.json(d, { headers: { ...CAB, ...extra } })
-const erro = (m: string, s = 400, extra: Record<string, string> = {}) => Response.json({ erro: m }, { status: s, headers: { ...CAB, ...extra } })
+const erro = (m: string, s = 400, extra: Record<string, string> = {}, mais: Record<string, any> = {}) => Response.json({ erro: m, ...mais }, { status: s, headers: { ...CAB, ...extra } })
 const LINK_RUIM = 'Esse link venceu ou não vale mais. Pede um novo pra Maia no WhatsApp: é só escrever "meu painel".'
+// 08/11: abrir a página sem link nenhum (nem cookie) é diferente de link recusado: a página mostra "abre pelo link que a Maia te mandou"
+const SEM_LINK = 'Abre o painel pelo link que a Maia te mandou no WhatsApp.'
 
 const cookieDe = (req: Request) => {
   const c = req.headers.get('cookie') || ''
@@ -37,8 +39,9 @@ async function quem(req: Request) {
 
 export async function GET(req: Request) {
   if (donoBloqueado(req)) return erro('muitas tentativas. Espera 15 minutos.', 429)
+  if (!cookieDe(req)) return erro(SEM_LINK, 401, {}, { motivo: 'sem_link' })
   const r = await quem(req)
-  if (!r) return erro(LINK_RUIM, 401, { 'Set-Cookie': tiraCookie() })
+  if (!r) return erro(LINK_RUIM, 401, { 'Set-Cookie': tiraCookie() }, { motivo: 'recusado' })
   const u = new URL(req.url), acao = u.searchParams.get('acao') || 'tudo'
   try {
     if (acao === 'tudo') return ok(await dadosDoPainel(r.neg))
@@ -55,7 +58,7 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}))
   if (b.acao === 'entrar') {
     const r = await negocioDoToken(b.t)
-    if (!r) { donoErrou(req); return erro(LINK_RUIM, 401, { 'Set-Cookie': tiraCookie() }) }
+    if (!r) { donoErrou(req); return erro(LINK_RUIM, 401, { 'Set-Cookie': tiraCookie() }, { motivo: 'recusado' }) }
     await db.evento('painel_dono_aberto', r.neg.id, {})
     return ok({ ok: true, negocio: r.neg.nome }, { 'Set-Cookie': poeCookie(String(b.t), r.exp - Date.now() / 1000) })
   }

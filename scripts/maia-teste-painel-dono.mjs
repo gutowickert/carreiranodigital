@@ -125,6 +125,29 @@ async function main() {
     const dif = campos.filter(k => JSON.stringify(P[k]) !== JSON.stringify(n[k]))
     anota(!dif.length, `${p}: os números batem com a equipe (${P.leads_novos} contatos, ${P.ganhos} vendas, R$ ${P.receita}, investimento R$ ${P.gasto})` + (dif.length ? ' — diferentes: ' + dif.join(', ') : ''))
   }
+  // 6b) 08/11: o RETORNO (ROI) — receita das vendas ÷ investimento em anúncio, no mesmo período, igual à conta da equipe
+  const r2 = (x) => Math.round(x * 100) / 100
+  for (const p of ['hoje', 'semana', 'mes']) {
+    const P = d2.periodos[p], R = P.roi || {}, n = await ver('numeros', { negocio: A.id, de: P.de, ate: P.ate })
+    const esperado = P.gasto > 0 ? r2(P.receita / P.gasto) : null
+    const certo = R.investido === P.gasto && R.vendido === P.receita && R.por_real === esperado && R.por_real === n.retorno &&
+      R.tem_investimento === (P.gasto > 0) && R.saldo === (esperado == null ? null : r2(P.receita - P.gasto)) && R.vendido_anuncio <= R.vendido && R.base === 'negocio'
+    anota(certo, `${p}: ROI — investiu R$ ${R.investido} → vendeu R$ ${R.vendido} → ${R.por_real == null ? 'sem investimento (sem ROI)' : 'a cada R$ 1 voltaram R$ ' + R.por_real}`)
+    const A0 = P.anterior || {}
+    anota(typeof A0.receita === 'number' && typeof A0.ganhos === 'number' && A0.ate <= P.de.replace(/T.*/, 'T23:59:59.999Z') && Date.parse(A0.ate) - Date.parse(A0.de) <= Date.parse(P.ate) - Date.parse(P.de) + 1000,
+      `${p}: período anterior pra tendência (${String(A0.de).slice(0, 10)} a ${String(A0.ate).slice(0, 10)}: ${A0.ganhos} vendas, R$ ${A0.receita})`)
+  }
+  const sr = d2.serie || {}
+  const soma7 = (sr.receita || []).slice(-8).reduce((s, x) => s + x, 0)
+  anota(sr.dias?.length === 30 && ['contatos', 'vendas', 'receita', 'gasto', 'conversas'].every(k => sr[k]?.length === 30) && r2(soma7) >= r2(d2.periodos.semana.receita) - 0.01,
+    `mini-gráficos: 30 dias de contatos, vendas, receita, investimento e conversas (receita 8 dias R$ ${r2(soma7)})`)
+  const dB = await (await painel(tB)).json(), RB = dB.periodos?.semana?.roi || {}
+  if (!dB.periodos?.semana?.gasto) anota(RB.por_real === null && RB.tem_investimento === false && RB.saldo === null, `sem investimento (${B.nome}): o ROI fica vazio e o painel mostra só as vendas (R$ ${RB.vendido})`)
+  // a página sem link nenhum é diferente de link recusado
+  const semNada = await fetch(URL_ + '/api/maia/painel?acao=tudo', { headers: outroIp() }), jSem = await semNada.json()
+  const ruim = await painel('lixo.0.1.x', 'acao=tudo', outroIp()), jRuim = await ruim.json()
+  anota(semNada.status === 401 && jSem.motivo === 'sem_link' && ruim.status === 401 && jRuim.motivo === 'recusado', 'sem link nem cookie: "abre pelo link que a Maia te mandou"; link recusado: "venceu"')
+
   log(`    retomadas: ${d2.retomadas.agendadas.length} agendadas (${d2.retomadas.atrasadas} atrasadas), ${d2.retomadas.feitas.length} feitas, ${d2.retomadas.respondidas} respondidas · esperando o dono: ${d2.esperando.length} · avisos: ${d2.avisos.length}`)
   if (process.env.MAIA_LOCAL_PASTA) anota(d2.avisos.length === 1 && d2.avisos[0].status === 'enviado', 'avisos: só o que já foi pro dono aparece (o da revisão da equipe não)')
 

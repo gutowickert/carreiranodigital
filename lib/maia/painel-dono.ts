@@ -77,6 +77,38 @@ export function periodo(p: string): [string, string] {
   return [d(7) + 'T03:00:00.000Z', new Date().toISOString()]
 }
 
+// 08/11: o período ANTERIOR do mesmo tamanho, pra mostrar a tendência (↑/↓ %) no painel do dono
+//   hoje → ontem até esta hora · semana → os 7 dias antes · mês → o mês passado, do dia 1 até o mesmo ponto
+export function periodoAnterior(p: string, de: string, ate: string): [string, string] {
+  const L = Date.parse(ate) - Date.parse(de)
+  if (p === 'mes') {
+    const h = hojeBR(), y = Number(h.slice(0, 4)), m = Number(h.slice(5, 7))
+    const ini = Date.UTC(m === 1 ? y - 1 : y, m === 1 ? 11 : m - 2, 1, 3)
+    return [new Date(ini).toISOString(), new Date(Math.min(ini + L, Date.parse(de))).toISOString()]   // nunca passa do dia 1 deste mês
+  }
+  const passo = p === 'hoje' ? 86400e3 : Math.max(L, 86400e3)
+  return [new Date(Date.parse(de) - passo).toISOString(), new Date(Date.parse(de) - passo + L).toISOString()]
+}
+
+// 08/11: o RETORNO (ROI) do período: "a cada R$ 1 investido em anúncio, voltaram R$ X".
+//   por_real (= ROAS) = receita das vendas do período ÷ investimento em anúncio do período.
+//   O investimento é o TOTAL de anúncio do negócio no período (maia_metricas_dia, igual ao /api/maia/operacao?acao=numeros);
+//   as vendas são todas as marcadas no período (vendido_anuncio separa as de contatos que vieram de anúncio).
+//   Sem investimento: por_real = null (o painel mostra só as vendas e explica por quê).
+export function retornoDe(n: { gasto?: number | null; receita?: number | null; ganhos?: number | null }, doAnuncio: { n: number; receita: number }) {
+  const r2 = (x: number) => Math.round(x * 100) / 100
+  const investido = r2(Number(n.gasto) || 0), vendido = r2(Number(n.receita) || 0)
+  const tem = investido > 0
+  return {
+    investido, vendido, vendas: Number(n.ganhos) || 0,
+    vendido_anuncio: r2(doAnuncio.receita), vendas_anuncio: doAnuncio.n,
+    por_real: tem ? r2(vendido / investido) : null,   // R$ que voltaram pra cada R$ 1 investido (= ROAS)
+    saldo: tem ? r2(vendido - investido) : null,      // vendeu − investiu
+    tem_investimento: tem,
+    base: 'negocio' as const,                         // investimento = total de anúncio do negócio no período
+  }
+}
+
 const ABERTAS = ['novo', 'conversando', 'interessado', 'proposta']
 const r1 = (n: number) => Math.round(n * 10) / 10
 // tabelas da Gestora (db/maia-gestora.sql) podem ainda não existir no banco: sem elas, lista vazia
@@ -123,10 +155,45 @@ export async function dadosDoPainel(neg: any) {
   const leadDe = new Map(leads.map(l => [l.id, l]))
 
   // 1) os números de hoje, da semana e do mês (os mesmos do /api/maia/operacao?acao=numeros e da ferramenta "numeros" do WhatsApp)
+  //    + o período anterior do mesmo tamanho (tendência) e o retorno do anúncio (ROI), 08/11
+  const deAnuncio = (l: any) => l.origem === 'anuncio' || !!l.anuncio_ref
+  const vendasAnuncio = (de: string, ate: string) => {
+    const g = leads.filter(l => l.ganho_em && l.ganho_em >= de && l.ganho_em <= ate && deAnuncio(l))
+    return { n: g.length, receita: g.reduce((s, l) => s + (Number(l.valor) || 0), 0) }
+  }
   const periodos: any = {}
   for (const p of ['hoje', 'semana', 'mes']) {
-    const [de, ate] = periodo(p)
-    periodos[p] = { de, ate, ...(await numeros(id, de, ate)), ...atendimento(convs, msgsCli, de, ate) }
+    const [de, ate] = periodo(p), [dA, aA] = periodoAnterior(p, de, ate)
+    const atual = { ...(await numeros(id, de, ate)), ...atendimento(convs, msgsCli, de, ate) }
+    const ant = { ...(await numeros(id, dA, aA)), ...atendimento(convs, msgsCli, dA, aA) }
+    periodos[p] = {
+      de, ate, ...atual,
+      roi: retornoDe(atual, vendasAnuncio(de, ate)),
+      anterior: { de: dA, ate: aA, leads_novos: ant.leads_novos, ganhos: ant.ganhos, receita: ant.receita, gasto: ant.gasto, conversao: ant.conversao,
+        conversas_atendidas: ant.conversas_atendidas, primeira_resposta_min: ant.primeira_resposta_min, retorno: ant.retorno, custo_por_venda: ant.custo_por_venda },
+    }
+  }
+
+  //    + os últimos 30 dias, dia a dia (no Brasil), pros mini-gráficos
+  const met = await talvez('metricas_dia', { negocio_id: id })
+  const diaBR = (iso: string) => new Date(Date.parse(iso) - 3 * 3600e3).toISOString().slice(0, 10)
+  const dias: string[] = []
+  for (let i = 29; i >= 0; i--) dias.push(new Date(Date.parse(hojeBR()) - i * 86400e3).toISOString().slice(0, 10))
+  const pos = new Map(dias.map((d, i) => [d, i]))
+  const zero = () => dias.map(() => 0)
+  const serie = { dias, contatos: zero(), vendas: zero(), receita: zero(), gasto: zero(), conversas: zero() }
+  for (const l of leads) {
+    const a = l.criado_em ? pos.get(diaBR(l.criado_em)) : undefined
+    if (a !== undefined) serie.contatos[a]++
+    const b = l.ganho_em ? pos.get(diaBR(l.ganho_em)) : undefined
+    if (b !== undefined) { serie.vendas[b]++; serie.receita[b] += Number(l.valor) || 0 }
+  }
+  for (const m of met) { const i = pos.get(String(m.dia).slice(0, 10)); if (i !== undefined) serie.gasto[i] += Number(m.gasto) || 0 }
+  const jaContou = new Set<string>()   // conversas que a Maia atendeu em cada dia
+  for (const m of msgsCli) {
+    if (m.autor !== 'maia') continue
+    const d = diaBR(m.criado_em), i = pos.get(d)
+    if (i !== undefined && !jaContou.has(m.conversa_id + d)) { jaContou.add(m.conversa_id + d); serie.conversas[i]++ }
   }
 
   // 2) o que a Maia está esperando do dono
@@ -205,7 +272,7 @@ export async function dadosDoPainel(neg: any) {
   return {
     negocio: { nome: neg.nome, dono: String(neg.dono_nome || '').split(' ')[0] || null, nicho: neg.nicho, cidade: neg.cidade, plano: neg.plano, status: neg.status, verba_dia: neg.verba_dia ?? null,
       whatsapp_conectado: !!neg.wa_phone_id, maia_atende: neg?.meta?.wa?.atende === true },
-    periodos, esperando, retomadas: { agendadas, atrasadas: agendadas.filter(x => x.atrasada).length, feitas, respondidas: feitas.filter(x => x.respondeu).length },
+    periodos, serie, esperando, retomadas: { agendadas, atrasadas: agendadas.filter(x => x.atrasada).length, feitas, respondidas: feitas.filter(x => x.respondeu).length },
     funil, conversas, anuncios, em_preparo, campanhas, vendas, perdas, avisos,
     whatsapp_maia: numeroMaia(), gerado_em: agora,
   }
