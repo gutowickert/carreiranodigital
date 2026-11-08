@@ -58,7 +58,7 @@ a:focus-visible,button:focus-visible,[tabindex]:focus-visible,select:focus-visib
 .icbtn svg{width:18px;height:18px}
 
 /* abertura: a Maia falando + o período */
-.abre{padding:18px 0 4px}
+.abre{padding-top:18px;padding-bottom:4px}
 .fala{display:flex;gap:12px;align-items:flex-end}
 .fala .foto{width:56px;height:56px;box-shadow:0 0 0 3px var(--surface),0 0 0 4px var(--accent-line)}
 .balao{background:var(--surface);border:1px solid var(--border);border-radius:18px 18px 18px 6px;padding:11px 14px;box-shadow:var(--sombra);min-width:0}
@@ -239,7 +239,7 @@ h2 small{font-family:'Manrope',sans-serif;font-weight:600;color:var(--text-muted
   .duas>div>h2:first-child{margin-top:4px}
   .heroi-n{font-size:56px}
 }
-@media (min-width:1100px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
 </style>
 </head>
 <body>
@@ -385,7 +385,7 @@ function pintaTopo(){
     k('Conversas da Maia',int(p.conversas_atendidas),'atendidas por ela',tend(p.conversas_atendidas,a.conversas_atendidas),spark(corte(sr.conversas),cor))+
     k('Conversão',pct(p.conversao),'contatos que viraram venda',tend(p.conversao,a.conversao))+
     k('1ª resposta',minutos(p.primeira_resposta_min),'tempo médio da Maia',tend(p.primeira_resposta_min,a.primeira_resposta_min,true))+
-    k('Custo por venda',p.custo_por_venda!=null?real(p.custo_por_venda):'—',p.gasto?real(p.gasto)+' em anúncio':'sem anúncio no período',tend(p.custo_por_venda,a.custo_por_venda,true),spark(corte(sr.gasto),'var(--text-faint)'));
+    k('Custo por venda',p.custo_por_venda!=null?real(p.custo_por_venda):'—',p.gasto?real(p.gasto)+' em anúncio':'sem anúncio no período',tend(p.custo_por_venda,a.custo_por_venda,true));
 }
 // o número-herói: a cada R$ 1 investido em anúncio, quanto voltou
 function heroi(p,sr){
