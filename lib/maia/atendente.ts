@@ -75,6 +75,17 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
 
 type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string }
 
+// 08/11 (teste completo, etapa): recusa FIRME ("tá caro, não quero.", "desisti", "vou comprar na internet"), sem pergunta.
+// Se a IA não marcou perdido, o sistema marca (com o motivo que dá pra tirar da frase). "Não quero glúten" não é recusa.
+export function recusaFirme(t: string): string | null {
+  const s = semAc(t)
+  if (/\?/.test(s)) return null
+  if (!/\b(nao quero(\s*[,.!]|\s*$|\s+mais\b|\s+nao\b|\s+obrigad)|desisti\w*|vou comprar (em outr|na internet|no concorrente|la)|comprei (em outr|no concorrente|na internet|la)|nao vou (querer|comprar|levar|fechar)|nao tenho mais interesse|sem interesse|deixa pra la)/.test(s)) return null
+  if (/\b(caro|cara|preco|valor|salgado)\b/.test(s)) return 'preço: achou caro e disse que não quer'
+  if (/\b(internet|outro lugar|outra loja|concorrente|comprei)\b/.test(s)) return 'vai comprar (ou comprou) em outro lugar'
+  return 'o cliente disse que não quer'
+}
+
 // 08/11 (teste completo, etapa): o cliente disse que quer, com quantidade ("quero 2 caixas", "vou querer 1", "pode separar").
 // Se a IA não mexeu no funil, o sistema põe em "proposta" (a mesma pergunta não pode deixar um em conversando e outro em proposta)
 export const querComprar = (t: string) => /(quero|vou querer|vou levar|vou pegar|me ve|me manda|separa|reserva)s+(d+|uma?|duas|dois|tres|quatro|cinco|seis|meia duzia)|(fechado|pode (fazer|separar|reservar|anotar|mandar fazer|preparar))/.test(semAc(t))
@@ -278,7 +289,10 @@ export async function respondeCliente(conversa_id: string) {
   if (aviso) await mandaTexto(cv, aviso)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })
-  if (!ctx.humano && lead && ['novo', 'conversando', 'interessado'].includes(lead.etapa) && querComprar(textoCliente) && !r.usadas.some(u => ['venda_fechada', 'venda_perdida'].includes(u.nome) || (u.nome === 'mudar_etapa' && u.entrada?.etapa === 'proposta'))) {
+  const firme = recusaFirme(textoCliente)
+  if (!ctx.humano && lead && ['novo', 'conversando', 'interessado', 'proposta'].includes(lead.etapa) && firme && !r.usadas.some(u => u.nome === 'venda_perdida')) {
+    lead = await perdeu(lead, firme, 'maia'); usadas.push('venda_perdida (sistema)')
+  } else if (!ctx.humano && lead && ['novo', 'conversando', 'interessado'].includes(lead.etapa) && querComprar(textoCliente) && !r.usadas.some(u => ['venda_fechada', 'venda_perdida'].includes(u.nome) || (u.nome === 'mudar_etapa' && u.entrada?.etapa === 'proposta'))) {
     lead = await mudaEtapa(lead, 'proposta', 'maia', { resumo: textoCliente.slice(0, 160) }); usadas.push('mudar_etapa proposta (sistema)')
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
