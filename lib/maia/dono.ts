@@ -9,20 +9,13 @@ import { donoAprova, donoAjuste, pecaDaMensagem } from './aprovacao'
 import { geraAnuncios } from './pecas'
 import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros, type Etapa } from './funil'
 import { baixaMidia } from '@/lib/oito/wa'
+// 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
+import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
 const MAX_IA_DIA = 120
 const ehJoinha = (t: string) => /^\s*(👍|👍🏻|👍🏼|👍🏽|👍🏾|👍🏿|ok|aprovado|aprovo|aprova|pode subir|pode|show|top|perfeito|manda ver|bora)\s*[!.]*\s*$/i.test(t)
-
-// hoje no Brasil (o servidor é UTC)
-const hojeBR = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
-function periodo(p: string): [string, string] {
-  const h = hojeBR(), d = (n: number) => new Date(Date.parse(h) - n * 86400e3).toISOString().slice(0, 10)
-  if (p === 'hoje') return [h + 'T03:00:00.000Z', new Date().toISOString()]
-  if (p === 'ontem') return [d(1) + 'T03:00:00.000Z', h + 'T03:00:00.000Z']
-  if (p === 'mes') return [h.slice(0, 8) + '01T03:00:00.000Z', new Date().toISOString()]
-  if (p === '30dias') return [d(30) + 'T03:00:00.000Z', new Date().toISOString()]
-  return [d(7) + 'T03:00:00.000Z', new Date().toISOString()]
-}
+// 07/11: o dono pediu o painel (o link vai mesmo que a IA esqueça de chamar a ferramenta)
+const pedePainel = (t: string) => /\b(meu painel|o painel|painel|dashboard|link (do|dos) (painel|resultados?|n[uú]meros))\b/i.test(t || '')
 
 // o que a Maia viu numa foto (pra escolher a certa na hora de criar o anúncio)
 async function descreveFoto(buf: Buffer, mime: string, neg: any) {
@@ -72,7 +65,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   return { cv, texto, responder: cv.modo === 'ia' }
 }
 
-function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
+function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferramenta[] {
   const lead = async (q: any) => (await achaLead(neg.id, { telefone: q.telefone, nome: q.nome, id: q.lead_id })) as any
   return [
     { name: 'salvar_contexto', description: 'Guarda o que tu aprendeu do negócio (serviços, preços, público, diferencial, horário, endereço, formas de pagamento, tom, o que evitar, verba por dia, perguntas frequentes). Só o que o dono disse.',
@@ -126,6 +119,9 @@ function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem: q.mensagem } })
         return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)' }
       } },
+    { name: 'link_do_painel', description: 'O link do PAINEL do dono (resultados, funil, retomadas, conversas dos clientes, anúncios e avisos, tudo numa tela). Usa quando ele pedir "meu painel", "dashboard", "quero ver os resultados", "onde vejo tudo". O link é pessoal e vale 30 dias: manda ele inteiro, sem mudar nada.',
+      input_schema: { type: 'object', properties: {} },
+      roda: async () => { const n = await db.um('negocios', { id: neg.id }); ctx.link = linkPainel(n || neg); return { link: ctx.link, vale_dias: VALIDADE_DIAS } } },
     { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       roda: async ({ motivo }) => { await avisaEquipe('o dono chamou', `${neg.nome}: ${motivo}`, neg.id, true); return { ok: true } } },
@@ -147,6 +143,7 @@ REGRAS:
 - Aprende o negócio aos poucos (salvar_contexto): uma pergunta por vez, sem questionário.
 - Reclamação, cancelamento, troca de plano, cobrança ou o que tu não sabe: chamar_equipe e diz que o Guto responde ali mesmo.
 - Nunca fala de preço da Maia, desconto ou contrato: isso é com a equipe.
+- Ele tem um PAINEL só dele (resultados, funil, retomadas, conversas, anúncios). Pediu o painel, dashboard ou "onde vejo tudo": link_do_painel e manda o link inteiro. O link é pessoal: diz pra não repassar.
 FORMATO DA RESPOSTA FINAL: uma a três mensagens, cada uma entre <msg> e </msg>. Nada fora das marcas.`
 
 // a Maia responde o dono (o webhook chama uns segundos depois da última mensagem dele)
@@ -165,7 +162,7 @@ export async function respondeDono(conversa_id: string) {
   // 05/11: pergunta de quem já fechou ou desistiu não fica esperando o dono
   const perguntas = (await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return l && (l.etapa === 'ganho' || l.etapa === 'perdido') ? null : `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))).filter(Boolean)
   const ultima = msgs.filter(x => x.autor === 'dono').slice(-1)[0]
-  const ctx = { aprovou: [] as string[] }
+  const ctx = { aprovou: [] as string[], link: '' }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
   if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
   const pedido = `HOJE: ${hojeBR()}
@@ -183,6 +180,13 @@ Responde a(s) última(s) mensagem(ns) do dono.`
   const r = await comFerramentas(REGRAS, pedido, ferramentas(neg, ctx), 6, { uso: { tipo: 'dono', negocio_id: neg?.id || null, conversa_id: cv?.id || null } })
   const partes = [...r.texto.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(Boolean)
   const saida = (partes.length ? partes : [r.texto.replace(/<\/?msg>/g, '').trim()]).filter(Boolean).slice(0, 3)
+  // 07/11: pediu o painel e o link não saiu na resposta (a IA esqueceu a ferramenta ou mexeu no link): manda o link certo
+  if ((ctx.link || (ultima && pedePainel(ultima.texto || ''))) && !saida.some(t => !!ctx.link && t.includes(ctx.link))) {
+    const link = ctx.link || linkPainel((await db.um('negocios', { id: neg.id })) || neg)
+    const i = saida.findIndex(t => /\/maia\/painel/.test(t))
+    if (i >= 0) saida.splice(i, 1)
+    saida.push(`Teu painel (pessoal, vale ${VALIDADE_DIAS} dias): ${link}`)
+  }
   for (const t of saida) await mandaTexto(cv, t)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
   if (maiaLocal()) for (const u of r.usadas) console.log(`  [ferramenta] ${u.nome} ${JSON.stringify(u.entrada).slice(0, 120)} → ${JSON.stringify(u.saida).slice(0, 160)}`)
