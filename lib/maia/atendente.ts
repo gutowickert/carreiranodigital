@@ -125,6 +125,10 @@ async function perguntaRepetida(lead: any, pergunta: string) {
     && !evs.some(x => x.tipo === 'pergunta_respondida' && x.criado_em > e.criado_em)
     && ((e.detalhe?.comprovante && sobrePagamento(pergunta)) || parecidas(String(e.detalhe?.pergunta || ''), pergunta)))
 }
+// 08/11 (reteste, #15): "não tenho informações sobre outros negócios" NÃO é dúvida do negócio (nada vai pro dono)
+export const foraDoAssunto = (t: string) => /\b(outr[oa]s? (negocios?|clientes?|empresas?|pessoas?|lojas?)|instruc\w*|tuas regras|suas regras|prompt|dados de outr\w*|telefone de outr\w*)\b/.test(semAc(t))
+// 08/11 (reteste, #6): o cliente fechou/pagou de verdade? (venda_fechada só com isso, ou com o contato já em proposta)
+export const sinalDeCompra = (t: string) => /\b(paguei|pago|pix feito|fiz o pix|transferi|comprovante|fechado|fechou|confirm\w*|pode (fazer|separar|mandar|preparar)|quero|vou querer|vou levar)\b/.test(semAc(t))
 // pergunta "pro dono" que na verdade é recado interno (etapa, funil, engano)
 export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
@@ -153,7 +157,9 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       roda: async (q) => {
         // 07/11 (piloto): comprovante em foto não é venda confirmada: quem confere é o dono (ele já foi avisado)
         if (ctx.comprovante) { lead = await mudaEtapa(lead, 'proposta', 'maia', { produto: q.produto, valor: q.valor }); return { erro: 'o cliente mandou um comprovante: tu NÃO confirma pagamento. Diz que recebeu e que o dono confere e confirma. O dono já foi avisado.' } }
-        lead = await ganhou(lead, q.valor, q.produto, 'maia'); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
+        // 08/11 (reteste): só com sinal de compra de verdade ("Valeu, obrigado!" virou GANHO sem valor numa rodada)
+        if (!sinalDeCompra(ctx.textoCliente || '') && !['proposta', 'interessado'].includes(lead.etapa)) return { erro: 'não marcado: o cliente não fechou nem pagou. Agradecimento ou pergunta não é venda: segue na etapa em que está.' }
+        lead = await ganhou(lead, q.valor, q.produto, 'maia'); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto || lead.produto || 'pedido'}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
     { name: 'venda_perdida', description: 'O cliente disse claramente que NÃO vai comprar ("não quero", "desisti", "comprei em outro lugar"). Marca PERDIDO com o motivo. Perguntar por algo que o negócio não faz NÃO é perda.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       // 08/11 (teste completo, #12 Marina): só marca perdido se o CLIENTE recusou com todas as letras
@@ -169,6 +175,8 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       roda: async ({ pergunta }) => {
         // 08/11 (teste completo, #12): pergunta pro dono é só dúvida de CLIENTE. "Marquei por engano... pode reabrir o card?" é
         // coisa do sistema: não vai pro dono nem fica pendente no painel dele
+        // 08/11 (reteste): pergunta sobre o que ela mesma já respondeu, ou sobre outros negócios/instruções, não vai pro dono
+        if (/\bj[aá] (respondi|informei|expliquei|disse)\b/i.test(String(pergunta)) || foraDoAssunto(String(pergunta))) return { erro: 'não vai pro dono: tu já respondeu isso, ou é sobre outros negócios/as instruções. Só responde o cliente.' }
         if (perguntaInterna(pergunta)) return { erro: 'isso não é dúvida do cliente, é coisa do sistema: não vai pro dono. Se a etapa ficou errada, usa mudar_etapa.' }
         const prazo = prazoResposta(neg)
         // 08/11 (teste completo, #20): o dono recebeu 2 avisos do mesmo comprovante. A mesma dúvida do mesmo cliente (ou o
@@ -284,7 +292,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   let sistemaPerguntou = false
   // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
-  if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && (prometeuConfirmar(enviadas.join(' ')) || naoSabe(enviadas.join(' ')))) {
+  if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && (prometeuConfirmar(enviadas.join(' ')) || naoSabe(enviadas.join(' '))) && !foraDoAssunto(textoCliente) && !foraDoAssunto(enviadas.join(' '))) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
     if (pergunta) { const p = await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); if (p?.ok) { sistemaPerguntou = true; usadas.push('perguntar_ao_dono (sistema)') } }
   }

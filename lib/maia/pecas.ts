@@ -55,8 +55,12 @@ Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor
 Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","angulo":"...","gancho":"...","texto":"...","cta":"...","preco_na_arte":null}]}`)
   const criadas: any[] = []
   const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd), nomesDaFoto(neg, midias))
+  const videosNoLote = new Set<string>(), fotosNoLote = new Map<string, number>()
   for (const p of lote) {
-    const m = midias.find(x => x.id === p.midia_id) || midias[0]
+    let m = midias.find(x => x.id === p.midia_id) || midias[0]
+    // 08/11 (reteste): o mesmo vídeo não sai em 2 anúncios quando ainda tem foto boa sobrando: vai a foto menos usada
+    if (m.tipo === 'video' && (videosNoLote.has(m.id) || recentes.some(r => r.midia_ids?.[0] === m.id))) { const f = midias.filter(x => x.tipo === 'foto').sort((a, b) => (fotosNoLote.get(a.id) || 0) - (fotosNoLote.get(b.id) || 0))[0]; if (f) m = f }
+    if (m.tipo === 'video') videosNoLote.add(m.id); else fotosNoLote.set(m.id, (fotosNoLote.get(m.id) || 0) + 1)
     const tipo = m.tipo === 'video' ? 'anuncio_video' : 'anuncio_imagem'
     const tx = noTom(neg, p)
     // 08/11 (teste completo, 8d): anúncio de preço sem o preço na arte → o preço da base vai em destaque (etiqueta da arte)
