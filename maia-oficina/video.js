@@ -183,6 +183,8 @@ async function editarVideo({ video, gancho, cta, texto, nome, marca, logo, chave
   const s = sonda(video)
   if (!s.video) throw new Error('o arquivo não tem imagem de vídeo')
   const cores = coresDaMarca(marca || {}), fontes = fontesDaMarca(marca || {})
+  // "R$" e o número nunca ficam em linhas diferentes
+  const nb = t => String(t || '').replace(/R\$\s?(?=\d)/g, 'R$\u00a0'); gancho = nb(gancho); texto = nb(texto); cta = nb(cta)
   log(`  vídeo: ${s.w}x${s.h}, ${s.dur.toFixed(1)} s${s.hdr ? ', HDR' : ''}${s.audio ? '' : ', sem som'}`)
 
   // 1. a fala, com o tempo de cada palavra

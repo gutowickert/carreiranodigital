@@ -157,6 +157,8 @@ async function gerarArte({ foto, gancho, cta, nome, marca, logo, chave, versao, 
   const cores = coresDaMarca(marca || {}), fontes = fontesDaMarca(marca || {})
   const layout = LAYOUTS.includes(pedido) ? pedido : LAYOUTS[(numeroDe(chave || gancho) + Math.max(0, (+versao || 1) - 1)) % LAYOUTS.length]
   if (preco && !/R\$\s?\d/.test(gancho || '') && !separaGancho(gancho).etiqueta) gancho = `${preco}: ${gancho}`
+  // "R$" e o número nunca ficam em linhas diferentes
+  gancho = String(gancho || '').replace(/R\$\s?(?=\d)/g, 'R$\u00a0'); cta = String(cta || '').replace(/R\$\s?(?=\d)/g, 'R$\u00a0')
   const fotoUri = preparaFoto(foto, path.dirname(saida))
   const br = navegador || await abreNavegador()
   try {
