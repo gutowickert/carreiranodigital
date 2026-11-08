@@ -93,6 +93,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date } = 
   // 07/11 (piloto): conversa com gente volta pra Maia depois de 24 h; pergunta sem resposta do dono: lembra em 1 h, equipe em 3 h
   try { const { devolveSozinha, cobraPerguntas } = await import('./humano'); r.devolvidas = await devolveSozinha(relogio); r.perguntas = await cobraPerguntas(relogio) } catch (e: any) { r.devolvidas_erro = e.message }
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
+  // 07/11 (piloto): as conversas do mês por negócio; avisa a equipe em 80% e 100% da franquia (não bloqueia nada)
+  try { const { avisaFranquia } = await import('./uso'); r.franquia = await avisaFranquia() } catch (e: any) { r.franquia_erro = e.message }
   try { if (horaBR() % 6 === 0 || opc.forcarRelatorio) r.metricas = await sincronizaMetricas() } catch (e: any) { r.metricas_erro = e.message }
   // 05/11: as leituras da Marketing API que contam pras 500 chamadas do acesso completo
   try { r.chamadas = await contaChamadas() } catch (e: any) { r.chamadas_erro = e.message }

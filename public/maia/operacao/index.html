@@ -1240,13 +1240,27 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-pessoa">Tratamento</label><select id="t-pessoa" name="pessoa">'+opt('voce','você',t.pessoa||'voce')+opt('tu','tu',t.pessoa||'voce')+'</select></div>'+
     '<div class="campo"><label for="t-gaucho">Jeito gaúcho</label><select id="t-gaucho" name="gaucho">'+opt('nao','não (neutro)',t.gaucho?'sim':'nao')+opt('sim','sim, leve',t.gaucho?'sim':'nao')+'</select></div>'+
     '<div class="campo"><label for="t-estilo">Estilo</label><select id="t-estilo" name="estilo">'+opt('leve','leve',t.estilo||'leve')+opt('formal','formal',t.estilo||'leve')+'</select></div>'+
-    '</div><button class="btn ok larga">'+ic('check')+'Salvar o jeito de atender</button></form>';
+    '<div class="campo"><label for="t-franquia">Conversas por mês (franquia)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" value="'+esc(a.franquia||1000)+'"></div>'+
+    '</div><button class="btn ok larga">'+ic('check')+'Salvar o jeito de atender</button></form>'+
+    '<div class="card" id="uso-mes" aria-live="polite"><h2 style="margin-bottom:10px">Conversas do mês</h2><div class="esq" style="height:34px;width:50%"></div></div>';
+}
+/* conversa do mês = contato diferente que mandou pelo menos 1 mensagem no mês (simuladas à parte; ver lib/maia/uso.ts) */
+function pintaUso(n){
+  var el=$('#uso-mes'); if(!el) return;
+  api(q({acao:'uso_mes',negocio:n.id})).then(function(u){
+    var p=Math.min(100,u.pct||0), cor=u.pct>=100?'var(--red)':u.pct>=80?'var(--amber)':'var(--green)';
+    el.innerHTML='<h2 style="margin-bottom:10px">Conversas do mês <small class="mu peq">'+esc(u.mes)+'</small></h2>'+
+      '<div style="display:flex;align-items:baseline;gap:8px;flex-wrap:wrap"><b class="num" style="font-size:28px">'+inteiro(u.conversas)+'</b><span class="mu">de '+inteiro(u.franquia)+' · '+pct(u.pct)+'</span></div>'+
+      '<div role="img" aria-label="'+pct(u.pct)+' da franquia" style="height:8px;border-radius:99px;background:var(--surface-2);margin:10px 0;overflow:hidden"><i style="display:block;height:100%;width:'+p+'%;background:'+cor+'"></i></div>'+
+      '<p class="mu peq" style="margin:0">Custo de IA no mês: <b>'+real(u.custo_ia)+'</b>'+(u.custo_por_conversa!=null?' · '+real(u.custo_por_conversa)+' por conversa':'')+(u.simuladas?' · '+plural(u.simuladas,'conversa simulada','conversas simuladas')+' (não contam)':'')+'. Passar da franquia não bloqueia o atendimento: a equipe é avisada em 80% e 100%.</p>';
+  }).catch(function(e){ el.innerHTML='<h2 style="margin-bottom:10px">Conversas do mês</h2>'+caixaErro(e); });
 }
 function ligaCardAtendimento(n){
   var f=$('#f-atend'); if(!f) return;
+  pintaUso(n);
   f.onsubmit=function(ev){ ev.preventDefault(); var d=Object.fromEntries(new FormData(f).entries());
-    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo}};
-    espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); }); });
+    var c={acao:'config_atendimento',negocio_id:n.id,tom:{pessoa:d.pessoa,gaucho:d.gaucho==='sim',estilo:d.estilo},franquia:d.franquia?Number(d.franquia):undefined};
+    espera($('button',f),'salvando…',function(){ return api(c).then(function(r){ n.meta=Object.assign({},n.meta||{},{atendimento:r.atendimento}); toast('Jeito de atender salvo.'); pintaUso(n); }); });
   };
 }
 function recarregaCab(n){
@@ -1571,6 +1585,7 @@ var TAREFAS=[
   ['retomadas','Retomadas','relogio','Volta a chamar os clientes que pararam de responder. Só das 9h às 20h (domingo a partir das 10h); fora disso fica pra próxima rodada.'],
   ['confirmacoes','Confirmação de vendas com o dono','festa','Pergunta pro dono se as vendas combinadas fecharam.'],
   ['devolvidas','Conversas que voltam pra Maia','robo','Conversa que estava com o dono ou a equipe volta pra Maia depois de 24 h sem ninguém falar nela.'],
+  ['franquia','Conversas do mês (franquia)','barras','Conta as conversas de cada negócio no mês e avisa a equipe em 80% e 100%. Não bloqueia nada.'],
   ['perguntas','Perguntas esperando o dono','relogio','Lembra o dono em 1 h e avisa a equipe em 3 h quando um cliente espera resposta.'],
   ['relatorios','Resumos da semana','arquivo','Escreve o resumo da semana de cada negócio. Vai pra fila da equipe aprovar.'],
   ['metricas','Números da Meta','barras','Busca o investimento e as conversas dos anúncios.'],

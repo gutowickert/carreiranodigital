@@ -82,6 +82,13 @@ export async function GET(req: Request) {
       return ok(await statusModelos(w && w.waba ? { token: w.token, waba: w.waba } : null))
     }
     if (acao === 'custo_ia') { const { custoIA } = await import('@/lib/maia/custo'); return ok(await custoIA(+(q('dias') || 30))) }
+    // 07/11 (piloto): conversas do mês x franquia e custo de IA do mês (um negócio com ?negocio=, ou todos)
+    if (acao === 'uso_mes') {
+      const { usoDoMes } = await import('@/lib/maia/uso')
+      if (q('negocio')) { const n = await db.um('negocios', { id: q('negocio') }); return n ? ok(await usoDoMes(n)) : erro('negócio não existe', 404) }
+      const negs = (await db.lista('negocios')).filter(n => !ehDemo(n) && n.status !== 'cancelado')
+      return ok(await Promise.all(negs.map(n => usoDoMes(n))))
+    }
     if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
@@ -207,6 +214,7 @@ export async function POST(req: Request) {
         const { tomValido } = await import('@/lib/maia/tom')
         const at: any = { ...(n.meta?.atendimento || {}) }
         if (b.tom) at.tom = tomValido(b.tom)
+        if (b.franquia !== undefined) { const f = Math.round(Number(b.franquia)); if (f > 0) at.franquia = f; else delete at.franquia }
         await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), atendimento: at } })
         await db.evento('config_atendimento', n.id, { por, mudou: Object.keys(b).filter(k => !['acao', 'negocio_id', 'por'].includes(k)) })
         return ok({ atendimento: at })

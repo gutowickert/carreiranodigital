@@ -12,6 +12,16 @@ const DOLAR = () => +(process.env.MAIA_DOLAR || 5.5)
 // custo em US$ de uma chamada: entrada normal, cache lido (10%), cache gravado (125%) e saída
 const usd = (d: any) => { const [pi, po] = preco(d.modelo || ''); return ((d.entrada || 0) * pi + (d.cache_lido || 0) * pi * 0.1 + (d.cache_gravado || 0) * pi * 1.25 + (d.saida || 0) * po) / 1e6 }
 
+// 07/11 (piloto): o custo de IA de um negócio desde uma data (total e por tipo: cliente, dono, peças...), em reais
+export async function custoDoNegocio(negocio_id: string, desde: string) {
+  const evs = (await db.lista('eventos', { tipo: 'uso_ia', negocio_id })).filter(e => e.criado_em >= desde)
+  const porTipo: Record<string, number> = {}
+  let total = 0
+  for (const e of evs) { const v = usd(e.detalhe || {}); total += v; const t = e.detalhe?.tipo || 'outro'; porTipo[t] = (porTipo[t] || 0) + v }
+  const brl = (v: number) => Math.round(v * DOLAR() * 100) / 100
+  return { reais: brl(total), por_tipo: Object.fromEntries(Object.entries(porTipo).map(([t, v]) => [t, brl(v)])), chamadas: evs.length }
+}
+
 export async function custoIA(dias = 30) {
   const desde = Date.now() - dias * 86400e3
   const evs = (await db.lista('eventos', { tipo: 'uso_ia' })).filter(e => Date.parse(e.criado_em) >= desde)
