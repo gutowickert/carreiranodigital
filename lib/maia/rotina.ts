@@ -90,6 +90,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date } = 
   const relogio = opc.relogio || new Date()
   try { r.retomadas = await retomadas(relogio) } catch (e: any) { r.retomadas_erro = e.message }
   try { r.confirmacoes = await confirmaVendas(opc.forcarRelatorio, relogio) } catch (e: any) { r.confirmacoes_erro = e.message }
+  // 07/11 (piloto): conversa com gente volta pra Maia depois de 24 h; pergunta sem resposta do dono: lembra em 1 h, equipe em 3 h
+  try { const { devolveSozinha, cobraPerguntas } = await import('./humano'); r.devolvidas = await devolveSozinha(relogio); r.perguntas = await cobraPerguntas(relogio) } catch (e: any) { r.devolvidas_erro = e.message }
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
   try { if (horaBR() % 6 === 0 || opc.forcarRelatorio) r.metricas = await sincronizaMetricas() } catch (e: any) { r.metricas_erro = e.message }
   // 05/11: as leituras da Marketing API que contam pras 500 chamadas do acesso completo

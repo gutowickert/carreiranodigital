@@ -5,6 +5,7 @@
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { jeitoAtendimento } from './tom'
+import { prazoResposta } from './horario'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
@@ -60,10 +61,16 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; compr
       roda: async (q) => { lead = await agendaFollowup(lead, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
     { name: 'perguntar_ao_dono', description: 'Tu não sabe uma informação (preço que não está no que tu sabe, se tem tal produto, horário vago). Pergunta pro dono pelo WhatsApp dele; tu continua atendendo o cliente e repassa a resposta quando ele responder.',
       input_schema: { type: 'object', properties: { pergunta: { type: 'string', description: 'a dúvida do cliente, curta' } }, required: ['pergunta'] },
-      roda: async ({ pergunta }) => { const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele.`); await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta } }); return { ok: true } } },
+      // 07/11 (piloto): a Maia promete um prazo ao cliente (horario.ts); a rotina lembra o dono em 1 h e avisa a equipe em 3 h
+      roda: async ({ pergunta }) => {
+        const prazo = prazoResposta(neg)
+        const dcv = await conversaDoDono(neg)
+        await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
+        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
+        return { ok: true, prazo: prazo.texto } } },
     { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, ou é um caso delicado.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async ({ motivo }) => { ctx.humano = true; await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' }); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) precisa de ti: ${motivo}`); return { ok: true } } },
+      roda: async ({ motivo }) => { ctx.humano = true; await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' }); await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por: 'maia' }); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) precisa de ti: ${motivo}`); return { ok: true } } },
   ]
 }
 
@@ -75,7 +82,7 @@ O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(
 COMO ATENDER:
 - Se apresenta na primeira mensagem como a assistente virtual do ${neg.nome}. Se perguntarem, diz que é uma IA.
 - Responde rápido e direto o que perguntaram. Depois, UMA pergunta que leva pra venda (horário, quantidade, endereço de entrega).
-- Preço, prazo, horário e condição: só o que está no que tu sabe. O que não está: "vou confirmar aqui e já te respondo" e perguntar_ao_dono. Tu SEGUE atendendo (passar_para_o_dono é só quando o cliente quer falar com uma pessoa ou reclama).
+- Preço, prazo, horário e condição: só o que está no que tu sabe. O que não está: diz que vai confirmar e responde até o PRAZO DE RESPOSTA que vem no pedido (ex.: "vou confirmar aqui e te respondo hoje até as 16h") e perguntar_ao_dono. Nunca deixa o cliente sem prazo. Tu SEGUE atendendo (passar_para_o_dono é só quando o cliente quer falar com uma pessoa ou reclama).
 - O FUNIL, sempre que a conversa andar:
   · tirando dúvida → mudar_etapa conversando; quer, falta decidir → interessado; recebeu preço, orçamento ou marcou horário/visita → proposta (com o valor, se tiver).
   · venda_fechada SÓ quando a venda aconteceu de verdade: pagou, confirmou o pedido com pagamento, ou é serviço agendado E pago. "Vou passar aí comprar" ou "quero agendar" é proposta: quem confirma a venda depois é o dono.
@@ -114,7 +121,7 @@ export async function respondeCliente(conversa_id: string) {
     return { mensagens: [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
   }
   const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)) }
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx), 6,
+  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferramentas(neg, cv, lead, ctx), 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
     { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")

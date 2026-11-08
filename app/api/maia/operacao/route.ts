@@ -152,10 +152,30 @@ export async function POST(req: Request) {
         const t = String(b.texto || '').trim()
         if (!t) return erro('escreve a mensagem')
         const { mandaRespostaCliente } = await import('@/lib/maia/canal')
-        return ok(await mandaRespostaCliente(cv, t, 'equipe'))
+        const r = await mandaRespostaCliente(cv, t, 'equipe')
+        // a equipe respondeu: a pergunta que esperava o dono não precisa mais de lembrete
+        if (cv.lead_id) await db.insere('lead_eventos', { negocio_id: cv.negocio_id, lead_id: cv.lead_id, tipo: 'pergunta_respondida', autor: 'equipe', detalhe: { como: r.como } })
+        return ok(r)
       }
-      case 'assumir': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'humano' }))[0])
-      case 'devolver': return ok((await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'ia' }))[0])
+      // 07/11 (piloto): assumir anota quando (a conversa volta pra Maia sozinha depois de 24 h sem o dono/equipe falar)
+      case 'assumir': { const [c] = await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'humano' }); if (c) await db.evento('modo_humano', c.negocio_id, { conversa_id: c.id, por }); return ok(c) }
+      case 'devolver': { const [c] = await db.atualiza('conversas', { id: b.conversa_id }, { modo: 'ia' }); if (c) await db.evento('conversa_devolvida', c.negocio_id, { conversa_id: c.id, motivo: 'painel', por }); return ok(c) }
+      // só no modo de teste: faz de conta que a conversa foi assumida há 25 h
+      case 'teste_humano_antigo': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const antes = new Date(Date.now() - 25 * 3600e3).toISOString()
+        for (const e of (await db.lista('eventos', { tipo: 'modo_humano' })).filter(e => e.detalhe?.conversa_id === b.conversa_id)) await db.atualiza('eventos', { id: e.id }, { criado_em: antes })
+        for (const m of (await db.lista('msgs', { conversa_id: b.conversa_id })).filter(m => m.autor === 'dono' || m.autor === 'equipe')) await db.atualiza('msgs', { id: m.id }, { criado_em: antes })
+        return ok({ ok: true })
+      }
+      // só no modo de teste: faz as perguntas pro dono ficarem velhas (h horas)
+      case 'teste_pergunta_antiga': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const antes = new Date(Date.now() - (Number(b.horas) || 4) * 3600e3).toISOString()
+        const ps = (await db.lista('lead_eventos', { negocio_id: b.negocio_id, tipo: 'pergunta_cliente' }))
+        for (const e of ps) await db.atualiza('lead_eventos', { id: e.id }, { criado_em: antes })
+        return ok({ perguntas: ps.length })
+      }
       case 'simular_dono': {
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda } : undefined
         return ok(await comoDono(b.negocio_id, { texto: b.texto, arquivo, reacao: b.reacao }))

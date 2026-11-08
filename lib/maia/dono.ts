@@ -128,6 +128,10 @@ function ferramentas(neg: any, ctx: { aprovou: string[] }): Ferramenta[] {
         return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)',
           ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
       } },
+    // 07/11 (piloto): o dono devolve pra Maia uma conversa de cliente que estava com ele
+    { name: 'devolver_conversa', description: 'O dono pediu pra tu voltar a atender um cliente (ou todos) cuja conversa estava com ele ("devolve pra Maia", "pode atender a Carla de novo"). Sem nome, devolve todas.',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' } } },
+      roda: async ({ nome }) => { const { devolvePeloDono } = await import('./humano'); const d = await devolvePeloDono(neg, null, nome || null); return d.length ? { ok: true, devolvidas: d } : { ok: true, devolvidas: [], obs: 'nenhuma conversa estava com o dono' } } },
     { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       roda: async ({ motivo }) => { await avisaEquipe('o dono chamou', `${neg.nome}: ${motivo}`, neg.id, true); return { ok: true } } },
@@ -170,6 +174,10 @@ export async function respondeDono(conversa_id: string) {
   const ctx = { aprovou: [] as string[] }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
   if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
+  // 07/11 (piloto): "devolve pra Maia": devolve na hora, sem depender da IA (ela só confirma)
+  const { pedeDevolver, devolvePeloDono } = await import('./humano')
+  const devolvidas = ultima && pedeDevolver(ultima.texto || '') ? await devolvePeloDono(neg, ultima.texto) : []
+  const comGente = (await db.lista('conversas', { negocio_id: neg.id, canal: 'cliente', modo: 'humano' })).map(c => c.nome || c.telefone)
   const pedido = `HOJE: ${hojeBR()}
 NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${neg.plano} · status ${neg.status}
 DONO: ${neg.dono_nome || cv.nome || '?'}
@@ -177,6 +185,7 @@ O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_
 ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
 PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo)
 MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}
+CONVERSAS DE CLIENTE QUE ESTÃO COM O DONO (tu não responde): ${comGente.length ? comGente.join(', ') : 'nenhuma'}${devolvidas.length ? `\n(o sistema já devolveu pra ti as conversas com: ${devolvidas.join(', ')}. Só confirma pro dono.)` : ''}
 
 CONVERSA:
 ${hist}
