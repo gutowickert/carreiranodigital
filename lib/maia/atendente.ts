@@ -320,10 +320,15 @@ export async function respondeCliente(conversa_id: string) {
   }
   // 08/11 (T12): a resposta da IA já trouxe um aviso de privacidade: o do sistema não vai junto (seria repetido)
   if (aviso && respostaJaAvisa(enviadas.join(' '))) aviso = null
-  // 08/11 (T12): o cliente mandou áudio e a voz está ligada (MAIA_VOZ_RESPOSTA=1): a resposta vai em áudio (voz.ts); senão, texto
+  // 08/11 (T12; Guto: ligado por padrão, desliga com MAIA_VOZ_RESPOSTA=0): o cliente mandou áudio → a resposta vai em áudio
+  // (voz.ts). Cliente que escreveu recebe texto. O texto fica salvo na conversa ("(áudio) ..."). A ElevenLabs falhou ou a Meta
+  // recusou o áudio: vai em texto. Link não dá pra falar: vai junto, por escrito, depois do áudio
   const caminhoAudio = vozLigada() && novas.some(x => x.tipo === 'audio') ? await audioDaResposta(neg, cv, enviadas.join(' ')).catch(() => null) : null
-  if (caminhoAudio) await mandaAudioCliente(cv, caminhoAudio, enviadas.join(' '))
-  else for (const t of enviadas) await mandaTexto(cv, t)
+  const envioAudio = caminhoAudio ? await mandaAudioCliente(cv, caminhoAudio, enviadas.join(' ')).catch((e: any) => ({ ok: false, erro: String(e?.message || e) })) : null
+  if (envioAudio?.ok) {
+    const links = enviadas.join(' ').match(/https?:\/\/\S+/g)
+    if (links) await mandaTexto(cv, [...new Set(links)].join('\n'))
+  } else for (const t of enviadas) await mandaTexto(cv, t)
   const usadas = r.usadas.map(u => u.nome)
   // 08/11 (teste completo, #14): o cliente pediu gente (ou reclamou, ou pediu devolução) ou a resposta disse que passou pra uma
   // pessoa, e a IA não chamou a ferramenta: o SISTEMA passa. Se a resposta não falou da passagem, vai uma frase curta dizendo
@@ -371,7 +376,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez, audio: caminhoAudio, reordenou_preco: reordenou }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez, audio: envioAudio?.ok ? caminhoAudio : null, reordenou_preco: reordenou }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.

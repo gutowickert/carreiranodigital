@@ -1,11 +1,13 @@
 // Maia: resposta em ÁUDIO pro cliente que mandou áudio (08/11, T12 do plano de passagem).
-// Desligado por padrão. Liga com MAIA_VOZ_RESPOSTA=1 (e ELEVENLABS_API_KEY no servidor).
-// A voz: meta.atendimento.voz_id do negócio, senão MAIA_VOZ_ID (a mesma da demonstração), senão a voz padrão da Maia.
+// 08/11 (Guto): LIGADO por padrão: cliente que manda áudio recebe a resposta em áudio, sempre que ELEVENLABS_API_KEY existe no
+// servidor. Pra desligar: MAIA_VOZ_RESPOSTA=0. Só responde em áudio quando o cliente MANDOU áudio (atendente.ts); texto tem resposta em texto.
+// O texto da resposta fica salvo na conversa como "(áudio) <texto>" (canal.ts): o dono lê no painel e a Maia lê no histórico.
+// A voz: meta.atendimento.voz_id do negócio, senão MAIA_VOZ_ID (não existe na Vercel), senão a voz padrão da Maia (5QMOJHwbSpbG7akM67Nn).
 // O áudio (Ogg Opus, o formato do WhatsApp) fica em maia/<negócio>/clientes/<conversa>/ e vai por link pro cliente.
-// Se a ElevenLabs falhar, a resposta vai em texto, como sempre.
+// Se a ElevenLabs falhar (ou o envio do áudio pela Meta falhar), a resposta vai em texto, como sempre.
 import { maiaDb as db } from './db'
 
-export const vozLigada = () => process.env.MAIA_VOZ_RESPOSTA === '1' && !!process.env.ELEVENLABS_API_KEY
+export const vozLigada = () => process.env.MAIA_VOZ_RESPOSTA !== '0' && !!process.env.ELEVENLABS_API_KEY
 const vozDo = (neg: any) => String(neg?.meta?.atendimento?.voz_id || process.env.MAIA_VOZ_ID || '5QMOJHwbSpbG7akM67Nn')
 
 // o texto que vira fala: sem link, sem emoji e sem marcações
