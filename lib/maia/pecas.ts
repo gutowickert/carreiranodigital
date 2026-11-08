@@ -8,13 +8,14 @@ import { avisaEquipe } from './canal'
 export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'post'; midia_id: string; titulo: string; gancho: string; texto: string; cta: string }
 
 const REGRA_GANCHO = `REGRAS DO ANÚNCIO (da escola, valem sempre):
-- Todo gancho de anúncio local leva a REGIÃO ("<cidade> e região", ex.: "Lajeado e região") E o PÚBLICO (pra quem é). Só muda a ordem.
+- O gancho começa pelo PÚBLICO e pela SITUAÇÃO dele (pra quem é e o momento ou a dor: "Vai casar e quer...", "Mãe de primeira viagem que...").
+- A região entra com leveza e só quando ajuda (entrega, atendimento perto, quem é da cidade). NUNCA abre todo anúncio com "<cidade> e região" (decisão de 06/11).
 - Deixa claro O QUE É e PRA QUEM É. Uma promessa concreta, sem exagero e sem promessa de resultado que o negócio não garante.
 - Usa SÓ o que o dono contou (preço, condição, prazo). Não inventa preço, desconto nem brinde.
 - Gancho curto (até 9 palavras), pra ir em cima da foto. Texto do anúncio com até 3 frases curtas, "tu", sem hashtag, no máximo 1 emoji.
 - CTA de WhatsApp curto ("Chama no WhatsApp", "Agenda pelo WhatsApp", "Pede o teu orçamento").`
 
-const contextoTxt = (n: any) => `NEGÓCIO: ${n.nome} (${n.nicho || 'nicho não informado'}), ${n.cidade || ''}. Região do gancho: ${n.regiao || (n.cidade ? n.cidade + ' e região' : '?')}.
+const contextoTxt = (n: any) => `NEGÓCIO: ${n.nome} (${n.nicho || 'nicho não informado'}), ${n.cidade || ''}. Região (só se ajudar, com leveza): ${n.regiao || (n.cidade ? n.cidade + ' e região' : '?')}.
 O QUE A MAIA SABE: ${JSON.stringify(n.contexto || {})}`
 
 // gera os textos dos anúncios a partir das fotos e vídeos que o dono mandou, e põe na fila da oficina

@@ -1101,7 +1101,7 @@ function formNovo(){
     cmp('nome','Nome do negócio *','text','Ex.: Studio Bela Pele',true)+
     cmp('nicho','Nicho','text','Ex.: estética facial')+
     cmp('cidade','Cidade','text','Ex.: Lajeado')+
-    cmp('regiao','Região (vai no gancho)','text','Ex.: Lajeado e região')+
+    cmp('regiao','Região (entra no anúncio só quando ajuda)','text','Ex.: Lajeado e região')+
     cmp('dono_nome','Nome do dono','text','Ex.: Carla Souza')+
     cmp('dono_whatsapp','WhatsApp do dono *','tel','Ex.: 51 99999-0000',true)+
     '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial">Essencial</option><option value="completa">Completa</option></select></div>'+
@@ -1182,7 +1182,7 @@ function subDados(n,box){
     '</div>'+
     '<form class="card" id="f-dados"><h2 style="margin-bottom:14px">Dados</h2><div class="grade2">'+
       cmp('nome','Nome do negócio','text','',true,n.nome)+cmp('nicho','Nicho','text','',false,n.nicho||'')+
-      cmp('cidade','Cidade','text','',false,n.cidade||'')+cmp('regiao','Região (vai no gancho)','text','',false,n.regiao||'')+
+      cmp('cidade','Cidade','text','',false,n.cidade||'')+cmp('regiao','Região (entra no anúncio só quando ajuda)','text','',false,n.regiao||'')+
       cmp('dono_nome','Nome do dono','text','',false,n.dono_nome||'')+cmp('dono_whatsapp','WhatsApp do dono','tel','',false,n.dono_whatsapp||'')+
       '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial"'+(n.plano!=='completa'?' selected':'')+'>Essencial</option><option value="completa"'+(n.plano==='completa'?' selected':'')+'>Completa</option></select></div>'+
       cmp('verba_dia','Verba por dia (R$)','number','',false,n.verba_dia==null?'':n.verba_dia)+
