@@ -4,6 +4,17 @@ Branch `maia-ajustes-piloto` (worktree `C:\maia-ajustes`), feita a partir do `or
 **Nada foi publicado, nenhum SQL foi rodado, nenhuma chave foi mudada e nenhuma mensagem real saiu.**
 Tudo espera o sim do Guto.
 
+## Junto com o painel do dono
+
+Esta branch também tem a branch `maia-painel-dono` (outro agente) juntada: o painel do dono com link mágico de 30 dias
+(`lib/maia/painel-dono.ts`, `app/api/maia/painel`, `public/maia/painel`; detalhes em `docs/maia-painel-dono/LEIA-ME.md`).
+No painel da equipe, os dados do negócio têm os botões "Link do painel do dono" e "Trocar link (cancela os antigos)",
+ao lado do card "Jeito de falar com os clientes". Na conversa com o dono, a Maia manda o link quando ele pede "meu painel"
+(ferramenta `link_do_painel`), e o link vai no resumo da semana. Isso convive com o "devolve pra Maia" do item 5.
+As duas correções de etapa foram unidas numa só: contato já ganho ou perdido não muda de etapa pelo atendimento
+(se o cliente voltar, quem reabre é o dono ou a equipe). Isso também cobre o caso de ganho/perdido e "conversando" na mesma resposta.
+Variável nova do painel: `MAIA_PAINEL_DONO_SEGREDO` (se faltar, usa `MAIA_CONECTAR_SEGREDO`).
+
 ## SQL novo
 
 **Nenhum.** Tudo cabe no que já existe no banco:
@@ -91,7 +102,7 @@ Ele só muda pela ação `config_atendimento` do painel. Salvar os outros dados 
 - **ANTES DE PUBLICAR:** conferir que `CRON_SECRET` está na Vercel (Production). Sem ela, esses crons param de rodar (ficam fechados, nunca abertos).
 
 ### Extras achados no teste
-- Depois de marcar ganho ou perda, a mesma resposta da IA não volta a etapa pra trás.
+- Contato já ganho ou perdido não volta de etapa pelo atendimento (correção unida com a do painel do dono).
 - Regra da etapa "proposta" mais clara ("quero 1" depois de saber o preço = proposta).
 
 ## Testes
@@ -100,9 +111,12 @@ Em modo local (nada sai pra Meta nem pro banco):
 
 ```
 npx next build
-MAIA_LOCAL=1 MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_PAINEL_SENHA=teste123 MAIA_OFICINA_CHAVE=oficina123 npx next start -p 3195
-node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123     # 54 conferências
-node scripts/maia-teste.mjs http://localhost:3195 teste123            # 45 conferências (apagar a pasta antes)
+PORT=3195 MAIA_LOCAL=1 MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_PAINEL_SENHA=teste123 MAIA_OFICINA_CHAVE=oficina123 MAIA_CONECTAR_SEGREDO=seg123 npx next start -p 3195
+# pasta limpa, depois:
+node scripts/maia-teste.mjs http://localhost:3195 teste123                       # 45 conferências
+MAIA_LOCAL_PASTA=.teste-maia-piloto MAIA_CONECTAR_SEGREDO=seg123 node scripts/maia-teste-painel-dono.mjs http://localhost:3195 teste123   # 35 (usa os negócios do teste acima)
+# pasta limpa de novo, depois:
+node scripts/maia-teste-piloto.mjs http://localhost:3195 teste123                # 54 conferências
 ```
 
 No modo de teste há ações que só funcionam localmente: `teste_fechar_janela`, `teste_modelos_status`, `teste_humano_antigo`, `teste_pergunta_antiga` e o `relogio` do `rodar_rotina`.

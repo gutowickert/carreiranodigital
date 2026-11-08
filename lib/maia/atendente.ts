@@ -43,22 +43,22 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
-function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean; fechou?: boolean }): Ferramenta[] {
+function ferramentas(neg: any, cv: any, lead: any, ctx: { humano: boolean; comprovante?: boolean }): Ferramenta[] {
   return [
     { name: 'mudar_etapa', description: 'Atualiza a etapa do cliente no funil: conversando (tirando dúvida), interessado (quer, falta decidir), proposta (recebeu preço/orçamento/horário).',
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
-      // 07/11 (piloto): no teste, a IA marcou "perdido" e logo depois "conversando" na mesma resposta. Depois de ganho/perdido
-      // nessa resposta, a etapa não volta atrás (numa mensagem nova do cliente, pode reabrir normalmente)
-      roda: async (q) => { if (ctx.fechou) return { ok: true, ignorado: 'a venda já foi marcada como ganha ou perdida nesta resposta' }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
+      // 07/11 (juntou as duas correções): no teste a IA chamou venda_perdida e, na mesma resposta, mudar_etapa, e o perdido voltava pra "conversando".
+      // Contato já ganho ou perdido não volta pelo atendimento (se o cliente voltar a falar, quem reabre é o dono ou a equipe)
+      roda: async (q) => { if (lead.etapa === 'ganho' || lead.etapa === 'perdido') return { ok: false, aviso: `esse cliente já está ${lead.etapa}: a etapa não muda` }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
     { name: 'venda_fechada', description: 'O cliente fechou: agendou e confirmou, pagou ou fez o pedido. Marca GANHO com o valor.',
       input_schema: { type: 'object', properties: { valor: { type: 'number' }, produto: { type: 'string' } }, required: ['produto'] },
       roda: async (q) => {
         // 07/11 (piloto): comprovante em foto não é venda confirmada: quem confere é o dono (ele já foi avisado)
         if (ctx.comprovante) { lead = await mudaEtapa(lead, 'proposta', 'maia', { produto: q.produto, valor: q.valor }); return { erro: 'o cliente mandou um comprovante: tu NÃO confirma pagamento. Diz que recebeu e que o dono confere e confirma. O dono já foi avisado.' } }
-        lead = await ganhou(lead, q.valor, q.produto, 'maia'); ctx.fechou = true; const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
+        lead = await ganhou(lead, q.valor, q.produto, 'maia'); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
     { name: 'venda_perdida', description: 'O cliente disse claramente que não vai comprar. Marca PERDIDO com o motivo (preço, comprou em outro lugar, não precisa mais, sem orçamento, fora da região).',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async (q) => { lead = await perdeu(lead, q.motivo, 'maia'); ctx.fechou = true; return { ok: true } } },
+      roda: async (q) => { lead = await perdeu(lead, q.motivo, 'maia'); return { ok: true } } },
     { name: 'retomar_depois', description: 'O cliente pediu pra falar depois ("vou ver e te aviso", "semana que vem"). Agenda a retomada.',
       input_schema: { type: 'object', properties: { em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
       roda: async (q) => { lead = await agendaFollowup(lead, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
@@ -129,7 +129,7 @@ export async function respondeCliente(conversa_id: string) {
     await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
     return { mensagens: aviso ? [t, aviso] : [t], ferramentas: [] as string[], etapa: lead.etapa, midia_falhou: true }
   }
-  const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)), fechou: false }
+  const ctx = { humano: false, comprovante: msgs.slice(-12).some(x => x.autor === 'cliente' && ehComprovante(x.texto)) }
   const ferrs = ferramentas(neg, cv, lead, ctx)
   const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca

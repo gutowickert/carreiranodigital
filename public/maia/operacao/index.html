@@ -1179,6 +1179,9 @@ function subDados(n,box){
       '<div class="chave" style="border-top:0"><div class="txt"><b>A Maia atende os clientes</b><small>Começa desligado. Liga depois de testar com um número conhecido. O dono pode seguir respondendo pelo celular: quando ele responde, ela fica quieta 2 h naquela conversa.</small></div><label class="sw"><span class="sr">A Maia atende os clientes</span><input type="checkbox" id="sw-atende"'+((m.wa&&m.wa.atende)?' checked':'')+(waOn?'':' disabled')+'><span></span></label></div>'+
       '<button class="btn larga" id="b-link">'+ic('link')+'Gerar link pro dono conectar</button><div id="wa-link" class="link-box"></div></div>'+
     cardAtendimento(n)+
+    // 07/11: o painel do dono (link mágico de 30 dias). "Trocar link" cancela todos os links antigos desse negócio
+    '<div class="card" id="c-painel-dono"><h2 style="margin-bottom:8px">Painel do dono</h2><p class="mu peq" style="margin:0 0 12px">Resultados, funil, retomadas, conversas e anúncios, só desse negócio. O dono também recebe o link pedindo "meu painel" pra Maia e no resumo da semana. Vale 30 dias.</p>'+
+      '<div class="btns"><button class="btn" id="b-painel">'+ic('link')+'Link do painel do dono</button><button class="btn" id="b-painel-trocar">Trocar link (cancela os antigos)</button></div><div id="painel-link" class="link-box"></div></div>'+
     '</div>'+
     '<form class="card" id="f-dados"><h2 style="margin-bottom:14px">Dados</h2><div class="grade2">'+
       cmp('nome','Nome do negócio','text','',true,n.nome)+cmp('nicho','Nicho','text','',false,n.nicho||'')+
@@ -1198,6 +1201,9 @@ function subDados(n,box){
       .catch(function(e){ i.checked=!val; falhou(e); });
   }; });
   $('#b-link').onclick=function(){ var b=this; espera(b,'gerando…',function(){ return api({acao:'link_conectar',negocio_id:n.id}).then(function(r){ $('#wa-link').innerHTML='<b>Link (vale '+r.vale_dias+' dias):</b> '+esc(r.link); if(navigator.clipboard) navigator.clipboard.writeText(r.link).then(function(){ toast('Link copiado. Manda pro dono.'); },function(){}); }); }); };
+  function mostraLinkPainel(r,msg){ $('#painel-link').innerHTML='<b>Link do painel (vale '+r.vale_dias+' dias):</b> '+esc(r.link); if(navigator.clipboard) navigator.clipboard.writeText(r.link).then(function(){ toast(msg); },function(){ toast(msg); }); else toast(msg); }
+  $('#b-painel').onclick=function(){ var b=this; espera(b,'gerando…',function(){ return api({acao:'link_painel_dono',negocio_id:n.id}).then(function(r){ mostraLinkPainel(r,'Link copiado. Manda pro dono.'); }); }); };
+  $('#b-painel-trocar').onclick=function(){ if(!confirm('Trocar o link do painel? Todos os links antigos desse negócio param de abrir na hora.')) return; var b=this; espera(b,'trocando…',function(){ return api({acao:'painel_dono_revogar',negocio_id:n.id}).then(function(r){ n.meta=Object.assign({},n.meta||{},{painel_versao:r.versao}); mostraLinkPainel(r,'Links antigos cancelados. O novo foi copiado.'); }); }); };
   $('#sw-atende').onchange=function(){ var i=this, val=i.checked; api({acao:'atendimento_clientes',negocio_id:n.id,ligado:val}).then(function(r){ n.meta=n.meta||{}; n.meta.wa=Object.assign({},n.meta.wa||{},{atende:val}); S.cart=null; recarregaCab(n); toast(val?(r.chave_geral?'A Maia começou a atender os clientes desse negócio.':'Ligado no negócio, mas a chave geral (MAIA_CLIENTES_LIGADO) ainda está desligada na Vercel.'):'Atendimento desligado: a Maia só observa.'); }).catch(function(e){ i.checked=!val; falhou(e); }); };
   ligaCardAtendimento(n);
   $('#d-status').onchange=function(){ var s=this; api({acao:'atualizar_negocio',id:n.id,status:s.value}).then(function(){ toast('Status: '+NEG_ST[s.value][0]+'.'); n.status=s.value; S.cart=null; recarregaCab(n); }).catch(function(e){ s.value=n.status; falhou(e); }); };

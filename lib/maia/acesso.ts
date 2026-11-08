@@ -29,3 +29,16 @@ export const equipeOk = (req: Request) => confere(req, process.env.MAIA_PAINEL_S
 export const oficinaOk = (req: Request) => confere(req, process.env.MAIA_OFICINA_CHAVE || '', 'x-chave')
 
 export const naoAutorizado = () => Response.json({ erro: 'não autorizado' }, { status: 401 })
+
+// 07/11: o painel do dono (link mágico). O mesmo limite: 10 links errados em 15 min por IP = 15 min bloqueado.
+// Contador separado do da senha da equipe (prefixo "dono:"), pra um não travar o outro.
+export function donoBloqueado(req: Request) {
+  const k = 'dono:' + ipDe(req), e = erros.get(k)
+  if (e && Date.now() - e.desde > JANELA_MS) { erros.delete(k); return false }
+  return !!e && e.n >= MAX_ERROS
+}
+export function donoErrou(req: Request) {
+  const k = 'dono:' + ipDe(req), e = erros.get(k), agora = Date.now()
+  erros.set(k, { n: (e?.n || 0) + 1, desde: e?.desde || agora })
+  if (erros.size > 5000) erros.clear()
+}

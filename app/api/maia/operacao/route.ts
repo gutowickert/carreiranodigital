@@ -4,6 +4,7 @@
 //        criar_campanha, ativar_campanha, pausar_campanha, lead_novo, lead_etapa, lead_ganho, lead_perdido,
 //        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina,
 //        link_conectar, atendimento_clientes, criar_modelo_dono (05/11). GET também: modelos, chamadas
+//   07/11 (painel do dono): POST link_painel_dono, painel_dono_revogar
 //   06/11 (demonstração grátis): GET amostras · POST simular_demo, rodar_demo, teste_demo_sumiu (só no modo de teste)
 import { maiaDb as db } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
@@ -39,6 +40,8 @@ function metaSeguro(novo: any, atual: any) {
   if (st && st !== '(guardada)') m.social_token = cifra(st)
   else if (atual?.social_token) m.social_token = atual.social_token
   else delete m.social_token
+  // 07/11: a versão dos links do painel do dono só muda pela ação painel_dono_revogar (senão salvar o formulário reviveria links revogados)
+  if (atual?.painel_versao != null) m.painel_versao = atual.painel_versao; else delete m.painel_versao
   return m
 }
 
@@ -204,6 +207,18 @@ export async function POST(req: Request) {
         const { assinaLink } = await import('@/lib/maia/conectar')
         const base = process.env.MAIA_URL_PUBLICA || new URL(req.url).origin
         return ok({ link: `${base}/maia/conectar?n=${b.negocio_id}&t=${assinaLink(b.negocio_id)}`, vale_dias: 14 })
+      }
+      // 07/11: o painel do dono. O link mágico (vale 30 dias) e o "trocar link", que invalida todos os links antigos desse negócio
+      case 'link_painel_dono': {
+        const { linkPainel, VALIDADE_DIAS } = await import('@/lib/maia/painel-dono')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        return ok({ link: linkPainel(n, process.env.MAIA_URL_PUBLICA || new URL(req.url).origin), vale_dias: VALIDADE_DIAS })
+      }
+      case 'painel_dono_revogar': {
+        const { revogaLinks, linkPainel, VALIDADE_DIAS } = await import('@/lib/maia/painel-dono')
+        const n = await revogaLinks(b.negocio_id, por)
+        return ok({ revogado: true, versao: n.meta.painel_versao, link: linkPainel(n, process.env.MAIA_URL_PUBLICA || new URL(req.url).origin), vale_dias: VALIDADE_DIAS })
       }
       // liga ou desliga o atendimento dos clientes pelo WhatsApp do negócio (começa desligado depois de conectar)
       case 'atendimento_clientes': {

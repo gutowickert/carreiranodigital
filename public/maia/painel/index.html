@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex,nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#141826">
+<title>Teu painel · Maia</title>
+<!-- Maia: o painel do DONO (07/11). Abre pelo link mágico (?t=...). A página troca o link por um cookie httpOnly e tira o
+     token da barra de endereço. Tudo vem de /api/maia/painel, só do negócio do link. Sem fonte nem script de fora. -->
+<style>
+:root{--bg:#f5f0e6;--card:#fff;--card2:#fbf8f2;--tx:#141826;--mu:#635f57;--ln:#e6dfd1;--coral:#ff7a59;--coral-tx:#b6431f;--coral-bg:#fff0ea;
+  --verde:#11865a;--verde-bg:#e3f5ec;--verm:#c62a3c;--verm-bg:#fdecee;--amar:#94600a;--amar-bg:#fdf3dc;--azul:#2b54c7;--azul-bg:#e8eefc;
+  --hero:#141826;--hero-tx:#f5f0e6;--hero-mu:#b8b3a8;--chat:#efe7da;--bolha-eu:#dcf3df;--sombra:0 1px 2px rgba(20,24,38,.06),0 4px 14px rgba(20,24,38,.05);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#10131e;--card:#1b2033;--card2:#171b2b;--tx:#f5f0e6;--mu:#aaa59a;--ln:#2c3350;--coral-tx:#ff9b80;--coral-bg:#3a2420;
+  --verde:#3ddc97;--verde-bg:#16362b;--verm:#ff7d8c;--verm-bg:#3d1d24;--amar:#f5c065;--amar-bg:#3a2f17;--azul:#93acff;--azul-bg:#1f2a4d;--hero:#1b2033;--chat:#141826;--bolha-eu:#1f4a3a;--sombra:none;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#10131e;--card:#1b2033;--card2:#171b2b;--tx:#f5f0e6;--mu:#aaa59a;--ln:#2c3350;--coral-tx:#ff9b80;--coral-bg:#3a2420;
+  --verde:#3ddc97;--verde-bg:#16362b;--verm:#ff7d8c;--verm-bg:#3d1d24;--amar:#f5c065;--amar-bg:#3a2f17;--azul:#93acff;--azul-bg:#1f2a4d;--hero:#1b2033;--chat:#141826;--bolha-eu:#1f4a3a;--sombra:none;color-scheme:dark}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+#app{overflow-x:clip}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit;color:inherit}
+a{color:inherit}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+.wrap{max-width:720px;margin:0 auto;padding:0 16px}
+/* topo */
+.hero{background:var(--hero);color:var(--hero-tx);padding:18px 0 22px}
+.marca{display:flex;align-items:center;gap:10px}
+.logo{width:34px;height:34px;border-radius:10px;background:var(--coral);color:#141826;display:grid;place-items:center;font-weight:800;font-size:18px}
+.marca b{font-size:16px;font-weight:800;letter-spacing:-.01em;display:block;line-height:1.2}
+.marca small{color:var(--hero-mu);font-size:13px;display:block;line-height:1.2}
+.ola{font-size:24px;line-height:1.2;margin:18px 0 4px;font-weight:800;letter-spacing:-.02em}
+.ola-sub{color:var(--hero-mu);margin:0;font-size:14px}
+.per{display:flex;gap:6px;background:rgba(245,240,230,.08);padding:4px;border-radius:12px;margin-top:16px}
+.per button{flex:1;border:0;background:transparent;color:var(--hero-mu);padding:9px 6px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer}
+.per button[aria-pressed="true"]{background:var(--hero-tx);color:#141826}
+.kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:14px}
+.kpi{background:rgba(245,240,230,.07);border:1px solid rgba(245,240,230,.10);border-radius:14px;padding:12px 13px;min-width:0}
+.kpi .r{font-size:12.5px;color:var(--hero-mu);display:block}
+.kpi .n{font-size:24px;font-weight:800;letter-spacing:-.02em;display:block;line-height:1.25;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.kpi .p{font-size:12.5px;color:var(--hero-mu);display:block}
+.kpi.grande{grid-column:span 2;background:var(--coral);border-color:var(--coral);color:#141826}
+.kpi.grande .r,.kpi.grande .p{color:#3a2017}
+.kpi.grande .n{font-size:30px}
+/* abas */
+.abas{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--ln)}
+.abas .wrap{display:flex;gap:6px;overflow-x:auto;padding-top:10px;padding-bottom:10px;scrollbar-width:none}
+.abas .wrap::-webkit-scrollbar{display:none}
+.abas a{flex:0 0 auto;text-decoration:none;padding:7px 13px;border-radius:999px;font-weight:700;font-size:14px;color:var(--mu);border:1px solid var(--ln);background:var(--card);white-space:nowrap}
+.abas a[aria-current="page"]{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.abas a .b{display:inline-block;min-width:18px;padding:0 5px;margin-left:5px;border-radius:999px;background:var(--coral);color:#141826;font-size:11.5px;line-height:18px;text-align:center}
+main{padding-top:16px;padding-bottom:28px}
+section[hidden]{display:none}
+h2{font-size:18px;margin:22px 0 10px;letter-spacing:-.01em}
+h2:first-child{margin-top:4px}
+h2 small{font-weight:600;color:var(--mu);font-size:13px;margin-left:6px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:16px;box-shadow:var(--sombra)}
+.pad{padding:14px 16px}
+.mu{color:var(--mu)}.peq{font-size:13px}
+.lista{list-style:none;margin:0;padding:0}
+.lista>li{padding:12px 16px;border-top:1px solid var(--ln);display:flex;gap:12px;align-items:flex-start}
+.lista>li:first-child{border-top:0}
+.lista>li.toca{cursor:pointer}
+.av{flex:0 0 36px;height:36px;border-radius:50%;background:var(--azul-bg);color:var(--azul);display:grid;place-items:center;font-weight:800;font-size:15px}
+.mid{flex:1;min-width:0}
+.mid b{display:block;font-size:15px;line-height:1.3}
+.mid .l2{color:var(--mu);font-size:13.5px;line-height:1.35;margin-top:2px;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.dir{flex:0 0 auto;text-align:right;font-size:12.5px;color:var(--mu)}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.c-verde{background:var(--verde-bg);color:var(--verde)}.c-verm{background:var(--verm-bg);color:var(--verm)}.c-amar{background:var(--amar-bg);color:var(--amar)}
+.c-azul{background:var(--azul-bg);color:var(--azul)}.c-coral{background:var(--coral-bg);color:var(--coral-tx)}.c-cinza{background:var(--card2);color:var(--mu);border:1px solid var(--ln)}
+.espera{border-left:4px solid var(--coral)}
+.espera li .ic{flex:0 0 28px;height:28px;border-radius:8px;background:var(--coral-bg);color:var(--coral-tx);display:grid;place-items:center;font-size:15px}
+.vazio{padding:22px 16px;text-align:center;color:var(--mu);font-size:14px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--ln);background:var(--card);border-radius:12px;padding:10px 14px;font-weight:700;font-size:14px;cursor:pointer;text-decoration:none}
+.btn.pri{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.btn.ok{background:var(--verde);color:#fff;border-color:var(--verde)}
+.btn.ruim{color:var(--verm)}
+.btn[disabled]{opacity:.55;cursor:default}
+.btns{display:flex;gap:8px;flex-wrap:wrap}
+/* funil */
+.funil{display:flex;gap:10px;overflow-x:auto;scroll-snap-type:x mandatory;padding:2px 16px 10px;margin:0 -16px;scrollbar-width:thin}
+.col{flex:0 0 76%;max-width:300px;scroll-snap-align:start;background:var(--card2);border:1px solid var(--ln);border-radius:16px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.col-cab{display:flex;align-items:center;justify-content:space-between;padding:2px 4px 4px;font-weight:800;font-size:14px}
+.col-cab .t{display:flex;align-items:center;gap:7px}
+.col-cab i{width:9px;height:9px;border-radius:50%;display:inline-block}
+.col-cab span.mu{font-weight:600;font-size:12.5px}
+.lc{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:10px 11px;cursor:pointer;text-align:left;width:100%}
+.lc b{display:block;font-size:14.5px}
+.lc .v{font-weight:800;font-size:13.5px}
+.lc .pa{display:block;color:var(--mu);font-size:12.5px;margin-top:3px;line-height:1.35}
+.lc .pa.quente{color:var(--coral-tx);font-weight:700}
+/* retomadas */
+.mini{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mini div{min-width:0;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:9px 6px;text-align:center}
+.mini b{display:block;font-size:20px;line-height:1.2}
+.mini span{font-size:11.5px;color:var(--mu);line-height:1.2;display:block}
+.mini .alerta{border-color:var(--verm);background:var(--verm-bg)}
+.mini .alerta b,.mini .alerta span{color:var(--verm)}
+li.atrasada{background:var(--verm-bg)}
+/* conversa */
+.chat-top{position:sticky;top:0;z-index:6;background:var(--hero);color:var(--hero-tx);display:flex;align-items:center;gap:10px;padding:10px 12px}
+.chat-top button{border:0;background:transparent;color:var(--hero-tx);font-size:22px;line-height:1;padding:6px 8px;cursor:pointer;border-radius:8px}
+.chat-top b{display:block;font-size:15.5px}.chat-top small{color:var(--hero-mu);font-size:12.5px}
+.chat{background:var(--chat);min-height:calc(100vh - 56px);padding:12px 10px 28px;display:flex;flex-direction:column;gap:4px}
+.dia{align-self:center;background:var(--card);color:var(--mu);font-size:12px;font-weight:700;padding:3px 10px;border-radius:8px;margin:8px 0 4px;box-shadow:var(--sombra)}
+.bol{max-width:82%;padding:7px 10px 5px;border-radius:10px;font-size:14.5px;line-height:1.4;white-space:pre-wrap;word-wrap:break-word;box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.bol.cli{align-self:flex-start;background:var(--card);border-top-left-radius:3px}
+.bol.eu{align-self:flex-end;background:var(--bolha-eu);border-top-right-radius:3px}
+.bol .quem{display:block;font-size:12px;font-weight:800;color:var(--coral-tx)}
+.bol .quem.dono{color:var(--azul)}
+.bol .h{display:block;text-align:right;font-size:11px;color:var(--mu);margin-top:2px}
+/* anúncios */
+.anuncio{overflow:hidden}
+.anuncio img,.anuncio video{display:block;width:100%;max-height:460px;object-fit:cover;background:var(--card2)}
+.anuncio .corpo{padding:12px 14px}
+.anuncio .g{font-weight:800;font-size:15.5px;line-height:1.3}
+.anuncio .tx{color:var(--mu);font-size:13.5px;margin-top:4px;white-space:pre-wrap}
+.grade{display:grid;gap:12px}
+@media (min-width:640px){.grade{grid-template-columns:repeat(2,minmax(0,1fr))}.col{flex-basis:240px}.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.kpi.grande{grid-column:span 2}}
+/* folha de baixo (ações) */
+.veu{position:fixed;inset:0;background:rgba(10,12,20,.5);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.folha{background:var(--card);width:100%;max-width:560px;border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:88vh;overflow:auto}
+.folha h3{margin:0 0 2px;font-size:19px}
+.campo{display:block;margin-top:12px}
+.campo span{display:block;font-size:13px;font-weight:700;color:var(--mu);margin-bottom:4px}
+.campo input,.campo textarea,.campo select{width:100%;padding:11px 12px;border:1px solid var(--ln);border-radius:10px;background:var(--card2)}
+.campo textarea{min-height:80px;resize:vertical}
+.toast{position:fixed;left:50%;bottom:86px;transform:translateX(-50%);background:var(--tx);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:700;font-size:14px;z-index:30;max-width:92vw}
+/* rodapé */
+.rodape{padding:6px 0 26px;text-align:center}
+.wa{display:flex;align-items:center;justify-content:center;gap:9px;background:#25D366;color:#0b2e17;font-weight:800;font-size:16px;text-decoration:none;border-radius:14px;padding:15px}
+.wa svg{width:22px;height:22px}
+.rodape p{margin:10px 0 0;color:var(--mu);font-size:12.5px}
+.esq{background:linear-gradient(90deg,var(--ln),var(--card2),var(--ln));background-size:200% 100%;animation:esq 1.2s infinite;border-radius:10px}
+@keyframes esq{to{background-position:-200% 0}}
+@media (prefers-reduced-motion:reduce){.esq{animation:none}}
+.porta{max-width:460px;margin:0 auto;padding:60px 20px;text-align:center}
+.porta h1{font-size:24px;margin:18px 0 8px}
+.porta p{color:var(--mu)}
+.motivos li{display:flex;justify-content:space-between;gap:10px}
+.barra{height:6px;border-radius:6px;background:var(--ln);margin-top:6px;overflow:hidden}.barra i{display:block;height:100%;background:var(--verm)}
+</style>
+</head>
+<body>
+<div id="app"><div class="porta"><div class="logo" style="margin:0 auto">M</div><h1>Abrindo o teu painel…</h1><p>Só um instante.</p></div></div>
+<script>
+(function(){
+'use strict';
+var API='/api/maia/painel', S={dados:null,per:'semana',aba:'resumo',conversa:null};
+var NUM_MAIA='5551993767137';
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+function $(s,e){return(e||document).querySelector(s);}
+function $$(s,e){return Array.prototype.slice.call((e||document).querySelectorAll(s));}
+function real(v){if(v==null||v==='')return '—';var n=Number(v);if(isNaN(n))return '—';return n.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:n%1?2:0});}
+function int(v){return v==null?'—':Number(v).toLocaleString('pt-BR');}
+function pct(v){return v==null?'—':Number(v).toLocaleString('pt-BR',{maximumFractionDigits:1})+'%';}
+function minutos(v){if(v==null)return '—';if(v<1)return '< 1 min';if(v<60)return Math.round(v)+' min';return (Math.round(v/6)/10).toLocaleString('pt-BR')+' h';}
+function dataC(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});}
+function hora(iso){if(!iso)return '';var d=new Date(iso);return isNaN(d)?'':d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+function quando(iso){if(!iso)return '';var d=new Date(iso),h=new Date(),o=new Date(Date.now()-864e5),a=new Date(Date.now()+864e5);
+  var mesmo=function(x,y){return x.toDateString()===y.toDateString();};
+  if(mesmo(d,h))return 'hoje '+hora(iso);if(mesmo(d,o))return 'ontem '+hora(iso);if(mesmo(d,a))return 'amanhã '+hora(iso);
+  return d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','')+' '+hora(iso);}
+function inicial(s){s=String(s||'?').trim();return esc((s[0]||'?').toUpperCase());}
+function fone(t){t=String(t||'').replace(/\D/g,'');if(/^55\d{10,11}$/.test(t)){var d=t.slice(4);return '('+t.slice(2,4)+') '+d.slice(0,d.length-4)+'-'+d.slice(-4);}return t;}
+function toast(m){var t=document.createElement('div');t.className='toast';t.setAttribute('role','status');t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove();},2600);}
+function wa(texto){return 'https://wa.me/'+(S.dados&&S.dados.whatsapp_maia||NUM_MAIA)+(texto?'?text='+encodeURIComponent(texto):'');}
+var ICWA='<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>';
+
+function api(q,corpo){
+  var o=corpo?{method:'POST',headers:{'content-type':'application/json','x-maia-painel':'1'},body:JSON.stringify(corpo),credentials:'same-origin'}:{credentials:'same-origin'};
+  return fetch(API+(q?'?'+q:''),o).then(function(r){return r.json().catch(function(){return{};}).then(function(j){if(!r.ok){var e=new Error(j.erro||('erro '+r.status));e.status=r.status;throw e;}return j;});});
+}
+function porta(titulo,frase){
+  $('#app').innerHTML='<div class="porta"><div class="logo" style="margin:0 auto">M</div><h1>'+esc(titulo)+'</h1><p>'+esc(frase)+'</p>'+
+    '<a class="wa" style="margin-top:22px" href="'+wa('Maia, me manda o link do meu painel')+'" target="_blank" rel="noopener">'+ICWA+'Pedir um link novo pra Maia</a></div>';
+}
+
+// 1) entra: troca o ?t= por um cookie httpOnly e tira o token da barra de endereço (e do histórico)
+function entrar(){
+  var u=new URL(location.href), t=u.searchParams.get('t');
+  if(!t) return Promise.resolve();
+  history.replaceState(null,'',u.pathname+u.hash);
+  return fetch(API,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({acao:'entrar',t:t}),credentials:'same-origin'}).then(function(r){return r.json().then(function(j){if(!r.ok){var e=new Error(j.erro||'link inválido');e.status=r.status;throw e;}});});
+}
+function carrega(){
+  return api('acao=tudo').then(function(d){S.dados=d;if(!$('#topo'))esqueleto();pinta();});
+}
+function lerHash(){
+  var h=location.hash.replace(/^#/,''), m=h.match(/^conversa=([\w-]+)$/);
+  if(m){S.conversa=m[1];abreConversa(m[1]);return;}
+  S.conversa=null;
+  var abas=['resumo','funil','retomadas','conversas','anuncios','vendas','avisos'];
+  S.aba=abas.indexOf(h)>=0?h:'resumo';
+  if(!$('#topo')){esqueleto();}
+  pinta();
+  // trocou de aba: a seção começa no alto da tela (o topo com os números fica em cima, é só voltar)
+  var ab=document.querySelector('.abas');if(S.aba!=='resumo'&&ab&&S.dados)window.scrollTo(0,ab.offsetTop);
+}
+
+function esqueleto(){
+  $('#app').innerHTML=
+   '<header class="hero" id="topo"><div class="wrap"><div class="marca"><span class="logo" aria-hidden="true">M</span><span><b id="nome-neg">…</b><small>teu painel da Maia</small></span></div>'+
+   '<p class="ola" id="ola">Olá!</p><p class="ola-sub" id="ola-sub">Tudo que a Maia fez pelo teu negócio.</p>'+
+   '<div class="per" role="group" aria-label="Período"><button type="button" data-per="hoje">Hoje</button><button type="button" data-per="semana">7 dias</button><button type="button" data-per="mes">Este mês</button></div>'+
+   '<div class="kpis" id="kpis"></div></div></header>'+
+   '<nav class="abas" aria-label="Partes do painel"><div class="wrap" id="abas"></div></nav>'+
+   '<main class="wrap" id="corpo"></main>'+
+   '<footer class="wrap rodape"><a class="wa" id="wa" href="#" target="_blank" rel="noopener">'+ICWA+'Fale com a Maia no WhatsApp</a><p>Tu gere tudo pelo WhatsApp. Aqui é pra acompanhar. Esse link é só teu: não repassa.</p></footer>';
+  $$('.per button').forEach(function(b){b.onclick=function(){S.per=b.dataset.per;pintaTopo();};});
+}
+
+function pinta(){
+  if(!S.dados||S.conversa)return;
+  if(!$('#topo'))esqueleto();
+  pintaTopo();pintaAbas();
+  var c=$('#corpo'),f={resumo:secResumo,funil:secFunil,retomadas:secRetomadas,conversas:secConversas,anuncios:secAnuncios,vendas:secVendas,avisos:secAvisos}[S.aba];
+  c.innerHTML=f();liga(c);
+  $('#wa').href=wa();
+}
+function pintaTopo(){
+  var d=S.dados,n=d.negocio,p=d.periodos[S.per]||{};
+  $('#nome-neg').textContent=n.nome||'';
+  $('#ola').textContent='Olá'+(n.dono?', '+n.dono:'')+'!';
+  var rot={hoje:'hoje',semana:'nos últimos 7 dias',mes:'este mês'}[S.per];
+  $('#ola-sub').textContent='O que a Maia fez pelo teu negócio '+rot+'.';
+  $$('.per button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.per===S.per?'true':'false');});
+  function k(r,n,p,cls){return '<div class="kpi '+(cls||'')+'"><span class="r">'+r+'</span><span class="n">'+n+'</span><span class="p">'+(p||'&nbsp;')+'</span></div>';}
+  $('#kpis').innerHTML=
+    k('Vendas',real(p.receita),int(p.ganhos)+(p.ganhos===1?' venda':' vendas')+(p.ticket_medio?' · ticket '+real(p.ticket_medio):''),'grande')+
+    k('Contatos novos',int(p.leads_novos),p.em_aberto!=null?int(p.em_aberto)+' em aberto no funil':'')+
+    k('Conversas da Maia',int(p.conversas_atendidas),'atendidas por ela')+
+    k('Conversão',pct(p.conversao),'contatos que viraram venda')+
+    k('1ª resposta',minutos(p.primeira_resposta_min),'tempo médio')+
+    k('Investimento',p.gasto?real(p.gasto):'—',p.gasto?'em anúncio':'sem gasto registrado')+
+    k('Custo por venda',p.custo_por_venda!=null?real(p.custo_por_venda):'—',p.retorno!=null?'cada R$ 1 voltou '+real(p.retorno):'com anúncio ligado');
+}
+function pintaAbas(){
+  var d=S.dados,r=d.retomadas;
+  var esperaN=d.esperando.length, anunN=d.anuncios.filter(function(a){return a.status==='com_dono';}).length;
+  var it=[['resumo','Resumo',esperaN],['funil','Funil',0],['retomadas','Retomadas',r.atrasadas],['conversas','Conversas',d.conversas.filter(function(c){return c.status==='dono';}).length],['anuncios','Anúncios',anunN],['vendas','Vendas',0],['avisos','Avisos',d.avisos.filter(function(a){return a.status==='enviado';}).length]];
+  $('#abas').innerHTML=it.map(function(x){return '<a href="#'+x[0]+'"'+(S.aba===x[0]?' aria-current="page"':'')+'>'+x[1]+(x[2]?'<span class="b">'+x[2]+'</span>':'')+'</a>';}).join('');
+  var at=$('#abas a[aria-current]');if(at&&at.scrollIntoView)try{at.scrollIntoView({block:'nearest',inline:'center'});}catch(e){}
+}
+
+// ---- seções ----
+function secResumo(){
+  var d=S.dados,h='';
+  h+='<h2>A Maia espera de ti'+(d.esperando.length?'<small>'+d.esperando.length+'</small>':'')+'</h2>';
+  if(d.esperando.length){
+    var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋'};
+    h+='<ul class="lista card espera">'+d.esperando.map(function(e){
+      var alvo=e.tipo==='joinha'?'#anuncios':e.conversa_id?'#conversa='+e.conversa_id:'';
+      return '<li'+(alvo?' class="toca" data-ir="'+alvo+'"':'')+'><span class="ic" aria-hidden="true">'+ic[e.tipo]+'</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+(e.em?quando(e.em):'')+(e.tipo==='fechou'||e.tipo==='pergunta'?' · responde no WhatsApp da Maia':'')+'</span></div></li>';
+    }).join('')+'</ul>';
+  } else h+='<div class="card vazio">Nada esperando por ti agora. A Maia está tocando tudo.</div>';
+  var r=d.retomadas;
+  h+='<h2>Retomadas</h2><div class="mini">'+mini(r.agendadas.length,'agendadas')+mini(r.atrasadas,'atrasadas',r.atrasadas>0)+mini(r.feitas.length,'feitas (30 dias)')+mini(r.respondidas,'responderam')+'</div>';
+  var ult=d.vendas.slice(0,3);
+  h+='<h2>Últimas vendas</h2>'+(ult.length?'<ul class="lista card">'+ult.map(liVenda).join('')+'</ul>':'<div class="card vazio">Nenhuma venda registrada este mês ainda. Fechou alguma? Conta pra Maia no WhatsApp.</div>');
+  var av=d.avisos.filter(function(a){return a.status==='enviado';}).slice(0,2);
+  if(av.length) h+='<h2>Avisos da Maia</h2><ul class="lista card">'+av.map(liAviso).join('')+'</ul>';
+  return h;
+}
+function mini(n,t,alerta){return '<div'+(alerta?' class="alerta"':'')+'><b>'+int(n)+'</b><span>'+t+'</span></div>';}
+var COLS=[['novo','Novo','var(--azul)'],['conversa','Em conversa','var(--amar)'],['proposta','Proposta','var(--coral)'],['retomada','Retomada','#8b5cf6'],['ganho','Ganho','var(--verde)'],['perdido','Perdido','var(--verm)']];
+function secFunil(){
+  var d=S.dados,h='<h2>Funil<small>'+int(d.funil.length)+' contatos · arrasta pro lado</small></h2><div class="funil">';
+  COLS.forEach(function(c){
+    var ls=d.funil.filter(function(l){return l.coluna===c[0];});
+    var soma=ls.reduce(function(s,l){return s+(Number(l.valor)||0);},0);
+    h+='<div class="col"><div class="col-cab"><span class="t"><i style="background:'+c[2]+'"></i>'+c[1]+'</span><span class="mu">'+ls.length+(soma?' · '+real(soma):'')+'</span></div>'+
+      (ls.length?ls.map(function(l){var q=/espera|perguntou|contigo|atrasada/.test(l.proxima_acao);
+        return '<button type="button" class="lc" data-lead="'+esc(l.id)+'"><b>'+esc(l.nome||fone(l.telefone)||'Sem nome')+'</b>'+(l.valor?'<span class="v">'+real(l.valor)+'</span>':'')+(l.produto?' <span class="mu peq">'+esc(l.produto)+'</span>':'')+'<span class="pa'+(q?' quente':'')+'">'+esc(l.proxima_acao)+'</span></button>';}).join(''):'<div class="vazio" style="padding:12px">ninguém aqui</div>')+'</div>';
+  });
+  return h+'</div><p class="mu peq">Toca num contato pra ver a conversa ou marcar venda ou perda.</p>';
+}
+function secRetomadas(){
+  var r=S.dados.retomadas,h='<h2>Retomadas<small>a Maia chama de novo quem sumiu (1, 3 e 7 dias)</small></h2>';
+  h+='<div class="mini">'+mini(r.agendadas.length,'agendadas')+mini(r.atrasadas,'atrasadas',r.atrasadas>0)+mini(r.feitas.length,'feitas (30 dias)')+mini(r.respondidas,'responderam')+'</div>';
+  var atr=r.agendadas.filter(function(x){return x.atrasada;}),prox=r.agendadas.filter(function(x){return !x.atrasada;});
+  if(atr.length) h+='<h2 style="color:var(--verm)">Atrasadas<small>'+atr.length+'</small></h2><ul class="lista card">'+atr.map(liRet).join('')+'</ul>';
+  h+='<h2>Próximas</h2>'+(prox.length?'<ul class="lista card">'+prox.map(liRet).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada marcada.</div>');
+  var esp=S.dados.esperando.filter(function(e){return e.tipo!=='joinha';});
+  if(esp.length) h+='<h2>Esperando a tua resposta</h2><ul class="lista card espera">'+esp.map(function(e){return '<li><span class="ic" aria-hidden="true">?</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+quando(e.em)+'</span></div></li>';}).join('')+'</ul>';
+  h+='<h2>Feitas</h2>'+(r.feitas.length?'<ul class="lista card">'+r.feitas.map(function(f){
+    return '<li class="toca" data-lead="'+esc(f.lead_id)+'"><span class="av">'+inicial(f.nome)+'</span><div class="mid"><b>'+esc(f.nome)+'</b><span class="l2">'+(f.numero?f.numero+'ª retomada · ':'')+quando(f.em)+'</span></div><div class="dir">'+(f.respondeu?'<span class="chip c-verde">respondeu</span>':'<span class="chip c-cinza">sem resposta</span>')+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada feita nos últimos 30 dias.</div>');
+  return h;
+}
+function liRet(x){
+  return '<li class="toca'+(x.atrasada?' atrasada':'')+'" data-lead="'+esc(x.lead_id)+'"><span class="av">'+inicial(x.nome)+'</span><div class="mid"><b>'+esc(x.nome||'Contato')+(x.produto?' <span class="mu peq">· '+esc(x.produto)+'</span>':'')+'</b><span class="l2">'+esc(x.motivo)+'</span></div><div class="dir">'+(x.atrasada?'<span class="chip c-verm">atrasada</span><br>':'')+quando(x.quando)+'</div></li>';
+}
+var ST_CV={maia:['Maia atendendo','c-verde'],dono:['esperando tu','c-coral'],encerrada:['encerrada','c-cinza']};
+function secConversas(){
+  var cs=S.dados.conversas,h='<h2>Atendimento<small>'+int(cs.length)+' conversas</small></h2>';
+  if(!S.dados.negocio.whatsapp_conectado) h+='<div class="card pad peq mu" style="margin-bottom:10px">O WhatsApp do teu negócio ainda não está ligado na Maia: essas conversas são de teste.</div>';
+  if(!cs.length) return h+'<div class="card vazio">Nenhuma conversa ainda.</div>';
+  return h+'<ul class="lista card">'+cs.map(function(c){var s=ST_CV[c.status]||ST_CV.maia;
+    return '<li class="toca" data-ir="#conversa='+esc(c.id)+'"><span class="av">'+inicial(c.nome||c.telefone)+'</span><div class="mid"><b>'+esc(c.nome||fone(c.telefone))+'</b><span class="l2">'+esc(c.ultima_msg||'')+'</span></div><div class="dir">'+quando(c.ultima_msg_em)+'<br><span class="chip '+s[1]+'">'+s[0]+'</span></div></li>';}).join('')+'</ul>';
+}
+var ST_AN={com_dono:['espera teu 👍','c-coral'],aprovada:['aprovado','c-azul'],no_ar:['no ar','c-verde']};
+var ST_CA={ativa:['no ar','c-verde'],criada_pausada:['pronta, pausada','c-amar'],pausada:['pausada','c-cinza'],encerrada:['encerrada','c-cinza'],erro:['com problema','c-verm']};
+function secAnuncios(){
+  var d=S.dados,h='',esp=d.anuncios.filter(function(a){return a.status==='com_dono';}),out=d.anuncios.filter(function(a){return a.status!=='com_dono';});
+  h+='<h2>Esperando o teu 👍<small>'+esp.length+'</small></h2>';
+  h+=esp.length?'<div class="grade">'+esp.map(function(a){return cardAn(a,true);}).join('')+'</div>':'<div class="card vazio">Nenhum anúncio esperando por ti.'+(d.em_preparo?' '+d.em_preparo+' em preparo com a equipe.':'')+'</div>';
+  h+='<h2>Campanhas</h2>'+(d.campanhas.length?'<ul class="lista card">'+d.campanhas.map(function(c){var s=ST_CA[c.status]||[c.status,'c-cinza'];
+    return '<li><div class="mid"><b>'+esc(c.nome||'Campanha')+'</b><span class="l2">'+(c.verba_dia?real(c.verba_dia)+'/dia · ':'')+c.anuncios+(c.anuncios===1?' anúncio':' anúncios')+(c.simulada?' · teste':'')+'</span><span class="l2"><b style="display:inline">'+int(c.contatos)+'</b> '+(c.contatos===1?'contato':'contatos')+' · <b style="display:inline">'+int(c.vendas)+'</b> '+(c.vendas===1?'venda':'vendas')+' · <b style="display:inline">'+real(c.receita)+'</b></span></div><div class="dir"><span class="chip '+s[1]+'">'+s[0]+'</span></div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma campanha ainda.</div>');
+  if(out.length) h+='<h2>Aprovados e no ar<small>'+out.length+'</small></h2><div class="grade">'+out.map(function(a){return cardAn(a,false);}).join('')+'</div>';
+  return h;
+}
+function cardAn(a,acoes){
+  var s=ST_AN[a.status]||[a.status,'c-cinza'],u=a.arquivo_url||'',vid=/video/.test(a.tipo);
+  var m=u?(vid?'<video src="'+esc(u)+'" controls playsinline preload="metadata"></video>':'<img src="'+esc(u)+'" alt="'+esc(a.gancho||'anúncio')+'" loading="lazy">'):'';
+  return '<div class="card anuncio">'+m+'<div class="corpo"><span class="chip '+s[1]+'">'+s[0]+'</span><div class="g" style="margin-top:6px">'+esc(a.gancho||'')+'</div><div class="tx">'+esc(a.texto||'')+'</div>'+(a.cta?'<div class="peq" style="margin-top:6px;font-weight:700">'+esc(a.cta)+'</div>':'')+
+    (acoes?'<div class="btns" style="margin-top:12px"><button type="button" class="btn ok" data-aprovar="'+esc(a.id)+'">👍 Aprovar</button><button type="button" class="btn" data-ajuste="'+esc(a.id)+'">Pedir mudança</button></div>':'')+'</div></div>';
+}
+function liVenda(l){return '<li class="toca" data-lead="'+esc(l.id)+'"><span class="av" style="background:var(--verde-bg);color:var(--verde)">'+inicial(l.nome)+'</span><div class="mid"><b>'+esc(l.nome||fone(l.telefone)||'Contato')+'</b><span class="l2">'+esc(l.produto||'')+(l.origem?' · veio de '+esc(ORIG[l.origem]||l.origem):'')+'</span></div><div class="dir"><b style="color:var(--verde);font-size:14px">'+real(l.valor)+'</b><br>'+dataC(l.ganho_em)+'</div></li>';}
+var ORIG={anuncio:'anúncio',organico:'orgânico',indicacao:'indicação',dono:'ti',outro:'outro',instagram:'Instagram',facebook:'Facebook'};
+function secVendas(){
+  var d=S.dados,m=d.periodos.mes,h='<h2>Vendas do mês<small>'+int(m.ganhos)+' · '+real(m.receita)+'</small></h2>';
+  h+=d.vendas.length?'<ul class="lista card">'+d.vendas.map(liVenda).join('')+'</ul>':'<div class="card vazio">Nenhuma venda este mês ainda.</div>';
+  h+='<h2>Perdas do mês<small>'+int(d.perdas.length)+'</small></h2>';
+  var mot=m.motivos_perda||{},ks=Object.keys(mot).sort(function(a,b){return mot[b]-mot[a];}),tot=ks.reduce(function(s,k){return s+mot[k];},0);
+  if(ks.length) h+='<div class="card pad" style="margin-bottom:10px"><b class="peq">Por que não compraram</b><ul class="lista motivos" style="margin-top:6px">'+ks.map(function(k){return '<li style="padding:8px 0;display:block"><div style="display:flex;justify-content:space-between;gap:10px"><span>'+esc(k)+'</span><b>'+mot[k]+'</b></div><div class="barra"><i style="width:'+Math.round(mot[k]/tot*100)+'%"></i></div></li>';}).join('')+'</ul></div>';
+  h+=d.perdas.length?'<ul class="lista card">'+d.perdas.map(function(l){return '<li class="toca" data-lead="'+esc(l.id)+'"><span class="av" style="background:var(--verm-bg);color:var(--verm)">'+inicial(l.nome)+'</span><div class="mid"><b>'+esc(l.nome||fone(l.telefone)||'Contato')+'</b><span class="l2">'+esc(l.motivo_perda||'sem motivo')+'</span></div><div class="dir">'+dataC(l.perdido_em)+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma perda este mês.</div>';
+  return h;
+}
+var NIV={urgente:['urgente','c-verm'],atencao:['atenção','c-amar'],info:['pra saber','c-azul']};
+function liAviso(a){var n=NIV[a.nivel]||NIV.info;return '<li><div class="mid"><span class="chip '+n[1]+'">'+n[0]+'</span>'+(a.status==='resolvido'?' <span class="chip c-verde">resolvido</span>':'')+'<b style="margin-top:6px">'+esc(a.titulo)+'</b>'+(a.texto?'<span class="l2" style="-webkit-line-clamp:4">'+esc(a.texto)+'</span>':'')+(a.acao?'<span class="l2"><b style="display:inline">O que fazer:</b> '+esc(a.acao)+'</span>':'')+'</div><div class="dir">'+dataC(a.dia+'T12:00:00')+'</div></li>';}
+function secAvisos(){
+  var av=S.dados.avisos;
+  return '<h2>Avisos da Maia<small>o que ela viu e vale a tua atenção</small></h2>'+(av.length?'<ul class="lista card">'+av.map(liAviso).join('')+'</ul>':'<div class="card vazio">Nenhum aviso. Quando a Maia vir algo que custa dinheiro (anúncio gastando sem conversa, cliente quente parado), aparece aqui e no teu WhatsApp.</div>');
+}
+
+// ---- toques ----
+function liga(el){
+  $$('[data-ir]',el).forEach(function(x){x.onclick=function(){location.hash=x.dataset.ir;};});
+  $$('[data-lead]',el).forEach(function(x){x.onclick=function(){abreLead(x.dataset.lead);};});
+  $$('[data-aprovar]',el).forEach(function(b){b.onclick=function(){
+    if(!confirm('Aprovar esse anúncio? A equipe liga a campanha depois.'))return;
+    b.disabled=true;api('',{acao:'aprovar',peca_id:b.dataset.aprovar}).then(function(){toast('Aprovado 👍');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});
+  $$('[data-ajuste]',el).forEach(function(b){b.onclick=function(){folha('<h3>O que mudar?</h3><p class="mu peq">A Maia refaz, a equipe confere e volta pra ti.</p><label class="campo"><span>Escreve do teu jeito</span><textarea id="f-nota" maxlength="500" placeholder="ex.: troca a foto, fala do parcelamento"></textarea></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Mandar o pedido</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var nota=$('#f-nota',v).value.trim();if(!nota){toast('Escreve o que mudar');return;}this.disabled=true;
+      api('',{acao:'ajuste',peca_id:b.dataset.ajuste,nota:nota}).then(function(){fecha();toast('Pedido enviado');return carrega();}).catch(function(e){toast(e.message);});};});};});
+}
+var veuAtual=null;
+function folha(html,depois){fecha();var v=document.createElement('div');v.className='veu';v.innerHTML='<div class="folha" role="dialog" aria-modal="true">'+html+'</div>';document.body.appendChild(v);veuAtual=v;
+  v.onclick=function(e){if(e.target===v||e.target.hasAttribute('data-fecha'))fecha();};if(depois)depois(v);}
+function fecha(){if(veuAtual){veuAtual.remove();veuAtual=null;}}
+document.addEventListener('keydown',function(e){if(e.key==='Escape')fecha();});
+var ET={novo:'novo',conversando:'em conversa',interessado:'interessado',proposta:'proposta',ganho:'ganho',perdido:'perdido'};
+function abreLead(id){
+  var l=S.dados.funil.filter(function(x){return x.id===id;})[0];if(!l)return;
+  var aberto=l.etapa!=='ganho'&&l.etapa!=='perdido';
+  var h='<h3>'+esc(l.nome||'Contato')+'</h3><p class="mu peq" style="margin:0">'+esc(fone(l.telefone))+' · '+esc(ET[l.etapa]||l.etapa)+(l.origem?' · veio de '+esc(ORIG[l.origem]||l.origem):'')+'</p>'+
+    (l.resumo?'<p class="peq" style="margin:10px 0 0">'+esc(l.resumo)+'</p>':'')+
+    '<p class="peq" style="margin:10px 0 0"><b>Próximo passo:</b> '+esc(l.proxima_acao)+'</p>'+
+    '<div class="btns" style="margin-top:14px">'+(l.conversa_id?'<button class="btn" id="f-cv">Ver conversa</button>':'')+(l.telefone?'<a class="btn" href="https://wa.me/'+esc(l.telefone)+'" target="_blank" rel="noopener">Chamar no WhatsApp</a>':'')+'</div>'+
+    (aberto?'<hr style="border:0;border-top:1px solid var(--ln);margin:16px 0 4px"><b>Fechou ou desistiu?</b>'+
+      '<label class="campo"><span>Valor da venda (R$)</span><input id="f-valor" inputmode="decimal" placeholder="ex.: 180" value="'+(l.valor!=null?esc(l.valor):'')+'"></label>'+
+      '<label class="campo"><span>O que comprou (opcional)</span><input id="f-prod" maxlength="120" value="'+esc(l.produto||'')+'"></label>'+
+      '<div class="btns" style="margin-top:12px"><button class="btn ok" id="f-venda">Marcar venda</button></div>'+
+      '<label class="campo"><span>Ou, se não vai comprar: o motivo</span><select id="f-mot"><option value="">escolhe…</option><option>achou caro</option><option>comprou no concorrente</option><option>sumiu, parou de responder</option><option>sem orçamento agora</option><option>não precisa mais</option><option>fora da região</option><option>outro</option></select></label>'+
+      '<div class="btns" style="margin-top:12px"><button class="btn ruim" id="f-perda">Marcar perda</button><button class="btn" data-fecha>Fechar</button></div>':'<div class="btns" style="margin-top:14px"><button class="btn" data-fecha>Fechar</button></div>');
+  folha(h,function(v){
+    var cv=$('#f-cv',v);if(cv)cv.onclick=function(){fecha();location.hash='conversa='+l.conversa_id;};
+    var bv=$('#f-venda',v);if(bv)bv.onclick=function(){var val=$('#f-valor',v).value.trim();if(!confirm('Marcar venda de '+(l.nome||'esse contato')+(val?' por R$ '+val:'')+'?'))return;bv.disabled=true;
+      api('',{acao:'venda',lead_id:l.id,valor:val,produto:$('#f-prod',v).value.trim()}).then(function(){fecha();toast('Venda marcada 💰');return carrega();}).catch(function(e){bv.disabled=false;toast(e.message);});};
+    var bp=$('#f-perda',v);if(bp)bp.onclick=function(){var m=$('#f-mot',v).value;if(!m){toast('Escolhe o motivo');return;}if(!confirm('Marcar '+(l.nome||'esse contato')+' como perdido?'))return;bp.disabled=true;
+      api('',{acao:'perda',lead_id:l.id,motivo:m}).then(function(){fecha();toast('Marcado como perdido');return carrega();}).catch(function(e){bp.disabled=false;toast(e.message);});};
+  });
+}
+function abreConversa(id){
+  var c=(S.dados&&S.dados.conversas||[]).filter(function(x){return x.id===id;})[0];
+  $('#app').innerHTML='<div class="chat-top"><button type="button" id="volta" aria-label="Voltar">←</button><span class="av" style="flex:0 0 36px">'+inicial(c&&(c.nome||c.telefone))+'</span><span><b>'+esc(c?(c.nome||fone(c.telefone)):'Conversa')+'</b><small>'+(c?esc(fone(c.telefone))+' · '+(ST_CV[c.status]||ST_CV.maia)[0]:'')+'</small></span></div><div class="chat" id="chat"><div class="esq" style="height:40px;width:60%"></div><div class="esq" style="height:40px;width:50%;align-self:flex-end"></div></div>';
+  $('#volta').onclick=function(){location.hash='conversas';};
+  api('acao=conversa&id='+encodeURIComponent(id)).then(function(r){
+    var h='',dia='';
+    r.msgs.forEach(function(m){var d=new Date(m.criado_em).toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});if(d!==dia){dia=d;h+='<span class="dia">'+esc(d)+'</span>';}
+      var cli=m.autor==='cliente';
+      h+='<div class="bol '+(cli?'cli':'eu')+'">'+(cli?'':'<span class="quem'+(m.autor==='dono'?' dono':'')+'">'+(m.autor==='dono'?'Tu':'Maia')+'</span>')+esc(m.texto||'('+(m.tipo||'mensagem')+')')+'<span class="h">'+hora(m.criado_em)+'</span></div>';});
+    $('#chat').innerHTML=h||'<div class="vazio">Sem mensagens.</div>';
+  }).catch(function(e){$('#chat').innerHTML='<div class="vazio">'+esc(e.message)+'</div>';});
+}
+
+window.addEventListener('hashchange',lerHash);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.dados&&!S.conversa)carrega().catch(function(){});});
+entrar().then(carrega).then(lerHash).catch(function(e){
+  if(e.status===401) porta('Esse link venceu','O link do painel vale 30 dias e é só teu. Pede um novo pra Maia: é só escrever "meu painel" no WhatsApp.');
+  else if(e.status===429) porta('Muitas tentativas','Espera 15 minutos e abre o link de novo.');
+  else porta('Não deu pra abrir agora',(e.message||'')+'. Tenta de novo em um minuto.');
+});
+})();
+</script>
+</body>
+</html>
