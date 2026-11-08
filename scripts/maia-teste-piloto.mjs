@@ -430,6 +430,14 @@ async function pendencias0811() {
   await op('teste_modelos_status', { negocio_id: S.id, status: { maia_resposta_voce: 'PENDING', maia_resposta: 'APPROVED' } })
   const envV = await op('mandar_ao_cliente', { negocio_id: S.id, conversa_id: cvDuda.id, texto: 'Oi Duda, aqui é a equipe: a caixa com 6 sai R$ 45.' })
   anota(envV.modelo === 'maia_resposta', 'P3. negócio em "você" com o _voce ainda não aprovado: usa o outro aprovado (a resposta não fica presa)')
+  // P4 (T11). modelo misto: resposta comum no barato; decisão de venda/passagem refeita no forte; as duas chamadas no custo
+  const usoCli = tab('eventos').filter(e => e.tipo === 'uso_ia' && e.detalhe?.tipo === 'cliente')
+  const fases = (f, m) => usoCli.filter(e => e.detalhe?.fase === f && (!m || String(e.detalhe?.modelo).includes(m))).length
+  anota(fases('barato', 'haiku') > 0 && fases('direto', 'sonnet') > 0, `P4. resposta comum no haiku (${fases('barato', 'haiku')} chamadas) e pedido de pessoa/devolução direto no sonnet (${fases('direto', 'sonnet')})`)
+  anota(fases('refeito', 'sonnet') > 0, `P4. decisão de venda (proposta/ganho/perdido) refeita no sonnet: ${fases('refeito', 'sonnet')} chamadas anotadas`)
+  const ci = await ver('custo_ia', { dias: 1 })
+  log('    custo do cliente por modelo: ' + JSON.stringify(ci.cliente_por_modelo) + ' · por conversa: R$ ' + ci.cliente_reais_por_conversa)
+  anota(Object.keys(ci.cliente_por_modelo || {}).some(k => /haiku · barato/.test(k)) && Object.keys(ci.cliente_por_modelo || {}).some(k => /sonnet/.test(k)), 'P4. custo_ia separa o custo do cliente por modelo e fase')
   //__PENDENCIAS__
 }
 main().catch(e => { console.error('\nERRO: ' + e.message); process.exit(1) })

@@ -27,6 +27,7 @@ export async function custoIA(dias = 30) {
   const evs = (await db.lista('eventos', { tipo: 'uso_ia' })).filter(e => Date.parse(e.criado_em) >= desde)
   const porTipo: Record<string, { chamadas: number; usd: number; conversas: Set<string> }> = {}
   const porNegocio: Record<string, number> = {}
+  const porModelo: Record<string, { chamadas: number; usd: number }> = {}
   let cacheLido = 0, entrada = 0
   for (const e of evs) {
     const d = e.detalhe || {}, v = usd(d), t = d.tipo || 'outro'
@@ -34,10 +35,15 @@ export async function custoIA(dias = 30) {
     x.chamadas++; x.usd += v; if (d.conversa_id) x.conversas.add(d.conversa_id)
     if (e.negocio_id) porNegocio[e.negocio_id] = (porNegocio[e.negocio_id] || 0) + v
     cacheLido += d.cache_lido || 0; entrada += (d.entrada || 0) + (d.cache_lido || 0)
+    // 08/11 (T11): o atendimento do cliente por modelo e fase do modelo misto (barato, refeito, direto)
+    if (t === 'cliente') { const k = `${d.modelo || '?'} · ${d.fase || 'sem fase'}`; const y = porModelo[k] ||= { chamadas: 0, usd: 0 }; y.chamadas++; y.usd += v }
   }
   const brl = (v: number) => Math.round(v * DOLAR() * 100) / 100
+  const cli = porTipo.cliente
   return {
     dias, dolar: DOLAR(),
+    cliente_por_modelo: Object.fromEntries(Object.entries(porModelo).map(([k, y]) => [k, { chamadas: y.chamadas, reais: Math.round(y.usd * DOLAR() * 1000) / 1000 }])),
+    cliente_reais_por_conversa: cli?.conversas.size ? Math.round(cli.usd / cli.conversas.size * DOLAR() * 1000) / 1000 : null,
     por_tipo: Object.fromEntries(Object.entries(porTipo).map(([t, x]) => [t, { chamadas: x.chamadas, conversas: x.conversas.size, reais: brl(x.usd), reais_por_conversa: x.conversas.size ? brl(x.usd / x.conversas.size) : null }])),
     por_negocio: Object.fromEntries(Object.entries(porNegocio).map(([n, v]) => [n, brl(v)])),
     cache: entrada ? Math.round(cacheLido / entrada * 100) + '% da entrada veio do cache' : 'sem dados',

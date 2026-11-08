@@ -28,10 +28,12 @@ async function chama(corpo: any) {
   return j
 }
 
-function anotaUso(modelo: string, u: any, uso?: { tipo?: string; negocio_id?: string | null; conversa_id?: string | null }) {
+// 08/11 (T11): uso.fase = em que parte do modelo misto foi a chamada ('barato' ou 'refeito'), pra medir o custo de cada uma
+type Uso = { tipo?: string; negocio_id?: string | null; conversa_id?: string | null; fase?: string | null }
+function anotaUso(modelo: string, u: any, uso?: Uso) {
   if (!u) return
   import('./db').then(({ maiaDb }) => maiaDb.evento('uso_ia', uso?.negocio_id || null, {
-    tipo: uso?.tipo || 'outro', conversa_id: uso?.conversa_id || null, modelo,
+    tipo: uso?.tipo || 'outro', conversa_id: uso?.conversa_id || null, modelo, ...(uso?.fase ? { fase: uso.fase } : {}),
     entrada: u.input_tokens || 0, saida: u.output_tokens || 0,
     cache_lido: u.cache_read_input_tokens || 0, cache_gravado: u.cache_creation_input_tokens || 0,
   })).catch(() => { /* anotar o uso nunca derruba a resposta */ })
@@ -46,7 +48,9 @@ export const limpaFerramentaEmTexto = (t: string) => t
   .trim()
 
 // op.modelo: outro modelo só pra essa conversa (ex.: o atendimento do cliente num modelo menor); op.uso: o que anotar no custo
-export async function comFerramentas(sistema: string, pedido: string | any[], ferramentas: Ferramenta[], maxVoltas = 6, op: { modelo?: string; uso?: { tipo?: string; negocio_id?: string | null; conversa_id?: string | null } } = {}) {
+// 08/11 (T11): op.antes = olha os pedidos de ferramenta ANTES de rodar; se devolver true, para sem rodar nenhum deles
+// (volta { parou: true }: o modelo misto refaz a decisão no modelo mais forte)
+export async function comFerramentas(sistema: string, pedido: string | any[], ferramentas: Ferramenta[], maxVoltas = 6, op: { modelo?: string; uso?: Uso; antes?: (pedidos: { name: string; input: any }[]) => boolean } = {}): Promise<{ texto: string; usadas: { nome: string; entrada: any; saida: any }[]; parou?: boolean }> {
   const extra: any = { uso: op.uso, ...(op.modelo ? { model: op.modelo } : {}) }
   const msgs: any[] = [{ role: 'user', content: pedido }]
   const usadas: { nome: string; entrada: any; saida: any }[] = []
@@ -75,6 +79,7 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
       // vale o texto da última volta; se ela veio vazia, o último que veio antes (sem repetir os dois)
       return { texto: limpaFerramentaEmTexto(t || textos[textos.length - 1] || ''), usadas }
     }
+    if (op.antes && op.antes(pedidos.map((p: any) => ({ name: p.name, input: p.input || {} })))) return { texto: '', usadas, parou: true }
     const respostas: any[] = []
     for (const p of pedidos) {
       const f = ferramentas.find(x => x.name === p.name)

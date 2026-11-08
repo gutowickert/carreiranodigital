@@ -4,6 +4,7 @@
 // (painel e testes), e o cérebro já fica pronto e testado.
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
+import { respondeMisto } from './misto'
 import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
 import { prazoResposta, diasDoNegocio } from './horario'
 import { avisoPrivacidade } from './lgpd'
@@ -266,9 +267,10 @@ export async function respondeCliente(conversa_id: string) {
   const ferrs = ferramentas(neg, cv, lead, ctx)
   // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
   const gatilho = gatilhoHumano(textoCliente)
-  const r = await comFerramentas(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs, 6,
-    // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício; testado em conversas fáceis e difíceis). MAIA_MODELO_CLIENTE troca
-    { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
+  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
+    // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício). MAIA_MODELO_CLIENTE troca
+    // 08/11 (T11): modelo misto (misto.ts): decisão de venda ou passagem pro dono é refeita no modelo forte. MAIA_MODELO_MISTO=0 desliga
+    { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho)
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
   // em vez da mensagem pro cliente. Isso nunca sai: só vale o que vem entre <msg>, e relatório é barrado.
   // Se não vier mensagem boa, pede de novo uma vez (sem ferramentas); se ainda falhar, não manda nada e chama a equipe.
@@ -276,7 +278,7 @@ export async function respondeCliente(conversa_id: string) {
   let partes = boas(r.texto)
   if (!partes.length) {
     const r2 = await comFerramentas(regras(neg), `CONVERSA:\n${hist}\n\nTua resposta anterior não foi uma mensagem pro cliente. Ela vai DIRETO pro WhatsApp do cliente: escreve só o que tu dirias pra ele, em 1 ou 2 mensagens, cada uma entre <msg> e </msg>. Não conta o que tu fez nem fala do sistema.`, [], 1,
-      { modelo: process.env.MAIA_MODELO_CLIENTE || 'claude-haiku-5-5', uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
+      { modelo: modeloIA, uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
     partes = boas(r2.texto)
   }
   // 08/11 (teste completo): confere o tom do negócio antes de mandar (fora do tom: reescreve; quase nunca acontece aqui)
@@ -338,7 +340,7 @@ export async function respondeCliente(conversa_id: string) {
   }
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano }
+  return { mensagens: [...enviadas, ...(passouExtra ? [passouExtra] : []), ...(diaExtra ? [diaExtra] : []), ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso, humano: ctx.humano, modelo: modeloIA, refez }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
