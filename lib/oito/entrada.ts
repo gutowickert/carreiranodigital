@@ -23,7 +23,8 @@ export function textoDe(m: any) {
 
 // m: a mensagem no formato da Meta; imagem: {id} da Meta ou {buf, mime} já baixada (simulação; 06/11: pode ser vídeo, na demo da Maia)
 export async function recebe(m: any, nome: string | null, arquivo?: { buf: Buffer; mime: string }) {
-  const imagem = arquivo && !/^video\//.test(arquivo.mime) ? arquivo : undefined
+  // 08/11: o arquivo da simulação pode ser imagem, vídeo ou áudio (só a imagem entra como imagem)
+  const imagem = arquivo && /^image\//.test(arquivo.mime) ? arquivo : undefined
   if (await db.um('wa_msgs', { wamid: m.id })) return null   // a Meta repete eventos
   const cv = await conversaDe(m.from, { nome })
   if (ehSimulado(cv.telefone) && !cv.simulado) { await db.atualiza('wa_conversas', { id: cv.id }, { simulado: true }); cv.simulado = true }
@@ -60,8 +61,10 @@ export async function recebe(m: any, nome: string | null, arquivo?: { buf: Buffe
       texto = texto.replace('(mandou um vídeo)', `(mandou o vídeo #${midias.length})`)
     } catch (e: any) { texto += ' [o vídeo não pôde ser baixado]' }
   }
-  if (ehMaia && (m.type === 'audio' || m.type === 'voice') && m.audio?.id) {
-    try { const { buf, mime } = await baixaMidia(m.audio.id); const t = await transcreve(buf, mime); if (t) texto = '(áudio) ' + t } catch {}
+  // 08/11: na simulação o áudio já vem junto (arquivo); no WhatsApp de verdade, pelo id da Meta
+  const audioSim = arquivo && /^audio\//.test(arquivo.mime) ? arquivo : undefined
+  if (ehMaia && (m.type === 'audio' || m.type === 'voice') && (m.audio?.id || audioSim)) {
+    try { const { buf, mime } = audioSim || await baixaMidia(m.audio.id); const t = await transcreve(buf, mime); if (t) texto = '(áudio) ' + t } catch {}
   }
   await db.insere('wa_msgs', { conversa_id: cv.id, autor: 'cliente', tipo: m.type, texto, wamid: m.id, status: 'recebido' }).catch(() => null)
   const agora = new Date(), sair = SAIR.has(texto.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, ''))
