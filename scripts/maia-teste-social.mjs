@@ -131,8 +131,11 @@ const passado = new Date(Date.now() - 3600e3).toISOString()
 const JPG = 'https://exemplo.supabase.co/storage/v1/object/sign/maia/x/foto1.jpg?token=a'
 confere(/JPEG/.test(await falha(() => S.criaPost(neg.id, { quando: passado, tipo: 'foto', midias: [{ url: 'https://x/a.png' }], legenda: 'oi' }))), 'foto PNG é recusada (o Instagram só aceita JPEG)')
 confere(/reels leva 1 vídeo/.test(await falha(() => S.criaPost(neg.id, { quando: passado, tipo: 'reels', midias: [{ url: JPG }], legenda: 'oi' }))), 'reels sem vídeo é recusado')
-const essencial = await db.insere('negocios', { nome: 'Essencial (teste)', plano: 'essencial', dono_whatsapp: '5500077779002' })
-confere(/plano Completa/.test(await falha(() => S.criaPost(essencial.id, { quando: passado, tipo: 'foto', midias: [{ url: JPG }], legenda: 'oi' }))), 'social media só no plano Completa')
+// 08/11: plano único: a social media vale também pro negócio marcado "essencial" (antigo); só a Maia Gestora não tem
+const essencial = await db.insere('negocios', { nome: 'Essencial antigo (teste)', plano: 'essencial', dono_whatsapp: '5500077779002' })
+confere(!/Gestora|plano/.test(String(await falha(() => S.criaPost(essencial.id, { quando: passado, tipo: 'foto', midias: [{ url: JPG }], legenda: 'oi' })))), 'plano único: o negócio marcado "essencial" também tem social media')
+const gestao = await db.insere('negocios', { nome: 'Gestora (teste)', plano: 'gestao', dono_whatsapp: '5500077779003' })
+confere(/Gestora/.test(await falha(() => S.criaPost(gestao.id, { quando: passado, tipo: 'foto', midias: [{ url: JPG }], legenda: 'oi' }))), 'a Maia Gestora (só leitura) não tem social media')
 
 let foto = await S.criaPost(neg.id, { quando: passado, tipo: 'foto', midias: [{ url: JPG }], legenda: 'Copo térmico com a foto de quem tu ama. Lajeado e região.', tema: 'presente', formato: 'produto', objetivo: 'venda' })
 let pc = await db.um('pecas', { id: foto.detalhe.peca_id })

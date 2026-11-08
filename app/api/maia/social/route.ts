@@ -1,4 +1,4 @@
-// Maia: a social media do plano Completa (06/11), pro painel da equipe (senha em x-senha, igual à operação).
+// Maia: a social media (06/11; desde 08/11 faz parte do plano único de R$ 997), pro painel da equipe (senha em x-senha, igual à operação).
 //   GET  ?acao=agenda|resultados|analise|link|capi&negocio=<id>   (link: &rede=instagram|facebook)
 //   POST {acao, ...}: criar_post {negocio_id, quando, tipo, midias:[{url|caminho, tipo}], legenda, tema, formato, objetivo, redes}
 //        aprovar_equipe {post_id} · aprovar_dono {post_id} (pra teste; o dono de verdade dá o 👍 no WhatsApp)

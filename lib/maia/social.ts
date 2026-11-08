@@ -1,4 +1,4 @@
-// Maia: social media do plano Completa (06/11). Ela posta no Instagram e no Facebook do negócio e lê os resultados.
+// Maia: social media (06/11; desde 08/11 faz parte do plano único de R$ 997). Ela posta no Instagram e no Facebook do negócio e lê os resultados.
 //   a) agenda: cada post = uma PEÇA (maia_pecas, tipo 'post' pra foto/carrossel e 'video' pra reels) + o registro da agenda em
 //      maia_eventos 'social_post' (detalhe: peca_id, quando, tipo, midias, tema, formato, objetivo, redes, status, ids da Meta).
 //      A legenda é o texto da peça: o ajuste do dono ou da equipe já vale pra publicação.
@@ -87,7 +87,8 @@ async function salva(post: any, mudanca: any) {
 export async function criaPost(negocio_id: string, d: { quando: string; tipo: TipoPost; midias: Midia[]; legenda: string; tema?: string; formato?: string; objetivo?: string; redes?: Rede[]; por?: string }) {
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
-  if (neg.plano !== 'completa') throw new Error('social media é do plano Completa')
+  // 08/11: plano único, a social media vale pra todo negócio da Maia ('essencial' antigo também); só a Maia Gestora (só leitura) não tem
+  if (neg.plano === 'gestao') throw new Error('social media não faz parte da Maia Gestora (plano gestao)')
   if (!['foto', 'carrossel', 'reels'].includes(d.tipo)) throw new Error('tipo tem que ser foto, carrossel ou reels')
   const quando = quandoIso(d.quando)
   if (!quando) throw new Error('data/hora inválida (ex.: 2026-11-10T18:00)')

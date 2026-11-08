@@ -238,7 +238,7 @@ async function criaPedido(cv: any, mx: any, boas: Vista[], vids: { path: string;
   }
   const neg = await db.insere('negocios', {
     nome: e.negocio || `${primeiro(lead) || lead} (demonstração)`, nicho: e.nicho || null, cidade: e.cidade || null,
-    regiao: e.cidade ? `${e.cidade} e região` : null, dono_nome: lead, dono_whatsapp: null, status: 'pausado', plano: 'essencial',
+    regiao: e.cidade ? `${e.cidade} e região` : null, dono_nome: lead, dono_whatsapp: null, status: 'pausado', plano: 'completa',
     contexto: { produto: e.produto || null, preco: e.preco || null, publico: e.publico || null, como_compra: e.como_compra || null, resumo: mx.resumo || null, demo },
   })
   await salvaMaia(cv.id, { amostra: neg.id })

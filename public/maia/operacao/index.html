@@ -1091,7 +1091,7 @@ function pintaCart(cart){
       var d=cart.por[n.id]||{}, sd=cart.saude[n.id], nm=d.num7||{}, na=d.numAnt||{};
       var rec=dias.map(function(dd){ return (d.leads||[]).reduce(function(s2,l){ return s2+(l.ganho_em&&chaveDia(l.ganho_em)===dd?(Number(l.valor)||0):0); },0); });
       var ret=nm.retorno!=null?'<b>'+real(nm.retorno)+'</b><small>por R$ 1</small>':'<span class="vazio-n" title="sem investimento na semana">—</span>';
-      return '<tr data-href="#negocio/'+esc(n.id)+'"><td><a href="#negocio/'+esc(n.id)+'" class="tn"><span class="av">'+inicial(n.nome)+'</span><span><b>'+esc(n.nome)+'</b><small>'+esc([n.nicho,n.cidade].filter(Boolean).join(' · ')||('plano '+(n.plano||'essencial')))+'</small></span></a></td>'+
+      return '<tr data-href="#negocio/'+esc(n.id)+'"><td><a href="#negocio/'+esc(n.id)+'" class="tn"><span class="av">'+inicial(n.nome)+'</span><span><b>'+esc(n.nome)+'</b><small>'+esc([n.nicho,n.cidade].filter(Boolean).join(' · ')||((n.plano==='gestao'?'Maia Gestora':'plano único')))+'</small></span></a></td>'+
         '<td><span class="saude '+(sd.nivel||'')+'"><i></i>'+(SAUDE_NOME[sd.nivel]||'—')+'</span><small class="rz">'+(sd.rz.length?esc(sd.rz[0].txt)+(sd.rz.length>1?' +'+(sd.rz.length-1):''):'tudo certo')+'</small></td>'+
         '<td class="nm" data-r="Contatos">'+inteiro(nm.leads_novos||0)+'</td><td class="nm" data-r="Vendas">'+inteiro(nm.ganhos||0)+'</td>'+
         '<td class="nm" data-r="Receita">'+realCurto(nm.receita||0)+' '+tend(nm.receita||0,na.receita||0)+'</td><td class="nm" data-r="Investido">'+(nm.gasto?realCurto(nm.gasto):'<span class="vazio-n">—</span>')+'</td>'+
@@ -1250,7 +1250,7 @@ function telaNegocios(abrirNovo){
 }
 function cardNeg(n,cart){
   var sd=cart.saude[n.id]||{nivel:'',rz:[]}, d=cart.por[n.id]||{}, nm=d.num7||{};
-  var sub=[n.nicho,n.cidade,'plano '+(n.plano||'essencial')].filter(Boolean).join(' · ');
+  var sub=[n.nicho,n.cidade,(n.plano==='gestao'?'Maia Gestora':'plano único')].filter(Boolean).join(' · ');
   return '<a class="lin" href="#negocio/'+esc(n.id)+'"><span class="cor '+(sd.nivel||'')+'"></span>'+
     '<span style="min-width:0"><span class="t"><span>'+esc(n.nome)+'</span>'+chip(SAUDE_NOME[sd.nivel]||'—',sd.nivel||'')+'</span>'+
     '<span class="sub" style="display:block">'+esc(sub)+'</span>'+
@@ -1265,7 +1265,7 @@ function formNovo(){
     cmp('regiao','Região (entra no anúncio só quando ajuda)','text','Ex.: Lajeado e região')+
     cmp('dono_nome','Nome do dono','text','Ex.: Carla Souza')+
     cmp('dono_whatsapp','WhatsApp do dono *','tel','Ex.: 51 99999-0000',true)+
-    '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial">Essencial</option><option value="completa">Completa</option></select></div>'+
+    '<div class="campo"><label>Plano</label><p style="margin:10px 0 0;font-size:14px;color:var(--text-2)">Plano único: R$ 997/mês, com tudo e 1.000 conversas por mês</p><input type="hidden" name="plano" value="completa"></div>'+
     cmp('verba_dia','Verba por dia (R$)','number','Ex.: 20')+
     cmp('ad_account_id','ID da conta de anúncio','text','act_123…')+
     cmp('page_id','ID da página','text','1234…')+
@@ -1322,7 +1322,7 @@ function pintaCabNeg(n,r){
   function c(v,t){ return '<div><b>'+v+'</b><span>'+t+'</span></div>'; }
   var nums = r==null ? [1,2,3,4,5].map(function(){return '<div><div class="esq" style="height:40px"></div></div>';}).join('')
     : c(r.receita!=null?'<span class="rs">R$</span>'+numBr(r.receita):'—','receita em 30 dias')+c(inteiro(r.ganhos),'vendas')+c(inteiro(r.leads_novos),'contatos novos')+c(pct(r.conversao),'conversão')+c(r.custo_por_venda!=null?'<span class="rs">R$</span>'+numBr(r.custo_por_venda):'—','custo por venda');
-  box.innerHTML='<div class="neg-cab"><div class="t"><h1>'+esc(n.nome)+'</h1><p>'+esc([n.nicho,n.regiao||n.cidade,n.dono_nome?'dono: '+n.dono_nome:null,'plano '+(n.plano||'essencial'),n.verba_dia?'verba '+real(n.verba_dia)+'/dia':null].filter(Boolean).join(' · '))+'</p></div>'+
+  box.innerHTML='<div class="neg-cab"><div class="t"><h1>'+esc(n.nome)+'</h1><p>'+esc([n.nicho,n.regiao||n.cidade,n.dono_nome?'dono: '+n.dono_nome:null,(n.plano==='gestao'?'Maia Gestora':'plano único'),n.verba_dia?'verba '+real(n.verba_dia)+'/dia':null].filter(Boolean).join(' · '))+'</p></div>'+
     '<div class="tags">'+st(NEG_ST,n.status)+wa+'</div></div><div class="faixa">'+nums+'</div>';
 }
 
@@ -1352,7 +1352,7 @@ function subDados(n,box){
       cmp('nome','Nome do negócio','text','',true,n.nome)+cmp('nicho','Nicho','text','',false,n.nicho||'')+
       cmp('cidade','Cidade','text','',false,n.cidade||'')+cmp('regiao','Região (entra no anúncio só quando ajuda)','text','',false,n.regiao||'')+
       cmp('dono_nome','Nome do dono','text','',false,n.dono_nome||'')+cmp('dono_whatsapp','WhatsApp do dono','tel','',false,n.dono_whatsapp||'')+
-      '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="essencial"'+(n.plano!=='completa'?' selected':'')+'>Essencial</option><option value="completa"'+(n.plano==='completa'?' selected':'')+'>Completa</option></select></div>'+
+      '<div class="campo"><label for="n-plano">Plano</label><select id="n-plano" name="plano"><option value="completa"'+(n.plano!=='gestao'?' selected':'')+'>Plano único (R$ 997)</option>'+(n.plano==='gestao'?'<option value="gestao" selected>Maia Gestora (só leitura)</option>':'')+'</select></div>'+
       cmp('verba_dia','Verba por dia (R$)','number','',false,n.verba_dia==null?'':n.verba_dia)+
       cmp('ad_account_id','ID da conta de anúncio','text','act_…',false,m.ad_account_id||'')+cmp('page_id','ID da página','text','',false,m.page_id||'')+
     '</div><div class="campo"><label><input type="checkbox" name="usa_cores"'+(cores.primaria?' checked':'')+'> Usar as cores da marca do cliente (sem marcar: neutro elegante, grafite e areia)</label><div class="cores">'+corCampo('cor_primaria','Primária',cores.primaria||'#1f1d1a')+corCampo('cor_secundaria','Destaque',cores.secundaria||'#d8c3a0')+corCampo('cor_texto','Texto',cores.texto||'#ffffff')+'</div></div>'+
@@ -1414,7 +1414,7 @@ function cardAtendimento(n){
     '<div class="campo"><label for="t-pessoa">Tratamento</label><select id="t-pessoa" name="pessoa">'+opt('voce','você',t.pessoa||'voce')+opt('tu','tu',t.pessoa||'voce')+'</select></div>'+
     '<div class="campo"><label for="t-gaucho">Jeito gaúcho</label><select id="t-gaucho" name="gaucho">'+opt('nao','não (neutro)',t.gaucho?'sim':'nao')+opt('sim','sim, leve',t.gaucho?'sim':'nao')+'</select></div>'+
     '<div class="campo"><label for="t-estilo">Estilo</label><select id="t-estilo" name="estilo">'+opt('leve','leve',t.estilo||'leve')+opt('formal','formal',t.estilo||'leve')+'</select></div>'+
-    '<div class="campo"><label for="t-franquia">Conversas por mês (vazio = a do plano)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" placeholder="'+(n.plano==='completa'?'1000 (Completa)':n.plano==='gestao'?'sem franquia (Gestora)':'500 (Essencial)')+'" value="'+esc(a.franquia||'')+'"></div>'+
+    '<div class="campo"><label for="t-franquia">Conversas por mês (vazio = a do plano)</label><input id="t-franquia" name="franquia" type="number" min="1" class="num" placeholder="'+(n.plano==='gestao'?'sem franquia (Gestora)':'1000 (plano único)')+'" value="'+esc(a.franquia||'')+'"></div>'+
     '<div class="campo"><label for="t-guarda">Guardar as conversas por (meses)</label><input id="t-guarda" name="guarda_meses" type="number" min="1" max="60" class="num" placeholder="12" value="'+esc(a.guarda_meses||'')+'"></div>'+
     '<div class="campo"><label for="t-priv">Aviso de privacidade na 1ª resposta</label><select id="t-priv" name="priv_ligado">'+opt('sim','sim',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+opt('nao','não',(a.privacidade&&a.privacidade.ligado===false)?'nao':'sim')+'</select></div>'+
     '<div class="campo"><label for="t-plink">Link da política (opcional)</label><input id="t-plink" name="priv_link" type="url" placeholder="https://…" value="'+esc((a.privacidade&&a.privacidade.link)||'')+'"></div>'+

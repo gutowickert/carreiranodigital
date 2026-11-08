@@ -1,4 +1,4 @@
-// Maia: o contador das conversas do mês, por negócio (07/11, piloto). A oferta promete 500 (Essencial) ou 1.000 (Completa) por mês.
+// Maia: o contador das conversas do mês, por negócio (07/11, piloto). A oferta promete 1.000 por mês (plano único, 08/11).
 //
 // O QUE CONTA COMO "CONVERSA": cada CONTATO diferente (telefone) que mandou pelo menos UMA mensagem pro WhatsApp do negócio
 // dentro do mês do calendário (do dia 1 às 0h até o fim do mês, no fuso do negócio; padrão Brasília). O mesmo cliente
@@ -7,8 +7,10 @@
 // e as retomadas que a Maia manda (só conta se o cliente escreveu).
 // Contato apagado a pedido (LGPD) continua contando no mês em que conversou (maia_eventos 'contato_apagado', sem dado pessoal).
 //
-// A franquia (08/11, decisão do Guto) vem do plano: Essencial 500, Completa 1.000 (lib/maia/oferta.ts); plano 'gestao' (Maia Gestora,
-// só leitura) não tem franquia e não conta. meta.atendimento.franquia troca por negócio. A equipe é avisada em 80% e 100%.
+// A franquia (08/11, decisão do Guto: plano único de R$ 997): 1.000 conversas por mês pra qualquer negócio (lib/maia/oferta.ts),
+// esteja ele marcado no banco como 'essencial' ou 'completa' (os dois valem como o plano único). meta.atendimento.franquia troca
+// por negócio. Só o plano 'gestao' (Maia Gestora, só leitura: a Maia não atende os clientes dele) continua sem franquia.
+// A equipe é avisada em 80% e 100%.
 // NUNCA bloqueia o atendimento.
 import { maiaDb as db } from './db'
 import { ehSimulado } from '@/lib/oito/wa'
@@ -16,13 +18,12 @@ import { fusoDo, horaLocal } from './horario'
 import { custoDoNegocio } from './custo'
 import { oferta } from './oferta'
 
-// a franquia do negócio: a do cadastro, se tiver; senão a do plano. null = sem franquia (plano gestao)
+// a franquia do negócio: a do cadastro, se tiver; senão a do plano único (1.000). null = sem franquia (plano gestao)
 export function franquiaDo(neg: any): number | null {
   const f = Number(neg?.meta?.atendimento?.franquia)
   if (f > 0) return Math.round(f)
   if (neg?.plano === 'gestao') return null
-  const o = oferta()
-  return neg?.plano === 'completa' ? o.conversas_completa : o.conversas_essencial
+  return oferta().conversas   // 'essencial', 'completa' ou sem plano: todos são o plano único
 }
 
 // o começo do mês (dia 1, 0h) no fuso do negócio, em UTC

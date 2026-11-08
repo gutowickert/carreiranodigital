@@ -126,7 +126,7 @@ export async function POST(req: Request) {
         if (!b.nome || !b.dono_whatsapp) return erro('nome e WhatsApp do dono são obrigatórios')
         const n = await db.insere('negocios', {
           nome: b.nome, nicho: b.nicho || null, cidade: b.cidade || null, regiao: b.regiao || (b.cidade ? b.cidade + ' e região' : null),
-          dono_nome: b.dono_nome || null, dono_whatsapp: fone(b.dono_whatsapp), plano: b.plano === 'completa' ? 'completa' : 'essencial',
+          dono_nome: b.dono_nome || null, dono_whatsapp: fone(b.dono_whatsapp), plano: 'completa',   // 08/11: plano único (R$ 997); no banco fica 'completa' (o 'essencial' antigo vale igual)
           contexto: b.contexto || {}, marca: b.marca || {}, meta: metaSeguro(b.meta, null), verba_dia: b.verba_dia || null,
         })
         await db.evento('negocio_criado', n.id, { por })
@@ -293,6 +293,8 @@ export async function POST(req: Request) {
           aviso: (await import('@/lib/maia/lgpd')).avisoPrivacidade({ nome: 'Negócio Teste', ...neg }), ja_avisa: (await import('@/lib/maia/lgpd')).respostaJaAvisa(t),
           voz_ligada: (await import('@/lib/maia/voz')).vozLigada(), tira_nome: b.nome ? (await import('@/lib/maia/lgpd')).tiraNome(String(b.nome), b.outros || []).troca(t) : null,
           pergunta_preco: at.perguntaPreco(t), preco_antes: (await import('@/lib/maia/preco')).precoAntesDoValor(t),
+          // 08/11: plano único (a oferta da demonstração e os números dela)
+          oferta: (await import('@/lib/maia/oferta')).oferta(), oferta_texto: (await import('@/lib/maia/oferta')).textoOferta(),
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
