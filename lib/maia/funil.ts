@@ -52,8 +52,12 @@ export async function mudaEtapa(lead: any, etapa: Etapa, autor: Autor, extra: { 
   if (etapa === 'ganho') return ganhou(lead, extra.valor ?? lead.valor, extra.produto, autor)
   if (etapa === 'perdido') return perdeu(lead, extra.resumo || 'sem motivo', autor)
   const campos: any = { etapa, ...(extra.resumo ? { resumo: extra.resumo } : {}), ...(extra.produto ? { produto: extra.produto } : {}), ...(extra.valor != null ? { valor: extra.valor } : {}) }
+  // 08/11 (teste completo, #12): reabrir um perdido (equipe, dono ou a correção na mesma resposta) limpa a marca de perda e o
+  // motivo: ele sai dos "perdidos" dos números e do painel na hora
+  const reabriu = lead.etapa === 'perdido'
+  if (reabriu) { campos.perdido_em = null; campos.motivo_perda = null }
   const [l] = await db.atualiza('leads', { id: lead.id }, campos)
-  if (lead.etapa !== etapa) await marca(lead, 'etapa', autor, { de: lead.etapa, para: etapa })
+  if (lead.etapa !== etapa) await marca(lead, reabriu ? 'reaberto' : 'etapa', autor, { de: lead.etapa, para: etapa, ...(reabriu ? { detalhe: { motivo_antes: lead.motivo_perda || null } } : {}) })
   return l
 }
 

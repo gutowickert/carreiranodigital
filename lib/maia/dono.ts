@@ -96,7 +96,7 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'novo_contato', description: 'Registra um contato que chegou por fora (indicação, loja, Instagram) pra entrar no funil.',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, produto: { type: 'string' }, origem: { type: 'string', enum: ['anuncio', 'organico', 'indicacao', 'dono', 'outro'] }, etapa: { type: 'string', enum: ['novo', 'conversando', 'interessado', 'proposta'] } }, required: ['nome'] },
       roda: async (q) => { const l = await novoLead(neg.id, q, 'dono'); if (q.etapa && q.etapa !== 'novo') await mudaEtapa(l, q.etapa as Etapa, 'dono'); return { ok: true, lead: l.id } } },
-    { name: 'mudar_etapa', description: 'Muda a etapa de um contato no funil (conversando, interessado, proposta).',
+    { name: 'mudar_etapa', description: 'Muda a etapa de um contato no funil (conversando, interessado, proposta). Também REABRE um contato perdido ("pode reabrir a Marina"): a perda sai dos números.',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, valor: { type: 'number' }, produto: { type: 'string' } }, required: ['etapa'] },
       roda: async (q) => { const l = await lead(q); if (!l) return { erro: 'não achei esse contato' }; await mudaEtapa(l, q.etapa, 'dono', { valor: q.valor, produto: q.produto }); return { ok: true } } },
     { name: 'listar_contatos', description: 'Os contatos do funil, filtrando por etapa. Bom pra "quem tá em aberto?" ou "quem eu preciso chamar?".',

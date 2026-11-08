@@ -70,7 +70,12 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
-type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string }
+type Ctx = { humano: boolean; comprovante?: boolean; textoCliente?: string; perdeuAgora?: boolean }
+
+// 08/11 (teste completo, #12): o cliente recusou com todas as letras? (só aí vale "perdido")
+export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|pedir|fechar|precisar)|preciso mais|tenho (mais )?interesse|me interessa|vai dar|da pra mim|compensa|obrigad[oa]?,? (nao|mas nao))|desist\w*|deixa (pra la|quieto)|esquece|comprei (em outr|no concorrente|la)|ja comprei|sem interesse|fica pra (proxima|outra))\b/.test(semAc(t))
+// pergunta "pro dono" que na verdade é recado interno (etapa, funil, engano)
+export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
 // passa a conversa pro dono: modo humano, sem retomada automática (quem fala agora é gente) e um aviso só pro dono
 async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: string, por: 'maia' | 'sistema') {
@@ -90,16 +95,21 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
       // 07/11 (juntou as duas correções): no teste a IA chamou venda_perdida e, na mesma resposta, mudar_etapa, e o perdido voltava pra "conversando".
       // Contato já ganho ou perdido não volta pelo atendimento (se o cliente voltar a falar, quem reabre é o dono ou a equipe)
-      roda: async (q) => { if (lead.etapa === 'ganho' || lead.etapa === 'perdido') return { ok: false, aviso: `esse cliente já está ${lead.etapa}: a etapa não muda` }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); return { ok: true } } },
+      // 08/11 (teste completo, #12): o perdido que ELA marcou nessa mesma resposta pode ser desfeito aqui (a correção é pela
+      // ferramenta, nunca um recado pro dono "marquei por engano, pode reabrir?")
+      roda: async (q) => { if (lead.etapa === 'ganho' || (lead.etapa === 'perdido' && !ctx.perdeuAgora)) return { ok: false, aviso: `esse cliente já está ${lead.etapa}: a etapa não muda` }; lead = await mudaEtapa(lead, q.etapa as Etapa, 'maia', q); ctx.perdeuAgora = false; return { ok: true } } },
     { name: 'venda_fechada', description: 'O cliente fechou: agendou e confirmou, pagou ou fez o pedido. Marca GANHO com o valor.',
       input_schema: { type: 'object', properties: { valor: { type: 'number' }, produto: { type: 'string' } }, required: ['produto'] },
       roda: async (q) => {
         // 07/11 (piloto): comprovante em foto não é venda confirmada: quem confere é o dono (ele já foi avisado)
         if (ctx.comprovante) { lead = await mudaEtapa(lead, 'proposta', 'maia', { produto: q.produto, valor: q.valor }); return { erro: 'o cliente mandou um comprovante: tu NÃO confirma pagamento. Diz que recebeu e que o dono confere e confirma. O dono já foi avisado.' } }
         lead = await ganhou(lead, q.valor, q.produto, 'maia'); const dcv = await conversaDoDono(neg); await mandaTexto(dcv, `Venda nova 💰 ${lead.nome || 'Cliente'}: ${q.produto}${q.valor ? ', R$ ' + q.valor : ''}.`); return { ok: true } } },
-    { name: 'venda_perdida', description: 'O cliente disse claramente que não vai comprar. Marca PERDIDO com o motivo (preço, comprou em outro lugar, não precisa mais, sem orçamento, fora da região).',
+    { name: 'venda_perdida', description: 'O cliente disse claramente que NÃO vai comprar ("não quero", "desisti", "comprei em outro lugar"). Marca PERDIDO com o motivo. Perguntar por algo que o negócio não faz NÃO é perda.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
-      roda: async (q) => { lead = await perdeu(lead, q.motivo, 'maia'); return { ok: true } } },
+      // 08/11 (teste completo, #12 Marina): só marca perdido se o CLIENTE recusou com todas as letras
+      roda: async (q) => {
+        if (!recusou(ctx.textoCliente || '')) return { erro: 'não marcado: o cliente não disse que não quer. Pergunta sobre algo que o negócio não faz NÃO é perda: diz o que tem e segue em conversando.' }
+        lead = await perdeu(lead, q.motivo, 'maia'); ctx.perdeuAgora = true; return { ok: true } } },
     { name: 'retomar_depois', description: 'O cliente pediu pra falar depois ("vou ver e te aviso", "semana que vem"). Agenda a retomada.',
       input_schema: { type: 'object', properties: { em_dias: { type: 'number' }, motivo: { type: 'string' } }, required: ['em_dias'] },
       roda: async (q) => { lead = await agendaFollowup(lead, new Date(Date.now() + q.em_dias * 86400e3).toISOString(), q.motivo); return { ok: true } } },
@@ -107,6 +117,9 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       input_schema: { type: 'object', properties: { pergunta: { type: 'string', description: 'a dúvida do cliente, curta' } }, required: ['pergunta'] },
       // 07/11 (piloto): a Maia promete um prazo ao cliente (horario.ts); a rotina lembra o dono em 1 h e avisa a equipe em 3 h
       roda: async ({ pergunta }) => {
+        // 08/11 (teste completo, #12): pergunta pro dono é só dúvida de CLIENTE. "Marquei por engano... pode reabrir o card?" é
+        // coisa do sistema: não vai pro dono nem fica pendente no painel dele
+        if (perguntaInterna(pergunta)) return { erro: 'isso não é dúvida do cliente, é coisa do sistema: não vai pro dono. Se a etapa ficou errada, usa mudar_etapa.' }
         const prazo = prazoResposta(neg)
         const dcv = await conversaDoDono(neg)
         await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${pergunta}. Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
@@ -131,7 +144,9 @@ COMO ATENDER:
   · tirando dúvida → mudar_etapa conversando; quer, falta decidir → interessado; recebeu preço, orçamento ou marcou horário/visita → proposta (com o valor, se tiver).
   · já sabe o preço e disse que quer ("quero 1", "fechado", "vou comprar o de 890", "pode fazer"), faltando só pagar, mandar a foto ou combinar entrega/horário → proposta com o valor (não é mais "interessado").
   · venda_fechada SÓ quando a venda aconteceu de verdade: pagou, confirmou o pedido com pagamento, ou é serviço agendado E pago. "Vou passar aí comprar" ou "quero agendar" é proposta: quem confirma a venda depois é o dono.
+  · só perguntou o preço → conversando (proposta é quando ele já mostrou que quer: quantidade, dia, endereço).
   · o cliente disse que NÃO quer ("tá caro, não quero", "comprei em outro lugar", "não preciso mais") → venda_perdida com o motivo, e responde com educação deixando a porta aberta.
+  · perguntou por algo que o negócio não faz → diz que não faz, oferece o que tem e segue em conversando. Isso NÃO é perda (ele não disse que não quer).
   · "vou pensar", "te aviso", "semana que vem" → retomar_depois.
 - SEMPRE escreve a resposta pro cliente, mesmo quando usa ferramenta.
 - Nunca insiste depois de um não. Nunca promete o que o negócio não disse que faz.
@@ -206,14 +221,16 @@ export async function respondeCliente(conversa_id: string) {
     usadas.push('passar_para_o_dono (sistema)')
     if (!disse) { passouExtra = `Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`; await mandaTexto(cv, passouExtra) }
   }
+  let sistemaPerguntou = false
   // 07/11 (piloto): rede de segurança: prometeu confirmar e não perguntou pro dono? O sistema pergunta (o cliente não fica esperando à toa)
-  if (!ctx.humano && !ctx.comprovante && !usadas.includes('perguntar_ao_dono') && !usadas.includes('passar_para_o_dono') && /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(enviadas.join(' '))) {
+  if (!ctx.humano && !ctx.comprovante && !perguntouIA && !usadas.includes('passar_para_o_dono') && /\b(vou|vamos|deixa eu|preciso) (confirmar|verificar|checar|conferir|ver com)\b|\bconfirm(o|ar) com\b/i.test(enviadas.join(' '))) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
-    if (pergunta) { await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); usadas.push('perguntar_ao_dono (sistema)') }
+    if (pergunta) { const p = await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); if (p?.ok) { sistemaPerguntou = true; usadas.push('perguntar_ao_dono (sistema)') } }
   }
   // 08/11: perguntou pro dono e a resposta não deu o horário? O cliente nunca fica sem prazo: vai uma frase curta com ele
   let prazoExtra: string | null = null
-  if (usadas.some(u => u.startsWith('perguntar_ao_dono')) && !/até[^.?!]{0,25}\s(as|às) \d{1,2}h/i.test(enviadas.join(' '))) {
+  // 08/11 (teste completo, #12): só quando a pergunta foi MESMO pro dono (pergunta recusada pela ferramenta não promete retorno)
+  if ((perguntouIA || sistemaPerguntou) && !/até[^.?!]{0,25}\s(as|às) \d{1,2}h/i.test(enviadas.join(' '))) {
     prazoExtra = `Te dou o retorno ${prazoResposta(neg).texto}.`
     await mandaTexto(cv, prazoExtra)
   }
