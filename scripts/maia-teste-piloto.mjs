@@ -127,7 +127,7 @@ async function main() {
   const T6 = '5500044440006'
   r = await cliente(A.id, T6, 'Gabi', 'Vocês fazem cookie sem glúten? Quanto fica a caixa?')
   log('    Gabi: Vocês fazem cookie sem glúten? Quanto fica a caixa?\n    maia: ' + fala(r) + '  [' + ferr(r).join(', ') + ']')
-  anota(ferr(r).includes('perguntar_ao_dono'), 'o que não está na base: perguntou pro dono')
+  anota(ferr(r).some(f => f.startsWith('perguntar_ao_dono')), 'o que não está na base: perguntou pro dono (a IA ou a rede de segurança)')
   anota(/até[^.?!]{0,25}\s(as|às) \d{1,2}h/i.test(fala(r)), 'deu um prazo pro cliente ("até as Xh", "até amanhã às Xh")')
   await op('teste_pergunta_antiga', { negocio_id: A.id, horas: 4 })
   rot = await op('rodar_rotina', { relogio: hojeAs(15) })

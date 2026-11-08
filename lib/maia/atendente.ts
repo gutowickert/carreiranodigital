@@ -156,12 +156,18 @@ export async function respondeCliente(conversa_id: string) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
     if (pergunta) { await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); usadas.push('perguntar_ao_dono (sistema)') }
   }
+  // 08/11: perguntou pro dono e a resposta não deu o horário? O cliente nunca fica sem prazo: vai uma frase curta com ele
+  let prazoExtra: string | null = null
+  if (usadas.some(u => u.startsWith('perguntar_ao_dono')) && !/até[^.?!]{0,25}\s(as|às) \d{1,2}h/i.test(enviadas.join(' '))) {
+    prazoExtra = `Te dou o retorno ${prazoResposta(neg).texto}.`
+    await mandaTexto(cv, prazoExtra)
+  }
   if (aviso) await mandaTexto(cv, aviso)
   // a bola ficou com o cliente: se ele sumir, a retomada já está marcada
   lead = await db.um('leads', { id: lead.id })
   if (!ctx.humano && lead && !['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
   await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
-  return { mensagens: aviso ? [...enviadas, aviso] : enviadas, ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso }
+  return { mensagens: [...enviadas, ...(prazoExtra ? [prazoExtra] : []), ...(aviso ? [aviso] : [])], ferramentas: usadas, etapa: lead?.etapa, aviso_privacidade: !!aviso }
 }
 
 // a retomada de quem parou de responder: escrita pela IA, curta, sem pressão. Sem canal do negócio, vira lembrete pro dono.
