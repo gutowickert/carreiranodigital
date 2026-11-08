@@ -37,6 +37,8 @@ export function respostaPassou(t: string, perguntou = false): boolean {
   if (/\b(passar|passei|transferir|transferi|encaminhar|encaminhei)\b (voce|vc|te|o senhor|a senhora)\b[^.?!]{0,6}\b(pra|para|a|com)\b/.test(s)) return true
   if (/\b(uma pessoa|um atendente|uma atendente|alguem da (nossa )?(equipe|loja|empresa)|alguem de verdade|um humano)\b[^.?!]{0,25}\b(vai|ja vai|ira|responde|retorna|entra em contato|fala com)\b/.test(s)) return true
   if (!perguntou && /\b(o dono|a dona|o responsavel|a responsavel|a equipe)\b[^.?!]{0,12}\b(vai|ja vai|ira)\b[^.?!]{0,12}\b(cuidar|atender|entrar em contato|falar com|chamar)/.test(s)) return true
+  // 08/11 (reteste, #17): "Já encaminhei seu pedido de reembolso para o responsável"
+  if (!perguntou && /\b(passei|encaminhei|repassei|vou passar|vou encaminhar)\b[^.?!]{0,35}\b(para|pro|pra|ao)\b (o |a )?(responsavel|dono|dona|equipe|gerente)\b/.test(s)) return true
   return false
 }
 
