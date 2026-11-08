@@ -88,7 +88,7 @@ async function main() {
   const mBeto = (await msgsDe(cvBeto)).find(m => m.autor === 'cliente')
   anota(mBeto?.tipo === 'audio' && /^\(áudio\) Oi, vocês têm cookie de pistache/.test(mBeto.texto), 'áudio do cliente virou texto (transcrição) na conversa')
   anota((r?.respondeu?.mensagens || []).length > 0 && !r.respondeu.midia_falhou, 'a Maia respondeu o áudio')
-  anota(fs.existsSync(path.join(PASTA, 'arquivos', A.id, 'clientes', cvBeto.id)) && fs.readdirSync(path.join(PASTA, 'arquivos', A.id, 'clientes', cvBeto.id)).length === 1, 'o áudio ficou guardado na pasta do negócio (clientes/<conversa>)')
+  anota(fs.existsSync(path.join(PASTA, 'arquivos', A.id, 'clientes', cvBeto.id)) && fs.readdirSync(path.join(PASTA, 'arquivos', A.id, 'clientes', cvBeto.id)).filter(f => !f.startsWith('maia-')).length === 1, 'o áudio ficou guardado na pasta do negócio (clientes/<conversa>; a resposta em áudio da Maia, maia-*.ogg, fica junto)')
   anota(!tab('midias').some(m => m.negocio_id === A.id), 'o arquivo do cliente NÃO entrou na biblioteca de fotos dos anúncios')
 
   const T3 = '5500044440003'
@@ -189,10 +189,25 @@ async function main() {
   log('\n=== contador das conversas do mês')
   let uso = await ver('uso_mes', { negocio: A.id })
   const simA = new Set(tab('conversas').filter(c => c.negocio_id === A.id && c.canal === 'cliente').map(c => c.telefone)).size
-  anota(uso.conversas === 0 && uso.simuladas === simA && uso.franquia === 500, `simuladas contam à parte: ${uso.simuladas} simulada(s), ${uso.conversas} real(is), franquia ${uso.franquia} (Essencial)`)
-  // 08/11: franquia pelo plano: Completa 1.000, Gestora sem franquia
+  anota(uso.conversas === 0 && uso.simuladas === simA && uso.franquia === 1000, `simuladas contam à parte: ${uso.simuladas} simulada(s), ${uso.conversas} real(is), franquia ${uso.franquia} (negócio marcado "essencial" no banco = plano único)`)
+  // 08/11 (plano único de R$ 997): 1.000 pra qualquer negócio ('essencial' antigo e 'completa'); Gestora sem franquia; a própria do negócio vale
   await op('atualizar_negocio', { id: B.id, plano: 'completa' })
-  anota((await ver('uso_mes', { negocio: B.id })).franquia === 1000, 'plano Completa: franquia de 1.000')
+  anota((await ver('uso_mes', { negocio: B.id })).franquia === 1000, 'plano único (marcado "completa"): franquia de 1.000')
+  await op('config_atendimento', { negocio_id: B.id, franquia: 250 })
+  anota((await ver('uso_mes', { negocio: B.id })).franquia === 250, 'franquia própria do negócio (meta.atendimento.franquia) continua valendo: 250')
+  await op('config_atendimento', { negocio_id: B.id, franquia: null })
+  anota((await ver('uso_mes', { negocio: B.id })).franquia === 1000, 'sem franquia própria, volta pra 1.000')
+  const Cn = await op('criar_negocio', { nome: 'Negócio novo (teste plano único)', dono_whatsapp: '5500077779099', plano: 'essencial' })
+  anota(Cn.plano === 'completa' && (await ver('uso_mes', { negocio: Cn.id })).franquia === 1000, 'negócio novo nasce no plano único ("completa", mesmo pedindo "essencial") com 1.000 conversas')
+  // a oferta da demonstração: um plano só, R$ 997, 1º mês R$ 498,50, 1.000 conversas, social media dentro
+  const of = await op('teste_funcoes', { texto: 'x' })
+  const ot = of.oferta_texto || ''
+  anota(of.oferta?.preco === 997 && of.oferta?.conversas === 1000 && ot.includes('R$ 997/mês') && ot.includes('R$ 498,50') && ot.includes('1.000 conversas') && /8 posts e 4 vídeos/.test(ot) && !/697|348|Essencial|Completa|500 conversas/.test(ot),
+    'oferta da demonstração: plano único de R$ 997 (1º mês R$ 498,50), 1.000 conversas e social media; sem R$ 697 nem dois planos')
+  const site = await (await fetch(URL_ + '/maia/index.html')).text()
+  anota(!/697|348,50|Essencial|>Completa</.test(site) && (site.match(/class="plano unico"/g) || []).length === 1 && site.includes('R$ 997') && site.includes('498,50') && site.includes('1.000 conversas por mês'),
+    'site /maia: um cartão só (R$ 997, 1º mês R$ 498,50, 1.000 conversas), nenhum R$ 697')
+  anota(!site.includes('maia-rosto.webp" alt="Rosto da Maia"') && /Maia · trabalhando agora/.test(site) && /Tudo pelo WhatsApp/.test(site), 'site /maia: sem a foto pequena repetida no "Prazer, Maia" (o selo continua) e com o "Tudo pelo WhatsApp"')
   await op('atualizar_negocio', { id: B.id, plano: 'gestao' })
   const usoG = await ver('uso_mes', { negocio: B.id })
   anota(usoG.franquia === null && usoG.pct === null, 'plano Gestora: sem franquia')
@@ -495,17 +510,31 @@ async function pendencias0811() {
   const mpv = await msgsDe(await cvDe(Pv.id, '5500044440306'))
   log('    Nina: Quanto é o exame de vista?\n    maia: ' + fala(rpv))
   anota(mpv.filter(m => m.autor === 'maia' && /LGPD|privacidade/i.test(m.texto)).length === 1 && !mpv.some(m => /Um aviso rápido/.test(m.texto)), 'P5. na conversa, o aviso de privacidade saiu 1 vez (o próprio do negócio) e o padrão não')
-  // resposta em áudio (ElevenLabs): desligada por padrão; com MAIA_VOZ_RESPOSTA=1 no servidor, gera o arquivo .ogg
+  // resposta em áudio (ElevenLabs): desde 08/11 LIGADA por padrão quando há ELEVENLABS_API_KEY (MAIA_VOZ_RESPOSTA=0 desliga)
   const tv = await op('teste_voz', { negocio_id: S.id, texto: 'Oi! A caixa com 6 cookies sai R$ 45. Quer que eu anote o seu pedido?' }).catch(e => ({ erro: e.message }))
   const arqV = tv.caminho ? path.join(PASTA, 'arquivos', tv.caminho) : ''
   anota(arqV && fs.existsSync(arqV) && fs.statSync(arqV).size > 1000 && /\.ogg$/.test(arqV), 'P5. ElevenLabs: o áudio da resposta foi gerado e guardado (' + (arqV ? path.basename(arqV) + ', ' + fs.statSync(arqV).size + ' bytes' : tv.erro || 'sem arquivo: falta ELEVENLABS_API_KEY?') + ')')
   const voz = (await fn('x')).voz_ligada
+  if (process.env.ELEVENLABS_API_KEY && process.env.MAIA_VOZ_RESPOSTA !== '0') anota(voz === true, 'P5. voz ligada por padrão: com a chave da ElevenLabs e sem MAIA_VOZ_RESPOSTA, a voz está ligada')
   const ra = await semIA(cliente(S.id, '5500044440307', 'Otto', '', { arquivo_b64: b64(), mime: 'audio/ogg', simulado: { transcricao: 'Oi, quanto é a caixa com 6 cookies?' } }))
   const mOt =await msgsDe(await cvDe(S.id, '5500044440307'))
   if (!voz) anota(!ra?.respondeu?.audio && mOt.some(m => m.autor === 'maia' && m.tipo === 'texto' && /45/.test(m.texto)) && !mOt.some(m => m.autor === 'maia' && m.tipo === 'audio'), 'P5. voz desligada (padrão): o cliente mandou áudio e a resposta foi em texto')
   else {
     const arq = ra?.respondeu?.audio ? path.join(PASTA, 'arquivos', ra.respondeu.audio) : ''
     anota(arq && fs.existsSync(arq) && fs.statSync(arq).size > 1000 && mOt.some(m => m.autor === 'maia' && m.tipo === 'audio' && /45/.test(m.texto)), 'P5. voz ligada: a resposta virou áudio (ElevenLabs) e o arquivo foi gerado: ' + (arq ? path.basename(arq) + ' ' + (fs.existsSync(arq) ? fs.statSync(arq).size : 0) + ' bytes' : '-'))
+    const mAud = mOt.find(m => m.autor === 'maia' && m.tipo === 'audio')
+    anota(mAud && mAud.texto.startsWith('(áudio) ') && mAud.texto.length > 12 && !mOt.some(m => m.autor === 'maia' && m.tipo === 'texto' && m.texto === mAud.texto.slice(8)), 'P5. o texto do áudio ficou salvo na conversa ("' + (mAud?.texto || '').slice(0, 60) + '...") e não foi repetido por escrito')
+    // o cliente que ESCREVEU recebe texto, mesmo com a voz ligada
+    await semIA(cliente(S.id, '5500044440308', 'Téo', 'Oi, quanto é a caixa com 6 cookies?'))
+    const mTe = await msgsDe(await cvDe(S.id, '5500044440308'))
+    anota(mTe.some(m => m.autor === 'maia' && m.tipo === 'texto' && /45/.test(m.texto)) && !mTe.some(m => m.autor === 'maia' && m.tipo === 'audio'), 'P5. voz ligada, mas o cliente escreveu: a resposta foi em texto')
+    // o dono vê o que foi dito no painel dele (a conversa mostra o texto do áudio)
+    const lS = await op('link_painel_dono', { negocio_id: S.id })
+    const tS = new URL(lS.link).searchParams.get('t'), ipS = { 'x-real-ip': '10.2.2.' + Math.floor(Math.random() * 200) }
+    await fetch(URL_ + '/api/maia/painel', { method: 'POST', headers: { 'content-type': 'application/json', ...ipS }, body: JSON.stringify({ acao: 'entrar', t: tS }) })
+    const cvO = await cvDe(S.id, '5500044440307')
+    const pc = await (await fetch(URL_ + '/api/maia/painel?acao=conversa&id=' + cvO.id, { headers: { cookie: 'maia_dono=' + encodeURIComponent(tS), ...ipS } })).json().catch(() => ({}))
+    anota((pc.msgs || []).some(m => m.autor === 'maia' && m.tipo === 'audio' && /45/.test(m.texto || '')), 'P5. no painel do dono, a resposta em áudio aparece com o que foi dito')
   }
   // P6. o campo dos dias que o negócio abre tem tela no painel da equipe (o clique de verdade: scripts/maia-teste-tela-equipe.mjs)
   const htmlOp = await (await fetch(URL_ + '/maia/operacao/')).text()

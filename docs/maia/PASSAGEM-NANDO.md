@@ -44,7 +44,7 @@ O que não deu pra confirmar no código ou nos documentos está marcado como **c
                  │ Next.js na Vercel (www.carreiranodigital.com)                   │
                  │  lib/maia/*  ·  app/api/maia/*  ·  public/maia/* (site, painéis)  │
                  │  Anthropic (cache de prompt, custo anotado em maia_eventos uso_ia)│
-                 │  Deepgram (áudio)  ·  ElevenLabs (voz, só na demonstração)        │
+                 │  Deepgram (áudio)  ·  ElevenLabs (voz: demo e resposta em áudio)  │
                  └───────▲──────────────────────────▲────────────────────▲────────┘
                          │                          │                    │
        Supabase da escola (maia_* + bucket "maia")   │   pg_cron "maia-rotina" (5 min de cada hora)
@@ -112,7 +112,7 @@ Ajuste da equipe (`ajuste_equipe`) ou do dono (`ajuste_dono`) refaz e volta pra 
 | `lib/maia/meta.ts` | campanha pausada, ativar, pausar, ler números |
 | `lib/maia/conversoes.ts` | CAPI de mensagens (LeadSubmitted, Purchase) |
 | `lib/maia/chamadas.ts` | as 500 chamadas da Marketing API |
-| `lib/maia/social.ts` | social media do plano Completa |
+| `lib/maia/social.ts` | social media (faz parte do plano único desde 08/11; só a Gestora não tem) |
 | `lib/maia/rotina.ts` | o que roda de hora em hora |
 | `lib/maia/wa-negocio.ts` | WhatsApp do negócio; `atendimentoLigado()` |
 | `lib/maia/conectar.ts` | link assinado de 14 dias pra conectar |
@@ -190,7 +190,7 @@ Chave nova ou trocada só vale depois de um novo deploy (Vercel → Deployments 
 | `RECADO_NTFY_TOPICO` | avisos no celular do Guto | existe |
 | `DEEPGRAM_API_KEY` | áudio do dono, do cliente e legendas | existe |
 | `FB_ADS_TOKEN` (ou `MAIA_ADS_TOKEN`) | Marketing API (campanha e leitura) | existe (`FB_ADS_TOKEN`) |
-| `ELEVENLABS_API_KEY` | voz da demonstração | **conferir** (esperava o sim do Guto desde 02/11) |
+| `ELEVENLABS_API_KEY` | voz da demonstração e, desde 08/11, da resposta em áudio pro cliente que manda áudio (ligada por padrão quando a chave existe) | **conferir** (esperava o sim do Guto desde 02/11) |
 | `MAIA_MODELO_CLIENTE` | modelo do atendimento. Padrão no código: `claude-haiku-5-5`. **Recomendação no piloto: `claude-sonnet-5-5`** | **conferir / pôr** |
 | `MAIA_MODELO` | dono e peças (padrão `claude-sonnet-5-5`) | opcional |
 | `MAIA_MODELO_ANALISE` | análise do mês do social (padrão `claude-opus-5-5`) | opcional |
@@ -210,7 +210,7 @@ Chave nova ou trocada só vale depois de um novo deploy (Vercel → Deployments 
 | `MAIA_MODELO_MISTO` | (branch `maia-pendencias`, T11) modelo misto no atendimento. **Padrão ligado**; `0` desliga (aí tudo vai no `MAIA_MODELO_CLIENTE`) | opcional |
 | `MAIA_MODELO_CLIENTE_FORTE` | (T11) o modelo que refaz a decisão de venda/passagem. Padrão `claude-sonnet-5-5` | opcional |
 | `MAIA_LIMITE_RESPOSTAS` | (T12) respostas da Maia por conversa por dia antes de passar pro dono. Padrão 40 (por negócio: `meta.atendimento.limite_respostas`) | opcional |
-| `MAIA_VOZ_RESPOSTA` | (T12) `1`: responde em áudio (ElevenLabs) quem mandou áudio. Precisa de `ELEVENLABS_API_KEY`. Voz: `meta.atendimento.voz_id` ou `MAIA_VOZ_ID` | **desligado** (decisão do Guto) |
+| `MAIA_VOZ_RESPOSTA` | (T12) resposta em áudio (ElevenLabs) pra quem mandou áudio. **Desde 08/11 vem ligada por padrão** sempre que `ELEVENLABS_API_KEY` existe; `0` desliga. Voz: `meta.atendimento.voz_id`, senão `MAIA_VOZ_ID` (não existe na Vercel), senão a padrão `5QMOJHwbSpbG7akM67Nn` | **não pôr** (ligado por padrão; só `0` em emergência) |
 | `MAIA_SUPABASE_URL`, `MAIA_SUPABASE_SERVICE_KEY` | (T16) banco próprio da Maia. As duas juntas; sem elas usa o banco da escola | **não pôr ainda** (só na troca do T16) |
 
 Com o modelo misto ligado (padrão), o `MAIA_MODELO_CLIENTE` volta a ser o modelo BARATO (deixar vazio = haiku). Se ficar `claude-sonnet-5-5`, o misto não faz nada (os dois modelos iguais).
@@ -299,6 +299,7 @@ SO_PENDENCIAS=1 node scripts/maia-teste-piloto.mjs http://localhost:3195 teste12
 Resultados em 08/11: **45/45, 35/35, 61/61**. O `maia-teste.mjs` roda a rotina "às 14h de hoje" (senão, à noite, a retomada não sai).
 Na branch `maia-correcoes` o piloto foi a **99/99** (com `FOTOS=<pasta com fotos>`). Na branch `maia-pendencias` ele ganhou as conferências P1 a P8 (uma ou mais por pendência). Com `FOTOS=`, antes de a IA ficar sem crédito: **111/112** (a que faltou era a própria conferência nova do custo, corrigida depois). Ver a seção 5.0.
 **08/11 à noite, com as três frentes juntas (correções + pendências + Gestora), IA de verdade, pastas limpas:** `maia-teste` **45/45**, `painel-dono` **44/44**, `piloto` com `FOTOS=` **137/137**, `tela-equipe` **14/14**, `gestora` com servidor **49/49** (19 das regras + 30 de ponta a ponta). Valor antes do preço: 8 perguntas de preço em 2 negócios, duas rodadas: 7/8 e 8/8, com a conferência depois da resposta (`lib/maia/preco.ts`; `testes/maia-08-11-reteste/preco.mjs`). Reteste das 20 conversas (r6): **20/20**, conteúdo 6/6 texto e 6/6 arte (`testes/maia-08-11-reteste/`).
+**08/11, depois do plano único, da voz ligada por padrão e do site "tudo pelo WhatsApp" (branch `maia-correcoes`), IA e ElevenLabs de verdade, pastas limpas:** `maia-teste` **45/45**, `painel-dono` **44/44**, `piloto` com `FOTOS=testes/maia-08-11-reteste/midias` **147/147** (10 conferências novas: plano único na oferta e no site, franquia de 1.000, franquia própria, negócio novo no plano único, voz ligada por padrão, texto do áudio salvo, cliente que escreve recebe texto, o dono vê o áudio no painel), `tela-equipe` **14/14**, extra `social` **50/50**. Rodar o teste com `node --env-file=.env.local` faz o piloto conferir também a voz ligada por padrão.
 
 ### 3.4 Riscos conhecidos
 
@@ -528,13 +529,13 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 | `read_insights` | 1) Login com a Página. 2) Painel → resultados do post na Página. 3) O relatório pro dono |
 
 - **Passos de código:** aba "Social" em `public/maia/operacao` usando `/api/maia/social` (agenda, resultados, análise, criar post, aprovar). Chave própria por cliente (`meta.social_token` cifrado) via login; sem ela usa a do tráfego. Primeiro post real com `MAIA_SOCIAL_LIGADO=1` + `MAIA_META_REAL=1`.
-- **Enquanto não libera:** a Completa é vendida com a equipe postando (decisão de 08/11).
+- **Enquanto não libera:** o plano único (que inclui a social media) é vendido com a equipe postando (decisão de 08/11).
 - **Aceite:** 4 permissões aprovadas; 1º post publicado sozinho no dia marcado.
 
 ### T11 · Contador, custo e franquia · P1 · ✅ FEITO NO CÓDIGO (08/11, commit 3ec5ef0; modelo misto em 363e632)
 
 - Pronto na branch: card "Conversas do mês", `GET acao=uso_mes`, aviso em 80% e 100%, nunca bloqueia.
-- **Franquia por plano (decisão de 08/11):** `franquiaDo(neg)` em `lib/maia/uso.ts` usa a do negócio (`meta.atendimento.franquia`) se houver; senão Essencial 500, Completa 1.000, Gestora sem franquia. Valores em `lib/maia/oferta.ts` (`conversas_essencial`, `conversas_completa`; `MAIA_OFERTA` troca). Site `/maia` e oferta da demonstração já dizem 500 / 1.000.
+- **Franquia (decisão de 08/11, atualizada no mesmo dia com o plano único):** `franquiaDo(neg)` em `lib/maia/uso.ts` usa a do negócio (`meta.atendimento.franquia`) se houver; senão **1.000 pra qualquer negócio** (no banco, `essencial` e `completa` valem os dois como o plano único); só a Gestora (`gestao`) continua sem franquia. Valor em `lib/maia/oferta.ts` (`conversas`; `MAIA_OFERTA` troca, e o formato antigo com `completa`/`conversas_completa` continua funcionando). Site `/maia` e oferta da demonstração dizem 1.000.
 - **Modelo misto: ✅ feito (08/11, 363e632, `lib/maia/misto.ts`).** Haiku na resposta comum; mudar pra proposta, ganho, perdido ou passar pro dono é refeito no sonnet antes da ferramenta rodar; pedido de pessoa/reclamação/devolução vai direto pro sonnet. Ligado por padrão (`MAIA_MODELO_MISTO=0` desliga; `MAIA_MODELO_CLIENTE_FORTE` troca o modelo forte). Custo medido: ver a seção 5.0 (R$ 0,083 por conversa nas 8 de teste, contra R$ 0,038 só haiku e R$ 0,135 só sonnet).
 - Falta (N): conferir a tabela de preço, abaixo, e medir o custo real nas primeiras semanas (`GET acao=custo_ia`: `cliente_por_modelo`).
 - **Conferir a tabela de preço** (`MAIA_PRECOS`, `MAIA_DOLAR`) com a fatura da Anthropic no fim do mês.
@@ -553,7 +554,7 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 | Aviso de privacidade redundante | não repetir quando o negócio já tem aviso próprio no texto da base, e só uma vez por contato (conferir no piloto) | `lgpd.ts` |
 | Retomada só de negócio "ativo" no resumo | o resumo só sai pra `status=ativo`: no piloto, mudar à mão | `rotina.ts` |
 
-**Como ficou (08/11, 92d7d50):** tom nos anúncios já estava feito (`pecas.ts` usa o tom do negócio desde 055001c); nome e telefone viram `[apagado]` nos recados e nos `aviso_equipe` (o primeiro nome sozinho só sai se nenhum outro contato do negócio tem o mesmo); limite em `lib/maia/limite.ts` (40, `MAIA_LIMITE_RESPOSTAS`); botões em `rotina.ts` + `dono.ts` (`respostaDeVenda`, só contato do próprio negócio); aviso de privacidade próprio em `lgpd.ts` (`avisoDaBase`, `respostaJaAvisa`); o resumo da semana vai também pro negócio em "implantação" que já atende ou teve contato na semana (`negociosDoResumo`; status "piloto" não existe no banco e não foi criado); áudio em `lib/maia/voz.ts` atrás de `MAIA_VOZ_RESPOSTA=1` (desligado; testado gerando o arquivo .ogg pela ElevenLabs no modo local). **Falta (N):** testar os botões no WhatsApp real e decidir a voz.
+**Como ficou (08/11, 92d7d50):** tom nos anúncios já estava feito (`pecas.ts` usa o tom do negócio desde 055001c); nome e telefone viram `[apagado]` nos recados e nos `aviso_equipe` (o primeiro nome sozinho só sai se nenhum outro contato do negócio tem o mesmo); limite em `lib/maia/limite.ts` (40, `MAIA_LIMITE_RESPOSTAS`); botões em `rotina.ts` + `dono.ts` (`respostaDeVenda`, só contato do próprio negócio); aviso de privacidade próprio em `lgpd.ts` (`avisoDaBase`, `respostaJaAvisa`); o resumo da semana vai também pro negócio em "implantação" que já atende ou teve contato na semana (`negociosDoResumo`; status "piloto" não existe no banco e não foi criado); áudio em `lib/maia/voz.ts` (testado gerando o arquivo .ogg pela ElevenLabs no modo local). **Atualização de 08/11 (Guto): a voz vem LIGADA por padrão** quando há `ELEVENLABS_API_KEY` (`MAIA_VOZ_RESPOSTA=0` desliga), com a voz padrão do código (`5QMOJHwbSpbG7akM67Nn`). Só responde em áudio quando o cliente mandou áudio; o texto fica salvo na conversa como "(áudio) ..." (o dono lê no painel; a Maia lê no histórico); se a ElevenLabs ou o envio do áudio pela Meta falhar, vai em texto; link da resposta vai também por escrito depois do áudio. **Falta (N):** testar os botões e um áudio no WhatsApp real.
 
 ### T13 · Pendências do painel do dono · P1 · N · 2 h
 
@@ -735,7 +736,7 @@ O que **não** precisa dele: configurar Meta, Railway, logs, código em branch, 
 |---|---|
 | 02/11 | Nome Maia; sempre diz que é IA; cores azul-noite, creme e coral; número do Oito vira o da Maia |
 | 03/11 | Um sistema só pra todos (`negocio_id`); tudo que ela gera passa pela equipe antes do dono; campanha nasce pausada e o Guto liga; vendas medidas no funil |
-| 06/11 | Sem taxa de implantação; Essencial R$ 697 e Completa R$ 997; 1º mês com 50%; 1.000 conversas; extras R$ 99 (100) e R$ 249 (300); verba e taxa do WhatsApp pagas pelo cliente à Meta; campanha em 5 dias depois das fotos e conexões; criativo novo em 1 dia útil; modelo menor no atendimento por padrão |
+| 06/11 | Sem taxa de implantação; Essencial R$ 697 e Completa R$ 997 (**trocado em 08/11 pelo plano único de R$ 997**); 1º mês com 50%; 1.000 conversas; extras R$ 99 (100) e R$ 249 (300); verba e taxa do WhatsApp pagas pelo cliente à Meta; campanha em 5 dias depois das fotos e conexões; criativo novo em 1 dia útil; modelo menor no atendimento por padrão |
 | 06/11 | Gancho: público e situação primeiro, região com leveza |
 | 06/11 | Maia Gestora: os 4 cases (Dani, Wood, Gaja, escola) só leitura e avisos |
 | 07/11 | Painel do dono por link mágico (sem senha); painel da equipe com senha própria |
@@ -743,12 +744,15 @@ O que **não** precisa dele: configurar Meta, Railway, logs, código em branch, 
 | 08/11 | Tom padrão "você", o cliente escolhe (já na branch) |
 | 08/11 | Oficina roda na Railway |
 | 08/11 | `MAIA_META_REAL=1` quando ativar o 1º cliente (lembrar o Guto) |
-| 08/11 | Vender a Completa com a equipe postando até a Meta liberar o social |
+| 08/11 | Vender a social media (hoje dentro do plano único) com a equipe postando até a Meta liberar o social |
 | 08/11 | Os 4 cases não são piloto do atendimento (já usam WhatsApp oficial pelo teunegócio OS; Dani e Wood já têm IA no número; duas IAs no mesmo número não pode). Entram pela Gestora e pelo tráfego |
 | 08/11 | Modelo intermediário só no piloto; depois mistura (barato no atendimento, intermediário nas decisões de etapa/venda) |
-| 08/11 | Franquia: Essencial 500 conversas/mês, Completa 1.000 (extras R$ 99 a cada 100 e R$ 249 a cada 300). Já no código e no site (T11) |
+| 08/11 | Franquia: Essencial 500 conversas/mês, Completa 1.000 (extras R$ 99 a cada 100 e R$ 249 a cada 300). Já no código e no site (T11). **Trocado no mesmo dia:** 1.000 pra todos (plano único) |
+| 08/11 | **Plano único R$ 997/mês** (acabam Essencial R$ 697 e Completa): anúncios, atendimento 24 h no WhatsApp, vendas contadas, melhoria mensal, social media (8 posts e 4 vídeos por mês) e 1.000 conversas por mês. Continuam: 1º mês com 50% (R$ 498,50), sem fidelidade, sem taxa de implantação, pacotes extras, verba e taxa do WhatsApp direto à Meta. No código (`oferta.ts`, `uso.ts`, `social.ts`, demonstração), no site e no painel da equipe (branch `maia-correcoes`) |
+| 08/11 | **A Maia responde áudio com áudio**, ligado por padrão (`MAIA_VOZ_RESPOSTA=0` desliga), voz padrão do código |
+| 08/11 | Site: deixar claro que é **tudo pelo WhatsApp** (topo, seção "Tudo pelo WhatsApp", passos e plano) e tirar a foto pequena repetida do "Prazer, Maia" |
 | 08/11 | Ok pra publicar a branch `maia-ajustes-piloto` (seguir a parte 4) |
-| 08/11 | Sim pra `ELEVENLABS_API_KEY`: o Guto põe na Vercel (sem código novo; só a demonstração usa, T14) |
+| 08/11 | Sim pra `ELEVENLABS_API_KEY`: o Guto põe na Vercel (a demonstração usa, T14; e, desde 08/11, a resposta em áudio do atendimento, ligada por padrão) |
 | 08/11 | LGPD: termo no contrato (modelo em `docs/maia/TERMO-LGPD-CONTRATO.md`, revisar com advogado) e guarda de 12 meses depois da última mensagem (já no código, T17) |
 | 08/11 | Banco próprio da Maia antes de 07/12 (T16, Nando) |
 
