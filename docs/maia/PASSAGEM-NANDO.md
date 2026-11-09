@@ -827,3 +827,15 @@ Número não bateu (55 e o 9), negócio `cancelado`, falta Redeploy depois de `M
 
 **Posso mexer no SQL?**
 Leitura, sim. Estrutura (criar/alterar tabela, policy, cron), só tu ou o Guto no SQL Editor, com o arquivo em `db/` commitado antes.
+
+## Quem faz o quê a partir de 09/11
+
+Decisão do Guto em 09/11: **o Nando termina a parte técnica da Maia** até o lançamento: T1, T2, T3, T4 (oficina na Railway + MAIA_OFICINA_LIGADA, MAIA_DEMO_CONTA, MAIA_VOZ_ID), T5, a parte técnica do T8, T9, T10, T13, T14, T15 no servidor (chaves dos CRMs, maia_aviso, agendamento diário), T16 antes de 07/12, CRON_SECRET e crons, e as telas e o fluxo da Ficha do negócio.
+
+**Guto + Claude seguem** com a lógica dos controles automáticos (quando avisar, pausar, mudar verba, retomar), o tráfego, os conteúdos novos (kit de estilo, roteiros, vídeos), a estratégia, a análise das conversas e a conversão (inclusive o T6).
+
+Arquivos do Guto + Claude: lib/maia/atendente.ts, preco.ts, oferta.ts, funil.ts, tom.ts, gestora.ts, gestora-rotina.ts, pecas.ts, public/maia/ e docs/maia/. Arquivos do Nando: meta.ts, wa-negocio.ts, conectar.ts, canal.ts, db.ts, segredo.ts, gestora-crm.ts, chamadas.ts, conversoes.ts, social.ts, uso.ts, maia-oficina/, crons e variáveis. O Claude trabalha em branches maia-regras-*. Publicar em produção só com o ok do Guto.
+
+Novidades desde 08/11 à noite: plano único R$ 997 com 1.000 conversas; a Maia responde áudio com áudio (Voz 3, MAIA_VOZ_RESPOSTA=0 desliga); o número 51 99376-7137 é só da Maia (o Oito acabou; a equipe fica em modo humano); sites da escola novos e pixel no site principal; o relatório da Gestora pro Guto falhou fora da janela de 24 h.
+
+Versão completa: https://claude.ai/artifact/HTMaoMRceAVLJi7LewHBGq
