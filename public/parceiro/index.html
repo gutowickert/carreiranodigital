@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Manrope:wght@400..800&display=swap">
 <style>
-/* Layout: uma esteira desenhada no topo (porta de entrada → três caminhos), depois uma ficha por produto com foto, e no fim o "ouviu isso, oferece aquilo". */
+/* Layout: três caminhos desenhados no topo, depois uma ficha por produto com foto, e no fim o "ouviu isso, oferece aquilo". */
 :root{
   --fundo:#0e0719; --fundo2:#160b28; --cartao:#1c1230; --borda:#33264b;
   --tinta:#f5f1fb; --suave:#bdb1d1; --fraco:#8d80a3;
@@ -138,7 +138,7 @@ td:last-child{white-space:nowrap;font-weight:800}
 footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13px}
 
 /* comissão e projeção */
-.ganho{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:28px}
+.ganho{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:28px}
 .ganho div{background:var(--cartao);border:1px solid var(--borda);border-top:4px solid var(--cor);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:4px;min-width:0}
 .ganho small{font-size:13px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--cor)}
 .ganho b{font-family:var(--display);font-size:clamp(26px,3.4vw,32px);font-weight:800;line-height:1.1;font-variant-numeric:tabular-nums}
@@ -193,7 +193,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
 <header class="abre">
   <div class="ct">
     <p class="marca"><i></i>Carreira no Digital · guia de quem vende</p>
-    <h1>Quatro produtos. Um caminho pro dono de negócio <span class="grad">vender mais com IA.</span></h1>
+    <h1>Três produtos. Um caminho pro dono de negócio <span class="grad">vender mais com IA.</span></h1>
     <p class="lead">A escola ensina o dono de negócio local a fazer o marketing com inteligência artificial, ou faz por ele. Presencial em <b>Lajeado e Porto Alegre</b>. Aqui está o que cada produto é, pra quem serve, quanto custa e como puxar a conversa.</p>
     <div class="numeros">
       <div><b>+500</b><span>alunos no 1º ano da escola</span></div>
@@ -225,15 +225,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
 <section class="esteira-sec" id="esteira">
   <div class="ct">
     <p class="olho">A nossa esteira</p>
-    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">Uma porta de entrada e três caminhos depois.</h2>
-    <div class="esteira">
-      <a class="porta" href="#imersao" style="text-decoration:none">
-        <span class="passo">Porta de entrada</span>
-        <h3>Imersão Deu Venda</h3>
-        <p>Em turma, 4 encontros presenciais. Sai com anúncio no ar e a máquina de IA montada.</p>
-        <span class="valor">R$ 1.497</span>
-      </a>
-      <div class="liga" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+    <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">Três caminhos, pelo que o dono quer.</h2>
+    <div class="esteira" style="grid-template-columns:1fr">
       <div class="caminhos">
         <a class="caminho" href="#individual" style="--cor:var(--magenta)">
           <span class="pergunta">Quer fazer sozinho, com alguém do lado</span>
@@ -242,7 +235,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
         </a>
         <a class="caminho" href="#maia" style="--cor:var(--maia)">
           <span class="pergunta">Não tem tempo, quer que façam por ele</span>
-          <h3>Maia</h3><span class="v">R$ 697<small>por mês</small></span>
+          <h3>Maia</h3><span class="v">R$ 997<small>por mês</small></span>
           <span class="o">A agência inteira numa IA: anuncia, atende no WhatsApp e conta as vendas.</span>
         </a>
         <a class="caminho" href="#os" style="--cor:var(--os)">
@@ -252,47 +245,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
         </a>
       </div>
     </div>
-    <p class="nota-esteira">A Imersão é por onde a maioria entra, mas <b>cada produto também se vende sozinho</b>. Um dono sem tempo pode ir direto pra Maia. Uma empresa com equipe pode ir direto pro OS. Pra quem já fez a Imersão, a escola ainda oferece o <b>acompanhamento individual de 3 meses por R$ 1.997</b>.</p>
-  </div>
-</section>
-
-<section class="produto" id="imersao" style="--cor:var(--roxo)">
-  <div class="ct prod">
-    <figure class="foto"><img src="/parceiro/img/aula.jpg" alt="Aula da Imersão: o professor ajuda uma aluna no celular, com o Claude projetado na tela"><figcaption>Sala da Imersão, com o Claude na tela.</figcaption></figure>
-    <div class="info">
-      <p class="olho">1 · Porta de entrada · em turma</p>
-      <h2>Imersão Deu Venda</h2>
-      <p class="lead">Em 4 encontros, o negócio sai com <b>anúncio rodando e vídeo editado pela IA</b>. Não é aula pra assistir: cada um traz o notebook e faz no próprio negócio.</p>
-      <div class="fatos"><span>4 encontros de 3 horas</span><span>Turma pequena</span><span>Anúncio no ar no 2º encontro</span><span>Presencial em Lajeado e Porto Alegre</span></div>
-      <div class="bloco">
-        <h3>Como funciona</h3>
-        <ul class="lista">
-          <li><span><b>Encontro 1, estratégia:</b> o negócio, o mercado, a oferta e pra quem falar.</span></li>
-          <li><span><b>Encontro 2, arte, vídeo e campanha:</b> os vídeos editados pela IA e o anúncio no ar.</span></li>
-          <li><span><b>Encontro 3, ajuste e atendimento:</b> a campanha ajustada, o WhatsApp organizado e o site no ar.</span></li>
-          <li><span><b>Encontro 4, resultados:</b> umas 2 semanas depois, numa segunda, com os números na mão.</span></li>
-        </ul>
-      </div>
-      <div class="bloco">
-        <h3>O que ele leva</h3>
-        <ul class="lista">
-          <li><span>A máquina de IA montada no Claude, com o negócio dele guardado. É dele e continua usando.</span></li>
-          <li><span>A edição de vídeo: grava no celular e a máquina corta, legenda e põe a marca.</span></li>
-          <li><span>Artes, posts, roteiros e o site da empresa, no padrão da marca dele.</span></li>
-          <li><span>30 dias no grupo da turma, com o time da escola no WhatsApp.</span></li>
-        </ul>
-      </div>
-      <div class="preco">
-        <div><small>Investimento</small><b>R$ 1.497</b><span>ou 6x de R$ 249,50 no cartão</span></div>
-        <div><small>Próximas turmas</small><b style="font-size:22px">10 a 12/11</b><span>Porto Alegre, tarde e noite · Lajeado de 17 a 19/11, à noite</span></div>
-      </div>
-      <div class="fala">
-        <div><small>Pra puxar a conversa</small><p><q>Em três noites tu sai com o teu anúncio no ar, feito por ti, com a IA editando os teus vídeos.</q></p></div>
-        <div><small>Se ele disser “já paguei e não deu”</small><p>Aqui ele não terceiriza: aprende fazendo, vê a campanha subir e volta 2 semanas depois pra olhar o resultado.</p></div>
-      </div>
-      <p class="cuidado">A verba do anúncio é do aluno e vai direto pra Meta. Quanto investir se define no 1º encontro. <b>Leva:</b> notebook, celular com WhatsApp Business e acesso ao Facebook e ao Instagram do negócio.</p>
-      <p class="link">Página: <b>carreiranodigital.com/imersaodeuvenda</b></p>
-    </div>
+    <p class="nota-esteira"><b>Cada produto se vende sozinho.</b> Quem quer aprender e fazer, com alguém do lado, vai pro Deu Venda individual. Um dono sem tempo vai direto pra Maia. Uma empresa com equipe vai direto pro OS.</p>
   </div>
 </section>
 
@@ -300,7 +253,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
   <div class="ct prod">
     <figure class="foto"><img src="/parceiro/img/kateedit.jpg" alt="Vídeo de uma dona de ótica, pronto pra anunciar, com legenda e a marca"><figcaption>Vídeo gravado no celular por uma dona de ótica e editado pela máquina.</figcaption></figure>
     <div class="info">
-      <p class="olho">2 · Quer fazer, com alguém do lado</p>
+      <p class="olho">1 · Quer fazer, com alguém do lado</p>
       <h2>Deu Venda individual</h2>
       <p class="lead">A mesma máquina de IA, montada <b>um a um</b>, só com o negócio dele na mesa. A primeira campanha entra no ar com ele olhando, e depois são 3 meses de acompanhamento até a estratégia acertar.</p>
       <div class="fatos"><span>Um a um, presencial</span><span>2 encontros de implantação</span><span>3 meses de acompanhamento</span><span>Data combinada com ele</span></div>
@@ -319,7 +272,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
         <div><small>Investimento</small><b>R$ 2.997</b><span>ou 10x de R$ 299,70 no cartão. Os 3 meses estão inclusos.</span></div>
       </div>
       <div class="fala">
-        <div><small>Pra quem oferecer</small><p>Quem não quer turma, tem agenda difícil ou quer atenção só pro negócio dele. Muitas vezes é o lead da Imersão que pede “e se for só eu?”.</p></div>
+        <div><small>Pra quem oferecer</small><p>Quem quer aprender a fazer o marketing do negócio com IA, com um especialista do lado, na data dele e com atenção só pro negócio dele.</p></div>
         <div><small>Pra quem não é</small><p>Quem quer que façam tudo sem participar (esse é da Maia), ou quem ainda não sabe o que vende nem por quanto.</p></div>
       </div>
       <p class="cuidado"><b>Fora do valor:</b> a verba de anúncio, domínio e hospedagem do site e o CRM. A escola ensina e acompanha, quem opera é ele. <b>Não se promete número de vendas.</b></p>
@@ -332,7 +285,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
   <div class="ct prod">
     <figure class="foto"><img src="/parceiro/img/ad-otica-24x.jpg" alt="Anúncio real de uma ótica cliente da escola"><figcaption>Anúncio de uma cliente real, do tipo que a Maia cria.</figcaption></figure>
     <div class="info">
-      <p class="olho">3 · Quer que façam por ele</p>
+      <p class="olho">2 · Quer que façam por ele</p>
       <h2>Maia</h2>
       <p class="lead">A <b>agência inteira numa IA</b>. Ela cria os anúncios, atende os clientes no WhatsApp a qualquer hora e conta quantas conversas viraram venda. O dono só fala com ela pelo WhatsApp.</p>
       <div class="fatos"><span>Sem reunião</span><span>Sem fidelidade</span><span>Atende 24 horas</span><span>Sempre diz que é uma IA</span></div>
@@ -346,14 +299,14 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
         </ul>
       </div>
       <div class="preco">
-        <div><small>Essencial</small><b>R$ 697<span style="font-size:16px">/mês</span></b><span>Anúncio, atendimento e venda contada.</span></div>
-        <div><small>Completa</small><b>R$ 997<span style="font-size:16px">/mês</span></b><span>Tudo da Essencial, mais 8 posts e 4 vídeos do Instagram por mês.</span></div>
+        <div><small>Plano único</small><b>R$ 997<span style="font-size:16px">/mês</span></b><span>Anúncio, atendimento 24 h com 1.000 conversas por mês, vendas contadas e 8 posts e 4 vídeos do Instagram.</span></div>
+        <div><small>1º mês</small><b>50%</b><span>de desconto: R$ 498,50. Sem taxa de implantação e sem fidelidade.</span></div>
       </div>
       <div class="fala">
         <div><small>Pra puxar a conversa</small><p><q>Tu já pensou ter uma pessoa que faz o teu anúncio, responde todo cliente na hora e te diz no fim da semana quanto vendeu? Ela custa menos que um salário.</q></p></div>
         <div><small>O melhor argumento</small><p>O teste grátis. Ele manda <b style="color:var(--tinta)">“Quero a demonstração grátis da Maia”</b> pro WhatsApp da escola e conversa com ela na hora.</p></div>
       </div>
-      <p class="cuidado"><b>Implantação de R$ 497</b> (aluno da escola não paga). A verba do anúncio e a taxa do WhatsApp o cliente paga direto pra Meta, na conta dele. <b>Antes de prometer data de início, confirma com o Guto.</b></p>
+      <p class="cuidado"><b>Sem taxa de implantação.</b> A campanha roda em 5 dias depois que ele manda as fotos e conecta as contas. A verba do anúncio e a taxa do WhatsApp o cliente paga direto pra Meta, na conta dele. <b>Antes de prometer data de início, confirma com o Guto.</b></p>
       <p class="link">Página: <b>carreiranodigital.vercel.app/maia</b></p>
     </div>
   </div>
@@ -363,7 +316,7 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
   <div class="ct prod">
     <figure class="foto"><img src="/parceiro/img/painel.jpg" alt="Tela do painel do teunegócio OS com vendas, leads, conversão e compromissos da semana" style="object-position:left top"><figcaption>Tela real do sistema. Onde diz “Tua marca”, entra o nome da empresa.</figcaption></figure>
     <div class="info">
-      <p class="olho">4 · Empresa com time e processo</p>
+      <p class="olho">3 · Empresa com time e processo</p>
       <h2>teunegócio OS</h2>
       <p class="lead">O <b>sistema da empresa, com o nome dela</b>, e a IA fazendo o que se repete: responder a mesma pergunta o dia todo, voltar no cliente que ficou de pensar, pedir aprovação. Em uso em até 17 dias.</p>
       <div class="fatos"><span>Em uso em até 17 dias</span><span>Cada um do time com seu login</span><span>90 dias ajustando junto</span><span>Os dados ficam no nome da empresa</span></div>
@@ -399,9 +352,9 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
       <table>
         <thead><tr><th>O que ele diz</th><th>O que está por trás</th><th>Oferece</th></tr></thead>
         <tbody>
-          <tr><td>“Quero aprender a fazer o meu anúncio.”</td><td>Quer autonomia e preço de entrada.</td><td class="t1">Imersão</td></tr>
-          <tr><td>“Todo mundo já foi pro digital, menos eu.”</td><td>Sente que está atrasado e não sabe por onde começar.</td><td class="t1">Imersão</td></tr>
-          <tr><td>“Não consigo ir em turma, minha agenda é louca.”</td><td>Quer fazer, mas no tempo dele.</td><td class="t2">Deu Venda individual</td></tr>
+          <tr><td>“Quero aprender a fazer o meu anúncio.”</td><td>Quer autonomia, com alguém do lado.</td><td class="t2">Deu Venda individual</td></tr>
+          <tr><td>“Todo mundo já foi pro digital, menos eu.”</td><td>Sente que está atrasado e não sabe por onde começar.</td><td class="t2">Deu Venda individual</td></tr>
+          <tr><td>“Minha agenda é louca, não consigo ir em curso.”</td><td>Quer fazer, mas no tempo dele.</td><td class="t2">Deu Venda individual</td></tr>
           <tr><td>“Quero alguém olhando o meu negócio comigo.”</td><td>Quer atenção só pra ele e acompanhamento.</td><td class="t2">Deu Venda individual</td></tr>
           <tr><td>“Não tenho tempo pra isso.”</td><td>Quer o resultado, não o trabalho.</td><td class="t3">Maia</td></tr>
           <tr><td>“O cliente chama e ninguém responde a tempo.”</td><td>Perde venda no atendimento.</td><td class="t3">Maia</td></tr>
@@ -419,9 +372,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
     <p class="olho">Quanto tu ganha</p>
     <h2 style="font-size:clamp(30px,5vw,46px);margin-top:10px">15% em cada venda. 5% em cada mensalidade.</h2>
     <div class="ganho">
-      <div style="--cor:var(--roxo)"><small>Imersão</small><b>R$ 224,55</b><span>por vaga vendida (15% de R$ 1.497)</span></div>
       <div style="--cor:var(--magenta)"><small>Deu Venda individual</small><b>R$ 449,55</b><span>por venda (15% de R$ 2.997)</span></div>
-      <div style="--cor:var(--maia)"><small>Maia</small><b>R$ 74,55</b><span>na implantação (15% de R$ 497), e todo mês R$ 34,85 na Essencial ou R$ 49,85 na Completa</span></div>
+      <div style="--cor:var(--maia)"><small>Maia</small><b>R$ 49,85</b><span>todo mês (5% de R$ 997), enquanto o cliente pagar. No 1º mês, com o desconto de 50%, R$ 24,93.</span></div>
       <div style="--cor:var(--os)"><small>teunegócio OS</small><b>15% + 5%</b><span>15% da implantação e 5% da mensalidade. O valor sai depois da conversa com o Nando.</span></div>
     </div>
     <p class="regra-com">A comissão é sobre o valor que o cliente paga. Nas mensalidades, tu recebe <b>5% todo mês, enquanto o cliente seguir pagando</b>. Por isso a Maia é a que mais cresce: cada cliente que tu traz soma no mês seguinte.</p>
@@ -433,10 +385,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
           <button type="button" data-c="bom" aria-pressed="true">Bom ritmo</button>
           <button type="button" data-c="forte" aria-pressed="false">Forte</button>
         </div>
-        <div class="campo"><label for="q-im">Vagas da Imersão<span>por mês</span></label><input id="q-im" type="number" min="0" max="99" step="1" value="6"></div>
-        <div class="campo"><label for="q-dv">Deu Venda individual<span>por mês</span></label><input id="q-dv" type="number" min="0" max="99" step="1" value="2"></div>
+        <div class="campo"><label for="q-dv">Deu Venda individual<span>por mês</span></label><input id="q-dv" type="number" min="0" max="99" step="1" value="3"></div>
         <div class="campo"><label for="q-mai">Clientes novos da Maia<span>por mês</span></label><input id="q-mai" type="number" min="0" max="99" step="1" value="4"></div>
-        <div class="campo"><label for="q-comp">Quantos pegam a Completa<span>% dos clientes da Maia</span></label><input id="q-comp" type="number" min="0" max="100" step="5" value="40"></div>
         <div class="campo"><label for="q-os">Clientes novos do OS<span>por mês</span></label><input id="q-os" type="number" min="0" max="99" step="1" value="1"></div>
         <div class="campo"><label for="q-osad">Taxa de adesão do OS<span>R$ por cliente</span></label><input id="q-osad" type="number" min="0" step="100" placeholder="R$"></div>
         <div class="campo"><label for="q-osmes">Mensalidade do OS<span>R$ por cliente</span></label><input id="q-osmes" type="number" min="0" step="50" placeholder="R$"></div>
@@ -491,8 +441,8 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
       <li><b>Nunca número de vendas</b><span>A escola ensina, monta e acompanha. Não garante volume de venda.</span></li>
       <li><b>A verba é do cliente</b><span>O dinheiro do anúncio vai direto pra Meta, na conta dele. Não passa pela escola.</span></li>
       <li><b>A IA se apresenta</b><span>A Maia sempre diz que é uma IA. Nada de vender como se fosse uma pessoa.</span></li>
-      <li><b>Preço de aluno é de aluno</b><span>A condição sem taxa de adesão da Maia vale pra quem já fez curso na escola.</span></li>
-      <li><b>Data, só confirmada</b><span>Turma e início da Maia: confirma com o Guto antes de passar.</span></li>
+      <li><b>Desconto, só com o ok</b><span>O preço é o da tabela. Fora os 50% do 1º mês da Maia, qualquer desconto passa pelo Guto antes.</span></li>
+      <li><b>Data, só confirmada</b><span>Início do Deu Venda e da Maia: confirma com o Guto antes de passar.</span></li>
       <li><b>O fechamento é no WhatsApp</b><span>Tu abre a conversa e passa o contato pro WhatsApp da escola.</span></li>
     </ul>
     <div class="fecha">
@@ -506,26 +456,26 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
 
 <script>
 (function(){
-  var PRECO={im:1497,dv:2997,impl:497,ess:697,comp:997}, VENDA=0.15, MES=0.05;
-  var CEN={comeco:{im:3,dv:1,mai:2,comp:40,sai:5,os:0},bom:{im:6,dv:2,mai:4,comp:40,sai:5,os:1},forte:{im:10,dv:3,mai:8,comp:40,sai:5,os:2}};
-  var ids=['im','dv','mai','comp','sai','os','osad','osmes'], $=function(i){return document.getElementById(i)};
+  var PRECO={dv:2997,maia:997}, DESC1=0.5, VENDA=0.15, MES=0.05;
+  var CEN={comeco:{dv:2,mai:2,sai:5,os:0},bom:{dv:3,mai:4,sai:5,os:1},forte:{dv:5,mai:8,sai:5,os:2}};
+  var ids=['dv','mai','sai','os','osad','osmes'], $=function(i){return document.getElementById(i)};
   var brl=function(v){return v.toLocaleString('pt-BR',{style:'currency',currency:'BRL',maximumFractionDigits:0})};
   function ler(k){var n=parseFloat($('q-'+k).value);return isFinite(n)&&n>0?n:0}
   function conta(){
-    var im=ler('im'),dv=ler('dv'),mai=ler('mai'),comp=Math.min(ler('comp'),100)/100,sai=Math.min(ler('sai'),100)/100;
+    var dv=ler('dv'),mai=ler('mai'),sai=Math.min(ler('sai'),100)/100;
     var os=ler('os'),osad=ler('osad'),osmes=ler('osmes');
-    var ticket=PRECO.ess*(1-comp)+PRECO.comp*comp, vendaMes=im*PRECO.im+dv*PRECO.dv+mai*PRECO.impl+os*osad;
+    var ticket=PRECO.maia, vendaMes=dv*PRECO.dv+os*osad;
     var ativos=0,ativosOs=0,meses=[],ano=0,esc=0;
     for(var m=0;m<12;m++){
       ativos=ativos*(1-sai)+mai; ativosOs=ativosOs*(1-sai)+os;
-      var rec=ativos*ticket+ativosOs*osmes, a=vendaMes*VENDA, b=rec*MES;
+      var rec=ativos*ticket-mai*ticket*DESC1+ativosOs*osmes, a=vendaMes*VENDA, b=rec*MES;
       meses.push([a,b]); ano+=a+b; esc+=vendaMes+rec;
     }
     $('r-m1').textContent=brl(meses[0][0]+meses[0][1]);
     $('r-m12').textContent=brl(meses[11][0]+meses[11][1]);
     $('r-ano').textContent=brl(ano);
     $('r-esc').textContent=brl(esc);
-    $('r-ativos').textContent='No 12º mês, cerca de '+Math.round(ativos)+' clientes pagando a Maia e '+Math.round(ativosOs)+' pagando o OS. Conta feita com a primeira mensalidade paga no mês da venda.'+(os>0&&!osad&&!osmes?' Preenche a adesão e a mensalidade do OS pra ele entrar na conta.':'');
+    $('r-ativos').textContent='No 12º mês, cerca de '+Math.round(ativos)+' clientes pagando a Maia e '+Math.round(ativosOs)+' pagando o OS. Conta feita com a primeira mensalidade paga no mês da venda, com os 50% de desconto do 1º mês da Maia.'+(os>0&&!osad&&!osmes?' Preenche a adesão e a mensalidade do OS pra ele entrar na conta.':'');
     desenha(meses);
     carteira(mai,os,ticket,osmes,sai);
   }
@@ -533,16 +483,16 @@ footer{padding-block:30px 50px;text-align:center;color:var(--fraco);font-size:13
     var a=0,o=0,soma=0,serie=[],linhas='',marcos=[1,3,6,9,12,18,24];
     for(var m=1;m<=24;m++){
       a=a*(1-sai)+mai; o=o*(1-sai)+os;
-      var rm=a*ticket*MES, ro=o*osmes*MES; soma+=rm+ro;
+      var rm=(a*ticket-mai*ticket*DESC1)*MES, ro=o*osmes*MES; soma+=rm+ro;
       serie.push([rm,ro]);
       if(marcos.indexOf(m)>-1){
-        linhas+='<tr><td>'+m+'º</td><td>'+Math.round(a)+'</td><td>'+Math.round(o)+'</td><td>'+brl(a*ticket+o*osmes)+'</td><td>'+brl(rm+ro)+'</td><td>'+brl(soma)+'</td></tr>';
+        linhas+='<tr><td>'+m+'º</td><td>'+Math.round(a)+'</td><td>'+Math.round(o)+'</td><td>'+brl(a*ticket-mai*ticket*DESC1+o*osmes)+'</td><td>'+brl(rm+ro)+'</td><td>'+brl(soma)+'</td></tr>';
       }
       if(m===12){$('c-cli12').textContent=Math.round(a+o);$('c-rec12').textContent=brl(rm+ro)}
       if(m===24){$('c-rec24').textContent=brl(rm+ro)}
     }
     $('c-tab').innerHTML=linhas;
-    var teto=sai>0?(mai/sai*ticket+os/sai*osmes)*MES:0;
+    var teto=sai>0?(mai/sai*ticket-mai*ticket*DESC1+os/sai*osmes)*MES:0;
     if(sai>0){
       $('c-teto').textContent=brl(teto);
       $('c-teto-txt').textContent='por mês, o teto da carteira (perto de '+Math.round((mai+os)/sai)+' clientes)';
