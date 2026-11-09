@@ -92,7 +92,13 @@ A CND virou **Tech Provider** da Meta: o cliente liga o WhatsApp dele ao sistema
 - **Conectar o WhatsApp do celular** (coexistência): o número que já está no app WhatsApp Business **continua no celular** e passa a aparecer no sistema também. O que a equipe responde pelo celular entra na conversa do sistema, e a IA fica quieta depois disso, igual a quando respondem pelo sistema. Na conexão vêm as conversas dos últimos 180 dias e o nome que a empresa deu pra cada contato na agenda do app (a Meta só deixa puxar uma vez, logo depois de conectar).
 - **Conectar um número novo**: um número que não está em nenhum WhatsApp. A Meta manda um código, e o sistema mostra um PIN de 6 dígitos pra guardar.
 
-Quem clica precisa ser administrador do portfólio da empresa no Facebook. Até a Meta terminar a verificação do acesso (pedida em 04/11), só quem tem função no app da CND consegue conectar.
+Quem clica precisa ser administrador do portfólio da empresa no Facebook (ou cria um no caminho). A Meta liberou a CND como Tech Provider em 07/11.
+
+**Como é a conexão do WhatsApp do celular (1º teste de verdade, 09/11/2026, com o número do Nando):**
+- **Na véspera:** avisar o cliente pra fazer o **backup das conversas** no app (WhatsApp Business → Configurações → Conversas → Backup) e atualizar o app. É regra (10b): marcou a instalação, vira tarefa na agenda.
+- A Meta **não mostra** uma opção "conectar o app": no botão verde, digita-se o número em "Insira um novo número". Ela reconhece que o número está no WhatsApp Business, mostra o perfil, pede o portfólio (criar um, nunca escolher o da CND ou de outro cliente), os dados da empresa (pede um site) e mostra um **QR code**: no celular, abrir a mensagem do "Facebook Business" e tocar em Conectar, ou ler o QR.
+- Na hora: o **WhatsApp do computador desconecta** (é só ler o QR de novo), as **listas de transmissão param**, e o sistema começa a receber as conversas antigas (até 6 meses) em pedaços, em poucos minutos.
+- O número **nunca é tirado do celular**: o sistema não registra na API quem conectou pelo botão verde, e recusa número que já está ligado a outro sistema (Dani, GAJA etc. aparecem na lista da janela pra quem é admin de vários portfólios).
 
 ## Retomadas e prazos por etapa (26/10/2026)
 
