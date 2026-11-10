@@ -839,3 +839,31 @@ Arquivos do Guto + Claude: lib/maia/atendente.ts, preco.ts, oferta.ts, funil.ts,
 Novidades desde 08/11 à noite: plano único R$ 997 com 1.000 conversas; a Maia responde áudio com áudio (Voz 3, MAIA_VOZ_RESPOSTA=0 desliga); o número 51 99376-7137 é só da Maia (o Oito acabou; a equipe fica em modo humano); sites da escola novos e pixel no site principal; o relatório da Gestora pro Guto falhou fora da janela de 24 h.
 
 Versão completa: https://claude.ai/artifact/HTMaoMRceAVLJi7LewHBGq
+
+## Quem toca a partir de 10/11
+
+Decisão do Guto em 10/11: **o Nando toca a Maia inteira a partir daqui.** Além da parte técnica (T1 a T17), passa pra ele o que em 09/11 tinha ficado com o Guto e o Claude: a lógica dos controles automáticos, o tráfego dos clientes, os conteúdos, a análise das conversas e a conversão. A divisão de 09/11, acima, valeu só um dia.
+
+**Por onde começar:**
+1. Adriane, no sistema da escola (urgente): ela ainda está no funil como negociação aberta, na etapa "Urgência enviada", e recebeu mensagem do sistema em 07/11. A família avisou em 08/11 que ela faleceu. Marcar como perda e pra não receber mais.
+2. Conferir o que já foi feito em 09/11 e riscar no backlog (T1, T2, T5).
+3. T1, T2 e T4: sem os três não existe primeiro cliente.
+4. Gestora rodando no servidor (T15): hoje o relatório diário sai de uma sessão do Claude e para quando ela fecha.
+5. Pegar com o Guto as 4 decisões dos controles automáticos.
+6. Lançamento pra base: decidir de qual número saem os modelos e mandar os 4 modelos pra Meta.
+
+**O que mudou de mão, e onde está:**
+- Controles automáticos: documento de regras em https://claude.ai/artifact/S4t9aU6sFhKKDdFeNH5p7b (3 níveis mais o "nunca"; códigos TR-1 a TR-7, CR-1 a CR-4, CV-1 a CV-4, AT-1 a AT-8, CO-1 a CO-3, NU-1 a NU-6). Nada está no código: hoje a Gestora só lê e avisa. Programar em lib/maia/gestora.ts e gestora-rotina.ts, uma regra por vez, cada uma com o teste que prova.
+- Análise semanal de cada cliente: o modelo é a análise da Wood de 09/11, https://claude.ai/artifact/9QRdkyo9c2G1GPnEjECxyP. Virar rotina do sistema (maia_funil_semana já existe; faltam a leitura das conversas com nota, o comparativo com a semana anterior e a lista "o que mudar").
+- Replicar o que vende (09/11): a peça vencedora por custo por venda vira referência de estilo das próximas, com ângulos novos (lib/maia/pecas.ts).
+- Lançamento pra base: plano com as peças escritas em https://claude.ai/artifact/UZvUhud6sBGvjMwqzdCiHo (5.901 pessoas na base, 2.400 recebem em duas ondas, meta de 5 clientes; nada foi enviado). Modelos pra aprovar: cnd_maia_abertura_aluno, cnd_maia_abertura_contato, cnd_maia_prova e cnd_maia_ultima_chamada. A demonstração tem limite de 10 amostras por semana no código, e nada liga o disparo ao teste.
+- Vídeos: o v2 espera o ok do Guto (public/maia/vid/maia-como-funciona-v2.mp4 e .jpg estão no PC do Guto, fora do git). Um vídeo novo de lançamento está sendo feito no Higgsfield.
+- Tráfego dos clientes e kit de estilo do cliente novo: ainda não escritos.
+
+**Continua com o Guto:** preço, franquia, promessa do site, condição de lançamento, primeiro cliente e capacidade; tudo que gasta ou fala com gente (ligar campanha, MAIA_META_REAL, MAIA_CLIENTES_LIGADO, mensagem pra base); o ok de cada publicação em produção.
+
+**Arquivos e branches:** produção em origin/main 0126e39 (10/11); depois do 38d4b4b entraram só documentos e o Guia de Vendas. Todos os arquivos de lib/maia/ e o public/maia/ agora são do Nando. Se o Claude for chamado, trabalha em branch maia-regras-*, documenta em docs/maia/ e não publica. Fora da Maia, no mesmo repositório: a branch diagnostico-mcp (789bec9, e3335dd, de59ea7) tem o conector da skill do vendedor da escola (app/api/diagnostico/, lib/diagnostico/; mexe em app/api/oito/instagram/route.ts sem mudar o comportamento). Espera o ok do Guto e as variáveis DIAGNOSTICO_MCP_CHAVE e GOOGLE_API_KEY.
+
+**Novidades de 09 e 10/11:** Guia de Vendas (/parceiro) no ar sem a Imersão, com a Maia em plano único de R$ 997 e comissão de 5% da mensalidade, no visual claro da escola; páginas e painéis sempre em fundo claro, no padrão da escola; nos anúncios da escola o nome é "Implantação de marketing com IA"; no levantamento da base, a entrega dos disparos caiu pra uns 47% em outubro, há 5 disparos presos em "enviando" e só 5 pedidos de não receber em 43 mil envios (conferir se o "não quero" está sendo marcado).
+
+Versão completa: https://claude.ai/artifact/HTMaoMRceAVLJi7LewHBGq
