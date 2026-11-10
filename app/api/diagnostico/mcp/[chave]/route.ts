@@ -27,6 +27,8 @@ const FERRAMENTAS = [
       'Lê o perfil PÚBLICO de uma conta PROFISSIONAL do Instagram (comercial ou criador) pelo caminho oficial da Meta. ' +
       'Devolve nome, bio, site, seguidores, total de posts, as últimas 18 postagens (tipo, data, curtidas, comentários, legenda, link) ' +
       'e um resumo: dias desde a última postagem, postagens nos últimos 30 dias e quantos vídeos/reels há nas últimas 9. ' +
+      'O campo foto_perfil_base64 é o LOGO pra página da análise: a foto do perfil em 128x128, JPEG, base64 puro (sem o prefixo "data:") — ' +
+      'copie pro campo logo_base64 do dados.json, porque a página não carrega imagem de outro site; vem null se não deu pra baixar. ' +
       'Use quando precisar avaliar o Instagram de uma empresa. Contas pessoais ou inexistentes voltam com erro.',
     inputSchema: {
       type: 'object',

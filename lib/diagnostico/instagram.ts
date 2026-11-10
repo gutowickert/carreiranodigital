@@ -4,6 +4,7 @@
 // (OITO_IG_USER_ID ou a achada em /me/accounts), com o token OITO_IG_TOKEN (na falta, FB_ADS_TOKEN).
 
 import { urlProxy } from './proxy'
+import { fotoPerfilBase64 } from './foto'
 
 export const GRAPH = 'https://graph.facebook.com/v21.0'
 export const igToken = () => process.env.OITO_IG_TOKEN || process.env.FB_ADS_TOKEN || ''
@@ -83,6 +84,7 @@ export async function perfilInstagramDiagnostico(entrada: string) {
     site: b.website ?? null,
     foto_perfil: b.profile_picture_url ?? null,
     foto_perfil_proxy: urlProxy(b.profile_picture_url),
+    foto_perfil_base64: await fotoPerfilBase64(b.profile_picture_url), // logo embutido (128x128, JPEG, base64 puro) ou null
     seguidores: b.followers_count ?? null,
     total_posts: b.media_count ?? null,
     resumo,
