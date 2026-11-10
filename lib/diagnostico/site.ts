@@ -1,5 +1,5 @@
 // Análise rápida de um site pro diagnóstico (conector MCP): baixa o HTML com segurança (sem SSRF),
-// tira título, descrição, h1, texto do topo, WhatsApp, pixel da Meta, tag do Google, telefones,
+// tira título, descrição, h1, texto do topo, WhatsApp, pixel da Meta, tag do Google, telefones, @ do Instagram,
 // e mede a velocidade no celular pelo PageSpeed Insights (GOOGLE_API_KEY, se existir).
 import { lookup } from 'node:dns/promises'
 import { isIP } from 'node:net'
@@ -144,6 +144,49 @@ function linksWhatsapp(html: string): string[] {
   return out
 }
 
+const temPixelMeta = (html: string) => /fbq\(|connect\.facebook\.net\/[a-z_]+\/fbevents\.js/i.test(html)
+
+// @ do Instagram a partir dos links instagram.com/<usuario> do HTML (ou de um endereço solto).
+// Ignora caminhos que não são perfil (/p/, /reel/, /explore, /accounts...). Se houver mais de um, fica o mais repetido.
+const IG_NAO_PERFIL = new Set([
+  'p', 'reel', 'reels', 'explore', 'accounts', 'tv', 'stories', 'share', 'sharer', 'direct', 'about', 'developer', 'developers',
+  'legal', 'privacy', 'terms', 'web', 'static', 'embed', 'embed.js', 'oauth', 'api', 'graphql', 'challenge', 'invites', 'ar', 'tags', 'locations', 'directory',
+])
+export function instagramDoHtml(html: string): string | null {
+  const contagem = new Map<string, number>()
+  for (const m of String(html || '').matchAll(/(?<![a-z0-9.-])(?:www\.)?(?:instagram\.com|instagr\.am)(?:\\?\/|%2F)+@?([a-z0-9._]{1,30})(?![a-z0-9._])/gi)) {
+    const u = m[1].toLowerCase().replace(/\.+$/, '')
+    if (!u || IG_NAO_PERFIL.has(u) || u.startsWith('.') || u.includes('..')) continue
+    contagem.set(u, (contagem.get(u) || 0) + 1)
+  }
+  let melhor: string | null = null
+  let vezes = 0
+  for (const [u, n] of contagem) if (n > vezes) { melhor = u; vezes = n }
+  return melhor
+}
+
+// Checagem rápida (sem PageSpeed), pra triagem de várias empresas: abriu? tem WhatsApp? tem pixel? qual o @ do Instagram?
+export async function checagemRapidaSite(entrada: string, limiteMs = 6_000, sinalGeral?: AbortSignal) {
+  const vazio = { abriu: false, tem_whatsapp: false, tem_pixel: false, instagram: null as string | null }
+  const u = normalizarUrl(entrada)
+  if (!u) return vazio
+  const sinal = sinalGeral ? AbortSignal.any([AbortSignal.timeout(limiteMs), sinalGeral]) : AbortSignal.timeout(limiteMs)
+  // a consulta de DNS não obedece ao sinal: a corrida garante que a checagem nunca passa do limite
+  const estouro = new Promise<null>(resolve => {
+    if (sinal.aborted) return resolve(null)
+    sinal.addEventListener('abort', () => resolve(null), { once: true })
+  })
+  const pagina = await Promise.race([baixar(u, sinal).catch(() => null), estouro])
+  if (!pagina) return vazio
+  const { html } = pagina
+  return {
+    abriu: pagina.status >= 200 && pagina.status < 400,
+    tem_whatsapp: linksWhatsapp(html).length > 0,
+    tem_pixel: temPixelMeta(html),
+    instagram: instagramDoHtml(html),
+  }
+}
+
 // ---------- PageSpeed (celular) ----------
 async function velocidadeCelular(url: string): Promise<{ velocidade: any; motivo?: string }> {
   const chave = process.env.GOOGLE_API_KEY
@@ -208,9 +251,10 @@ export async function analisarSite(entrada: string) {
     h1s,
     texto_topo: texto.slice(0, 400),
     links_whatsapp: linksWhatsapp(html),
-    tem_pixel_meta: /fbq\(|connect\.facebook\.net\/[a-z_]+\/fbevents\.js/i.test(html),
+    tem_pixel_meta: temPixelMeta(html),
     tem_google_tag: /gtag\(|googletagmanager\.com/i.test(html),
     telefones: telefones(html, texto),
+    instagram: instagramDoHtml(html),
     velocidade: ps.velocidade,
     ...(ps.motivo ? { velocidade_motivo: ps.motivo } : {}),
     ...(texto.length < 80 ? { observacao: 'quase nenhum texto no HTML: o site provavelmente monta a página por JavaScript (o conteúdo real pode não aparecer aqui)' } : {}),

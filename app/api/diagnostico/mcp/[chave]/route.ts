@@ -2,11 +2,11 @@
 // Endereço: https://<site>/api/diagnostico/mcp/<DIAGNOSTICO_MCP_CHAVE>
 // MCP "Streamable HTTP" sem estado: cada POST traz JSON-RPC 2.0 (um pedido ou uma lista) e a resposta volta
 // em application/json (sem SSE, sem Mcp-Session-Id). Chave errada ou não configurada → 404. GET → 405.
-// Ferramentas: instagram_perfil, site_analise, google_empresa. (Anúncios ficam com o conector oficial da Meta.)
+// Ferramentas: instagram_perfil, site_analise, google_empresa, google_buscar_ramo. (Anúncios ficam com o conector oficial da Meta.)
 import { timingSafeEqual } from 'node:crypto'
 import { perfilInstagramDiagnostico } from '@/lib/diagnostico/instagram'
 import { analisarSite } from '@/lib/diagnostico/site'
-import { empresaGoogle } from '@/lib/diagnostico/google'
+import { empresaGoogle, buscarRamoGoogle } from '@/lib/diagnostico/google'
 
 export const maxDuration = 60
 export const dynamic = 'force-dynamic'
@@ -15,7 +15,8 @@ const VERSOES = ['2025-06-18', '2025-03-26']
 const SERVIDOR = { name: 'diagnostico-carreira', version: '1.0.0' }
 const INSTRUCOES =
   'Ferramentas pra montar o diagnóstico de marketing de uma empresa: instagram_perfil (perfil público e postagens de conta profissional), ' +
-  'site_analise (o que o site mostra, WhatsApp, pixel, tag do Google e velocidade no celular) e google_empresa (ficha e avaliações no Google). ' +
+  'site_analise (o que o site mostra, WhatsApp, pixel, tag do Google e velocidade no celular), google_empresa (ficha e avaliações no Google) ' +
+  'e google_buscar_ramo (lista de empresas de um ramo numa cidade, pra escolher quem analisar quando o pedido não traz nome de empresa). ' +
   'Use só dados que as ferramentas devolverem; se uma falhar, diga o que não deu pra ver em vez de inventar. Anúncios: use o conector da Meta.'
 
 const FERRAMENTAS = [
@@ -68,6 +69,28 @@ const FERRAMENTAS = [
     },
     annotations: { readOnlyHint: true, openWorldHint: true },
   },
+  {
+    name: 'google_buscar_ramo',
+    title: 'Garimpo de empresas por ramo e cidade',
+    description:
+      'Lista empresas em funcionamento de um RAMO numa CIDADE (Google Maps), pro vendedor escolher quem analisar. ' +
+      'Use quando o pedido vier por ramo e cidade, SEM nome de empresa (ex.: "acha dentistas em Lajeado", "quero prospectar marcenarias em Estrela"). ' +
+      'Pra cada empresa devolve nome, endereço, nota, total de avaliações, telefone, site, link do Maps e uma triagem rápida do site: ' +
+      'se abriu, se tem link de WhatsApp, se tem pixel da Meta e o @ do Instagram quando o site mostra (nulo quando não há site). ' +
+      'É só triagem: não traz anúncios nem postagens. Depois de escolher as empresas, use instagram_perfil, site_analise, google_empresa ' +
+      'e a biblioteca de anúncios da Meta em cada uma. Se já existe o nome da empresa, use google_empresa. Pode levar até ~40 segundos.',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        ramo: { type: 'string', description: 'Ramo ou tipo de negócio (ex.: esquadrias de alumínio, dentista, pet shop)' },
+        cidade: { type: 'string', description: 'Cidade (e estado, se ajudar) — ex.: Lajeado RS' },
+        quantidade: { type: 'integer', minimum: 5, maximum: 20, description: 'Quantas empresas buscar (de 5 a 20; padrão 12)' },
+      },
+      required: ['ramo', 'cidade'],
+      additionalProperties: false,
+    },
+    annotations: { readOnlyHint: true, openWorldHint: true },
+  },
 ]
 
 function chaveOk(recebida: string): boolean {
@@ -91,6 +114,7 @@ async function chamarFerramenta(nome: string, args: any): Promise<unknown> {
   if (nome === 'instagram_perfil') return perfilInstagramDiagnostico(String(a.usuario ?? ''))
   if (nome === 'site_analise') return analisarSite(String(a.url ?? ''))
   if (nome === 'google_empresa') return empresaGoogle(String(a.nome ?? ''), String(a.cidade ?? ''))
+  if (nome === 'google_buscar_ramo') return buscarRamoGoogle(String(a.ramo ?? ''), String(a.cidade ?? ''), a.quantidade == null ? undefined : Number(a.quantidade))
   throw Object.assign(new Error(`ferramenta desconhecida: ${nome}`), { codigo: -32602 })
 }
 
