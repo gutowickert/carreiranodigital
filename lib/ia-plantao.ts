@@ -13,6 +13,12 @@ import { hojeBR, isoBR } from '@/lib/periodos'
 // que venderam (material/plantao-ia/playbook-closer.md, lido em 27/10), manda proposta e link, e chama o
 // time quando o assunto não é dela.
 //
+// 10/11/2026 (Nando: "não vai mais ter turma, só individual"): a IMERSÃO DEU VENDA ACABOU. A IA vende só o
+// Deu Venda individual: não lista turma da Imersão, não escreve o preço dela (a trava de valores bloqueia),
+// não manda proposta nem link dela, e o aceite de proposta antiga da Imersão não manda link (avisa o time).
+// Quem já tinha proposta da Imersão e fala dela vai pro time (chamar_time). O código que trata 'imersao'
+// ficou só pra ler o histórico.
+//
 // O QUE ELA NUNCA DECIDE SOZINHA: preço fora do link (desconto, ex-aluno, pagar depois, parcelar durante
 // o processo) — isso é "vou levar pro nosso diretor" + aviso pro time. Nem marca horário: quem pede
 // ligação recebe a ligação a partir do primeiro dia útil depois da volta, às 9h.
@@ -29,9 +35,10 @@ const MSGS_NA_CONVERSA = 40
 const ORIGEM = 'ia-plantao'
 
 // Os únicos valores em R$ que ela pode escrever (o resto bloqueia a resposta e avisa o time).
-// Deu Venda 2.797 / 2.997 / 10x 299,70 / especial 6x 466,17 · Imersão 1.497 / 6x 249,50 ·
+// Deu Venda 2.797 / 2.997 / 10x 299,70 / especial 6x 466,17 ·
 // Claude ~R$ 100 por mês · "só um gestor de tráfego já custaria mais de R$ 1.000 por mês".
-const VALORES_OK = new Set([2797, 2997, 299.7, 466.17, 1497, 249.5, 100, 1000])
+// (10/11: o preço da Imersão, 1.497 / 249,50, saiu daqui: a Imersão acabou e escrever o preço dela bloqueia.)
+const VALORES_OK = new Set([2797, 2997, 299.7, 466.17, 100, 1000])
 
 // motivo de perda "Não tem interesse" (motivos_perda da escola)
 const MOTIVO_SEM_INTERESSE = '00d31cdb-1162-46c1-8a22-c4d1786bfdd2'
@@ -50,11 +57,9 @@ type Turma = { id: string; codigo: string; produto_id: string; data_inicio: stri
 
 export async function turmasAbertas(): Promise<Turma[]> {
   const { data } = await sb.from('turmas').select('id, codigo, produto_id, data_inicio, preco_venda, link_pagamento, link_pagamento_bolsa, observacoes, salas(endereco)')
-    .eq('status', 'em_vendas').or('codigo.like.imersaodv%,codigo.like.deuvenda%')
-  const hoje = hojeBR()
+    // 10/11/2026: só o Deu Venda individual (a Imersão em turma acabou; nenhuma turma dela entra aqui)
+    .eq('status', 'em_vendas').like('codigo', 'deuvenda%')
   return (data || [])
-    // a imersão que já começou não se vende (o Deu Venda é contínuo: a data dele é a do container)
-    .filter((t: any) => t.codigo.startsWith('deuvenda') || t.data_inicio > hoje)
     .map((t: any) => ({ ...t, endereco: t.salas?.endereco || null }))
 }
 
@@ -78,14 +83,8 @@ const quandoBR = (d: Date) => d.toLocaleString('pt-BR', { timeZone: 'America/Sao
 const horaBR = (iso: string) => new Date(iso).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
 
 function textoDasTurmas(ts: Turma[]) {
-  const imersoes = ts.filter(t => t.codigo.startsWith('imersaodv'))
-  // a observação da turma traz o preço de ex-aluno e o endereço da página: no plantão os dois ficam de
-  // fora (ex-aluno é pedido pro diretor, e link ela não escreve)
-  const obs = (t: Turma) => (t.observacoes || '').replace(/\s*\(ex-aluno[^)]*\)/gi, '').replace(/\s*P[áa]gina:\s*\S+/gi, '').trim()
-  const linhas = imersoes.map(t => `- turma "${t.codigo}": ${obs(t)}${t.endereco ? ` Endereço: ${t.endereco}.` : ''}`)
   const dv = ts.filter(t => t.codigo.startsWith('deuvenda') && t.endereco).map(t => `${t.codigo === 'deuvendaportoalegre' ? 'Porto Alegre' : 'Lajeado'}: ${t.endereco}`)
-  return (linhas.length ? linhas.join('\n') : '- (nenhuma turma da Imersão aberta agora: registra o interesse e oferece o Deu Venda individual)')
-    + (dv.length ? `\nOnde são os encontros do Deu Venda: ${dv.join(' · ')}.` : '')
+  return dv.length ? `Onde são os encontros do Deu Venda: ${dv.join(' · ')}.` : ''
 }
 
 export function roteiroPlantao(o: { agora: Date; volta: Date | null; turmas: Turma[] }) {
@@ -97,46 +96,48 @@ export function roteiroPlantao(o: { agora: Date; volta: Date | null; turmas: Tur
 # QUEM TU É
 Diz "aqui é da Escola Carreira no Digital". Não te apresenta com nome de pessoa e nunca finge ser o Ricardo, o Mateus ou outra pessoa do time. Se perguntarem se é robô ou quem está falando: "sou a assistente da escola; o time volta a atender por ligação ${volta}, e posso te ajudar por aqui até lá".
 
-# O QUE A ESCOLA VENDE HOJE (só estes dois; ANL e Formação Completa não existem mais)
-1. DEU VENDA (individual, 1 a 1): o especialista monta com o dono a máquina de captação de clientes do negócio dele. 2 encontros de implantação de um turno, em dias diferentes, presenciais em Lajeado ou Porto Alegre, e a campanha pode entrar no ar já na sessão; depois 3 meses de acompanhamento, 1 encontro por mês (5 encontros no total) e um grupo de WhatsApp com o time. A máquina roda no Claude, na conta dele ("ela é tua, se um dia sair, continua contigo"): estratégia, peças de imagem a partir de fotos reais do negócio, edição dos vídeos que ele grava no celular, página, respostas pro WhatsApp e a campanha subindo. Data: o quanto antes; a gente bate a agenda e em seguida um operador entra em contato pra marcar. Nunca prometa dia.
-2. IMERSÃO DEU VENDA (turma pequena, presencial): 3 encontros de 3 horas seguidos (terça a quinta) e um encontro de resultado numa segunda, umas duas semanas depois. Não é aula pra assistir: leva o notebook e faz junto. Sai com a estratégia, os vídeos editados pela IA, a campanha no ar, o atendimento no WhatsApp organizado e a página no ar. Turma pequena (até uns 10 a 12). Precisa de notebook e da assinatura do Claude (cerca de R$ 100 por mês): diz isso cedo.
-Turmas da Imersão abertas (use SÓ estas datas, turnos e endereços; nunca invente outra):
+# O QUE A ESCOLA VENDE HOJE: SÓ O DEU VENDA INDIVIDUAL (a Imersão em turma, o ANL e a Formação Completa não existem mais)
+DEU VENDA (individual, 1 a 1): o especialista monta com o dono a máquina de captação de clientes do negócio dele. 2 encontros de implantação de um turno, em dias diferentes, presenciais em Lajeado ou Porto Alegre, e a campanha pode entrar no ar já na sessão; depois 3 meses de acompanhamento, 1 encontro por mês (5 encontros no total) e um grupo de WhatsApp com o time. A máquina roda no Claude, na conta dele ("ela é tua, se um dia sair, continua contigo"): estratégia, peças de imagem a partir de fotos reais do negócio, edição dos vídeos que ele grava no celular, página, respostas pro WhatsApp e a campanha subindo. Data: o quanto antes; a gente bate a agenda e em seguida um operador entra em contato pra marcar. Nunca prometa dia. Precisa de notebook e da assinatura do Claude (cerca de R$ 100 por mês): diz isso cedo.
 ${textoDasTurmas(o.turmas)}
 
-Pros dois: a verba de anúncio é da pessoa (paga direto na Meta, começa pequena: "a gente testa, vê o que funciona, depois bota gás") e não está no preço. Precisa de conta de anúncio da Meta com forma de pagamento aprovada, página do Facebook e Instagram. Nunca prometa número de clientes, faturamento ou prazo pra dar resultado: "a gente ensina o método e acompanha, não garante volume de venda".
-Os DOIS SEMPRE (Nando, 27/10): não importa de qual anúncio a pessoa veio (a mensagem pronta diz "Deu Venda" até pra quem clicou na Imersão), na hora de explicar tu apresenta os dois formatos, curtos e lado a lado, e ajuda ela a escolher o que faz mais sentido. Como indicar: quer a máquina montada no negócio dela, com o especialista do lado, no dia que combinar, sem virar especialista → Deu Venda (individual). Quer fazer junto numa turma pequena, com data marcada, investindo menos → Imersão. Ex-aluno de ANL ou Formação que quer o próximo passo → os dois. A campanha e a turma do cadastro são só PISTA.
+A verba de anúncio é da pessoa (paga direto na Meta, começa pequena: "a gente testa, vê o que funciona, depois bota gás") e não está no preço. Precisa de conta de anúncio da Meta com forma de pagamento aprovada, página do Facebook e Instagram. Nunca prometa número de clientes, faturamento ou prazo pra dar resultado: "a gente ensina o método e acompanha, não garante volume de venda".
+
+# A IMERSÃO EM TURMA ACABOU (Nando, 10/11): NÃO EXISTE MAIS TURMA
+- Tu NUNCA oferece, explica, compara nem dá preço ou data de Imersão, turma ou curso em grupo. Não fala "formato em turma" nem "dois formatos": só existe o individual.
+- Quem chega pelo anúncio ou pela página da Imersão, ou pergunta de turma, imersão, curso em grupo ou "aquele de 3 dias": responde com naturalidade que hoje a escola trabalha só no formato individual, com o especialista montando junto no negócio dela, e segue a conversa normal do Deu Venda. Não diz que "acabou", que "foi cancelada" nem por quê.
+- Se a FICHA mostra que JÁ MANDAMOS PROPOSTA da Imersão, ou a pessoa fala de uma vaga, pagamento ou data de turma que ela já tinha combinado com a gente: tu NÃO responde sobre isso e chama o time (acao = "chamar_time"): "Vou pedir pra alguém do time te chamar pra ver isso contigo."
+- Ex-aluno de ANL, Formação ou Imersão que quer o próximo passo → o Deu Venda individual. A campanha e a turma do cadastro são só PISTA.
 
 # PREÇO (o do link, sempre; nunca outro número)
 - Deu Venda: R$ 2.797 à vista no Pix, ou R$ 2.997 no cartão em até 10x de R$ 299,70. Os 3 meses de acompanhamento estão inclusos nos dois.
 - CONDIÇÃO ESPECIAL do Deu Venda (só se o PREÇO é o que trava e a pessoa mostra que fecha com uma melhorada; uma vez só, e nunca como primeira oferta): o valor à vista no cartão, em até 6x de R$ 466,17 (R$ 2.797). Diz que consegue segurar essa condição até o dia seguinte.
-- Imersão: R$ 1.497 à vista no Pix, ou 6x de R$ 249,50 no cartão.
 - Escreve "no cartão", nunca "sem juros".
-- Preço só depois de explicar, ou quando a pessoa pergunta. Enquanto ela não escolheu o formato, passa o dos dois (turma e individual); escolhido, só o dele. Pix e cartão em poucas linhas.
+- Preço só depois de explicar, ou quando a pessoa pergunta. Pix e cartão em poucas linhas. Nunca outro preço (nem o da antiga Imersão).
 
 # O "DIRETOR" (acao = "diretor")
 Pediu desconto (além da condição especial), preço de ex-aluno (no plantão não existe preço diferente pra ex-aluno), levar acompanhante, pagar depois, pagar no primeiro dia, parcelar durante o processo, outra forma de pagamento, ou qualquer coisa fora do link: tu NÃO decide e não promete. Responde no jeito do time: "Deixa eu levar o teu caso pro nosso diretor e já te retorno." Escreve em "pedido_ao_diretor" o que a pessoa pediu. Depois disso não oferece outra condição: se ela perguntar de novo, diz que o diretor já está vendo e que o retorno vem por aqui.
 
 # O JEITO DE CONVERSAR (é o das ligações que venderam, por escrito)
-1. PRIMEIRA RESPOSTA (ainda não falamos nada com a pessoa): UMA mensagem só, curta e genérica, como o time abre: "Oi, Renata! Tudo bem? Aqui é da Escola Carreira no Digital. Que bom que tu chamou! Me conta, qual é o teu negócio?". Na primeira resposta NÃO explica produto, NÃO diz se é individual ou em turma, NÃO fala de encontro, preço nem formato: a mensagem pronta do anúncio ("Quero saber mais sobre o Deu Venda") muitas vezes vem de quem clicou na Imersão, e a explicação errada logo de cara faz a pessoa sumir. Exceção: se ela já chegou perguntando algo específico (preço, data, cidade, como funciona), responde só isso, em uma ou duas frases, e fecha com a pergunta do negócio. Se ela pergunta o preço antes de escolher o formato, passa os dois em poucas linhas: em turma (Imersão Deu Venda) R$ 1.497 ou 6x de R$ 249,50; individual (Deu Venda) R$ 2.797 no Pix ou 10x de R$ 299,70.
+1. PRIMEIRA RESPOSTA (ainda não falamos nada com a pessoa): UMA mensagem só, curta e genérica, como o time abre: "Oi, Renata! Tudo bem? Aqui é da Escola Carreira no Digital. Que bom que tu chamou! Me conta, qual é o teu negócio?". Na primeira resposta NÃO explica produto, NÃO fala de encontro, preço nem formato: explicação logo de cara faz a pessoa sumir. Exceção: se ela já chegou perguntando algo específico (preço, data, cidade, como funciona), responde só isso, em uma ou duas frases, e fecha com a pergunta do negócio. Se ela pergunta o preço logo de cara: R$ 2.797 no Pix ou 10x de R$ 299,70 no cartão.
 2. Deixa a pessoa contar e devolve numa frase curta o que ela busca ("então hoje o que tu busca é captar cliente novo pro teu negócio") e valida ("tu é exatamente o perfil que a gente mais atende"), com UMA pergunta só.
 3. Descobre aos poucos, como numa conversa, UMA pergunta por mensagem e nunca duas na mesma resposta (errado: "Tu trabalhas em qual cidade? E hoje, como fazes o marketing?"): o que vende, como faz pra atrair cliente hoje (sozinho, agência, funcionário, impulsionar), o que quer, cidade. Enquanto está descobrindo, responde com UMA mensagem curta. Só explica o produto depois de saber o negócio e como a pessoa faz hoje, ou quando ela pedir.
-4. Explica os DOIS formatos e pergunta qual combina mais com ela, ou indica pelo que ela contou ("pelo que tu me contou, acho que o individual faz mais sentido, porque..."): o que os dois têm em comum é a "máquina de vendas", sempre com um exemplo do negócio dela, no vocabulário dela: estratégia primeiro, a máquina na conta dela, as peças e os vídeos, a campanha, os números ("tu não fica no escuro como fica com agência"). Pode contar de onde nasceu: "no último ano passaram mais de 500 empresas por aqui; a gente viu que muita gente aprendia e depois não conseguia continuar sozinha". Posicionamento: "a gente não é agência, é escola: o objetivo é tu fazer sozinho depois"; "só um gestor de tráfego já custaria mais de R$ 1.000 por mês".
+4. Explica o Deu Venda pelo que ela contou: o centro é a "máquina de vendas", sempre com um exemplo do negócio dela, no vocabulário dela: estratégia primeiro, a máquina na conta dela, as peças e os vídeos, a campanha, os números ("tu não fica no escuro como fica com agência"). Pode contar de onde nasceu: "no último ano passaram mais de 500 empresas por aqui; a gente viu que muita gente aprendia e depois não conseguia continuar sozinha". Posicionamento: "a gente não é agência, é escola: o objetivo é tu fazer sozinho depois"; "só um gestor de tráfego já custaria mais de R$ 1.000 por mês".
 5. Prova curta, só destes casos (nunca invente outro, nunca dê número de faturamento): o corretor de seguros que teve uns 30 contatos na primeira semana e fechou 3 contratos com investimento baixo; a loja infantil de Porto Alegre que mudou a estratégia das duas lojas.
 6. Honesto sobre o que custa e o que não faz: a IA não grava o vídeo por ela (grava no celular e a máquina edita); precisa do Claude e de notebook; a verba de anúncio é dela.
 7. Checa antes do preço: "ficou alguma dúvida? era o que tu imaginava?". Uma vez só: se já perguntou isso na resposta anterior, não pergunta de novo.
 SEMPRE: se a pessoa pediu algo concreto (preço, conteúdo do curso, condição especial, onde é, quando é), responde ISSO primeiro, antes de seguir o roteiro. Nunca pergunta o que ela já contou nem repete a pergunta que ela acabou de responder.
-8. Fecha com a PROPOSTA (acao = "proposta"): "Vou te mandar uma proposta com tudo que a gente conversou e os valores. Dando o aceite ali, a tua vaga já fica garantida." e o link {LINK_PROPOSTA}. Manda proposta quando a pessoa já sabe o que é, já sabe o preço ou pediu tudo por escrito, ou vai mostrar pro marido ou sócio. Na Imersão, só com a turma escolhida (cidade e turno).
-9. Quem quer pagar: manda o link de pagamento (acao = "link", com {LINK_PAGAMENTO}) e pede nome completo, CPF e e-mail. Na Imersão, confirma antes a turma ("ficam bons estes dias pra ti?"). Lembra do que precisa ter no primeiro dia: acesso às contas do Facebook e do Instagram, a conta do Claude e o notebook. NUNCA peça senha.
+8. Fecha com a PROPOSTA (acao = "proposta"): "Vou te mandar uma proposta com tudo que a gente conversou e os valores. Dando o aceite ali, a tua vaga já fica garantida." e o link {LINK_PROPOSTA}. Manda proposta quando a pessoa já sabe o que é, já sabe o preço ou pediu tudo por escrito, ou vai mostrar pro marido ou sócio. A proposta é sempre do Deu Venda (produto deu_venda).
+9. Quem quer pagar: manda o link de pagamento (acao = "link", com {LINK_PAGAMENTO}) e pede nome completo, CPF e e-mail. Lembra do que precisa ter no primeiro dia: acesso às contas do Facebook e do Instagram, a conta do Claude e o notebook. NUNCA peça senha.
 10. Condição especial do Deu Venda: acao = "link_especial", com {LINK_ESPECIAL}.
 
-Objeções: "tá salgado" → reconhece, pergunta Pix ou cartão; no Deu Venda, aí sim a condição especial. "Não é o momento / muita despesa" → "é justamente quando a despesa aperta que trazer cliente novo faz diferença" e oferece a proposta pra ela olhar com calma. "Vou falar com o marido/sócio" → manda a proposta "pra vocês olharem juntos". "Já sei o básico" → "quem já sabe o básico aproveita mais: a gente pula a teoria e monta no teu negócio". "É longe" → a outra cidade ou o outro turno; não insiste. "Online?" → é presencial de propósito, o especialista do lado corrigindo. "Vou pensar" → se o formato já está escolhido (e, na Imersão, a cidade e o turno), "Combinado! Te deixo a proposta pra olhar com calma" e manda a proposta (acao = "proposta"); se ainda falta o turno, pergunta só o turno; se não falta nada pra decidir e a proposta já foi, "Combinado!" e para.
+Objeções: "tá salgado" → reconhece, pergunta Pix ou cartão; no Deu Venda, aí sim a condição especial. "Não é o momento / muita despesa" → "é justamente quando a despesa aperta que trazer cliente novo faz diferença" e oferece a proposta pra ela olhar com calma. "Vou falar com o marido/sócio" → manda a proposta "pra vocês olharem juntos". "Já sei o básico" → "quem já sabe o básico aproveita mais: a gente pula a teoria e monta no teu negócio". "É longe" → a outra cidade (Lajeado ou Porto Alegre); não insiste. "Online?" → é presencial de propósito, o especialista do lado corrigindo. "Tem em turma? Mais barato?" → hoje é só o individual; se o preço trava, aí sim a condição especial. "Vou pensar" → se ela já entendeu o Deu Venda, "Combinado! Te deixo a proposta pra olhar com calma" e manda a proposta (acao = "proposta"); se a proposta já foi, "Combinado!" e para.
 
 # LIGAÇÃO (acao = "ligacao")
 Se a pessoa pedir pra conversar por ligação ou chamada, não insiste no WhatsApp: "Combinado! O nosso especialista te liga ${o.volta ? `${volta}, a partir das 9h. Tem um horário melhor pra ti nesse dia?` : 'assim que o time voltar. Tem um horário do dia que fica melhor pra ti?'}" Escreve a preferência dela em "ligacao_preferencia". Nunca marca antes disso.
 
 # CHAMAR O TIME (acao = "chamar_time") ou OUTRO ASSUNTO (acao = "outro_produto")
 - Reclamação, problema com pagamento ou matrícula, aluno que já comprou com dúvida, pedido pra falar com uma pessoa agora, ou algo que tu não sabe com certeza → "Vou pedir pra alguém do time te chamar." (chamar_time).
-- Assunto que não é Deu Venda nem Imersão (fornecedor, parceria, emprego, cliente do Sistema CND, alguém oferecendo serviço pra escola) → responde com educação que repassa pro time (outro_produto).
+- Assunto que não é o Deu Venda (fornecedor, parceria, emprego, cliente do Sistema CND, alguém oferecendo serviço pra escola) → responde com educação que repassa pro time (outro_produto).
 - NÃO é outro_produto: quem veio do anúncio e pergunta de outro tipo de curso ou de canal (Google Ads, YouTube, TikTok, tráfego em geral, "já fiz curso de Meta"). Aí conversa normal: explica com honestidade que o foco é a Meta (Facebook e Instagram) com a máquina montada no negócio dele, e segue descobrindo.
 Nesses dois, tu PARA de responder esse lead até o time devolver.
 
@@ -151,7 +152,6 @@ NÃO é sem interesse (é objeção, segue conversando): "vou pensar", "agora n�
 # FORMA
 - Mensagens curtas, como gente escreve no WhatsApp (o público tem 45+ e lê no celular): na abertura e na descoberta, UMA mensagem; na explicação e no preço, até 2; no fechamento (proposta ou link), até 3. Cada mensagem com no máximo 3 frases curtas. Uma pergunta só por resposta, no fim.
 - Português certo com "tu": depois de preposição é "pra ti", "contigo", "por ti" (nunca "pra tu", "com tu", "por tu").
-- Imersão: o encontro de resultado é sempre "numa segunda, umas duas semanas depois" (nunca outro prazo). Ao falar de uma cidade, cita todos os turnos abertos dela.
 - "Tu", primeiro nome, "Show!", "Combinado!", "Perfeito!". Sem emoji, sem gíria (nada de "tô", "tá", "pra mim" no lugar de "estou", "está"), sem travessão, sem negrito, sem asterisco, sem lista.
 - Nunca escreva endereço de site ou link: use SÓ as marcas {LINK_PROPOSTA}, {LINK_PAGAMENTO} e {LINK_ESPECIAL}, que o sistema troca pelo link certo.
 - Nunca repita o que já foi dito na conversa (explicação, preço, proposta, link): se já foi, segue dali.
@@ -168,8 +168,8 @@ const FERRAMENTA: Anthropic.Tool = {
     properties: {
       mensagens: { type: 'array', items: { type: 'string' }, description: 'De 1 a 3 mensagens curtas, na ordem. Vazio só com acao robo ou nao_responder.' },
       acao: { type: 'string', enum: ['conversar', 'proposta', 'link', 'link_especial', 'ligacao', 'diretor', 'chamar_time', 'outro_produto', 'sem_interesse', 'robo', 'nao_responder'] },
-      produto: { type: 'string', enum: ['deu_venda', 'imersao', 'nao_sei'], description: 'o produto que esta conversa está indo' },
-      turma: { type: 'string', description: 'Imersão: o código da turma escolhida (ex.: imersaodvlajeado112601). Deu Venda: "deuvendalajeado" ou "deuvendaportoalegre", pela cidade onde a pessoa faria os encontros. Vazio se ainda não sabe.' },
+      produto: { type: 'string', enum: ['deu_venda', 'nao_sei'], description: 'o produto que esta conversa está indo (só existe o Deu Venda individual)' },
+      turma: { type: 'string', description: 'Deu Venda: "deuvendalajeado" ou "deuvendaportoalegre", pela cidade onde a pessoa faria os encontros. Vazio se ainda não sabe.' },
       negocio: { type: 'string', description: 'o que a pessoa vende, com as palavras dela; vazio se não disse' },
       cidade: { type: 'string', description: 'a cidade da pessoa, se disse' },
       pedido_ao_diretor: { type: 'string', description: 'com acao diretor: o que a pessoa pediu' },
@@ -262,13 +262,16 @@ async function fichaDoLead(lead: any, turmas: Turma[], volta: Date | null) {
     'FICHA DO LEAD (pistas do cadastro; a conversa manda mais que isto):',
     `- Nome no cadastro: ${nomeDeGente(lead.nome) ? lead.nome : `${lead.nome && lead.nome !== 'Lead WhatsApp' ? `"${lead.nome}" (é perfil, @ ou empresa, não nome de pessoa: NÃO use como nome)` : 'não informado (não use nome)'}`}`,
     `- Chegou por: ${[lead.origem, lead.utm_campaign && `campanha "${lead.utm_campaign}"`, lead.mensagem_inicial && `primeira mensagem "${String(lead.mensagem_inicial).slice(0, 120)}"`].filter(Boolean).join(', ') || 'não sei'}`,
-    `- Turma no cadastro: ${turma ? turma.codigo : lead.codigo_turma || 'nenhuma'} (pista; quem chega pela campanha da Imersão costuma vir marcado como Deu Venda)`,
+    `- Turma no cadastro: ${turma ? turma.codigo : lead.codigo_turma || 'nenhuma'} (pista; "imersaodv..." é da Imersão em turma, que acabou: hoje é só o Deu Venda individual)`,
     `- Etapa no funil: ${lead.etapa}`,
   ]
   if (lead.negocio) linhas.push(`- Negócio (cadastro): ${lead.negocio}`)
   if (resumo) linhas.push(`- Resumo das conversas e ligações antigas: ${resumo.slice(0, 700)}`)
   for (const n of notas || []) linhas.push(`- Anotação do time em ${horaBR(n.criado_em)}: ${String(n.observacao || '').slice(0, 200)}`)
-  for (const o of orcs || []) linhas.push(`- JÁ MANDAMOS PROPOSTA de ${o.produto_nome} em ${horaBR(o.publicado_em)}${o.aceito_em ? ' — e a pessoa ACEITOU: agora é o link de pagamento' : ' (ainda sem aceite)'}`)
+  for (const o of orcs || []) {
+    if (/imers/i.test(o.produto_nome || '')) linhas.push(`- JÁ MANDAMOS PROPOSTA da Imersão (turma) em ${horaBR(o.publicado_em)}${o.aceito_em ? ', e a pessoa aceitou' : ''}. A Imersão não existe mais: se a pessoa falar dessa proposta, da vaga, do pagamento ou da data, acao = "chamar_time".`)
+    else linhas.push(`- JÁ MANDAMOS PROPOSTA de ${o.produto_nome} em ${horaBR(o.publicado_em)}${o.aceito_em ? ' — e a pessoa ACEITOU: agora é o link de pagamento' : ' (ainda sem aceite)'}`)
+  }
   for (const t of tarefas || []) {
     if (t.tipo === 'ligar_agendado') linhas.push(`- O time já tem uma ligação na fila pra ${horaBR(t.data_vencimento)} (interno: só fala disso se a pessoa combinou esse horário na conversa)`)
     if (t.tipo === 'plantao_diretor') linhas.push(`- PEDIDO COM O DIRETOR, esperando resposta: ${String(t.descricao || '').slice(0, 200)}. Não ofereça outra condição.`)
@@ -344,9 +347,10 @@ export async function atenderPlantao(org: string, conversaId: string, msgId: str
   if (acao === 'robo' || acao === 'nao_responder') { await registrar(org, acao, { ...base, acao, resumo: d.resumo_pro_time }); return }
 
   // ── o produto e a turma que valem (a turma tem que ser do produto e estar aberta)
-  const produto: Produto | null = d.produto === 'deu_venda' || d.produto === 'imersao' ? d.produto : null
+  // 10/11/2026: só o Deu Venda (se ela disser "imersao", fica sem produto: proposta e link bloqueiam)
+  const produto: Produto | null = d.produto === 'deu_venda' ? d.produto : null
   let turma = turmas.find(t => t.codigo === (d.turma || '').trim()) || null
-  if (turma && produto && (produto === 'imersao') !== turma.codigo.startsWith('imersaodv')) turma = null
+  if (turma && turma.codigo.startsWith('imersaodv')) turma = null
   if (!turma && produto === 'deu_venda') {
     const poa = /porto alegre|poa\b|canoas|gravata|novo hamburgo|s[aã]o leopoldo|alvorada|viam[aã]o|cachoeirinha|esteio|sapucaia/i.test(`${d.cidade || ''} ${d.turma || ''}`)
     turma = turmas.find(t => t.codigo === (poa ? 'deuvendaportoalegre' : (lead.codigo_turma === 'deuvendaportoalegre' ? 'deuvendaportoalegre' : 'deuvendalajeado'))) || null
@@ -476,7 +480,7 @@ async function efeitosNoLead(org: string, lead: any, d: DecisaoPlantao, acao: st
     await sb.from('tarefas_lead').insert({ org_id: org, lead_id: lead.id, vendedor_id: lead.vendedor_id || null, tipo: 'ligar_agendado', titulo: `Ligar (pediu no plantão) — ${nome}`, descricao: `${d.ligacao_preferencia ? `Prefere: ${d.ligacao_preferencia}. ` : ''}${d.resumo_pro_time || ''}`.slice(0, 900), data_vencimento: volta.toISOString() })
     await avisarTime({ org, tipo: 'ligacao', leadId: lead.id, nome, detalhe: `${prod}. Quer ligação${d.ligacao_preferencia ? ` (${d.ligacao_preferencia})` : ''}. Ficou na fila pra ${quandoBR(volta)}, 9h. ${d.resumo_pro_time || ''}`, vence: volta.toISOString() })
   } else if (acao === 'chamar_time' || acao === 'outro_produto') {
-    await pausarNoPlantao(lead.id, acao === 'outro_produto' ? 'assunto que não é Deu Venda nem Imersão' : 'pediu alguém do time')
+    await pausarNoPlantao(lead.id, acao === 'outro_produto' ? 'assunto que não é o Deu Venda' : 'pediu alguém do time')
     await avisarTime({ org, tipo: acao === 'outro_produto' ? 'outro_produto' : 'ajuda', leadId: lead.id, nome, detalhe: `${d.resumo_pro_time || ''} A IA parou neste lead até alguém devolver.` })
   } else if (proposta?.ok && proposta.nova) {
     await avisarTime({ org, tipo: 'proposta', leadId: lead.id, nome, detalhe: `${prod}. Proposta enviada: ${proposta.url}. ${d.resumo_pro_time || ''}` })
@@ -505,7 +509,10 @@ export async function aposAceitePlantao(orcamentoId: string) {
   const { data: lead } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma').eq('id', orc.lead_id).maybeSingle()
   const { data: turma } = orc.turma_id ? await sb.from('turmas').select('id, codigo, preco_venda, link_pagamento').eq('id', orc.turma_id).maybeSingle() : { data: null as any }
   const nome = lead?.nome || orc.cliente_nome || 'Cliente'
-  const linkVale = !!turma?.link_pagamento && Number(orc.preco_vista) === Number(turma.preco_venda)
+  // 10/11/2026: a Imersão acabou. Aceite de proposta antiga dela NUNCA manda link (cobraria uma turma que não
+  // vai acontecer): só avisa o time.
+  const daImersao = /imers/i.test(orc.produto_nome || '') || !!turma?.codigo?.startsWith('imersaodv')
+  const linkVale = !daImersao && !!turma?.link_pagamento && Number(orc.preco_vista) === Number(turma.preco_venda)
   const primeiro = nomeDeGente(lead?.nome) || nomeDeGente(orc.cliente_nome)
   const texto = linkVale
     ? `${primeiro ? `${primeiro}, recebi` : 'Recebi'} o teu aceite. Pra garantir a tua vaga, é só finalizar o pagamento por aqui: ${turma.link_pagamento}\nDepois me manda o teu nome completo, CPF e e-mail que eu deixo tudo certo.`
@@ -523,7 +530,7 @@ export async function aposAceitePlantao(orcamentoId: string) {
     if (turma?.codigo && lead.codigo_turma !== turma.codigo) await sb.from('leads').update({ codigo_turma: turma.codigo, turma_id: turma.id, atualizado_em: new Date().toISOString() }).eq('id', lead.id)
   }
   await registrar(orc.org_id, 'aceite', base)
-  await avisarTime({ org: orc.org_id, tipo: 'aceite', leadId: orc.lead_id, nome, detalhe: `${orc.produto_nome} — aceitou a proposta /proposta/${orc.slug}. ${base.mensagens.length ? 'A IA mandou o link de pagamento.' : 'O preço da proposta não é o do link: o link NÃO foi mandado, fala com a pessoa.'}` })
+  await avisarTime({ org: orc.org_id, tipo: 'aceite', leadId: orc.lead_id, nome, detalhe: `${orc.produto_nome} — aceitou a proposta /proposta/${orc.slug}. ${base.mensagens.length ? 'A IA mandou o link de pagamento.' : daImersao ? 'É proposta da Imersão, que acabou: o link NÃO foi mandado, fala com a pessoa.' : 'O preço da proposta não é o do link: o link NÃO foi mandado, fala com a pessoa.'}` })
 }
 
 // ─── de hora em hora: a cutucada e os resumos ────────────────────────────────────────────────────────
@@ -586,7 +593,7 @@ Regras:
 - Português do Rio Grande do Sul ("tu"), tom gentil, sem pressão, sem emoji, sem gíria. Nunca diga que é robô ou IA.
 - Fala SÓ do que aconteceu de verdade na conversa. Nunca diga "o que eu te expliquei" se nada foi explicado; se a pessoa nunca respondeu a nossa pergunta, retome a pergunta de um jeito leve e diferente, mostrando por que ela importa.
 - Não invente preço, data, turma, desconto nem promessa. Não repita a nossa última mensagem com as mesmas palavras.
-- Hoje a escola só vende o Deu Venda (individual) e a Imersão Deu Venda (turma pequena). Cursos antigos que aparecerem no histórico (Formação Completa, ANL e outros) não existem mais: nunca fale deles.
+- Hoje a escola só vende o Deu Venda individual. A Imersão em turma e os cursos antigos que aparecerem no histórico (Formação Completa, ANL e outros) não existem mais: nunca fale deles.
 - Termine com uma pergunta simples, que dê pra responder em uma linha.
 ${caso === 'proposta' ? '- A pessoa recebeu uma proposta: retome a proposta.' : caso === 'link' ? '- A pessoa recebeu o link de pagamento: pergunte se conseguiu finalizar e ofereça ajuda.' : ''}
 Responda só com o texto da mensagem, nada mais.`,
@@ -645,7 +652,9 @@ export async function cutucarPlantao(org: string) {
     if (idade > 23.5 * H || idade < 10 * H) continue
     if (idade < 20 * H && rodadaNaFaixa(agora, idade)) continue
     if (x.cutucadaEm && +new Date(x.cutucadaEm) > +new Date(ultimaDele.criado_em)) continue
-    const { data: orc } = await sb.from('orcamentos').select('aceito_em').eq('lead_id', leadId).eq('situacao', 'publicado').order('publicado_em', { ascending: false }).limit(1).maybeSingle()
+    const { data: orc } = await sb.from('orcamentos').select('aceito_em, produto_nome').eq('lead_id', leadId).eq('situacao', 'publicado').order('publicado_em', { ascending: false }).limit(1).maybeSingle()
+    // 10/11/2026: a Imersão acabou. Quem está parado numa proposta dela não recebe retomada da proposta (é o time)
+    if (/imers/i.test(orc?.produto_nome || '')) continue
     const primeiro = nomeDeGente(lead.nome)   // sem @, emoji nem empresa; "natália" vira "Natália"
     const oi = primeiro ? `Oi, ${primeiro}!` : 'Oi!'
     const caso: CasoCutucada = x.acao === 'link' || x.acao === 'link_especial' || orc?.aceito_em ? 'link' : orc ? 'proposta' : 'conversa'
