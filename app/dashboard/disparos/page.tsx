@@ -145,7 +145,7 @@ export default function Disparos() {
         const chunk = contatos.slice(i, i + lote)
         const res = await fetchAuth('/api/wa-oficial/disparar', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ action: 'enviar', disparoId, template: tpl.nome, idioma: tpl.idioma, categoria: tpl.categoria, headerMidia: headerObj, bodyParams, contatos: chunk }),
+          body: JSON.stringify({ action: 'enviar', disparoId, template: tpl.nome, idioma: tpl.idioma, categoria: tpl.categoria, headerMidia: headerObj, bodyParams, corpo: tpl.corpo, contatos: chunk }),
         }).then(r => r.json())
         if (res.ok) { enviados += res.enviados; falhas += res.falhas }
         else falhas += chunk.length

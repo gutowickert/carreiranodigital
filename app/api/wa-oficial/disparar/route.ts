@@ -34,7 +34,7 @@ export async function POST(req: NextRequest) {
 
     // 2) Envia um LOTE de contatos da campanha
     if (action === 'enviar') {
-      const { disparoId, template, idioma, categoria, headerMidia, bodyParams, contatos } = body
+      const { disparoId, template, idioma, categoria, headerMidia, bodyParams, contatos, corpo } = body
       if (!disparoId || !template || !Array.isArray(contatos)) {
         return NextResponse.json({ ok: false, error: 'parâmetros faltando' }, { status: 200 })
       }
@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
       let enviados = 0, falhas = 0, pulados = 0
       const envios: any[] = []
+      const textos = new Map<string, { texto: string; wamid: string | null }>() // telefone -> texto que saiu (pro histórico da conversa)
 
       for (const c of contatos) {
         const tel = foneOficial(c.telefone)
@@ -79,6 +80,11 @@ export async function POST(req: NextRequest) {
 
         const r = await enviarTemplate(tel, template, idioma || 'pt_BR', componentes.length ? componentes : undefined)
         if (r.ok) enviados++; else falhas++
+        if (r.ok && typeof corpo === 'string' && corpo.trim()) {
+          const params: string[] = Array.isArray(bodyParams) ? bodyParams : []
+          const texto = corpo.replace(/\{\{(\d+)\}\}/g, (_m, n) => (params[Number(n) - 1] || '').replace(/\{nome\}/gi, c.nome || ''))
+          textos.set(tel, { texto, wamid: r.wamid || null })
+        }
         envios.push({
           org_id: org, disparo_id: disparoId, telefone: tel, nome: c.nome || null,
           lead_id: c.lead_id || null, aluno_id: c.aluno_id || null,
@@ -103,6 +109,26 @@ export async function POST(req: NextRequest) {
         await supabase.from('wa_contatos')
           .update({ status: 'enviado', atualizado_em: new Date().toISOString() })
           .eq('org_id', org).in('telefone', enviadosFones).eq('status', 'novo')
+      }
+
+      // HISTÓRICO (11/11/2026, pedido do Rick): a mensagem do disparo entra na conversa de quem JÁ tem conversa,
+      // pra o time ver a que o contato está respondendo. Não cria conversa nova (lista fria grande encheria a caixa).
+      // Falha aqui não derruba o disparo: a mensagem já saiu.
+      if (textos.size) {
+        try {
+          const { data: convs } = await supabase.from('wa_conversas').select('id, telefone, ultima_msg_em')
+            .eq('org_id', org).eq('canal', 'oficial').in('telefone', [...textos.keys()])
+            .order('ultima_msg_em', { ascending: false, nullsFirst: false })
+          const agora = new Date().toISOString()
+          const usadas = new Set<string>()
+          for (const cv of convs || []) {
+            if (usadas.has(cv.telefone)) continue // telefone com mais de uma conversa: só a mais recente
+            usadas.add(cv.telefone)
+            const t = textos.get(cv.telefone)!
+            await supabase.from('wa_mensagens').insert({ org_id: org, conversa_id: cv.id, zapi_id: t.wamid, direcao: 'enviada', tipo: 'texto', texto: t.texto, status: 'enviada', canal: 'oficial' })
+            await supabase.from('wa_conversas').update({ ultima_msg: t.texto.slice(0, 200), ultima_msg_em: agora }).eq('id', cv.id)
+          }
+        } catch { /* histórico é complemento; o envio já foi registrado */ }
       }
 
       return NextResponse.json({ ok: true, enviados, falhas, pulados })
