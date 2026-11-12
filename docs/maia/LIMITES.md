@@ -38,11 +38,13 @@ Tudo em `lib/maia/limites.ts`. Cada teto tem um padrão no código, uma troca ge
 - IA do dia: cliente vai pro modo humano com a frase fixa; o 2º cliente também; a equipe é avisada 1 vez; o dono recebe 1 recado.
 - Enxurrada: 31 contatos novos na hora → o 32º vai pra equipe, com o aviso de privacidade; contatos de 2 h atrás não contam.
 
-**O que NÃO foi testado:**
-- O teto das demonstrações: o fluxo usa as tabelas do Oito no banco da escola, que não têm modo local.
-- A recusa da verba alta pela conversa com o dono: precisa de IA.
-- O teste completo do Guto (`maia-teste.mjs`, 45 conferências) não rodou: a chave da Anthropic no `.env.local` desta máquina está vencida (401). Conferido sem IA: mensagem normal de cliente e de dono, num negócio sem gasto, passa pelos freios e chega na IA.
-- **Antes de publicar:** rodar `maia-teste.mjs`, `maia-teste-piloto.mjs` e este teste numa máquina com a chave válida.
+**Testes com IA (12/11, à tarde, chave da Anthropic da escola numa pasta só da Maia, modo local, ~US$ 1,50 de IA):**
+- `maia-teste.mjs`: **45/45** (as fotos de teste do PC do Guto foram trocadas por fotos reais da ótica, do papelão e dos copos da Wood; na 1ª rodada, com foto de doce no lugar do copo, a Maia recusou criar anúncio e pediu foto do produto: comportamento certo).
+- `maia-teste-piloto.mjs`: **142/143**. A única falha é a resposta em áudio (P5), que precisa da `ELEVENLABS_API_KEY`: não existe nesta máquina, existe na Vercel.
+- Verba alta pela conversa: o dono pediu "sobe pra 200 por dia". A Maia não gravou (ficou R$ 30), disse que é um salto grande e mexe em dinheiro, e chamou a equipe (`chamar_equipe`).
+- Este teste: 18/18 de novo.
+
+**O que NÃO foi testado:** o teto das demonstrações (usa as tabelas do Oito no banco da escola, sem modo local).
 
 ## Como desfazer
 
