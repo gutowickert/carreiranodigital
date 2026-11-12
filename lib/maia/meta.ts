@@ -45,6 +45,43 @@ async function chaveCidade(cidade: string) {
   return { key: c.key, name: c.name }
 }
 
+// 12/11 (campanha da escola): com promoted_object só com a página, a Meta manda o clique pro número PADRÃO da página,
+// que pode ser outro (a escola tem 6 números na página; os contatos caíram no número da Maia por 2 dias). O número
+// do WhatsApp do negócio vai sempre explícito no conjunto. Detalhes que a Meta impõe:
+//   - o número só se escolhe na CRIAÇÃO do conjunto (num conjunto ativo não muda: tem que criar outro)
+//   - ele tem que estar ligado à página E a conta do WhatsApp (WABA) tem que estar atribuída ao usuário do sistema
+//     que usa o token; senão a Meta responde "This WhatsApp phone number is not linked to your account"
+const soDigitos = (s: any) => String(s || '').replace(/\D/g, '')
+// o número que o cliente do negócio tem que achar do outro lado do anúncio (DDI + DDD + número, só dígitos)
+export async function numeroDoAnuncio(neg: any): Promise<string> {
+  let n = soDigitos(neg.meta?.wa?.numero || neg.contexto?.whatsapp)
+  if (!n && neg.wa_phone_id) {
+    // mesmo caminho do link do perfil: lê o número da conta do WhatsApp conectada e guarda em meta.wa.numero
+    const { linkDoPerfil } = await import('./social')
+    n = soDigitos((await linkDoPerfil(neg.id).catch(() => null))?.numero)
+  }
+  if (!n) throw new Error('falta o número do WhatsApp do negócio pro anúncio (conecta o WhatsApp ou preenche meta.wa.numero)')
+  if (!n.startsWith('55')) n = '55' + n
+  return n
+}
+// "não está ligado" vira uma frase que diz o que fazer
+export const explicaNumero = (e: any, numero: string) => /not linked|não está vinculado|nao esta vinculado/i.test(String(e?.message || ''))
+  ? new Error(`a Meta não aceitou o WhatsApp ${numero} no anúncio: o número precisa estar ligado à página do negócio e a conta do WhatsApp atribuída ao usuário do sistema no BM da escola (Configurações do negócio → Contas do WhatsApp → Atribuir usuários)`)
+  : e
+// a Meta às vezes guarda sem o 9 do celular: 55 51 9xxxx-xxxx e 55 51 xxxx-xxxx são o mesmo número
+export const mesmoNumero = (a: string, b: string) => {
+  const sem9 = (s: string) => { s = soDigitos(s); return s.length === 13 && s[4] === '9' ? s.slice(0, 4) + s.slice(5) : s }
+  return !!soDigitos(a) && sem9(a) === sem9(b)
+}
+// lê de volta o conjunto e confere o número. Se a Meta não guardou o número certo, o anúncio NÃO pode ir pro ar.
+export async function confereNumero(adset_id: string, numero: string) {
+  if (!metaReal()) return { ok: true, simulado: true }
+  const j = await get(adset_id, { fields: 'promoted_object' })
+  const salvo = soDigitos(j?.promoted_object?.whatsapp_phone_number)
+  if (!mesmoNumero(salvo, numero)) throw new Error(`o conjunto ${adset_id} está com o WhatsApp ${salvo || '(padrão da página)'} e não com o ${numero}: não liga`)
+  return { ok: true, numero: salvo }
+}
+
 // monta a campanha inteira, PAUSADA: campanha → conjunto (cidade + raio, verba do dia, conversa no WhatsApp) → um anúncio por peça aprovada
 export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: string[]; verba_dia?: number; raio_km?: number; idade_min?: number; idade_max?: number; por: string }) {
   const neg = await db.um('negocios', { id: negocio_id })
@@ -54,6 +91,7 @@ export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: 
   const todas = await db.lista('pecas', { negocio_id, status: 'aprovada' })
   const pecas = todas.filter(p => (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && (!opc.peca_ids?.length || opc.peca_ids.includes(p.id)) && !p.campanha_id)
   if (!pecas.length) throw new Error('nenhum anúncio aprovado pelo dono pra subir')
+  const numero = await numeroDoAnuncio(neg)
   const verba = Number(opc.verba_dia || neg.verba_dia || 20)
   // 12/11 (limites.ts): verba diária acima do teto do negócio não vira campanha (nem pausada): sobe o teto antes, com o ok do Guto
   if (!(verba > 0)) throw new Error('verba do dia inválida')
@@ -66,9 +104,11 @@ export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: 
   const conj = await post(`${act(conta)}/adsets`, (enviado.conjunto = {
     name: nome + ' · conversas', campaign_id: camp.id, status: 'PAUSED',
     daily_budget: Math.round(verba * 100), billing_event: 'IMPRESSIONS', optimization_goal: 'CONVERSATIONS', destination_type: 'WHATSAPP',
-    bid_strategy: 'LOWEST_COST_WITHOUT_CAP', promoted_object: { page_id: pagina },
+    bid_strategy: 'LOWEST_COST_WITHOUT_CAP', promoted_object: { page_id: pagina, whatsapp_phone_number: numero },
     targeting: { geo_locations: { cities: [{ key: cidade.key, radius: opc.raio_km || 25, distance_unit: 'kilometer' }] }, age_min: opc.idade_min || 18, age_max: opc.idade_max || 65, targeting_automation: { advantage_audience: 1 } },
-  }))
+  })).catch(e => { throw explicaNumero(e, numero) })
+  // confere na hora: se a Meta não guardou o número, para aqui (a campanha fica pausada e sem anúncio)
+  await confereNumero(conj.id, numero)
   const adIds: string[] = []
   for (const p of pecas) {
     const arquivo = p.arquivo_path ? await db.baixa(p.arquivo_path) : null
@@ -90,7 +130,7 @@ export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: 
     adIds.push(ad.id)
   }
   const c = await db.insere('campanhas', {
-    negocio_id, nome, status: 'criada_pausada', verba_dia: verba, publico: { cidade: cidade.name, raio_km: opc.raio_km || 25 },
+    negocio_id, nome, status: 'criada_pausada', verba_dia: verba, publico: { cidade: cidade.name, raio_km: opc.raio_km || 25, whatsapp: numero },
     peca_ids: pecas.map(p => p.id), meta_campaign_id: camp.id, meta_adset_id: conj.id, meta_ad_ids: adIds, simulada: !metaReal(),
   })
   for (const p of pecas) await db.atualiza('pecas', { id: p.id }, { campanha_id: c.id })
@@ -109,6 +149,8 @@ export async function ativa(campanha_id: string, por: string) {
   const neg = await db.um('negocios', { id: c.negocio_id })
   const acima = verbaAcimaDoTeto(neg, Number(c.verba_dia))
   if (acima) throw new Error(acima)
+  // 12/11: antes de ligar, confere de novo o WhatsApp do conjunto contra o número do negócio de HOJE
+  if (c.meta_adset_id) await confereNumero(c.meta_adset_id, await numeroDoAnuncio(neg))
   for (const id of [c.meta_campaign_id, c.meta_adset_id, ...(c.meta_ad_ids || [])]) await post(id, { status: 'ACTIVE' })
   const [nova] = await db.atualiza('campanhas', { id: c.id }, { status: 'ativa', ativada_por: por, ativada_em: new Date().toISOString() })
   for (const p of pecas) await db.atualiza('pecas', { id: (p as any).id }, { status: 'no_ar' })
