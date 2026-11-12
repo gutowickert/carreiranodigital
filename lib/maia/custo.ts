@@ -14,7 +14,7 @@ const usd = (d: any) => { const [pi, po] = preco(d.modelo || ''); return ((d.ent
 
 // 07/11 (piloto): o custo de IA de um negócio desde uma data (total e por tipo: cliente, dono, peças...), em reais
 export async function custoDoNegocio(negocio_id: string, desde: string) {
-  const evs = (await db.lista('eventos', { tipo: 'uso_ia', negocio_id })).filter(e => e.criado_em >= desde)
+  const evs = await db.lista('eventos', { tipo: 'uso_ia', negocio_id }, { desde: ['criado_em', desde] })   // 12/11: o filtro da data vai pro banco
   const porTipo: Record<string, number> = {}
   let total = 0
   for (const e of evs) { const v = usd(e.detalhe || {}); total += v; const t = e.detalhe?.tipo || 'outro'; porTipo[t] = (porTipo[t] || 0) + v }

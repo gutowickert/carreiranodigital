@@ -7,6 +7,7 @@ import { comFerramentas, type Ferramenta } from './ia'
 import { respondeMisto, modeloBarato, modeloForte } from './misto'
 import { valorAntesDoPreco } from './preco'
 import { limiteRespostas, respostasHoje } from './limite'
+import { iaDoDia, novasNaHora, avisaUmaVez } from './limites'
 import { vozLigada, audioDaResposta } from './voz'
 import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
 import { prazoResposta, diasDoNegocio } from './horario'
@@ -267,6 +268,36 @@ export async function respondeCliente(conversa_id: string) {
     await mandaTexto(cv, t)
     await avisaEquipe('conversa passou do limite', `${neg.nome}: a conversa com ${lead.nome || cv.telefone} passou de ${limite} respostas da Maia hoje. Passei pro dono (modo humano). Vale olhar no painel.`, neg.id)
     return { mensagens: [t], ferramentas: ['limite_respostas'], etapa: lead.etapa, humano: true, limite: true }
+  }
+  // 12/11 (limites.ts): os freios do negócio, antes de gastar IA. (1) o custo de IA do dia passou do teto; (2) contato NOVO
+  // numa enxurrada (mais contatos novos na última hora do que o teto). Nos dois casos a Maia não responde com IA: a conversa
+  // vai pro dono, o cliente recebe uma frase fixa e honesta (com o aviso de privacidade, se é a 1ª) e a equipe é avisada 1x por dia.
+  const freio = await (async () => {
+    const ia = await iaDoDia(neg)
+    if (ia.estourou) return { motivo: 'ia_do_dia', dono: `o custo de IA de hoje chegou no teto (R$ ${ia.gasto} de R$ ${ia.teto})`,
+      equipe: `${neg.nome}: o custo de IA de hoje chegou em R$ ${ia.gasto} (teto R$ ${ia.teto}). A Maia parou de responder os clientes até a meia-noite e passa cada conversa pro dono. Vale olhar o painel: pode ser conversa em círculo ou robô do outro lado.` }
+    if (primeira) {
+      const nv = await novasNaHora(neg)
+      if (nv.passou) return { motivo: 'enxurrada', dono: `chegaram ${nv.novas} contatos novos na última hora (o teto é ${nv.teto}) e eu deixei os de agora contigo`,
+        equipe: `${neg.nome}: ${nv.novas} contatos novos na última hora (teto ${nv.teto}). Os novos vão direto pro dono, sem IA. Pode ser anúncio bombando (bom: subir o teto) ou ataque/disparo errado (ruim: desligar o atendimento).` }
+    }
+    return null
+  })().catch(() => null)
+  if (freio) {
+    // passa sem o recado por conversa (numa enxurrada seriam dezenas no WhatsApp do dono): o dono recebe UM recado por dia
+    if ((await db.um('conversas', { id: cv.id }))?.modo !== 'humano') {
+      await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' })
+      await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por: 'sistema', motivo: freio.motivo })
+      if (lead?.id) await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: null }).catch(() => null)
+    }
+    const t = `${primeira ? `Oi! Aqui é a assistente virtual do ${neg.nome}. ` : ''}Recebi ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} mensagem e uma pessoa da equipe responde aqui mesmo, assim que puder.`
+    await mandaTexto(cv, t)
+    if (aviso) await mandaTexto(cv, aviso)
+    if (await avisaUmaVez(neg.id, freio.motivo, freio.motivo === 'ia_do_dia' ? 'teto de IA do dia' : 'enxurrada de contatos novos', freio.equipe)) {
+      const dcv = await conversaDoDono(neg)
+      await mandaTexto(dcv, `Aviso: ${freio.dono}. Os clientes que escreverem agora ficam contigo (eu não respondo esses): aparecem no painel e no teu WhatsApp do negócio. A equipe da Carreira no Digital já foi avisada.`).catch(() => null)
+    }
+    return { mensagens: aviso ? [t, aviso] : [t], ferramentas: ['freio_' + freio.motivo], etapa: lead.etapa, humano: true, limite: true }
   }
   if (novas.length && novas.every(x => midiaFalhou(x.texto))) {
     const audio = novas.some(x => String(x.texto).includes(NAO_OUVIU)), foto = novas.some(x => String(x.texto).includes(NAO_VIU))

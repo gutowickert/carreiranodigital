@@ -5,6 +5,7 @@
 //   - sem MAIA_META_REAL=1 nada vai pra Meta: grava o que seria enviado e devolve ids de simulação
 import { maiaDb as db } from './db'
 import { avisaEquipe } from './canal'
+import { verbaAcimaDoTeto } from './limites'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
 const TOKEN = () => process.env.MAIA_ADS_TOKEN || process.env.FB_ADS_TOKEN || ''
@@ -54,6 +55,10 @@ export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: 
   const pecas = todas.filter(p => (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && (!opc.peca_ids?.length || opc.peca_ids.includes(p.id)) && !p.campanha_id)
   if (!pecas.length) throw new Error('nenhum anúncio aprovado pelo dono pra subir')
   const verba = Number(opc.verba_dia || neg.verba_dia || 20)
+  // 12/11 (limites.ts): verba diária acima do teto do negócio não vira campanha (nem pausada): sobe o teto antes, com o ok do Guto
+  if (!(verba > 0)) throw new Error('verba do dia inválida')
+  const acima = verbaAcimaDoTeto(neg, verba)
+  if (acima) throw new Error(acima)
   const cidade = await chaveCidade(neg.cidade || 'Lajeado')
   const nome = `MAIA · ${neg.nome} · ${new Date().toISOString().slice(0, 10)}`
   const enviado: any = { campanha: null, conjunto: null, anuncios: [] }
@@ -100,6 +105,10 @@ export async function ativa(campanha_id: string, por: string) {
   if (c.status !== 'criada_pausada' && c.status !== 'pausada') throw new Error('campanha não está pausada (' + c.status + ')')
   const pecas = await Promise.all((c.peca_ids || []).map((id: string) => db.um('pecas', { id })))
   if (pecas.some((p: any) => !p?.aprovado_dono_em)) throw new Error('tem peça sem o 👍 do dono')
+  // 12/11 (limites.ts): confere o teto de novo na hora de ligar (o teto pode ter baixado depois de a campanha ser criada)
+  const neg = await db.um('negocios', { id: c.negocio_id })
+  const acima = verbaAcimaDoTeto(neg, Number(c.verba_dia))
+  if (acima) throw new Error(acima)
   for (const id of [c.meta_campaign_id, c.meta_adset_id, ...(c.meta_ad_ids || [])]) await post(id, { status: 'ACTIVE' })
   const [nova] = await db.atualiza('campanhas', { id: c.id }, { status: 'ativa', ativada_por: por, ativada_em: new Date().toISOString() })
   for (const p of pecas) await db.atualiza('pecas', { id: (p as any).id }, { status: 'no_ar' })

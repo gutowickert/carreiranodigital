@@ -11,6 +11,7 @@ import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros,
 import { baixaMidia } from '@/lib/oito/wa'
 import { descreveTom, tomDoNegocio } from './tom'
 import { diasDoNegocio } from './horario'
+import { iaDoDia, verbaAcimaDoTeto, avisaUmaVez } from './limites'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
@@ -125,7 +126,14 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
   return [
     { name: 'salvar_contexto', description: 'Guarda o que tu aprendeu do negócio (serviços, preços, público, diferencial, horário, endereço, formas de pagamento, tom, o que evitar, verba por dia, perguntas frequentes). Só o que o dono disse.',
       input_schema: { type: 'object', properties: { campos: { type: 'object', description: 'chave → valor, ex.: {"servicos":"...","preco_medio":"R$ 180"}' }, verba_dia: { type: 'number' } }, required: ['campos'] },
-      roda: async ({ campos, verba_dia }) => { const n = await db.um('negocios', { id: neg.id }); await db.atualiza('negocios', { id: neg.id }, { contexto: { ...(n?.contexto || {}), ...campos }, ...(verba_dia ? { verba_dia } : {}) }); return { ok: true } } },
+      roda: async ({ campos, verba_dia }) => {
+        // 12/11 (limites.ts): verba acima do teto do negócio não é salva pela conversa: a equipe confirma com o dono (é dinheiro)
+        const acima = verba_dia ? verbaAcimaDoTeto(neg, verba_dia) : null
+        const n = await db.um('negocios', { id: neg.id })
+        await db.atualiza('negocios', { id: neg.id }, { contexto: { ...(n?.contexto || {}), ...(campos || {}) }, ...(verba_dia && !acima ? { verba_dia } : {}) })
+        if (acima) await avisaUmaVez(neg.id, 'verba_teto', 'verba acima do teto', `${neg.nome}: o dono pediu verba de R$ ${verba_dia}/dia na conversa e ${acima}. Não salvei. Confirmar com ele e com o Guto.`)
+        return acima ? { ok: true, verba: `NÃO salva: ${acima}. Diz pro dono, sem número de teto, que um valor desse a equipe confirma com ele antes.` } : { ok: true }
+      } },
     { name: 'criar_anuncios', description: 'Cria anúncios novos com as fotos e vídeos que o dono mandou. Eles vão pra revisão da equipe e depois chegam pro dono aprovar (leva umas horas). Usa quando o dono pedir ou quando chegarem fotos/vídeos novos e ele topar.',
       input_schema: { type: 'object', properties: { quantidade: { type: 'number' }, tema: { type: 'string', description: 'ex.: Natal, promoção de terça, produto novo' } } },
       roda: async ({ quantidade, tema }) => geraAnuncios(neg, { quantidade, tema }) },
@@ -230,6 +238,14 @@ export async function respondeDono(conversa_id: string) {
   const ctx = { aprovou: [] as string[], link: '' }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
   if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
+  // 12/11 (limites.ts): custo de IA do dia no teto. O 👍 de cima já valeu (não usa IA); o resto espera a equipe ou o dia seguinte
+  const iaHoje = await iaDoDia(neg).catch(() => null)
+  if (iaHoje?.estourou) {
+    const avisou = await avisaUmaVez(neg.id, 'ia_do_dia', 'teto de IA do dia', `${neg.nome}: o custo de IA de hoje chegou em R$ ${iaHoje.gasto} (teto R$ ${iaHoje.teto}). A Maia parou de responder o dono e os clientes até a meia-noite. Vale olhar o painel.`)
+    const ok = ctx.aprovou.length ? 'Aprovado ✅ ' : ''
+    if (avisou || ok) await mandaTexto(cv, `${ok}${avisou ? 'Hoje eu cheguei no meu limite de segurança do dia. A equipe da Carreira no Digital já foi avisada e te responde por aqui; amanhã eu volto ao normal.' : ''}`.trim())
+    return null
+  }
   // 07/11 (piloto): "devolve pra Maia": devolve na hora, sem depender da IA (ela só confirma)
   const { pedeDevolver, devolvePeloDono } = await import('./humano')
   const devolvidas = ultima && pedeDevolver(ultima.texto || '') ? await devolvePeloDono(neg, ultima.texto) : []

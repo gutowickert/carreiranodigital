@@ -148,6 +148,21 @@ export async function atendeMaia(id: string) {
     avisaDono('Maia (demonstração falhou), assume', `${cv.nome || cv.telefone}: ${String(e?.message || '').slice(0, 140)}`)
     return
   }
+  // 12/11 (limites.ts): teto de demonstrações novas por dia. O número da Maia é público: sem teto, qualquer um (ou um robô
+  // com muitos números) gasta a nossa IA. A conversa conta na 1ª vez que chega aqui (a parte com IA; a 1ª resposta é fixa).
+  // Passou do teto: vai pro Guto (modo humano), sem IA, e a equipe recebe UM aviso no dia
+  if (!mx.ia_contada && !ehSimulado(cv.telefone)) {
+    const { demosDoDia, avisaUmaVez } = await import('./limites')
+    const { maiaDb } = await import('./db')
+    const d = await demosDoDia().catch(() => null)
+    if (d && !d.cabe) {
+      await db.atualiza('wa_conversas', { id }, { modo: 'humano' })
+      await avisaUmaVez(null, 'demos_dia', 'teto de demonstrações do dia', `Chegaram ${d.demos} demonstrações hoje (teto ${d.teto}). As novas de hoje ficam com o Guto, sem IA (modo humano no número da Maia). Procura de verdade: subir MAIA_TETO_DEMOS_DIA. Números estranhos em série: avisar o Nando.`).catch(() => null)
+      return
+    }
+    await maiaDb.evento('demo_iniciada', null, { conversa: id }).catch(() => null)
+    await amostra.salvaMaia(id, { ia_contada: new Date().toISOString() })
+  }
   const atual: any = (await db.um('wa_conversas', { id })) || cv
   const mxa = atual.rascunho?.maia || {}
   const msgs = await db.lista('wa_msgs', { conversa_id: id }, { ordem: 'criado_em' })

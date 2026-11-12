@@ -3,6 +3,7 @@
 //   POST {acao, ...}: criar_negocio, atualizar_negocio, gerar_anuncios, aprovar_peca, ajustar_peca, descartar_peca, pedir_joinha,
 //        criar_campanha, ativar_campanha, pausar_campanha, lead_novo, lead_etapa, lead_ganho, lead_perdido,
 //        mandar_ao_dono, assumir, devolver, simular_dono, simular_cliente, rodar_rotina,
+//        limites (12/11: o retrato dos tetos de um negócio, lib/maia/limites.ts),
 //        link_conectar, atendimento_clientes, criar_modelo_dono (05/11). GET também: modelos, chamadas
 //   07/11 (painel do dono): POST link_painel_dono, painel_dono_revogar
 //   06/11 (demonstração grátis): GET amostras · POST simular_demo, rodar_demo, teste_demo_sumiu (só no modo de teste)
@@ -42,6 +43,9 @@ function metaSeguro(novo: any, atual: any) {
   else delete m.social_token
   // 07/11: a versão dos links do painel do dono só muda pela ação painel_dono_revogar (senão salvar o formulário reviveria links revogados)
   if (atual?.painel_versao != null) m.painel_versao = atual.painel_versao; else delete m.painel_versao
+  // 12/11 (limites.ts): os tetos do negócio (meta.limites) só saem se vierem de propósito no pedido; o formulário que não conhece o
+  // campo não apaga um teto que a equipe pôs. Pra voltar ao padrão: mandar limites: {}
+  if (!('limites' in (novo || {})) && atual?.limites) m.limites = atual.limites
   return m
 }
 
@@ -160,6 +164,13 @@ export async function POST(req: Request) {
       case 'pedir_joinha': await pedeJoinha(b.negocio_id); return ok({ ok: true })
       case 'criar_campanha': return ok(await criaCampanhaPausada(b.negocio_id, { peca_ids: b.peca_ids, verba_dia: b.verba_dia, raio_km: b.raio_km, idade_min: b.idade_min, idade_max: b.idade_max, por }))
       case 'ativar_campanha': return ok(await ativa(b.campanha_id, por))
+      // 12/11 (limites.ts): o retrato dos tetos de um negócio (verba, IA do dia, contatos novos na hora). Só leitura
+      case 'limites': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { limitesDoNegocio } = await import('@/lib/maia/limites')
+        return ok(await limitesDoNegocio(n))
+      }
       case 'pausar_campanha': return ok(await pausa(b.campanha_id, por))
       case 'lead_novo': return ok(await novoLead(b.negocio_id, { nome: b.nome, telefone: b.telefone, origem: b.origem || 'outro', produto: b.produto }, 'equipe'))
       case 'lead_etapa': { const l = await db.um('leads', { id: b.lead_id }); return ok(await mudaEtapa(l, b.etapa as Etapa, 'equipe', { valor: b.valor, produto: b.produto })) }

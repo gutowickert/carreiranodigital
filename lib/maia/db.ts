@@ -8,7 +8,9 @@ import crypto from 'node:crypto'
 
 type Linha = Record<string, any>
 type Filtro = Record<string, string | number | boolean | null>
-type Opc = { ordem?: string; desc?: boolean; limite?: number; campos?: string }
+// 12/11 (limites.ts): desde = [coluna, valor] filtra "coluna >= valor" no banco (ex.: ['criado_em', iso]), pra contar o dia
+// sem trazer a tabela inteira. É o único filtro que não é igualdade
+type Opc = { ordem?: string; desc?: boolean; limite?: number; campos?: string; desde?: [string, string] }
 
 // 07/11 (segurança): o modo local nunca vale na Vercel, mesmo com MAIA_LOCAL=1 lá: ele abre /api/maia/arquivo sem senha
 // e deixa o webhook aceitar evento sem assinatura
@@ -58,7 +60,7 @@ export const maiaDb = {
 
   async lista(tab: string, f: Filtro = {}, o: Opc = {}): Promise<Linha[]> {
     if (maiaLocal()) {
-      let l = le(tab).filter(x => casa(x, f))
+      let l = le(tab).filter(x => casa(x, f) && (!o.desde || String(x[o.desde[0]] ?? '') >= o.desde[1]))
       if (o.ordem) l.sort((a, b) => (a[o.ordem!] > b[o.ordem!] ? 1 : a[o.ordem!] < b[o.ordem!] ? -1 : 0) * (o.desc ? -1 : 1))
       return o.limite ? l.slice(0, o.limite) : l
     }
@@ -66,7 +68,7 @@ export const maiaDb = {
     const todas: Linha[] = []
     for (let de = 0; ; de += 1000) {
       const ate = o.limite ? Math.min(de + 999, o.limite - 1) : de + 999
-      const p = [qs(f), `select=${o.campos || '*'}`, o.ordem ? `order=${o.ordem}.${o.desc ? 'desc' : 'asc'}` : ''].filter(Boolean).join('&')
+      const p = [qs(f), o.desde ? `${o.desde[0]}=gte.${encodeURIComponent(o.desde[1])}` : '', `select=${o.campos || '*'}`, o.ordem ? `order=${o.ordem}.${o.desc ? 'desc' : 'asc'}` : ''].filter(Boolean).join('&')
       const parte: Linha[] = await req(`/rest/v1/maia_${tab}?${p}`, { headers: { Range: `${de}-${ate}` } })
       todas.push(...parte)
       if (parte.length < ate - de + 1 || (o.limite && todas.length >= o.limite)) break
