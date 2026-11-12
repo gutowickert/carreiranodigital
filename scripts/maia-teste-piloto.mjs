@@ -515,7 +515,8 @@ async function pendencias0811() {
   const arqV = tv.caminho ? path.join(PASTA, 'arquivos', tv.caminho) : ''
   anota(arqV && fs.existsSync(arqV) && fs.statSync(arqV).size > 1000 && /\.ogg$/.test(arqV), 'P5. ElevenLabs: o áudio da resposta foi gerado e guardado (' + (arqV ? path.basename(arqV) + ', ' + fs.statSync(arqV).size + ' bytes' : tv.erro || 'sem arquivo: falta ELEVENLABS_API_KEY?') + ')')
   const voz = (await fn('x')).voz_ligada
-  if (process.env.ELEVENLABS_API_KEY && process.env.MAIA_VOZ_RESPOSTA !== '0') anota(voz === true, 'P5. voz ligada por padrão: com a chave da ElevenLabs e sem MAIA_VOZ_RESPOSTA, a voz está ligada')
+  // 12/11 (Guto): a voz é DESLIGADA por padrão; só liga com MAIA_VOZ_RESPOSTA=1
+  if (process.env.MAIA_VOZ_RESPOSTA !== '1') anota(voz === false, 'P5. voz desligada por padrão: sem MAIA_VOZ_RESPOSTA=1, a Maia responde só em texto')
   const ra = await semIA(cliente(S.id, '5500044440307', 'Otto', '', { arquivo_b64: b64(), mime: 'audio/ogg', simulado: { transcricao: 'Oi, quanto é a caixa com 6 cookies?' } }))
   const mOt =await msgsDe(await cvDe(S.id, '5500044440307'))
   if (!voz) anota(!ra?.respondeu?.audio && mOt.some(m => m.autor === 'maia' && m.tipo === 'texto' && /45/.test(m.texto)) && !mOt.some(m => m.autor === 'maia' && m.tipo === 'audio'), 'P5. voz desligada (padrão): o cliente mandou áudio e a resposta foi em texto')

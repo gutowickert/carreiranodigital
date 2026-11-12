@@ -195,7 +195,9 @@ CONVERSA ATÉ AGORA:\n${historico}\n\nResponde a(s) última(s) mensagem(ns). Res
       try { const { valorAntesDoPreco } = await import('./preco'); o.mensagens = (await valorAntesDoPreco(REGRAS(), o.mensagens, { modelos: [MODELO] })).msgs } catch { /* fica a original */ }
     }
     // áudio primeiro (quando houver), depois os textos
-    const querAudio = (o.audio || '').trim() && (ultimaFoiAudio || o.etapa === 'proposta')
+    // 12/11 (Guto): sem voz por padrão (voz.ts); o texto do áudio já vai nas mensagens
+    const { vozLigada } = await import('./voz')
+    const querAudio = vozLigada() && (o.audio || '').trim() && (ultimaFoiAudio || o.etapa === 'proposta')
     if (querAudio) {
       const ogg = await fala(o.audio as string).catch(() => null)
       if (ogg) {

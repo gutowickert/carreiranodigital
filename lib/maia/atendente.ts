@@ -14,6 +14,7 @@ import { avisoPrivacidade, respostaJaAvisa } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente, mandaAudioCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
+import { respostaFixa } from './fixas'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
 
@@ -282,6 +283,16 @@ export async function respondeCliente(conversa_id: string) {
   const ferrs = ferramentas(neg, cv, lead, ctx)
   // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
   const gatilho = gatilhoHumano(textoCliente)
+  // 12/11 (custo): só perguntou o Pix, o endereço, o horário ou o frete, e isso está na ficha: resposta fixa, sem IA (fixas.ts).
+  // Na 1ª mensagem não (ela se apresenta e vai o aviso de privacidade), nem com comprovante ou pedido de pessoa
+  const fixa = !primeira && !gatilho && !ctx.comprovante ? respostaFixa(neg, textoCliente) : null
+  if (fixa) {
+    await mandaTexto(cv, fixa.texto)
+    await db.evento('resposta_fixa', neg.id, { conversa_id: cv.id, assunto: fixa.assunto })
+    if (!['ganho', 'perdido'].includes(lead.etapa) && !lead.proximo_followup_em) await agendaFollowup(lead)
+    await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
+    return { mensagens: [fixa.texto], ferramentas: ['resposta_fixa'], etapa: lead.etapa, fixa: fixa.assunto }
+  }
   // 08/11 (regra fixa da casa): perguntou o preço → primeiro o valor (o que ganha), logo depois o número
   const precoAgora = perguntaPreco(textoCliente) ? '\nO CLIENTE PERGUNTOU O PREÇO (regra fixa: valor antes do preço). Depois da apresentação, a ordem é: 1º) uma ou duas frases curtas do que ele ganha (o que vem, o que inclui, o resultado), só com o que tu sabe do negócio; 2º) o preço, na mesma mensagem, logo em seguida. A frase com "R$" NUNCA vem antes da frase do valor.\nOrdem certa (exemplo de outro negócio): "A pizza grande tem 8 fatias e vem com a borda recheada. Ela sai R$ 59."\nOrdem errada: "A pizza grande sai R$ 59. Ela tem 8 fatias e vem com a borda recheada."\nSe o que tu sabe do negócio só tem o preço (nada do que inclui ou do resultado), diz o preço direto e não inventa benefício.' : ''
 
@@ -384,7 +395,9 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const cv = await db.um('conversas', { negocio_id: neg.id, canal: 'cliente', telefone: lead.telefone || '' })
   const msgs = cv ? (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em' })).filter(m => m.texto).slice(-12) : []
   const { emJson } = await import('./ia')
-  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).`,
-    `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`)
+  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).\nO que funciona (12/11, estudo de 2.032 conversas reais): retomar o que o próprio cliente disse (o produto, a data, a dúvida dele) ou levar algo novo e útil; nas conversas que pararam depois do preço ou do sim, oferecer de novo o próximo passo (horário, dados do pagamento).\nNUNCA: "ficou alguma dúvida?", "condição especial", "último dia", "vou encerrar teu contato" (tiveram de 11% a 22% de resposta).`,
+    `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`, [],
+    // 12/11 (custo): a retomada é curta e simples: vai no modelo barato (antes ia no padrão, o Sonnet)
+    { modelo: modeloBarato(), uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv?.id || null } })
   return noTomDoNegocio(neg, r.texto, { negocio_id: neg.id, conversa_id: cv?.id || null })
 }

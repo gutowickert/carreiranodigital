@@ -8,8 +8,10 @@ export const ETAPAS = ['novo', 'conversando', 'interessado', 'proposta', 'ganho'
 export type Etapa = typeof ETAPAS[number]
 type Autor = 'maia' | 'dono' | 'equipe'
 
-// follow-up: quem parou de responder recebe até 3 retomadas (1, 3 e 7 dias depois); sem resposta depois disso, vira perdido
-export const FOLLOWUP_DIAS = [1, 3, 7]
+// follow-up: quem parou de responder recebe até 3 retomadas; sem resposta depois disso, vira perdido.
+// 12/11 (estudo dos 4 CRMs): a 1ª retomada em até 24 h teve 83% de resposta na Wood (depois de 1 dia, de 19% a 26%) e,
+// na escola, 48% entre 6 e 24 h. Por isso: 18 h, 2 dias e 5 dias (antes 1, 3 e 7 dias). No máximo 3 (10+ retomadas: 0% de venda)
+export const FOLLOWUP_DIAS = [0.75, 2, 5]
 const ABERTAS: Etapa[] = ['novo', 'conversando', 'interessado', 'proposta']
 const dias = (n: number) => new Date(Date.now() + n * 86400e3).toISOString()
 

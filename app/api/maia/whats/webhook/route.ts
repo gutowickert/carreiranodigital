@@ -94,11 +94,13 @@ export async function POST(req: Request) {
       if (!r) continue
       if (atendimentoLigado(neg)) { marcaLidaNeg(waDoNegocio(neg)!, m.id).catch(() => null); if (r.responder) responder.set(r.cv.id, neg.id) }
     }
-    await espera(12000)
+    // 12/11 (custo): 20 s (antes 12). O cliente costuma mandar 2 ou 3 mensagens seguidas: a Maia responde tudo de uma vez
+    const ESPERA = +(process.env.MAIA_ESPERA_MS || 20000)
+    await espera(ESPERA)
     for (const [id, negocio_id] of responder) {
       const msgs = await db.lista('msgs', { conversa_id: id }, { ordem: 'criado_em', desc: true, limite: 20 })
       const ultCliente = msgs.find(x => x.autor === 'cliente')
-      if (ultCliente && Date.now() - Date.parse(ultCliente.criado_em) < 11000) continue
+      if (ultCliente && Date.now() - Date.parse(ultCliente.criado_em) < ESPERA - 1000) continue
       const ultDono = msgs.find(x => x.autor === 'dono')
       if (ultDono && Date.now() - Date.parse(ultDono.criado_em) < QUIETA_MS) continue
       await respondeCliente(id).catch(async (e: any) => { await avisaEquipe('a Maia falhou com um cliente', String(e?.message || e).slice(0, 160), negocio_id) })

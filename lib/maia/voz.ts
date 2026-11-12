@@ -1,5 +1,5 @@
 // Maia: resposta em ÁUDIO pro cliente que mandou áudio (08/11, T12 do plano de passagem).
-// 08/11 (Guto): LIGADO por padrão: cliente que manda áudio recebe a resposta em áudio, sempre que ELEVENLABS_API_KEY existe no
+// 08/11 (Guto): era ligado por padrão; desde 12/11 é DESLIGADO (ver vozLigada): cliente que manda áudio recebe a resposta em áudio, sempre que ELEVENLABS_API_KEY existe no
 // servidor. Pra desligar: MAIA_VOZ_RESPOSTA=0. Só responde em áudio quando o cliente MANDOU áudio (atendente.ts); texto tem resposta em texto.
 // O texto da resposta fica salvo na conversa como "(áudio) <texto>" (canal.ts): o dono lê no painel e a Maia lê no histórico.
 // A voz: meta.atendimento.voz_id do negócio, senão MAIA_VOZ_ID (não existe na Vercel), senão a voz padrão da Maia (5QMOJHwbSpbG7akM67Nn).
@@ -7,7 +7,9 @@
 // Se a ElevenLabs falhar (ou o envio do áudio pela Meta falhar), a resposta vai em texto, como sempre.
 import { maiaDb as db } from './db'
 
-export const vozLigada = () => process.env.MAIA_VOZ_RESPOSTA !== '0' && !!process.env.ELEVENLABS_API_KEY
+// 12/11 (Guto, custo): a Maia responde SÓ em texto. A voz era o maior custo por cliente. Quem manda áudio (cliente ou dono)
+// continua sendo entendido (transcrição). Pra religar a voz: MAIA_VOZ_RESPOSTA=1
+export const vozLigada = () => process.env.MAIA_VOZ_RESPOSTA === '1' && !!process.env.ELEVENLABS_API_KEY
 const vozDo = (neg: any) => String(neg?.meta?.atendimento?.voz_id || process.env.MAIA_VOZ_ID || '5QMOJHwbSpbG7akM67Nn')
 
 // o texto que vira fala: sem link, sem emoji e sem marcações
