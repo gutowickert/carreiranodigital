@@ -91,12 +91,13 @@ export async function criaCampanhaPausada(negocio_id: string, opc: { peca_ids?: 
   const todas = await db.lista('pecas', { negocio_id, status: 'aprovada' })
   const pecas = todas.filter(p => (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && (!opc.peca_ids?.length || opc.peca_ids.includes(p.id)) && !p.campanha_id)
   if (!pecas.length) throw new Error('nenhum anúncio aprovado pelo dono pra subir')
-  const numero = await numeroDoAnuncio(neg)
   const verba = Number(opc.verba_dia || neg.verba_dia || 20)
   // 12/11 (limites.ts): verba diária acima do teto do negócio não vira campanha (nem pausada): sobe o teto antes, com o ok do Guto
   if (!(verba > 0)) throw new Error('verba do dia inválida')
   const acima = verbaAcimaDoTeto(neg, verba)
   if (acima) throw new Error(acima)
+  // o número do WhatsApp vem depois do teto: verba acima do teto é recusada antes de qualquer outra conferência
+  const numero = await numeroDoAnuncio(neg)
   const cidade = await chaveCidade(neg.cidade || 'Lajeado')
   const nome = `MAIA · ${neg.nome} · ${new Date().toISOString().slice(0, 10)}`
   const enviado: any = { campanha: null, conjunto: null, anuncios: [] }

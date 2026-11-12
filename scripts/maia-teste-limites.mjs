@@ -30,7 +30,7 @@ const agora = () => new Date().toISOString()
 const dado = r => r.dados ?? r.data ?? r   // o formato da resposta do painel
 
 async function novoNegocio(nome, fone, meta = {}) {
-  const r = await api('criar_negocio', { nome, dono_whatsapp: fone, cidade: 'Estrela', verba_dia: 30, meta })
+  const r = await api('criar_negocio', { nome, dono_whatsapp: fone, cidade: 'Estrela', verba_dia: 30, meta, contexto: { whatsapp: fone } })   // 12/11: campanha só nasce com o WhatsApp do negócio (ramo maia-regras-whatsapp)
   const n = dado(r)
   if (!n?.id) throw new Error('não criou o negócio: ' + JSON.stringify(r).slice(0, 200))
   return n
