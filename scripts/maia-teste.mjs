@@ -84,7 +84,7 @@ async function main() {
 
   for (const N of NEGOCIOS) {
     log('\n=== ' + N.cad.nome)
-    const neg = await op('criar_negocio', N.cad)
+    const neg = await op('criar_negocio', { ...N.cad, contexto: { ...(N.cad.contexto || {}), whatsapp: N.cad.dono_whatsapp } })   // 12/11: campanha só nasce com o WhatsApp do negócio
     anota(!!neg.id, 'negócio criado')
     for (const t of N.dono) { const r = await op('simular_dono', { negocio_id: neg.id, texto: t }); log('    dono: ' + t + '\n    maia: ' + fala(r) + '  [' + ferr(r) + ']') }
     for (const f of N.fotos) await op('simular_dono', { negocio_id: neg.id, ...foto(f), legenda: '' })

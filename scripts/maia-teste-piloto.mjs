@@ -513,7 +513,8 @@ async function pendencias0811() {
   // resposta em áudio (ElevenLabs): desde 08/11 LIGADA por padrão quando há ELEVENLABS_API_KEY (MAIA_VOZ_RESPOSTA=0 desliga)
   const tv = await op('teste_voz', { negocio_id: S.id, texto: 'Oi! A caixa com 6 cookies sai R$ 45. Quer que eu anote o seu pedido?' }).catch(e => ({ erro: e.message }))
   const arqV = tv.caminho ? path.join(PASTA, 'arquivos', tv.caminho) : ''
-  anota(arqV && fs.existsSync(arqV) && fs.statSync(arqV).size > 1000 && /\.ogg$/.test(arqV), 'P5. ElevenLabs: o áudio da resposta foi gerado e guardado (' + (arqV ? path.basename(arqV) + ', ' + fs.statSync(arqV).size + ' bytes' : tv.erro || 'sem arquivo: falta ELEVENLABS_API_KEY?') + ')')
+  if (process.env.MAIA_VOZ_RESPOSTA === '1') anota(   // 12/11: a voz é desligada por padrão; o áudio só é conferido com ela ligada
+    arqV && fs.existsSync(arqV) && fs.statSync(arqV).size > 1000 && /\.ogg$/.test(arqV), 'P5. ElevenLabs: o áudio da resposta foi gerado e guardado (' + (arqV ? path.basename(arqV) + ', ' + fs.statSync(arqV).size + ' bytes' : tv.erro || 'sem arquivo: falta ELEVENLABS_API_KEY?') + ')')
   const voz = (await fn('x')).voz_ligada
   // 12/11 (Guto): a voz é DESLIGADA por padrão; só liga com MAIA_VOZ_RESPOSTA=1
   if (process.env.MAIA_VOZ_RESPOSTA !== '1') anota(voz === false, 'P5. voz desligada por padrão: sem MAIA_VOZ_RESPOSTA=1, a Maia responde só em texto')
