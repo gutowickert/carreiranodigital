@@ -410,7 +410,7 @@ CADA POST: ${JSON.stringify(lista).slice(0, 12000)}
 Compara por tema, formato e horário (alcance médio, taxa de interação, salvos e compartilhamentos valem mais que curtida). Com poucos posts num grupo, fala que é sinal, não certeza.
 Devolve SÓ o JSON: {"resumo":"2 a 3 frases","repetir":["..."],"testar":["..."],"parar":["..."],"plano":[{"semana":1,"dia":"terça","horario":"18h","tipo":"foto|carrossel|reels","tema":"...","formato":"...","ideia":"uma frase"}]}
 No máximo 3 itens em repetir, testar e parar. Plano do mês seguinte com 8 a 12 posts.`, [], 1,
-    { modelo: process.env.MAIA_MODELO_ANALISE || 'claude-opus-5-5', uso: { tipo: 'social_analise', negocio_id } })
+    { modelo: process.env.MAIA_MODELO_ANALISE || 'claude-sonnet-5-5', uso: { tipo: 'social_analise', negocio_id } })
   let a: any
   try { a = jsonDe(r.texto) } catch { throw new Error('a IA não devolveu a análise no formato certo') }
   const l = (t: string, xs: string[]) => (xs?.length ? `${t}: ${xs.join('; ')}.` : '')
