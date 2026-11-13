@@ -1,15 +1,14 @@
 // Maia: o que roda sozinho (03/11). O cron chama /api/maia/rotina de hora em hora.
 //   - retomadas vencidas: manda pro cliente (quando o canal do negócio existir) ou junta num lembrete pro dono (hoje)
-//   - segunda de manhã: o resumo da semana de cada negócio, que vai pra revisão da equipe antes de ir pro dono
+//   - segunda de manhã: o resumo da semana de cada negócio, que vai pra revisão da equipe antes de ir pro dono (13/11: resumo-semana.ts)
 //   - números da Meta: sincroniza o gasto e as conversas do dia
 //   - 06/11: social media (lib/maia/social.ts), atrás de MAIA_SOCIAL_LIGADO=1
 import { maiaDb as db } from './db'
 import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, mandaBotoes, janelaAbertaCv } from './canal'
 import { atendimentoLigado } from './wa-negocio'
 import { contaChamadas } from './chamadas'
-import { followupsVencidos, registraFollowup, encerraSemResposta, numeros } from './funil'
+import { followupsVencidos, registraFollowup, encerraSemResposta } from './funil'
 import { textoRetomada } from './atendente'
-import { geraRelatorio } from './pecas'
 import { sincronizaMetricas } from './meta'
 import { rotinaSocial, socialLigado } from './social'
 import { podeFalar } from './horario'
@@ -97,9 +96,10 @@ export async function relatoriosDaSemana(forcar = false) {
   const ate = new Date(), de = new Date(ate.getTime() - 7 * 86400e3)
   const feitos: any[] = []
   for (const neg of await negociosDoResumo(de)) {
-    const n = await numeros(neg.id, de.toISOString(), ate.toISOString())
-    const p = await geraRelatorio(neg, n)
-    feitos.push({ negocio: neg.id, peca: p.id })
+    // 13/11 (resumo-semana.ts): o texto sai pronto, sem IA: conversas, vendas, retorno, o melhor anúncio e uma sugestão
+    const { geraResumoSemana } = await import('./resumo-semana')
+    const { peca } = await geraResumoSemana(neg, de, ate)
+    feitos.push({ negocio: neg.id, peca: peca.id })
   }
   return feitos
 }

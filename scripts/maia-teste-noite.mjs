@@ -160,5 +160,57 @@ confere('sem a senha da equipe: não abre', semSenha.status === 401 || semSenha.
 // sai da carteira (o número do dono parece de verdade: nenhuma rotina pode falar com ele)
 await api('atualizar_negocio', { id: n2.id, status: 'cancelado' })
 
+// ═══════════ 3) o resumo da semana pro dono
+console.log('3) O resumo da semana')
+const n3 = await novoNegocio('TESTE · Resumo Semana', '550008883' + RUN)
+await api('atualizar_negocio', { id: n3.id, status: 'ativo' })
+const dias = k => new Date(Date.now() - k * 86400e3).toISOString()
+const pv = { id: crypto.randomUUID(), negocio_id: n3.id, tipo: 'anuncio_imagem', status: 'no_ar', titulo: 'presente', gancho: 'Presente que ninguém esquece', texto: 't', cta: 'c', midia_ids: [], versao: 1, criado_em: dias(9), atualizado_em: dias(9) }
+poe('pecas', [pv])
+poe('campanhas', [{ id: crypto.randomUUID(), negocio_id: n3.id, nome: 'teste', status: 'ativa', verba_dia: 20, peca_ids: [pv.id], meta_ad_ids: ['ad_teste_1'], criado_em: dias(9) }])
+const lead = (nome, extra) => ({ id: crypto.randomUUID(), negocio_id: n3.id, telefone: '550006663' + RUN + nome.length, nome, origem: 'anuncio', etapa: 'conversando', followups: 0, criado_em: dias(3), atualizado_em: dias(1), ...extra })
+poe('leads', [
+  lead('Ana', { anuncio_ref: 'ad_teste_1', etapa: 'ganho', valor: 135, ganho_em: dias(2) }),
+  lead('Bruno', { anuncio_ref: 'ad_teste_1', etapa: 'ganho', valor: 85, ganho_em: dias(1) }),
+  lead('Cida', { anuncio_ref: 'ad_teste_2' }),
+  lead('Duda Antiga', { criado_em: dias(20), etapa: 'ganho', valor: 999, ganho_em: dias(15) }),   // fora da semana: não conta
+])
+poe('metricas_dia', [0, 1, 2, 3, 4, 5, 6].map(k => ({ id: crypto.randomUUID(), negocio_id: n3.id, dia: dias(k).slice(0, 10), gasto: 20, conversas_iniciadas: 2 })))
+for (const k of [1, 2]) {
+  const c = { id: crypto.randomUUID(), negocio_id: n3.id, canal: 'cliente', telefone: '550006664' + RUN + k, modo: 'ia', criado_em: dias(2), ultima_msg_em: dias(1) }
+  poe('conversas', [c])
+  poe('msgs', [{ id: crypto.randomUUID(), conversa_id: c.id, negocio_id: n3.id, autor: 'cliente', tipo: 'texto', texto: 'oi', status: 'recebido', criado_em: dias(1) }])
+}
+let rs = await api('resumo_semana', { negocio_id: n3.id })
+const tx = String(rs.texto || '')
+console.log(tx.split('\n').map(l => '     │ ' + l).join('\n'))
+confere('abre com "Resumo da semana do <negócio>" e o período', /^Resumo da semana do TESTE · Resumo Semana \(\d\d\/\d\d a \d\d\/\d\d\), Dono:/.test(tx))
+confere('conversas da semana: 2', /Conversas com clientes: 2 \(3 contatos novos\)/.test(tx))
+confere('vendas da semana: 2, somando R$ 220 (a venda antiga não conta)', /Vendas e agendamentos fechados: 2, somando R\$ 220/.test(tx))
+confere('investido no anúncio: R$ 140 (7 dias de R$ 20) e o custo por venda', /Investido no anúncio: R\$ 140 \(R\$ 70 por venda\)/.test(tx))
+confere('retorno "a cada R$ X investidos, voltaram R$ Y"', /a cada R\$ 140 investidos, voltaram R\$ 220 em vendas \(R\$ 1,57 pra cada R\$ 1\)/.test(tx))
+confere('melhor anúncio pelo nome que o dono conhece (o gancho)', /Melhor anúncio: "Presente que ninguém esquece" \(2 contatos, 2 vendas\)/.test(tx))
+confere('uma sugestão no fim', /\nSugestão: .{20,}$/.test(tx))
+confere('a prévia não grava nada', !le('pecas').some(p => p.negocio_id === n3.id && p.tipo === 'relatorio'))
+const rot = await api('rodar_rotina', { forcar_relatorio: true })
+const rel = le('pecas').find(p => p.negocio_id === n3.id && p.tipo === 'relatorio')
+confere('a rotina da segunda gera o resumo (sem IA) pra equipe aprovar', rel?.status === 'revisao_equipe' && rel.texto === tx && (rot.relatorios || []).some(x => x.negocio === n3.id), JSON.stringify(rot.relatorios_erro || rel?.status))
+const ap = await api('aprovar_peca', { peca_id: rel?.id })
+const dcv = le('conversas').find(c => c.negocio_id === n3.id && c.canal === 'dono')
+const doDono = le('msgs').filter(m => m.conversa_id === dcv?.id && /^Resumo da semana/.test(m.texto || ''))
+// (o número de teste 55000 não tem janela de 24 h: a mensagem sai na hora, simulada. Número de verdade fora da janela vai pra fila
+// do dono e chama o modelo maia_novidades: canal.ts, igual aos anúncios)
+confere('equipe aprova: o resumo vai pro WhatsApp do dono', ap.http < 400 && le('pecas').find(p => p.id === rel?.id)?.status === 'aprovada' && doDono.length === 1 && doDono[0].status === 'enviado', JSON.stringify(ap).slice(0, 200))
+confere('e leva o link do painel do dono', /\/maia\/painel\?t=/.test(doDono[0]?.texto || ''))
+const lk = await api('link_painel_dono', { negocio_id: n3.id })
+const tok = new globalThis.URL(lk.link).searchParams.get('t')
+const ent = await fetch(`${URL}/api/maia/painel`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ acao: 'entrar', t: tok }) })
+const ck = (ent.headers.get('set-cookie') || '').split(';')[0]
+const pd = await (await fetch(`${URL}/api/maia/painel?acao=tudo`, { headers: { cookie: ck } })).json().catch(() => ({}))
+confere('o painel do dono mostra o resumo enviado', (pd.resumos || []).length === 1 && pd.resumos[0].texto.startsWith('Resumo da semana'), JSON.stringify(pd).slice(0, 200))
+await api('atualizar_negocio', { id: n3.id, aprovacao_equipe: false })
+const g2 = await api('resumo_semana', { negocio_id: n3.id, gerar: true })
+confere('sem "equipe aprova tudo": o resumo vai direto pro dono', le('pecas').find(p => p.id === g2.peca?.id)?.status === 'aprovada')
+
 console.log(`\n${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)

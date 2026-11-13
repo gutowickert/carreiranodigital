@@ -278,6 +278,8 @@ export async function dadosDoPainel(neg: any) {
       whatsapp_conectado: !!neg.wa_phone_id, maia_atende: neg?.meta?.wa?.atende === true },
     periodos, serie, esperando, retomadas: { agendadas, atrasadas: agendadas.filter(x => x.atrasada).length, feitas, respondidas: feitas.filter(x => x.respondeu).length },
     funil, conversas, anuncios, em_preparo, campanhas, vendas, perdas, avisos,
+    // 13/11: os resumos da semana que já foram pro WhatsApp do dono (resumo-semana.ts)
+    resumos: await (await import('./resumo-semana')).resumosEnviados(id).catch(() => []),
     whatsapp_maia: numeroMaia(), gerado_em: agora,
   }
 }

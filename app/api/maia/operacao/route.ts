@@ -152,6 +152,17 @@ export async function POST(req: Request) {
         if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
         return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
       }
+      // 13/11 (resumo-semana.ts): o resumo dos últimos 7 dias de um negócio. Sem gerar: só a prévia do texto (não grava nem manda).
+      // gerar: true cria a peça pra equipe aprovar (o mesmo da segunda 7h)
+      case 'resumo_semana': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const rs = await import('@/lib/maia/resumo-semana')
+        const ate = new Date(), de = new Date(ate.getTime() - 7 * 86400e3)
+        if (b.gerar === true) { const g = await rs.geraResumoSemana(n, de, ate); return ok({ peca: g.peca, texto: g.peca.texto }) }
+        const d = await rs.dadosDaSemana(n, de, ate)
+        return ok({ texto: rs.textoResumo(n, d), dados: d })
+      }
       // 13/11 (ligar.ts): a equipe conferiu (no botão de um anúncio de teste) que o número do WhatsApp dos anúncios é o certo.
       // numero (opcional) grava em contexto.whatsapp, o número que vai no anúncio quando o WhatsApp do negócio ainda não conectou
       case 'conferir_whatsapp': {

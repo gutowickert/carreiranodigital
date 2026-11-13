@@ -439,6 +439,12 @@ function secResumo(){
   h+='<h2>Últimas vendas</h2>'+(ult.length?'<ul class="lista card">'+ult.map(liVenda).join('')+'</ul>':vazioMaia('Nenhuma venda registrada este mês ainda. Fechou alguma? Me conta no WhatsApp.'));
   var av=d.avisos.filter(function(a){return a.status==='enviado';}).slice(0,2);
   if(av.length) h+='<h2>Avisos da Maia</h2><ul class="lista card">'+av.map(liAviso).join('')+'</ul>';
+  // 13/11: o resumo da semana que foi pro WhatsApp (o último aberto; os anteriores dobrados)
+  var rs=d.resumos||[];
+  if(rs.length){
+    h+='<h2>Resumo da semana<small>'+dataC(rs[0].enviado_em)+'</small></h2><div class="card pad" style="white-space:pre-line;line-height:1.55">'+esc(rs[0].texto)+'</div>';
+    if(rs.length>1) h+='<details class="card pad" style="margin-top:10px"><summary style="cursor:pointer">Semanas anteriores ('+(rs.length-1)+')</summary>'+rs.slice(1).map(function(r){return '<p class="mu peq" style="margin:14px 0 4px">'+esc(r.titulo||'')+'</p><div style="white-space:pre-line;line-height:1.55">'+esc(r.texto)+'</div>';}).join('')+'</details>';
+  }
   return h+'</div></div>';
 }
 function mini(n,t,alerta){return '<div'+(alerta?' class="alerta"':'')+'><b>'+int(n)+'</b><span>'+t+'</span></div>';}

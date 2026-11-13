@@ -160,8 +160,10 @@ export async function soltaFilaDoCliente(cv: any) {
 // ---- a fila do dono (fora da janela de 24 h) ----
 const resumoFila = (itens: Saida[]) => {
   const pecas = itens.filter(i => i.tipo !== 'texto').length
-  const textos = itens.length - pecas
-  return [pecas ? `${pecas} ${pecas === 1 ? 'anúncio novo' : 'anúncios novos'} pra tu aprovar` : '', textos ? `${textos} ${textos === 1 ? 'recado' : 'recados'}` : ''].filter(Boolean).join(' e ')
+  // 13/11: o resumo da semana tem nome próprio no modelo ("novidades do X pra ti: o resumo da semana")
+  const resumo = itens.some(i => i.tipo === 'texto' && /^Resumo da semana\b/.test(i.texto))
+  const textos = itens.length - pecas - (resumo ? 1 : 0)
+  return [resumo ? 'o resumo da semana' : '', pecas ? `${pecas} ${pecas === 1 ? 'anúncio novo' : 'anúncios novos'} pra tu aprovar` : '', textos ? `${textos} ${textos === 1 ? 'recado' : 'recados'}` : ''].filter(Boolean).join(' e ')
 }
 async function enfileira(cv: any, s: Saida) {
   await db.evento('fila_dono', cv.negocio_id, { conversa_id: cv.id, ...s, enviado: false })
