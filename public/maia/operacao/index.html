@@ -809,6 +809,9 @@ function pintaSelos(){
   if(r.modo==='local') h+=' · <span class="selo teste" title="Modo teste (local)">modo teste</span>';
   if(r.meta_real===false) h+=' · <span class="selo sim">Meta simulada</span>';
   if(r.meta_real===true) h+=' · <span class="selo real">Meta de verdade</span>';
+  // 14/11: qual banco a Maia usa (proprio = o banco separado dela; escola = o de antes)
+  if(r.banco==='proprio') h+=' · <span class="selo real" title="Os dados da Maia estão no banco próprio dela">banco próprio</span>';
+  if(r.banco==='escola') h+=' · <span class="selo sim" title="Os dados da Maia ainda estão no banco da escola">banco da escola</span>';
   if($('#selos')) $('#selos').innerHTML=h;
   $$('.bolha-fila').forEach(function(b){ b.textContent=r.pra_equipe?String(r.pra_equipe):''; });
 }
