@@ -6,7 +6,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { maiaDb as db, maiaLocal, assinaEnvioLocal } from '@/lib/maia/db'
 
-const TIPOS: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.mp4': 'video/mp4', '.ogg': 'audio/ogg' }
+const TIPOS: Record<string, string> = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.mp4': 'video/mp4', '.mov': 'video/quicktime', '.ogg': 'audio/ogg', '.mp3': 'audio/mpeg' }   // 13/11: .mov (takes) e .mp3 (locução)
 
 export async function GET(req: Request) {
   if (!maiaLocal()) return new Response('não', { status: 404 })

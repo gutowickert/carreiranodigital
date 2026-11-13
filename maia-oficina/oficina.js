@@ -4,10 +4,13 @@
 //   node oficina.js --uma-vez          → pega uma tarefa só (se tiver) e sai
 //   node oficina.js --teste-arte  <foto>  "<gancho>" "<cta>" "<nome>"   → grava em saida/
 //   node oficina.js --teste-video <video> "<gancho>" "<cta>" "<nome>"   → grava em saida/
+//   13/11: node oficina.js --teste-locucao --audio <locução.mp3> [--palavras <palavras.json>] <take1> <take2> ... "<gancho>" "<cta>" "<nome>"
+//          node oficina.js --teste-carrossel --slides <slides.json> "<cta>" "<nome>"     (slides.json: [{foto, texto, apoio, estilo}])
 // Opcional nos testes: --marca '{"cores":{"primaria":"#0b3d91","secundaria":"#f5a623"}}'  --logo <arquivo>  --id <id da peça>
 const { P, fs, path, ff, sonda, COR_HDR, dataUri, mimeDoArquivo } = require('./comum')
 const { gerarArte } = require('./arte')
-const { editarVideo } = require('./video')
+const { editarVideo, editarLocucao } = require('./video')
+const { gerarCarrossel } = require('./carrossel')
 
 const URL_BASE = () => (process.env.MAIA_URL || '').replace(/\/+$/, '')
 const CHAVE = () => process.env.MAIA_OFICINA_CHAVE || ''
@@ -29,8 +32,8 @@ async function baixa(url, destinoSemExt, mimeSugerido) {
   const r = await fetch(absoluto(url), { headers: { 'x-chave': CHAVE() } })
   if (!r.ok) throw new Error(`não consegui baixar a mídia (${r.status})`)
   const mime = (r.headers.get('content-type') || mimeSugerido || '').split(';')[0].trim()
-  const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/heic': '.heic', 'image/heif': '.heic', 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'image/svg+xml': '.svg' }[mime]
-    || (mimeSugerido && { 'image/jpeg': '.jpg', 'image/png': '.png', 'video/mp4': '.mp4', 'video/quicktime': '.mov' }[mimeSugerido]) || '.bin'
+  const ext = { 'image/jpeg': '.jpg', 'image/png': '.png', 'image/webp': '.webp', 'image/heic': '.heic', 'image/heif': '.heic', 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'video/webm': '.webm', 'image/svg+xml': '.svg', 'audio/mpeg': '.mp3' }[mime]
+    || (mimeSugerido && { 'image/jpeg': '.jpg', 'image/png': '.png', 'video/mp4': '.mp4', 'video/quicktime': '.mov', 'audio/mpeg': '.mp3' }[mimeSugerido]) || '.bin'
   const arq = destinoSemExt + ext
   fs.writeFileSync(arq, Buffer.from(await r.arrayBuffer()))
   return { arq, mime }
@@ -59,8 +62,40 @@ async function fazTarefa(job, navegador) {
     const base = { gancho: peca.gancho || '', cta: peca.cta || '', texto: peca.texto || '', nome: neg.nome || '', marca, logo, chave: peca.id, navegador, layout: tarefa.layout || null, preco: tarefa.preco || null }
     if (tarefa.ajuste) log('  pedido de ajuste: ' + String(tarefa.ajuste).slice(0, 200) + ' (a versão nova troca o layout)')
     let saida, mime, duracao = 0
-    const arqMidia = midia && midia.url ? (await baixa(midia.url, path.join(pasta, 'midia'), midia.mime)).arq : null
-    if (tarefa.tipo === 'arte') {
+    // 13/11: carrossel = um JPG por slide, cada um com o seu link de envio; devolve {tarefa_id, caminhos} na ordem
+    if (tarefa.variante === 'carrossel') {
+      const slides = []
+      for (let i = 0; i < (job.slides || []).length; i++) {
+        const s = job.slides[i]
+        const foto = s.midia && s.midia.url ? (await baixa(s.midia.url, path.join(pasta, 'foto-' + i), s.midia.mime)).arq : null
+        slides.push({ foto, texto: s.texto, apoio: s.apoio, estilo: s.estilo })
+      }
+      const r = await gerarCarrossel({ slides, nome: base.nome, marca, logo, cta: tarefa.cta || peca.cta || 'Chama no WhatsApp', whatsapp: neg.whatsapp || null, chave: peca.id, pasta: path.join(pasta, 'slides'), navegador, log })
+      log(`  carrossel pronto: ${r.arquivos.length} slides (${r.jeitos.join(', ')})${r.apertados.length ? ', ATENÇÃO texto apertado nos slides ' + r.apertados.join(',') : ''}`)
+      const ups = (job.upload && job.upload.slides) || []
+      if (ups.length < r.arquivos.length) throw new Error('a fila não mandou um link de envio por slide')
+      for (let i = 0; i < r.arquivos.length; i++) {
+        const u = await tenta(absoluto(ups[i].url), { method: 'PUT', headers: { 'content-type': 'image/jpeg', 'x-upsert': 'true' }, body: fs.readFileSync(r.arquivos[i]) })
+        if (!u.ok) throw new Error(`o armazenamento não aceitou o slide ${i + 1} (${u.status}): ${(await u.text()).slice(0, 200)}`)
+      }
+      await devolve({ tarefa_id: tarefa.id, caminhos: ups.slice(0, r.arquivos.length).map(x => x.caminho) })
+      log('  entregue ✔')
+      return
+    }
+    // 13/11: vídeo com locução = vários takes do dono + o áudio da locução (feito no sistema, com o tempo de cada palavra)
+    if (tarefa.variante === 'locucao') {
+      const takes = []
+      for (let i = 0; i < (job.midias || []).length; i++) { const m = job.midias[i]; if (m && m.url && (!m.tipo || m.tipo === 'video')) takes.push((await baixa(m.url, path.join(pasta, 'take-' + i), m.mime)).arq) }
+      if (!takes.length) throw new Error('a tarefa de locução veio sem os vídeos do dono')
+      if (!job.locucao || !job.locucao.url) throw new Error('a tarefa de locução veio sem o áudio da locução')
+      const audio = (await baixa(job.locucao.url, path.join(pasta, 'locucao'), 'audio/mpeg')).arq
+      saida = path.join(pasta, 'video.mp4'); mime = 'video/mp4'
+      const r = await editarLocucao({ ...base, takes, audio, palavras: job.locucao.palavras || [], chaveDeepgram: process.env.DEEPGRAM_API_KEY, saida, pasta, log })
+      log(`  vídeo com locução pronto: ${r.duracao.toFixed(1)} s, ${r.cortes.length} cortes de ${takes.length} take(s), ${(fs.statSync(saida).size / 1e6).toFixed(1)} MB`)
+      duracao = r.duracao
+    }
+    const arqMidia = !saida && midia && midia.url ? (await baixa(midia.url, path.join(pasta, 'midia'), midia.mime)).arq : null
+    if (saida) { /* 13/11: já feito acima (locução) */ } else if (tarefa.tipo === 'arte') {
       if (!arqMidia) log('  sem foto do dono: a arte sai só com as cores da marca')
       saida = path.join(pasta, 'arte.jpg'); mime = 'image/jpeg'
       const r = await gerarArte({ ...base, foto: arqMidia, versao: peca.versao, saida })
@@ -187,10 +222,40 @@ async function teste(tipo, args) {
   }
 }
 
+// 13/11: os testes da locução e do carrossel. --onde <pasta> grava fora do saida/ (opcional)
+async function testeNovo(tipo, args) {
+  const marca = JSON.parse(opcao(args, '--marca') || '{}')
+  const logoArq = opcao(args, '--logo'), id = opcao(args, '--id'), nomeSaida = opcao(args, '--saida'), onde = opcao(args, '--onde') || P('saida')
+  const logo = logoArq ? dataUri(fs.readFileSync(logoArq), mimeDoArquivo(logoArq) || 'image/png') : null
+  const base = (nomeSaida || `${tipo}-${Date.now().toString(36)}`).replace(/[^\w-]+/g, '-')
+  fs.mkdirSync(onde, { recursive: true })
+  const t0 = Date.now()
+  if (tipo === 'locucao') {
+    const audio = opcao(args, '--audio'), palArq = opcao(args, '--palavras')
+    const [nome, cta, gancho] = [args.pop(), args.pop(), args.pop()]
+    const takes = args
+    if (!audio || !fs.existsSync(audio) || !takes.length || takes.some(t => !fs.existsSync(t)) || !gancho) { console.log('Uso: node oficina.js --teste-locucao --audio <locução.mp3> [--palavras <palavras.json>] <take1> <take2> ... "<gancho>" "<cta>" "<nome>"'); process.exit(1) }
+    const palavras = palArq ? JSON.parse(fs.readFileSync(palArq, 'utf8')) : []
+    const saida = path.join(onde, base + '.mp4'), pasta = path.join(onde, 'trabalho-' + base)
+    const r = await editarLocucao({ takes, audio, palavras, gancho, cta, nome, marca, logo, chave: id || gancho, chaveDeepgram: process.env.DEEPGRAM_API_KEY, saida, pasta, log: console.log })
+    console.log(`Pronto: ${saida}\n  ${r.duracao.toFixed(1)} s (locução ${r.locucao} s), ${r.cortes.length} cortes, ${(fs.statSync(saida).size / 1e6).toFixed(1)} MB, ${r.palavras} palavras, ${r.blocos} legendas (${((Date.now() - t0) / 1000).toFixed(1)} s)`)
+  } else {
+    const slidesArq = opcao(args, '--slides')
+    const [cta, nome] = args
+    if (!slidesArq || !fs.existsSync(slidesArq) || !nome) { console.log('Uso: node oficina.js --teste-carrossel --slides <slides.json> "<cta>" "<nome>"'); process.exit(1) }
+    const slides = JSON.parse(fs.readFileSync(slidesArq, 'utf8'))
+    const pasta = path.join(onde, base)
+    const r = await gerarCarrossel({ slides, nome, marca, logo, cta, chave: id || slidesArq, pasta, log: console.log })
+    console.log(`Pronto: ${pasta}\n  ${r.arquivos.length} slides (${r.jeitos.join(', ')})${r.apertados.length ? ', TEXTO APERTADO nos slides ' + r.apertados.join(',') : ''} (${((Date.now() - t0) / 1000).toFixed(1)} s)`)
+  }
+}
+
 const args = process.argv.slice(2)
 ;(async () => {
   if (args[0] === '--teste-arte') await teste('arte', args.slice(1))
   else if (args[0] === '--teste-video') await teste('video', args.slice(1))
+  else if (args[0] === '--teste-locucao') await testeNovo('locucao', args.slice(1))
+  else if (args[0] === '--teste-carrossel') await testeNovo('carrossel', args.slice(1))
   else await laco(args.includes('--uma-vez'))
 })().catch(e => { console.log('Não deu: ' + e.message); process.exit(1) })
 

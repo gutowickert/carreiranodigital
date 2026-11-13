@@ -2,10 +2,13 @@
 //   GET  ?acao=agenda|resultados|analise|link|capi&negocio=<id>   (link: &rede=instagram|facebook)
 //   POST {acao, ...}: criar_post {negocio_id, quando, tipo, midias:[{url|caminho, tipo}], legenda, tema, formato, objetivo, redes}
 //        aprovar_equipe {post_id} · aprovar_dono {post_id} (pra teste; o dono de verdade dá o 👍 no WhatsApp)
+//        criar_carrossel {negocio_id, quando, tema, tipo: noticia|dica|produto, fonte?, midia_ids?, quantos?, redes?} (13/11: a IA escreve os
+//          slides e a oficina monta as imagens com texto; ver lib/maia/carrossel.ts)
 //        publicar_agora {post_id} · ler_resultados_agora {negocio_id?} · analise_agora {negocio_id, mes?} · dataset {negocio_id}
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { agenda, resultados, analises, linkDoPerfil, criaPost, aprovaEquipe, aprovaDono, publica, leResultados, analiseDoMes, type Rede } from '@/lib/maia/social'
 import { garanteDataset, placarCapi } from '@/lib/maia/conversoes'
+import { criaCarrossel } from '@/lib/maia/carrossel'
 
 export const maxDuration = 300
 const ok = (d: any) => Response.json(d)
@@ -35,6 +38,7 @@ export async function POST(req: Request) {
   try {
     switch (b.acao) {
       case 'criar_post': return ok(await criaPost(b.negocio_id, { quando: b.quando, tipo: b.tipo, midias: b.midias || [], legenda: b.legenda, tema: b.tema, formato: b.formato, objetivo: b.objetivo, redes: b.redes, por }))
+      case 'criar_carrossel': return ok(await criaCarrossel(b.negocio_id, { quando: b.quando, tema: b.tema, tipo: b.tipo, fonte: b.fonte, midia_ids: b.midia_ids, quantos: b.quantos, redes: b.redes, por }))
       case 'aprovar_equipe': return ok(await aprovaEquipe(b.post_id, por))
       case 'aprovar_dono': return ok(await aprovaDono(b.post_id))
       case 'publicar_agora': return ok(await publica(b.post_id, { forcar: true, por }))

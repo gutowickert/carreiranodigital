@@ -71,7 +71,7 @@ async function igDe(neg: any, token: string) {
 // ---------- a agenda ----------
 const legendaDe = (p: any) => [p?.gancho, p?.texto, p?.cta].filter(Boolean).join('\n\n')
 // "2026-11-10T18:00" sem fuso é horário de Brasília
-const quandoIso = (q: string) => { const s = String(q || '').trim(); if (!s) return null; const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : (s.length <= 10 ? s + 'T12:00' : s) + '-03:00'); return isNaN(d.getTime()) ? null : d.toISOString() }
+export const quandoIso = (q: string) => { const s = String(q || '').trim(); if (!s) return null; const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : (s.length <= 10 ? s + 'T12:00' : s) + '-03:00'); return isNaN(d.getTime()) ? null : d.toISOString() }
 const quandoTxt = (iso: string) => { const d = new Date(new Date(iso).getTime() - 3 * 3600e3); return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')} às ${d.getUTCHours()}h${d.getUTCMinutes() ? String(d.getUTCMinutes()).padStart(2, '0') : ''}` }
 
 export async function posts(negocio_id?: string | null) {

@@ -5,8 +5,12 @@ import { maiaDb as db } from './db'
 import { emJson, JEITO } from './ia'
 import { avisaEquipe } from './canal'
 import { tomDoNegocio, acertaTom, ctaNoTom } from './tom'
+import { locucaoLigada } from './locucao'
 
-export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'post'; midia_id: string; titulo: string; gancho: string; texto: string; cta: string; angulo?: string; preco_na_arte?: string | null }
+// 13/11: 'anuncio_locucao' = vídeo com locução (lib/maia/locucao.ts): vários takes do dono (midia_ids) e uma voz por cima.
+// No banco continua 'anuncio_video'; a variante vai na tarefa (dados.variante = 'locucao', dados.midia_ids = os takes)
+export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'anuncio_locucao' | 'post'; midia_id: string; midia_ids?: string[]; titulo: string; gancho: string; texto: string; cta: string; angulo?: string; preco_na_arte?: string | null }
+const USO_TEXTO = (neg: any) => ({ uso: { tipo: 'peca_texto', negocio_id: neg?.id || null } })   // 13/11: custo por peça (custo.ts)
 
 // 08/11 (teste completo): o anúncio fala com o CLIENTE do negócio, então vale o tom do negócio (tom.ts), não o jeito da Maia
 // com o dono. No teste, as 6 peças de uma doceria em "você" saíram em "tu" ("Pede o teu orçamento", "Ó o teu lembrete").
@@ -38,7 +42,9 @@ const contextoTxt = (n: any) => `NEGÓCIO: ${n.nome} (${n.nicho || 'nicho não i
 O QUE A MAIA SABE: ${JSON.stringify(n.contexto || {})}`
 
 // gera os textos dos anúncios a partir das fotos e vídeos que o dono mandou, e põe na fila da oficina
-export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: string; midia_ids?: string[] } = {}) {
+// 13/11: opc.locucao = true pede pelo menos 1 vídeo com locução (precisa de 2+ vídeos e da chave da ElevenLabs). O negócio com
+// contexto.video_locucao = true (o dono não quer aparecer) também pede; false nunca faz
+export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: string; midia_ids?: string[]; locucao?: boolean } = {}) {
   const todas = await db.lista('midias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true })
   const midias = (opc.midia_ids?.length ? todas.filter(m => opc.midia_ids!.includes(m.id)) : todas.filter(m => m.tipo === 'foto' || m.tipo === 'video')).slice(0, 12)
   if (!midias.length) return { ok: false, erro: 'o dono ainda não mandou fotos nem vídeos' }
@@ -47,16 +53,35 @@ export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: 
   // 08/11 (teste completo, 8e): o que já saiu com cada mídia (pra não repetir a mesma foto com o mesmo layout)
   const usados = await layoutsUsados(neg.id)
   const recentes = (await db.lista('pecas', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 12 })).filter(p => !['descartada', 'erro'].includes(p.status) && p.tipo !== 'relatorio' && p.gancho)
+  const videos = midias.filter(m => m.tipo === 'video')
+  const prefere = opc.locucao === true || neg.contexto?.video_locucao === true
+  const podeLocucao = locucaoLigada() && videos.length >= 2 && opc.locucao !== false && neg.contexto?.video_locucao !== false
+  const locucaoTxt = podeLocucao ? `\nVÍDEO COM LOCUÇÃO (anuncio_locucao): junta 2 a 6 vídeos curtos do dia a dia do negócio (sem o dono falando pra câmera) e uma voz lê o anúncio por cima. Usa "midia_ids" com os vídeos NA ORDEM em que devem aparecer (o que prende primeiro, o produto no meio, o fechamento no fim). ${prefere ? 'O DONO PREFERE NÃO APARECER: faz pelo menos 1 anúncio assim.' : 'Usa quando os vídeos não têm fala ou o dono não fala neles.'}` : ''
   const recentesTxt = recentes.length ? `\nANÚNCIOS QUE JÁ EXISTEM (não repete o mesmo gancho nem o mesmo ângulo com a mesma mídia): ${recentes.map(p => `"${p.gancho}" (mídia ${p.midia_ids?.[0] || '-'})`).join('; ')}` : ''
   const r = await emJson<{ pecas: NovaPeca[] }>(`${ESCRITORA}\nTu também és a estrategista: escolhes o ângulo de cada anúncio.\n${regraGancho(neg)}`,
     `${contextoTxt(neg)}\n\nFOTOS E VÍDEOS QUE O DONO MANDOU:\n${lista}\n\n${opc.tema ? 'TEMA PEDIDO: ' + opc.tema + '\n' : ''}NUNCA usa uma mídia que não é do próprio negócio ou que a descrição diz que não serve pra anúncio (documento, print, orçamento de outra empresa, foto tremida ou escura). Se nenhuma servir, devolve {"pecas":[]}.
-Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor do cliente, a ocasião). Usa uma mídia por anúncio, a melhor pra cada ângulo; vídeo vira anuncio_video. Varia as mídias: só repete uma se não tiver outra que sirva pro ângulo.${recentesTxt}
+Cria ${qtd} anúncios diferentes entre si (ângulos diferentes: o produto, a dor do cliente, a ocasião). Usa uma mídia por anúncio, a melhor pra cada ângulo; vídeo vira anuncio_video. Varia as mídias: só repete uma se não tiver outra que sirva pro ângulo.${locucaoTxt}${recentesTxt}
 "angulo": produto, preco, presente, ocasiao, dor, encomenda, lembrete ou prova. "preco_na_arte": o preço da base que vai em destaque na arte (ex.: "R$ 28") quando o ângulo é preço; senão null.
-Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video","midia_id":"...","titulo":"nome curto interno","angulo":"...","gancho":"...","texto":"...","cta":"...","preco_na_arte":null}]}`)
+Devolve: {"pecas":[{"tipo":"anuncio_imagem|anuncio_video${podeLocucao ? '|anuncio_locucao' : ''}","midia_id":"...",${podeLocucao ? '"midia_ids":["só no anuncio_locucao"],' : ''}"titulo":"nome curto interno","angulo":"...","gancho":"...","texto":"...","cta":"...","preco_na_arte":null}]}`, [], USO_TEXTO(neg))
   const criadas: any[] = []
   const lote = await semDiaRelativo(neg, (r.pecas || []).slice(0, qtd), nomesDaFoto(neg, midias))
   const videosNoLote = new Set<string>(), fotosNoLote = new Map<string, number>()
   for (const p of lote) {
+    // 13/11: vídeo com locução: os takes na ordem que a IA escolheu (só vídeos do lote; se vier menos de 2, os primeiros vídeos)
+    if (p.tipo === 'anuncio_locucao' && podeLocucao) {
+      let takes = [...new Set((p.midia_ids || []).filter(id => videos.some(v => v.id === id)))].slice(0, 6)
+      if (takes.length < 2) takes = videos.slice(0, 4).map(v => v.id)
+      // 13/11 (teste): com 3 takes curtos e 40 s de fala, o mesmo take voltou 4 vezes. Até somar ~35 s de vídeo, os outros
+      // vídeos do lote entram no fim (depois dos que a IA escolheu, na ordem dela)
+      const soma = () => takes.reduce((a, id) => a + (+(videos.find(v => v.id === id)?.duracao) || 4), 0)
+      for (const v of videos) { if (takes.length >= 6 || soma() >= 35) break; if (!takes.includes(v.id)) takes.push(v.id) }
+      const tx = noTom(neg, p)
+      const peca = await db.insere('pecas', { negocio_id: neg.id, tipo: 'anuncio_video', status: 'gerando', titulo: `Locução · ${p.titulo || ''}`.trim(), gancho: tx.gancho, texto: tx.texto, cta: tx.cta, midia_ids: takes })
+      await db.insere('tarefas', { negocio_id: neg.id, tipo: 'video', peca_id: peca.id, dados: { variante: 'locucao', midia_id: takes[0], midia_ids: takes, ...(p.angulo ? { angulo: p.angulo } : {}) } })
+      for (const id of takes) { const v = videos.find(x => x.id === id)!; videosNoLote.add(id); await db.atualiza('midias', { id }, { usos: (v.usos || 0) + 1 }) }
+      criadas.push(peca)
+      continue
+    }
     let m = midias.find(x => x.id === p.midia_id) || midias[0]
     // 08/11 (reteste): o mesmo vídeo não sai em 2 anúncios quando ainda tem foto boa sobrando: vai a foto menos usada
     if (m.tipo === 'video' && (videosNoLote.has(m.id) || recentes.some(r => r.midia_ids?.[0] === m.id))) { const f = midias.filter(x => x.tipo === 'foto').sort((a, b) => (fotosNoLote.get(a.id) || 0) - (fotosNoLote.get(b.id) || 0))[0]; if (f) m = f }
@@ -126,7 +151,7 @@ async function semDiaRelativo<T extends { gancho?: string; texto?: string; cta?:
   if (!ruins.length) return pecas
   try {
     const r = await emJson<{ pecas: { i: number; gancho: string; texto: string; cta: string }[] }>(`${ESCRITORA}\n${regraGancho(neg)}`,
-      `${contextoTxt(neg)}\n\nReescreve estes anúncios mantendo o ângulo e as informações, SEM nenhum dia relativo ("hoje", "amanhã", dia da semana: o anúncio roda por dias)${nomes.length ? ` e SEM os nomes ${nomes.map(n => `"${n}"`).join(', ')} (só aparecem na foto; o negócio se chama "${neg.nome}")` : ''}.\n${JSON.stringify(ruins.map(([p, i]) => ({ i, gancho: p.gancho, texto: p.texto, cta: p.cta })))}\nDevolve {"pecas":[{"i":0,"gancho":"...","texto":"...","cta":"..."}]}`)
+      `${contextoTxt(neg)}\n\nReescreve estes anúncios mantendo o ângulo e as informações, SEM nenhum dia relativo ("hoje", "amanhã", dia da semana: o anúncio roda por dias)${nomes.length ? ` e SEM os nomes ${nomes.map(n => `"${n}"`).join(', ')} (só aparecem na foto; o negócio se chama "${neg.nome}")` : ''}.\n${JSON.stringify(ruins.map(([p, i]) => ({ i, gancho: p.gancho, texto: p.texto, cta: p.cta })))}\nDevolve {"pecas":[{"i":0,"gancho":"...","texto":"...","cta":"..."}]}`, [], USO_TEXTO(neg))
     for (const x of r.pecas || []) if (pecas[x.i]) pecas[x.i] = { ...pecas[x.i], gancho: x.gancho || pecas[x.i].gancho, texto: x.texto || pecas[x.i].texto, cta: x.cta || pecas[x.i].cta }
   } catch { /* segue pro corte abaixo */ }
   // último recurso: tira a frase do texto; o nome da foto vira o nicho ("a doceria"). A equipe vê na revisão
@@ -142,7 +167,7 @@ export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
   // 06/11: post do Instagram/Facebook (lib/maia/social.ts) refaz só a legenda, sem regra de anúncio e sem a oficina
   if (peca.tipo === 'post' || peca.tipo === 'video') { const { refazPost } = await import('./social'); const p = await refazPost(peca, nota, quem); if (p) return p }
   const r = await emJson<{ gancho: string; texto: string; cta: string; trocar_midia: boolean }>(`${ESCRITORA}\n${regraGancho(neg)}`,
-    `${contextoTxt(neg)}\n\nANÚNCIO ATUAL:\nGancho: ${peca.gancho}\nTexto: ${peca.texto}\nCTA: ${peca.cta}\nMídia (só pra tu saber o que aparece; não vira detalhe do produto): ${m?.descricao || m?.legenda || '-'}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\n\nRefaz respeitando o pedido. Se o pedido for só da imagem (cor, foto, corte), mantém o texto. Devolve: {"gancho":"...","texto":"...","cta":"...","trocar_midia":false}`)
+    `${contextoTxt(neg)}\n\nANÚNCIO ATUAL:\nGancho: ${peca.gancho}\nTexto: ${peca.texto}\nCTA: ${peca.cta}\nMídia (só pra tu saber o que aparece; não vira detalhe do produto): ${m?.descricao || m?.legenda || '-'}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\n\nRefaz respeitando o pedido. Se o pedido for só da imagem (cor, foto, corte), mantém o texto. Devolve: {"gancho":"...","texto":"...","cta":"...","trocar_midia":false}`, [], USO_TEXTO(neg))
   const tx = noTom(neg, r)
   const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: tx.gancho, texto: tx.texto, cta: tx.cta, status: 'gerando', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
   if (peca.tipo === 'anuncio_imagem' || peca.tipo === 'anuncio_video' || peca.tipo === 'post') {
@@ -154,13 +179,16 @@ export async function refaz(peca: any, nota: string, quem: 'equipe' | 'dono') {
       const ja = (await layoutsUsados(peca.negocio_id, peca.id)).get(peca.midia_ids[0]) || []
       layout = LAYOUTS.find(l => l !== antes.layout && !ja.includes(l)) || LAYOUTS.find(l => l !== antes.layout) || null
     }
-    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota, ...(layout ? { layout } : {}), ...(preco ? { preco } : {}) } })
+    // 13/11: o vídeo com locução continua com locução (os mesmos takes); a voz é refeita com o texto novo (sem dados.locucao)
+    const loc = antes.variante === 'locucao' ? { variante: 'locucao', midia_ids: antes.midia_ids || peca.midia_ids || [] } : {}
+    await db.insere('tarefas', { negocio_id: peca.negocio_id, tipo: peca.tipo === 'anuncio_video' ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: peca.midia_ids?.[0], ajuste: nota, ...loc, ...(layout ? { layout } : {}), ...(preco ? { preco } : {}) } })
   } else await db.atualiza('pecas', { id: peca.id }, { status: 'revisao_equipe' })
   return nova
 }
 
 // a oficina terminou uma tarefa: guarda o arquivo e a peça vai pra revisão da equipe
-export async function oficinaEntregou(tarefa: any, arquivo: { buf?: Buffer; caminho?: string; mime: string } | null, erro?: string) {
+// 13/11: arquivo.caminhos = os slides do carrossel (vão pro post da agenda; o 1º é o arquivo da peça)
+export async function oficinaEntregou(tarefa: any, arquivo: { buf?: Buffer; caminho?: string; caminhos?: string[]; mime: string } | null, erro?: string) {
   if (erro || !arquivo) {
     const tent = (tarefa.tentativas || 0) + 1
     await db.atualiza('tarefas', { id: tarefa.id }, { status: tent >= 3 ? 'erro' : 'fila', tentativas: tent, resultado: { erro } })
@@ -169,7 +197,8 @@ export async function oficinaEntregou(tarefa: any, arquivo: { buf?: Buffer; cami
   }
   const ext = /mp4/.test(arquivo.mime) ? 'mp4' : /png/.test(arquivo.mime) ? 'png' : 'jpg'
   const caminho = arquivo.caminho || await db.sobe(`${tarefa.negocio_id}/pecas/${tarefa.peca_id}-${Date.now()}.${ext}`, arquivo.buf!, arquivo.mime)
-  await db.atualiza('tarefas', { id: tarefa.id }, { status: 'feito', resultado: { arquivo: caminho } })
+  await db.atualiza('tarefas', { id: tarefa.id }, { status: 'feito', resultado: { arquivo: caminho, ...(arquivo.caminhos?.length ? { slides: arquivo.caminhos } : {}) } })
+  if (arquivo.caminhos?.length && tarefa.dados?.variante === 'carrossel') { const { carrosselEntregue } = await import('./carrossel'); await carrosselEntregue(tarefa, arquivo.caminhos) }
   const peca = await db.um('pecas', { id: tarefa.peca_id })
   const neg = await db.um('negocios', { id: tarefa.negocio_id })
   await db.atualiza('pecas', { id: tarefa.peca_id }, { arquivo_path: caminho, status: 'revisao_equipe' })

@@ -3,6 +3,9 @@
 // aparecia 10 vezes mais caro. Agora o preço é por modelo, com o preço do cache lido de cada um (tabela da Anthropic de 03/11/2026).
 // Preço em US$ por milhão de tokens: [entrada, saída, cache lido]. MAIA_PRECOS='{"claude-haiku-5-5":[0.1,0.5,0.01]}' troca os valores.
 // A voz (ElevenLabs) entra também: cada resposta em áudio anota os caracteres em 'voz_resposta' (voz.ts).
+// 13/11 (custo por peça): as peças têm tipo próprio. 'peca_texto' (o texto do anúncio, pecas.ts), 'peca_foto' (a Maia olhando a
+// foto ou o vídeo do dono, ia.ts), 'carrossel' (os textos dos slides, carrossel.ts) e 'locucao' (o roteiro, mais a VOZ da
+// locução, que anota os caracteres em 'voz_locucao', locucao.ts). Antes o texto e a foto caíam em 'outro'.
 import { maiaDb as db } from './db'
 
 const PRECOS: Record<string, [number, number, number]> = {
@@ -31,18 +34,21 @@ export const usdVoz = (d: any) => (d.caracteres || 0) / 1000 * VOZ_USD_1K()
 export async function custoDoNegocio(negocio_id: string, desde: string) {
   const evs = await db.lista('eventos', { tipo: 'uso_ia', negocio_id }, { desde: ['criado_em', desde] })   // 12/11 (Nando): o filtro da data vai pro banco
   const voz = await db.lista('eventos', { tipo: 'voz_resposta', negocio_id }, { desde: ['criado_em', desde] })
+  const loc = await db.lista('eventos', { tipo: 'voz_locucao', negocio_id }, { desde: ['criado_em', desde] })
   const porTipo: Record<string, number> = {}
   let total = 0
   for (const e of evs) { const v = usd(e.detalhe || {}); total += v; const t = e.detalhe?.tipo || 'outro'; porTipo[t] = (porTipo[t] || 0) + v }
   for (const e of voz) { const v = usdVoz(e.detalhe || {}); total += v; porTipo.voz = (porTipo.voz || 0) + v }
+  for (const e of loc) { const v = usdVoz(e.detalhe || {}); total += v; porTipo.locucao = (porTipo.locucao || 0) + v }
   const brl = (v: number) => Math.round(v * DOLAR() * 100) / 100
-  return { reais: brl(total), por_tipo: Object.fromEntries(Object.entries(porTipo).map(([t, v]) => [t, brl(v)])), chamadas: evs.length, audios: voz.length }
+  return { reais: brl(total), por_tipo: Object.fromEntries(Object.entries(porTipo).map(([t, v]) => [t, brl(v)])), chamadas: evs.length, audios: voz.length, locucoes: loc.length }
 }
 
 export async function custoIA(dias = 30) {
   const desde = Date.now() - dias * 86400e3
   const evs = (await db.lista('eventos', { tipo: 'uso_ia' })).filter(e => Date.parse(e.criado_em) >= desde)
   const voz = (await db.lista('eventos', { tipo: 'voz_resposta' })).filter(e => Date.parse(e.criado_em) >= desde)
+  const loc = (await db.lista('eventos', { tipo: 'voz_locucao' })).filter(e => Date.parse(e.criado_em) >= desde)
   const porTipo: Record<string, { chamadas: number; usd: number; conversas: Set<string> }> = {}
   const porNegocio: Record<string, number> = {}
   const porModelo: Record<string, { chamadas: number; usd: number }> = {}
@@ -56,9 +62,10 @@ export async function custoIA(dias = 30) {
     // 08/11 (T11): o atendimento do cliente por modelo e fase do modelo misto (barato, refeito, direto)
     if (t === 'cliente') { const k = `${d.modelo || '?'} · ${d.fase || 'sem fase'}`; const y = porModelo[k] ||= { chamadas: 0, usd: 0 }; y.chamadas++; y.usd += v }
   }
-  for (const e of voz) {
+  // 13/11: a voz da locução soma no tipo 'locucao' (junto com o roteiro); a do atendimento, em 'voz'
+  for (const [e, t] of [...voz.map(e => [e, 'voz'] as const), ...loc.map(e => [e, 'locucao'] as const)]) {
     const d = e.detalhe || {}, v = usdVoz(d)
-    const x = porTipo.voz ||= { chamadas: 0, usd: 0, conversas: new Set() }
+    const x = porTipo[t] ||= { chamadas: 0, usd: 0, conversas: new Set() }
     x.chamadas++; x.usd += v; if (d.conversa_id) x.conversas.add(d.conversa_id)
     if (e.negocio_id) porNegocio[e.negocio_id] = (porNegocio[e.negocio_id] || 0) + v
   }
