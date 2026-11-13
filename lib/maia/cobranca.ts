@@ -1,5 +1,5 @@
 // Maia: a parte administrativa (13/11, decisões do Guto). Cada cliente da Maia:
-//   1) vira cliente no CRM da escola (projetos + instalacoes, produto "maia"), igual Dani e GAJA, e o negócio guarda o
+//   1) vira cliente no CRM da escola (projetos + instalacoes, produto "maia"), como os clientes recorrentes da escola, e o negócio guarda o
 //      projeto em meta.financeiro.projeto_id (sem coluna nova);
 //   2) paga a IMPLANTAÇÃO (R$ 497) numa cobrança avulsa do Asaas, com vencimento no dia da implantação ou antes;
 //   3) paga a MENSALIDADE (R$ 997) numa assinatura do Asaas que começa na data combinada no 1º encontro. O dia dela vira

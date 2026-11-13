@@ -1,4 +1,4 @@
-// Maia: o CRM e o financeiro da ESCOLA (13/11), onde cada cliente da Maia vira cliente igual à Dani e à GAJA.
+// Maia: o CRM e o financeiro da ESCOLA (13/11), onde cada cliente da Maia vira cliente como os outros clientes recorrentes da escola.
 // As tabelas são as da escola (projetos, instalacoes, lancamentos_empresa, projeto_andamentos, contas_financeiras), no
 // banco da escola, pela chave de serviço (lib/supabase-admin). No modo local da Maia (MAIA_LOCAL=1) são arquivos JSON
 // escola_<tabela> na mesma pasta dos testes: nada toca o banco de verdade.
