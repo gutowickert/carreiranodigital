@@ -24,7 +24,7 @@ const pedePainel = (t: string) => /\b(meu painel|o painel|painel|dashboard|link 
 async function descreveFoto(buf: Buffer, mime: string, neg: any) {
   try {
     const r = await emJson<{ descricao: string }>('Tu descreves fotos de pequenos negócios pra uma redatora de anúncios. Objetivo, em português, até 25 palavras: o que aparece, a qualidade da foto (nítida, escura, tremida) e se serve pra anúncio.',
-      `Foto do negócio ${neg.nome} (${neg.nicho || ''}). Devolve {"descricao":"..."}`, [{ b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }])
+      `Foto do negócio ${neg.nome} (${neg.nicho || ''}). Devolve {"descricao":"..."}`, [{ b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }], { uso: { tipo: 'peca_foto', negocio_id: neg?.id || null } })   // 13/11: custo por peça (custo.ts)
     return r.descricao
   } catch { return null }
 }
@@ -49,7 +49,7 @@ export async function descreveVideo(midia_id: string, quadros_b64: string[], dur
   if (quadros_b64.length) {
     try {
       const r = await emJson<{ descricao: string }>('Tu descreves vídeos curtos de pequenos negócios pra uma redatora de anúncios. Recebes 3 quadros (começo, meio e fim) do mesmo vídeo. Objetivo, em português, até 35 palavras: o que aparece, o que acontece, a qualidade (nítido, escuro, tremido) e se serve pra anúncio. Só o que se vê: não inventa produto, sabor nem preço.',
-        `Vídeo do negócio ${neg?.nome || ''} (${neg?.nicho || ''}). Devolve {"descricao":"..."}`, quadros_b64.map(b64 => ({ b64, mime: 'image/jpeg' })), { uso: { tipo: 'outro', negocio_id: m.negocio_id } })
+        `Vídeo do negócio ${neg?.nome || ''} (${neg?.nicho || ''}). Devolve {"descricao":"..."}`, quadros_b64.map(b64 => ({ b64, mime: 'image/jpeg' })), { uso: { tipo: 'peca_foto', negocio_id: m.negocio_id } })   // 13/11: custo por peça (custo.ts)
       quadros = String(r?.descricao || '').trim().replace(/[.\s]+$/, '') || quadros
     } catch { /* fica "não deu pra ver" */ }
   }
@@ -121,6 +121,30 @@ export async function respostaDeVenda(neg: any, cv: any, lead_id: string, fechou
   return { lead: lead.id, etapa: 'perdido', mudou: true }
 }
 
+// 13/11 (junção): o dono pede CARROSSEL ou VÍDEO COM LOCUÇÃO (regra da casa: pelo WhatsApp E pelo painel; os dois chamam isto).
+// Nada sai direto: o carrossel vira post em rascunho e a peça passa pela equipe e pelo 👍 do dono (carrossel.ts/pecas.ts)
+export async function pedeConteudo(neg: any, d: { o: 'carrossel' | 'locucao'; tema?: string; tipo?: string; fonte?: string; quando?: string; quantidade?: number }, por: string) {
+  const n = (await db.um('negocios', { id: neg.id })) || neg
+  const tema = String(d.tema || '').trim().slice(0, 200)
+  if (d.o === 'carrossel') {
+    if (n.plano === 'gestao') return { ok: false, erro: 'carrossel (social media) não faz parte do plano Gestora' }
+    if (!tema) return { ok: false, erro: 'falta o tema do carrossel' }
+    // sem data: amanhã às 18h (horário de Brasília). A equipe e o dono aprovam antes de publicar
+    const am = new Date(Date.now() - 3 * 3600e3 + 24 * 3600e3).toISOString().slice(0, 10)
+    const tipo = ['noticia', 'dica', 'produto'].includes(String(d.tipo)) ? d.tipo as 'noticia' | 'dica' | 'produto' : 'dica'
+    try {
+      const { criaCarrossel } = await import('./carrossel')
+      const r = await criaCarrossel(n.id, { quando: d.quando || am + 'T18:00', tema, tipo, fonte: d.fonte ? String(d.fonte).slice(0, 2000) : undefined, por })
+      return { ok: true, carrossel: { slides: r.slides.length, tema }, proximo: 'a oficina monta as imagens, a equipe confere e chega pro dono aprovar antes de publicar' }
+    } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
+  }
+  const { locucaoLigada } = await import('./locucao')
+  if (!locucaoLigada()) return { ok: false, erro: 'o vídeo com locução está desligado agora; a equipe precisa ligar' }
+  const videos = (await db.lista('midias', { negocio_id: n.id })).filter(m => m.tipo === 'video')
+  if (videos.length < 2) return { ok: false, erro: 'precisa de pelo menos 2 vídeos curtos do dia a dia do negócio (sem falar pra câmera). Pede pro dono mandar' }
+  return geraAnuncios(n, { quantidade: Math.min(Math.max(Number(d.quantidade) || 2, 1), 3), tema: tema || undefined, locucao: true })
+}
+
 // 13/11: as perguntas de cliente que esperam o dono (as de quem ainda está em aberto), com o contato
 export async function perguntasAbertas(neg: any) {
   const evs = await db.lista('lead_eventos', { negocio_id: neg.id }, { ordem: 'criado_em' })
@@ -170,6 +194,10 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'criar_anuncios', description: 'Cria anúncios novos com as fotos e vídeos que o dono mandou. Eles vão pra revisão da equipe e depois chegam pro dono aprovar (leva umas horas). Usa quando o dono pedir ou quando chegarem fotos/vídeos novos e ele topar.',
       input_schema: { type: 'object', properties: { quantidade: { type: 'number' }, tema: { type: 'string', description: 'ex.: Natal, promoção de terça, produto novo' } } },
       roda: async ({ quantidade, tema }) => geraAnuncios(neg, { quantidade, tema }) },
+    // 13/11 (junção): carrossel e vídeo com locução também pelo WhatsApp (o painel tem o mesmo botão)
+    { name: 'pedir_conteudo', description: 'O dono pediu um CARROSSEL (post com várias imagens com texto: dica, produto ou notícia) ou um VÍDEO COM LOCUÇÃO (os vídeos dele juntos com uma voz lendo o anúncio, sem ele aparecer falando). Tudo passa pela equipe e volta pra ele aprovar antes de sair. Carrossel de notícia só com o texto da notícia que ele mandou (fonte).',
+      input_schema: { type: 'object', properties: { o: { type: 'string', enum: ['carrossel', 'locucao'] }, tema: { type: 'string', description: 'sobre o que é' }, tipo: { type: 'string', enum: ['dica', 'produto', 'noticia'], description: 'só no carrossel' }, fonte: { type: 'string', description: 'o texto da notícia (carrossel de notícia)' }, quando: { type: 'string', description: 'carrossel: data e hora de publicar (AAAA-MM-DDTHH:MM); sem isso, amanhã às 18h' } }, required: ['o'] },
+      roda: async (a) => pedeConteudo(neg, a as any, 'dono') },
     { name: 'pecas_com_o_dono', description: 'Lista os anúncios que já foram mandados pro dono e esperam o 👍.',
       input_schema: { type: 'object', properties: {} },
       roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, gancho: p.gancho })) },

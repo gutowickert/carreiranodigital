@@ -187,7 +187,8 @@ async function parte2() {
   const r3 = await api({ acao: 'rodar', modo: 'urgentes', relogio: '2026-11-09T11:00:00-03:00' })
   const novos09 = tab('avisos').filter(a => a.dia === '2026-11-09')
   anota(novos09.length && novos09.every(a => ['gasto_sem_conversa', 'parou_de_gastar'].includes(a.tipo) && a.nivel === 'urgente'), '2 em 2 horas: só "gasto sem conversa" e "parou de gastar" → ' + novos09.map(a => a.tipo).join(' '))
-  const eq2 = tab('eventos').filter(e => e.tipo === 'aviso_equipe')
+  // 13/11 (maia-vendedora): "parou de gastar" também vira aviso próprio "problema técnico: ..." pra equipe (pendencias.ts); aqui conta só os da gestora
+  const eq2 = tab('eventos').filter(e => e.tipo === 'aviso_equipe' && !/^problema técnico/.test(e.detalhe?.titulo || ''))
   anota(eq2.length === 2 && /urgente/.test(eq2[1].detalhe.titulo), 'urgente novo: a equipe é avisada na hora')
 
   // 5) segunda 7h: resumo da semana + funil por anúncio

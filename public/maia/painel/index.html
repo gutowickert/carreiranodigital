@@ -438,6 +438,10 @@ function secResumo(){
   h+='<h2>Verba dos anúncios</h2><div class="card pad"><p style="margin:0"><b>'+(vb.dia!=null?'R$ '+esc(vb.dia)+' por dia':'Ainda sem verba definida')+'</b></p>'+
     (vb.pedido?'<p class="mu peq" style="margin:6px 0 0">Teu pedido de R$ '+esc(vb.pedido.valor)+' por dia está com a equipe. Tu recebe a confirmação no WhatsApp.</p>':'')+
     '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-verba">Pedir mudança</button></div></div>';
+  // 13/11 (junção): pedir vídeo com locução ou carrossel (o mesmo de pedir pra Maia no WhatsApp; a equipe confere e volta pra ti aprovar)
+  var gest=d.negocio&&d.negocio.plano==='gestao';
+  h+='<h2>Pedir peças novas</h2><div class="card pad"><p class="mu peq" style="margin:0">A Maia cria, a equipe confere e volta pra ti aprovar antes de sair.</p>'+
+    '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-locucao">Vídeo com locução</button>'+(gest?'':'<button type="button" class="btn" id="b-carrossel">Carrossel</button>')+'</div></div>';
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
   var r=d.retomadas;
@@ -554,6 +558,13 @@ function liga(el){
   var bv=$('#b-verba',el);if(bv)bv.onclick=function(){folha('<h3>Mudar a verba por dia</h3><p class="mu peq">Vira um pedido: a equipe confere e aprova, e tu recebe a confirmação no WhatsApp.</p><label class="campo"><span>Quanto por dia (R$)</span><input id="f-vb" inputmode="decimal" placeholder="ex.: 40"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
     $('#f-ok',v).onclick=function(){var x=$('#f-vb',v).value.trim();if(!x){toast('Escreve o valor');return;}var k=this;k.disabled=true;
       api('',{acao:'verba',valor:x}).then(function(){fecha();toast('Pedido enviado pra equipe');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
+  // 13/11 (junção): vídeo com locução e carrossel pelo painel
+  var bl=$('#b-locucao',el);if(bl)bl.onclick=function(){folha('<h3>Vídeo com locução</h3><p class="mu peq">A Maia junta os teus vídeos do dia a dia e põe uma voz lendo o anúncio. Precisa de pelo menos 2 vídeos curtos que tu já mandou.</p><label class="campo"><span>Sobre o que (opcional)</span><input id="f-tema" maxlength="200" placeholder="ex.: encomendas de Natal"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var k=this;k.disabled=true;
+      api('',{acao:'conteudo',o:'locucao',tema:$('#f-tema',v).value.trim()}).then(function(){fecha();toast('Pedido feito: chega pra ti aprovar');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
+  var bc=$('#b-carrossel',el);if(bc)bc.onclick=function(){folha('<h3>Carrossel</h3><p class="mu peq">Um post com várias imagens com texto, feito com as tuas fotos.</p><label class="campo"><span>Sobre o que</span><input id="f-tema" maxlength="200" placeholder="ex.: 3 cuidados com o teu sofá"></label><label class="campo"><span>Tipo</span><select id="f-tipo"><option value="dica">Dica</option><option value="produto">Produto</option></select></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var t=$('#f-tema',v).value.trim();if(!t){toast('Escreve o tema');return;}var k=this;k.disabled=true;
+      api('',{acao:'conteudo',o:'carrossel',tema:t,tipo:$('#f-tipo',v).value}).then(function(){fecha();toast('Pedido feito: chega pra ti aprovar');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
   $$('[data-aprovar]',el).forEach(function(b){b.onclick=function(){
     if(!confirm('Aprovar esse anúncio? A equipe liga a campanha depois.'))return;
     b.disabled=true;api('',{acao:'aprovar',peca_id:b.dataset.aprovar}).then(function(){toast('Aprovado 👍');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});

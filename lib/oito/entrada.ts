@@ -12,7 +12,7 @@ const SAIR = new Set(['sair', 'parar', 'pare', 'stop', 'cancelar', 'descadastrar
 // MAIA_FONES_EQUIPE (só dígitos, separados por vírgula) + o WhatsApp do perfil do Guto
 let equipeCache: { em: number; fones: string[] } | null = null
 export async function ehEquipe(tel: string) {
-  const so = (x: any) => String(x || '').replace(/D/g, '')
+  const so = (x: any) => String(x || '').replace(/\D/g, '')   // 13/11: era /D/g (tirava só a letra D, não os não-dígitos)
   if (!equipeCache || Date.now() - equipeCache.em > 10 * 60e3) {
     const fones = String(process.env.MAIA_FONES_EQUIPE || '').split(',').map(so).filter(Boolean)
     try {

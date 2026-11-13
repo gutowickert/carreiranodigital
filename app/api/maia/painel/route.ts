@@ -148,6 +148,18 @@ export async function POST(req: Request) {
         await db.evento('painel_dono_acao', neg.id, { acao: 'verba', valor: p.valor })
         return ok({ ok: true, pedido: p.pedido, valor: p.valor })
       }
+      // 13/11 (junção): o dono pede carrossel ou vídeo com locução pelo painel (o mesmo de pedir pra Maia no WhatsApp: dono.ts, pedeConteudo)
+      case 'conteudo': {
+        const o = b.o === 'carrossel' ? 'carrossel' : b.o === 'locucao' ? 'locucao' : null
+        if (!o) return erro('pedido inválido')
+        const tema = String(b.tema || '').trim().slice(0, 200)
+        if (o === 'carrossel' && !tema) return erro('escreve o tema')
+        const { pedeConteudo } = await import('@/lib/maia/dono')
+        const p: any = await pedeConteudo(neg, { o, tema, tipo: b.tipo === 'produto' ? 'produto' : 'dica' }, 'dono_painel')
+        if (!p?.ok) return erro(p?.erro || 'não deu')
+        await db.evento('painel_dono_acao', neg.id, { acao: 'conteudo', o })
+        return ok({ ok: true })
+      }
       default: return erro('ação desconhecida')
     }
   } catch (e: any) { console.error('[painel do dono]', e?.message); return erro('não deu agora. Tenta de novo ou fala com a Maia no WhatsApp.', 500) }
