@@ -5,6 +5,7 @@ import { maiaDb as db } from './db'
 import { emJson, JEITO } from './ia'
 import { avisaEquipe } from './canal'
 import { tomDoNegocio, acertaTom, ctaNoTom } from './tom'
+import { textoRegrasAprendidas } from './aprendizado'   // 13/11 (aprendizado): as regras que a equipe aprovou
 
 export type NovaPeca = { tipo: 'anuncio_imagem' | 'anuncio_video' | 'post'; midia_id: string; titulo: string; gancho: string; texto: string; cta: string; angulo?: string; preco_na_arte?: string | null }
 
@@ -28,7 +29,7 @@ function regraGancho(neg: any) {
 - Anúncio de PREÇO: o preço da base vai NO GANCHO (o gancho é o texto que aparece grande na arte), ex.: "Caixa com 4 cookies por R$ 28".
 - Nada de "hoje", "amanhã", "essa semana" nem dia da semana no anúncio: ele roda por dias e semanas (no domingo, "amanhã" vira uma segunda em que o negócio pode estar fechado). Prazo vai como regra: "com 1 dia de antecedência".
 - Gancho curto (até 9 palavras), pra ir em cima da foto. Texto do anúncio com até 3 frases curtas, sem hashtag, no máximo 1 emoji.
-- CTA de WhatsApp curto e do tipo certo: produto pronto ou encomenda → ${voce ? '"Peça pelo WhatsApp", "Chame no WhatsApp", "Encomende pelo WhatsApp"' : '"Pede pelo WhatsApp", "Chama no WhatsApp", "Encomenda pelo WhatsApp"'}; serviço com hora marcada → ${voce ? '"Agende pelo WhatsApp"' : '"Agenda pelo WhatsApp"'}; "orçamento" SÓ quando o preço não é fixo.`
+- CTA de WhatsApp curto e do tipo certo: produto pronto ou encomenda → ${voce ? '"Peça pelo WhatsApp", "Chame no WhatsApp", "Encomende pelo WhatsApp"' : '"Pede pelo WhatsApp", "Chama no WhatsApp", "Encomenda pelo WhatsApp"'}; serviço com hora marcada → ${voce ? '"Agende pelo WhatsApp"' : '"Agenda pelo WhatsApp"'}; "orçamento" SÓ quando o preço não é fixo.${textoRegrasAprendidas(neg, 'criacao')}`
 }
 
 // o texto da peça no tom do negócio (rede de segurança sem IA: "teu" → "seu", "Pede" → "Peça" etc.)
