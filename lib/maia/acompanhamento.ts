@@ -30,10 +30,24 @@ export async function avisaTime(titulo: string, texto: string, negocio_id: strin
   await avisaEquipe(titulo, texto, negocio_id, urgente)
   const fones = fonesDoTime()
   if (!fones.length || maiaLocal() || process.env.MAIA_SEM_AVISO === '1') return { whats: 0 }
-  const { enviaTexto } = await import('@/lib/oito/wa')
-  let n = 0
-  for (const f of fones) { const r: any = await enviaTexto(f, `Maia · ${titulo}\n${texto}`).catch(() => null); if (r?.ok) n++ }
-  return { whats: n }
+  const { enviaTexto, enviaModelo, conversaDe, janelaAberta } = await import('@/lib/oito/wa')
+  // 13/11: texto comum só chega a quem falou com o número da Maia nas últimas 24 h (a Meta aceita o envio e recusa depois, sem
+  // erro na hora). Por isso olha a janela da conversa daquele telefone: aberta, vai o texto; fechada, vai o modelo aprovado
+  // maia_novidades (o mesmo do dono) com o título do aviso; o texto inteiro fica no painel da equipe (avisaEquipe acima)
+  const neg: any = negocio_id ? await db.um('negocios', { id: negocio_id }).catch(() => null) : null
+  const curto = (x: string) => String(x || '').replace(/\s+/g, ' ').trim().slice(0, 200)
+  let n = 0, modelo = 0
+  for (const f of fones) {
+    const cv = await conversaDe(f).catch(() => null)
+    let r: any
+    if (cv && janelaAberta(cv)) r = await enviaTexto(f, `Maia · ${titulo}\n${texto}`).catch(() => null)
+    else {
+      r = await enviaModelo(f, process.env.MAIA_MODELO_DONO || 'maia_novidades', 'pt_BR', ['time', curto(neg?.nome || 'a Maia'), curto(titulo + ' (detalhes no painel da equipe)')]).catch(() => null)
+      if (r?.ok) modelo++
+    }
+    if (r?.ok) n++
+  }
+  return { whats: n, modelo }
 }
 
 // ---------- 1) as primeiras conversas ----------
