@@ -15,5 +15,12 @@ export async function GET(req: Request) {
   const segredo = !!cron && igual(req.headers.get('authorization') || '', 'Bearer ' + cron)
   const chave = !!rotina && igual(req.headers.get('x-chave') || '', rotina)
   if (!segredo && !chave) return Response.json({ erro: 'não autorizado' }, { status: 401 })
-  return Response.json(await roda())
+  // 13/11: deixa a marca de cada rodada (quem chamou e quanto durou), pra conferir que o agendador do banco da Maia está chamando
+  const t0 = Date.now()
+  const r = await roda()
+  try {
+    const { maiaDb: db } = await import('@/lib/maia/db')
+    await db.evento('rotina_rodou', null, { por: chave ? 'banco' : 'vercel', ms: Date.now() - t0 })
+  } catch { /* a marca nunca derruba a rotina */ }
+  return Response.json(r)
 }
