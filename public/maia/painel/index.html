@@ -193,6 +193,8 @@ h2 small{font-family:'Manrope',sans-serif;font-weight:600;color:var(--text-muted
 .bol .quem img{width:16px;height:16px;border-radius:50%}
 .bol .quem.dono{color:var(--blue)}
 .bol .h{display:block;text-align:right;font-size:11px;color:var(--text-muted);margin-top:2px}
+.devolve{position:sticky;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.devolve p{margin:0;font-size:13.5px;color:var(--text-muted);flex:1 1 200px}
 /* anúncios */
 .anuncio{overflow:hidden}
 .anuncio img,.anuncio video{display:block;width:100%;max-height:460px;object-fit:cover;background:var(--surface-2)}
@@ -479,7 +481,7 @@ function secRetomadas(){
   var esp=S.dados.esperando.filter(function(e){return e.tipo!=='joinha';});
   if(esp.length) h+='<h2>Esperando a tua resposta</h2><ul class="lista card espera">'+esp.map(function(e){return '<li><span class="ic" aria-hidden="true">?</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+quando(e.em)+'</span></div></li>';}).join('')+'</ul>';
   h+='<h2>Feitas</h2>'+(r.feitas.length?'<ul class="tempo card">'+r.feitas.map(function(f){
-    return '<li class="'+(f.respondeu?'respondeu':'feita')+'" data-lead="'+esc(f.lead_id)+'"><span class="pt"><i></i></span><div class="mid"><span class="q">'+esc(quando(f.em))+'</span><b>'+esc(f.nome)+'</b><span class="l2">'+(f.numero?f.numero+'ª retomada':'retomada')+'</span></div><div class="dir">'+(f.respondeu?'<span class="chip c-verde">respondeu</span>':'<span class="chip c-cinza">sem resposta</span>')+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada feita nos últimos 30 dias.</div>');
+    return '<li class="'+(f.respondeu?'respondeu':'feita')+'" data-lead="'+esc(f.lead_id)+'"><span class="pt"><i></i></span><div class="mid"><span class="q">'+esc(quando(f.em))+'</span><b>'+esc(f.nome)+'</b><span class="l2">'+(f.despedida?'despedida (última retomada)':f.numero?f.numero+'ª retomada':'retomada')+'</span></div><div class="dir">'+(f.respondeu?'<span class="chip c-verde">respondeu</span>':'<span class="chip c-cinza">sem resposta</span>')+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada feita nos últimos 30 dias.</div>');
   return h;
 }
 var ST_CV={maia:['Maia atendendo','c-roxo'],dono:['esperando tu','c-amar'],encerrada:['encerrada','c-cinza']};
@@ -576,6 +578,14 @@ function abreConversa(id){
       var cli=m.autor==='cliente';
       h+='<div class="bol '+(cli?'cli':'eu')+'">'+(cli?'':'<span class="quem'+(m.autor==='dono'?' dono':'')+'">'+(m.autor==='dono'?'Tu':'<img src="'+FOTO+'" alt="" width="16" height="16">Maia')+'</span>')+esc(m.texto||'('+(m.tipo||'mensagem')+')')+'<span class="h">'+hora(m.criado_em)+'</span></div>';});
     $('#chat').innerHTML=h||'<div class="vazio">Sem mensagens.</div>';
+    // 13/11: conversa que está com o dono (modo humano): o botão "Resolvido, devolver pra Maia" (o mesmo do WhatsApp: "devolve pra Maia")
+    if(r.conversa&&r.conversa.modo==='humano'){
+      var bar=document.createElement('div');bar.className='devolve';
+      bar.innerHTML='<p>Essa conversa está contigo: a Maia não responde aqui. Resolveu?</p><button type="button" class="btn ok" id="devolver">Resolvido, devolver pra Maia</button>';
+      $('#app').appendChild(bar);
+      $('#devolver').onclick=function(){var b=this;if(!confirm('Devolver a conversa com '+(c?(c.nome||fone(c.telefone)):'esse cliente')+' pra Maia? Ela volta a responder esse cliente.'))return;b.disabled=true;
+        api('',{acao:'devolver',conversa_id:id}).then(function(){bar.remove();toast('A Maia voltou a atender');return api('acao=tudo');}).then(function(d){S.dados=d;if(S.conversa===id)abreConversa(id);}).catch(function(e){b.disabled=false;toast(e.message);});};
+    }
   }).catch(function(e){$('#chat').innerHTML='<div class="vazio">'+esc(e.message)+'</div>';});
 }
 

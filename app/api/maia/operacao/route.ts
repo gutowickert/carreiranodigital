@@ -356,6 +356,13 @@ export async function POST(req: Request) {
           oferta: (await import('@/lib/maia/oferta')).oferta(), oferta_texto: (await import('@/lib/maia/oferta')).textoOferta(),
           // 13/11 (cadastro.ts): o funil e os limites do cadastro como regra (sem IA)
           ...(await (async () => { const c = await import('@/lib/maia/cadastro'); return { regras_cadastro: c.regrasDoCadastro(neg), regras_retomada: c.regrasDaRetomada(neg), ficha: c.fichaParaAtender(neg), desconto_max: c.descontoMax(neg), desconto_acima: c.descontoAcima(neg, t), motivo_cadastro: c.motivoDoCadastro(neg, t), sem_desconto: c.semFrasesDeDesconto(t) } })()),
+          // 13/11 (a Vendedora): quem fecha, o preço personalizado, a resposta fixa e a 1ª retomada (sem IA)
+          ...(await (async () => {
+            const c = await import('@/lib/maia/cadastro'), fx = await import('@/lib/maia/fixas'), fu = await import('@/lib/maia/funil')
+            const agora = b.agora ? new Date(b.agora) : new Date()
+            return { fechamento: c.fechamentoDo(neg), regra_fechamento: c.regraDoFechamento(neg), quer_fechar: at.querFechar(t, neg), preco_personalizado: c.precoPersonalizadoDo(neg),
+              fixa: fx.respostaFixa(neg, t), followup_dias: fu.FOLLOWUP_DIAS, primeira_retomada: fu.quandoPrimeira(neg, agora) }
+          })()),
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
@@ -404,6 +411,14 @@ export async function POST(req: Request) {
           await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'maia', tipo: 'texto', texto: `(teste) resposta ${i + 1}`, status: 'enviado' })
         }
         return ok({ ok: true })
+      }
+      // 13/11, só no modo de teste: o texto da retomada N de um contato (a 3ª é a despedida), sem mandar nada (usa IA)
+      case 'teste_retomada_texto': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }), l = await db.um('leads', { id: b.lead_id, negocio_id: b.negocio_id })
+        if (!n || !l) return erro('negócio ou contato não encontrado', 404)
+        const { textoRetomada } = await import('@/lib/maia/atendente')
+        return ok({ texto: await textoRetomada(n, l, Number(b.numero) || 1) })
       }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {

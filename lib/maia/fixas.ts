@@ -2,8 +2,9 @@
 // ou o frete, e a ficha do negócio (neg.contexto) tem isso escrito, a resposta sai da ficha: de graça, na hora e sem inventar.
 // Qualquer outra coisa na mesma mensagem (preço, produto, reclamação, mais de um assunto) segue pra IA, como sempre.
 // Campos aceitos na ficha (contexto): pix | chave_pix, endereco | localizacao, horario | horarios | funcionamento, frete | entrega.
+import { fechamentoDo } from './cadastro'
 
-const semAc = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+const semAc =(s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
 type Assunto = 'pix' | 'endereco' | 'horario' | 'frete'
 
@@ -41,6 +42,9 @@ export function respostaFixa(neg: any, textoCliente: string): { assunto: Assunto
   if (!s || s.length > 90) return null
   const assuntos = (Object.keys(PERGUNTA) as Assunto[]).filter(a => PERGUNTA[a].test(s))
   if (assuntos.length !== 1) return null
+  // 13/11 (fechamento no time, o padrão): pedir o Pix é querer pagar: a Maia não manda a chave, a conversa vai pro dono/time
+  // (atendente.ts). Endereço, horário e frete continuam saindo daqui
+  if (assuntos[0] === 'pix' && fechamentoDo(neg) === 'time') return null
   // "quero pagar, qual o pix?" é o sim do cliente: aí o pix vai, mas "quero 2 caixas, qual o pix?" tem pedido junto: vai pra IA
   let resto = s.replace(PERGUNTA[assuntos[0]], ' ')
   if (assuntos[0] === 'pix') resto = resto.replace(/\b(quero|vou|posso|queria) (te )?(pagar|fazer o pix)\b/g, ' ')

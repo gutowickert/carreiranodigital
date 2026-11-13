@@ -210,7 +210,7 @@ export async function dadosDoPainel(neg: any) {
   }
   for (const c of convs.filter(c => c.modo === 'humano')) {
     const l = leadDe.get(c.lead_id)
-    if (!l || ABERTAS.includes(l.etapa)) esperando.push({ tipo: 'conversa', lead_id: c.lead_id, conversa_id: c.id, nome: c.nome || l?.nome || c.telefone, texto: `A Maia passou a conversa com ${c.nome || l?.nome || 'esse cliente'} pra ti: ela não responde mais ali.`, em: c.ultima_msg_em })
+    if (!l || ABERTAS.includes(l.etapa)) esperando.push({ tipo: 'conversa', lead_id: c.lead_id, conversa_id: c.id, nome: c.nome || l?.nome || c.telefone, texto: `A Maia passou a conversa com ${c.nome || l?.nome || 'esse cliente'} pra ti: ela não responde mais ali. Resolveu? Abre a conversa e toca em "Resolvido, devolver pra Maia".`, em: c.ultima_msg_em })
   }
   const pecasDono = pecas.filter(p => p.status === 'com_dono')
   if (pecasDono.length) esperando.unshift({ tipo: 'joinha', texto: `${pecasDono.length === 1 ? '1 anúncio espera' : pecasDono.length + ' anúncios esperam'} o teu 👍.`, em: pecasDono[0].enviado_dono_em })
@@ -227,7 +227,8 @@ export async function dadosDoPainel(neg: any) {
   const feitas = evs.filter(e => e.tipo === 'followup' && recente(e.criado_em, 30)).reverse().map(e => {
     const l = leadDe.get(e.lead_id)
     const respondeu = !!l && msgsCli.some(m => m.autor === 'cliente' && m.criado_em > e.criado_em && convs.find(c => c.id === m.conversa_id)?.lead_id === l.id)
-    return { lead_id: e.lead_id, nome: l?.nome || l?.telefone || 'contato', numero: e.detalhe?.numero || null, em: e.criado_em, respondeu, etapa: l?.etapa || null }
+    // 13/11: despedida = a 3ª retomada escrita pela Maia (rotina.ts), pra ver a taxa de resposta dela
+    return { lead_id: e.lead_id, nome: l?.nome || l?.telefone || 'contato', numero: e.detalhe?.numero || null, em: e.criado_em, respondeu, etapa: l?.etapa || null, despedida: e.detalhe?.tipo === 'despedida' }
   })
 
   // 4) o funil em colunas (as abertas que já levaram retomada vão pra "retomada")

@@ -13,12 +13,12 @@ import { jeitoAtendimento, tomDoNegocio, noTomDoNegocio } from './tom'
 import { prazoResposta, diasDoNegocio } from './horario'
 import { avisoPrivacidade, respostaJaAvisa } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente, mandaAudioCliente } from './canal'
-import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, type Etapa } from './funil'
+import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, FOLLOWUP_DIAS, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
 import { respostaFixa } from './fixas'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
-import { regrasDoCadastro, regrasDaRetomada, fichaParaAtender, motivoDoCadastro, descontoAcima, semFrasesDeDesconto, limitesDoCadastro } from './cadastro'
+import { regrasDoCadastro, regrasDaRetomada, fichaParaAtender, motivoDoCadastro, descontoAcima, semFrasesDeDesconto, limitesDoCadastro, fechamentoDo, regraDoFechamento, precoPersonalizadoDo } from './cadastro'
 
 const semAc = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
@@ -116,6 +116,21 @@ export function querComprar(t: string, neg: any = null) {
 
 // 08/11 (teste completo, #12): o cliente recusou com todas as letras? (só aí vale "perdido")
 export const recusou = (t: string) => /\b(nao (quero|vou (querer|comprar|levar|pedir|fechar|precisar)|preciso mais|tenho (mais )?interesse|me interessa|vai dar|da pra mim|compensa|obrigad[oa]?,? (nao|mas nao))|desist\w*|deixa (pra la|quieto)|esquece|comprei (em outr|no concorrente|la)|ja comprei|sem interesse|fica pra (proxima|outra))\b/.test(semAc(t))
+// 13/11 (fechamento no time): o cliente quer FECHAR agora (pagar, pedir o Pix, agendar, marcar, reservar, "quero 2", "fechado").
+// Com contexto.fechamento 'time' (o padrão), isso passa a conversa pro dono/time, mesmo se a IA esquecer a ferramenta.
+// "Quanto custa?", "vocês entregam?" e "que horas abre?" não são fechamento: a Maia segue preparando o cliente
+export function querFechar(t: string, neg: any = null): boolean {
+  const s = semAc(t)
+  if (!s.trim() || recusou(t)) return false
+  // pagou: é o caminho do comprovante (o dono confere), não o de fechar
+  if (/\b(ja paguei|paguei|pix feito|fiz o pix|comprovante)\b/.test(s)) return false
+  if (querComprar(t, neg)) return true
+  if (/\b(quero|queria|vou|posso|gostaria de|da pra|como (faco|eu faco) (pra|para)|bora|vamos)\s+(te\s+)?(pagar|fechar|comprar|agendar|marcar|reservar|encomendar|fazer o pedido|fazer a encomenda|fazer o pix|garantir)\b/.test(s)) return true
+  if (/\b(manda|mande|passa|passe|qual (e |eh )?(a |o )?)\s*(a |o )?(chave( do)? pix|pix|link (de|do|pra) pagamento|dados (pra|para|do) (o )?pagamento)\b/.test(s)) return true
+  if (/\b(tem|teria)\s+(um\s+)?(horario|vaga|hora)\s+(livre|disponivel|amanha|hoje|segunda|terca|quarta|quinta|sexta|sabado|domingo|pra|na|no|essa|esta|semana)\b|\bpode ser (amanha|hoje|segunda|terca|quarta|quinta|sexta|sabado|domingo|as \d|dia \d)/.test(s)) return true
+  return /^\s*(fechado|vamos fechar|bora fechar)[\s.!]*$/.test(s)
+}
+
 // 08/11 (teste completo, #19): o motivo da passagem tem que dizer alguma coisa ("Não" não é motivo)
 export const motivoClaro = (m: string) => { const s = semAc(m).replace(/[^a-z0-9 ]+/g, ' ').trim(); return s.length >= 12 && s.split(/\s+/).length >= 3 && !/^(nao|sim|ok|nada|outro|sem motivo|n a)$/.test(s) }
 export const motivoDePassagem = (m: string) => /\b(reclama\w*|pessoa|humano|atendente|devolu\w*|reembols\w*|dinheiro de volta|estorn\w*|apagar|dados|irritad\w*|brav[oa]|delicad\w*|ameac\w*|processo|procon|juridic\w*|advogad\w*|cancel\w*|errad\w*|estragad\w*|insatisf\w*|ofend\w*|agressiv\w*)\b/.test(semAc(m))
@@ -149,19 +164,29 @@ export const sinalDeCompra = (t: string) => /\b(paguei|pago|pix feito|fiz o pix|
 export const perguntaInterna = (t: string) => /\b(marquei|marcou|marcad[ao] como|por engano|reabr\w*|cards?|funil|etapa|perdid[ao]|venda_perdida|mudar_etapa|ferramenta|o sistema)\b/.test(semAc(t))
 
 // passa a conversa pro dono: modo humano, sem retomada automática (quem fala agora é gente) e um aviso só pro dono
-async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: string, por: 'maia' | 'sistema') {
+// 13/11 (fechamento no time): tipo 'fechar' = o cliente quer comprar e quem fecha é o dono/time. O aviso diz isso, o contato vai
+// pra "proposta" (aí a pergunta das 18h "fechou?" pega ele) e o evento leva o tipo, pra contar quantas vendas a Maia preparou.
+// O dono devolve pelo WhatsApp ("devolve pra Maia") ou pelo painel (botão "Resolvido, devolver pra Maia")
+const motivoDeFechar = (m: string) => /\bquer (fechar|comprar|pagar|agendar|marcar|reservar|encomendar)\b/.test(semAc(m))
+async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: string, por: 'maia' | 'sistema', tipo?: 'fechar') {
   ctx.humano = true
   const atual = await db.um('conversas', { id: cv.id })
   if (atual?.modo === 'humano') return
+  const fechar = tipo === 'fechar' || motivoDeFechar(motivo)
   await db.atualiza('conversas', { id: cv.id }, { modo: 'humano' })
-  await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por, motivo })
+  await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por, motivo, ...(fechar ? { tipo: 'fechar' } : {}) })
   if (lead?.id) await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: null }).catch(() => null)
+  if (fechar && lead?.id && ['novo', 'conversando', 'interessado'].includes(lead.etapa)) await mudaEtapa(lead, 'proposta', 'maia', { resumo: motivo.slice(0, 160) }).catch(() => null)
   const dcv = await conversaDoDono(neg)
-  await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${motivo.trim().replace(/[.!?\s]+$/, '')}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia").`)
+  const m = motivo.trim().replace(/[.!?\s]+$/, '')
+  if (fechar) await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) quer fechar: ${m.replace(/^quer fechar:\s*/i, '')}. Já tirei as dúvidas; agora é contigo pra combinar o pagamento ou o horário e finalizar (eu não respondo mais ali). Fechou? Me conta o valor que eu marco a venda. Quando terminar, me diz "devolve pra Maia" ou toca em "Resolvido, devolver pra Maia" no painel.`)
+  else await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${m}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia" aqui, ou o botão "Resolvido, devolver pra Maia" no painel).`)
 }
 
 function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
-  return [
+  // 13/11: com o fechamento no time (o padrão) a Maia não marca venda (quem fecha é o dono/time): venda_fechada sai da lista
+  const time = fechamentoDo(neg) === 'time'
+  const todas: Ferramenta[] = [
     { name: 'mudar_etapa', description: 'Atualiza a etapa do cliente no funil: conversando (tirando dúvida), interessado (quer, falta decidir), proposta (recebeu preço/orçamento/horário).',
       input_schema: { type: 'object', properties: { etapa: { type: 'string', enum: ['conversando', 'interessado', 'proposta'] }, produto: { type: 'string' }, valor: { type: 'number' }, resumo: { type: 'string' } }, required: ['etapa'] },
       // 07/11 (juntou as duas correções): no teste a IA chamou venda_perdida e, na mesma resposta, mudar_etapa, e o perdido voltava pra "conversando".
@@ -203,16 +228,19 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${String(pergunta).trim().replace(/[.\s]+$/, '')}${/\?$/.test(String(pergunta).trim()) ? '' : '.'} Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
         return { ok: true, prazo: prazo.texto } } },
-    { name: 'passar_para_o_dono', description: 'Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, pede devolução, pede pra apagar os dados, ou é um caso delicado. NUNCA numa conversa normal (preço, entrega, áudio que tu entendeu). O motivo é uma frase clara pro dono.',
+    { name: 'passar_para_o_dono', description: `Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, pede devolução, pede pra apagar os dados, ou é um caso delicado${time ? ', OU quando ele quer fechar (pagar, pedir o Pix, agendar, marcar horário, reservar, fazer o pedido): aí o motivo começa com "quer fechar:"' : ''}. NUNCA numa conversa normal (preço, entrega, áudio que tu entendeu). O motivo é uma frase clara pro dono.`,
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       // 08/11 (teste completo, #19 Tiago): a IA passou um áudio respondido certinho com o motivo "Não", e o dono recebeu
       // "Tiago precisa de ti: Não". Agora: motivo claro E um gatilho de verdade (na conversa ou no motivo); senão ela segue atendendo
       roda: async ({ motivo }) => {
         const m = String(motivo || '').trim()
         // 13/11 (cadastro): o "quando passar pro dono" combinado na implantação também vale ("encomenda de empresa", "mais de 10 caixas")
-        if (!motivoClaro(m) || !(gatilhoHumano(ctx.textoCliente || '') || motivoDePassagem(m) || motivoDoCadastro(neg, m))) return { erro: 'não passou: passar_para_o_dono é só com motivo claro (o cliente pediu uma pessoa, reclamou, pediu devolução, pediu pra apagar os dados, ou é um caso delicado). Tu segue atendendo normalmente.' }
-        await passaConversa(neg, cv, lead, ctx, m, 'maia'); return { ok: true } } },
+        // 13/11 (fechamento no time): o cliente quer fechar também vale (pelo que ele escreveu, ou pelo motivo "quer fechar: ...")
+        const fechar = time && (querFechar(ctx.textoCliente || '', neg) || motivoDeFechar(m))
+        if (!motivoClaro(m) || !(gatilhoHumano(ctx.textoCliente || '') || motivoDePassagem(m) || motivoDoCadastro(neg, m) || fechar)) return { erro: 'não passou: passar_para_o_dono é só com motivo claro (o cliente pediu uma pessoa, reclamou, pediu devolução, pediu pra apagar os dados, ou é um caso delicado). Tu segue atendendo normalmente.' }
+        await passaConversa(neg, cv, lead, ctx, m, 'maia', fechar ? 'fechar' : undefined); return { ok: true } } },
   ]
+  return time ? todas.filter(f => f.name !== 'venda_fechada') : todas
 }
 
 // 07/11 (piloto): o jeito de falar com o cliente vem do cadastro do negócio (tom.ts), não do JEITO da Maia com o dono
@@ -221,6 +249,7 @@ const regras = (neg: any) => `${jeitoAtendimento(neg)}
 AGORA: tu és a ASSISTENTE VIRTUAL do negócio "${neg.nome}" (${neg.nicho || ''}, ${neg.cidade || ''}) e estás atendendo um CLIENTE dele no WhatsApp. Tu falas em nome do negócio.
 O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(fichaParaAtender(neg))}
 ${regrasDoCadastro(neg)}
+${regraDoFechamento(neg)}
 COMO ATENDER:
 - Se apresenta na primeira mensagem como a assistente virtual do ${neg.nome}. Se perguntarem, diz que é uma IA.
 - Responde rápido e direto o que perguntaram. Depois, UMA pergunta que leva pra venda (horário, quantidade, endereço de entrega).
@@ -228,8 +257,9 @@ COMO ATENDER:
 - PERGUNTOU O PREÇO (regra fixa da casa: primeiro o valor, depois o número): uma ou duas frases curtas do que o cliente ganha (o que está incluso, o resultado, o benefício), SÓ com o que está no que tu sabe, e logo em seguida o preço, na mesma resposta. Ex.: "A limpeza profunda leva uns 60 minutos: tira cravos e impurezas e a pele fica lisinha e com viço. O investimento é R$ 180, e dá pra fazer em 3x." Sem enrolar, sem esconder o preço e sem fazer outra pergunta antes de dizer o preço. Se o que tu sabe não tem nada além do preço, diz o preço direto (não inventa benefício).
 - O FUNIL, sempre que a conversa andar:
   · tirando dúvida → mudar_etapa conversando; quer, falta decidir → interessado; recebeu preço, orçamento ou marcou horário/visita → proposta (com o valor, se tiver).
-  · já sabe o preço e disse que quer ("quero 1", "fechado", "vou comprar o de 890", "pode fazer"), faltando só pagar, mandar a foto ou combinar entrega/horário → proposta com o valor (não é mais "interessado").
-  · venda_fechada SÓ quando a venda aconteceu de verdade: pagou, confirmou o pedido com pagamento, ou é serviço agendado E pago. "Vou passar aí comprar" ou "quero agendar" é proposta: quem confirma a venda depois é o dono.
+  · já sabe o preço e disse que quer ("quero 1", "fechado", "vou comprar o de 890", "pode fazer"), faltando só pagar, mandar a foto ou combinar entrega/horário → proposta com o valor (não é mais "interessado").${fechamentoDo(neg) === 'time' ? `
+  · quer fechar (pagar, Pix, agendar, marcar, reservar, pedido) → passar_para_o_dono com "quer fechar: ..." (QUEM FECHA A VENDA, acima). Tu nunca marca venda: quem fecha e conta a venda é o dono.` : `
+  · venda_fechada SÓ quando a venda aconteceu de verdade: pagou, confirmou o pedido com pagamento, ou é serviço agendado E pago. "Vou passar aí comprar" ou "quero agendar" é proposta: quem confirma a venda depois é o dono.`}
   · só perguntou o preço → conversando (proposta é quando ele já mostrou que quer: quantidade, dia, endereço).
   · o cliente disse que NÃO quer ("tá caro, não quero", "comprei em outro lugar", "não preciso mais") → venda_perdida com o motivo, e responde com educação deixando a porta aberta.
   · perguntou por algo que o negócio não faz → diz que não faz, oferece o que tem e segue em conversando. Isso NÃO é perda (ele não disse que não quer).
@@ -243,7 +273,8 @@ COMO ATENDER:
 - Não supõe o gênero do cliente ("chateado/chateada"): usa palavras neutras se não souber.
 - ÁUDIO E FOTO: "(áudio) ..." é a transcrição do que o cliente falou; "(mandou uma foto: ...)" é o que aparece na foto. Se vier "${NAO_OUVIU}" ou "${NAO_VIU}", tu NÃO ouviu nem viu: diz com honestidade que não conseguiu ouvir/ver e pede pra escrever. Nunca finge que ouviu ou viu.
 - O cliente pediu pra apagar os dados dele (LGPD): diz que o pedido foi anotado e que o negócio apaga, e chama passar_para_o_dono com o motivo "pediu pra apagar os dados". O aviso de privacidade da 1ª resposta o sistema manda sozinho: tu não repete.
-- "${COMPROVANTE}": tu NUNCA confirma pagamento nem diz que "caiu". Diz que recebeu o comprovante e que o dono confere e confirma. Não usa venda_fechada (o dono já foi avisado).
+- "${COMPROVANTE}": tu NUNCA confirma pagamento nem diz que "caiu". Diz que recebeu o comprovante e que o dono confere e confirma. Não usa venda_fechada (o dono já foi avisado).${precoPersonalizadoDo(neg).length ? `
+- PREÇO PERSONALIZADO: os serviços da regra "PREÇO PERSONALIZADO" não têm número. Perguntaram o preço deles: o que a pessoa ganha, por que depende de cada caso, e o caminho (a avaliação). Os outros produtos seguem a regra do preço (valor antes do número).` : ''}
 FORMATO: uma ou duas mensagens, cada uma entre <msg> e </msg>.`
 
 // texto que é relatório pra equipe e não mensagem pro cliente (fala do cliente na 3ª pessoa, de etapa, de ferramenta)
@@ -317,6 +348,8 @@ export async function respondeCliente(conversa_id: string) {
   const ferrs = ferramentas(neg, cv, lead, ctx)
   // 08/11 (teste completo): pedido de pessoa, reclamação, devolução ou apagar dados: a IA já sabe que é passagem (e o sistema garante)
   const gatilho = gatilhoHumano(textoCliente)
+  // 13/11 (fechamento no time, o padrão): o cliente quer fechar → a conversa vai pro dono/time (o sistema garante, como o gatilho)
+  const fechar = !gatilho && !ctx.comprovante && fechamentoDo(neg) === 'time' && querFechar(textoCliente, neg)
   // 12/11 (custo): só perguntou o Pix, o endereço, o horário ou o frete, e isso está na ficha: resposta fixa, sem IA (fixas.ts).
   // Na 1ª mensagem não (ela se apresenta e vai o aviso de privacidade), nem com comprovante ou pedido de pessoa
   const fixa = !primeira && !gatilho && !ctx.comprovante ? respostaFixa(neg, textoCliente) : null
@@ -328,12 +361,14 @@ export async function respondeCliente(conversa_id: string) {
     return { mensagens: [fixa.texto], ferramentas: ['resposta_fixa'], etapa: lead.etapa, fixa: fixa.assunto }
   }
   // 08/11 (regra fixa da casa): perguntou o preço → primeiro o valor (o que ganha), logo depois o número
-  const precoAgora = perguntaPreco(textoCliente) ? '\nO CLIENTE PERGUNTOU O PREÇO (regra fixa: valor antes do preço). Depois da apresentação, a ordem é: 1º) uma ou duas frases curtas do que ele ganha (o que vem, o que inclui, o resultado), só com o que tu sabe do negócio; 2º) o preço, na mesma mensagem, logo em seguida. A frase com "R$" NUNCA vem antes da frase do valor.\nOrdem certa (exemplo de outro negócio): "A pizza grande tem 8 fatias e vem com a borda recheada. Ela sai R$ 59."\nOrdem errada: "A pizza grande sai R$ 59. Ela tem 8 fatias e vem com a borda recheada."\nSe o que tu sabe do negócio só tem o preço (nada do que inclui ou do resultado), diz o preço direto e não inventa benefício.' : ''
+  const precoAgora = perguntaPreco(textoCliente) ? '\nO CLIENTE PERGUNTOU O PREÇO (regra fixa: valor antes do preço). Depois da apresentação, a ordem é: 1º) uma ou duas frases curtas do que ele ganha (o que vem, o que inclui, o resultado), só com o que tu sabe do negócio; 2º) o preço, na mesma mensagem, logo em seguida. A frase com "R$" NUNCA vem antes da frase do valor.\nOrdem certa (exemplo de outro negócio): "A pizza grande tem 8 fatias e vem com a borda recheada. Ela sai R$ 59."\nOrdem errada: "A pizza grande sai R$ 59. Ela tem 8 fatias e vem com a borda recheada."\nSe o que tu sabe do negócio só tem o preço (nada do que inclui ou do resultado), diz o preço direto e não inventa benefício.' + (precoPersonalizadoDo(neg).length ? '\nSe a pergunta é de um serviço com PREÇO PERSONALIZADO, não tem número: o que ele ganha, por que depende de cada caso e o caminho (a avaliação, com o preço dela se estiver no que tu sabe).' : '') : ''
+  // 13/11 (fechamento no time): a resposta prepara e avisa da passagem; quem combina pagamento/horário é a pessoa da equipe
+  const fecharAgora = fechar ? `\nATENÇÃO: o cliente quer fechar. Responde o que ele perguntou (se perguntou algo) e diz que uma pessoa da equipe vai falar com ele por aqui mesmo pra combinar o pagamento ou o horário e finalizar. Chama passar_para_o_dono com o motivo "quer fechar: <o que ele quer>". NÃO manda chave Pix nem dados de pagamento, NÃO marca horário e NÃO confirma o pedido.` : ''
 
-  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${precoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
+  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício). MAIA_MODELO_CLIENTE troca
     // 08/11 (T11): modelo misto (misto.ts): decisão de venda ou passagem pro dono é refeita no modelo forte. MAIA_MODELO_MISTO=0 desliga
-    { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho)
+    { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho || fechar)
 
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
   // em vez da mensagem pro cliente. Isso nunca sai: só vale o que vem entre <msg>, e relatório é barrado.
@@ -392,10 +427,13 @@ export async function respondeCliente(conversa_id: string) {
   const perguntouIA = r.usadas.some(u => u.nome === 'perguntar_ao_dono' && u.saida?.ok)
   const disse = respostaPassou(enviadas.join(' '), perguntouIA)
   let passouExtra: string | null = null
-  if (!ctx.humano && (gatilho || disse)) {
-    await passaConversa(neg, cv, lead, ctx, gatilho ? `${gatilho}: "${textoCliente.slice(0, 160)}"` : `eu disse ao cliente que ia passar pra uma pessoa ("${enviadas.join(' ').slice(0, 120)}")`, 'sistema')
+  // 13/11 (fechamento no time): o cliente quis fechar e a IA não passou: o sistema passa (tipo 'fechar', o dono combina e finaliza)
+  if (!ctx.humano && (gatilho || disse || fechar)) {
+    const deFechar = !gatilho && fechar
+    await passaConversa(neg, cv, lead, ctx, gatilho ? `${gatilho}: "${textoCliente.slice(0, 160)}"` : deFechar ? `quer fechar: "${textoCliente.slice(0, 160)}"` : `eu disse ao cliente que ia passar pra uma pessoa ("${enviadas.join(' ').slice(0, 120)}")`, 'sistema', deFechar ? 'fechar' : undefined)
     usadas.push('passar_para_o_dono (sistema)')
-    if (!disse) { passouExtra = `Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`; await mandaTexto(cv, passouExtra) }
+    const tua = tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'
+    if (!disse) { passouExtra = deFechar ? `Vou passar a ${tua} conversa pra uma pessoa da equipe, que fala aqui mesmo pra combinar os detalhes e finalizar.` : `Passei a ${tua} conversa pra uma pessoa da equipe, que responde aqui mesmo.`; await mandaTexto(cv, passouExtra) }
   }
   // 08/11 (reteste r3, #20): o cliente pediu "amanhã"/"hoje" num dia em que o negócio NÃO abre e a resposta não disse isso
   // (numa rodada a IA respondeu "vou confirmar se a gente abre"): o sistema avisa com o calendário certo
@@ -446,7 +484,14 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const cv = await db.um('conversas', { negocio_id: neg.id, canal: 'cliente', telefone: lead.telefone || '' })
   const msgs = cv ? (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em' })).filter(m => m.texto).slice(-12) : []
   const { emJson } = await import('./ia')
-  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).\nO que funciona (12/11, estudo de 2.032 conversas reais): retomar o que o próprio cliente disse (o produto, a data, a dúvida dele) ou levar algo novo e útil; nas conversas que pararam depois do preço ou do sim, oferecer de novo o próximo passo (horário, dados do pagamento).\nNUNCA: "ficou alguma dúvida?", "condição especial", "último dia", "vou encerrar teu contato" (tiveram de 11% a 22% de resposta).`,
+  const time = fechamentoDo(neg) === 'time'
+  // 13/11 (Guto): a 3ª (a última) é uma DESPEDIDA calorosa, no jeito do Guto: reconhece a correria, diz que o produto é bom, avisa
+  // que vai parar o atendimento por ali e fica à disposição. Sem pressão. A rotina marca no evento (tipo 'despedida') pra medir a resposta
+  const despedida = numero >= FOLLOWUP_DIAS.length
+  const pedido = despedida
+    ? `Escreve UMA mensagem curta de DESPEDIDA pra um cliente que parou de responder (é a última mensagem que tu manda pra ele). No jeito do dono, caloroso e sem pressão:\n1) reconhece a correria do dia a dia, sem cobrar nem culpar ("imagino que a correria tá grande por aí");\n2) uma frase dizendo que o produto ou serviço é bom de verdade, ligada ao que o próprio cliente procurava (só com o que está no que o negócio oferece);\n3) avisa, com leveza, que vai parar o atendimento por aqui pra não incomodar;\n4) fica à disposição: quando quiser, é só chamar que a gente continua de onde parou.\nSem pergunta no fim. NUNCA: "condição especial", "último dia", "última chance", desconto, prazo, "ficou alguma dúvida?", nem "vou encerrar teu contato" (frio). Ex. do tom (outro negócio): "Oi, Ana! Imagino que a correria tá grande por aí. A limpeza de pele é muito boa e ia te ajudar com aquela oleosidade que tu comentou. Vou parar o atendimento por aqui pra não te incomodar, tá? Quando quiser, é só me chamar que a gente continua de onde parou."`
+    : `Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de ${FOLLOWUP_DIAS.length} (a última é a despedida, mas ESTA ainda não é: não fala em parar o atendimento).\nO que funciona (12/11, estudo de 2.032 conversas reais): retomar o que o próprio cliente disse (o produto, a data, a dúvida dele) ou levar algo novo e útil; nas conversas que pararam depois do preço ou do sim, oferecer de novo o próximo passo (${time ? 'seguir com a equipe pra combinar o horário ou o pagamento' : 'horário, dados do pagamento'}).\nNUNCA: "ficou alguma dúvida?", "condição especial", "último dia", "vou encerrar teu contato" (tiveram de 11% a 22% de resposta).`
+  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. ${pedido}`,
     // 13/11 (cadastro): a retomada também segue o sim, o próximo passo da etapa e o que nunca prometer
     `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(fichaParaAtender(neg))}\n${regrasDaRetomada(neg)}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`, [],
     // 12/11 (custo): a retomada é curta e simples: vai no modelo barato (antes ia no padrão, o Sonnet)

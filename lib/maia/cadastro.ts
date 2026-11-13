@@ -73,11 +73,30 @@ export function motivoDoCadastro(neg: any, motivo: string): string | null {
   return null
 }
 
+// ---- 13/11 (Guto, a Vendedora): quem fecha a venda ----
+// contexto.fechamento: 'time' (o padrão) = a Maia NÃO agenda horário e NÃO fecha: prepara o cliente (tira dúvida, mostra o valor,
+// diz o preço) e, quando ele quer comprar (pagar, fechar, agendar), passa a conversa pro dono/time (modo humano + aviso).
+// 'maia' = como era até 12/11: ela manda o Pix/o próximo passo e marca a venda.
+export type Fechamento = 'time' | 'maia'
+export const fechamentoDo = (neg: any): Fechamento => semAc(neg?.contexto?.fechamento).trim() === 'maia' ? 'maia' : 'time'
+
+// ---- 13/11: preço personalizado ----
+// Serviço sem preço fixo (estética, tratamento individualizado): o preço só sai depois de uma avaliação (que tem preço fixo).
+// contexto.preco_personalizado: { servicos, por_que, caminho } (ou uma lista deles). Vem de ficha.preco_personalizado do cadastro
+export type PrecoPersonalizado = { servicos: string; por_que: string; caminho: string }
+export function precoPersonalizadoDo(neg: any): PrecoPersonalizado[] {
+  const p = neg?.contexto?.preco_personalizado
+  const lista = Array.isArray(p) ? p : p && typeof p === 'object' ? [p] : []
+  return lista.map((x: any) => ({ servicos: txt(x?.servicos), por_que: txt(x?.por_que), caminho: txt(x?.caminho) })).filter((x: PrecoPersonalizado) => x.servicos)
+}
+
 // a ficha que vai pro prompt como "o que tu sabe": sem o que vira regra abaixo e sem o que é da equipe (peças, estilo, datas)
-const FORA_DA_FICHA = ['funil', 'limites', 'perguntas', 'provas', 'pecas_aprovadas', 'estilo', 'implantacao', 'demo']
+const FORA_DA_FICHA = ['funil', 'limites', 'perguntas', 'provas', 'pecas_aprovadas', 'estilo', 'implantacao', 'demo', 'fechamento', 'preco_personalizado']
 export function fichaParaAtender(neg: any) {
   const c = { ...(neg?.contexto || {}) }
   for (const k of FORA_DA_FICHA) delete c[k]
+  // 13/11: com o fechamento no time, a chave Pix não vai pro prompt (quem manda os dados do pagamento é o dono/time)
+  if (fechamentoDo(neg) === 'time') { delete c.pix; delete c.chave_pix }
   for (const k of Object.keys(c)) if (vazio(c[k])) delete c[k]
   return c
 }
@@ -87,10 +106,13 @@ export function regrasDoCadastro(neg: any): string {
   const f = funilDo(neg), l = limitesDoCadastro(neg), pq = perguntasDo(neg), max = descontoMax(neg)
   const provas = txt(neg?.contexto?.provas), mais = txt(neg?.contexto?.mais_vendido)
   const linhas: string[] = []
-  if (f.sim) linhas.push(`- O "SIM" DESTE NEGÓCIO (o que conta como venda): ${f.sim}. Toda conversa caminha pra isso. venda_fechada só quando isso aconteceu de verdade.`)
+  // 13/11: com o fechamento no time, o "sim" é o destino da conversa, mas quem fecha é a equipe (regraDoFechamento)
+  if (f.sim) linhas.push(`- O "SIM" DESTE NEGÓCIO (o que conta como venda): ${f.sim}. Toda conversa caminha pra isso. ${fechamentoDo(neg) === 'time' ? 'Quando o cliente quer chegar nele, quem fecha é a equipe: passar_para_o_dono (ver QUEM FECHA A VENDA).' : 'venda_fechada só quando isso aconteceu de verdade.'}`)
   if (f.etapas.length) linhas.push(`- O CAMINHO DA VENDA (etapa → o próximo passo). Vê em que etapa o cliente está pelo que ele já disse e faz o próximo passo DELA (um passo por vez):\n${f.etapas.map((e, i) => `  ${i + 1}. ${e.etapa || '?'} → ${e.proximo_passo || '(segue a conversa)'}`).join('\n')}`)
   if (mais) linhas.push(`- MAIS VENDIDO: ${mais}. Cliente em dúvida do que escolher: sugere esse.`)
   if (l.faixa_preco) linhas.push(`- PREÇO: ${l.faixa_preco}.`)
+  // 13/11: serviço sem preço fixo: explica por que e leva pro caminho (a avaliação). Nunca inventa número nem faixa
+  for (const p of precoPersonalizadoDo(neg)) linhas.push(`- PREÇO PERSONALIZADO (${p.servicos}): esse serviço NÃO tem preço fixo${p.por_que ? ` porque ${p.por_que.replace(/[.\s]+$/, '')}` : ''}. Perguntaram o preço disso: em uma ou duas frases curtas diz o que a pessoa ganha e por que o valor depende de cada caso, e leva pro caminho: ${p.caminho || 'a avaliação'}. NUNCA inventa um valor, faixa ou "a partir de" pra esse serviço (o preço da avaliação, se estiver no caminho, pode dizer).`)
   if (l.desconto_maximo) linhas.push(`- DESCONTO: ${max === 0 ? 'este negócio não dá desconto' : `no máximo ${l.desconto_maximo}`}. Tu NUNCA oferece desconto por conta própria: só fala de desconto se o cliente pedir${max === 0 ? '' : ', e dentro desse limite'}. Pediu mais que isso: diz que vai ver com o responsável e chama perguntar_ao_dono (não promete nada).`)
   if (l.nunca_prometer) linhas.push(`- NUNCA PROMETE: ${l.nunca_prometer}. Se o cliente pedir isso, diz com educação que não dá e oferece o que dá.`)
   if (l.passar_pro_dono) linhas.push(`- PASSA A CONVERSA PRO DONO (passar_para_o_dono, com o motivo dito assim) quando: ${l.passar_pro_dono}. Além dos casos de sempre (pedido de pessoa, reclamação, devolução, apagar dados).`)
@@ -107,6 +129,16 @@ export function regrasDaRetomada(neg: any): string {
   if (f.sim) t.push(`O "sim" deste negócio: ${f.sim}.`)
   if (f.etapas.length) t.push(`Caminho da venda (etapa → próximo passo): ${f.etapas.map(e => `${e.etapa} → ${e.proximo_passo}`).join('; ')}. A retomada oferece de novo o próximo passo da etapa em que o cliente parou.`)
   if (l.nunca_prometer) t.push(`Nunca promete: ${l.nunca_prometer}.`)
+  for (const p of precoPersonalizadoDo(neg)) t.push(`${p.servicos}: não tem preço fixo; o caminho é ${p.caminho || 'a avaliação'}.`)
+  // 13/11: com o fechamento no time, a retomada não manda Pix nem marca horário: convida a seguir e quem combina é a equipe
+  if (fechamentoDo(neg) === 'time') t.push('Quem fecha (pagamento, horário, pedido) é a equipe do negócio: a retomada não manda dados de pagamento nem marca horário; se o cliente quiser seguir, uma pessoa da equipe combina com ele.')
   t.push('Nunca oferece desconto na retomada.')
   return t.join('\n')
+}
+
+// 13/11: a regra do fechamento no prompt do atendimento (vale com ou sem cadastro)
+export function regraDoFechamento(neg: any): string {
+  if (fechamentoDo(neg) === 'maia') return ''
+  return `QUEM FECHA A VENDA (regra deste negócio, vale mais que o caminho da venda acima): tu NÃO agenda horário, NÃO manda chave Pix nem dados de pagamento, NÃO confirma pedido e NÃO marca venda. Teu trabalho é preparar o cliente: tirar as dúvidas, mostrar o valor, dizer o preço (quando tem) e entender o que ele quer (qual produto/serviço, quantidade, dia que prefere).
+Quando ele quer comprar (pede pra pagar, pede o Pix, quer fechar, agendar, marcar horário, reservar, "quero 2", "pode fazer"): responde o que ele perguntou e diz, com naturalidade, que uma pessoa da equipe vai falar com ele por aqui mesmo pra combinar o pagamento ou o horário e finalizar; e chama passar_para_o_dono NESSA MESMA resposta, com o motivo "quer fechar: <o que ele quer>". Nada de "vou ver se tem horário" sem passar.`
 }

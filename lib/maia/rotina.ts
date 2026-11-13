@@ -7,7 +7,7 @@ import { maiaDb as db } from './db'
 import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, mandaBotoes, janelaAbertaCv } from './canal'
 import { atendimentoLigado } from './wa-negocio'
 import { contaChamadas } from './chamadas'
-import { followupsVencidos, registraFollowup, encerraSemResposta } from './funil'
+import { followupsVencidos, registraFollowup, encerraSemResposta, FOLLOWUP_DIAS } from './funil'
 import { textoRetomada } from './atendente'
 import { sincronizaMetricas } from './meta'
 import { rotinaSocial, socialLigado } from './social'
@@ -25,15 +25,18 @@ export async function retomadas(relogio = new Date()) {
   for (const lead of vencidos) {
     const neg = await db.um('negocios', { id: lead.negocio_id })
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
-    if ((lead.followups || 0) >= 3) { await encerraSemResposta(lead); feitos.push({ lead: lead.id, encerrado: true }); continue }
+    if ((lead.followups || 0) >= FOLLOWUP_DIAS.length) { await encerraSemResposta(lead); feitos.push({ lead: lead.id, encerrado: true }); continue }
     // fora da janela (de madrugada, domingo cedo): não manda nem conta a tentativa; sai na próxima rodada dentro da janela
     if (!podeFalar(neg, relogio)) { feitos.push({ lead: lead.id, adiada: true }); continue }
-    const { ultimo } = await registraFollowup(lead)
     const numero = (lead.followups || 0) + 1
-    if (atendimentoLigado(neg) && lead.telefone) {
+    // 13/11: o evento da retomada diz como ela saiu e se foi a despedida (a 3ª escrita pela Maia), pra medir a resposta depois
+    const cv = atendimentoLigado(neg) && lead.telefone ? await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id }) : null
+    const como = !cv ? 'lembrete_dono' : janelaAbertaCv(cv) ? 'texto' : 'modelo'
+    const tipo = numero >= FOLLOWUP_DIAS.length && como === 'texto' ? 'despedida' : 'retomada'
+    const { ultimo } = await registraFollowup(lead, { tipo, como })
+    if (cv) {
       // 05/11: o canal do negócio. Dentro da janela de 24 h, a retomada escrita pela Maia; fora dela, o modelo aprovado (maia_retomada).
-      const cv = await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id })
-      if (janelaAbertaCv(cv)) await mandaTexto(cv, await textoRetomada(neg, lead, numero))
+      if (como === 'texto') await mandaTexto(cv, await textoRetomada(neg, lead, numero))
       else {
         // 08/11 (T2): o modelo no tom do negócio (maia_retomada_voce no "você", o padrão)
         const modelo = nomeDoModelo(neg, 'maia_retomada'), voce = modelo.endsWith('_voce')
@@ -42,7 +45,7 @@ export async function retomadas(relogio = new Date()) {
     } else {
       (lembretes[neg.id] ||= []).push(`${lead.nome || lead.telefone || 'contato'}${lead.produto ? ' (' + lead.produto + ')' : ''}${ultimo ? ', última tentativa' : ''}`)
     }
-    feitos.push({ lead: lead.id, numero })
+    feitos.push({ lead: lead.id, numero, tipo, como })
   }
   for (const [negocio_id, nomes] of Object.entries(lembretes)) {
     const neg = await db.um('negocios', { id: negocio_id })

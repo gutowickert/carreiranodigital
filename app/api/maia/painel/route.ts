@@ -2,7 +2,8 @@
 //   POST {acao:'entrar', t}  → confere o link mágico e guarda num cookie httpOnly (a página tira o token da barra de endereço)
 //   GET  ?acao=tudo          → tudo do negócio do cookie (números, funil, retomadas, conversas, anúncios, vendas, avisos)
 //   GET  ?acao=conversa&id=  → a conversa completa com um cliente (só se for do negócio do cookie)
-//   POST {acao:'venda'|'perda'|'aprovar'|'ajuste'|'sair'} → as poucas ações do dono, pelas MESMAS funções do WhatsApp
+//   POST {acao:'venda'|'perda'|'aprovar'|'ajuste'|'devolver'|'sair'} → as poucas ações do dono, pelas MESMAS funções do WhatsApp
+//   13/11: 'devolver' {conversa_id} = o botão "Resolvido, devolver pra Maia" (o mesmo que "devolve pra Maia" no WhatsApp, humano.ts)
 // O negócio vem SÓ do token conferido no servidor. Nada aqui devolve chave, token, dado de outro negócio ou nota da equipe.
 import { maiaDb as db } from '@/lib/maia/db'
 import { donoBloqueado, donoErrou } from '@/lib/maia/acesso'
@@ -105,6 +106,17 @@ export async function POST(req: Request) {
         const a = await donoAjuste(neg.id, p.id, nota)
         await db.evento('painel_dono_acao', neg.id, { acao: 'ajuste', peca: p.id })
         return ok({ ok: !!a.ok })
+      }
+      // 13/11: regra da casa (toda ação do dono pelo WhatsApp E pelo painel): o dono resolveu a conversa e devolve pra Maia.
+      // Só conversa de cliente DESTE negócio e que está com ele (modo humano)
+      case 'devolver': {
+        const cv = await db.um('conversas', { id: String(b.conversa_id || ''), negocio_id: neg.id })
+        if (!cv || cv.canal !== 'cliente') return erro('conversa não encontrada', 404)
+        if (cv.modo !== 'humano') return erro('essa conversa já está com a Maia')
+        const { devolve } = await import('@/lib/maia/humano')
+        await devolve(cv, 'dono_painel', 'dono')
+        await db.evento('painel_dono_acao', neg.id, { acao: 'devolver', conversa: cv.id })
+        return ok({ ok: true, modo: 'ia' })
       }
       default: return erro('ação desconhecida')
     }
