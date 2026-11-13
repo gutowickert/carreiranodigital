@@ -283,6 +283,9 @@ export async function dadosDoPainel(neg: any) {
     resumos: await (await import('./resumo-semana')).resumosEnviados(id).catch(() => []),
     // 13/11: a verba por dia e o pedido de mudança que espera a equipe (pendencias.ts)
     verba: await (async () => { const p = (await (await import('./pendencias')).pedidosDeVerba(id).catch(() => []))[0]; return { dia: neg.verba_dia ?? null, pedido: p ? { valor: p.detalhe.valor, em: p.criado_em } : null } })(),
+    // 13/11 (relatorios.ts): a análise dos anúncios (de 2 em 2 dias) e os relatórios do mês que já foram pro dono
+    analises: await (await import('./relatorios')).analisesEnviadas(id).catch(() => []),
+    relatorios_mes: await (await import('./relatorios')).relatoriosEnviados(id).catch(() => []),
     whatsapp_maia: numeroMaia(), gerado_em: agora,
   }
 }

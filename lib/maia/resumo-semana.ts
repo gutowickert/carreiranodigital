@@ -81,5 +81,6 @@ export async function geraResumoSemana(neg: any, de: Date, ate: Date) {
 // os resumos que já foram pro dono (o painel dele mostra)
 export async function resumosEnviados(negocio_id: string, limite = 6) {
   const ps = await db.lista('pecas', { negocio_id, tipo: 'relatorio' }, { ordem: 'criado_em', desc: true })
-  return ps.filter(p => p.status === 'aprovada' && p.enviado_dono_em).slice(0, limite).map(p => ({ id: p.id, titulo: p.titulo, texto: p.texto, enviado_em: p.enviado_dono_em }))
+  // 13/11: a análise dos anúncios e o relatório do mês têm lugar próprio no painel (relatorios.ts)
+  return ps.filter(p => p.status === 'aprovada' && p.enviado_dono_em && !/^(Análise dos anúncios|Relatório do mês)\b/.test(String(p.titulo || ''))).slice(0, limite).map(p => ({ id: p.id, titulo: p.titulo, texto: p.texto, enviado_em: p.enviado_dono_em }))
 }

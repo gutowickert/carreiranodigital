@@ -54,6 +54,8 @@ async function fazTarefa(job, navegador) {
   const pasta = P('trabalho', String(tarefa.id).replace(/[^\w-]+/g, '_'))
   fs.mkdirSync(pasta, { recursive: true })
   try {
+    // 13/11 (analise.js): a imagem da análise de 2 em 2 dias pro dono (tarefa 'relatorio')
+    if (tarefa.tipo === 'relatorio') { await require('./analise').fazTarefaAnalise(job, { pasta, baixa, devolve, tenta, absoluto, log, logoComoDataUri }); log('  entregue ✔'); return }
     if (!peca) throw new Error('a tarefa veio sem a peça')
     const neg = negocio || {}
     const marca = neg.marca || {}
@@ -250,12 +252,22 @@ async function testeNovo(tipo, args) {
   }
 }
 
+// 13/11: node oficina.js --teste-analise <dados.json> [--logo <arq>] [--foto <arq>] [--marca '{...}'] [--saida <arq.jpg>]
+async function testeAnalise(args) {
+  const marca = JSON.parse(opcao(args, '--marca') || '{}'), logoArq = opcao(args, '--logo'), foto = opcao(args, '--foto'), saida = opcao(args, '--saida') || P('saida', 'analise-' + Date.now().toString(36) + '.jpg')
+  if (!args[0] || !fs.existsSync(args[0])) { console.log('Uso: node oficina.js --teste-analise <dados.json> [--logo <arq>] [--foto <arq>] [--marca ...] [--saida <arq>]'); process.exit(1) }
+  fs.mkdirSync(path.dirname(saida), { recursive: true })
+  const r = await require('./analise').gerarAnalise({ dados: JSON.parse(fs.readFileSync(args[0], 'utf8')), marca, logo: logoArq ? dataUri(fs.readFileSync(logoArq), mimeDoArquivo(logoArq) || 'image/png') : null, foto, saida })
+  console.log('Pronto: ' + saida + (r.apertado.length ? ' (texto apertado: ' + r.apertado.join(',') + ')' : ''))
+}
+
 const args = process.argv.slice(2)
 ;(async () => {
   if (args[0] === '--teste-arte') await teste('arte', args.slice(1))
   else if (args[0] === '--teste-video') await teste('video', args.slice(1))
   else if (args[0] === '--teste-locucao') await testeNovo('locucao', args.slice(1))
   else if (args[0] === '--teste-carrossel') await testeNovo('carrossel', args.slice(1))
+  else if (args[0] === '--teste-analise') await testeAnalise(args.slice(1))   // 13/11 (analise.js)
   else await laco(args.includes('--uma-vez'))
 })().catch(e => { console.log('Não deu: ' + e.message); process.exit(1) })
 

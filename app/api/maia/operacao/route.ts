@@ -172,6 +172,39 @@ export async function POST(req: Request) {
         const d = await rs.dadosDaSemana(n, de, ate)
         return ok({ texto: rs.textoResumo(n, d), dados: d })
       }
+      // 13/11 (relatorios.ts): a análise dos anúncios (de 2 em 2 dias) e o relatório do mês. Sem gerar: só a prévia (não grava).
+      //   analise_anuncios {negocio_id, gerar?, de?, ate?} · relatorio_mes {negocio_id, mes?: 'AAAA-MM', gerar?, aviso?, forcar?, ia?}
+      //   rodar_relatorios {agora?} (a agenda; `agora` só no modo de teste) · pedido_dono {negocio_id, qual} (o que a ferramenta do WhatsApp devolve)
+      case 'analise_anuncios': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const rl = await import('@/lib/maia/relatorios'), C = await import('@/lib/maia/relatorios-conta')
+        const agoraT = db.modo() === 'local' && b.agora && !isNaN(Date.parse(b.agora)) ? new Date(b.agora) : new Date()
+        if (b.gerar === true) { const g = await rl.geraAnalise(n, { agora: agoraT, de: b.de, ate: b.ate }); return ok({ peca: g.peca, texto: g.peca.texto, dados: g.dados }) }
+        const p = b.de && b.ate ? { de: String(b.de), ate: String(b.ate) } : await rl.periodoDaAnalise(n, agoraT)
+        const d = await rl.dadosDaAnalise(n, p.de, p.ate, agoraT)
+        return ok({ texto: C.textoAnalise(d), dados: d })
+      }
+      case 'relatorio_mes': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const rl = await import('@/lib/maia/relatorios'), C = await import('@/lib/maia/relatorios-conta')
+        const mes = /^\d{4}-\d{2}$/.test(String(b.mes || '')) ? String(b.mes) : rl.mesAnteriorDe(new Date())
+        if (b.aviso === true) return ok(await rl.geraAvisoMes(n, mes))
+        if (b.gerar === true) return ok(await rl.geraRelatorioMes(n, mes, { forcar: !!b.forcar, ia: b.ia === true ? true : b.ia === false ? false : undefined }))
+        const d = await rl.dadosDoMes(n, mes), c = await rl.conclusoesDoMes(n, d, b.ia === true)
+        return ok({ dados: d, conclusoes: c, texto: C.textoRelatorioWhats(d, c), aviso: C.textoAviso(d, C.tomDoMes(d)), tom: C.tomDoMes(d), projecao: C.projecao(d), html: C.htmlRelatorio(d, c, { gerado_em: new Date().toISOString(), imagens: await rl.imagensDoRelatorio(d, true) }) })
+      }
+      case 'rodar_relatorios': {
+        const { rotinaRelatorios } = await import('@/lib/maia/relatorios')
+        return ok(await rotinaRelatorios({ agora: db.modo() === 'local' && b.agora && !isNaN(Date.parse(b.agora)) ? new Date(b.agora) : undefined, forcar: db.modo() === 'local' && !!b.forcar }))
+      }
+      case 'pedido_dono': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { pedidoDoDono } = await import('@/lib/maia/relatorios')
+        return ok(await pedidoDoDono(n, b.qual === 'relatorio_mes' ? 'relatorio_mes' : 'analise'))
+      }
       // 13/11 (ligar.ts): a equipe conferiu (no botão de um anúncio de teste) que o número do WhatsApp dos anúncios é o certo.
       // numero (opcional) grava em contexto.whatsapp, o número que vai no anúncio quando o WhatsApp do negócio ainda não conectou
       case 'conferir_whatsapp': {

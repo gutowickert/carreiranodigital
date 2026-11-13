@@ -52,6 +52,12 @@ export async function GET(req: Request) {
       const c = await conversaDoPainel(r.neg, u.searchParams.get('id') || '')
       return c ? ok(c) : erro('conversa não encontrada', 404)
     }
+    // 13/11 (relatorios.ts): a PÁGINA do relatório do mês (cards), só do negócio do cookie e só a que já foi pro dono
+    if (acao === 'relatorio') {
+      const { paginaDoRelatorio } = await import('@/lib/maia/relatorios')
+      const html = await paginaDoRelatorio(r.neg, u.searchParams.get('id') || '')
+      return html ? new Response(html, { headers: { ...CAB, 'Content-Type': 'text/html; charset=utf-8', 'X-Frame-Options': 'DENY' } }) : erro('relatório não encontrado', 404)
+    }
     return erro('ação desconhecida')
   } catch (e: any) { console.error('[painel do dono]', e?.message); return erro('não deu pra carregar agora. Tenta de novo em um minuto.', 500) }
 }

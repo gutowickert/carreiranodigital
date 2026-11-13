@@ -222,6 +222,10 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'link_do_painel', description: 'O link do PAINEL do dono (resultados, funil, retomadas, conversas dos clientes, anúncios e avisos, tudo numa tela). Usa quando ele pedir "meu painel", "dashboard", "quero ver os resultados", "onde vejo tudo". O link é pessoal e vale 30 dias: manda ele inteiro, sem mudar nada.',
       input_schema: { type: 'object', properties: {} },
       roda: async () => { const n = await db.um('negocios', { id: neg.id }); ctx.link = linkPainel(n || neg); return { link: ctx.link, vale_dias: VALIDADE_DIAS } } },
+    // 13/11 (lib/maia/relatorios.ts): a análise dos anúncios (de 2 em 2 dias) e o relatório do mês, quando o dono pede
+    { name: 'analise_ou_relatorio', description: 'O dono pediu a ANÁLISE dos anúncios ("me manda a análise", "como tão os anúncios") ou o RELATÓRIO DO MÊS ("o relatório do mês", "o relatório completo"). Repassa o que vier: o texto pronto, os números de agora ou o link do relatório (inteiro, sem mudar nada). Se disser que a equipe está conferindo, avisa que chega em seguida.',
+      input_schema: { type: 'object', properties: { qual: { type: 'string', enum: ['analise', 'relatorio_mes'] } }, required: ['qual'] },
+      roda: async ({ qual }) => { const { pedidoDoDono } = await import('./relatorios'); return pedidoDoDono((await db.um('negocios', { id: neg.id })) || neg, qual === 'relatorio_mes' ? 'relatorio_mes' : 'analise') } },
     { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       roda: async ({ motivo }) => { await avisaEquipe('o dono chamou', `${neg.nome}: ${motivo}`, neg.id, true); return { ok: true } } },

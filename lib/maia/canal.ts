@@ -169,11 +169,15 @@ export async function soltaFilaDoCliente(cv: any) {
 
 // ---- a fila do dono (fora da janela de 24 h) ----
 const resumoFila = (itens: Saida[]) => {
-  const pecas = itens.filter(i => i.tipo !== 'texto').length
+  // 13/11 (relatorios.ts): a análise dos anúncios (imagem ou texto) e o relatório do mês também têm nome próprio
+  const ehAnalise = (i: Saida) => /^Análise dos anúncios\b/.test(i.texto || '')
+  const pecas = itens.filter(i => i.tipo !== 'texto' && !ehAnalise(i)).length
   // 13/11: o resumo da semana tem nome próprio no modelo ("novidades do X pra ti: o resumo da semana")
   const resumo = itens.some(i => i.tipo === 'texto' && /^Resumo da semana\b/.test(i.texto))
-  const textos = itens.length - pecas - (resumo ? 1 : 0)
-  return [resumo ? 'o resumo da semana' : '', pecas ? `${pecas} ${pecas === 1 ? 'anúncio novo' : 'anúncios novos'} pra tu aprovar` : '', textos ? `${textos} ${textos === 1 ? 'recado' : 'recados'}` : ''].filter(Boolean).join(' e ')
+  const analises = itens.filter(ehAnalise).length, analise = analises > 0
+  const mes = itens.some(i => i.tipo === 'texto' && /^Relatório do mês\b/.test(i.texto))
+  const textos = itens.length - pecas - analises - (resumo ? 1 : 0) - (mes ? 1 : 0)
+  return [resumo ? 'o resumo da semana' : '', mes ? 'o relatório do mês' : '', analise ? 'a análise dos anúncios' : '', pecas ? `${pecas} ${pecas === 1 ? 'anúncio novo' : 'anúncios novos'} pra tu aprovar` : '', textos ? `${textos} ${textos === 1 ? 'recado' : 'recados'}` : ''].filter(Boolean).join(' e ')
 }
 async function enfileira(cv: any, s: Saida) {
   await db.evento('fila_dono', cv.negocio_id, { conversa_id: cv.id, ...s, enviado: false })

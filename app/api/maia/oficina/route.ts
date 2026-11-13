@@ -21,7 +21,7 @@ export async function GET(req: Request) {
   if (!oficinaOk(req)) return naoAutorizado()
   // 06/11: a oficina está de pé (a amostra da demonstração vê isso pra avisar a equipe quando ela cair)
   await (await import('@/lib/maia/demo-amostra')).marcaOficinaViva().catch(() => null)
-  const fila = (await db.lista('tarefas', { status: 'fila' }, { ordem: 'criado_em' })).filter(t => t.tipo === 'arte' || t.tipo === 'video')
+  const fila = (await db.lista('tarefas', { status: 'fila' }, { ordem: 'criado_em' })).filter(t => t.tipo === 'arte' || t.tipo === 'video' || t.tipo === 'relatorio')   // 13/11: 'relatorio' = a imagem da análise (relatorios.ts)
   // tarefa presa (pegou e não devolveu em 20 min) volta pra fila
   const presas = (await db.lista('tarefas', { status: 'rodando' })).filter(t => t.pego_em && Date.now() - Date.parse(t.pego_em) > 20 * 60e3)
   for (const t of presas) await db.atualiza('tarefas', { id: t.id }, { status: 'fila', tentativas: (t.tentativas || 0) + 1 })
@@ -66,6 +66,8 @@ export async function GET(req: Request) {
     // 13/11: os takes da locução (na ordem) e a fala; os slides do carrossel com a foto de cada um
     ...(variante === 'locucao' ? { midias: (await Promise.all((t.dados?.midia_ids || []).map(umaMidia))).filter(Boolean), locucao: locucao && { url: await db.link(locucao.caminho), palavras: locucao.palavras, texto: locucao.texto, duracao: locucao.duracao } } : {}),
     ...(slides.length ? { slides: await Promise.all(slides.map(async (s: any) => ({ texto: s.texto, apoio: s.apoio || '', estilo: s.estilo, midia: s.midia_id ? await umaMidia(s.midia_id) : null }))) } : {}),
+    // 13/11 (relatorios.ts → maia-oficina/analise.js): os textos prontos do card da análise e o link da miniatura do anúncio
+    ...(t.tipo === 'relatorio' ? { analise: { ...(t.dados?.analise || {}), anuncio_url: t.dados?.analise?.anuncio_arquivo ? comOrigem(await db.link(t.dados.analise.anuncio_arquivo)) : null } } : {}),
   })
 }
 
@@ -79,7 +81,9 @@ export async function POST(req: Request) {
   }
   const t = await db.um('tarefas', { id: b.tarefa_id })
   if (!t) return Response.json({ erro: 'tarefa não existe' }, { status: 404 })
-  if (b.erro) { await oficinaEntregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }
+  // 13/11: a imagem da análise (tarefa 'relatorio') é entregue pelo relatorios.ts; o resto, pelas peças
+  const entregou = t.tipo === 'relatorio' ? (await import('@/lib/maia/relatorios')).analiseEntregue : oficinaEntregou
+  if (b.erro) { await entregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }
   // a oficina já mandou direto pro armazenamento: confere que o caminho é desta tarefa e que o arquivo chegou mesmo
   // 13/11: carrossel = um arquivo por slide, todos da pasta desta tarefa e todos no armazenamento
   if (Array.isArray(b.caminhos) && b.caminhos.length) {
@@ -95,12 +99,12 @@ export async function POST(req: Request) {
     const c = String(caminho)
     if (!c.startsWith(`${t.negocio_id}/pecas/${t.peca_id}-`) || c.includes('..')) return Response.json({ erro: 'caminho não é desta tarefa' }, { status: 400 })
     if (!(await db.existe(c))) return Response.json({ erro: 'o arquivo não chegou no armazenamento' }, { status: 400 })
-    await oficinaEntregou(t, { caminho: c, mime: b.mime || (/\.mp4$/.test(c) ? 'video/mp4' : /\.png$/.test(c) ? 'image/png' : 'image/jpeg') })
+    await entregou(t, { caminho: c, mime: b.mime || (/\.mp4$/.test(c) ? 'video/mp4' : /\.png$/.test(c) ? 'image/png' : 'image/jpeg') })
     await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: b.caminho ? 'link' : 'link (campo antigo)' })
     return Response.json({ ok: true })
   }
   if (!b.arquivo_b64) return Response.json({ erro: 'sem arquivo' }, { status: 400 })
-  await oficinaEntregou(t, { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/png' })
+  await entregou(t, { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/png' })
   await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: 'base64 (oficina antiga)' })
   return Response.json({ ok: true })
 }

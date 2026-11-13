@@ -18,8 +18,18 @@ export async function equipeAprova(peca_id: string, por: string) {
   if (peca.tipo === 'relatorio' || peca.tipo === 'texto') {
     // 07/11: o resumo da semana leva o link do painel do dono (gerado na hora do envio, vale 30 dias)
     let texto = peca.texto
-    if (peca.tipo === 'relatorio') { try { const { linkPainel } = await import('./painel-dono'); texto += `\n\nTudo em detalhe no teu painel: ${linkPainel(neg)}` } catch { /* sem segredo no servidor: vai sem o link */ } }
-    r = await mandaTexto(cv, texto)
+    // 13/11 (relatorios.ts): a análise dos anúncios com a imagem (o card) vai como IMAGEM com a legenda curta (no cta)
+    const imagem = peca.tipo === 'relatorio' && peca.arquivo_path && /^Análise dos anúncios\b/.test(String(peca.titulo || ''))
+    if (imagem && peca.cta) texto = peca.cta
+    if (peca.tipo === 'relatorio') {
+      try {
+        // 13/11 (relatorios.ts): o relatório do mês leva o link da PÁGINA dele (cards); o resto, o link do painel
+        const rel = await import('./relatorios')
+        if (rel.ehRelatorioMes(peca)) texto += `\n\nO relatório completo: ${rel.linkRelatorio(neg, peca.id)}`
+        else { const { linkPainel } = await import('./painel-dono'); texto += `\n\nTudo em detalhe no teu painel: ${linkPainel(neg)}` }
+      } catch { /* sem segredo no servidor: vai sem o link */ }
+    }
+    r = imagem ? await mandaImagem(cv, (await db.link(peca.arquivo_path, 60 * 60 * 24 * 7))!, texto, 'maia', peca.id) : await mandaTexto(cv, texto)
     await db.atualiza('pecas', { id: peca.id }, { status: 'aprovada', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), enviado_dono_em: new Date().toISOString(), wamid_envio: r.wamid || null })
     return { ok: r.ok, status: 'aprovada' }
   }
