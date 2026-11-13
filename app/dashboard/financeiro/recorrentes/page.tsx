@@ -150,7 +150,7 @@ export default function ClientesRecorrencia() {
 
 // "+ Adicionar cliente" (13/11/2026, pedido do Rick): cliente que não passou pelo CRM. A rota cria o
 // contrato (em manutenção, sem encontros) e o cadastro em Clientes do CRM; nenhum lançamento nasce aqui.
-const PRODUTOS: [string, string][] = [['crm', 'Sistema'], ['crm_trafego', 'CRM + Tráfego'], ['deu_venda', 'Deu Venda'], ['combo', 'Deu Venda + CRM + Tráfego']]
+const PRODUTOS: [string, string][] = [['crm', 'Sistema'], ['crm_trafego', 'CRM + Tráfego'], ['deu_venda', 'Deu Venda'], ['combo', 'Deu Venda + CRM + Tráfego'], ['maia', 'Maia']]
 
 function ModalAdicionar({ onFechar, onSalvo }: { onFechar: () => void; onSalvo: (id: string) => void }) {
   const [f, setF] = useState({ nome: '', produto: '', valor: '', dia: '', desde: '' })

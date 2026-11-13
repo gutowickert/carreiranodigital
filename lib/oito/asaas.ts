@@ -9,6 +9,9 @@ const api = async (caminho: string, opts: any = {}) => {
   if (!r.ok) throw new Error('Asaas ' + r.status + ': ' + JSON.stringify(j.errors || j).slice(0, 300))
   return j
 }
+// 13/11: a Maia (lib/maia/cobranca.ts) usa a mesma conta e a mesma chamada
+export const asaasApi = api
+export const ASAAS_PAGO = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH']
 const PAGO = ['RECEIVED', 'CONFIRMED', 'RECEIVED_IN_CASH']
 const hoje = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
 const maisDias = (n: number) => new Date(Date.now() - 3 * 3600e3 + n * 86400e3).toISOString().slice(0, 10)

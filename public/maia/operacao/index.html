@@ -1309,7 +1309,7 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
 /* 13/11: o que falta pra ligar (lista de conferência; lib/maia/ligar.ts). Só lê; o único botão grava o número conferido */
 function subLigar(n,box){
   box.innerHTML='<div id="ligar-c">'+esqLinhas(6)+'</div>';
@@ -1331,6 +1331,40 @@ function subLigar(n,box){
   function carrega(){ return api(q({acao:'falta_ligar',negocio:n.id})).then(pinta).catch(function(e){ if($('#ligar-c')) $('#ligar-c').innerHTML=caixaErro(e); }); }
   carrega();
 }
+// 13/11 (cobranca.ts): a parte administrativa do negócio. Cliente no CRM da escola, implantação (R$ 497) e mensalidade
+// (R$ 997) pelo Asaas. A baixa no financeiro e o aviso de atraso (no dia seguinte ao vencimento) são da rotina de hora em hora.
+function subCobranca(n,c){
+  c.innerHTML='<div id="cob-c"><div class="card"><div class="esq" style="height:80px"></div></div></div>';
+  var hoje=new Date(Date.now()-3*3600e3).toISOString().slice(0,10);
+  var dt=function(d){ return d?String(d).split('-').reverse().join('/'):''; };
+  var rs=function(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var link=function(u){ return u?'<a href="'+esc(u)+'" target="_blank" rel="noopener">abrir a fatura</a> · <button class="btn" style="min-height:30px;padding:4px 10px" data-copia="'+esc(u)+'">copiar o link</button>':''; };
+  function pinta(r){
+    var s=r.situacao||{}, im=s.implantacao||{}, me=s.mensalidade||{};
+    var tomI={paga:['paga','bom','check'],pendente:['a pagar','aten','alerta'],atrasada:['atrasada','ruim','alerta'],sem_cobranca:['sem cobrança','','']}[im.status||(r.implantacao?'pendente':'sem_cobranca')]||['—','',''];
+    var tomM={em_dia:['em dia','bom','check'],atrasada:['atrasada','ruim','alerta'],sem_assinatura:['sem assinatura','','']}[me.status||(r.assinatura?'em_dia':'sem_assinatura')]||['—','',''];
+    var campo=function(id,rot,extra){ return '<div class="campo"><label for="'+id+'">'+rot+'</label><input id="'+id+'" '+(extra||'')+'></div>'; };
+    var h='';
+    h+='<div class="card"><div class="card-cab"><div><h2>Cliente no CRM da escola</h2><p class="mu peq" style="margin-top:4px">'+(r.ligado?'Ligado: '+esc(r.nome||'')+' · '+esc(r.documento||'')+' · '+esc(r.email||'')+'. Aparece em Financeiro, Clientes com recorrência.':'Cadastra o cliente (produto Maia) e liga este negócio a ele. Se já existe com o mesmo nome, liga no que existe.')+'</p></div>'+chip(r.ligado?'ligado':'falta ligar',r.ligado?'bom':'aten',r.ligado?'check':'alerta')+'</div>'+
+      (r.ligado?'':campo('cb-nome','Nome na cobrança','value="'+esc(n.nome||'')+'"')+campo('cb-doc','CPF ou CNPJ','inputmode="numeric" placeholder="só números"')+campo('cb-mail','E-mail (a fatura vai pra ele)','type="email"')+'<div class="btns"><button class="btn ok" id="cb-ligar">'+ic('check')+'Ligar no CRM</button></div>')+'</div>';
+    h+='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Implantação · '+rs(r.implantacao?r.implantacao.valor:497)+'</h2><p class="mu peq" style="margin-top:4px">'+(r.implantacao?'Vence '+dt(im.vence||r.implantacao.vence)+(im.pago_em?' · paga em '+dt(im.pago_em):'')+'. '+(im.status==='paga'?'':link(im.link||r.implantacao.link)):'Cobrança avulsa (Pix, boleto ou cartão), com vencimento no dia da implantação ou antes.')+'</p></div>'+chip(tomI[0],tomI[1],tomI[2])+'</div>'+
+      (r.ligado&&!r.implantacao?campo('cb-venc','Vence em','type="date" min="'+hoje+'" value="'+hoje+'"')+'<div class="btns"><button class="btn ok" id="cb-impl">'+ic('dinheiro')+'Gerar a cobrança da implantação</button></div>':'')+'</div>';
+    h+='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Mensalidade · '+rs(r.assinatura?r.assinatura.valor:997)+'</h2><p class="mu peq" style="margin-top:4px">'+(r.assinatura?'Todo dia '+r.assinatura.dia+', desde '+dt(r.assinatura.primeira)+'.'+(me.proxima?' Próxima: '+dt(me.proxima)+'. ':' ')+(me.atrasadas?'<b>'+me.atrasadas+' em atraso.</b> ':'')+(me.link?link(me.link):''):'A data da 1ª mensalidade é a que vocês combinaram no primeiro encontro. O dia dela vira o dia de todo mês.')+'</p></div>'+chip(tomM[0],tomM[1],tomM[2])+'</div>'+
+      (r.ligado&&!r.assinatura?campo('cb-prim','1ª mensalidade vence em','type="date" min="'+hoje+'"')+'<div class="btns"><button class="btn ok" id="cb-ass">'+ic('dinheiro')+'Abrir a assinatura</button></div>':'')+'</div>';
+    h+='<div class="card" style="margin-top:14px"><p class="mu peq" style="margin:0 0 10px">Pagou: a baixa no financeiro é automática (a rotina confere a cada hora). Venceu e não pagou: a equipe é avisada no dia seguinte. A Maia continua atendendo: quem decide é vocês.'+(s.conferido_em?' Conferido em '+new Date(s.conferido_em).toLocaleString('pt-BR')+'.':'')+(r.simulado?' <b>Modo de teste: sem a chave do Asaas, as cobranças são simuladas.</b>':'')+'</p><div class="btns"><button class="btn" id="cb-conf">'+ic('check')+'Conferir agora</button>'+(r.simulado&&(r.implantacao||r.assinatura)?'<button class="btn" id="cb-sim-i">Simular: pagou a implantação</button><button class="btn" id="cb-sim-m">Simular: pagou a mensalidade</button>':'')+'</div></div>';
+    $('#cob-c').innerHTML=h;
+    c.querySelectorAll('[data-copia]').forEach(function(b){ b.onclick=function(){ var u=b.getAttribute('data-copia'); if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){ toast('Link copiado. Manda pro cliente.'); },function(){ toast(u); }); else toast(u); }; });
+    var acao=function(id,txt,corpo,okTxt){ var b=$('#'+id); if(b) b.onclick=function(){ var x=corpo(); if(!x) return; espera(b,txt,function(){ return api(x).then(function(){ toast(okTxt); return carrega(); }); }); }; };
+    acao('cb-ligar','ligando…',function(){ return {acao:'cobranca_ligar',negocio_id:n.id,nome:$('#cb-nome').value,documento:$('#cb-doc').value,email:$('#cb-mail').value}; },'Cliente ligado no CRM.');
+    acao('cb-impl','gerando…',function(){ return {acao:'cobranca_implantacao',negocio_id:n.id,vence:$('#cb-venc').value}; },'Cobrança da implantação gerada. Copia o link e manda pro cliente.');
+    acao('cb-ass','abrindo…',function(){ var d=$('#cb-prim').value; if(!d){ toast('Escolhe a data da 1ª mensalidade.',true); return null; } return {acao:'cobranca_assinatura',negocio_id:n.id,primeira:d}; },'Assinatura aberta.');
+    acao('cb-conf','conferindo…',function(){ return {acao:'cobranca_conferir',negocio_id:n.id}; },'Conferido.');
+    acao('cb-sim-i','simulando…',function(){ return {acao:'cobranca_simular_pagamento',negocio_id:n.id,qual:'implantacao'}; },'Pagamento simulado.');
+    acao('cb-sim-m','simulando…',function(){ return {acao:'cobranca_simular_pagamento',negocio_id:n.id,qual:'mensalidade'}; },'Pagamento simulado.');
+  }
+  function carrega(){ return api(q({acao:'cobranca',negocio:n.id})).then(pinta).catch(function(e){ if($('#cob-c')) $('#cob-c').innerHTML=caixaErro(e); }); }
+  carrega();
+}
 function telaNegocio(id,sub,mesmoNeg){
   var t=$('#tela');
   var temCab = mesmoNeg && $('#neg-topo') && S.negAtual && S.negAtual.id===id;
@@ -1339,7 +1373,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }

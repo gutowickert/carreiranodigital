@@ -174,7 +174,7 @@ export async function POST(req: Request) {
 // Grava o mínimo que a tela precisa pra mostrar o cliente: um contrato em `projetos` (status
 // 'manutencao', SEM marcos — nada cai na agenda) e o cadastro em `instalacoes` ligado a ele. Valor,
 // dia e início continuam editáveis em Clientes do CRM. Nenhum lançamento nasce aqui.
-const PRODUTOS_OK = ['crm', 'crm_trafego', 'deu_venda', 'combo']
+const PRODUTOS_OK = ['crm', 'crm_trafego', 'deu_venda', 'combo', 'maia']
 
 async function novoCliente(org: string, b: any) {
   const nome = (b.nome || '').toString().trim().slice(0, 120)

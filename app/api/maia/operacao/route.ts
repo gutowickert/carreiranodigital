@@ -38,6 +38,8 @@ function metaSeguro(novo: any, atual: any) {
   if (atual?.wa) m.wa = atual.wa; else delete m.wa
   // 07/11 (piloto): o jeito de atender (tom, aviso de privacidade, franquia, fuso) só muda pela ação config_atendimento
   if (atual?.atendimento) m.atendimento = atual.atendimento; else delete m.atendimento
+  // 13/11 (cobranca.ts): o financeiro (cliente no CRM, Asaas, baixas e avisos) só muda pelas ações de cobrança
+  if (atual?.financeiro) m.financeiro = atual.financeiro; else delete m.financeiro
   const st = typeof m.social_token === 'string' ? m.social_token.trim() : ''
   if (st && st !== '(guardada)') m.social_token = cifra(st)
   else if (atual?.social_token) m.social_token = atual.social_token
@@ -86,6 +88,14 @@ export async function GET(req: Request) {
       return ok(negs.filter(n => !ehDemo(n) && (q('todos') === '1' || n.status !== 'cancelado')).map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
     }
     if (acao === 'negocio') return ok(semChave(await db.um('negocios', { id: q('id') })))
+    // 13/11 (cobranca.ts): a situação da cobrança do negócio (a guardada; ?conferir=1 vai no Asaas agora)
+    if (acao === 'cobranca') {
+      const c = await import('@/lib/maia/cobranca')
+      let n = await db.um('negocios', { id: q('negocio') })
+      if (!n) return erro('negócio não existe', 404)
+      if (q('conferir') === '1') { await c.confereNegocio(n); n = await db.um('negocios', { id: n.id }) }
+      return ok(c.situacaoDo(n))
+    }
     // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
     if (acao === 'falta_ligar') {
       const { faltaLigar } = await import('@/lib/maia/ligar')
@@ -163,6 +173,25 @@ export async function POST(req: Request) {
       }
       // 13/11 (resumo-semana.ts): o resumo dos últimos 7 dias de um negócio. Sem gerar: só a prévia do texto (não grava nem manda).
       // gerar: true cria a peça pra equipe aprovar (o mesmo da segunda 7h)
+      // 13/11 (cobranca.ts): a parte administrativa. Cliente no CRM da escola, implantação e mensalidade pelo Asaas
+      case 'cobranca_ligar': {
+        const c = await import('@/lib/maia/cobranca')
+        return ok(await c.ligaCliente(b.negocio_id, { documento: b.documento, email: b.email, nome: b.nome, projeto_id: b.projeto_id || null, por }))
+      }
+      case 'cobranca_implantacao': { const c = await import('@/lib/maia/cobranca'); return ok(await c.cobraImplantacao(b.negocio_id, { vence: String(b.vence || ''), valor: Number(b.valor) || undefined, por })) }
+      case 'cobranca_assinatura': { const c = await import('@/lib/maia/cobranca'); return ok(await c.abreAssinatura(b.negocio_id, { primeira: String(b.primeira || ''), valor: Number(b.valor) || undefined, por })) }
+      case 'cobranca_conferir': {
+        const c = await import('@/lib/maia/cobranca')
+        if (!b.negocio_id) return ok(await c.confereCobrancas())
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe')
+        await c.confereNegocio(n); return ok(c.situacaoDo(await db.um('negocios', { id: n.id })))
+      }
+      case 'cobranca_simular_pagamento': {
+        const c = await import('@/lib/maia/cobranca')
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe')
+        await c.simulaPagamento(n, b.qual === 'implantacao' ? 'implantacao' : 'mensalidade'); await c.confereNegocio(n)
+        return ok(c.situacaoDo(await db.um('negocios', { id: n.id })))
+      }
       case 'resumo_semana': {
         const n = await db.um('negocios', { id: b.negocio_id })
         if (!n) return erro('negócio não existe')

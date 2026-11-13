@@ -9,7 +9,7 @@ const card: React.CSSProperties = { background: 'var(--surface)', border: '1px s
 const inp: React.CSSProperties = { background: 'var(--surface-2)', border: '1px solid var(--border-strong)', borderRadius: 8, padding: '7px 9px', fontSize: 13, color: 'var(--text)', width: '100%' }
 const lbl: React.CSSProperties = { fontSize: 11, color: 'var(--text-faint)', display: 'block', marginBottom: 3 }
 
-const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'Sistema'], ['combo', 'Deu Venda + CRM + Tráfego'], ['crm_trafego', 'CRM + Tráfego']]
+const PRODUTOS: [string, string][] = [['deu_venda', 'Deu Venda'], ['crm', 'Sistema'], ['combo', 'Deu Venda + CRM + Tráfego'], ['crm_trafego', 'CRM + Tráfego'], ['maia', 'Maia']]
 // as duas abas da tela (decisão do dono, 27/09/2026): o Sistema tem o próprio roteiro de
 // implantação e o Deu Venda tem o dele; misturados, o que precisa de ti hoje some no meio
 type Aba = 'sistema' | 'deu_venda'

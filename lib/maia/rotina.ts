@@ -127,6 +127,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   // 06/11: social media (desde 08/11 no plano único): publica o que venceu, lê os resultados 1x por dia (7h) e a análise do mês no dia 1. Só com MAIA_SOCIAL_LIGADO=1
   try { if (socialLigado()) r.social = await rotinaSocial({ forcar: opc.forcarRelatorio }) } catch (e: any) { r.social_erro = e.message }
   // 08/11 (T15): a Maia Gestora (lib/maia/gestora-rotina.ts): 7h todas as regras, de 2 em 2 h (9h–19h) as urgentes da Meta. Só lê. Só com MAIA_GESTORA_LIGADA=1
+  // 13/11 (cobranca.ts): confere no Asaas o que foi pago (baixa no financeiro da escola) e avisa a equipe do que venceu ontem
+  try { const { confereCobrancas } = await import('./cobranca'); r.cobranca = await confereCobrancas(relogio) } catch (e: any) { r.cobranca_erro = e.message }
   try { if (process.env.MAIA_GESTORA_LIGADA === '1') { const { rotinaGestora } = await import('./gestora-rotina'); r.gestora = await rotinaGestora({ relogio }) } } catch (e: any) { r.gestora_erro = e.message }
   // 13/11 (acompanhamento.ts): 7h a análise de ontem dos negócios novos, segunda 8h as regras propostas, e as regras aprovadas no contexto
   try { const { rotinaAprendizado } = await import('./acompanhamento'); r.aprendizado = await rotinaAprendizado({ relogio, forcar: opc.forcarRelatorio }) } catch (e: any) { r.aprendizado_erro = e.message }

@@ -23,7 +23,7 @@
 import { hojeBR } from '@/lib/periodos'
 export type Natureza = 'encontro' | 'interno' | 'marco'
 export type EstadoMarco = 'previsto' | 'combinado' | 'confirmado' | 'concluido' | 'a_remarcar' | 'cancelado'
-export type Produto = 'deu_venda' | 'crm' | 'combo' | 'crm_trafego'
+export type Produto = 'deu_venda' | 'crm' | 'combo' | 'crm_trafego' | 'maia'
 export type FimTipo = 'encerra' | 'renegocia' | 'manutencao'
 
 export type MarcoTpl = {
@@ -219,6 +219,22 @@ export const ROTEIROS: Record<Produto, RoteiroProduto> = {
   // Cliente que já tem o tráfego rodando e entra pro CRM — sem o Deu Venda (sem a
   // máquina de captação). Um encontro presencial a cada 3 semanas, CRM e tráfego
   // na mesma mesa, e a renegociação antes do fim dos 6 meses.
+  // 13/11: a MAIA (a agência inteira numa IA). Contrato sem fim (mensalidade pelo Asaas, ligada no painel da Maia) e
+  // sem roteiro de encontros na agenda: a implantação e o acompanhamento estão na skill implantacao-maia e no painel da Maia.
+  maia: {
+    nome: 'Maia',
+    cor: '#7c3aed',
+    prazoMeses: null,
+    fimTipo: 'manutencao',
+    avisoFimDias: 30,
+    fases: [
+      { chave: 'implantacao', label: 'Implantação' },
+      { chave: 'no_ar', label: 'No ar' },
+      { chave: 'acompanhamento', label: 'Acompanhamento' },
+    ],
+    marcos: [],
+  },
+
   crm_trafego: {
     nome: 'CRM + Tráfego',
     cor: '#f59e0b',
@@ -260,7 +276,7 @@ export const ROTEIROS: Record<Produto, RoteiroProduto> = {
 export type Segmento = 'sistema' | 'deu_venda'
 export function segmentosDoProduto(p: string): Segmento[] {
   if (p === 'deu_venda') return ['deu_venda']
-  if (p === 'crm' || p === 'crm_trafego') return ['sistema']
+  if (p === 'crm' || p === 'crm_trafego' || p === 'maia') return ['sistema']
   return ['sistema', 'deu_venda']
 }
 
