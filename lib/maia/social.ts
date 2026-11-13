@@ -69,6 +69,14 @@ async function igDe(neg: any, token: string) {
 }
 
 // ---------- a agenda ----------
+// 13/11 (Guto): não tem horário padrão ainda, então testa. Post sem hora marcada alterna 11h e 18h (o oposto do último)
+export async function horaDeTeste(negocio_id: string): Promise<'11:00' | '18:00'> {
+  const ps = (await db.lista('eventos', { negocio_id, tipo: 'social_post' }, { ordem: 'criado_em', desc: true })).slice(0, 1)
+  const q = ps[0]?.detalhe?.quando
+  if (!q) return '11:00'
+  // o horário fica guardado em UTC: volta pra hora de Brasília antes de comparar
+  return horaBR(new Date(q)) < 14 ? '18:00' : '11:00'
+}
 const legendaDe = (p: any) => [p?.gancho, p?.texto, p?.cta].filter(Boolean).join('\n\n')
 // "2026-11-10T18:00" sem fuso é horário de Brasília
 export const quandoIso = (q: string) => { const s = String(q || '').trim(); if (!s) return null; const d = new Date(/[zZ]|[+-]\d\d:?\d\d$/.test(s) ? s : (s.length <= 10 ? s + 'T12:00' : s) + '-03:00'); return isNaN(d.getTime()) ? null : d.toISOString() }
@@ -177,7 +185,7 @@ export async function refazPost(peca: any, nota: string, quem: 'equipe' | 'dono'
   if (!post) return null
   const neg = await db.um('negocios', { id: peca.negocio_id })
   const { emJson } = await import('./ia')
-  const r = await emJson<{ legenda: string }>(`${jeitoDaLegenda(neg)}\nLegenda de Instagram: começa com uma frase que prende, conteúdo útil, até 2.200 caracteres, no máximo 5 hashtags, sem inventar preço nem promoção.`,
+  const r = await emJson<{ legenda: string }>(`${jeitoDaLegenda(neg)}\nLegenda de Instagram: começa com uma frase que prende, conteúdo útil, tamanho MÉDIO (de 400 a 900 caracteres), no máximo 5 hashtags, sem inventar preço nem promoção. Post orgânico é posicionamento: NÃO chama pro WhatsApp (se o post é de produto, pode dizer que o link está na bio).`,
     `NEGÓCIO: ${neg?.nome} (${neg?.nicho || ''}, ${neg?.cidade || ''}). O QUE A MAIA SABE: ${JSON.stringify(neg?.contexto || {})}\nTEMA: ${post.detalhe.tema || '-'} · FORMATO: ${post.detalhe.formato || post.detalhe.tipo}\nLEGENDA ATUAL:\n${legendaDe(peca)}\n\nAJUSTE PEDIDO PELA ${quem === 'equipe' ? 'EQUIPE' : 'DONA/DONO'}: ${nota}\nDevolve {"legenda":"..."}`)
   const [nova] = await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: textoNoTom(neg, String(r.legenda || peca.texto)).slice(0, 2200), status: 'revisao_equipe', versao: (peca.versao || 1) + 1, ...(quem === 'equipe' ? { nota_equipe: nota } : { nota_dono: nota }) })
   await salva(post, { status: 'rascunho' })
@@ -408,6 +416,7 @@ POR TEMA, FORMATO, TIPO E HORÁRIO (somas e médias): ${JSON.stringify(ag)}
 CADA POST: ${JSON.stringify(lista).slice(0, 12000)}
 
 Compara por tema, formato e horário (alcance médio, taxa de interação, salvos e compartilhamentos valem mais que curtida). Com poucos posts num grupo, fala que é sinal, não certeza.
+HORÁRIO: ainda não tem padrão (13/11). Enquanto um horário não mostrar vantagem clara, o plano ALTERNA 11h e 18h, pra testar; quando um ganhar, ele fica e testa um terceiro.
 Devolve SÓ o JSON: {"resumo":"2 a 3 frases","repetir":["..."],"testar":["..."],"parar":["..."],"plano":[{"semana":1,"dia":"terça","horario":"18h","tipo":"foto|carrossel|reels","tema":"...","formato":"...","ideia":"uma frase"}]}
 No máximo 3 itens em repetir, testar e parar. Plano do mês seguinte com 8 a 12 posts.`, [], 1,
     { modelo: process.env.MAIA_MODELO_ANALISE || 'claude-sonnet-5-5', uso: { tipo: 'social_analise', negocio_id } })

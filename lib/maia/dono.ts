@@ -129,12 +129,12 @@ export async function pedeConteudo(neg: any, d: { o: 'carrossel' | 'locucao'; te
   if (d.o === 'carrossel') {
     if (n.plano === 'gestao') return { ok: false, erro: 'carrossel (social media) não faz parte do plano Gestora' }
     if (!tema) return { ok: false, erro: 'falta o tema do carrossel' }
-    // sem data: amanhã às 18h (horário de Brasília). A equipe e o dono aprovam antes de publicar
+    // sem data: amanhã, alternando 11h e 18h pra testar o horário (social.horaDeTeste). A equipe e o dono aprovam antes de publicar
     const am = new Date(Date.now() - 3 * 3600e3 + 24 * 3600e3).toISOString().slice(0, 10)
     const tipo = ['noticia', 'dica', 'produto'].includes(String(d.tipo)) ? d.tipo as 'noticia' | 'dica' | 'produto' : 'dica'
     try {
       const { criaCarrossel } = await import('./carrossel')
-      const r = await criaCarrossel(n.id, { quando: d.quando || am + 'T18:00', tema, tipo, fonte: d.fonte ? String(d.fonte).slice(0, 2000) : undefined, por })
+      const r = await criaCarrossel(n.id, { quando: d.quando || am + 'T' + await (await import('./social')).horaDeTeste(n.id), tema, tipo, fonte: d.fonte ? String(d.fonte).slice(0, 2000) : undefined, por })
       return { ok: true, carrossel: { slides: r.slides.length, tema }, proximo: 'a oficina monta as imagens, a equipe confere e chega pro dono aprovar antes de publicar' }
     } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
   }

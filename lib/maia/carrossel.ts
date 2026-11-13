@@ -36,11 +36,11 @@ REGRAS:
 - Slide 1 (estilo "capa") é o GANCHO: até 9 palavras, faz a pessoa querer arrastar. Sem nome do negócio.
 - Slides do meio: um ponto por slide. "texto" até 12 palavras; "apoio" opcional, até 20 palavras (complementa, não repete).
 - 1 ou 2 slides do meio com estilo "quebra" (a frase mais forte vai sozinha num fundo de cor, sem foto atrás ou com a foto pequena). Nunca 2 quebras seguidas. Os outros do meio: estilo "foto".
-- Último slide (estilo "final"): uma frase de fechamento que leva pro perfil (${voce ? '"Salve pra lembrar na hora de escolher", "Siga o perfil pra mais dicas"' : '"Salva pra lembrar na hora de escolher", "Segue o perfil pra mais dicas"'}), até 10 palavras. NÃO escreve "WhatsApp" nele: o botão do WhatsApp já vai embaixo da frase.
+- Último slide (estilo "final"): uma frase de fechamento que leva pro perfil (${voce ? '"Salve pra lembrar na hora de escolher", "Siga o perfil pra mais dicas"' : '"Salva pra lembrar na hora de escolher", "Segue o perfil pra mais dicas"'}), até 10 palavras. NÃO escreve "WhatsApp" nele: post orgânico é posicionamento, não chama pro WhatsApp.
 - Se o gancho promete um número ("5 passos", "3 erros"), o número tem que bater com os slides de foto e quebra do meio.
 - Cada slide usa uma foto da lista (pelo id). Varia as fotos; só repete se faltar. A quebra pode ir sem foto (midia_id null).
 - Usa SÓ o que está em O QUE A MAIA SABE${d.tipo === 'noticia' ? ' e em FONTE' : ''}. Não inventa preço, promoção, prazo nem número. Sem hashtag e sem emoji nos slides.
-- A legenda: começa com uma frase que prende, conteúdo útil, até 1.200 caracteres, no máximo 5 hashtags, termina chamando pro WhatsApp ou pro perfil.`,
+- A legenda: começa com uma frase que prende, conteúdo útil, tamanho MÉDIO (de 400 a 900 caracteres), no máximo 5 hashtags. Post orgânico é posicionamento: NÃO chama pro WhatsApp.${d.tipo === 'produto' ? ' Como é de produto, pode terminar dizendo que o link está na bio.' : ' Termina levando pro perfil (salvar, seguir, comentar).'}`,
     `NEGÓCIO: ${neg.nome} (${neg.nicho || 'nicho não informado'}), ${neg.cidade || ''}.
 O QUE A MAIA SABE: ${JSON.stringify(neg.contexto || {}).slice(0, 3000)}
 TIPO DE CONTEÚDO: ${SOBRE[d.tipo] || SOBRE.dica}
@@ -88,7 +88,8 @@ export async function criaCarrossel(negocio_id: string, d: { quando: string; tem
     peca_id: peca.id, quando, tipo: 'carrossel', midias: [], montagem: 'oficina', tema: d.tema, formato: `carrossel ${tipo}`, objetivo: null, redes,
     status: 'rascunho', ig: {}, fb: {}, tentativas: 0, por: d.por || null, simulado: !metaReal(),
   } })
-  await db.insere('tarefas', { negocio_id, tipo: 'arte', peca_id: peca.id, dados: { variante: 'carrossel', slides, post_id: ev.id, tipo_conteudo: tipo, cta: ctaNoTom(neg, 'Chama no WhatsApp') } })
+  await db.insere('tarefas', { negocio_id, tipo: 'arte', peca_id: peca.id, dados: { variante: 'carrossel', slides, post_id: ev.id, tipo_conteudo: tipo, // 13/11 (Guto): orgânico é posicionamento, sem botão nem número do WhatsApp; post de produto leva pro link da bio
+    cta: tipo === 'produto' ? 'Link na bio' : '', sem_whatsapp: true } })
   for (const id of usadas) { const m = midias.find(x => x.id === id); if (m) await db.atualiza('midias', { id }, { usos: (m.usos || 0) + 1 }) }
   await db.evento('carrossel_criado', negocio_id, { peca_id: peca.id, slides: slides.length, tipo })
   return { peca_id: peca.id, post_id: ev.id, slides }

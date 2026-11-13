@@ -72,7 +72,7 @@ async function fazTarefa(job, navegador) {
         const foto = s.midia && s.midia.url ? (await baixa(s.midia.url, path.join(pasta, 'foto-' + i), s.midia.mime)).arq : null
         slides.push({ foto, texto: s.texto, apoio: s.apoio, estilo: s.estilo })
       }
-      const r = await gerarCarrossel({ slides, nome: base.nome, marca, logo, cta: tarefa.cta || peca.cta || 'Chama no WhatsApp', whatsapp: neg.whatsapp || null, chave: peca.id, pasta: path.join(pasta, 'slides'), navegador, log })
+      const r = await gerarCarrossel({ slides, nome: base.nome, marca, logo, cta: typeof tarefa.cta === 'string' ? tarefa.cta : (peca.cta || 'Chama no WhatsApp'), whatsapp: tarefa.sem_whatsapp ? null : (neg.whatsapp || null), chave: peca.id, pasta: path.join(pasta, 'slides'), navegador, log })
       log(`  carrossel pronto: ${r.arquivos.length} slides (${r.jeitos.join(', ')})${r.apertados.length ? ', ATENÇÃO texto apertado nos slides ' + r.apertados.join(',') : ''}`)
       const ups = (job.upload && job.upload.slides) || []
       if (ups.length < r.arquivos.length) throw new Error('a fila não mandou um link de envio por slide')
