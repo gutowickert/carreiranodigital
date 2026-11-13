@@ -236,6 +236,15 @@ details p{margin-top:10px;color:var(--tx2)}
 /* fim */
 .fim{margin-block:84px 30px;background:var(--tx);color:#fff;border-radius:30px;padding:clamp(28px,5vw,56px);display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,.7fr);gap:30px;align-items:center}
 .fim h2{color:#fff}
+.sedes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin-top:30px}
+.sede{background:var(--s1);border:1px solid var(--ln);border-radius:24px;overflow:hidden;box-shadow:0 14px 34px rgba(76,29,149,.07)}
+.sede img{width:100%;height:auto;aspect-ratio:4/3;object-fit:cover;display:block}
+.sede .tx{padding:18px 22px}
+.sede small{display:block;font:800 11px var(--f-tx);letter-spacing:.12em;text-transform:uppercase;color:var(--ac2)}
+.sede b{display:block;font:800 30px/1.1 var(--f-dis);margin:4px 0 6px}
+.sede span{color:var(--tx2);font-size:16px}
+.sede-mini{display:block;margin-top:6px;font-weight:700;color:var(--ac2);font-size:14px}
+@media (max-width:700px){.sedes{grid-template-columns:1fr}}
 .fim p{color:#cfc8e3;margin:14px 0 24px;max-width:560px}
 .fim img{width:100%;max-width:260px;aspect-ratio:1/1;object-fit:cover;border-radius:50%;justify-self:center;border:6px solid rgba(255,255,255,.12)}
 .num{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:16px;color:#cfc8e3;font-size:15px}
@@ -260,7 +269,7 @@ footer{padding-block:10px 40px;color:var(--mu);font-size:13px;text-align:center}
     <h1>A tua agência inteira, <em>numa IA que mede tudo.</em></h1>
     <p class="lead">Estratégia, anúncios, Instagram, atendimento no WhatsApp e análise, trabalhando junto. Ela mede do anúncio ao dinheiro no caixa, repete o que vende, corta o que não vende e fica mais esperta todo mês.</p>
     <a class="cta" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.2 1.4 2.5 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.5Z"/></svg>Conversar no WhatsApp</a>
-    <div class="selos"><span>Implantação presencial</span><span>Preço fixo</span><span>Sem fidelidade</span></div>
+    <div class="selos"><span>Implantação presencial em Lajeado e Porto Alegre</span><span>Preço fixo</span><span>Sem fidelidade</span></div>
   </div>
   <div class="palco">
     <img class="rosto" src="/maia/img/maia-rosto.webp" alt="A Maia, a IA de marketing" width="640" height="800">
@@ -398,7 +407,7 @@ footer{padding-block:10px 40px;color:var(--mu);font-size:13px;text-align:center}
   <div class="cab"><span class="rot">Como começa</span><h2>Três horas com um especialista. Depois, a Maia assume.</h2><p class="lead">Não é uma IA que tu configura sozinho. Um especialista da Carreira no Digital monta tudo contigo, na escola.</p></div>
   <div class="comeco">
     <div class="etapa"><span class="q">Antes</span><b>Tu separa o material</b><span>Fotos e vídeos, produtos, preços e custos, e os acessos do Facebook e do WhatsApp.</span></div>
-    <div class="etapa"><span class="q">3 horas, na escola</span><b>A implantação</b><span>O especialista monta a estratégia contigo e liga as tuas contas.</span></div>
+    <div class="etapa"><span class="q">3 horas, na escola</span><b>A implantação</b><span>O especialista monta a estratégia contigo e liga as tuas contas.</span><span class="sede-mini">Em Lajeado ou Porto Alegre</span></div>
     <div class="etapa"><span class="q">Em até 5 dias</span><b>A Maia rodando</b><span>Anúncios no ar e atendimento ligado no teu número.</span></div>
     <div class="etapa"><span class="q">Primeiras conversas</span><b>A equipe acompanha</b><span>Cada uma das primeiras conversas é conferida pelo especialista.</span></div>
   </div>
@@ -455,10 +464,18 @@ footer{padding-block:10px 40px;color:var(--mu);font-size:13px;text-align:center}
   </div>
 </section>
 
+<section id="sedes">
+  <div class="cab"><span class="rot">Onde é</span><h2>A implantação é presencial, numa das nossas sedes.</h2><p class="lead">Tu senta com o especialista na escola, com calma, e sai com a Maia montada pro teu negócio.</p></div>
+  <div class="sedes">
+    <div class="sede"><img src="/img/ctd/sede-lajeado.jpg" alt="Sede da Carreira no Digital em Lajeado" loading="lazy" width="800" height="600"><div class="tx"><small>Sede</small><b>Lajeado</b><span>Rua Alberto Torres, 526, Centro</span></div></div>
+    <div class="sede"><img src="/img/ctd/sede-poa.jpg" alt="Sede da Carreira no Digital em Porto Alegre" loading="lazy" width="800" height="600"><div class="tx"><small>Sede</small><b>Porto Alegre</b><span>Av. Carlos Gomes, 1340, sala 904, Três Figueiras</span></div></div>
+  </div>
+</section>
+
 <div class="fim">
   <div>
     <h2>Agenda a tua implantação.</h2>
-    <p>Chama a escola no WhatsApp e marca as 3 horas com o especialista. Em até 5 dias, a Maia está trabalhando pro teu negócio.</p>
+    <p>Chama a escola no WhatsApp e marca as 3 horas com o especialista, na sede de Lajeado ou de Porto Alegre. Em até 5 dias, a Maia está trabalhando pro teu negócio.</p>
     <a class="cta" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o">Conversar no WhatsApp</a>
     <div class="num">WhatsApp da escola <b id="num">(51) 99505-4548</b> <button type="button" id="copiar">Copiar</button></div>
   </div>
