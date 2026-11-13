@@ -60,7 +60,12 @@ o contato vira venda (valor, BRL, `event_id` próprio e conferência antes, porq
 
 ## Testes (modo local, 13/11)
 
-`scripts/maia-teste-noite.mjs` (instruções no topo). Ver o resultado no relatório do commit/PR.
+`scripts/maia-teste-noite.mjs` (instruções no topo): **61/61** com `MAIA_CAPI=1` (com `--ia`, as 2 conversas de desconto e
+de encomenda de empresa também passaram) e **55/55** num servidor sem a chave (a parte da Meta confere que nada sai).
+Suítes de sempre, pastas limpas, IA de verdade: `maia-teste` **45/45**, `maia-teste-limites` **18/18**, `maia-teste-piloto`
+(com `FOTOS=`) **142/143**. A que faltou foi "valor antes do preço" numa rodada: a IA pôs os sabores e o preço na MESMA frase
+("vem com os sabores chocolate, red velvet ou pistache, e custa R$ 45") e a conferência quer frases separadas. Repetida 4 vezes
+depois, a ordem veio certa. A falha do áudio da voz (conhecida) não aparece mais porque o teste só confere o áudio com a voz ligada.
 
 ## Telas da Maia no ar (www.carreiranodigital.com)
 
