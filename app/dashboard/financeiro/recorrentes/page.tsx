@@ -33,6 +33,7 @@ export default function ClientesRecorrencia() {
   const [carregando, setCarregando] = useState(true)
   const [erro, setErro] = useState('')
   const [pagar, setPagar] = useState<{ c: Cliente; m: Mes } | null>(null)
+  const [adicionar, setAdicionar] = useState(false)
   // clientes abertos (começa tudo fechado; continua aberto depois de lançar um pagamento)
   const [abertos, setAbertos] = useState<Record<string, boolean>>({})
 
@@ -60,6 +61,8 @@ export default function ClientesRecorrencia() {
         <button onClick={() => setBloco(Math.max(0, bloco - 1))} disabled={bloco === 0} style={{ ...btnSec, opacity: bloco === 0 ? .4 : 1 }}>← 12 meses antes</button>
         <span style={{ fontSize: 13, color: 'var(--text-2)', fontWeight: 600 }}>{bloco === 0 ? 'Primeiros 12 meses' : `${bloco * 12 + 1}º ao ${bloco * 12 + 12}º mês`}</span>
         <button onClick={() => setBloco(bloco + 1)} disabled={bloco >= 10} style={btnSec}>12 meses depois →</button>
+        <div style={{ flex: 1 }} />
+        {!erro && <button onClick={() => setAdicionar(true)} style={btnPri}>+ Adicionar cliente</button>}
       </div>
 
       {erro && <div style={{ background: 'var(--red-bg)', border: '1px solid var(--red)', borderRadius: 10, padding: '12px 16px', fontSize: 13.5, color: 'var(--red)', marginBottom: 16 }}>{erro}</div>}
@@ -140,6 +143,69 @@ export default function ClientesRecorrencia() {
       )}
 
       {pagar && <ModalPagar c={pagar.c} m={pagar.m} caixas={caixas} onFechar={() => setPagar(null)} onSalvo={() => { setPagar(null); carregar() }} />}
+      {adicionar && <ModalAdicionar onFechar={() => setAdicionar(false)} onSalvo={(id) => { setAdicionar(false); setAbertos(a => ({ ...a, [id]: true })); carregar() }} />}
+    </div>
+  )
+}
+
+// "+ Adicionar cliente" (13/11/2026, pedido do Rick): cliente que não passou pelo CRM. A rota cria o
+// contrato (em manutenção, sem encontros) e o cadastro em Clientes do CRM; nenhum lançamento nasce aqui.
+const PRODUTOS: [string, string][] = [['crm', 'Sistema'], ['crm_trafego', 'CRM + Tráfego'], ['deu_venda', 'Deu Venda'], ['combo', 'Deu Venda + CRM + Tráfego']]
+
+function ModalAdicionar({ onFechar, onSalvo }: { onFechar: () => void; onSalvo: (id: string) => void }) {
+  const [f, setF] = useState({ nome: '', produto: '', valor: '', dia: '', desde: '' })
+  const [salvando, setSalvando] = useState(false)
+  const [erro, setErro] = useState('')
+
+  async function salvar() {
+    if (!f.nome.trim()) { setErro('Falta o nome do cliente.'); return }
+    if (!f.produto) { setErro('Escolha o que o cliente contratou.'); return }
+    if (!f.valor.trim()) { setErro('Falta o valor da mensalidade.'); return }
+    if (!f.dia.trim()) { setErro('Falta o dia do vencimento.'); return }
+    if (!f.desde) { setErro('Falta a partir de quando cobra.'); return }
+    setSalvando(true); setErro('')
+    const j = await fetchAuth('/api/financeiro/recorrentes', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ acao: 'novo_cliente', ...f }),
+    }).then(r => r.json()).catch(() => null)
+    setSalvando(false)
+    if (!j?.ok) { setErro(j?.error || 'não consegui adicionar'); return }
+    onSalvo(j.id)
+  }
+
+  return (
+    <div onClick={onFechar} style={{ position: 'fixed', inset: 0, background: 'rgba(8,4,20,.55)', backdropFilter: 'blur(6px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 }}>
+      <div onClick={e => e.stopPropagation()} style={{ ...card, padding: 22, width: 440, maxWidth: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+          <div>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: 'var(--text)', margin: 0 }}>Adicionar cliente</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-muted)', margin: '4px 0 0' }}>Para cliente que não passou pelo CRM.</p>
+          </div>
+          <button onClick={onFechar} aria-label="Fechar" style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: '50%', width: 30, height: 30, color: 'var(--text-muted)', cursor: 'pointer' }}><X size={15} /></button>
+        </div>
+
+        <div><label style={lbl}>Nome do cliente *</label><input style={inp} value={f.nome} onChange={e => setF({ ...f, nome: e.target.value })} autoFocus /></div>
+        <div><label style={lbl}>O que contratou *</label>
+          <select style={inp} value={f.produto} onChange={e => setF({ ...f, produto: e.target.value })}>
+            <option value="">Escolha</option>
+            {PRODUTOS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
+          </select>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 100px', gap: 10 }}>
+          <div><label style={lbl}>Mensalidade (R$) *</label><input style={inp} value={f.valor} onChange={e => setF({ ...f, valor: e.target.value })} placeholder="1500" inputMode="decimal" /></div>
+          <div><label style={lbl}>Vence dia *</label><input style={inp} value={f.dia} onChange={e => setF({ ...f, dia: e.target.value })} placeholder="10" inputMode="numeric" /></div>
+        </div>
+        <div><label style={lbl}>Cobrar a partir de *</label><input type="date" style={inp} value={f.desde} onChange={e => setF({ ...f, desde: e.target.value })} /></div>
+        <p style={{ fontSize: 12, color: 'var(--text-faint)', margin: 0, lineHeight: 1.5 }}>
+          O cliente também aparece em Clientes do CRM, onde dá para corrigir valor, dia e início depois. Nenhum lançamento é criado agora: o pagamento de cada mês continua no &quot;Lançar pagamento&quot;.
+        </p>
+
+        {erro && <p style={{ fontSize: 12.5, color: 'var(--red)', margin: 0 }}>{erro}</p>}
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={onFechar} style={{ ...btnSec, flex: 1 }}>Cancelar</button>
+          <button onClick={salvar} disabled={salvando} style={{ ...btnPri, flex: 1 }}>{salvando ? 'Adicionando…' : 'Adicionar'}</button>
+        </div>
+      </div>
     </div>
   )
 }

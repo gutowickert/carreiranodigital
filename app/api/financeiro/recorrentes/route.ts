@@ -3,6 +3,7 @@ import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { orgDaRequest } from '@/lib/org'
 import { quemEuVejo } from '@/lib/quem-eu-vejo'
 import { hojeBR } from '@/lib/periodos'
+import { ROTEIROS, type Produto } from '@/lib/entrega'
 
 // CLIENTES COM RECORRÊNCIA (13/10/2026, pedido do Rick) — os clientes do CRM que pagam por mês,
 // 12 meses em fileira, e o botão de "pagou" que lança no financeiro.
@@ -116,6 +117,7 @@ export async function POST(req: Request) {
     if (!(await souAdmin(auth, org))) return erro('só administradores', 403)
 
     const b = await req.json().catch(() => ({} as any))
+    if (b.acao === 'novo_cliente') return novoCliente(org, b)
     const projetoId = (b.projeto_id || '').toString()
     const mes = (b.mes || '').toString()
     const contaId = (b.conta_id || '').toString()
@@ -166,4 +168,54 @@ export async function POST(req: Request) {
   } catch (e: any) {
     return erro(e?.message || 'erro')
   }
+}
+
+// "+ ADICIONAR CLIENTE" (13/11/2026, pedido do Rick) — cliente que não passou pelo CRM entra direto aqui.
+// Grava o mínimo que a tela precisa pra mostrar o cliente: um contrato em `projetos` (status
+// 'manutencao', SEM marcos — nada cai na agenda) e o cadastro em `instalacoes` ligado a ele. Valor,
+// dia e início continuam editáveis em Clientes do CRM. Nenhum lançamento nasce aqui.
+const PRODUTOS_OK = ['crm', 'crm_trafego', 'deu_venda', 'combo']
+
+async function novoCliente(org: string, b: any) {
+  const nome = (b.nome || '').toString().trim().slice(0, 120)
+  const produto = (b.produto || '').toString()
+  const valor = Number(String(b.valor ?? '').replace(',', '.'))
+  const dia = Number(b.dia)
+  const desde = (b.desde || '').toString()
+  if (!nome) return erro('falta o nome do cliente')
+  if (!PRODUTOS_OK.includes(produto)) return erro('escolha o que o cliente contratou')
+  if (!Number.isFinite(valor) || valor <= 0) return erro('valor da mensalidade inválido')
+  if (!Number.isInteger(dia) || dia < 1 || dia > 31) return erro('o dia do vencimento tem que ser de 1 a 31')
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(desde)) return erro('informe a partir de quando cobra')
+
+  // mesmo nome em Clientes do CRM: não cria outro (seria o mesmo cliente duas vezes na cobrança)
+  const { data: iguais, error: eBusca } = await sb.from('instalacoes').select('id')
+    .eq('org_id', org).ilike('nome', nome.replace(/[%_\\]/g, '\\$&'))
+  if (eBusca) return erro(eBusca.message)
+  if ((iguais || []).length) return erro('já existe um cliente com esse nome em Clientes do CRM')
+
+  const r = ROTEIROS[produto as Produto]
+  const { data: proj, error: eProj } = await sb.from('projetos').insert({
+    org_id: org, cliente: nome, produto, data_inicio: desde,
+    status: 'manutencao', fim_tipo: 'manutencao', aviso_fim_dias: r?.avisoFimDias ?? 30,
+    prazo_meses: null, data_fim: null, fase: r?.fases[0]?.chave || null, participantes: [],
+    mensalidade_valor: valor, mensalidade_dia: dia, cobranca_desde: desde,
+    observacoes: 'Cadastrado em Financeiro → Clientes com recorrência (não passou pelo CRM).',
+  }).select('id').single()
+  if (eProj || !proj) return erro(eProj?.message || 'não consegui criar o contrato')
+
+  const { error: eInst } = await sb.from('instalacoes').insert({
+    org_id: org, nome, url: null, tipo: 'cliente', projeto_id: proj.id,
+    observacoes: 'Cadastrado em Financeiro → Clientes com recorrência.', atualizado_em: new Date().toISOString(),
+  })
+  if (eInst) {
+    // sem o cadastro o contrato ficaria solto, fora da tela: desfaz o que acabou de criar
+    await sb.from('projetos').delete().eq('id', proj.id)
+    return erro(eInst.message)
+  }
+  await sb.from('projeto_andamentos').insert({
+    org_id: org, projeto_id: proj.id, tipo: 'criado',
+    observacao: 'Contrato criado em Clientes com recorrência, sem roteiro de encontros.',
+  })
+  return ok({ cliente: true, id: proj.id })
 }
