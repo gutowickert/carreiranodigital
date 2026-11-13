@@ -7,6 +7,7 @@
 //        link_conectar, atendimento_clientes, criar_modelo_dono (05/11). GET também: modelos, chamadas
 //   07/11 (painel do dono): POST link_painel_dono, painel_dono_revogar
 //   06/11 (demonstração grátis): GET amostras · POST simular_demo, rodar_demo, teste_demo_sumiu (só no modo de teste)
+//   13/11: GET falta_ligar[&negocio=] (o que falta pra ligar, lib/maia/ligar.ts) · POST conferir_whatsapp
 import { maiaDb as db } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/aprovacao'
@@ -82,6 +83,13 @@ export async function GET(req: Request) {
       return ok(negs.filter(n => !ehDemo(n)).map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
     }
     if (acao === 'negocio') return ok(semChave(await db.um('negocios', { id: q('id') })))
+    // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
+    if (acao === 'falta_ligar') {
+      const { faltaLigar } = await import('@/lib/maia/ligar')
+      if (q('negocio')) { const n = await db.um('negocios', { id: q('negocio') }); return n ? ok(await faltaLigar(n)) : erro('negócio não existe', 404) }
+      const [negs, pecas] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas')])
+      return ok(await Promise.all(negs.filter(n => !ehDemo(n) && n.status !== 'cancelado').map(n => faltaLigar(n, { pecas }))))
+    }
     // 05/11: situação dos modelos de mensagem (do número da Maia, ou de um negócio com ?negocio=) e o placar das 500 chamadas
     if (acao === 'modelos') {
       const { statusModelos } = await import('@/lib/maia/modelos')
@@ -143,6 +151,30 @@ export async function POST(req: Request) {
         // 05/11: a conexão do WhatsApp (com a chave) não vem do painel: mantém a que está guardada
         if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
         return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
+      }
+      // 13/11 (ligar.ts): a equipe conferiu (no botão de um anúncio de teste) que o número do WhatsApp dos anúncios é o certo.
+      // numero (opcional) grava em contexto.whatsapp, o número que vai no anúncio quando o WhatsApp do negócio ainda não conectou
+      case 'conferir_whatsapp': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const { numeroDosAnuncios } = await import('@/lib/maia/ligar')
+        const campos: any = {}
+        let ctx = n.contexto || {}
+        if (b.numero !== undefined) {
+          let num = fone(String(b.numero || ''))
+          if (num && !num.startsWith('55')) num = '55' + num
+          if (num && !/^55\d{10,11}$/.test(num)) return erro('número estranho: manda com DDD (ex.: 51 99999-9999)')
+          ctx = { ...ctx }; if (num) ctx.whatsapp = num; else delete ctx.whatsapp
+          campos.contexto = ctx
+        }
+        const numero = numeroDosAnuncios({ ...n, contexto: ctx })
+        const meta: any = { ...(n.meta || {}) }
+        if (b.conferido === false) delete meta.whatsapp_conferido
+        else { if (!numero) return erro('falta o número do WhatsApp dos anúncios'); meta.whatsapp_conferido = { numero, em: new Date().toISOString(), por } }
+        campos.meta = meta
+        const [atual] = await db.atualiza('negocios', { id: n.id }, campos)
+        await db.evento('whatsapp_conferido', n.id, { por, numero, conferido: b.conferido !== false })
+        return ok(semChave(atual))
       }
       // 08/11 (teste completo, 8b): o logo do negócio (vai na barra da arte e no cartão final do vídeo)
       case 'subir_logo': {
@@ -306,6 +338,8 @@ export async function POST(req: Request) {
           pergunta_preco: at.perguntaPreco(t), preco_antes: (await import('@/lib/maia/preco')).precoAntesDoValor(t),
           // 08/11: plano único (a oferta da demonstração e os números dela)
           oferta: (await import('@/lib/maia/oferta')).oferta(), oferta_texto: (await import('@/lib/maia/oferta')).textoOferta(),
+          // 13/11 (cadastro.ts): o funil e os limites do cadastro como regra (sem IA)
+          ...(await (async () => { const c = await import('@/lib/maia/cadastro'); return { regras_cadastro: c.regrasDoCadastro(neg), regras_retomada: c.regrasDaRetomada(neg), ficha: c.fichaParaAtender(neg), desconto_max: c.descontoMax(neg), desconto_acima: c.descontoAcima(neg, t), motivo_cadastro: c.motivoDoCadastro(neg, t), sem_desconto: c.semFrasesDeDesconto(t) } })()),
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)

@@ -18,6 +18,7 @@ import { anotaClique } from './conversoes'
 import { respostaFixa } from './fixas'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
+import { regrasDoCadastro, regrasDaRetomada, fichaParaAtender, motivoDoCadastro, descontoAcima, semFrasesDeDesconto, limitesDoCadastro } from './cadastro'
 
 const semAc = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
 
@@ -208,7 +209,8 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
       // "Tiago precisa de ti: Não". Agora: motivo claro E um gatilho de verdade (na conversa ou no motivo); senão ela segue atendendo
       roda: async ({ motivo }) => {
         const m = String(motivo || '').trim()
-        if (!motivoClaro(m) || !(gatilhoHumano(ctx.textoCliente || '') || motivoDePassagem(m))) return { erro: 'não passou: passar_para_o_dono é só com motivo claro (o cliente pediu uma pessoa, reclamou, pediu devolução, pediu pra apagar os dados, ou é um caso delicado). Tu segue atendendo normalmente.' }
+        // 13/11 (cadastro): o "quando passar pro dono" combinado na implantação também vale ("encomenda de empresa", "mais de 10 caixas")
+        if (!motivoClaro(m) || !(gatilhoHumano(ctx.textoCliente || '') || motivoDePassagem(m) || motivoDoCadastro(neg, m))) return { erro: 'não passou: passar_para_o_dono é só com motivo claro (o cliente pediu uma pessoa, reclamou, pediu devolução, pediu pra apagar os dados, ou é um caso delicado). Tu segue atendendo normalmente.' }
         await passaConversa(neg, cv, lead, ctx, m, 'maia'); return { ok: true } } },
   ]
 }
@@ -217,7 +219,8 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
 const regras = (neg: any) => `${jeitoAtendimento(neg)}
 
 AGORA: tu és a ASSISTENTE VIRTUAL do negócio "${neg.nome}" (${neg.nicho || ''}, ${neg.cidade || ''}) e estás atendendo um CLIENTE dele no WhatsApp. Tu falas em nome do negócio.
-O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(neg.contexto || {})}
+O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(fichaParaAtender(neg))}
+${regrasDoCadastro(neg)}
 COMO ATENDER:
 - Se apresenta na primeira mensagem como a assistente virtual do ${neg.nome}. Se perguntarem, diz que é uma IA.
 - Responde rápido e direto o que perguntaram. Depois, UMA pergunta que leva pra venda (horário, quantidade, endereço de entrega).
@@ -351,6 +354,18 @@ export async function respondeCliente(conversa_id: string) {
     const v = await valorAntesDoPreco(jeitoAtendimento(neg), enviadas, { modelos: [...new Set([modeloBarato(), modeloForte()])], uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id, fase: 'preco' } })
     enviadas = v.msgs; reordenou = v.reescreveu
   }
+  // 13/11 (cadastro): a resposta ofereceu desconto acima do máximo combinado com o dono? Reescreve uma vez no modelo forte; se
+  // ainda passar, as frases do desconto saem e a pergunta vai pro dono (mais abaixo: o cliente ganha o prazo de resposta)
+  let descontoDono: string | null = null
+  if (!gatilho && !ctx.humano && enviadas.length && descontoAcima(neg, enviadas.join(' ')) != null) {
+    const lim = limitesDoCadastro(neg).desconto_maximo
+    const r3 = await comFerramentas(regras(neg), `CONVERSA:\n${hist}\n\nTUA RESPOSTA:\n${enviadas.map(m => `<msg>${m}</msg>`).join('\n')}\n\nEssa resposta oferece um desconto MAIOR que o combinado com o dono (${lim}). Reescreve sem passar desse limite e sem oferecer desconto que o cliente não pediu; se ele pediu mais, diz que vai ver com o responsável. O resto fica igual. Cada mensagem entre <msg> e </msg>.`, [], 1,
+      { modelo: modeloForte(), uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id, fase: 'desconto' } }).catch(() => null)
+    const refeitas = r3 ? boas(r3.texto).slice(0, 2) : []
+    if (refeitas.length && descontoAcima(neg, refeitas.join(' ')) == null) enviadas = refeitas
+    else { enviadas = enviadas.map(semFrasesDeDesconto).filter(Boolean); descontoDono = lim }
+    if (!enviadas.length) enviadas = ['Sobre o desconto, vou ver com o responsável.']
+  }
   // 08/11 (reteste, #17): na passagem pro dono, nada de pedir detalhes ao cliente (quem responde agora é a pessoa)
   if (enviadas.length && (ctx.humano || gatilho || respostaPassou(enviadas.join(' '), r.usadas.some(u => u.nome === 'perguntar_ao_dono' && u.saida?.ok)))) {
     enviadas = enviadas.map(semPedirDetalhes).filter(Boolean)
@@ -399,6 +414,11 @@ export async function respondeCliente(conversa_id: string) {
     const pergunta = novas.map(x => x.texto).join(' / ').slice(0, 300)
     if (pergunta) { const p = await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta }).catch(() => null); if (p?.ok) { sistemaPerguntou = true; usadas.push('perguntar_ao_dono (sistema)') } }
   }
+  // 13/11 (cadastro): o desconto acima do limite saiu da resposta: quem decide é o dono (vai a pergunta, o cliente ganha o prazo)
+  if (descontoDono && !ctx.humano && !perguntouIA && !sistemaPerguntou) {
+    const p = await ferrs.find(f => f.name === 'perguntar_ao_dono')!.roda({ pergunta: `o cliente pediu desconto (o limite combinado é ${descontoDono}): ${textoCliente.slice(0, 200)}` }).catch(() => null)
+    if (p?.ok) { sistemaPerguntou = true; usadas.push('perguntar_ao_dono (desconto)') }
+  }
   // 08/11: perguntou pro dono e a resposta não deu o horário? O cliente nunca fica sem prazo: vai uma frase curta com ele
   let prazoExtra: string | null = null
   // 08/11 (teste completo, #12): só quando a pergunta foi MESMO pro dono (pergunta recusada pela ferramenta não promete retorno)
@@ -427,7 +447,8 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const msgs = cv ? (await db.lista('msgs', { conversa_id: cv.id }, { ordem: 'criado_em' })).filter(m => m.texto).slice(-12) : []
   const { emJson } = await import('./ia')
   const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de 3 (a 3ª é a despedida: deixa a porta aberta).\nO que funciona (12/11, estudo de 2.032 conversas reais): retomar o que o próprio cliente disse (o produto, a data, a dúvida dele) ou levar algo novo e útil; nas conversas que pararam depois do preço ou do sim, oferecer de novo o próximo passo (horário, dados do pagamento).\nNUNCA: "ficou alguma dúvida?", "condição especial", "último dia", "vou encerrar teu contato" (tiveram de 11% a 22% de resposta).`,
-    `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(neg.contexto || {})}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`, [],
+    // 13/11 (cadastro): a retomada também segue o sim, o próximo passo da etapa e o que nunca prometer
+    `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(fichaParaAtender(neg))}\n${regrasDaRetomada(neg)}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`, [],
     // 12/11 (custo): a retomada é curta e simples: vai no modelo barato (antes ia no padrão, o Sonnet)
     { modelo: modeloBarato(), uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv?.id || null } })
   return noTomDoNegocio(neg, r.texto, { negocio_id: neg.id, conversa_id: cv?.id || null })
