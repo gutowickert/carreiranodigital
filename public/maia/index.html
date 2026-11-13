@@ -308,7 +308,6 @@ tr:last-child td,tr:last-child th{border-bottom:0}
 .plano.unico .lado{display:flex;flex-direction:column;gap:12px;min-width:0}
 .plano.unico h3{font-size:26px}
 .plano.unico .v{font-size:60px;font-weight:800;letter-spacing:-.04em}
-.plano.unico .primeiro{display:inline-flex;align-self:flex-start;font-weight:800;color:var(--verde);background:var(--verde-bg);border-radius:999px;padding:5px 14px;font-size:15px}
 .plano.unico .so{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:#423a5c;margin-top:4px}
 .plano.unico .so svg{flex:none;width:22px;height:22px;color:#1fa855;margin-top:1px}
 .plano.unico .btn{margin-top:6px;align-self:flex-start;font-size:16px;min-height:52px;padding:0 22px}
@@ -355,28 +354,11 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
 /* 12/11: implantação presencial */
 .impl{background:var(--s1);border-block:1px solid var(--ln)}
 .impl-rot{display:block;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac)}
-.impl-grade{display:grid;grid-template-columns:1.15fr .85fr;gap:20px;align-items:start}
-.horas{background:var(--bg);border:1px solid var(--ln);border-radius:26px;padding:26px}
-.horas ol{list-style:none;display:flex;flex-direction:column;margin-top:14px}
-.horas li{display:grid;grid-template-columns:72px minmax(0,1fr);gap:14px;padding:16px 0;border-top:1px solid var(--ln)}
-.horas li:first-child{border-top:0}
-.horas .t{font-family:var(--f-dis);font-weight:800;font-size:22px;letter-spacing:-.03em;color:var(--ac2);line-height:1.1}
-.horas b{display:block;font-size:18px;line-height:1.25}
-.horas li span:not(.t){font-size:15px;color:var(--mu)}
-.impl-lado{display:flex;flex-direction:column;gap:14px;min-width:0}
-.pronto{background:linear-gradient(150deg,#f4eeff,#fff 70%);border:2px solid var(--ac-line);border-radius:26px;padding:24px}
-.pronto ul{list-style:none;display:flex;flex-direction:column;gap:10px;margin-top:12px}
-.pronto li{display:flex;gap:10px;font-size:16px;font-weight:600}
-.pronto li::before{content:"";flex:none;width:20px;height:20px;margin-top:2px;border-radius:50%;background:var(--verde-bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 12 4 4 8-9'/%3E%3C/svg%3E") center/13px no-repeat}
-.levar{background:var(--bg);border:1px solid var(--ln);border-radius:22px;padding:20px 22px}
-.levar p:last-child{margin-top:8px;font-size:15px;color:var(--mu)}
-.dias{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-top:20px}
-.dias div{position:relative;background:var(--bg);border:1px solid var(--ln);border-radius:20px;padding:16px;min-width:0}
-.dias span{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
-.dias b{display:block;font-size:16px;line-height:1.25;margin-top:6px}
-.dias em{display:block;font-style:normal;font-size:14px;color:var(--mu);margin-top:2px}
-.dias .no-ar{background:var(--verde-bg);border-color:#bbf0cc}
-.dias .no-ar span,.dias .no-ar b{color:var(--verde)}
+.fatos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.fatos div{background:var(--bg);border:1px solid var(--ln);border-radius:24px;padding:24px 26px;min-width:0}
+.fatos b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(34px,4.4vw,50px);line-height:1;letter-spacing:-.04em;color:var(--ac2)}
+.fatos span{display:block;margin-top:8px;font-size:16px;color:var(--mu);font-weight:600}
+.fatos .no-ar{background:var(--verde-bg);border-color:#bbf0cc}.fatos .no-ar b{color:var(--verde)}
 .papeis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px}
 .papel{position:relative;background:var(--bg);border:1px solid var(--ln);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:6px;min-width:0}
 .papel b{font-size:19px;line-height:1.25}
@@ -390,8 +372,8 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
 .adesao-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 320px}
 .adesao-v{font-family:var(--f-dis);font-size:28px!important;white-space:nowrap}
 .adesao-v small{font-family:var(--f-tx);font-size:14px;font-weight:600;color:var(--mu)}
-@media (max-width:920px){.impl-grade{grid-template-columns:1fr}.dias{grid-template-columns:1fr 1fr}.dias .no-ar{grid-column:1/-1}.papeis{grid-template-columns:1fr}}
-@media (max-width:600px){.horas{padding:20px 18px}.horas li{grid-template-columns:66px minmax(0,1fr);gap:10px}.horas .t{font-size:18px;white-space:nowrap}}
+@media (max-width:920px){.papeis{grid-template-columns:1fr}}
+@media (max-width:600px){.fatos{grid-template-columns:1fr}}
 
 @media (max-width:920px){
   .abre .ct,.ela{grid-template-columns:1fr;gap:40px}
@@ -474,7 +456,7 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
     <div>
       <div class="cargo"><img class="av" src="/maia/img/maia-avatar.webp" alt="Rosto da Maia" width="56" height="56"><div><b>Maia</b><span>IA de marketing e atendimento pra negócios locais</span></div></div>
       <h1>Contrata a Maia: <span class="grad">o teu time de marketing inteiro</span>, numa IA.</h1>
-      <p class="lead">Estrategista, designer, editora de vídeo, social media, gestora de tráfego, vendedora e analista de resultados. <b style="color:var(--tx)">Tu manda fotos e vídeos curtos do celular.</b> Ela faz o resto e te responde na hora. <b style="color:var(--tx)">Começa com 3 horas presenciais com um especialista da escola.</b></p>
+      <p class="lead">Estrategista, designer, editora de vídeo, social media, gestora de tráfego, vendedora e analista de resultados. <b style="color:var(--tx)">Tu manda fotos e vídeos curtos do celular.</b> Ela faz o resto e te responde na hora. <b style="color:var(--tx)">Começa com 3 horas presenciais na escola, com um especialista.</b></p>
       <p class="so-wa"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><span><b>Tudo pelo WhatsApp.</b> Sem aplicativo novo e sem sistema pra aprender.</span></p>
       <div class="acao">
         <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Conversar no WhatsApp</a>
@@ -737,47 +719,16 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
     <div class="cab">
       <p class="olho">Como começa</p>
       <h2>Três horas com um especialista. <span class="grad">Depois, a Maia assume.</span></h2>
-      <p class="lead">Não é uma IA que tu configura sozinho. Um especialista da Carreira no Digital senta contigo, presencialmente, monta a estratégia e deixa tudo pronto. A Maia executa, com a aprovação dele e a tua.</p>
+      <p class="lead">Não é uma IA que tu configura sozinho. Na escola, um especialista da Carreira no Digital senta contigo, monta a estratégia e deixa tudo pronto. A Maia executa, com a aprovação dele e a tua.</p>
     </div>
 
-    <div class="impl-grade">
-      <div class="horas">
-        <p class="impl-rot">As 3 horas</p>
-        <ol>
-          <li><span class="t">55 min</span><div><b>O teu negócio</b><span>O que tu vende, pra quem, por quanto e como tu fala com o cliente. Vira o contexto que a Maia usa.</span></div></li>
-          <li><span class="t">55 min</span><div><b>Estratégia e venda</b><span>O que anunciar primeiro, a verba por dia e como a conversa chega no "sim".</span></div></li>
-          <li><span class="t">30 min</span><div><b>As tuas contas</b><span>Facebook, Instagram, WhatsApp e conta de anúncio ligados e conferidos, um por um.</span></div></li>
-          <li><span class="t">40 min</span><div><b>O teu visual</b><span>Tu escolhe o estilo das artes, aprova as primeiras peças e grava os vídeos ali mesmo.</span></div></li>
-        </ol>
-      </div>
-      <div class="impl-lado">
-        <div class="pronto">
-          <p class="impl-rot">Tu sai com</p>
-          <ul>
-            <li>O contexto do teu negócio pronto pra IA</li>
-            <li>Facebook, Instagram e WhatsApp ligados e configurados</li>
-            <li>O material visual aprovado</li>
-            <li>O estilo dos vídeos aprovado</li>
-            <li>Tudo que a Maia precisa pra começar</li>
-          </ul>
-        </div>
-        <div class="levar">
-          <p class="impl-rot">O que levar</p>
-          <p>Login do Facebook da página, o celular do WhatsApp do negócio, o cartão da conta de anúncio, a lista de produtos com preço, a logo, umas 10 fotos e 2 ou 3 vídeos curtos.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="dias" role="list" aria-label="Depois da implantação">
-      <div role="listitem"><span>Dia 0</span><b>Implantação</b><em>3 horas, presencial</em></div>
-      <div role="listitem"><span>Dia 1</span><b>A Maia monta</b><em>os anúncios a partir do que tu aprovou</em></div>
-      <div role="listitem"><span>Dia 2</span><b>Tu dá o joinha</b><em>pelo WhatsApp</em></div>
-      <div role="listitem"><span>Dia 3</span><b>A Maia cria a campanha</b><em>e o especialista aprova</em></div>
-      <div role="listitem" class="no-ar"><span>Dia 5</span><b>Maia rodando</b><em>conteúdo, anúncios e atendimento</em></div>
+    <div class="fatos">
+      <div><b>3 horas</b><span>presencial, na escola, com um especialista da Carreira no Digital</span></div>
+      <div class="no-ar"><b>Até 5 dias</b><span>pra Maia estar rodando no teu negócio</span></div>
     </div>
 
     <div class="papeis">
-      <div class="papel"><span class="impl-rot">Especialista</span><b>Pensa a estratégia e aprova.</b><span>Monta o começo contigo e aprova cada campanha que a Maia cria.</span></div>
+      <div class="papel"><span class="impl-rot">Especialista</span><b>Pensa a estratégia e aprova.</b><span>Monta o começo contigo e aprova cada campanha que a Maia cria, dentro da mensalidade.</span></div>
       <div class="papel maia-p"><img src="/maia/img/maia-avatar.webp" alt="" width="44" height="44" loading="lazy"><span class="impl-rot">Maia</span><b>Executa e mede tudo.</b><span>Conteúdo, anúncios e atendimento. Mostra o que vende e põe mais força nisso.</span></div>
       <div class="papel"><span class="impl-rot">Tu</span><b>Decide.</b><span>Manda fotos e vídeos, dá o joinha e escolhe o caminho com os números na mão.</span></div>
     </div>
@@ -820,14 +771,13 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
     <div class="cab">
       <p class="olho">Preço</p>
       <h2>Um plano só. Com tudo dentro.</h2>
-      <p class="lead">Preço fixo, sem fidelidade e sem letra miúda. Primeiro mês com 50% de desconto.</p>
+      <p class="lead">Preço fixo, sem fidelidade e sem letra miúda. A implantação na escola é paga uma vez só.</p>
     </div>
     <div class="plano unico">
       <div class="lado">
         <span class="tag">Plano único · tudo incluso</span>
         <h3>A Maia inteira</h3>
         <p class="v">R$ 997<small>/mês</small></p>
-        <p class="primeiro">1º mês por R$ 498,50</p>
         <p class="so"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><span><b>Tu só usa o WhatsApp.</b> O resto fica com ela.</span></p>
         <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener">Conversar no WhatsApp</a>
       </div>
@@ -840,10 +790,10 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Melhora da campanha todo mês</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Social media: 8 posts e 4 vídeos do teu negócio por mês</li>
         <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Análise do conteúdo todo mês</li>
-        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Maia rodando 5 dias depois da implantação</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Maia rodando em até 5 dias depois da implantação</li>
       </ul>
     </div>
-    <div class="adesao"><span class="adesao-t"><b>Implantação presencial</b><span>3 horas com o especialista. Sai com tudo ligado, o visual aprovado e a Maia rodando 5 dias depois.</span></span><b class="adesao-v">R$ 497<small> uma vez só</small></b></div>
+    <div class="adesao"><span class="adesao-t"><b>Implantação presencial na escola</b><span>3 horas com um especialista. A Maia rodando em até 5 dias.</span></span><b class="adesao-v">R$ 497<small> uma vez só</small></b></div>
     <p class="verba">Passou das 1.000 conversas do mês? Pacote extra de R$ 99 a cada 100 ou R$ 249 a cada 300. A verba do anúncio (a partir de R$ 20 por dia) e a taxa do WhatsApp tu paga direto pra Meta, no teu cartão. A conta é tua.</p>
   </div>
 </section>
@@ -853,9 +803,9 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
     <div class="cab"><p class="olho">Perguntas</p><h2>O que todo mundo pergunta.</h2></div>
     <div class="faq">
       <details><summary>Serve pro meu tipo de negócio?</summary><p>Serve pra negócio local que vende pelo WhatsApp: salão, clínica, loja, restaurante, oficina, pet shop, academia, prestador de serviço. Na implantação, tu e o especialista ensinam o teu negócio pra ela: o que tu vende, por quanto e pra quem.</p></details>
-      <details><summary>Como é a implantação?</summary><p>São 3 horas, presencial, com um especialista da Carreira no Digital. Vocês montam o contexto do teu negócio pra IA, ligam o Facebook, o Instagram e o WhatsApp, e aprovam o visual e o estilo dos vídeos. Custa R$ 497, uma vez só. A Maia começa a rodar 5 dias depois.</p></details>
+      <details><summary>Como é a implantação?</summary><p>São 3 horas, presencial, na escola, com um especialista da Carreira no Digital. Ele monta a estratégia contigo e deixa tudo pronto pra Maia. Custa R$ 497, uma vez só, e a Maia está rodando em até 5 dias.</p></details>
       <details><summary>Por que não é só ligar uma IA?</summary><p>Porque a IA sozinha não conhece o teu negócio. Aqui um especialista de verdade monta a estratégia contigo, e a Maia executa com a aprovação dele e a tua. Com o tempo, os números mostram o que vende, e ela põe mais força nisso.</p></details>
-      <details><summary>Preciso entender de anúncio?</summary><p>Não. A Maia cria a campanha, o especialista aprova e tu dá um joinha pelo WhatsApp, uma vez por mês.</p></details>
+      <details><summary>Preciso entender de anúncio?</summary><p>Não. A Maia cria a campanha, o especialista aprova (está dentro da mensalidade) e tu dá um joinha pelo WhatsApp, uma vez por mês.</p></details>
       <details><summary>Vou perder o meu número de WhatsApp?</summary><p>Não. Ela trabalha no teu número de sempre e tu continua vendo todas as conversas no teu celular.</p></details>
       <details><summary>Quanto eu gasto além da mensalidade?</summary><p>A implantação, R$ 497, uma vez só. E a verba do anúncio, que tu define, e centavos de taxa do WhatsApp: esses dois vão direto no teu cartão, na Meta.</p></details>
       <details><summary>Posso mandar áudio?</summary><p>Pode. Tu e os teus clientes podem mandar áudio. A Maia entende e responde por escrito.</p></details>
@@ -870,7 +820,7 @@ footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);
   <div class="ct">
     <img class="rosto" src="/maia/img/maia-tchau.webp" alt="A Maia acenando" width="160" height="160" loading="lazy">
     <h2>Agenda a tua implantação.</h2>
-    <p class="lead">Chama a escola no WhatsApp e marca as 3 horas com o especialista. Cinco dias depois, a Maia está trabalhando pro teu negócio.</p>
+    <p class="lead">Chama a escola no WhatsApp e marca as 3 horas com o especialista, na escola. Em até 5 dias, a Maia está trabalhando pro teu negócio.</p>
     <div class="acao">
       <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Conversar no WhatsApp</a>
       <span class="calma">Implantação presencial · Preço fixo · Sem fidelidade</span>
