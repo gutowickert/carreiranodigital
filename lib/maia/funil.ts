@@ -3,6 +3,7 @@
 // Quem mexe: a Maia (atendendo o cliente ou quando o dono conta "fechei com a Ana"), a equipe pelo painel, e o follow-up automático.
 import { maiaDb as db } from './db'
 import { fone } from '@/lib/oito/wa'
+import { podeFalar } from './horario'
 
 export const ETAPAS = ['novo', 'conversando', 'interessado', 'proposta', 'ganho', 'perdido'] as const
 export type Etapa = typeof ETAPAS[number]
@@ -10,8 +11,11 @@ type Autor = 'maia' | 'dono' | 'equipe'
 
 // follow-up: quem parou de responder recebe até 3 retomadas; sem resposta depois disso, vira perdido.
 // 12/11 (estudo dos 4 CRMs): a 1ª retomada em até 24 h teve 83% de resposta na Wood (depois de 1 dia, de 19% a 26%) e,
-// na escola, 48% entre 6 e 24 h. Por isso: 18 h, 2 dias e 5 dias (antes 1, 3 e 7 dias). No máximo 3 (10+ retomadas: 0% de venda)
-export const FOLLOWUP_DIAS = [0.75, 2, 5]
+// na escola, 48% entre 6 e 24 h. No máximo 3 (10+ retomadas: 0% de venda)
+// 13/11 (Guto): 1ª com ~20 h, 2ª com 3 dias e 3ª com 6 dias (antes 18 h, 2 e 5 dias). A 1ª tem que sair DENTRO das 24 h da última
+// mensagem do cliente: aí vai o texto escrito pela Maia (canal.ts, janela_ate); depois das 24 h o WhatsApp só aceita o modelo
+// aprovado (maia_retomada), que é pago e genérico. A 3ª é a despedida (atendente.ts, textoRetomada)
+export const FOLLOWUP_DIAS = [0.83, 3, 6]
 const ABERTAS: Etapa[] = ['novo', 'conversando', 'interessado', 'proposta']
 const dias = (n: number) => new Date(Date.now() + n * 86400e3).toISOString()
 
@@ -86,11 +90,26 @@ export async function clienteRespondeu(lead: any) {
   return l
 }
 
+// 13/11: quando sai a 1ª retomada. O alvo é ~20 h depois da resposta, mas a rotina só fala das 9h às 20h (horario.ts) e roda de
+// hora em hora: se as 20 h caem de noite, a retomada ficaria pra manhã seguinte, já fora das 24 h (e aí só com o modelo pago).
+// Então: o horário dentro da janela mais perto das 20 h, entre 8 h e 22 h depois (com a hora da rotina, sai antes das 23 h)
+export function quandoPrimeira(neg: any, agora = new Date()) {
+  const H = 3600e3, q = 15 * 60e3, alvo = agora.getTime() + FOLLOWUP_DIAS[0] * 86400e3
+  let melhor: number | null = null
+  for (let t = Math.ceil((agora.getTime() + 8 * H) / q) * q; t <= agora.getTime() + 22 * H; t += q) {
+    if (!podeFalar(neg, new Date(t)) || !podeFalar(neg, new Date(t + H - 60e3))) continue
+    if (melhor == null || Math.abs(t - alvo) < Math.abs(melhor - alvo)) melhor = t
+  }
+  return new Date(melhor ?? alvo).toISOString()
+}
+
 // a Maia respondeu e a bola ficou com o cliente: agenda a próxima retomada
 export async function agendaFollowup(lead: any, quando?: string | null, motivo?: string) {
   if (!ABERTAS.includes(lead.etapa)) return lead
   const n = lead.followups || 0
-  const em = quando || dias(FOLLOWUP_DIAS[Math.min(n, FOLLOWUP_DIAS.length - 1)])
+  let em = quando || dias(FOLLOWUP_DIAS[Math.min(n, FOLLOWUP_DIAS.length - 1)])
+  // 13/11: a 1ª (sem data pedida pelo cliente) cai dentro das 24 h e da janela de horário
+  if (!quando && n === 0) em = quandoPrimeira(await db.um('negocios', { id: lead.negocio_id }).catch(() => null))
   const [l] = await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: em })
   if (motivo) await marca(lead, 'nota', 'maia', { detalhe: { followup_em: em, motivo } })
   return l
@@ -101,11 +120,13 @@ export async function followupsVencidos(agora = new Date()) {
   const todos = await db.lista('leads')
   return todos.filter(l => ABERTAS.includes(l.etapa) && l.proximo_followup_em && l.proximo_followup_em <= agora.toISOString())
 }
-export async function registraFollowup(lead: any) {
+// 13/11: `extra` vai junto no evento: tipo ('retomada', ou 'despedida' na 3ª escrita pela Maia) e como saiu ('texto', 'modelo'
+// ou 'lembrete_dono'). Com isso dá pra medir a taxa de resposta da despedida (lead_eventos 'followup' + a resposta do cliente depois)
+export async function registraFollowup(lead: any, extra: Record<string, any> = {}) {
   const n = (lead.followups || 0) + 1
   const ultimo = n >= FOLLOWUP_DIAS.length
   const [l] = await db.atualiza('leads', { id: lead.id }, { followups: n, proximo_followup_em: ultimo ? dias(4) : dias(FOLLOWUP_DIAS[n] - FOLLOWUP_DIAS[n - 1]) })
-  await marca(lead, 'followup', 'maia', { detalhe: { numero: n } })
+  await marca(lead, 'followup', 'maia', { detalhe: { numero: n, ...extra } })
   return { lead: l, ultimo }
 }
 export async function encerraSemResposta(lead: any) { return perdeu(lead, 'parou de responder depois das retomadas', 'maia') }

@@ -162,7 +162,8 @@ async function main() {
   const env = await op('mandar_ao_cliente', { negocio_id: A.id, conversa_id: cvAna.id, texto: 'Oi Ana, aqui é a equipe: a entrega em Estrela sai amanhã às 10h.' })
   const donoDepois = await msgsDe(donoA)
   anota(env.na_fila && env.modelo === null && !(await msgsDe(cvAna)).some(m => /^\(modelo maia_resposta(_voce)?\)/.test(m.texto)), 'modelo NÃO aprovado: nada de modelo, a mensagem ficou guardada')
-  anota(donoDepois.length > qtdDono && /ficou guardada/.test(donoDepois.slice(-1)[0].texto), 'o dono foi avisado (e a equipe, em aviso_equipe)')
+  // 13/11 (problema técnico): o dono NÃO recebe na hora; o recado fica pendente até a equipe aprovar no painel (pendencias.ts)
+  anota(donoDepois.length === qtdDono && tab('eventos').some(e => e.tipo === 'aviso_dono_pendente' && e.negocio_id === A.id && e.detalhe?.status === 'pendente' && /ficou guardada/.test(e.detalhe?.texto || '')), 'problema técnico: o recado pro dono ficou pendente pra equipe aprovar (nada direto pro dono)')
   anota(tab('eventos').some(e => e.tipo === 'aviso_equipe' && e.negocio_id === A.id && /maia_resposta não aprovado/.test(e.detalhe?.titulo || '')), 'a equipe foi avisada do modelo não aprovado')
   const ehOutroNeg = await opErro('mandar_ao_cliente', { negocio_id: B.id, conversa_id: cvAna.id, texto: 'x' })
   anota(!!ehOutroNeg, 'a equipe não manda mensagem numa conversa de outro negócio')
@@ -303,7 +304,8 @@ async function correcoes0811() {
 
   log('\n=== 08/11: correções do teste completo (com a IA)')
   const C = await op('criar_negocio', { nome: 'Doceria Teste (correções 08/11)', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Rê', dono_whatsapp: '5500077779003', plano: 'essencial',
-    contexto: { precos: 'caixa 4 cookies R$ 28; caixa 16 cookies R$ 98; brownie R$ 12 a unidade; bolo de pote R$ 15', pagamento: 'pix e cartão', entrega: 'Estrela e Lajeado, taxa de R$ 8', retirada: 'retirada em Estrela', horario: 'terça a sábado, das 10h às 19h', encomenda: '1 dia de antecedência', evitar: 'NÃO faz bolo de aniversário grande; NÃO tem opção sem glúten', desconto: 'só acima de 3 caixas de 16 cookies: 10%' } })
+    // 13/11: esse bloco confere áudio, dia fechado e IA com a Maia fechando (como era); o fechamento com o time tem teste próprio (maia-teste-vendedora.mjs)
+    contexto: { fechamento: 'maia', precos: 'caixa 4 cookies R$ 28; caixa 16 cookies R$ 98; brownie R$ 12 a unidade; bolo de pote R$ 15', pagamento: 'pix e cartão', entrega: 'Estrela e Lajeado, taxa de R$ 8', retirada: 'retirada em Estrela', horario: 'terça a sábado, das 10h às 19h', encomenda: '1 dia de antecedência', evitar: 'NÃO faz bolo de aniversário grande; NÃO tem opção sem glúten', desconto: 'só acima de 3 caixas de 16 cookies: 10%' } })
   const donoC = async () => msgsDe((await ver('conversas', { negocio: C.id })).find(c => c.canal === 'dono'))
   const leadDe = async (tel) => (await ver('leads', { negocio: C.id })).find(l => l.telefone === tel)
   const ultMaia = async (tel) => (await msgsDe(await cvDe(C.id, tel))).filter(m => m.autor === 'maia').map(m => m.texto)

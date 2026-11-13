@@ -193,6 +193,8 @@ h2 small{font-family:'Manrope',sans-serif;font-weight:600;color:var(--text-muted
 .bol .quem img{width:16px;height:16px;border-radius:50%}
 .bol .quem.dono{color:var(--blue)}
 .bol .h{display:block;text-align:right;font-size:11px;color:var(--text-muted);margin-top:2px}
+.devolve{position:sticky;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--border);padding:12px 16px calc(12px + env(safe-area-inset-bottom));display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.devolve p{margin:0;font-size:13.5px;color:var(--text-muted);flex:1 1 200px}
 /* anúncios */
 .anuncio{overflow:hidden}
 .anuncio img,.anuncio video{display:block;width:100%;max-height:460px;object-fit:cover;background:var(--surface-2)}
@@ -426,9 +428,16 @@ function secResumo(){
     var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋'};
     h+='<ul class="lista card espera">'+d.esperando.map(function(e){
       var alvo=e.tipo==='joinha'?'#anuncios':e.conversa_id?'#conversa='+e.conversa_id:'';
-      return '<li'+(alvo?' class="toca" data-ir="'+alvo+'"':'')+'><span class="ic" aria-hidden="true">'+ic[e.tipo]+'</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+(e.em?quando(e.em):'')+(e.tipo==='fechou'||e.tipo==='pergunta'?' · responde no WhatsApp da Maia':'')+'</span></div></li>';
+      // 13/11: a pergunta de cliente dá pra responder aqui mesmo (ou no WhatsApp da Maia, igual)
+      var resp=e.tipo==='pergunta'&&e.lead_id?'<div class="dir"><button type="button" class="btn" data-responder="'+esc(e.lead_id)+'">Responder</button></div>':'';
+      return '<li'+(alvo?' class="toca" data-ir="'+alvo+'"':'')+'><span class="ic" aria-hidden="true">'+ic[e.tipo]+'</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+(e.em?quando(e.em):'')+(e.tipo==='fechou'?' · responde no WhatsApp da Maia':e.tipo==='pergunta'?' · responde aqui ou no WhatsApp da Maia':'')+'</span></div>'+resp+'</li>';
     }).join('')+'</ul>';
   } else h+=vazioMaia('Nada esperando por ti agora. Eu tô tocando tudo.');
+  // 13/11: a verba por dia; o pedido de mudança vai pra equipe aprovar (o mesmo de pedir pra Maia no WhatsApp)
+  var vb=d.verba||{};
+  h+='<h2>Verba dos anúncios</h2><div class="card pad"><p style="margin:0"><b>'+(vb.dia!=null?'R$ '+esc(vb.dia)+' por dia':'Ainda sem verba definida')+'</b></p>'+
+    (vb.pedido?'<p class="mu peq" style="margin:6px 0 0">Teu pedido de R$ '+esc(vb.pedido.valor)+' por dia está com a equipe. Tu recebe a confirmação no WhatsApp.</p>':'')+
+    '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-verba">Pedir mudança</button></div></div>';
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
   var r=d.retomadas;
@@ -479,7 +488,7 @@ function secRetomadas(){
   var esp=S.dados.esperando.filter(function(e){return e.tipo!=='joinha';});
   if(esp.length) h+='<h2>Esperando a tua resposta</h2><ul class="lista card espera">'+esp.map(function(e){return '<li><span class="ic" aria-hidden="true">?</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+quando(e.em)+'</span></div></li>';}).join('')+'</ul>';
   h+='<h2>Feitas</h2>'+(r.feitas.length?'<ul class="tempo card">'+r.feitas.map(function(f){
-    return '<li class="'+(f.respondeu?'respondeu':'feita')+'" data-lead="'+esc(f.lead_id)+'"><span class="pt"><i></i></span><div class="mid"><span class="q">'+esc(quando(f.em))+'</span><b>'+esc(f.nome)+'</b><span class="l2">'+(f.numero?f.numero+'ª retomada':'retomada')+'</span></div><div class="dir">'+(f.respondeu?'<span class="chip c-verde">respondeu</span>':'<span class="chip c-cinza">sem resposta</span>')+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada feita nos últimos 30 dias.</div>');
+    return '<li class="'+(f.respondeu?'respondeu':'feita')+'" data-lead="'+esc(f.lead_id)+'"><span class="pt"><i></i></span><div class="mid"><span class="q">'+esc(quando(f.em))+'</span><b>'+esc(f.nome)+'</b><span class="l2">'+(f.despedida?'despedida (última retomada)':f.numero?f.numero+'ª retomada':'retomada')+'</span></div><div class="dir">'+(f.respondeu?'<span class="chip c-verde">respondeu</span>':'<span class="chip c-cinza">sem resposta</span>')+'</div></li>';}).join('')+'</ul>':'<div class="card vazio">Nenhuma retomada feita nos últimos 30 dias.</div>');
   return h;
 }
 var ST_CV={maia:['Maia atendendo','c-roxo'],dono:['esperando tu','c-amar'],encerrada:['encerrada','c-cinza']};
@@ -532,6 +541,14 @@ function secAvisos(){
 function liga(el){
   $$('[data-ir]',el).forEach(function(x){x.onclick=function(){location.hash=x.dataset.ir;};});
   $$('[data-lead]',el).forEach(function(x){x.onclick=function(){abreLead(x.dataset.lead);};});
+  // 13/11: responder a pergunta de um cliente (a Maia repassa no tom do negócio) e pedir mudança de verba (a equipe aprova)
+  $$('[data-responder]',el).forEach(function(b){b.onclick=function(ev){ev.stopPropagation();var e=S.dados.esperando.filter(function(x){return x.tipo==='pergunta'&&x.lead_id===b.dataset.responder;})[0];
+    folha('<h3>Responder o cliente</h3><p class="mu peq">'+esc(e?e.texto:'')+'</p><label class="campo"><span>A tua resposta (a Maia repassa pra ele)</span><textarea id="f-resp" maxlength="1000"></textarea></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Mandar pro cliente</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+      $('#f-ok',v).onclick=function(){var t=$('#f-resp',v).value.trim();if(!t){toast('Escreve a resposta');return;}var k=this;k.disabled=true;
+        api('',{acao:'responder',lead_id:b.dataset.responder,texto:t}).then(function(r){fecha();toast(r.aviso?'Guardada: sai quando o cliente escrever':'A Maia mandou pro cliente');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};});
+  var bv=$('#b-verba',el);if(bv)bv.onclick=function(){folha('<h3>Mudar a verba por dia</h3><p class="mu peq">Vira um pedido: a equipe confere e aprova, e tu recebe a confirmação no WhatsApp.</p><label class="campo"><span>Quanto por dia (R$)</span><input id="f-vb" inputmode="decimal" placeholder="ex.: 40"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var x=$('#f-vb',v).value.trim();if(!x){toast('Escreve o valor');return;}var k=this;k.disabled=true;
+      api('',{acao:'verba',valor:x}).then(function(){fecha();toast('Pedido enviado pra equipe');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
   $$('[data-aprovar]',el).forEach(function(b){b.onclick=function(){
     if(!confirm('Aprovar esse anúncio? A equipe liga a campanha depois.'))return;
     b.disabled=true;api('',{acao:'aprovar',peca_id:b.dataset.aprovar}).then(function(){toast('Aprovado 👍');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});
@@ -576,6 +593,14 @@ function abreConversa(id){
       var cli=m.autor==='cliente';
       h+='<div class="bol '+(cli?'cli':'eu')+'">'+(cli?'':'<span class="quem'+(m.autor==='dono'?' dono':'')+'">'+(m.autor==='dono'?'Tu':'<img src="'+FOTO+'" alt="" width="16" height="16">Maia')+'</span>')+esc(m.texto||'('+(m.tipo||'mensagem')+')')+'<span class="h">'+hora(m.criado_em)+'</span></div>';});
     $('#chat').innerHTML=h||'<div class="vazio">Sem mensagens.</div>';
+    // 13/11: conversa que está com o dono (modo humano): o botão "Resolvido, devolver pra Maia" (o mesmo do WhatsApp: "devolve pra Maia")
+    if(r.conversa&&r.conversa.modo==='humano'){
+      var bar=document.createElement('div');bar.className='devolve';
+      bar.innerHTML='<p>Essa conversa está contigo: a Maia não responde aqui. Resolveu?</p><button type="button" class="btn ok" id="devolver">Resolvido, devolver pra Maia</button>';
+      $('#app').appendChild(bar);
+      $('#devolver').onclick=function(){var b=this;if(!confirm('Devolver a conversa com '+(c?(c.nome||fone(c.telefone)):'esse cliente')+' pra Maia? Ela volta a responder esse cliente.'))return;b.disabled=true;
+        api('',{acao:'devolver',conversa_id:id}).then(function(){bar.remove();toast('A Maia voltou a atender');return api('acao=tudo');}).then(function(d){S.dados=d;if(S.conversa===id)abreConversa(id);}).catch(function(e){b.disabled=false;toast(e.message);});};
+    }
   }).catch(function(e){$('#chat').innerHTML='<div class="vazio">'+esc(e.message)+'</div>';});
 }
 

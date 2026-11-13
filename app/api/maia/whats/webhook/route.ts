@@ -6,9 +6,10 @@
 import { NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
-import { conversa, avisaEquipe } from '@/lib/maia/canal'
+import { avisaEquipe } from '@/lib/maia/canal'
 import { recebeDoCliente, respondeCliente } from '@/lib/maia/atendente'
 import { atendimentoLigado, waDoNegocio, marcaLidaNeg, baixaMidiaNeg } from '@/lib/maia/wa-negocio'
+import { ecoDoDono } from '@/lib/maia/humano'
 
 export const maxDuration = 120
 const VERIFY = () => process.env.MAIA_WA_VERIFY_TOKEN || 'maia-wa-2026'
@@ -65,12 +66,8 @@ export async function POST(req: Request) {
     }
 
     // coexistência: o que o dono respondeu pelo app do celular chega como eco. Fica na conversa e a Maia sai de cena 2 h.
-    for (const e of v.message_echoes || []) {
-      const cv = await conversa(neg.id, 'cliente', e.to)
-      if (e.id && (await db.um('msgs', { wamid: e.id }))) continue
-      await db.insere('msgs', { conversa_id: cv.id, negocio_id: neg.id, autor: 'dono', tipo: e.type || 'texto', texto: textoDe(e), wamid: e.id || null, status: 'enviado' }).catch(() => null)
-      await db.atualiza('conversas', { id: cv.id }, { ultima_msg: textoDe(e).slice(0, 200), ultima_msg_em: new Date().toISOString() })
-    }
+    // 13/11: o dono respondeu direto: a pergunta do cliente sai da pendência dele (humano.ts, ecoDoDono)
+    for (const e of v.message_echoes || []) await ecoDoDono(neg, { to: e.to, id: e.id || null, type: e.type || 'texto', texto: textoDe(e) }).catch(() => null)
 
     for (const m of v.messages || []) {
       const nome = v.contacts?.find((x: any) => String(x.wa_id) === String(m.from))?.profile?.name || null

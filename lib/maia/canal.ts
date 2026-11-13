@@ -9,7 +9,7 @@ import { enviaTexto, enviaImagem, enviaVideo, enviaModelo, enviaBotoes, fone, eh
 import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVideoNeg, enviaModeloNeg, enviaAudioNeg } from './wa-negocio'
 export { janelaAbertaCv }
 
-type Envio = { ok: boolean; wamid?: string; erro?: string; na_fila?: boolean }
+type Envio = { ok: boolean; wamid?: string; erro?: string; na_fila?: boolean; codigo?: number }
 type Saida = { tipo: 'texto' | 'imagem' | 'video'; texto: string; link?: string; peca_id?: string | null }
 const simulado = (): Envio => ({ ok: true, wamid: 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) })
 const janelaAberta = (cv: any) => !!cv?.janela_ate && cv.janela_ate > new Date().toISOString()
@@ -17,7 +17,15 @@ const janelaAbertaCv = janelaAberta
 
 function simuladaCv(cv: any) { return ehSimulado(cv.telefone) || !!cv.simulada }
 
+// 13/11 (problema técnico): erro de acesso no WhatsApp do negócio (chave vencida, sem permissão, conta bloqueada, número
+// desconectado). Avisa só a equipe; o recado pro dono espera a equipe aprovar no painel (pendencias.ts)
+const WA_CAIU = new Set([190, 10, 200, 131031, 133010, 133005])
 async function registra(cv: any, autor: 'maia' | 'equipe' | 'sistema', texto: string, r: Envio, tipo = 'texto', midia_id: string | null = null) {
+  if (cv.canal === 'cliente' && !r.ok && WA_CAIU.has(Number(r.codigo))) {
+    const neg = await db.um('negocios', { id: cv.negocio_id })
+    const { problemaTecnico } = await import('./pendencias')
+    await problemaTecnico(neg, { tipo: 'whatsapp_caiu', equipe: `o WhatsApp do negócio recusou o envio (código ${r.codigo}: ${String(r.erro || '').slice(0, 160)}). Conferir a conexão.`, dono: 'O WhatsApp do teu negócio desconectou da Maia, então eu parei de responder os clientes por lá. A equipe já está ligando de novo e te avisa por aqui.' }).catch(() => null)
+  }
   await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor, tipo, texto, midia_id, wamid: r.wamid || null, status: r.na_fila ? 'na_fila' : r.ok ? 'enviado' : 'falhou' })
   await db.atualiza('conversas', { id: cv.id }, { ultima_msg: texto.slice(0, 200), ultima_msg_em: new Date().toISOString() })
   return r
@@ -136,8 +144,10 @@ export async function mandaRespostaCliente(cv: any, texto: string, autor: 'maia'
     if (!r.ok) await avisaEquipe(`o modelo ${modelo} não saiu`, `${neg?.nome}: ${r.erro || '?'} (a resposta pro cliente ficou guardada e sai quando ele escrever)`, atual.negocio_id)
     return { ok: true, na_fila: true, como: 'modelo' as const, modelo, modelo_ok: r.ok }
   }
-  await avisaEquipe('maia_resposta não aprovado', `${neg?.nome}: uma resposta pro cliente ${nome || atual.telefone} ficou guardada (passou 24 h da última mensagem dele e o modelo maia_resposta não está aprovado). Sai quando ele escrever de novo.`, atual.negocio_id)
-  if (neg?.dono_whatsapp) await mandaTexto(await conversaDoDono(neg), `Ó, a resposta pro ${nome || 'cliente'} ficou guardada: já passou 24 h da última mensagem dele e o WhatsApp só deixa mandar com o modelo aprovado, que ainda não saiu. Ela vai assim que ele escrever de novo, e a equipe já está vendo.`).catch(() => null)
+  // 13/11 (problema técnico, pendencias.ts): avisa só a equipe; o recado pro dono espera a equipe aprovar no painel
+  const { problemaTecnico } = await import('./pendencias')
+  await problemaTecnico(neg, { tipo: 'maia_resposta não aprovado', equipe: `uma resposta pro cliente ${nome || atual.telefone} ficou guardada (passou 24 h da última mensagem dele e o modelo maia_resposta não está aprovado). Sai quando ele escrever de novo.`,
+    dono: `Ó, a resposta pro ${nome || 'cliente'} ficou guardada: já passou 24 h da última mensagem dele e o WhatsApp só deixa mandar com o modelo aprovado, que ainda não saiu. Ela vai assim que ele escrever de novo, e a equipe já está vendo.` }).catch(() => null)
   return { ok: true, na_fila: true, como: 'fila' as const, modelo: null }
 }
 

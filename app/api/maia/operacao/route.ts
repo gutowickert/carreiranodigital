@@ -112,6 +112,10 @@ export async function GET(req: Request) {
       return ok(await Promise.all(negs.map(n => usoDoMes(n))))
     }
     if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
+    // 13/11 (pendencias.ts): o que a equipe aprova antes de chegar no dono (pedido de verba, recado de problema técnico)
+    if (acao === 'pendentes_equipe') { const { pendentesDaEquipe } = await import('@/lib/maia/pendencias'); return ok(await pendentesDaEquipe()) }
+    // 13/11: o que está esperando o dono de um negócio (a análise de 2 dias usa a mesma lista: pendenciasDoDono)
+    if (acao === 'pendencias_dono') { const { pendenciasDoDono } = await import('@/lib/maia/pendencias'); const n = await db.um('negocios', { id: q('negocio') }); return n ? ok(await pendenciasDoDono(n)) : erro('negócio não existe', 404) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
       // 06/11: a peça de amostra da demonstração vai marcada, com o nome do lead
@@ -259,6 +263,36 @@ export async function POST(req: Request) {
         for (const m of (await db.lista('msgs', { conversa_id: b.conversa_id })).filter(m => m.autor === 'dono' || m.autor === 'equipe')) await db.atualiza('msgs', { id: m.id }, { criado_em: antes })
         return ok({ ok: true })
       }
+      // 13/11 (pendencias.ts): a equipe aprova (ou não) o pedido de verba do dono e o recado de problema técnico pro dono
+      case 'verba_decidir': {
+        const { decideVerba } = await import('@/lib/maia/pendencias')
+        try { return ok(await decideVerba(String(b.id || ''), b.aprova === true, por, b.motivo ? String(b.motivo).slice(0, 200) : null)) } catch (e: any) { return erro(e.message) }
+      }
+      case 'aviso_dono_decidir': {
+        const { decideAvisoDono } = await import('@/lib/maia/pendencias')
+        try { return ok(await decideAvisoDono(String(b.id || ''), b.aprova === true, por, b.texto ? String(b.texto).slice(0, 1000) : null)) } catch (e: any) { return erro(e.message) }
+      }
+      // 13/11, só no modo de teste: o dono respondeu o cliente direto pelo celular (o eco do webhook); um problema técnico;
+      // e deixar velhos os eventos (passagem pro dono, cobrança) pra testar a cobrança de 1 h e do dia seguinte
+      case 'teste_eco_dono': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe', 404)
+        const { ecoDoDono } = await import('@/lib/maia/humano')
+        return ok(await ecoDoDono(n, { to: String(b.telefone), id: 'eco-' + Date.now(), texto: String(b.texto || 'ok') }))
+      }
+      case 'teste_problema_tecnico': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe', 404)
+        const { problemaTecnico } = await import('@/lib/maia/pendencias')
+        return ok(await problemaTecnico(n, { tipo: String(b.tipo || 'teste'), equipe: String(b.equipe || 'teste'), dono: String(b.dono || 'teste') }))
+      }
+      case 'teste_eventos_antigos': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const antes = new Date(Date.now() - (Number(b.horas) || 2) * 3600e3).toISOString()
+        const evs = (await db.lista('eventos', { negocio_id: b.negocio_id })).filter(e => (b.tipos || []).includes(e.tipo))
+        for (const e of evs) await db.atualiza('eventos', { id: e.id }, { criado_em: antes })
+        return ok({ eventos: evs.length })
+      }
       // só no modo de teste: faz as perguntas pro dono ficarem velhas (h horas)
       case 'teste_pergunta_antiga': {
         if (db.modo() !== 'local') return erro('só no modo de teste')
@@ -356,6 +390,13 @@ export async function POST(req: Request) {
           oferta: (await import('@/lib/maia/oferta')).oferta(), oferta_texto: (await import('@/lib/maia/oferta')).textoOferta(),
           // 13/11 (cadastro.ts): o funil e os limites do cadastro como regra (sem IA)
           ...(await (async () => { const c = await import('@/lib/maia/cadastro'); return { regras_cadastro: c.regrasDoCadastro(neg), regras_retomada: c.regrasDaRetomada(neg), ficha: c.fichaParaAtender(neg), desconto_max: c.descontoMax(neg), desconto_acima: c.descontoAcima(neg, t), motivo_cadastro: c.motivoDoCadastro(neg, t), sem_desconto: c.semFrasesDeDesconto(t) } })()),
+          // 13/11 (a Vendedora): quem fecha, o preço personalizado, a resposta fixa e a 1ª retomada (sem IA)
+          ...(await (async () => {
+            const c = await import('@/lib/maia/cadastro'), fx = await import('@/lib/maia/fixas'), fu = await import('@/lib/maia/funil')
+            const agora = b.agora ? new Date(b.agora) : new Date()
+            return { fechamento: c.fechamentoDo(neg), regra_fechamento: c.regraDoFechamento(neg), quer_fechar: at.querFechar(t, neg), preco_personalizado: c.precoPersonalizadoDo(neg),
+              fixa: fx.respostaFixa(neg, t), followup_dias: fu.FOLLOWUP_DIAS, primeira_retomada: fu.quandoPrimeira(neg, agora) }
+          })()),
         })
       }
       // 08/11 (T12), só no modo de teste: quem recebe o resumo da semana (sem gerar, sem IA)
@@ -404,6 +445,14 @@ export async function POST(req: Request) {
           await db.insere('msgs', { conversa_id: cv.id, negocio_id: cv.negocio_id, autor: 'maia', tipo: 'texto', texto: `(teste) resposta ${i + 1}`, status: 'enviado' })
         }
         return ok({ ok: true })
+      }
+      // 13/11, só no modo de teste: o texto da retomada N de um contato (a 3ª é a despedida), sem mandar nada (usa IA)
+      case 'teste_retomada_texto': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }), l = await db.um('leads', { id: b.lead_id, negocio_id: b.negocio_id })
+        if (!n || !l) return erro('negócio ou contato não encontrado', 404)
+        const { textoRetomada } = await import('@/lib/maia/atendente')
+        return ok({ texto: await textoRetomada(n, l, Number(b.numero) || 1) })
       }
       // só no modo de teste: faz as retomadas marcadas vencerem agora, pra testar o follow-up sem esperar dias
       case 'teste_vencer_retomadas': {

@@ -11,7 +11,7 @@ import { achaLead, novoLead, ganhou, perdeu, mudaEtapa, agendaFollowup, numeros,
 import { baixaMidia } from '@/lib/oito/wa'
 import { descreveTom, tomDoNegocio } from './tom'
 import { diasDoNegocio } from './horario'
-import { iaDoDia, verbaAcimaDoTeto, avisaUmaVez } from './limites'
+import { iaDoDia, avisaUmaVez } from './limites'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
@@ -121,6 +121,33 @@ export async function respostaDeVenda(neg: any, cv: any, lead_id: string, fechou
   return { lead: lead.id, etapa: 'perdido', mudou: true }
 }
 
+// 13/11: as perguntas de cliente que esperam o dono (as de quem ainda está em aberto), com o contato
+export async function perguntasAbertas(neg: any) {
+  const evs = await db.lista('lead_eventos', { negocio_id: neg.id }, { ordem: 'criado_em' })
+  const abertas = evs.filter(e => e.tipo === 'pergunta_cliente' && !evs.some(x => x.tipo === 'pergunta_respondida' && x.lead_id === e.lead_id && x.criado_em > e.criado_em))
+  const out: { evento: any; lead: any }[] = []
+  for (const e of abertas) {
+    const l = await db.um('leads', { id: e.lead_id })
+    if (l && !['ganho', 'perdido'].includes(l.etapa) && !out.some(x => x.lead.id === l.id)) out.push({ evento: e, lead: l })
+  }
+  return out
+}
+
+// 13/11: o dono respondeu a pergunta de um cliente (pelo WhatsApp, ferramenta responder_cliente; ou pelo painel do dono): a Maia
+// repassa ao cliente certo, no tom do NEGÓCIO, e a pergunta sai da pendência. A mesma função nos dois caminhos
+export async function responderCliente(neg: any, l: any, texto: string, via: 'whatsapp' | 'painel' = 'whatsapp') {
+  const ccv = await conversa(neg.id, 'cliente', l.telefone, { nome: l.nome, lead_id: l.id })
+  // 08/11 (teste completo): o repasse sai no tom do NEGÓCIO com os clientes ("você"/"tu", gaúcho ou não), nunca no jeito da
+  // Maia com o dono ("Qual tu prefere?" num negócio em "você"). Fora do tom: reescreve; o acerto sem IA confere no fim
+  const { noTomDoNegocio } = await import('./tom')
+  const mensagem = await noTomDoNegocio(neg, texto, { negocio_id: neg.id, conversa_id: ccv.id })
+  // 07/11 (piloto): depois de 24 h da última mensagem do cliente, vai pelo modelo maia_resposta (a resposta espera na fila)
+  const env = await mandaRespostaCliente(ccv, mensagem, 'maia')
+  await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem, como: env.como, via } })
+  return { ok: true, mensagem, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)',
+    ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
+}
+
 function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferramenta[] {
   const lead = async (q: any) => (await achaLead(neg.id, { telefone: q.telefone, nome: q.nome, id: q.lead_id })) as any
   return [
@@ -128,12 +155,18 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
       input_schema: { type: 'object', properties: { campos: { type: 'object', description: 'chave → valor, ex.: {"servicos":"...","preco_medio":"R$ 180"}' }, verba_dia: { type: 'number' } }, required: ['campos'] },
       roda: async ({ campos, verba_dia }) => {
         // 12/11 (limites.ts): verba acima do teto do negócio não é salva pela conversa: a equipe confirma com o dono (é dinheiro)
-        const acima = verba_dia ? verbaAcimaDoTeto(neg, verba_dia) : null
+        // 13/11: nenhuma verba é salva direto pela conversa: vira PEDIDO que a equipe aprova no painel (pendencias.ts)
         const n = await db.um('negocios', { id: neg.id })
-        await db.atualiza('negocios', { id: neg.id }, { contexto: { ...(n?.contexto || {}), ...(campos || {}) }, ...(verba_dia && !acima ? { verba_dia } : {}) })
-        if (acima) await avisaUmaVez(neg.id, 'verba_teto', 'verba acima do teto', `${neg.nome}: o dono pediu verba de R$ ${verba_dia}/dia na conversa e ${acima}. Não salvei. Confirmar com ele e com o Guto.`)
-        return acima ? { ok: true, verba: `NÃO salva: ${acima}. Diz pro dono, sem número de teto, que um valor desse a equipe confirma com ele antes.` } : { ok: true }
+        await db.atualiza('negocios', { id: neg.id }, { contexto: { ...(n?.contexto || {}), ...(campos || {}) } })
+        if (!verba_dia) return { ok: true }
+        const { pedeVerba } = await import('./pendencias')
+        const p = await pedeVerba(n || neg, verba_dia, 'dono')
+        return { ok: true, verba: p.ok ? `virou pedido de R$ ${p.valor}/dia: a equipe aprova e tu confirma pro dono que ele recebe o ok por aqui` : `NÃO virou pedido: ${p.erro}. Diz pro dono, sem número de teto, que um valor desse a equipe confirma com ele antes.` }
       } },
+    // 13/11: o dono pede pra mudar a verba ("aumenta pra 40 por dia"): vira pedido; a equipe aprova antes de valer (teto de R$ 60/dia)
+    { name: 'pedir_verba', description: 'O dono pediu pra mudar a verba por dia dos anúncios ("aumenta pra 40 por dia", "baixa pra 20"). Vira um PEDIDO que a equipe aprova antes de valer; ele recebe a confirmação aqui. Diz isso pra ele (não diz que já mudou).',
+      input_schema: { type: 'object', properties: { valor: { type: 'number', description: 'reais por dia' } }, required: ['valor'] },
+      roda: async ({ valor }) => { const { pedeVerba } = await import('./pendencias'); const p = await pedeVerba((await db.um('negocios', { id: neg.id })) || neg, Number(valor), 'dono'); return p.ok ? { ok: true, pedido: `R$ ${p.valor}/dia, esperando a equipe aprovar` } : { erro: p.erro } } },
     { name: 'criar_anuncios', description: 'Cria anúncios novos com as fotos e vídeos que o dono mandou. Eles vão pra revisão da equipe e depois chegam pro dono aprovar (leva umas horas). Usa quando o dono pedir ou quando chegarem fotos/vídeos novos e ele topar.',
       input_schema: { type: 'object', properties: { quantidade: { type: 'number' }, tema: { type: 'string', description: 'ex.: Natal, promoção de terça, produto novo' } } },
       roda: async ({ quantidade, tema }) => geraAnuncios(neg, { quantidade, tema }) },
@@ -176,17 +209,11 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'responder_cliente', description: 'Repassa pro CLIENTE do negócio a resposta que o dono deu a uma pergunta dele (as perguntas esperando estão no pedido). Escreve a mensagem pronta, como a assistente do negócio, no TOM COM OS CLIENTES que vem no pedido (não no teu jeito com o dono).',
       input_schema: { type: 'object', properties: { nome: { type: 'string' }, telefone: { type: 'string' }, mensagem: { type: 'string' } }, required: ['mensagem'] },
       roda: async (q) => {
-        const l = await lead(q); if (!l || !l.telefone) return { erro: 'não achei esse cliente' }
-        const ccv = await conversa(neg.id, 'cliente', l.telefone, { nome: l.nome, lead_id: l.id })
-        // 08/11 (teste completo): o repasse sai no tom do NEGÓCIO com os clientes ("você"/"tu", gaúcho ou não), nunca no jeito da
-        // Maia com o dono ("Qual tu prefere?" num negócio em "você"). Fora do tom: reescreve; o acerto sem IA confere no fim
-        const { noTomDoNegocio } = await import('./tom')
-        const mensagem = await noTomDoNegocio(neg, String(q.mensagem || ''), { negocio_id: neg.id, conversa_id: ccv.id })
-        // 07/11 (piloto): depois de 24 h da última mensagem do cliente, vai pelo modelo maia_resposta (a resposta espera na fila)
-        const env = await mandaRespostaCliente(ccv, mensagem, 'maia')
-        await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: l.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { mensagem, como: env.como } })
-        return { ok: true, canal: neg.wa_phone_id ? 'whatsapp do negócio' : 'simulado (o WhatsApp do negócio ainda não está ligado)',
-          ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
+        // 13/11: sem nome/telefone que bata e com UMA pergunta só esperando, é dela (o dono responde sem dizer o nome)
+        let l = await lead(q)
+        if (!l && !q.telefone) { const so = await perguntasAbertas(neg); if (so.length === 1) l = so[0].lead }
+        if (!l || !l.telefone) return { erro: 'não achei esse cliente: pergunta pro dono de quem é a resposta' }
+        return responderCliente(neg, l, String(q.mensagem || ''))
       } },
     // 07/11 (piloto): o dono devolve pra Maia uma conversa de cliente que estava com ele
     { name: 'devolver_conversa', description: 'O dono pediu pra tu voltar a atender um cliente (ou todos) cuja conversa estava com ele ("devolve pra Maia", "pode atender a Carla de novo"). Sem nome, devolve todas.',
@@ -216,6 +243,8 @@ REGRAS:
 - Aprende o negócio aos poucos (salvar_contexto): uma pergunta por vez, sem questionário.
 - Reclamação, cancelamento, troca de plano, cobrança ou o que tu não sabe: chamar_equipe e diz que o Guto responde ali mesmo.
 - Nunca fala de preço da Maia, desconto ou contrato: isso é com a equipe.
+- VERBA: o dono pediu pra mudar a verba por dia → pedir_verba. Não muda na hora: a equipe aprova e ele recebe a confirmação aqui (diz isso). Também dá pra pedir no painel.
+- PERGUNTA DE CLIENTE: o dono respondeu → responder_cliente (se ele não disse de quem e só tem uma esperando, é dela). Ele também pode responder pelo painel ou direto no WhatsApp do negócio.
 - Ele tem um PAINEL só dele (resultados, funil, retomadas, conversas, anúncios). Pediu o painel, dashboard ou "onde vejo tudo": link_do_painel e manda o link inteiro. O link é pessoal: diz pra não repassar.
 FORMATO DA RESPOSTA FINAL: uma a três mensagens, cada uma entre <msg> e </msg>. Nada fora das marcas.`
 
