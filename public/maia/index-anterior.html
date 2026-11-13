@@ -1,0 +1,846 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Maia: o teu time de marketing inteiro numa IA</title>
+<meta name="description" content="A Maia é a IA que faz teu marketing inteiro: cria e roda os anúncios, atende teus clientes no WhatsApp, posta no Instagram e mede as vendas. Começa com 3 horas presenciais com um especialista da escola.">
+<meta property="og:title" content="Maia: o teu time de marketing inteiro numa IA">
+<meta property="og:description" content="Anúncios, atendimento no WhatsApp, social media e vendas medidas. Tu só manda as fotos e dá um joinha.">
+<meta property="og:image" content="https://www.carreiranodigital.com/maia/img/maia-og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="A Maia sorrindo, com o título: Maia, o teu time de marketing inteiro numa IA">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="/maia/img/maia-avatar.webp">
+<link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/maia/img/maia-rosto.webp" as="image" type="image/webp">
+<meta name="theme-color" content="#f7f5fc">
+<!-- 06/11: pixel da escola. PageView na entrada e Contact a cada clique pro WhatsApp (o evento de conversa do teste) -->
+<script>!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');fbq('init','3968641693466078');fbq('track','PageView');
+document.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('a[href*="wa.me"]');if(a&&window.fbq)fbq('track','Contact',{content_name:'maia',content_category:(a.textContent||'').trim().slice(0,60)})},true)</script>
+</head>
+<body>
+<style>
+/* Layout: a Maia em pessoa no topo (foto + o WhatsApp dela), o time com as cenas dela trabalhando, prova real,
+   quem é a Maia, como ela trabalha em 4 passos, o joinha, a conta contra montar um time, planos e perguntas.
+   08/11: fundo claro sempre (sem escuro automático), fontes da escola (Manrope + Bricolage, servidas daqui), fotos da Maia.
+   Paleta: docs/maia-visual/PALETA.md */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+:root{
+  --bg:#f7f5fc; --s1:#ffffff; --s2:#f3f0fa; --s3:#ebe6f5; --ln:#ebe6f5;
+  --tx:#1b1530; --mu:#6b6485; --ac:#7c3aed; --ac2:#6d28d9; --ac-bg:#f1ebfe; --ac-line:#c4b5fd;
+  --grad:linear-gradient(100deg,#7c3aed,#a855f7);
+  --verde:#15803d; --verde-bg:#dcfce7;
+  --la:#ea580c; --la-tx:#c2410c; --la-bg:#fff1e6; --menta-bg:#e9f8ef; --azul-bg:#eef0ff; --anil:#4f46e5;
+  --wa:#efeae2; --wa-top:#f0f2f5; --wa-eu:#d9fdd3; --wa-ela:#ffffff; --wa-tx:#111b21; --wa-mu:#667781;
+  --f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-tx);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+h1,h2,h3{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 86;letter-spacing:-.03em;line-height:1.04;text-wrap:balance}
+a{color:inherit}
+img{display:block;max-width:100%;height:auto}
+.ct{max-width:1120px;margin:0 auto;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px))}
+section{padding-block:80px}
+.olho{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.grad{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lead{font-size:clamp(17px,2.1vw,20px);color:var(--mu);max-width:56ch}
+h2{font-size:clamp(28px,4.6vw,44px)}
+.cab{display:flex;flex-direction:column;gap:12px;margin-bottom:36px}
+
+/* botão único */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 26px;border-radius:999px;background:var(--ac);color:#fff;font-weight:700;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 12px 30px rgba(124,58,237,.28);transition:transform .15s,filter .15s}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.05)}
+.btn:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
+.btn svg{width:22px;height:22px;flex:none}
+.calma{font-size:14px;color:var(--mu);font-weight:600}
+
+/* topo */
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid var(--ln)}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+.topo .ct{display:flex;align-items:center;gap:12px;min-height:64px}
+.marca{display:flex;align-items:center;gap:10px;font-family:var(--f-dis);font-size:22px;font-weight:800;letter-spacing:-.03em;text-decoration:none}
+.marca img{width:36px;height:36px;border-radius:50%;object-fit:cover}
+.topo nav{flex:1;display:flex;gap:22px;justify-content:center;font-size:15px;font-weight:600;color:var(--mu)}
+.topo nav a{text-decoration:none}
+.topo .btn{min-height:42px;padding:0 18px;font-size:15px;box-shadow:none}
+
+/* abertura */
+.abre{padding-block:56px 72px;position:relative;overflow:hidden}
+.abre::before{content:"";position:absolute;width:640px;height:640px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.35),transparent 65%);top:-260px;right:-180px;pointer-events:none}
+.abre .ct{display:grid;grid-template-columns:1.05fr .95fr;gap:56px;align-items:center;position:relative}
+.abre h1{font-size:clamp(34px,5.4vw,60px)}
+.abre .lead{margin-top:20px}
+.acao{display:flex;flex-direction:column;align-items:flex-start;gap:12px;margin-top:30px}
+.cargo{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+.cargo img{width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid var(--s1);box-shadow:0 0 0 2px var(--ac2)}
+.cargo b{display:block;font-size:17px}
+.cargo span{font-size:14px;color:var(--mu)}
+/* 08/11 (Guto): deixar claro já no topo que é tudo pelo WhatsApp */
+.so-wa{display:inline-flex;align-items:center;gap:10px;margin-top:18px;background:#e9f9ef;border:1px solid #c6ecd4;color:#14532d;border-radius:999px;padding:8px 16px 8px 10px;font-size:15px;line-height:1.35}
+.so-wa svg{flex:none;width:24px;height:24px;color:#1fa855}
+.so-wa b{font-weight:800}
+
+/* celular com WhatsApp */
+.cel{width:min(360px,100%);margin:0 auto;border-radius:38px;padding:10px;background:#0b0a10;box-shadow:0 30px 80px rgba(23,18,31,.35)}
+.tela{border-radius:30px;overflow:hidden;background:var(--wa);color:var(--wa-tx)}
+.wtop{display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--wa-top)}
+.wtop img{width:38px;height:38px;border-radius:50%;object-fit:cover}
+.wtop b{display:block;font-size:15px}
+.wtop span{font-size:12px;color:var(--wa-mu)}
+.msgs{display:flex;flex-direction:column;gap:6px;padding:14px 12px 18px;font-size:14px;line-height:1.4;min-height:470px}
+.m{max-width:84%;padding:7px 10px 6px;border-radius:10px;background:var(--wa-ela);box-shadow:0 1px 1px rgba(0,0,0,.08);animation:entra .45s ease both}
+.m.eu{align-self:flex-end;background:var(--wa-eu)}
+.m small{display:block;text-align:right;font-size:11px;color:var(--wa-mu);margin-top:2px}
+.m img{border-radius:7px;margin-bottom:6px;aspect-ratio:4/5;object-fit:cover;width:100%}
+.m.joia{font-size:40px;line-height:1;padding:6px 10px}
+.m.num b{display:block;font-size:20px}
+.dia{align-self:center;font-size:11px;font-weight:700;color:var(--wa-mu);background:var(--wa-top);border-radius:8px;padding:4px 10px;margin:4px 0}
+.m:nth-of-type(1){animation-delay:.2s}.m:nth-of-type(2){animation-delay:.9s}.m:nth-of-type(3){animation-delay:1.6s}.m:nth-of-type(4){animation-delay:2.3s}.m:nth-of-type(5){animation-delay:3s}.m:nth-of-type(6){animation-delay:3.7s}
+@keyframes entra{from{opacity:.0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.exemplo{text-align:center;font-size:12px;color:var(--mu);margin-top:12px}
+
+/* 08/11: a vitrine do topo: a Maia em foto grande e, na frente, o WhatsApp dela trabalhando */
+.vitrine{position:relative;padding-bottom:40px;max-width:500px;margin-left:auto;min-height:620px}
+.vitrine .foto-h{position:relative;width:100%;border-radius:32px;overflow:hidden;box-shadow:0 30px 70px -30px rgba(76,29,149,.45);background:var(--s3)}
+.vitrine .foto-h img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.vitrine .foto-h .on{position:absolute;left:14px;top:14px;display:flex;align-items:center;gap:8px;background:rgba(255,255,255,.92);color:var(--tx);border-radius:999px;padding:7px 13px;font-size:13px;font-weight:700;box-shadow:0 8px 20px rgba(27,21,48,.12)}
+.vitrine .foto-h .on i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+.vitrine .cel{position:absolute;left:-30px;top:64px;width:250px;margin:0;border-radius:30px;padding:7px}
+.vitrine .m img{display:none}
+.vitrine .tela{border-radius:25px}
+.vitrine .msgs{min-height:0;font-size:13px;padding:12px 10px 14px}
+.vitrine .exemplo{position:absolute;right:0;bottom:8px;text-align:right}
+.vitrine .foto-h .on{left:auto;right:14px}
+/* a faixa das cenas: a Maia em cada cargo */
+.cenas{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:22px}
+.cenas figure{position:relative;border-radius:20px;overflow:hidden;background:var(--s3);margin:0}
+.cenas img{width:100%;aspect-ratio:1;object-fit:cover}
+.cenas figcaption{position:absolute;left:8px;bottom:8px;background:rgba(255,255,255,.93);color:var(--tx);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+/* quem é a Maia: a foto dela no escritório (08/11: a foto pequena do rosto saiu, era repetida) */
+.duo{position:relative;max-width:440px;width:100%;justify-self:center}
+.duo .a{border-radius:28px;overflow:hidden;box-shadow:0 24px 60px -28px rgba(76,29,149,.4)}
+.duo .a img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.duo .selo{position:absolute;left:16px;top:16px;display:flex;align-items:center;gap:8px;background:var(--s1);color:var(--tx);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;box-shadow:0 10px 24px rgba(0,0,0,.12)}
+.duo .selo i{width:9px;height:9px;border-radius:50%;background:var(--verde);box-shadow:0 0 0 4px var(--verde-bg)}
+.fim{background:radial-gradient(circle at 15% 20%,#fff1e6 0,transparent 45%),radial-gradient(circle at 85% 80%,#ede4ff 0,transparent 50%),var(--bg)}
+.fim .rosto{width:160px;height:160px;border-radius:50%;object-fit:cover;margin:0 auto 22px;box-shadow:0 0 0 6px var(--s1),0 0 0 8px var(--ac-line),0 24px 50px -20px rgba(76,29,149,.45)}
+
+/* prova */
+.prova{background:var(--s2)}
+.ads{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.ads figure{background:var(--s1);border:1px solid var(--ln);border-radius:20px;overflow:hidden}
+.ads img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.ads figcaption{padding:12px 14px;font-size:14px;color:var(--mu)}
+.ads figcaption b{display:block;color:var(--tx);font-size:15px}
+/* o time */
+.time{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.cargo-c{background:var(--s1);border:1px solid var(--ln);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.cargo-c svg{width:30px;height:30px;color:var(--ac)}
+.cargo-c b{font-size:18px;line-height:1.25}
+.cargo-c span{font-size:15px;color:var(--mu)}
+.cargo-c.dono{background:var(--grad);border-color:transparent;color:#fff}
+.cargo-c.dono svg,.cargo-c.dono span{color:rgba(255,255,255,.9)}
+/* anúncios de exemplo, no formato do Instagram */
+.feed{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:900px}
+.ad{background:var(--s1);border:1px solid var(--ln);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.ad-top{display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13px}
+.ad-top i{width:26px;height:26px;border-radius:50%;background:var(--grad);flex:none}
+.ad-top b{display:block;font-size:13px;line-height:1.2}
+.ad-top small{font-size:11px;color:var(--mu)}
+.ad-img{position:relative}
+.ad-img img,.ad-img video{display:block;width:100%;aspect-ratio:9/16;object-fit:cover;background:var(--s3)}
+.ad-img p{position:absolute;left:0;right:0;bottom:0;padding:40px 14px 14px;background:linear-gradient(transparent,rgba(10,6,20,.82));color:#fff;font-family:var(--f-dis);font-size:15px;font-weight:700;line-height:1.2;text-wrap:balance}
+.ad-img p span{display:block;font-family:var(--f-tx);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#e9d5ff;margin-bottom:4px}
+.ad-cta{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;font-size:13px;font-weight:700;border-top:1px solid var(--ln)}
+.ad-cta em{font-style:normal;color:var(--mu);font-weight:600}
+.envio .m img{aspect-ratio:1;margin:0}
+.fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px}
+.fotos3 img{border-radius:6px;aspect-ratio:1;object-fit:cover;width:100%}
+.video{display:flex;align-items:center;gap:8px;font-weight:700}
+.video i{width:34px;height:34px;border-radius:8px;background:var(--wa-top);display:flex;align-items:center;justify-content:center;font-style:normal}
+
+/* conhece a maia */
+.ela{display:grid;grid-template-columns:.8fr 1.2fr;gap:56px;align-items:center}
+.retrato{position:relative;max-width:420px}
+.retrato img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:32px}
+.retrato .selo{position:absolute;left:16px;bottom:16px;display:flex;align-items:center;gap:8px;background:var(--s1);color:var(--tx);border-radius:999px;padding:8px 14px;font-size:14px;font-weight:700;box-shadow:0 10px 24px rgba(0,0,0,.18)}
+.retrato .selo i{width:9px;height:9px;border-radius:50%;background:var(--verde);box-shadow:0 0 0 4px var(--verde-bg)}
+.tracos{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:28px}
+.tracos div{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:18px;min-width:0}
+.tracos b{display:block;font-size:17px;margin-bottom:4px}
+.tracos span{font-size:15px;color:var(--mu)}
+
+/* passos (08/11, pedido do Guto: mais vida, mais imagem, mais cor). Cada passo é uma faixa de cor clara com a Maia trabalhando,
+   um número grande e uma prova visual (peças reais de clientes, celular com conversa, números grandes). */
+.como-sec{background:linear-gradient(180deg,var(--bg),#fff 18%,#fff 82%,var(--bg))}
+.passos{display:flex;flex-direction:column;gap:28px}
+.passo{position:relative;display:grid;grid-template-columns:1fr 1.05fr;gap:52px;align-items:center;border-radius:36px;padding:52px 48px;background:var(--ac-bg)}
+.passo.p2{background:var(--la-bg)}.passo.p3{background:var(--menta-bg)}.passo.p4{background:var(--azul-bg)}
+.passo:nth-child(even) .txt{order:2}
+.passo .num{font-family:var(--f-dis);font-weight:800;font-size:clamp(64px,9vw,108px);line-height:.85;letter-spacing:-.05em;color:var(--ac);display:block}
+.passo.p2 .num{color:var(--la)}.passo.p3 .num{color:var(--verde)}.passo.p4 .num{color:var(--anil)}
+.passo .n{display:inline-block;margin-top:16px;font-size:12px;font-weight:800;letter-spacing:.14em;color:var(--tx);background:rgba(255,255,255,.8);border-radius:999px;padding:5px 12px}
+.passo h3{font-size:clamp(26px,3.4vw,38px);margin:12px 0}
+.passo p{color:#423a5c;max-width:44ch}
+.passo ul{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:18px}
+.passo li{display:flex;gap:10px;font-size:15px;color:#423a5c;font-weight:600}
+.passo li::before{content:"✓";flex:none;width:22px;height:22px;border-radius:50%;background:#fff;color:var(--ac);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.passo.p2 li::before{color:var(--la-tx)}.passo.p3 li::before{color:var(--verde)}.passo.p4 li::before{color:var(--anil)}
+.vis{position:relative;min-width:0}
+.foto-p{position:relative;border-radius:28px;overflow:hidden;box-shadow:0 30px 60px -30px rgba(27,21,48,.45);background:var(--s3)}
+.foto-p img{width:100%;aspect-ratio:4/5;object-fit:cover}
+.vis .chip,.polegar .chip{position:absolute;display:flex;align-items:center;gap:8px;background:#fff;color:var(--tx);border-radius:999px;padding:8px 14px;font-size:13px;font-weight:700;box-shadow:0 12px 28px rgba(27,21,48,.16);white-space:nowrap;z-index:3}
+.vis .chip i,.polegar .chip i{width:8px;height:8px;border-radius:50%;background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.18)}
+/* celular pequeno sobre a foto */
+.cel-p{position:absolute;z-index:2;width:min(240px,60%);border-radius:28px;padding:6px;background:#0b0a10;box-shadow:0 30px 60px -20px rgba(23,18,31,.5)}
+.cel-p .tela{border-radius:23px}
+.cel-p .msgs{min-height:0;padding:10px 9px 12px;font-size:12.5px;gap:5px}
+.cel-p .wtop,.v2 .wtop{padding:9px 11px}.cel-p .wtop img,.v2 .wtop img{width:30px;height:30px}.cel-p .wtop b,.v2 .wtop b{font-size:13px}.cel-p .wtop span,.v2 .wtop span{font-size:11px}
+.cel-p .m,.v2 .m{animation:none}
+.rotulo{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--verde);background:var(--verde-bg);border-radius:10px;padding:7px 9px;margin-top:2px}
+.fotos3{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-bottom:6px}
+.fotos3 img{border-radius:6px;aspect-ratio:1;object-fit:cover;width:100%}
+.video{display:flex;align-items:center;gap:8px;font-weight:700}
+.video i{width:28px;height:28px;border-radius:8px;background:var(--wa-top);display:flex;align-items:center;justify-content:center;font-style:normal;font-size:11px}
+/* 1 · cria: a Maia, o celular com o material bruto do dono e as peças reais que saíram assim */
+.v1 .cima{position:relative;padding-left:30%}
+.v1 .cel-p{left:0;bottom:-24px}
+.v1 .chip{right:14px;top:14px}
+.pecas{position:relative;background:#fff;border-radius:22px;padding:14px;box-shadow:0 14px 30px -18px rgba(27,21,48,.3);margin-top:40px}
+.pecas p{font-size:13px;font-weight:700;color:var(--mu);margin-bottom:10px}
+.pecas div{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pecas img{width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:12px}
+/* 2 · atende: o celular com a conversa (valor antes do preço) e a Maia atrás */
+.v2{position:relative;padding-right:32%}
+.v2 .foto-p{position:absolute;right:0;top:28px;width:48%}
+.v2 .foto-p{overflow:visible}
+.v2 .foto-p img{aspect-ratio:3/4;border-radius:28px}
+.v2 .cel{position:relative;z-index:2;width:min(330px,100%);margin:0;border-radius:34px;padding:8px;box-shadow:0 30px 60px -20px rgba(23,18,31,.45)}
+.v2 .tela{border-radius:27px}
+.v2 .msgs{min-height:0;font-size:13.5px;padding:12px 10px 14px}
+.v2 .chip.t{right:10px;top:10px}
+.v2 .chip.h{right:10px;bottom:12px;background:var(--la-tx);color:#fff}
+.v2 .chip.h i{background:#fff;box-shadow:0 0 0 4px rgba(255,255,255,.25)}
+/* 3 · mede: números grandes, as vendas por anúncio e a Maia */
+.v3{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.v3 .foto-p img{height:100%;aspect-ratio:auto}
+.placar{display:flex;flex-direction:column;gap:10px;min-width:0}
+.grande{background:#fff;border-radius:22px;padding:16px 18px;box-shadow:0 14px 30px -20px rgba(27,21,48,.3)}
+.grande b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(34px,4.4vw,50px);line-height:1;letter-spacing:-.04em;font-variant-numeric:tabular-nums}
+.grande span{display:block;margin-top:4px;font-size:13px;font-weight:700;color:var(--mu)}
+.grande.verde b{color:var(--verde)}.grande.roxo b{color:var(--ac)}.grande.lj b{color:var(--la-tx)}
+.barras{grid-column:1/-1;display:flex;flex-direction:column;gap:9px;background:#fff;border-radius:22px;padding:16px 18px;box-shadow:0 14px 30px -20px rgba(27,21,48,.3)}
+.barras p{font-size:13px;font-weight:700;color:var(--mu)}
+.barra{display:grid;grid-template-columns:110px 1fr 70px;gap:10px;align-items:center;font-size:13px;color:var(--mu)}
+.barra i{display:block;height:10px;border-radius:6px;background:linear-gradient(90deg,#4ade80,#15803d)}
+.barra b{color:var(--tx);text-align:right;font-variant-numeric:tabular-nums}
+/* 4 · melhora: a Maia ajustando a campanha e as decisões dela */
+.v4{position:relative;padding-left:24%;padding-bottom:20px}
+.v4 .decisoes{position:absolute;left:0;bottom:0;width:min(320px,80%);display:flex;flex-direction:column;gap:8px;z-index:2}
+.decisoes div{display:flex;gap:10px;align-items:flex-start;background:#fff;border-radius:16px;padding:11px 13px;font-size:13px;color:var(--mu);box-shadow:0 14px 30px -14px rgba(27,21,48,.35)}
+.decisoes b{display:block;color:var(--tx);font-size:14px}
+.decisoes em{flex:none;font-style:normal;font-weight:800;font-size:11px;border-radius:8px;padding:3px 8px;margin-top:2px}
+.e-pausa{background:var(--s3);color:var(--mu)}
+.e-mais{background:var(--verde-bg);color:var(--verde)}
+.e-novo{background:var(--la-bg);color:var(--la-tx)}
+.v4 .chip{right:14px;top:14px}
+/* faixa de números grandes depois dos passos */
+.faixa-num{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:28px}
+.faixa-num div{background:#fff;border:1px solid var(--ln);border-radius:24px;padding:22px;min-width:0}
+.faixa-num b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(34px,4.4vw,50px);line-height:1;letter-spacing:-.04em}
+.faixa-num span{display:block;margin-top:8px;font-size:14px;color:var(--mu);font-weight:600}
+.faixa-num div:nth-child(1) b{color:var(--ac)}.faixa-num div:nth-child(2) b{color:var(--la-tx)}.faixa-num div:nth-child(3) b{color:var(--verde)}.faixa-num div:nth-child(4) b{color:var(--anil)}
+
+/* joinha */
+.joinha-sec{background:linear-gradient(135deg,#fff4ea 0%,#f4eeff 100%)}
+.joinha-sec .grade{display:grid;grid-template-columns:.85fr 1.15fr;gap:52px;align-items:center}
+/* 08/11 (noite): a Maia fazendo joinha atrás e o celular com a aprovação na frente (as duas na mesma célula da grade) */
+.polegar{position:relative;max-width:500px;width:100%;display:grid}
+.polegar>.foto-p,.polegar>.cel{grid-area:1/1}
+.polegar>.foto-p{width:74%;align-self:start;justify-self:start}
+.polegar>.foto-p img{aspect-ratio:4/5}
+.polegar>.cel{position:relative;justify-self:end;align-self:end;width:min(250px,54%);margin:64px 0 0}
+.polegar .m img.ad{aspect-ratio:4/5;object-fit:cover}
+.fotos3.f2{grid-template-columns:repeat(2,1fr)}
+.polegar .m.num b{font-size:16px;line-height:1.25;margin:2px 0}
+.olho-wa{display:inline-flex;align-items:center;gap:8px}
+.olho-wa svg{width:18px;height:18px;color:#1fa855}
+/* 08/11: o joinha grande fica no canto de baixo da foto (antes cobria a última mensagem do celular) */
+.polegar .bolha{position:relative;grid-area:1/1;align-self:start;justify-self:start;margin:calc(92.5% - 60px) 0 0 -14px;z-index:4;width:92px;height:92px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:46px;box-shadow:0 18px 40px -12px rgba(234,88,12,.5)}
+.polegar .chip{left:14px;top:14px}
+.rotina{display:grid;grid-template-columns:1fr;gap:12px}
+.rotina>div{display:grid;grid-template-columns:56px 1fr;column-gap:16px;align-items:center;background:#fff;border-radius:22px;padding:18px 20px;min-width:0;box-shadow:0 14px 30px -22px rgba(27,21,48,.35)}
+.rotina .ic{grid-row:1/span 3;width:56px;height:56px;border-radius:18px;display:flex;align-items:center;justify-content:center;background:var(--ac-bg);color:var(--ac)}
+.rotina>div:nth-child(2) .ic{background:var(--la-bg);color:var(--la-tx)}.rotina>div:nth-child(3) .ic{background:var(--menta-bg);color:var(--verde)}.rotina>div:nth-child(4) .ic{background:var(--azul-bg);color:var(--anil)}
+.rotina .ic svg{width:26px;height:26px}
+.rotina .q{font-size:12px;font-weight:800;letter-spacing:.12em;color:var(--mu)}
+.rotina b{display:block;font-size:19px;line-height:1.25}
+.rotina .d{color:var(--mu);font-size:15px}
+
+/* comparação */
+.versus{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:center;margin-bottom:22px}
+.versus>div:not(.vs){background:var(--s1);border:1px solid var(--ln);border-radius:26px;padding:24px 26px;min-width:0}
+.versus span{font-size:13px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.versus b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(38px,5.4vw,60px);line-height:1;letter-spacing:-.04em;margin:8px 0 6px;color:var(--mu);font-variant-numeric:tabular-nums}
+.versus b small{font-family:var(--f-tx);font-size:16px;font-weight:700;letter-spacing:0}
+.versus em{font-style:normal;font-size:14px;color:var(--mu)}
+.versus .maia{background:linear-gradient(140deg,#f4eeff,#fff4ea)!important;border:2px solid var(--ac-line)!important}
+.versus .maia span{color:var(--ac)}.versus .maia b{color:var(--ac2)}
+.versus .vs{width:52px;height:52px;border-radius:50%;background:var(--la-bg);color:var(--la-tx);font-family:var(--f-tx);font-weight:800;font-size:28px;display:flex;align-items:center;justify-content:center}
+.tabela{overflow-x:auto;border:1px solid var(--ln);border-radius:24px;background:var(--s1)}
+table{width:100%;border-collapse:collapse;min-width:640px}
+th,td{padding:16px 20px;text-align:left;border-bottom:1px solid var(--ln);font-size:15px;vertical-align:top}
+thead th{font-size:13px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--mu)}
+thead th.maia{color:var(--ac)}
+tbody th{font-weight:600;color:var(--mu)}
+td.maia{background:color-mix(in srgb,var(--ac2) 9%,transparent);font-weight:700}
+tr:last-child td,tr:last-child th{border-bottom:0}
+.nota{font-size:13px;color:var(--mu);margin-top:12px}
+
+/* preço: um plano só (08/11) */
+.plano.unico{max-width:860px;display:grid;grid-template-columns:.9fr 1.1fr;gap:34px;align-items:start;border:2px solid var(--ac2);background:linear-gradient(160deg,#f4eeff,#fff 60%);padding:36px;box-shadow:0 30px 70px -40px rgba(76,29,149,.45)}
+.plano.unico .lado{display:flex;flex-direction:column;gap:12px;min-width:0}
+.plano.unico h3{font-size:26px}
+.plano.unico .v{font-size:60px;font-weight:800;letter-spacing:-.04em}
+.plano.unico .so{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:#423a5c;margin-top:4px}
+.plano.unico .so svg{flex:none;width:22px;height:22px;color:#1fa855;margin-top:1px}
+.plano.unico .btn{margin-top:6px;align-self:flex-start;font-size:16px;min-height:52px;padding:0 22px}
+.plano.unico ul{gap:12px;background:#fff;border:1px solid var(--ln);border-radius:22px;padding:22px 22px}
+.plano.unico li{font-size:16px;font-weight:600}
+.plano{background:var(--s1);border:1px solid var(--ln);border-radius:28px;padding:30px;display:flex;flex-direction:column;gap:14px}
+.plano .tag{align-self:flex-start;font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#fff;background:var(--grad);border-radius:999px;padding:4px 12px}
+.plano h3{font-size:22px}
+.plano .v{font-family:var(--f-dis);font-size:44px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.plano .v small{font-family:var(--f-tx);font-size:16px;color:var(--mu);font-weight:600}
+.plano ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.plano li{display:flex;gap:10px;font-size:15px}
+.plano li svg{flex:none;width:18px;height:18px;color:var(--verde);margin-top:3px}
+.adesao{max-width:860px;margin-top:18px;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center;background:var(--verde-bg);border-radius:18px;padding:16px 20px;font-size:15px}
+.adesao b{font-size:17px}
+.adesao s{color:var(--mu)}
+.verba{max-width:860px;font-size:14px;color:var(--mu);margin-top:12px}
+
+/* perguntas */
+.faq{display:flex;flex-direction:column;gap:10px;max-width:820px}
+details{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:0 20px}
+summary{cursor:pointer;list-style:none;padding:18px 0;font-weight:700;font-size:17px;display:flex;justify-content:space-between;gap:12px}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font-family:var(--f-dis);color:var(--ac)}
+details[open] summary::after{content:"−"}
+summary:focus-visible{outline:3px solid var(--ac);outline-offset:3px;border-radius:8px}
+details p{color:var(--mu);padding-bottom:18px;max-width:62ch}
+
+/* fim */
+.fim{text-align:center}
+
+.fim .lead{margin:16px auto 28px}
+.fim .acao{align-items:center}
+.numero{display:inline-flex;align-items:center;gap:10px;font-size:15px;color:var(--mu);margin-top:6px}
+.numero b{color:var(--tx);user-select:all}
+.numero button{font:inherit;font-size:13px;font-weight:700;color:var(--ac);background:transparent;border:1px solid var(--ln);border-radius:999px;padding:4px 12px;cursor:pointer}
+footer{padding-block:28px 40px;text-align:center;font-size:13px;color:var(--mu);border-top:1px solid var(--ln)}
+
+
+/* 12/11: joinha sem emoji (ícone de traço) */
+.joia-ic{width:30px;height:30px;color:#1fa855;display:block}
+.m.joia{font-size:14px;line-height:1}
+.polegar .bolha .joia-ic{width:44px;height:44px;color:var(--la)}
+/* 12/11: implantação presencial */
+.impl{background:var(--s1);border-block:1px solid var(--ln)}
+.impl-rot{display:block;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac)}
+.fatos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.fatos div{background:var(--bg);border:1px solid var(--ln);border-radius:24px;padding:24px 26px;min-width:0}
+.fatos b{display:block;font-family:var(--f-dis);font-weight:800;font-size:clamp(34px,4.4vw,50px);line-height:1;letter-spacing:-.04em;color:var(--ac2)}
+.fatos span{display:block;margin-top:8px;font-size:16px;color:var(--mu);font-weight:600}
+.fatos .no-ar{background:var(--verde-bg);border-color:#bbf0cc}.fatos .no-ar b{color:var(--verde)}
+.papeis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin-top:20px}
+.papel{position:relative;background:var(--bg);border:1px solid var(--ln);border-radius:22px;padding:22px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.papel b{font-size:19px;line-height:1.25}
+.papel>span:last-child{font-size:15px;color:var(--mu)}
+.papel.maia-p{background:var(--ac-bg);border-color:var(--ac-line)}
+.papel.maia-p img{position:absolute;right:18px;top:18px;width:44px;height:44px;border-radius:50%;object-fit:cover}
+.impl-preco{margin-top:22px;font-size:17px;color:var(--mu)}
+.impl-preco b{color:var(--tx);font-family:var(--f-dis);font-size:22px}
+/* a implantação no bloco do preço */
+.adesao{justify-content:space-between}
+.adesao-t{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1 1 320px}
+.adesao-v{font-family:var(--f-dis);font-size:28px!important;white-space:nowrap}
+.adesao-v small{font-family:var(--f-tx);font-size:14px;font-weight:600;color:var(--mu)}
+@media (max-width:920px){.papeis{grid-template-columns:1fr}}
+@media (max-width:600px){.fatos{grid-template-columns:1fr}}
+
+@media (max-width:920px){
+  .abre .ct,.ela{grid-template-columns:1fr;gap:40px}
+  .cenas{grid-template-columns:repeat(5,minmax(150px,1fr));overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:6px;scrollbar-width:none}
+  .cenas figure{scroll-snap-align:start}
+  .vitrine{max-width:520px;margin:0 auto}
+  .vitrine .cel{left:-12px}
+  .passo{grid-template-columns:1fr;gap:40px;padding:36px 28px 40px}
+  .passo:nth-child(even) .txt{order:0}
+  .vis{max-width:560px;width:100%;margin:0 auto}
+  .faixa-num{grid-template-columns:1fr 1fr}
+  .joinha-sec .grade{grid-template-columns:1fr;gap:40px}
+  .polegar{margin:0 auto}
+  .ads,.feed{grid-template-columns:1fr 1fr}
+  .time{grid-template-columns:1fr 1fr}
+  .rotina{grid-template-columns:1fr}
+  .topo nav{display:none}
+  .topo .ct{justify-content:space-between}
+  .retrato{max-width:340px}
+}
+@media (max-width:600px){
+  section{padding-block:56px}
+  .vitrine{padding-bottom:0}
+  .vitrine .foto-h{width:100%}
+  .vitrine .foto-h img{aspect-ratio:1}
+  .vitrine{min-height:0}
+  .vitrine .cel{position:relative;left:auto;top:auto;width:86%;margin:-150px 0 0 auto}
+  .vitrine .exemplo{position:static;width:auto;text-align:right}
+  .duo{max-width:400px}
+  .tracos{grid-template-columns:1fr}
+  .plano.unico{grid-template-columns:1fr;padding:26px 20px;gap:22px}
+  .plano.unico .v{font-size:52px}
+  .plano.unico .btn{align-self:stretch}
+  .so-wa{border-radius:18px}
+  .funil b{font-size:21px}
+  .barra{grid-template-columns:92px 1fr 64px}
+  .passo{padding:28px 18px 32px;border-radius:28px}
+  .passo .num{font-size:64px}
+  .v1 .cima{padding-left:0}
+  .v1 .foto-p{width:76%;margin-left:auto}
+  .v1 .foto-p img{aspect-ratio:1}
+  .v1 .cel-p{position:relative;left:auto;bottom:auto;width:64%;margin-top:-105px}
+  .pecas{margin-top:18px}
+  .pecas div{grid-template-columns:repeat(4,1fr);gap:6px}
+  .v2{padding-right:0;padding-top:0}
+  .v2 .foto-p{position:relative;top:auto;width:62%;margin:0 0 -150px auto}
+  .v2 .cel{width:86%}
+  .v2 .chip{font-size:11px;padding:6px 10px;gap:6px}
+  .v2 .chip.t{right:calc(100% - 40px);top:18px}
+  .v2 .chip.h{right:calc(100% - 40px);bottom:auto;top:56px}
+  .v1 .chip{right:auto;left:0;top:12px}
+  .v3{grid-template-columns:1fr 1fr;gap:10px}
+  .grande{padding:12px 14px}
+  .grande b{font-size:30px}
+  .v4{padding-left:12%;padding-bottom:150px}
+  .v4 .decisoes{width:92%}
+  .vis .chip{font-size:12px;padding:7px 12px}
+  .versus{grid-template-columns:1fr}
+  .versus .vs{margin:-6px auto}
+  .faixa-num div{padding:18px}
+  .rotina>div{grid-template-columns:48px 1fr;padding:16px}
+  .rotina .ic{width:48px;height:48px;border-radius:14px}
+  .topo .btn span{display:none}
+  .msgs{min-height:0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="topo">
+  <div class="ct">
+    <a class="marca" href="#inicio"><img class="av" src="/maia/img/maia-avatar.webp" alt="" width="36" height="36">maia</a>
+    <nav aria-label="Seções"><a href="#time">O que ela faz</a><a href="#como">Como trabalha</a><a href="#implantacao">Implantação</a><a href="#conta">A conta</a><a href="#planos">Preço</a><a href="#perguntas">Perguntas</a></nav>
+    <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><span>Conversar no WhatsApp</span></a>
+  </div>
+</header>
+
+<main id="inicio">
+<section class="abre">
+  <div class="ct">
+    <div>
+      <div class="cargo"><img class="av" src="/maia/img/maia-avatar.webp" alt="Rosto da Maia" width="56" height="56"><div><b>Maia</b><span>IA de marketing e atendimento pra negócios locais</span></div></div>
+      <h1>Contrata a Maia: <span class="grad">o teu time de marketing inteiro</span>, numa IA.</h1>
+      <p class="lead">Estrategista, designer, editora de vídeo, social media, gestora de tráfego, vendedora e analista de resultados. <b style="color:var(--tx)">Tu manda fotos e vídeos curtos do celular.</b> Ela faz o resto e te responde na hora. <b style="color:var(--tx)">Começa com 3 horas presenciais na escola, com um especialista.</b></p>
+      <p class="so-wa"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><span><b>Tudo pelo WhatsApp.</b> Sem aplicativo novo e sem sistema pra aprender.</span></p>
+      <div class="acao">
+        <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Conversar no WhatsApp</a>
+        <span class="calma">Implantação presencial · Preço fixo · Sem fidelidade</span>
+      </div>
+    </div>
+    <div class="vitrine">
+      <figure class="foto-h"><img src="/maia/img/maia-rosto.webp" alt="A Maia, a IA de marketing" width="720" height="720" fetchpriority="high"><span class="on"><i></i>Maia · online agora</span></figure>
+      <div class="cel">
+        <div class="tela">
+          <div class="wtop"><img class="av" src="/maia/img/maia-avatar.webp" alt="" width="38" height="38"><div><b>Maia</b><span>IA do teu marketing · online</span></div></div>
+          <div class="msgs">
+            <span class="dia">DIA 25</span>
+            <div class="m">Rafa, os anúncios de dezembro tão prontos.<small>09:00</small></div>
+            <div class="m"><img src="/maia/vid/wood.jpg" alt="Anúncio pronto pra aprovar" loading="lazy">Presente de Natal com a foto da família. Me dá um joinha que eu coloco no ar.<small>09:00</small></div>
+            <div class="m eu joia"><svg class="joia-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="joinha"><path d="M7 10v12"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.4 22H7V10l4-8a3 3 0 0 1 4 3.9Z"/></svg><small>09:12</small></div>
+            <div class="m">No ar. Te aviso quando chegar cliente.<small>09:13</small></div>
+            <span class="dia">SEGUNDA</span>
+            <div class="m num">Fechamento da semana<b>37 conversas · 6 vendas</b>Cada venda custou R$ 28. Todas as conversas respondidas.<small>08:00</small></div>
+          </div>
+        </div>
+      </div>
+      <p class="exemplo">Conversa de exemplo.</p>
+    </div>
+  </div>
+</section>
+
+<section id="time">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">O que ela faz</p>
+      <h2>Sete profissionais numa IA só.</h2>
+      <p class="lead">Tudo que uma agência de marketing faz, mais a vendedora que atende o teu cliente. E ela te responde no WhatsApp na hora.</p>
+    </div>
+    <div class="cenas" role="list" aria-label="A Maia trabalhando">
+      <figure role="listitem"><img src="/maia/img/maia-estrategista.webp" alt="A Maia planejando a estratégia num quadro de post-its" width="640" height="640" loading="lazy"><figcaption>Estrategista</figcaption></figure>
+      <figure role="listitem"><img src="/maia/img/maia-trafego.webp" alt="A Maia cuidando das campanhas no computador" width="640" height="640" loading="lazy"><figcaption>Gestora de tráfego</figcaption></figure>
+      <figure role="listitem"><img src="/maia/img/maia-editora.webp" alt="A Maia editando um vídeo" width="640" height="640" loading="lazy"><figcaption>Editora de vídeo</figcaption></figure>
+      <figure role="listitem"><img src="/maia/img/maia-vendedora.webp" alt="A Maia atendendo clientes pelo WhatsApp no celular" width="640" height="640" loading="lazy"><figcaption>Vendedora</figcaption></figure>
+      <figure role="listitem"><img src="/maia/img/maia-analista.webp" alt="A Maia mostrando os gráficos dos resultados" width="640" height="640" loading="lazy"><figcaption>Analista</figcaption></figure>
+    </div>
+    <div class="time">
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg><b>Estrategista digital</b><span>Entende o teu negócio e o teu público e decide o que anunciar, pra quem e quando.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><circle cx="11" cy="11" r="2"/></svg><b>Designer</b><span>Transforma as tuas fotos em artes de anúncio no padrão da tua marca.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="14" height="14" rx="2"/><path d="M16 10l6-4v12l-6-4z"/></svg><b>Editora de vídeo</b><span>Corta, legenda e põe trilha e a tua marca nos vídeos que tu grava no celular.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".5"/></svg><b>Social media</b><span>Escreve as legendas e monta os posts e os vídeos do teu Instagram.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11l18-5v12L3 14v-3z"/><path d="M11.6 16.8a3 3 0 1 1-5.8-1.6"/></svg><b>Gestora de tráfego</b><span>Sobe as campanhas no Facebook e no Instagram e cuida da tua verba todo dia.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h8M8 13h5"/></svg><b>Vendedora</b><span>Atende cada cliente no teu WhatsApp, a qualquer hora, e leva até a venda.</span></div>
+      <div class="cargo-c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg><b>Analista de resultados</b><span>Conta cada conversa e cada venda e te diz quanto custou cada cliente.</span></div>
+      <div class="cargo-c dono"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg><b>E a tua assistente no WhatsApp</b><span>Pergunta o que quiser, a qualquer hora. Ela responde na hora, sem demorar e sem reclamar.</span></div>
+    </div>
+  </div>
+</section>
+
+<section class="prova">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">Pra qualquer negócio local</p>
+      <h2>Anúncios que já estão rodando.</h2>
+      <p class="lead">Brindes, seguros, embalagens, ótica, escolinha de esporte e cursos. Feitos com os vídeos e as fotos que os próprios donos gravaram no celular.</p>
+    </div>
+    <div class="feed">
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Wood · Segatto</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><video src="/maia/vid/wood.mp4" poster="/maia/vid/wood.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Anúncio em vídeo: Wood · Segatto"></video></div>
+        <div class="ad-cta">Vídeo<em>Brindes personalizados</em></div>
+      </article>
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Gaja Corretora</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><video src="/maia/vid/gaja.mp4" poster="/maia/vid/gaja.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Anúncio em vídeo: Gaja Corretora"></video></div>
+        <div class="ad-cta">Vídeo<em>Seguros</em></div>
+      </article>
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Mundo do Papelão</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><video src="/maia/vid/papelao.mp4" poster="/maia/vid/papelao.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Anúncio em vídeo: Mundo do Papelão"></video></div>
+        <div class="ad-cta">Vídeo<em>Embalagens</em></div>
+      </article>
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Ótica Tempo de Visão</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><video src="/maia/vid/otica.mp4" poster="/maia/vid/otica.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Anúncio em vídeo: Ótica Tempo de Visão"></video></div>
+        <div class="ad-cta">Vídeo<em>Ótica · Gravataí</em></div>
+      </article>
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Basquete Matilha</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><img src="/maia/vid/matilha.jpg" alt="Anúncio: Basquete Matilha"></div>
+        <div class="ad-cta">Imagem<em>Escolinha de esporte · Estrela</em></div>
+      </article>
+      <article class="ad">
+        <div class="ad-top"><i></i><div><b>Tizon Academy</b><small>Patrocinado</small></div></div>
+        <div class="ad-img"><video src="/maia/vid/tizon.mp4" poster="/maia/vid/tizon.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Anúncio em vídeo: Tizon Academy"></video></div>
+        <div class="ad-cta">Vídeo<em>Cursos online</em></div>
+      </article>
+    </div>
+    <p class="nota">Anúncios reais de clientes da Carreira no Digital.</p>
+  </div>
+</section>
+
+<section>
+  <div class="ct ela">
+    <div class="duo"><div class="a"><img src="/maia/img/maia-escritorio.webp" alt="A Maia no escritório, acenando com uma xícara de café na mão" width="720" height="900" loading="lazy"></div><span class="selo"><i></i>Maia · trabalhando agora</span></div>
+    <div>
+      <p class="olho">Prazer, Maia</p>
+      <h2 style="margin-top:12px">A colega de trabalho que cuida das tuas vendas.</h2>
+      <p class="lead" style="margin-top:16px">Esperta, focada em resultado, séria com o teu dinheiro e divertida na hora certa. Ela aprende o teu negócio, fala do teu jeito e te manda tudo pelo WhatsApp. Tu pode mandar áudio: ela entende e te responde por escrito.</p>
+      <div class="tracos">
+        <div><b>Diz que é uma IA</b><span>Com o teu cliente ela é sempre clara: é a assistente virtual do teu negócio.</span></div>
+        <div><b>Passa pra ti na hora certa</b><span>Cliente pronto pra fechar ou querendo falar com gente: ela te chama.</span></div>
+        <div><b>Não inventa</b><span>Fala só o que tu ensinou: preço, horário, prazo, como funciona.</span></div>
+        <div><b>Trabalha de madrugada</b><span>Responde em segundos, até às 23h de um domingo.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="como" class="como-sec">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">Como a Maia trabalha</p>
+      <h2>Ela faz o trabalho. <span class="grad">Tu vê a venda.</span></h2>
+      <p class="lead">Quatro passos, e tu não sai do WhatsApp em nenhum deles. Tu manda o material, ela cria, atende, conta e melhora.</p>
+    </div>
+    <div class="passos">
+      <article class="passo p1">
+        <div class="txt">
+          <span class="num">01</span>
+          <span class="n">CRIA</span>
+          <h3>Tu manda fotos e vídeos curtos. Ela faz os anúncios.</h3>
+          <p>Do celular mesmo, pelo WhatsApp: o produto, o serviço, o antes e depois, um vídeo de 15 segundos. Ela escolhe o que funciona, edita, escreve e coloca no ar no Facebook e no Instagram.</p>
+          <ul><li>No padrão da tua marca, com as tuas fotos</li><li>Vídeo com corte, legenda e a tua marca</li><li>O texto falando com quem compra de ti</li></ul>
+        </div>
+        <div class="vis v1">
+          <div class="cima">
+            <figure class="foto-p"><img src="/maia/img/maia-passo-cria.webp" alt="A Maia editando o vídeo de um cliente no computador" width="560" height="700" loading="lazy"></figure>
+            <span class="chip"><i></i>Editando o teu vídeo</span>
+            <div class="cel-p"><div class="tela">
+              <div class="wtop"><img src="/maia/img/maia-avatar.webp" alt="" width="30" height="30"><div><b>Maia</b><span>online</span></div></div>
+              <div class="msgs chat">
+                <div class="m eu"><div class="fotos3"><img src="/maia/vid/bruto1.jpg" alt="" loading="lazy"><img src="/maia/vid/bruto2.jpg" alt="" loading="lazy"><img src="/maia/vid/bruto3.jpg" alt="" loading="lazy"></div>Fotos da semana<small>18:40</small></div>
+                <div class="m eu"><span class="video"><i>▶</i>Vídeo · 0:15</span><small>18:41</small></div>
+                <div class="m">Recebi! O vídeo ficou ótimo. Amanhã cedo te mando 3 anúncios pra aprovar.<small>18:41</small></div>
+              </div>
+            </div></div>
+          </div>
+          <div class="pecas">
+            <p>Anúncios reais que saíram assim, de fotos e vídeos de celular</p>
+            <div><img src="/maia/img/ad-otica-24x.jpg" alt="Anúncio real de uma ótica: óculos novos em até 24x" width="600" height="750" loading="lazy"><img src="/maia/img/ad-papelao.jpg" alt="Anúncio real de uma loja de embalagens" width="600" height="750" loading="lazy"><img src="/maia/vid/matilha.jpg" alt="Anúncio real de uma escolinha de basquete" loading="lazy"><img src="/maia/img/ad-otica-video.jpg" alt="Anúncio real em vídeo de uma ótica" width="600" height="750" loading="lazy"></div>
+          </div>
+        </div>
+      </article>
+      <article class="passo p2">
+        <div class="txt">
+          <span class="num">02</span>
+          <span class="n">ATENDE</span>
+          <h3>Cliente respondido em segundos.</h3>
+          <p>De dia e de madrugada, no teu número de WhatsApp de sempre. Primeiro ela mostra o que o cliente ganha, depois passa o preço. Tu continua vendo todas as conversas no teu celular.</p>
+          <ul><li>Explica o serviço e o resultado antes do preço</li><li>Responde preço, horário e como funciona</li><li>Volta em quem perguntou e sumiu</li></ul>
+        </div>
+        <div class="vis v2">
+          <figure class="foto-p"><img src="/maia/img/maia-passo-atende.webp" alt="A Maia respondendo um cliente pelo celular" width="560" height="700" loading="lazy"><span class="chip t"><i></i>Respondeu em segundos</span><span class="chip h"><i></i>23h14 de um domingo</span></figure>
+          <div class="cel"><div class="tela">
+            <div class="wtop"><img src="/maia/img/maia-avatar.webp" alt="" width="30" height="30"><div><b>Studio da Marta</b><span>assistente virtual · online</span></div></div>
+            <div class="msgs chat">
+              <span class="dia">DOMINGO</span>
+              <div class="m eu">Oi! Quanto é a limpeza de pele?<small>23:14</small></div>
+              <div class="m">Oi, Pedro! A nossa é a limpeza profunda, de 60 minutos: tira cravos e impurezas, hidrata e a pele sai lisinha e com viço no mesmo dia.<small>23:14</small></div>
+              <div class="m">O investimento é R$ 180, e dá pra fazer em 3x. Quer que eu veja um horário pra ti?<small>23:14</small></div>
+              <div class="m eu">Sábado de manhã tem?<small>23:15</small></div>
+              <span class="rotulo">Cliente pronto: passou pra Marta · sábado, 9h</span>
+            </div>
+          </div></div>
+        </div>
+      </article>
+      <article class="passo p3">
+        <div class="txt">
+          <span class="num">03</span>
+          <span class="n">MEDE</span>
+          <h3>Cada venda, contada.</h3>
+          <p>Quanto tu gastou, quantos compraram e de qual anúncio veio cada venda. Toda segunda, no teu WhatsApp.</p>
+          <ul><li>Sem painel pra abrir, sem relatório pra decifrar</li><li>Pergunta o que quiser, a qualquer hora</li></ul>
+        </div>
+        <div class="vis v3">
+          <figure class="foto-p"><img src="/maia/img/maia-passo-mede.webp" alt="A Maia mostrando os números da semana" width="560" height="700" loading="lazy"></figure>
+          <div class="placar">
+            <div class="grande roxo"><b>138</b><span>conversas no mês</span></div>
+            <div class="grande verde"><b>27</b><span>vendas contadas</span></div>
+            <div class="grande lj"><b>R$ 28</b><span>custou cada venda</span></div>
+          </div>
+          <div class="barras">
+            <p>De qual anúncio veio cada venda</p>
+            <div class="barra">Vídeo da pele<i style="width:100%"></i><b>16 vendas</b></div>
+            <div class="barra">Sobrancelha<i style="width:50%"></i><b>8 vendas</b></div>
+            <div class="barra">Vale-presente<i style="width:19%"></i><b>3 vendas</b></div>
+          </div>
+        </div>
+      </article>
+      <article class="passo p4">
+        <div class="txt">
+          <span class="num">04</span>
+          <span class="n">MELHORA</span>
+          <h3>Todo mês, melhor.</h3>
+          <p>Corta o que não vende e põe mais força no que vende: no conteúdo, nos anúncios e no atendimento. As mudanças grandes passam por ti e pelo especialista.</p>
+          <ul><li>Troca o anúncio que cansou o público</li><li>Põe a verba no que traz venda</li><li>Repete no conteúdo o que deu certo</li></ul>
+        </div>
+        <div class="vis v4">
+          <figure class="foto-p"><img src="/maia/img/maia-passo-melhora.webp" alt="A Maia ajustando as campanhas no computador" width="560" height="700" loading="lazy"></figure>
+          <span class="chip"><i></i>Cuidando da tua verba</span>
+          <div class="decisoes">
+            <div><em class="e-pausa">pausou</em><span><b>Foto da sobrancelha</b>Ficou caro: R$ 9 por conversa.</span></div>
+            <div><em class="e-mais">+ verba</em><span><b>Vídeo da limpeza de pele</b>Tu aprovou com um joinha.</span></div>
+            <div><em class="e-novo">novo</em><span><b>Anúncio de Natal</b>O público já tinha visto o antigo 4 vezes.</span></div>
+          </div>
+        </div>
+      </article>
+    </div>
+    <div class="faixa-num">
+      <div><b>24 h</b><span>atendendo, até domingo à noite</span></div>
+      <div><b>7 em 1</b><span>profissionais numa IA só</span></div>
+      <div><b>1 joinha</b><span>por mês pra aprovar os anúncios</span></div>
+      <div><b>R$ 997</b><span>por mês, tudo incluso, sem fidelidade</span></div>
+    </div>
+    <p class="nota">Conversas e números de exemplo.</p>
+  </div>
+</section>
+
+<section class="joinha-sec">
+  <div class="ct grade">
+    <div class="polegar">
+      <figure class="foto-p"><img src="/maia/img/maia-joinha.webp" alt="A Maia fazendo joinha no escritório" width="720" height="720" loading="lazy"><span class="chip"><i></i>Aprovou em 12 min</span></figure>
+      <div class="cel cel-p"><div class="tela">
+        <div class="wtop"><img src="/maia/img/maia-avatar.webp" alt="" width="30" height="30"><div><b>Maia</b><span>online</span></div></div>
+        <div class="msgs chat" style="min-height:0">
+          <div class="m eu"><div class="fotos3 f2"><img src="/maia/vid/bruto1.jpg" alt="" loading="lazy"><img src="/maia/vid/bruto3.jpg" alt="" loading="lazy"></div>Fotos da vitrine<small>18:40</small></div>
+          <div class="m"><img class="ad" src="/maia/img/ad-otica-24x.jpg" alt="O anúncio real que saiu dessas fotos" loading="lazy">Teu anúncio ficou pronto. Me dá um joinha que eu coloco no ar.<small>09:00</small></div>
+          <div class="m eu joia"><svg class="joia-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="joinha"><path d="M7 10v12"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.4 22H7V10l4-8a3 3 0 0 1 4 3.9Z"/></svg><small>09:12</small></div>
+          <span class="dia">SEGUNDA</span>
+          <div class="m num">Teus números da semana<b>41 conversas · 7 vendas</b>Cada venda custou R$ 26.<small>08:00</small></div>
+        </div>
+      </div></div>
+      <span class="bolha" aria-hidden="true"><svg class="joia-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="joinha"><path d="M7 10v12"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.4 22H7V10l4-8a3 3 0 0 1 4 3.9Z"/></svg></span>
+    </div>
+    <div>
+      <div class="cab">
+        <p class="olho olho-wa"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>A tua parte</p>
+        <h2>Tudo pelo WhatsApp. <span class="grad">Tu só dá um joinha.</span></h2>
+        <p class="lead">Manda as fotos, aprova o anúncio, recebe os números e pergunta o que quiser, na mesma conversa, no celular que já está no teu bolso. Depois da implantação, sem reunião e sem login.</p>
+      </div>
+      <div class="rotina">
+        <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg></span><span class="q">QUANDO TIVER NOVIDADE</span><b>Manda fotos e vídeos</b><span class="d">Do jeito que saem do celular. Ela edita e transforma em anúncio.</span></div>
+        <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 10v12"/><path d="M15 5.9 14 10h5.8a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.4 22H7V10l4-8a3 3 0 0 1 4 3.9Z"/></svg></span><span class="q">1 VEZ POR MÊS</span><b>Aprova os anúncios</b><span class="d">Ela manda os anúncios do mês. Tu responde com um joinha.</span></div>
+        <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg></span><span class="q">TODA SEGUNDA</span><b>Recebe os números</b><span class="d">Conversas, vendas e quanto custou cada venda, em três linhas.</span></div>
+        <div><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span><span class="q">QUANDO QUISER</span><b>Pergunta pra ela</b><span class="d">“Qual anúncio vende mais?” Ela responde na hora.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 12/11 (Guto): a implantação presencial. Especialista de verdade + a IA executando. Valor primeiro, o preço só no fim. -->
+<section id="implantacao" class="impl">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">Como começa</p>
+      <h2>Três horas com um especialista. <span class="grad">Depois, a Maia assume.</span></h2>
+      <p class="lead">Não é uma IA que tu configura sozinho. Na escola, um especialista da Carreira no Digital senta contigo, monta a estratégia e deixa tudo pronto. A Maia executa, com a aprovação dele e a tua.</p>
+    </div>
+
+    <div class="fatos">
+      <div><b>3 horas</b><span>presencial, na escola, com um especialista da Carreira no Digital</span></div>
+      <div class="no-ar"><b>Até 5 dias</b><span>pra Maia estar rodando no teu negócio</span></div>
+    </div>
+
+    <div class="papeis">
+      <div class="papel"><span class="impl-rot">Especialista</span><b>Pensa a estratégia e aprova.</b><span>Monta o começo contigo e aprova cada campanha que a Maia cria, dentro da mensalidade.</span></div>
+      <div class="papel maia-p"><img src="/maia/img/maia-avatar.webp" alt="" width="44" height="44" loading="lazy"><span class="impl-rot">Maia</span><b>Executa e mede tudo.</b><span>Conteúdo, anúncios e atendimento. Mostra o que vende e põe mais força nisso.</span></div>
+      <div class="papel"><span class="impl-rot">Tu</span><b>Decide.</b><span>Manda fotos e vídeos, dá o joinha e escolhe o caminho com os números na mão.</span></div>
+    </div>
+    <p class="impl-preco">Implantação presencial: <b>R$ 497</b>, uma vez só.</p>
+  </div>
+</section>
+
+<section id="conta">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">A conta</p>
+      <h2>Mais que uma agência e uma atendente juntas.</h2>
+      <p class="lead">Pra ter o que a Maia faz, o normal é pagar uma agência pro tráfego e o conteúdo e contratar uma atendente pro WhatsApp.</p>
+    </div>
+    <div class="versus">
+      <div><span>Agência + atendente</span><b>R$ 4.200<small>+/mês</small></b><em>horário comercial, sem fim de semana</em></div>
+      <div class="vs" aria-hidden="true">×</div>
+      <div class="maia"><span>Maia</span><b>R$ 997<small>/mês</small></b><em>24 horas, todos os dias, com tudo</em></div>
+    </div>
+    <div class="tabela">
+      <table>
+        <thead><tr><th></th><th>Agência de tráfego e conteúdo</th><th>Atendente</th><th class="maia">Maia</th></tr></thead>
+        <tbody>
+          <tr><th>O que faz</th><td>Anúncios e posts</td><td>Responde os clientes</td><td class="maia">Anúncios, posts, vídeos, atendimento e vendas contadas</td></tr>
+          <tr><th>Horas por semana</th><td>Horário comercial, segunda a sexta</td><td>44 horas</td><td class="maia">168 horas: todas</td></tr>
+          <tr><th>Fim de semana e feriado</th><td>Não trabalha</td><td>Só pagando hora extra</td><td class="maia">Trabalha</td></tr>
+          <tr><th>Cliente que chama às 22h</th><td>Não é com ela</td><td>Responde amanhã</td><td class="maia">Responde em segundos</td></tr>
+          <tr><th>Férias, atestado, troca de pessoa</th><td>Muda quem cuida da tua conta</td><td>Tem</td><td class="maia">Não tem</td></tr>
+          <tr><th>Quando tu pergunta algo</th><td>Responde no horário ou marca reunião</td><td>No horário dela</td><td class="maia">Na hora, no WhatsApp</td></tr>
+          <tr><th>Custo por mês</th><td>a partir de R$ 1.700</td><td>a partir de R$ 2.500</td><td class="maia">R$ 997, com tudo</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="nota">Juntas, agência e atendente passam de R$ 4.200 por mês: a Maia custa menos de um quarto disso. Valores de referência no RS, sem a verba do anúncio. Atendente com salário e encargos.</p>
+  </div>
+</section>
+
+<section id="planos" style="background:var(--s2)">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho">Preço</p>
+      <h2>Um plano só. Com tudo dentro.</h2>
+      <p class="lead">Preço fixo, sem fidelidade e sem letra miúda. A implantação na escola é paga uma vez só.</p>
+    </div>
+    <div class="plano unico">
+      <div class="lado">
+        <span class="tag">Plano único · tudo incluso</span>
+        <h3>A Maia inteira</h3>
+        <p class="v">R$ 997<small>/mês</small></p>
+        <p class="so"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg><span><b>Tu só usa o WhatsApp.</b> O resto fica com ela.</span></p>
+        <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener">Conversar no WhatsApp</a>
+      </div>
+      <ul>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Anúncios criados e no ar no Facebook e no Instagram</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Atendimento 24 h no teu WhatsApp</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>1.000 conversas por mês</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Vendas contadas toda semana</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Especialista aprovando as campanhas</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Melhora da campanha todo mês</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Social media: 8 posts e 4 vídeos do teu negócio por mês</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Análise do conteúdo todo mês</li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="m5 12 5 5 9-10"/></svg>Maia rodando em até 5 dias depois da implantação</li>
+      </ul>
+    </div>
+    <div class="adesao"><span class="adesao-t"><b>Implantação presencial na escola</b><span>3 horas com um especialista. A Maia rodando em até 5 dias.</span></span><b class="adesao-v">R$ 497<small> uma vez só</small></b></div>
+    <p class="verba">Passou das 1.000 conversas do mês? Pacote extra de R$ 99 a cada 100 ou R$ 249 a cada 300. A verba do anúncio (a partir de R$ 20 por dia) e a taxa do WhatsApp tu paga direto pra Meta, no teu cartão. A conta é tua.</p>
+  </div>
+</section>
+
+<section id="perguntas">
+  <div class="ct">
+    <div class="cab"><p class="olho">Perguntas</p><h2>O que todo mundo pergunta.</h2></div>
+    <div class="faq">
+      <details><summary>Serve pro meu tipo de negócio?</summary><p>Serve pra negócio local que vende pelo WhatsApp: salão, clínica, loja, restaurante, oficina, pet shop, academia, prestador de serviço. Na implantação, tu e o especialista ensinam o teu negócio pra ela: o que tu vende, por quanto e pra quem.</p></details>
+      <details><summary>Como é a implantação?</summary><p>São 3 horas, presencial, na escola, com um especialista da Carreira no Digital. Ele monta a estratégia contigo e deixa tudo pronto pra Maia. Custa R$ 497, uma vez só, e a Maia está rodando em até 5 dias.</p></details>
+      <details><summary>Por que não é só ligar uma IA?</summary><p>Porque a IA sozinha não conhece o teu negócio. Aqui um especialista de verdade monta a estratégia contigo, e a Maia executa com a aprovação dele e a tua. Com o tempo, os números mostram o que vende, e ela põe mais força nisso.</p></details>
+      <details><summary>Preciso entender de anúncio?</summary><p>Não. A Maia cria a campanha, o especialista aprova (está dentro da mensalidade) e tu dá um joinha pelo WhatsApp, uma vez por mês.</p></details>
+      <details><summary>Vou perder o meu número de WhatsApp?</summary><p>Não. Ela trabalha no teu número de sempre e tu continua vendo todas as conversas no teu celular.</p></details>
+      <details><summary>Quanto eu gasto além da mensalidade?</summary><p>A implantação, R$ 497, uma vez só. E a verba do anúncio, que tu define, e centavos de taxa do WhatsApp: esses dois vão direto no teu cartão, na Meta.</p></details>
+      <details><summary>Posso mandar áudio?</summary><p>Pode. Tu e os teus clientes podem mandar áudio. A Maia entende e responde por escrito.</p></details>
+      <details><summary>O meu cliente sabe que é uma IA?</summary><p>Sabe. Ela se apresenta como a assistente virtual do teu negócio. Quando o cliente quer falar com uma pessoa, ela te chama.</p></details>
+      <details><summary>Ela fala do meu jeito?</summary><p>Fala. Na implantação ela aprende o teu negócio: preços, horários, o que tu faz diferente e como tu gosta de falar com os clientes. E só responde o que tu ensinou.</p></details>
+      <details><summary>E se eu quiser cancelar?</summary><p>Tu avisa e pronto. Não tem fidelidade nem multa. A conta de anúncio e o WhatsApp são teus e continuam contigo.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="fim">
+  <div class="ct">
+    <img class="rosto" src="/maia/img/maia-tchau.webp" alt="A Maia acenando" width="160" height="160" loading="lazy">
+    <h2>Agenda a tua implantação.</h2>
+    <p class="lead">Chama a escola no WhatsApp e marca as 3 horas com o especialista, na escola. Em até 5 dias, a Maia está trabalhando pro teu negócio.</p>
+    <div class="acao">
+      <a class="btn" href="https://wa.me/5551995054548?text=Oi!%20Quero%20saber%20da%20Maia%20e%20da%20implanta%C3%A7%C3%A3o" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm0 18.2c-1.5 0-3-.4-4.3-1.2l-.3-.2-3 .8.8-2.9-.2-.3A8.2 8.2 0 1 1 12 20.2Zm4.5-6.1c-.2-.1-1.5-.7-1.7-.8-.2-.1-.4-.1-.6.1l-.8 1c-.1.2-.3.2-.5.1a6.7 6.7 0 0 1-3.3-2.9c-.2-.4.2-.4.7-1.3.1-.2 0-.3 0-.4l-.8-1.8c-.2-.5-.4-.4-.6-.4h-.5c-.2 0-.4.1-.7.3-.2.3-.9.9-.9 2.2s.9 2.5 1 2.7c.1.2 1.8 2.8 4.4 3.9 1.6.7 2.3.8 3.1.6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.2-1.2-.1-.1-.3-.2-.5-.3Z"/></svg>Conversar no WhatsApp</a>
+      <span class="calma">Implantação presencial · Preço fixo · Sem fidelidade</span>
+      <span class="numero">WhatsApp da escola <b id="num">(51) 99505-4548</b><button type="button" id="copiar">Copiar</button></span>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>Maia · uma IA da Carreira no Digital · RS<br>Conversas e números de exemplo. Anúncios de clientes reais da Carreira no Digital.</footer>
+
+
+<script>
+document.getElementById('copiar').addEventListener('click',function(){
+  var t='51995054548',b=this;
+  navigator.clipboard.writeText(t).then(function(){b.textContent='Copiado'},function(){
+    var r=document.createRange();r.selectNodeContents(document.getElementById('num'));var s=getSelection();s.removeAllRanges();s.addRange(r);
+  });
+});
+</script>
+
+</body>
+</html>
