@@ -59,14 +59,16 @@ export async function GET(req: Request) {
       const [todosNegs, todasPecas, leads, camps] = await Promise.all([db.lista('negocios'), db.lista('pecas'), db.lista('leads'), db.lista('campanhas')])
       // 06/11: as amostras da demonstração moram em negócios marcados (contexto.demo): contam só no que é da equipe aprovar
       const demo = new Set(todosNegs.filter(ehDemo).map(n => n.id))
-      const negs = todosNegs.filter(n => !demo.has(n.id)), pecas = todasPecas.filter(p => !demo.has(p.negocio_id))
+      // 13/11: negócio arquivado (status cancelado) some do painel: não conta em nada
+      const arquivados = new Set(todosNegs.filter(n => n.status === 'cancelado').map(n => n.id))
+      const negs = todosNegs.filter(n => !demo.has(n.id) && !arquivados.has(n.id)), pecas = todasPecas.filter(p => !demo.has(p.negocio_id) && !arquivados.has(p.negocio_id))
       const semana = new Date(Date.now() - 7 * 86400e3).toISOString()
       return ok({
         modo: db.modo(), meta_real: metaReal(),
         // 08/11 (T16): qual banco a Maia está usando (local, proprio = MAIA_SUPABASE_URL, escola = o de sempre)
         banco: (await import('@/lib/maia/db')).bancoDaMaia(),
         negocios: negs.length, ativos: negs.filter(n => n.status === 'ativo').length,
-        pra_equipe: todasPecas.filter(p => p.status === 'revisao_equipe').length,
+        pra_equipe: todasPecas.filter(p => p.status === 'revisao_equipe' && !arquivados.has(p.negocio_id)).length,
         amostras_semana: await vagasDaSemana(),
         com_dono: pecas.filter(p => p.status === 'com_dono').length,
         pra_ligar: pecas.filter(p => p.status === 'aprovada' && (p.tipo === 'anuncio_imagem' || p.tipo === 'anuncio_video') && !p.campanha_id).length,
@@ -80,7 +82,8 @@ export async function GET(req: Request) {
     }
     if (acao === 'negocios') {
       const [negs, pecas, leads] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas'), db.lista('leads')])
-      return ok(negs.filter(n => !ehDemo(n)).map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
+      // 13/11: os arquivados (cancelado) só aparecem com ?todos=1
+      return ok(negs.filter(n => !ehDemo(n) && (q('todos') === '1' || n.status !== 'cancelado')).map(n => ({ ...semChave(n), pra_equipe: pecas.filter(p => p.negocio_id === n.id && p.status === 'revisao_equipe').length, leads: leads.filter(l => l.negocio_id === n.id).length, ganhos: leads.filter(l => l.negocio_id === n.id && l.etapa === 'ganho').length })))
     }
     if (acao === 'negocio') return ok(semChave(await db.um('negocios', { id: q('id') })))
     // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
@@ -113,7 +116,7 @@ export async function GET(req: Request) {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
       // 06/11: a peça de amostra da demonstração vai marcada, com o nome do lead
       const demo = (id: string) => { const n = negs.find(x => x.id === id); return ehDemo(n) ? { lead: n!.contexto.demo.lead, telefone: n!.contexto.demo.telefone, entrega: n!.contexto.demo.entrega } : null }
-      const pecas = (await db.lista('pecas', {}, { ordem: 'criado_em' })).filter(p => ['revisao_equipe', 'gerando', 'ajuste_equipe', 'ajuste_dono', 'erro'].includes(p.status))
+      const pecas = (await db.lista('pecas', {}, { ordem: 'criado_em' })).filter(p => ['revisao_equipe', 'gerando', 'ajuste_equipe', 'ajuste_dono', 'erro'].includes(p.status) && negs.find(n => n.id === p.negocio_id)?.status !== 'cancelado')
       return ok((await comLinks(pecas)).map(p => ({ ...p, negocio_nome: nome(p.negocio_id), demo: demo(p.negocio_id) })))
     }
     if (acao === 'amostras') return ok(await painelAmostras())
