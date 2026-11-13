@@ -124,6 +124,34 @@ async function carregaPagina(pg, html, fontes) {
   }, fontes.titulo, fontes.texto).catch(() => {})
 }
 
+// encolhe o texto até caber (mesma ideia da arte). 13/11: veio do video.js pra cá (o carrossel usa também)
+// itens = [[id, tamanho mínimo, id da caixa que não pode passar]]
+const encolhe = (pg, itens) => pg.evaluate(itens => {
+  // passou do espaço? (mede as linhas de verdade; folga pequena pro acento do Ó/É, que sobe acima da linha)
+  const passa = (el, tf) => {
+    const t = tf || parseFloat(getComputedStyle(el).fontSize) || 20, q = el.getBoundingClientRect(), rg = document.createRange()
+    rg.selectNodeContents(el)
+    const fora = [...rg.getClientRects()].some(x => x.right > q.right + 2 || x.left < q.left - 2)
+    return fora || el.scrollWidth > el.clientWidth + 2 || el.scrollHeight > el.clientHeight + Math.max(2, t * 0.15)
+  }
+  const out = {}
+  for (const [id, min, caixa] of itens) {
+    const el = document.getElementById(id); if (!el) continue
+    const box = document.getElementById(caixa || id)
+    const t0 = parseFloat(getComputedStyle(el).fontSize)
+    let t = t0
+    // o que é pra caber numa linha só (o botão do CTA) tenta numa linha até ~2/3 do tamanho; depois deixa quebrar
+    if (getComputedStyle(el).whiteSpace === 'nowrap') {
+      while ((passa(box, t) || passa(el)) && t > t0 * 0.66) { t -= 2; el.style.fontSize = t + 'px' }
+      if (passa(box, t) || passa(el)) { el.style.whiteSpace = 'normal'; t = t0; el.style.fontSize = t + 'px' }
+    }
+    while ((passa(box, t) || passa(el)) && t > min) { t -= 2; el.style.fontSize = t + 'px' }
+    if (passa(box, t) || passa(el)) { el.style.overflowWrap = 'anywhere'; while ((passa(box, t) || passa(el)) && t > 18) { t -= 2; el.style.fontSize = t + 'px' } }
+    out[id] = t
+  }
+  return out
+}, itens)
+
 const esc = s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
 // número estável a partir de um texto (pra escolher o layout sempre igual pra mesma peça)
@@ -135,4 +163,4 @@ function mimeDoArquivo(arq) {
   return { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp', '.gif': 'image/gif', '.svg': 'image/svg+xml' }[e] || ''
 }
 
-module.exports = { PASTA, P, carregaEnv, FFMPEG, FFPROBE, ff, sonda, COR_HDR, temZscale, navegador, abreNavegador, coresDaMarca, fontesDaMarca, RESERVA, carregaPagina, esc, numeroDe, dataUri, mimeDoArquivo, textoSobre, contraste, fs, path }
+module.exports = { PASTA, P, carregaEnv, FFMPEG, FFPROBE, ff, sonda, COR_HDR, temZscale, navegador, abreNavegador, coresDaMarca, fontesDaMarca, RESERVA, carregaPagina, encolhe, esc, numeroDe, dataUri, mimeDoArquivo, textoSobre, contraste, fs, path }

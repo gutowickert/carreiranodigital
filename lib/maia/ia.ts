@@ -102,7 +102,11 @@ export async function emJson<T = any>(sistema: string, pedido: string, imagens: 
     ...imagens.map(i => ({ type: 'image', source: { type: 'base64', media_type: i.mime, data: i.b64 } })),
     { type: 'text', text: pedido + '\n\nResponde SÓ com o JSON, sem nada antes ou depois.' },
   ]
-  const j = await chama({ system: sistema, max_tokens: 4000, messages: [{ role: 'user', content: conteudo }], ...(op.modelo ? { model: op.modelo } : {}), uso: op.uso })
+  // 13/11 (custo por peça): pedido com foto que não disse o tipo (ou disse 'outro') é a Maia olhando a foto/vídeo do dono pra
+  // escolher a mídia da peça (dono.ts descreveFoto/descreveVideo, demo-amostra): vai no tipo 'peca_foto' do custo.ts.
+  // Foto de CLIENTE (midia-cliente.ts) diz o tipo 'cliente' e fica de fora disso
+  const uso = imagens.length && (!op.uso?.tipo || op.uso.tipo === 'outro') ? { ...(op.uso || {}), tipo: 'peca_foto' } : op.uso
+  const j = await chama({ system: sistema, max_tokens: 4000, messages: [{ role: 'user', content: conteudo }], ...(op.modelo ? { model: op.modelo } : {}), uso })
   const txt = (j.content || []).map((c: any) => c.text || '').join('')
   const a = txt.indexOf('{') >= 0 && (txt.indexOf('[') < 0 || txt.indexOf('{') < txt.indexOf('[')) ? txt.indexOf('{') : txt.indexOf('[')
   const b = Math.max(txt.lastIndexOf('}'), txt.lastIndexOf(']'))

@@ -173,4 +173,4 @@ async function gerarArte({ foto, gancho, cta, nome, marca, logo, chave, versao, 
   } finally { if (!navegador) await br.close() }
 }
 
-module.exports = { gerarArte, separaGancho, LAYOUTS }
+module.exports = { gerarArte, separaGancho, preparaFoto, LAYOUTS }
