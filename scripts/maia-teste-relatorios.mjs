@@ -11,10 +11,15 @@
 //   rm -rf .teste-relatorios
 //   MAIA_LOCAL=1 MAIA_LOCAL_PASTA=.teste-relatorios MAIA_PAINEL_SENHA=teste123 MAIA_SEM_AVISO=1 MAIA_CONECTAR_SEGREDO=seg123 \
 //   MAIA_GESTORA_META_PASTA=.teste-relatorios/meta npx next dev --webpack -p 3215
-// No fim grava o exemplo da página do relatório em <pasta>/exemplo-relatorio-do-mes.html
+// No fim grava o exemplo da página do relatório em <pasta>/exemplo-relatorio-do-mes.html e o da imagem da análise em
+// <pasta>/exemplo-analise-2-dias.png (e .jpg, o que a oficina entregou de verdade).
+// 13/11: a imagem da análise sai pela OFICINA de verdade (maia-oficina/oficina.js --uma-vez, com o Chrome do PC): o servidor
+// precisa de MAIA_OFICINA_CHAVE=oficina123 (ou OFICINA_CHAVE=<a mesma>) e a pasta maia-oficina com npm ci.
+// Fotos e logo: as da Wood (as mesmas do teste da criação), se existirem neste PC.
 import fs from 'node:fs'
 import path from 'node:path'
 import crypto from 'node:crypto'
+import { spawnSync } from 'node:child_process'
 import * as C from '../lib/maia/relatorios-conta.ts'
 
 const [URL_ = '', SENHA = 'teste123', PASTA = '.teste-relatorios'] = process.argv.slice(2)
@@ -68,6 +73,15 @@ const poe = (tab, linhas) => { const l = le(tab); for (const x of linhas) l.push
 const mexe = (tab, id, campos) => { const l = le(tab); const x = l.find(y => y.id === id); Object.assign(x, campos); grava(tab, l) }
 const id = () => crypto.randomUUID()
 let nEv = 100000
+const CHAVE = process.env.OFICINA_CHAVE || 'oficina123'
+const oficina = () => spawnSync(process.execPath, ['maia-oficina/oficina.js', '--uma-vez'], { env: { ...process.env, MAIA_URL: URL_, MAIA_OFICINA_CHAVE: CHAVE }, encoding: 'utf8', timeout: 180000 })
+// as fotos reais da Wood (o carrossel que a oficina fez no teste da criação, com as fotos dela) e a logo
+const WOOD = 'C:/Users/carre/Desktop/Wood - Segatto', CARR = 'C:/Users/carre/Desktop/Maia-teste-locucao-carrossel-13-11'
+const FOTO = n => { const a = path.join(CARR, `carrossel-0${n}.jpg`); return fs.existsSync(a) ? a : null }
+const LOGO = fs.existsSync(WOOD + '/marca/logo-wood.jpg') ? WOOD + '/marca/logo-wood.jpg' : null
+const MARCA_WOOD = { cores: { primaria: '#3d4f54', secundaria: '#c9a96e' } }
+// põe um arquivo no armazenamento do modo local (<pasta>/arquivos/<caminho>) e devolve o caminho
+const guarda = (caminho, origem) => { if (!origem) return null; const d = path.join(PASTA, 'arquivos', caminho); fs.mkdirSync(path.dirname(d), { recursive: true }); fs.copyFileSync(origem, d); return caminho }
 const ev = (negocio_id, tipo, detalhe, criado_em) => ({ id: ++nEv + Number(RUN), tipo, negocio_id, detalhe, criado_em })
 
 const res = await fetch(`${URL_}/api/maia/operacao?acao=resumo`, { headers: { 'x-senha': SENHA } }).then(r => r.json()).catch(() => ({}))
@@ -75,10 +89,11 @@ if (res.modo !== 'local') { console.log('o sistema NÃO está em modo local: tes
 
 // ─── negócio A: a análise de 2 em 2 dias
 console.log('\n2) A análise dos anúncios (negócio A)')
-const A = await api('criar_negocio', { nome: 'TESTE · Análise', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Ana Teste', dono_whatsapp: '550007771' + RUN, verba_dia: 50 })
-mexe('negocios', A.id, { status: 'ativo', meta: { ad_account_id: 'act_rel_a' + RUN }, contexto: { trafego: { metricas_secundarias: ['pediu orçamento'], ciclo_venda_dias: 5 } } })
+const NOME_A = 'Wood Arte a Laser', NOME_M = 'Wood Arte a Laser (mês)'
+const A = await api('criar_negocio', { nome: NOME_A, nicho: 'copos e garrafas personalizados', cidade: 'Estrela', dono_nome: 'Ana Teste', dono_whatsapp: '550007771' + RUN, verba_dia: 50 })
+mexe('negocios', A.id, { status: 'ativo', marca: { ...MARCA_WOOD, logo_path: guarda(`${A.id}/marca/logo.jpg`, LOGO) }, meta: { ad_account_id: 'act_rel_a' + RUN }, contexto: { trafego: { metricas_secundarias: ['pediu orçamento'], ciclo_venda_dias: 5 } } })
 const peca = (neg, gancho, extra = {}) => ({ id: id(), negocio_id: neg, tipo: 'anuncio_imagem', status: 'no_ar', titulo: gancho, gancho, texto: 't', cta: 'c', midia_ids: [], versao: 1, criado_em: dias(20), atualizado_em: dias(20), ...extra })
-const pa = peca(A.id, 'Presente que ninguém esquece'), pb = peca(A.id, 'Promo de terça'), pc = peca(A.id, 'Caixa nova de Natal')
+const pa = peca(A.id, 'Presente que ninguém esquece', { arquivo_path: guarda(`${A.id}/pecas/a.jpg`, FOTO(1)) }), pb = peca(A.id, 'Promo de terça', { arquivo_path: guarda(`${A.id}/pecas/b.jpg`, FOTO(5)) }), pc = peca(A.id, 'Caixa nova de Natal', { arquivo_path: guarda(`${A.id}/pecas/c.jpg`, FOTO(3)) })
 poe('pecas', [pa, pb, pc])
 const camp = (neg, nome, p, ad, verba, ativ) => ({ id: id(), negocio_id: neg, nome, status: 'ativa', verba_dia: verba, peca_ids: [p.id], meta_ad_ids: [ad], simulada: true, criado_em: ativ, ativada_em: ativ })
 poe('campanhas', [camp(A.id, 'Presente', pa, 'ad_a', 20, dias(20)), camp(A.id, 'Promo', pb, 'ad_b', 20, dias(12)), camp(A.id, 'Natal', pc, 'ad_c', 10, dias(2))])
@@ -107,7 +122,7 @@ fs.writeFileSync(path.join(PASTA, 'meta', 'rel_a' + RUN + '.json'), JSON.stringi
 let r = await api('analise_anuncios', { negocio_id: A.id })
 const tx = String(r.texto || '')
 console.log(tx.split('\n').map(l => '     │ ' + l).join('\n'))
-confere('abre com "Análise dos anúncios do <negócio>" e o período', /^Análise dos anúncios do TESTE · Análise \(\d\d\/\d\d a \d\d\/\d\d\), Ana:/.test(tx))
+confere('abre com "Análise dos anúncios do <negócio>" e o período', /^Análise dos anúncios do Wood Arte a Laser \(\d\d\/\d\d a \d\d\/\d\d\), Ana:/.test(tx))
 // o período são os 2 últimos dias; maia_metricas_dia conta por dia inteiro (3 dias de R$ 50 e 4 conversas, igual ao resumo da semana)
 confere('investido R$ 150, 12 conversas, R$ 12,50 por conversa', /Investido: R\$ 150 · 12 conversas · R\$ 12,50 por conversa/.test(tx))
 confere('métrica secundária da implantação: 2 chegaram em "pediu orçamento" de 3 contatos novos', /Chegaram em "pediu orçamento": 2 de 3 contatos novos$/m.test(tx))
@@ -122,18 +137,33 @@ confere('a prévia não grava nada', !le('pecas').some(p => p.negocio_id === A.i
 await api('atualizar_negocio', { id: A.id, aprovacao_equipe: false })
 r = await api('analise_anuncios', { negocio_id: A.id, gerar: true })
 const pAn = le('pecas').find(p => p.id === r.peca?.id)
-confere('"sugiro mudar" passa pela equipe mesmo com a aprovação automática ligada', pAn?.status === 'revisao_equipe' && pAn.texto === tx, pAn?.status)
+const tarA = le('tarefas').find(t => t.peca_id === pAn?.id)
+confere('a análise vira tarefa de IMAGEM pra oficina (a peça espera em "gerando", com a legenda curta)', pAn?.status === 'gerando' && tarA?.tipo === 'relatorio' && tarA.dados?.analise?.conclusao?.tipo === 'mudar' && /^Análise dos anúncios do Wood Arte a Laser .*Topa testar\? Me responde aqui\.$/.test(pAn.cta || ''), JSON.stringify({ st: pAn?.status, cta: pAn?.cta }))
+const card = tarA?.dados?.analise || {}
+confere('o card leva os 5 números: R$ 150, 12, R$ 12,50, "2 de 3" e 1 venda (R$ 85)', JSON.stringify(card.numeros?.map(x => x.valor)) === JSON.stringify(['R$ 150', '12', 'R$ 12,50', '2 de 3', '1']) && /R\$ 85/.test(card.numeros?.[4]?.rotulo || ''), JSON.stringify(card.numeros))
+confere('o anúncio da vez é o que a sugestão manda estimular, com a miniatura do criativo', card.anuncio?.nome === 'Presente que ninguém esquece' && card.anuncio_arquivo === pa.arquivo_path && card.pergunta === 'Topa testar?', JSON.stringify(card.anuncio))
+const of = oficina()
+console.log((of.stdout || '').split('\n').filter(Boolean).map(l => '     │ oficina: ' + l).join('\n'))
+const pAn2 = le('pecas').find(p => p.id === pAn?.id)
+confere('a oficina (Chrome) fez a imagem e devolveu: a peça vai pra equipe com a imagem', !!pAn2?.arquivo_path && pAn2.status === 'revisao_equipe' && fs.existsSync(path.join(PASTA, 'arquivos', pAn2.arquivo_path)), (of.stderr || '').slice(0, 300) + JSON.stringify({ st: pAn2?.status }))
+confere('"sugiro mudar" passa pela equipe mesmo com a aprovação automática ligada', pAn2?.status === 'revisao_equipe' && pAn2.texto === tx, pAn2?.status)
+if (pAn2?.arquivo_path) {
+  fs.copyFileSync(path.join(PASTA, 'arquivos', pAn2.arquivo_path), path.join(PASTA, 'exemplo-analise-2-dias.jpg'))
+  fs.writeFileSync(path.join(PASTA, 'card-analise.json'), JSON.stringify(card, null, 1))
+  const png = spawnSync(process.execPath, ['maia-oficina/oficina.js', '--teste-analise', path.join(PASTA, 'card-analise.json'), ...(LOGO ? ['--logo', LOGO] : []), ...(FOTO(1) ? ['--foto', FOTO(1)] : []), '--marca', JSON.stringify(MARCA_WOOD), '--saida', path.resolve(PASTA, 'exemplo-analise-2-dias.png')], { encoding: 'utf8', timeout: 120000 })
+  confere('o modo de teste da oficina grava o PNG de exemplo', fs.existsSync(path.join(PASTA, 'exemplo-analise-2-dias.png')), (png.stdout || '') + (png.stderr || ''))
+}
 confere('o evento guarda a conclusão e as sugestões (pra equipe e pro relatório do mês)', le('eventos').some(e => e.tipo === 'analise_2dias' && e.detalhe?.peca_id === pAn?.id && e.detalhe?.conclusao === 'mudar' && e.detalhe.sugestoes.length === 2))
 const ap = await api('aprovar_peca', { peca_id: pAn?.id })
 const dcvA = le('conversas').find(c => c.negocio_id === A.id && c.canal === 'dono')
-const msgA = le('msgs').filter(m => m.conversa_id === dcvA?.id && /^Análise dos anúncios/.test(m.texto || ''))
-confere('equipe aprova: vai pro WhatsApp do dono com o link do painel', ap.http < 400 && msgA.length === 1 && /\/maia\/painel\?t=/.test(msgA[0].texto), JSON.stringify(ap).slice(0, 200))
+const msgA = le('msgs').filter(m => m.conversa_id === dcvA?.id && /^\(imagem\) Análise dos anúncios/.test(m.texto || ''))
+confere('equipe aprova: vai pro WhatsApp do dono como IMAGEM, com a legenda curta e o link do painel', ap.http < 400 && msgA.length === 1 && msgA[0].tipo === 'imagem' && /Topa testar\?/.test(msgA[0].texto) && /\/maia\/painel\?t=/.test(msgA[0].texto), JSON.stringify(ap).slice(0, 200))
 const lk = await api('link_painel_dono', { negocio_id: A.id })
 const tokA = new globalThis.URL(lk.link).searchParams.get('t')
 const entra = async t => (await fetch(`${URL_}/api/maia/painel`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ acao: 'entrar', t }) })).headers.get('set-cookie')?.split(';')[0] || ''
 const ckA = await entra(tokA)
 let pd = await (await fetch(`${URL_}/api/maia/painel?acao=tudo`, { headers: { cookie: ckA } })).json().catch(() => ({}))
-confere('o painel do dono mostra a análise (e ela não entra no lugar do resumo da semana)', pd.analises?.length === 1 && pd.analises[0].texto === tx && !(pd.resumos || []).some(x => /^Análise/.test(x.texto)), JSON.stringify(pd.analises))
+confere('o painel do dono mostra a análise (e ela não entra no lugar do resumo da semana)', pd.analises?.length === 1 && pd.analises[0].texto === tx && !!pd.analises[0].imagem && !(pd.resumos || []).some(x => /^Análise/.test(x.texto)), JSON.stringify(pd.analises))
 r = await api('pedido_dono', { negocio_id: A.id, qual: 'analise' })
 confere('pelo WhatsApp ("me manda a análise"): devolve a análise que acabou de ir', r.analise === tx, JSON.stringify(r).slice(0, 200))
 
@@ -151,10 +181,10 @@ confere('terça 8h, 4 dias depois: faz a análise', Object.values(r).some(x => x
 
 // ─── negócio M: o relatório do mês (outubro de 2026)
 console.log('\n3) O relatório do mês (negócio M, outubro)')
-const M = await api('criar_negocio', { nome: 'TESTE · Relatório', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Marta Teste', dono_whatsapp: '550007772' + RUN, verba_dia: 30 })
-mexe('negocios', M.id, { status: 'ativo', meta: { ad_account_id: 'act_rel_m' + RUN } })   // sem trafego: secundária padrão
+const M = await api('criar_negocio', { nome: NOME_M, nicho: 'copos e garrafas personalizados', cidade: 'Estrela', dono_nome: 'Marta Teste', dono_whatsapp: '550007772' + RUN, verba_dia: 30 })
+mexe('negocios', M.id, { status: 'ativo', marca: { ...MARCA_WOOD, logo_path: guarda(`${M.id}/marca/logo.jpg`, LOGO) }, meta: { ad_account_id: 'act_rel_m' + RUN } })   // sem trafego: secundária padrão
 const out = (dia, h = 15, min = 0) => new Date(Date.UTC(2026, 9, dia, h, min)).toISOString()
-const pm1 = peca(M.id, 'Caixa pra presentear', { criado_em: out(2), aprovado_dono_em: out(2) }), pm2 = peca(M.id, 'Promo do mês', { criado_em: out(9), aprovado_dono_em: out(9), status: 'aprovada' })
+const pm1 = peca(M.id, 'Caixa pra presentear', { criado_em: out(2), aprovado_dono_em: out(2), arquivo_path: guarda(`${M.id}/pecas/m1.jpg`, FOTO(1)) }), pm2 = peca(M.id, 'Promo do mês', { criado_em: out(9), aprovado_dono_em: out(9), status: 'aprovada' })
 const pm3 = peca(M.id, 'Rascunho', { criado_em: out(20), status: 'descartada' })
 const cm1 = camp(M.id, 'Presente', pm1, 'ad_m1', 20, out(3)), cm2 = camp(M.id, 'Promo', pm2, 'ad_m2', 10, out(10))
 poe('pecas', [pm1, pm2, pm3]); poe('campanhas', [cm1, cm2])
@@ -188,8 +218,8 @@ mexe('conversas', cvs[2].id, { lead_id: Ls[1].id })
 poe('eventos', [ev(M.id, 'modo_humano', { conversa_id: cvs[2].id, por: 'maia', motivo: 'reclamação do cliente' }, out(7, 15, 10)), ev(M.id, 'modo_humano', { conversa_id: cvs[3].id, por: 'sistema', motivo: 'pediu pra falar com uma pessoa' }, out(8, 15, 20)),
   ev(M.id, 'modo_humano', { conversa_id: cvs[1].id, por: 'Guto', motivo: 'equipe assumiu' }, out(6, 16))])   // a equipe assumir não é "a IA precisou de ajuda"
 // orgânico: 3 posts publicados (2 de bastidores, 1 de promo)
-const post = (dia, tema, reach, inter) => { const p = peca(M.id, 'post ' + tema, { tipo: 'post', criado_em: out(dia - 1), texto: `Legenda do post sobre ${tema}` }); poe('pecas', [p]); return ev(M.id, 'social_post', { peca_id: p.id, tipo: 'foto', tema, status: 'publicado', publicado_em: out(dia, 21), resultado: { ig: { reach, total_interactions: inter, views: reach * 2, saved: 3 } } }, out(dia - 1)) }
-poe('eventos', [post(6, 'bastidores', 800, 60), post(13, 'bastidores', 600, 40), post(20, 'promo', 200, 5)])
+const post = (dia, tema, reach, inter, foto) => { const cam = guarda(`${M.id}/social/p${dia}.jpg`, FOTO(foto)); const p = peca(M.id, 'post ' + tema, { tipo: 'post', criado_em: out(dia - 1), texto: `Legenda do post sobre ${tema}`, arquivo_path: cam }); poe('pecas', [p]); return ev(M.id, 'social_post', { peca_id: p.id, tipo: 'foto', tema, midias: cam ? [{ caminho: cam, tipo: 'foto' }] : [], status: 'publicado', publicado_em: out(dia, 21), resultado: { ig: { reach, total_interactions: inter, views: reach * 2, saved: 3 } } }, out(dia - 1)) }
+poe('eventos', [post(6, 'bastidores', 800, 60, 3), post(13, 'bastidores', 600, 40, 2), post(20, 'promo', 200, 5, 6)])
 
 r = await api('relatorio_mes', { negocio_id: M.id, mes: '2026-10' })
 const dm = r.dados || {}, w = dm.whatsapp || {}, t = dm.trafego || {}, o = dm.organico || {}
@@ -213,7 +243,11 @@ confere('projeção com verba maior fica no teto (R$ 39) e conta a conversa 15% 
 confere('projeção do time: a conversa que parou, na taxa de venda do mês (75%) = ~0,8 venda', /1 conversa x 75% .*= ~0,8 vendas a mais/.test(r.projecao?.cenarios?.[2]?.conta || ''), r.projecao?.cenarios?.[2]?.conta)
 const tw = String(r.texto || '')
 console.log(tw.split('\n').map(l => '     │ ' + l).join('\n'))
-confere('o resumo do WhatsApp é curto e tem os números do mês', /^Relatório do mês: outubro de 2026 do TESTE · Relatório, Marta\./.test(tw) && /WhatsApp: 4 conversas, 3 vendas, 3 perdas/.test(tw) && /Anúncios: R\$ 600, 100 conversas \(R\$ 6 cada\)/.test(tw) && tw.split('\n').length <= 8)
+confere('o resumo do WhatsApp é curto e tem os números do mês', /^Relatório do mês: outubro de 2026 do Wood Arte a Laser \(mês\), Marta\./.test(tw) && /WhatsApp: 4 conversas, 3 vendas, 3 perdas/.test(tw) && /Anúncios: R\$ 600, 100 conversas \(R\$ 6 cada\)/.test(tw) && tw.split('\n').length <= 8)
+confere('semana a semana: investido 210/210/180/0/0, vendas 0/3/0/0/0, conversas 35/35/30/0/0', JSON.stringify((dm.semanas || []).map(w => [w.rotulo, w.investido, w.vendas, w.conversas])) === JSON.stringify([['01–07', 210, 0, 35], ['08–14', 210, 3, 35], ['15–21', 180, 0, 30], ['22–28', 0, 0, 0], ['29–31', 0, 0, 0]]), JSON.stringify(dm.semanas))
+confere('anúncio campeão: "Caixa pra presentear" (2 vendas), com o criativo da peça', dm.campeao_anuncio?.nome === 'Caixa pra presentear' && dm.campeao_anuncio.arquivo === pm1.arquivo_path && /2 vendas/.test(dm.campeao_anuncio.motivo), JSON.stringify(dm.campeao_anuncio))
+confere('postagem campeã: a de bastidores do dia 06 (800 de alcance), com a mídia', dm.campeao_post?.alcance === 800 && !!dm.campeao_post.midia?.caminho, JSON.stringify(dm.campeao_post))
+confere('a página traz a logo, o anúncio e o post campeões (embutidos no exemplo) e os gráficos', ['Os campeões do mês', 'Semana a semana', 'Anúncio campeão', 'Postagem campeã', 'class="hero"', 'var(--marca)'].every(x => (r.html || '').includes(x)) && ((r.html || '').match(/data:image\/jpeg;base64,/g) || []).length === (LOGO && FOTO(1) ? 3 : 0), '')
 confere('a página tem os cards e os números', ['Conversas do WhatsApp', 'Onde a IA precisou de ajuda', 'Onde o time pode melhorar', 'Campanhas e anúncios', 'Orgânico', 'Cada função da Maia', 'Projeção', 'Precisamos olhar juntos', 'Caixa pra presentear', '1,5 h'].every(s => (r.html || '').includes(s)), '')
 fs.writeFileSync(path.join(PASTA, 'exemplo-relatorio-do-mes.html'), r.html || '')
 
@@ -255,5 +289,6 @@ r = await api('rodar_relatorios', { agora: new Date(Date.UTC(2026, 11, 2, 11)).t
 confere('rodar de novo no mesmo dia não repete o relatório', !Object.values(r).some(x => x?.negocio === M.id && x.relatorio))
 
 console.log(`\nExemplo do relatório: ${path.resolve(PASTA, 'exemplo-relatorio-do-mes.html')}`)
+console.log(`Exemplo da análise: ${path.resolve(PASTA, 'exemplo-analise-2-dias.png')} (e .jpg, o da oficina)`)
 console.log(`${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)

@@ -15,7 +15,7 @@ export async function GET(req: Request) {
   if (!oficinaOk(req)) return naoAutorizado()
   // 06/11: a oficina está de pé (a amostra da demonstração vê isso pra avisar a equipe quando ela cair)
   await (await import('@/lib/maia/demo-amostra')).marcaOficinaViva().catch(() => null)
-  const fila = (await db.lista('tarefas', { status: 'fila' }, { ordem: 'criado_em' })).filter(t => t.tipo === 'arte' || t.tipo === 'video')
+  const fila = (await db.lista('tarefas', { status: 'fila' }, { ordem: 'criado_em' })).filter(t => t.tipo === 'arte' || t.tipo === 'video' || t.tipo === 'relatorio')   // 13/11: 'relatorio' = a imagem da análise (relatorios.ts)
   // tarefa presa (pegou e não devolveu em 20 min) volta pra fila
   const presas = (await db.lista('tarefas', { status: 'rodando' })).filter(t => t.pego_em && Date.now() - Date.parse(t.pego_em) > 20 * 60e3)
   for (const t of presas) await db.atualiza('tarefas', { id: t.id }, { status: 'fila', tentativas: (t.tentativas || 0) + 1 })
@@ -47,6 +47,8 @@ export async function GET(req: Request) {
     peca: peca && { id: peca.id, tipo: peca.tipo, gancho: peca.gancho, texto: peca.texto, cta: peca.cta, versao: peca.versao },
     negocio: neg && { id: neg.id, nome: neg.nome, nicho: neg.nicho, cidade: neg.cidade, regiao: neg.regiao, marca: { ...(neg.marca || {}), logo_url: logo }, whatsapp: neg.contexto?.whatsapp_publico || null },
     midia: midia && { id: midia.id, tipo: midia.tipo, mime: midia.mime, url: await db.link(midia.path), legenda: midia.legenda },
+    // 13/11 (relatorios.ts → maia-oficina/analise.js): os textos prontos do card da análise e o link da miniatura do anúncio
+    ...(t.tipo === 'relatorio' ? { analise: { ...(t.dados?.analise || {}), anuncio_url: t.dados?.analise?.anuncio_arquivo ? comOrigem(await db.link(t.dados.analise.anuncio_arquivo)) : null } } : {}),
   })
 }
 
@@ -60,19 +62,21 @@ export async function POST(req: Request) {
   }
   const t = await db.um('tarefas', { id: b.tarefa_id })
   if (!t) return Response.json({ erro: 'tarefa não existe' }, { status: 404 })
-  if (b.erro) { await oficinaEntregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }
+  // 13/11: a imagem da análise (tarefa 'relatorio') é entregue pelo relatorios.ts; o resto, pelas peças
+  const entregou = t.tipo === 'relatorio' ? (await import('@/lib/maia/relatorios')).analiseEntregue : oficinaEntregou
+  if (b.erro) { await entregou(t, null, String(b.erro).slice(0, 500)); return Response.json({ ok: true, de_novo: true }) }
   // a oficina já mandou direto pro armazenamento: confere que o caminho é desta tarefa e que o arquivo chegou mesmo
   const caminho = b.caminho || b.arquivo_path
   if (caminho) {
     const c = String(caminho)
     if (!c.startsWith(`${t.negocio_id}/pecas/${t.peca_id}-`) || c.includes('..')) return Response.json({ erro: 'caminho não é desta tarefa' }, { status: 400 })
     if (!(await db.existe(c))) return Response.json({ erro: 'o arquivo não chegou no armazenamento' }, { status: 400 })
-    await oficinaEntregou(t, { caminho: c, mime: b.mime || (/\.mp4$/.test(c) ? 'video/mp4' : /\.png$/.test(c) ? 'image/png' : 'image/jpeg') })
+    await entregou(t, { caminho: c, mime: b.mime || (/\.mp4$/.test(c) ? 'video/mp4' : /\.png$/.test(c) ? 'image/png' : 'image/jpeg') })
     await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: b.caminho ? 'link' : 'link (campo antigo)' })
     return Response.json({ ok: true })
   }
   if (!b.arquivo_b64) return Response.json({ erro: 'sem arquivo' }, { status: 400 })
-  await oficinaEntregou(t, { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/png' })
+  await entregou(t, { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/png' })
   await db.evento('oficina_entrega', t.negocio_id, { tarefa_id: t.id, como: 'base64 (oficina antiga)' })
   return Response.json({ ok: true })
 }

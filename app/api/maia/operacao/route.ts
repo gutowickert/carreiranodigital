@@ -189,7 +189,7 @@ export async function POST(req: Request) {
         if (b.aviso === true) return ok(await rl.geraAvisoMes(n, mes))
         if (b.gerar === true) return ok(await rl.geraRelatorioMes(n, mes, { forcar: !!b.forcar, ia: b.ia === true ? true : b.ia === false ? false : undefined }))
         const d = await rl.dadosDoMes(n, mes), c = await rl.conclusoesDoMes(n, d, b.ia === true)
-        return ok({ dados: d, conclusoes: c, texto: C.textoRelatorioWhats(d, c), aviso: C.textoAviso(d, C.tomDoMes(d)), tom: C.tomDoMes(d), projecao: C.projecao(d), html: C.htmlRelatorio(d, c, { gerado_em: new Date().toISOString() }) })
+        return ok({ dados: d, conclusoes: c, texto: C.textoRelatorioWhats(d, c), aviso: C.textoAviso(d, C.tomDoMes(d)), tom: C.tomDoMes(d), projecao: C.projecao(d), html: C.htmlRelatorio(d, c, { gerado_em: new Date().toISOString(), imagens: await rl.imagensDoRelatorio(d, true) }) })
       }
       case 'rodar_relatorios': {
         const { rotinaRelatorios } = await import('@/lib/maia/relatorios')

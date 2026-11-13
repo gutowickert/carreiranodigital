@@ -80,6 +80,7 @@ export type AnuncioNum = {
   inicio?: string | null            // quando começou a rodar (ativação da campanha, 1º gasto ou 1º contato)
   gasto: number | null; conversas: number | null   // da Meta, por anúncio (null quando não dá pra ler por anúncio)
   contatos: number; secundaria: number | null; vendas: number; receita: number
+  arquivo?: string | null           // 13/11: o criativo da peça da Maia (imagem ou vídeo no armazenamento), quando o anúncio é dela
 }
 export type Sugestao = { tipo: 'pausar' | 'estimular'; anuncio: string; nome: string; texto: string; motivo: string; verba_de?: number | null; verba_para?: number | null; campanha_id?: string | null }
 export type Decisao = {
@@ -203,8 +204,51 @@ export function textoAnalise(d: DadosAnalise, comConclusao = true) {
   return l.join('\n')
 }
 
+// ─────────────────────────── 13/11: a IMAGEM da análise (card 1080x1350 que a oficina monta: maia-oficina/analise.js)
+const maiusc = (t: string) => t.charAt(0).toUpperCase() + t.slice(1)
+export const TITULO_CONCLUSAO = { segue: 'Segue como está', segura: 'Segura mais uns dias', mudar: 'Sugiro mudar' } as const
+// o anúncio do card: o que a sugestão manda estimular, senão o que manda pausar, senão o que está em teste, senão o melhor
+export function anuncioDaVez(anuncios: AnuncioNum[], dec: Decisao): (AnuncioNum & { linha: string }) | null {
+  const est = dec.sugestoes.find(s => s.tipo === 'estimular'), pau = dec.sugestoes.find(s => s.tipo === 'pausar')
+  const id = est?.anuncio || pau?.anuncio || dec.em_teste[0]?.anuncio || anuncios[0]?.id
+  const a = anuncios.find(x => x.id === id)
+  if (!a) return null
+  const cc = a.gasto != null && a.conversas ? a.gasto / a.conversas : null
+  const linha = est?.anuncio === a.id ? 'o que mais vende: vale dar mais verba' : pau?.anuncio === a.id ? 'não está trazendo gente pra compra' : dec.em_teste.some(t => t.anuncio === a.id) ? 'em teste, dentro do tempo de venda' : 'o melhor do período'
+  const nums = [plural(a.contatos, 'contato'), a.vendas ? plural(a.vendas, 'venda') : '', cc != null ? `${R$(cc)} por conversa` : ''].filter(Boolean).join(', ')
+  return { ...a, linha: `${maiusc(linha)}. ${nums} (30 dias).` }
+}
+export type CardAnalise = ReturnType<typeof cardAnalise>
+export function cardAnalise(d: DadosAnalise, anuncios: AnuncioNum[]) {
+  const cpc = custoPorConversa(d.gasto, d.conversas), dec = d.decisao, ad = anuncioDaVez(anuncios, dec)
+  const itens = dec.conclusao === 'mudar' ? dec.sugestoes.map(s => s.tipo === 'pausar' ? `Pausar "${s.nome}": ${s.motivo}.` : maiusc(s.texto) + '.')
+    : [dec.texto.replace(/^(Segue como está|Segura mais uns dias de teste)[:.]\s*/, '')]
+  return {
+    negocio: d.negocio, titulo: TITULO_ANALISE, periodo: `${ddmm(d.de)} a ${ddmm(d.ate)}`,
+    numeros: [
+      { valor: d.gasto > 0 ? R$(d.gasto) : 'R$ 0', rotulo: 'investido' },
+      { valor: String(d.conversas), rotulo: d.conversas === 1 ? 'conversa' : 'conversas' },
+      { valor: cpc != null ? R$(cpc) : '–', rotulo: 'por conversa' },
+      d.sec.etapa && d.secundaria != null ? { valor: d.contatos ? `${d.secundaria} de ${d.contatos}` : String(d.secundaria), rotulo: `chegaram em "${d.sec.nome}"` } : { valor: '–', rotulo: 'etapa antes da compra: ainda sem medida' },
+      { valor: String(d.vendas), rotulo: d.vendas ? `${d.vendas === 1 ? 'venda' : 'vendas'}, somando ${R$(d.receita)}` : 'vendas' },
+    ],
+    anuncio: ad ? { nome: ad.nome, linha: ad.linha } : null,
+    anuncio_arquivo: ad?.arquivo && /\.(jpe?g|png|webp)$/i.test(ad.arquivo) ? ad.arquivo : null,
+    conclusao: { tipo: dec.conclusao, titulo: TITULO_CONCLUSAO[dec.conclusao], itens },
+    pergunta: dec.conclusao === 'mudar' ? 'Topa testar?' : null,
+  }
+}
+// a legenda curta que vai com a imagem no WhatsApp (o texto completo fica na peça e no painel)
+export function legendaAnalise(d: DadosAnalise) {
+  const cpc = custoPorConversa(d.gasto, d.conversas)
+  const nums = [d.gasto > 0 ? `${R$(d.gasto)} investidos` : 'sem gasto de anúncio', plural(d.conversas, 'conversa') + (cpc != null ? ` (${R$(cpc)} cada)` : ''), plural(d.vendas, 'venda')].join(', ')
+  const muda = (s: Sugestao) => s.tipo === 'pausar' ? `pausar "${s.nome}"` : s.verba_para && s.verba_de && s.verba_para !== s.verba_de ? `subir "${s.nome}" pra ${R$(s.verba_para)}/dia` : `manter "${s.nome}"`
+  const fim = d.decisao.conclusao === 'mudar' ? `${TITULO_CONCLUSAO.mudar}: ${d.decisao.sugestoes.map(muda).join(' e ')}. Topa testar? Me responde aqui.` : `${TITULO_CONCLUSAO[d.decisao.conclusao]}.`
+  return `${TITULO_ANALISE} do ${d.negocio} (${ddmm(d.de)} a ${ddmm(d.ate)}): ${nums}. ${fim}`
+}
+
 // ─────────────────────────── o relatório do mês
-export type Organico = { posts: { dia: string; tipo: string; tema: string | null; legenda: string; alcance: number; interacoes: number; views: number; salvos: number }[]; estimular: string | null; tirar: string | null }
+export type Organico = { posts: { dia: string; tipo: string; tema: string | null; legenda: string; alcance: number; interacoes: number; views: number; salvos: number; midia?: any }[]; estimular: string | null; tirar: string | null }
 export type DadosMes = {
   negocio: string; dono: string | null; mes: string; de: string; ate: string; teto: number
   sec: Secundaria; ciclo: { dias: number; padrao: boolean }
@@ -223,6 +267,32 @@ export type DadosMes = {
   organico: Organico & { total: number; alcance: number; contatos: number; social_ligado: boolean }
   criacao: { criadas: number; aprovadas: number; no_ar: number; por_tipo: Record<string, number> }
   anterior: { vendas: number; receita: number; gasto: number; conversas: number } | null
+  // 13/11 (mais visual): a marca do negócio, as semanas do mês (gráficos) e os campeões (anúncio e post)
+  marca?: { primaria: string | null; secundaria: string | null; logo: string | null }
+  semanas?: { rotulo: string; conversas: number; vendas: number; investido: number }[]
+  campeao_anuncio?: { id: string; nome: string; motivo: string; arquivo: string | null; thumb: string | null } | null
+  campeao_post?: { dia: string; tipo: string; tema: string | null; legenda: string; alcance: number; views: number; interacoes: number; midia: { caminho?: string | null; url?: string | null; tipo?: string | null } | null } | null
+}
+
+// as semanas do mês (1–7, 8–14, 15–21, 22–28, 29–fim), pra os gráficos de barras
+export function semanasDoMes(mes: string) {
+  const [a, m] = mes.split('-').map(Number), fim = new Date(Date.UTC(a, m, 0)).getUTCDate()
+  const s: { rotulo: string; de: number; ate: number }[] = []
+  for (let d = 1; d <= fim; d += 7) s.push({ rotulo: `${String(d).padStart(2, '0')}–${String(Math.min(d + 6, fim)).padStart(2, '0')}`, de: d, ate: Math.min(d + 6, fim) })
+  if (s.length > 4 && s[s.length - 1].ate - s[s.length - 1].de < 2) { const u = s.pop()!; s[s.length - 1].ate = u.ate; s[s.length - 1].rotulo = s[s.length - 1].rotulo.slice(0, 3) + String(u.ate).padStart(2, '0') }
+  return s
+}
+// o dia (1–31) no Brasil de um ISO
+export const diaBRdoMes = (iso: string) => Number(new Date(Date.parse(iso) - 3 * 3600e3).toISOString().slice(8, 10))
+
+// a cor da marca que dá pra usar em cima do branco (clara demais vira um grafite); sem marca, o roxo da Maia
+export function corDaMarca(c: string | null | undefined, reserva = '#6d28d9') {
+  const ok = typeof c === 'string' && /^#?[0-9a-f]{6}$/i.test(c.trim())
+  if (!ok) return reserva
+  const h = '#' + c!.trim().replace('#', '').toLowerCase()
+  const n = parseInt(h.slice(1), 16), f = (x: number) => { x /= 255; return x <= 0.03928 ? x / 12.92 : Math.pow((x + 0.055) / 1.055, 2.4) }
+  const L = 0.2126 * f(n >> 16) + 0.7152 * f((n >> 8) & 255) + 0.0722 * f(n & 255)
+  return (1.05 / (L + 0.05)) >= 3 ? h : '#3a3835'
 }
 
 // o tom do mês: boas notícias quando vendeu e (sem anúncio, ou o anúncio se pagou, ou vendeu mais que o mês anterior)
@@ -321,7 +391,17 @@ export function textoRelatorioWhats(d: DadosMes, c: Conclusoes) {
 }
 
 // ─────────────────────────── a página do relatório (cards, clara, no padrão do painel do dono)
-export function htmlRelatorio(d: DadosMes, c: Conclusoes, op: { gerado_em?: string; painel?: string | null } = {}) {
+export type ImagemRel = { src: string; video?: boolean } | null
+export function htmlRelatorio(d: DadosMes, c: Conclusoes, op: { gerado_em?: string; painel?: string | null; imagens?: { logo?: string | null; anuncio?: ImagemRel; post?: ImagemRel } } = {}) {
+  // 13/11 (mais visual): a cor da marca do negócio nos cards, a logo no topo, os campeões do mês e as barras por semana
+  const marca = corDaMarca(d.marca?.primaria), marca2 = corDaMarca(d.marca?.secundaria, marca)
+  const im = op.imagens || {}
+  const midia = (x: ImagemRel, alt: string) => !x ? '' : x.video ? `<video src="${esc(x.src)}" controls playsinline muted preload="metadata"></video>` : `<img src="${esc(x.src)}" alt="${esc(alt)}" loading="lazy">`
+  const barras = (titulo: string, campo: 'conversas' | 'vendas' | 'investido', fmt: (n: number) => string) => {
+    const ss = d.semanas || [], mx = Math.max(1, ...ss.map(x => x[campo]))
+    return `<div class="graf"><h3>${esc(titulo)}</h3><div class="barras" role="img" aria-label="${esc(titulo)}: ${ss.map(x => x.rotulo + ' ' + fmt(x[campo])).join(', ')}">${ss.map(x => `<div class="b"><span class="v">${esc(fmt(x[campo]))}</span><i style="height:${x[campo] ? Math.max(4, Math.round(x[campo] / mx * 100)) : 0}%"></i><span class="r">${esc(x.rotulo)}</span></div>`).join('')}</div></div>`
+  }
+  const ca = d.campeao_anuncio, cp = d.campeao_post
   const w = d.whatsapp, t = d.trafego, o = d.organico, p = projecao(d), tom = tomDoMes(d)
   const kpi = (n: string, rot: string, sub = '') => `<div class="kpi"><b>${esc(n)}</b><span>${esc(rot)}</span>${sub ? `<small>${esc(sub)}</small>` : ''}</div>`
   const lista = (xs: string[]) => xs.length ? `<ul>${xs.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''
@@ -341,19 +421,22 @@ export function htmlRelatorio(d: DadosMes, c: Conclusoes, op: { gerado_em?: stri
 <style>
 @font-face{font-family:'Manrope';font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
 @font-face{font-family:'Bricolage Grotesque';font-weight:300 800;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
-:root{--bg:#f7f5fc;--surface:#fff;--surface-2:#f3f0fa;--border:#ebe6f5;--text:#1b1530;--text-2:#423a5c;--muted:#6b6485;--accent:#7c3aed;--accent-bg:#f1ebfe;--green:#15803d;--green-bg:#dcfce7;--amber:#b45309;--amber-bg:#fef3c7;--red:#b91c1c;--red-bg:#fee2e2;color-scheme:light}
+:root{--marca:${marca};--marca2:${marca2};--bg:color-mix(in srgb,var(--marca) 4%,#fbfaf8);--surface:#fff;--surface-2:color-mix(in srgb,var(--marca) 7%,#fff);--border:color-mix(in srgb,var(--marca) 14%,#eeeae4);--text:#1d1b19;--text-2:#45413c;--muted:#6b665f;--accent:var(--marca);--accent-bg:color-mix(in srgb,var(--marca) 10%,#fff);--green:#15803d;--green-bg:#dcfce7;--amber:#b45309;--amber-bg:#fef3c7;--red:#b91c1c;--red-bg:#fee2e2;color-scheme:light}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.55 'Manrope',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;-webkit-font-smoothing:antialiased}
 .wrap{max-width:980px;margin:0 auto;padding:0 16px 48px}
 h1,h2,.kpi b{font-family:'Bricolage Grotesque','Manrope',sans-serif}
-header{padding:28px 0 8px}header small{color:var(--muted);font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:12px}
+.hero{background:var(--marca);color:#fff;padding:26px 0 30px;margin-bottom:6px}.hero .wrap{padding-bottom:0;display:flex;gap:18px;align-items:center}.hero .logo{flex:none;width:76px;height:76px;border-radius:18px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden}.hero .logo img{max-width:66px;max-height:66px;object-fit:contain}.hero small{display:block;opacity:.85;font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:12px}.hero h1{color:#fff}
+header.ab{padding:18px 0 8px}
 h1{font-size:clamp(26px,5vw,36px);line-height:1.15;margin:6px 0 10px}
 .tom{display:inline-block;padding:6px 12px;border-radius:999px;font-weight:700;font-size:13.5px}.tom.boas{background:var(--green-bg);color:var(--green)}.tom.olhar{background:var(--amber-bg);color:var(--amber)}
 .resumo{font-size:16.5px;color:var(--text-2);max-width:760px}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:18px 0}
-.kpi{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:14px 16px}.kpi b{display:block;font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}.kpi span{display:block;color:var(--muted);font-size:13px;font-weight:600}.kpi small{display:block;color:var(--muted);font-size:12px}
+.kpi{background:var(--surface);border:1px solid var(--border);border-top:4px solid var(--marca);border-radius:16px;padding:14px 16px}.kpi b{display:block;color:var(--marca);font-size:26px;line-height:1.1;font-variant-numeric:tabular-nums}.kpi span{display:block;color:var(--muted);font-size:13px;font-weight:600}.kpi small{display:block;color:var(--muted);font-size:12px}
 .grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 .card{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:18px 18px 14px;box-shadow:0 1px 2px rgba(27,21,48,.04),0 4px 16px rgba(27,21,48,.05);margin-bottom:14px;min-width:0}
-.card h2{font-size:19px;margin:0 0 10px}.card p{margin:0 0 10px}.card ul{margin:0 0 10px;padding-left:20px}.card li{margin:3px 0}
+.card h2{font-size:19px;margin:0 0 10px;padding-left:12px;border-left:4px solid var(--marca)}
+.graficos{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}.graf{background:var(--surface-2);border-radius:14px;padding:12px 12px 8px}.graf h3{font-size:14px;margin:0 0 8px;color:var(--text-2)}.barras{display:flex;align-items:flex-end;gap:8px;height:150px}.barras .b{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center}.barras i{display:block;width:100%;max-width:44px;border-radius:8px 8px 3px 3px;background:var(--marca)}.graf:nth-child(2) .barras i{background:var(--marca2)}.barras .v{font-size:12px;font-weight:700;margin-bottom:3px;white-space:nowrap;font-variant-numeric:tabular-nums}.barras .r{font-size:11px;color:var(--muted);margin-top:4px;white-space:nowrap}
+.campeoes{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px}.campeao{background:var(--surface-2);border-radius:16px;overflow:hidden}.campeao img,.campeao video{display:block;width:100%;aspect-ratio:4/5;object-fit:cover;background:var(--accent-bg)}.campeao .tx{padding:12px 14px}.campeao small{display:block;color:var(--marca);font-weight:800;font-size:12px;text-transform:uppercase;letter-spacing:.05em}.campeao b{display:block;font-size:17px;margin:2px 0 4px}.campeao p{margin:0;color:var(--text-2);font-size:14px}.card p{margin:0 0 10px}.card ul{margin:0 0 10px;padding-left:20px}.card li{margin:3px 0}
 .largo{grid-column:1/-1}.nota{color:var(--muted);font-size:13px}
 .mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:8px;margin:0 0 12px}.mini div{background:var(--surface-2);border-radius:12px;padding:9px 11px}.mini b{display:block;font-size:19px;font-variant-numeric:tabular-nums}.mini span{font-size:12.5px;color:var(--muted)}
 .tabela{overflow-x:auto;margin:0 -4px 10px}table{border-collapse:collapse;width:100%;font-size:14px;min-width:560px}th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--border);vertical-align:top}th{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}td small{display:block;color:var(--muted);font-size:12px}
@@ -362,12 +445,13 @@ h1{font-size:clamp(26px,5vw,36px);line-height:1.15;margin:6px 0 10px}
 .cena{border-left:3px solid var(--accent);padding:4px 0 4px 12px;margin:0 0 12px}.cena b{display:block}.cena span{color:var(--text-2);font-size:14px}
 .voltar{display:inline-block;margin-top:8px;color:var(--accent);font-weight:700}
 footer{color:var(--muted);font-size:12.5px;margin-top:10px}
-</style></head><body><div class="wrap">
-<header><small>Relatório do mês · ${esc(d.negocio)}</small><h1>${esc(nomeDoMes(d.mes).replace(/^./, x => x.toUpperCase()))}</h1>
-<span class="tom ${tom}">${tom === 'boas' ? 'Boas notícias' : 'Precisamos olhar juntos'}</span>
+</style></head><body><div class="hero"><div class="wrap">${im.logo ? `<div class="logo"><img src="${esc(im.logo)}" alt="Logo do ${esc(d.negocio)}"></div>` : ''}<div><small>Relatório do mês · ${esc(d.negocio)}</small><h1>${esc(nomeDoMes(d.mes).replace(/^./, x => x.toUpperCase()))}</h1></div></div></div><div class="wrap">
+<header class="ab"><span class="tom ${tom}">${tom === 'boas' ? 'Boas notícias' : 'Precisamos olhar juntos'}</span>
 <p class="resumo">${esc(c.resumo)}</p></header>
 <div class="kpis">${kpi(String(w.conversas), 'conversas no WhatsApp')}${kpi(String(w.ganhos), 'vendas', w.receita ? R$(w.receita) : '')}${kpi(t.gasto > 0 ? R$(t.gasto) : '–', 'investido em anúncio')}${kpi(t.custo_conversa != null ? R$(t.custo_conversa) : '–', 'por conversa')}${kpi(t.retorno != null ? R$(t.retorno) : '–', 'de volta pra cada R$ 1')}</div>
 <div class="grade">
+${(d.semanas || []).length ? card('Semana a semana', `<div class="graficos">${barras('Conversas', 'conversas', n => String(n))}${barras('Vendas', 'vendas', n => String(n))}${barras('Investido', 'investido', n => n ? R$(n) : '0')}</div>`, 'largo') : ''}
+${ca || cp ? card('Os campeões do mês', `<div class="campeoes">${ca ? `<div class="campeao">${midia(im.anuncio || null, 'O anúncio campeão')}<div class="tx"><small>Anúncio campeão</small><b>${esc(ca.nome)}</b><p>${esc(ca.motivo)}</p></div></div>` : ''}${cp ? `<div class="campeao">${midia(im.post || null, 'A postagem campeã')}<div class="tx"><small>Postagem campeã</small><b>${esc(ddmm(cp.dia))} · ${esc(cp.tipo)}${cp.tema ? ' sobre ' + esc(cp.tema) : ''}</b><p>${cp.alcance.toLocaleString('pt-BR')} pessoas alcançadas${cp.views ? `, ${cp.views.toLocaleString('pt-BR')} visualizações` : ''}, ${cp.interacoes} interações. "${esc(cp.legenda.slice(0, 80))}${cp.legenda.length > 80 ? '…' : ''}"</p></div></div>` : ''}</div>`, 'largo') : ''}
 ${card('Conversas do WhatsApp', `<div class="mini"><div><b>${w.conversas}</b><span>conversas</span></div><div><b>${w.ganhos}</b><span>ganhos</span></div><div><b>${w.perdas}</b><span>perdas</span></div><div><b>${w.contatos_novos}</b><span>contatos novos</span></div></div>
 ${w.motivos.length ? `<p><b>Por que perdemos:</b></p>${lista(w.motivos.map(([m, n]) => `${m}: ${n}`))}` : '<p>Nenhuma perda marcada no mês.</p>'}`)}
 ${card('Onde a IA precisou de ajuda', `<div class="mini"><div><b>${w.passadas}</b><span>passadas pro time</span></div><div><b>${w.reclamacoes}</b><span>reclamações</span></div></div>

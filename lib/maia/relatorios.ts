@@ -31,14 +31,14 @@ const primeiro = (s: any) => String(s || '').split(' ')[0] || null
 const dentro = (iso: any, de: string, ate: string) => !!iso && iso >= de && iso <= ate
 
 // ─────────────────────────── leitura comum
-type AdInfo = { nome: string; campanha_id: string | null; campanha: string | null; verba_dia: number | null; ativa: boolean; inicio: string | null }
+type AdInfo = { nome: string; campanha_id: string | null; campanha: string | null; verba_dia: number | null; ativa: boolean; inicio: string | null; arquivo: string | null }
 async function infoDosAnuncios(neg: any): Promise<Map<string, AdInfo>> {
   const m = new Map<string, AdInfo>()
   for (const c of await db.lista('campanhas', { negocio_id: neg.id })) {
     const ids = (c.meta_ad_ids || []).map(String)
     for (let i = 0; i < ids.length; i++) {
       const p = c.peca_ids?.[i] ? await db.um('pecas', { id: c.peca_ids[i] }) : null
-      m.set(ids[i], { nome: String(p?.gancho || p?.titulo || `anúncio ${ids[i]}`), campanha_id: c.id, campanha: c.nome || null, verba_dia: c.verba_dia != null ? Number(c.verba_dia) : null, ativa: c.status === 'ativa', inicio: c.ativada_em || c.criado_em || null })
+      m.set(ids[i], { nome: String(p?.gancho || p?.titulo || `anúncio ${ids[i]}`), campanha_id: c.id, campanha: c.nome || null, verba_dia: c.verba_dia != null ? Number(c.verba_dia) : null, ativa: c.status === 'ativa', inicio: c.ativada_em || c.criado_em || null, arquivo: p?.arquivo_path || null })
     }
   }
   return m
@@ -80,7 +80,7 @@ function anunciosDoPeriodo(o: { leads: any[]; porLead: Map<string, any[]>; info:
     out.push({ id, nome: x?.nome || nomeMeta || (id === 'simulado' ? 'anúncio de teste' : `anúncio ${id}`), campanha_id: x?.campanha_id || null, campanha: x?.campanha || lm[0]?.campaign_name || null,
       verba_dia: x?.verba_dia ?? null, campanha_ativa: x ? x.ativa : true, inicio: x?.inicio || primeiroDia,
       gasto: temMeta ? r2(lm.reduce((s, l) => s + (+l.gasto || 0), 0)) : null, conversas: temMeta ? lm.reduce((s, l) => s + (+l.conversas || 0), 0) : null,
-      contatos, secundaria, vendas: ganhos.length, receita: r2(ganhos.reduce((s, l) => s + (Number(l.valor) || 0), 0)) })
+      contatos, secundaria, vendas: ganhos.length, receita: r2(ganhos.reduce((s, l) => s + (Number(l.valor) || 0), 0)), arquivo: x?.arquivo || null })
   }
   // só o que teve movimento no período (ou está no ar)
   return out.filter(a => a.contatos || a.vendas || (a.gasto || 0) > 0 || (a.secundaria || 0) > 0 || info.get(a.id)?.ativa)
@@ -122,14 +122,66 @@ export async function geraAnalise(neg: any, op: { agora?: Date; de?: string; ate
   const p = op.de && op.ate ? { de: op.de, ate: op.ate } : await periodoDaAnalise(neg, agora)
   const d = await dadosDaAnalise(neg, p.de, p.ate, agora)
   const texto = C.textoAnalise(d)
-  const peca = await db.insere('pecas', { negocio_id: neg.id, tipo: 'relatorio', status: 'revisao_equipe', titulo: `${C.TITULO_ANALISE} ${p.de.slice(0, 10)} a ${p.ate.slice(0, 10)}`, texto })
+  // 13/11 (pedido do Guto): a análise vira uma IMAGEM (card 1080x1350 na cor do negócio) que a oficina monta (maia-oficina/analise.js,
+  // tarefa 'relatorio'). A peça espera a imagem em 'gerando'; o texto completo fica na peça (painel) e a legenda curta no cta.
+  // Sem oficina (MAIA_ANALISE_IMAGEM=0, ou ela não entregou em 2 h / errou 3 vezes): segue só com o texto, como antes
+  const card = C.cardAnalise(d, d.anuncios)
+  const comImagem = process.env.MAIA_ANALISE_IMAGEM !== '0'
+  const peca = await db.insere('pecas', { negocio_id: neg.id, tipo: 'relatorio', status: comImagem ? 'gerando' : 'revisao_equipe', titulo: `${C.TITULO_ANALISE} ${p.de.slice(0, 10)} a ${p.ate.slice(0, 10)}`, texto, cta: C.legendaAnalise(d) })
   await db.evento('analise_2dias', neg.id, { peca_id: peca.id, de: p.de, ate: p.ate, conclusao: d.decisao.conclusao, julga_por: d.decisao.julga_por, sugestoes: d.decisao.sugestoes, em_teste: d.decisao.em_teste,
     numeros: { gasto: d.gasto, conversas: d.conversas, contatos: d.contatos, secundaria: d.secundaria, vendas: d.vendas, receita: d.receita }, secundaria_nome: d.sec.nome, secundaria_padrao: d.sec.padrao })
-  // "sugiro mudar" passa SEMPRE pela equipe (é verba e anúncio); o resto segue a regra do negócio
-  if (neg.aprovacao_equipe === false && d.decisao.conclusao !== 'mudar') { const { equipeAprova } = await import('./aprovacao'); await equipeAprova(peca.id, 'automatico') }
-  else { const { avisaEquipe } = await import('./canal'); await avisaEquipe('análise dos anúncios pra aprovar', `${neg.nome}: ${d.decisao.conclusao === 'mudar' ? 'SUGESTÃO DE MUDANÇA: ' + d.decisao.sugestoes.map(s => s.texto).join('; ') : d.decisao.conclusao === 'segura' ? 'segura mais uns dias' : 'segue como está'}`.slice(0, 400), neg.id) }
-  return { peca, dados: d }
+  if (comImagem) {
+    await db.insere('tarefas', { negocio_id: neg.id, tipo: 'relatorio', peca_id: peca.id, dados: { analise: card } })
+    return { peca, dados: d, card }
+  }
+  await analisePronta(neg, peca, d.decisao.conclusao)
+  return { peca, dados: d, card }
 }
+
+// a análise ficou pronta (com ou sem imagem): equipe aprova, ou vai direto quando o negócio não pede aprovação.
+// "sugiro mudar" passa SEMPRE pela equipe (é verba e anúncio)
+async function analisePronta(neg: any, peca: any, conclusao: string) {
+  if (neg.aprovacao_equipe === false && conclusao !== 'mudar') { const { equipeAprova } = await import('./aprovacao'); await equipeAprova(peca.id, 'automatico'); return }
+  const ev = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'analise_2dias' }, { ordem: 'criado_em', desc: true, limite: 20 })).find(e => e.detalhe?.peca_id === peca.id)
+  const sug = (ev?.detalhe?.sugestoes || []).map((s: any) => s.texto)
+  const { avisaEquipe } = await import('./canal')
+  await avisaEquipe('análise dos anúncios pra aprovar', `${neg.nome}: ${conclusao === 'mudar' ? 'SUGESTÃO DE MUDANÇA: ' + sug.join('; ') : conclusao === 'segura' ? 'segura mais uns dias' : 'segue como está'}`.slice(0, 400), neg.id)
+}
+
+// a oficina devolveu a imagem da análise (ou o erro). Chamada por /api/maia/oficina no lugar do oficinaEntregou das peças
+export async function analiseEntregue(tarefa: any, arquivo: { buf?: Buffer; caminho?: string; mime: string } | null, erro?: string) {
+  const peca = await db.um('pecas', { id: tarefa.peca_id }), neg = await db.um('negocios', { id: tarefa.negocio_id })
+  if (!peca || !neg) return
+  if (erro || !arquivo) {
+    const tent = (tarefa.tentativas || 0) + 1
+    await db.atualiza('tarefas', { id: tarefa.id }, { status: tent >= 3 ? 'erro' : 'fila', tentativas: tent, resultado: { erro } })
+    if (tent >= 3) await soltaSemImagem(neg, peca, 'a oficina não conseguiu fazer a imagem: ' + String(erro || '').slice(0, 120))
+    return
+  }
+  const caminho = arquivo.caminho || await db.sobe(`${tarefa.negocio_id}/pecas/${tarefa.peca_id}-${Date.now()}.jpg`, arquivo.buf!, arquivo.mime || 'image/jpeg')
+  await db.atualiza('tarefas', { id: tarefa.id }, { status: 'feito', resultado: { arquivo: caminho } })
+  if (peca.status !== 'gerando') return   // já saiu sem imagem (atrasou demais): não muda o que a equipe já tem
+  await db.atualiza('pecas', { id: peca.id }, { arquivo_path: caminho, status: 'revisao_equipe' })
+  const ev = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'analise_2dias' }, { ordem: 'criado_em', desc: true, limite: 20 })).find(e => e.detalhe?.peca_id === peca.id)
+  await analisePronta(neg, { ...peca, arquivo_path: caminho }, ev?.detalhe?.conclusao || 'mudar')
+}
+async function soltaSemImagem(neg: any, peca: any, motivo: string) {
+  await db.atualiza('pecas', { id: peca.id }, { status: 'revisao_equipe' })
+  const { avisaEquipe } = await import('./canal'); await avisaEquipe('análise sem imagem', `${neg.nome}: ${motivo}. Vai só com o texto.`, neg.id)
+  const ev = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'analise_2dias' }, { ordem: 'criado_em', desc: true, limite: 20 })).find(e => e.detalhe?.peca_id === peca.id)
+  await analisePronta(neg, peca, ev?.detalhe?.conclusao || 'mudar')
+}
+// a oficina não pegou a imagem em 2 h (desligada, caiu): a análise segue só com o texto (a rotina chama)
+export async function analisesAtrasadas(agora = new Date()) {
+  const feitas: string[] = []
+  for (const p of await db.lista('pecas', { tipo: 'relatorio', status: 'gerando' })) {
+    if (!ehAnalise(p) || agora.getTime() - Date.parse(p.criado_em) < 2 * 3600e3) continue
+    const neg = await db.um('negocios', { id: p.negocio_id }); if (!neg) continue
+    await soltaSemImagem(neg, p, 'a oficina não fez a imagem em 2 h'); feitas.push(p.id)
+  }
+  return feitas
+}
+
 
 // ═══════════════════════════ 2) O RELATÓRIO DO MÊS
 // o mês no Brasil: do dia 1 às 00h até o último dia às 23h59 (o servidor é UTC: +3 h)
@@ -209,7 +261,7 @@ export async function dadosDoMes(neg: any, mes: string): Promise<C.DadosMes> {
     const pc = pecas.find(x => x.id === p.detalhe.peca_id)
     return { dia: p.detalhe.publicado_em, tipo: String(p.detalhe.tipo || 'post'), tema: p.detalhe.tema || null, legenda: String(pc?.texto || pc?.gancho || ''),
       alcance: (ig.reach || 0) + (fb.post_total_media_view_unique || 0), interacoes: (ig.total_interactions || 0) + (fb.reacoes || fb.post_reactions_by_type_total || 0) + (fb.comentarios || 0) + (fb.compartilhamentos || 0),
-      views: (ig.views || 0) + (fb.post_media_view || 0), salvos: ig.saved || 0 }
+      views: (ig.views || 0) + (fb.post_media_view || 0), salvos: ig.saved || 0, midia: (p.detalhe.midias || [])[0] || (pc?.arquivo_path ? { caminho: pc.arquivo_path } : null) }
   }).sort((a, b) => (a.dia < b.dia ? -1 : 1))
   const alcanceTot = listaPosts.reduce((s, p) => s + p.alcance, 0)
   // o que estimular / tirar: por tema (ou tipo), com 2+ posts no grupo; o melhor e o pior pelo alcance médio
@@ -246,6 +298,41 @@ export async function dadosDoMes(neg: any, mes: string): Promise<C.DadosMes> {
       contatos: leads.filter(l => ['instagram', 'facebook', 'organico'].includes(l.origem) && dentro(l.criado_em, de, ate)).length },
     criacao: { criadas: criadas.length, aprovadas: criadas.filter(p => p.aprovado_dono_em).length, no_ar: criadas.filter(p => p.status === 'no_ar').length, por_tipo: porTipo },
     anterior,
+    // 13/11 (mais visual): a marca, as semanas (gráficos) e os campeões do mês
+    marca: { primaria: neg.marca?.cores?.primaria || neg.marca?.cor_primaria || null, secundaria: neg.marca?.cores?.secundaria || neg.marca?.cor_secundaria || null, logo: neg.marca?.logo_path || null },
+    semanas: C.semanasDoMes(mes).map(w => {
+      const naSemana = (iso: any) => dentro(iso, de, ate) && C.diaBRdoMes(iso) >= w.de && C.diaBRdoMes(iso) <= w.ate
+      const ms = metM.ms.filter(x => Number(String(x.dia).slice(8, 10)) >= w.de && Number(String(x.dia).slice(8, 10)) <= w.ate)
+      const convMeta = ms.reduce((s, x) => s + (Number(x.conversas_iniciadas) || 0), 0)
+      const convCli = [...porCv.values()].filter(m => { const pri = m.find(x => x.autor === 'cliente'); return pri && naSemana(pri.criado_em) }).length
+      return { rotulo: w.rotulo, conversas: metM.conversas ? convMeta : convCli, vendas: leads.filter(l => naSemana(l.ganho_em)).length, investido: r2(ms.reduce((s, x) => s + (Number(x.gasto) || 0), 0)) }
+    }),
+    campeao_anuncio: (() => {
+      const q = anuncios.filter(a => a.qualificado).sort((a, b) => (b.vendas - a.vendas) || ((b.secundaria || 0) - (a.secundaria || 0)) || (b.contatos - a.contatos))[0]
+      if (!q) return null
+      return { id: q.id, nome: q.nome, arquivo: q.arquivo || null, thumb: (linhas.find(l => String(l.ad_id) === q.id && (l as any).thumbnail_url) as any)?.thumbnail_url || null,
+        motivo: [q.vendas ? `${q.vendas} ${q.vendas === 1 ? 'venda' : 'vendas'}${q.receita ? ' (' + C.R$(q.receita) + ')' : ''}` : '', q.secundaria ? `${q.secundaria} chegaram em "${sec.nome}"` : '', `${q.contatos} contatos`, q.custo_conversa != null ? `conversa a ${C.R$(q.custo_conversa)}` : ''].filter(Boolean).join(', ') }
+    })(),
+    campeao_post: (() => { const b = [...listaPosts].sort((x, y) => (y.alcance - x.alcance) || (y.views - x.views))[0]; return b ? { dia: b.dia, tipo: b.tipo, tema: b.tema, legenda: b.legenda, alcance: b.alcance, views: b.views, interacoes: b.interacoes, midia: b.midia || null } : null })(),
+  }
+}
+
+// as imagens da página (logo, anúncio campeão, post campeão): link assinado, ou embutidas (o exemplo em arquivo e a prévia)
+const ehVideo = (s: any) => /\.(mp4|mov|webm)(\?|$)/i.test(String(s || ''))
+export async function imagensDoRelatorio(d: C.DadosMes, embutir = false) {
+  const um = async (caminho: string | null | undefined, url?: string | null): Promise<C.ImagemRel> => {
+    try {
+      if (url && /^https?:\/\//.test(url)) return { src: url, video: ehVideo(url) }
+      if (!caminho) return null
+      if (ehVideo(caminho)) return embutir ? null : { src: (await db.link(caminho, 60 * 60 * 24 * 7))!, video: true }
+      if (embutir) { const buf = await db.baixa(caminho); return { src: `data:${/\.png$/i.test(caminho) ? 'image/png' : /\.webp$/i.test(caminho) ? 'image/webp' : 'image/jpeg'};base64,${buf.toString('base64')}` } }
+      return { src: (await db.link(caminho, 60 * 60 * 24 * 7))! }
+    } catch { return null }
+  }
+  return {
+    logo: (await um(d.marca?.logo))?.src || null,
+    anuncio: await um(d.campeao_anuncio?.arquivo, d.campeao_anuncio?.thumb),
+    post: await um(d.campeao_post?.midia?.caminho, d.campeao_post?.midia?.url),
   }
 }
 
@@ -303,7 +390,7 @@ export async function geraRelatorioMes(neg: any, mes: string, op: { forcar?: boo
   // o relatório do mês passa sempre pela equipe quando tem texto da IA; sem IA, segue a regra do negócio
   if (neg.aprovacao_equipe === false && !c.por_ia) { const { equipeAprova } = await import('./aprovacao'); await equipeAprova(peca.id, 'automatico') }
   else { const { avisaEquipe } = await import('./canal'); await avisaEquipe('relatório do mês pra aprovar', `${neg.nome}: ${C.nomeDoMes(mes)}, ${d.whatsapp.ganhos} venda(s), ${C.R$(d.whatsapp.receita)}`, neg.id) }
-  return { peca, dados: d, conclusoes: c, html: C.htmlRelatorio(d, c, { gerado_em: new Date().toISOString() }) }
+  return { peca, dados: d, conclusoes: c, html: C.htmlRelatorio(d, c, { gerado_em: new Date().toISOString(), imagens: await imagensDoRelatorio(d, true) }) }
 }
 
 // o link da página do relatório (o mesmo token do painel do dono: abre o painel e o relatório)
@@ -319,13 +406,14 @@ export async function paginaDoRelatorio(neg: any, peca_id: string, op: { painel?
   if (!p || !ehRelatorioMes(p) || p.status !== 'aprovada') return null
   const ev = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'relatorio_mes' }, { ordem: 'criado_em', desc: true })).find(e => e.detalhe?.peca_id === p.id)
   if (!ev?.detalhe?.dados) return null
-  return C.htmlRelatorio(ev.detalhe.dados, ev.detalhe.conclusoes || C.conclusoesSemIA(ev.detalhe.dados), { gerado_em: ev.criado_em, painel: op.painel ?? '/maia/painel' })
+  return C.htmlRelatorio(ev.detalhe.dados, ev.detalhe.conclusoes || C.conclusoesSemIA(ev.detalhe.dados), { gerado_em: ev.criado_em, painel: op.painel ?? '/maia/painel', imagens: await imagensDoRelatorio(ev.detalhe.dados) })
 }
 
 // ═══════════════════════════ o painel do dono e o pedido pelo WhatsApp
 export async function analisesEnviadas(negocio_id: string, limite = 6) {
   const ps = await db.lista('pecas', { negocio_id, tipo: 'relatorio' }, { ordem: 'criado_em', desc: true })
-  return ps.filter(p => ehAnalise(p) && p.status === 'aprovada' && p.enviado_dono_em).slice(0, limite).map(p => ({ id: p.id, titulo: p.titulo, texto: p.texto, enviado_em: p.enviado_dono_em }))
+  // 13/11: com a imagem (o card), quando a oficina fez
+  return Promise.all(ps.filter(p => ehAnalise(p) && p.status === 'aprovada' && p.enviado_dono_em).slice(0, limite).map(async p => ({ id: p.id, titulo: p.titulo, texto: p.texto, legenda: p.cta || null, imagem: p.arquivo_path ? await db.link(p.arquivo_path, 60 * 60 * 24) : null, enviado_em: p.enviado_dono_em })))
 }
 export async function relatoriosEnviados(negocio_id: string, limite = 12) {
   const ps = await db.lista('pecas', { negocio_id, tipo: 'relatorio' }, { ordem: 'criado_em', desc: true })
@@ -349,7 +437,7 @@ export async function pedidoDoDono(neg: any, qual: 'analise' | 'relatorio_mes', 
   // os números de agora vão na hora (são do sistema); a conclusão sai depois que a equipe olha
   const p = await periodoDaAnalise(neg, agora)
   const d = await dadosDaAnalise(neg, p.de, p.ate, agora)
-  const esperando = (await db.lista('pecas', { negocio_id: neg.id, tipo: 'relatorio' })).find(x => ehAnalise(x) && x.status === 'revisao_equipe')
+  const esperando = (await db.lista('pecas', { negocio_id: neg.id, tipo: 'relatorio' })).find(x => ehAnalise(x) && ['revisao_equipe', 'gerando'].includes(x.status))
   if (!esperando) await geraAnalise(neg, { agora })
   return { ok: true, numeros_agora: C.textoAnalise(d, false), obs: 'manda os números agora; a conclusão (seguir, segurar ou mudar) chega depois que a equipe conferir' }
 }
@@ -365,6 +453,8 @@ async function negocios(agora: Date) { const { negociosDoResumo } = await import
 export async function rotinaRelatorios(op: { agora?: Date; forcar?: boolean } = {}) {
   const agora = op.agora || new Date()
   const feitos: any[] = []
+  // 13/11: a análise que a oficina não transformou em imagem em 2 h segue só com o texto
+  try { for (const id of await analisesAtrasadas(agora)) feitos.push({ analise_sem_imagem: id }) } catch { /* segue */ }
   for (const neg of await negocios(agora)) {
     try {
       const h = horaLocal(agora, fusoDo(neg))
