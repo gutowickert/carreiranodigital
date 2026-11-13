@@ -19,6 +19,7 @@ import { comPendencias } from './pendencias'
 import { respostaFixa } from './fixas'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
+import { textoRegrasAprendidas } from './aprendizado'   // 13/11 (aprendizado): as regras que a equipe aprovou
 import { regrasDoCadastro, regrasDaRetomada, fichaParaAtender, motivoDoCadastro, descontoAcima, semFrasesDeDesconto, limitesDoCadastro, fechamentoDo, regraDoFechamento, precoPersonalizadoDo } from './cadastro'
 
 const semAc = (s: any) => String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
@@ -74,6 +75,7 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
     texto = m.texto; tipo = d.tipo === 'audio' ? 'audio' : 'imagem'; comprovante = m.comprovante
   }
   await db.insere('msgs', { conversa_id: cv.id, negocio_id: neg.id, autor: 'cliente', tipo, texto, wamid: d.wamid || null, status: 'recebido' }).catch(() => null)
+  await import('./acompanhamento').then(m => m.acompanhaPrimeiras(neg, cv)).catch(() => null)   // 13/11: aviso das primeiras conversas pra equipe
   // comprovante de pagamento: a Maia nunca confirma sozinha. Chama o dono pra conferir (a venda só é marcada quando ele confirma)
   if (comprovante) {
     await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'comprovante', autor: 'maia', detalhe: {} }).catch(() => null)
@@ -251,7 +253,7 @@ const regras = (neg: any) => `${jeitoAtendimento(neg)}
 
 AGORA: tu és a ASSISTENTE VIRTUAL do negócio "${neg.nome}" (${neg.nicho || ''}, ${neg.cidade || ''}) e estás atendendo um CLIENTE dele no WhatsApp. Tu falas em nome do negócio.
 O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(fichaParaAtender(neg))}
-${regrasDoCadastro(neg)}
+${regrasDoCadastro(neg)}${textoRegrasAprendidas(neg, 'atendimento')}
 ${regraDoFechamento(neg)}
 COMO ATENDER:
 - Se apresenta na primeira mensagem como a assistente virtual do ${neg.nome}. Se perguntarem, diz que é uma IA.

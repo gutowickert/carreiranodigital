@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f7f5fc">
+<link rel="icon" href="/maia/img/maia-avatar.webp">
+<title>Maia · Aprendizado</title>
+<script>
+(function(){ try{ if(localStorage.getItem('maia_op_tema')==='dark') document.documentElement.setAttribute('data-theme','dark'); }catch(e){} })();
+</script>
+<style>
+/* Maia: a aba "Aprendizado" do painel da equipe (13/11). Página à parte (mesma senha e o mesmo visual claro do
+   /maia/operacao), como a de Avisos. Regras propostas pelas correções, quanto a Maia acerta de primeira, o acompanhamento
+   dos negócios novos (análise da manhã) e a conversa ao vivo com o "isso está errado". */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+:root{
+  --bg:#f7f5fc; --surface:#ffffff; --surface-2:#f3f0fa; --border:#ebe6f5; --border-strong:#dcd5ec;
+  --text:#1b1530; --text-2:#423a5c; --text-muted:#6b6485; --text-faint:#77708f;
+  --accent:#7c3aed; --accent-soft:#6d28d9; --accent-bg:#f1ebfe;
+  --green:#15803d; --green-bg:#dcfce7; --red:#b91c1c; --red-bg:#fee2e2; --amber:#b45309; --amber-bg:#fef3c7; --blue:#1d4ed8; --blue-bg:#dbeafe;
+  --bal-maia:#efe9fc; --bal-ele:#ffffff; --bal-equipe:#dcf5e5; --chat-fundo:#f3f0fa;
+  --sombra:0 1px 2px rgba(23,18,42,.04),0 6px 22px rgba(23,18,42,.06); --raio:18px; color-scheme:light;
+}
+:root[data-theme="dark"]{
+  --bg:#0f0c17; --surface:#171320; --surface-2:#211b2e; --border:#261f36; --border-strong:#372e4c;
+  --text:#f4f1fb; --text-2:#c9c2da; --text-muted:#9a93ae; --text-faint:#8a83a0;
+  --accent:#8b5cf6; --accent-soft:#c4b5fd; --accent-bg:#2a1b4d;
+  --green:#4ade80; --green-bg:#0d2e20; --red:#fb7185; --red-bg:#3b1520; --amber:#fbbf24; --amber-bg:#3a2a0a; --blue:#7fb0ff; --blue-bg:#14243f;
+  --bal-maia:#2a1f45; --bal-ele:#1c1727; --bal-equipe:#13301f; --chat-fundo:#13101c;
+  --sombra:0 1px 2px rgba(0,0,0,.3),0 8px 24px rgba(0,0,0,.25); color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+h1,h2,h3{font-family:'Bricolage Grotesque','Manrope',sans-serif;font-variation-settings:'opsz' 48,'wdth' 92;font-weight:700;letter-spacing:-.02em;line-height:1.2;margin:0}
+h1{font-size:26px} h2{font-size:17px} h3{font-size:15px}
+p{margin:0} a{color:var(--accent-soft)}
+button,input,textarea,select{font:inherit;color:inherit}
+.mu{color:var(--text-muted)} .peq{font-size:13px}
+header{position:sticky;top:0;z-index:5;background:color-mix(in srgb,var(--bg) 86%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+.topo{max-width:1080px;margin:0 auto;display:flex;align-items:center;gap:12px;padding:10px 16px}
+.topo img{width:36px;height:36px;border-radius:11px;object-fit:cover}
+.topo b{font-family:'Bricolage Grotesque',sans-serif;font-size:18px}
+.topo .dir{margin-left:auto;display:flex;gap:8px}
+nav.abas{max-width:1080px;margin:0 auto;display:flex;gap:6px;padding:0 16px 10px;overflow-x:auto;scrollbar-width:none}
+nav.abas a{padding:7px 14px;border-radius:999px;font-weight:700;font-size:14px;color:var(--text-2);text-decoration:none;white-space:nowrap}
+nav.abas a.on{background:var(--accent);color:#fff}
+main{max-width:1080px;margin:0 auto;padding:20px 16px 72px}
+.cab{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:16px}
+.cab small{display:block;font:600 13.5px/1.4 'Manrope',sans-serif;color:var(--text-muted);margin-top:4px}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:999px;border:1px solid var(--border-strong);background:var(--surface);font-weight:700;font-size:13.5px;cursor:pointer;text-decoration:none;color:var(--text-2)}
+.btn:hover{border-color:var(--accent);color:var(--accent-soft)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.mini{padding:5px 11px;font-size:12.5px}
+.btn.perigo:hover{border-color:var(--red);color:var(--red)}
+.btn[disabled]{opacity:.55;cursor:default}
+.card{background:var(--surface);border-radius:var(--raio);box-shadow:var(--sombra);padding:16px 18px;margin-bottom:16px;min-width:0}
+.card-cab{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.chip{display:inline-flex;align-items:center;gap:5px;padding:2px 9px;border-radius:999px;font-size:12px;font-weight:700;background:var(--surface-2);color:var(--text-2);white-space:nowrap}
+.chip.ruim{background:var(--red-bg);color:var(--red)} .chip.aten{background:var(--amber-bg);color:var(--amber)} .chip.info{background:var(--blue-bg);color:var(--blue)} .chip.bom{background:var(--green-bg);color:var(--green)}
+.item{border-top:1px solid var(--border);padding:12px 0}
+.item:first-of-type{border-top:0;padding-top:4px}
+.item .t{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.item p{margin-top:4px;color:var(--text-2);font-size:14px}
+.regra{font-weight:700;font-size:15px;color:var(--text);margin-top:6px}
+.botoes{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+textarea,select,input[type=number]{border:1px solid var(--border-strong);border-radius:12px;padding:8px 10px;background:var(--surface);width:100%}
+textarea{min-height:64px;resize:vertical}
+select,input[type=number]{width:auto}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
+.num{font-family:'Bricolage Grotesque',sans-serif;font-size:30px;line-height:1.1;font-variant-numeric:tabular-nums}
+.tres{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:8px 0}
+.tres div{background:var(--surface-2);border-radius:12px;padding:10px}
+.tres span{display:block;font-size:12px;font-weight:700;color:var(--text-muted)}
+.nota{font-size:13px;color:var(--text-muted);background:var(--surface-2);border-radius:12px;padding:8px 12px;margin-top:8px}
+.trecho{font-size:13.5px;background:var(--surface-2);border-radius:10px;padding:7px 10px;margin-top:6px}
+.trecho b{font-size:12px;color:var(--amber)}
+.erro{background:var(--red-bg);color:var(--red);border-radius:12px;padding:10px 14px;margin:10px 0}
+.vazio{color:var(--text-muted);padding:10px 0}
+.login{max-width:360px;margin:12vh auto;background:var(--surface);border-radius:var(--raio);box-shadow:var(--sombra);padding:24px;display:grid;gap:12px}
+.login input{padding:10px 12px;border-radius:12px;border:1px solid var(--border-strong);background:var(--surface)}
+.chat{background:var(--chat-fundo);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:8px;max-height:65vh;overflow:auto}
+.bal{max-width:min(80%,520px);padding:9px 13px 6px;border-radius:18px;white-space:pre-wrap;overflow-wrap:anywhere;font-size:14.5px;line-height:1.5;background:var(--bal-ele);box-shadow:var(--sombra);align-self:flex-start}
+.bal.maia,.bal.equipe,.bal.dono{align-self:flex-end}
+.bal.maia{background:var(--bal-maia);box-shadow:none} .bal.equipe{background:var(--bal-equipe);box-shadow:none}
+.bal .quem{display:block;font-size:11.5px;font-weight:800;opacity:.85}
+.bal .hora{display:block;text-align:right;font-size:10.5px;color:var(--text-faint)}
+.bal .errado{display:block;border:0;background:none;padding:2px 0;color:var(--text-faint);font-weight:700;font-size:11.5px;text-decoration:underline;cursor:pointer}
+.bal .errado:hover{color:var(--red)} .bal .errado.feito{color:var(--amber);text-decoration:none;cursor:default}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:left;padding:8px 6px;border-top:1px solid var(--border);vertical-align:top}
+th{font-size:12px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;border-top:0}
+.rolar{overflow-x:auto}
+#toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:10px 16px;border-radius:12px;font-weight:600;font-size:14px;display:none;max-width:calc(100% - 32px);z-index:20}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:8px}
+@media (max-width:520px){ .tres{grid-template-columns:1fr} .grade{grid-template-columns:1fr} }
+</style>
+</head>
+<body>
+<header><div class="topo"><img src="/maia/img/maia-avatar.webp" alt="" width="36" height="36"><div><b>Maia</b><div class="mu peq">Aprendizado · equipe</div></div>
+  <div class="dir"><a class="btn mini" href="/maia/operacao">← Painel</a></div></div>
+  <nav class="abas" id="abas-apr"><a href="#regras">Regras</a><a href="#acerto">Acerto de primeira</a><a href="#acompanhar">Negócios novos</a><a href="#correcoes">Correções</a></nav></header>
+<main id="tela"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="/maia/operacao/aprendizado-gancho.js"></script>
+<script>
+(function(){
+'use strict';
+var API='/api/maia/aprendizado', CHAVE='maia_op_senha';
+var S={senha:null,dados:null,timer:null};
+var AREA={criacao:'anúncios e posts',atendimento:'atendimento',tudo:'anúncios e atendimento'};
+function $(s,e){ return (e||document).querySelector(s); }
+function $$(s,e){ return Array.prototype.slice.call((e||document).querySelectorAll(s)); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v==null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(e){ return null; } }
+function toast(t,ruim){ var d=$('#toast'); d.textContent=t; d.style.display='block'; d.style.background=ruim?'var(--red)':''; clearTimeout(d._t); d._t=setTimeout(function(){ d.style.display='none'; },3000); }
+function quando(iso){ if(!iso) return ''; var d=new Date(iso); return isNaN(d)?'':d.toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}); }
+function pct(v){ return v==null?'—':v+'%'; }
+function quem(){ return ls('maia_op_quem')||'equipe'; }
+function api(arg){
+  var o={headers:{'x-senha':S.senha||''}}, url=API;
+  if(typeof arg==='string') url+='?'+arg; else { o.method='POST'; o.headers['content-type']='application/json'; arg.por=arg.por||quem(); o.body=JSON.stringify(arg); }
+  return fetch(url,o).then(function(r){ return r.json().catch(function(){return {};}).then(function(j){
+    if(r.status===401){ ls(CHAVE,null); S.senha=null; login('A senha não confere.'); throw new Error('senha'); }
+    if(!r.ok) throw new Error((j&&j.erro)||('erro '+r.status)); return j; }); });
+}
+function espera(b,txt,fn){ if(b.disabled) return; var a=b.innerHTML; b.disabled=true; b.textContent=txt; return fn().catch(function(e){ toast('Não deu: '+e.message,true); }).then(function(){ b.disabled=false; b.innerHTML=a; }); }
+function login(msg){
+  $('#tela').innerHTML='<form class="login" id="f"><h1>Aprendizado da Maia</h1><p class="mu peq">A mesma senha do painel da equipe.</p>'+(msg?'<div class="erro">'+esc(msg)+'</div>':'')+
+    '<input id="s" type="password" autocomplete="current-password" placeholder="senha" required><button class="btn pri">Entrar</button></form>';
+  $('#f').onsubmit=function(e){ e.preventDefault(); S.senha=$('#s').value.trim(); carrega().then(function(){ ls(CHAVE,S.senha); rota(); }).catch(function(){}); };
+}
+function carrega(){ return api('acao=painel').then(function(d){ S.dados=d; return d; }); }
+
+function rota(){
+  clearInterval(S.timer); S.timer=null;
+  if(!S.senha) return login();
+  var h=(location.hash||'#regras').slice(1).split('/'), aba=h[0]||'regras';
+  $$('#abas-apr a').forEach(function(a){ a.classList.toggle('on', a.getAttribute('href')==='#'+aba); });
+  if(aba==='conversa') return telaConversa(h[1]);
+  $('#tela').innerHTML='<p class="mu">carregando…</p>';
+  carrega().then(function(){
+    if(aba==='acerto') return telaAcerto();
+    if(aba==='acompanhar') return telaAcompanhar(h[1]);
+    if(aba==='correcoes') return telaCorrecoes();
+    return telaRegras();
+  }).catch(function(e){ if(e.message!=='senha') $('#tela').innerHTML='<div class="erro">Não deu: '+esc(e.message)+'</div>'; });
+}
+window.addEventListener('hashchange',rota);
+
+/* ---------- Regras ---------- */
+function telaRegras(){
+  var d=S.dados, pend=d.propostas.filter(function(p){return p.status==='pendente';}), feitas=d.propostas.filter(function(p){return p.status!=='pendente';}).slice(0,15);
+  var negOpts=d.negocios.map(function(n){ return '<option value="'+esc(n.id)+'">'+esc(n.nome)+'</option>'; }).join('');
+  $('#tela').innerHTML='<div class="cab"><div><h1>Regras que a Maia aprende</h1><small>Toda segunda às 8h a Maia junta as correções da semana e propõe regras. Aprovada, a regra entra no que ela lê pra criar e pra atender.</small></div>'+
+    '<button class="btn pri" id="b-propor">Juntar as correções agora</button></div>'+
+    '<div class="card"><div class="card-cab"><h2>Esperando a equipe ('+pend.length+')</h2></div>'+
+      (pend.length?pend.map(cardProposta).join(''):'<p class="vazio">Nenhuma proposta esperando. Quando a equipe corrigir peças ou respostas com o mesmo motivo, aparece aqui.</p>')+'</div>'+
+    '<div class="card"><div class="card-cab"><h2>Regras valendo ('+d.regras.length+')</h2></div>'+
+      (d.regras.length?d.regras.map(function(r){ return '<div class="item"><div class="t">'+(r.escopo==='geral'?'<span class="chip info">todos os negócios</span>':'<span class="chip">'+esc(r.negocio_nome)+'</span>')+'<span class="chip">'+esc(AREA[r.area]||r.area)+'</span><span class="mu peq">aprovada '+esc(quando(r.aprovada_em))+' por '+esc(r.por||'equipe')+'</span></div>'+
+        '<p class="regra">'+esc(r.texto)+'</p><div class="botoes"><button class="btn mini" data-editar="'+esc(r.id)+'">Editar</button><button class="btn mini perigo" data-desligar="'+esc(r.id)+'">Desligar</button></div></div>'; }).join(''):'<p class="vazio">Nenhuma regra ainda.</p>')+
+      '<details style="margin-top:12px"><summary class="btn mini">Escrever uma regra direto</summary><div style="margin-top:10px;display:grid;gap:8px">'+
+        '<textarea id="nova-t" placeholder="ex.: Na Wood, todo gancho fala da cidade (Lajeado e região)."></textarea>'+
+        '<div class="botoes" style="margin-top:0"><select id="nova-n"><option value="__geral">todos os negócios</option>'+negOpts+'</select><select id="nova-a"><option value="tudo">anúncios e atendimento</option><option value="criacao">só anúncios e posts</option><option value="atendimento">só atendimento</option></select><button class="btn pri mini" id="b-nova">Guardar regra</button></div></div></details></div>'+
+    (feitas.length?'<div class="card"><div class="card-cab"><h2>Decididas</h2></div>'+feitas.map(function(p){ return '<div class="item"><div class="t"><span class="chip '+(p.status==='aprovada'?'bom':'')+'">'+esc(p.status)+'</span><span class="mu peq">'+esc(p.negocio_nome)+' · '+esc(quando(p.decidido_em))+' · '+esc(p.decidido_por||'')+'</span></div><p>'+esc(p.texto_final||p.texto)+'</p></div>'; }).join('')+'</div>':'');
+  $('#b-propor').onclick=function(){ espera(this,'juntando…',function(){ return api({acao:'propor'}).then(function(r){ toast(r.novas.length?r.novas.length+' regra(s) nova(s) pra decidir.':'Nenhuma regra nova: ainda não tem correção repetida.'); return rota(); }); }); };
+  $('#b-nova').onclick=function(){ var t=$('#nova-t').value.trim(), n=$('#nova-n').value; if(!t) return toast('Escreve a regra.',true);
+    espera(this,'guardando…',function(){ return api({acao:'regra_nova',texto:t,area:$('#nova-a').value,escopo:n==='__geral'?'geral':'negocio',negocio_id:n==='__geral'?null:n}).then(function(){ toast('Regra guardada.'); rota(); }); }); };
+  $$('[data-decidir]').forEach(function(b){ b.onclick=function(){
+    var id=b.dataset.id, caixa=b.closest('.item');
+    espera(b,'…',function(){ return api({acao:'decidir',id:id,decisao:b.dataset.decidir,texto:$('textarea',caixa).value,escopo:$('[data-escopo]',caixa).value,area:$('[data-area]',caixa).value}).then(function(r){ toast(r.status==='aprovada'?'Aprovada. A Maia já usa essa regra.':'Recusada.'); rota(); }); });
+  }; });
+  $$('[data-desligar]').forEach(function(b){ b.onclick=function(){ if(!confirm('Desligar essa regra? A Maia para de usar.')) return; espera(b,'…',function(){ return api({acao:'regra_mudar',id:b.dataset.desligar,ativa:false}).then(function(){ toast('Regra desligada.'); rota(); }); }); }; });
+  $$('[data-editar]').forEach(function(b){ b.onclick=function(){ var r=d.regras.filter(function(x){return x.id===b.dataset.editar;})[0]; var t=prompt('A regra:',r.texto); if(!t||t.trim()===r.texto) return;
+    espera(b,'…',function(){ return api({acao:'regra_mudar',id:r.id,texto:t.trim()}).then(function(){ toast('Regra mudada.'); rota(); }); }); }; });
+}
+function cardProposta(p){
+  var geral=p.escopo==='geral';
+  return '<div class="item"><div class="t">'+(geral?'<span class="chip info">todos os negócios</span>':'<span class="chip">'+esc(p.negocio_nome)+'</span>')+'<span class="chip aten">'+esc(p.base)+' correção(ões)</span>'+(p.ia?'<span class="chip">texto da IA</span>':'')+'<span class="mu peq">'+esc(quando(p.criado_em))+'</span></div>'+
+    '<p>'+esc(p.porque)+' Regra proposta:</p>'+
+    '<textarea style="margin-top:6px" aria-label="Texto da regra (dá pra editar)">'+esc(p.texto)+'</textarea>'+
+    '<div class="botoes"><select data-escopo aria-label="Vale pra">'+(geral?'':'<option value="negocio">só '+esc(p.negocio_nome)+'</option>')+'<option value="geral"'+(geral?' selected':'')+'>todos os negócios</option></select>'+
+    '<select data-area aria-label="Onde vale"><option value="tudo"'+(p.area==='tudo'?' selected':'')+'>anúncios e atendimento</option><option value="criacao"'+(p.area==='criacao'?' selected':'')+'>só anúncios e posts</option><option value="atendimento"'+(p.area==='atendimento'?' selected':'')+'>só atendimento</option></select>'+
+    '<button class="btn pri mini" data-decidir="aprovar" data-id="'+esc(p.id)+'">Aprovar</button><button class="btn mini perigo" data-decidir="recusar" data-id="'+esc(p.id)+'">Recusar</button></div></div>';
+}
+
+/* ---------- Acerto de primeira ---------- */
+function telaAcerto(){
+  var d=S.dados;
+  $('#tela').innerHTML='<div class="cab"><div><h1>Quanto a Maia acerta de primeira</h1><small>Últimos 30 dias. Peças: aprovadas pela equipe sem ajuste nem descarte. Respostas: mensagens da Maia em conversas reais que ninguém marcou como erradas.</small></div></div>'+
+    (d.negocios.length?'<div class="grade">'+d.negocios.map(function(n){ var a=n.acerto;
+      function bloco(rot,x,pe){ return '<div><span>'+rot+'</span><b class="num">'+pct(x.pct)+'</b><small class="mu peq">'+pe+'</small></div>'; }
+      return '<div class="card"><div class="card-cab"><h2>'+esc(n.nome)+'</h2><span class="chip">'+a.correcoes+' correção(ões)</span></div><div class="tres">'+
+        bloco('Peças',a.pecas,a.pecas.de_primeira+' de '+a.pecas.total)+bloco('Sugestões pro dono',a.sugestoes,a.sugestoes.de_primeira+' de '+a.sugestoes.total)+bloco('Respostas',a.respostas,(a.respostas.total-a.respostas.corrigidas)+' de '+a.respostas.total)+'</div>'+
+        (n.motivos.length?'<p class="peq mu">Motivos mais comuns: '+n.motivos.slice(0,4).map(function(m){ return esc(m.rotulo)+' ('+m.n+')'; }).join(', ')+'</p>':'<p class="peq mu">Sem correção ainda.</p>')+'</div>'; }).join('')+'</div>':'<p class="vazio">Nenhum negócio ainda.</p>');
+}
+
+/* ---------- Negócios novos (acompanhamento) ---------- */
+function telaAcompanhar(sel){
+  var d=S.dados;
+  $('#tela').innerHTML='<div class="cab"><div><h1>Negócios novos</h1><small>Nas primeiras conversas reais a equipe recebe o link pra acompanhar ao vivo. Todo dia às 7h sai a análise de ontem dos negócios em acompanhamento (30 dias desde a 1ª conversa real, ou marcado aqui).</small></div></div>'+
+    '<p class="nota" style="margin-bottom:16px">Quem recebe os avisos: quem assinar o tópico do ntfy da equipe no celular'+(d.avisos_whats?' e '+d.avisos_whats+' número(s) no WhatsApp (MAIA_AVISO_EQUIPE_WHATS)':'; WhatsApp ainda sem números (variável MAIA_AVISO_EQUIPE_WHATS na Vercel)')+'.</p>'+
+    d.negocios.map(function(n){ var c=n.acompanhamento, u=n.ultima_analise;
+      return '<div class="card" id="neg-'+esc(n.id)+'"><div class="card-cab"><h2>'+esc(n.nome)+'</h2><span class="chip '+(c.ativo?'bom':'')+'">'+(c.ativo?'em acompanhamento':'fora do acompanhamento')+'</span></div>'+
+        '<div class="botoes" style="margin-top:0"><label class="peq">Avisar nas primeiras <input type="number" min="0" max="50" value="'+c.primeiras+'" data-prim style="width:70px"> conversas</label><span class="mu peq">('+c.avisadas+' avisada(s))</span>'+
+        '<select data-marca aria-label="Acompanhamento"><option value=""'+(c.marcado==null?' selected':'')+'>automático (30 dias)</option><option value="1"'+(c.marcado===true?' selected':'')+'>sempre acompanhar</option><option value="0"'+(c.marcado===false?' selected':'')+'>não acompanhar</option></select>'+
+        '<button class="btn mini" data-salvar="'+esc(n.id)+'">Salvar</button><button class="btn mini" data-analisar="'+esc(n.id)+'">Refazer a análise de ontem</button><button class="btn mini" data-ver="'+esc(n.id)+'">Ver análises</button></div>'+
+        (u?'<div class="nota">Última análise ('+esc(u.detalhe.dia)+'): '+esc(u.detalhe.conclusoes)+'</div>':'')+'<div data-lista></div></div>'; }).join('');
+  $$('[data-salvar]').forEach(function(b){ b.onclick=function(){ var c=b.closest('.card'), m=$('[data-marca]',c).value;
+    espera(b,'…',function(){ return api({acao:'acompanhar',negocio_id:b.dataset.salvar,primeiras:Number($('[data-prim]',c).value),acompanhar:m===''?null:m==='1'}).then(function(){ toast('Salvo.'); }); }); }; });
+  $$('[data-analisar]').forEach(function(b){ b.onclick=function(){ espera(b,'analisando…',function(){ return api({acao:'analisar',negocio_id:b.dataset.analisar}).then(function(r){ toast(r.feita?'Análise pronta.':'Sem análise: '+(r.pulou||'?')); return mostraAnalises(b.dataset.analisar); }); }); }; });
+  $$('[data-ver]').forEach(function(b){ b.onclick=function(){ mostraAnalises(b.dataset.ver); }; });
+  if(sel){ var c=document.getElementById('neg-'+sel); if(c){ c.scrollIntoView(); mostraAnalises(sel); } }
+}
+function mostraAnalises(id){
+  var box=$('#neg-'+(window.CSS&&CSS.escape?CSS.escape(id):id)+' [data-lista]'); if(!box) return Promise.resolve();
+  box.innerHTML='<p class="mu peq">carregando…</p>';
+  return api('acao=analises&negocio='+encodeURIComponent(id)).then(function(l){
+    if(!l.length){ box.innerHTML='<p class="vazio">Nenhuma análise ainda (só sai quando teve conversa real no dia).</p>'; return; }
+    box.innerHTML=l.slice(0,7).map(function(a){ var n=a.numeros||{};
+      return '<div class="item"><div class="t"><h3>'+esc(a.dia)+'</h3><span class="chip">'+n.conversas+' conversa(s)</span><span class="chip '+(a.pontos?'aten':'bom')+'">'+a.pontos+' ponto(s)</span>'+(a.ia?'<span class="chip">conclusões da IA</span>':'')+'</div>'+
+        '<p>'+esc(a.conclusoes)+'</p>'+
+        '<p class="peq mu">Respostas da Maia: '+n.respostas_maia+' · espera média: '+(n.espera_media_min==null?'—':n.espera_media_min+' min')+' · preço antes do valor: '+n.preco_antes_do_valor+' · fora do tom: '+n.fora_do_tom+' · demoras: '+n.demoradas+' · sem resposta: '+n.sem_resposta+' · passou pro dono: '+n.passagens_dono+' · não soube: '+n.nao_soube+' · sumiram: '+n.sumiram+' · vendas: '+n.vendas+'</p>'+
+        (a.trechos&&a.trechos.length?a.trechos.map(function(t){ return '<div class="trecho"><b>'+esc(t.tipo)+'</b> · '+esc(t.nome)+(t.conversa_id?' · <a href="#conversa/'+esc(t.conversa_id)+'">abrir conversa</a>':'')+'<br>'+esc(t.texto)+'</div>'; }).join(''):'')+
+        (a.sugestoes&&a.sugestoes.length?'<p style="margin-top:8px"><b>Sugestões:</b></p><ul style="margin:4px 0 0 18px;padding:0">'+a.sugestoes.map(function(s){ return '<li>'+esc(s)+'</li>'; }).join('')+'</ul>':'')+'</div>'; }).join('');
+  }).catch(function(e){ box.innerHTML='<div class="erro">Não deu: '+esc(e.message)+'</div>'; });
+}
+
+/* ---------- Correções ---------- */
+function telaCorrecoes(){
+  var l=S.dados.correcoes, mot={}; S.dados.motivos.forEach(function(m){ mot[m.id]=m.rotulo; });
+  var ALVO={peca:'peça',resposta:'resposta pro cliente',sugestao:'sugestão pro dono'};
+  $('#tela').innerHTML='<div class="cab"><div><h1>Correções da equipe</h1><small>Os últimos 90 dias. Cada uma vira base pras regras propostas.</small></div></div><div class="card">'+
+    (l.length?l.map(function(c){ return '<div class="item"><div class="t"><span class="chip">'+esc(c.negocio_nome)+'</span><span class="chip info">'+esc(ALVO[c.alvo]||c.alvo)+'</span>'+(c.motivos||[]).map(function(m){ return '<span class="chip aten">'+esc(mot[m]||m)+'</span>'; }).join('')+'<span class="mu peq">'+esc(quando(c.criado_em))+' · '+esc(c.por||'')+'</span></div>'+
+      (c.original?'<p>"'+esc(c.original)+'"</p>':'')+(c.livre?'<p><b>Por quê:</b> '+esc(c.livre)+'</p>':'')+(c.certo?'<p><b>O certo seria:</b> '+esc(c.certo)+'</p>':'')+
+      (c.conversa_id?'<p class="peq"><a href="#conversa/'+esc(c.conversa_id)+'">abrir conversa</a></p>':'')+'</div>'; }).join(''):'<p class="vazio">Nenhuma correção ainda.</p>')+'</div>';
+}
+
+/* ---------- Conversa ao vivo ---------- */
+var QUEM={cliente:'Cliente',maia:'Maia',equipe:'Equipe',dono:'Dono',sistema:'Sistema'};
+function telaConversa(id){
+  $('#tela').innerHTML='<p class="mu">carregando…</p>';
+  function pinta(r){
+    var feitas={}; (r.correcoes||[]).forEach(function(c){ if(c.msg_id!=null) feitas[String(c.msg_id)]=1; });
+    var cv=r.conversa, neg=r.negocio||{};
+    var chat=$('#chat'), noFim=!chat||chat.scrollTop+chat.clientHeight>=chat.scrollHeight-40;
+    $('#tela').innerHTML='<div class="cab"><div><h1>'+esc(cv.nome||'Cliente')+'</h1><small>'+esc(neg.nome||'')+' · '+(cv.modo==='humano'?'a equipe assumiu':'a Maia está respondendo')+' · atualiza sozinho a cada 8 s</small></div>'+
+      '<div class="botoes" style="margin-top:0"><a class="btn mini" href="/maia/operacao#negocio/'+esc(neg.id)+'/conversa">Abrir no painel (assumir, responder)</a></div></div>'+
+      '<div class="card"><div class="chat" id="chat">'+(r.msgs.length?r.msgs.map(function(m){
+        var errado=m.autor==='maia'&&cv.canal==='cliente'?'<button type="button" class="errado'+(feitas[String(m.id)]?' feito':'')+'" data-msg="'+esc(m.id)+'">'+(feitas[String(m.id)]?'corrigida pela equipe':'isso está errado')+'</button>':'';
+        return '<div class="bal '+esc(m.autor)+'"><span class="quem">'+esc(QUEM[m.autor]||m.autor)+'</span>'+esc(m.texto||'('+(m.tipo||'mídia')+')')+errado+'<span class="hora">'+esc(quando(m.criado_em))+'</span></div>'; }).join(''):'<p class="vazio">Nada ainda.</p>')+'</div></div>';
+    var c2=$('#chat'); if(noFim) c2.scrollTop=c2.scrollHeight;
+    $$('[data-msg]').forEach(function(b){ if(b.classList.contains('feito')) return; b.onclick=function(){
+      var m=r.msgs.filter(function(x){ return String(x.id)===b.dataset.msg; })[0];
+      window.maiaPerguntaPorque({ alvo:'resposta', titulo:'O que está errado nessa resposta?', original:m.texto, certo:true, envio:{conversa_id:cv.id, msg_id:m.id, acao_original:'resposta_errada'} })
+        .then(function(x){ if(x&&x.ok){ toast('Correção guardada.'); b.textContent='corrigida pela equipe'; b.className='errado feito'; b.onclick=null; } });
+    }; });
+  }
+  function busca(){ if(document.querySelector('.apr-fundo')) return; return api('acao=conversa&id='+encodeURIComponent(id)).then(pinta).catch(function(e){ if(e.message!=='senha') $('#tela').innerHTML='<div class="erro">Não deu: '+esc(e.message)+'</div>'; }); }
+  busca(); S.timer=setInterval(busca,8000);
+}
+
+S.senha=ls(CHAVE);
+rota();
+})();
+</script>
+</body>
+</html>

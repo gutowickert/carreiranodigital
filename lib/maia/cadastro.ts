@@ -91,7 +91,7 @@ export function precoPersonalizadoDo(neg: any): PrecoPersonalizado[] {
 }
 
 // a ficha que vai pro prompt como "o que tu sabe": sem o que vira regra abaixo e sem o que é da equipe (peças, estilo, datas)
-const FORA_DA_FICHA = ['funil', 'limites', 'perguntas', 'provas', 'pecas_aprovadas', 'estilo', 'implantacao', 'demo', 'fechamento', 'preco_personalizado']
+const FORA_DA_FICHA = ['funil', 'limites', 'perguntas', 'provas', 'pecas_aprovadas', 'estilo', 'implantacao', 'demo', 'fechamento', 'preco_personalizado', 'regras_aprendidas']   // 13/11: regras_aprendidas vai no prompt como bloco próprio (aprendizado.ts)
 export function fichaParaAtender(neg: any) {
   const c = { ...(neg?.contexto || {}) }
   for (const k of FORA_DA_FICHA) delete c[k]
