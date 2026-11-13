@@ -112,6 +112,10 @@ export async function GET(req: Request) {
       return ok(await Promise.all(negs.map(n => usoDoMes(n))))
     }
     if (acao === 'chamadas') { const { placarChamadas } = await import('@/lib/maia/chamadas'); return ok(await placarChamadas()) }
+    // 13/11 (pendencias.ts): o que a equipe aprova antes de chegar no dono (pedido de verba, recado de problema técnico)
+    if (acao === 'pendentes_equipe') { const { pendentesDaEquipe } = await import('@/lib/maia/pendencias'); return ok(await pendentesDaEquipe()) }
+    // 13/11: o que está esperando o dono de um negócio (a análise de 2 dias usa a mesma lista: pendenciasDoDono)
+    if (acao === 'pendencias_dono') { const { pendenciasDoDono } = await import('@/lib/maia/pendencias'); const n = await db.um('negocios', { id: q('negocio') }); return n ? ok(await pendenciasDoDono(n)) : erro('negócio não existe', 404) }
     if (acao === 'fila') {
       const negs = await db.lista('negocios'), nome = (id: string) => negs.find(n => n.id === id)?.nome || '?'
       // 06/11: a peça de amostra da demonstração vai marcada, com o nome do lead
@@ -258,6 +262,36 @@ export async function POST(req: Request) {
         for (const e of (await db.lista('eventos', { tipo: 'modo_humano' })).filter(e => e.detalhe?.conversa_id === b.conversa_id)) await db.atualiza('eventos', { id: e.id }, { criado_em: antes })
         for (const m of (await db.lista('msgs', { conversa_id: b.conversa_id })).filter(m => m.autor === 'dono' || m.autor === 'equipe')) await db.atualiza('msgs', { id: m.id }, { criado_em: antes })
         return ok({ ok: true })
+      }
+      // 13/11 (pendencias.ts): a equipe aprova (ou não) o pedido de verba do dono e o recado de problema técnico pro dono
+      case 'verba_decidir': {
+        const { decideVerba } = await import('@/lib/maia/pendencias')
+        try { return ok(await decideVerba(String(b.id || ''), b.aprova === true, por, b.motivo ? String(b.motivo).slice(0, 200) : null)) } catch (e: any) { return erro(e.message) }
+      }
+      case 'aviso_dono_decidir': {
+        const { decideAvisoDono } = await import('@/lib/maia/pendencias')
+        try { return ok(await decideAvisoDono(String(b.id || ''), b.aprova === true, por, b.texto ? String(b.texto).slice(0, 1000) : null)) } catch (e: any) { return erro(e.message) }
+      }
+      // 13/11, só no modo de teste: o dono respondeu o cliente direto pelo celular (o eco do webhook); um problema técnico;
+      // e deixar velhos os eventos (passagem pro dono, cobrança) pra testar a cobrança de 1 h e do dia seguinte
+      case 'teste_eco_dono': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe', 404)
+        const { ecoDoDono } = await import('@/lib/maia/humano')
+        return ok(await ecoDoDono(n, { to: String(b.telefone), id: 'eco-' + Date.now(), texto: String(b.texto || 'ok') }))
+      }
+      case 'teste_problema_tecnico': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id }); if (!n) return erro('negócio não existe', 404)
+        const { problemaTecnico } = await import('@/lib/maia/pendencias')
+        return ok(await problemaTecnico(n, { tipo: String(b.tipo || 'teste'), equipe: String(b.equipe || 'teste'), dono: String(b.dono || 'teste') }))
+      }
+      case 'teste_eventos_antigos': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const antes = new Date(Date.now() - (Number(b.horas) || 2) * 3600e3).toISOString()
+        const evs = (await db.lista('eventos', { negocio_id: b.negocio_id })).filter(e => (b.tipos || []).includes(e.tipo))
+        for (const e of evs) await db.atualiza('eventos', { id: e.id }, { criado_em: antes })
+        return ok({ eventos: evs.length })
       }
       // só no modo de teste: faz as perguntas pro dono ficarem velhas (h horas)
       case 'teste_pergunta_antiga': {

@@ -152,6 +152,87 @@ confere('devolver de novo: avisa que já está com a Maia', p.status === 400)
 const html = await (await fetch(`${URL}/maia/painel/index.html`)).text().catch(() => '')
 confere('a página do painel tem o botão', /Resolvido, devolver pra Maia/.test(html) && /acao:'devolver'/.test(html))
 
+// ═══════════ 6) pendências do dono, cobrança por urgência, eco, verba e problema técnico (sem IA)
+console.log('6) Pendências do dono: cobrança, consolidar, eco, verba (equipe aprova) e problema técnico')
+const get = async q => { const r = await fetch(`${URL}/api/maia/operacao?${q}`, { headers: { 'x-senha': SENHA } }); return r.json() }
+const n5 = await api('criar_negocio', { nome: 'TESTE · Pendências', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Paula Dona', dono_whatsapp: '550007791' + RUN, verba_dia: 30, contexto: DOCERIA })
+const donoMsgs = () => { const cv = le('conversas').find(c => c.negocio_id === n5.id && c.canal === 'dono'); return le('msgs').filter(m => m.conversa_id === cv?.id) }
+const telF = '550007792' + RUN, telP = '550007793' + RUN
+const LF = { id: crypto.randomUUID(), negocio_id: n5.id, telefone: telF, nome: 'Fernanda', origem: 'anuncio', etapa: 'proposta', followups: 0, criado_em: agora(), atualizado_em: agora() }
+const LP = { id: crypto.randomUUID(), negocio_id: n5.id, telefone: telP, nome: 'Pedro', origem: 'anuncio', etapa: 'conversando', followups: 0, criado_em: agora(), atualizado_em: agora() }
+poe('leads', [LF, LP])
+const cvF = { id: crypto.randomUUID(), negocio_id: n5.id, canal: 'cliente', telefone: telF, nome: 'Fernanda', lead_id: LF.id, modo: 'humano', nao_lidas: 0, ia_respostas: 3, simulada: true, criado_em: agora(), ultima_msg_em: agora() }
+const cvP = { id: crypto.randomUUID(), negocio_id: n5.id, canal: 'cliente', telefone: telP, nome: 'Pedro', lead_id: LP.id, modo: 'ia', nao_lidas: 0, ia_respostas: 1, simulada: true, criado_em: agora(), ultima_msg_em: agora(), janela_ate: new Date(Date.now() + 20 * H).toISOString() }
+poe('conversas', [cvF, cvP])
+poe('eventos', [{ id: crypto.randomUUID(), negocio_id: n5.id, tipo: 'modo_humano', detalhe: { conversa_id: cvF.id, por: 'sistema', motivo: 'quer fechar: 2 caixas', tipo: 'fechar' }, criado_em: agora() }])
+poe('lead_eventos', [{ id: crypto.randomUUID(), negocio_id: n5.id, lead_id: LP.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta: 'tem sem glúten?' }, criado_em: agora() }])
+poe('pecas', [{ id: crypto.randomUUID(), negocio_id: n5.id, tipo: 'imagem', status: 'com_dono', gancho: 'Teste', versao: 1, midia_ids: [], criado_em: agora(), enviado_dono_em: agora() }])
+let pd = await get(`acao=pendencias_dono&negocio=${n5.id}`)
+confere('a lista de pendências do dono: quem quer fechar e a pergunta (alta) e o 👍 (simples)', pd.length === 3 && pd.filter(p => p.urgencia === 'alta').map(p => p.tipo).sort().join() === 'fechar,pergunta' && pd.find(p => p.urgencia === 'simples')?.tipo === 'joinha', JSON.stringify(pd.map(p => [p.tipo, p.urgencia])))
+const rodaAs14 = () => api('rodar_rotina', { relogio: hoje14.toISOString() })
+let qtd = donoMsgs().length
+rot = await rodaAs14()
+confere('com menos de 1 h, a rotina não cobra (o aviso na hora já saiu na passagem)', donoMsgs().length === qtd, JSON.stringify(rot.perguntas))
+await api('teste_eventos_antigos', { negocio_id: n5.id, tipos: ['modo_humano'], horas: 1.5 }); await api('teste_pergunta_antiga', { negocio_id: n5.id, horas: 1.5 })
+rot = await rodaAs14()
+let novas = donoMsgs().slice(qtd)
+confere('depois de 1 h: UMA mensagem com tudo (Fernanda quer fechar, a pergunta do Pedro e o 👍 junto)', novas.length === 1 && /Fernanda quer fechar/.test(novas[0].texto) && /Pedro perguntou/.test(novas[0].texto) && /anúncio esperando/.test(novas[0].texto), novas.map(m => m.texto).join(' || '))
+confere('a cobrança volta pra rotina como lembrete pro dono (pergunta)', (rot.perguntas || []).some(x => x.lembrou === 'dono'))
+qtd = donoMsgs().length; await rodaAs14()
+confere('no mesmo dia não cobra de novo', donoMsgs().length === qtd)
+await api('teste_eventos_antigos', { negocio_id: n5.id, tipos: ['cobranca_dono'], horas: 25 }); await rodaAs14()
+confere('no dia seguinte, cobra de novo (uma mensagem)', donoMsgs().length === qtd + 1, donoMsgs().slice(qtd).map(m => m.texto).join(' || '))
+qtd = donoMsgs().length; await api('teste_eventos_antigos', { negocio_id: n5.id, tipos: ['cobranca_dono'], horas: 49 }); await rodaAs14()
+confere('depois da 2ª cobrança, a Maia para (quem cobra é a equipe)', donoMsgs().length === qtd)
+const n6 = await api('criar_negocio', { nome: 'TESTE · Só simples', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Rui', dono_whatsapp: '550007794' + RUN, verba_dia: 30, contexto: DOCERIA })
+poe('pecas', [{ id: crypto.randomUUID(), negocio_id: n6.id, tipo: 'imagem', status: 'com_dono', gancho: 'Teste', versao: 1, midia_ids: [], criado_em: new Date(Date.now() - 30 * H).toISOString(), enviado_dono_em: new Date(Date.now() - 30 * H).toISOString() }])
+await rodaAs14()
+confere('coisa simples (só o 👍) não é cobrada pela rotina (fica pra análise de 2 dias)', !le('eventos').some(e => e.tipo === 'cobranca_dono' && e.negocio_id === n6.id))
+// o dono respondeu direto pelo celular (eco no número do negócio): sai da pendência
+const eco = await api('teste_eco_dono', { negocio_id: n5.id, telefone: telP, texto: 'Oi Pedro! Tem sim, sem glúten.' })
+pd = await get(`acao=pendencias_dono&negocio=${n5.id}`)
+confere('o dono respondeu o Pedro direto pelo celular: a pergunta sai da pendência', eco.perguntas_resolvidas === 1 && !pd.some(p => p.tipo === 'pergunta') && le('lead_eventos').some(e => e.lead_id === LP.id && e.tipo === 'pergunta_respondida' && e.detalhe?.como === 'direto'))
+await api('teste_eco_dono', { negocio_id: n5.id, telefone: telF, texto: 'Oi Fernanda, te mando o Pix agora.' })
+pd = await get(`acao=pendencias_dono&negocio=${n5.id}`)
+confere('falou com a Fernanda direto: a conversa sai da pendência (e continua com o dono até ele devolver)', !pd.some(p => p.tipo === 'fechar') && le('conversas').find(c => c.id === cvF.id).modo === 'humano', JSON.stringify(pd.map(p => p.tipo)))
+// a verba: pedido pelo painel, a equipe aprova, o dono recebe a confirmação
+const l5 = await api('link_painel_dono', { negocio_id: n5.id }), t5 = new globalThis.URL(l5.link).searchParams.get('t')
+const painel5 = (corpo) => fetch(`${URL}/api/maia/painel`, { method: 'POST', headers: { 'content-type': 'application/json', cookie: 'maia_dono=' + encodeURIComponent(t5), 'x-maia-painel': '1', ...IP }, body: JSON.stringify(corpo) }).then(async r => ({ status: r.status, ...(await r.json().catch(() => ({}))) }))
+let pv = await painel5({ acao: 'verba', valor: '80' })
+confere('pedido de verba acima do teto (R$ 60/dia) nem vira pedido', pv.status === 400 && !le('eventos').some(e => e.tipo === 'pedido_verba' && e.negocio_id === n5.id))
+pv = await painel5({ acao: 'verba', valor: '45' })
+let pe = await get('acao=pendentes_equipe')
+confere('pedido de R$ 45/dia pelo painel: a verba NÃO muda e o pedido aparece pra equipe', pv.status === 200 && le('negocios').find(n => n.id === n5.id).verba_dia === 30 && pe.verba.some(v => v.negocio_id === n5.id && v.valor === 45))
+const td = await (await fetch(`${URL}/api/maia/painel?acao=tudo`, { headers: { cookie: 'maia_dono=' + encodeURIComponent(t5), ...IP } })).json()
+confere('o painel do dono mostra a verba e o pedido esperando', td.verba?.dia === 30 && td.verba?.pedido?.valor === 45)
+qtd = donoMsgs().length
+const idV = pe.verba.find(v => v.negocio_id === n5.id).id
+const dv = await api('verba_decidir', { id: idV, aprova: true })
+const msgV = donoMsgs().slice(qtd).map(m => m.texto).join(' || ')
+confere('a equipe aprovou: a verba vira R$ 45 e o dono recebe a confirmação', dv.status === 'aprovado' && le('negocios').find(n => n.id === n5.id).verba_dia === 45 && /agora são R\$ 45/.test(msgV), msgV)
+confere('a confirmação leva junto o que ainda espera o dono (numa mensagem só)', /Ainda esperando por ti/.test(msgV) && /anúncio esperando/.test(msgV), msgV)
+confere('pedido decidido não decide de novo', (await api('verba_decidir', { id: idV, aprova: true })).http === 400)
+// responder a pergunta pelo painel (o mesmo caminho do WhatsApp)
+const LQ = { id: crypto.randomUUID(), negocio_id: n5.id, telefone: '550007795' + RUN, nome: 'Quitéria', origem: 'anuncio', etapa: 'conversando', followups: 0, criado_em: agora(), atualizado_em: agora() }
+poe('leads', [LQ]); poe('conversas', [{ id: crypto.randomUUID(), negocio_id: n5.id, canal: 'cliente', telefone: LQ.telefone, nome: 'Quitéria', lead_id: LQ.id, modo: 'ia', nao_lidas: 0, ia_respostas: 1, simulada: true, criado_em: agora(), ultima_msg_em: agora(), janela_ate: new Date(Date.now() + 20 * H).toISOString() }])
+poe('lead_eventos', [{ id: crypto.randomUUID(), negocio_id: n5.id, lead_id: LQ.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta: 'entregam em Teutônia?' }, criado_em: agora() }])
+const pr = await painel5({ acao: 'responder', lead_id: LQ.id, texto: 'Entregamos sim em Teutônia, com taxa de R$ 15.' })
+const cvQ = le('conversas').find(c => c.telefone === LQ.telefone)
+confere('o dono respondeu pelo painel: a Maia repassou pro cliente e a pergunta saiu da pendência', pr.status === 200 && le('msgs').some(m => m.conversa_id === cvQ.id && m.autor === 'maia' && /Teutônia/.test(m.texto)) && le('lead_eventos').some(e => e.lead_id === LQ.id && e.tipo === 'pergunta_respondida' && e.detalhe?.via === 'painel'), JSON.stringify(pr))
+confere('responder quem não tem pergunta esperando: recusa', (await painel5({ acao: 'responder', lead_id: LQ.id, texto: 'x' })).status === 400)
+// problema técnico: só a equipe; o dono recebe só depois da aprovação
+qtd = donoMsgs().length
+await api('teste_problema_tecnico', { negocio_id: n5.id, tipo: 'campanha_nao_ligou', equipe: 'a Meta recusou: cartão recusado', dono: 'A campanha não ligou: a Meta pediu um ajuste.' })
+await api('teste_problema_tecnico', { negocio_id: n5.id, tipo: 'campanha_nao_ligou', equipe: 'de novo', dono: 'de novo' })
+pe = await get('acao=pendentes_equipe')
+const avT = pe.avisos_dono.filter(a => a.negocio_id === n5.id)
+confere('problema técnico: a equipe é avisada, o dono não recebe nada e fica 1 recado pendente (sem repetir)', donoMsgs().length === qtd && avT.length === 1 && le('eventos').some(e => e.tipo === 'aviso_equipe' && e.negocio_id === n5.id && /problema técnico/.test(e.detalhe?.titulo || '')))
+await api('aviso_dono_decidir', { id: avT[0].id, aprova: true, texto: 'A campanha não ligou porque o cartão foi recusado. A equipe te chama pra resolver.' })
+confere('a equipe aprovou (com o texto ajustado): aí o dono recebe', donoMsgs().slice(qtd).some(m => /cartão foi recusado/.test(m.texto)) && !(await get('acao=pendentes_equipe')).avisos_dono.some(a => a.negocio_id === n5.id))
+const htmlEq = await (await fetch(`${URL}/maia/operacao/index.html`)).text().catch(() => '')
+confere('o painel da equipe tem a seção de aprovar (verba e recado técnico)', /Esperando a equipe aprovar/.test(htmlEq) && /verba_decidir/.test(htmlEq) && /aviso_dono_decidir/.test(htmlEq))
+confere('o painel do dono tem "Pedir mudança" da verba e "Responder" a pergunta', /acao:'verba'/.test(html) && /acao:'responder'/.test(html))
+
 // ═══════════ 5) com IA
 if (COM_IA) {
   console.log('5) Com IA: fechamento, preço personalizado e despedida')
@@ -200,6 +281,17 @@ if (COM_IA) {
   const d1 = await api('teste_retomada_texto', { negocio_id: n4.id, lead_id: lH.id, numero: 1 })
   console.log('     1ª retomada: ' + d1.texto)
   confere('a 1ª retomada não é despedida', !/parar o atendimento|por aqui pra n[aã]o/i.test(d1.texto || '') && (d1.texto || '').length > 10)
+  // pelo WhatsApp do dono: pedir verba (vira pedido) e responder a pergunta sem dizer o nome (só uma esperando)
+  const n7 = await api('criar_negocio', { nome: 'TESTE · Dono no WhatsApp', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Sara', dono_whatsapp: '550007796' + RUN, verba_dia: 30, contexto: DOCERIA })
+  r = await api('simular_dono', { negocio_id: n7.id, texto: 'Maia, aumenta a verba pra 40 por dia' })
+  console.log('     dono: aumenta a verba pra 40 por dia → maia: ' + (r?.mensagens || r?.respondeu?.mensagens || []).join(' | ').slice(0, 220))
+  confere('WhatsApp: "aumenta pra 40 por dia" vira pedido pra equipe e a verba não muda', le('eventos').some(e => e.tipo === 'pedido_verba' && e.negocio_id === n7.id && e.detalhe?.valor === 40 && e.detalhe?.status === 'pendente') && le('negocios').find(n => n.id === n7.id).verba_dia === 30)
+  const LR = { id: crypto.randomUUID(), negocio_id: n7.id, telefone: '550007797' + RUN, nome: 'Renata', origem: 'anuncio', etapa: 'conversando', followups: 0, criado_em: agora(), atualizado_em: agora() }
+  poe('leads', [LR]); poe('conversas', [{ id: crypto.randomUUID(), negocio_id: n7.id, canal: 'cliente', telefone: LR.telefone, nome: 'Renata', lead_id: LR.id, modo: 'ia', nao_lidas: 0, ia_respostas: 1, simulada: true, criado_em: agora(), ultima_msg_em: agora(), janela_ate: new Date(Date.now() + 20 * H).toISOString() }])
+  poe('lead_eventos', [{ id: crypto.randomUUID(), negocio_id: n7.id, lead_id: LR.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta: 'vocês fazem cookie sem lactose?' }, criado_em: agora() }])
+  r = await api('simular_dono', { negocio_id: n7.id, texto: 'pode dizer que sim, temos o de chocolate sem lactose' })
+  const cvR2 = le('conversas').find(c => c.telefone === LR.telefone)
+  confere('WhatsApp: o dono respondeu sem dizer o nome: a Maia repassou pra Renata (a única esperando)', le('msgs').some(m => m.conversa_id === cvR2.id && m.autor === 'maia' && /lactose/i.test(m.texto)) && le('lead_eventos').some(e => e.lead_id === LR.id && e.tipo === 'pergunta_respondida'))
 }
 
 console.log(`\n${ok} certos, ${falha} errados`)

@@ -281,6 +281,8 @@ export async function dadosDoPainel(neg: any) {
     funil, conversas, anuncios, em_preparo, campanhas, vendas, perdas, avisos,
     // 13/11: os resumos da semana que já foram pro WhatsApp do dono (resumo-semana.ts)
     resumos: await (await import('./resumo-semana')).resumosEnviados(id).catch(() => []),
+    // 13/11: a verba por dia e o pedido de mudança que espera a equipe (pendencias.ts)
+    verba: await (async () => { const p = (await (await import('./pendencias')).pedidosDeVerba(id).catch(() => []))[0]; return { dia: neg.verba_dia ?? null, pedido: p ? { valor: p.detalhe.valor, em: p.criado_em } : null } })(),
     whatsapp_maia: numeroMaia(), gerado_em: agora,
   }
 }

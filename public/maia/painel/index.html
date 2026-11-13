@@ -428,9 +428,16 @@ function secResumo(){
     var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋'};
     h+='<ul class="lista card espera">'+d.esperando.map(function(e){
       var alvo=e.tipo==='joinha'?'#anuncios':e.conversa_id?'#conversa='+e.conversa_id:'';
-      return '<li'+(alvo?' class="toca" data-ir="'+alvo+'"':'')+'><span class="ic" aria-hidden="true">'+ic[e.tipo]+'</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+(e.em?quando(e.em):'')+(e.tipo==='fechou'||e.tipo==='pergunta'?' · responde no WhatsApp da Maia':'')+'</span></div></li>';
+      // 13/11: a pergunta de cliente dá pra responder aqui mesmo (ou no WhatsApp da Maia, igual)
+      var resp=e.tipo==='pergunta'&&e.lead_id?'<div class="dir"><button type="button" class="btn" data-responder="'+esc(e.lead_id)+'">Responder</button></div>':'';
+      return '<li'+(alvo?' class="toca" data-ir="'+alvo+'"':'')+'><span class="ic" aria-hidden="true">'+ic[e.tipo]+'</span><div class="mid"><b>'+esc(e.texto)+'</b><span class="l2">'+(e.em?quando(e.em):'')+(e.tipo==='fechou'?' · responde no WhatsApp da Maia':e.tipo==='pergunta'?' · responde aqui ou no WhatsApp da Maia':'')+'</span></div>'+resp+'</li>';
     }).join('')+'</ul>';
   } else h+=vazioMaia('Nada esperando por ti agora. Eu tô tocando tudo.');
+  // 13/11: a verba por dia; o pedido de mudança vai pra equipe aprovar (o mesmo de pedir pra Maia no WhatsApp)
+  var vb=d.verba||{};
+  h+='<h2>Verba dos anúncios</h2><div class="card pad"><p style="margin:0"><b>'+(vb.dia!=null?'R$ '+esc(vb.dia)+' por dia':'Ainda sem verba definida')+'</b></p>'+
+    (vb.pedido?'<p class="mu peq" style="margin:6px 0 0">Teu pedido de R$ '+esc(vb.pedido.valor)+' por dia está com a equipe. Tu recebe a confirmação no WhatsApp.</p>':'')+
+    '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-verba">Pedir mudança</button></div></div>';
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
   var r=d.retomadas;
@@ -534,6 +541,14 @@ function secAvisos(){
 function liga(el){
   $$('[data-ir]',el).forEach(function(x){x.onclick=function(){location.hash=x.dataset.ir;};});
   $$('[data-lead]',el).forEach(function(x){x.onclick=function(){abreLead(x.dataset.lead);};});
+  // 13/11: responder a pergunta de um cliente (a Maia repassa no tom do negócio) e pedir mudança de verba (a equipe aprova)
+  $$('[data-responder]',el).forEach(function(b){b.onclick=function(ev){ev.stopPropagation();var e=S.dados.esperando.filter(function(x){return x.tipo==='pergunta'&&x.lead_id===b.dataset.responder;})[0];
+    folha('<h3>Responder o cliente</h3><p class="mu peq">'+esc(e?e.texto:'')+'</p><label class="campo"><span>A tua resposta (a Maia repassa pra ele)</span><textarea id="f-resp" maxlength="1000"></textarea></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Mandar pro cliente</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+      $('#f-ok',v).onclick=function(){var t=$('#f-resp',v).value.trim();if(!t){toast('Escreve a resposta');return;}var k=this;k.disabled=true;
+        api('',{acao:'responder',lead_id:b.dataset.responder,texto:t}).then(function(r){fecha();toast(r.aviso?'Guardada: sai quando o cliente escrever':'A Maia mandou pro cliente');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};});
+  var bv=$('#b-verba',el);if(bv)bv.onclick=function(){folha('<h3>Mudar a verba por dia</h3><p class="mu peq">Vira um pedido: a equipe confere e aprova, e tu recebe a confirmação no WhatsApp.</p><label class="campo"><span>Quanto por dia (R$)</span><input id="f-vb" inputmode="decimal" placeholder="ex.: 40"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var x=$('#f-vb',v).value.trim();if(!x){toast('Escreve o valor');return;}var k=this;k.disabled=true;
+      api('',{acao:'verba',valor:x}).then(function(){fecha();toast('Pedido enviado pra equipe');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
   $$('[data-aprovar]',el).forEach(function(b){b.onclick=function(){
     if(!confirm('Aprovar esse anúncio? A equipe liga a campanha depois.'))return;
     b.disabled=true;api('',{acao:'aprovar',peca_id:b.dataset.aprovar}).then(function(){toast('Aprovado 👍');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});

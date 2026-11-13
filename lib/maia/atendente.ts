@@ -15,6 +15,7 @@ import { avisoPrivacidade, respostaJaAvisa } from './lgpd'
 import { conversa, mandaTexto, conversaDoDono, avisaEquipe, soltaFilaDoCliente, mandaAudioCliente } from './canal'
 import { novoLead, clienteRespondeu, mudaEtapa, ganhou, perdeu, agendaFollowup, FOLLOWUP_DIAS, type Etapa } from './funil'
 import { anotaClique } from './conversoes'
+import { comPendencias } from './pendencias'
 import { respostaFixa } from './fixas'
 import { origemDoTexto } from './social'
 import { textoDaMidia, midiaFalhou, ehComprovante, COMPROVANTE, NAO_OUVIU, NAO_VIU, type MidiaCliente } from './midia-cliente'
@@ -77,7 +78,7 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   if (comprovante) {
     await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'comprovante', autor: 'maia', detalhe: {} }).catch(() => null)
     const dcv = await conversaDoDono(neg)
-    await mandaTexto(dcv, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) mandou um comprovante de pagamento. Confere se caiu e me diz aqui: aí eu marco a venda.`).catch(() => null)
+    await mandaTexto(dcv, await comPendencias(neg, `${lead.nome || 'Um cliente'} (${lead.telefone || ''}) mandou um comprovante de pagamento. Confere se caiu e me diz aqui: aí eu marco a venda.`, { lead_id: lead.id })).catch(() => null)
     // 08/11 (teste completo, #20): o comprovante já é a pergunta pro dono (com prazo e lembrete). Se a IA também chamar
     // perguntar_ao_dono sobre o pagamento, não sai um 2º aviso (dedup em perguntar_ao_dono)
     await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta: 'mandou um comprovante de pagamento: confere se caiu', comprovante: true, prazo: prazoResposta(neg).quando } }).catch(() => null)
@@ -179,8 +180,10 @@ async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: str
   if (fechar && lead?.id && ['novo', 'conversando', 'interessado'].includes(lead.etapa)) await mudaEtapa(lead, 'proposta', 'maia', { resumo: motivo.slice(0, 160) }).catch(() => null)
   const dcv = await conversaDoDono(neg)
   const m = motivo.trim().replace(/[.!?\s]+$/, '')
-  if (fechar) await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) quer fechar: ${m.replace(/^quer fechar:\s*/i, '')}. Já tirei as dúvidas; agora é contigo pra combinar o pagamento ou o horário e finalizar (eu não respondo mais ali). Fechou? Me conta o valor que eu marco a venda. Quando terminar, me diz "devolve pra Maia" ou toca em "Resolvido, devolver pra Maia" no painel.`)
-  else await mandaTexto(dcv, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${m}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia" aqui, ou o botão "Resolvido, devolver pra Maia" no painel).`)
+  // 13/11 (consolidar, pendencias.ts): o aviso leva junto o que mais espera pelo dono, numa mensagem só
+  const exceto = { lead_id: lead?.id || null, conversa_id: cv.id }
+  if (fechar) await mandaTexto(dcv, await comPendencias(neg, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) quer fechar: ${m.replace(/^quer fechar:\s*/i, '')}. Já tirei as dúvidas; agora é contigo pra combinar o pagamento ou o horário e finalizar (eu não respondo mais ali). Fechou? Me conta o valor que eu marco a venda. Quando terminar, me diz "devolve pra Maia" ou toca em "Resolvido, devolver pra Maia" no painel.`, exceto))
+  else await mandaTexto(dcv, await comPendencias(neg, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${m}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia" aqui, ou o botão "Resolvido, devolver pra Maia" no painel).`, exceto))
 }
 
 function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
@@ -225,7 +228,7 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         const jaFoi = await perguntaRepetida(lead, String(pergunta || ''))
         if (jaFoi) return { ok: true, prazo: prazo.texto, obs: 'o dono já foi avisado disso há pouco; não mandei de novo' }
         const dcv = await conversaDoDono(neg)
-        await mandaTexto(dcv, `${lead.nome || 'Um cliente'} perguntou: ${String(pergunta).trim().replace(/[.\s]+$/, '')}${/\?$/.test(String(pergunta).trim()) ? '' : '.'} Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}).`)
+        await mandaTexto(dcv, await comPendencias(neg, `${lead.nome || 'Um cliente'} perguntou: ${String(pergunta).trim().replace(/[.\s]+$/, '')}${/\?$/.test(String(pergunta).trim()) ? '' : '.'} Me responde aqui que eu passo pra ele (prometi resposta ${prazo.texto}). Ou responde direto no painel.`, { lead_id: lead.id }))
         await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_cliente', autor: 'maia', detalhe: { pergunta, prazo: prazo.quando } })
         return { ok: true, prazo: prazo.texto } } },
     { name: 'passar_para_o_dono', description: `Passa a CONVERSA pro dono (tu para de responder esse cliente): só quando o cliente pede pra falar com uma pessoa, reclama, pede devolução, pede pra apagar os dados, ou é um caso delicado${time ? ', OU quando ele quer fechar (pagar, pedir o Pix, agendar, marcar horário, reservar, fazer o pedido): aí o motivo começa com "quer fechar:"' : ''}. NUNCA numa conversa normal (preço, entrega, áudio que tu entendeu). O motivo é uma frase clara pro dono.`,
@@ -438,7 +441,8 @@ export async function respondeCliente(conversa_id: string) {
   // 08/11 (reteste r3, #20): o cliente pediu "amanhã"/"hoje" num dia em que o negócio NÃO abre e a resposta não disse isso
   // (numa rodada a IA respondeu "vou confirmar se a gente abre"): o sistema avisa com o calendário certo
   let diaExtra: string | null = null
-  if (!ctx.humano) {
+  // 13/11: na passagem pra fechar (fechamento no time), o aviso do dia fechado também vale (o cliente não fica achando que dá)
+  if (!ctx.humano || fechar) {
     const dd = diasDoNegocio(neg), pede = semAc(textoCliente)
     const alvo = /\bamanha\b/.test(pede) && dd.amanha.abre === false ? { d: dd.amanha, quando: 'amanhã' } : /\bhoje\b/.test(pede) && dd.hoje.abre === false ? { d: dd.hoje, quando: 'hoje' } : null
     if (alvo && !/\bnao (abr|funcion|atend|trabalh|vamos estar|estamos|estaremos|da pra|consigo|conseguimos)|fechad/.test(semAc(enviadas.join(' ')))) {

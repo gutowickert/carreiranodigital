@@ -918,9 +918,22 @@ function telaHoje(){
       '<div class="pilha"><section class="box" aria-labelledby="t-sem"><h2 id="t-sem">A semana <small>contatos e vendas por dia</small></h2><div id="h-sem">'+esqBloco(150)+'</div></section>'+
       '<section class="box" aria-labelledby="t-fun"><h2 id="t-fun">Funil da carteira <small>onde cada contato está agora</small></h2><div id="h-fun">'+esqLinhas(3)+'</div></section></div>'+
     '</div>'+
+    // 13/11 (pendencias.ts): o que o dono pediu e o que vai pro dono, esperando a equipe aprovar
+    '<section class="box" style="margin-top:16px" aria-labelledby="t-pend" id="h-pend-box" hidden><h2 id="t-pend">Esperando a equipe aprovar <small>pedido de verba do dono e recado de problema técnico pro dono</small></h2><div id="h-pend"></div></section>'+
     '<section class="box" style="margin-top:16px" aria-labelledby="t-cart"><h2 id="t-cart">Carteira <span id="h-cart-n"></span></h2><div id="h-cart">'+esqLinhas(3)+'</div></section>';
   $('#b-atual').onclick=function(){ var b=this; espera(b,'atualizando…',function(){ return carrega(true); }); };
+  function pintaPend(){
+    return api('acao=pendentes_equipe').then(function(p){
+      var box=$('#h-pend-box'), el=$('#h-pend'); if(!box||!el) return;
+      var n=(p.verba||[]).length+(p.avisos_dono||[]).length; box.hidden=!n; if(!n) return;
+      el.innerHTML=(p.verba||[]).map(function(v){ return '<div class="linha-pend" style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;padding:10px 0;border-bottom:1px solid var(--border)"><div style="flex:1 1 240px"><b>'+esc(v.negocio)+'</b>: o dono pediu verba de <b>R$ '+esc(v.valor)+'/dia</b> (hoje '+(v.atual!=null?'R$ '+esc(v.atual):'sem verba')+')</div><button class="btn pri" data-verba="'+esc(v.id)+'" data-ok="1">Aprovar</button><button class="btn" data-verba="'+esc(v.id)+'">Recusar</button></div>'; }).join('')+
+        (p.avisos_dono||[]).map(function(a){ return '<div class="linha-pend" style="padding:10px 0;border-bottom:1px solid var(--border)"><b>'+esc(a.negocio)+'</b> · problema técnico ('+esc(a.tipo)+'): '+esc(a.equipe||'')+'<label style="display:block;margin-top:6px"><span class="mu" style="font-size:13px">Recado pro dono (dá pra ajustar)</span><textarea data-texto="'+esc(a.id)+'" rows="2" style="width:100%">'+esc(a.texto||'')+'</textarea></label><div style="display:flex;gap:8px;margin-top:6px"><button class="btn pri" data-aviso="'+esc(a.id)+'" data-ok="1">Mandar pro dono</button><button class="btn" data-aviso="'+esc(a.id)+'">Não mandar</button></div></div>'; }).join('');
+      $$('[data-verba]',el).forEach(function(b){ b.onclick=function(){ var ok=!!b.dataset.ok, mot=ok?null:prompt('Motivo (vai pro dono, opcional):'); espera(b,ok?'aprovando…':'recusando…',function(){ return api({acao:'verba_decidir',id:b.dataset.verba,aprova:ok,motivo:mot||null}).then(function(){ toast(ok?'Verba aprovada: o dono foi avisado.':'Pedido recusado: o dono foi avisado.'); return pintaPend(); }); }); }; });
+      $$('[data-aviso]',el).forEach(function(b){ b.onclick=function(){ var ok=!!b.dataset.ok, t=$('[data-texto="'+b.dataset.aviso+'"]',el); espera(b,ok?'mandando…':'descartando…',function(){ return api({acao:'aviso_dono_decidir',id:b.dataset.aviso,aprova:ok,texto:t?t.value:null}).then(function(){ toast(ok?'Recado mandado pro dono.':'Recado descartado.'); return pintaPend(); }); }); }; });
+    }).catch(function(){});
+  }
   function carrega(forcar){
+    pintaPend();
     return Promise.all([api('acao=resumo').then(function(r){ S.resumo=r; pintaSelos(); pintaKpis(r,null); return r; }), carregaCarteira(forcar)])
       .then(function(res){ if(!$('#h-kpis')) return; pintaKpis(res[0],res[1]); pintaUrg(res[1]); pintaSemana(res[1]); pintaFunilCart(res[1]); pintaCart(res[1]); })
       .catch(function(e){ if($('#h-urg')) $('#h-urg').innerHTML=caixaErro(e); if($('#h-cart')) $('#h-cart').innerHTML=''; });

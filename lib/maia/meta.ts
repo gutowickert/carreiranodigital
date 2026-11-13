@@ -152,7 +152,13 @@ export async function ativa(campanha_id: string, por: string) {
   if (acima) throw new Error(acima)
   // 12/11: antes de ligar, confere de novo o WhatsApp do conjunto contra o número do negócio de HOJE
   if (c.meta_adset_id) await confereNumero(c.meta_adset_id, await numeroDoAnuncio(neg))
-  for (const id of [c.meta_campaign_id, c.meta_adset_id, ...(c.meta_ad_ids || [])]) await post(id, { status: 'ACTIVE' })
+  // 13/11 (problema técnico, pendencias.ts): a Meta recusou ligar (anúncio reprovado, cartão recusado, conta com problema):
+  // avisa a equipe e o recado pro dono espera a equipe aprovar no painel. O erro continua subindo pra quem chamou
+  try { for (const id of [c.meta_campaign_id, c.meta_adset_id, ...(c.meta_ad_ids || [])]) await post(id, { status: 'ACTIVE' }) } catch (e: any) {
+    const { problemaTecnico } = await import('./pendencias')
+    await problemaTecnico(neg, { tipo: 'campanha_nao_ligou', equipe: `a Meta recusou ligar a campanha ${c.nome}: ${String(e?.message || e).slice(0, 200)}`, dono: `A campanha "${c.nome}" não ligou: a Meta pediu um ajuste na conta. A equipe já está resolvendo e te avisa por aqui.` }).catch(() => null)
+    throw e
+  }
   const [nova] = await db.atualiza('campanhas', { id: c.id }, { status: 'ativa', ativada_por: por, ativada_em: new Date().toISOString() })
   for (const p of pecas) await db.atualiza('pecas', { id: (p as any).id }, { status: 'no_ar' })
   await db.atualiza('negocios', { id: c.negocio_id, status: 'implantacao' }, { status: 'ativo' })

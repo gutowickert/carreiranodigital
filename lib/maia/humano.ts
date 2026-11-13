@@ -61,9 +61,45 @@ export async function devolvePeloDono(neg: any, texto?: string | null, nome?: st
   return escolhidas.map(c => c.nome || c.telefone)
 }
 
+// 13/11: o dono respondeu o cliente DIRETO, pelo celular, no número do negócio (o eco chega no webhook): a Maia percebe e tira da
+// pendência. A pergunta aberta desse cliente vira respondida (como: 'direto'); a conversa passada já sai da lista sozinha (pendencias.ts
+// vê a mensagem do dono depois da passagem). Não muda o modo da conversa: quem devolve pra Maia é o dono (WhatsApp ou painel)
+export async function donoFalouNaConversa(neg: any, cv: any) {
+  const lead = cv.lead_id ? await db.um('leads', { id: cv.lead_id }) : await db.um('leads', { negocio_id: neg.id, telefone: cv.telefone })
+  if (!lead) return 0
+  const evs = await db.lista('lead_eventos', { lead_id: lead.id }, { ordem: 'criado_em' })
+  const abertas = evs.filter(e => e.tipo === 'pergunta_cliente' && !evs.some(x => x.tipo === 'pergunta_respondida' && x.criado_em > e.criado_em))
+  if (!abertas.length) return 0
+  await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_respondida', autor: 'dono', detalhe: { como: 'direto', perguntas: abertas.map(e => e.id) } })
+  return abertas.length
+}
+
+// o eco de uma mensagem que o dono mandou pelo celular, no número do negócio (webhook; e o teste local simula)
+export async function ecoDoDono(neg: any, e: { to: string; id?: string | null; type?: string; texto: string }) {
+  const { conversa } = await import('./canal')
+  const cv = await conversa(neg.id, 'cliente', e.to)
+  if (e.id && (await db.um('msgs', { wamid: e.id }))) return null
+  await db.insere('msgs', { conversa_id: cv.id, negocio_id: neg.id, autor: 'dono', tipo: e.type || 'texto', texto: e.texto, wamid: e.id || null, status: 'enviado' }).catch(() => null)
+  await db.atualiza('conversas', { id: cv.id }, { ultima_msg: e.texto.slice(0, 200), ultima_msg_em: new Date().toISOString() })
+  return { conversa_id: cv.id, perguntas_resolvidas: await donoFalouNaConversa(neg, cv) }
+}
+
 // pergunta de cliente esperando o dono: lembrete pro dono em 1 h (de dia), aviso pra equipe em 3 h
+// 13/11 (cobrança por urgência, pendencias.ts): o lembrete pro dono agora é UMA mensagem por negócio com tudo que espera por ele
+// (clientes que querem fechar, perguntas, e junto o simples), em 1 h e de novo no dia seguinte. Aqui fica o aviso pra equipe em 3 h,
+// que também vale pro cliente que quer fechar e o dono não respondeu
 export async function cobraPerguntas(relogio = new Date()) {
   const agora = Date.now(), feitos: any[] = []
+  const { cobraDono, pendenciasDoDono } = await import('./pendencias')
+  feitos.push(...await cobraDono(relogio))
+  for (const neg of (await db.lista('negocios')).filter(n => !['cancelado', 'pausado'].includes(n.status))) {
+    for (const p of (await pendenciasDoDono(neg)).filter(p => p.tipo === 'fechar' && agora - Date.parse(p.desde) >= 3 * H)) {
+      if ((await db.lista('eventos', { negocio_id: neg.id, tipo: 'fechar_sem_dono' })).some(e => e.detalhe?.chave === p.chave)) continue
+      await avisaEquipe('cliente quer fechar e o dono não respondeu', `${neg.nome}: ${p.texto} há ${Math.floor((agora - Date.parse(p.desde)) / H)} h. Cobra o dono.`, neg.id, true)
+      await db.evento('fechar_sem_dono', neg.id, { chave: p.chave })
+      feitos.push({ chave: p.chave, lembrou: 'equipe' })
+    }
+  }
   const perguntas = (await db.lista('lead_eventos', { tipo: 'pergunta_cliente' })).filter(e => agora - Date.parse(e.criado_em) < 3 * 86400e3)
   for (const e of perguntas) {
     const evs = await db.lista('lead_eventos', { lead_id: e.lead_id })
@@ -74,11 +110,6 @@ export async function cobraPerguntas(relogio = new Date()) {
     if (!neg || neg.status === 'cancelado') continue
     const idade = agora - Date.parse(e.criado_em)
     const ja = (nivel: string) => evs.some(x => x.tipo === 'pergunta_lembrete' && x.detalhe?.pergunta_id === e.id && x.detalhe?.nivel === nivel)
-    if (idade >= 1 * H && !ja('dono') && podeFalar(neg, relogio)) {
-      await mandaTexto(await conversaDoDono(neg), `Lembrete: ${lead.nome || 'um cliente'} ainda espera tua resposta: ${e.detalhe?.pergunta || ''}. Me responde aqui que eu passo pra ele.`)
-      await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_lembrete', autor: 'maia', detalhe: { pergunta_id: e.id, nivel: 'dono' } })
-      feitos.push({ pergunta: e.id, lembrou: 'dono' })
-    }
     if (idade >= 3 * H && !ja('equipe')) {
       await avisaEquipe('pergunta sem resposta do dono', `${neg.nome}: ${lead.nome || 'um cliente'} perguntou "${String(e.detalhe?.pergunta || '').slice(0, 120)}" há ${Math.floor(idade / H)} h e o dono não respondeu. Cobra ele ou responde pelo painel.`, neg.id)
       await db.insere('lead_eventos', { negocio_id: neg.id, lead_id: lead.id, tipo: 'pergunta_lembrete', autor: 'maia', detalhe: { pergunta_id: e.id, nivel: 'equipe' } })

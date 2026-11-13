@@ -13,6 +13,9 @@ import { analisa, textoDono, textoResumo, diaBR, menos, qualModo, MODELO_AVISO, 
 import { lerCRM, lerMeta } from './gestora-crm'
 
 type Modo = ModoGestora
+// 13/11 (Guto): problema TÉCNICO (conta parou de gastar: cartão, saldo ou anúncio reprovado; WhatsApp falhando; conversões
+// falhando) não vai direto pro dono: avisa a equipe e o recado pro dono fica pendente até a equipe aprovar (pendencias.ts)
+export const TECNICOS = new Set(['parou_de_gastar', 'wa_falha', 'capi_falhando'])
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export const gestoraLigada = () => process.env.MAIA_GESTORA_LIGADA === '1'
@@ -37,7 +40,7 @@ async function gravaAvisos(neg: any, a: Analise, direto: boolean) {
       await db.insere('avisos', {
         negocio_id: neg.id, dia: a.dia, tipo: x.tipo, nivel: x.nivel, titulo: x.titulo, texto: x.texto, acao: x.acao, numeros: x.numeros || {},
         lead_ids: (x.lead_ids || []).filter(i => UUID.test(i)).slice(0, 200),   // só os ids do CRM do cliente; o nome nunca é gravado
-        status: direto ? 'enviado' : 'revisao_equipe', enviado_em: direto ? new Date().toISOString() : null, util: null,
+        status: direto && !TECNICOS.has(x.tipo) ? 'enviado' : 'revisao_equipe', enviado_em: direto && !TECNICOS.has(x.tipo) ? new Date().toISOString() : null, util: null,
       })
       novos.push(x); ja.add(x.tipo)
     } catch (e: any) { if (!/duplicate|23505/.test(e.message)) throw e }
@@ -133,8 +136,14 @@ export async function rotinaGestora(opc: { relogio?: Date; forcar?: Modo; previa
         if (mostrar.length) pGuto.push(`${curto(neg.nome)}: ${modo === 'urgentes' ? mostrar.map(x => x.titulo).join('; ') : `${mostrar.length} (${mostrar.filter(x => x.nivel === 'urgente').length} urgente)`}`)
         else if (modo !== 'urgentes') pGuto.push(`${curto(neg.nome)}: tudo certo`)
         // o dono, só quando está na lista; e só os avisos dele
-        if (direto && (modo !== 'urgentes' ? true : novos.length)) {
-          const so = modo === 'urgentes' ? { ...a, avisos: novos } : a
+        // 13/11: o técnico novo vira recado pendente pro dono (a equipe aprova no painel) e sai da mensagem direta
+        if (direto) {
+          const { problemaTecnico } = await import('./pendencias')
+          for (const x of novos.filter(x => TECNICOS.has(x.tipo))) await problemaTecnico(neg, { tipo: x.tipo, equipe: `${x.titulo}. ${x.acao || ''}`.trim(), dono: `${x.titulo}. ${x.texto}`.trim() })
+        }
+        const naoTec = (l: Aviso[]) => l.filter(x => !TECNICOS.has(x.tipo))
+        if (direto && (modo !== 'urgentes' ? true : naoTec(novos).length)) {
+          const so = modo === 'urgentes' ? { ...a, avisos: naoTec(novos) } : { ...a, avisos: naoTec(a.avisos) }
           const partes = [textoDono(neg.nome, so, { saude: !!cfg.saude, comNomes: true })]
           if (modo === 'semana') partes.push(textoResumo(neg.nome, a))
           const r: any = await mandaProDono(neg, partes.join('\n\n'), so.avisos.length)
