@@ -1246,6 +1246,8 @@ function telaNegocios(abrirNovo){
     var ord={ruim:0,aten:1,info:2,bom:3,'':4};
     negs=negs.slice().sort(function(a,b){ return (ord[(cart.saude[a.id]||{}).nivel||'']-ord[(cart.saude[b.id]||{}).nivel||'']); });
     box.innerHTML='<div class="lista">'+negs.map(function(n){ return cardNeg(n,cart); }).join('')+'</div>';
+    // 13/11: quem está em implantação ganha o selo "pronto pra ligar / faltam N" (lista completa na aba "Pra ligar" do negócio)
+    api('acao=falta_ligar').then(function(l){ S.ligar={}; (l||[]).forEach(function(x){ S.ligar[x.negocio_id]=x; }); if($('#negs')) $('#negs').innerHTML='<div class="lista">'+negs.map(function(n){ return cardNeg(n,cart); }).join('')+'</div>'; }).catch(function(){});
   }).catch(function(e){ if($('#negs')) $('#negs').innerHTML=caixaErro(e); });
 }
 function cardNeg(n,cart){
@@ -1255,7 +1257,7 @@ function cardNeg(n,cart){
     '<span style="min-width:0"><span class="t"><span>'+esc(n.nome)+'</span>'+chip(SAUDE_NOME[sd.nivel]||'—',sd.nivel||'')+'</span>'+
     '<span class="sub" style="display:block">'+esc(sub)+'</span>'+
     '<span class="sub" style="display:block">'+(sd.rz.length?esc(sd.rz.map(function(x){return x.txt;}).join(' · ')):'Tudo certo por aqui.')+'</span></span>'+
-    '<span class="dir">'+(n.pra_equipe?chip(plural(n.pra_equipe,'peça','peças')+' pra aprovar','aten'):'')+'<small>'+plural(nm.ganhos||0,'venda')+' na semana</small>'+ic('vai','vai')+'</span></a>';
+    '<span class="dir">'+(n.status==='implantacao'&&S.ligar&&S.ligar[n.id]?chip(S.ligar[n.id].pronto?'pronto pra ligar':'faltam '+S.ligar[n.id].faltam+' pra ligar',S.ligar[n.id].pronto?'bom':'aten'):'')+(n.pra_equipe?chip(plural(n.pra_equipe,'peça','peças')+' pra aprovar','aten'):'')+'<small>'+plural(nm.ganhos||0,'venda')+' na semana</small>'+ic('vai','vai')+'</span></a>';
 }
 function formNovo(){
   return '<form id="f-novo"><div class="grade2">'+
@@ -1291,7 +1293,28 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+/* 13/11: o que falta pra ligar (lista de conferência; lib/maia/ligar.ts). Só lê; o único botão grava o número conferido */
+function subLigar(n,box){
+  box.innerHTML='<div id="ligar-c">'+esqLinhas(6)+'</div>';
+  function cor(i){ return i.ok?'bom':i.obrigatorio?'ruim':'aten'; }
+  function linhaItem(i){ return '<div class="lin"><span class="cor '+cor(i)+'"></span><span style="min-width:0"><span class="t"><span>'+esc(i.titulo)+'</span>'+chip(i.ok?'ok':i.obrigatorio?'pendente':'recomendado',i.ok?'bom':i.obrigatorio?'aten':'info')+'</span><span class="sub" style="display:block">'+esc(i.detalhe)+(i.ok?'':' · quem faz: '+esc(i.quem))+'</span></span></div>'; }
+  function pinta(r){
+    var c=$('#ligar-c'); if(!c) return;
+    var grupos={}, ordem=[]; (r.itens||[]).forEach(function(i){ if(!grupos[i.grupo]){ grupos[i.grupo]=[]; ordem.push(i.grupo); } grupos[i.grupo].push(i); });
+    var w=r.whatsapp||{};
+    var topo='<div class="card"><div class="card-cab"><div><h2>'+(r.pronto?'Pronto pra ligar':'Faltam '+plural(r.faltam,'item','itens')+' pra ligar')+'</h2><p class="mu peq" style="margin-top:4px">'+
+      (r.recomendados?plural(r.recomendados,'recomendação pendente','recomendações pendentes')+' (não trava). ':'')+(r.ligar_ate?'Combinado com o dono: ligar até '+esc(String(r.ligar_ate).split('-').reverse().join('/'))+'.':'')+'</p></div>'+chip(r.pronto?'pronto pra ligar':'faltam '+r.faltam,r.pronto?'bom':'aten',r.pronto?'check':'alerta')+'</div></div>';
+    var wa='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">Número do WhatsApp dos anúncios</h2><p class="mu peq" style="margin:0 0 12px">É o número que o botão do anúncio abre. '+(w.do_whats_conectado?'Vem do WhatsApp conectado do negócio.':'Enquanto o WhatsApp do negócio não conecta, vale o número daqui.')+' Confere num anúncio de teste antes de marcar.</p>'+
+      '<div class="campo"><label for="lg-num">Número (com DDD)</label><input id="lg-num" type="tel" value="'+esc(w.numero||'')+'"'+(w.do_whats_conectado?' disabled':'')+' placeholder="51 99999-9999"></div>'+
+      '<div class="btns"><button class="btn ok" id="lg-conf">'+ic('check')+(w.conferido?'Conferido (marcar de novo)':'Conferi: o anúncio abre esse número')+'</button>'+(w.conferido?'<button class="btn" id="lg-desm">Desmarcar</button>':'')+'</div></div>';
+    c.innerHTML=topo+ordem.map(function(g){ return '<section class="box" style="margin-top:14px"><h2>'+esc(g)+'</h2><div class="lista">'+grupos[g].map(linhaItem).join('')+'</div></section>'; }).join('')+wa;
+    $('#lg-conf').onclick=function(){ var b=this, i=$('#lg-num'), corpo={acao:'conferir_whatsapp',negocio_id:n.id,conferido:true}; if(!i.disabled) corpo.numero=i.value; espera(b,'salvando…',function(){ return api(corpo).then(function(x){ Object.assign(n,x||{}); toast('Número conferido.'); return carrega(); }); }); };
+    if($('#lg-desm')) $('#lg-desm').onclick=function(){ var b=this; espera(b,'salvando…',function(){ return api({acao:'conferir_whatsapp',negocio_id:n.id,conferido:false}).then(function(x){ Object.assign(n,x||{}); toast('Desmarcado.'); return carrega(); }); }); };
+  }
+  function carrega(){ return api(q({acao:'falta_ligar',negocio:n.id})).then(pinta).catch(function(e){ if($('#ligar-c')) $('#ligar-c').innerHTML=caixaErro(e); }); }
+  carrega();
+}
 function telaNegocio(id,sub,mesmoNeg){
   var t=$('#tela');
   var temCab = mesmoNeg && $('#neg-topo') && S.negAtual && S.negAtual.id===id;
@@ -1300,7 +1323,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }
