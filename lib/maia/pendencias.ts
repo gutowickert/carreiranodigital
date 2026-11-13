@@ -25,7 +25,7 @@ const diaBR = (t: number) => new Date(t - 3 * H).toISOString().slice(0, 10)
 const primeiro = (s: any) => String(s || '').trim().split(' ')[0]
 const talvez = async (tab: string, f: any, o: any = {}) => { try { return await db.lista(tab, f, o) } catch { return [] } }
 
-export type Pendencia = { chave: string; tipo: 'fechar' | 'conversa' | 'pergunta' | 'joinha' | 'fechou' | 'sugestao'; urgencia: 'alta' | 'simples'; desde: string; texto: string; lead_id?: string | null; conversa_id?: string | null }
+export type Pendencia = { chave: string; tipo: 'fechar' | 'conversa' | 'pergunta' | 'joinha' | 'fechou' | 'sugestao' | 'material'; urgencia: 'alta' | 'simples'; desde: string; texto: string; lead_id?: string | null; conversa_id?: string | null }
 
 export async function pendenciasDoDono(neg: any): Promise<Pendencia[]> {
   const id = neg.id
@@ -68,6 +68,9 @@ export async function pendenciasDoDono(neg: any): Promise<Pendencia[]> {
     const l = leadDe.get(e.lead_id)
     if (l && l.etapa === 'proposta' && !out.some(p => p.tipo === 'fechou' && p.lead_id === l.id)) out.push({ chave: `fechou:${l.id}`, tipo: 'fechou', urgencia: 'simples', desde: e.criado_em, lead_id: l.id, texto: `${l.nome || l.telefone} fechou? (é só me dizer sim ou não)` })
   }
+  // 13/11 (material.ts): a pauta de captação que o dono ainda não mandou
+  const pauta = (await db.lista('eventos', { negocio_id: id, tipo: 'pauta_captacao' }, { ordem: 'criado_em', desc: true, limite: 5 })).find(e => e.detalhe?.status === 'aberta')
+  if (pauta) out.push({ chave: `material:${pauta.id}`, tipo: 'material', urgencia: 'simples', desde: pauta.detalhe?.pedida_em || pauta.criado_em, texto: `as fotos e vídeos que eu pedi${pauta.detalhe?.data_lote ? ' pros anúncios do dia ' + Number(String(pauta.detalhe.data_lote).slice(8, 10)) : ''}` })
   for (const a of avisos) out.push({ chave: `sugestao:${a.id}`, tipo: 'sugestao', urgencia: 'simples', desde: a.enviado_em || a.criado_em, texto: String(a.titulo || a.acao || 'sugestão da análise').slice(0, 120) })
   return out.sort((a, b) => (a.urgencia === b.urgencia ? (a.desde < b.desde ? -1 : 1) : a.urgencia === 'alta' ? -1 : 1))
 }

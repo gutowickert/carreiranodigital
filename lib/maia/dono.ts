@@ -21,7 +21,7 @@ const ehJoinha = (t: string) => /^\s*(👍|👍🏻|👍🏼|👍🏽|👍🏾|�
 const pedePainel = (t: string) => /\b(meu painel|o painel|painel|dashboard|link (do|dos) (painel|resultados?|n[uú]meros))\b/i.test(t || '')
 
 // o que a Maia viu numa foto (pra escolher a certa na hora de criar o anúncio)
-async function descreveFoto(buf: Buffer, mime: string, neg: any) {
+export async function descreveFoto(buf: Buffer, mime: string, neg: any) {
   try {
     const r = await emJson<{ descricao: string }>('Tu descreves fotos de pequenos negócios pra uma redatora de anúncios. Objetivo, em português, até 25 palavras: o que aparece, a qualidade da foto (nítida, escura, tremida) e se serve pra anúncio.',
       `Foto do negócio ${neg.nome} (${neg.nicho || ''}). Devolve {"descricao":"..."}`, [{ b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }], { uso: { tipo: 'peca_foto', negocio_id: neg?.id || null } })   // 13/11: custo por peça (custo.ts)
@@ -30,7 +30,7 @@ async function descreveFoto(buf: Buffer, mime: string, neg: any) {
 }
 
 // 08/11 (teste completo, 8f): o que se ouve no vídeo do dono (a Vercel não tem ffmpeg; o Deepgram aceita o mp4 direto)
-async function falaDoVideo(buf: Buffer, mime: string) {
+export async function falaDoVideo(buf: Buffer, mime: string) {
   if (maiaLocal() && process.env.MAIA_LOCAL_DEEPGRAM !== '1') return 'vídeo (a fala não foi ouvida no modo de teste)'
   try {
     const { transcreve } = await import('./demo')
@@ -81,6 +81,9 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
         const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : await falaDoVideo(buf, mime)
         const md = await db.insere('midias', { negocio_id: neg.id, tipo, path: caminho, mime, legenda, descricao })
         midia_id = md.id
+        // 13/11 (material.ts): a pauta de captação aberta anota o que chegou e fecha quando não falta mais nada
+        await db.evento('material_chegou', neg.id, { midia_id: md.id, tipo, por: 'dono_whatsapp' })
+        await import('./material').then(x => x.confereChegada(neg)).catch(() => null)
         texto = `(mandou ${tipo === 'video' ? 'um vídeo' : 'uma foto'}${descricao ? ': ' + descricao : ''})${legenda ? ' ' + legenda : ''}`
       }
     } catch (e: any) { texto += ' [a mídia não pôde ser baixada: ' + String(e?.message || '').slice(0, 80) + ']' }

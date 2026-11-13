@@ -1309,7 +1309,7 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
 /* 13/11: o que falta pra ligar (lista de conferência; lib/maia/ligar.ts). Só lê; o único botão grava o número conferido */
 function subLigar(n,box){
   box.innerHTML='<div id="ligar-c">'+esqLinhas(6)+'</div>';
@@ -1365,6 +1365,49 @@ function subCobranca(n,c){
   function carrega(){ return api(q({acao:'cobranca',negocio:n.id})).then(pinta).catch(function(e){ if($('#cob-c')) $('#cob-c').innerHTML=caixaErro(e); }); }
   carrega();
 }
+// 13/11 (material.ts): os arquivos do cliente. O banco de fotos e vídeos (o que chegou pelo WhatsApp do dono, pelo painel dele,
+// pela implantação e por aqui), com a descrição da Maia, quantas vezes já foi usado e se serve; "não usar" tira da criação.
+// Em cima, as pautas de captação que a Maia pediu ao dono (dia 1 e 12, ou na implantação pelo botão) e o que chegou.
+function subArquivos(n,c){
+  c.innerHTML='<div id="arq-c"><div class="card"><div class="esq" style="height:80px"></div></div></div>';
+  var dt=function(d){ return d?new Date(d).toLocaleDateString('pt-BR'):''; };
+  var stP={aberta:['esperando o dono','aten'],atendida:['chegou','bom'],vencida:['não chegou','ruim'],sem_falta:['não faltava nada','']};
+  function linhaPauta(p){
+    var t=stP[p.status]||[p.status,''];
+    var titulo=(p.lote==='implantacao'?'Implantação':'Lote do dia '+esc(String(p.data_lote||'').slice(8,10)))+' · pedida em '+dt(p.pedida_em||p.criado_em);
+    var corpo=esc(p.texto||'Não faltava nada no banco.')+(p.recebidas&&p.recebidas.length?'<br>Chegaram '+p.recebidas.length+' arquivo(s).':'');
+    return '<div class="lin"><span class="cor '+(t[1]||'')+'"></span><span style="min-width:0"><span class="t"><span>'+titulo+'</span>'+chip(t[0],t[1])+'</span><span class="sub" style="display:block;white-space:pre-line">'+corpo+'</span></span></div>';
+  }
+  function cartaoMidia(m){
+    var mini=m.link?(m.tipo==='video'?'<video src="'+esc(m.link)+'" muted playsinline preload="metadata" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;background:#000"></video>':'<img src="'+esc(m.link)+'" alt="" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px">'):'';
+    var selos=chip(m.tipo==='video'?'vídeo':'foto','')+(m.nao_usar?chip('não usar','ruim'):m.serve?chip('serve','bom'):chip('não serve','ruim'))+(m.usos?chip('usada '+m.usos+'x',m.cansada?'aten':''):'');
+    return '<div style="min-width:0;opacity:'+(m.nao_usar?0.5:1)+'">'+mini+'<div style="display:flex;flex-wrap:wrap;gap:4px;margin:6px 0">'+selos+'</div><p class="mu peq" style="margin:0 0 6px;font-size:12.5px">'+esc((m.descricao||'sem descrição ainda').slice(0,160))+'</p><button class="btn" style="min-height:30px;padding:4px 10px" data-naousar="'+esc(m.id)+'" data-nao="'+(m.nao_usar?'0':'1')+'">'+(m.nao_usar?'Voltar a usar':'Não usar')+'</button></div>';
+  }
+  function pinta(r){
+    var h='', ps=r.pautas||[], b=r.banco||[];
+    var serve=b.filter(function(m){ return m.serve; });
+    h+='<div class="card"><div class="card-cab"><div><h2>Pauta de captação</h2><p class="mu peq" style="margin-top:4px">Dia 1 e dia 12 a Maia compara o banco com o próximo lote de anúncios'+(r.produto?' (produto da vez: '+esc(r.produto)+')':'')+' e pede ao dono o que falta. No dia do lote, se não chegou, a equipe é avisada.</p></div></div>'+
+      (ps.length?'<div class="lista">'+ps.slice(0,5).map(linhaPauta).join('')+'</div>':'<p class="mu peq" style="margin:0 0 10px">Nenhuma pauta ainda.</p>')+
+      '<div class="btns" style="margin-top:10px"><button class="btn" id="arq-pauta">'+ic('msg')+'Pedir o material agora (implantação)</button></div></div>';
+    h+='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Arquivos do cliente</h2><p class="mu peq" style="margin-top:4px">'+b.length+' no banco · '+serve.length+' servem pra anúncio. Foto e vídeo real, do jeito que vieram: a Maia descreve cada um.</p></div></div>'+
+      '<div class="btns"><label class="btn ok" for="arq-file" style="cursor:pointer">'+ic('imagem')+'Subir fotos e vídeos</label><input type="file" id="arq-file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple hidden></div><p class="mu peq" id="arq-st" aria-live="polite" style="margin:8px 0 0"></p>'+
+      (b.length?'<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;margin-top:14px">'+b.map(cartaoMidia).join('')+'</div>':'<p class="mu peq" style="margin:12px 0 0">Ainda nada. Sobe aqui, ou o dono manda pelo WhatsApp da Maia ou pelo painel dele.</p>')+'</div>';
+    $('#arq-c').innerHTML=h;
+    $('#arq-pauta').onclick=function(){ var bt=this; espera(bt,'pedindo…',function(){ return api({acao:'material_pauta',negocio_id:n.id,lote:'implantacao'}).then(function(x){ toast(x.ja?'Já pediu hoje.':x.sem_falta?'Não falta nada no banco agora.':'Pedido mandado pro dono.'); return carrega(); }); }); };
+    c.querySelectorAll('[data-naousar]').forEach(function(bt){ bt.onclick=function(){ espera(bt,'…',function(){ return api({acao:'material_nao_usar',midia_id:bt.getAttribute('data-naousar'),nao:bt.getAttribute('data-nao')==='1'}).then(carrega); }); }; });
+    var fi=$('#arq-file'); fi.onchange=function(){ var lista=[].slice.call(fi.files||[]), st=$('#arq-st'), feitos=0; if(!lista.length) return;
+      var um=function(i){ if(i>=lista.length){ st.textContent=feitos+' de '+lista.length+' no banco.'; toast('Arquivos no banco.'); return carrega(); }
+        var f=lista[i]; st.textContent='Subindo '+(i+1)+' de '+lista.length+' ('+f.name+')…';
+        return mandaArq(f).then(function(){ feitos++; },function(e){ toast(f.name+': '+(e&&e.message||e),true); }).then(function(){ return um(i+1); }); };
+      um(0); };
+  }
+  function b64(f){ return new Promise(function(ok,nok){ var r=new FileReader(); r.onload=function(){ ok(String(r.result).split(',')[1]); }; r.onerror=function(){ nok(new Error('não deu pra ler o arquivo')); }; r.readAsDataURL(f); }); }
+  function mandaArq(f){ var mime=(f.type||'').toLowerCase();
+    if(f.size<=3.5*1024*1024) return b64(f).then(function(x){ return api({acao:'material_subir',negocio_id:n.id,mime:mime,nome:f.name,arquivo_b64:x}); });
+    return api({acao:'material_envio',negocio_id:n.id,mime:mime}).then(function(x){ return fetch(x.url,{method:'PUT',headers:{'content-type':mime,'x-upsert':'true'},body:f}).then(function(r){ if(!r.ok) throw new Error('o envio falhou'); return api({acao:'material_registrar',negocio_id:n.id,caminho:x.caminho,mime:mime,nome:f.name}); }); }); }
+  function carrega(){ return api(q({acao:'material',negocio:n.id})).then(pinta).catch(function(e){ if($('#arq-c')) $('#arq-c').innerHTML=caixaErro(e); }); }
+  carrega();
+}
 function telaNegocio(id,sub,mesmoNeg){
   var t=$('#tela');
   var temCab = mesmoNeg && $('#neg-topo') && S.negAtual && S.negAtual.id===id;
@@ -1373,7 +1416,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }

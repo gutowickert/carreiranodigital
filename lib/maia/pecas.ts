@@ -2,6 +2,7 @@
 // (o vídeo curto do dono editado), post e relatório. A IA escreve; a arte e o vídeo saem da "oficina" (maia-oficina/, um
 // trabalhador com Chrome e ffmpeg, fora da Vercel), que pega as tarefas na fila. Pronto → vai pra revisão da equipe.
 import { maiaDb as db } from './db'
+import { naoUsar } from './material'   // 13/11 (material): o que a equipe marcou "não usar" fica de fora
 import { emJson, JEITO } from './ia'
 import { avisaEquipe } from './canal'
 import { tomDoNegocio, acertaTom, ctaNoTom } from './tom'
@@ -47,7 +48,7 @@ O QUE A MAIA SABE: ${JSON.stringify(n.contexto || {})}`
 // contexto.video_locucao = true (o dono não quer aparecer) também pede; false nunca faz
 export async function geraAnuncios(neg: any, opc: { quantidade?: number; tema?: string; midia_ids?: string[]; locucao?: boolean } = {}) {
   const todas = await db.lista('midias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true })
-  const midias = (opc.midia_ids?.length ? todas.filter(m => opc.midia_ids!.includes(m.id)) : todas.filter(m => m.tipo === 'foto' || m.tipo === 'video')).slice(0, 12)
+  const midias = (opc.midia_ids?.length ? todas.filter(m => opc.midia_ids!.includes(m.id)) : todas.filter(m => (m.tipo === 'foto' || m.tipo === 'video') && !naoUsar(m))).slice(0, 12)
   if (!midias.length) return { ok: false, erro: 'o dono ainda não mandou fotos nem vídeos' }
   const lista = midias.map(m => `- ${m.id} · ${m.tipo}${m.duracao ? ' ' + Math.round(m.duracao) + 's' : ''} · ${m.descricao || m.legenda || 'sem descrição'}`).join('\n')
   const qtd = Math.min(opc.quantidade || 3, 6)

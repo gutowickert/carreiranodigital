@@ -10,6 +10,7 @@
 //      vai pra revisão da equipe, igual a qualquer post. Publicar é o mesmo carrossel de fotos do social.ts.
 // Custo: a escrita anota 'uso_ia' com tipo 'carrossel' (custo.ts).
 import { maiaDb as db } from './db'
+import { naoUsar } from './material'   // 13/11 (material): o que a equipe marcou "não usar" fica de fora
 import { emJson } from './ia'
 import { avisaEquipe } from './canal'
 import { jeitoDaLegenda, quandoIso } from './social'
@@ -74,7 +75,7 @@ export async function criaCarrossel(negocio_id: string, d: { quando: string; tem
   if (neg.plano === 'gestao') throw new Error('social media não faz parte da Maia Gestora (plano gestao)')
   const quando = quandoIso(d.quando)
   if (!quando) throw new Error('data/hora inválida (ex.: 2026-11-20T18:00)')
-  const todas = (await db.lista('midias', { negocio_id }, { ordem: 'criado_em', desc: true })).filter(m => m.tipo === 'foto')
+  const todas = (await db.lista('midias', { negocio_id }, { ordem: 'criado_em', desc: true })).filter(m => m.tipo === 'foto' && !naoUsar(m))
   const midias = (d.midia_ids?.length ? todas.filter(m => d.midia_ids!.includes(m.id)) : todas).slice(0, 12)
   if (midias.length < 2) throw new Error('o carrossel precisa de pelo menos 2 fotos do dono')
   const tipo: TipoConteudo = ['noticia', 'dica', 'produto'].includes(d.tipo as any) ? d.tipo as TipoConteudo : 'dica'

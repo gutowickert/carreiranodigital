@@ -442,6 +442,11 @@ function secResumo(){
   var gest=d.negocio&&d.negocio.plano==='gestao';
   h+='<h2>Pedir peças novas</h2><div class="card pad"><p class="mu peq" style="margin:0">A Maia cria, a equipe confere e volta pra ti aprovar antes de sair.</p>'+
     '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-locucao">Vídeo com locução</button>'+(gest?'':'<button type="button" class="btn" id="b-carrossel">Carrossel</button>')+'</div></div>';
+  // 13/11 (material.ts): fotos e vídeos pro banco da Maia (o mesmo de mandar no WhatsApp) e o que ela pediu
+  var mt=d.material||{};
+  h+='<h2>Fotos e vídeos<small>'+int(mt.fotos||0)+' fotos · '+int(mt.videos||0)+' vídeos</small></h2><div class="card pad">'+
+    (mt.pauta&&mt.pauta.texto?'<p style="margin:0 0 8px;font-weight:700">A Maia pediu:</p><p class="mu" style="margin:0;white-space:pre-line">'+esc(mt.pauta.texto)+'</p>'+(mt.pauta.recebidas?'<p class="mu peq" style="margin:8px 0 0">Já chegaram '+int(mt.pauta.recebidas)+'.</p>':''):'<p class="mu peq" style="margin:0">Foto e vídeo de verdade vendem mais. Manda do jeito que estão, sem editar.</p>')+
+    '<div class="btns" style="margin-top:10px"><label class="btn" for="f-midias" style="cursor:pointer">Mandar fotos e vídeos</label><input type="file" id="f-midias" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple hidden></div><p class="mu peq" id="f-midias-st" style="margin:8px 0 0" aria-live="polite"></p></div>';
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
   var r=d.retomadas;
@@ -558,6 +563,12 @@ function liga(el){
   var bv=$('#b-verba',el);if(bv)bv.onclick=function(){folha('<h3>Mudar a verba por dia</h3><p class="mu peq">Vira um pedido: a equipe confere e aprova, e tu recebe a confirmação no WhatsApp.</p><label class="campo"><span>Quanto por dia (R$)</span><input id="f-vb" inputmode="decimal" placeholder="ex.: 40"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
     $('#f-ok',v).onclick=function(){var x=$('#f-vb',v).value.trim();if(!x){toast('Escreve o valor');return;}var k=this;k.disabled=true;
       api('',{acao:'verba',valor:x}).then(function(){fecha();toast('Pedido enviado pra equipe');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
+  // 13/11 (material.ts): manda os arquivos um por um (até ~3,5 MB direto; maior vai pelo link do armazenamento)
+  var fm=$('#f-midias',el);if(fm)fm.onchange=function(){var fs=[].slice.call(fm.files||[]),st=$('#f-midias-st',el),feitos=0;if(!fs.length)return;
+    var um=function(i){if(i>=fs.length){st.textContent=feitos+' de '+fs.length+' enviados. A Maia já está olhando.';toast('Recebido');return carrega();}
+      var f=fs[i];st.textContent='Enviando '+(i+1)+' de '+fs.length+'...';
+      return mandaArquivo(f).then(function(){feitos++;},function(e){toast(f.name+': '+e.message);}).then(function(){return um(i+1);});};
+    um(0);};
   // 13/11 (junção): vídeo com locução e carrossel pelo painel
   var bl=$('#b-locucao',el);if(bl)bl.onclick=function(){folha('<h3>Vídeo com locução</h3><p class="mu peq">A Maia junta os teus vídeos do dia a dia e põe uma voz lendo o anúncio. Precisa de pelo menos 2 vídeos curtos que tu já mandou.</p><label class="campo"><span>Sobre o que (opcional)</span><input id="f-tema" maxlength="200" placeholder="ex.: encomendas de Natal"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
     $('#f-ok',v).onclick=function(){var k=this;k.disabled=true;
@@ -572,6 +583,10 @@ function liga(el){
     $('#f-ok',v).onclick=function(){var nota=$('#f-nota',v).value.trim();if(!nota){toast('Escreve o que mudar');return;}this.disabled=true;
       api('',{acao:'ajuste',peca_id:b.dataset.ajuste,nota:nota}).then(function(){fecha();toast('Pedido enviado');return carrega();}).catch(function(e){toast(e.message);});};});};});
 }
+function b64De(f){return new Promise(function(ok,nok){var r=new FileReader();r.onload=function(){ok(String(r.result).split(',')[1]);};r.onerror=function(){nok(new Error('não deu pra ler o arquivo'));};r.readAsDataURL(f);});}
+function mandaArquivo(f){var mime=(f.type||'').toLowerCase();
+  if(f.size<=3.5*1024*1024) return b64De(f).then(function(b){return api('',{acao:'midia_subir',mime:mime,nome:f.name,arquivo_b64:b});});
+  return api('',{acao:'midia_envio',mime:mime}).then(function(x){return fetch(x.url,{method:'PUT',headers:{'content-type':mime,'x-upsert':'true'},body:f}).then(function(r){if(!r.ok)throw new Error('o envio falhou');return api('',{acao:'midia_registrar',caminho:x.caminho,mime:mime,nome:f.name});});});}
 var veuAtual=null;
 function folha(html,depois){fecha();var v=document.createElement('div');v.className='veu';v.innerHTML='<div class="folha" role="dialog" aria-modal="true">'+html+'</div>';document.body.appendChild(v);veuAtual=v;
   v.onclick=function(e){if(e.target===v||e.target.hasAttribute('data-fecha'))fecha();};if(depois)depois(v);}

@@ -160,6 +160,22 @@ export async function POST(req: Request) {
         await db.evento('painel_dono_acao', neg.id, { acao: 'conteudo', o })
         return ok({ ok: true })
       }
+      // 13/11 (material.ts): o dono manda fotos e vídeos pelo painel (regra da casa: WhatsApp E painel). Pequeno em base64;
+      // grande vai direto pro armazenamento (midia_envio → PUT no link → midia_registrar)
+      case 'midia_subir': {
+        if (!b.arquivo_b64) return erro('falta o arquivo')
+        const m = await import('@/lib/maia/material')
+        const x = await m.sobeMidia(neg, { buf: Buffer.from(String(b.arquivo_b64), 'base64'), mime: b.mime, nome: b.nome || null, por: 'dono_painel' })
+        await db.evento('painel_dono_acao', neg.id, { acao: 'midia' })
+        return ok({ ok: true, id: x.id })
+      }
+      case 'midia_envio': { const m = await import('@/lib/maia/material'); const x = await m.linkDeEnvio(neg, b.mime); return ok({ caminho: x.caminho, url: x.url }) }
+      case 'midia_registrar': {
+        const m = await import('@/lib/maia/material')
+        const x = await m.registraMidia(neg, { caminho: b.caminho, mime: b.mime, nome: b.nome || null, por: 'dono_painel' })
+        await db.evento('painel_dono_acao', neg.id, { acao: 'midia' })
+        return ok({ ok: true, id: x.id })
+      }
       default: return erro('ação desconhecida')
     }
   } catch (e: any) { console.error('[painel do dono]', e?.message); return erro('não deu agora. Tenta de novo ou fala com a Maia no WhatsApp.', 500) }

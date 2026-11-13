@@ -96,6 +96,13 @@ export async function GET(req: Request) {
       if (q('conferir') === '1') { await c.confereNegocio(n); n = await db.um('negocios', { id: n.id }) }
       return ok(c.situacaoDo(n))
     }
+    // 13/11 (material.ts): os arquivos do cliente (banco de mídias) e as pautas de captação que a Maia pediu
+    if (acao === 'material') {
+      const m = await import('@/lib/maia/material')
+      const n = await db.um('negocios', { id: q('negocio') })
+      if (!n) return erro('negócio não existe', 404)
+      return ok({ banco: await m.bancoDoNegocio(n), pautas: (await m.pautas(n.id)).map(e => ({ id: e.id, criado_em: e.criado_em, ...e.detalhe })), produto: m.produtoDaVez(n) })
+    }
     // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
     if (acao === 'falta_ligar') {
       const { faltaLigar } = await import('@/lib/maia/ligar')
@@ -270,6 +277,35 @@ export async function POST(req: Request) {
         const [atual] = await db.atualiza('negocios', { id: n.id }, { marca: { ...(n.marca || {}), logo_path: caminho } })
         await db.evento('logo_novo', n.id, { por })
         return ok(semChave(atual))
+      }
+      // 13/11 (material.ts): arquivos do cliente. Pequeno (até ~4 MB) vem em base64; grande vai direto pro armazenamento
+      // (material_envio devolve o link; depois material_registrar com o mesmo caminho). A implantação (importar.mjs) usa os dois
+      case 'material_subir': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        if (!b.arquivo_b64) return erro('falta o arquivo')
+        const m = await import('@/lib/maia/material')
+        return ok(await m.sobeMidia(n, { buf: Buffer.from(String(b.arquivo_b64), 'base64'), mime: b.mime, nome: b.nome || null, legenda: b.legenda || null, por }))
+      }
+      case 'material_envio': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const m = await import('@/lib/maia/material')
+        return ok(await m.linkDeEnvio(n, b.mime))
+      }
+      case 'material_registrar': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const m = await import('@/lib/maia/material')
+        return ok(await m.registraMidia(n, { caminho: b.caminho, mime: b.mime, nome: b.nome || null, legenda: b.legenda || null, por }))
+      }
+      case 'material_nao_usar': { const m = await import('@/lib/maia/material'); return ok(await m.marcaNaoUsar(b.midia_id, b.nao !== false, por)) }
+      case 'material_pauta': {
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const m = await import('@/lib/maia/material')
+        const lote = ['inicio', 'meio', 'implantacao'].includes(b.lote) ? b.lote : 'implantacao'
+        return ok(await m.pedePauta(n, { lote, por }))
       }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))

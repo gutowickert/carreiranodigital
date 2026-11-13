@@ -283,6 +283,8 @@ export async function dadosDoPainel(neg: any) {
     resumos: await (await import('./resumo-semana')).resumosEnviados(id).catch(() => []),
     // 13/11: a verba por dia e o pedido de mudança que espera a equipe (pendencias.ts)
     verba: await (async () => { const p = (await (await import('./pendencias')).pedidosDeVerba(id).catch(() => []))[0]; return { dia: neg.verba_dia ?? null, pedido: p ? { valor: p.detalhe.valor, em: p.criado_em } : null } })(),
+    // 13/11 (material.ts): o material que a Maia pediu e ainda espera, e quantas fotos e vídeos o banco tem
+    material: await (async () => { const m = await import('./material'); const p = await m.pautaAberta(id).catch(() => null); const ms = await db.lista('midias', { negocio_id: id }).catch(() => [] as any[]); return { pauta: p ? { texto: p.detalhe?.texto || null, data_lote: p.detalhe?.data_lote || null, recebidas: (p.detalhe?.recebidas || []).length } : null, fotos: ms.filter(x => x.tipo === 'foto' && m.serve(x)).length, videos: ms.filter(x => x.tipo === 'video' && m.serve(x)).length } })(),
     // 13/11 (relatorios.ts): a análise dos anúncios (de 2 em 2 dias) e os relatórios do mês que já foram pro dono
     analises: await (await import('./relatorios')).analisesEnviadas(id).catch(() => []),
     relatorios_mes: await (await import('./relatorios')).relatoriosEnviados(id).catch(() => []),

@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 export async function PUT(req: Request) {
   if (!maiaLocal()) return new Response('não', { status: 404 })
   const u = new URL(req.url), p = u.searchParams.get('p') || '', envio = u.searchParams.get('envio') || ''
-  if (!p || p.includes('..') || !/^[\w-]+\/pecas\/[\w.-]+$/.test(p)) return new Response('caminho inválido', { status: 400 })
+  if (!p || p.includes('..') || !/^[\w-]+\/(pecas|midias)\/[\w.-]+$/.test(p)) return new Response('caminho inválido', { status: 400 })   // 13/11 (material.ts): mídia do cliente também
   if (envio !== assinaEnvioLocal(p)) return new Response('assinatura inválida', { status: 403 })
   const buf = Buffer.from(await req.arrayBuffer())
   if (!buf.length) return new Response('arquivo vazio', { status: 400 })
