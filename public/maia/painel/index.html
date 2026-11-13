@@ -445,6 +445,11 @@ function secResumo(){
     h+='<h2>Resumo da semana<small>'+dataC(rs[0].enviado_em)+'</small></h2><div class="card pad" style="white-space:pre-line;line-height:1.55">'+esc(rs[0].texto)+'</div>';
     if(rs.length>1) h+='<details class="card pad" style="margin-top:10px"><summary style="cursor:pointer">Semanas anteriores ('+(rs.length-1)+')</summary>'+rs.slice(1).map(function(r){return '<p class="mu peq" style="margin:14px 0 4px">'+esc(r.titulo||'')+'</p><div style="white-space:pre-line;line-height:1.55">'+esc(r.texto)+'</div>';}).join('')+'</details>';
   }
+  // 13/11 (lib/maia/relatorios.ts): a análise dos anúncios (de 2 em 2 dias) e os relatórios do mês (a página abre com o mesmo cookie)
+  var an=d.analises||[];
+  if(an.length) h+='<h2>Análise dos anúncios<small>'+dataC(an[0].enviado_em)+'</small></h2><div class="card pad" style="white-space:pre-line;line-height:1.55">'+esc(an[0].texto)+'</div>';
+  var rm=d.relatorios_mes||[];
+  if(rm.length) h+='<h2>Relatórios do mês</h2><ul class="lista card">'+rm.map(function(r){return '<li style="padding:12px 16px"><a href="/api/maia/painel?acao=relatorio&id='+encodeURIComponent(r.id)+'" target="_blank" rel="noopener" style="font-weight:700;color:var(--accent-tx)">'+esc(r.nome||r.mes)+'</a><small class="mu" style="display:block">enviado em '+dataC(r.enviado_em)+'</small></li>';}).join('')+'</ul>';
   return h+'</div></div>';
 }
 function mini(n,t,alerta){return '<div'+(alerta?' class="alerta"':'')+'><b>'+int(n)+'</b><span>'+t+'</span></div>';}

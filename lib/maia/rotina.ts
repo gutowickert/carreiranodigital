@@ -112,6 +112,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   // 07/11 (piloto): conversa com gente volta pra Maia depois de 24 h; pergunta sem resposta do dono: lembra em 1 h, equipe em 3 h
   try { const { devolveSozinha, cobraPerguntas } = await import('./humano'); r.devolvidas = await devolveSozinha(relogio); r.perguntas = await cobraPerguntas(relogio) } catch (e: any) { r.devolvidas_erro = e.message }
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
+  // 13/11 (relatorios.ts): 8h no fuso do negócio: a análise dos anúncios de 2 em 2 dias, o aviso (dia 1) e o relatório do mês (dia 2)
+  try { const { rotinaRelatorios } = await import('./relatorios'); r.analises = await rotinaRelatorios({ agora: relogio }) } catch (e: any) { r.analises_erro = e.message }
   // 08/11 (LGPD): 1x por dia apaga as conversas sem mensagem há mais de 12 meses (meta.atendimento.guarda_meses)
   try { const { apagaVencidos } = await import('./lgpd'); r.guarda = await apagaVencidos(new Date(), !!opc.forcarGuarda) } catch (e: any) { r.guarda_erro = e.message }
   // 07/11 (piloto): as conversas do mês por negócio; avisa a equipe em 80% e 100% da franquia (não bloqueia nada)
