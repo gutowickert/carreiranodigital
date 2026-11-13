@@ -10,10 +10,19 @@
 //   - ESTIMULAR o que vende (ou, antes de 10 vendas, o que mais chega na secundária) com conversa barata, sempre dentro do
 //     teto de verba por dia (limites.ts, R$ 60). Somando as campanhas no ar, nunca passa do teto
 //   - a sugestão nunca é feita sozinha: vai pra equipe e depois pergunta pro dono se ele topa testar
+// 13/11 (depois da prova com a Wood, Guto):
+//   - anúncio que JÁ VENDEU se julga pelo ROI (métrica primária): quanto gastou x quanto entrou. Custo por venda acima da meta
+//     de CPA (contexto.trafego.cpa_meta, da implantação), com gasto de pelo menos 2 CPAs, sugere pausar; dentro da meta, fica
+//   - subir verba: 30% por vez. Custo de tráfego até 5% do que o anúncio vendeu: sugere DOBRAR (sempre dentro do teto)
+//   - anúncio que a Meta quase não entrega fica ligado; só sugere pausar quando já gastou um CPA sem vender (precisa da meta)
+//   - toda semana, com a oferta indo bem, sugere começar a testar um anúncio novo de outro produto (a oferta uma hora para)
 
 export const ETAPAS_ORDEM = ['novo', 'conversando', 'interessado', 'proposta', 'ganho']
 export const VENDAS_PRA_JULGAR_POR_VENDA = 10
 export const CICLO_PADRAO_DIAS = 7
+export const SOBE_VERBA = 1.3            // 13/11: sobe 30% por vez
+export const DOBRA_ATE_CUSTO = 0.05      // custo de tráfego até 5% do que vendeu: dobra
+export function cpaDo(neg: any): number | null { const n = Number(neg?.contexto?.trafego?.cpa_meta); return n > 0 ? n : null }
 
 const r2 = (n: number) => Math.round(n * 100) / 100
 export const R$ = (v: number) => 'R$ ' + r2(v).toLocaleString('pt-BR', { minimumFractionDigits: Math.round(v * 100) % 100 ? 2 : 0, maximumFractionDigits: 2 })
@@ -82,7 +91,7 @@ export type AnuncioNum = {
   contatos: number; secundaria: number | null; vendas: number; receita: number
   arquivo?: string | null           // 13/11: o criativo da peça da Maia (imagem ou vídeo no armazenamento), quando o anúncio é dela
 }
-export type Sugestao = { tipo: 'pausar' | 'estimular'; anuncio: string; nome: string; texto: string; motivo: string; verba_de?: number | null; verba_para?: number | null; campanha_id?: string | null }
+export type Sugestao = { tipo: 'pausar' | 'estimular' | 'testar'; anuncio: string; nome: string; texto: string; motivo: string; verba_de?: number | null; verba_para?: number | null; campanha_id?: string | null }
 export type Decisao = {
   conclusao: 'segue' | 'segura' | 'mudar'
   julga_por: 'vendas' | 'secundaria'
@@ -95,7 +104,8 @@ export type Decisao = {
 const custoConversa = (a: { gasto: number | null; conversas: number | null }) => a.gasto != null && a.conversas ? a.gasto / a.conversas : null
 const idadeDias = (inicio: string | null | undefined, agora: number) => inicio ? Math.max(0, (agora - Date.parse(inicio)) / 86400e3) : null
 
-export function decide(o: { anuncios: AnuncioNum[]; vendas_historico: number; ciclo: number; teto: number; agora: number; secundaria: Secundaria }): Decisao {
+export function decide(o: { anuncios: AnuncioNum[]; vendas_historico: number; ciclo: number; teto: number; agora: number; secundaria: Secundaria; cpa_meta?: number | null; teste_semana?: boolean; produto?: string | null }): Decisao {
+  const cpa = o.cpa_meta && o.cpa_meta > 0 ? o.cpa_meta : null
   const { anuncios, ciclo, teto, agora } = o
   const conta = o.secundaria.etapa != null && anuncios.every(a => a.secundaria != null)
   const julga_por: Decisao['julga_por'] = o.vendas_historico >= VENDAS_PRA_JULGAR_POR_VENDA || !conta ? 'vendas' : 'secundaria'
@@ -108,17 +118,26 @@ export function decide(o: { anuncios: AnuncioNum[]; vendas_historico: number; ci
 
   const sugestoes: Sugestao[] = [], em_teste: Decisao['em_teste'] = []
   for (const a of anuncios) {
-    if (a.vendas > 0) continue
+    if (a.vendas > 0) {
+      // já vendeu: julga pelo ROI. Só pausa com a meta de CPA da implantação e gasto de pelo menos 2 CPAs (dado suficiente)
+      const cv = a.gasto != null ? a.gasto / a.vendas : null
+      if (cpa && cv != null && cv > cpa && (a.gasto || 0) >= 2 * cpa) {
+        const motivo = `${plural(a.vendas, 'venda')}, mas cada uma custou ${R$(cv)} em anúncio (gastou ${R$(a.gasto || 0)} pra vender ${R$(a.receita)}); a meta é até ${R$(cpa)} por venda`
+        sugestoes.push({ tipo: 'pausar', anuncio: a.id, nome: a.nome, motivo, texto: `pausar "${a.nome}" (${motivo})`, campanha_id: a.campanha_id || null })
+      }
+      continue
+    }
     const idade = idadeDias(a.inicio, agora)
     const taxa = conta && a.contatos ? (a.secundaria || 0) / a.contatos : null
     // secundária ruim: com gente suficiente pra julgar (5+ contatos), ninguém chegou ou chegou menos da metade da média
     // (com 10+ vendas o julgamento é pela venda: aí só o ciclo de venda pausa)
     const secRuim = julga_por === 'secundaria' && taxa != null && a.contatos >= 5 && (taxa === 0 || (mediaSec != null && mediaSec > 0 && taxa < mediaSec * 0.5))
-    const passouCiclo = idade != null && idade > ciclo && a.contatos >= 3
+    // anúncio que a Meta quase não entrega (pouco contato) fica ligado; só sai quando já gastou um CPA inteiro sem vender
+    const passouCiclo = idade != null && idade > ciclo && (a.contatos >= 3 || (cpa != null && (a.gasto || 0) >= cpa))
     if (secRuim || passouCiclo) {
       const motivo = secRuim
         ? `${plural(a.contatos, 'contato')}, ${a.secundaria ? `só ${a.secundaria} chegou` : 'nenhum chegou'} em "${o.secundaria.nome}"${mediaSec ? ` (a média dos anúncios é ${pct(mediaSec)})` : ''} e nenhuma venda`
-        : `já roda há ${Math.floor(idade!)} dias, passou do tempo normal de venda (${ciclo} dias), com ${plural(a.contatos, 'contato')} e nenhuma venda`
+        : `já roda há ${Math.floor(idade!)} dias, passou do tempo normal de venda (${ciclo} dias), com ${plural(a.contatos, 'contato')}${a.gasto ? ` e ${R$(a.gasto)} gastos` : ''} e nenhuma venda`
       sugestoes.push({ tipo: 'pausar', anuncio: a.id, nome: a.nome, motivo, texto: `pausar "${a.nome}" (${motivo})`, campanha_id: a.campanha_id || null })
     } else if (idade == null || idade <= ciclo) {
       em_teste.push({ anuncio: a.id, nome: a.nome, faltam_dias: idade == null ? ciclo : Math.max(1, Math.ceil(ciclo - idade)) })
@@ -151,10 +170,13 @@ export function decide(o: { anuncios: AnuncioNum[]; vendas_historico: number; ci
     const porque = melhor.vendas > 0
       ? `${plural(melhor.vendas, 'venda')}${c != null ? `, conversa a ${R$(c)}` : ''}`
       : `${melhor.secundaria} de ${plural(melhor.contatos, 'contato')} chegaram em "${o.secundaria.nome}"${c != null ? `, conversa a ${R$(c)}` : ''}`
+    // 30% por vez; se o anúncio custa até 5% do que vendeu em tráfego, dobra (sempre dentro do teto)
+    const dobra = melhor.vendas > 0 && melhor.receita > 0 && melhor.gasto != null && melhor.gasto / melhor.receita <= DOBRA_ATE_CUSTO
     if (de != null && folga >= 1) {
-      const para = Math.min(de + folga, Math.max(de + 1, Math.round(de * 1.2)), teto)
-      sugestoes.push({ tipo: 'estimular', anuncio: melhor.id, nome: melhor.nome, motivo: porque, verba_de: de, verba_para: para, campanha_id: melhor.campanha_id || null,
-        texto: `subir a verba de "${melhor.nome}" de ${R$(de)} pra ${R$(para)} por dia (${porque})` })
+      const para = Math.min(de + folga, Math.max(de + 1, Math.round(de * (dobra ? 2 : SOBE_VERBA))), teto)
+      const roi = dobra ? `; o anúncio custou só ${pct(melhor.gasto! / melhor.receita)} do que vendeu` : ''
+      sugestoes.push({ tipo: 'estimular', anuncio: melhor.id, nome: melhor.nome, motivo: porque + roi, verba_de: de, verba_para: para, campanha_id: melhor.campanha_id || null,
+        texto: `${dobra && para >= de * 2 ? 'dobrar' : 'subir'} a verba de "${melhor.nome}" de ${R$(de)} pra ${R$(para)} por dia (${porque}${roi})` })
     } else if (de == null) {
       sugestoes.push({ tipo: 'estimular', anuncio: melhor.id, nome: melhor.nome, motivo: porque, campanha_id: melhor.campanha_id || null,
         texto: `dar mais verba pra "${melhor.nome}", dentro do teto de ${R$(teto)} por dia (${porque})` })
@@ -163,6 +185,14 @@ export function decide(o: { anuncios: AnuncioNum[]; vendas_historico: number; ci
       sugestoes.push({ tipo: 'estimular', anuncio: melhor.id, nome: melhor.nome, motivo: porque, verba_de: de, verba_para: de, campanha_id: melhor.campanha_id || null,
         texto: `manter "${melhor.nome}" como o principal (${porque}); a verba já está no teto de ${R$(teto)} por dia` })
     }
+  }
+
+  // 13/11: uma vez por semana, com a oferta indo bem (um anúncio vendendo dentro do ROI), já começa a testar outro produto
+  const vaiBem = anuncios.some(a => a.vendas > 0 && !sugestoes.some(s => s.tipo === 'pausar' && s.anuncio === a.id))
+  if (o.teste_semana && vaiBem) {
+    const quem = anuncios.filter(a => a.vendas > 0).sort((x, y) => y.vendas - x.vendas)[0]
+    sugestoes.push({ tipo: 'testar', anuncio: quem.id, nome: quem.nome, motivo: `"${quem.nome}" está vendendo`,
+      texto: `começar a testar um anúncio novo com outro produto${o.produto ? ` (o que vende hoje: ${o.produto})` : ''}, pra ter a próxima oferta pronta quando essa cansar` })
   }
 
   // (o "manter no teto" só entra junto com uma pausa: aí é mudança)
@@ -242,7 +272,7 @@ export function cardAnalise(d: DadosAnalise, anuncios: AnuncioNum[]) {
 export function legendaAnalise(d: DadosAnalise) {
   const cpc = custoPorConversa(d.gasto, d.conversas)
   const nums = [d.gasto > 0 ? `${R$(d.gasto)} investidos` : 'sem gasto de anúncio', plural(d.conversas, 'conversa') + (cpc != null ? ` (${R$(cpc)} cada)` : ''), plural(d.vendas, 'venda')].join(', ')
-  const muda = (s: Sugestao) => s.tipo === 'pausar' ? `pausar "${s.nome}"` : s.verba_para && s.verba_de && s.verba_para !== s.verba_de ? `subir "${s.nome}" pra ${R$(s.verba_para)}/dia` : `manter "${s.nome}"`
+  const muda = (s: Sugestao) => s.tipo === 'testar' ? 'testar um anúncio de outro produto' : s.tipo === 'pausar' ? `pausar "${s.nome}"` : s.verba_para && s.verba_de && s.verba_para !== s.verba_de ? `subir "${s.nome}" pra ${R$(s.verba_para)}/dia` : `manter "${s.nome}"`
   const fim = d.decisao.conclusao === 'mudar' ? `${TITULO_CONCLUSAO.mudar}: ${d.decisao.sugestoes.map(muda).join(' e ')}. Topa testar? Me responde aqui.` : `${TITULO_CONCLUSAO[d.decisao.conclusao]}.`
   return `${TITULO_ANALISE} do ${d.negocio} (${ddmm(d.de)} a ${ddmm(d.ate)}): ${nums}. ${fim}`
 }

@@ -112,7 +112,12 @@ export async function dadosDaAnalise(neg: any, de: string, ate: string, agora = 
   const de30 = new Date(agora.getTime() - 30 * DIA).toISOString()
   const anuncios = anunciosDoPeriodo({ leads, porLead, info, linhas, sec, de: de30, ate })
   const vendas_historico = leads.filter(l => l.etapa === 'ganho' && deAnuncio(l)).length
-  const decisao = C.decide({ anuncios, vendas_historico, ciclo: ciclo.dias, teto: tetoVerba(neg), agora: agora.getTime(), secundaria: sec })
+  // 13/11: a meta de CPA da implantação (ROI de quem já vendeu) e o teste semanal de produto novo (1 sugestão a cada 7 dias)
+  const testes = (await db.lista('eventos', { negocio_id: neg.id, tipo: 'analise_2dias' }, { ordem: 'criado_em', desc: true, limite: 10 }))
+    .filter(e => (e.detalhe?.sugestoes || []).some((s: any) => s.tipo === 'testar'))
+  const teste_semana = !testes.length || agora.getTime() - Date.parse(testes[0].criado_em) >= 6.5 * DIA
+  const produto = typeof neg?.contexto?.ficha?.produto === 'string' ? neg.contexto.ficha.produto.slice(0, 80) : null
+  const decisao = C.decide({ anuncios, vendas_historico, ciclo: ciclo.dias, teto: tetoVerba(neg), agora: agora.getTime(), secundaria: sec, cpa_meta: C.cpaDo(neg), teste_semana, produto })
   const d: C.DadosAnalise = { negocio: neg.nome, dono: primeiro(neg.dono_nome), de, ate, gasto: n.gasto, conversas: n.conversas_meta || contatos, contatos, secundaria, sec, vendas: n.ganhos, receita: n.receita, decisao, ciclo }
   return { ...d, anuncios, vendas_historico }
 }
