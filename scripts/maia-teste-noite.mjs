@@ -212,5 +212,38 @@ await api('atualizar_negocio', { id: n3.id, aprovacao_equipe: false })
 const g2 = await api('resumo_semana', { negocio_id: n3.id, gerar: true })
 confere('sem "equipe aprova tudo": o resumo vai direto pro dono', le('pecas').find(p => p.id === g2.peca?.id)?.status === 'aprovada')
 
+// ═══════════ 4) conversões pra Meta (CAPI). Precisa do servidor com MAIA_CAPI=1; sem MAIA_META_REAL é tudo simulado
+console.log('4) Quem comprou volta pra Meta (CAPI, simulado)')
+const n4 = await novoNegocio('TESTE · CAPI', '550008884' + RUN)
+const placar = await get(`acao=capi&negocio=${n4.id}`)
+if (!placar.ligado) console.log('     (o servidor está sem MAIA_CAPI=1: essa parte confere só que nada é enviado)')
+const capiEv = () => le('eventos').filter(e => e.tipo === 'capi' && e.negocio_id === n4.id && e.detalhe?.evento !== 'dataset')
+const tel4 = '550006665' + RUN
+let c4 = await api('teste_clique', { negocio_id: n4.id, telefone: tel4, nome: 'Lia', ctwa_clid: 'clid-teste-' + RUN, anuncio: 'ad_capi_1' })
+if (placar.ligado) {
+  confere('sem WhatsApp conectado (sem WABA/dataset): não envia e anota o motivo', c4.capi?.ok === false && capiEv().some(e => !e.detalhe.ok && /conectado|dataset/.test(e.detalhe.erro || '')), JSON.stringify(c4.capi))
+  // conecta (faz de conta) e um 2º contato chega pelo anúncio
+  mexe('negocios', n4.id, { wa_phone_id: '999000222', meta: { ...le('negocios').find(n => n.id === n4.id).meta, wa: { token: 'token-de-mentira', waba_id: 'waba-capi-' + RUN } } })
+  const tel5 = '550006666' + RUN
+  c4 = await api('teste_clique', { negocio_id: n4.id, telefone: tel5, nome: 'Rui', ctwa_clid: 'clid-rui-' + RUN, anuncio: 'ad_capi_1' })
+  const lead5 = c4.lead
+  const lev = capiEv().filter(e => e.detalhe.evento === 'LeadSubmitted' && e.detalhe.ok)
+  confere('1ª conversa vinda do anúncio: LeadSubmitted com o ctwa_clid', c4.capi?.ok === true && lev.length === 1 && lev[0].detalhe.enviado?.data?.[0]?.user_data?.ctwa_clid === 'clid-rui-' + RUN && lev[0].detalhe.enviado.data[0].action_source === 'business_messaging', JSON.stringify(c4.capi))
+  c4 = await api('teste_clique', { negocio_id: n4.id, telefone: tel5, ctwa_clid: 'clid-rui-' + RUN })
+  confere('o mesmo clique de novo não manda outro Lead', capiEv().filter(e => e.detalhe.evento === 'LeadSubmitted' && e.detalhe.ok).length === 1)
+  await api('lead_ganho', { lead_id: lead5.id, valor: 180, produto: 'caixa com 12' })
+  const pur = capiEv().filter(e => e.detalhe.evento === 'Purchase' && e.detalhe.ok)
+  const d0 = pur[0]?.detalhe?.enviado?.data?.[0]
+  confere('virou venda: Purchase com valor 180 e moeda BRL', pur.length === 1 && d0?.custom_data?.value === 180 && d0?.custom_data?.currency === 'BRL' && d0?.user_data?.ctwa_clid === 'clid-rui-' + RUN, JSON.stringify(d0))
+  confere('event_id único por venda (a Meta não tira repetido nessa API)', /^Purchase-/.test(d0?.event_id || '') && d0.event_id !== lev[0].detalhe.event_id)
+  const sem = await api('lead_novo', { negocio_id: n4.id, nome: 'Sem anúncio', telefone: '550006667' + RUN, origem: 'organico' })
+  await api('lead_ganho', { lead_id: sem.id, valor: 50 })
+  confere('venda de quem não veio do anúncio não vai pra Meta', capiEv().filter(e => e.detalhe.evento === 'Purchase').length === 1)
+  const pl = await get(`acao=capi&negocio=${n4.id}`)
+  confere('o placar da equipe conta os enviados e os que falharam', pl.ok === 2 && pl.erro >= 1, JSON.stringify(pl).slice(0, 200))
+} else {
+  confere('chave desligada: nada é enviado nem anotado', c4.capi?.pulou && !capiEv().length, JSON.stringify(c4.capi))
+}
+
 console.log(`\n${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)

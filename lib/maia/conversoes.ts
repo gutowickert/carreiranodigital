@@ -13,7 +13,11 @@ import { metaReal } from './meta'
 import { tokenWa } from './segredo'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
-export const capiLigado = () => process.env.MAIA_CAPI_LIGADO === '1'
+// 13/11: MAIA_CAPI=1 também liga (o nome curto do plano de lançamento); as duas desligadas por padrão
+export const capiLigado = () => process.env.MAIA_CAPI_LIGADO === '1' || process.env.MAIA_CAPI === '1'
+// 13/11: o conjunto de dados só é CRIADO na Meta com MAIA_CAPI_CRIAR_DATASET=1. Sem ela, vale o que já existe na WABA do negócio
+// (lido por GET) ou o meta.wa.dataset_id guardado: sem dataset configurado, nada é enviado (fica anotado o motivo)
+const podeCriarDataset = () => process.env.MAIA_CAPI_CRIAR_DATASET === '1'
 const sha = (v: string) => createHash('sha256').update(v).digest('hex')
 type Res = { ok: boolean; erro?: string; pulou?: string; simulado?: boolean; dataset_id?: string }
 
@@ -44,6 +48,7 @@ export async function garanteDataset(negocio_id: string): Promise<Res> {
     if (!token) return { ok: false, erro: 'falta a chave do negócio (meta.wa.token) ou MAIA_CAPI_TOKEN' }
     try {
       id = idDoDataset(await graph('GET', `${waba}/dataset`, token).catch(() => null))
+      if (!id && !podeCriarDataset()) return { ok: false, erro: 'o negócio ainda não tem conjunto de dados na Meta (cria no Gerenciador de Eventos, ou liga MAIA_CAPI_CRIAR_DATASET=1)' }
       if (!id) id = idDoDataset(await graph('POST', `${waba}/dataset`, token))
     } catch (e: any) { await db.evento('capi', negocio_id, { evento: 'dataset', ok: false, erro: e.message }); return { ok: false, erro: e.message } }
     if (!id) return { ok: false, erro: 'a Meta não devolveu o id do conjunto de dados' }

@@ -90,6 +90,8 @@ export async function GET(req: Request) {
       const [negs, pecas] = await Promise.all([db.lista('negocios', {}, { ordem: 'criado_em', desc: true }), db.lista('pecas')])
       return ok(await Promise.all(negs.filter(n => !ehDemo(n) && n.status !== 'cancelado').map(n => faltaLigar(n, { pecas }))))
     }
+    // 13/11: o placar das conversões devolvidas pra Meta (LeadSubmitted e Purchase) de um negócio, e se a chave está ligada
+    if (acao === 'capi') { const c = await import('@/lib/maia/conversoes'); return ok({ ligado: c.capiLigado(), ...(await c.placarCapi(q('negocio'))) }) }
     // 05/11: situação dos modelos de mensagem (do número da Maia, ou de um negócio com ?negocio=) e o placar das 500 chamadas
     if (acao === 'modelos') {
       const { statusModelos } = await import('@/lib/maia/modelos')
@@ -269,7 +271,7 @@ export async function POST(req: Request) {
       case 'simular_cliente': {
         // 07/11 (piloto): áudio ou foto do cliente simulado (arquivo_b64 + mime). `simulado` (transcrição/descrição de mentira) só vale no modo de teste
         const arquivo = b.arquivo_b64 ? { buf: Buffer.from(b.arquivo_b64, 'base64'), mime: b.mime || 'image/jpeg', legenda: b.legenda, simulado: b.simulado || null } : undefined
-        return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto || '', anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null), arquivo,
+        return ok(await comoCliente(b.negocio_id, { telefone: b.telefone || '5500011112222', nome: b.nome, texto: b.texto || '', anuncio: b.anuncio || (b.origem === 'anuncio' ? 'simulado' : null), ctwa_clid: b.ctwa_clid ? String(b.ctwa_clid) : null, arquivo,
           // 08/11: esperar: true = a espera de 12 s do webhook de verdade (junta as mensagens picadas numa resposta só)
           esperar_ms: b.esperar === true ? ESPERA_WEBHOOK_MS : Number(b.esperar) > 0 ? Math.min(Number(b.esperar), 30000) : null }))
       }
@@ -366,6 +368,15 @@ export async function POST(req: Request) {
         const peca = await db.insere('pecas', { negocio_id: n.id, tipo: video ? 'anuncio_video' : 'anuncio_imagem', status: 'gerando', titulo: 'teste da oficina', gancho: b.gancho || 'Caixa com 6 cookies por R$ 45', texto: b.texto || 'Cookies artesanais feitos no dia.', cta: b.cta || 'Peça pelo WhatsApp', midia_ids: [m.id] })
         const t = await db.insere('tarefas', { negocio_id: n.id, tipo: video ? 'video' : 'arte', peca_id: peca.id, dados: { midia_id: m.id } })
         return ok({ peca_id: peca.id, tarefa_id: t.id })
+      }
+      // 13/11, só no modo de teste: um contato chega pelo clique no anúncio (ctwa_clid), sem IA: anota o clique e manda o LeadSubmitted
+      case 'teste_clique': {
+        if (db.modo() !== 'local') return erro('só no modo de teste')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        const l = await novoLead(n.id, { telefone: b.telefone, nome: b.nome || null, origem: 'anuncio', anuncio_ref: b.anuncio || 'simulado' })
+        const { anotaClique } = await import('@/lib/maia/conversoes')
+        return ok({ lead: l, capi: await anotaClique(n, l, { ctwa_clid: b.ctwa_clid || null, source_id: b.anuncio || 'simulado' }) })
       }
       case 'teste_resumo_negocios': {
         if (db.modo() !== 'local') return erro('só no modo de teste')

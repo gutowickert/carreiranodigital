@@ -35,12 +35,12 @@ export async function responderDono(negocio_id: string) {
 // 08/11 (teste completo, #11): esperar_ms = a mesma espera do webhook de verdade (12 s): a mensagem fica guardada e só a
 // ÚLTIMA de uma rajada responde, pra todas juntas. As outras voltam { juntou: true }. Só simulação.
 export const ESPERA_WEBHOOK_MS = 12000
-export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null; esperar_ms?: number | null; arquivo?: { buf: Buffer; mime: string; legenda?: string; simulado?: MidiaSimulada | null } }) {
+export async function comoCliente(negocio_id: string, d: { telefone: string; nome?: string; texto: string; anuncio?: string | null; ctwa_clid?: string | null; esperar_ms?: number | null; arquivo?: { buf: Buffer; mime: string; legenda?: string; simulado?: MidiaSimulada | null } }) {
   const neg = await db.um('negocios', { id: negocio_id })
   if (!neg) throw new Error('negócio não existe')
   const tipo = d.arquivo ? (/audio/.test(d.arquivo.mime) ? 'audio' : 'image') : null
   const id = wamid()
-  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto || '', wamid: id, referral: d.anuncio ? { source_id: d.anuncio } : null,
+  const r = await recebeDoCliente(neg, { telefone: d.telefone, nome: d.nome, texto: d.texto || '', wamid: id, referral: d.anuncio ? { source_id: d.anuncio, ctwa_clid: d.ctwa_clid || null } : null,   // 13/11: ctwa_clid simulado (testa a CAPI)
     ...(d.arquivo ? { tipo, midia: { buf: d.arquivo.buf, mime: d.arquivo.mime, simulado: d.arquivo.simulado || null }, legenda: d.arquivo.legenda || null } : {}) })
   if (!r) return null
   if (d.esperar_ms && d.esperar_ms > 0) {
