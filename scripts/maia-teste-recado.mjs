@@ -127,7 +127,7 @@ let r1 = (await db.lista('recados', { negocio_id: neg.id }))[0]
 confere('a Maia chamou a ferramenta e o recado nasceu esperando a equipe', resp?.ferramentas?.includes('recado_pra_base') && r1?.status === 'aprovar_equipe' && r1?.criado_por === 'dono', { resp, st: r1?.status })
 confere('a Maia confirmou pro dono', /Fechado!/.test((await msgsDono(neg)).slice(-1)[0] || ''))
 confere('o texto: sem saudação, valor antes do preço e chamando pra responder', r1 && !/^oi/i.test(r1.texto) && r1.texto.indexOf('prêmio') >= 0 && r1.texto.indexOf('prêmio') < r1.texto.indexOf('R$') && /Responde aqui/.test(r1.texto), r1?.texto)
-confere('a equipe foi avisada pra aprovar (com o custo estimado)', (await avisos(neg.id, /recado pra base pra aprovar/)).some(e => /29 contatos/.test(e.detalhe.texto) && /R\$ 10,15/.test(e.detalhe.texto)))
+confere('a equipe foi avisada pra aprovar (com o custo estimado)', (await avisos(neg.id, /recado pra base pra aprovar/)).some(e => /29 contatos/.test(e.detalhe.texto) && e.detalhe.texto.includes('R$ 11,60')))
 confere('o dono não pode aprovar antes da equipe', /não está esperando a tua aprovação/.test(await erroDe(() => R.donoAprovaRecado(neg.id, r1.id, 'painel')) || ''))
 
 etapa('4) A equipe pede ajuste e aprova; vai pro dono com o custo')
@@ -138,7 +138,7 @@ confere('o ajuste da equipe refaz o texto e continua com a equipe', r1.texto !==
 const ap = await R.equipeAprovaRecado(r1.id, 'equipe')
 r1 = await rec(r1.id)
 ult = (await msgsDono(neg)).slice(-1)[0] || ''
-confere('aprovado pela equipe: espera o dono, com a prévia, os botões e o custo', r1.status === 'aprovar_dono' && /Oi, \(nome da pessoa\)!/.test(ult) && /\[Quero participar\] \[Não quero receber\]/.test(ult) && /Vai pra 29 contatos/.test(ult) && /R\$ 10,15/.test(ult) && ap.estimativa.custo === 10.15, ult)
+confere('aprovado pela equipe: espera o dono, com a prévia, os botões e o custo', r1.status === 'aprovar_dono' && /Oi, \(nome da pessoa\)!/.test(ult) && /\[Quero participar\] \[Não quero receber\]/.test(ult) && /Vai pra 29 contatos/.test(ult) && ult.includes('R$ 11,60') && ap.estimativa.custo === 11.6, ult)
 confere('o recado entra nas pendências do dono', (await P.pendenciasDoDono(neg)).some(p => p.tipo === 'recado'))
 const pdono = await R.painelDoDono(neg)
 confere('o painel do dono mostra o recado com a estimativa (sem a nota interna)', pdono.disponivel && pdono.recados[0].status === 'aprovar_dono' && pdono.recados[0].estimativa.contatos === 29 && pdono.recados[0].nota === null)
@@ -254,7 +254,7 @@ confere('a Meta recusou o modelo: volta pra equipe ajustar e a equipe é avisada
 etapa('10) Painéis, resumo da semana e a rotina inteira')
 const pr = await R.painelRecados(neg)
 const p1 = pr.find(x => x.id === r1.id)
-confere('painel da equipe: números do recado (enviados, entregues, responderam, quero, saíram, vendas)', p1.numeros.enviados === 28 && p1.numeros.entregues === 2 && p1.numeros.respostas === 4 && p1.numeros.quero === 2 && p1.numeros.saidas === 1 && p1.numeros.vendas === 2 && p1.custo_real === 9.8, p1.numeros)
+confere('painel da equipe: números do recado (enviados, entregues, responderam, quero, saíram, vendas)', p1.numeros.enviados === 28 && p1.numeros.entregues === 2 && p1.numeros.respostas === 4 && p1.numeros.quero === 2 && p1.numeros.saidas === 1 && p1.numeros.vendas === 2 && p1.custo_real === 11.2, p1.numeros)
 const dp = await PD.dadosDoPainel(neg)
 confere('painel do dono: o cartão do recado com a base e os números', dp.recado?.disponivel && dp.recado.base.ativos === 27 && dp.recado.recados.some(x => x.id === r1.id && x.numeros.vendas === 2))
 const dsem = await RS.dadosDaSemana(neg, em(-1), em(8))
