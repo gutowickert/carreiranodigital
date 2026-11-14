@@ -57,7 +57,16 @@ export async function equipeAjuste(peca_id: string, nota: string, por: string) {
   if (!peca) throw new Error('peça não existe')
   await db.atualiza('pecas', { id: peca_id }, { status: 'ajuste_equipe', nota_equipe: nota })
   await db.evento('ajuste_equipe', peca.negocio_id, { peca: peca_id, nota, por })
-  return refaz(peca, nota, 'equipe')
+  return refazOuVolta(peca, nota, 'equipe')
+}
+
+// 14/11 (ensaio geral): se o refazer falha (IA fora do ar), a peça volta pro status de antes em vez de ficar presa em
+// "refazendo" (a equipe não conseguia aprovar e o dono não conseguia pedir de novo). O erro continua subindo pra quem chamou
+async function refazOuVolta(peca: any, nota: string, quem: 'equipe' | 'dono') {
+  try { return await refaz(peca, nota, quem) } catch (e) {
+    await db.atualiza('pecas', { id: peca.id }, { status: peca.status }).catch(() => null)
+    throw e
+  }
 }
 
 export async function descarta(peca_id: string, por: string) {
@@ -85,7 +94,7 @@ export async function donoAjuste(negocio_id: string, peca_id: string | null, not
   if (!alvo) return { ok: false, erro: 'nenhuma peça esperando o dono' }
   await db.atualiza('pecas', { id: alvo.id }, { status: 'ajuste_dono', nota_dono: nota })
   await avisaEquipe('dono pediu ajuste', `${nota}`.slice(0, 160), negocio_id)
-  await refaz(alvo, nota, 'dono')
+  await refazOuVolta(alvo, nota, 'dono')
   return { ok: true, peca: alvo.id }
 }
 
