@@ -33,10 +33,16 @@ export async function retomadas(relogio = new Date()) {
     const cv = atendimentoLigado(neg) && lead.telefone ? await conversa(neg.id, 'cliente', lead.telefone, { nome: lead.nome, lead_id: lead.id }) : null
     const como = !cv ? 'lembrete_dono' : janelaAbertaCv(cv) ? 'texto' : 'modelo'
     const tipo = numero >= FOLLOWUP_DIAS.length && como === 'texto' ? 'despedida' : 'retomada'
+    // 14/11 (ensaio geral): o texto sai ANTES de contar a tentativa. Com a IA fora do ar, a retomada não conta e sai na próxima
+    // rodada (antes contava sem mandar nada e parava as outras da hora; com 3 horas de IA fora o contato era encerrado sem receber nenhuma)
+    let texto = ''
+    if (cv && como === 'texto') {
+      try { texto = await textoRetomada(neg, lead, numero) } catch (e: any) { feitos.push({ lead: lead.id, erro: 'texto da retomada: ' + String(e?.message || e).slice(0, 120) }); continue }
+    }
     const { ultimo } = await registraFollowup(lead, { tipo, como })
     if (cv) {
       // 05/11: o canal do negócio. Dentro da janela de 24 h, a retomada escrita pela Maia; fora dela, o modelo aprovado (maia_retomada).
-      if (como === 'texto') await mandaTexto(cv, await textoRetomada(neg, lead, numero))
+      if (como === 'texto') await mandaTexto(cv, texto)
       else {
         // 08/11 (T2): o modelo no tom do negócio (maia_retomada_voce no "você", o padrão)
         const modelo = nomeDoModelo(neg, 'maia_retomada'), voce = modelo.endsWith('_voce')
