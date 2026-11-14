@@ -81,6 +81,20 @@ if (orig && !globalThis.__maiaEnsaioRede) {
           ? { titulo: 'Bolão da Mega da Virada', texto: 'O bolão da Mega da Virada abriu e as cotas são poucas: quem entra divide a chance do prêmio com o grupo. Cada cota sai R$ 50. Quer participar? Responde aqui que a gente separa a sua.' }
           : { titulo: 'Bolão da Mega da Virada', texto: 'O prêmio da Mega da Virada vem grande e o bolão da loja já abriu: quem entra divide a chance com o grupo. São 10 cotas de R$ 50. Quer participar? Responde aqui que a gente separa a sua.' }))
       }
+      // 14/11 (aba Social, scripts/maia-teste-social-aba.mjs): os slides e a legenda do carrossel (lib/maia/carrossel.ts)
+      if (/CARROSSEL de Instagram/.test(sis) && /Devolve \{"slides"/.test(msgs)) {
+        const ids = (msgs.split('FOTOS DO DONO:')[1] || '').split('\n').map(l => (/^- (\S+) · /.exec(l) || [])[1]).filter(Boolean)
+        const f = (i) => ids.length ? ids[i % ids.length] : null
+        anota({ tipo: 'ia_falsa', o: 'carrossel', fotos: ids.length })
+        return texto(JSON.stringify({ slides: [
+          { estilo: 'capa', midia_id: f(0), texto: '3 jeitos de jogar em grupo' },
+          { estilo: 'foto', midia_id: f(1), texto: 'Bolão divide o custo', apoio: 'Cada um paga uma cota e a chance cresce' },
+          { estilo: 'quebra', midia_id: null, texto: 'Mais jogos, mesma aposta' },
+          { estilo: 'foto', midia_id: f(2), texto: 'Combine as dezenas com antecedência' },
+          { estilo: 'foto', midia_id: f(3), texto: 'Guarde o comprovante do bolão' },
+          { estilo: 'final', midia_id: f(4), texto: 'Salve pra lembrar no próximo sorteio' },
+        ], legenda: 'Jogar em grupo é o jeito mais simples de aumentar a chance sem gastar mais. No bolão, cada pessoa compra uma cota e o grupo joga mais dezenas do que jogaria sozinho. Combine tudo antes, guarde o comprovante e acompanhe o resultado com o grupo. Salve este post pra lembrar no próximo sorteio. #bolao #loteria' }))
+      }
       // o dono pede o recado pelo WhatsApp ("manda pra base que..."): a IA falsa chama a ferramenta recado_pra_base e depois confirma
       if (com && corpo.tools.some(t => t.name === 'recado_pra_base')) {
         const doDono = [...msgs.matchAll(/^DONO: (.*)$/gm)].map(m => m[1]).pop() || ''

@@ -529,6 +529,7 @@ Cada permissão precisa de vídeo de uso (gravação de tela, com áudio ou lege
 | `read_insights` | 1) Login com a Página. 2) Painel → resultados do post na Página. 3) O relatório pro dono |
 
 - **Passos de código:** aba "Social" em `public/maia/operacao` usando `/api/maia/social` (agenda, resultados, análise, criar post, aprovar). Chave própria por cliente (`meta.social_token` cifrado) via login; sem ela usa a do tráfego. Primeiro post real com `MAIA_SOCIAL_LIGADO=1` + `MAIA_META_REAL=1`.
+  - **Aba feita em 14/11 (branch `maia-social-aba`):** ligação (página, achar o Instagram, colar a chave, cifrada e nunca mostrada de volta; travas do servidor só leitura), criar post com fotos do banco e carrossel com texto, agenda do mês com filtro e ações por status (aprovar, pedir ajuste, editar legenda, descartar, publicar agora com confirmação na página), resultados e análise do mês. Teste: `scripts/maia-teste-social-aba.mjs` (modo local, 59 conferências, com prints).
 - **Enquanto não libera:** o plano único (que inclui a social media) é vendido com a equipe postando (decisão de 08/11).
 - **Aceite:** 4 permissões aprovadas; 1º post publicado sozinho no dia marcado.
 

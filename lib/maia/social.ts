@@ -19,7 +19,7 @@ import { donoAprova } from './aprovacao'
 import { comFerramentas, JEITO } from './ia'
 import { tomDoNegocio, textoNoTom } from './tom'
 import { isoBR } from '@/lib/periodos'
-import { tokenSocial, tokenWa } from './segredo'
+import { tokenSocial, tokenWa, cifra } from './segredo'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
 export const socialLigado = () => process.env.MAIA_SOCIAL_LIGADO === '1'
@@ -475,7 +475,14 @@ export async function rotinaSocial(opc: { forcar?: boolean } = {}) {
 export async function agenda(negocio_id: string) {
   const lista = await Promise.all((await posts(negocio_id)).map(p => sincroniza(p)))
   const pecas = await db.lista('pecas', { negocio_id })
-  return lista.map(p => { const pc = pecas.find(x => x.id === p.detalhe.peca_id); return { id: p.id, ...p.detalhe, legenda: legendaDe(pc), peca_status: pc?.status || null } })
+  // 14/11 (aba Social): o link de cada mídia pra prévia (o carrossel da oficina ainda sem slides usa a 1ª foto da peça)
+  const linkDe = async (m: Midia) => m.url || (m.caminho ? await db.link(m.caminho).catch(() => null) : null)
+  return Promise.all(lista.map(async p => {
+    const pc = pecas.find(x => x.id === p.detalhe.peca_id)
+    const links = (await Promise.all((p.detalhe.midias || []).map(linkDe))).filter(Boolean)
+    if (!links.length && pc?.arquivo_path) { const l = await db.link(pc.arquivo_path).catch(() => null); if (l) links.push(l) }
+    return { id: p.id, ...p.detalhe, legenda: legendaDe(pc), peca_status: pc?.status || null, nota_equipe: pc?.nota_equipe || null, nota_dono: pc?.nota_dono || null, links }
+  }))
 }
 export async function resultados(negocio_id: string) {
   return (await db.lista('eventos', { negocio_id, tipo: 'social_resultado' }, { ordem: 'criado_em', desc: true })).map(e => ({ id: e.id, em: e.criado_em, ...e.detalhe }))
@@ -483,4 +490,95 @@ export async function resultados(negocio_id: string) {
 export async function analises(negocio_id: string) {
   const evs = await db.lista('eventos', { negocio_id, tipo: 'social_analise' }, { ordem: 'criado_em', desc: true })
   return Promise.all(evs.map(async e => ({ id: e.id, mes: e.detalhe.mes, posts: e.detalhe.posts, analise: e.detalhe.analise, peca: await db.um('pecas', { id: e.detalhe.peca_id }) })))
+}
+
+// ---------- a ligação (14/11, aba Social do painel da equipe) ----------
+// o que falta pra postar, em linguagem simples. Nunca devolve a chave: só se está guardada.
+export async function ligacao(negocio_id: string) {
+  const neg = await db.um('negocios', { id: negocio_id })
+  if (!neg) throw new Error('negócio não existe')
+  const m = neg.meta || {}
+  const chave_guardada = !!m.social_token
+  const chave_reserva = !!(process.env.MAIA_SOCIAL_TOKEN || process.env.MAIA_ADS_TOKEN || process.env.FB_ADS_TOKEN)
+  const faltas: string[] = []
+  if (neg.plano === 'gestao') faltas.push('a Maia Gestora (só leitura) não tem social media')
+  if (!m.page_id) faltas.push('falta a página do negócio (o ID da página do Facebook)')
+  if (!chave_guardada && !chave_reserva) faltas.push('falta a chave do social (cola a chave da página aqui embaixo)')
+  if (!m.ig_id) faltas.push(m.page_id ? 'falta achar o Instagram profissional ligado à página' : 'falta o Instagram (ele sai da página, depois que ela estiver aqui)')
+  if (!socialLigado()) faltas.push('a social está desligada no servidor (MAIA_SOCIAL_LIGADO): nada sai sozinho no horário')
+  if (!metaReal()) faltas.push('modo simulado (sem MAIA_META_REAL): os posts não saem de verdade')
+  let link: string | null = null
+  try { link = (await linkDoPerfil(negocio_id, 'instagram')).link } catch { /* sem número do WhatsApp ainda */ }
+  return {
+    page_id: m.page_id || null, ig_id: m.ig_id || null, chave_guardada, chave_reserva,
+    cifrada: !!process.env.MAIA_CRIPTO_CHAVE, social_ligado: socialLigado(), meta_real: metaReal(),
+    gestora: neg.plano === 'gestao', pronto: !faltas.length, faltas, link_perfil: link,
+  }
+}
+
+// salva a página, o Instagram e/ou a chave do social (a chave vai cifrada e nunca volta pro painel)
+export async function salvaLigacao(negocio_id: string, d: { page_id?: string | null; ig_id?: string | null; social_token?: string | null; apagar_chave?: boolean }, por: string) {
+  const neg = await db.um('negocios', { id: negocio_id })
+  if (!neg) throw new Error('negócio não existe')
+  const meta: any = { ...(neg.meta || {}) }
+  const so = (v: any) => String(v ?? '').trim()
+  if (d.page_id !== undefined) {
+    const p = so(d.page_id)
+    if (p && !/^\d{5,25}$/.test(p)) throw new Error('o ID da página tem só números (ex.: 102938475610293)')
+    // trocou a página: o Instagram achado era da página antiga
+    if (p !== String(meta.page_id || '')) { if (meta.page_id) chavesPagina.delete(String(meta.page_id)); delete meta.ig_id }
+    if (p) meta.page_id = p; else delete meta.page_id
+  }
+  if (d.ig_id !== undefined) {
+    const i = so(d.ig_id)
+    if (i && !/^\d{5,25}$/.test(i)) throw new Error('o ID do Instagram tem só números')
+    if (i) meta.ig_id = i; else delete meta.ig_id
+  }
+  const nova = so(d.social_token)
+  if (d.apagar_chave) delete meta.social_token
+  else if (nova && nova !== '(guardada)') {
+    if (/\s/.test(nova) || nova.length < 20) throw new Error('essa chave não parece certa (cola a chave inteira, sem espaço)')
+    meta.social_token = cifra(nova)
+  }
+  if (meta.page_id) chavesPagina.delete(String(meta.page_id))
+  await db.atualiza('negocios', { id: neg.id }, { meta })
+  await db.evento('social_ligacao', neg.id, { por, page_id: meta.page_id || null, ig_id: meta.ig_id || null, chave: d.apagar_chave ? 'apagada' : nova && nova !== '(guardada)' ? 'nova' : 'igual' })
+  return ligacao(neg.id)
+}
+
+// acha o Instagram profissional pela página (o mesmo caminho da publicação). Sem MAIA_META_REAL não procura na Meta.
+export async function achaInstagram(negocio_id: string) {
+  const neg = await db.um('negocios', { id: negocio_id })
+  if (!neg) throw new Error('negócio não existe')
+  if (!neg.meta?.page_id) throw new Error('falta a página do negócio: preenche o ID da página primeiro')
+  if (!metaReal()) return { simulado: true, ig_id: neg.meta?.ig_id || null, aviso: 'modo simulado: sem MAIA_META_REAL a Maia não procura na Meta' }
+  chavesPagina.delete(String(neg.meta.page_id))
+  const token = await tokenPagina(neg)
+  return { ig_id: await igDe({ ...neg, meta: { ...neg.meta, ig_id: null } }, token) }
+}
+
+// a equipe corrige a legenda na mão (só antes de aprovar: depois disso o dono já viu)
+export async function editaLegenda(post_id: string | number, texto: string, por: string) {
+  const post = await umPost(post_id)
+  if (!post) throw new Error('post não existe')
+  const peca = await db.um('pecas', { id: post.detalhe.peca_id })
+  if (!peca || peca.status !== 'revisao_equipe') throw new Error('só dá pra editar a legenda antes da equipe aprovar')
+  const neg = await db.um('negocios', { id: peca.negocio_id })
+  const legenda = textoNoTom(neg, String(texto || '').trim())
+  if (!legenda) throw new Error('falta a legenda')
+  if (legenda.length > 2200) throw new Error('legenda passa de 2.200 caracteres (limite do Instagram)')
+  if ((legenda.match(/#[\p{L}\d_]+/gu) || []).length > 30) throw new Error('mais de 30 hashtags (limite do Instagram)')
+  await db.atualiza('pecas', { id: peca.id }, { gancho: null, cta: null, texto: legenda })
+  await db.evento('social_legenda_editada', peca.negocio_id, { post: post.id, peca: peca.id, por })
+  return sincroniza(await umPost(post_id))
+}
+
+// descartar um post que ainda não saiu (inclusive o que deu erro): a peça vai pra descartada e a agenda acompanha
+export async function descartaPost(post_id: string | number, por: string) {
+  const post = await umPost(post_id)
+  if (!post) throw new Error('post não existe')
+  if (['publicado', 'publicando', 'processando'].includes(post.detalhe?.status)) throw new Error('esse post já saiu (ou está saindo): não dá pra descartar')
+  const { descarta } = await import('./aprovacao')
+  await descarta(post.detalhe.peca_id, por)
+  return salva(post, { status: 'descartado', descartado_por: por })
 }
