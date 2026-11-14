@@ -1309,7 +1309,91 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['base','Base','pessoas'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+// 14/11 (lib/maia/recado.ts): o RECADO PRA BASE. A base de contatos do negócio (colar a lista ou subir .csv, quem já comprou,
+// etiquetas, quem saiu) e os recados: criar, ajustar, editar, aprovar (a equipe aprova antes do dono), cancelar e os números.
+// O custo estimado aparece antes de aprovar (contatos x custo por mensagem de marketing: o negócio paga direto pra Meta).
+function subBase(n,c){
+  c.innerHTML='<div id="base-c"><div class="card"><div class="esq" style="height:80px"></div></div></div>';
+  var rs=function(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}); };
+  var dt=function(d){ return d?new Date(d).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}):''; };
+  var tel=function(t){ t=String(t||''); return /^55\d{10,11}$/.test(t)?'('+t.slice(2,4)+') '+t.slice(4,t.length-4)+'-'+t.slice(-4):t; };
+  var TOM={rascunho:'',aprovar_equipe:'aten',aprovar_dono:'aten',aguardando_meta:'info',agendado:'info',enviando:'info',enviado:'bom',cancelado:''};
+  var editando=null, ajustando=null, filtro='';
+  function num(v,t){ return '<div style="border:1px solid var(--border);border-radius:12px;padding:8px 10px;min-width:0"><b style="display:block;font-size:18px">'+inteiro(v||0)+'</b><span class="mu peq">'+t+'</span></div>'; }
+  function cartaoRecado(r,d){
+    var x=r.numeros||{}, est=r.estimativa, h='';
+    h+='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>'+esc(r.titulo||'Recado')+'</h2><p class="mu peq" style="margin-top:4px">'+
+      'Criado em '+dt(r.criado_em)+' por '+esc(r.criado_por||'?')+((r.etiquetas_alvo||[]).length?' · pra etiqueta '+esc(r.etiquetas_alvo.join(', ')):' · pra toda a base')+
+      (r.agendado_para?' · a partir de '+dt(r.agendado_para):'')+(r.enviado_em?' · terminou em '+dt(r.enviado_em):'')+(r.modelo_nome?' · modelo '+esc(r.modelo_nome)+(r.modelo_status?' ('+esc(r.modelo_status)+')':''):'')+'</p></div>'+chip(r.status_nome,TOM[r.status]||'')+'</div>';
+    if(r.nota) h+='<div class="erro-box" style="margin-bottom:10px">'+ic('alerta')+'<span>'+esc(r.nota)+'</span></div>';
+    if(editando===r.id) h+='<div class="campo"><label for="rc-txt">Texto (vai depois de "Oi, Nome!")</label><textarea id="rc-txt" rows="5" style="width:100%">'+esc(r.texto||'')+'</textarea></div><div class="btns"><button class="btn ok" data-rc="salvar" data-id="'+esc(r.id)+'">'+ic('check')+'Salvar o texto</button><button class="btn" data-rc="voltar">Voltar</button></div>';
+    else if(ajustando===r.id) h+='<div class="campo"><label for="rc-nota">O que a Maia muda?</label><textarea id="rc-nota" rows="3" style="width:100%" placeholder="Ex.: fala que as cotas são poucas, tira o emoji"></textarea></div><div class="btns"><button class="btn ok" data-rc="refazer" data-id="'+esc(r.id)+'">'+ic('enviar')+'Mandar refazer</button><button class="btn" data-rc="voltar">Voltar</button></div>';
+    else h+='<p style="margin:0 0 6px;white-space:pre-line;line-height:1.55">Oi, (nome)! '+esc(r.texto||'')+'</p><p class="mu peq" style="margin:0 0 12px">Botões: Quero participar · Não quero receber</p>';
+    if(est) h+='<p class="peq" style="margin:0 0 12px"><b>Vai pra '+plural(est.contatos,'contato')+'. Custo estimado na Meta: '+rs(est.custo)+'</b> <span class="mu">('+rs(est.custo_msg)+' por mensagem, pago pelo negócio direto pra Meta. Quem recebeu recado nos últimos 3 dias, ou 2 na semana, fica de fora)</span></p>';
+    if(r.status==='enviando'||r.status==='enviado') h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(105px,1fr));gap:8px;margin-bottom:12px">'+num(x.enviados,'enviados')+num(x.entregues,'entregues')+num(x.respostas,'responderam')+num(x.quero,'querem participar')+num(x.saidas,'saíram da lista')+num(x.vendas,'vendas ('+rs(x.valor_vendas)+')')+'</div>'+
+      '<p class="mu peq" style="margin:0 0 12px">'+(x.falhas?plural(x.falhas,'falha')+' no envio · ':'')+(x.pulados?plural(x.pulados,'pessoa ficou','pessoas ficaram')+' de fora pelo intervalo · ':'')+(r.custo_real!=null?'custo estimado: '+rs(r.custo_real):'')+'</p>';
+    var b=[];
+    if((r.status==='aprovar_equipe'||r.status==='rascunho')&&editando!==r.id&&ajustando!==r.id){
+      b.push('<button class="btn ok" data-rc="aprovar" data-id="'+esc(r.id)+'">'+ic('check')+'Aprovar e mandar pro dono</button>');
+      b.push('<button class="btn" data-rc="ajustar" data-id="'+esc(r.id)+'">Pedir ajuste pra Maia</button>');
+      b.push('<button class="btn" data-rc="editar" data-id="'+esc(r.id)+'">Editar o texto</button>');
+    }
+    if(r.status==='aguardando_meta'){
+      if(r.modelo_status==='ERRO') b.push('<button class="btn" data-rc="meta" data-id="'+esc(r.id)+'">Pedir o modelo de novo</button>');
+      if(d.local) b.push('<button class="btn" data-rc="simular" data-id="'+esc(r.id)+'">Teste: a Meta aprovou</button>');
+    }
+    if(['enviado','cancelado'].indexOf(r.status)<0&&editando!==r.id&&ajustando!==r.id) b.push('<button class="btn" data-rc="cancelar" data-id="'+esc(r.id)+'">Cancelar</button>');
+    if(b.length) h+='<div class="btns">'+b.join('')+'</div>';
+    return h+'</div>';
+  }
+  function pinta(d){
+    var cx=$('#base-c'); if(!cx) return;
+    if(!d.disponivel){ cx.innerHTML='<div class="card">'+vazio('alerta','Recado pra base ainda não ligado',esc(d.erro||'Falta rodar o SQL no banco.'))+'</div>'; return; }
+    var b=d.base||{}, h='';
+    h+='<div class="card"><div class="card-cab"><div><h2>Base de contatos</h2><p class="mu peq" style="margin-top:4px">'+plural(b.ativos||0,'contato ativo','contatos ativos')+(b.saiu?' · '+plural(b.saiu,'saiu','saíram')+' da lista':'')+'. Os clientes de sempre do negócio: recebem os recados (jogo novo, bolão, prêmio acumulado). Quem toca em "Não quero receber" ou responde SAIR sai na hora.</p></div></div>'+
+      ((b.etiquetas||[]).length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px">'+b.etiquetas.map(function(e){ return chip(e.nome+' · '+e.n,''); }).join('')+'</div>':'')+
+      '<details'+((b.total||0)?'':' open')+'><summary style="cursor:pointer;font-weight:700;margin-bottom:10px">Importar contatos</summary>'+
+      '<div class="campo"><label for="bs-txt">Uma linha por pessoa: nome;telefone;etiquetas (ou cola a planilha)</label><textarea id="bs-txt" rows="5" style="width:100%" placeholder="Ana Souza;51 99999-1234;mega, bolão&#10;Bruno Lima;(51) 98888-7777;lotofácil"></textarea></div>'+
+      '<div class="grade2"><div class="campo"><label for="bs-etq">Etiqueta pra todos dessa lista (opcional)</label><input id="bs-etq" placeholder="ex.: mega"></div>'+
+      '<div class="campo"><label for="bs-inc">Quem já é cliente do negócio</label><select id="bs-inc"><option value="">não incluir</option><option value="compraram">incluir quem já comprou</option><option value="todos">incluir todos os contatos do funil</option></select></div></div>'+
+      '<div class="btns"><button class="btn ok" id="bs-imp">'+ic('pessoas')+'Importar</button><label class="btn" for="bs-file" style="cursor:pointer">'+ic('arquivo')+'Subir .csv</label><input type="file" id="bs-file" accept=".csv,.txt,.vcf,text/csv,text/plain,text/vcard" hidden></div><p class="mu peq" id="bs-st" aria-live="polite" style="margin:8px 0 0"></p></details>';
+    var cs=(b.contatos||[]).filter(function(x){ if(!filtro) return true; var f=filtro.toLowerCase(), dg=f.replace(/\D/g,''); return String(x.nome||'').toLowerCase().indexOf(f)>=0||(dg&&String(x.telefone).indexOf(dg)>=0)||(x.etiquetas||[]).join(' ').indexOf(f)>=0; });
+    if(b.total) h+='<details id="bs-lista" style="margin-top:12px"'+(filtro?' open':'')+'><summary style="cursor:pointer;font-weight:700">Ver os contatos ('+b.total+')</summary><div class="campo" style="margin-top:10px"><input id="bs-filtro" placeholder="procurar por nome, telefone ou etiqueta" value="'+esc(filtro)+'" aria-label="procurar contato"></div><div class="lista">'+cs.slice(0,200).map(function(x){
+        return '<div class="lin"><span class="cor '+(x.optout?'ruim':'bom')+'"></span><span style="min-width:0"><span class="t"><span>'+esc(x.nome||'sem nome')+'</span>'+(x.optout?chip('saiu da lista','ruim'):'')+'</span><span class="sub" style="display:block">'+esc(tel(x.telefone))+((x.etiquetas||[]).length?' · '+esc(x.etiquetas.join(', ')):'')+(x.ultimo_recado_em?' · último recado '+dt(x.ultimo_recado_em):'')+'</span></span>'+
+          '<span class="dir"><button class="btn peq" data-ct="'+esc(x.id)+'" data-optout="'+(x.optout?'0':'1')+'">'+(x.optout?'Voltar pra lista':'Tirar da lista')+'</button><button class="btn peq" data-ctx="'+esc(x.id)+'">Apagar</button></span></div>'; }).join('')+'</div>'+(cs.length>200?'<p class="mu peq">Mostrando 200 de '+cs.length+'.</p>':'')+'</details>';
+    h+='</div>';
+    h+='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">Novo recado</h2><p class="mu peq" style="margin:0 0 12px">Diz o que avisar (com preço, data e quantidade, se tiver). A Maia escreve curto, valor antes do preço, chamando pra responder. Depois: a equipe aprova, o dono aprova, o WhatsApp aprova o modelo e sai no horário comercial, até '+esc(d.lote)+' por hora. O recado avisa e chama: quem fecha é o time do negócio (sem vender nem cobrar pelo WhatsApp).</p>'+
+      '<div class="campo"><label for="rc-ped">O que avisar</label><textarea id="rc-ped" rows="3" style="width:100%" placeholder="ex.: abriu o bolão da Mega da Virada, 10 cotas de R$ 50"></textarea></div>'+
+      '<div class="grade2"><div class="campo"><label for="rc-etq">Só pra etiqueta (vazio = toda a base)</label><input id="rc-etq" placeholder="ex.: mega"></div><div class="campo"><label for="rc-qd">Mandar a partir de (opcional)</label><input id="rc-qd" type="datetime-local"></div>'+
+      '<div class="campo"><label for="rc-img">Imagem (vai pra quem está com a conversa aberta)</label><select id="rc-img"><option value="">sem imagem</option>'+(d.fotos||[]).map(function(f){ return '<option value="'+esc(f.id)+'">'+esc(f.descricao||'foto')+'</option>'; }).join('')+'</select></div></div>'+
+      '<div class="btns"><button class="btn ok" id="rc-criar">'+ic('brilho')+'A Maia escreve o recado</button></div></div>';
+    h+=(d.recados||[]).length?(d.recados||[]).map(function(r){ return cartaoRecado(r,d); }).join(''):'<div class="card" style="margin-top:14px">'+vazio('megafone','Nenhum recado ainda','O dono pede pelo WhatsApp ("manda pra base que...") ou pelo painel dele; a equipe também cria aqui.')+'</div>';
+    h+='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">Custo e ritmo</h2><div class="grade2"><div class="campo"><label for="bs-custo">Custo por mensagem de marketing (R$)</label><input id="bs-custo" inputmode="decimal" value="'+esc(String(d.custo_msg).replace('.',','))+'"></div><div class="campo"><label for="bs-lote">Mensagens por hora</label><input id="bs-lote" inputmode="numeric" value="'+esc(d.lote)+'"></div></div><div class="btns"><button class="btn" id="bs-cfg">Salvar</button></div></div>';
+    cx.innerHTML=h;
+    var imp=function(texto){ return api({acao:'base_importar',negocio_id:n.id,texto:texto,incluir:$('#bs-inc').value||null,etiquetas:$('#bs-etq').value||null}).then(function(r){ var m=r.novos+' entraram'+(r.ja_estavam?', '+r.ja_estavam+' já estavam':'')+(r.repetidos?', '+r.repetidos+' repetidos':'')+(r.invalidos?', '+r.invalidos+' inválidos'+(r.exemplos_invalidos&&r.exemplos_invalidos.length?' (ex.: '+r.exemplos_invalidos.slice(0,3).join(', ')+')':''):'')+'.'; toast('Base: '+m); return carrega().then(function(){ if($('#bs-st')) $('#bs-st').textContent=m; }); }); };
+    $('#bs-imp').onclick=function(){ var t=$('#bs-txt').value; if(!t.trim()&&!$('#bs-inc').value){ toast('Cola a lista ou escolhe incluir os clientes.',true); return; } espera(this,'importando…',function(){ return imp(t); }); };
+    $('#bs-file').onchange=function(){ var f=this.files[0]; if(!f) return; var rd=new FileReader(); rd.onload=function(){ espera($('#bs-imp'),'importando…',function(){ return imp(String(rd.result||'')); }); }; rd.readAsText(f); };
+    var fi=$('#bs-filtro'); if(fi) fi.oninput=function(){ filtro=fi.value; var pos=fi.selectionStart; pinta(d); var n2=$('#bs-filtro'); if(n2){ n2.focus(); try{ n2.setSelectionRange(pos,pos); }catch(e){} } };
+    c.querySelectorAll('[data-ct]').forEach(function(bt){ bt.onclick=function(){ var sai=bt.getAttribute('data-optout')==='1'; if(!sai&&!confirm('Voltar esse contato pra lista? Só faz isso se ele mesmo pediu pra voltar.')) return; espera(bt,'…',function(){ return api({acao:'base_contato',negocio_id:n.id,id:bt.getAttribute('data-ct'),optout:sai}).then(carrega); }); }; });
+    c.querySelectorAll('[data-ctx]').forEach(function(bt){ bt.onclick=function(){ if(!confirm('Apagar esse contato da base?')) return; espera(bt,'…',function(){ return api({acao:'base_contato',negocio_id:n.id,id:bt.getAttribute('data-ctx'),apagar:true}).then(carrega); }); }; });
+    $('#rc-criar').onclick=function(){ var p=$('#rc-ped').value.trim(); if(!p){ toast('Escreve o que avisar.',true); return; } var qd=$('#rc-qd').value; espera(this,'a Maia está escrevendo…',function(){ return api({acao:'recado_criar',negocio_id:n.id,pedido:p,etiquetas:$('#rc-etq').value||null,midia_id:$('#rc-img').value||null,quando:qd?new Date(qd).toISOString():null}).then(function(r){ toast('Recado escrito: '+plural(r.estimativa?r.estimativa.contatos:0,'contato')+'.'); return carrega(); }); }); };
+    $('#bs-cfg').onclick=function(){ espera(this,'salvando…',function(){ return api({acao:'base_config',negocio_id:n.id,custo_msg:$('#bs-custo').value,lote:Number($('#bs-lote').value)}).then(function(){ toast('Salvo.'); return carrega(); }); }); };
+    c.querySelectorAll('[data-rc]').forEach(function(bt){ bt.onclick=function(){
+      var a=bt.getAttribute('data-rc'), id=bt.getAttribute('data-id');
+      if(a==='editar'){ editando=id; ajustando=null; return pinta(d); }
+      if(a==='ajustar'){ ajustando=id; editando=null; return pinta(d); }
+      if(a==='voltar'){ editando=null; ajustando=null; return pinta(d); }
+      var corpo=a==='aprovar'?{acao:'recado_aprovar',recado_id:id}:a==='salvar'?{acao:'recado_editar',recado_id:id,texto:$('#rc-txt').value}:a==='refazer'?{acao:'recado_ajustar',recado_id:id,nota:$('#rc-nota').value}:a==='cancelar'?{acao:'recado_cancelar',recado_id:id}:a==='meta'?{acao:'recado_meta',recado_id:id}:a==='simular'?{acao:'recado_meta_simular',recado_id:id,status:'APPROVED'}:null;
+      if(!corpo) return;
+      if(a==='refazer'&&!String(corpo.nota||'').trim()){ toast('Escreve o que mudar.',true); return; }
+      if(a==='cancelar'&&!confirm('Cancelar esse recado? O que já saiu não volta.')) return;
+      espera(bt,'…',function(){ return api(corpo).then(function(){ editando=null; ajustando=null; toast(a==='aprovar'?'Aprovado: foi pro dono aprovar.':a==='simular'?'Marcado como aprovado. A rotina manda no próximo horário.':'Feito.'); return carrega(); }); });
+    }; });
+  }
+  function carrega(){ return api(q({acao:'base',negocio:n.id})).then(pinta).catch(function(e){ if($('#base-c')) $('#base-c').innerHTML=caixaErro(e); }); }
+  carrega();
+}
 /* 13/11: o que falta pra ligar (lista de conferência; lib/maia/ligar.ts). Só lê; o único botão grava o número conferido */
 function subLigar(n,box){
   box.innerHTML='<div id="ligar-c">'+esqLinhas(6)+'</div>';
@@ -1416,7 +1500,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos,base:subBase}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }

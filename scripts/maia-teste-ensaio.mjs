@@ -341,7 +341,8 @@ confere('rodando de novo no dia 15: não repete', avisosEquipe(neg.id, /material
 // ─────────────────────────────── 13) nada saiu do computador
 etapa('13) A rede: nada saiu pra internet')
 const log = rede()
-const fora = log.filter(x => x.tipo === 'bloqueada' && x.host !== 'registry.npmjs.org')   // registry.npmjs.org: o aviso de versão do próprio Next (modo dev), não o sistema
+// registry.npmjs.org e telemetry.nextjs.org: o aviso de versão e a telemetria do próprio Next (modo dev), não o sistema
+const fora = log.filter(x => x.tipo === 'bloqueada' && x.host !== 'registry.npmjs.org' && x.host !== 'telemetry.nextjs.org')
 confere('nenhuma chamada do sistema tentou sair pra internet (Meta, WhatsApp, Asaas, banco)', fora.length === 0, JSON.stringify(fora.slice(0, 5)))
 const ia = log.filter(x => x.tipo === 'ia_falsa'), recusada = log.filter(x => x.tipo === 'ia_recusada')
 console.log(`   IA simulada: ${ia.length} resposta(s) (${[...new Set(ia.map(x => x.o))].join(', ')}); pedidos de IA fora do roteiro (responderam "IA fora do ar"): ${recusada.length}`)
