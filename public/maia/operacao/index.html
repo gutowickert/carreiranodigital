@@ -738,8 +738,9 @@ function cab(titulo,ctx,acoes){ return '<div class="cab"><h1>'+esc(titulo)+(ctx?
 function dataHoje(){ var s=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'numeric',month:'long'}); return s.charAt(0).toUpperCase()+s.slice(1); }
 
 /* ---------- API ---------- */
-function api(arg){
-  var opts={headers:{'x-senha':S.senha||''}}, url=API;
+// 14/11: o 2º argumento troca a rota (a aba Social fala com /api/maia/social, com a mesma senha)
+function api(arg,rota){
+  var opts={headers:{'x-senha':S.senha||''}}, url=rota||API;
   if(typeof arg==='string'){ url+='?'+arg; }
   else { opts.method='POST'; opts.headers['content-type']='application/json'; opts.body=JSON.stringify(arg); }
   return fetch(url,opts).then(function(r){
@@ -1309,7 +1310,7 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['base','Base','pessoas'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['social','Social','celular'],['base','Base','pessoas'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
 // 14/11 (lib/maia/recado.ts): o RECADO PRA BASE. A base de contatos do negócio (colar a lista ou subir .csv, quem já comprou,
 // etiquetas, quem saiu) e os recados: criar, ajustar, editar, aprovar (a equipe aprova antes do dono), cancelar e os números.
 // O custo estimado aparece antes de aprovar (contatos x custo por mensagem de marketing: o negócio paga direto pra Meta).
@@ -1492,6 +1493,265 @@ function subArquivos(n,c){
   function carrega(){ return api(q({acao:'material',negocio:n.id})).then(pinta).catch(function(e){ if($('#arq-c')) $('#arq-c').innerHTML=caixaErro(e); }); }
   carrega();
 }
+// 14/11 (lib/maia/social.ts, rota /api/maia/social): a SOCIAL MEDIA do negócio. Em cima, a ligação (página, Instagram, chave e
+// as travas do servidor), depois criar post (fotos do banco de mídias) ou carrossel com texto (a Maia escreve), a agenda do mês
+// com as ações de cada status e os resultados. Publicar agora pede confirmação dentro da página (nunca confirm()).
+function subSocial(n,c){
+  var R='/api/maia/social', so=function(arg){ return api(arg,R); };
+  c.innerHTML='<div id="soc-lig">'+esqBloco(90)+'</div><div id="soc-novo"></div><div id="soc-agenda"></div><div id="soc-res"></div>';
+  var fmt=function(iso,o){ if(!iso) return ''; var d=new Date(iso); if(isNaN(d)) return ''; try{ return d.toLocaleString('pt-BR',Object.assign({timeZone:'America/Sao_Paulo'},o)); }catch(e){ return d.toLocaleString('pt-BR',o); } };
+  var horaBR=function(iso){ return (new Date(iso).getUTCHours()+21)%24; };
+  var diaBR=function(ms){ return new Date((ms||Date.now())-3*3600e3).toISOString().slice(0,10); };
+  var mesBR=function(iso){ return new Date(new Date(iso).getTime()-3*3600e3).toISOString().slice(0,7); };
+  var quandoTxt=function(iso){ return fmt(iso,{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','')+' às '+horaBR(iso)+'h'+(new Date(iso).getUTCMinutes()?String(new Date(iso).getUTCMinutes()).padStart(2,'0'):''); };
+  var NOME_MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
+  var mesTxt=function(m){ var p=String(m).split('-'); return NOME_MES[Number(p[1])-1]+' de '+p[0]; };
+  var ST={rascunho:['esperando a equipe','aten'],aprovado_equipe:['com o dono','info'],aprovado_dono:['aprovado','info'],agendado:['agendado','bom'],publicando:['publicando','info'],processando:['processando','info'],publicado:['publicado','bom'],erro:['deu erro','ruim'],descartado:['descartado','']};
+  var GRUPO={rascunho:'equipe',aprovado_equipe:'dono',aprovado_dono:'agendado',agendado:'agendado',processando:'agendado',publicando:'agendado',publicado:'publicado',erro:'erro',descartado:'descartado'};
+  var FILT=[['todos','Todos'],['equipe','Pra equipe'],['dono','Com o dono'],['agendado','Agendados'],['publicado','Publicados'],['erro','Com erro'],['descartado','Descartados']];
+  var REDE={instagram:'Instagram',facebook:'Facebook'};
+  var D={lig:null,agenda:[],res:[],an:[],banco:[]}, filtro='todos', mes=mesBR(new Date().toISOString()), ab={}, sel=[];
+  function rotulo(p){
+    if(p.status==='rascunho'&&p.peca_status==='gerando') return ['a oficina está montando','info'];
+    if(p.status==='rascunho'&&/^ajuste/.test(p.peca_status||'')) return ['a Maia está refazendo','info'];
+    return ST[p.status]||[p.status||'?',''];
+  }
+  function num(v,t){ return '<div style="border:1px solid var(--border);border-radius:12px;padding:8px 10px;min-width:0"><b style="display:block;font-size:18px">'+inteiro(v||0)+'</b><span class="mu peq">'+t+'</span></div>'; }
+  function copia(u,msg){ if(navigator.clipboard) navigator.clipboard.writeText(u).then(function(){ toast(msg); },function(){ toast(u); }); else toast(u); }
+  function atualizaNeg(){ return api(q({acao:'negocio',id:n.id})).then(function(x){ if(x&&x.meta) n.meta=x.meta; }).catch(function(){}); }
+
+  /* ---- 1. a ligação ---- */
+  function pintaLig(){
+    var cx=$('#soc-lig'), L=D.lig; if(!cx||!L) return;
+    var chaveChip=L.chave_guardada?chip('guardada','bom','check'):L.chave_reserva?chip('sem chave própria: usa a da equipe','info'):chip('sem chave','ruim','alerta');
+    var h='<div class="card"><div class="card-cab"><div><h2>'+(L.pronto?'Pronto pra postar':'Falta '+plural(L.faltas.length,'coisa','coisas')+' pra postar')+'</h2><p class="mu peq" style="margin-top:4px">A Maia posta no Instagram e no Facebook do negócio, só com os dois joinhas (equipe e dono).</p></div>'+chip(L.pronto?'pronto':'falta '+L.faltas.length,L.pronto?'bom':'aten',L.pronto?'check':'alerta')+'</div>';
+    if(L.faltas.length) h+='<div class="lista">'+L.faltas.map(function(f){ return '<div class="lin"><span class="cor aten"></span><span style="min-width:0"><span class="t"><span>'+esc(f.charAt(0).toUpperCase()+f.slice(1))+'</span></span></span></div>'; }).join('')+'</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin:12px 0">'+chip(L.social_ligado?'social ligada no servidor':'social desligada no servidor',L.social_ligado?'bom':'aten')+chip(L.meta_real?'Meta de verdade':'modo simulado: nada sai pra Meta',L.meta_real?'bom':'info')+'</div>';
+    if(!L.gestora){
+      h+='<div class="grade2"><div class="campo"><label for="sl-page">ID da página do Facebook</label><input id="sl-page" inputmode="numeric" autocomplete="off" value="'+esc(L.page_id||'')+'" placeholder="só números, ex.: 102938475610293"></div>'+
+        '<div class="campo"><label>Instagram profissional</label><p style="margin:6px 0 0">'+(L.ig_id?chip('achado · '+L.ig_id,'bom','check'):chip('ainda não achado','aten'))+'</p></div></div>'+
+        '<div class="btns"><button class="btn" id="sl-salvar">'+ic('check')+'Salvar a página</button><button class="btn" id="sl-achar"'+(L.page_id?'':' disabled title="Salva a página primeiro"')+'>'+ic('link')+'Achar o Instagram pela página</button></div>';
+      h+='<div class="campo" style="margin-top:14px"><label for="sl-chave">Chave do social (da página ou do usuário) · '+chaveChip+'</label><input id="sl-chave" type="password" autocomplete="new-password" spellcheck="false" placeholder="'+(L.chave_guardada?'já guardada: cola outra só pra trocar':'cola a chave aqui')+'"></div>'+
+        '<p class="mu peq" style="margin:0 0 10px">Vai guardada '+(L.cifrada?'cifrada':'<b>sem cifra (o servidor está sem MAIA_CRIPTO_CHAVE)</b>')+' e nunca aparece de volta aqui.</p>';
+      if(ab.apagar) h+='<div class="aviso" style="margin-bottom:10px">'+ic('alerta')+'<span>Apagar a chave do social deste negócio? '+(L.chave_reserva?'Aí a Maia usa a chave da equipe.':'Sem ela os posts não saem.')+'</span></div><div class="btns"><button class="btn perigo cheio" id="sl-apagar-sim">Sim, apagar a chave</button><button class="btn" id="sl-apagar-nao">Voltar</button></div>';
+      else h+='<div class="btns"><button class="btn ok" id="sl-guardar">'+ic('check')+'Guardar a chave</button>'+(L.chave_guardada?'<button class="btn perigo" id="sl-apagar">Apagar a chave</button>':'')+'</div>';
+      if(L.link_perfil) h+='<p class="peq" style="margin:14px 0 0;overflow-wrap:anywhere"><b>Link pra bio do Instagram:</b> '+esc(L.link_perfil)+' <button class="btn peq" id="sl-copia">Copiar</button><br><span class="mu">Quem chama por ele chega como "Vim pelo Instagram" e o contato fica marcado com essa origem.</span></p>';
+    }
+    cx.innerHTML=h+'</div>';
+    if(L.gestora) return;
+    $('#sl-salvar').onclick=function(){ var b=this; espera(b,'salvando…',function(){ return so({acao:'salvar_ligacao',negocio_id:n.id,page_id:$('#sl-page').value.trim()}).then(function(x){ D.lig=x; pintaLig(); toast('Página salva.'); return atualizaNeg(); }); }); };
+    $('#sl-achar').onclick=function(){ var b=this; espera(b,'procurando…',function(){ return so({acao:'achar_instagram',negocio_id:n.id}).then(function(x){ toast(x.simulado?x.aviso:'Instagram achado: '+x.ig_id); return carrega(); }); }); };
+    if($('#sl-guardar')) $('#sl-guardar').onclick=function(){ var b=this, v=$('#sl-chave').value.trim(); if(!v){ toast('Cola a chave no campo primeiro.',true); return; } espera(b,'guardando…',function(){ return so({acao:'salvar_ligacao',negocio_id:n.id,social_token:v}).then(function(x){ D.lig=x; pintaLig(); toast('Chave guardada.'); return atualizaNeg(); }); }); };
+    if($('#sl-apagar')) $('#sl-apagar').onclick=function(){ ab.apagar=true; pintaLig(); };
+    if($('#sl-apagar-nao')) $('#sl-apagar-nao').onclick=function(){ ab.apagar=false; pintaLig(); };
+    if($('#sl-apagar-sim')) $('#sl-apagar-sim').onclick=function(){ var b=this; espera(b,'apagando…',function(){ return so({acao:'salvar_ligacao',negocio_id:n.id,apagar_chave:true}).then(function(x){ ab.apagar=false; D.lig=x; pintaLig(); toast('Chave apagada.'); return atualizaNeg(); }); }); };
+    if($('#sl-copia')) $('#sl-copia').onclick=function(){ copia(L.link_perfil,'Link copiado. Põe na bio do Instagram.'); };
+  }
+
+  /* ---- 2. criar post ---- */
+  // repinta o formulário (a escolha das fotos mudou) sem perder o que já foi escrito
+  var CAMPOS=['sn-tipo','sn-tema','sn-leg','sn-dia','sn-hora','sc-tema','sc-tipo','sc-fonte'];
+  function repinta(){
+    var g={}; CAMPOS.forEach(function(k){ var e=$('#'+k); if(e) g[k]=e.value; }); var ig=$('#sn-ig'), fb=$('#sn-fb'), det=$('#soc-novo details');
+    var ck=[ig?ig.checked:true,fb?fb.checked:true], aberto=det?det.open:false;
+    pintaNovo();
+    CAMPOS.forEach(function(k){ var e=$('#'+k); if(e&&g[k]!=null) e.value=g[k]; }); $('#sn-ig').checked=ck[0]; $('#sn-fb').checked=ck[1]; $('#soc-novo details').open=aberto;
+    $('#sn-leg').oninput(); $('#sc-tipo').onchange();
+  }
+  function sugereHora(){ var a=D.agenda, u=a.length?a[a.length-1]:null; return !u||!u.quando?'11:00':(horaBR(u.quando)<14?'18:00':'11:00'); }
+  function pintaNovo(){
+    var cx=$('#soc-novo'); if(!cx) return;
+    if(D.lig&&D.lig.gestora){ cx.innerHTML=''; return; }
+    var banco=(D.banco||[]).filter(function(m){ return !m.nao_usar; });
+    var hs=sugereHora(), amanha=diaBR(Date.now()+86400e3);
+    var h='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:6px">Novo post</h2><p class="mu peq" style="margin:0 0 12px">Escolhe as fotos do banco do cliente (aba Arquivos), escreve a legenda e marca o dia. Vai pra aprovação da equipe e depois do dono, no WhatsApp. Foto tem que ser JPG.</p>'+
+      '<div class="grade2"><div class="campo"><label for="sn-tipo">Tipo</label><select id="sn-tipo"><option value="foto">Foto (1 foto)</option><option value="carrossel">Carrossel de fotos (2 a 10)</option><option value="reels">Reels (1 vídeo)</option></select></div>'+
+      '<div class="campo"><label for="sn-tema">Tema (opcional, ajuda na análise do mês)</label><input id="sn-tema" placeholder="ex.: bolão da Mega"></div></div>'+
+      '<p class="peq" style="margin:4px 0 8px"><b>Fotos e vídeos do banco</b> <span class="mu" id="sn-sel">'+(sel.length?plural(sel.length,'escolhida','escolhidas'):'toca pra escolher')+'</span></p>'+
+      (banco.length?'<div id="sn-banco" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px;margin-bottom:12px">'+banco.map(function(m){
+        var i=sel.indexOf(m.id), on=i>=0;
+        var mini=m.link?(m.tipo==='video'?'<video src="'+esc(m.link)+'" muted playsinline preload="metadata" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;background:#000;display:block"></video>':'<img src="'+esc(m.link)+'" alt="" loading="lazy" style="width:100%;aspect-ratio:1/1;object-fit:cover;border-radius:10px;display:block">'):'<div style="aspect-ratio:1/1;border-radius:10px;background:var(--surface-2)"></div>';
+        return '<button type="button" data-midia="'+esc(m.id)+'" aria-pressed="'+on+'" title="'+esc((m.descricao||'').slice(0,120))+'" style="position:relative;padding:0;border:3px solid '+(on?'var(--accent)':'transparent')+';border-radius:13px;background:none;cursor:pointer;min-width:0">'+mini+
+          '<span style="position:absolute;top:5px;left:5px;background:'+(on?'var(--accent)':'rgba(0,0,0,.55)')+';color:#fff;border-radius:999px;font-size:12px;font-weight:700;padding:1px 7px">'+(on?(i+1):(m.tipo==='video'?'vídeo':'foto'))+'</span></button>';
+      }).join('')+'</div>':'<div class="dica" style="margin-bottom:12px">'+ic('info')+'<span>O banco de mídias está vazio. Sobe as fotos na aba Arquivos (ou o dono manda pelo WhatsApp).</span></div>')+
+      '<div class="campo"><label for="sn-leg">Legenda <span class="mu" id="sn-cont">0 / 2.200</span></label><textarea id="sn-leg" rows="5" style="width:100%" placeholder="Começa com uma frase que prende. Post orgânico não chama pro WhatsApp."></textarea></div>'+
+      '<div class="grade2"><div class="campo"><label for="sn-dia">Dia</label><input id="sn-dia" type="date" min="'+diaBR()+'" value="'+amanha+'"></div>'+
+      '<div class="campo"><label for="sn-hora">Hora</label><div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"><button type="button" class="btn peq" data-hora="11:00">11h</button><button type="button" class="btn peq" data-hora="18:00">18h</button><input id="sn-hora" type="time" value="'+hs+'" style="max-width:130px"></div><span class="mu peq">Sugestão: '+hs.slice(0,2)+'h (a Maia alterna 11h e 18h pra testar o melhor horário)</span></div></div>'+
+      '<div class="campo"><label>Onde sai</label><div style="display:flex;gap:16px;flex-wrap:wrap"><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sn-ig" checked>Instagram</label><label style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="sn-fb" checked>Facebook</label></div></div>'+
+      '<div class="btns"><button class="btn ok" id="sn-criar">'+ic('mais')+'Criar o post</button></div>'+
+      '<details style="margin-top:16px;border-top:1px solid var(--border);padding-top:12px"><summary style="cursor:pointer;font-weight:700">Carrossel com texto (a Maia escreve)</summary><p class="mu peq" style="margin:8px 0 12px">A Maia escreve os slides e a legenda, e a oficina monta as imagens com o texto em cima das fotos. Usa as fotos escolhidas acima (2 ou mais) ou, sem escolha, as do banco. Usa o mesmo dia, hora e redes.</p>'+
+      '<div class="grade2"><div class="campo"><label for="sc-tema">Tema</label><input id="sc-tema" placeholder="ex.: como funciona o bolão"></div><div class="campo"><label for="sc-tipo">Tipo de conteúdo</label><select id="sc-tipo"><option value="dica">Dica (conteúdo útil)</option><option value="produto">Produto ou serviço</option><option value="noticia">Notícia do setor</option></select></div></div>'+
+      '<div class="campo" id="sc-fonte-c" hidden><label for="sc-fonte">A notícia (cola o texto: a Maia usa só isso, pra não inventar)</label><textarea id="sc-fonte" rows="3" style="width:100%"></textarea></div>'+
+      '<div class="btns"><button class="btn" id="sc-criar">'+ic('brilho')+'A Maia monta o carrossel</button></div></details></div>';
+    cx.innerHTML=h;
+    var leg=$('#sn-leg'), cont=$('#sn-cont');
+    leg.oninput=function(){ var k=leg.value.length; cont.textContent=k.toLocaleString('pt-BR')+' / 2.200'; cont.style.color=k>2200?'var(--red)':''; };
+    $$('[data-hora]',cx).forEach(function(b){ b.onclick=function(){ $('#sn-hora').value=b.getAttribute('data-hora'); }; });
+    $('#sc-tipo').onchange=function(){ $('#sc-fonte-c').hidden=$('#sc-tipo').value!=='noticia'; };
+    $$('[data-midia]',cx).forEach(function(b){ b.onclick=function(){
+      var id=b.getAttribute('data-midia'), tipo=$('#sn-tipo').value, i=sel.indexOf(id);
+      if(i>=0) sel.splice(i,1); else if(tipo==='carrossel'){ if(sel.length>=10){ toast('Carrossel leva até 10.',true); return; } sel.push(id); } else sel=[id];
+      repinta();
+    }; });
+    $('#sn-tipo').onchange=function(){ if(this.value!=='carrossel'&&sel.length>1){ sel=sel.slice(0,1); repinta(); } };
+    var redes=function(){ var r=[]; if($('#sn-ig').checked) r.push('instagram'); if($('#sn-fb').checked) r.push('facebook'); return r; };
+    var quando=function(){ var d=$('#sn-dia').value, h=$('#sn-hora').value||hs; return d?d+'T'+h:''; };
+    $('#sn-criar').onclick=function(){
+      var tipo=$('#sn-tipo').value, l=leg.value.trim(), qd=quando(), rs=redes();
+      if(tipo==='carrossel'?sel.length<2:sel.length!==1){ toast(tipo==='carrossel'?'Escolhe de 2 a 10 fotos pro carrossel.':tipo==='reels'?'Escolhe 1 vídeo pro reels.':'Escolhe 1 foto pro post.',true); return; }
+      if(!l){ toast('Escreve a legenda.',true); return; }
+      if(l.length>2200){ toast('A legenda passa de 2.200 caracteres (limite do Instagram).',true); return; }
+      if(!qd){ toast('Escolhe o dia.',true); return; }
+      if(!rs.length){ toast('Marca pelo menos uma rede.',true); return; }
+      espera(this,'criando…',function(){ return so({acao:'criar_post',negocio_id:n.id,tipo:tipo,midia_ids:sel.slice(),legenda:l,quando:qd,tema:$('#sn-tema').value.trim()||undefined,redes:rs}).then(function(){ sel=[]; toast('Post criado: está esperando a equipe aprovar.'); return carrega(true); }); });
+    };
+    $('#sc-criar').onclick=function(){
+      var tema=$('#sc-tema').value.trim(), tipo=$('#sc-tipo').value, qd=quando(), rs=redes();
+      if(!tema){ toast('Escreve o tema do carrossel.',true); return; }
+      if(tipo==='noticia'&&!$('#sc-fonte').value.trim()){ toast('Cola o texto da notícia (a Maia não inventa).',true); return; }
+      if(!qd){ toast('Escolhe o dia.',true); return; }
+      if(!rs.length){ toast('Marca pelo menos uma rede.',true); return; }
+      espera(this,'a Maia está escrevendo…',function(){ return so({acao:'criar_carrossel',negocio_id:n.id,tema:tema,tipo:tipo,fonte:$('#sc-fonte').value.trim()||undefined,midia_ids:sel.length>=2?sel.slice():undefined,quando:qd,redes:rs}).then(function(r){ sel=[]; toast('Carrossel escrito ('+plural((r.slides||[]).length,'slide')+'). A oficina monta as imagens e ele vai pra aprovação.'); return carrega(true); }); });
+    };
+  }
+
+  /* ---- 3. a agenda ---- */
+  function metr(r){
+    r=r||{}; var ig=r.ig||{}, fb=r.fb||{}, out=[];
+    [['alcance',ig.reach],['visualizações',ig.views],['curtidas',ig.likes],['comentários',ig.comments],['salvamentos',ig.saved],['compartilhamentos',ig.shares],['seguidores novos',ig.follows]].forEach(function(x){ if(x[1]!=null) out.push(['Instagram',x[0],x[1]]); });
+    var reac=fb.reacoes!=null?fb.reacoes:fb.post_reactions_by_type_total;
+    [['alcance',fb.post_total_media_view_unique],['reações',reac],['comentários',fb.comentarios],['compartilhamentos',fb.compartilhamentos]].forEach(function(x){ if(x[1]!=null) out.push(['Facebook',x[0],x[1]]); });
+    return out;
+  }
+  function cartaoPost(p){
+    var s=rotulo(p), links=p.links||[], img=links[0], m0=(p.midias||[])[0]||{}, video=p.tipo==='reels'||m0.tipo==='video';
+    var mini=img?(video?'<video src="'+esc(img)+'" muted playsinline preload="metadata" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px;background:#000;display:block"></video>':'<img src="'+esc(img)+'" alt="" loading="lazy" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:10px;display:block">'):'<div style="aspect-ratio:4/5;border-radius:10px;background:var(--surface-2);display:grid;place-items:center;text-align:center;font-size:12px;color:var(--text-muted);padding:6px">sem imagem ainda</div>';
+    var leg=String(p.legenda||''), curta=leg.length>240?leg.slice(0,240).replace(/\s+\S*$/,'')+'…':leg;
+    var h='<div class="card" style="margin-top:12px" data-post="'+esc(p.id)+'"><div style="display:grid;grid-template-columns:minmax(0,min(110px,26vw)) minmax(0,1fr);gap:14px;align-items:start">'+
+      '<div style="min-width:0">'+mini+(p.tipo==='carrossel'&&(p.midias||[]).length?'<span class="mu peq" style="display:block;margin-top:4px;text-align:center">'+plural(p.midias.length,'imagem','imagens')+'</span>':'')+'</div><div style="min-width:0">'+
+      '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:6px"><b style="font-size:15px">'+esc(quandoTxt(p.quando))+'</b>'+chip(s[0],s[1])+chip(p.tipo==='reels'?'reels':p.tipo==='carrossel'?'carrossel':'foto','')+(p.redes||[]).map(function(r){ return chip(REDE[r]||r,''); }).join('')+'</div>'+
+      (p.tema?'<p class="mu peq" style="margin:0 0 6px">Tema: '+esc(p.tema)+'</p>':'');
+    if(ab.edit===p.id) h+='<div class="campo"><label for="sp-leg">Legenda</label><textarea id="sp-leg" rows="6" style="width:100%">'+esc(leg)+'</textarea></div><div class="btns"><button class="btn ok" data-sp="salvar" data-id="'+esc(p.id)+'">'+ic('check')+'Salvar a legenda</button><button class="btn" data-sp="voltar">Voltar</button></div>';
+    else if(ab.ajuste===p.id) h+='<div class="campo"><label for="sp-nota">O que a Maia muda na legenda?</label><textarea id="sp-nota" rows="3" style="width:100%" placeholder="Ex.: mais curta, fala do prêmio acumulado"></textarea></div><div class="btns"><button class="btn ok" data-sp="refazer" data-id="'+esc(p.id)+'">'+ic('enviar')+'Mandar refazer</button><button class="btn" data-sp="voltar">Voltar</button></div>';
+    else h+='<p style="margin:0 0 8px;white-space:pre-line;line-height:1.5;overflow-wrap:anywhere">'+esc(curta||'(sem legenda ainda)')+'</p>'+(curta!==leg?'<details style="margin:0 0 8px"><summary class="mu peq" style="cursor:pointer">ver a legenda inteira</summary><p style="white-space:pre-line;line-height:1.5;overflow-wrap:anywhere">'+esc(leg)+'</p></details>':'');
+    if(p.nota_dono&&p.status==='rascunho') h+='<p class="peq" style="margin:0 0 8px"><b>O dono pediu:</b> '+esc(p.nota_dono)+'</p>';
+    if(p.status==='erro'&&p.erro) h+='<div class="erro-box" style="margin-bottom:10px">'+ic('alerta')+'<span>'+esc(p.erro)+'</span></div>';
+    if(p.status==='processando'&&p.erro) h+='<div class="aviso" style="margin-bottom:10px">'+ic('relogio')+'<span>'+esc(p.erro)+'. A Maia tenta de novo na próxima hora.</span></div>';
+    if(p.status==='publicado'){
+      var ms=metr(p.resultado);
+      h+='<p class="peq" style="margin:0 0 8px">Publicado '+esc(fmt(p.publicado_em,{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'}))+(p.simulado||(p.ig&&p.ig.simulado)?' <span class="mu">(simulado)</span>':'')+(p.ig&&p.ig.permalink?' · <a href="'+esc(p.ig.permalink)+'" target="_blank" rel="noopener">ver no Instagram</a>':'')+'</p>'+
+        (ms.length?'<p class="mu peq" style="margin:0 0 8px">'+ms.filter(function(x){ return x[0]==='Instagram'; }).slice(0,5).map(function(x){ return inteiro(x[2])+' '+x[1]; }).join(' · ')+'</p>':'');
+    }
+    // as ações de cada status
+    var b=[], id=esc(p.id);
+    if(ab.pub===p.id){
+      h+='<div class="aviso" style="margin-bottom:10px">'+ic('alerta')+'<span>Publicar agora no '+(p.redes||[]).map(function(r){ return REDE[r]||r; }).join(' e ')+'? '+(D.lig&&D.lig.meta_real?'Sai na hora, na página do cliente.':'Modo simulado: nada sai de verdade.')+'</span></div>';
+      b.push('<button class="btn ok" data-sp="publicar-sim" data-id="'+id+'">'+ic('enviar')+'Sim, publicar agora</button>','<button class="btn" data-sp="voltar">Voltar</button>');
+    } else if(ab.desc===p.id){
+      h+='<div class="aviso" style="margin-bottom:10px">'+ic('alerta')+'<span>Descartar esse post? Ele sai da agenda e não é publicado.</span></div>';
+      b.push('<button class="btn perigo cheio" data-sp="descartar-sim" data-id="'+id+'">Sim, descartar</button>','<button class="btn" data-sp="voltar">Voltar</button>');
+    } else if(ab.edit!==p.id&&ab.ajuste!==p.id){
+      if(p.status==='rascunho'&&p.peca_status==='revisao_equipe'){
+        b.push('<button class="btn ok" data-sp="aprovar" data-id="'+id+'">'+ic('check')+'Aprovar e mandar pro dono</button>','<button class="btn" data-sp="ajustar" data-id="'+id+'">Pedir ajuste pra Maia</button>','<button class="btn" data-sp="editar" data-id="'+id+'">Editar a legenda</button>');
+      }
+      if(p.status==='aprovado_equipe'){
+        h+='<p class="mu peq" style="margin:0 0 8px">Esperando o 👍 do dono no WhatsApp.</p>';
+        if(D.lig&&!D.lig.meta_real) b.push('<button class="btn" data-sp="dono" data-id="'+id+'">Teste: o dono aprovou</button>');
+      }
+      if(p.status==='agendado'||p.status==='aprovado_dono') b.push('<button class="btn ok" data-sp="publicar" data-id="'+id+'">'+ic('enviar')+'Publicar agora</button>');
+      if(p.status==='erro') b.push('<button class="btn ok" data-sp="publicar" data-id="'+id+'">'+ic('enviar')+'Tentar publicar de novo</button>');
+      if(p.status==='processando') b.push('<button class="btn" data-sp="publicar" data-id="'+id+'">Tentar agora</button>');
+      if(['publicado','publicando','processando','descartado'].indexOf(p.status)<0) b.push('<button class="btn perigo" data-sp="descartar" data-id="'+id+'">Descartar</button>');
+    }
+    if(b.length) h+='<div class="btns">'+b.join('')+'</div>';
+    return h+'</div></div></div>';
+  }
+  function pintaAgenda(){
+    var cx=$('#soc-agenda'); if(!cx) return;
+    if(D.lig&&D.lig.gestora){ cx.innerHTML=''; return; }
+    var meses={}; meses[mes]=1; D.agenda.forEach(function(p){ if(p.quando) meses[mesBR(p.quando)]=1; });
+    var doMes=D.agenda.filter(function(p){ return mes==='todos'||(p.quando&&mesBR(p.quando)===mes); });
+    var cont={todos:doMes.length}; doMes.forEach(function(p){ var g=GRUPO[p.status]||'equipe'; cont[g]=(cont[g]||0)+1; });
+    var lista=doMes.filter(function(p){ return filtro==='todos'||GRUPO[p.status]===filtro; }).sort(function(a,b){ return String(a.quando).localeCompare(String(b.quando)); });
+    var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Agenda</h2><p class="mu peq" style="margin-top:4px">'+plural(doMes.length,'post','posts')+(mes==='todos'?' no total':' em '+mesTxt(mes))+'. Só publica com os dois joinhas; o agendado sai sozinho no horário (com a social ligada no servidor).</p></div>'+
+      '<select id="sa-mes" aria-label="Mês da agenda" style="max-width:190px">'+Object.keys(meses).sort().map(function(m){ return '<option value="'+m+'"'+(m===mes?' selected':'')+'>'+mesTxt(m)+'</option>'; }).join('')+'<option value="todos"'+(mes==='todos'?' selected':'')+'>todos os meses</option></select></div>'+
+      '<nav class="filtros" aria-label="Filtrar por status">'+FILT.filter(function(f){ return f[0]==='todos'||cont[f[0]]; }).map(function(f){ return '<a href="#" data-filtro="'+f[0]+'" class="'+(filtro===f[0]?'on':'')+'">'+f[1]+' <span class="n">'+(cont[f[0]]||0)+'</span></a>'; }).join('')+'</nav>'+
+      (lista.length?'':vazio('relogio','Nada aqui',doMes.length?'Nenhum post com esse status neste mês.':'Nenhum post neste mês ainda. Cria um aqui em cima, ou o plano do mês da Maia monta os posts.'))+'</div>'+
+      lista.map(cartaoPost).join('');
+    cx.innerHTML=h;
+    $('#sa-mes').onchange=function(){ mes=this.value; filtro='todos'; pintaAgenda(); };
+    $$('[data-filtro]',cx).forEach(function(a){ a.onclick=function(e){ e.preventDefault(); filtro=a.getAttribute('data-filtro'); pintaAgenda(); }; });
+    $$('[data-sp]',cx).forEach(function(bt){ bt.onclick=function(){
+      var a=bt.getAttribute('data-sp'), id=bt.getAttribute('data-id'), p=D.agenda.filter(function(x){ return String(x.id)===String(id); })[0];
+      if(a==='voltar'){ ab={}; return pintaAgenda(); }
+      if(a==='editar'){ ab={edit:p.id}; return pintaAgenda(); }
+      if(a==='ajustar'){ ab={ajuste:p.id}; return pintaAgenda(); }
+      if(a==='publicar'){ ab={pub:p.id}; return pintaAgenda(); }
+      if(a==='descartar'){ ab={desc:p.id}; return pintaAgenda(); }
+      var corpo=null, rota=R, ok='Feito.';
+      if(a==='aprovar'){ corpo={acao:'aprovar_equipe',post_id:p.id}; ok='Aprovado: foi pro dono dar o 👍 no WhatsApp.'; }
+      if(a==='dono'){ corpo={acao:'aprovar_dono',post_id:p.id}; ok='Marcado o 👍 do dono: o post está agendado.'; }
+      if(a==='salvar'){ var t=$('#sp-leg').value.trim(); if(!t){ toast('A legenda não pode ficar vazia.',true); return; } corpo={acao:'editar_legenda',post_id:p.id,legenda:t}; ok='Legenda salva.'; }
+      if(a==='refazer'){ var nt=$('#sp-nota').value.trim(); if(!nt){ toast('Escreve o que mudar.',true); return; } corpo={acao:'ajustar_peca',peca_id:p.peca_id,nota:nt}; rota=null; ok='A Maia refez a legenda: confere e aprova.'; }
+      if(a==='publicar-sim'){ corpo={acao:'publicar_agora',post_id:p.id}; }
+      if(a==='descartar-sim'){ corpo={acao:'descartar_post',post_id:p.id}; ok='Post descartado.'; }
+      if(!corpo) return;
+      espera(bt,'…',function(){ return api(corpo,rota||undefined).then(function(r){
+        ab={};
+        if(a==='publicar-sim'){ var d=(r&&r.detalhe)||r||{}; var stt=d.status; toast(stt==='publicado'?'Publicado'+(d.simulado||(d.ig&&d.ig.simulado)?' (simulado).':'.'):stt==='processando'?'A Meta ainda está processando: a Maia termina na próxima hora.':stt==='erro'?'Não saiu: '+(d.erro||'erro na Meta'):'Feito.',stt==='erro'); }
+        else toast(ok);
+        return carrega();
+      }); });
+    }; });
+  }
+
+  /* ---- 4. os resultados ---- */
+  function pintaRes(){
+    var cx=$('#soc-res'); if(!cx) return;
+    if(D.lig&&D.lig.gestora){ cx.innerHTML=''; return; }
+    var pubs=D.agenda.filter(function(p){ return p.status==='publicado'; }).sort(function(a,b){ return String(b.publicado_em||b.quando).localeCompare(String(a.publicado_em||a.quando)); });
+    var ult={}; (D.res||[]).forEach(function(r){ if(!ult[r.post]) ult[r.post]=r; });
+    var tot={alc:0,inter:0,salvos:0,lidos:0};
+    pubs.forEach(function(p){ var r=p.resultado||ult[p.id]; if(!r) return; var ig=r.ig||{}, fb=r.fb||{}; tot.lidos++; tot.alc+=(ig.reach||0)+(fb.post_total_media_view_unique||0); tot.inter+=(ig.total_interactions||0)+(fb.reacoes!=null?fb.reacoes:(fb.post_reactions_by_type_total||0))+(fb.comentarios||0)+(fb.compartilhamentos||0); tot.salvos+=ig.saved||0; });
+    var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Resultados</h2><p class="mu peq" style="margin-top:4px">A Maia lê os números todo dia às 7h (posts dos últimos 30 dias). Salvamento e compartilhamento valem mais que curtida.</p></div><button class="btn" id="sr-ler">'+ic('barras')+'Ler resultados agora</button></div>'+
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:12px">'+num(pubs.length,'publicados')+num(tot.alc,'alcance somado')+num(tot.inter,'interações')+num(tot.salvos,'salvamentos')+'</div>';
+    if(!pubs.length) h+='<p class="mu peq" style="margin:0">Nenhum post publicado ainda.</p>';
+    else h+='<div class="lista">'+pubs.slice(0,30).map(function(p){
+      var r=p.resultado||ult[p.id], ms=metr(r);
+      return '<div class="lin"><span class="cor '+(r&&!r.erro?'bom':'')+'"></span><span style="min-width:0"><span class="t"><span>'+esc(quandoTxt(p.publicado_em||p.quando))+'</span>'+chip(p.tipo,'')+(p.tema?'<span class="mu peq" style="font-weight:500">'+esc(p.tema)+'</span>':'')+'</span>'+
+        '<span class="sub" style="display:block">'+(ms.length?ms.map(function(x){ return (x[0]==='Facebook'?'Face: ':'')+inteiro(x[2])+' '+x[1]; }).join(' · '):(r&&r.erro?'Não deu pra ler: '+esc(r.erro):'Ainda sem números (a leitura é no dia seguinte).'))+(r&&r.dia?' · lido em '+esc(String(r.dia).split('-').reverse().slice(0,2).join('/')):'')+'</span></span>'+
+        (p.ig&&p.ig.permalink?'<span class="dir"><a class="btn peq" href="'+esc(p.ig.permalink)+'" target="_blank" rel="noopener">Ver</a></span>':'')+'</div>';
+    }).join('')+'</div>';
+    h+='</div>';
+    var a=(D.an||[])[0];
+    h+='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>Análise do mês</h2><p class="mu peq" style="margin-top:4px">No dia 1 a Maia compara tema, formato e horário do mês anterior e escreve pro dono. Passa pela equipe antes.</p></div><button class="btn" id="sr-analise">'+ic('brilho')+'Fazer a do mês passado</button></div>';
+    if(a){
+      var x=a.analise||{}, pc=a.peca||{}, li=function(t,xs){ return xs&&xs.length?'<p class="peq" style="margin:0 0 6px"><b>'+t+':</b> '+esc(xs.join('; '))+'</p>':''; };
+      h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px">'+chip(mesTxt(a.mes),'')+chip(plural(a.posts||0,'post','posts'),'')+(pc.status?chip(pc.status==='revisao_equipe'?'pra equipe aprovar':pc.status==='com_dono'?'com o dono':pc.status==='aprovada'?'aprovada':pc.status,pc.status==='revisao_equipe'?'aten':'info'):'')+'</div>'+
+        (x.resumo?'<p style="margin:0 0 8px;line-height:1.5">'+esc(x.resumo)+'</p>':'')+li('Repetir',x.repetir)+li('Testar',x.testar)+li('Parar',x.parar)+(pc.status==='revisao_equipe'?'<p class="mu peq" style="margin:8px 0 0">Aprova na aba Peças (ou em Aprovar) pra ir pro dono.</p>':'');
+    } else h+='<p class="mu peq" style="margin:0">Nenhuma análise ainda.</p>';
+    cx.innerHTML=h+'</div>';
+    $('#sr-ler').onclick=function(){ var b=this; espera(b,'lendo…',function(){ return so({acao:'ler_resultados_agora',negocio_id:n.id}).then(function(r){ var e=(r||[]).filter(function(x){ return x.erro; }); toast((r||[]).length?plural(r.length,'post lido','posts lidos')+(e.length?', '+e.length+' com erro: '+e[0].erro:'.'):'Nenhum post publicado nos últimos 30 dias.',!!e.length); return carrega(); }); }); };
+    $('#sr-analise').onclick=function(){ var b=this; espera(b,'a Maia está analisando…',function(){ return so({acao:'analise_agora',negocio_id:n.id}).then(function(r){ toast(r&&r.pulou?'Não fez: '+r.pulou+'.':'Análise pronta: vai pra equipe aprovar.'); return carrega(); }); }); };
+  }
+
+  function carrega(comNovo){
+    var seguro=function(p,pad){ return p.catch(function(e){ D.erro=e; return pad; }); };
+    D.erro=null;
+    return Promise.all([
+      so(q({acao:'ligacao',negocio:n.id})),
+      seguro(so(q({acao:'agenda',negocio:n.id})),[]),
+      seguro(so(q({acao:'resultados',negocio:n.id})),[]),
+      seguro(so(q({acao:'analise',negocio:n.id})),[]),
+      seguro(api(q({acao:'material',negocio:n.id})).then(function(r){ return (r&&r.banco)||[]; }),[]),
+    ]).then(function(x){
+      D.lig=x[0]; D.agenda=x[1]||[]; D.res=x[2]||[]; D.an=x[3]||[]; D.banco=x[4]||[];
+      pintaLig(); if(comNovo||!$('#sn-tipo')) pintaNovo(); pintaAgenda(); pintaRes();
+      if(D.erro) toast('Parte da aba não carregou: '+(D.erro.message||D.erro),true);
+    }).catch(function(e){ if($('#soc-lig')) $('#soc-lig').innerHTML=caixaErro(e); });
+  }
+  carrega(true);
+}
 function telaNegocio(id,sub,mesmoNeg){
   var t=$('#tela');
   var temCab = mesmoNeg && $('#neg-topo') && S.negAtual && S.negAtual.id===id;
@@ -1500,7 +1760,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos,base:subBase}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos,base:subBase,social:subSocial}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }
