@@ -10,7 +10,8 @@ const RAIZ = path.resolve(import.meta.dirname, '..')
 const PASTA = '.maia-teste/social'
 fs.rmSync(path.join(RAIZ, PASTA), { recursive: true, force: true })
 Object.assign(process.env, {
-  MAIA_LOCAL: '1', MAIA_LOCAL_PASTA: PASTA, MAIA_META_REAL: '1', MAIA_CAPI_LIGADO: '1', MAIA_SOCIAL_LIGADO: '1',
+  // 13/11: o conjunto de dados só é criado na Meta com MAIA_CAPI_CRIAR_DATASET=1 (o teste liga pra cobrir a criação)
+  MAIA_LOCAL: '1', MAIA_LOCAL_PASTA: PASTA, MAIA_META_REAL: '1', MAIA_CAPI_LIGADO: '1', MAIA_CAPI_CRIAR_DATASET: '1', MAIA_SOCIAL_LIGADO: '1',
   MAIA_SOCIAL_ESPERA_MS: '1', MAIA_SOCIAL_TOKEN: 'tk_sistema', MAIA_CLIENTES_LIGADO: '', ANTHROPIC_API_KEY: 'teste',
 })
 for (const k of ['MAIA_CAPI_TOKEN', 'MAIA_ADS_TOKEN', 'FB_ADS_TOKEN', 'MAIA_CAPI_TESTE', 'MAIA_CAPI_PARCEIRO']) delete process.env[k]
@@ -241,7 +242,8 @@ const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paul
 const an = await S.analiseDoMes(neg.id, { mes })
 const ia = chamadas.filter(x => x.host === 'ia')
 const pAn = await db.um('pecas', { id: an.peca_id })
-confere(ia.length === 1 && ia[0].modelo === 'claude-opus-5-5', 'análise do mês com o modelo maior (' + ia[0]?.modelo + ')')
+// 12/11 (custo menor): a análise do mês saiu do opus pro sonnet (MAIA_MODELO_ANALISE troca)
+confere(ia.length === 1 && ia[0].modelo === 'claude-sonnet-5-5', 'análise do mês com o modelo do padrão (' + ia[0]?.modelo + ')')
 confere(pAn?.tipo === 'relatorio' && pAn.status === 'revisao_equipe' && /Repetir: reels de bastidores/.test(pAn.texto) && /Testar:/.test(pAn.texto) && /Parar:/.test(pAn.texto) && /plano do mês que vem/.test(pAn.texto), 'virou peça de relatório na revisão da equipe (repetir, testar, parar e o plano)')
 console.log('    ' + pAn.texto.replace(/\n/g, '\n    '))
 confere((await S.analiseDoMes(neg.id, { mes })).pulou === 'já feita', 'a análise do mês não repete')

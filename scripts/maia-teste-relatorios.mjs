@@ -143,7 +143,8 @@ confere('investido R$ 150, 12 conversas, R$ 12,50 por conversa', /Investido: R\$
 confere('métrica secundária da implantação: 2 chegaram em "pediu orçamento" de 3 contatos novos', /Chegaram em "pediu orçamento": 2 de 3 contatos novos$/m.test(tx))
 confere('vendas no período: 1, somando R$ 85 (a de 3 dias atrás não conta)', /Vendas: 1, somando R\$ 85$/m.test(tx))
 confere('conclusão: pausar a "Promo de terça" (0 de 6 no orçamento, sem venda)', /Sugiro mudar: pausar "Promo de terça" \(6 contatos, nenhum chegou em "pediu orçamento" \(a média dos anúncios é 21%\) e nenhuma venda\)/.test(tx))
-confere('e subir "Presente que ninguém esquece" de R$ 20 pra R$ 24 (2 vendas, conversa a R$ 10), dentro do teto', /subir a verba de "Presente que ninguém esquece" de R\$ 20 pra R\$ 24 por dia \(2 vendas, conversa a R\$ 10\)/.test(tx))
+// 13/11 (tráfego no jeito do Guto): sobe 30% por vez (era 20%): R$ 20 → R$ 26
+confere('e subir "Presente que ninguém esquece" de R$ 20 pra R$ 26 (2 vendas, conversa a R$ 10), dentro do teto', /subir a verba de "Presente que ninguém esquece" de R\$ 20 pra R\$ 26 por dia \(2 vendas, conversa a R\$ 10\)/.test(tx))
 confere('o anúncio novo (2 dias, ciclo de 5) fica em teste, sem mexer', (r.dados?.decisao?.em_teste || []).some(x => x.nome === 'Caixa nova de Natal' && x.faltam_dias === 3), JSON.stringify(r.dados?.decisao?.em_teste))
 confere('termina perguntando se o dono topa testar', /Topa testar assim\? Me responde aqui que eu passo pra equipe ajustar\.$/.test(tx))
 confere('a prévia não grava nada', !le('pecas').some(p => p.negocio_id === A.id && p.tipo === 'relatorio'))
@@ -168,7 +169,8 @@ if (pAn2?.arquivo_path) {
   const png = spawnSync(process.execPath, ['maia-oficina/oficina.js', '--teste-analise', path.join(PASTA, 'card-analise.json'), ...(LOGO ? ['--logo', LOGO] : []), ...(FOTO(1) ? ['--foto', FOTO(1)] : []), '--marca', JSON.stringify(MARCA_WOOD), '--saida', path.resolve(PASTA, 'exemplo-analise-2-dias.png')], { encoding: 'utf8', timeout: 120000 })
   confere('o modo de teste da oficina grava o PNG de exemplo', fs.existsSync(path.join(PASTA, 'exemplo-analise-2-dias.png')), (png.stdout || '') + (png.stderr || ''))
 }
-confere('o evento guarda a conclusão e as sugestões (pra equipe e pro relatório do mês)', le('eventos').some(e => e.tipo === 'analise_2dias' && e.detalhe?.peca_id === pAn?.id && e.detalhe?.conclusao === 'mudar' && e.detalhe.sugestoes.length === 2))
+// 13/11: além de pausar e subir, vem a sugestão semanal de testar um anúncio novo (3 sugestões)
+confere('o evento guarda a conclusão e as sugestões (pra equipe e pro relatório do mês)', le('eventos').some(e => e.tipo === 'analise_2dias' && e.detalhe?.peca_id === pAn?.id && e.detalhe?.conclusao === 'mudar' && e.detalhe.sugestoes.map(s => s.tipo).join() === 'pausar,estimular,testar'))
 const ap = await api('aprovar_peca', { peca_id: pAn?.id })
 const dcvA = le('conversas').find(c => c.negocio_id === A.id && c.canal === 'dono')
 const msgA = le('msgs').filter(m => m.conversa_id === dcvA?.id && /^\(imagem\) Análise dos anúncios/.test(m.texto || ''))
