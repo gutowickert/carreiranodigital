@@ -425,7 +425,7 @@ function secResumo(){
   var d=S.dados,h='<div class="duas"><div>';
   h+='<h2>A Maia espera de ti'+(d.esperando.length?'<small>'+d.esperando.length+'</small>':'')+'</h2>';
   if(d.esperando.length){
-    var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋'};
+    var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋',recado:'•'};
     h+='<ul class="lista card espera">'+d.esperando.map(function(e){
       var alvo=e.tipo==='joinha'?'#anuncios':e.conversa_id?'#conversa='+e.conversa_id:'';
       // 13/11: a pergunta de cliente dá pra responder aqui mesmo (ou no WhatsApp da Maia, igual)
@@ -447,6 +447,18 @@ function secResumo(){
   h+='<h2>Fotos e vídeos<small>'+int(mt.fotos||0)+' fotos · '+int(mt.videos||0)+' vídeos</small></h2><div class="card pad">'+
     (mt.pauta&&mt.pauta.texto?'<p style="margin:0 0 8px;font-weight:700">A Maia pediu:</p><p class="mu" style="margin:0;white-space:pre-line">'+esc(mt.pauta.texto)+'</p>'+(mt.pauta.recebidas?'<p class="mu peq" style="margin:8px 0 0">Já chegaram '+int(mt.pauta.recebidas)+'.</p>':''):'<p class="mu peq" style="margin:0">Foto e vídeo de verdade vendem mais. Manda do jeito que estão, sem editar.</p>')+
     '<div class="btns" style="margin-top:10px"><label class="btn" for="f-midias" style="cursor:pointer">Mandar fotos e vídeos</label><input type="file" id="f-midias" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" multiple hidden></div><p class="mu peq" id="f-midias-st" style="margin:8px 0 0" aria-live="polite"></p></div>';
+  // 14/11 (recado.ts): o RECADO PRA BASE (o mesmo de pedir pra Maia no WhatsApp: "manda pra base que...")
+  var rc=d.recado||{};
+  if(rc.disponivel){
+    var stRc=function(r){var x=r.numeros||{};
+      if(r.status==='aprovar_dono')return '<p style="margin:8px 0 4px;white-space:pre-line">Oi, (nome)! '+esc(r.texto||'')+'</p><p class="mu peq" style="margin:0">Botões: Quero participar · Não quero receber</p>'+(r.estimativa?'<p class="peq" style="margin:6px 0 0"><b>Vai pra '+int(r.estimativa.contatos)+(r.estimativa.contatos===1?' contato':' contatos')+'. Custo estimado na Meta: '+real2(r.estimativa.custo)+'</b> <span class="mu">('+real2(r.estimativa.custo_msg)+' por mensagem, pago pelo teu negócio direto pra Meta)</span></p>':'')+
+        '<div class="btns" style="margin-top:8px"><button type="button" class="btn pri" data-rec-ok="'+esc(r.id)+'">Aprovar</button><button type="button" class="btn" data-rec-aj="'+esc(r.id)+'">Pedir ajuste</button></div>';
+      if(r.status==='enviando'||r.status==='enviado')return '<p class="mu peq" style="margin:6px 0 0">'+int(x.enviados)+' enviados · '+int(x.entregues)+' entregues · '+int(x.respostas)+' responderam · '+int(x.quero)+' querem participar · '+int(x.saidas)+' saíram da lista · '+int(x.vendas)+' vendas ('+real(x.valor_vendas)+')</p>';
+      return r.estimativa?'<p class="mu peq" style="margin:6px 0 0">Pra '+int(r.estimativa.contatos)+(r.estimativa.contatos===1?' contato':' contatos')+' (custo estimado '+real2(r.estimativa.custo)+').</p>':'';};
+    h+='<h2>Recado pra base<small>'+int(rc.base.ativos)+' contatos</small></h2><div class="card pad"><p class="mu peq" style="margin:0">Avisa teus clientes de sempre de uma novidade (jogo novo, bolão, prêmio acumulado). A Maia escreve, a equipe confere e volta pra ti aprovar. Sai no horário comercial; quem responder que quer, a Maia te passa pra fechar.</p>'+
+      (rc.recados||[]).slice(0,4).map(function(r){return '<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px"><b>'+esc(r.titulo||'Recado')+'</b> <span class="chip">'+esc(r.status_nome)+'</span>'+stRc(r)+'</div>';}).join('')+
+      '<div class="btns" style="margin-top:12px"><button type="button" class="btn" id="b-recado">Novo recado</button><button type="button" class="btn" id="b-base">Importar contatos</button></div></div>';
+  }
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
   var r=d.retomadas;
@@ -576,6 +588,21 @@ function liga(el){
   var bc=$('#b-carrossel',el);if(bc)bc.onclick=function(){folha('<h3>Carrossel</h3><p class="mu peq">Um post com várias imagens com texto, feito com as tuas fotos.</p><label class="campo"><span>Sobre o que</span><input id="f-tema" maxlength="200" placeholder="ex.: 3 cuidados com o teu sofá"></label><label class="campo"><span>Tipo</span><select id="f-tipo"><option value="dica">Dica</option><option value="produto">Produto</option></select></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
     $('#f-ok',v).onclick=function(){var t=$('#f-tema',v).value.trim();if(!t){toast('Escreve o tema');return;}var k=this;k.disabled=true;
       api('',{acao:'conteudo',o:'carrossel',tema:t,tipo:$('#f-tipo',v).value}).then(function(){fecha();toast('Pedido feito: chega pra ti aprovar');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
+  // 14/11 (recado.ts): o recado pra base (novo, importar contatos, aprovar e pedir ajuste), as mesmas funções do WhatsApp
+  var br=$('#b-recado',el);if(br)br.onclick=function(){folha('<h3>Novo recado pra base</h3><p class="mu peq">Diz o que avisar, com preço, data e quantidade se tiver. A Maia escreve, a equipe confere e volta pra ti aprovar.</p><label class="campo"><span>O que avisar</span><textarea id="f-ped" maxlength="1000" placeholder="ex.: abriu o bolão da Mega da Virada, 10 cotas de R$ 50"></textarea></label><label class="campo"><span>Só pra quem tem a etiqueta (opcional)</span><input id="f-etq" maxlength="60" placeholder="ex.: mega"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Pedir o recado</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var p=$('#f-ped',v).value.trim();if(!p){toast('Escreve o que avisar');return;}var k=this;k.disabled=true;
+      api('',{acao:'recado_criar',pedido:p,etiquetas:$('#f-etq',v).value.trim()||null}).then(function(){fecha();toast('A Maia escreveu: a equipe confere e volta pra ti');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
+  var bb=$('#b-base',el);if(bb)bb.onclick=function(){folha('<h3>Importar contatos</h3><p class="mu peq">Uma linha por pessoa: nome;telefone;etiquetas. Ou escolhe a planilha salva em .csv. Também dá pra mandar a planilha ou os contatos pra Maia no WhatsApp.</p><label class="campo"><span>Cola a lista</span><textarea id="f-lista" placeholder="Ana Souza;51 99999-1234;mega"></textarea></label><label class="campo"><span>Ou a planilha (.csv)</span><input id="f-csv" type="file" accept=".csv,.txt,.vcf,text/csv,text/plain,text/vcard"></label><label class="campo"><span>Quem já comprou de ti</span><select id="f-inc"><option value="">não incluir</option><option value="compraram">incluir quem já comprou</option></select></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Importar</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var k=this,arq=$('#f-csv',v).files[0],inc=$('#f-inc',v).value||null;
+      var manda=function(t){if(!String(t||'').trim()&&!inc){toast('Cola a lista ou escolhe a planilha');return;}k.disabled=true;
+        api('',{acao:'base_importar',texto:t,incluir:inc}).then(function(r){fecha();toast(r.novos+' entraram'+(r.ja_estavam?', '+r.ja_estavam+' já estavam':'')+(r.invalidos?', '+r.invalidos+' números não deu pra ler':''));return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};
+      if(arq){var rd=new FileReader();rd.onload=function(){manda(String(rd.result||''));};rd.readAsText(arq);}else manda($('#f-lista',v).value);};});};
+  $$('[data-rec-ok]',el).forEach(function(b){b.onclick=function(){
+    if(!confirm('Aprovar esse recado? A Maia pede a aprovação do WhatsApp e manda no horário comercial.'))return;
+    b.disabled=true;api('',{acao:'recado_aprovar',recado_id:b.dataset.recOk}).then(function(){toast('Aprovado');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});
+  $$('[data-rec-aj]',el).forEach(function(b){b.onclick=function(){folha('<h3>O que mudar no recado?</h3><p class="mu peq">A Maia refaz, a equipe confere e volta pra ti.</p><label class="campo"><span>Escreve do teu jeito</span><textarea id="f-nota" maxlength="500" placeholder="ex.: fala que dá pra pagar na loja"></textarea></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Mandar o pedido</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var nota=$('#f-nota',v).value.trim();if(!nota){toast('Escreve o que mudar');return;}var k=this;k.disabled=true;
+      api('',{acao:'recado_ajuste',recado_id:b.dataset.recAj,nota:nota}).then(function(){fecha();toast('Pedido enviado');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};});
   $$('[data-aprovar]',el).forEach(function(b){b.onclick=function(){
     if(!confirm('Aprovar esse anúncio? A equipe liga a campanha depois.'))return;
     b.disabled=true;api('',{acao:'aprovar',peca_id:b.dataset.aprovar}).then(function(){toast('Aprovado 👍');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});
