@@ -159,7 +159,18 @@ confere('a oficina entregou e as 2 peças estão na revisão da equipe, com arqu
 confere('a equipe foi avisada das peças pra aprovar', avisosEquipe(neg.id, /peça pra aprovar/).length === 2)
 
 // ─────────────────────────────── 5) a equipe aprova, o dono aprova
-etapa('5) Equipe aprova, dono aprova (uma pelo painel, outra com 👍 no WhatsApp)')
+etapa('5) Equipe pede um ajuste (primeiro com a IA fora do ar), aprova; o dono aprova (uma pelo painel, outra com 👍 no WhatsApp)')
+const nota = 'deixa o gancho mais curto e fala do nome gravado'
+fs.writeFileSync(path.join(PASTA, 'ia-fora'), '1')
+const errAj = await opErro('ajustar_peca', { peca_id: pecas[0].id, nota })
+fs.rmSync(path.join(PASTA, 'ia-fora'), { force: true })
+let pAj = (await ver('pecas', { negocio: neg.id })).find(p => p.id === pecas[0].id)
+confere('ajuste com a IA fora do ar: dá erro e a peça volta pra revisão da equipe (não fica presa em "refazendo")', !!errAj && pAj.status === 'revisao_equipe' && (pAj.versao || 1) === 1, JSON.stringify({ errAj, st: pAj.status }))
+await op('ajustar_peca', { peca_id: pecas[0].id, nota })
+await oficinaFalsa()
+pAj = (await ver('pecas', { negocio: neg.id })).find(p => p.id === pecas[0].id)
+confere('ajuste com a IA de volta: a peça é refeita (versão 2), passa na oficina e volta pra equipe', pAj.status === 'revisao_equipe' && pAj.versao === 2 && pAj.gancho === 'Sua tábua, com o seu nome' && pAj.nota_equipe === nota, JSON.stringify({ st: pAj.status, v: pAj.versao, g: pAj.gancho }))
+pecas = await ver('pecas', { negocio: neg.id })
 for (const p of pecas) await op('aprovar_peca', { peca_id: p.id })
 await op('pedir_joinha', { negocio_id: neg.id })
 pecas = await ver('pecas', { negocio: neg.id })

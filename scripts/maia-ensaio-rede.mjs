@@ -3,6 +3,7 @@
 //   1. nada sai pra internet: só passa o que vai pro próprio computador (localhost). O resto é recusado e anotado;
 //   2. a IA é SIMULADA (nenhuma chamada vai pra Anthropic). Ela responde só três coisas, com texto fixo:
 //      - "cria N anúncios" (pecas.ts geraAnuncios): devolve N peças usando as mídias que o pedido lista;
+//      - o ajuste de uma peça (pecas.ts refaz): devolve o gancho e o texto novos;
 //      - conversa com ferramentas (atendimento do cliente e do dono): uma frase curta no "você", sem chamar ferramenta;
 //      - pedido que devolve {"texto":"..."} (retomada, resumo da semana): uma frase curta.
 //      Qualquer outro pedido de IA recebe "IA fora do ar" (529), como quando a Anthropic cai: o sistema tem que seguir.
@@ -65,6 +66,10 @@ if (orig && !globalThis.__maiaEnsaioRede) {
         const r = anuncios(msgs)
         anota({ tipo: 'ia_falsa', o: 'anuncios', quantos: r.pecas.length })
         return texto(JSON.stringify(r))
+      }
+      if (/AJUSTE PEDIDO PEL[AO]/.test(msgs)) {
+        anota({ tipo: 'ia_falsa', o: 'ajuste' })
+        return texto(JSON.stringify({ gancho: 'Sua tábua, com o seu nome', texto: 'Tábua de churrasco gravada com o nome que você escolher, pronta pra presentear.', cta: 'Chama no WhatsApp e peça a sua.', trocar_midia: false }))
       }
       if (com) {
         anota({ tipo: 'ia_falsa', o: 'conversa', ferramentas: corpo.tools.length })
