@@ -109,7 +109,9 @@ export async function apagaContato(negocio_id: string, q: { conversa_id?: string
     if (telefone.length >= 8) { nt = nt.split(telefone).join('[apagado]'); nx = nx.split(telefone).join('[apagado]') }
     if (nt !== tit || nx !== tx) { await db.atualiza('eventos', { id: e.id }, { detalhe: { ...d, titulo: nt, texto: nx } }); avisos++ }
   }
-  const r = { mes, contou, msgs: msgs.length, midias, registros, contato: !!lead, recados, avisos }
+  // 14/11 (recado.ts): sai da base de contatos do recado pra base (e o telefone some dos envios, que ficam só como número)
+  const base = telefone ? await import('./recado').then(x => x.apagaTelefoneDaBase(negocio_id, telefone)).catch(() => 0) : 0
+  const r = { mes, contou, msgs: msgs.length, midias, registros, contato: !!lead, recados, avisos, base }
   await db.evento('contato_apagado', negocio_id, { por, motivo, ...r })
   return { ok: true, ...r }
 }

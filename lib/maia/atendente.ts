@@ -62,8 +62,20 @@ export function semPedirDetalhes(t: string): string {
 // 07/11 (piloto): d.tipo 'audio' ou 'image' com d.midia (o arquivo já baixado) vira texto: transcrição ou descrição (midia-cliente.ts)
 export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: string | null; texto: string; wamid?: string | null; referral?: { source_id?: string; headline?: string; ctwa_clid?: string | null; source_url?: string | null } | null; tipo?: string | null; midia?: MidiaCliente | null; legenda?: string | null }) {
   if (d.wamid && (await db.um('msgs', { wamid: d.wamid }))) return null
+  // 14/11 (recado.ts): a resposta a um RECADO PRA BASE. "Não quero receber"/SAIR: sai da lista na hora (sem funil e sem IA);
+  // "Quero participar": vai pro funil e o time do negócio fecha (lá embaixo); outra resposta: a Maia atende sabendo do recado
+  const rb: any = d.tipo === 'audio' || d.tipo === 'image' ? null : await import('./recado').then(r => r.respostaDaBase(neg, { telefone: d.telefone, texto: d.texto })).catch(() => null)
+  if (rb?.tipo === 'saiu') {
+    const { textoSaiu } = await import('./recado')
+    const cvS = await conversa(neg.id, 'cliente', d.telefone, { nome: d.nome })
+    const janela = new Date(Date.now() + 24 * 3600e3).toISOString()
+    await db.insere('msgs', { conversa_id: cvS.id, negocio_id: neg.id, autor: 'cliente', tipo: 'texto', texto: d.texto, wamid: d.wamid || null, status: 'recebido' }).catch(() => null)
+    await db.atualiza('conversas', { id: cvS.id }, { ultima_msg: String(d.texto).slice(0, 200), ultima_msg_em: new Date().toISOString(), janela_ate: janela, nao_lidas: (cvS.nao_lidas || 0) + 1 })
+    await mandaTexto({ ...cvS, janela_ate: janela }, textoSaiu(neg)).catch(() => null)
+    return { cv: cvS as any, lead: null as any, responder: false, entregues: 0, saiu: true }
+  }
   // 06/11: sem anúncio, o texto pronto do link do perfil ("Vim pelo Instagram") marca a origem (só na 1ª mensagem: lead que já existe fica como está)
-  let lead = await novoLead(neg.id, { telefone: d.telefone, nome: d.nome, origem: d.referral?.source_id ? 'anuncio' : origemDoTexto(d.texto) || 'organico', anuncio_ref: d.referral?.source_id || null })
+  let lead = await novoLead(neg.id, { telefone: d.telefone, nome: d.nome, origem: rb ? 'base' : d.referral?.source_id ? 'anuncio' : origemDoTexto(d.texto) || 'organico', anuncio_ref: rb ? null : d.referral?.source_id || null, produto: rb?.recado?.titulo || null })
   // 06/11: veio do clique no anúncio: guarda o ctwa_clid e avisa a Meta (LeadSubmitted). Nunca derruba o atendimento.
   if (d.referral?.ctwa_clid) await anotaClique(neg, lead, d.referral).catch(() => null)
   lead = await clienteRespondeu(lead)
@@ -89,6 +101,13 @@ export async function recebeDoCliente(neg: any, d: { telefone: string; nome?: st
   // 07/11 (piloto): a janela abriu: entrega as respostas do dono/equipe que esperavam (depois de 24 h, maia_resposta).
   // Se entregou, a Maia não responde por cima ("Pode mandar" → a resposta já foi)
   const entregues = await soltaFilaDoCliente({ ...cv, lead_id: lead.id }).catch(() => 0)
+  if (rb?.recado) {
+    const R = await import('./recado')
+    if (rb.tipo === 'quero') {
+      try { lead = await R.queroDoRecado(neg, { ...cv, lead_id: lead.id }, lead, rb.recado); return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: false, entregues, quero: true } }
+      catch (e: any) { await avisaEquipe('recado: o "quero" não foi passado', `${neg.nome}: ${String(e?.message || e).slice(0, 160)}`, neg.id) }
+    } else await R.ligaAoRecado(neg, lead, rb.recado).catch(() => null)
+  }
   return { cv: { ...cv, lead_id: lead.id } as any, lead, responder: cv.modo === 'ia' && !entregues, entregues }
 }
 
@@ -186,6 +205,17 @@ async function passaConversa(neg: any, cv: any, lead: any, ctx: Ctx, motivo: str
   const exceto = { lead_id: lead?.id || null, conversa_id: cv.id }
   if (fechar) await mandaTexto(dcv, await comPendencias(neg, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) quer fechar: ${m.replace(/^quer fechar:\s*/i, '')}. Já tirei as dúvidas; agora é contigo pra combinar o pagamento ou o horário e finalizar (eu não respondo mais ali). Fechou? Me conta o valor que eu marco a venda. Quando terminar, me diz "devolve pra Maia" ou toca em "Resolvido, devolver pra Maia" no painel.`, exceto))
   else await mandaTexto(dcv, await comPendencias(neg, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) precisa de ti: ${m}. A conversa agora está contigo: eu não respondo mais ali até tu me pedir ("devolve pra Maia" aqui, ou o botão "Resolvido, devolver pra Maia" no painel).`, exceto))
+}
+
+// 14/11 (recado.ts): o "Quero participar" de um recado pra base é fechamento: passa pro dono/time (o mesmo aviso de "quer fechar").
+// Se a conversa já estava com o dono, o aviso vai do mesmo jeito (senão ele não saberia do pedido novo)
+export async function passaPraFechar(neg: any, cv: any, lead: any, motivo: string) {
+  const atual = await db.um('conversas', { id: cv.id })
+  if (atual?.modo !== 'humano') return passaConversa(neg, cv, lead, { humano: false }, motivo, 'sistema', 'fechar')
+  await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por: 'sistema', motivo, tipo: 'fechar' })
+  if (lead?.id && ['novo', 'conversando', 'interessado'].includes(lead.etapa)) await mudaEtapa(lead, 'proposta', 'maia', { resumo: motivo.slice(0, 160) }).catch(() => null)
+  const m = motivo.trim().replace(/[.!?\s]+$/, '').replace(/^quer fechar:\s*/i, '')
+  await mandaTexto(await conversaDoDono(neg), await comPendencias(neg, `${lead?.nome || 'Um cliente'} (${lead?.telefone || ''}) quer fechar: ${m}. A conversa já está contigo: é só combinar e finalizar. Fechou? Me conta o valor que eu marco a venda.`, { lead_id: lead?.id || null, conversa_id: cv.id }))
 }
 
 function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
@@ -370,7 +400,9 @@ export async function respondeCliente(conversa_id: string) {
   // 13/11 (fechamento no time): a resposta prepara e avisa da passagem; quem combina pagamento/horário é a pessoa da equipe
   const fecharAgora = fechar ? `\nATENÇÃO: o cliente quer fechar. Responde o que ele perguntou (se perguntou algo) e diz que uma pessoa da equipe vai falar com ele por aqui mesmo pra combinar o pagamento ou o horário e finalizar. Chama passar_para_o_dono com o motivo "quer fechar: <o que ele quer>". NÃO manda chave Pix nem dados de pagamento, NÃO marca horário e NÃO confirma o pedido.` : ''
 
-  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
+  // 14/11 (recado.ts): o cliente respondeu um recado pra base: a Maia sabe qual
+  const doRecado = await import('./recado').then(x => x.contextoDoRecado(neg, cv.telefone)).catch(() => '')
+  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}${doRecado}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício). MAIA_MODELO_CLIENTE troca
     // 08/11 (T11): modelo misto (misto.ts): decisão de venda ou passagem pro dono é refeita no modelo forte. MAIA_MODELO_MISTO=0 desliga
     { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho || fechar)

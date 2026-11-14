@@ -31,7 +31,7 @@ export async function dadosDaSemana(neg: any, de: Date, ate: Date) {
   const doCliente = new Set(convs.map(c => c.id))
   const conversas = new Set(msgs.filter(m => m.criado_em <= ate.toISOString() && doCliente.has(m.conversa_id)).map(m => m.conversa_id)).size
   // o melhor anúncio: o que mais vendeu (receita, depois vendas, depois contatos). Só conta o que tem id de anúncio
-  const origens = ['anuncio', 'organico', 'instagram', 'facebook', 'indicacao', 'outro', 'link']
+  const origens = ['anuncio', 'organico', 'instagram', 'facebook', 'indicacao', 'outro', 'link', 'base', 'dono']
   const anuncios = Object.entries(n.por_origem || {}).filter(([k]) => !origens.includes(k))
     .sort(([, a]: any, [, b]: any) => (b.receita - a.receita) || (b.ganhos - a.ganhos) || (b.leads - a.leads))
   let melhor: { id: string; nome: string; contatos: number; vendas: number; receita: number } | null = null
@@ -39,7 +39,9 @@ export async function dadosDaSemana(neg: any, de: Date, ate: Date) {
     const [id, x]: any = anuncios[0]
     melhor = { id, nome: (await nomeDoAnuncio(neg.id, id)) || (id === 'simulado' ? 'anúncio de teste' : `anúncio ${id}`), contatos: x.leads, vendas: x.ganhos, receita: x.receita }
   }
-  return { ...n, conversas, melhor }
+  // 14/11 (recado.ts): os recados pra base que saíram na semana (sem a tabela, fica de fora)
+  const recados = await import('./recado').then(r => r.recadosDoPeriodo(neg, de, ate)).catch(() => null)
+  return { ...n, conversas, melhor, recados }
 }
 
 // a sugestão da semana: UMA, a mais importante, pela ordem do que mais pesa no bolso
@@ -63,6 +65,7 @@ export function textoResumo(neg: any, d: any): string {
     l.push(`- Investido no anúncio: ${R$(d.gasto)}${d.custo_por_venda != null ? ` (${R$(d.custo_por_venda)} por venda)` : ''}`)
     l.push(d.receita > 0 ? `- Retorno: a cada ${R$(d.gasto)} investidos, voltaram ${R$(d.receita)} em vendas (${R$(d.receita / d.gasto)} pra cada R$ 1)` : '- Retorno: ainda sem venda marcada vinda da semana')
   }
+  if (d.recados?.enviados) l.push(`- Recado pra base: ${plural(d.recados.recados, 'recado')} pra ${plural(d.recados.enviados, 'contato')}, ${d.recados.quero} ${d.recados.quero === 1 ? 'quis' : 'quiseram'} participar${d.recados.vendas ? `, ${plural(d.recados.vendas, 'venda')} (${R$(d.recados.valor_vendas)})` : ''}`)
   if (d.melhor) l.push(`- Melhor anúncio: "${d.melhor.nome}" (${plural(d.melhor.contatos, 'contato')}${d.melhor.vendas ? `, ${plural(d.melhor.vendas, 'venda')}` : ''})`)
   l.push(`Sugestão: ${sugestao(d)}`)
   return l.join('\n')

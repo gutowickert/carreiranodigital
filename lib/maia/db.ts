@@ -36,9 +36,16 @@ const PADRAO: Record<string, Linha> = {
   msgs: { tipo: 'texto' },
   tarefas: { status: 'fila', dados: {}, resultado: {}, tentativas: 0 },
   eventos: { detalhe: {} },
+  // 14/11 (recado.ts, db/maia-recado-base.sql): a base de contatos, os recados e cada envio
+  base: { etiquetas: [], optout: false, origem: 'importado' },
+  recados: { status: 'rascunho', etiquetas_alvo: [], enviados: 0, entregues: 0, falhas: 0, respostas: 0, quero: 0, saidas: 0, pulados: 0, vendas: 0, valor_vendas: 0 },
+  recado_envios: { status: 'enviado' },
 }
 const SERIAL = new Set(['lead_eventos', 'eventos'])
-const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads'])
+const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads', 'recados'])
+// as chaves únicas que o banco garante (modo local)
+const UNICA: Record<string, string[]> = { base: ['negocio_id', 'telefone'], recado_envios: ['recado_id', 'telefone'] }
+const repete = (tab: string, l: Linha[], nova: Linha) => !!UNICA[tab] && l.some(x => UNICA[tab].every(k => String(x[k]) === String(nova[k])))
 
 // 08/11 (T16): o banco PRÓPRIO da Maia quando existir (MAIA_SUPABASE_URL + MAIA_SUPABASE_SERVICE_KEY, as duas juntas);
 // senão, o da escola, como até hoje. A cópia dos dados do banco antigo pro novo: scripts/maia-copiar-banco.mjs
@@ -87,10 +94,33 @@ export const maiaDb = {
       if (tab === 'leads' && nova.telefone && l.some(x => x.negocio_id === nova.negocio_id && x.telefone === nova.telefone)) throw new Error('duplicate lead 23505')
       if (tab === 'conversas' && l.some(x => x.negocio_id === nova.negocio_id && x.canal === nova.canal && x.telefone === nova.telefone)) throw new Error('duplicate conversa 23505')
       if (tab === 'negocios' && nova.dono_whatsapp && l.some(x => x.dono_whatsapp === nova.dono_whatsapp)) throw new Error('duplicate dono 23505')
+      if (repete(tab, l, nova)) throw new Error(`duplicate ${tab} 23505`)
       l.push(nova); grava(tab, l); return nova
     }
     const r = await req(`/rest/v1/maia_${tab}`, { method: 'POST', body: JSON.stringify(linha), headers: { Prefer: 'return=representation' } })
     return r[0]
+  },
+
+  // 14/11 (recado.ts): várias linhas numa chamada só (a importação da base: centenas de contatos). Quem repete a chave única
+  // (onConflict, ex. 'negocio_id,telefone') é ignorado, sem derrubar o resto. Devolve as que entraram
+  async insereMuitos(tab: string, linhas: Linha[], onConflict?: string): Promise<Linha[]> {
+    if (!linhas.length) return []
+    if (maiaLocal()) {
+      const l = le(tab), agora = new Date().toISOString(), out: Linha[] = []
+      for (const linha of linhas) {
+        const nova: Linha = { ...(PADRAO[tab] || {}), id: SERIAL.has(tab) ? l.length + 1 : crypto.randomUUID(), criado_em: agora, ...linha }
+        if (COM_ATUALIZADO.has(tab)) nova.atualizado_em = agora
+        if (repete(tab, l, nova)) continue
+        l.push(nova); out.push(nova)
+      }
+      grava(tab, l); return out
+    }
+    const out: Linha[] = []
+    for (let i = 0; i < linhas.length; i += 500) {
+      const r = await req(`/rest/v1/maia_${tab}${onConflict ? '?on_conflict=' + onConflict : ''}`, { method: 'POST', body: JSON.stringify(linhas.slice(i, i + 500)), headers: { Prefer: 'return=representation' + (onConflict ? ',resolution=ignore-duplicates' : '') } })
+      out.push(...(r || []))
+    }
+    return out
   },
 
   async atualiza(tab: string, f: Filtro, campos: Linha): Promise<Linha[]> {

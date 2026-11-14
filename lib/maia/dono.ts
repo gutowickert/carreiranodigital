@@ -64,8 +64,12 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   const cv = await conversaDoDono(neg)
   let texto = m.type === 'text' ? m.text?.body || '' : m.type === 'reaction' ? `(reagiu ${m.reaction?.emoji || ''})` : m.type === 'button' ? m.button?.text || '' : m.type === 'interactive' ? m.interactive?.button_reply?.title || '' : ''
   let midia_id: string | null = null
+  // 14/11 (recado.ts): a lista de contatos pra base (planilha .csv, cartão .vcf ou contatos compartilhados): importa sem IA
+  const { ehListaDoDono } = await import('./recado')
+  const lista = ehListaDoDono(m)
+  if (lista) texto = m.type === 'contacts' ? `(mandou ${(m.contacts || []).length} contato(s))` : `(mandou a lista ${m.document?.filename || 'de contatos'})`
   const idMeta = m.image?.id || m.video?.id || m.audio?.id || (/image\/|video\//.test(m.document?.mime_type || '') ? m.document.id : null)
-  if (midia || idMeta) {
+  if ((midia || idMeta) && !lista) {
     try {
       const { buf, mime } = midia || await baixaMidia(idMeta)
       if (/audio/.test(mime)) {
@@ -94,10 +98,24 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   // 05/11: a janela de 24 h abriu: entrega o que estava esperando na fila (fora da janela só sai modelo aprovado)
   await soltaFilaDoDono({ ...cv, janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString() }).catch(() => 0)
 
+  if (lista) {
+    const { importaListaDoDono } = await import('./recado')
+    const r = await importaListaDoDono(neg, m, midia).catch((e: any) => ({ ok: false, resposta: 'Não consegui ler essa lista agora (' + String(e?.message || e).slice(0, 100) + '). Tenta mandar de novo em .csv, ou sobe pelo teu painel.' }))
+    await mandaTexto({ ...cv, janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString() }, r.resposta)
+    return { cv, texto, responder: false, lista: r }
+  }
   // o 👍 em cima da mensagem de uma peça aprova aquela peça, sem precisar da IA
   if (m.type === 'reaction' && /👍/.test(m.reaction?.emoji || '') && m.reaction?.message_id) {
     const p = await pecaDaMensagem(neg.id, m.reaction.message_id)
     if (p && p.status === 'com_dono') { await donoAprova(neg.id, p.id); return { cv, texto, responder: true, aprovou: [p.id] } }
+    // 14/11 (recado.ts): o 👍 em cima do recado pra base aprova o recado
+    const { recadoDaMensagem, donoAprovaRecado } = await import('./recado')
+    const rec = await recadoDaMensagem(neg.id, m.reaction.message_id)
+    if (rec && rec.status === 'aprovar_dono') {
+      await donoAprovaRecado(neg.id, rec.id, 'whatsapp')
+      await mandaTexto(cv, `Aprovado ✅ Pedi a aprovação do WhatsApp pro recado "${rec.titulo}". Quando sair, eu mando no horário comercial e te aviso.`)
+      return { cv, texto, responder: false, recado: rec.id }
+    }
   }
   // 08/11 (T12): o clique em "Fechou" / "Não fechou" da pergunta das 18h (rotina.ts) vira ganho ou perdido, sem precisar da IA
   const venda = /^venda:([\w-]+):(sim|nao)$/.exec(String(m.interactive?.button_reply?.id || m.button?.payload || ''))
@@ -175,7 +193,7 @@ export async function responderCliente(neg: any, l: any, texto: string, via: 'wh
     ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
 }
 
-function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferramenta[] {
+function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string; recados?: number }): Ferramenta[] {
   const lead = async (q: any) => (await achaLead(neg.id, { telefone: q.telefone, nome: q.nome, id: q.lead_id })) as any
   return [
     { name: 'salvar_contexto', description: 'Guarda o que tu aprendeu do negócio (serviços, preços, público, diferencial, horário, endereço, formas de pagamento, tom, o que evitar, verba por dia, perguntas frequentes). Só o que o dono disse.',
@@ -257,6 +275,27 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string }): Ferra
     { name: 'analise_ou_relatorio', description: 'O dono pediu a ANÁLISE dos anúncios ("me manda a análise", "como tão os anúncios") ou o RELATÓRIO DO MÊS ("o relatório do mês", "o relatório completo"). Repassa o que vier: o texto pronto, os números de agora ou o link do relatório (inteiro, sem mudar nada). Se disser que a equipe está conferindo, avisa que chega em seguida.',
       input_schema: { type: 'object', properties: { qual: { type: 'string', enum: ['analise', 'relatorio_mes'] } }, required: ['qual'] },
       roda: async ({ qual }) => { const { pedidoDoDono } = await import('./relatorios'); return pedidoDoDono((await db.um('negocios', { id: neg.id })) || neg, qual === 'relatorio_mes' ? 'relatorio_mes' : 'analise') } },
+    // 14/11 (recado.ts): o RECADO PRA BASE (o painel do dono tem os mesmos botões)
+    { name: 'recado_pra_base', description: 'O dono quer AVISAR OS CLIENTES DE SEMPRE (a base de contatos) de uma novidade: jogo novo, bolão, prêmio acumulado, produto novo, data especial ("manda pra base que abriu o bolão da Mega da Virada, 10 cotas de R$ 50"). Tu escreves o recado; a equipe confere e volta pra ele aprovar com 👍; depois o WhatsApp aprova o modelo e ele sai no horário comercial, em lotes. O recado AVISA e CHAMA pra responder: quem fecha é o time do negócio (não vende nem cobra pelo WhatsApp). Passa no pedido tudo que ele disse (preço, data, quantidade). etiquetas: só se ele disse pra quem (ex.: ["mega"]).',
+      input_schema: { type: 'object', properties: { pedido: { type: 'string' }, etiquetas: { type: 'array', items: { type: 'string' } } }, required: ['pedido'] },
+      roda: async (q) => {
+        const { criaRecado } = await import('./recado')
+        try { const r: any = await criaRecado(neg, { pedido: String(q.pedido || ''), etiquetas: q.etiquetas || null, por: 'dono' }); return { ok: true, titulo: r.titulo, contatos: r.estimativa.contatos, custo_estimado_reais: r.estimativa.custo, proximo: 'a equipe confere o texto e eu te mando pra aprovar com 👍 (com quantos contatos e o custo estimado na Meta)' } }
+        catch (e: any) { return { erro: String(e?.message || e) } }
+      } },
+    { name: 'recado_decisao', description: 'O dono respondeu sobre o RECADO PRA BASE que está esperando a aprovação dele: aprovar ("pode mandar", 👍), ajustar (o que mudar no texto) ou cancelar.',
+      input_schema: { type: 'object', properties: { acao: { type: 'string', enum: ['aprovar', 'ajustar', 'cancelar'] }, nota: { type: 'string', description: 'o que mudar (no ajustar)' } }, required: ['acao'] },
+      roda: async ({ acao, nota }) => {
+        const R = await import('./recado')
+        try {
+          if (acao === 'aprovar') { const a = await R.donoAprovaRecado(neg.id, null, 'whatsapp'); ctx.recados = (ctx.recados || 0) + a.length; return a.length ? { ok: true, aprovados: a.length, proximo: 'o WhatsApp aprova o modelo (minutos ou horas) e eu mando no horário comercial' } : { erro: 'nenhum recado esperando a aprovação dele' } }
+          if (acao === 'ajustar') return await R.donoAjustaRecado(neg.id, null, String(nota || ''))
+          return await R.donoCancelaRecado(neg.id, null)
+        } catch (e: any) { return { erro: String(e?.message || e) } }
+      } },
+    { name: 'base_e_recados', description: 'A base de contatos do negócio (quantos, etiquetas, quantos saíram da lista) e como foram os últimos recados (enviados, quiseram participar, saíram, vendas). Usa quando ele perguntar da base, da lista ou do resultado de um recado.',
+      input_schema: { type: 'object', properties: {} },
+      roda: async () => { try { const R = await import('./recado'); const p: any = await R.painelDoDono(neg); if (!p.disponivel) return { erro: 'o recado pra base ainda não está ligado: a equipe liga' }; return { base: p.base, recados: p.recados.slice(0, 5).map((r: any) => ({ titulo: r.titulo, situacao: r.status_nome, ...r.numeros, contatos_previstos: r.estimativa?.contatos ?? null })) } } catch (e: any) { return { erro: String(e?.message || e) } } } },
     { name: 'chamar_equipe', description: 'Passa pra equipe da escola (o Guto) o que tu não resolve: reclamação, mudança de plano, cancelamento, dúvida de pagamento, pedido fora do que tu faz.',
       input_schema: { type: 'object', properties: { motivo: { type: 'string' } }, required: ['motivo'] },
       roda: async ({ motivo }) => { await avisaEquipe('o dono chamou', `${neg.nome}: ${motivo}`, neg.id, true); return { ok: true } } },
@@ -280,6 +319,7 @@ REGRAS:
 - Nunca fala de preço da Maia, desconto ou contrato: isso é com a equipe.
 - VERBA: o dono pediu pra mudar a verba por dia → pedir_verba. Não muda na hora: a equipe aprova e ele recebe a confirmação aqui (diz isso). Também dá pra pedir no painel.
 - PERGUNTA DE CLIENTE: o dono respondeu → responder_cliente (se ele não disse de quem e só tem uma esperando, é dela). Ele também pode responder pelo painel ou direto no WhatsApp do negócio.
+- RECADO PRA BASE: ele quer avisar os clientes de sempre de uma novidade ("manda pra base que...") → recado_pra_base. Recado esperando o 👍 dele: aprovar, ajustar ou cancelar → recado_decisao. A lista de contatos ele manda aqui (planilha .csv com nome;telefone;etiquetas, ou os contatos do celular) ou sobe no painel. O recado avisa e chama pra responder; quem fecha a venda é ele/o time dele (nada de vender ou cobrar pelo WhatsApp).
 - Ele tem um PAINEL só dele (resultados, funil, retomadas, conversas, anúncios). Pediu o painel, dashboard ou "onde vejo tudo": link_do_painel e manda o link inteiro. O link é pessoal: diz pra não repassar.
 FORMATO DA RESPOSTA FINAL: uma a três mensagens, cada uma entre <msg> e </msg>. Nada fora das marcas.`
 
@@ -299,14 +339,19 @@ export async function respondeDono(conversa_id: string) {
   // 05/11: pergunta de quem já fechou ou desistiu não fica esperando o dono
   const perguntas = (await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return l && (l.etapa === 'ganho' || l.etapa === 'perdido') ? null : `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))).filter(Boolean)
   const ultima = msgs.filter(x => x.autor === 'dono').slice(-1)[0]
-  const ctx = { aprovou: [] as string[], link: '' }
+  const ctx = { aprovou: [] as string[], link: '', recados: 0 }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
   if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
+  // 14/11 (recado.ts): o 👍 sozinho com recado pra base esperando: aprova o recado também
+  const R = await import('./recado')
+  let recPend = await R.recadosComDono(neg.id).catch(() => [] as any[])
+  if (ultima && ehJoinha(ultima.texto || '') && recPend.length) { ctx.recados = (await R.donoAprovaRecado(neg.id, null, 'whatsapp').catch(() => [])).length; recPend = [] }
+  const baseInfo = await R.painelDoDono(neg).then((p: any) => p.disponivel ? `${p.base.ativos} contatos${p.base.etiquetas.length ? ' (etiquetas: ' + p.base.etiquetas.slice(0, 6).map((e: any) => e.nome).join(', ') + ')' : ''}` : 'ainda não ligada').catch(() => '?')
   // 12/11 (limites.ts): custo de IA do dia no teto. O 👍 de cima já valeu (não usa IA); o resto espera a equipe ou o dia seguinte
   const iaHoje = await iaDoDia(neg).catch(() => null)
   if (iaHoje?.estourou) {
     const avisou = await avisaUmaVez(neg.id, 'ia_do_dia', 'teto de IA do dia', `${neg.nome}: o custo de IA de hoje chegou em R$ ${iaHoje.gasto} (teto R$ ${iaHoje.teto}). A Maia parou de responder o dono e os clientes até a meia-noite. Vale olhar o painel.`)
-    const ok = ctx.aprovou.length ? 'Aprovado ✅ ' : ''
+    const ok = ctx.aprovou.length || ctx.recados ? 'Aprovado ✅ ' : ''
     if (avisou || ok) await mandaTexto(cv, `${ok}${avisou ? 'Hoje eu cheguei no meu limite de segurança do dia. A equipe da Carreira no Digital já foi avisada e te responde por aqui; amanhã eu volto ao normal.' : ''}`.trim())
     return null
   }
@@ -319,6 +364,8 @@ NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${
 DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
 ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
+RECADOS PRA BASE ESPERANDO A APROVAÇÃO DELE: ${recPend.length ? recPend.map((x: any) => `"${x.titulo}"`).join('; ') : 'nenhum'}${ctx.recados ? `\n(o 👍 dele já aprovou ${ctx.recados} recado(s) pra base agora: só confirma e diz que o WhatsApp aprova o modelo e ele sai no horário comercial)` : ''}
+BASE DE CONTATOS (pro recado pra base): ${baseInfo}
 PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo. Se tu já lembrou o dono delas numa das tuas últimas mensagens da CONVERSA, não repete a lista: responde só o que ele falou agora. Lembra de novo só se ele perguntar o que falta)
 TOM COM OS CLIENTES (vale no responder_cliente; contigo e com o dono é o teu jeito de sempre): ${descreveTom(tomDoNegocio(neg))}${tomDoNegocio(neg).pessoa === 'voce' ? ' (no responder_cliente: "você", "seu", "sua", "pra você"; nunca "tu", "teu", "pra ti")' : ''}
 MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}

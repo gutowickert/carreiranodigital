@@ -15,6 +15,8 @@ export async function comoDono(negocio_id: string, d: { texto?: string; arquivo?
   if (d.reacao) m = { id: wamid(), type: 'reaction', reaction: { emoji: d.reacao.emoji, message_id: d.reacao.wamid } }
   // 08/11 (T12): o clique num botão de resposta rápida (o mesmo formato que a Meta manda)
   else if (d.botao) m = { id: wamid(), type: 'interactive', interactive: { type: 'button_reply', button_reply: { id: d.botao.id, title: d.botao.titulo || '' } } }
+  // 14/11 (recado.ts): a lista de contatos (.csv ou .vcf) como documento
+  else if (d.arquivo && /csv|vcard|text\/plain/.test(d.arquivo.mime)) m = { id: wamid(), type: 'document', document: { mime_type: d.arquivo.mime, filename: /vcard/.test(d.arquivo.mime) ? 'contatos.vcf' : 'lista.csv', caption: d.arquivo.legenda } }
   else if (d.arquivo) m = /video/.test(d.arquivo.mime) ? { id: wamid(), type: 'video', video: { caption: d.arquivo.legenda } } : /audio/.test(d.arquivo.mime) ? { id: wamid(), type: 'audio', audio: {} } : { id: wamid(), type: 'image', image: { caption: d.arquivo.legenda } }
   else m = { id: wamid(), type: 'text', text: { body: d.texto || '' } }
   const r = await recebeDoDono(neg, m, neg.dono_nome, d.arquivo ? { buf: d.arquivo.buf, mime: d.arquivo.mime } : undefined)
@@ -46,11 +48,11 @@ export async function comoCliente(negocio_id: string, d: { telefone: string; nom
   if (d.esperar_ms && d.esperar_ms > 0) {
     await new Promise(ok => setTimeout(ok, Math.min(d.esperar_ms!, 30000)))
     const ult = (await db.lista('msgs', { conversa_id: (r.cv as any).id }, { ordem: 'criado_em', desc: true, limite: 20 })).find(x => x.autor === 'cliente')
-    if (ult && ult.wamid !== id) return { lead: r.lead.id, respondeu: null, juntou: true }
+    if (ult && ult.wamid !== id) return { lead: r.lead?.id || null, respondeu: null, juntou: true }
     // o dono falou nessa conversa nas últimas 2 h (eco do celular): a Maia fica quieta, igual ao webhook
     const atual = await db.um('conversas', { id: (r.cv as any).id })
-    if (!atual || atual.modo !== 'ia') return { lead: r.lead.id, respondeu: null }
+    if (!atual || atual.modo !== 'ia') return { lead: r.lead?.id || null, respondeu: null }
   }
   const resp = r.responder ? await respondeCliente((r.cv as any).id) : null
-  return { lead: r.lead.id, respondeu: resp }
+  return { lead: r.lead?.id || null, respondeu: resp }
 }
