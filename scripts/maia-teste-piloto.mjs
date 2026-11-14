@@ -200,14 +200,14 @@ async function main() {
   anota((await ver('uso_mes', { negocio: B.id })).franquia === 1000, 'sem franquia própria, volta pra 1.000')
   const Cn = await op('criar_negocio', { nome: 'Negócio novo (teste plano único)', dono_whatsapp: '5500077779099', plano: 'essencial' })
   anota(Cn.plano === 'completa' && (await ver('uso_mes', { negocio: Cn.id })).franquia === 1000, 'negócio novo nasce no plano único ("completa", mesmo pedindo "essencial") com 1.000 conversas')
-  // a oferta da demonstração: um plano só, R$ 997, 1º mês R$ 498,50, 1.000 conversas, social media dentro
+  // a oferta da demonstração: um plano só, R$ 997 (14/11: sem desconto no 1º mês), implantação R$ 497, anúncio em 2 dias
   const of = await op('teste_funcoes', { texto: 'x' })
   const ot = of.oferta_texto || ''
-  anota(of.oferta?.preco === 997 && of.oferta?.conversas === 1000 && ot.includes('R$ 997/mês') && ot.includes('R$ 498,50') && ot.includes('1.000 conversas') && /8 posts e 4 vídeos/.test(ot) && !/697|348|Essencial|Completa|500 conversas/.test(ot),
-    'oferta da demonstração: plano único de R$ 997 (1º mês R$ 498,50), 1.000 conversas e social media; sem R$ 697 nem dois planos')
+  anota(of.oferta?.preco === 997 && of.oferta?.conversas === 1000 && ot.includes('R$ 997/mês') && !ot.includes('498,50') && !/desconto/i.test(ot) && ot.includes('R$ 497') && ot.includes('2 dias') && ot.includes('1.000 conversas') && /8 posts e 4 vídeos/.test(ot) && !/697|348|Essencial|Completa|500 conversas/.test(ot),
+    'oferta da demonstração: plano único de R$ 997 sem desconto, implantação R$ 497, anúncio em 2 dias, 1.000 conversas; sem R$ 697 nem dois planos')
   const site = await (await fetch(URL_ + '/maia/index.html')).text()
-  anota(!/697|348,50|Essencial|>Completa</.test(site) && (site.match(/class="plano unico"/g) || []).length === 1 && site.includes('R$ 997') && site.includes('498,50') && site.includes('1.000 conversas por mês'),
-    'site /maia: um cartão só (R$ 997, 1º mês R$ 498,50, 1.000 conversas), nenhum R$ 697')
+  anota(!/697|348,50|498,50|Essencial|>Completa<|5 dias/.test(site) && site.includes('R$ 997') && site.includes('R$ 497') && site.includes('até 2 dias') && site.includes('1.000 conversas por mês'),
+    'site /maia: R$ 997, implantação R$ 497, anúncio em até 2 dias, sem desconto nem R$ 697')
   anota(!site.includes('maia-rosto.webp" alt="Rosto da Maia"') && /Maia · trabalhando agora/.test(site) && /Tudo pelo WhatsApp/.test(site), 'site /maia: sem a foto pequena repetida no "Prazer, Maia" (o selo continua) e com o "Tudo pelo WhatsApp"')
   await op('atualizar_negocio', { id: B.id, plano: 'gestao' })
   const usoG = await ver('uso_mes', { negocio: B.id })
