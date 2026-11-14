@@ -176,6 +176,38 @@ export async function POST(req: Request) {
         await db.evento('painel_dono_acao', neg.id, { acao: 'midia' })
         return ok({ ok: true, id: x.id })
       }
+      // 14/11 (recado.ts): o RECADO PRA BASE pelo painel (regra da casa: o mesmo que pelo WhatsApp da Maia).
+      //   base_importar {texto, incluir?} · recado_criar {pedido, etiquetas?} · recado_aprovar {recado_id} · recado_ajuste {recado_id, nota}
+      // O erro de regra (base vazia, etiqueta que não existe, função ainda não ligada) volta com a frase pro dono
+      case 'base_importar': case 'recado_criar': case 'recado_aprovar': case 'recado_ajuste': {
+        const R = await import('@/lib/maia/recado')
+        try {
+          if (b.acao === 'base_importar') {
+            const texto = String(b.texto || '').slice(0, 400_000)
+            const incluir = b.incluir === 'compraram' || b.incluir === 'todos' ? b.incluir : null
+            if (!texto.trim() && !incluir) return erro('cola a lista ou escolhe o arquivo .csv')
+            const r = await R.importaBase(neg, { texto, incluir, origem: 'dono', por: 'dono_painel' })
+            await db.evento('painel_dono_acao', neg.id, { acao: 'base_importar', novos: r.novos })
+            return ok(r)
+          }
+          if (b.acao === 'recado_criar') {
+            const r: any = await R.criaRecado(neg, { pedido: String(b.pedido || '').slice(0, 1000), etiquetas: b.etiquetas || null, por: 'dono_painel' })
+            await db.evento('painel_dono_acao', neg.id, { acao: 'recado_criar', recado: r.id })
+            return ok({ ok: true, id: r.id, titulo: r.titulo, estimativa: r.estimativa })
+          }
+          if (b.acao === 'recado_aprovar') {
+            const a = await R.donoAprovaRecado(neg.id, String(b.recado_id || ''), 'painel')
+            await db.evento('painel_dono_acao', neg.id, { acao: 'recado_aprovar', recado: b.recado_id })
+            return ok({ ok: true, aprovados: a.length })
+          }
+          const nota = String(b.nota || '').trim().slice(0, 500)
+          if (!nota) return erro('escreve o que mudar')
+          const a = await R.donoAjustaRecado(neg.id, String(b.recado_id || ''), nota)
+          if (!a.ok) return erro(a.erro || 'não deu')
+          await db.evento('painel_dono_acao', neg.id, { acao: 'recado_ajuste', recado: b.recado_id })
+          return ok({ ok: true })
+        } catch (e: any) { return erro(String(e?.message || 'não deu').slice(0, 300)) }
+      }
       default: return erro('ação desconhecida')
     }
   } catch (e: any) { console.error('[painel do dono]', e?.message); return erro('não deu agora. Tenta de novo ou fala com a Maia no WhatsApp.', 500) }

@@ -78,6 +78,34 @@ export async function criaModelosDoNegocio(w: { token: string; waba: string } | 
   return out
 }
 
+// 14/11 (recado.ts): o RECADO PRA BASE. Cada recado vira um modelo de MARKETING próprio na conta do negócio (o texto aprovado
+// pela equipe e pelo dono), com o nome do cliente no {{1}} e dois botões: "Quero participar" e "Não quero receber".
+// Sem cabeçalho de imagem (a Meta pede o arquivo de exemplo por outro caminho de envio): a imagem vai só pra quem está com a
+// janela de 24 h aberta. Modo local: nada vai pra Meta, o pedido fica "simulado" (o teste marca aprovado: recado.ts)
+export const BOTAO_QUERO = 'Quero participar'
+export const BOTAO_SAIR = 'Não quero receber'
+export const RODAPE_RECADO = 'Pra não receber mais, toque em Não quero receber'
+export function modeloDoRecado(nome: string, texto: string): Modelo {
+  return {
+    name: nome, category: 'MARKETING', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: `Oi, {{1}}! ${texto}`.slice(0, 1000), example: { body_text: [['Ana']] } },
+      { type: 'FOOTER', text: RODAPE_RECADO },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: BOTAO_QUERO }, { type: 'QUICK_REPLY', text: BOTAO_SAIR }] },
+    ],
+  }
+}
+export async function criaModeloRecado(neg: any, nome: string, texto: string): Promise<{ nome: string; ok: boolean; status?: string; erro?: string; simulado?: boolean }> {
+  const { waDoNegocio } = await import('./wa-negocio')
+  const w = waDoNegocio(neg)
+  if (maiaLocal() || !w?.waba) {
+    if (!maiaLocal()) return { nome, ok: false, erro: 'o WhatsApp desse negócio ainda não foi conectado (falta a conta do WhatsApp)' }
+    return { nome, ok: true, status: 'PENDING', simulado: true }
+  }
+  const r = await cria(w.token, w.waba, modeloDoRecado(nome, texto))
+  return { nome, ok: r.ok, status: r.ok ? 'PENDING' : undefined, erro: (r as any).erro }
+}
+
 // o modelo do dono, na conta do número da Maia (a do Oito)
 export async function criaModeloDoDono() {
   const token = process.env.OITO_WA_TOKEN || process.env.WA_OFICIAL_TOKEN || '', waba = process.env.OITO_WA_WABA_ID || ''
@@ -89,7 +117,7 @@ export async function criaModeloDoDono() {
 export async function statusModelos(w?: { token: string; waba: string } | null) {
   const token = w?.token || process.env.OITO_WA_TOKEN || process.env.WA_OFICIAL_TOKEN || '', waba = w?.waba || process.env.OITO_WA_WABA_ID || ''
   if (!token || !waba) return { ok: false, erro: 'sem conta pra consultar' }
-  const r = await fetch(`${GRAPH}/${waba}/message_templates?fields=name,status,category,rejected_reason&limit=100`, { headers: { Authorization: 'Bearer ' + token } })
+  const r = await fetch(`${GRAPH}/${waba}/message_templates?fields=name,status,category,rejected_reason&limit=250`, { headers: { Authorization: 'Bearer ' + token } })
   const j: any = await r.json().catch(() => ({}))
   if (!r.ok) return { ok: false, erro: String(j?.error?.message || r.status) }
   return { ok: true, modelos: (j.data || []).filter((m: any) => /^maia_/.test(m.name)) }

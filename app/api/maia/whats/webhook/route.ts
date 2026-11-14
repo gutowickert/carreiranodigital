@@ -63,6 +63,8 @@ export async function POST(req: Request) {
     for (const s of v.statuses || []) {
       const st = s.status === 'delivered' ? 'entregue' : s.status === 'read' ? 'lido' : s.status === 'failed' ? 'falhou' : s.status === 'sent' ? 'enviado' : s.status
       await db.atualiza('msgs', { wamid: s.id }, { status: st }).catch(() => null)
+      // 14/11 (recado.ts): entregue/lido/falhou do recado pra base (sem a tabela, não faz nada)
+      await import('@/lib/maia/recado').then(x => x.anotaStatusEnvio(s.id, st)).catch(() => null)
     }
 
     // coexistência: o que o dono respondeu pelo app do celular chega como eco. Fica na conversa e a Maia sai de cena 2 h.

@@ -136,6 +136,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   // 13/11 (cobranca.ts): confere no Asaas o que foi pago (baixa no financeiro da escola) e avisa a equipe do que venceu ontem
   // 13/11 (material.ts): dia 1 e 12 pede ao dono o material do lote; no dia do lote, se não chegou, avisa a equipe
   try { const { rotinaMaterial } = await import('./material'); r.material = await rotinaMaterial(relogio) } catch (e: any) { r.material_erro = e.message }
+  // 14/11 (recado.ts): o recado pra base. Confere a aprovação do modelo na Meta e manda em lotes, só no horário do negócio
+  try { const { rotinaRecados } = await import('./recado'); r.recados = await rotinaRecados(relogio) } catch (e: any) { r.recados_erro = e.message }
   try { const { confereCobrancas } = await import('./cobranca'); r.cobranca = await confereCobrancas(relogio) } catch (e: any) { r.cobranca_erro = e.message }
   try { if (process.env.MAIA_GESTORA_LIGADA === '1') { const { rotinaGestora } = await import('./gestora-rotina'); r.gestora = await rotinaGestora({ relogio }) } } catch (e: any) { r.gestora_erro = e.message }
   // 13/11 (acompanhamento.ts): 7h a análise de ontem dos negócios novos, segunda 8h as regras propostas, e as regras aprovadas no contexto

@@ -49,6 +49,8 @@ function metaSeguro(novo: any, atual: any) {
   // 12/11 (limites.ts): os tetos do negócio (meta.limites) só saem se vierem de propósito no pedido; o formulário que não conhece o
   // campo não apaga um teto que a equipe pôs. Pra voltar ao padrão: mandar limites: {}
   if (!('limites' in (novo || {})) && atual?.limites) m.limites = atual.limites
+  // 14/11 (recado.ts): o custo por mensagem e o lote do recado pra base só mudam pela ação base_config
+  if (atual?.recado) m.recado = atual.recado; else delete m.recado
   return m
 }
 
@@ -102,6 +104,15 @@ export async function GET(req: Request) {
       const n = await db.um('negocios', { id: q('negocio') })
       if (!n) return erro('negócio não existe', 404)
       return ok({ banco: await m.bancoDoNegocio(n), pautas: (await m.pautas(n.id)).map(e => ({ id: e.id, criado_em: e.criado_em, ...e.detalhe })), produto: m.produtoDaVez(n) })
+    }
+    // 14/11 (recado.ts): a base de contatos e os recados pra base de um negócio (sem o SQL: disponivel false e o motivo)
+    if (acao === 'base') {
+      const R = await import('@/lib/maia/recado')
+      const n = await db.um('negocios', { id: q('negocio') })
+      if (!n) return erro('negócio não existe', 404)
+      if (!(await R.baseDisponivel())) return ok({ disponivel: false, erro: R.INDISPONIVEL })
+      const fotos = (await db.lista('midias', { negocio_id: n.id }, { ordem: 'criado_em', desc: true, limite: 40 })).filter(m => m.tipo === 'foto').map(m => ({ id: m.id, descricao: String(m.descricao || '').slice(0, 80) }))
+      return ok({ disponivel: true, base: await R.baseDoNegocio(n, 500), recados: await R.painelRecados(n), custo_msg: R.custoMsg(n), lote: n.meta?.recado?.lote || R.LOTE_PADRAO, fotos, local: db.modo() === 'local' })
     }
     // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
     if (acao === 'falta_ligar') {
@@ -306,6 +317,36 @@ export async function POST(req: Request) {
         const m = await import('@/lib/maia/material')
         const lote = ['inicio', 'meio', 'implantacao'].includes(b.lote) ? b.lote : 'implantacao'
         return ok(await m.pedePauta(n, { lote, por }))
+      }
+      // 14/11 (recado.ts): o RECADO PRA BASE. base_importar {negocio_id, texto, incluir?, etiquetas?} · base_contato {negocio_id, id, optout?, etiquetas?, apagar?}
+      //   base_config {negocio_id, custo_msg?, lote?} · recado_criar {negocio_id, pedido, etiquetas?, midia_id?, quando?, titulo?}
+      //   recado_aprovar {recado_id} · recado_ajustar {recado_id, nota} · recado_editar {recado_id, texto?, titulo?, etiquetas?, quando?}
+      //   recado_cancelar {recado_id} · recado_meta {recado_id} (pedir o modelo de novo) · recado_meta_simular {recado_id, status} (só teste)
+      //   recado_rodar {relogio?} (o envio agora; relogio só no modo de teste)
+      case 'base_importar': case 'base_contato': case 'base_config': case 'recado_criar': {
+        const R = await import('@/lib/maia/recado')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        if (b.acao === 'base_importar') return ok(await R.importaBase(n, { texto: String(b.texto || ''), incluir: b.incluir === 'compraram' || b.incluir === 'todos' ? b.incluir : null, etiquetas: b.etiquetas || null, origem: 'importado', por }))
+        if (b.acao === 'base_contato') return ok(await R.mudaContato(n, String(b.id || ''), { optout: b.optout, etiquetas: b.etiquetas, apagar: b.apagar === true }, por))
+        if (b.acao === 'base_config') {
+          const rc: any = { ...(n.meta?.recado || {}) }
+          if (b.custo_msg !== undefined) { const v = Number(String(b.custo_msg).replace(',', '.')); if (!(v > 0 && v < 10)) return erro('custo por mensagem inválido'); rc.custo_msg = v }
+          if (b.lote !== undefined) { const v = Math.round(Number(b.lote)); if (!(v >= 10 && v <= 1000)) return erro('lote entre 10 e 1000'); rc.lote = v }
+          await db.atualiza('negocios', { id: n.id }, { meta: { ...(n.meta || {}), recado: rc } })
+          return ok({ ok: true, recado: rc })
+        }
+        return ok(await R.criaRecado(n, { pedido: String(b.pedido || ''), etiquetas: b.etiquetas || null, midia_id: b.midia_id || null, quando: b.quando || null, titulo: b.titulo || null, por }))
+      }
+      case 'recado_aprovar': { const R = await import('@/lib/maia/recado'); return ok(await R.equipeAprovaRecado(b.recado_id, por)) }
+      case 'recado_ajustar': { const R = await import('@/lib/maia/recado'); return ok(await R.equipeAjustaRecado(b.recado_id, String(b.nota || ''), por)) }
+      case 'recado_editar': { const R = await import('@/lib/maia/recado'); return ok(await R.equipeEditaRecado(b.recado_id, { texto: b.texto, titulo: b.titulo, etiquetas: b.etiquetas, quando: b.quando }, por)) }
+      case 'recado_cancelar': { const R = await import('@/lib/maia/recado'); return ok(await R.cancelaRecado(b.recado_id, por)) }
+      case 'recado_meta': { const R = await import('@/lib/maia/recado'); return ok(await R.pedeModeloDeNovo(b.recado_id, por)) }
+      case 'recado_meta_simular': { const R = await import('@/lib/maia/recado'); return ok(await R.statusMetaSimulado(b.recado_id, b.status === 'REJECTED' ? 'REJECTED' : b.status === 'PENDING' ? 'PENDING' : 'APPROVED', b.motivo)) }
+      case 'recado_rodar': {
+        const R = await import('@/lib/maia/recado')
+        return ok(await R.rotinaRecados(db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : new Date()))
       }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))

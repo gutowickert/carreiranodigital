@@ -46,7 +46,9 @@ export async function novoLead(negocio_id: string, d: { telefone?: string | null
   } catch (e: any) {
     if (tel && /duplicate|23505/.test(e.message)) return db.um('leads', { negocio_id, telefone: tel })
     // 06/11: 'instagram'/'facebook' só valem no banco depois do db/maia-social.sql. Até lá ele recusa (23514): entra 'organico' e a origem certa fica no evento
-    if (/23514|check/i.test(e.message) && linha.origem !== 'organico') lead = await db.insere('leads', { ...linha, origem: 'organico' })
+    // 14/11 (recado.ts): 'base' (respondeu o recado pra base) só vale depois do db/maia-recado-base.sql; até lá entra 'outro'
+    const reserva = linha.origem === 'base' ? 'outro' : 'organico'
+    if (/23514|check/i.test(e.message) && linha.origem !== reserva) lead = await db.insere('leads', { ...linha, origem: reserva })
     else throw e
   }
   await marca(lead, 'criado', autor, { para: 'novo', detalhe: { origem: linha.origem } })
@@ -72,6 +74,8 @@ export async function ganhou(lead: any, valor: number | null | undefined, produt
   await marca(lead, 'ganho', autor, { de: lead.etapa, para: 'ganho', valor: valor ?? null, detalhe: { produto: produto || lead.produto || null } })
   // 06/11: se o lead veio de um clique no anúncio de WhatsApp, a venda volta pra Meta (Purchase). Nunca derruba a venda.
   try { const { vendaNaMeta } = await import('./conversoes'); await vendaNaMeta(l || lead, valor) } catch { /* melhor esforço */ }
+  // 14/11 (recado.ts): o contato veio de um recado pra base ("Quero participar" ou respondeu): a venda soma no recado
+  try { const { vendaDoRecado } = await import('./recado'); await vendaDoRecado(l || lead, valor ?? null) } catch { /* sem a tabela, segue */ }
   return l
 }
 

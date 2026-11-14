@@ -5,7 +5,9 @@
 //      - "cria N anúncios" (pecas.ts geraAnuncios): devolve N peças usando as mídias que o pedido lista;
 //      - o ajuste de uma peça (pecas.ts refaz): devolve o gancho e o texto novos;
 //      - conversa com ferramentas (atendimento do cliente e do dono): uma frase curta no "você", sem chamar ferramenta;
-//      - pedido que devolve {"texto":"..."} (retomada, resumo da semana): uma frase curta.
+//      - pedido que devolve {"texto":"..."} (retomada, resumo da semana): uma frase curta;
+//      - 14/11: o texto do recado pra base (e o ajuste dele) e, quando o dono escreve "manda pra base...", a chamada da
+//        ferramenta recado_pra_base (scripts/maia-teste-recado.mjs).
 //      Qualquer outro pedido de IA recebe "IA fora do ar" (529), como quando a Anthropic cai: o sistema tem que seguir.
 // Tudo fica anotado em <MAIA_LOCAL_PASTA>/ensaio-rede.jsonl, uma linha por chamada, pro ensaio conferir no fim.
 import fs from 'node:fs'
@@ -70,6 +72,24 @@ if (orig && !globalThis.__maiaEnsaioRede) {
       if (/AJUSTE PEDIDO PEL[AO]/.test(msgs)) {
         anota({ tipo: 'ia_falsa', o: 'ajuste' })
         return texto(JSON.stringify({ gancho: 'Sua tábua, com o seu nome', texto: 'Tábua de churrasco gravada com o nome que você escolher, pronta pra presentear.', cta: 'Chama no WhatsApp e peça a sua.', trocar_midia: false }))
+      }
+      // 14/11 (recado pra base, lib/maia/recado.ts): o texto do recado (e o ajuste dele), valor antes do preço, sem saudação
+      if (/RECADO PRA BASE/.test(sis) && /Devolve \{"titulo"/.test(msgs)) {
+        const ajuste = (/AJUSTE DO RECADO PEDIDO: (.*)/.exec(msgs) || [])[1] || ''
+        anota({ tipo: 'ia_falsa', o: 'recado', ajuste: !!ajuste })
+        return texto(JSON.stringify(ajuste
+          ? { titulo: 'Bolão da Mega da Virada', texto: 'O bolão da Mega da Virada abriu e as cotas são poucas: quem entra divide a chance do prêmio com o grupo. Cada cota sai R$ 50. Quer participar? Responde aqui que a gente separa a sua.' }
+          : { titulo: 'Bolão da Mega da Virada', texto: 'O prêmio da Mega da Virada vem grande e o bolão da loja já abriu: quem entra divide a chance com o grupo. São 10 cotas de R$ 50. Quer participar? Responde aqui que a gente separa a sua.' }))
+      }
+      // o dono pede o recado pelo WhatsApp ("manda pra base que..."): a IA falsa chama a ferramenta recado_pra_base e depois confirma
+      if (com && corpo.tools.some(t => t.name === 'recado_pra_base')) {
+        const doDono = [...msgs.matchAll(/^DONO: (.*)$/gm)].map(m => m[1]).pop() || ''
+        const jaUsou = (corpo.messages || []).some(m => Array.isArray(m.content) && m.content.some(c => c.type === 'tool_result'))
+        if (/manda pra base/i.test(doDono) && !jaUsou) {
+          anota({ tipo: 'ia_falsa', o: 'ferramenta', nome: 'recado_pra_base' })
+          return resp({ id: 'msg_falsa', type: 'message', role: 'assistant', model: 'ia-falsa', content: [{ type: 'tool_use', id: 'toolu_falso_1', name: 'recado_pra_base', input: { pedido: doDono } }], stop_reason: 'tool_use', usage: uso })
+        }
+        if (jaUsou) { anota({ tipo: 'ia_falsa', o: 'conversa', depois_da_ferramenta: true }); return texto('<msg>Fechado! Escrevi o recado e a equipe dá uma conferida. Já te mando pra aprovar.</msg>') }
       }
       if (com) {
         anota({ tipo: 'ia_falsa', o: 'conversa', ferramentas: corpo.tools.length })
