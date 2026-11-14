@@ -37,7 +37,7 @@ Se a Meta recusar o modelo, o recado volta pra equipe com o motivo e a equipe é
 - Ver os contatos, procurar, tirar alguém da lista ou apagar.
 - Novo recado: escrever o que avisar, escolher a etiqueta (vazio = toda a base), a data e uma imagem (opcional).
 - Em cada recado: aprovar, pedir ajuste, editar o texto, cancelar, e os números.
-- Custo por mensagem e mensagens por hora (padrão R$ 0,35 e 200).
+- Custo por mensagem e mensagens por hora (padrão R$ 0,40 e 200).
 
 **Dono pelo WhatsApp da Maia**
 - Mandar a lista: a planilha em `.csv` (no Excel: Salvar como, CSV), o cartão `.vcf` ou os contatos do celular.
@@ -66,7 +66,7 @@ Aparecem no painel da equipe, no painel do dono e numa linha do resumo da semana
 ## Custo
 
 Cada mensagem de marketing é cobrada **pela Meta, direto do negócio** (o cartão da conta do WhatsApp do negócio).
-A Maia mostra a estimativa antes de aprovar: contatos x R$ 0,35 (o valor muda na aba Base).
+A Maia mostra a estimativa antes de aprovar: contatos x R$ 0,40 (o valor muda na aba Base).
 Quem está com a conversa aberta nas últimas 24 h recebe como mensagem normal.
 
 ## O que precisa rodar no banco (uma vez)

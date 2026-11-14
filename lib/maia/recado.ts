@@ -29,7 +29,7 @@ const plural = (n: number, s: string, p = s + 's') => `${n} ${n === 1 ? s : p}`
 export const INTERVALO_DIAS = 3    // 1 recado por contato a cada 3 dias
 export const POR_SEMANA = 2        // e no máximo 2 em 7 dias
 export const LOTE_PADRAO = 200     // por rodada da rotina (de hora em hora), por negócio
-export const CUSTO_PADRAO = 0.35   // R$ por mensagem de marketing na Meta (o negócio paga direto pra Meta)
+export const CUSTO_PADRAO = 0.40   // R$ por mensagem de marketing na Meta (o negócio paga direto pra Meta). 14/11: US$ 0,07188 desde 01/04/2026, uns R$ 0,40
 export const STATUS_NOME: Record<string, string> = {
   rascunho: 'rascunho', aprovar_equipe: 'equipe revisando', aprovar_dono: 'esperando o dono', aguardando_meta: 'esperando o WhatsApp aprovar',
   agendado: 'agendado', enviando: 'enviando', enviado: 'enviado', cancelado: 'cancelado',
