@@ -105,7 +105,9 @@ export function segundaDe(d = new Date()) { const dia = isoBR(d), dow = new Date
 export const diaTxt = (iso: string) => new Date(iso + 'T12:00:00Z').toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit', timeZone: 'UTC' })
 
 export const ehDemo = (n: any) => !!n?.contexto?.demo
-export async function negociosDemo() { return (await db.lista('negocios')).filter(ehDemo) }
+// 15/11: as amostras do lançamento (contexto.demo.lancamento) também são "demo" pra sumir do resto do painel, mas não são da
+// demonstração do Oito: ficam fora da fila, das vagas e da lista de amostras (a tela delas é /maia/operacao/lancamento.html)
+export async function negociosDemo() { return (await db.lista('negocios')).filter(n => ehDemo(n) && !n.contexto.demo.lancamento) }
 
 export async function vagasDaSemana(semana = segundaDe()) {
   const usadas = (await negociosDemo()).filter(n => n.contexto.demo.semana === semana).length

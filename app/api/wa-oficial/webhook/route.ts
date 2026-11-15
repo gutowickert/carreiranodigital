@@ -148,7 +148,12 @@ async function registrarRecebida(m: any, value: any) {
   // Casa por sufixo (8 últimos dígitos) pra resolver o 9º dígito do BR.
   const limpo = semAcento((m.text?.body || '').trim().toLowerCase())
   const sufixo = tel.slice(-8)
-  if (PALAVRAS_OPTOUT.has(limpo)) {
+  // LANÇAMENTO DA MAIA (15/11/2026, lib/maia/lancamento): quem está na lista do lançamento (a "etiqueta maia") é atendido
+  // pela Maia, não pela IA do CRM. Só com MAIA_LANCAMENTO_LIGADO=1. "sair" no modo teste da Maia sai do teste, não é opt-out.
+  const lanc = await lancamentoEntrada(tel, m, nome, tipo, texto)
+  if (lanc && PALAVRAS_OPTOUT.has(limpo) && lanc.emTeste) {
+    // segue sem opt-out: a Maia trata o "sair" do teste
+  } else if (PALAVRAS_OPTOUT.has(limpo)) {
     await registrarOptout(tel)
   } else {
     const agora = new Date().toISOString()
@@ -166,6 +171,12 @@ async function registrarRecebida(m: any, value: any) {
   try {
     if (texto && await lerRespostaDeReconfirmacao(ORG_CND, tel, texto)) return
   } catch { /* se falhar, segue o fluxo normal — melhor responder duas vezes que não responder */ }
+
+  // LANÇAMENTO DA MAIA: tratado pela Maia → a IA do CRM, o plantão e a devolução pro time não rodam pra esta mensagem
+  if (lanc?.tratado) {
+    after(async () => { try { const { processa } = await import('@/lib/maia/lancamento/conversa'); await processa(lanc.contato_id!, lanc.msg_id!) } catch { /* melhor esforço */ } })
+    return
+  }
 
   // LEAD respondeu no canal oficial. MODELO AUTÔNOMO: a IA ATENDE quem responde — NÃO tira o lead da IA.
   // O lead só sai da IA quando ESCALA (pede humano / a IA tem dúvida) — isso é o handoff_em, setado pelo respondedor.
@@ -210,6 +221,25 @@ async function registrarRecebida(m: any, value: any) {
     // Hoje em modo SOMBRA — só registra o que faria (lib/ia-fds.ts, tela /dashboard/ia-fds).
     if (msgIns?.id && plantao !== 'desligado') after(async () => { try { await atenderPlantao(ORG_CND, conv.id, msgIns.id) } catch { /* melhor esforço */ } })
     else if (msgIns?.id && naJanela()) after(async () => { try { await processarFds(conv.id, msgIns.id) } catch { /* melhor esforço */ } })
+  }
+}
+
+// LANÇAMENTO DA MAIA (15/11/2026): a pessoa está na lista do lançamento? Guarda a mensagem na conversa da Maia e diz se a
+// Maia trata. Com a chave desligada (MAIA_LANCAMENTO_LIGADO diferente de 1) não consulta nada: o CRM segue como sempre.
+async function lancamentoEntrada(tel: string, m: any, nome: string | null, tipo: string, texto: string | null) {
+  if (process.env.MAIA_LANCAMENTO_LIGADO !== '1') return null
+  try {
+    const { entrada } = await import('@/lib/maia/lancamento/conversa')
+    const { contatoDoTelefone } = await import('@/lib/maia/lancamento/base')
+    const antes = await contatoDoTelefone(tel)
+    if (!antes) return null
+    const emTeste = antes.estado?.modo === 'teste' && Date.parse(antes.estado?.teste_ate || 0) > Date.now()
+    const midia = m.image || m.video || null
+    const r = await entrada({ telefone: tel, nome, tipo: m.type === 'button' ? 'botao' : tipo, texto, midia_id: midia?.id || null, mime: midia?.mime_type || null, wamid: m.id || null })
+    return { ...r, emTeste }
+  } catch (e: any) {
+    await supabase.from('webhook_logs').insert({ org_id: ORG_CND, origem: 'maia-lancamento', evento: 'erro', status: 'erro', payload: { erro: String(e?.message || e).slice(0, 300) } }).then(() => null, () => null)
+    return null
   }
 }
 
@@ -270,7 +300,11 @@ export async function POST(req: NextRequest) {
           // pro assistente pessoal e NÃO passa por registrarRecebida: não cria lead, não cria
           // conversa, não aparece na caixa de entrada. Responde no after() porque a Meta quer o
           // 200 rápido e a IA leva segundos.
-          const doTime = await usuarioDoNumero(m.from).catch(() => null)
+          // LANÇAMENTO DA MAIA: quem do time está na lista do lançamento (o teste interno) passa pela Maia como cliente
+          const naListaMaia = process.env.MAIA_LANCAMENTO_LIGADO === '1'
+            ? await import('@/lib/maia/lancamento/base').then(b => b.contatoDoTelefone(m.from)).catch(() => null)
+            : null
+          const doTime = naListaMaia ? null : await usuarioDoNumero(m.from).catch(() => null)
           // "#lead" no começo: quem é do time TESTA COMO CLIENTE — a mensagem vai pra caixa do time
           // (sem o "#lead"), abre a janela de 24h pro atendente e segue o caminho de um lead. Sem isto
           // o Nando e o Guto nunca conseguiam responder como cliente: tudo ia pro assistente (28/09/2026).

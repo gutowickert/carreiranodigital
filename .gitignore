@@ -52,3 +52,7 @@ maia-oficina/node_modules/
 maia-oficina/saida/
 maia-oficina/.env
 .teste-relatorios/
+
+# Maia: teste do lançamento (15/11)
+.teste-lancamento/
+.next-teste-lanc/

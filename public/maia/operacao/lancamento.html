@@ -1,0 +1,175 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#f7f5fc">
+<link rel="icon" href="/maia/img/maia-avatar.webp">
+<title>Lançamento da Maia</title>
+<style>
+/* Tela do LANÇAMENTO da Maia (15/11/2026): quem está na lista, a coleta, o material, as peças da amostra e a entrega.
+   A mesma senha e o mesmo visual claro do painel da equipe (/maia/operacao). Sem emoji. */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+:root{--bg:#f7f5fc;--surface:#fff;--surface-2:#f3f0fa;--border:#ebe6f5;--border-strong:#dcd5ec;--text:#1b1530;--text-2:#423a5c;--text-muted:#6b6485;
+--accent:#7c3aed;--accent-soft:#6d28d9;--accent-bg:#f1ebfe;--green:#15803d;--green-bg:#dcfce7;--red:#b91c1c;--red-bg:#fee2e2;--amber:#b45309;--amber-bg:#fef3c7;--blue:#1d4ed8;--blue-bg:#dbeafe;
+--sombra:0 1px 2px rgba(23,18,42,.04),0 6px 22px rgba(23,18,42,.06);--f-tit:'Bricolage Grotesque',system-ui,sans-serif;--f-txt:'Manrope',system-ui,sans-serif;color-scheme:light}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--text);font:15px/1.5 var(--f-txt);overflow-x:hidden}
+h1,h2,h3{font-family:var(--f-tit);font-stretch:85%;margin:0;line-height:1.1}
+a{color:var(--accent-soft)}
+button,select,input,textarea{font:inherit}
+.faixa{padding:0 max(16px,env(safe-area-inset-left,0px))}
+.miolo{max-width:1180px;margin:0 auto}
+header{padding:20px 0 14px;border-bottom:1px solid var(--border);background:var(--surface)}
+header .miolo{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+header h1{font-size:26px;font-weight:800}
+header small{color:var(--text-muted)}
+.sp{flex:1}
+.btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--text);border-radius:10px;padding:8px 14px;font-weight:700;cursor:pointer}
+.btn:hover{border-color:var(--accent)}
+.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.ok{background:var(--green);border-color:var(--green);color:#fff}
+.btn:disabled{opacity:.55;cursor:default}
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;margin:16px 0}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:10px 12px;box-shadow:var(--sombra);cursor:pointer}
+.kpi.on{border-color:var(--accent);background:var(--accent-bg)}
+.kpi small{display:block;font:800 11px var(--f-txt);letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted)}
+.kpi b{font-family:var(--f-tit);font-size:26px;font-weight:800;font-variant-numeric:tabular-nums}
+.filas{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.fila{border:1px solid var(--border-strong);background:var(--surface);border-radius:999px;padding:6px 14px;font-weight:700;cursor:pointer}
+.fila.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.fila .n{display:inline-block;min-width:22px;text-align:center;background:var(--amber-bg);color:var(--amber);border-radius:999px;padding:0 6px;margin-left:6px;font-size:12px}
+.busca{width:100%;max-width:360px;border:1px solid var(--border-strong);border-radius:10px;padding:8px 12px;background:var(--surface)}
+.tab{background:var(--surface);border:1px solid var(--border);border-radius:16px;overflow-x:auto;box-shadow:var(--sombra)}
+table{width:100%;border-collapse:collapse;min-width:760px}
+th{font:800 11px var(--f-txt);letter-spacing:.06em;text-transform:uppercase;color:var(--text-muted);text-align:left;padding:10px 12px;border-bottom:1px solid var(--border-strong)}
+td{padding:9px 12px;border-bottom:1px solid var(--border);vertical-align:top}
+tr.l{cursor:pointer}tr.l:hover td{background:var(--surface-2)}
+.chip{display:inline-block;font:700 12px var(--f-txt);border-radius:999px;padding:2px 9px;white-space:nowrap;background:var(--surface-2);color:var(--text-2);margin:1px 2px 1px 0}
+.c-ok{background:var(--green-bg);color:var(--green)}.c-at{background:var(--amber-bg);color:var(--amber)}.c-led{background:var(--red-bg);color:var(--red)}.c-info{background:var(--blue-bg);color:var(--blue)}.c-ia{background:var(--accent-bg);color:var(--accent-soft)}
+.mu{color:var(--text-muted);font-size:13px}
+/* gaveta do contato */
+.gaveta{position:fixed;inset:0;background:rgba(27,21,48,.35);display:none;z-index:30}
+.gaveta.on{display:block}
+.painel{position:absolute;right:0;top:0;bottom:0;width:min(760px,100%);background:var(--bg);overflow-y:auto;padding:18px max(16px,env(safe-area-inset-right,0px)) 60px 16px;box-shadow:-10px 0 40px rgba(0,0,0,.15)}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:12px;box-shadow:var(--sombra)}
+.card h3{font-size:19px;margin-bottom:8px}
+dl{display:grid;grid-template-columns:150px minmax(0,1fr);gap:6px 12px;margin:0}
+dt{color:var(--text-muted);font-size:13px}dd{margin:0;overflow-wrap:anywhere}
+.grade{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.grade figure{margin:0;background:var(--surface-2);border-radius:10px;overflow:hidden}
+.grade img,.grade video{width:100%;height:140px;object-fit:cover;display:block;background:#000}
+.grade figcaption{font-size:12px;padding:4px 8px;display:flex;justify-content:space-between}
+.slots{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.slot{border:1px dashed var(--border-strong);border-radius:12px;padding:10px;min-width:0}
+.slot b{display:block;margin-bottom:6px}
+.slot img,.slot video{width:100%;max-height:220px;object-fit:contain;background:#000;border-radius:8px;display:block}
+.slot textarea{width:100%;min-height:70px;border:1px solid var(--border-strong);border-radius:8px;padding:6px;margin-top:6px}
+textarea.conv{width:100%;min-height:200px;border:1px solid var(--border-strong);border-radius:10px;padding:10px}
+.chat{max-height:380px;overflow-y:auto;background:var(--surface-2);border-radius:12px;padding:10px}
+.m{max-width:82%;padding:7px 10px;border-radius:10px;margin:5px 0;font-size:14px;white-space:pre-wrap;overflow-wrap:anywhere}
+.m.e{background:#fff}.m.s{background:#e9e1fd;margin-left:auto}
+.m small{display:block;font-size:11px;color:var(--text-muted)}
+.acoes{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.alerta{background:var(--amber-bg);color:var(--text);border-radius:12px;padding:10px 12px;margin-top:10px}
+.login{max-width:360px;margin:12vh auto;background:var(--surface);border-radius:16px;padding:24px;box-shadow:var(--sombra)}
+.login input{width:100%;border:1px solid var(--border-strong);border-radius:10px;padding:10px;margin:12px 0}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;border-radius:10px;padding:10px 16px;display:none;z-index:40;max-width:90vw}
+@media (max-width:640px){.slots{grid-template-columns:1fr}dl{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="toast" role="status"></div>
+<script>
+var CHAVE='maia_op_senha', API='/api/maia/lancamento', S={senha:null,dados:null,fila:'todos',etapa:'',busca:'',aberto:null};
+function lsGet(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{if(v==null)localStorage.removeItem(k);else localStorage.setItem(k,v)}catch(e){}}
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
+function $(s,e){return(e||document).querySelector(s)}
+function quando(iso){if(!iso)return'—';var d=new Date(iso);return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}
+function toast(t,erro){var e=$('#toast');e.textContent=t;e.style.background=erro?'#b91c1c':'#1b1530';e.style.display='block';clearTimeout(e._t);e._t=setTimeout(function(){e.style.display='none'},erro?6000:3000)}
+function api(arg){var o={headers:{'x-senha':S.senha||''}},u=API;if(typeof arg==='string')u+='?'+arg;else{o.method='POST';o.headers['content-type']='application/json';o.body=JSON.stringify(Object.assign({por:lsGet('maia_op_quem')||'equipe'},arg))}
+  return fetch(u,o).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(r.status===401){sair('A senha não confere.');throw new Error('senha')}if(!r.ok)throw new Error(j.erro||('erro '+r.status));return j})})}
+function sair(msg){lsSet(CHAVE,null);S.senha=null;login(msg)}
+function login(msg){$('#app').innerHTML='<form class="login" id="fl"><h1>Lançamento da Maia</h1><p class="mu">A mesma senha do painel da equipe.</p>'+(msg?'<p style="color:var(--red)">'+esc(msg)+'</p>':'')+'<input id="s" type="password" autocomplete="current-password" placeholder="Senha" required><input id="q" placeholder="Teu nome (Guto, Mateus...)" value="'+esc(lsGet('maia_op_quem')||'')+'"><button class="btn pri" style="width:100%">Entrar</button></form>';
+  $('#fl').onsubmit=function(ev){ev.preventDefault();S.senha=$('#s').value.trim();lsSet('maia_op_quem',$('#q').value.trim()||null);carrega().then(function(){lsSet(CHAVE,S.senha)}).catch(function(e){if(e.message!=='senha')toast('Não deu: '+e.message,true)})}}
+
+var ETAPA_COR={na_lista:'',disparado:'',quero_ver:'c-info',coletando:'c-info',material_recebido:'c-at',em_producao:'c-at',amostra_entregue:'c-ia',testou:'c-ia',fechamento:'c-ok',implantacao_marcada:'c-ok',pago:'c-ok',agora_nao:'c-led',perdido:'c-led'};
+function nomeEtapa(k){var e=(S.dados&&S.dados.etapas||[]).find(function(x){return x.chave===k});return e?e.nome:k}
+function chipEtapa(k){return '<span class="chip '+(ETAPA_COR[k]||'')+'">'+esc(nomeEtapa(k))+'</span>'}
+
+function carrega(){return api('acao=lista').then(function(d){S.dados=d;tela()})}
+var FILAS=[['todos','Todos'],['produzir','Pra produzir'],['rick','Rick: mandar áudio'],['duvidas','Dúvidas pro time'],['retomar','Retomada à mão'],['entregar','Aprovadas, esperando a hora'],['teste','Teste do time']];
+function naFila(c,f){if(f==='produzir')return ['material_recebido','em_producao'].indexOf(c.etapa)>=0&&!c.aprovada_em;if(f==='rick')return c.rick_pendente;if(f==='duvidas')return !!c.duvida;if(f==='retomar')return !!c.retomada_a_mao;if(f==='entregar')return c.aprovada_em&&!c.entregue_em;if(f==='teste')return c.remessa===0;return true}
+function tela(){
+  var d=S.dados,l=d.lista;
+  var h='<header class="faixa"><div class="miolo"><div><h1>Lançamento da Maia</h1><small>'+(d.ligado?'Ligado: a Maia atende quem está na lista no número da escola':'<b style="color:var(--red)">Desligado</b> (MAIA_LANCAMENTO_LIGADO): a Maia não responde ninguém')+' · '+d.total+' na lista · '+d.abriram+' abriram a amostra · '+d.testaram+' testaram</small></div><span class="sp"></span><a class="btn" href="/maia/operacao/">Painel da equipe</a><button class="btn" id="atu">Atualizar</button><button class="btn" id="sai">Sair</button></div></header><main class="faixa"><div class="miolo">';
+  h+='<div class="kpis">'+d.etapas.map(function(e){return '<div class="kpi'+(S.etapa===e.chave?' on':'')+'" data-etapa="'+e.chave+'"><small>'+esc(e.nome)+'</small><b>'+(d.conta[e.chave]||0)+'</b>'+(d.chegou[e.chave]!=null&&e.chave!=='na_lista'?'<div class="mu">chegaram: '+d.chegou[e.chave]+'</div>':'')+'</div>'}).join('')+'</div>';
+  h+='<div class="filas">'+FILAS.map(function(f){var n=f[0]==='todos'?0:l.filter(function(c){return naFila(c,f[0])}).length;return '<button class="fila'+(S.fila===f[0]?' on':'')+'" data-fila="'+f[0]+'">'+esc(f[1])+(n?'<span class="n">'+n+'</span>':'')+'</button>'}).join('')+'<span class="sp"></span><input class="busca" id="busca" placeholder="Buscar nome, negócio ou final do telefone" value="'+esc(S.busca)+'"></div>';
+  var b=S.busca.toLowerCase();
+  var vis=l.filter(function(c){return naFila(c,S.fila)&&(!S.etapa||c.etapa===S.etapa)&&(!b||[c.nome,c.negocio,c.telefone,c.cidade].join(' ').toLowerCase().indexOf(b)>=0)});
+  h+='<div class="tab"><table><thead><tr><th>Pessoa</th><th>Negócio</th><th>Etapa</th><th>Entrega</th><th>Amostra</th><th>Avisos</th></tr></thead><tbody>'+vis.slice(0,400).map(function(c){
+    var av=[];if(c.rick_pendente)av.push('<span class="chip c-ok">Rick: '+esc(c.rick_motivo||'mandar áudio')+'</span>');if(c.duvida)av.push('<span class="chip c-at">Dúvida</span>');if(c.retomada_a_mao)av.push('<span class="chip c-at">Retomada à mão</span>');if(c.falha)av.push('<span class="chip c-led">Não saiu</span>');if(c.em_teste)av.push('<span class="chip c-ia">No modo teste</span>');
+    return '<tr class="l" data-id="'+c.id+'"><td><b>'+esc(c.nome||'(sem nome)')+'</b><div class="mu">final '+esc(String(c.telefone).slice(-4))+' · '+(c.remessa===0?'teste do time':'remessa '+esc(c.remessa))+' · '+esc(c.versao)+'</div></td><td>'+esc(c.negocio||c.ramo||'—')+'<div class="mu">'+esc(c.cidade||'')+'</div></td><td>'+chipEtapa(c.etapa)+'</td><td>'+(c.entregue_em?'entregue '+quando(c.entregue_em):c.entrega_em?quando(c.entrega_em):'—')+'</td><td>'+c.pecas+'/3 peças'+(c.aberturas?'<div class="mu">abriu '+c.aberturas+'x</div>':'')+(c.testou_em?'<div class="mu">testou</div>':'')+'</td><td>'+av.join('')+'</td></tr>'}).join('')+'</tbody></table>'+(vis.length?'':'<p class="mu" style="padding:16px">Ninguém aqui.</p>')+'</div>';
+  h+='<p class="mu">Os dados da coleta são do contato: use só pra fazer a amostra. As respostas pro contato saem pela caixa de Disparos do CRM (número da escola).</p></div></main><div class="gaveta" id="gav"><div class="painel" id="pn"></div></div>';
+  $('#app').innerHTML=h;
+  $('#atu').onclick=function(){carrega().catch(function(e){toast(e.message,true)})};$('#sai').onclick=function(){sair()};
+  document.querySelectorAll('[data-fila]').forEach(function(x){x.onclick=function(){S.fila=x.dataset.fila;tela()}});
+  document.querySelectorAll('[data-etapa]').forEach(function(x){x.onclick=function(){S.etapa=S.etapa===x.dataset.etapa?'':x.dataset.etapa;tela()}});
+  $('#busca').oninput=function(e){S.busca=e.target.value;clearTimeout(S._b);S._b=setTimeout(function(){tela();var i=$('#busca');i.focus();i.setSelectionRange(i.value.length,i.value.length)},300)};
+  document.querySelectorAll('tr.l').forEach(function(x){x.onclick=function(){abre(x.dataset.id)}});
+  $('#gav').onclick=function(e){if(e.target.id==='gav')fecha()};
+  if(S.aberto)abre(S.aberto);
+}
+function fecha(){S.aberto=null;$('#gav').classList.remove('on')}
+var ROT={negocio:'O que vende e pra quem',nome_negocio:'Nome do negócio',publico:'Público',cidade:'Cidade',produtos:'Produtos e preços',como_vende:'Como vende e horário',carro_chefe:'O que mais vende',dificuldade:'Maior dificuldade',instagram:'Instagram',hora:'Hora da entrega',sem_video:'Sem vídeo',so_essas:'Só tem essas fotos'};
+var SLOT={anuncio1:'Anúncio 1',anuncio2:'Anúncio 2',video:'Vídeo editado'};
+function ehVid(m,u){return /^video/.test(m||'')||/\.(mp4|mov)(\?|$)/i.test(u||'')}
+function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='<p class="mu">carregando…</p>';
+  api('acao=contato&id='+encodeURIComponent(id)).then(function(c){
+    var h='<div style="display:flex;gap:10px;align-items:center"><h2 style="font-size:26px">'+esc(c.nome||'(sem nome)')+'</h2>'+chipEtapa(c.etapa)+'<span class="sp"></span><button class="btn" id="fx">Fechar</button></div>';
+    h+='<p class="mu">'+esc(c.telefone)+' · <a href="https://wa.me/'+esc(c.telefone)+'" target="_blank" rel="noopener">abrir no WhatsApp</a> · '+(c.remessa===0?'teste do time':'remessa '+esc(c.remessa))+' · modelo '+esc(c.versao)+(c.nota!=null?' · nota '+esc(c.nota):'')+'</p>';
+    if(c.duvida)h+='<div class="alerta"><b>Dúvida pro time:</b> '+esc(c.duvida.texto)+' <button class="btn" data-a="duvida_resolvida">Resolvido</button></div>';
+    if(c.rick_pendente)h+='<div class="alerta" style="background:var(--green-bg)"><b>Rick: mandar áudio</b> ('+esc(c.rick_motivo||'')+') <button class="btn ok" data-a="rick_feito">Áudio mandado</button></div>';
+    if(c.retomada_a_mao)h+='<div class="alerta"><b>Retomada à mão</b> (sem modelo aprovado pra fora das 24 h). Manda pela caixa de Disparos: <i>'+esc(c.retomada_a_mao.texto||'')+'</i> <button class="btn" data-a="retomada_feita">Feito</button></div>';
+    if(c.falha)h+='<div class="alerta" style="background:var(--red-bg)"><b>A amostra não saiu:</b> '+esc(c.falha)+'</div>';
+    // coleta
+    var k=c.coleta||{};h+='<div class="card"><h3>O que a pessoa contou</h3><dl>'+Object.keys(ROT).filter(function(x){return k[x]!=null&&k[x]!==''}).map(function(x){return '<dt>'+ROT[x]+'</dt><dd>'+esc(x==='hora'?k[x]+'h':k[x]===true?'sim':k[x])+'</dd>'}).join('')+'<dt>Entrega combinada</dt><dd>'+quando(c.entrega_em)+'</dd><dt>Por que está na lista</dt><dd>'+esc(c.motivo||'—')+'</dd></dl></div>';
+    // material
+    var mat=c.midias.filter(function(m){return m.origem==='contato'});
+    h+='<div class="card"><h3>Fotos e vídeos que a pessoa mandou ('+mat.length+')</h3>'+(mat.length?'<div class="grade">'+mat.map(function(m){return '<figure>'+(m.tipo==='video'?'<video src="'+esc(m.url)+'" preload="metadata" controls playsinline></video>':'<img src="'+esc(m.url)+'" alt="foto do contato" loading="lazy">')+'<figcaption><span>'+(m.tipo==='video'?'vídeo':'foto')+'</span><a href="'+esc(m.url)+'" download target="_blank" rel="noopener">baixar</a></figcaption></figure>'}).join('')+'</div>':'<p class="mu">Ainda nada.</p>')+'</div>';
+    // peças
+    h+='<div class="card"><h3>A amostra: 2 anúncios e 1 vídeo</h3><div class="slots">'+['anuncio1','anuncio2','video'].map(function(s){var p=c.pecas[s];return '<div class="slot"><b>'+SLOT[s]+'</b>'+(p?(ehVid(p.mime,p.url)?'<video src="'+esc(p.url)+'" controls playsinline preload="metadata"></video>':'<img src="'+esc(p.url)+'" alt="'+SLOT[s]+'">')+'<textarea data-leg="'+s+'" placeholder="Legenda do anúncio">'+esc(p.legenda||'')+'</textarea><div class="acoes"><button class="btn" data-salvaleg="'+s+'">Salvar legenda</button></div>':'<p class="mu">Vazio</p>')+'<label class="btn" style="display:inline-block;margin-top:8px">'+(p?'Trocar':'Subir')+' arquivo<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" data-sobe="'+s+'" hidden></label></div>'}).join('')+'</div>';
+    h+='<div class="acoes"><button class="btn" data-a="gerar_oficina">Gerar com a oficina</button><span class="mu">A oficina faz 2 artes e 1 vídeo com o material; depois escolhe abaixo qual vai em cada lugar.</span></div>';
+    if(c.oficina&&c.oficina.length)h+='<div class="grade" style="margin-top:10px">'+c.oficina.map(function(p){return '<figure>'+(p.url?(ehVid(p.tipo==='anuncio_video'?'video/mp4':'',p.url)?'<video src="'+esc(p.url)+'" controls preload="metadata"></video>':'<img src="'+esc(p.url)+'" alt="peça da oficina">'):'<div style="height:140px;display:grid;place-items:center" class="mu">'+esc(p.status)+'</div>')+'<figcaption><span>'+esc(p.gancho||p.tipo)+'</span></figcaption>'+(p.url?'<div class="acoes" style="padding:0 6px 6px">'+['anuncio1','anuncio2','video'].map(function(s){return '<button class="btn" style="padding:4px 8px;font-size:12px" data-usa="'+p.id+'" data-slot="'+s+'">'+SLOT[s]+'</button>'}).join('')+'</div>':'')+'</figure>'}).join('')+'</div>';
+    h+='</div>';
+    // conversa pronta
+    var conv=(c.conversa_pronta||[]).map(function(f){return (f.de==='maia'?'Maia: ':'Cliente: ')+f.texto}).join('\n')+(c.retomada_pronta?'\nRetomada: '+c.retomada_pronta:'');
+    h+='<div class="card"><h3>A conversa pronta (o print da página)</h3><p class="mu">Uma fala por linha: "Cliente: ...", "Maia: ..." e "Retomada: ...". Valor antes do preço; nada inventado.</p><textarea class="conv" id="conv">'+esc(conv)+'</textarea><div class="acoes"><button class="btn" data-a="gerar_conversa">Gerar de novo</button><button class="btn" id="salvaconv">Salvar conversa</button></div></div>';
+    // entrega
+    h+='<div class="card"><h3>Aprovar e entregar</h3><p class="mu">'+(c.entregue_em?'Entregue em '+quando(c.entregue_em)+'. Abriu '+c.aberturas+' vez(es)'+(c.testou_em?', testou ao vivo.':'.'):c.aprovada_em?'Aprovada: sai sozinha '+quando(c.entrega_em)+' (a rotina confere de hora em hora).':'Hora combinada: '+quando(c.entrega_em))+'</p>'+(c.previa?'<p><a href="'+esc(c.previa)+'" target="_blank" rel="noopener">Ver a prévia da página</a>'+(c.link?' · link do contato: <code>'+esc(c.link)+'</code>':'')+'</p>':'')+(c.entregue_em?'':'<div class="acoes"><button class="btn pri" data-aprova="0">Aprovar e entregar na hora combinada</button><button class="btn" data-aprova="1">Aprovar e entregar agora</button></div>')+'</div>';
+    // etapa
+    h+='<div class="card"><h3>Mudar a etapa</h3><div class="acoes"><select id="et" class="btn">'+S.dados.etapas.map(function(e){return '<option value="'+e.chave+'"'+(e.chave===c.etapa?' selected':'')+'>'+esc(e.nome)+'</option>'}).join('')+'</select><input id="mot" class="btn" placeholder="motivo (se perdido)" value="'+esc(c.motivo_perda||'')+'"><button class="btn" id="salvaet">Salvar etapa</button>'+(c.remessa===0?'<button class="btn" data-a="zerar" style="margin-left:auto">Zerar pra repetir o teste</button><button class="btn" data-a="remover">Tirar da lista</button>':'')+'</div></div>';
+    // conversa
+    h+='<div class="card"><h3>A conversa com a Maia</h3><div class="chat">'+(c.msgs.length?c.msgs.map(function(m){return '<div class="m '+(m.direcao==='entrada'?'e':'s')+'"><small>'+(m.direcao==='entrada'?'Contato':m.autor==='maia'?'Maia':m.autor)+' · '+quando(m.em)+(m.ok===false?' · NÃO SAIU':'')+'</small>'+esc(m.texto||'('+m.tipo+')')+'</div>'}).join(''):'<p class="mu">Ainda sem conversa.</p>')+'</div></div>';
+    $('#pn').innerHTML=h;var ch=$('.chat');if(ch)ch.scrollTop=ch.scrollHeight;
+    $('#fx').onclick=fecha;
+    function faz(o,btn,msg){if(btn)btn.disabled=true;return api(Object.assign({id:c.id},o)).then(function(r){toast(msg||'Feito');return carrega()}).catch(function(e){toast('Não deu: '+e.message,true)}).then(function(){if(btn)btn.disabled=false})}
+    document.querySelectorAll('[data-a]').forEach(function(b){b.onclick=function(){var a=b.dataset.a;if(a==='zerar'&&!confirm('Apagar a conversa, as fotos e a amostra dessa pessoa pra repetir o teste?'))return;if(a==='remover'&&!confirm('Tirar da lista do lançamento? O número volta a ser atendido como antes.'))return;if(a==='remover'){fecha()}faz({acao:a},b,a==='gerar_oficina'?'Pedido pra oficina':null)}});
+    document.querySelectorAll('[data-salvaleg]').forEach(function(b){b.onclick=function(){var s=b.dataset.salvaleg;faz({acao:'legenda',slot:s,legenda:$('[data-leg="'+s+'"]').value},b,'Legenda salva')}});
+    document.querySelectorAll('[data-usa]').forEach(function(b){b.onclick=function(){faz({acao:'usar_peca',peca_id:b.dataset.usa,slot:b.dataset.slot},b)}});
+    document.querySelectorAll('[data-aprova]').forEach(function(b){b.onclick=function(){var agora=b.dataset.aprova==='1';if(!confirm(agora?'Mandar a amostra agora pela Maia?':'Aprovar? Ela sai sozinha na hora combinada.'))return;faz({acao:'aprovar',agora:agora},b,agora?'Amostra enviada':'Aprovada')}});
+    $('#salvaconv').onclick=function(){faz({acao:'salvar_conversa',texto:$('#conv').value},this,'Conversa salva')};
+    $('#salvaet').onclick=function(){faz({acao:'etapa',etapa:$('#et').value,motivo:$('#mot').value},this,'Etapa salva')};
+    document.querySelectorAll('[data-sobe]').forEach(function(inp){inp.onchange=function(){var f=inp.files[0];if(!f)return;var mime=f.type||'';toast('Enviando '+f.name+'…');
+      api({acao:'link_envio',id:c.id,mime:mime}).then(function(x){return fetch(x.url,{method:'PUT',headers:{'content-type':mime,'x-upsert':'true'},body:f}).then(function(r){if(!r.ok)throw new Error('o envio falhou');return api({acao:'definir_peca',id:c.id,slot:inp.dataset.sobe,caminho:x.caminho,mime:mime})})}).then(function(){toast('Arquivo salvo');return carrega()}).catch(function(e){toast('Não deu: '+e.message,true)})}});
+  }).catch(function(e){$('#pn').innerHTML='<p style="color:var(--red)">Não deu: '+esc(e.message)+'</p><button class="btn" onclick="fecha()">Fechar</button>'})}
+S.senha=lsGet(CHAVE);
+if(S.senha)carrega().catch(function(e){if(e.message!=='senha')login('Não deu: '+e.message)});else login();
+setInterval(function(){if(S.senha&&!S.aberto&&document.visibilityState==='visible')carrega().catch(function(){})},60000);
+</script>
+</body>
+</html>

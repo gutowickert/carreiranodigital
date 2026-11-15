@@ -12,6 +12,8 @@ export async function equipeAprova(peca_id: string, por: string) {
   if (peca.status !== 'revisao_equipe') throw new Error('a peça não está esperando a equipe (' + peca.status + ')')
   const neg = await db.um('negocios', { id: peca.negocio_id })
   // 06/11: amostra da demonstração grátis: aprovada pela equipe, vai direto pro lead pelo número do Oito (sem joinha)
+  // 15/11: peça da amostra do LANÇAMENTO: só fica aprovada; quem escolhe e entrega é a tela do lançamento (lancamento.html)
+  if (neg?.contexto?.demo?.lancamento) { await db.atualiza('pecas', { id: peca.id }, { status: 'aprovada', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString() }); return { ok: true, status: 'aprovada', lancamento: true } }
   if (neg?.contexto?.demo) { const { entregaAmostra } = await import('./demo-amostra'); return entregaAmostra(peca, neg, por) }
   const cv = await conversaDoDono(neg)
   let r: any

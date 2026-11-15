@@ -15,7 +15,11 @@ type Contato = { telefone: string; nome: string; lead_id?: string }
 export default function Disparos() {
   const [turmas, setTurmas] = useState<any[]>([])
   const [templates, setTemplates] = useState<Tpl[]>([])
-  const [modo, setModo] = useState<'turma' | 'colar' | 'lista' | 'naoentregues'>('turma')
+  const [modo, setModo] = useState<'turma' | 'colar' | 'lista' | 'naoentregues' | 'maia'>('turma')
+  // lançamento da Maia (15/11/2026): a lista com a etiqueta maia, por remessa e versão do modelo (0 = teste do time)
+  const [maiaRemessa, setMaiaRemessa] = useState('1')
+  const [maiaVersao, setMaiaVersao] = useState('aluno')
+  const [maiaTodos, setMaiaTodos] = useState(false)
   const [turmaId, setTurmaId] = useState('')
   const [turmaEtapa, setTurmaEtapa] = useState('') // '' = todas; 'perda' = só perdidos; 'ganho' = só ganhos
   const [numerosTexto, setNumerosTexto] = useState('')
@@ -109,6 +113,10 @@ export default function Disparos() {
           cs = cs.filter((c: any) => !jaRecebeu.has(suf(c.telefone)))
         }
         setContatos(cs)
+      } else if (modo === 'maia') {
+        const j = await fetchAuth('/api/wa-oficial/contatos-maia?' + new URLSearchParams({ remessa: maiaRemessa, versao: maiaVersao, todos: maiaTodos ? '1' : '' }).toString()).then(r => r.json())
+        if (!j.ok) alert(j.error || 'não deu pra carregar a lista do lançamento')
+        setContatos((j.contatos || []).map((c: any) => ({ telefone: c.telefone, nome: c.nome || '' })))
       } else if (modo === 'naoentregues') {
         if (!campanhaId) { setCarregandoPublico(false); return }
         const j = await fetchAuth('/api/wa-oficial/relatorio?naoEntregues=' + encodeURIComponent(campanhaId)).then(r => r.json())
@@ -172,6 +180,7 @@ export default function Disparos() {
           <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'lista'} onChange={() => setModo('lista')} /> Listas (frias)</label>
           <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'naoentregues'} onChange={() => setModo('naoentregues')} /> Não-entregues</label>
           <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'colar'} onChange={() => setModo('colar')} /> Colar números</label>
+          <label style={{ fontSize: 13, color: 'var(--text-2)', cursor: 'pointer' }}><input type="radio" checked={modo === 'maia'} onChange={() => setModo('maia')} /> Lançamento Maia</label>
         </div>
         {modo === 'turma' && (
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
@@ -255,6 +264,18 @@ export default function Disparos() {
               })}
             </select>
             <div style={{ fontSize: 11, color: 'var(--text-faint)', marginTop: 6 }}>Carrega os contatos que o WhatsApp aceitou mas não entregou. Quem já recebeu, leu ou respondeu fica de fora.</div>
+          </div>
+        )}
+        {modo === 'maia' && (
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center' }}>
+            <select style={inp} value={maiaRemessa} onChange={e => setMaiaRemessa(e.target.value)}>
+              <option value="0">Teste do time</option><option value="1">Remessa 1</option><option value="2">Remessa 2</option><option value="3">Remessa 3</option><option value="4">Remessa 4</option>
+            </select>
+            <select style={inp} value={maiaVersao} onChange={e => setMaiaVersao(e.target.value)}>
+              <option value="aluno">Ex-alunos (modelo maia_invadiu_aluno)</option><option value="contato">Demais contatos (modelo maia_invadiu_contato)</option><option value="">Todos</option>
+            </select>
+            <label style={{ fontSize: 13, color: 'var(--text-2)' }}><input type="checkbox" checked={maiaTodos} onChange={e => setMaiaTodos(e.target.checked)} /> incluir quem já recebeu</label>
+            <span style={{ fontSize: 12, color: 'var(--text-faint)' }}>Na variável 1 do modelo, escreve {'{nome}'}.</span>
           </div>
         )}
         {modo === 'colar' && (
