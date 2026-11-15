@@ -21,7 +21,10 @@ const fonesMao = []
 for (let i = 0; i < args.length; i++) if (args[i] === '--fone' && args[i + 1]) fonesMao.push(args[++i])
 
 function lerEnv() {
-  const txt = readFileSync(new URL('../.env.local', import.meta.url), 'utf8')
+  // o .env.local da raiz desta cópia; se não tiver (a cópia de teste C:maia-lancamento), o do sistema em C:carreiranodigital
+  let txt = ''
+  for (const f of [new URL('../.env.local', import.meta.url), 'C:/carreiranodigital/.env.local']) { try { txt = readFileSync(f, 'utf8'); break } catch { } }
+  if (!txt) { console.error('Não achei o .env.local.'); process.exit(1) }
   const env = {}
   for (const l of txt.split(/\r?\n/)) { const m = l.match(/^([A-Z0-9_]+)\s*=\s*(.*)$/); if (m) env[m[1]] = m[2].replace(/^["']|["']$/g, '').trim() }
   return env
