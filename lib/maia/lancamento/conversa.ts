@@ -25,7 +25,7 @@ export const PERGUNTAS: Record<Exclude<Passo, 'fotos' | 'hora'>, string> = {
   dificuldade: 'Hoje, qual é a maior dificuldade pra vender mais?',
   instagram: 'Qual é o @ do teu Instagram? Se não tiver, é só dizer.',
 }
-export const PEDE_FOTOS = 'Agora o mais importante: me manda de 3 a 5 fotos do teu produto ou serviço e, se tiver, uns vídeos curtos do dia a dia. Pode ser do celular mesmo. Eu só uso o que tu mandar.'
+export const PEDE_FOTOS = 'Agora o mais importante: me manda de 3 a 5 fotos do teu produto ou serviço e, se tiver, uns vídeos curtos do dia a dia. Pode ser do celular mesmo. Se tiver a logo da empresa, manda também. Eu só uso o que tu mandar.'
 export const PEDE_VIDEO = 'Fotos recebidas! Tem uns vídeos curtos do dia a dia (até 1 minuto)? Se tiver, manda aqui. Se não tiver, é só dizer "sem vídeo".'
 export const SEM_FOTO = 'Sem fotos eu não consigo, porque não invento imagem do teu negócio. Quando tiver, me manda aqui que eu faço.'
 // Sem se apresentar de novo: a Maia já se apresentou no disparo (Guto, 15/11)
