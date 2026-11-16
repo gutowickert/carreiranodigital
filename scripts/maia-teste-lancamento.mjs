@@ -512,6 +512,9 @@ confere('quem não testou recebe o botão "Testar agora" junto', saidas(F.ivo).s
   await diz(F.ivo, 'Gostei'); await diz(F.ivo, 'Quero outro video')
   confere('depois do "vou passar pro time", a Maia fica quieta nas próximas mensagens', saidas(F.ivo).length === n0, saidas(F.ivo).slice(n0).map(m => m.texto))
   confere('e o time fica sabendo do que chegou (o texto novo na fila)', contato(F.ivo).estado.rick_texto === 'Quero outro video', contato(F.ivo).estado) }
+// 16/11 (Maria): "Ok" depois da amostra não manda o teste e o link de novo
+{ const n0 = saidas(F.ivo).length; await diz(F.ivo, 'Ok')
+  confere('"Ok" depois da amostra: a Maia não responde', saidas(F.ivo).length === n0, saidas(F.ivo).slice(n0).map(m => m.texto)) }
 r = await roda(E + 3 * 3600e3 + 60e3)
 const r2 = await roda(E + 3 * 86400e3 + 60e3)
 confere('depois de responder, a Maia não manda mais nada da sequência', !fez(r, F.ivo) && !fez(r2, F.ivo))

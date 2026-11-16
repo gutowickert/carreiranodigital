@@ -111,6 +111,9 @@ export async function POST(req: NextRequest) {
     await supabase.from('wa_conversas').update({ ultima_msg: (resumoMsg || '').slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversa.id)
     // PLANTÃO DA IA: alguém do time escreveu pro lead → a IA sai deste lead (só com o plantão ligado)
     await timeAssumiu(leadId || conversa.lead_id)
+    // 16/11 (Maia, lançamento): a caixa do CRM manda por AQUI (texto, áudio, foto). O time falou com alguém da lista do
+    // lançamento → a Maia fica quieta com essa pessoa (lib/maia/lancamento/base.ts timeFalou; quem não está na lista: nada muda)
+    await import('@/lib/maia/lancamento/base').then(m => m.timeFalou(to, tipoMsg === 'texto' ? (texto?.trim() || null) : null, tipoMsg)).catch(() => null)
 
     return NextResponse.json({ ok: true, conversaId: conversa.id, canal: 'oficial' })
   } catch (e: any) {

@@ -155,6 +155,12 @@ export async function posEntregaNova(c: any, texto: string) {
     await marcaRick(c, 'contou o que achou do teste')
     return { ok: true, depois: 'opiniao_teste' }
   }
+  // 16/11 (Nando, Maria): "ok", "beleza", "obrigada" depois da amostra não é "quero ver" (a Maia mandava o teste e o link de novo).
+  // Não precisa de resposta: o time fica sabendo pela fila
+  if (/^\s*(ok+|okay|blz|beleza|obrigad[oa]s?|brigad[oa]|valeu|show|top|certo|combinado|perfeito|otimo|aguardo|fico no aguardo|\p{Extended_Pictographic}+)[\s.!]*$/iu.test(texto)) {
+    await marcaRick(c, 'respondeu depois da amostra')
+    return { ok: true, depois: 'ok', quieta: true }
+  }
   if (ehQueroVer(texto) || /\b(resto|link|ver tudo|testar)\b/.test(s)) {
     await mandaTesteELink(c, false)
     await marcaRick(c, 'respondeu depois da amostra')

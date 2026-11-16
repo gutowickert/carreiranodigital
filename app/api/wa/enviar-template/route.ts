@@ -103,6 +103,7 @@ export async function POST(req: NextRequest) {
 
     await timeAssumiu(leadId)   // plantão da IA: o time assumiu este lead
 
+    await import('@/lib/maia/lancamento/base').then(m => m.timeFalou(to, textoRender || null, 'texto')).catch(() => null)   // 16/11: Maia quieta (lançamento)
     return NextResponse.json({ ok: true, texto: textoRender, template: tpl.nome_meta })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })
