@@ -17,6 +17,16 @@ export type Leitura = {
 const sem = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
 
 export const ehQueroVer = (t: string) => /^(quero ver|quero|sim|bora|vamos|pode ser|claro|ok|quero sim)[!. ]*$/.test(sem(t))
+// 16/11 (remessa 1): quase toda "resposta" logo depois do disparo é a mensagem automática do WhatsApp Business da empresa
+// ("agradece seu contato", "seja bem-vindo", "retorno em breve"). Isso não é a pessoa pedindo a amostra: a Maia fica quieta.
+export const ehAutomatica = (t: string) => {
+  const x = sem(t)
+  if (!x) return false
+  return /agradece (o |seu |o seu |sua |pelo )?(contato|contado|mensagem)|agradecemos (o |seu |pelo )?(contato|mensagem)|agradec(o|emos) (o |seu |pelo )?contato|obrigad[oa] (pelo|por) (seu |o |ter entrado em )?(contato|mensagem)|seja(m)? (muito )?bem[ -]?vind|sejam bem vind|bem[ -]?vind[oa]s? (a|ao|à|na|no)|mensagem automatica|resposta automatica|(retorn|respond)\w* (assim que|o mais breve|em breve|logo|em seguida)|assim que possivel|o mais breve possivel|horario de atendimento|nossos horarios|fora do (nosso )?horario|estamos (ocupad|ausent|fechad)|no momento (nao|estamos)|como (podemos|posso) (te |lhe )?ajudar|escolha (a|uma) opcao|digite (o numero|a opcao|1)|deixe (o teu|seu|sua) (recado|mensagem)|numero secundario|pedido online|ja (ja )?te atendo|em seguida (te )?(retorno|atendo|respondo)|logo (mais )?(retorno|respondo|te atendo)/.test(x)
+}
+// resposta ao convite que é robô: o convite tem os botões "Quero ver" / "Agora não", então quem tem interesse clica;
+// texto longo ou só um link nessa hora é quase sempre a mensagem automática da empresa
+export const ehRoboNoConvite = (t: string) => !ehQueroVer(t) && (ehAutomatica(t) || String(t || '').trim().length > 140 || /^https?:\/\/\S+$/.test(String(t || '').trim()))
 // "não" sozinho só vale como recusa na resposta ao convite (o botão "Agora não"); no meio da coleta é resposta ("não tenho Instagram")
 export const ehAgoraNao = (t: string, convite = false) => (convite && /^(nao|nao obrigad[oa])[!. ]*$/.test(sem(t))) || /^(agora nao|nao quero|sem interesse)[!. ]*$/.test(sem(t)) || /nao (tenho|tem) interesse|nao me (chama|mande)|para de me mandar|desisti|deixa pra la|nao vou querer/.test(sem(t))
 // 16/11 (Nando): as mesmas palavras que o webhook da escola trata como descadastro (PALAVRAS_OPTOUT). Fora do modo teste,

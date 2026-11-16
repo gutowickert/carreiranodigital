@@ -11,7 +11,7 @@ import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehRoboNoConvite, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -115,6 +115,12 @@ async function responde(c: any, texto: string, novas: Novas) {
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)
   if (['na_lista', 'disparado', 'agora_nao', 'perdido'].includes(c.etapa)) {
     if (ehAgoraNao(texto, true)) return agoraNao(c)
+    // 16/11: resposta automática do WhatsApp da empresa (não é a pessoa): fica quieta e espera o clique de verdade
+    // (o convite tem os botões "Quero ver" / "Agora não": quem tem interesse clica; texto longo nessa hora é quase sempre robô)
+    if (['na_lista', 'disparado'].includes(c.etapa) && ehRoboNoConvite(texto)) {
+      await evento('lanc_automatica', { contato: c.id, texto: texto.slice(0, 120) })
+      return { ok: true, ignorada: 'resposta automática' }
+    }
     await salva(c, { etapa: 'quero_ver', motivo_perda: null })
     await salvaJson(c, 'estado', { indicacao: null, inicio_em: new Date().toISOString() })
     await evento('lanc_quero_ver', { contato: c.id })
