@@ -42,5 +42,7 @@ export function semChaves(n: any) {
   const meta = { ...n.meta }
   if (meta.wa) meta.wa = { ...meta.wa, token: meta.wa.token ? '(guardada)' : null }
   if (meta.social_token) meta.social_token = '(guardada)'
+  // 16/11: a lista de páginas do login do social (com as chaves delas), enquanto o dono escolhe: nunca sai
+  if (meta.social_pendente) meta.social_pendente = '(guardada)'
   return { ...n, meta }
 }

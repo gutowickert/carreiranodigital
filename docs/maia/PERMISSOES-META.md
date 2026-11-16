@@ -4,7 +4,8 @@ Escrito em 16/11/2026 pra tarefa do Nando (documento do Guto, item 4; roteiros d
 
 ## Antes de gravar
 
-0. ⚠️ **A aba Social do painel da equipe tem que estar no ar.** Em 16/11 ela não está no main nem em nenhum ramo enviado (só a parte por trás, `/api/maia/social`). O documento do Guto diz que está com o Claude dele, esperando o SQL do recado (`db/maia-recado-base.sql`) e o "publica". Pedir pro Guto enviar o ramo; sem a tela, os vídeos A, B e C não têm o que mostrar. O vídeo D não depende dela.
+0a. **O login do dono (16/11):** o link de conectar (aba Dados → "Gerar link pro dono conectar") agora tem um 2º botão, **"Conectar Instagram e Facebook"**: o dono entra com o Facebook, marca a página e o Instagram, e a Maia guarda a chave da página (cifrada). É ESSE login que os vídeos A, B e C mostram no começo. O botão só aparece com a configuração do social criada na Meta (Login do Facebook para Empresas → Configurações → Criar configuração, "Token de acesso do usuário", permissões `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `read_insights`, `business_management`) e o ID dela em `MAIA_META_CONFIG_SOCIAL` (ou no padrão do código, `app/api/maia/conectar/social/route.ts`). Teste: `scripts/maia-teste-conectar-social.mjs` (18/18, Meta de mentira).
+0. ✅ (publicada em 16/11) **A aba Social do painel da equipe tem que estar no ar.** Em 16/11 ela não está no main nem em nenhum ramo enviado (só a parte por trás, `/api/maia/social`). O documento do Guto diz que está com o Claude dele, esperando o SQL do recado (`db/maia-recado-base.sql`) e o "publica". Pedir pro Guto enviar o ramo; sem a tela, os vídeos A, B e C não têm o que mostrar. O vídeo D não depende dela.
 1. O domínio do login já liberado (Login do Facebook para Empresas → Configurações → SDK do JavaScript ligado, domínios `https://www.carreiranodigital.com/` e `https://carreiranodigital.com/`). Sem isso o login nem abre no vídeo.
 2. Uma conta de teste com uma Página do Facebook e um Instagram profissional ligado a ela (pode ser a da escola).
 3. Gravação de tela no Mac: Cmd+Shift+5 → "Gravar tela inteira". 1 a 2 minutos por vídeo. Sem áudio, com a legenda em inglês abaixo colada num texto na tela ou falada em inglês.
@@ -30,7 +31,7 @@ Com acesso padrão, as permissões já funcionam pra quem tem uma função no ap
 Um vídeo pode servir pra mais de uma permissão: a Meta pede um por permissão, então sobe o mesmo arquivo em cada uma que ele mostra.
 
 ### Vídeo A · login e post no Instagram (`instagram_content_publish`, `instagram_basic`, `pages_show_list`)
-1. Abrir o link de conectar do painel da equipe → "Entrar com o Facebook" → escolher a Página e a conta do Instagram → permitir.
+1. Abrir o link de conectar do painel da equipe → "Conectar Instagram e Facebook" → escolher a Página e a conta do Instagram → permitir → "Pronto! … conectados à Maia".
 2. Painel da equipe → o negócio → aba Social → um post agendado (foto da biblioteca do negócio + legenda).
 3. Mostrar a aprovação da equipe e o 👍 do dono no WhatsApp.
 4. Abrir o Instagram e mostrar o post publicado.

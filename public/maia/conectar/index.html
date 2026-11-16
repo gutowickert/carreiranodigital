@@ -18,7 +18,10 @@ p{color:var(--mu);margin:0 0 14px}
 ol{margin:0;padding-left:20px}li{margin:6px 0}
 button{width:100%;border:0;border-radius:12px;padding:16px;font:700 17px system-ui;background:#25D366;color:#fff;cursor:pointer}
 button[disabled]{opacity:.6;cursor:default}
-#status{margin-top:14px;font-size:15px}
+#status,#status-social{margin-top:14px;font-size:15px}
+h2{font-size:21px;margin:34px 0 4px}
+button.social{background:linear-gradient(90deg,#833ab4,#e1306c,#f77737)}
+button.pag{background:var(--card);color:var(--tx);border:1px solid var(--ln);margin-top:8px;font-weight:600;text-align:left}
 .ok{color:var(--verde)}.erro{color:var(--verm)}
 </style>
 </head>
@@ -36,13 +39,29 @@ button[disabled]{opacity:.6;cursor:default}
   </div>
   <button id="botao" disabled>Carregando…</button>
   <div id="status"></div>
+
+  <!-- 16/11: o Instagram e a página do Facebook (posts que o dono aprova). Só aparece com a configuração do social na Meta -->
+  <section id="social" hidden>
+    <h2>Instagram e Facebook</h2>
+    <div class="card">
+      <ol>
+        <li>Tu entra com o Facebook e marca a <b>página do negócio</b> e o <b>Instagram</b> ligado a ela.</li>
+        <li>A Maia prepara os posts, a equipe revisa e <b>tu aprova cada um</b> no WhatsApp antes de sair. Nada é publicado sem o teu ok.</li>
+        <li>Ela também lê o alcance e as curtidas dos teus posts pra te mostrar no relatório.</li>
+      </ol>
+    </div>
+    <button id="botao-social" class="social" disabled>Conectar Instagram e Facebook</button>
+    <div id="paginas"></div>
+    <div id="status-social"></div>
+  </section>
 </main>
 <script>
 (function () {
   const q = new URLSearchParams(location.search), n = q.get('n') || '', t = q.get('t') || ''
   const $ = id => document.getElementById(id)
   const status = (txt, cls) => { $('status').textContent = txt; $('status').className = cls || '' }
-  let cfg = null, sessao = {}
+  let cfg = null, sessao = {}, cfgSocial = null
+  const statusS = (txt, cls) => { $('status-social').textContent = txt; $('status-social').className = cls || '' }
 
   window.addEventListener('message', ev => {
     try { if (!/facebook\.com$/.test(new URL(ev.origin).hostname)) return } catch { return }
@@ -57,7 +76,14 @@ button[disabled]{opacity:.6;cursor:default}
     cfg = j
     $('titulo').textContent = 'Conectar o WhatsApp do ' + j.negocio
     $('sub').textContent = (j.dono ? j.dono + ', ' : '') + (j.conectado ? 'esse negócio já tem um número conectado. Se conectar de novo, o novo substitui.' : 'leva uns 2 minutos.')
-    window.fbAsyncInit = function () { FB.init({ appId: j.app_id, autoLogAppEvents: true, xfbml: false, version: 'v25.0' }); $('botao').disabled = false; $('botao').textContent = 'Conectar meu WhatsApp' }
+    window.fbAsyncInit = function () { FB.init({ appId: j.app_id, autoLogAppEvents: true, xfbml: false, version: 'v25.0' }); $('botao').disabled = false; $('botao').textContent = 'Conectar meu WhatsApp'; if (cfgSocial) $('botao-social').disabled = false }
+    // 16/11: o botão do Instagram (só com a configuração do social na Meta)
+    fetch('/api/maia/conectar/social?n=' + encodeURIComponent(n) + '&t=' + encodeURIComponent(t)).then(r => r.json()).then(s => {
+      if (!s.ok || !s.config_id) return
+      cfgSocial = s; $('social').hidden = false
+      if (s.pagina && s.instagram) statusS('Esse negócio já tem página e Instagram conectados. Se conectar de novo, o novo substitui.')
+      if (window.FB) $('botao-social').disabled = false
+    }).catch(() => {})
     const s = document.createElement('script'); s.async = true; s.defer = true; s.crossOrigin = 'anonymous'; s.src = 'https://connect.facebook.net/pt_BR/sdk.js'; document.body.appendChild(s)
   }).catch(() => { $('sub').textContent = 'Não consegui carregar. Tenta de novo em instantes.' })
 
@@ -78,6 +104,37 @@ button[disabled]{opacity:.6;cursor:default}
     try {
       FB.login(resp => { fim(resp) }, { config_id: cfg.config_id, response_type: 'code', override_default_response_type: true, extras: { setup: {}, featureType: 'whatsapp_business_app_onboarding', sessionInfoVersion: '3' } })
     } catch (e) { $('botao').disabled = false; status('Erro ao abrir o login: ' + (e && e.message || e), 'erro') }
+  }
+
+  // 16/11: Instagram e Facebook
+  const fimSocial = r => {
+    $('botao-social').disabled = false; $('paginas').innerHTML = ''
+    if (r && r.ok && r.escolher) {
+      statusS('Qual é a página do negócio?')
+      r.escolher.forEach(p => {
+        const b = document.createElement('button'); b.className = 'pag'
+        b.textContent = p.nome + (p.instagram ? ' · ' + p.instagram : ' · sem Instagram ligado')
+        b.onclick = () => { statusS('Guardando…'); $('paginas').innerHTML = ''; envia({ page_id: p.id }) }
+        $('paginas').appendChild(b)
+      })
+      return
+    }
+    if (r && r.ok) {
+      statusS(r.sem_instagram ? 'A página ' + r.pagina + ' foi conectada, mas ela não tem um Instagram profissional ligado. Liga o Instagram à página (no app do Instagram: Configurações, Central de Contas) e conecta de novo.' : 'Pronto! ' + r.pagina + (r.instagram ? ' e ' + r.instagram : '') + ' conectados à Maia. Os posts só saem depois do teu ok.', r.sem_instagram ? 'erro' : 'ok')
+      $('botao-social').textContent = r.sem_instagram ? 'Conectar de novo' : 'Conectado'
+    } else statusS('Não deu certo: ' + ((r && r.erro) || 'sem resposta') + '. Se continuar, fala com a equipe.', 'erro')
+  }
+  const envia = extra => fetch('/api/maia/conectar/social', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ n, t, ...extra }) }).then(x => x.json()).catch(() => null).then(fimSocial)
+  $('botao-social').onclick = function () {
+    if (!cfgSocial || !window.FB) return
+    $('botao-social').disabled = true; statusS('Abrindo o login do Facebook…')
+    try {
+      FB.login(resp => {
+        const code = resp && resp.authResponse && resp.authResponse.code
+        if (!code) { $('botao-social').disabled = false; statusS('O login não terminou. Tenta de novo.', 'erro'); return }
+        statusS('Conectando…'); envia({ code })
+      }, { config_id: cfgSocial.config_id, response_type: 'code', override_default_response_type: true })
+    } catch (e) { $('botao-social').disabled = false; statusS('Erro ao abrir o login: ' + (e && e.message || e), 'erro') }
   }
 })()
 </script>
