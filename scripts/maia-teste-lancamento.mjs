@@ -165,7 +165,7 @@ confere('responde como atendente do negócio, com os preços da coleta', /Aqui �
 a = contato(T.ana)
 confere('registra "Testou"', a.testou_em && a.etapa === 'testou')
 await diz(T.ana, 'Vocês aceitam vale-refeição?')
-confere('o que não sabe: aprende na implantação', /implantação/.test(ultimas(T.ana)[0]))
+confere('o que não sabe: confirma com a equipe, sem falar em dono nem implantação', /equipe/.test(ultimas(T.ana)[0]) && !/dono|implantação/i.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 r = await diz(T.ana, 'sair')
 confere('"sair" sai do modo teste (e não vira opt-out)', /saí do modo teste/.test(ultimas(T.ana)[0]) && !contato(T.ana).estado.modo)
 await post({ acao: 'rick_feito', id: ida })
