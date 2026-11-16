@@ -24,7 +24,7 @@ function resumo(c: any) {
     id: c.id, nome: c.nome, telefone: c.telefone, versao: c.versao, remessa: c.remessa, nota: c.nota, ramo: c.ramo, cidade: k.cidade || c.cidade,
     negocio: k.nome_negocio || k.negocio || null, etapa: c.etapa, entrega_em: c.entrega_em, entregue_em: c.entregue_em,
     aberturas: c.aberturas || 0, aberta_em: c.aberta_em, testou_em: c.testou_em, rick_pendente: !!(c.rick_pendente_em && !c.rick_feito_em),
-    rick_motivo: c.estado?.rick_motivo || null, duvida: c.estado?.duvida || null, retomada_a_mao: c.estado?.retomada?.como === 'a_mao' ? c.estado.retomada : null,
+    rick_motivo: c.estado?.rick_motivo || null, duvida: c.estado?.duvida || null, com_time: c.estado?.time_em || (c.estado?.humano ? c.estado?.humano?.em || true : null), retomada_a_mao: c.estado?.retomada?.como === 'a_mao' ? c.estado.retomada : null,
     pecas: SLOTS.filter(s => c.amostra?.pecas?.[s]).length, aprovada_em: c.amostra?.aprovada_em || null, falha: c.amostra?.falha || null,
     em_teste: c.estado?.modo === 'teste', ultima_entrada_em: c.ultima_entrada_em, atualizado_em: c.atualizado_em,
     // 16/11 (entrega nova): o que a pessoa fez (cartão do Rick), a resposta que foi pro time e a fila "Rick: ligar"
@@ -112,7 +112,9 @@ export async function POST(req: Request) {
         return ok({ ok: true })
       }
       case 'rick_feito': await salva(c, { rick_feito_em: new Date().toISOString() }); await salvaJson(c, 'estado', { rick_por: por }); return ok({ ok: true })
-      case 'duvida_resolvida': await salvaJson(c, 'estado', { duvida: null, humano: null }); return ok({ ok: true })   // 16/11: devolve a pessoa pra Maia
+      case 'duvida_resolvida': await salvaJson(c, 'estado', { duvida: null, humano: null }); return ok({ ok: true })   // 16/11: a dúvida foi respondida
+      // 16/11 (Nando): o time termina e devolve a pessoa pra Maia (tira o "com o time", o pedido de humano e a dúvida)
+      case 'devolver': await salvaJson(c, 'estado', { time_em: null, humano: null, duvida: null }); return ok({ ok: true })
       case 'retomada_feita': await salvaJson(c, 'estado', { retomada: { ...(c.estado?.retomada || {}), como: 'a_mao_feita' } }); return ok({ ok: true })
       case 'link_envio': return ok(await linkEnvio(c, String(b.mime || '')))
       case 'definir_peca': {
@@ -131,7 +133,7 @@ export async function POST(req: Request) {
         await salvaJson(c, 'amostra', { conversa: r.conversa, ...(r.retomada ? { retomada: r.retomada } : {}) })
         return ok({ ok: true })
       }
-      case 'aprovar': return ok(await aprova(c, { agora: !!b.agora, por }))
+      case 'aprovar': await salvaJson(c, 'estado', { time_em: null, humano: null }); return ok(await aprova(c, { agora: !!b.agora, por }))   // aprovar a amostra devolve pra Maia (é ela que entrega)
       // ---- 16/11: a entrega nova (os textos da página e da entrega, os roteiros, a logo, a capa e a grade) ----
       case 'salvar_textos': {
         if (b.frase_entrega != null) await salvaJson(c, 'amostra', { frase_entrega: String(b.frase_entrega).trim().slice(0, 600) })

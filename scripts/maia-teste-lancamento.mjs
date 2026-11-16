@@ -163,9 +163,13 @@ confere('a mensagem do time entra na conversa como "equipe"', msIv().slice(-1)[0
 let nIv = msIv().length
 await diz(iv, 'Tenho uma loja de roupas')
 confere('o time falou: a Maia não responde junto', msIv().length === nIv)
-{ const csIv = le('lanc_contatos'); const dIv = csIv.find(x => x.telefone === iv); dIv.estado.time_em = new Date(Date.now() - 3 * 3600e3).toISOString(); grava('lanc_contatos', csIv) }
+{ const csIv = le('lanc_contatos'); const dIv = csIv.find(x => x.telefone === iv); dIv.estado.time_em = new Date(Date.now() - 5 * 3600e3).toISOString(); grava('lanc_contatos', csIv) }
 await diz(iv, 'Roupa feminina em Lajeado')
-confere('3 h sem o time: a Maia volta sozinha', msIv().length === nIv + 1 && msIv().slice(-1)[0]?.autor === 'maia')
+confere('5 h depois do time: a Maia continua fora (não volta sozinha)', msIv().length === nIv)
+confere('a tela mostra "Com o time"', !!(await get('acao=lista')).lista.find(x => x.id === contato(iv).id).com_time)
+await post({ acao: 'devolver', id: contato(iv).id })
+await diz(iv, 'Roupa feminina pra mulheres de 30 a 50')
+confere('"Devolver pra Maia": ela volta a responder', msIv().length === nIv + 1 && msIv().slice(-1)[0]?.autor === 'maia' && !contato(iv).estado.time_em)
 
 // 16/11: quem parou na antiga pergunta da hora (coleta completa) recebe o fechamento sozinho na rotina, dentro da janela
 const jo = '55000' + R + '95'

@@ -87,8 +87,10 @@ export const evento = (tipo: string, detalhe: any = {}) => db.evento(tipo, null,
 // modelo). A Maia fica quieta com ela por 2 h desde a última mensagem do time (MAIA_LANC_TIME_MIN) e volta sozinha depois.
 // As retomadas automáticas esperam 24 h. A mensagem do time entra na conversa da tela do lançamento como "equipe"
 export const TIME_MS = () => Math.max(10, +(process.env.MAIA_LANC_TIME_MIN || 120)) * 60e3
-export const timeFalando = (c: any, agora = Date.now()) => !!c?.estado?.time_em && agora - Date.parse(c.estado.time_em) < TIME_MS()
-export const timeRecente = (c: any, agora = Date.now()) => !!c?.estado?.time_em && agora - Date.parse(c.estado.time_em) < 24 * 3600e3
+// 16/11 (Nando): o time entrou na conversa → a Maia fica fora ATÉ alguém tocar em "Devolver pra Maia" na tela do lançamento
+// (antes voltava sozinha 2 h depois e respondia por cima do time). Aprovar/mandar a amostra também devolve
+export const timeFalando = (c: any, _agora = Date.now()) => !!c?.estado?.time_em
+export const timeRecente = (c: any, _agora = Date.now()) => !!c?.estado?.time_em
 export async function timeFalou(telefone: string, texto: string | null, tipo = 'texto') {
   if (!lancamentoLigado()) return null
   const c = await contatoDoTelefone(telefone)

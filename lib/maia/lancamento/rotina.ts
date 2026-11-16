@@ -27,7 +27,7 @@ export async function segueAutoResposta(agora = new Date()) {
     if (!['na_lista', 'disparado'].includes(c.etapa)) continue
     const a = c.estado?.auto_resposta
     if (!a?.em || c.estado?.auto_segue || c.estado?.humano) continue
-    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue
+    if (c.estado?.time_em) continue
     if (t - Date.parse(a.em) < H || !janelaAberta(c, 10, t)) continue
     await mandaTexto(c, SEGUE_AUTO)
     await salvaJson(c, 'estado', { auto_segue: { em: new Date(t).toISOString() } })
@@ -61,13 +61,13 @@ export async function retomadas(agora = new Date()) {
   const { fechaColeta } = await import('./conversa')
   for (const c of todos) {
     if (!['quero_ver', 'coletando'].includes(c.etapa) || c.estado?.humano || c.estado?.modo === 'teste') continue
-    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue
+    if (c.estado?.time_em) continue
     if (proximoPasso(c, await contaMidias(c)) !== 'feito' || !janelaAberta(c, 10, t)) continue
     try { await fechaColeta(c); c.etapa = 'material_recebido'; feitos.push({ contato: c.id, fechou: true }) } catch { /* segue */ }
   }
   for (const c of todos) {
     if (c.estado?.humano) continue   // 16/11: com o time, sem retomada
-    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue   // 16/11: o time falou nas últimas 24 h
+    if (c.estado?.time_em) continue   // 16/11: o time está com a pessoa (até "Devolver pra Maia")
     const fase: 'coleta' | 'amostra' | null = ['quero_ver', 'coletando'].includes(c.etapa) ? 'coleta' : (c.etapa === 'amostra_entregue' && !c.testou_em) ? 'amostra' : null
     if (!fase || c.estado?.modo === 'teste') continue
     // 16/11: quem recebeu a entrega nova está no acompanhamento (entrega.ts), não nesta retomada
