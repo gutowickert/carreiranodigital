@@ -25,7 +25,19 @@ function confere(req: Request, segredo: string, cab: string) {
   return ok
 }
 
-export const equipeOk = (req: Request) => confere(req, process.env.MAIA_PAINEL_SENHA || '', 'x-senha')
+// 16/11 (Nando): além da senha geral, uma senha por pessoa: toda variável MAIA_PAINEL_SENHA_<NOME> (ex.: MAIA_PAINEL_SENHA_NANDO)
+// também abre o painel. Tirar o acesso de alguém = apagar a variável dela, sem trocar a de todo mundo. Vazia ou curta (< 12) não vale
+export function senhasDaEquipe() {
+  const extras = Object.keys(process.env).filter(k => k.startsWith('MAIA_PAINEL_SENHA_')).map(k => String(process.env[k] || '')).filter(v => v.length >= 12)
+  return [process.env.MAIA_PAINEL_SENHA || '', ...extras].filter(Boolean)
+}
+export function equipeOk(req: Request) {
+  const v = req.headers.get('x-senha') || ''
+  const senhas = senhasDaEquipe()
+  const certa = senhas.find(s => s.length === v.length && igual(s, v))
+  // passa pelo confere (o contador de erros por IP) com a senha que bateu, ou com a geral quando nenhuma bateu
+  return confere(req, certa || senhas[0] || '', 'x-senha')
+}
 export const oficinaOk = (req: Request) => confere(req, process.env.MAIA_OFICINA_CHAVE || '', 'x-chave')
 
 export const naoAutorizado = () => Response.json({ erro: 'não autorizado' }, { status: 401 })
