@@ -28,7 +28,8 @@ export const PERGUNTAS: Record<Exclude<Passo, 'fotos' | 'hora'>, string> = {
 export const PEDE_FOTOS = 'Agora o mais importante: me manda de 3 a 5 fotos do teu produto ou serviço e, se tiver, uns vídeos curtos do dia a dia. Pode ser do celular mesmo. Eu só uso o que tu mandar.'
 export const PEDE_VIDEO = 'Fotos recebidas! Tem uns vídeos curtos do dia a dia (até 1 minuto)? Se tiver, manda aqui. Se não tiver, é só dizer "sem vídeo".'
 export const SEM_FOTO = 'Sem fotos eu não consigo, porque não invento imagem do teu negócio. Quando tiver, me manda aqui que eu faço.'
-export const INTRO = 'Oba! Aqui é a Maia, a inteligência artificial da Carreira no Digital. Sim, uma IA mesmo. Vou te fazer umas perguntas rápidas, uma de cada vez, e no fim te peço umas fotos. Leva uns 3 minutos.'
+// Sem se apresentar de novo: a Maia já se apresentou no disparo (Guto, 15/11)
+export const INTRO = 'Oba! Vou te fazer umas perguntas rápidas, uma de cada vez, e no fim te peço umas fotos e uns vídeos curtos. Leva uns 3 minutos.'
 export const AGORA_NAO = 'Tranquilo! Não te chamo mais sobre isso.'
 export const SEM_NEGOCIO = 'Entendi! A amostra é feita pro negócio de quem tem um. Mas se tu conhece alguém que tem negócio e ia gostar, me passa o nome e o WhatsApp da pessoa: se ela fechar, tu ganha comissão pela indicação.'
 export const PRECO = 'Te mostro tudo junto com a amostra: o que eu faço, o que está incluso e o valor. Primeiro deixa eu fazer a tua!'
