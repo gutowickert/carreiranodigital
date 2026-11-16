@@ -11,7 +11,7 @@ import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -144,10 +144,21 @@ async function responde(c: any, texto: string, novas: Novas) {
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)
   if (['na_lista', 'disparado', 'agora_nao', 'perdido'].includes(c.etapa)) {
     if (ehAgoraNao(texto, true)) return agoraNao(c)
+    // 16/11: saudação automática do WhatsApp da empresa não é "Quero ver": quieta, e a pessoa segue onde estava
+    if (['na_lista', 'disparado'].includes(c.etapa) && texto && ehAutoResposta(texto)) {
+      await salvaJson(c, 'estado', { auto_resposta: { em: new Date().toISOString() } })
+      await evento('lanc_auto_resposta', { contato: c.id })
+      return { ok: true, silencio: 'resposta automática' }
+    }
     await salva(c, { etapa: 'quero_ver', motivo_perda: null })
     await salvaJson(c, 'estado', { indicacao: null, inicio_em: new Date().toISOString() })
     await evento('lanc_quero_ver', { contato: c.id })
     return coleta(c, ehQueroVer(texto) ? '' : texto, novas, true)
+  }
+  // 16/11: na coleta, o robô do WhatsApp da empresa respondendo a pergunta ("no momento não estamos atendendo") não é resposta
+  if (['quero_ver', 'coletando'].includes(c.etapa) && texto && !novas.fotos && !novas.videos && ehAutoResposta(texto)) {
+    await evento('lanc_auto_resposta', { contato: c.id, na: 'coleta' })
+    return { ok: true, silencio: 'resposta automática' }
   }
   if (['quero_ver', 'coletando'].includes(c.etapa)) return coleta(c, texto, novas, false)
   if (['material_recebido', 'em_producao'].includes(c.etapa)) return aguardando(c, texto, novas)

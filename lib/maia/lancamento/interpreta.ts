@@ -22,6 +22,14 @@ export const ehAgoraNao = (t: string, convite = false) => (convite && /^(nao|nao
 // 16/11 (Nando): as mesmas palavras que o webhook da escola trata como descadastro (PALAVRAS_OPTOUT). Fora do modo teste,
 // quem manda uma delas pediu pra sair da lista: a Maia não responde e o contato vira "perdido"
 export const ehDescadastro = (t: string) => /^(sair|parar|pare|cancelar|descadastrar|remover|stop)[!. ]*$/.test(sem(t))
+// 16/11 (Nando): a SAUDAÇÃO AUTOMÁTICA do WhatsApp Business de quem recebeu o disparo ("X agradece seu contato. Como podemos
+// ajudar?", "Seja bem-vindo à...", "em breve retornamos"). Na 1ª hora do lançamento, 110 das 128 primeiras respostas eram isso,
+// e a Maia abria a coleta com cada uma. Não é interesse: a Maia fica quieta e a pessoa continua "Disparado"
+export const ehAutoResposta = (t: string) => {
+  const s = sem(t)
+  if (!s || /^quero ver/.test(s)) return false
+  return /(agradece (o |pelo )?(seu )?contato|como (podemos|posso) (te |lhe )?ajudar|seja (muito )?bem[- ]?vind|bem[- ]?vindo\(a\)|em breve (te |lhe )?(retorn|respond|iremos|vou|entraremos|falo)|assim que (possivel|puder)|obrigad[oa] (pelo|por) (seu |sua |ter )?(entrado em |entrar em )?(contato|mensagem)|mensagem automatica|resposta automatica|no momento (nao|estou|estamos)|fora do (nosso )?horario|recebemos (a )?sua mensagem|retornaremos|deixe (aqui )?(seu|sua) (recado|mensagem)|estou em atendimento|que (bom|otimo|prazer) (falar|receber|ter)|prazer (em )?ter voce|prazer te ter|e um prazer (te )?atend|para agilizar (seu|o) atendimento|bem[- ]?vind[oa]|bem -vind|seja bem\\b|agradeco (o |pelo )?(seu )?contato|agradecemos (por|pelo|o)|retornarei|ja (ja|lhe|te) (te )?atend|logo (logo |mais )?(vou|retorn|te atend|lhe atend)|em seguida (ja )?(vou|retorno|te respond)|digite \\d|numero secundario|o mais (rapido|breve) possivel|(me )?diz (o )?teu nome que|como posso ajuda)/.test(s)
+}
 // 16/11 (Nando): pediu pra falar com uma pessoa. A Maia avisa uma vez que chamou o time e fica quieta com essa pessoa
 export const ehPedeHumano = (t: string) => /\b(humano|humana|atendente|pessoa de verdade|pessoa real|falar com (alguem|uma pessoa|o time|voces|o pessoal)|chama (alguem|o time|uma pessoa)|quero falar com)\b/.test(sem(t))
 export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[!. ]*$/.test(sem(t))

@@ -120,6 +120,16 @@ await post({ acao: 'simular_entrada', telefone: gi, tipo: 'audio' })
 const ga = le('lanc_msgs').filter(m => m.contato_id === contato(gi).id && m.direcao === 'saida').map(m => m.texto)
 confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.filter(t => /ouvir áudio/.test(t)).length === 1 && !!contato(gi).estado.humano, ga)
 
+// 16/11: a saudação automática do WhatsApp da empresa não abre a coleta; o botão "Quero ver" depois abre normal
+const hu = '55000' + R + '09'
+await post({ acao: 'adicionar', telefone: hu, nome: 'Hugo', remessa: 1 })
+for (const auto of ['‎Imobiliária Univale agradece seu contato. Como podemos ajudar?', 'Olá! 👋 Seja bem-vindo(a) à Encanta Pet! 🐾 Em breve retornamos.', 'Olá, obrigado pela mensagem 😃 Estou em atendimento, assim que possível te respondo.']) await diz(hu, auto)
+confere('saudação automática: a Maia não responde e não abre a coleta', le('lanc_msgs').filter(m => m.contato_id === contato(hu).id && m.direcao === 'saida').length === 0 && ['na_lista', 'disparado'].includes(contato(hu).etapa), contato(hu).etapa)
+await diz(hu, 'Quero ver', 'botao')
+confere('depois o "Quero ver" de verdade abre a coleta', contato(hu).etapa === 'quero_ver' && /o que tu vende/i.test(ultimas(hu)[0] || ''), ultimas(hu)[0])
+await diz(hu, 'Vendo móveis planejados pra quem está reformando a casa')
+confere('e uma resposta de verdade na coleta segue a coleta (não é saudação)', contato(hu).etapa === 'coletando')
+
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')
 confere('contadores por etapa', l.conta.material_recebido >= 1 && l.conta.agora_nao === 0 && l.conta.quero_ver >= 1, l.conta)
