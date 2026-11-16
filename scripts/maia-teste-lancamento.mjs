@@ -44,7 +44,9 @@ console.log('1) "Quero ver" e a coleta, uma pergunta por vez')
 r = await diz(T.ana, 'Quero ver', 'botao')
 confere('o botão "Quero ver" é da Maia', r.tratado === true)
 let m = ultimas(T.ana)[0]
-confere('a Maia se apresenta como IA e faz a 1ª pergunta', /Maia/.test(m) && /\bIA\b/.test(m) && /o que tu vende, e pra quem/i.test(m), m)
+// 15/11 (8810c83): depois do "Quero ver" a Maia não se apresenta de novo: quem diz que ela é IA é o modelo do disparo (regra do Nando 15/11:
+// se vendendo, ela diz que é IA; atendendo cliente de um negócio, só se perguntarem)
+confere('a Maia faz a 1ª pergunta (sem se apresentar de novo)', /o que tu vende, e pra quem/i.test(m), m)
 confere('sem emoji', !/\p{Extended_Pictographic}/u.test(m))
 confere('etapa Quero ver', contato(T.ana).etapa === 'quero_ver')
 await diz(T.ana, 'Cookies artesanais pra quem quer dar presente')
