@@ -195,15 +195,18 @@ export async function avisaGuto(titulo: string, texto: string, urgente = false) 
   if (maiaLocal() || process.env.MAIA_SEM_AVISO === '1') return { ok: true, local: true }
   try {
     const { supabaseAdmin: sb } = await import('@/lib/supabase-admin')
-    const { data } = await sb.from('usuarios_perfil').select('whatsapp').eq('email', 'guto.wickert@gmail.com').limit(1)
-    const w = soDigitos(data?.[0]?.whatsapp)
-    if (!w) return { ok: false, erro: 'sem whatsapp no perfil' }
+    // 16/11 (Nando): o aviso vai pro time (Guto e Nando), pelo WhatsApp do perfil de cada um na escola. MAIA_LANC_AVISO_EMAILS troca
+    const emails = String(process.env.MAIA_LANC_AVISO_EMAILS || 'guto.wickert@gmail.com,debairros@hotmail.com').split(',').map(s => s.trim()).filter(Boolean)
+    const { data } = await sb.from('usuarios_perfil').select('whatsapp').in('email', emails)
+    const fones = [...new Set((data || []).map((x: any) => soDigitos(x.whatsapp)).filter(Boolean))]
+    if (!fones.length) return { ok: false, erro: 'sem whatsapp no perfil' }
     const { enviaTexto, conversaDe, registraSaida } = await import('@/lib/oito/wa')
-    const cv = await conversaDe(w.length <= 11 ? '55' + w : w)
     const t = `Lançamento da Maia · ${titulo}\n${texto}`
-    const r = await enviaTexto(cv.telefone, t)
-    await registraSaida(cv, 'sistema', t, r)
-    return { ok: r.ok }
+    let algum = false
+    for (const w of fones) {
+      try { const cv = await conversaDe(w.length <= 11 ? '55' + w : w); const r = await enviaTexto(cv.telefone, t); await registraSaida(cv, 'sistema', t, r); algum = algum || !!r.ok } catch { /* o próximo */ }
+    }
+    return { ok: algum }
   } catch (e: any) { return { ok: false, erro: String(e?.message || e) } }
 }
 

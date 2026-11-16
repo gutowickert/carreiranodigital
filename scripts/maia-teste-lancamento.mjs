@@ -68,13 +68,16 @@ await foto(T.ana, 1); await foto(T.ana, 2)
 confere('2 fotos: pede mais 1', /Manda mais 1 foto/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 await foto(T.ana, 3)
 confere('3 fotos: pergunta dos vídeos', /vídeos curtos/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
+const avisosAna = () => le('eventos').filter(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto)).length
+confere('chegaram as fotos: o time é avisado NA HORA (antes do vídeo)', avisosAna() === 1)
 await video(T.ana)
 // 16/11 (Nando): sem a pergunta da hora; fecha com "Material recebido! Em até 24 horas..."
 confere('vídeo: fecha a coleta sem perguntar hora', /Material recebido/.test(ultimas(T.ana)[0]) && /24 horas/.test(ultimas(T.ana)[0]) && !/10h|15h/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 let a = contato(T.ana)
 confere('Material recebido, sem hora marcada e com o prazo de 24 h pra equipe', a.etapa === 'material_recebido' && !a.entrega_em && !!a.estado.prazo_em, a)
 confere('guardou 3 fotos e 1 vídeo no armazenamento', le('lanc_midias').filter(x => x.contato_id === a.id && x.origem === 'contato').length === 4 && fs.existsSync(path.join(PASTA, 'arquivos', le('lanc_midias').find(x => x.contato_id === a.id).path)))
-confere('aviso pro Guto do material novo (só primeiro nome + negócio)', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material novo/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto) && !e.detalhe.texto.includes(T.ana)))
+confere('aviso pro time do material (só primeiro nome + negócio)', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto) && !e.detalhe.texto.includes(T.ana)))
+confere('o aviso do material sai uma vez só (não repete ao fechar)', avisosAna() === 1, String(avisosAna()))
 await diz(T.ana, 'Valeu!')
 confere('depois: confirma o prazo de 24 horas', /24 horas/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 

@@ -222,6 +222,8 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   if (c.etapa === 'quero_ver' && (texto || novas.fotos || novas.videos) && !intro) await salva(c, { etapa: 'coletando' })
   n = await contaMidias(c)
   passo = proximoPasso(c, n)
+  // 16/11 (Nando): chegaram as fotos → avisa o time NA HORA pra começar a amostra (uma vez por pessoa), sem esperar o vídeo
+  if ((novas.fotos || novas.videos) && (passo === 'video' || passo === 'feito')) await avisaMaterial(c, n)
   // a resposta
   if (passo === 'feito') return fechaColeta(c, partes)
   const recebi = novas.fotos || novas.videos
@@ -241,14 +243,21 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
 // 16/11 (Nando): sem hora marcada. A amostra sai assim que a equipe aprovar; o prazo prometido é de 24 h (estado.prazo_em,
 // pra a tela da equipe ordenar). Quem já tinha hora combinada (entrega_em) segue com ela
 export const MATERIAL_RECEBIDO = 'Material recebido! Em até 24 horas eu te mando aqui como ficou: 2 anúncios e 1 vídeo feitos com as tuas fotos.'
+async function avisaMaterial(c: any, n: { fotos: number; videos: number }) {
+  const atual = (await acha(c.id)) || c
+  if (atual.estado?.aviso_material) return
+  const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
+  await salvaJson(c, 'estado', { aviso_material: new Date().toISOString() })
+  await avisaGuto('material chegou, começar a amostra', `${rotulo(atual)} mandou ${n.fotos} foto(s)${n.videos ? ` e ${n.videos} vídeo(s)` : ''}. Prometido em até 24 h (até ${quandoFalado(prazo)}). Tela: www.carreiranodigital.com/maia/operacao/lancamento.html`, true)
+}
 export async function fechaColeta(c: any, partes: string[] = []) {
   const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
   await salva(c, { etapa: avanca(c.etapa, 'material_recebido') })
   await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString(), prazo_em: prazo })
   await mandaTexto(c, [...partes, MATERIAL_RECEBIDO].join('\n\n'))
   await evento('lanc_material', { contato: c.id })
-  const n = await contaMidias(c)
-  await avisaGuto('material novo', `${rotulo(c)} mandou ${n.fotos} foto(s) e ${n.videos} vídeo(s). Prometido: em até 24 h (até ${quandoFalado(prazo)}). Tela: /maia/operacao/lancamento.html`)
+  // o aviso pro time sai quando as fotos chegam (avisaMaterial); aqui só se ainda não saiu (ex.: a rotina fechando quem parou)
+  await avisaMaterial(c, await contaMidias(c))
   return { ok: true, passo: 'feito', prazo_em: prazo }
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
