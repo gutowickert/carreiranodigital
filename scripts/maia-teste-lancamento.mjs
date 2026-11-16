@@ -156,6 +156,32 @@ await post({ acao: 'adicionar', telefone: jo, nome: 'Jo', remessa: 1 })
   const rJ = await post({ acao: 'rodar_rotina', relogio: relJ.toISOString() })
   confere('parou na pergunta da hora: a rotina fecha a coleta com o "em até 24 horas"', contato(jo).etapa === 'material_recebido' && /Material recebido/.test(ultimas(jo)[0] || ''), rJ) }
 
+// 16/11 (Nando): follow-up de 1 h na coleta e pra quem só mandou a saudação automática
+{ const relF = new Date('2026-11-17T17:00:00Z')   // 14h em Brasília
+  const ka = '55000' + R + '96', le2 = '55000' + R + '97'
+  await post({ acao: 'adicionar', telefone: ka, nome: 'Ka', remessa: 1 }); await post({ acao: 'adicionar', telefone: le2, nome: 'Leo', remessa: 1 })
+  await diz(ka, 'Quero ver', 'botao')
+  const ajusta = (tel, f) => { const cs2 = le('lanc_contatos'); const x = cs2.find(y => y.telefone === tel); f(x); grava('lanc_contatos', cs2) }
+  ajusta(ka, x => { x.ultima_entrada_em = new Date(relF - 55 * 60e3).toISOString(); x.ultima_saida_em = new Date(relF - 50 * 60e3).toISOString(); x.estado.retomada = null })
+  let rr = await post({ acao: 'rodar_rotina', relogio: relF.toISOString() })
+  confere('coleta: com 50 min ainda não retoma', !(rr.retomadas || []).some(x => x.contato === contato(ka).id))
+  ajusta(ka, x => { x.ultima_entrada_em = new Date(relF - 75 * 60e3).toISOString(); x.ultima_saida_em = new Date(relF - 70 * 60e3).toISOString() })
+  rr = await post({ acao: 'rodar_rotina', relogio: relF.toISOString() })
+  confere('coleta: 1 h depois de parar, a Maia retoma com a pergunta que falta', (rr.retomadas || []).some(x => x.contato === contato(ka).id && x.n === 1 && x.como === 'texto') && /Ficou faltando pouco/.test(ultimas(ka)[0]), rr.retomadas)
+  await diz(le2, 'Imobiliária Teste agradece seu contato. Como podemos ajudar?')
+  ajusta(le2, x => { x.estado.auto_resposta.em = new Date(relF - 30 * 60e3).toISOString(); x.ultima_entrada_em = new Date(relF - 30 * 60e3).toISOString() })
+  rr = await post({ acao: 'rodar_rotina', relogio: relF.toISOString() })
+  confere('saudação automática: com 30 min ainda não segue', !(rr.segue_auto || []).includes(contato(le2).id))
+  ajusta(le2, x => { x.estado.auto_resposta.em = new Date(relF - 70 * 60e3).toISOString(); x.ultima_entrada_em = new Date(relF - 70 * 60e3).toISOString() })
+  rr = await post({ acao: 'rodar_rotina', relogio: new Date('2026-11-18T00:30:00Z').toISOString() })
+  confere('saudação automática: de noite (21h30) não manda', !(rr.segue_auto || []).includes(contato(le2).id))
+  rr = await post({ acao: 'rodar_rotina', relogio: relF.toISOString() })
+  confere('saudação automática: 1 h depois, UMA mensagem dizendo que é a Maia (IA) e o que é', (rr.segue_auto || []).includes(contato(le2).id) && /Maia, a IA/.test(ultimas(le2)[0]) && /quero ver/.test(ultimas(le2)[0]), rr.segue_auto)
+  rr = await post({ acao: 'rodar_rotina', relogio: new Date(+relF + 3600e3).toISOString() })
+  confere('saudação automática: não manda de novo', !(rr.segue_auto || []).includes(contato(le2).id))
+  await diz(le2, 'quero ver')
+  confere('depois do follow-up, "quero ver" abre a coleta', contato(le2).etapa === 'quero_ver') }
+
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')
 confere('contadores por etapa', l.conta.material_recebido >= 1 && l.conta.agora_nao === 0 && l.conta.quero_ver >= 1, l.conta)

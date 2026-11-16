@@ -13,6 +13,29 @@ import { acompanhamento, naSequencia } from './entrega'
 
 const H = 3600e3, D = 24 * H
 export const RETOMADA = [20 * H, 3 * D, 6 * D]
+// 16/11 (Nando): na COLETA (tocou em "Quero ver" e parou, ex.: sem mandar as fotos) a 1ª retomada é 1 h depois; a 2ª em 20 h
+// (ainda dentro da janela de 24 h) e a despedida em 6 dias
+export const RETOMADA_COLETA = [1 * H, 20 * H, 6 * D]
+// 16/11 (Nando): quem só mandou a saudação automática do WhatsApp (não viu o disparo ainda): UMA mensagem 1 h depois, dentro da
+// janela de 24 h que a própria saudação abriu, das 8h às 20h. Se responder, segue o caminho normal; se o robô responder, a Maia ignora
+export const SEGUE_AUTO = 'Oi! Aqui é a Maia, a IA de marketing da Carreira no Digital. Te mandei há pouco a ideia de fazer uma amostra grátis pro teu negócio: 2 anúncios e 1 vídeo com as tuas fotos, prontos em até 24 horas. Quer ver? É só responder "quero ver".'
+export async function segueAutoResposta(agora = new Date()) {
+  const h = horaBR(agora)
+  if (h < 8 || h >= 20) return []
+  const t = agora.getTime(), feitos: any[] = []
+  for (const c of await db.lista('lanc_contatos')) {
+    if (!['na_lista', 'disparado'].includes(c.etapa)) continue
+    const a = c.estado?.auto_resposta
+    if (!a?.em || c.estado?.auto_segue || c.estado?.humano) continue
+    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue
+    if (t - Date.parse(a.em) < H || !janelaAberta(c, 10, t)) continue
+    await mandaTexto(c, SEGUE_AUTO)
+    await salvaJson(c, 'estado', { auto_segue: { em: new Date(t).toISOString() } })
+    await evento('lanc_segue_auto', { contato: c.id })
+    feitos.push(c.id)
+  }
+  return feitos
+}
 
 function perguntaPendente(p: string) {
   return p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : (PERGUNTAS as any)[p] || ''
@@ -55,7 +78,9 @@ export async function retomadas(agora = new Date()) {
     const n = r.fase === fase && (!c.ultima_entrada_em || c.ultima_entrada_em < r.ultima_em) ? r.n || 0 : 0
     // 20 h, 3 dias e 6 dias contam do momento em que a pessoa parou (a nossa última mensagem antes da 1ª retomada)
     const base = n > 0 && r.base ? Date.parse(r.base) : Date.parse(fase === 'amostra' ? (c.entregue_em || c.ultima_saida_em) : c.ultima_saida_em)
-    if (n >= 3 || t - base < RETOMADA[n]) continue
+    if (n >= 3 || t - base < (fase === 'coleta' ? RETOMADA_COLETA : RETOMADA)[n]) continue
+    // 16/11: no mínimo 3 h entre uma retomada e a próxima (se a 1ª saiu atrasada, a 2ª não vem colada)
+    if (n > 0 && r.ultima_em && t - Date.parse(r.ultima_em) < 3 * H) continue
     let pendente = ''
     if (fase === 'coleta') pendente = perguntaPendente(proximoPasso(c, await contaMidias(c)))
     const texto = textoRetomada(c, n, fase, pendente)
@@ -121,6 +146,7 @@ export async function rotinaLancamento(agora = new Date()) {
   try { r.entregas = await entregasAgendadas(agora) } catch (e: any) { r.entregas_erro = e.message }
   try { r.testes = await testesParados(agora) } catch (e: any) { r.testes_erro = e.message }
   try { r.retomadas = await retomadas(agora) } catch (e: any) { r.retomadas_erro = e.message }
+  try { r.segue_auto = await segueAutoResposta(agora) } catch (e: any) { r.segue_auto_erro = e.message }
   try { r.acompanhamento = await acompanhamento(agora) } catch (e: any) { r.acompanhamento_erro = e.message }
   try { r.disparados = await marcaDisparados() } catch (e: any) { r.disparados_erro = e.message }
   return r
