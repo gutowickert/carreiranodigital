@@ -190,7 +190,7 @@ export function proximoPasso(c: any, n: { fotos: number; videos: number }): Pass
   for (const p of ['negocio', 'cidade', 'produtos', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) if (!k[p]) return p
   if (n.fotos < 3 && !(k.so_essas && n.fotos >= 1)) return 'fotos'
   if (!n.videos && !k.sem_video) return 'video'
-  if (k.hora == null) return 'hora'
+  // 16/11 (Nando): sem a pergunta da hora (as pessoas paravam nela). Fotos e vídeo recebidos: fecha ("em até 24 horas")
   return 'feito'
 }
 const pergunta = (p: Passo | 'video' | 'feito') => p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : PERGUNTAS[p]
@@ -201,7 +201,7 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   const antes = c.estado?.passo || null
   const partes: string[] = intro ? [INTRO] : []
   if (texto) {
-    const passoLeitura: Passo = passo === 'video' ? 'fotos' : passo === 'feito' ? 'hora' : passo
+    const passoLeitura: Passo = passo === 'video' || passo === 'feito' ? 'fotos' : passo
     const l = await interpreta(texto, passoLeitura, c.coleta)
     const campos: any = { ...(l.campos || {}) }
     if (campos.hora != null && passo !== 'hora') delete campos.hora
@@ -238,21 +238,23 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   return { ok: true, passo }
 }
 
-async function fechaColeta(c: any, partes: string[]) {
-  const dia = diaDaEntrega()
-  const entrega = instanteBR(dia, c.coleta.hora)
-  await salva(c, { etapa: avanca(c.etapa, 'material_recebido'), entrega_em: entrega })
-  await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString() })
-  await mandaTexto(c, [...partes, `Combinado! ${cap(quandoFalado(entrega))} eu te mando aqui a tua amostra: 2 anúncios e 1 vídeo feitos com as tuas fotos. Até lá!`].join('\n\n'))
+// 16/11 (Nando): sem hora marcada. A amostra sai assim que a equipe aprovar; o prazo prometido é de 24 h (estado.prazo_em,
+// pra a tela da equipe ordenar). Quem já tinha hora combinada (entrega_em) segue com ela
+export const MATERIAL_RECEBIDO = 'Material recebido! Em até 24 horas eu te mando aqui como ficou: 2 anúncios e 1 vídeo feitos com as tuas fotos.'
+export async function fechaColeta(c: any, partes: string[] = []) {
+  const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
+  await salva(c, { etapa: avanca(c.etapa, 'material_recebido') })
+  await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString(), prazo_em: prazo })
+  await mandaTexto(c, [...partes, MATERIAL_RECEBIDO].join('\n\n'))
   await evento('lanc_material', { contato: c.id })
   const n = await contaMidias(c)
-  await avisaGuto('material novo', `${rotulo(c)} mandou ${n.fotos} foto(s) e ${n.videos} vídeo(s). Entrega combinada: ${quandoFalado(entrega)}. Tela: /maia/operacao/lancamento.html`)
-  return { ok: true, passo: 'feito', entrega_em: entrega }
+  await avisaGuto('material novo', `${rotulo(c)} mandou ${n.fotos} foto(s) e ${n.videos} vídeo(s). Prometido: em até 24 h (até ${quandoFalado(prazo)}). Tela: /maia/operacao/lancamento.html`)
+  return { ok: true, passo: 'feito', prazo_em: prazo }
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 async function aguardando(c: any, texto: string, novas: Novas) {
-  const quando = c.entrega_em ? quandoFalado(c.entrega_em) : 'amanhã'
+  const quando = c.entrega_em ? quandoFalado(c.entrega_em) : 'em até 24 horas'
   if (novas.fotos || novas.videos) { await mandaTexto(c, 'Recebi! Vai junto pra equipe que está montando a tua amostra.'); if (!texto) return { ok: true } }
   if (!texto) return { ok: true }
   const h = /\b(hora|horario|mudar|trocar|pode ser|melhor)\b/i.test(texto) ? lerHora(texto) : null

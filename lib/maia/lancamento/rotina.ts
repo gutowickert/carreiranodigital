@@ -34,6 +34,14 @@ export async function retomadas(agora = new Date()) {
   if (h < 8 || h >= 21) return []
   const t = agora.getTime(), feitos: any[] = []
   const todos = await db.lista('lanc_contatos')
+  // 16/11 (sem a pergunta da hora): quem parou na hora já mandou tudo: fecha a coleta ("em até 24 horas"), dentro da janela
+  const { fechaColeta } = await import('./conversa')
+  for (const c of todos) {
+    if (!['quero_ver', 'coletando'].includes(c.etapa) || c.estado?.humano || c.estado?.modo === 'teste') continue
+    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue
+    if (proximoPasso(c, await contaMidias(c)) !== 'feito' || !janelaAberta(c, 10, t)) continue
+    try { await fechaColeta(c); c.etapa = 'material_recebido'; feitos.push({ contato: c.id, fechou: true }) } catch { /* segue */ }
+  }
   for (const c of todos) {
     if (c.estado?.humano) continue   // 16/11: com o time, sem retomada
     if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue   // 16/11: o time falou nas últimas 24 h

@@ -69,15 +69,14 @@ confere('2 fotos: pede mais 1', /Manda mais 1 foto/.test(ultimas(T.ana)[0]), ult
 await foto(T.ana, 3)
 confere('3 fotos: pergunta dos vídeos', /vídeos curtos/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 await video(T.ana)
-confere('vídeo: pergunta a hora (10h ou 15h)', /10h/.test(ultimas(T.ana)[0]) && /15h/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
-await diz(T.ana, 'de tarde')
+// 16/11 (Nando): sem a pergunta da hora; fecha com "Material recebido! Em até 24 horas..."
+confere('vídeo: fecha a coleta sem perguntar hora', /Material recebido/.test(ultimas(T.ana)[0]) && /24 horas/.test(ultimas(T.ana)[0]) && !/10h|15h/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 let a = contato(T.ana)
-confere('Material recebido, com a hora combinada às 15h', a.etapa === 'material_recebido' && new Date(Date.parse(a.entrega_em) - 3 * 3600e3).getUTCHours() === 15, a)
-confere('a Maia confirma a entrega', /Combinado!/.test(ultimas(T.ana)[0]))
+confere('Material recebido, sem hora marcada e com o prazo de 24 h pra equipe', a.etapa === 'material_recebido' && !a.entrega_em && !!a.estado.prazo_em, a)
 confere('guardou 3 fotos e 1 vídeo no armazenamento', le('lanc_midias').filter(x => x.contato_id === a.id && x.origem === 'contato').length === 4 && fs.existsSync(path.join(PASTA, 'arquivos', le('lanc_midias').find(x => x.contato_id === a.id).path)))
 confere('aviso pro Guto do material novo (só primeiro nome + negócio)', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material novo/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto) && !e.detalhe.texto.includes(T.ana)))
-await diz(T.ana, 'pode ser às 10h então? melhor')
-confere('mudou a hora da entrega pra 10h', new Date(Date.parse(contato(T.ana).entrega_em) - 3 * 3600e3).getUTCHours() === 10, ultimas(T.ana)[0])
+await diz(T.ana, 'Valeu!')
+confere('depois: confirma o prazo de 24 horas', /24 horas/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 
 console.log('2) Agora não, sem negócio')
 await diz(T.beto, 'Agora não', 'botao')
@@ -101,7 +100,7 @@ r = await diz(eva, 'Parar.')
 confere('"Parar." também é descadastro', r.tratado === false)
 
 // 16/11: pediu uma pessoa → a Maia avisa UMA vez e fica quieta até a equipe resolver; e nunca repete a mesma mensagem
-const fe = '55000' + R + '07', gi = '55000' + R + '08'
+const fe = '55000' + R + '91', gi = '55000' + R + '92'
 await post({ acao: 'adicionar', telefone: fe, nome: 'Fê', remessa: 1 }); await post({ acao: 'adicionar', telefone: gi, nome: 'Gi', remessa: 1 })
 await diz(fe, 'Quero ver', 'botao')
 const saidasDe = tel => le('lanc_msgs').filter(m => m.contato_id === contato(tel).id && m.direcao === 'saida').length
@@ -121,7 +120,7 @@ const ga = le('lanc_msgs').filter(m => m.contato_id === contato(gi).id && m.dire
 confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.filter(t => /ouvir áudio/.test(t)).length === 1 && !!contato(gi).estado.humano, ga)
 
 // 16/11: a saudação automática do WhatsApp da empresa não abre a coleta; o botão "Quero ver" depois abre normal
-const hu = '55000' + R + '09'
+const hu = '55000' + R + '93'
 await post({ acao: 'adicionar', telefone: hu, nome: 'Hugo', remessa: 1 })
 for (const auto of ['‎Imobiliária Univale agradece seu contato. Como podemos ajudar?', 'Olá! 👋 Seja bem-vindo(a) à Encanta Pet! 🐾 Em breve retornamos.', 'Olá, obrigado pela mensagem 😃 Estou em atendimento, assim que possível te respondo.']) await diz(hu, auto)
 confere('saudação automática: a Maia não responde e não abre a coleta', le('lanc_msgs').filter(m => m.contato_id === contato(hu).id && m.direcao === 'saida').length === 0 && ['na_lista', 'disparado'].includes(contato(hu).etapa), contato(hu).etapa)
@@ -131,7 +130,7 @@ await diz(hu, 'Vendo móveis planejados pra quem está reformando a casa')
 confere('e uma resposta de verdade na coleta segue a coleta (não é saudação)', contato(hu).etapa === 'coletando')
 
 // 16/11 (AT-3): o time respondeu pela caixa do CRM → a Maia fica quieta 2 h; depois volta sozinha
-const iv = '55000' + R + '10'
+const iv = '55000' + R + '94'
 await post({ acao: 'adicionar', telefone: iv, nome: 'Ivo', remessa: 1 })
 await diz(iv, 'Quero ver', 'botao')
 await post({ acao: 'simular_time', telefone: iv, texto: 'Oi Ivo, aqui é o Guto da escola. Me conta do teu negócio?' })
@@ -143,6 +142,16 @@ confere('o time falou: a Maia não responde junto', msIv().length === nIv)
 { const csIv = le('lanc_contatos'); const dIv = csIv.find(x => x.telefone === iv); dIv.estado.time_em = new Date(Date.now() - 3 * 3600e3).toISOString(); grava('lanc_contatos', csIv) }
 await diz(iv, 'Roupa feminina em Lajeado')
 confere('3 h sem o time: a Maia volta sozinha', msIv().length === nIv + 1 && msIv().slice(-1)[0]?.autor === 'maia')
+
+// 16/11: quem parou na antiga pergunta da hora (coleta completa) recebe o fechamento sozinho na rotina, dentro da janela
+const jo = '55000' + R + '95'
+await post({ acao: 'adicionar', telefone: jo, nome: 'Jo', remessa: 1 })
+{ const csJ = le('lanc_contatos'); const dJ = csJ.find(x => x.telefone === jo); const relJ = new Date('2026-11-17T17:00:00Z')
+  dJ.etapa = 'coletando'; dJ.coleta = { negocio: 'Pizzaria', cidade: 'Lajeado', produtos: 'Pizza R$ 60', como_vende: 'Entrega', carro_chefe: 'Calabresa', dificuldade: 'Pouco movimento', instagram: '@pizza', so_essas: true, sem_video: true }
+  dJ.estado = { passo: 'hora' }; dJ.ultima_entrada_em = new Date(relJ - 3600e3).toISOString(); dJ.ultima_saida_em = new Date(relJ - 3500e3).toISOString(); grava('lanc_contatos', csJ)
+  const mids = le('lanc_midias'); mids.push({ id: 'midia-jo-1', contato_id: dJ.id, tipo: 'foto', origem: 'contato', path: `lanc-${dJ.id}/midias/x.jpg`, mime: 'image/jpeg', criado_em: new Date().toISOString() }); grava('lanc_midias', mids)
+  const rJ = await post({ acao: 'rodar_rotina', relogio: relJ.toISOString() })
+  confere('parou na pergunta da hora: a rotina fecha a coleta com o "em até 24 horas"', contato(jo).etapa === 'material_recebido' && /Material recebido/.test(ultimas(jo)[0] || ''), rJ) }
 
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')
@@ -227,7 +236,9 @@ for (let i = 0; i < 3; i++) await foto(T.duda, i)
 await diz(T.duda, 'sem vídeo')
 await diz(T.duda, '10')
 const dd = contato(T.duda)
-confere('Duda: sem vídeo também chega na hora', dd.etapa === 'material_recebido' && dd.coleta.sem_video, dd.estado)
+confere('Duda: sem vídeo também fecha a coleta', dd.etapa === 'material_recebido' && dd.coleta.sem_video, dd.estado)
+// quem combinou hora antes de 16/11 (entrega_em) segue com ela: simula isso na Duda pra conferir a entrega agendada
+{ const csD = le('lanc_contatos'); const dD = csD.find(x => x.telefone === T.duda); dD.entrega_em = new Date(Date.now() + 20 * 3600e3).toISOString(); grava('lanc_contatos', csD) }
 // as peças direto no arquivo (o caminho da tela já foi testado) e a aprovação pra hora combinada
 let cs = le('lanc_contatos'), d = cs.find(x => x.telefone === T.duda)
 d.amostra = { pecas: { anuncio1: { path: `lanc-${d.id}/pecas/a.jpg`, mime: 'image/jpeg' }, anuncio2: { path: `lanc-${d.id}/pecas/b.jpg`, mime: 'image/jpeg' }, video: { path: `lanc-${d.id}/pecas/c.mp4`, mime: 'video/mp4' } } }
