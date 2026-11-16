@@ -34,7 +34,7 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/orcamentos': FileText,
   '/dashboard/captacao': Megaphone, '/dashboard/analise-conversao': TrendingUp, '/dashboard/trafego': Activity,
   '/dashboard/entregas/trafego': Activity, '/dashboard/entregas/monitor': Activity, '/dashboard/funil-site': Globe, '/dashboard/velocidade-venda': Gauge, '/dashboard/nps': Smile,
-  '/dashboard/turmas': GraduationCap, '/dashboard/chamada': UserCheck, '/dashboard/disparos': Send,
+  '/dashboard/turmas': GraduationCap, '/dashboard/chamada': UserCheck, '/dashboard/disparos': Send, '/dashboard/lancamento-maia': Sparkles,
   '/dashboard/agenda-disparos': CalendarRange, '/dashboard/followup-templates': MessageSquareText,
   '/dashboard/disparos/relatorios': FileText, '/dashboard/listas': List,
   '/dashboard/financeiro': Wallet, '/dashboard/financeiro/fluxo': TrendingUp, '/dashboard/transferencias': ArrowLeftRight, '/dashboard/financeiro/transferencias': ArrowLeftRight,
@@ -118,6 +118,7 @@ const grupos: Grupo[] = [
     titulo: 'Marketing',
     itens: [
       { nome: 'Disparos', href: '/dashboard/disparos' },
+      { nome: 'Lançamento Maia', href: '/dashboard/lancamento-maia' },
       { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
       { nome: 'Templates de Follow-up', href: '/dashboard/followup-templates' },
       { nome: 'Relatório de Disparos', href: '/dashboard/disparos/relatorios' },
@@ -259,7 +260,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
       // o Mateus foi pro Deu Venda (27/09/2026): acompanha as entregas dos clientes
       '/dashboard/entregas', '/dashboard/entregas/monitor',
       // toda a área de Marketing (28/09/2026, pedido do Guto): disparos, listas, captação, tráfego, funil do site
-      '/dashboard/disparos', '/dashboard/agenda-disparos', '/dashboard/followup-templates', '/dashboard/disparos/relatorios',
+      '/dashboard/disparos', '/dashboard/lancamento-maia', '/dashboard/agenda-disparos', '/dashboard/followup-templates', '/dashboard/disparos/relatorios',
       '/dashboard/listas', '/dashboard/captacao', '/dashboard/trafego', '/dashboard/funil-site', '/dashboard/entregas/trafego',
     ]
     if (href === '/dashboard/whatsapp') return p.wa_caixa === true
