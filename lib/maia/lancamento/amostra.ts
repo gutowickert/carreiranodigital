@@ -102,7 +102,7 @@ export function conversaSimples(c: any): { conversa: Fala[]; retomada: string } 
   return {
     conversa: [
       { de: 'cliente', texto: `Oi! Vi o anúncio de vocês. Como funciona?` },
-      { de: 'maia', texto: `Oi! Aqui é a Maia, a assistente virtual da ${neg}. O que mais sai aqui é ${prod}.${precos ? ` Os valores: ${precos}.` : ''} Quer que eu te ajude a escolher?` },
+      { de: 'maia', texto: `Oi! Aqui é da ${neg}. O que mais sai aqui é ${prod}.${precos ? ` Os valores: ${precos}.` : ''} Quer que eu te ajude a escolher?` },
       { de: 'cliente', texto: 'Quero sim. Como faço pra pedir?' },
       { de: 'maia', texto: `${como ? como + '. ' : ''}Me passa o teu nome e o que tu quer, que eu já anoto e confirmo contigo.` },
       { de: 'cliente', texto: 'Ana. Quero o que mais sai, pra sábado.' },
@@ -120,7 +120,7 @@ export async function geraConversa(c: any) {
       const { fichaDoNegocio } = await import('./teste')
       const j = await emJson<{ conversa: Fala[]; retomada: string }>(
         'Tu escreves exemplos curtos de conversa de WhatsApp entre um cliente e a Maia, a atendente virtual (IA) de um pequeno negócio. Português do Brasil, sem emoji.',
-        `O negócio:\n${fichaDoNegocio(c)}\n\nEscreve uma conversa de 6 a 8 mensagens: um cliente que viu o anúncio chama no WhatsApp, a Maia atende (diz que é a assistente virtual do negócio na primeira mensagem), responde o preço mostrando PRIMEIRO o valor (como é o produto ou serviço) e DEPOIS o número, e leva até o pedido ou o agendamento (o que, quanto, nome, dia). A Maia não confirma nada sozinha: diz que confirma com o dono. Usa SÓ o que está acima, nunca inventa preço, prazo nem endereço. Mensagens curtas, de WhatsApp. O cliente se chama Ana.\nE uma mensagem de retomada: a Maia chamando de novo no outro dia um cliente que sumiu no meio, leve, com algo novo (sem cobrar).\nDevolve {"conversa":[{"de":"cliente"|"maia","texto":"..."}],"retomada":"..."}`,
+        `O negócio:\n${fichaDoNegocio(c)}\n\nEscreve uma conversa de 6 a 8 mensagens: um cliente que viu o anúncio chama no WhatsApp, a atendente responde em nome do negócio (na primeira mensagem: "Aqui é da <negócio>"; nunca usa o nome Maia nem diz que é IA, a não ser que o cliente pergunte), responde o preço mostrando PRIMEIRO o valor (como é o produto ou serviço) e DEPOIS o número, e leva até o pedido ou o agendamento (o que, quanto, nome, dia). A Maia não confirma nada sozinha: diz que confirma com o dono. Usa SÓ o que está acima, nunca inventa preço, prazo nem endereço. Mensagens curtas, de WhatsApp. O cliente se chama Ana.\nE uma mensagem de retomada: a Maia chamando de novo no outro dia um cliente que sumiu no meio, leve, com algo novo (sem cobrar).\nDevolve {"conversa":[{"de":"cliente"|"maia","texto":"..."}],"retomada":"..."}`,
         [], { uso: { tipo: 'lancamento' } })
       if (Array.isArray(j?.conversa) && j.conversa.length >= 4) r = { conversa: j.conversa.filter(f => f && (f.de === 'cliente' || f.de === 'maia') && f.texto).slice(0, 10).map(f => ({ de: f.de, texto: String(f.texto).slice(0, 500) })), retomada: String(j.retomada || r.retomada).slice(0, 400) }
     } catch { /* fica a simples */ }

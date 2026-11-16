@@ -152,7 +152,7 @@ await diz(T.ana, 'Quero testar a Maia como cliente da Cookies artesanais pra que
 confere('liga o modo teste', /Modo teste ligado/.test(ultimas(T.ana)[0]) && contato(T.ana).estado.modo === 'teste')
 await diz(T.ana, 'Oi, quanto custa a caixa?')
 m = ultimas(T.ana)[0]
-confere('responde como atendente do negócio, com os preços da coleta', /assistente virtual/.test(m) && /R\$ 45/.test(m), m)
+confere('responde como atendente do negócio, com os preços da coleta', /Aqui é da/.test(m) && !/Maia|intelig|assistente virtual/i.test(m) && /R\$ 45/.test(m), m)
 a = contato(T.ana)
 confere('registra "Testou"', a.testou_em && a.etapa === 'testou')
 await diz(T.ana, 'Vocês aceitam vale-refeição?')
