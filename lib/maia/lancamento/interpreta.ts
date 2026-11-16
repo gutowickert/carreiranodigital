@@ -36,7 +36,7 @@ export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[
 // 16/11 (Andréia): pergunta sobre a própria Maia no meio do modo teste (preço, ativação, implantação, contratar)
 export const ehSobreMaia = (t: string) => {
   const x = sem(t)
-  return /\bmaia\b/.test(x) || /\b(ativar|ativacao|implantacao|mensalidade|contratar|assinar|assinatura)\b/.test(x) || /\b(497|997)\b/.test(x)
+  return /\bmaia\b/.test(x) || /\b(ativar|ativacao|implantacao|mensalidade)\b/.test(x) || /\b(497|997)\b/.test(x)
 }
 // o texto pronto do botão da página da amostra liga o modo teste
 export const ehGatilhoTeste = (t: string) => /\bmodo teste\b|quero testar a maia|testar como (se fosse|cliente)/.test(sem(t))
