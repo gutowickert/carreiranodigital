@@ -25,6 +25,8 @@ export const ehDescadastro = (t: string) => /^(sair|parar|pare|cancelar|descadas
 export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[!. ]*$/.test(sem(t))
 // o texto pronto do botão da página da amostra liga o modo teste
 export const ehGatilhoTeste = (t: string) => /\bmodo teste\b|quero testar a maia|testar como (se fosse|cliente)/.test(sem(t))
+// 16/11 (entrega nova): o botão "Testar agora" que a Maia manda junto da amostra (só vale com MAIA_LANC_ENTREGA_V2=1)
+export const ehTestarAgora = (t: string) => /^testar( a maia)? agora[!. ]*$/.test(sem(t))
 
 // a hora da entrega: "10", "às 15h", "de manhã", "de tarde"; das 8h às 20h
 export function lerHora(t: string): number | null {

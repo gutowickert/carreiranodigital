@@ -200,7 +200,9 @@ confere('na hora combinada a rotina entrega', !!contato(T.duda).entregue_em && c
 // retomada da coleta: o Beto parou no meio (a última mensagem foi nossa, há 21 h); relógio às 14h de Brasília
 const rel = new Date('2026-11-17T17:00:00Z')
 cs = le('lanc_contatos'); let b = cs.find(x => x.telefone === T.beto)
-b.ultima_entrada_em = new Date(rel - 22 * 3600e3).toISOString(); b.ultima_saida_em = new Date(rel - 21 * 3600e3).toISOString(); grava('lanc_contatos', cs)
+b.ultima_entrada_em = new Date(rel - 22 * 3600e3).toISOString(); b.ultima_saida_em = new Date(rel - 21 * 3600e3).toISOString()
+// 16/11: começa sem retomada (rodando de madrugada, a rotina da Duda, "amanhã às 10h", fica a mais de 20 h e já retomava o Beto antes)
+b.estado.retomada = null; grava('lanc_contatos', cs)
 r = await post({ acao: 'rodar_rotina', relogio: rel.toISOString() })
 confere('retomada de ~20 h dentro das 24 h: texto com a pergunta que falta', (r.retomadas || []).some(x => x.contato === b.id && x.como === 'texto' && x.n === 1) && /Ficou faltando pouco/.test(ultimas(T.beto)[0]) && /o que tu vende/i.test(ultimas(T.beto)[0]), r)
 // o envio grava a hora de verdade; no relógio do teste, a retomada saiu em "rel"
@@ -232,6 +234,192 @@ confere('zerar quem é da remessa de verdade: recusa', (await post({ acao: 'zera
 r = await post({ acao: 'remover', id: contato(T.time).id })
 confere('tirar o time da lista: o número volta pro atendimento de antes', r.ok && !contato(T.time) && (await diz(T.time, 'oi')).tratado === false)
 confere('tirar da lista quem é da remessa de verdade: recusa', (await post({ acao: 'remover', id: ida })).http === 400)
+
+// ======================================================================================================================
+// 16/11: a ENTREGA NOVA (MAIA_LANC_ENTREGA_V2). Tudo acima roda com a chave desligada (o comportamento de antes).
+// ======================================================================================================================
+console.log('8) Entrega nova: as peças dentro do WhatsApp, o botão "Testar agora" e a pergunta ao sair do teste')
+const saidas = tel => { const c = contato(tel); return le('lanc_msgs').filter(m => m.contato_id === c.id && m.direcao === 'saida') }
+const muda = (tel, f) => { const cs = le('lanc_contatos'); const x = cs.find(y => y.telefone === tel); f(x); grava('lanc_contatos', cs); return x }
+const COLETA = n => ({ negocio: 'Pizzaria pra família', nome_negocio: n, cidade: 'Lajeado', produtos: 'Pizza grande R$ 60, média R$ 45', como_vende: 'Entrega e retirada, de terça a domingo das 18h às 23h', carro_chefe: 'Pizza de calabresa', dificuldade: 'Pouco movimento durante a semana', instagram: '@' + n.toLowerCase().replace(/\W/g, ''), hora: 10 })
+// alguém com a coleta feita e as 2 artes prontas (sem vídeo), janela de 24 h aberta
+async function pronto(tel, nome, neg, op = {}) {
+  await post({ acao: 'adicionar', telefone: tel, nome, remessa: 1 })
+  const x = muda(tel, x => {
+    x.etapa = 'material_recebido'; x.coleta = COLETA(neg); x.entrega_em = new Date(Date.now() - 60e3).toISOString()
+    x.ultima_entrada_em = op.janelaFechada ? new Date(Date.now() - 30 * 3600e3).toISOString() : new Date(Date.now() - 3600e3).toISOString()
+    x.amostra = { pecas: { anuncio1: { path: `lanc-${x.id}/pecas/a1.jpg`, mime: 'image/jpeg', legenda: 'A calabresa que sai do forno a lenha.' }, anuncio2: { path: `lanc-${x.id}/pecas/a2.jpg`, mime: 'image/jpeg' }, ...(op.video ? { video: { path: `lanc-${x.id}/pecas/v.mp4`, mime: 'video/mp4' } } : {}) } }
+  })
+  return x
+}
+r = await post({ acao: 'chave_v2', ligar: true })
+confere('liga a chave da entrega nova (só no teste local)', r.v2 === true && (await get('acao=lista')).v2 === true, r)
+const F = { fabi: '55000' + R + '11', gil: '55000' + R + '12', hugo: '55000' + R + '13', ivo: '55000' + R + '14', jo: '55000' + R + '15', kika: '55000' + R + '16' }
+// a Fabi faz a coleta de verdade (com fotos), pra ter capa, logo e grade
+await post({ acao: 'adicionar', telefone: F.fabi, nome: 'Fabi', remessa: 1 })
+await diz(F.fabi, 'Quero ver', 'botao')
+for (const t of ['Doces de festa pra aniversário', 'Lajeado', 'Brigadeiro gourmet R$ 3, bolo de pote R$ 12', 'Encomenda com 2 dias, retirada ou entrega', 'Brigadeiro gourmet', 'Pouca gente fora do bairro me conhece', '@docesdafabi']) await diz(F.fabi, t)
+for (let i = 0; i < 4; i++) await foto(F.fabi, 10 + i)
+await diz(F.fabi, 'sem vídeo'); await diz(F.fabi, '10')
+let fa = contato(F.fabi)
+confere('Fabi: coleta completa com 4 fotos', fa.etapa === 'material_recebido' && le('lanc_midias').filter(x => x.contato_id === fa.id).length === 4, fa.etapa)
+const idf = fa.id
+muda(F.fabi, x => { x.amostra = { pecas: { anuncio1: { path: `lanc-${x.id}/pecas/a1.jpg`, mime: 'image/jpeg', legenda: 'Brigadeiro de festa feito na hora.' }, anuncio2: { path: `lanc-${x.id}/pecas/a2.jpg`, mime: 'image/jpeg' } } } })
+// os campos novos da tela da equipe
+confere('salvar textos: "o que vimos" fora do formato é recusado', (await post({ acao: 'salvar_textos', id: idf, vimos: 'só uma frase solta' })).http === 400)
+confere('salvar textos: cor fora do formato é recusada', (await post({ acao: 'salvar_textos', id: idf, cor: 'vermelho' })).http === 400)
+r = await post({ acao: 'salvar_textos', id: idf, nome_negocio: 'Doces da Fabi', cor: '#e8202e', frase_entrega: 'A principal oportunidade: mostrar o brigadeiro de perto pra quem está montando festa em Lajeado.', vimos: '3 de 12 posts mostram os doces → Mostrar os doces de perto, com o WhatsApp na bio\nA bio leva pro Facebook → Trocar pelo link do WhatsApp\nSó orgânico, sem anúncio visível → Anúncio pra quem está montando festa em Lajeado e região' })
+fa = contato(F.fabi)
+confere('salvar textos: nome, cor, frase e 3 pontos do "o que vimos"', r.ok && fa.coleta.nome_negocio === 'Doces da Fabi' && fa.amostra.cor === '#e8202e' && fa.amostra.vimos.length === 3 && fa.amostra.vimos[1].oportunidade === 'Trocar pelo link do WhatsApp', fa.amostra)
+const mids = le('lanc_midias').filter(x => x.contato_id === idf)
+confere('marcar a logo e a capa (só foto do contato)', (await post({ acao: 'marcar_logo', id: idf, midia_id: mids[0].id })).ok && (await post({ acao: 'marcar_capa', id: idf, midia_id: mids[1].id })).ok && (await post({ acao: 'marcar_logo', id: idf, midia_id: 'outra' })).http === 400)
+confere('grade com 2 fotos é recusada; com 3 fica', (await post({ acao: 'salvar_grade', id: idf, itens: mids.slice(1, 3).map(m => ({ midia_id: m.id, titulo: 'x' })) })).http === 400 && (await post({ acao: 'salvar_grade', id: idf, itens: mids.slice(1, 4).map((m, i) => ({ midia_id: m.id, titulo: ['Brigadeiro', 'Bolo de pote', 'Mesa de festa'][i], tipo: 'produto' })) })).grade === 3)
+r = await post({ acao: 'gerar_roteiros', id: idf })
+confere('gerar roteiros (sem IA: 1 roteiro de uns 30 s, 5 cenas, sem preço)', r.ok && r.roteiros.length === 1 && r.roteiros[0].cenas.length === 5 && !/R\$/.test(r.texto) && /^# /.test(r.texto), r)
+confere('salvar roteiros editados (texto da tela) e recusar vazio', (await post({ acao: 'salvar_roteiros', id: idf, texto: r.texto.replace('Quem já quer comprar', 'Quem vai fazer festa') + '\n\n# Presente | Pra dezembro\n0 a 3s | Gancho | a caixa de doces | Vai dar presente?\n3 a 9s | Solução | os doces na caixa | Caixa de brigadeiro gourmet.\n9 a 15s | Chamada | o celular | Chama no WhatsApp.' })).ok && contato(F.fabi).amostra.roteiros.length === 2 && contato(F.fabi).amostra.roteiros[0].titulo === 'Quem vai fazer festa' && (await post({ acao: 'salvar_roteiros', id: idf, texto: 'nada' })).http === 400)
+c = await get('acao=contato&id=' + idf)
+confere('a tela da equipe recebe os campos novos', c.nova && c.nova.nome_negocio === 'Doces da Fabi' && /→/.test(c.nova.vimos) && /# Quem vai fazer festa/.test(c.nova.roteiros) && c.nova.grade.length === 3 && c.nova.frase_padrao)
+// aprova e entrega agora (a janela está aberta: ela escreveu agora), sem vídeo
+const nAntes = saidas(F.fabi).length
+r = await post({ acao: 'aprovar', id: idf, agora: true })
+fa = contato(F.fabi)
+const novas = saidas(F.fabi).slice(nAntes)
+confere('sem vídeo também aprova na entrega nova', r.ok && fa.entregue_em && fa.etapa === 'amostra_entregue' && fa.amostra.entrega_v2 === true, r)
+confere('entrega: anúncio 1 e 2 como imagem, primeiro', novas[0]?.tipo === 'imagem' && /anúncio 1/.test(novas[0].texto) && /Doces da Fabi/.test(novas[0].texto) && novas[1]?.tipo === 'imagem' && /anúncio 2/.test(novas[1].texto), novas.map(m => m.tipo + ': ' + m.texto))
+confere('entrega: a frase da oportunidade com o botão "Testar agora"', novas[2]?.tipo === 'botoes' && novas[2].texto.includes('mostrar o brigadeiro de perto') && /\[botões: Testar agora\]/.test(novas[2].texto), novas[2])
+confere('entrega: por último o link da página', novas.length === 4 && novas[3].tipo === 'texto' && novas[3].texto.startsWith('Quer ver tudo, com os roteiros, a análise e o plano? Tá aqui: ') && novas[3].texto.includes('/maia/amostra/' + fa.token))
+confere('entrega: as imagens levam o arquivo das peças (sem emoji)', novas[0].midia_id === `lanc-${idf}/pecas/a1.jpg` && !novas.some(m => /\p{Extended_Pictographic}/u.test(m.texto || '')))
+// com vídeo: vai como vídeo, depois das imagens
+await pronto(F.jo, 'Jo', 'Forno do Jo', { video: true })
+r = await post({ acao: 'aprovar', id: contato(F.jo).id, agora: true })
+confere('com vídeo: imagem, imagem, vídeo, botão, link', saidas(F.jo).map(m => m.tipo).join(',') === 'imagem,imagem,video,botoes,texto', saidas(F.jo).map(m => m.tipo))
+// o botão "Testar agora" liga o modo teste ali mesmo
+r = await diz(F.fabi, 'Testar agora')
+confere('o botão "Testar agora" liga o modo teste', r.teste === 'ligado' && contato(F.fabi).estado.modo === 'teste' && /Modo teste ligado/.test(ultimas(F.fabi)[0]) && /Doces da Fabi/.test(ultimas(F.fabi)[0]), r)
+await diz(F.fabi, 'Oi, quanto custa o brigadeiro?')
+confere('no teste responde como a Doces da Fabi, com os preços da coleta', /Aqui é da Doces da Fabi/.test(ultimas(F.fabi)[0]) && /R\$ 3/.test(ultimas(F.fabi)[0]), ultimas(F.fabi)[0])
+await diz(F.fabi, 'Vocês fazem doce sem açúcar?')
+confere('guarda as perguntas do teste pro cartão do Rick', (contato(F.fabi).estado.teste_perguntas || []).length === 2)
+r = await diz(F.fabi, 'sair')
+fa = contato(F.fabi)
+confere('saiu do teste: a Maia pergunta na hora o que achou', /saí do modo teste/.test(ultimas(F.fabi)[0]) && ultimas(F.fabi)[0].endsWith('E aí, curtiu como ela atendeu teu cliente? O que tu achou?') && fa.estado.acomp.esperando === 'opiniao_teste' && !fa.estado.modo, ultimas(F.fabi)[0])
+await post({ acao: 'rick_feito', id: idf })
+r = await diz(F.fabi, 'Achei muito rápida, gostei do jeito')
+fa = contato(F.fabi)
+let lf = (await get('acao=lista')).lista.find(x => x.id === idf)
+confere('a resposta vai pro time (fila do Rick) com o texto, e para a sequência', /Valeu por me contar/.test(ultimas(F.fabi)[0]) && lf.rick_pendente && lf.rick_texto === 'Achei muito rápida, gostei do jeito' && fa.estado.acomp.parado, lf)
+confere('o cartão do Rick mostra o que a pessoa fez (aberturas, teste, perguntas)', lf.atividade.testou === true && lf.atividade.perguntas.length === 2 && /testou/.test(lf.atividade.texto) && /sem açúcar/.test(lf.atividade.texto), lf.atividade)
+confere('o aviso pro Guto não leva a resposta nem o telefone', !le('eventos').some(e => e.tipo === 'lanc_aviso' && (/Achei muito rápida/.test(e.detalhe.texto) || e.detalhe.texto.includes(F.fabi))))
+
+console.log('9) A página nova da amostra')
+const tf = contato(F.fabi).token
+pg = await fetch(`${URL}/maia/amostra/${tf}`, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone)' } }); html = await pg.text()
+const ordemNova = ['Amostra feita pela Maia', 'Testar a Maia agora', 'Quero colocar rodando', 'O que a gente viu', 'Os anúncios', 'Tu grava, a Maia monta', 'Uma ideia de grade do Instagram', 'Agora testa tu', 'Tudo que a Maia faz', 'Como começa', 'Ativação de', 'Dúvidas comuns', 'Bora colocar']
+const posN = ordemNova.map(t => html.indexOf(t))
+confere('a página nova tem tudo, na ordem', pg.status === 200 && posN.every((p, i) => p > 0 && (i === 0 || p > posN[i - 1])), ordemNova.filter((t, i) => posN[i] < 0))
+confere('entrada: logo da pessoa, os cards do que ela contou e a foto de capa', /<img class="logo" src="[^"]*api\/maia\/arquivo/.test(html) && /O que mais sai/.test(html) && /Brigadeiro gourmet/.test(html) && /class="foto"[^>]*background-image/.test(html))
+confere('"o que vimos" em 3 cards coloridos, com o número em destaque', (html.match(/class="v c\d"/g) || []).length === 3 && /<b class="num">3<\/b>/.test(html) && /Trocar pelo link do WhatsApp/.test(html))
+confere('os 3 estilos de vídeo e os roteiros em storyboard (tempo, o que filmar, a fala)', ['Voz por cima das cenas', 'Falando pra câmera', 'Misturando os dois', 'Quem vai fazer festa', 'Como gravar'].every(t => html.includes(t)) && (html.match(/class="card rot-card r\d"/g) || []).length === 2 && /class="tq">0 a 4s/.test(html) && /class="balao"/.test(html))
+confere('"Tudo que a Maia faz": os 11 cards, números marcados "exemplo"', /<i>11<\/i><h3>12 posts por mês/.test(html) && (html.match(/class="ex">exemplo/g) || []).length >= 6)
+confere('a oferta: R$ 997 por R$ 497, depois R$ 997 por mês, no ar 2 dias depois, presencial e individual, sem fidelidade', /<s>R\$ 997<\/s>/.test(html) && /<b>R\$ 497<\/b>/.test(html) && /R\$ 997 por mês/.test(html) && /2 dias depois/.test(html) && /presencial e individual/.test(html) && /sem fidelidade/i.test(html))
+confere('o valor vem antes do preço (o R$ 497 só depois de "Como começa")', html.indexOf('R$ 497') > html.indexOf('Como começa'))
+confere('sem prova de cliente, sem emoji, só tema claro', !/Wood|Segatto/.test(html) && !/\p{Extended_Pictographic}/u.test(html.replace(/<style[\s\S]*?<\/style>/, '')) && !/prefers-color-scheme:\s*dark/.test(html))
+confere('as imagens são só a da Maia e os arquivos do contato', (html.match(/<img [^>]*src="([^"]+)"/g) || []).every(t => /maia-avatar|api\/maia\/arquivo/.test(t)))
+confere('os botões abrem o WhatsApp da escola (teste e "colocar rodando")', html.includes('https://wa.me/5551995054548?text=Quero%20testar%20a%20Maia%20como%20cliente%20da%20Doces%20da%20Fabi%20(modo%20teste)') && html.includes('Quero%20colocar%20a%20Maia%20rodando%20na%20Doces%20da%20Fabi'))
+confere('a página nova continua contando as aberturas', contato(F.fabi).aberturas === 1)
+// sem os campos opcionais: some o "o que vimos", a grade e a logo (vai o nome escrito na cor da marca)
+const tj = contato(F.jo).token
+html = await (await fetch(`${URL}/maia/amostra/${tj}?previa=1`)).text()
+confere('sem "o que vimos", sem grade e sem logo: as seções somem e o nome vai escrito', !html.includes('O que a gente viu') && !html.includes('grade do Instagram') && !html.includes('class="logo"') && /<h1 class="nome [gmp]">Forno do <span>Jo<\/span><\/h1>/.test(html) && html.includes('Tu grava, a Maia monta') && html.includes('O vídeo que a Maia montou'))
+confere('os roteiros saem da coleta (rascunho feito na aprovação)', /class="card rot-card r1"/.test(html) && /Pizza de calabresa/i.test(html))
+
+console.log('10) O acompanhamento depois da amostra (relógio simulado)')
+const E = Date.parse('2026-11-17T13:00:00Z')   // 10h em Brasília
+const roda = async ms => post({ acao: 'rodar_rotina', relogio: new Date(ms).toISOString() })
+const fez = (r, tel, passo) => (r.acompanhamento || []).find(x => x.contato === contato(tel).id && (!passo || x.passo === passo))
+await pronto(F.gil, 'Gil', 'Forno do Gil')
+await post({ acao: 'aprovar', id: contato(F.gil).id, agora: true })
+muda(F.gil, x => { x.entregue_em = new Date(E).toISOString(); x.ultima_entrada_em = new Date(E - 3600e3).toISOString() })
+r = await roda(E + 2 * 3600e3)
+confere('2 h depois da entrega: nada ainda', !fez(r, F.gil), r.acompanhamento)
+r = await roda(E + 3 * 3600e3 + 60e3)
+let sg = saidas(F.gil).slice(-1)[0]
+confere('3 h sem abrir: reenvia o anúncio 1 como imagem', fez(r, F.gil, 'reenvio')?.como === 'texto' && sg.tipo === 'imagem' && sg.texto === 'Fiz esse pra ti. Quer ver o resto e testar?' && sg.midia_id === `lanc-${contato(F.gil).id}/pecas/a1.jpg`, r.acompanhamento)
+r = await roda(E + 4 * 3600e3 + 60e3)
+confere('não repete o reenvio', !fez(r, F.gil))
+const tg = contato(F.gil).token
+for (let i = 0; i < 2; i++) await fetch(`${URL}/maia/amostra/${tg}`, { headers: { 'user-agent': 'Mozilla/5.0 (Android)' } })
+let lg = (await get('acao=lista')).lista.find(x => x.id === contato(F.gil).id)
+confere('abriu 2 vezes: vai pra fila "Rick: mandar áudio" com o que fez', lg.rick_pendente && lg.rick_motivo === 'abriu a amostra' && /abriu 2 vezes/.test(lg.atividade.texto) && /não testou/.test(lg.atividade.texto), lg)
+await post({ acao: 'rick_feito', id: contato(F.gil).id })
+const A = E + 5 * 3600e3   // o Rick mandou o áudio às 15h
+muda(F.gil, x => { x.rick_feito_em = new Date(A).toISOString(); x.ultima_entrada_em = new Date(A + 2 * 3600e3).toISOString() })   // a janela fica aberta (ela abriu a conversa)
+r = await roda(A + 19 * 3600e3)
+confere('19 h depois do áudio: nada ainda', !fez(r, F.gil), r.acompanhamento)
+r = await roda(A + 20 * 3600e3 + 60e3)
+sg = saidas(F.gil).slice(-1)[0]
+confere('20 h depois do áudio, sem resposta: "O que achou da amostra?" com os 2 botões', fez(r, F.gil, 'pos_audio')?.como === 'texto' && sg.tipo === 'botoes' && /^O que achou da amostra\?/.test(sg.texto) && /\[botões: Quero conversar \| Ficou dúvida\]/.test(sg.texto), r.acompanhamento)
+r = await roda(A + 21 * 3600e3)
+confere('no mesmo dia não vai pra fila de ligar', !fez(r, F.gil, 'ligar'))
+// o Hugo também recebeu o áudio e a pergunta, mas é frio (abriu 1 vez, não testou)
+await pronto(F.hugo, 'Hugo', 'Forno do Hugo')
+await post({ acao: 'aprovar', id: contato(F.hugo).id, agora: true })
+muda(F.hugo, x => { x.entregue_em = new Date(E).toISOString(); x.aberturas = 1; x.aberta_em = new Date(E + 3600e3).toISOString(); x.rick_feito_em = new Date(A).toISOString(); x.estado.acomp = { pos_audio_em: new Date(A + 20 * 3600e3 + 60e3).toISOString() } })
+const DIA2 = Date.parse('2026-11-19T11:00:00Z')   // dia seguinte à pergunta, 8h em Brasília
+r = await roda(DIA2)
+lg = (await get('acao=lista')).lista.find(x => x.id === contato(F.gil).id)
+confere('dia seguinte, sem resposta e quente (abriu 2+): fila "Rick: ligar" com o resumo', fez(r, F.gil, 'ligar') && lg.ligar && /abriu 2 vezes/.test(lg.ligar.resumo), r.acompanhamento)
+confere('o frio (abriu 1 vez, não testou) não entra na fila de ligar', !fez(r, F.hugo, 'ligar') && !(await get('acao=lista')).lista.find(x => x.id === contato(F.hugo).id).ligar)
+confere('o aviso "Rick: ligar" pro Guto não leva o telefone', le('eventos').some(e => e.tipo === 'lanc_aviso' && e.detalhe.titulo === 'Rick: ligar' && /Gil/.test(e.detalhe.texto) && !e.detalhe.texto.includes(F.gil)))
+confere('"Liguei" tira da fila', (await post({ acao: 'ligar_feito', id: contato(F.gil).id })).ok && !(await get('acao=lista')).lista.find(x => x.id === contato(F.gil).id).ligar)
+r = await roda(E + 3 * 86400e3 + 60e3)
+let rg = contato(F.gil).estado.retomada
+confere('3 dias: a ideia nova (janela fechada e sem modelo: vai pra "Retomada à mão" com o texto)', fez(r, F.gil, 'ideia')?.como === 'a_mao' && rg.como === 'a_mao' && /tive uma ideia/.test(rg.texto) && /Forno do Gil/.test(rg.texto) && !/R\$|cobr/i.test(rg.texto), rg)
+confere('o Hugo (frio) também recebe a ideia no 3º dia', fez(r, F.hugo, 'ideia'))
+r = await roda(E + 4 * 86400e3)
+confere('não repete a ideia', !fez(r, F.gil))
+r = await roda(E + 6 * 86400e3 + 60e3)
+rg = contato(F.gil).estado.retomada
+confere('6 dias: a despedida educada, com a porta aberta', fez(r, F.gil, 'despedida') && /Tentei falar contigo, entendo a correria/.test(rg.texto) && /fico à disposição/.test(rg.texto) && contato(F.gil).estado.acomp.fim)
+r = await roda(E + 8 * 86400e3)
+confere('depois da despedida, para', !fez(r, F.gil))
+r = await roda(Date.parse('2026-11-18T01:00:00Z'))   // 22h em Brasília
+confere('fora das 8h às 21h não manda nada', !(r.acompanhamento || []).length)
+// com o modelo aprovado, fora da janela vai o modelo (a ideia leva o nome, o negócio e a ideia)
+await post({ acao: 'chave_v2', ligar: true, modelos: { IDEIA: 'maia_lanc_ideia', DESPEDIDA: 'maia_lanc_despedida' } })
+muda(F.hugo, x => { x.estado.acomp = { pos_audio_em: x.estado.acomp.pos_audio_em }; x.ultima_entrada_em = new Date(E - 30 * 3600e3).toISOString() })
+r = await roda(E + 3 * 86400e3 + 2 * 3600e3)
+confere('fora da janela, com modelo: a ideia vai pelo modelo', fez(r, F.hugo, 'ideia')?.como === 'modelo' && /^\[modelo maia_lanc_ideia\] /.test(saidas(F.hugo).slice(-1)[0].texto), saidas(F.hugo).slice(-1)[0])
+
+console.log('11) Resposta interrompe, "Agora não" para, e a entrega fora das 24 h')
+await pronto(F.ivo, 'Ivo', 'Forno do Ivo')
+await post({ acao: 'aprovar', id: contato(F.ivo).id, agora: true })
+muda(F.ivo, x => { x.entregue_em = new Date(E).toISOString() })
+r = await diz(F.ivo, 'Bem legal, depois vejo com calma')
+let li = (await get('acao=lista')).lista.find(x => x.id === contato(F.ivo).id)
+confere('qualquer resposta para a sequência e vai pro time, com o texto', contato(F.ivo).estado.acomp.parado && li.rick_pendente && li.rick_texto === 'Bem legal, depois vejo com calma' && /Vou passar pro time/.test(ultimas(F.ivo)[0]), li)
+confere('quem não testou recebe o botão "Testar agora" junto', saidas(F.ivo).slice(-1)[0].tipo === 'botoes' && /Testar agora/.test(saidas(F.ivo).slice(-1)[0].texto))
+r = await roda(E + 3 * 3600e3 + 60e3)
+const r2 = await roda(E + 3 * 86400e3 + 60e3)
+confere('depois de responder, a Maia não manda mais nada da sequência', !fez(r, F.ivo) && !fez(r2, F.ivo))
+r = await diz(F.jo, 'Quero conversar')
+confere('botão "Quero conversar": Fechamento e fila do Rick', contato(F.jo).etapa === 'fechamento' && (await get('acao=lista')).lista.find(x => x.id === contato(F.jo).id).rick_pendente && /time da escola/.test(ultimas(F.jo)[0]))
+r = await diz(F.hugo, 'Ficou dúvida')
+confere('botão "Ficou dúvida": pergunta qual e passa pro time', /Me conta qual é a dúvida/.test(ultimas(F.hugo)[0]) && (await get('acao=lista')).lista.find(x => x.id === contato(F.hugo).id).rick_pendente && contato(F.hugo).estado.acomp.parado)
+r = await diz(F.hugo, 'Agora não')
+confere('"Agora não" para tudo (Perdido)', contato(F.hugo).etapa === 'perdido' && !fez(await roda(E + 6 * 86400e3 + 60e3), F.hugo))
+// fora das 24 h: vai o modelo de entrega; quando a pessoa responde, vão as peças, o botão e o link
+await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: 'maia_amostra_pronta' } })
+await pronto(F.kika, 'Kika', 'Forno da Kika', { janelaFechada: true })
+r = await post({ acao: 'aprovar', id: contato(F.kika).id, agora: true })
+confere('janela fechada: entrega pelo modelo e guarda o resto', r.entregue === 'modelo' && contato(F.kika).amostra.falta_resto === true && saidas(F.kika).length === 1 && /^\[modelo maia_amostra_pronta\]/.test(saidas(F.kika)[0].texto), r)
+await diz(F.kika, 'Oi! Quero ver')
+confere('a pessoa respondeu: vão as peças, o botão e o link', saidas(F.kika).slice(1).map(m => m.tipo).join(',') === 'imagem,imagem,botoes,texto' && !contato(F.kika).amostra.falta_resto && !contato(F.kika).estado.acomp?.parado, saidas(F.kika).map(m => m.tipo))
+// "sair" fora do teste depois da entrega = descadastro (para tudo)
+r = await diz(F.kika, 'SAIR')
+confere('"sair" fora do teste para tudo (descadastro)', r.tratado === false && contato(F.kika).etapa === 'perdido')
+await post({ acao: 'chave_v2', ligar: false, modelos: { ENTREGA: null, IDEIA: null, DESPEDIDA: null } })
+confere('desliga a chave no fim (o servidor volta ao comportamento de antes)', (await get('acao=lista')).v2 === false)
 
 console.log(`\n${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)

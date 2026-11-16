@@ -9,6 +9,7 @@ import { maiaDb as db, maiaLocal } from '../db'
 import { salva, salvaJson, mandaTexto, mandaModelo, janelaAberta, janelaAte, horaBR, primeiroNome, evento, variantes } from './base'
 import { proximoPasso, contaMidias, PERGUNTAS, PEDE_FOTOS, PEDE_VIDEO, perguntaHora, saiTeste } from './conversa'
 import { entrega, horaDeEntregar, linkAmostra, nomeNeg } from './amostra'
+import { acompanhamento, naSequencia } from './entrega'
 
 const H = 3600e3, D = 24 * H
 export const RETOMADA = [20 * H, 3 * D, 6 * D]
@@ -36,6 +37,8 @@ export async function retomadas(agora = new Date()) {
   for (const c of todos) {
     const fase: 'coleta' | 'amostra' | null = ['quero_ver', 'coletando'].includes(c.etapa) ? 'coleta' : (c.etapa === 'amostra_entregue' && !c.testou_em) ? 'amostra' : null
     if (!fase || c.estado?.modo === 'teste') continue
+    // 16/11: quem recebeu a entrega nova está no acompanhamento (entrega.ts), não nesta retomada
+    if (fase === 'amostra' && naSequencia(c)) continue
     if (!c.ultima_saida_em || (c.ultima_entrada_em && c.ultima_entrada_em > c.ultima_saida_em)) continue   // a vez é nossa só se a última foi nossa
     const r = c.estado?.retomada || {}
     // a contagem recomeça quando a fase muda ou quando a pessoa respondeu depois da última retomada
@@ -73,7 +76,10 @@ export async function testesParados(agora = new Date()) {
   const feitos: string[] = []
   for (const c of await db.lista('lanc_contatos')) {
     if (c.estado?.modo !== 'teste' || Date.parse(c.estado.teste_ate || 0) > agora.getTime()) continue
-    if (janelaAberta(c, 2, agora.getTime())) await saiTeste(c, true); else await salvaJson(c, 'estado', { modo: null })
+    const h = horaBR(agora)
+    // 16/11 (entrega nova): de noite (fora das 8h às 21h) sai calado; a pergunta "o que tu achou" vai de manhã pelo acompanhamento
+    if (naSequencia(c) && c.testou_em && ['amostra_entregue', 'testou'].includes(c.etapa) && (h < 8 || h >= 21)) await salvaJson(c, 'estado', { modo: null, teste_ate: null, acomp: { ...(c.estado?.acomp || {}), perguntar_teste: true } })
+    else if (janelaAberta(c, 2, agora.getTime())) await saiTeste(c, true); else await salvaJson(c, 'estado', { modo: null })
     feitos.push(c.id)
   }
   return feitos
@@ -105,6 +111,7 @@ export async function rotinaLancamento(agora = new Date()) {
   try { r.entregas = await entregasAgendadas(agora) } catch (e: any) { r.entregas_erro = e.message }
   try { r.testes = await testesParados(agora) } catch (e: any) { r.testes_erro = e.message }
   try { r.retomadas = await retomadas(agora) } catch (e: any) { r.retomadas_erro = e.message }
+  try { r.acompanhamento = await acompanhamento(agora) } catch (e: any) { r.acompanhamento_erro = e.message }
   try { r.disparados = await marcaDisparados() } catch (e: any) { r.disparados_erro = e.message }
   return r
 }

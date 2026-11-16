@@ -9,9 +9,9 @@
 import { maiaLocal } from '../db'
 import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto, guardaMidia, avisaGuto, avanca,
-  primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes,
+  primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -108,7 +108,8 @@ async function responde(c: any, texto: string, novas: Novas) {
     }
     await salvaJson(c, 'estado', { modo: null })   // passou o tempo: sai calado e segue
   }
-  if (texto && ehGatilhoTeste(texto)) return entraTeste(c)
+  // 16/11 (entrega nova): o botão "Testar agora" da entrega liga o modo teste ali mesmo
+  if (texto && (ehGatilhoTeste(texto) || (entregaV2() && ehTestarAgora(texto)))) return entraTeste(c)
   if (novas.audio && !texto) { await mandaTexto(c, 'Ainda não consigo ouvir áudio por aqui. Me escreve, por favor?'); return { ok: true } }
   // quem tinha recusado (ou sem negócio) e voltou
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)
@@ -121,7 +122,17 @@ async function responde(c: any, texto: string, novas: Novas) {
   }
   if (['quero_ver', 'coletando'].includes(c.etapa)) return coleta(c, texto, novas, false)
   if (['material_recebido', 'em_producao'].includes(c.etapa)) return aguardando(c, texto, novas)
-  if (['amostra_entregue', 'testou'].includes(c.etapa)) return posEntrega(c, texto)
+  if (['amostra_entregue', 'testou'].includes(c.etapa)) {
+    // 16/11 (entrega nova): a amostra saiu pelo modelo (fora das 24 h); a pessoa respondeu, então vão as peças, o botão e o link
+    if (entregaV2() && c.amostra?.falta_resto && c.amostra?.entrega_v2) {
+      const e = await import('./entrega')
+      await e.mandaResto(c)
+      if (texto && !ehQueroVer(texto) && (await lePosEntrega(texto)) !== 'outro') return e.posEntregaNova(c, texto)
+      return { ok: true, resto: true }
+    }
+    if (entregaV2() && c.amostra?.entrega_v2) return (await import('./entrega')).posEntregaNova(c, texto)
+    return posEntrega(c, texto)
+  }
   if (c.etapa === 'fechamento') { await marcaRick(c, 'respondeu de novo na conversa'); return { ok: true, silencio: 'com o time' } }
   return { ok: true }
 }
@@ -232,6 +243,14 @@ async function entraTeste(c: any) {
 export async function saiTeste(c: any, porTempo = false) {
   await salvaJson(c, 'estado', { modo: null, teste_ate: null })
   const testou = !!c.testou_em
+  // 16/11 (entrega nova): saiu do teste depois da amostra, a Maia pergunta na hora o que a pessoa achou (a resposta vai pro time)
+  if (testou && entregaV2() && c.amostra?.entrega_v2 && ['amostra_entregue', 'testou'].includes(c.etapa)) {
+    const { PERGUNTA_TESTE } = await import('./conteudo')
+    await mandaTexto(c, `${porTempo ? 'Faz um tempinho que tu não escreve, então saí do modo teste' : 'Pronto, saí do modo teste'} e voltei a ser a Maia da escola. ${PERGUNTA_TESTE}`)
+    await salvaJson(c, 'estado', { acomp: { ...((await acha(c.id))?.estado?.acomp || {}), esperando: 'opiniao_teste', perguntou_teste_em: new Date().toISOString(), perguntar_teste: false } })
+    await marcaRick(c, 'fez o teste ao vivo')
+    return { ok: true, teste: 'saiu', perguntou: true }
+  }
   await mandaTexto(c, `${porTempo ? 'Faz um tempinho que tu não escreve, então saí do modo teste' : 'Pronto, saí do modo teste'} e voltei a ser a Maia da escola. ${testou ? 'Viu? É assim que eu atenderia cada cliente teu, a qualquer hora, e chamaria de novo quem sumisse. Se quiser colocar isso pra rodar no teu negócio, é só me dizer.' : 'Quando quiser testar, é só escrever "modo teste".'}`)
   if (testou) await marcaRick(c, 'fez o teste ao vivo')
   return { ok: true, teste: 'saiu' }
@@ -245,6 +264,8 @@ async function respondeTeste(c: any, texto: string) {
   const { respostaTeste } = await import('./teste')
   resposta = await respostaTeste(c, hist, texto)
   await mandaTexto(c, resposta)
+  // 16/11 (entrega nova): guarda as perguntas do teste pro cartão do Rick
+  if (entregaV2()) await salvaJson(c, 'estado', { teste_perguntas: [...((await acha(c.id))?.estado?.teste_perguntas || []), texto.slice(0, 200)].slice(-10) })
   if (!c.testou_em) {
     await salva(c, { testou_em: new Date().toISOString(), etapa: avanca(c.etapa, 'testou') })
     await evento('lanc_testou', { contato: c.id })

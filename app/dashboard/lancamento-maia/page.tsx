@@ -7,7 +7,7 @@ import { fetchAuth } from '@/lib/api'
 type Cartao = {
   id: string; nome: string | null; final: string; versao: string; remessa: number; negocio: string | null; cidade: string | null
   etapa: string; entrega_em: string | null; entregue_em: string | null; aberturas: number; testou: boolean
-  rick_pendente: boolean; duvida: boolean; em_teste: boolean; atualizado_em: string | null
+  rick_pendente: boolean; duvida: boolean; em_teste: boolean; atualizado_em: string | null; rick_ligar?: boolean
 }
 type Etapa = { chave: string; nome: string }
 
@@ -76,6 +76,7 @@ export default function LancamentoMaia() {
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                       {c.remessa === 0 && <span style={selo('#6b7280')}>teste do time</span>}
                       {c.rick_pendente && <span style={selo('#b4471f')}>Rick: mandar áudio</span>}
+                      {c.rick_ligar && <span style={selo('#b4471f')}>Rick: ligar</span>}
                       {c.duvida && <span style={selo('#d97706')}>dúvida</span>}
                       {c.em_teste && <span style={selo('#8b5cf6')}>testando agora</span>}
                       {c.aberturas > 0 && <span style={selo('#1f7a55')}>abriu {c.aberturas}x</span>}

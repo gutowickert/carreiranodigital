@@ -7,6 +7,9 @@ import crypto from 'node:crypto'
 import { maiaDb as db, maiaLocal } from '../db'
 
 export const lancamentoLigado = () => process.env.MAIA_LANCAMENTO_LIGADO === '1' || maiaLocal()
+// 16/11: a ENTREGA NOVA (as peças dentro do WhatsApp, o botão "Testar agora", o acompanhamento depois da amostra e a página
+// no formato da JamRock). Desligada = tudo como era. Ver lib/maia/lancamento/entrega.ts, conteudo.ts e pagina.ts
+export const entregaV2 = () => process.env.MAIA_LANC_ENTREGA_V2 === '1'
 
 // o número da escola (o mesmo do site e dos anúncios): o teste ao vivo abre o WhatsApp nele
 export const WHATS_ESCOLA = () => (process.env.MAIA_LANC_WHATS || '5551995054548').replace(/\D/g, '')
@@ -112,23 +115,36 @@ export async function mandaTexto(c: any, texto: string, autor: 'maia' | 'equipe'
   await espelhaCrm(c, 'texto', texto, r)
   return r
 }
-export async function mandaMidia(c: any, tipo: 'image' | 'video', link: string, legenda: string, mime: string) {
+export async function mandaMidia(c: any, tipo: 'image' | 'video', link: string, legenda: string, mime: string, path?: string | null) {
   const para = paraDe(c)
   let r: Envio
   if (simulado(para)) r = { ok: true, wamid: 'local-' + r12() }
   else { const { enviarMidiaLink } = await import('@/lib/whatsapp-oficial'); r = await enviarMidiaLink(para, tipo, link, legenda || undefined) }
-  await registra(c, { direcao: 'saida', autor: 'maia', tipo: tipo === 'image' ? 'imagem' : 'video', texto: legenda, mime, wamid: r.wamid || null, ok: r.ok, erro: r.ok ? null : String(r.error || '').slice(0, 300) })
+  await registra(c, { direcao: 'saida', autor: 'maia', tipo: tipo === 'image' ? 'imagem' : 'video', texto: legenda, mime, midia_id: path || null, wamid: r.wamid || null, ok: r.ok, erro: r.ok ? null : String(r.error || '').slice(0, 300) })
   await espelhaCrm(c, tipo === 'image' ? 'imagem' : 'video', legenda, r, { url: link, mime })
   return r
 }
+// botões de resposta rápida (só dentro das 24 h); o clique volta como texto (o título do botão)
+export async function mandaBotoes(c: any, corpo: string, botoes: { id: string; titulo: string }[]) {
+  const para = paraDe(c)
+  let r: Envio
+  if (simulado(para)) r = { ok: true, wamid: 'local-' + r12() }
+  else { const { enviarBotoes } = await import('@/lib/whatsapp-oficial'); r = await enviarBotoes(para, corpo, botoes) }
+  const registro = `${corpo}\n[botões: ${botoes.map(b => b.titulo).join(' | ')}]`
+  await registra(c, { direcao: 'saida', autor: 'maia', tipo: 'botoes', texto: registro, wamid: r.wamid || null, ok: r.ok, erro: r.ok ? null : String(r.error || '').slice(0, 300) })
+  await espelhaCrm(c, 'texto', registro, r)
+  return r
+}
 // fora das 24 h só modelo aprovado pela Meta. params = as variáveis do corpo; botaoUrl = o final do link do botão (se o modelo tiver)
-export async function mandaModelo(c: any, nome: string, params: string[], registro: string, botaoUrl?: string | null) {
+// imagem = o link da imagem do cabeçalho (só nos modelos com cabeçalho de imagem)
+export async function mandaModelo(c: any, nome: string, params: string[], registro: string, botaoUrl?: string | null, imagem?: string | null) {
   const para = paraDe(c)
   let r: Envio
   if (simulado(para)) r = { ok: true, wamid: 'local-' + r12() }
   else {
     const { enviarTemplate } = await import('@/lib/whatsapp-oficial')
     const comps: any[] = [{ type: 'body', parameters: params.map(t => ({ type: 'text', text: t })) }]
+    if (imagem) comps.unshift({ type: 'header', parameters: [{ type: 'image', image: { link: imagem } }] })
     if (botaoUrl) comps.push({ type: 'button', sub_type: 'url', index: '0', parameters: [{ type: 'text', text: botaoUrl }] })
     r = await enviarTemplate(para, nome, 'pt_BR', comps)
   }

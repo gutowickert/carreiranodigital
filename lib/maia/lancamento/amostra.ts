@@ -6,7 +6,7 @@
 import { maiaDb as db, maiaLocal } from '../db'
 import {
   contato as acha, salva, salvaJson, midias, mandaTexto, mandaMidia, mandaModelo, janelaAberta, janelaAte, garanteToken, avanca, evento,
-  primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto,
+  primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto, entregaV2,
 } from './base'
 import { TEXTO_TESTE, marcaRick, rotulo } from './conversa'
 
@@ -147,8 +147,10 @@ export async function aprova(c: any, op: { agora?: boolean; por: string }) {
   const atual = (await acha(c.id)) || c
   const p = atual.amostra?.pecas || {}
   if (!p.anuncio1 || !p.anuncio2) throw new Error('faltam os 2 anúncios')
-  if (!p.video) throw new Error('falta o vídeo')
+  // 16/11 (entrega nova): o vídeo é opcional (a página traz os roteiros pra pessoa gravar)
+  if (!p.video && !entregaV2()) throw new Error('falta o vídeo')
   if (!atual.amostra?.conversa?.length) await geraConversa(atual)
+  if (entregaV2() && !atual.amostra?.roteiros?.length) { const { geraRoteiros } = await import('./conteudo'); await salvaJson(atual, 'amostra', { roteiros: await geraRoteiros(atual) }) }
   await garanteToken(atual)
   await salvaJson(atual, 'amostra', { aprovada_em: new Date().toISOString(), aprovada_por: op.por, entregar: op.agora ? 'agora' : 'combinado', falha: null })
   await salva(atual, { etapa: avanca(atual.etapa, 'em_producao') })
@@ -164,6 +166,7 @@ Lá tem os 2 anúncios e o vídeo que eu fiz com as tuas fotos. E tem um teste: 
 
 // manda a amostra agora (dentro das 24 h: texto com o link + o 1º anúncio; fora: o modelo aprovado, se tiver)
 export async function entrega(c: any) {
+  if (entregaV2()) { const { entregaNova } = await import('./entrega'); return entregaNova(c) }
   const atual = (await acha(c.id)) || c
   if (atual.entregue_em) return { ok: true, ja: true }
   await garanteToken(atual)
@@ -187,7 +190,7 @@ export async function entrega(c: any) {
   if (!comBotao) await salvaJson(atual, 'amostra', { falta_link: true })
   return marcaEntregue(atual, 'modelo')
 }
-async function marcaEntregue(c: any, como: string) {
+export async function marcaEntregue(c: any, como: string) {
   await salva(c, { entregue_em: new Date().toISOString(), etapa: avanca(c.etapa, 'amostra_entregue') })
   await salvaJson(c, 'amostra', { entregue_como: como, falha: null })
   await evento('lanc_entregue', { contato: c.id, como })
@@ -255,6 +258,7 @@ ${p.legenda ? `<p class="ad-leg"><b>${esc(neg)}</b> ${br(p.legenda)}</p>` : ''}<
 }
 
 export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
+  if (entregaV2()) { const { htmlAmostraNova } = await import('./pagina'); return htmlAmostraNova(c, op) }
   const neg = nomeNeg(c), nome = primeiroNome(c.nome)
   const p = c.amostra?.pecas || {}
   const urls: Record<string, string | null> = {}

@@ -4,10 +4,14 @@
 //   POST {acao,...}: etapa, rick_feito, duvida_resolvida, link_envio, definir_peca, legenda, gerar_oficina, usar_peca,
 //        gerar_conversa, salvar_conversa, aprovar (agora: true = na hora do clique), zerar e remover (só a lista de teste, remessa 0),
 //        adicionar (um contato à mão, ex.: o teste do time)
-//   Só no modo de teste (MAIA_LOCAL=1): simular_entrada, rodar_rotina, relogio
+//   16/11 (entrega nova, MAIA_LANC_ENTREGA_V2): salvar_textos (frase da entrega, o que vimos, nome do negócio, cor), gerar_roteiros,
+//        salvar_roteiros, marcar_logo, marcar_capa, salvar_grade, ligar_feito (a fila "Rick: ligar")
+//   Só no modo de teste (MAIA_LOCAL=1): simular_entrada, rodar_rotina, relogio, chave_v2
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
-import { ETAPAS, ORDEM, contato as acha, salva, salvaJson, msgs, midias, novoContato, variantes, contatoDoTelefone, lancamentoLigado } from '@/lib/maia/lancamento/base'
+import { ETAPAS, ORDEM, contato as acha, salva, salvaJson, msgs, midias, novoContato, variantes, contatoDoTelefone, lancamentoLigado, entregaV2 } from '@/lib/maia/lancamento/base'
+import { frasePadrao, lePontos, pontosTexto, leRoteiros, roteirosTexto, geraRoteiros } from '@/lib/maia/lancamento/conteudo'
+import { atividade } from '@/lib/maia/lancamento/entrega'
 import { SLOTS, definePeca, legendaPeca, linkEnvio, geraComOficina, pecasDaOficina, usaPecaDaOficina, geraConversa, leConversaTexto, aprova, linkAmostra, type Slot } from '@/lib/maia/lancamento/amostra'
 
 export const maxDuration = 300
@@ -23,6 +27,9 @@ function resumo(c: any) {
     rick_motivo: c.estado?.rick_motivo || null, duvida: c.estado?.duvida || null, retomada_a_mao: c.estado?.retomada?.como === 'a_mao' ? c.estado.retomada : null,
     pecas: SLOTS.filter(s => c.amostra?.pecas?.[s]).length, aprovada_em: c.amostra?.aprovada_em || null, falha: c.amostra?.falha || null,
     em_teste: c.estado?.modo === 'teste', ultima_entrada_em: c.ultima_entrada_em, atualizado_em: c.atualizado_em,
+    // 16/11 (entrega nova): o que a pessoa fez (cartão do Rick), a resposta que foi pro time e a fila "Rick: ligar"
+    atividade: atividade(c), rick_texto: c.estado?.rick_texto || null, entrega_v2: !!c.amostra?.entrega_v2,
+    ligar: c.estado?.acomp?.ligar && !c.estado.acomp.ligar.feito_em ? c.estado.acomp.ligar : null,
   }
 }
 
@@ -40,8 +47,12 @@ export async function GET(req: Request) {
         ...resumo(c), coleta: c.coleta || {}, estado: c.estado || {}, motivo: c.motivo, nome_crm: c.nome_crm, motivo_perda: c.motivo_perda,
         link: c.token ? linkAmostra(c) : null, previa: c.token ? `/maia/amostra/${c.token}?previa=1` : null,
         conversa_pronta: c.amostra?.conversa || null, retomada_pronta: c.amostra?.retomada || null, pecas,
+        nova: {
+          frase_entrega: c.amostra?.frase_entrega || '', frase_padrao: frasePadrao(c), vimos: pontosTexto(c.amostra?.vimos || []), roteiros: roteirosTexto(c.amostra?.roteiros || []),
+          nome_negocio: c.coleta?.nome_negocio || '', cor: c.amostra?.cor || '', logo: c.amostra?.logo || null, capa: c.amostra?.capa || null, grade: c.amostra?.grade || [], acomp: c.estado?.acomp || {},
+        },
         msgs: ms.slice(-200).map(m => ({ direcao: m.direcao, autor: m.autor, tipo: m.tipo, texto: m.texto, ok: m.ok, erro: m.erro, em: m.criado_em })),
-        midias: await Promise.all(md.map(async m => ({ id: m.id, tipo: m.tipo, origem: m.origem, mime: m.mime, em: m.criado_em, url: await db.link(m.path) }))),
+        midias: await Promise.all(md.map(async m => ({ id: m.id, tipo: m.tipo, origem: m.origem, mime: m.mime, em: m.criado_em, path: m.path, url: await db.link(m.path) }))),
         oficina: of,
       })
     }
@@ -54,7 +65,7 @@ export async function GET(req: Request) {
     const chegou: Record<string, number> = {}
     for (const e of ETAPAS.slice(0, ORDEM.pago + 1)) chegou[e.chave] = lista.filter(c => ORDEM[c.etapa] >= ORDEM[e.chave] && ORDEM[c.etapa] <= ORDEM.pago).length
     return ok({
-      ligado: lancamentoLigado(), modo: db.modo(), etapas: ETAPAS, conta, chegou, total: lista.length,
+      ligado: lancamentoLigado(), v2: entregaV2(), modo: db.modo(), etapas: ETAPAS, conta, chegou, total: lista.length,
       abriram: lista.filter(c => c.aberta_em).length, testaram: lista.filter(c => c.testou_em).length,
       lista,
     })
@@ -67,8 +78,15 @@ export async function POST(req: Request) {
   const por = String(b.por || 'equipe').slice(0, 40)
   try {
     // ---- só no modo de teste ----
-    if (b.acao === 'simular_entrada' || b.acao === 'rodar_rotina') {
+    if (b.acao === 'simular_entrada' || b.acao === 'rodar_rotina' || b.acao === 'chave_v2') {
       if (!maiaLocal()) return erro('só no modo de teste', 403)
+      // liga e desliga a entrega nova no servidor de teste (na Vercel é a variável MAIA_LANC_ENTREGA_V2)
+      if (b.acao === 'chave_v2') {
+        if (b.ligar) process.env.MAIA_LANC_ENTREGA_V2 = '1'; else delete process.env.MAIA_LANC_ENTREGA_V2
+        // os nomes dos modelos (fora das 24 h), pra testar o caminho do modelo: { ENTREGA: 'x', REENVIO: 'y', ... }; null apaga
+        for (const [k, v] of Object.entries(b.modelos || {})) { if (!/^[A-Z_]+$/.test(k)) continue; if (v) process.env['MAIA_LANC_MODELO_' + k] = String(v); else delete process.env['MAIA_LANC_MODELO_' + k] }
+        return ok({ ok: true, v2: entregaV2() })
+      }
       if (b.acao === 'rodar_rotina') { const { rotinaLancamento } = await import('@/lib/maia/lancamento/rotina'); return ok(await rotinaLancamento(b.relogio ? new Date(b.relogio) : new Date())) }
       const { entrada, processa } = await import('@/lib/maia/lancamento/conversa')
       const r = await entrada({ telefone: b.telefone, nome: b.nome || null, tipo: b.tipo || 'texto', texto: b.texto ?? null, mime: b.mime || null, b64: b.b64 || null })
@@ -112,6 +130,42 @@ export async function POST(req: Request) {
         return ok({ ok: true })
       }
       case 'aprovar': return ok(await aprova(c, { agora: !!b.agora, por }))
+      // ---- 16/11: a entrega nova (os textos da página e da entrega, os roteiros, a logo, a capa e a grade) ----
+      case 'salvar_textos': {
+        if (b.frase_entrega != null) await salvaJson(c, 'amostra', { frase_entrega: String(b.frase_entrega).trim().slice(0, 600) })
+        if (b.vimos != null) {
+          const pts = lePontos(String(b.vimos))
+          if (String(b.vimos).trim() && !pts.length) return erro('escreve um ponto por linha: o que vimos → oportunidade')
+          await salvaJson(c, 'amostra', { vimos: pts })
+        }
+        if (b.cor != null) { const cor = String(b.cor).trim(); if (cor && !/^#[0-9a-f]{6}$/i.test(cor)) return erro('a cor é no formato #e8202e'); await salvaJson(c, 'amostra', { cor: cor || null }) }
+        if (b.nome_negocio != null) await salvaJson(c, 'coleta', { nome_negocio: String(b.nome_negocio).trim().slice(0, 60) || null })
+        return ok({ ok: true })
+      }
+      case 'gerar_roteiros': { const r = await geraRoteiros(c); await salvaJson(c, 'amostra', { roteiros: r }); return ok({ ok: true, roteiros: r, texto: roteirosTexto(r) }) }
+      case 'salvar_roteiros': {
+        const r = leRoteiros(String(b.texto || ''))
+        if (!r.length) return erro('escreve pelo menos 1 roteiro: "# título | quando" e as cenas "tempo | parte | o que filmar | a fala"')
+        await salvaJson(c, 'amostra', { roteiros: r })
+        return ok({ ok: true, roteiros: r.length })
+      }
+      case 'marcar_logo': case 'marcar_capa': {
+        const campo = b.acao === 'marcar_logo' ? 'logo' : 'capa'
+        if (!b.midia_id) { await salvaJson(c, 'amostra', { [campo]: null }); return ok({ ok: true }) }
+        const m = (await midias(c.id)).find(x => x.id === b.midia_id)
+        if (!m || m.tipo !== 'foto') return erro('foto não é desse contato')
+        await salvaJson(c, 'amostra', { [campo]: m.path })
+        return ok({ ok: true })
+      }
+      case 'salvar_grade': {
+        const ms = await midias(c.id)
+        const itens = (Array.isArray(b.itens) ? b.itens : []).slice(0, 9).map((x: any) => ({ m: ms.find(y => y.id === x.midia_id && y.tipo === 'foto'), titulo: String(x.titulo || '').slice(0, 40), tipo: String(x.tipo || '').toLowerCase().replace(/[^a-zà-ú ]/g, '').trim().slice(0, 15) || 'produto' }))
+        if (itens.some((x: any) => !x.m)) return erro('foto não é desse contato')
+        if (itens.length && itens.length < 3) return erro('a grade precisa de pelo menos 3 fotos (ou nenhuma)')
+        await salvaJson(c, 'amostra', { grade: itens.map((x: any) => ({ path: x.m.path, titulo: x.titulo, tipo: x.tipo })) })
+        return ok({ ok: true, grade: itens.length })
+      }
+      case 'ligar_feito': { const a = c.estado?.acomp || {}; await salvaJson(c, 'estado', { acomp: { ...a, ligar: { ...(a.ligar || {}), feito_em: new Date().toISOString(), por } } }); return ok({ ok: true }) }
       case 'zerar': {
         if (c.remessa !== 0) return erro('só dá pra zerar quem está na lista de teste (remessa 0)')
         for (const m of await msgs(c.id)) await db.apaga('lanc_msgs', { id: m.id })

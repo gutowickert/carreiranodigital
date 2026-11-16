@@ -103,6 +103,27 @@ export async function enviarMidiaLink(to: string, tipo: 'image' | 'video' | 'doc
   }
 }
 
+// Mensagem com BOTÕES de resposta rápida (sessão: só dentro das 24 h). Até 3 botões, título de até 20 letras.
+// O clique volta no webhook como "interactive" (button_reply), com o título como texto.
+export async function enviarBotoes(to: string, corpo: string, botoes: { id: string; titulo: string }[]): Promise<{ ok: boolean; wamid?: string | null; error?: string }> {
+  if (!TOKEN || !PHONE_ID) return { ok: false, error: 'sem credenciais' }
+  try {
+    const res = await fetch(`${GRAPH}/${PHONE_ID}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp', to: foneOficial(to), type: 'interactive',
+        interactive: { type: 'button', body: { text: corpo.slice(0, 1024) }, action: { buttons: botoes.slice(0, 3).map(b => ({ type: 'reply', reply: { id: b.id.slice(0, 256), title: b.titulo.slice(0, 20) } })) } },
+      }),
+    })
+    const j = await res.json().catch(() => ({}))
+    if (!res.ok) return { ok: false, error: JSON.stringify((j && j.error) || j) }
+    return { ok: true, wamid: j.messages?.[0]?.id || null }
+  } catch (e: any) {
+    return { ok: false, error: (e && e.message) || 'falha' }
+  }
+}
+
 // Envia uma mensagem de TEMPLATE (único jeito de iniciar conversa na API oficial).
 // componentes = variáveis do template (ex: [{ type:'body', parameters:[{type:'text', text:'Guto'}] }])
 export async function enviarTemplate(
