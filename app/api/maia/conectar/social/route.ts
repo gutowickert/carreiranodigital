@@ -15,7 +15,7 @@ import { salvaLigacao } from '@/lib/maia/social'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
 const APP_ID = () => process.env.MAIA_META_APP_ID || '2069913353660247'
-const CONFIG_SOCIAL = () => process.env.MAIA_META_CONFIG_SOCIAL || ''
+const CONFIG_SOCIAL = () => process.env.MAIA_META_CONFIG_SOCIAL || '895620820243176'   // configuração "Maia Instagram e Facebook" (16/11, Nando)
 const APP_SECRET = () => process.env.MAIA_META_APP_SECRET || process.env.META_APP_SECRET || ''
 const ESCOLHA_MS = 30 * 60e3
 const invalido = () => Response.json({ ok: false, erro: 'Esse link venceu ou não é válido. Pede um novo pra equipe da Maia.' }, { status: 403 })
