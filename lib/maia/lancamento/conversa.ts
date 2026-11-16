@@ -6,9 +6,9 @@
 //   4. o modo teste: a Maia responde como atendente do negócio da pessoa (sai com "sair" ou depois de 30 min parado)
 //   5. depois da entrega: quem quer fechar, tem dúvida ou testou vai pra fila do Rick (áudio de fechamento)
 // A Maia sempre diz que é IA, fala "tu", sem emoji, e mostra o valor antes do preço.
-import { maiaLocal } from '../db'
+import { maiaLocal, maiaDb } from '../db'
 import {
-  contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, guardaMidia, avisaGuto, avanca,
+  contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, mandaMidia, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2, timeFalando,
 } from './base'
 import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
@@ -328,8 +328,22 @@ async function respondeTeste(c: any, texto: string) {
   const hist = (await msgs(c.id)).filter(m => m.criado_em >= desde && m.tipo === 'texto').slice(-12)
   let resposta = ''
   const { respostaTeste } = await import('./teste')
-  resposta = await respostaTeste(c, hist, texto)
+  // 16/11 (Guto): no negócio de produto, a atendente mostra os modelos. As fotos que a pessoa mandou na coleta (sem a logo)
+  // vão quando o cliente pede pra ver; 4 por vez, sem repetir as que já foram nesse teste
+  const fotos = (await midias(c.id)).filter((m: any) => m.tipo === 'foto' && m.path && m.path !== c.amostra?.logo)
+  resposta = await respostaTeste(c, hist, texto, fotos.length)
+  const comFotos = /\[FOTOS\]/i.test(resposta)
+  resposta = resposta.replace(/\s*\[FOTOS\]\s*/gi, ' ').trim()
   await mandaTexto(c, resposta)
+  if (comFotos && fotos.length) {
+    const ja = Number((await acha(c.id))?.estado?.teste_fotos || 0)
+    const lote = Array.from({ length: Math.min(4, fotos.length) }, (_, i) => fotos[(ja + i) % fotos.length])
+    for (const f of lote) {
+      const link = await maiaDb.linkEnvio(f.path)
+      if (link) await mandaMidia(c, 'image', link, '', f.mime || 'image/jpeg', f.path)
+    }
+    await salvaJson(c, 'estado', { teste_fotos: ja + lote.length })
+  }
   // 16/11 (entrega nova): guarda as perguntas do teste pro cartão do Rick
   if (entregaV2()) await salvaJson(c, 'estado', { teste_perguntas: [...((await acha(c.id))?.estado?.teste_perguntas || []), texto.slice(0, 200)].slice(-10) })
   if (!c.testou_em) {

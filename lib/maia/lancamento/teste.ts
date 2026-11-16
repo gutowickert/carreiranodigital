@@ -44,7 +44,7 @@ export function fichaDoNegocio(c: any) {
   ].join('\n')
 }
 
-export function regrasTeste(c: any) {
+export function regrasTeste(c: any, nFotos = 0) {
   return `Tu és a atendente do negócio "${nomeNeg(c)}" no WhatsApp e falas em nome dele (por trás, és uma inteligência artificial).
 Isto é um TESTE: a pessoa responsável pelo negócio está fingindo ser um cliente que viu um anúncio. Responde exatamente como responderias a um cliente de verdade.
 
@@ -60,13 +60,17 @@ COMO RESPONDER:
 - O que tu não sabes: diz com naturalidade que vai confirmar com a equipe e já retorna (ex.: "Essa eu confirmo com a equipe e já te falo."). Depois oferece o que tu sabes. Nunca fala em "dono" nem em "implantação" pro cliente.
 - Cliente quer comprar ou agendar: conduz até o pedido (o que quer, quantidade, nome, dia), e diz que confirma com a equipe. Não diz que já está confirmado.
 - Só se perguntarem se é robô, IA ou pessoa: diz a verdade, que é a assistente virtual (uma IA) do negócio, e segue ajudando.
+${nFotos ? `
+- FOTOS: tu tens ${nFotos} foto(s) reais dos produtos ou do serviço. Quando o cliente pedir pra ver modelos, cores, opções, fotos ou como fica, ou quando mostrar ajudar a escolher, responde normal e termina a mensagem com [FOTOS]: as fotos vão logo depois da tua mensagem. Não descreve foto por foto e não promete foto que não tens.` : ''}
 - Escreve só a mensagem pro cliente, sem aspas e sem explicação.${jeitoDeFalar(c)}`
 }
 
-export function respostaSimples(c: any, texto: string, primeira: boolean) {
+export function respostaSimples(c: any, texto: string, primeira: boolean, nFotos = 0) {
   const k = c.coleta || {}
   const oi = primeira ? `Oi! Aqui é da ${nomeNeg(c)}. ` : ''
   const s = texto.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  // 16/11 (Guto): negócio de produto mostra os modelos. Pediu pra ver: vai com as fotos que a pessoa mandou
+  if (nFotos && pedeFotos(s)) return `${oi}Claro! Olha alguns dos nossos modelos. Se gostar de algum, me diz qual que eu te passo os detalhes. [FOTOS]`.trim()
   if (/preco|valor|quanto|custa|tem\b|vende|produto|servico|cardapio|opcoes/.test(s) && k.produtos)
     return `${oi}${k.carro_chefe ? `O que mais sai aqui é ${String(k.carro_chefe).replace(/[.!]+$/, '')}. ` : ''}Os valores: ${String(k.produtos).replace(/[.!]+$/, '')}. ${k.como_vende ? String(k.como_vende).replace(/[.!]+$/, '') + '. ' : ''}Quer que eu já anote o teu pedido?`.trim()
   if (/quero|pedido|encomend|agend|marcar|reserv/.test(s)) return `${oi}Ótimo! Me passa o teu nome, o que tu quer e pra qual dia, que eu anoto e confirmo com a equipe.`.trim()
@@ -74,14 +78,15 @@ export function respostaSimples(c: any, texto: string, primeira: boolean) {
   return `${oi}Essa eu confirmo com a equipe e já te falo. Enquanto isso, posso te ajudar com os produtos e os preços?`.trim()
 }
 
-export async function respostaTeste(c: any, hist: any[], texto: string) {
+export const pedeFotos = (s: string) => /\b(fotos?|modelos?|cor|cores|opc(ao|oes)|ver|mostra|catalogo|como fica|imagem|imagens)\b/.test(s)
+export async function respostaTeste(c: any, hist: any[], texto: string, nFotos = 0) {
   if (!Array.isArray(c.coleta?.legendas_ig)) { const ls = await legendasDoInstagram(c); if (ls.length) c = { ...c, coleta: { ...(c.coleta || {}), legendas_ig: ls } } }
   const primeira = !hist.some(m => m.direcao === 'saida' && m.autor === 'maia' && !/Modo teste ligado/.test(m.texto || '') && m.criado_em >= (c.estado?.teste_desde || ''))
-  if (!usaIA()) return respostaSimples(c, texto, primeira)
+  if (!usaIA()) return respostaSimples(c, texto, primeira, nFotos)
   try {
     const conversa = hist.filter(m => !/Modo teste ligado/.test(m.texto || '')).map(m => `${m.direcao === 'entrada' ? 'Cliente' : 'Atendente'}: ${m.texto}`).join('\n')
-    const r = await comFerramentas(regrasTeste(c), `A conversa até agora:\n${conversa || '(começando)'}\n\nA última mensagem do cliente: "${texto}"\n\nEscreve a resposta da atendente.`, [], 1, { uso: { tipo: 'lancamento_teste' } })
+    const r = await comFerramentas(regrasTeste(c, nFotos), `A conversa até agora:\n${conversa || '(começando)'}\n\nA última mensagem do cliente: "${texto}"\n\nEscreve a resposta da atendente.`, [], 1, { uso: { tipo: 'lancamento_teste' } })
     const t = String(r.texto || '').replace(/^["“]|["”]$/g, '').trim()
-    return t || respostaSimples(c, texto, primeira)
-  } catch { return respostaSimples(c, texto, primeira) }
+    return t || respostaSimples(c, texto, primeira, nFotos)
+  } catch { return respostaSimples(c, texto, primeira, nFotos) }
 }
