@@ -83,6 +83,21 @@ export async function registra(c: any, m: { direcao: 'entrada' | 'saida'; autor:
 }
 export const evento = (tipo: string, detalhe: any = {}) => db.evento(tipo, null, detalhe)
 
+// 16/11 (Nando; regra AT-3 dos controles do Guto): o TIME escreveu pra essa pessoa pela caixa do CRM da escola (responder ou
+// modelo). A Maia fica quieta com ela por 2 h desde a última mensagem do time (MAIA_LANC_TIME_MIN) e volta sozinha depois.
+// As retomadas automáticas esperam 24 h. A mensagem do time entra na conversa da tela do lançamento como "equipe"
+export const TIME_MS = () => Math.max(10, +(process.env.MAIA_LANC_TIME_MIN || 120)) * 60e3
+export const timeFalando = (c: any, agora = Date.now()) => !!c?.estado?.time_em && agora - Date.parse(c.estado.time_em) < TIME_MS()
+export const timeRecente = (c: any, agora = Date.now()) => !!c?.estado?.time_em && agora - Date.parse(c.estado.time_em) < 24 * 3600e3
+export async function timeFalou(telefone: string, texto: string | null, tipo = 'texto') {
+  if (!lancamentoLigado()) return null
+  const c = await contatoDoTelefone(telefone)
+  if (!c) return null
+  await salvaJson(c, 'estado', { time_em: new Date().toISOString() })
+  await registra(c, { direcao: 'saida', autor: 'equipe', tipo, texto: texto || null, ok: true })
+  return c.id
+}
+
 // ---------- a janela de 24 h (a última mensagem da pessoa) ----------
 export const janelaAte = (c: any) => (c.ultima_entrada_em ? Date.parse(c.ultima_entrada_em) + 24 * 3600e3 : 0)
 export const janelaAberta = (c: any, folgaMin = 2, agora = Date.now()) => janelaAte(c) - agora > folgaMin * 60e3

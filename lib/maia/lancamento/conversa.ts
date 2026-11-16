@@ -9,7 +9,7 @@
 import { maiaLocal } from '../db'
 import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, guardaMidia, avisaGuto, avanca,
-  primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2,
+  primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2, timeFalando,
 } from './base'
 import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
@@ -126,6 +126,8 @@ async function responde(c: any, texto: string, novas: Novas) {
   const agora = Date.now()
   // 16/11: com o time, a Maia fica quieta (a mensagem já está na caixa do CRM)
   if (c.estado?.humano) return { ok: true, silencio: 'com o time' }
+  // 16/11 (AT-3): o time escreveu pra ela nas últimas 2 h pela caixa do CRM: a Maia não fala junto
+  if (timeFalando(c)) return { ok: true, silencio: 'o time está falando' }
   // modo teste
   if (c.estado?.modo === 'teste') {
     if (Date.parse(c.estado.teste_ate || 0) > agora) {

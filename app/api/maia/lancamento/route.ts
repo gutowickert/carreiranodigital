@@ -78,8 +78,10 @@ export async function POST(req: Request) {
   const por = String(b.por || 'equipe').slice(0, 40)
   try {
     // ---- só no modo de teste ----
-    if (b.acao === 'simular_entrada' || b.acao === 'rodar_rotina' || b.acao === 'chave_v2') {
+    if (b.acao === 'simular_entrada' || b.acao === 'rodar_rotina' || b.acao === 'chave_v2' || b.acao === 'simular_time') {
       if (!maiaLocal()) return erro('só no modo de teste', 403)
+      // 16/11: o time respondendo pela caixa do CRM (o mesmo que o responder da escola chama)
+      if (b.acao === 'simular_time') { const { timeFalou } = await import('@/lib/maia/lancamento/base'); return ok({ ok: true, id: await timeFalou(b.telefone, b.texto ?? null) }) }
       // liga e desliga a entrega nova no servidor de teste (na Vercel é a variável MAIA_LANC_ENTREGA_V2)
       if (b.acao === 'chave_v2') {
         if (b.ligar) process.env.MAIA_LANC_ENTREGA_V2 = '1'; else delete process.env.MAIA_LANC_ENTREGA_V2

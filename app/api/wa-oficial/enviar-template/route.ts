@@ -118,6 +118,8 @@ export async function POST(req: NextRequest) {
       await sb.from('wa_conversas').update({ ultima_msg: textoRender.slice(0, 200), ultima_msg_em: new Date().toISOString() }).eq('id', conversaId)
     }
     await timeAssumiu(lead.id)   // plantão da IA: o time assumiu este lead
+    // 16/11 (Maia, lançamento): modelo mandado pelo time pra alguém da lista do lançamento → a Maia fica quieta 2 h
+    await import('@/lib/maia/lancamento/base').then(m => m.timeFalou(to, textoRender, 'modelo')).catch(() => null)
     return NextResponse.json({ ok: true, template: templateNome, conversaId })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: e?.message || 'erro' }, { status: 200 })

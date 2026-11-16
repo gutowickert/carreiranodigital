@@ -180,6 +180,7 @@ export async function acompanhamento(agora = new Date()) {
   for (const c of await db.lista('lanc_contatos')) {
     if (!['amostra_entregue', 'testou'].includes(c.etapa) || !c.entregue_em || !naSequencia(c)) continue
     if (c.estado?.humano) continue   // 16/11: com o time, sem acompanhamento automático
+    if (c.estado?.time_em && t - Date.parse(c.estado.time_em) < 24 * 3600e3) continue   // 16/11: o time falou nas últimas 24 h
     if (c.estado?.modo === 'teste' && Date.parse(c.estado.teste_ate || 0) > t) continue
     const a = c.estado?.acomp || {}
     if (a.parado || a.fim) continue

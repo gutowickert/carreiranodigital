@@ -130,6 +130,20 @@ confere('depois o "Quero ver" de verdade abre a coleta', contato(hu).etapa === '
 await diz(hu, 'Vendo móveis planejados pra quem está reformando a casa')
 confere('e uma resposta de verdade na coleta segue a coleta (não é saudação)', contato(hu).etapa === 'coletando')
 
+// 16/11 (AT-3): o time respondeu pela caixa do CRM → a Maia fica quieta 2 h; depois volta sozinha
+const iv = '55000' + R + '10'
+await post({ acao: 'adicionar', telefone: iv, nome: 'Ivo', remessa: 1 })
+await diz(iv, 'Quero ver', 'botao')
+await post({ acao: 'simular_time', telefone: iv, texto: 'Oi Ivo, aqui é o Guto da escola. Me conta do teu negócio?' })
+const msIv = () => le('lanc_msgs').filter(m => m.contato_id === contato(iv).id && m.direcao === 'saida')
+confere('a mensagem do time entra na conversa como "equipe"', msIv().slice(-1)[0]?.autor === 'equipe' && !!contato(iv).estado.time_em)
+let nIv = msIv().length
+await diz(iv, 'Tenho uma loja de roupas')
+confere('o time falou: a Maia não responde junto', msIv().length === nIv)
+{ const csIv = le('lanc_contatos'); const dIv = csIv.find(x => x.telefone === iv); dIv.estado.time_em = new Date(Date.now() - 3 * 3600e3).toISOString(); grava('lanc_contatos', csIv) }
+await diz(iv, 'Roupa feminina em Lajeado')
+confere('3 h sem o time: a Maia volta sozinha', msIv().length === nIv + 1 && msIv().slice(-1)[0]?.autor === 'maia')
+
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')
 confere('contadores por etapa', l.conta.material_recebido >= 1 && l.conta.agora_nao === 0 && l.conta.quero_ver >= 1, l.conta)

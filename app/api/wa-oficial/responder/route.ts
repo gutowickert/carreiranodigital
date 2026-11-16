@@ -55,6 +55,9 @@ export async function POST(req: NextRequest) {
       const { data: c } = await supabase.from('wa_conversas').select('lead_id').eq('id', conversaId).maybeSingle()
       await timeAssumiu(c?.lead_id)
     }
+    // 16/11 (Maia, lançamento): o time falou com alguém da lista do lançamento → a Maia fica quieta 2 h com essa pessoa
+    // (lib/maia/lancamento/base.ts timeFalou; só com MAIA_LANCAMENTO_LIGADO=1; quem não está na lista: nada muda)
+    await import('@/lib/maia/lancamento/base').then(m => m.timeFalou(telefone, texto?.trim() || null, tipoMsg)).catch(() => null)
     return NextResponse.json({ ok: true, wamid: r.wamid })
   } catch (e: any) {
     return NextResponse.json({ ok: false, error: (e && e.message) || 'erro' }, { status: 200 })
