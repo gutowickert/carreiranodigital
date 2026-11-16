@@ -121,7 +121,15 @@ async function espelhaCrm(c: any, tipo: string, texto: string, r: Envio, midia?:
   } catch { /* espelhar nunca derruba o envio */ }
 }
 
+// 16/11: a última rede contra repetição. Se a última mensagem que saiu pra pessoa é IGUAL a esta e tem menos de 30 min, não manda
+async function repetida(c: any, registro: string) {
+  try {
+    const ult = (await msgs(c.id)).filter((m: any) => m.direcao === 'saida').pop()
+    return !!ult && ult.texto === registro && Date.now() - Date.parse(ult.criado_em) < 30 * 60e3
+  } catch { return false }
+}
 export async function mandaTexto(c: any, texto: string, autor: 'maia' | 'equipe' | 'sistema' = 'maia') {
+  if (autor === 'maia' && await repetida(c, texto)) return { ok: true, repetida: true } as Envio
   const para = paraDe(c)
   let r: Envio
   if (simulado(para)) r = { ok: true, wamid: 'local-' + r12() }
@@ -141,6 +149,7 @@ export async function mandaMidia(c: any, tipo: 'image' | 'video', link: string, 
 }
 // botões de resposta rápida (só dentro das 24 h); o clique volta como texto (o título do botão)
 export async function mandaBotoes(c: any, corpo: string, botoes: { id: string; titulo: string }[]) {
+  if (await repetida(c, `${corpo}\n[botões: ${botoes.map(b => b.titulo).join(' | ')}]`)) return { ok: true, repetida: true } as Envio
   const para = paraDe(c)
   let r: Envio
   if (simulado(para)) r = { ok: true, wamid: 'local-' + r12() }

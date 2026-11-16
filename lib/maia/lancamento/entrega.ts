@@ -118,6 +118,8 @@ export async function posEntregaNova(c: any, texto: string) {
   if (!texto) return { ok: true }
   const s = sem(texto)
   const a = c.estado?.acomp || {}
+  // 16/11 (Nando, Cristina Grossi): depois do "Valeu! Vou passar pro time", cada nova mensagem recebia o mesmo texto de novo
+  const jaPassou = !!a.passou_time_em
   await salvaJson(c, 'estado', { acomp: { ...a, parado: true, respondeu_em: new Date().toISOString(), esperando: null }, rick_texto: texto.slice(0, 400) })
   if (/quero conversar|gostei,? quero|colocar (a maia )?rodando|quero colocar/.test(s)) {
     await salva(c, { etapa: avanca(c.etapa, 'fechamento') })
@@ -158,8 +160,17 @@ export async function posEntregaNova(c: any, texto: string) {
     await marcaRick(c, 'respondeu depois da amostra')
     return { ok: true, depois: 'quer_ver' }
   }
+  if (jaPassou) {
+    // já avisou que o time vem: fica quieta; o time fica sabendo do que chegou (no máximo 1 aviso a cada 30 min)
+    if (!(await marcaRick(c, 'mandou mais mensagens depois da amostra')) && Date.now() - Date.parse(a.aviso_de_novo_em || 0) > 30 * 60e3) {
+      await avisaGuto('Rick: respondeu de novo', `${rotulo(c)} mandou mais: "${texto.slice(0, 160)}". Responde pela caixa do CRM.`)
+      await salvaJson(c, 'estado', { acomp: { ...(((await acha(c.id)) || c).estado?.acomp || {}), aviso_de_novo_em: new Date().toISOString() } })
+    }
+    return { ok: true, depois: q, quieta: true }
+  }
   if (!c.testou_em) await mandaBotoes(c, 'Valeu! Vou passar pro time da escola, que já te chama aqui. Enquanto isso, se quiser ver como eu atenderia um cliente teu, toca em "Testar agora".', [BOTAO_TESTE])
   else await mandaTexto(c, 'Valeu! Vou passar pro time da escola, que já te chama aqui.')
+  await salvaJson(c, 'estado', { acomp: { ...(((await acha(c.id)) || c).estado?.acomp || {}), passou_time_em: new Date().toISOString() } })
   await marcaRick(c, 'respondeu depois da amostra')
   return { ok: true, depois: q }
 }

@@ -507,6 +507,11 @@ r = await diz(F.ivo, 'Bem legal, depois vejo com calma')
 let li = (await get('acao=lista')).lista.find(x => x.id === contato(F.ivo).id)
 confere('qualquer resposta para a sequência e vai pro time, com o texto', contato(F.ivo).estado.acomp.parado && li.rick_pendente && li.rick_texto === 'Bem legal, depois vejo com calma' && /Vou passar pro time/.test(ultimas(F.ivo)[0]), li)
 confere('quem não testou recebe o botão "Testar agora" junto', saidas(F.ivo).slice(-1)[0].tipo === 'botoes' && /Testar agora/.test(saidas(F.ivo).slice(-1)[0].texto))
+// 16/11 (Cristina Grossi): mais mensagens depois disso não recebem o mesmo "Valeu! Vou passar pro time" de novo
+{ const n0 = saidas(F.ivo).length
+  await diz(F.ivo, 'Gostei'); await diz(F.ivo, 'Quero outro video')
+  confere('depois do "vou passar pro time", a Maia fica quieta nas próximas mensagens', saidas(F.ivo).length === n0, saidas(F.ivo).slice(n0).map(m => m.texto))
+  confere('e o time fica sabendo do que chegou (o texto novo na fila)', contato(F.ivo).estado.rick_texto === 'Quero outro video', contato(F.ivo).estado) }
 r = await roda(E + 3 * 3600e3 + 60e3)
 const r2 = await roda(E + 3 * 86400e3 + 60e3)
 confere('depois de responder, a Maia não manda mais nada da sequência', !fez(r, F.ivo) && !fez(r2, F.ivo))
