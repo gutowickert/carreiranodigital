@@ -41,6 +41,8 @@ export const HUMANO = 'Claro! Já chamei o time da escola: uma pessoa te respond
 async function mandaTexto(c: any, texto: string, autor?: 'maia' | 'equipe' | 'sistema') {
   const ultima = (await msgs(c.id)).filter((m: any) => m.direcao === 'saida').slice(-1)[0]
   if (ultima && ultima.texto === texto && Date.now() - Date.parse(ultima.criado_em || 0) < 30 * 60e3) {
+    // 16/11 (Clarice: "Ok" duas vezes depois do material): repetir um aviso de espera não é conversa travada. Fica quieta
+    if (/^(Anotado! A tua amostra chega|Recebi! Vai junto)/.test(texto)) return { ok: true, repetida: true, quieta: true } as any
     await passaProTime(c, 'a conversa travou (a Maia ia repetir a mesma mensagem)', false)
     return { ok: true, repetida: true } as any
   }
@@ -288,6 +290,8 @@ async function aguardando(c: any, texto: string, novas: Novas) {
     return { ok: true, nova_hora: h }
   }
   if (texto.includes('?')) { await registraDuvida(c, texto); await mandaTexto(c, DUVIDA); return { ok: true, duvida: true } }
+  // 16/11: "ok", "obrigada", "beleza" enquanto espera a amostra: não precisa de resposta
+  if (/^\s*(ok+|okay|blz|beleza|obrigad[oa]s?|brigad[oa]|valeu|show|top|certo|combinado|perfeito|otimo|ótimo|aguardo|fico no aguardo|\p{Extended_Pictographic}+)[\s.!]*$/iu.test(texto)) return { ok: true, quieta: true }
   await mandaTexto(c, `Anotado! A tua amostra chega ${quando}.`)
   return { ok: true }
 }
