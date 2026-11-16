@@ -43,7 +43,10 @@ async function mandaTexto(c: any, texto: string, autor?: 'maia' | 'equipe' | 'si
   if (ultima && ultima.texto === texto && Date.now() - Date.parse(ultima.criado_em || 0) < 30 * 60e3) {
     // 16/11 (Clarice: "Ok" duas vezes depois do material): repetir um aviso de espera não é conversa travada. Fica quieta
     if (/^(Anotado! A tua amostra chega|Recebi! Vai junto)/.test(texto)) return { ok: true, repetida: true, quieta: true } as any
-    await passaProTime(c, 'a conversa travou (a Maia ia repetir a mesma mensagem)', false)
+    // 16/11 (Guto: "o time tem que ter algum lugar pra entender qual a dúvida"): o motivo diz o que travou e o que a pessoa mandou
+    const recebida = (await msgs(c.id)).filter((m: any) => m.direcao === 'entrada').slice(-1)[0]
+    const disse = !recebida ? '' : recebida.tipo && recebida.tipo !== 'texto' ? `mandou ${recebida.tipo}` : `respondeu "${String(recebida.texto || '').replace(/\s+/g, ' ').slice(0, 160)}${String(recebida.texto || '').length > 160 ? '...' : ''}"`
+    await passaProTime(c, `a conversa travou: a Maia pediu "${texto.replace(/\s+/g, ' ').slice(0, 70)}..." e a pessoa ${disse || 'não respondeu o que ela pediu'}. Lê a conversa no cartão e responde pela caixa do CRM`, false)
     return { ok: true, repetida: true } as any
   }
   return mandaTextoBase(c, texto, autor)
