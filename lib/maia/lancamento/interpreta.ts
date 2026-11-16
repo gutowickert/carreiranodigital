@@ -33,6 +33,11 @@ export const ehAutoResposta = (t: string) => {
 // 16/11 (Nando): pediu pra falar com uma pessoa. A Maia avisa uma vez que chamou o time e fica quieta com essa pessoa
 export const ehPedeHumano = (t: string) => /\b(humano|humana|atendente|pessoa de verdade|pessoa real|falar com (alguem|uma pessoa|o time|voces|o pessoal)|chama (alguem|o time|uma pessoa)|quero falar com)\b/.test(sem(t))
 export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[!. ]*$/.test(sem(t))
+// 16/11 (Andréia): pergunta sobre a própria Maia no meio do modo teste (preço, ativação, implantação, contratar)
+export const ehSobreMaia = (t: string) => {
+  const x = sem(t)
+  return /\bmaia\b/.test(x) || /\b(ativar|ativacao|implantacao|mensalidade|contratar|assinar|assinatura)\b/.test(x) || /\b(497|997)\b/.test(x)
+}
 // o texto pronto do botão da página da amostra liga o modo teste
 export const ehGatilhoTeste = (t: string) => /\bmodo teste\b|quero testar a maia|testar como (se fosse|cliente)/.test(sem(t))
 // 16/11 (entrega nova): o botão "Testar agora" que a Maia manda junto da amostra (só vale com MAIA_LANC_ENTREGA_V2=1)

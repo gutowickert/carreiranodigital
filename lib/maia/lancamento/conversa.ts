@@ -11,7 +11,7 @@ import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2, timeFalando,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehSobreMaia, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -41,6 +41,9 @@ export const HUMANO = 'Claro! Já chamei o time da escola: uma pessoa te respond
 async function mandaTexto(c: any, texto: string, autor?: 'maia' | 'equipe' | 'sistema') {
   const ultima = (await msgs(c.id)).filter((m: any) => m.direcao === 'saida').slice(-1)[0]
   if (ultima && ultima.texto === texto && Date.now() - Date.parse(ultima.criado_em || 0) < 30 * 60e3) {
+    // 16/11 (Maria): o pedido de foto/vídeo se repete quando a mídia ainda está descendo (ela mandou o vídeo e a Maia ainda
+    // não tinha contado). Aí não é conversa travada: fica quieta e a próxima mídia ou mensagem segue a coleta normal
+    if (texto === PEDE_VIDEO || texto === PEDE_FOTOS || /^Recebi \d+ foto/.test(texto)) return { ok: true, repetida: true, espera_midia: true } as any
     await passaProTime(c, 'a conversa travou (a Maia ia repetir a mesma mensagem)', false)
     return { ok: true, repetida: true } as any
   }
@@ -132,10 +135,16 @@ async function responde(c: any, texto: string, novas: Novas) {
   if (c.estado?.modo === 'teste') {
     if (Date.parse(c.estado.teste_ate || 0) > agora) {
       if (ehSair(texto)) return saiTeste(c)
-      if (texto) return respondeTeste(c, texto)
-      return { ok: true, teste: 'midia ignorada' }
-    }
-    await salvaJson(c, 'estado', { modo: null })   // passou o tempo: sai calado e segue
+      // 16/11 (Andréia): no teste perguntou "pra ativar a Maia vou pagar 497 por mês?" e a Maia respondeu como atendente da
+      // loja dela. Pergunta sobre a Maia (preço, ativação, implantação, contratar) sai do teste e segue o caminho normal
+      // (depois da entrega: a dúvida vai pro time e o Rick chama)
+      if (texto && ehSobreMaia(texto)) {
+        await salvaJson(c, 'estado', { modo: null, teste_ate: null })
+        await mandaTextoBase(c, 'Saí do modo teste pra te responder como a Maia da escola.')
+        c = (await acha(c.id)) || c
+      } else if (texto) return respondeTeste(c, texto)
+      else return { ok: true, teste: 'midia ignorada' }
+    } else await salvaJson(c, 'estado', { modo: null })   // passou o tempo: sai calado e segue
   }
   // 16/11: pediu uma pessoa
   if (texto && ehPedeHumano(texto)) return passaProTime(c, 'pediu pra falar com uma pessoa', true)
