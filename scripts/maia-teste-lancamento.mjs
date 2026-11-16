@@ -27,6 +27,7 @@ const diz = (telefone, texto, tipo = 'texto') => post({ acao: 'simular_entrada',
 const foto = (telefone, n = 1) => post({ acao: 'simular_entrada', telefone, tipo: 'imagem', mime: 'image/jpeg', b64: Buffer.from('foto-teste-' + n).toString('base64') })
 const video = telefone => post({ acao: 'simular_entrada', telefone, tipo: 'video', mime: 'video/mp4', b64: Buffer.from('video-teste').toString('base64') })
 const R = String(Date.now()).slice(-6)
+const INICIO = Date.now() - 1000   // os avisos contam só desta rodada (a pasta de teste guarda as anteriores)
 const T = { ana: '55000' + R + '01', beto: '55000' + R + '02', caio: '55000' + R + '03', duda: '55000' + R + '04', time: '55000' + R + '05' }
 
 console.log('0) Senha e lista')
@@ -68,7 +69,7 @@ await foto(T.ana, 1); await foto(T.ana, 2)
 confere('2 fotos: pede mais 1', /Manda mais 1 foto/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 await foto(T.ana, 3)
 confere('3 fotos: pergunta dos vídeos', /vídeos curtos/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
-const avisosAna = () => le('eventos').filter(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto)).length
+const avisosAna = () => le('eventos').filter(e => e.tipo === 'lanc_aviso' && Date.parse(e.criado_em) >= INICIO && /material chegou/.test(e.detalhe.titulo) && /Ana/.test(e.detalhe.texto)).length
 confere('chegaram as fotos: o time é avisado NA HORA (antes do vídeo)', avisosAna() === 1)
 await video(T.ana)
 // 16/11 (Nando): sem a pergunta da hora; fecha com "Material recebido! Em até 24 horas..."
@@ -131,6 +132,16 @@ confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.fil
   confere('áudio: a Maia entende e faz a próxima pergunta (não diz que não ouve)', !/ouvir/.test(ultimas(au)[0]) && ultimas(au)[0] !== p0 && !contato(au).estado.humano, ultimas(au).slice(0, 2))
   await post({ acao: 'simular_entrada', telefone: au, tipo: 'audio', midia_id: 'nao-transcreve' })
   confere('áudio que não deu pra transcrever: pede pra escrever', /ouvir esse áudio/.test(ultimas(au)[0]), ultimas(au)[0]) }
+// 16/11: "Oi" ou a saudação automática nunca viram o negócio da pessoa (o painel mostrava "Olá, assim que possível retorno…")
+{ const sa = '55000' + R + '89'
+  await post({ acao: 'adicionar', telefone: sa, nome: 'Saudação Teste' })
+  await diz(sa, 'Quero ver', 'botao')
+  await diz(sa, 'Oi')
+  confere('"Oi" na pergunta do negócio: não vira o negócio, pergunta de novo', !contato(sa).coleta?.negocio && /o que tu vende/.test(ultimas(sa)[0]), [contato(sa).coleta, ultimas(sa)[0]])
+  await diz(sa, 'Bela Flor agradece seu contato. Como podemos ajudar?')
+  confere('saudação automática na coleta: não vira o negócio', !contato(sa).coleta?.negocio, contato(sa).coleta)
+  await diz(sa, 'Vendo flores e cestas pra presente')
+  confere('a resposta de verdade vira o negócio', /flores/.test(contato(sa).coleta?.negocio || ''), contato(sa).coleta) }
 
 // 16/11: a saudação automática do WhatsApp da empresa não abre a coleta; o botão "Quero ver" depois abre normal
 const hu = '55000' + R + '93'

@@ -133,7 +133,10 @@ export async function processa(contato_id: string, msg_id: string) {
     const t = await ouve(String(m.midia_id))
     if (t) { ouvidos[m.id] = t; await db.atualiza('lanc_msgs', { id: m.id }, { texto: '🎤 ' + t }) }
   }
-  const texto = pend.map(x => ouvidos[x.id] || (['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto ? String(x.texto).replace(/^🎤 /, '') : '')).filter(Boolean).join('\n').trim()
+  const falas = pend.map(x => ouvidos[x.id] || (['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto ? String(x.texto).replace(/^🎤 /, '') : '')).filter(Boolean)
+  // 16/11: a saudação automática que chega junto com uma resposta de gente não entra na leitura (virava "o negócio" da pessoa)
+  const deGente = falas.filter(f => !ehAutoResposta(f))
+  const texto = (deGente.length ? deGente : falas).join('\n').trim()
   const audio = pend.some(x => x.tipo === 'audio' && !x.texto && !ouvidos[x.id])
   try { return await responde(c, texto, { fotos, videos, audio }) }
   catch (e: any) { await evento('lanc_erro', { contato: c.id, erro: String(e?.message || e).slice(0, 300) }); return { ok: false, erro: String(e?.message || e) } }
@@ -198,6 +201,13 @@ async function responde(c: any, texto: string, novas: Novas) {
 }
 
 // ---------- 3. a coleta ----------
+// 16/11 (Nando): saudação automática ("X agradece seu contato…") ou só um "Oi" não é resposta: não vira o negócio, a cidade etc.
+export const soSaudacao = (v: string) => /^\s*(oi+|ol[aá]+|opa|e a[ií]|bom dia|boa tarde|boa noite|tudo bem\??)[\s!.,?]*$/i.test(v)
+export function limpaCampos(campos: Record<string, any>) {
+  const out: Record<string, any> = {}
+  for (const [k, v] of Object.entries(campos)) if (!(typeof v === 'string' && (ehAutoResposta(v) || soSaudacao(v)))) out[k] = v
+  return out
+}
 export async function contaMidias(c: any) {
   const ms = await midias(c.id)
   return { fotos: ms.filter(m => m.origem === 'contato' && m.tipo === 'foto').length, videos: ms.filter(m => m.origem === 'contato' && m.tipo === 'video').length }
@@ -221,7 +231,7 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   if (texto) {
     const passoLeitura: Passo = passo === 'video' || passo === 'feito' ? 'fotos' : passo
     const l = await interpreta(texto, passoLeitura, c.coleta)
-    const campos: any = { ...(l.campos || {}) }
+    const campos: any = limpaCampos(l.campos || {})
     if (campos.hora != null && passo !== 'hora') delete campos.hora
     if (Object.keys(campos).length) await salvaJson(c, 'coleta', campos)
     if (l.intencao === 'agora_nao') return agoraNao(c)
