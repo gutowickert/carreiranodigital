@@ -94,6 +94,13 @@ export async function entrada(m: Entrada): Promise<{ tratado: boolean; contato_i
   return { tratado: true, contato_id: c.id, msg_id: linha.id }
 }
 
+// o texto de um áudio (no teste local, o id 'teste-audio:<fala>' faz de conta que foi transcrito)
+async function ouve(midiaId: string): Promise<string | null> {
+  if (process.env.MAIA_LOCAL === '1') return midiaId.startsWith('teste-audio:') ? midiaId.slice(12) : null
+  const { transcreverMidiaOficial } = await import('@/lib/transcrever-audio')
+  return transcreverMidiaOficial(midiaId)
+}
+
 // ---------- 2. o processamento (no after(), depois de uns segundos) ----------
 export async function processa(contato_id: string, msg_id: string) {
   if (ESPERA_MS()) await new Promise(r => setTimeout(r, ESPERA_MS()))
@@ -115,8 +122,14 @@ export async function processa(contato_id: string, msg_id: string) {
       if (m.tipo === 'video') videos++; else fotos++
     } catch (e: any) { await evento('lanc_erro_midia', { contato: c.id, erro: String(e?.message || e).slice(0, 200) }) }
   }
-  const texto = pend.filter(x => ['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto).map(x => x.texto).join('\n').trim()
-  const audio = pend.some(x => x.tipo === 'audio' && !x.texto)
+  // os áudios viram texto (16/11: uma pessoa mandou áudio e a Maia disse que não ouvia). O texto fica na conversa com 🎤
+  const ouvidos: Record<string, string> = {}
+  for (const m of pend.filter(x => x.tipo === 'audio' && !x.texto && x.midia_id)) {
+    const t = await ouve(String(m.midia_id))
+    if (t) { ouvidos[m.id] = t; await db.atualiza('lanc_msgs', { id: m.id }, { texto: '🎤 ' + t }) }
+  }
+  const texto = pend.map(x => ouvidos[x.id] || (['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto ? String(x.texto).replace(/^🎤 /, '') : '')).filter(Boolean).join('\n').trim()
+  const audio = pend.some(x => x.tipo === 'audio' && !x.texto && !ouvidos[x.id])
   try { return await responde(c, texto, { fotos, videos, audio }) }
   catch (e: any) { await evento('lanc_erro', { contato: c.id, erro: String(e?.message || e).slice(0, 300) }); return { ok: false, erro: String(e?.message || e) } }
 }
@@ -141,7 +154,7 @@ async function responde(c: any, texto: string, novas: Novas) {
   if (texto && ehPedeHumano(texto)) return passaProTime(c, 'pediu pra falar com uma pessoa', true)
   // 16/11 (entrega nova): o botão "Testar agora" da entrega liga o modo teste ali mesmo
   if (texto && (ehGatilhoTeste(texto) || (entregaV2() && ehTestarAgora(texto)))) return entraTeste(c)
-  if (novas.audio && !texto) { await mandaTexto(c, 'Ainda não consigo ouvir áudio por aqui. Me escreve, por favor?'); return { ok: true } }
+  if (novas.audio && !texto) { await mandaTexto(c, 'Não consegui ouvir esse áudio. Me escreve, por favor?'); return { ok: true } }
   // quem tinha recusado (ou sem negócio) e voltou
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)
   if (['na_lista', 'disparado', 'agora_nao', 'perdido'].includes(c.etapa)) {

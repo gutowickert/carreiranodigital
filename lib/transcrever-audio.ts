@@ -53,6 +53,24 @@ export async function transcreverAudioMsg(msgId: string): Promise<string | null>
   } catch { return null }
 }
 
+// Só o texto de um áudio do WhatsApp oficial, pelo id da mídia na Meta (16/11, lançamento da Maia: ela não lê wa_mensagens,
+// tem a tabela dela). Devolve o texto falado, '' se o áudio não tem fala, null se falhou. Não lança.
+export async function transcreverMidiaOficial(mediaId: string): Promise<string | null> {
+  try {
+    const dgKey = process.env.DEEPGRAM_API_KEY || ''
+    if (!dgKey || !mediaId) return null
+    const dl = await baixarMidia(mediaId)
+    if (!dl.ok || !dl.buffer) return null
+    const r = await fetch('https://api.deepgram.com/v1/listen?model=nova-2&language=pt&smart_format=true&punctuate=true' + REFORCO, {
+      method: 'POST', headers: { Authorization: `Token ${dgKey}`, 'Content-Type': (dl.mime || 'audio/ogg').split(';')[0] }, body: Buffer.from(dl.buffer),
+    })
+    const j: any = await r.json().catch(() => null)
+    const txt = j?.results?.channels?.[0]?.alternatives?.[0]?.transcript
+    if (!r.ok || typeof txt !== 'string') return null
+    return txt.trim()
+  } catch { return null }
+}
+
 /**
  * Transcreve TODO áudio ainda mudo das conversas de um lead — nos DOIS sentidos.
  *

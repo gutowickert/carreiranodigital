@@ -91,7 +91,7 @@ export async function POST(req: Request) {
       }
       if (b.acao === 'rodar_rotina') { const { rotinaLancamento } = await import('@/lib/maia/lancamento/rotina'); return ok(await rotinaLancamento(b.relogio ? new Date(b.relogio) : new Date())) }
       const { entrada, processa } = await import('@/lib/maia/lancamento/conversa')
-      const r = await entrada({ telefone: b.telefone, nome: b.nome || null, tipo: b.tipo || 'texto', texto: b.texto ?? null, mime: b.mime || null, b64: b.b64 || null })
+      const r = await entrada({ telefone: b.telefone, nome: b.nome || null, tipo: b.tipo || 'texto', texto: b.texto ?? null, midia_id: b.midia_id || null, mime: b.mime || null, b64: b.b64 || null })
       if (!r.tratado) return ok({ tratado: false })
       const p = await processa(r.contato_id!, r.msg_id!)
       return ok({ tratado: true, ...p })

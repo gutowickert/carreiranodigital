@@ -234,7 +234,7 @@ async function lancamentoEntrada(tel: string, m: any, nome: string | null, tipo:
     const antes = await contatoDoTelefone(tel)
     if (!antes) return null
     const emTeste = antes.estado?.modo === 'teste' && Date.parse(antes.estado?.teste_ate || 0) > Date.now()
-    const midia = m.image || m.video || null
+    const midia = m.image || m.video || m.audio || m.voice || null   // o áudio também: a Maia transcreve (16/11)
     const r = await entrada({ telefone: tel, nome, tipo: m.type === 'button' ? 'botao' : tipo, texto, midia_id: midia?.id || null, mime: midia?.mime_type || null, wamid: m.id || null })
     return { ...r, emTeste }
   } catch (e: any) {

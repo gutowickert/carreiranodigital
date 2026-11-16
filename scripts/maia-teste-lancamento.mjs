@@ -120,7 +120,17 @@ await diz(gi, 'Quero ver', 'botao')
 await post({ acao: 'simular_entrada', telefone: gi, tipo: 'audio' })
 await post({ acao: 'simular_entrada', telefone: gi, tipo: 'audio' })
 const ga = le('lanc_msgs').filter(m => m.contato_id === contato(gi).id && m.direcao === 'saida').map(m => m.texto)
-confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.filter(t => /ouvir áudio/.test(t)).length === 1 && !!contato(gi).estado.humano, ga)
+confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.filter(t => /ouvir esse áudio/.test(t)).length === 1 && !!contato(gi).estado.humano, ga)
+{ const au = '55000' + R + '98'
+  await post({ acao: 'adicionar', telefone: au, nome: 'Áudio Teste' })
+  await diz(au, 'Quero ver', 'botao')
+  const p0 = ultimas(au)[0]
+  await post({ acao: 'simular_entrada', telefone: au, tipo: 'audio', midia_id: 'teste-audio:Eu tenho uma loja de roupa feminina em Lajeado' })
+  const ma = le('lanc_msgs').filter(m => m.contato_id === contato(au).id && m.tipo === 'audio')
+  confere('áudio: a fala fica na conversa com 🎤', ma.length === 1 && ma[0].texto === '🎤 Eu tenho uma loja de roupa feminina em Lajeado', ma)
+  confere('áudio: a Maia entende e faz a próxima pergunta (não diz que não ouve)', !/ouvir/.test(ultimas(au)[0]) && ultimas(au)[0] !== p0 && !contato(au).estado.humano, ultimas(au).slice(0, 2))
+  await post({ acao: 'simular_entrada', telefone: au, tipo: 'audio', midia_id: 'nao-transcreve' })
+  confere('áudio que não deu pra transcrever: pede pra escrever', /ouvir esse áudio/.test(ultimas(au)[0]), ultimas(au)[0]) }
 
 // 16/11: a saudação automática do WhatsApp da empresa não abre a coleta; o botão "Quero ver" depois abre normal
 const hu = '55000' + R + '93'
