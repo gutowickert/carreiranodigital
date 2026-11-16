@@ -90,6 +90,15 @@ await diz(T.caio, 'Não tenho negócio, só estudo')
 confere('sem negócio: convite pra indicar', /indicação/.test(ultimas(T.caio)[0]) && contato(T.caio).etapa === 'perdido')
 await diz(T.caio, 'Minha tia: Rosa 51 99999-0000')
 confere('a indicação vai pro time', /Valeu pela indicação/.test(ultimas(T.caio)[0]))
+// 16/11: "SAIR" respondendo ao disparo é descadastro: a Maia não responde nem começa a coleta
+const eva = '55000' + R + '06'
+await post({ acao: 'adicionar', telefone: eva, nome: 'Eva', remessa: 1 })
+r = await diz(eva, 'SAIR')
+confere('"SAIR" ao disparo: não é da Maia (o CRM registra o descadastro)', r.tratado === false, r)
+confere('"SAIR": vira perdido, sem nenhuma mensagem da Maia', contato(eva).etapa === 'perdido' && le('lanc_msgs').filter(m => m.contato_id === contato(eva).id && m.direcao === 'saida').length === 0)
+confere('depois do "SAIR", um "oi" não traz a Maia de volta', (await diz(eva, 'oi')).tratado === false)
+r = await diz(eva, 'Parar.')
+confere('"Parar." também é descadastro', r.tratado === false)
 
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')

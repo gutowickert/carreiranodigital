@@ -11,7 +11,7 @@ import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehGatilhoTeste, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -51,6 +51,15 @@ export async function entrada(m: Entrada): Promise<{ tratado: boolean; contato_i
   // quem recusou, perdeu ou já está com o time: a Maia só volta se a pessoa pedir pra ver (ou mandar o texto do teste)
   if (['agora_nao', 'perdido'].includes(c.etapa) && !c.estado?.indicacao && !volta) return { tratado: false }
   if (['implantacao_marcada', 'pago'].includes(c.etapa) && !ehGatilhoTeste(t)) return { tratado: false }
+  // 16/11: "SAIR" (e as outras palavras de descadastro) fora do modo teste = pediu pra sair. O webhook da escola já registra
+  // o descadastro; a Maia não pode responder (antes ela começava a coleta). Vira "perdido" e a mensagem segue pro CRM.
+  const emTeste = c.estado?.modo === 'teste' && Date.parse(c.estado?.teste_ate || 0) > Date.now()
+  if (!emTeste && ehDescadastro(t)) {
+    await salva(c, { etapa: 'perdido', motivo_perda: 'pediu pra sair' })
+    await salvaJson(c, 'estado', { indicacao: null })
+    await evento('lanc_descadastro', { contato: c.id })
+    return { tratado: false }
+  }
   const tel = variantes(m.telefone)[0]
   if (tel && c.wa_id !== tel) await salva(c, { wa_id: tel })
   const tipo = m.tipo === 'imagem' || m.tipo === 'image' ? 'imagem' : m.tipo === 'video' ? 'video' : m.tipo === 'button' || m.tipo === 'botao' ? 'botao' : m.tipo === 'audio' ? 'audio' : (m.tipo === 'texto' || m.tipo === 'text' || m.tipo === 'interactive') ? 'texto' : 'outro'

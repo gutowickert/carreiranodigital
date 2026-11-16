@@ -19,6 +19,9 @@ const sem = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toL
 export const ehQueroVer = (t: string) => /^(quero ver|quero|sim|bora|vamos|pode ser|claro|ok|quero sim)[!. ]*$/.test(sem(t))
 // "não" sozinho só vale como recusa na resposta ao convite (o botão "Agora não"); no meio da coleta é resposta ("não tenho Instagram")
 export const ehAgoraNao = (t: string, convite = false) => (convite && /^(nao|nao obrigad[oa])[!. ]*$/.test(sem(t))) || /^(agora nao|nao quero|sem interesse)[!. ]*$/.test(sem(t)) || /nao (tenho|tem) interesse|nao me (chama|mande)|para de me mandar|desisti|deixa pra la|nao vou querer/.test(sem(t))
+// 16/11 (Nando): as mesmas palavras que o webhook da escola trata como descadastro (PALAVRAS_OPTOUT). Fora do modo teste,
+// quem manda uma delas pediu pra sair da lista: a Maia não responde e o contato vira "perdido"
+export const ehDescadastro = (t: string) => /^(sair|parar|pare|cancelar|descadastrar|remover|stop)[!. ]*$/.test(sem(t))
 export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[!. ]*$/.test(sem(t))
 // o texto pronto do botão da página da amostra liga o modo teste
 export const ehGatilhoTeste = (t: string) => /\bmodo teste\b|quero testar a maia|testar como (se fosse|cliente)/.test(sem(t))
