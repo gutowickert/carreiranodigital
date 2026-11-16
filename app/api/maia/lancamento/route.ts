@@ -5,7 +5,7 @@
 //        gerar_conversa, salvar_conversa, aprovar (agora: true = na hora do clique), zerar e remover (só a lista de teste, remessa 0),
 //        adicionar (um contato à mão, ex.: o teste do time)
 //   16/11, o raio-x do negócio (só com MAIA_LANC_DIAGNOSTICO=1): gerar_diagnostico, salvar_diagnostico (notas e textos; revisado: true),
-//        sem_diagnostico (entregar sem), anuncios (o que a equipe conferiu na Biblioteca de Anúncios; fonte: "conector" quando
+//        sem_diagnostico (entregar sem), anuncios (o que a equipe conferiu na Biblioteca de Anúncios; fonte: "conta" quando vem da conta de anúncios que a escola gerencia, "conector" quando
 //        quem preenche é uma sessão do Claude com o conector da Meta), marcar_logo (midia_id ou null), dados_empresa (nome e @)
 //   Só no modo de teste (MAIA_LOCAL=1): simular_entrada, rodar_rotina, relogio
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
@@ -134,7 +134,7 @@ export async function POST(req: Request) {
         if (b.acao === 'gerar_diagnostico') return ok({ ok: true, diagnostico: await geraDiagnostico(c, { por }) })
         if (b.acao === 'salvar_diagnostico') return ok({ ok: true, diagnostico: await salvaDiagnostico(c, b.diagnostico || {}, por) })
         if (b.acao === 'sem_diagnostico') { await semDiagnostico(c, por); return ok({ ok: true }) }
-        if (b.acao === 'anuncios') return ok({ ok: true, anuncios: await marcaAnuncios(c, b.anuncios || {}, por, b.fonte === 'conector' ? 'conector' : 'equipe') })
+        if (b.acao === 'anuncios') return ok({ ok: true, anuncios: await marcaAnuncios(c, b.anuncios || {}, por, b.fonte === 'conector' ? 'conector' : b.fonte === 'conta' ? 'conta' : 'equipe') })
         if (b.acao === 'marcar_logo') { await marcaLogo(c, b.midia_id ? String(b.midia_id) : null, por); return ok({ ok: true }) }
         const k: any = {}
         if (b.nome_negocio != null) { const n = String(b.nome_negocio).trim().slice(0, 80); if (!n) return erro('o nome da empresa não pode ficar vazio'); k.nome_negocio = n; k.nome_confirmado = true }

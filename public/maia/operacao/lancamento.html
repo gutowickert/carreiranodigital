@@ -181,7 +181,12 @@ function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='
   }).catch(function(e){$('#pn').innerHTML='<p style="color:var(--red)">Não deu: '+esc(e.message)+'</p><button class="btn" onclick="fecha()">Fechar</button>'})}
 // ---------- o raio-x do negócio (16/11): anúncios no Facebook e no Instagram, Instagram e atendimento ----------
 var AREA_NOME={anuncios:'Anúncios',instagram:'Instagram',atendimento:'Atendimento'};
-var FUNCOES=['Cria os anúncios','Edita os vídeos','Posta no Instagram','Coloca a campanha no ar','Atende 24 horas','Retoma quem sumiu','Mede as vendas','Te manda o relatório'];
+// cada ponto: o que vimos → resolve com (a peça da amostra + a entrega do mês). As mesmas listas de lib/maia/lancamento/diagnostico.ts
+var PECAS=[['','escolhe a peça'],['anuncio1','Anúncio 1'],['anuncio2','Anúncio 2'],['video','Vídeo editado'],['conversa','Conversa pronta'],['teste','Teste ao vivo']];
+var ENTREGAS=[['','escolhe a entrega do mês'],['anuncios_novos','Anúncios novos todo mês (6 vídeos + 6 imagens), testados'],['troca','Troca do que não funciona'],['campanha_whats','Campanha no ar levando pro WhatsApp'],['posts','12 posts por mês no Instagram'],['videos','Vídeos do celular editados'],['atende24','Atendimento 24 h no WhatsApp'],['retomada','Retomada de quem sumiu (20 h, 3 d, 6 d)'],['medir','Venda medida e relatório'],['dono','Responde o dono na hora']];
+function formPonto(p,i){p=p||{};return '<div class="rx-ad" data-ponto="'+i+'"><b>Ponto '+(i+1)+'</b>'+(p.area?' <span class="chip">'+esc(p.area)+'</span>':'')+'<div class="rx-f"><label>O que vimos (com o dado real; vazio = tira o ponto)</label><textarea data-p="vimos">'+esc(p.vimos||'')+'</textarea></div>'+
+  '<div class="rx-g"><div><label>Resolve com: a peça da amostra</label><select data-p="peca">'+opt(0,PECAS,p.peca||'')+'</select></div><div><label>Resolve com: a entrega do mês</label><select data-p="mensal">'+opt(0,ENTREGAS,p.mensal||'')+'</select></div></div>'+
+  '<div class="rx-f"><label>O que já fizemos pra ti (o que a peça mostra)</label><input data-p="fizemos" value="'+esc(p.fizemos||'')+'"><input type="hidden" data-p="area" value="'+esc(p.area||'')+'"></div></div>'}
 function opt(v,lista,sel){return lista.map(function(x){return '<option value="'+esc(x[0])+'"'+(String(sel==null?'':sel)===String(x[0])?' selected':'')+'>'+esc(x[1])+'</option>'}).join('')}
 var SN=[['','não vi'],['sim','sim'],['nao','não']];
 function snv(v){return v===true?'sim':v===false?'nao':''}
@@ -218,10 +223,11 @@ function cartaoRaioX(c){
     h+='<div class="rx-f"><label>Resumo (2 frases)</label><textarea id="rx-res">'+esc(d.resumo||'')+'</textarea>'+
       '<label>A maior oportunidade (vazio = não mostra)</label><textarea id="rx-op">'+esc(op)+'</textarea>'+
       '<label>O que está bom (uma por linha)</label><textarea id="rx-bons">'+esc((d.bons||[]).join('\n'))+'</textarea>'+
-      '<label>O que melhorar (uma por linha: "texto | função da Maia"; funções: '+esc(FUNCOES.join(', '))+')</label><textarea id="rx-mel" style="min-height:100px">'+esc((d.melhorar||[]).map(function(m){return m.texto+(m.maia?' | '+m.maia:'')}).join('\n'))+'</textarea>'+
+      '</div><h3 style="font-size:16px;margin-top:14px">Os pontos: o que vimos → resolve com</h3><p class="mu">Só entra o que a gente resolve. Pra marcar revisado, todo ponto precisa da peça, do "o que já fizemos" e da entrega do mês.</p><div id="rx-pts">'+(d.pontos||[]).map(formPonto).join('')+((d.pontos||[]).length<3?formPonto({},(d.pontos||[]).length):'')+'</div><div class="rx-f">'+
       '<label>Tarefa grátis da semana: título</label><input id="rx-tt" value="'+esc((d.tarefa||{}).titulo||'')+'">'+
+      '<label>Depois, a Maia faz isso por ti (a entrega do mês)</label><select id="rx-tm">'+opt(0,ENTREGAS,(d.tarefa||{}).mensal||'')+'</select>'+
       '<label>Passos (um por linha)</label><textarea id="rx-tp">'+esc(((d.tarefa||{}).passos||[]).join('\n'))+'</textarea>'+
-      '<label>Pro áudio do Rick (1 ou 2 frases)</label><textarea id="rx-rick">'+esc((d.rick||[]).join('\n'))+'</textarea></div>';
+      '<label>Pro áudio do Rick (1 ou 2 frases: "Vi que [problema]; no anúncio que a Maia fez pra ti a gente já [solução]")</label><textarea id="rx-rick">'+esc((d.rick||[]).join('\n'))+'</textarea></div>';
     if(d.exemplos&&d.exemplos.length)h+='<p class="mu">Anúncios de exemplo na página: '+d.exemplos.length+' (vêm dos anúncios acima).</p>';
   }
   h+='<div class="acoes"><button class="btn" id="rx-gera">'+(d&&d.gerado_em?'Gerar de novo':'Gerar diagnóstico')+'</button>'+(d&&!d.ocultar&&d.areas?'<button class="btn" id="rx-salva">Salvar</button><button class="btn ok" id="rx-rev">Salvar e marcar revisado</button>':'')+'<button class="btn" id="rx-sem">Entregar sem raio-x</button>'+(c.previa?'<a class="btn" href="'+esc(c.previa)+'#t-raio" target="_blank" rel="noopener">Ver na prévia</a>':'')+'</div></div>';
@@ -236,7 +242,8 @@ function ligaRaioX(c,faz){
   if(q('#rx-salvaads'))q('#rx-salvaads').onclick=function(){var b=this,dados=lerAnuncios();if(c.diagnostico&&c.diagnostico.editado&&!confirm('Gerar de novo apaga as correções feitas nos textos. Seguir?'))return;b.disabled=true;
     api({acao:'anuncios',id:c.id,anuncios:dados}).then(function(){toast('Anúncios salvos. Gerando o raio-x…');return api({acao:'gerar_diagnostico',id:c.id})}).then(function(){toast('Raio-x gerado');return carrega()}).catch(function(e){toast('Não deu: '+e.message,true)}).then(function(){b.disabled=false})};
   function textos(rev){var notas={};document.querySelectorAll('[data-nota]').forEach(function(x){notas[x.dataset.nota]=x.value});
-    return {notas:notas,resumo:q('#rx-res').value,oportunidade:q('#rx-op').value,bons:q('#rx-bons').value,melhorar:q('#rx-mel').value,tarefa_titulo:q('#rx-tt').value,tarefa_passos:q('#rx-tp').value,rick:q('#rx-rick').value,ocultar:false,revisado:rev}}
+    var pontos=[];document.querySelectorAll('#rx-pts [data-ponto]').forEach(function(b){var o={};b.querySelectorAll('[data-p]').forEach(function(x){o[x.dataset.p]=x.value});if(o.vimos.trim())pontos.push(o)});
+    return {notas:notas,resumo:q('#rx-res').value,oportunidade:q('#rx-op').value,bons:q('#rx-bons').value,pontos:pontos,tarefa_titulo:q('#rx-tt').value,tarefa_passos:q('#rx-tp').value,tarefa_mensal:q('#rx-tm').value,rick:q('#rx-rick').value,ocultar:false,revisado:rev}}
   if(q('#rx-salva'))q('#rx-salva').onclick=function(){faz({acao:'salvar_diagnostico',diagnostico:textos(false)},this,'Raio-x salvo')};
   if(q('#rx-rev'))q('#rx-rev').onclick=function(){faz({acao:'salvar_diagnostico',diagnostico:textos(true)},this,'Raio-x revisado')};
   if(q('#rx-sem'))q('#rx-sem').onclick=function(){if(!confirm('Entregar a amostra sem o raio-x?'))return;faz({acao:'sem_diagnostico'},this,'Vai sem raio-x')};

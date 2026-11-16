@@ -9,7 +9,7 @@ import {
   primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto,
 } from './base'
 import { TEXTO_TESTE, marcaRick, rotulo } from './conversa'
-import { diagLigado, diagVisivel, logoDe, logoMidiaId, notaGeral, LEVA, FORMATO, type Diagnostico } from './diagnostico'
+import { diagLigado, diagVisivel, logoDe, logoMidiaId, notaGeral, LEVA, FORMATO, PECAS, ENTREGAS, type Diagnostico } from './diagnostico'
 
 export const SLOTS = ['anuncio1', 'anuncio2', 'video'] as const
 export type Slot = typeof SLOTS[number]
@@ -249,19 +249,31 @@ const INCLUSO = [
 ]
 
 const avatar = (neg: string, logo?: string | null) => logo ? `<img class="av" src="${esc(logo)}" alt="Logo da ${esc(neg)}">` : `<span class="av">${esc((neg[0] || 'N').toUpperCase())}</span>`
-function cartaoAnuncio(neg: string, p: any, url: string | null, titulo: string, logo?: string | null) {
+function cartaoAnuncio(neg: string, p: any, url: string | null, titulo: string, logo?: string | null, slot?: string, resolve = '') {
   if (!p || !url) return ''
   const video = /^video/.test(p.mime || '') || /\.(mp4|mov)(\?|$)/i.test(p.path || '')
   const midia = video ? `<video src="${esc(url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(url)}" alt="${esc(titulo)} da ${esc(neg)}" loading="lazy">`
-  return `<figure class="ad"><figcaption class="ad-top">${avatar(neg, logo)}<span><b>${esc(neg)}</b><small>Patrocinado</small></span></figcaption>
+  return `<figure class="ad"${slot ? ` id="peca-${slot}"` : ''}><figcaption class="ad-top">${avatar(neg, logo)}<span><b>${esc(neg)}</b><small>Patrocinado</small></span></figcaption>
 <div class="ad-midia">${midia}</div><div class="ad-cta"><span>Enviar mensagem</span><span class="seta">WhatsApp</span></div>
-${p.legenda ? `<p class="ad-leg"><b>${esc(neg)}</b> ${br(p.legenda)}</p>` : ''}<p class="ad-rot">${esc(titulo)}</p></figure>`
+${p.legenda ? `<p class="ad-leg"><b>${esc(neg)}</b> ${br(p.legenda)}</p>` : ''}<p class="ad-rot">${esc(titulo)}</p>${resolve}</figure>`
 }
 
-// ---------- o RAIO-X do negócio (16/11, MAIA_LANC_DIAGNOSTICO=1) ----------
+// ---------- o RAIO-X do negócio (16/11, MAIA_LANC_DIAGNOSTICO=1): problema → solução amarrado à amostra e ao plano ----------
+// Ordem da página com o raio-x: topo (logo e nome) → "O que vimos" → "O que já fizemos pra ti" (anúncios, vídeo e conversa,
+// cada peça dizendo qual ponto resolve) → teste ao vivo → "O que a Maia faz todo mês" (ponto a ponto) e a tarefa grátis → oferta
 const faixaNota = (n: number) => (n >= 7 ? 'bom' : n >= 4 ? 'medio' : 'ruim')
 const COR_NOTA: Record<string, string> = { bom: '#15803d', medio: '#a85a08', ruim: '#b91c1c' }
-export async function htmlRaioX(c: any, d: Diagnostico, neg: string, logo: string | null) {
+const num1 = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+const pontosOk = (d: Diagnostico) => (d.pontos || []).filter(p => p.vimos)
+// a etiqueta embaixo de cada peça: qual ponto do raio-x ela resolve (com o link pro ponto)
+export function resolveDe(d: Diagnostico | null, peca: string) {
+  if (!d) return ''
+  const ps = pontosOk(d).map((p, i) => ({ p, i })).filter(x => x.p.peca === peca)
+  return ps.map(({ p, i }) => `<a class="rx-res" href="#ponto-${i + 1}"><small>Resolve o ponto ${i + 1}</small>${esc(cap1(p.problema))}</a>`).join('')
+}
+const cap1 = (s: string) => String(s || '').charAt(0).toUpperCase() + String(s || '').slice(1)
+
+export async function htmlVimos(d: Diagnostico, neg: string, logo: string | null, fonteAnuncios?: string) {
   const geral = notaGeral(d.areas)
   const g = geral == null ? '' : num1(geral)
   const anel = geral == null ? '' : `<div class="rx-anel" role="img" aria-label="Nota geral ${g} de 10"><svg width="112" height="112" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" stroke="#ede7fb" stroke-width="12" fill="none"/><circle cx="60" cy="60" r="54" stroke="${COR_NOTA[faixaNota(geral)]}" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="${Math.round(geral * 33.9)} 339" transform="rotate(-90 60 60)"/></svg><div><b>${g}</b><small>de 10</small></div></div>`
@@ -278,22 +290,30 @@ export async function htmlRaioX(c: any, d: Diagnostico, neg: string, logo: strin
   }))
   const op = d.areas.find(a => a.id === 'anuncios')?.oportunidade
   const data = new Date(d.gerado_em || Date.now()).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
-  return `<section aria-labelledby="t-raio" class="raio">
-<span class="rot">Raio-x do teu negócio</span>
+  const ps = pontosOk(d)
+  return `<section id="raio-x" aria-labelledby="t-raio" class="raio" style="padding-top:28px">
+<span class="rot">O que vimos no teu negócio</span>
 <div class="rx-cab">${avatar(neg, logo)}<div><h2 id="t-raio">Raio-x da ${esc(neg)}</h2><small>Anúncios no Facebook e no Instagram, o teu perfil e o atendimento · ${esc(data)}</small></div></div>
 <div class="rx-topo">${anel}<p>${esc(d.resumo)}</p></div>
 <div class="rx-placar">${placar}</div>
 ${exs.length ? `<h3 class="rx-h3">Os teus anúncios no ar</h3><div class="rx-exs">${exs.join('')}</div>` : ''}
+${d.bons?.length ? `<h3 class="rx-h3">O que já está bom</h3><ul class="lista">${d.bons.map(x => `<li>${esc(x)}</li>`).join('')}</ul>` : ''}
+${ps.length ? `<h3 class="rx-h3">O que dá pra melhorar</h3><ol class="rx-pontos">${ps.map((p, i) => `<li id="ponto-${i + 1}"><span class="rx-num">${i + 1}</span><div><p>${esc(p.vimos)}</p>${p.peca && PECAS[p.peca] ? `<a href="#peca-${p.peca}">A amostra já resolve: ${esc(PECAS[p.peca].nome)}</a>` : ''}</div></li>`).join('')}</ol>` : ''}
 ${op ? `<div class="rx-oport"><span class="selo">A maior oportunidade</span><p>${esc(op)}</p></div>` : ''}
-<div class="rx-duas">
-<div class="rx-col"><h3 class="rx-h3">O que está bom</h3><ul class="lista">${(d.bons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
-<div class="rx-col"><h3 class="rx-h3">O que dá pra melhorar</h3><ul class="rx-mel">${(d.melhorar || []).map(m => `<li><span>${esc(m.texto)}</span>${m.maia ? `<em>A Maia faz isso: ${esc(m.maia)}</em>` : ''}</li>`).join('')}</ul></div>
-</div>
-${d.tarefa?.titulo ? `<div class="rx-tarefa"><div><span class="rx-sel">Tarefa grátis da semana</span><h3>${esc(d.tarefa.titulo)}</h3><ol>${(d.tarefa.passos || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol><small>Tu faz sozinho, em uns 30 minutos, sem pagar nada.</small></div></div>` : ''}
-<p class="rx-fontes">Feito com dados públicos (a Biblioteca de Anúncios da Meta e o teu Instagram) e com o que tu me contou. O que não deu pra ver ficou sem nota: nada aqui é chute.</p>
+<p class="rx-fontes">${esc(fonteAnuncios || 'Feito com dados públicos (a Biblioteca de Anúncios da Meta e o teu Instagram) e com o que tu me contou.')} O que não deu pra ver ficou sem nota: nada aqui é chute.</p>
 </section>`
 }
-const num1 = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+
+export function htmlMensal(d: Diagnostico, neg: string) {
+  const ps = pontosOk(d)
+  const t = d.tarefa
+  return `<section aria-labelledby="t-mes" class="raio">
+<span class="rot">Ponto a ponto</span><h2 id="t-mes">O que a Maia faz todo mês pra ${esc(neg)}</h2>
+<p class="lead">Cada ponto do raio-x, o que a amostra já mostrou e o que vira rotina depois da implantação.</p>
+<div class="rx-pares">${ps.map((p, i) => `<div class="rx-par"><div class="rx-c1"><small>${i + 1}. O que vimos</small><p>${esc(cap1(p.problema))}.</p></div><div class="rx-c2"><small>O que já fizemos pra ti</small><p>${esc(p.fizemos)}</p>${p.peca && PECAS[p.peca] ? `<a href="#peca-${p.peca}">Ver: ${esc(PECAS[p.peca].nome)}</a>` : ''}</div><div class="rx-c3"><small>O que a Maia faz todo mês</small><p>${esc(ENTREGAS[p.mensal || ''] || '')}</p></div></div>`).join('')}</div>
+${t?.titulo ? `<div class="rx-tarefa"><div><span class="rx-sel">Tarefa grátis da semana</span><h3>${esc(t.titulo)}</h3><ol>${(t.passos || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol><small>Tu faz sozinho, em uns 30 minutos, sem pagar nada.${t.mensal && ENTREGAS[t.mensal] ? ` Depois da implantação, a Maia faz isso por ti: ${esc(ENTREGAS[t.mensal].charAt(0).toLowerCase() + ENTREGAS[t.mensal].slice(1))}` : ''}</small></div></div>` : ''}
+</section>`
+}
 
 export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
   const neg = nomeNeg(c), nome = primeiroNome(c.nome)
@@ -309,7 +329,9 @@ export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
   const rx = diagVisivel(c, !!op.previa) ? c.amostra.diagnostico as Diagnostico : null
   const lg = rx ? await logoDe(c) : null
   const logo = lg ? await db.link(lg.path, 60 * 60 * 24 * 7) : null
-  const raio = rx ? await htmlRaioX(c, rx, neg, logo) : ''
+  const fonte = c.amostra?.diag_anuncios?.fonte === 'conta' ? 'Os anúncios vieram da conta de anúncios da empresa (que a escola gerencia), não da Biblioteca de Anúncios; o resto, do teu Instagram e do que tu me contou.' : undefined
+  const vimos = rx ? await htmlVimos(rx, neg, logo, fonte) : ''
+  const mensal = rx ? htmlMensal(rx, neg) : ''
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>Amostra da Maia pra ${esc(neg)}</title><meta name="theme-color" content="#f7f5fc">
 <meta property="og:title" content="A tua amostra ficou pronta"><meta property="og:description" content="2 anúncios e 1 vídeo da ${esc(neg)}, feitos pela Maia."><meta property="og:image" content="${esc(SITE())}/maia/img/maia-og.jpg">
@@ -419,11 +441,22 @@ img.av{object-fit:cover;background:#fff;border:1px solid var(--ln);padding:0}
 .rx-ex a{display:inline-block;margin-top:10px;font-weight:700;font-size:14px}
 .rx-oport{background:var(--ac-bg);border:1px solid var(--ac);border-radius:18px;padding:18px 20px;margin-top:22px}
 .rx-oport p{margin-top:10px;color:var(--tx)}
-.rx-duas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
-.rx-col{min-width:0}
-.rx-mel{list-style:none;margin-top:16px;display:grid;gap:10px}
-.rx-mel li{background:var(--s1);border:1px solid var(--ln);border-left:4px solid var(--amb);border-radius:12px;padding:12px 14px;color:var(--tx2)}
-.rx-mel em{display:inline-block;margin-top:8px;font:800 12px var(--f-tx);font-style:normal;color:var(--ac2);background:var(--ac-bg);border-radius:999px;padding:4px 10px}
+.rx-pontos{list-style:none;margin-top:14px;display:grid;gap:10px}
+.rx-pontos li{display:grid;grid-template-columns:34px minmax(0,1fr);gap:12px;background:var(--s1);border:1px solid var(--ln);border-radius:14px;padding:14px 16px;scroll-margin-top:16px}
+.rx-pontos p{color:var(--tx)}
+.rx-pontos a{display:inline-block;margin-top:8px;font-weight:800;font-size:14px}
+.rx-num{width:34px;height:34px;border-radius:50%;background:var(--amb-bg);color:var(--amb);display:grid;place-items:center;font:800 15px var(--f-dis)}
+.rx-res{display:block;margin:0 12px 12px;padding:8px 12px;border-radius:12px;background:var(--ac-bg);color:var(--tx);text-decoration:none;font-size:14px;line-height:1.35}
+.rx-res small{display:block;font:800 11px var(--f-tx);letter-spacing:.08em;text-transform:uppercase;color:var(--ac2);margin-bottom:2px}
+.rx-ress{display:grid;gap:8px;margin-top:14px;max-width:520px}.rx-ress .rx-res{margin:0}
+.rx-pares{display:grid;gap:12px;margin-top:18px}
+.rx-par{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:var(--s1);border:1px solid var(--ln);border-radius:16px;overflow:hidden}
+.rx-par>div{padding:14px 16px;min-width:0}
+.rx-par small{display:block;font:800 11px var(--f-tx);letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}
+.rx-par p{color:var(--tx2);font-size:15px}
+.rx-par a{display:inline-block;margin-top:8px;font-weight:800;font-size:14px}
+.rx-c2{background:var(--s2)}.rx-c3{background:var(--ac-bg)}.rx-c3 small{color:var(--ac2)}
+#peca-anuncio1,#peca-anuncio2,#peca-video,#peca-conversa,#peca-teste{scroll-margin-top:16px}
 .rx-tarefa{border-radius:20px;padding:2px;background:var(--grad);margin-top:26px;box-shadow:0 18px 40px rgba(124,58,237,.18)}
 .rx-tarefa>div{background:#fff;border-radius:18px;padding:22px 22px 18px}
 .rx-sel{display:inline-block;font:800 11px var(--f-tx);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--grad);border-radius:999px;padding:5px 12px}
@@ -431,7 +464,7 @@ img.av{object-fit:cover;background:#fff;border:1px solid var(--ln);padding:0}
 .rx-tarefa ol{padding-left:22px;display:grid;gap:8px;color:var(--tx2)}
 .rx-tarefa small{display:block;color:var(--mu);margin-top:12px;font-size:13.5px}
 .rx-fontes{color:var(--mu);font-size:13px;margin-top:16px}
-@media (max-width:820px){.ads{grid-template-columns:1fr;max-width:460px}.funcs{grid-template-columns:1fr}.rx-exs,.rx-duas{grid-template-columns:1fr}.rx-topo{flex-direction:column;align-items:flex-start}}
+@media (max-width:820px){.ads{grid-template-columns:1fr;max-width:460px}.funcs{grid-template-columns:1fr}.rx-exs,.rx-par{grid-template-columns:1fr}.rx-topo{flex-direction:column;align-items:flex-start}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style></head><body>
 ${op.previa ? '<div class="previa">Prévia da equipe: esta visita não conta como abertura</div>' : ''}
@@ -439,17 +472,18 @@ ${op.previa ? '<div class="previa">Prévia da equipe: esta visita não conta com
 <div class="quem"><img src="/maia/img/maia-avatar.webp" alt="A Maia"><span>Maia, a IA da Carreira no Digital</span></div>
 ${rx ? `<div class="marca">${logo ? `<img src="${esc(logo)}" alt="Logo da ${esc(neg)}">` : avatar(neg)}<span><b>${esc(neg)}</b><small>amostra e raio-x feitos pela Maia</small></span></div>` : ''}
 <h1>${nome ? esc(nome) + ', a' : 'A'} tua amostra ficou <em>pronta</em></h1>
-<p>Eu fiz 2 anúncios e 1 vídeo pra ${esc(neg)}, com as fotos e os vídeos que tu me mandou. Olha como eles apareceriam no Instagram.${rx ? ' E mais abaixo tem o raio-x dos teus anúncios e do teu Instagram, com o que dá pra melhorar.' : ''}</p>
+<p>${rx ? `Primeiro eu olhei os anúncios e o Instagram da ${esc(neg)}. Depois fiz 2 anúncios e 1 vídeo com as fotos e os vídeos que tu me mandou, cada um resolvendo um ponto do que eu vi.` : `Eu fiz 2 anúncios e 1 vídeo pra ${esc(neg)}, com as fotos e os vídeos que tu me mandou. Olha como eles apareceriam no Instagram.`}</p>
 </div></header>
 <main class="faixa"><div class="miolo">
+${vimos}
 
 <section aria-labelledby="t-ads" style="padding-top:28px">
-<span class="rot">Os teus anúncios</span><h2 id="t-ads">2 anúncios e 1 vídeo da ${esc(neg)}</h2>
-<div class="ads">${cartaoAnuncio(neg, p.anuncio1, urls.anuncio1, 'Anúncio 1', logo)}${cartaoAnuncio(neg, p.anuncio2, urls.anuncio2, 'Anúncio 2', logo)}${cartaoAnuncio(neg, p.video, urls.video, 'Vídeo editado', logo)}</div>
+<span class="rot">${rx ? 'O que já fizemos pra ti' : 'Os teus anúncios'}</span><h2 id="t-ads">2 anúncios e 1 vídeo da ${esc(neg)}</h2>
+<div class="ads">${cartaoAnuncio(neg, p.anuncio1, urls.anuncio1, 'Anúncio 1', logo, 'anuncio1', resolveDe(rx, 'anuncio1'))}${cartaoAnuncio(neg, p.anuncio2, urls.anuncio2, 'Anúncio 2', logo, 'anuncio2', resolveDe(rx, 'anuncio2'))}${cartaoAnuncio(neg, p.video, urls.video, 'Vídeo editado', logo, 'video', resolveDe(rx, 'video'))}</div>
 <p class="pouca">Feitos com pouca informação: na implantação eles ficam no jeito do teu negócio.</p>
 </section>
 
-<section aria-labelledby="t-conv">
+<section aria-labelledby="t-conv" id="peca-conversa">
 <span class="rot">E quando o cliente chama</span><h2 id="t-conv">Eu atendo, levo até o pedido e chamo de novo quem sumiu</h2>
 <p class="lead">Um exemplo de como seria: um cliente viu o anúncio da ${esc(neg)} e chamou no WhatsApp.</p>
 <div class="fone" role="img" aria-label="Exemplo de conversa no WhatsApp entre um cliente e a Maia">
@@ -458,17 +492,19 @@ ${chat}
 <div class="sep"><span>No outro dia, o cliente não tinha respondido</span></div>
 <div class="b m">${br(retomada)}</div>
 </div>
+${rx ? `<div class="rx-ress">${resolveDe(rx, 'conversa')}</div>` : ''}
 </section>
 
-<section aria-labelledby="t-teste">
+<section aria-labelledby="t-teste" id="peca-teste">
 <div class="teste">
 <span class="rot">Teste ao vivo</span><h2 id="t-teste">Agora testa tu</h2>
 <p>Me manda uma pergunta como se fosse um cliente teu. Eu respondo no WhatsApp como atendente da ${esc(neg)}, com o que tu me contou. Pra sair do teste, é só escrever "sair".</p>
 <a class="cta" href="${esc(testa)}">Agora testa tu: me manda uma pergunta como se fosse teu cliente</a>
+${rx ? `<div class="rx-ress">${resolveDe(rx, 'teste')}</div>` : ''}
 </div>
 </section>
 
-${raio}
+${mensal}
 <section aria-labelledby="t-func">
 <span class="rot">Tudo o que eu faço</span><h2 id="t-func">O teu time de marketing inteiro, numa IA</h2>
 <div class="funcs">${FUNCOES.map(([t, d], i) => `<div class="func${i === 1 ? ' forte' : ''}"><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join('')}</div>

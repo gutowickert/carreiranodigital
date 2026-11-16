@@ -8,7 +8,7 @@
 //      "A maior oportunidade". Busca vazia da API NUNCA vira "não tem".
 //   2. INSTAGRAM (perfil e postagens): Business Discovery, a mesma função do conector da escola (lib/diagnostico/instagram.ts).
 //   3. ATENDIMENTO no WhatsApp: sem teste como cliente fica sem nota; só o que a pessoa contou na coleta.
-// O site só aparece como "pra onde o anúncio leva". As NOTAS saem da régua (rubrica.md da skill diagnostico-vendedor), em
+// O site só aparece como "pra onde o anúncio leva". Cada ponto é um par problema → solução amarrado à amostra e ao plano. As NOTAS saem da régua (rubrica.md da skill diagnostico-vendedor), em
 // código. A IA da Maia só reescreve os textos, e todo número que ela escrever tem que existir nos fatos.
 // Logo: a que a pessoa mandou (marcada na conversa ou pela equipe); senão a foto do perfil do Instagram; senão nenhuma.
 // Fica no contato: amostra.diagnostico (JSON) e amostra.diag_anuncios (o que a equipe conferiu). Chave: MAIA_LANC_DIAGNOSTICO=1.
@@ -31,16 +31,38 @@ export const AREAS = [
 ] as const
 export type AreaId = typeof AREAS[number]['id']
 
-// as funções da Maia que vão ao lado de uma melhoria (os mesmos títulos da página da amostra)
-export const FUNCOES_MAIA = ['Cria os anúncios', 'Edita os vídeos', 'Posta no Instagram', 'Coloca a campanha no ar', 'Atende 24 horas', 'Retoma quem sumiu', 'Mede as vendas', 'Te manda o relatório']
-const funcaoOk = (f: any) => (FUNCOES_MAIA.includes(String(f || '')) ? String(f) : null)
+// 16/11 (Guto: "o diagnóstico tem que estar atrelado ao resultado que vamos entregar"): cada ponto do raio-x é um PAR
+//   o que vimos (fato com dado) → o que já fizemos pra ti (a peça da amostra que resolve) → o que a Maia faz todo mês.
+// Só entra o que a gente resolve. As peças da amostra e as entregas do plano (site /maia: 6 vídeos e 6 imagens de anúncio
+// por mês, 12 posts, atendimento 24 h no WhatsApp, retomada 20 h/3 d/6 d, venda medida e relatório, resposta na hora):
+export const PECAS: Record<string, { nome: string; em: string }> = {
+  anuncio1: { nome: 'Anúncio 1', em: 'no anúncio 1' },
+  anuncio2: { nome: 'Anúncio 2', em: 'no anúncio 2' },
+  video: { nome: 'Vídeo editado', em: 'no vídeo' },
+  conversa: { nome: 'Conversa pronta', em: 'na conversa pronta' },
+  teste: { nome: 'Teste ao vivo', em: 'no teste ao vivo' },
+}
+export const ENTREGAS: Record<string, string> = {
+  anuncios_novos: 'Todo mês, 6 vídeos e 6 imagens de anúncio novos, com as tuas fotos reais, testados um contra o outro.',
+  troca: 'O anúncio que não chama gente é trocado, e o que funciona ganha versões novas antes de cansar o público.',
+  campanha_whats: 'A campanha no ar levando direto pro teu WhatsApp, montada e acompanhada com o especialista conferindo.',
+  posts: '12 posts por mês no teu Instagram (carrossel, imagem e vídeo), com legenda pronta: tu só dá o joinha.',
+  videos: 'Os teus vídeos curtos do celular viram anúncio e post: cortados, com texto e locução.',
+  atende24: 'Atendimento no teu WhatsApp 24 horas: responde em segundos, de noite e no domingo, mostrando o valor antes do preço.',
+  retomada: 'Quem some é chamado de novo no outro dia, em 3 dias e em 6 dias, sem ser chata.',
+  medir: 'Cada venda contada pelo anúncio de onde veio, com o relatório da semana e do mês em português simples.',
+  dono: 'Tu pergunta pelo WhatsApp e ela responde na hora; quando o cliente quer fechar, ela te passa a conversa pronta.',
+}
+const pecaOk = (p: any) => (p && PECAS[p] ? String(p) : null)
+const entregaOk = (e: any) => (e && ENTREGAS[e] ? String(e) : null)
 
 export type Dado = { valor: string; rotulo: string; cor?: 'sim' | 'nao' }
-export type Area = { id: AreaId; nome: string; nota: number | null; dados: Dado[]; sem_rotulo?: string; sem_motivo?: string; bom?: string; melhorar?: string; maia?: string | null; oportunidade?: string }
-export type Melhoria = { texto: string; maia: string | null }
+export type Area = { id: AreaId; nome: string; nota: number | null; dados: Dado[]; sem_rotulo?: string; sem_motivo?: string; bom?: string; oportunidade?: string }
+// um ponto: o que vimos → resolve com (a peça da amostra + a entrega do mês). problema/solucao são as versões curtas (pro Rick)
+export type Ponto = { area: string; vimos: string; problema: string; peca: string | null; fizemos: string; solucao: string; mensal: string | null }
 export type Exemplo = AnuncioLido & { dias: number | null }
 export type Diagnostico = {
-  versao: 2
+  versao: 3
   gerado_em: string; gerado_por: string; ia: boolean
   empresa: string; cidade: string | null; instagram: string | null
   logo_instagram: string | null   // caminho no armazenamento (a foto do perfil, se veio)
@@ -48,13 +70,16 @@ export type Diagnostico = {
   areas: Area[]
   exemplos: Exemplo[]             // 1 a 3 anúncios reais da empresa (da Biblioteca)
   bons: string[]
-  melhorar: Melhoria[]
-  tarefa: { titulo: string; passos: string[] }
+  pontos: Ponto[]                 // 2 a 3 pares problema → solução
+  tarefa: { titulo: string; passos: string[]; mensal: string | null }
   rick: string[]
   fontes: Record<string, { ok: boolean; detalhe?: string }>
   fatos: any
   revisado_em?: string | null; revisado_por?: string | null; editado?: boolean; ocultar?: boolean
 }
+// todo ponto tem que dizer com o que se resolve (a peça e a entrega do mês) pra poder marcar revisado
+export const pontoCompleto = (p: Ponto) => !!(p.vimos && pecaOk(p.peca) && p.fizemos && entregaOk(p.mensal))
+export const fraseRick = (p: Ponto) => `Vi que ${p.problema}; ${PECAS[p.peca || '']?.em || 'na amostra'} que a Maia fez pra ti a gente já ${p.solucao}.`
 
 // ---------- ajudantes ----------
 const sem = (s: any) => String(s ?? '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
@@ -117,9 +142,9 @@ function anunciosSimulados(usuario: string | null, agora = Date.now()) {
 }
 
 // ---------- 2. o que a equipe conferiu na Biblioteca (amostra.diag_anuncios) ----------
-export type AnunciosConferidos = { status: 'nao_conferido' | 'tem' | 'nao_tem'; fonte?: 'equipe' | 'api' | 'conector'; por?: string; em?: string; total_ativos?: number | null; lista?: AnuncioLido[] }
+export type AnunciosConferidos = { status: 'nao_conferido' | 'tem' | 'nao_tem'; fonte?: 'equipe' | 'api' | 'conector' | 'conta'; por?: string; em?: string; total_ativos?: number | null; lista?: AnuncioLido[] }
 const simNao = (v: any) => (v === true || v === 'sim' ? true : v === false || v === 'nao' || v === 'não' ? false : null)
-export function limpaAnuncios(e: any, por: string, fonte: 'equipe' | 'conector' = 'equipe'): AnunciosConferidos {
+export function limpaAnuncios(e: any, por: string, fonte: 'equipe' | 'conector' | 'conta' = 'equipe'): AnunciosConferidos {
   const status = ['nao_conferido', 'tem', 'nao_tem'].includes(e?.status) ? e.status : null
   if (!status) throw new Error('status de anúncio inválido (nao_conferido, tem ou nao_tem)')
   const lista: AnuncioLido[] = status !== 'tem' ? [] : (Array.isArray(e.lista) ? e.lista : []).slice(0, 3).map((a: any, i: number) => {
@@ -160,28 +185,29 @@ export function fatosDe(ig: any, an: AnunciosConferidos, c: any, agora = Date.no
 }
 type Fatos = ReturnType<typeof fatosDe>
 
-// ---------- 4. a régua (rubrica.md), em código ----------
-type Rascunho = { area: Area; bons: string[]; melhorias: Melhoria[]; fato_bom?: string; fato_melhorar?: string }
+// ---------- 4. a régua (rubrica.md), em código: a nota e os pontos (problema → solução) ----------
+type Rascunho = { area: Area; bons: string[]; pontos: Ponto[]; fato_bom?: string }
+const P = (area: string, vimos: string, problema: string, peca: string, fizemos: string, solucao: string, mensal: string): Ponto => ({ area, vimos, problema, peca, fizemos, solucao, mensal })
 
 function areaAnuncios(f: Fatos, nome: string, publico: string): Rascunho {
   const base = { id: 'anuncios' as const, nome: 'Anúncios no Facebook e no Instagram' }
   const a = f.anuncios, cidade = cidadeCurta(f.cidade)
   if (a.status === 'nao_tem') {
-    const melhorar = `Não encontramos nenhum anúncio ativo da ${nome} na Biblioteca de Anúncios da Meta. Sem anúncio, as vendas dependem de indicação e de quem já segue o perfil.`
     return {
       area: {
         ...base, nota: 2, dados: [{ valor: '0', rotulo: 'anúncios no ar', cor: 'nao' }],
-        bom: `O caminho está livre: quem começar a anunciar bem no ramo${cidade ? ', em ' + cidade : ''}, aparece primeiro.`, melhorar, maia: 'Cria os anúncios',
+        bom: `O caminho está livre: quem começar a anunciar bem no ramo${cidade ? ', em ' + cidade : ''}, aparece primeiro.`,
         oportunidade: `Anúncio é o que faz o WhatsApp tocar com gente nova${cidade ? ' de ' + cidade : ''}, e não só com quem já é cliente ou veio por indicação. Com as fotos reais do teu produto, um anúncio simples, mostrado pra ${publico} e com botão direto pro WhatsApp, coloca a ${nome} na frente de quem ainda não te conhece.`,
       },
       bons: [`O caminho dos anúncios está livre${cidade ? ' em ' + cidade : ''}: quem começar bem aparece primeiro.`],
-      melhorias: [{ texto: `Nenhum anúncio no ar: hoje só chama quem já conhece a ${nome}.`, maia: 'Cria os anúncios' }, { texto: 'Quando o anúncio entrar, quem chamar precisa ser respondido na hora, até de noite.', maia: 'Atende 24 horas' }],
-      fato_bom: `o caminho dos anúncios está livre${cidade ? ' em ' + cidade : ''}`, fato_melhorar: `a ${nome} ainda não tem nenhum anúncio no ar`,
+      pontos: [P('anuncios', `Não encontramos nenhum anúncio ativo da ${nome} na Biblioteca de Anúncios da Meta. Hoje só chama quem já conhece.`, `a ${nome} ainda não tem nenhum anúncio no ar`,
+        'anuncio1', 'Os 2 anúncios e o vídeo da amostra já foram feitos com as tuas fotos reais, com botão direto pro WhatsApp.', 'fez anúncios com as tuas fotos reais, com botão direto pro WhatsApp', 'anuncios_novos')],
+      fato_bom: `o caminho dos anúncios está livre${cidade ? ' em ' + cidade : ''}`,
     }
   }
-  if (a.status !== 'tem') return { area: { ...base, nota: null, dados: [], sem_rotulo: 'não deu pra ver', sem_motivo: 'Não conferimos a Biblioteca de Anúncios da Meta desta vez.' }, bons: [], melhorias: [] }
+  if (a.status !== 'tem') return { area: { ...base, nota: null, dados: [], sem_rotulo: 'não deu pra ver', sem_motivo: 'Não conferimos a Biblioteca de Anúncios da Meta desta vez.' }, bons: [], pontos: [] }
   const L = a.lista
-  if (!L.length) return { area: { ...base, nota: null, dados: [{ valor: a.total_ativos ? String(a.total_ativos) : 'Sim', rotulo: 'anúncios no ar', cor: 'sim' }], sem_rotulo: 'já anuncia', sem_motivo: `A ${nome} já tem anúncio no ar, o que pouca empresa faz. Na implantação, a Maia olha cada anúncio contigo.` }, bons: [`A ${nome} já anuncia, o que pouca empresa faz.`], melhorias: [], fato_bom: `a ${nome} já anuncia` }
+  if (!L.length) return { area: { ...base, nota: null, dados: [{ valor: a.total_ativos ? String(a.total_ativos) : 'Sim', rotulo: 'anúncios no ar', cor: 'sim' }], sem_rotulo: 'já anuncia', sem_motivo: `A ${nome} já tem anúncio no ar, o que pouca empresa faz. Na implantação, a Maia olha cada anúncio contigo.` }, bons: [`A ${nome} já anuncia, o que pouca empresa faz.`], pontos: [], fato_bom: `a ${nome} já anuncia` }
   const n = a.total_ativos ?? L.length
   const ds = L.map(x => x.dias).filter((x): x is number => x != null)
   const velho = ds.length ? Math.max(...ds) : null
@@ -213,29 +239,32 @@ function areaAnuncios(f: Fatos, nome: string, publico: string): Rascunho {
   if (L.some(x => x.fala_publico === true)) bons.push('A primeira frase chama um público e uma situação: quem passa rápido se vê ali.')
   if (L.some(x => x.valor_antes === true)) bons.push('O anúncio mostra o que a pessoa ganha antes do preço.')
   if (!bons.length) bons.push(`A ${nome} já anuncia, o que pouca empresa da cidade faz.`)
-  const melhorias: Melhoria[] = []
-  if (soPerfil) melhorias.push({ texto: 'Os anúncios levam pro perfil do Instagram: quem tem interesse precisa de 3 cliques pra falar contigo. Levar direto pro WhatsApp encurta o caminho.', maia: 'Coloca a campanha no ar' })
-  else if (levas.length && !temWhats && levas.includes('site')) melhorias.push({ texto: 'O anúncio leva pro site. Se lá o WhatsApp não está à vista, muita gente se perde no caminho.', maia: 'Coloca a campanha no ar' })
-  if (n === 1 || (L.length > 1 && datas === 1)) melhorias.push({ texto: n === 1 ? 'É um anúncio só no ar. Sem testar outro, não dá pra saber qual chama mais gente.' : 'Os anúncios entraram todos no mesmo dia. Testar um novo de tempos em tempos mostra qual chama mais gente.', maia: 'Cria os anúncios' })
-  if (velho != null && velho > 60 && datas <= 1) melhorias.push({ texto: `O mesmo anúncio roda há ${dias(velho)}. Trocar a imagem ou a primeira frase a cada poucas semanas evita que o público canse.`, maia: 'Cria os anúncios' })
-  if (formatos.size && !formatos.has('video')) melhorias.push({ texto: 'Nenhum anúncio em vídeo. Vídeo curto do dia a dia costuma chamar mais atenção.', maia: 'Edita os vídeos' })
-  if (L.some(x => x.fala_publico === false)) melhorias.push({ texto: 'A primeira frase não chama um público nem uma situação. Quem passa rápido precisa se ver ali logo de cara.', maia: 'Cria os anúncios' })
-  if (L.some(x => x.mostra_preco === true && x.valor_antes === false)) melhorias.push({ texto: 'O preço aparece antes do que a pessoa ganha. Mostrar o valor primeiro faz o preço parecer justo.', maia: 'Cria os anúncios' })
-  if (L.some(x => x.foto_real === false)) melhorias.push({ texto: 'O anúncio usa imagem que não é do teu negócio. Foto real do teu produto passa mais confiança.', maia: 'Cria os anúncios' })
-  if (!melhorias.length) melhorias.push({ texto: 'Saber de qual anúncio veio cada venda mostra onde vale pôr o dinheiro.', maia: 'Mede as vendas' })
-  const area: Area = { ...base, nota, dados, bom: bons[0], melhorar: melhorias[0].texto, maia: melhorias[0].maia }
+  const pontos: Ponto[] = []
+  if (soPerfil) pontos.push(P('anuncios', 'Os teus anúncios levam pro perfil do Instagram: quem tem interesse precisa de 3 cliques pra falar contigo.', 'os teus anúncios levam pro perfil, e não direto pro WhatsApp',
+    'anuncio1', 'Os anúncios da amostra terminam em "Enviar mensagem": levam direto pro teu WhatsApp.', 'colocou o botão direto pro WhatsApp', 'campanha_whats'))
+  else if (levas.length && !temWhats && levas.includes('site')) pontos.push(P('anuncios', 'O teu anúncio leva pro site: se lá o WhatsApp não está à vista, muita gente se perde no caminho.', 'o teu anúncio leva pro site, e não direto pro WhatsApp',
+    'anuncio1', 'Os anúncios da amostra terminam em "Enviar mensagem": levam direto pro teu WhatsApp.', 'colocou o botão direto pro WhatsApp', 'campanha_whats'))
+  if (velho != null && velho > 60 && datas <= 1) pontos.push(P('anuncios', `O mesmo anúncio roda há ${dias(velho)}: o público cansa de ver sempre a mesma coisa.`, `o mesmo anúncio roda há ${dias(velho)}`,
+    'anuncio2', 'Os anúncios da amostra são novos, feitos com as tuas fotos de agora.', 'fez anúncios novos com as tuas fotos de agora', 'troca'))
+  else if (n === 1 || (L.length > 1 && datas === 1)) pontos.push(P('anuncios', n === 1 ? 'É um anúncio só no ar: sem testar outro, não dá pra saber qual chama mais gente.' : 'Os teus anúncios entraram todos no mesmo dia: sem testar um novo de tempos em tempos, não dá pra saber qual chama mais gente.', n === 1 ? 'tem um anúncio só no ar' : 'os teus anúncios entraram todos no mesmo dia',
+    'anuncio2', 'Fizemos 2 anúncios diferentes pra ti, pra testar um contra o outro.', 'fez 2 anúncios diferentes, pra testar um contra o outro', 'anuncios_novos'))
+  if (formatos.size && !formatos.has('video')) pontos.push(P('anuncios', 'Nenhum anúncio teu é em vídeo, e vídeo curto do dia a dia costuma chamar mais atenção.', 'nenhum anúncio teu é em vídeo',
+    'video', 'O vídeo da amostra foi editado com o material que tu mandou.', 'editou um vídeo com o material que tu mandou', 'videos'))
+  if (L.some(x => x.fala_publico === false)) pontos.push(P('anuncios', 'A primeira frase do anúncio não chama um público nem uma situação: quem passa rápido não se vê ali.', 'a primeira frase do anúncio não chama o teu público',
+    'anuncio1', 'Os anúncios da amostra começam falando com quem compra de ti.', 'começou o anúncio falando com quem compra de ti', 'anuncios_novos'))
+  if (L.some(x => x.mostra_preco === true && x.valor_antes === false)) pontos.push(P('anuncios', 'No anúncio, o preço aparece antes do que a pessoa ganha.', 'o preço aparece antes do valor no anúncio',
+    'conversa', 'Na conversa pronta, a Maia mostra o que o cliente ganha antes de dizer o preço.', 'mostrou o valor antes do preço, na conversa pronta', 'atende24'))
+  if (L.some(x => x.foto_real === false)) pontos.push(P('anuncios', 'O anúncio usa imagem que não é do teu negócio, e foto real passa mais confiança.', 'o anúncio usa imagem que não é do teu negócio',
+    'anuncio1', 'Os anúncios da amostra usam só as fotos que tu mandou.', 'usou só as tuas fotos reais', 'anuncios_novos'))
+  const area: Area = { ...base, nota, dados, bom: bons[0] }
   if (nota <= 4) area.oportunidade = `A ${nome} já investe em anúncio, e isso é meio caminho andado. Com ${soPerfil ? 'o botão levando direto pro WhatsApp' : 'anúncios novos testados de tempos em tempos'} e quem chama sendo respondido na hora, o mesmo dinheiro passa a trazer mais conversa${cidade ? ' de gente de ' + cidade : ''}.`
-  return {
-    area, bons, melhorias,
-    fato_bom: velho != null && velho > 30 ? `a ${nome} tem anúncio rodando há ${dias(velho)}` : `a ${nome} já anuncia no ${plats.has('instagram') ? 'Instagram' : 'Facebook'}`,
-    fato_melhorar: soPerfil ? 'os anúncios levam pro perfil, e não direto pro WhatsApp' : n === 1 ? 'é um anúncio só no ar' : melhorias[0].texto.split('.')[0].toLowerCase(),
-  }
+  return { area, bons, pontos, fato_bom: velho != null && velho > 30 ? `a ${nome} tem anúncio rodando há ${dias(velho)}` : `a ${nome} já anuncia no ${plats.has('instagram') ? 'Instagram' : 'Facebook'}` }
 }
 
 function areaInstagram(f: Fatos, nome: string): Rascunho {
   const base = { id: 'instagram' as const, nome: 'Instagram' }
   const i = f.instagram
-  if (!i) return { area: { ...base, nota: null, dados: [], sem_rotulo: f.instagram_sem ? 'sem Instagram' : 'não deu pra ver', sem_motivo: f.instagram_sem ? 'Tu contou que não tem Instagram, ou não passou o @.' : `Não conseguimos abrir o perfil${f.instagram_erro && /pessoal|profissional/.test(f.instagram_erro) ? ': ele é conta pessoal, e a Meta só mostra contas profissionais' : ''}.` }, bons: [], melhorias: [] }
+  if (!i) return { area: { ...base, nota: null, dados: [], sem_rotulo: f.instagram_sem ? 'sem Instagram' : 'não deu pra ver', sem_motivo: f.instagram_sem ? 'Tu contou que não tem Instagram, ou não passou o @.' : `Não conseguimos abrir o perfil${f.instagram_erro && /pessoal|profissional/.test(f.instagram_erro) ? ': ele é conta pessoal, e a Meta só mostra contas profissionais' : ''}.` }, bons: [], pontos: [] }
   let n = 5
   const d = i.dias_desde_ultima, p30 = i.posts_30_dias, vid = i.videos_nas_ultimas_9
   if (d != null) { if (d <= 7) n += 2; else if (d > 30) n -= 3 }
@@ -244,8 +273,7 @@ function areaInstagram(f: Fatos, nome: string): Rascunho {
   const cid = sem(cidadeCurta(f.cidade))
   const bioCidade = !!cid && sem(i.bio).includes(cid)
   n += bioCidade ? 1 : -1
-  const link = i.link_bio ? normUrl(i.link_bio) : null
-  if (!link) n -= 1
+  if (!(i.link_bio && normUrl(i.link_bio))) n -= 1
   const dados: Dado[] = []
   if (i.seguidores != null) dados.push({ valor: num(i.seguidores), rotulo: 'seguidores' })
   if (p30 != null) dados.push({ valor: String(p30), rotulo: 'postagens em 30 dias' })
@@ -256,34 +284,38 @@ function areaInstagram(f: Fatos, nome: string): Rascunho {
   else if (vid) { bom = 'Tem vídeo nas últimas postagens, o formato que mais alcança gente nova.'; fato_bom = `a ${nome} já posta vídeo no Instagram` }
   else if (bioCidade) { bom = `A bio diz onde a ${nome} atende: quem chega sabe logo se é perto.`; fato_bom = 'a bio do Instagram já diz a cidade' }
   else { bom = `${i.seguidores != null ? num(i.seguidores) + ' pessoas já seguem' : 'Já tem gente seguindo'} a ${nome} no Instagram.`; fato_bom = `a ${nome} tem ${i.seguidores != null ? num(i.seguidores) + ' seguidores' : 'seguidores'} no Instagram` }
-  let melhorar: string, maia: string | null, fato_melhorar: string
-  if (d != null && d > 30) { melhorar = `A última postagem foi há ${dias(d)}. Quem entra no perfil pode achar que a ${nome} parou.`; maia = 'Posta no Instagram'; fato_melhorar = `o Instagram está parado há ${dias(d)}` }
-  else if (p30 != null && p30 < 8) { melhorar = `Foram ${p30} postage${p30 === 1 ? 'm' : 'ns'} nos últimos 30 dias. Duas por semana mantêm a ${nome} na lembrança de quem segue.`; maia = 'Posta no Instagram'; fato_melhorar = `foram ${p30} postage${p30 === 1 ? 'm' : 'ns'} no Instagram nos últimos 30 dias` }
-  else if (vid === 0) { melhorar = 'Nenhum vídeo nas últimas 9 postagens. Vídeo curto do dia a dia é o que mais alcança gente nova.'; maia = 'Edita os vídeos'; fato_melhorar = 'não tem vídeo nas últimas postagens do Instagram' }
-  else if (!bioCidade) { melhorar = `A bio não diz a cidade. Quem chega precisa saber, logo de cara, onde a ${nome} atende.`; maia = null; fato_melhorar = 'a bio do Instagram não diz a cidade' }
-  else if (!link) { melhorar = 'A bio não tem link. Quem quer comprar precisa procurar o teu número.'; maia = null; fato_melhorar = 'a bio do Instagram não tem link pro WhatsApp' }
-  else { melhorar = 'Dá pra mostrar mais o dia a dia, com gente de verdade, em vídeos curtos.'; maia = 'Edita os vídeos'; fato_melhorar = 'dá pra usar mais vídeo curto no Instagram' }
-  return { area: { ...base, nota: lim(n), dados, bom, melhorar, maia }, bons: [bom], melhorias: [{ texto: melhorar, maia }], fato_bom, fato_melhorar }
+  // só o que a Maia resolve (posts e vídeos); bio e link ficam de fora
+  const pontos: Ponto[] = []
+  const postVideo = ['video', 'O vídeo editado da amostra já serve de post no teu Instagram.', 'editou um vídeo que já serve de post', 'posts'] as const
+  if (d != null && d > 30) pontos.push(P('instagram', `A última postagem foi há ${dias(d)}: quem entra no perfil pode achar que a ${nome} parou.`, `o teu Instagram está parado há ${dias(d)}`, ...postVideo))
+  else if (p30 != null && p30 < 8) pontos.push(P('instagram', `Foram ${p30} postage${p30 === 1 ? 'm' : 'ns'} nos últimos 30 dias: duas ou três por semana mantêm a ${nome} na lembrança de quem segue.`, `foram ${p30} postage${p30 === 1 ? 'm' : 'ns'} no teu Instagram em 30 dias`, ...postVideo))
+  if (vid === 0) pontos.push(P('instagram', 'Nenhum vídeo nas últimas 9 postagens: vídeo curto do dia a dia é o que mais alcança gente nova.', 'não tem vídeo nas tuas últimas postagens',
+    'video', 'O vídeo da amostra foi editado com o material que tu mandou.', 'editou um vídeo com o teu material', 'videos'))
+  return { area: { ...base, nota: lim(n), dados, bom }, bons: [bom], pontos, fato_bom }
 }
 
 function areaAtendimento(f: Fatos): Rascunho {
   const como = String(f.coleta.como_vende || '').trim().replace(/[.!]+$/, '').slice(0, 220)
-  const melhorias: Melhoria[] = []
+  const pontos: Ponto[] = []
   const comoS = sem(como), dif = sem(f.coleta.dificuldade)
-  if (/\d{1,2}\s*(h|:|hs|horas)|\bas\s*\d|segunda|terca|sabado|domingo|horario/.test(comoS) && !/24\s*h|24 horas/.test(comoS)) melhorias.push({ texto: 'Fora do horário que tu contou, quem chama no WhatsApp espera até o outro dia, e muita gente compra de quem responde primeiro.', maia: 'Atende 24 horas' })
-  if (/sum|some|nao respond|esfria|demor|vacu|nao volta|desist/.test(dif)) melhorias.push({ texto: 'Tu contou que cliente some no meio da conversa. Chamar de novo no outro dia, sem ser chato, recupera parte dessas vendas.', maia: 'Retoma quem sumiu' })
+  if (/sum|some|nao respond|esfria|demor|vacu|nao volta|desist/.test(dif)) pontos.push(P('atendimento', 'Tu contou que cliente some no meio da conversa: muita venda se perde ali, sem ninguém chamar de novo.', 'tem cliente sumindo no meio da conversa',
+    'conversa', 'A conversa pronta mostra a Maia chamando de novo, no outro dia, o cliente que sumiu.', 'mostrou como ela chama de novo, no outro dia, quem sumiu', 'retomada'))
+  if (/\d{1,2}\s*(h|:|hs|horas)|\bas\s*\d|segunda|terca|sabado|domingo|horario/.test(comoS) && !/24\s*h|24 horas/.test(comoS)) pontos.push(P('atendimento', 'Fora do horário que tu contou, quem chama no WhatsApp espera até o outro dia, e muita gente compra de quem responde primeiro.', 'fora do teu horário quem chama no WhatsApp fica esperando',
+    'teste', 'O teste ao vivo já está pronto: manda uma pergunta como cliente e a Maia responde na hora, como atendente do teu negócio.', 'deixou o teste ao vivo pronto, respondendo na hora', 'atende24'))
   return {
-    area: { id: 'atendimento', nome: 'Atendimento no WhatsApp', nota: null, dados: [], sem_rotulo: 'não testado', sem_motivo: como ? `Tu contou: "${como}". Não mandamos mensagem como cliente desta vez; na implantação a gente testa.` : 'Não mandamos mensagem como cliente desta vez; na implantação a gente testa.', ...(melhorias[0] ? { melhorar: melhorias[0].texto, maia: melhorias[0].maia } : {}) },
-    bons: [], melhorias, fato_melhorar: melhorias[0] ? (melhorias[0].maia === 'Atende 24 horas' ? 'fora do teu horário quem chama no WhatsApp fica esperando' : 'tem cliente sumindo no meio da conversa') : undefined,
+    area: { id: 'atendimento', nome: 'Atendimento no WhatsApp', nota: null, dados: [], sem_rotulo: 'não testado', sem_motivo: como ? `Tu contou: "${como}". Não mandamos mensagem como cliente desta vez; na implantação a gente testa.` : 'Não mandamos mensagem como cliente desta vez; na implantação a gente testa.' },
+    bons: [], pontos,
   }
 }
 
-function tarefaDe(f: Fatos, nome: string): Diagnostico['tarefa'] {
-  const i = f.instagram, L = f.anuncios.lista
-  if (L.length && L.every(x => x.leva === 'instagram')) return { titulo: 'Trocar o botão do anúncio pra WhatsApp', passos: ['No Gerenciador de Anúncios, abre o anúncio que está no ar e toca em "Editar".', 'Em "Destino", escolhe WhatsApp e confere o teu número.', 'Publica de novo. Não muda a verba: só o caminho de quem clica.'] }
-  if (i && !i.link_bio) return { titulo: 'Pôr o link do WhatsApp na bio do Instagram', passos: ['No Instagram, toca em "Editar perfil" e depois em "Links".', 'Cola o link wa.me/55 seguido do teu número com DDD (ex.: wa.me/5551999990000).', 'Na bio, escreve numa linha o que tu vende e a cidade. Salva.'] }
-  if (i && ((i.dias_desde_ultima ?? 0) > 7 || (i.posts_30_dias ?? 0) < 8 || i.videos_nas_ultimas_9 === 0)) return { titulo: 'Postar 3 vídeos curtos nesta semana', passos: ['Grava 3 vídeos de até 20 segundos: o produto sendo feito, um cliente recebendo e tu contando o que vende.', 'Posta um na segunda, um na quarta e um na sexta, como Reels.', 'Na legenda, diz a cidade e termina com "chama no WhatsApp".'] }
-  return { titulo: 'Escrever a primeira frase do teu próximo anúncio', passos: [`Pensa no cliente que mais compra da ${nome} e no momento em que ele precisa de ti.`, 'Escreve uma pergunta curta que ele responderia "sim" (o público e a situação), e só depois o que ele ganha.', 'Posta essa frase num story com uma foto real e vê quem responde.'] }
+// a tarefa grátis: o que a pessoa faz já, sozinha e de graça, e que a Maia passaria a fazer por ela
+function tarefaDe(f: Fatos, pontos: Ponto[]): Diagnostico['tarefa'] {
+  const L = f.anuncios.lista
+  if (L.length && L.every(x => x.leva === 'instagram')) return { titulo: 'Trocar o botão do anúncio pra WhatsApp', passos: ['No Gerenciador de Anúncios, abre o anúncio que está no ar e toca em "Editar".', 'Em "Destino", escolhe WhatsApp e confere o teu número.', 'Publica de novo. Não muda a verba: só o caminho de quem clica.'], mensal: 'campanha_whats' }
+  const retomar = { titulo: 'Chamar de novo 5 clientes que sumiram', passos: ['No WhatsApp, procura 5 pessoas que perguntaram nos últimos dias e não compraram.', 'Manda pra cada uma uma mensagem curta, sem cobrar: "Oi! Ficou alguma dúvida? Se quiser, separo pra ti."', 'Anota quem respondeu: é gente que estava quase comprando.'], mensal: 'retomada' }
+  if (pontos.some(p => p.mensal === 'retomada')) return retomar
+  if (pontos.some(p => p.area === 'instagram')) return { titulo: 'Postar 3 vídeos curtos nesta semana', passos: ['Grava 3 vídeos de até 20 segundos: o produto sendo feito, um cliente recebendo e tu contando o que vende.', 'Posta um na segunda, um na quarta e um na sexta, como Reels.', 'Na legenda, diz a cidade e termina com "chama no WhatsApp".'], mensal: 'posts' }
+  return retomar
 }
 
 export const notaGeral = (areas: Area[]) => { const ns = areas.map(a => a.nota).filter((n): n is number => typeof n === 'number'); return ns.length ? Math.round(ns.reduce((s, n) => s + n, 0) / ns.length * 10) / 10 : null }
@@ -296,18 +328,21 @@ export function rascunho(f: Fatos, c: any) {
   const [ad, ig, at] = [areaAnuncios(f, nome, publico), areaInstagram(f, nome), areaAtendimento(f)]
   const areas = [ad.area, ig.area, at.area]
   const bons = [...ad.bons.slice(0, 2), ...ig.bons].slice(0, 3)
-  const melhorar: Melhoria[] = []
+  // os 2 ou 3 pontos principais: o 1º dos anúncios, o 1º do atendimento, o 1º do Instagram, e depois o resto
+  const pontos: Ponto[] = []
   const vistos = new Set<string>()
-  for (const m of [ad.melhorias[0], at.melhorias[0], ig.melhorias[0], ad.melhorias[1], at.melhorias[1], ad.melhorias[2]]) if (m && !vistos.has(m.texto)) { vistos.add(m.texto); melhorar.push(m) }
+  for (const p of [ad.pontos[0], at.pontos[0], ig.pontos[0], ad.pontos[1], at.pontos[1], ig.pontos[1], ad.pontos[2]]) if (p && !vistos.has(p.vimos) && pontos.length < 3) { vistos.add(p.vimos); pontos.push(p) }
+  // sem nenhum fato pra mostrar: o que a pessoa contou como a maior dificuldade (sem inventar)
+  const dif = String(k.dificuldade || '').trim().replace(/[.!]+$/, '').slice(0, 160)
+  if (pontos.length < 2 && dif) pontos.push(P('geral', `Tu contou que a maior dificuldade hoje é: "${dif}".`, `a tua maior dificuldade hoje é ${dif.charAt(0).toLowerCase() + dif.slice(1)}`,
+    'anuncio1', 'Fizemos 2 anúncios e 1 vídeo com as tuas fotos, pra levar gente nova pro teu WhatsApp.', 'fez 2 anúncios e 1 vídeo com as tuas fotos', 'anuncios_novos'))
   const forte = (ad.area.nota != null && ad.area.nota >= (ig.area.nota ?? 0) && ad.area.nota > 2 ? ad.fato_bom : ig.fato_bom) || ad.fato_bom
-  const fraco = ad.area.oportunidade ? ad.fato_melhorar : ad.fato_melhorar || at.fato_melhorar || ig.fato_melhorar
-  const resumo = [forte ? cap(forte) + '.' : '', f.anuncios.status === 'nao_tem' ? 'A maior oportunidade está nos anúncios: hoje não tem nenhum no ar, então só chama quem já conhece.' : fraco ? `O que mais dá pra melhorar: ${fraco}.` : ''].filter(Boolean).join(' ') || `Olhamos o que deu pra ver da ${nome} no Instagram e nos anúncios.`
-  const rick = [forte ? `Vi na tua análise que ${forte}.` : '', fraco ? `E que ${fraco}: é por aí que a Maia começa.` : ''].filter(Boolean)
-  const exemplos = f.anuncios.lista.slice(0, 3)
-  return { areas, exemplos, bons, melhorar: melhorar.slice(0, 3), tarefa: tarefaDe(f, nome), resumo, rick }
+  const resumo = [forte ? cap(forte) + '.' : '', f.anuncios.status === 'nao_tem' ? 'A maior oportunidade está nos anúncios: hoje não tem nenhum no ar, e a amostra já mostra como seriam os teus.' : pontos[0] ? `O ponto principal: ${pontos[0].problema}, e a amostra já mostra como resolver.` : ''].filter(Boolean).join(' ') || `Olhamos o que deu pra ver da ${nome} no Instagram e nos anúncios.`
+  const rick = pontos.slice(0, 2).map(fraseRick)
+  return { areas, exemplos: f.anuncios.lista.slice(0, 3), bons, pontos, tarefa: tarefaDe(f, pontos), resumo, rick }
 }
 
-// ---------- 5. a IA da Maia reescreve os textos (sem mudar nota nem número) ----------
+// ---------- 5. a IA da Maia reescreve os textos (sem mudar nota, número, peça nem entrega) ----------
 const usaIA = () => process.env.MAIA_LANC_IA === '1' || (!maiaLocal() && process.env.MAIA_LANC_IA !== '0' && !!process.env.ANTHROPIC_API_KEY)
 // todo número do texto tem que existir nos fatos (ou no rascunho): senão a IA inventou
 const numeros = (t: string) => (String(t).match(/\d+(?:[.,]\d+)?/g) || []).map(x => x.replace(',', '.'))
@@ -326,29 +361,25 @@ async function textosIA(f: Fatos, r: ReturnType<typeof rascunho>) {
     `OS FATOS (vieram da Biblioteca de Anúncios da Meta, do Instagram e do que o dono contou; é tudo o que existe):
 ${JSON.stringify(f).slice(0, 5000)}
 
-O RASCUNHO (as notas já estão dadas pela régua da escola e NÃO mudam):
-${JSON.stringify({ areas: r.areas.map(a => ({ id: a.id, nota: a.nota, bom: a.bom, melhorar: a.melhorar, oportunidade: a.oportunidade })), bons: r.bons, melhorar: r.melhorar, tarefa: r.tarefa, resumo: r.resumo, rick: r.rick })}
+O RASCUNHO (notas, peças e entregas já estão decididas e NÃO mudam):
+${JSON.stringify({ resumo: r.resumo, bons: r.bons, pontos: r.pontos.map(p => ({ vimos: p.vimos })), oportunidade: r.areas[0].oportunidade || null })}
 
-Reescreve os textos do rascunho no teu jeito, mais concretos e com o dado, sem inventar NADA:
+Reescreve só estes textos, mais concretos e com o dado, sem inventar NADA:
 - Só fatos que estão acima. Nunca inventa número, data, preço nem coisa que não deu pra ver. Não fala de Google nem de site (só como "pra onde o anúncio leva").
-- Os anúncios são o centro: o que está bom e o que melhorar neles vem primeiro.
-- Não fala o preço da Maia, não promete venda, faturamento nem número de clientes. Não diz "tu precisa de nós".
-- "melhorar": 3 itens, cada um com a função da Maia que resolve, só se fizer sentido, desta lista: ${FUNCOES_MAIA.join(', ')}. Sem sentido: null.
-- "bons": 3 frases curtas (até 18 palavras) com o dado. "resumo": 2 frases, começa pelo ponto mais forte e termina na maior oportunidade.
-- "tarefa": a mesma ideia do rascunho (ou outra melhor, que o dono faz sozinho em 30 minutos, de graça, sem a escola), 2 ou 3 passos.
-- "rick": 1 ou 2 frases curtas que o vendedor fala num áudio pro dono, começando com "Vi na tua análise que...".
+- Não fala o preço da Maia, não promete venda, faturamento nem número de clientes.
+- "resumo": 2 frases, começa pelo ponto mais forte e termina no ponto principal.
+- "bons": as mesmas ideias, frases curtas (até 18 palavras) com o dado.
+- "vimos": um texto por ponto, na mesma ordem, 1 ou 2 frases: o fato e por que ele pesa pro dono.
 - "oportunidade": só se o rascunho tem (2 ou 3 frases).
-Devolve {"resumo":"...","bons":["..."],"melhorar":[{"texto":"...","maia":"..."|null}],"oportunidade":"..."|null,"tarefa":{"titulo":"...","passos":["..."]},"rick":["..."]}`,
+Devolve {"resumo":"...","bons":["..."],"vimos":["..."],"oportunidade":"..."|null}`,
     [], { uso: { tipo: 'lancamento_diagnostico' } })
   const ok = (t: any) => semInvencao(t, base) && !PROIBIDO.test(String(t))
-  const out = { ...r, areas: r.areas.map(a => ({ ...a })) }
+  const out = { ...r, areas: r.areas.map(a => ({ ...a })), pontos: r.pontos.map(p => ({ ...p })) }
   if (ok(j?.resumo)) out.resumo = String(j.resumo).slice(0, 400)
-  if (Array.isArray(j?.bons) && j.bons.length >= 2 && j.bons.every(ok)) out.bons = j.bons.slice(0, 3).map((x: any) => String(x).slice(0, 200))
-  if (Array.isArray(j?.melhorar) && j.melhorar.length >= 2 && j.melhorar.every((m: any) => ok(m?.texto))) out.melhorar = j.melhorar.slice(0, 3).map((m: any) => ({ texto: String(m.texto).slice(0, 300), maia: funcaoOk(m.maia) }))
+  if (Array.isArray(j?.bons) && j.bons.length >= Math.min(2, r.bons.length) && j.bons.every(ok)) out.bons = j.bons.slice(0, 3).map((x: any) => String(x).slice(0, 200))
+  if (Array.isArray(j?.vimos) && j.vimos.length === r.pontos.length && j.vimos.every(ok)) out.pontos.forEach((p, i) => { p.vimos = String(j.vimos[i]).slice(0, 320) })
   const an = out.areas.find(a => a.id === 'anuncios')!
   if (an.oportunidade && ok(j?.oportunidade)) an.oportunidade = String(j.oportunidade).slice(0, 600)
-  if (j?.tarefa && ok(j.tarefa.titulo) && Array.isArray(j.tarefa.passos) && j.tarefa.passos.length >= 2 && j.tarefa.passos.every((p: any) => typeof p === 'string' && !PROIBIDO.test(p))) out.tarefa = { titulo: String(j.tarefa.titulo).slice(0, 120), passos: j.tarefa.passos.slice(0, 3).map((p: any) => String(p).slice(0, 300)) }
-  if (Array.isArray(j?.rick) && j.rick.length && j.rick.every(ok)) out.rick = j.rick.slice(0, 2).map((x: any) => String(x).slice(0, 240))
   return out
 }
 
@@ -380,11 +411,11 @@ export async function geraDiagnostico(c0: any, op: { por?: string } = {}): Promi
   }
   const apiErro = (api as any)?.ok ? null : (api as any)?.erro
   const d: Diagnostico = {
-    versao: 2, gerado_em: new Date().toISOString(), gerado_por: op.por || 'auto', ia,
+    versao: 3, gerado_em: new Date().toISOString(), gerado_por: op.por || 'auto', ia,
     empresa: nome, cidade: k.cidade || null, instagram: usuario, logo_instagram,
-    resumo: r.resumo, areas: r.areas, exemplos: r.exemplos, bons: r.bons, melhorar: r.melhorar, tarefa: r.tarefa, rick: r.rick,
+    resumo: r.resumo, areas: r.areas, exemplos: r.exemplos, bons: r.bons, pontos: r.pontos, tarefa: r.tarefa, rick: r.rick,
     fontes: {
-      anuncios: { ok: an.status !== 'nao_conferido', detalhe: an.status === 'nao_tem' ? 'conferido na Biblioteca: nenhum anúncio ativo' : an.status === 'tem' ? `conferido (${an.fonte === 'api' ? 'pela API da Biblioteca' : an.fonte === 'conector' ? 'pelo conector da Meta' : 'pela equipe'}): tem anúncio` : `não conferido${apiErro ? ' (API: ' + apiErro + ')' : ' (a API não achou; confere na Biblioteca)'}` },
+      anuncios: { ok: an.status !== 'nao_conferido', detalhe: an.status === 'nao_tem' ? 'conferido na Biblioteca: nenhum anúncio ativo' : an.status === 'tem' ? `conferido (${an.fonte === 'api' ? 'pela API da Biblioteca' : an.fonte === 'conector' ? 'pelo conector da Meta' : an.fonte === 'conta' ? 'pela conta de anúncios que a escola gerencia' : 'pela equipe'}): tem anúncio` : `não conferido${apiErro ? ' (API: ' + apiErro + ')' : ' (a API não achou; confere na Biblioteca)'}` },
       instagram: { ok: !!(ig as any)?.ok, detalhe: (ig as any)?.ok ? '@' + (ig as any).usuario : (ig as any)?.erro },
       atendimento: { ok: !!k.como_vende, detalhe: 'o que a pessoa contou na coleta' },
     },
@@ -412,23 +443,41 @@ export async function salvaDiagnostico(c: any, e: any, por: string) {
   })
   if (e.oportunidade != null) novo.areas = novo.areas.map(a => a.id === 'anuncios' ? { ...a, oportunidade: String(e.oportunidade).trim().slice(0, 800) || undefined } : a)
   if (e.bons != null) novo.bons = linhas(e.bons).slice(0, 5).map(x => x.slice(0, 240))
-  // "texto | função da Maia" (a função é opcional)
-  if (e.melhorar != null) novo.melhorar = linhas(e.melhorar).slice(0, 5).map(l => { const [t, fn] = l.split('|').map(x => x.trim()); return { texto: t.slice(0, 320), maia: funcaoOk(fn) } })
-  if (e.tarefa_titulo != null) novo.tarefa = { titulo: String(e.tarefa_titulo).slice(0, 140), passos: e.tarefa_passos != null ? linhas(e.tarefa_passos).slice(0, 4).map(x => x.slice(0, 320)) : d.tarefa.passos }
-  if (e.rick != null) novo.rick = linhas(e.rick).slice(0, 2).map(x => x.slice(0, 260))
+  // os pontos: o que vimos → resolve com (a peça da amostra + a entrega do mês). Ponto sem "o que vimos" sai
+  if (Array.isArray(e.pontos)) novo.pontos = e.pontos.slice(0, 4).map((p: any, i: number): Ponto => {
+    const antigo = d.pontos?.[i]
+    const vimos = String(p?.vimos || '').trim().slice(0, 400)
+    return {
+      area: String(p?.area || antigo?.area || 'geral').slice(0, 20), vimos,
+      problema: String(p?.problema || (antigo && antigo.vimos === vimos ? antigo.problema : vimos.split(/[.:]/)[0].replace(/^./, (x: string) => x.toLowerCase()))).slice(0, 200),
+      peca: pecaOk(p?.peca), fizemos: String(p?.fizemos || '').trim().slice(0, 300),
+      solucao: String(p?.solucao || (antigo && antigo.fizemos === String(p?.fizemos || '').trim() ? antigo.solucao : String(p?.fizemos || '').trim().replace(/[.]+$/, '').replace(/^./, (x: string) => x.toLowerCase()))).slice(0, 200),
+      mensal: entregaOk(p?.mensal),
+    }
+  }).filter((p: Ponto) => p.vimos)
+  if (e.tarefa_titulo != null) novo.tarefa = { titulo: String(e.tarefa_titulo).slice(0, 140), passos: e.tarefa_passos != null ? linhas(e.tarefa_passos).slice(0, 4).map(x => x.slice(0, 320)) : d.tarefa.passos, mensal: e.tarefa_mensal !== undefined ? entregaOk(e.tarefa_mensal) : d.tarefa?.mensal || null }
+  if (e.rick != null && String(e.rick).trim()) novo.rick = linhas(e.rick).slice(0, 2).map(x => x.slice(0, 260))
+  else if (Array.isArray(e.pontos)) novo.rick = novo.pontos.filter(pontoCompleto).slice(0, 2).map(fraseRick)   // sem frase escrita: sai dos pontos
   if (e.ocultar != null) novo.ocultar = !!e.ocultar
-  if (e.revisado) { novo.revisado_em = new Date().toISOString(); novo.revisado_por = por }
+  if (e.revisado) {
+    // revisado só com todo ponto amarrado a uma peça da amostra e a uma entrega do mês
+    const falta = (novo.pontos || []).map((p, i) => pontoCompleto(p) ? 0 : i + 1).filter(Boolean)
+    if (!novo.pontos?.length) throw new Error('o raio-x precisa de pelo menos 1 ponto (o que vimos → resolve com)')
+    if (falta.length) throw new Error(`falta o "resolve com" (a peça da amostra, o que já fizemos e a entrega do mês) no ponto ${falta.join(', ')}`)
+    if (!entregaOk(novo.tarefa?.mensal)) throw new Error('a tarefa grátis precisa dizer qual entrega da Maia faz isso depois')
+    novo.revisado_em = new Date().toISOString(); novo.revisado_por = por
+  }
   await salvaJson(atual, 'amostra', { diagnostico: novo })
   return novo
 }
 // entregar sem o raio-x (ex.: não deu pra ver quase nada): conta como revisado, e a página não mostra
 export async function semDiagnostico(c: any, por: string) {
   const atual = (await acha(c.id)) || c
-  const d = atual.amostra?.diagnostico || { versao: 2, gerado_em: null, empresa: empresaDe(atual), areas: [], exemplos: [], bons: [], melhorar: [], rick: [], fontes: {} }
+  const d = atual.amostra?.diagnostico || { versao: 3, gerado_em: null, empresa: empresaDe(atual), areas: [], exemplos: [], bons: [], pontos: [], rick: [], fontes: {} }
   await salvaJson(atual, 'amostra', { diagnostico: { ...d, ocultar: true, revisado_em: new Date().toISOString(), revisado_por: por } })
 }
 // a equipe (ou uma sessão do Claude com o conector da Meta) conferiu a Biblioteca de Anúncios
-export async function marcaAnuncios(c: any, e: any, por: string, fonte: 'equipe' | 'conector' = 'equipe') {
+export async function marcaAnuncios(c: any, e: any, por: string, fonte: 'equipe' | 'conector' | 'conta' = 'equipe') {
   const an = limpaAnuncios(e, por, fonte)
   for (const a of an.lista || []) if (a.imagem_path && !a.imagem_path.startsWith(`lanc-${c.id}/`)) throw new Error('a imagem do anúncio tem que ser desse contato')
   await salvaJson(c, 'amostra', { diag_anuncios: an })
