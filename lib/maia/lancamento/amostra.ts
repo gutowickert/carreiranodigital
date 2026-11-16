@@ -9,6 +9,7 @@ import {
   primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto,
 } from './base'
 import { TEXTO_TESTE, marcaRick, rotulo } from './conversa'
+import { diagLigado, diagVisivel, logoDe, logoMidiaId, notaGeral, LEVA, FORMATO, type Diagnostico } from './diagnostico'
 
 export const SLOTS = ['anuncio1', 'anuncio2', 'video'] as const
 export type Slot = typeof SLOTS[number]
@@ -58,7 +59,8 @@ export async function negocioDeApoio(c: any) {
   })
   await salva(c, { negocio_id: neg.id })
   // as mídias do contato entram no negócio de apoio (o mesmo arquivo do bucket, sem copiar)
-  for (const m of (await midias(c.id)).filter(m => m.origem === 'contato')) {
+  const logoId = logoMidiaId(c)
+  for (const m of (await midias(c.id)).filter(m => m.origem === 'contato' && m.id !== logoId)) {
     await db.insere('midias', { negocio_id: neg.id, tipo: m.tipo, path: m.path, mime: m.mime, descricao: m.tipo === 'video' ? 'vídeo curto que o dono mandou' : 'foto que o dono mandou' })
   }
   return neg
@@ -147,6 +149,8 @@ export async function aprova(c: any, op: { agora?: boolean; por: string }) {
   const p = atual.amostra?.pecas || {}
   if (!p.anuncio1 || !p.anuncio2) throw new Error('faltam os 2 anúncios')
   if (!p.video) throw new Error('falta o vídeo')
+  // 16/11 (MAIA_LANC_DIAGNOSTICO=1): o raio-x do negócio precisa estar revisado (ou marcado pra entregar sem)
+  if (diagLigado() && !atual.amostra?.diagnostico?.revisado_em) throw new Error('falta revisar o raio-x do negócio (ou marcar "entregar sem raio-x")')
   if (!atual.amostra?.conversa?.length) await geraConversa(atual)
   await garanteToken(atual)
   await salvaJson(atual, 'amostra', { aprovada_em: new Date().toISOString(), aprovada_por: op.por, entregar: op.agora ? 'agora' : 'combinado', falha: null })
@@ -159,7 +163,7 @@ export async function aprova(c: any, op: { agora?: boolean; por: string }) {
 const saudacao = (d = new Date()) => { const h = horaBR(d); return h < 12 ? 'Bom dia' : h < 18 ? 'Boa tarde' : 'Boa noite' }
 export const textoEntrega = (c: any) => `${saudacao()}${primeiroNome(c.nome) ? ', ' + primeiroNome(c.nome) : ''}! A tua amostra ficou pronta: ${linkAmostra(c)}
 
-Lá tem os 2 anúncios e o vídeo que eu fiz com as tuas fotos. E tem um teste: me manda aqui uma pergunta como se fosse um cliente teu, que eu respondo como atendente do teu negócio.`
+Lá tem os 2 anúncios e o vídeo que eu fiz com as tuas fotos${diagVisivel(c) ? ', e um raio-x dos teus anúncios e do teu Instagram, com o que dá pra melhorar' : ''}. E tem um teste: me manda aqui uma pergunta como se fosse um cliente teu, que eu respondo como atendente do teu negócio.`
 
 // manda a amostra agora (dentro das 24 h: texto com o link + o 1º anúncio; fora: o modelo aprovado, se tiver)
 export async function entrega(c: any) {
@@ -244,14 +248,52 @@ const INCLUSO = [
   'Vendas medidas por anúncio, relatório da semana e do mês, e o painel',
 ]
 
-function cartaoAnuncio(neg: string, p: any, url: string | null, titulo: string) {
+const avatar = (neg: string, logo?: string | null) => logo ? `<img class="av" src="${esc(logo)}" alt="Logo da ${esc(neg)}">` : `<span class="av">${esc((neg[0] || 'N').toUpperCase())}</span>`
+function cartaoAnuncio(neg: string, p: any, url: string | null, titulo: string, logo?: string | null) {
   if (!p || !url) return ''
   const video = /^video/.test(p.mime || '') || /\.(mp4|mov)(\?|$)/i.test(p.path || '')
   const midia = video ? `<video src="${esc(url)}" controls playsinline preload="metadata"></video>` : `<img src="${esc(url)}" alt="${esc(titulo)} da ${esc(neg)}" loading="lazy">`
-  return `<figure class="ad"><figcaption class="ad-top"><span class="av">${esc((neg[0] || 'N').toUpperCase())}</span><span><b>${esc(neg)}</b><small>Patrocinado</small></span></figcaption>
+  return `<figure class="ad"><figcaption class="ad-top">${avatar(neg, logo)}<span><b>${esc(neg)}</b><small>Patrocinado</small></span></figcaption>
 <div class="ad-midia">${midia}</div><div class="ad-cta"><span>Enviar mensagem</span><span class="seta">WhatsApp</span></div>
 ${p.legenda ? `<p class="ad-leg"><b>${esc(neg)}</b> ${br(p.legenda)}</p>` : ''}<p class="ad-rot">${esc(titulo)}</p></figure>`
 }
+
+// ---------- o RAIO-X do negócio (16/11, MAIA_LANC_DIAGNOSTICO=1) ----------
+const faixaNota = (n: number) => (n >= 7 ? 'bom' : n >= 4 ? 'medio' : 'ruim')
+const COR_NOTA: Record<string, string> = { bom: '#15803d', medio: '#a85a08', ruim: '#b91c1c' }
+export async function htmlRaioX(c: any, d: Diagnostico, neg: string, logo: string | null) {
+  const geral = notaGeral(d.areas)
+  const g = geral == null ? '' : num1(geral)
+  const anel = geral == null ? '' : `<div class="rx-anel" role="img" aria-label="Nota geral ${g} de 10"><svg width="112" height="112" viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="60" r="54" stroke="#ede7fb" stroke-width="12" fill="none"/><circle cx="60" cy="60" r="54" stroke="${COR_NOTA[faixaNota(geral)]}" stroke-width="12" fill="none" stroke-linecap="round" stroke-dasharray="${Math.round(geral * 33.9)} 339" transform="rotate(-90 60 60)"/></svg><div><b>${g}</b><small>de 10</small></div></div>`
+  const placar = d.areas.map(a => {
+    const dados = (a.dados || []).map(x => `<span class="rx-dado${x.cor ? ' ' + x.cor : ''}"><b>${esc(x.valor)}</b> ${esc(x.rotulo)}</span>`).join('')
+    if (a.nota == null) return `<div class="rx-area sem"><div class="rx-lin"><b>${esc(a.nome)}</b><span class="rx-sem">${esc(a.sem_rotulo || 'não deu pra ver')}</span></div>${dados ? `<div class="rx-dados">${dados}</div>` : ''}${a.sem_motivo ? `<p class="rx-motivo">${esc(a.sem_motivo)}</p>` : ''}</div>`
+    const f = faixaNota(a.nota)
+    return `<div class="rx-area"><div class="rx-lin"><b>${esc(a.nome)}</b><span class="rx-n ${f}">${a.nota}<small>/10</small></span></div><div class="rx-barra"><i class="${f}" style="width:${a.nota * 10}%"></i></div>${dados ? `<div class="rx-dados">${dados}</div>` : ''}</div>`
+  }).join('')
+  const exs = await Promise.all((d.exemplos || []).slice(0, 3).map(async x => {
+    const img = x.imagem_path ? await db.link(x.imagem_path, 60 * 60 * 24 * 7) : null
+    const chips = [x.dias != null ? `no ar há ${x.dias} dia${x.dias === 1 ? '' : 's'}` : '', x.formato ? FORMATO[x.formato] : '', x.leva ? 'leva pro ' + LEVA[x.leva] : '', (x.plataformas || []).filter(p => p === 'facebook' || p === 'instagram').map(p => p[0].toUpperCase() + p.slice(1)).join(' e ')].filter(Boolean)
+    return `<figure class="rx-ex">${img ? `<img src="${esc(img)}" alt="Anúncio da ${esc(neg)}" loading="lazy">` : ''}<figcaption>${x.texto ? `<p>"${esc(x.texto)}"</p>` : ''}<div class="rx-dados">${chips.map(t => `<span class="rx-dado">${esc(t)}</span>`).join('')}</div>${x.link ? `<a href="${esc(x.link)}" target="_blank" rel="noopener">Ver na Biblioteca de Anúncios</a>` : ''}</figcaption></figure>`
+  }))
+  const op = d.areas.find(a => a.id === 'anuncios')?.oportunidade
+  const data = new Date(d.gerado_em || Date.now()).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+  return `<section aria-labelledby="t-raio" class="raio">
+<span class="rot">Raio-x do teu negócio</span>
+<div class="rx-cab">${avatar(neg, logo)}<div><h2 id="t-raio">Raio-x da ${esc(neg)}</h2><small>Anúncios no Facebook e no Instagram, o teu perfil e o atendimento · ${esc(data)}</small></div></div>
+<div class="rx-topo">${anel}<p>${esc(d.resumo)}</p></div>
+<div class="rx-placar">${placar}</div>
+${exs.length ? `<h3 class="rx-h3">Os teus anúncios no ar</h3><div class="rx-exs">${exs.join('')}</div>` : ''}
+${op ? `<div class="rx-oport"><span class="selo">A maior oportunidade</span><p>${esc(op)}</p></div>` : ''}
+<div class="rx-duas">
+<div class="rx-col"><h3 class="rx-h3">O que está bom</h3><ul class="lista">${(d.bons || []).map(x => `<li>${esc(x)}</li>`).join('')}</ul></div>
+<div class="rx-col"><h3 class="rx-h3">O que dá pra melhorar</h3><ul class="rx-mel">${(d.melhorar || []).map(m => `<li><span>${esc(m.texto)}</span>${m.maia ? `<em>A Maia faz isso: ${esc(m.maia)}</em>` : ''}</li>`).join('')}</ul></div>
+</div>
+${d.tarefa?.titulo ? `<div class="rx-tarefa"><div><span class="rx-sel">Tarefa grátis da semana</span><h3>${esc(d.tarefa.titulo)}</h3><ol>${(d.tarefa.passos || []).map(x => `<li>${esc(x)}</li>`).join('')}</ol><small>Tu faz sozinho, em uns 30 minutos, sem pagar nada.</small></div></div>` : ''}
+<p class="rx-fontes">Feito com dados públicos (a Biblioteca de Anúncios da Meta e o teu Instagram) e com o que tu me contou. O que não deu pra ver ficou sem nota: nada aqui é chute.</p>
+</section>`
+}
+const num1 = (n: number) => n.toLocaleString('pt-BR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 
 export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
   const neg = nomeNeg(c), nome = primeiroNome(c.nome)
@@ -263,6 +305,11 @@ export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
   const testa = waLink(TEXTO_TESTE(neg))
   const marca = waLink(`Oi! Vi a amostra da Maia pra ${neg} e quero marcar a implantação.`)
   const chat = conv.map(f => `<div class="b ${f.de === 'maia' ? 'm' : 'c'}">${br(f.texto)}</div>`).join('')
+  // 16/11: o raio-x (só com a chave ligada e revisado; a prévia da equipe mostra antes)
+  const rx = diagVisivel(c, !!op.previa) ? c.amostra.diagnostico as Diagnostico : null
+  const lg = rx ? await logoDe(c) : null
+  const logo = lg ? await db.link(lg.path, 60 * 60 * 24 * 7) : null
+  const raio = rx ? await htmlRaioX(c, rx, neg, logo) : ''
   return `<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="robots" content="noindex,nofollow"><title>Amostra da Maia pra ${esc(neg)}</title><meta name="theme-color" content="#f7f5fc">
 <meta property="og:title" content="A tua amostra ficou pronta"><meta property="og:description" content="2 anúncios e 1 vídeo da ${esc(neg)}, feitos pela Maia."><meta property="og:image" content="${esc(SITE())}/maia/img/maia-og.jpg">
@@ -270,7 +317,7 @@ export async function htmlAmostra(c: any, op: { previa?: boolean } = {}) {
 <style>
 @font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
-:root{--bg:#f7f5fc;--s1:#fff;--s2:#f3f0fa;--ln:#e6e0f2;--tx:#1b1530;--tx2:#3d3654;--mu:#6b6485;--ac:#7c3aed;--ac2:#6d28d9;--ac-bg:#f1ebfe;--grad:linear-gradient(100deg,#7c3aed,#a855f7);--verde:#15803d;--verde-bg:#dcfce7;--amb:#a85a08;--amb-bg:#fdeecb;--wa:#e7fbe9;--f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;--f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;color-scheme:light}
+:root{--bg:#f7f5fc;--s1:#fff;--s2:#f3f0fa;--ln:#e6e0f2;--tx:#1b1530;--tx2:#3d3654;--mu:#6b6485;--ac:#7c3aed;--ac2:#6d28d9;--ac-bg:#f1ebfe;--grad:linear-gradient(100deg,#7c3aed,#a855f7);--verde:#15803d;--verde-bg:#dcfce7;--amb:#a85a08;--amb-bg:#fdeecb;--red:#b91c1c;--wa:#e7fbe9;--f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;--f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;color-scheme:light}
 *{box-sizing:border-box;margin:0;padding:0}
 body{background:var(--bg);color:var(--tx);font:16px/1.55 var(--f-tx);-webkit-font-smoothing:antialiased;overflow-x:hidden}
 img,video{display:block;max-width:100%}
@@ -335,20 +382,70 @@ section{padding-block:44px 0}
 .fim .cta{margin-top:16px}
 .rodape{font-size:13px;color:var(--mu);margin-top:26px}
 .previa{background:var(--amb-bg);color:var(--amb);text-align:center;font-weight:800;font-size:13px;padding:8px}
-@media (max-width:820px){.ads{grid-template-columns:1fr;max-width:460px}.funcs{grid-template-columns:1fr}}
+img.av{object-fit:cover;background:#fff;border:1px solid var(--ln);padding:0}
+.marca{display:flex;align-items:center;gap:12px;margin-top:18px}
+.marca img{width:56px;height:56px;border-radius:14px;object-fit:cover;background:#fff;border:1px solid var(--ln)}
+.marca b{font-family:var(--f-dis);font-size:22px;font-stretch:88%}
+.marca small{display:block;color:var(--mu);font-size:13px}
+.rx-cab{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+.rx-cab .av{width:56px;height:56px;border-radius:14px;font-size:22px}
+.rx-cab small{display:block;color:var(--mu);font-size:13.5px;margin-top:4px}
+.rx-topo{display:flex;align-items:center;gap:18px;background:var(--s1);border:1px solid var(--ln);border-radius:20px;padding:18px 20px;margin-top:16px}
+.rx-topo p{color:var(--tx2);font-size:16.5px}
+.rx-anel{position:relative;width:112px;height:112px;flex:none}
+.rx-anel div{position:absolute;inset:0;display:grid;place-content:center;text-align:center}
+.rx-anel b{font-family:var(--f-dis);font-size:32px;font-weight:800;font-stretch:80%;line-height:1}
+.rx-anel small{color:var(--mu);font-size:12px}
+.rx-placar{display:grid;gap:10px;margin-top:14px}
+.rx-area{background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;min-width:0}
+.rx-lin{display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+.rx-lin b{font-family:var(--f-dis);font-size:19px;font-stretch:88%}
+.rx-n{font-family:var(--f-dis);font-weight:800;font-size:24px;font-stretch:80%}
+.rx-n small{font-size:13px;color:var(--mu);font-weight:700}
+.rx-n.bom,.rx-dado.sim b{color:var(--verde)}.rx-n.medio{color:var(--amb)}.rx-n.ruim,.rx-dado.nao b{color:var(--red)}
+.rx-barra{height:8px;border-radius:999px;background:var(--s2);margin-top:8px;overflow:hidden}
+.rx-barra i{display:block;height:100%;border-radius:999px}
+.rx-barra i.bom{background:var(--verde)}.rx-barra i.medio{background:#d97706}.rx-barra i.ruim{background:var(--red)}
+.rx-sem{font:800 11px var(--f-tx);letter-spacing:.08em;text-transform:uppercase;color:var(--mu);background:var(--s2);border-radius:999px;padding:4px 10px;white-space:nowrap}
+.rx-dados{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px}
+.rx-dado{font-size:13px;color:var(--tx2);background:var(--s2);border-radius:999px;padding:3px 10px}
+.rx-motivo{color:var(--mu);font-size:14px;margin-top:8px}
+.rx-h3{font-family:var(--f-dis);font-size:22px;font-stretch:88%;margin:26px 0 4px}
+.rx-exs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:10px}
+.rx-ex{background:var(--s1);border:1px solid var(--ln);border-radius:16px;overflow:hidden;margin:0;min-width:0}
+.rx-ex img{width:100%;max-height:320px;object-fit:contain;background:#000}
+.rx-ex figcaption{padding:12px 14px}
+.rx-ex p{color:var(--tx2);font-size:14.5px;overflow-wrap:anywhere}
+.rx-ex a{display:inline-block;margin-top:10px;font-weight:700;font-size:14px}
+.rx-oport{background:var(--ac-bg);border:1px solid var(--ac);border-radius:18px;padding:18px 20px;margin-top:22px}
+.rx-oport p{margin-top:10px;color:var(--tx)}
+.rx-duas{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.rx-col{min-width:0}
+.rx-mel{list-style:none;margin-top:16px;display:grid;gap:10px}
+.rx-mel li{background:var(--s1);border:1px solid var(--ln);border-left:4px solid var(--amb);border-radius:12px;padding:12px 14px;color:var(--tx2)}
+.rx-mel em{display:inline-block;margin-top:8px;font:800 12px var(--f-tx);font-style:normal;color:var(--ac2);background:var(--ac-bg);border-radius:999px;padding:4px 10px}
+.rx-tarefa{border-radius:20px;padding:2px;background:var(--grad);margin-top:26px;box-shadow:0 18px 40px rgba(124,58,237,.18)}
+.rx-tarefa>div{background:#fff;border-radius:18px;padding:22px 22px 18px}
+.rx-sel{display:inline-block;font:800 11px var(--f-tx);letter-spacing:.12em;text-transform:uppercase;color:#fff;background:var(--grad);border-radius:999px;padding:5px 12px}
+.rx-tarefa h3{font-family:var(--f-dis);font-size:24px;font-stretch:85%;margin:12px 0 10px}
+.rx-tarefa ol{padding-left:22px;display:grid;gap:8px;color:var(--tx2)}
+.rx-tarefa small{display:block;color:var(--mu);margin-top:12px;font-size:13.5px}
+.rx-fontes{color:var(--mu);font-size:13px;margin-top:16px}
+@media (max-width:820px){.ads{grid-template-columns:1fr;max-width:460px}.funcs{grid-template-columns:1fr}.rx-exs,.rx-duas{grid-template-columns:1fr}.rx-topo{flex-direction:column;align-items:flex-start}}
 @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
 </style></head><body>
 ${op.previa ? '<div class="previa">Prévia da equipe: esta visita não conta como abertura</div>' : ''}
 <header class="topo faixa"><div class="miolo">
 <div class="quem"><img src="/maia/img/maia-avatar.webp" alt="A Maia"><span>Maia, a IA da Carreira no Digital</span></div>
+${rx ? `<div class="marca">${logo ? `<img src="${esc(logo)}" alt="Logo da ${esc(neg)}">` : avatar(neg)}<span><b>${esc(neg)}</b><small>amostra e raio-x feitos pela Maia</small></span></div>` : ''}
 <h1>${nome ? esc(nome) + ', a' : 'A'} tua amostra ficou <em>pronta</em></h1>
-<p>Eu fiz 2 anúncios e 1 vídeo pra ${esc(neg)}, com as fotos e os vídeos que tu me mandou. Olha como eles apareceriam no Instagram.</p>
+<p>Eu fiz 2 anúncios e 1 vídeo pra ${esc(neg)}, com as fotos e os vídeos que tu me mandou. Olha como eles apareceriam no Instagram.${rx ? ' E mais abaixo tem o raio-x dos teus anúncios e do teu Instagram, com o que dá pra melhorar.' : ''}</p>
 </div></header>
 <main class="faixa"><div class="miolo">
 
 <section aria-labelledby="t-ads" style="padding-top:28px">
 <span class="rot">Os teus anúncios</span><h2 id="t-ads">2 anúncios e 1 vídeo da ${esc(neg)}</h2>
-<div class="ads">${cartaoAnuncio(neg, p.anuncio1, urls.anuncio1, 'Anúncio 1')}${cartaoAnuncio(neg, p.anuncio2, urls.anuncio2, 'Anúncio 2')}${cartaoAnuncio(neg, p.video, urls.video, 'Vídeo editado')}</div>
+<div class="ads">${cartaoAnuncio(neg, p.anuncio1, urls.anuncio1, 'Anúncio 1', logo)}${cartaoAnuncio(neg, p.anuncio2, urls.anuncio2, 'Anúncio 2', logo)}${cartaoAnuncio(neg, p.video, urls.video, 'Vídeo editado', logo)}</div>
 <p class="pouca">Feitos com pouca informação: na implantação eles ficam no jeito do teu negócio.</p>
 </section>
 
@@ -356,7 +453,7 @@ ${op.previa ? '<div class="previa">Prévia da equipe: esta visita não conta com
 <span class="rot">E quando o cliente chama</span><h2 id="t-conv">Eu atendo, levo até o pedido e chamo de novo quem sumiu</h2>
 <p class="lead">Um exemplo de como seria: um cliente viu o anúncio da ${esc(neg)} e chamou no WhatsApp.</p>
 <div class="fone" role="img" aria-label="Exemplo de conversa no WhatsApp entre um cliente e a Maia">
-<div class="fone-top"><span class="av">${esc((neg[0] || 'N').toUpperCase())}</span><span>${esc(neg)}<small>atendimento pela Maia</small></span></div>
+<div class="fone-top">${avatar(neg, logo)}<span>${esc(neg)}<small>atendimento pela Maia</small></span></div>
 ${chat}
 <div class="sep"><span>No outro dia, o cliente não tinha respondido</span></div>
 <div class="b m">${br(retomada)}</div>
@@ -371,6 +468,7 @@ ${chat}
 </div>
 </section>
 
+${raio}
 <section aria-labelledby="t-func">
 <span class="rot">Tudo o que eu faço</span><h2 id="t-func">O teu time de marketing inteiro, numa IA</h2>
 <div class="funcs">${FUNCOES.map(([t, d], i) => `<div class="func${i === 1 ? ' forte' : ''}"><b>${esc(t)}</b><span>${esc(d)}</span></div>`).join('')}</div>

@@ -12,6 +12,7 @@ import {
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes,
 } from './base'
 import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, lerHora, type Passo } from './interpreta'
+import { diagLigado, arrobaDe, marcaLogo, geraDiagnostico } from './diagnostico'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -27,6 +28,8 @@ export const PERGUNTAS: Record<Exclude<Passo, 'fotos' | 'hora'>, string> = {
 }
 export const PEDE_FOTOS = 'Agora o mais importante: me manda de 3 a 5 fotos do teu produto ou serviço e, se tiver, uns vídeos curtos do dia a dia. Pode ser do celular mesmo. Eu só uso o que tu mandar.'
 export const PEDE_VIDEO = 'Fotos recebidas! Tem uns vídeos curtos do dia a dia (até 1 minuto)? Se tiver, manda aqui. Se não tiver, é só dizer "sem vídeo".'
+// 16/11 (raio-x, MAIA_LANC_DIAGNOSTICO=1): junto com as fotos, a logo (opcional)
+export const pedeFotos = () => (diagLigado() ? PEDE_FOTOS + ' Se tiver a logo da empresa, manda também.' : PEDE_FOTOS)
 export const SEM_FOTO = 'Sem fotos eu não consigo, porque não invento imagem do teu negócio. Quando tiver, me manda aqui que eu faço.'
 // Sem se apresentar de novo: a Maia já se apresentou no disparo (Guto, 15/11)
 export const INTRO = 'Oba! Vou te fazer umas perguntas rápidas, uma de cada vez, e no fim te peço umas fotos e uns vídeos curtos. Leva uns 3 minutos.'
@@ -65,7 +68,7 @@ export async function entrada(m: Entrada): Promise<{ tratado: boolean; contato_i
   const tipo = m.tipo === 'imagem' || m.tipo === 'image' ? 'imagem' : m.tipo === 'video' ? 'video' : m.tipo === 'button' || m.tipo === 'botao' ? 'botao' : m.tipo === 'audio' ? 'audio' : (m.tipo === 'texto' || m.tipo === 'text' || m.tipo === 'interactive') ? 'texto' : 'outro'
   const linha = await registra(c, { direcao: 'entrada', autor: 'contato', tipo, texto: t || null, midia_id: m.midia_id || null, mime: m.mime || null, wamid: m.wamid || null, processado: false })
   // a mídia do teste local vem junto (base64): guarda já, pra o processa achar
-  if (m.b64) { try { await guardaMidia(c, { b64: m.b64, mime: m.mime }); await (await import('../db')).maiaDb.atualiza('lanc_msgs', { id: linha.id }, { midia_id: 'local' }) } catch { /* segue */ } }
+  if (m.b64) { try { const g = await guardaMidia(c, { b64: m.b64, mime: m.mime }); await (await import('../db')).maiaDb.atualiza('lanc_msgs', { id: linha.id }, { midia_id: 'local:' + g.id }) } catch { /* segue */ } }
   return { tratado: true, contato_id: c.id, msg_id: linha.id }
 }
 
@@ -84,19 +87,38 @@ export async function processa(contato_id: string, msg_id: string) {
   for (const m of pend) await db.atualiza('lanc_msgs', { id: m.id }, { processado: true })
   // as mídias: baixa da Meta e guarda no bucket (a do teste local já foi guardada na entrada)
   let fotos = 0, videos = 0
+  const lote: { tipo: string; id: string | null; legenda: string }[] = []
   for (const m of pend.filter(x => x.tipo === 'imagem' || x.tipo === 'video')) {
     try {
-      if (m.midia_id !== 'local') await guardaMidia(c, { midia_id: m.midia_id, mime: m.mime })
+      const local = String(m.midia_id || '').startsWith('local')
+      const g = local ? null : await guardaMidia(c, { midia_id: m.midia_id, mime: m.mime })
+      lote.push({ tipo: m.tipo, id: g?.id || (local ? String(m.midia_id).slice(6) || null : null), legenda: m.texto || '' })
       if (m.tipo === 'video') videos++; else fotos++
     } catch (e: any) { await evento('lanc_erro_midia', { contato: c.id, erro: String(e?.message || e).slice(0, 200) }) }
   }
-  const texto = pend.filter(x => ['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto).map(x => x.texto).join('\n').trim()
+  let texto = pend.filter(x => ['texto', 'botao', 'outro', 'audio'].includes(x.tipo) && x.texto).map(x => x.texto).join('\n').trim()
   const audio = pend.some(x => x.tipo === 'audio' && !x.texto)
-  try { return await responde(c, texto, { fotos, videos, audio }) }
+  // 16/11 (raio-x): "essa é a logo" (na legenda da foto ou numa mensagem junto) marca a foto como a logo da empresa.
+  // A logo não conta como foto do produto, e o texto que só fala da logo não vira resposta da coleta
+  let logo = false
+  if (diagLigado()) {
+    const falaLogo = (t: any) => /\blogo(marca|tipo)?\b/i.test(String(t || ''))
+    const fotosLote = lote.filter(x => x.tipo === 'imagem' && x.id)
+    let alvo = fotosLote.find(x => falaLogo(x.legenda))?.id || null
+    if (!alvo && falaLogo(texto)) alvo = fotosLote[fotosLote.length - 1]?.id || (await midias(c.id)).filter(x => x.origem === 'contato' && x.tipo === 'foto').pop()?.id || null
+    if (alvo) {
+      try {
+        await marcaLogo(c, alvo, 'contato'); logo = true
+        if (fotosLote.some(x => x.id === alvo)) fotos--
+        texto = texto.split('\n').filter(l => !(falaLogo(l) && l.length < 80)).join('\n').trim()
+      } catch { /* a equipe marca na tela */ }
+    }
+  }
+  try { return await responde(c, texto, { fotos, videos, audio, logo }) }
   catch (e: any) { await evento('lanc_erro', { contato: c.id, erro: String(e?.message || e).slice(0, 300) }); return { ok: false, erro: String(e?.message || e) } }
 }
 
-type Novas = { fotos: number; videos: number; audio?: boolean }
+type Novas = { fotos: number; videos: number; audio?: boolean; logo?: boolean }
 async function responde(c: any, texto: string, novas: Novas) {
   const agora = Date.now()
   // modo teste
@@ -109,6 +131,7 @@ async function responde(c: any, texto: string, novas: Novas) {
     await salvaJson(c, 'estado', { modo: null })   // passou o tempo: sai calado e segue
   }
   if (texto && ehGatilhoTeste(texto)) return entraTeste(c)
+  if (novas.logo && !texto && !novas.fotos && !novas.videos && !['quero_ver', 'coletando'].includes(c.etapa)) { await mandaTexto(c, 'Recebi a logo! Vai junto pra equipe.'); return { ok: true, logo: true } }
   if (novas.audio && !texto) { await mandaTexto(c, 'Ainda não consigo ouvir áudio por aqui. Me escreve, por favor?'); return { ok: true } }
   // quem tinha recusado (ou sem negócio) e voltou
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)
@@ -129,26 +152,63 @@ async function responde(c: any, texto: string, novas: Novas) {
 // ---------- 3. a coleta ----------
 export async function contaMidias(c: any) {
   const ms = await midias(c.id)
-  return { fotos: ms.filter(m => m.origem === 'contato' && m.tipo === 'foto').length, videos: ms.filter(m => m.origem === 'contato' && m.tipo === 'video').length }
+  const logoId = diagLigado() ? c.amostra?.logo?.midia_id || null : null   // a logo não conta como foto do produto
+  return { fotos: ms.filter(m => m.origem === 'contato' && m.tipo === 'foto' && m.id !== logoId).length, videos: ms.filter(m => m.origem === 'contato' && m.tipo === 'video').length }
 }
 // o próximo passo que falta (as fotos: 3, ou menos se a pessoa disse que só tem essas; o vídeo é opcional, mas pergunta)
-export function proximoPasso(c: any, n: { fotos: number; videos: number }): Passo | 'video' | 'feito' {
+export type PassoColeta = Passo | 'video' | 'feito' | 'nome_empresa' | 'instagram_ok'
+export function proximoPasso(c: any, n: { fotos: number; videos: number }): PassoColeta {
   const k = c.coleta || {}
   for (const p of ['negocio', 'cidade', 'produtos', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) if (!k[p]) return p
+  // 16/11 (raio-x): o nome exato da empresa e o @ certo (pro Instagram e pra Biblioteca de Anúncios)
+  if (diagLigado()) {
+    if (!k.nome_confirmado) return 'nome_empresa'
+    if (k.instagram && !/^n[aã]o tem$/i.test(String(k.instagram)) && !arrobaDe(k.instagram) && !k.instagram_confirmado) return 'instagram_ok'
+  }
   if (n.fotos < 3 && !(k.so_essas && n.fotos >= 1)) return 'fotos'
   if (!n.videos && !k.sem_video) return 'video'
   if (k.hora == null) return 'hora'
   return 'feito'
 }
-const pergunta = (p: Passo | 'video' | 'feito') => p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : PERGUNTAS[p]
+export const perguntaNome = (c: any) => c.coleta?.nome_negocio
+  ? `Pra eu fazer também um raio-x do teu negócio: o nome da empresa é "${c.coleta.nome_negocio}" mesmo, do jeito que aparece no Instagram? Se for outro, me escreve o certo.`
+  : 'Pra eu fazer também um raio-x do teu negócio: qual é o nome da tua empresa, do jeito que aparece no Instagram ou na fachada?'
+export const PERGUNTA_ARROBA = 'Me confirma só o @ do teu Instagram, do jeito que aparece no perfil (ex.: @minhaloja)?'
+export const pergunta = (p: PassoColeta, c?: any) => p === 'fotos' ? pedeFotos() : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : p === 'nome_empresa' ? perguntaNome(c || {}) : p === 'instagram_ok' ? PERGUNTA_ARROBA : PERGUNTAS[p]
+const semAc = (s: string) => s.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+// a resposta do nome da empresa e do @ (null = não é resposta: pergunta ou recusa)
+export function respostaDiag(c: any, passo: 'nome_empresa' | 'instagram_ok', texto: string): Record<string, any> | null {
+  const s = semAc(texto)
+  if (ehAgoraNao(texto) || (/\?\s*$/.test(texto) && s.split(/\s+/).length >= 3)) return null
+  if (passo === 'instagram_ok') {
+    const h = arrobaDe(texto)
+    if (h) return { instagram: '@' + h, instagram_confirmado: true }
+    if (/^(nao|sem|nenhum)\b|nao tenho|nao tem/.test(s)) return { instagram: 'não tem', instagram_confirmado: true }
+    return { instagram_confirmado: true }
+  }
+  if (c.coleta?.nome_negocio && /^(sim|isso|exato|correto|certo|e isso|e esse|e sim|isso mesmo|s|ss|aham|uhum|positivo|confirmo|pode ser)\b/.test(s)) return { nome_confirmado: true }
+  const nome = texto.trim().replace(/^(o nome da empresa (e|é)|o nome (e|é)|se chama|chama(-se)?|nome:?|(é|e))\s+/i, '').replace(/^["'\u201c\u201d]+|["'\u201c\u201d.!]+$/g, '').trim().slice(0, 80)
+  return nome ? { nome_negocio: nome, nome_confirmado: true } : null
+}
 
 async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   let n = await contaMidias(c)
   let passo = proximoPasso(c, n)
   const antes = c.estado?.passo || null
   const partes: string[] = intro ? [INTRO] : []
-  if (texto) {
-    const passoLeitura: Passo = passo === 'video' ? 'fotos' : passo === 'feito' ? 'hora' : passo
+  let lido = false
+  if (texto && (passo === 'nome_empresa' || passo === 'instagram_ok')) {
+    const r = respostaDiag(c, passo, texto)
+    if (r) { await salvaJson(c, 'coleta', r); lido = true }
+    else if (ehAgoraNao(texto)) return agoraNao(c)
+    else {
+      await registraDuvida(c, texto)
+      await mandaTexto(c, [...partes, DUVIDA, pergunta(passo, c)].join('\n\n'))
+      return { ok: true, passo, duvida: true }
+    }
+  }
+  if (texto && !lido) {
+    const passoLeitura: Passo = passo === 'video' ? 'fotos' : passo === 'feito' ? 'hora' : (passo === 'nome_empresa' || passo === 'instagram_ok') ? 'instagram' : passo
     const l = await interpreta(texto, passoLeitura, c.coleta)
     const campos: any = { ...(l.campos || {}) }
     if (campos.hora != null && passo !== 'hora') delete campos.hora
@@ -160,25 +220,25 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
     if (l.intencao === 'so_essas' && passo === 'fotos') await salvaJson(c, 'coleta', { so_essas: true })
     if (l.intencao === 'preco' || l.intencao === 'duvida') {
       if (l.intencao === 'duvida') await registraDuvida(c, l.duvida || texto)
-      await mandaTexto(c, [...partes, l.intencao === 'preco' ? PRECO : DUVIDA, pergunta(proximoPasso(c, n))].join('\n\n'))
+      await mandaTexto(c, [...partes, l.intencao === 'preco' ? PRECO : DUVIDA, pergunta(proximoPasso(c, n), c)].join('\n\n'))
       await salvaJson(c, 'estado', { passo: proximoPasso(c, n) })
       return { ok: true, passo: proximoPasso(c, n), [l.intencao]: true }
     }
     if (passo === 'hora' && l.campos?.hora == null) { await mandaTexto(c, 'Me diz só a hora que fica melhor amanhã: 10h ou 15h?'); return { ok: true, passo } }
   }
-  if (c.etapa === 'quero_ver' && (texto || novas.fotos || novas.videos) && !intro) await salva(c, { etapa: 'coletando' })
+  if (c.etapa === 'quero_ver' && (texto || novas.fotos || novas.videos || novas.logo) && !intro) await salva(c, { etapa: 'coletando' })
   n = await contaMidias(c)
   passo = proximoPasso(c, n)
   // a resposta
   if (passo === 'feito') return fechaColeta(c, partes)
-  const recebi = novas.fotos || novas.videos
-    ? `Recebi ${[novas.fotos ? `${novas.fotos} foto${novas.fotos > 1 ? 's' : ''}` : '', novas.videos ? `${novas.videos} vídeo${novas.videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')}.`
+  const recebi = novas.fotos || novas.videos || novas.logo
+    ? `Recebi ${[novas.fotos ? `${novas.fotos} foto${novas.fotos > 1 ? 's' : ''}` : '', novas.videos ? `${novas.videos} vídeo${novas.videos > 1 ? 's' : ''}` : '', novas.logo ? 'a logo' : ''].filter(Boolean).join(' e ')}.`
     : ''
   let msg: string
-  if (passo === 'fotos' && antes === 'fotos' && (novas.fotos || novas.videos)) msg = `${recebi} ${n.fotos < 3 ? `Manda mais ${3 - n.fotos} foto${3 - n.fotos > 1 ? 's' : ''} que já dá.` : ''}`.trim()
-  else if (passo === antes && !texto && (novas.fotos || novas.videos)) msg = `${recebi} Já guardei.\n\n${pergunta(passo)}`
-  else if (passo === antes && texto) msg = pergunta(passo)   // a resposta não serviu: pergunta de novo
-  else msg = [recebi || (texto && !intro ? OKS[(c.estado?.oks || 0) % OKS.length] : ''), pergunta(passo)].filter(Boolean).join(' ')
+  if (passo === 'fotos' && antes === 'fotos' && (novas.fotos || novas.videos || novas.logo)) msg = `${recebi} ${n.fotos < 3 ? `Manda mais ${3 - n.fotos} foto${3 - n.fotos > 1 ? 's' : ''} que já dá.` : ''}`.trim()
+  else if (passo === antes && !texto && (novas.fotos || novas.videos || novas.logo)) msg = `${recebi} Já guardei.\n\n${pergunta(passo, c)}`
+  else if (passo === antes && texto) msg = pergunta(passo, c)   // a resposta não serviu: pergunta de novo
+  else msg = [recebi || (texto && !intro ? OKS[(c.estado?.oks || 0) % OKS.length] : ''), pergunta(passo, c)].filter(Boolean).join(' ')
   if (passo === 'video' && (novas.fotos || novas.videos) && antes === 'fotos') msg = PEDE_VIDEO
   await mandaTexto(c, [...partes, msg].join('\n\n'))
   await salvaJson(c, 'estado', { passo, oks: (c.estado?.oks || 0) + 1 })
@@ -190,10 +250,12 @@ async function fechaColeta(c: any, partes: string[]) {
   const entrega = instanteBR(dia, c.coleta.hora)
   await salva(c, { etapa: avanca(c.etapa, 'material_recebido'), entrega_em: entrega })
   await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString() })
-  await mandaTexto(c, [...partes, `Combinado! ${cap(quandoFalado(entrega))} eu te mando aqui a tua amostra: 2 anúncios e 1 vídeo feitos com as tuas fotos. Até lá!`].join('\n\n'))
+  await mandaTexto(c, [...partes, `Combinado! ${cap(quandoFalado(entrega))} eu te mando aqui a tua amostra: 2 anúncios e 1 vídeo feitos com as tuas fotos${diagLigado() ? ', e um raio-x dos teus anúncios e do teu Instagram' : ''}. Até lá!`].join('\n\n'))
   await evento('lanc_material', { contato: c.id })
   const n = await contaMidias(c)
   await avisaGuto('material novo', `${rotulo(c)} mandou ${n.fotos} foto(s) e ${n.videos} vídeo(s). Entrega combinada: ${quandoFalado(entrega)}. Tela: /maia/operacao/lancamento.html`)
+  // 16/11: o raio-x do negócio sai sozinho aqui (se falhar, a rotina de hora em hora tenta de novo, e a equipe tem o botão)
+  if (diagLigado()) { try { await geraDiagnostico(c, { por: 'auto' }) } catch (e: any) { await evento('lanc_diag_erro', { contato: c.id, erro: String(e?.message || e).slice(0, 200) }) } }
   return { ok: true, passo: 'feito', entrega_em: entrega }
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -219,7 +281,7 @@ async function aguardando(c: any, texto: string, novas: Novas) {
 export const TEXTO_TESTE = (neg: string) => `Quero testar a Maia como cliente da ${neg} (modo teste)`
 async function entraTeste(c: any) {
   if (!c.coleta?.negocio) {
-    await mandaTexto(c, 'O teste fica pronto junto com a tua amostra: primeiro eu preciso conhecer o teu negócio. ' + pergunta(proximoPasso(c, await contaMidias(c))))
+    await mandaTexto(c, 'O teste fica pronto junto com a tua amostra: primeiro eu preciso conhecer o teu negócio. ' + pergunta(proximoPasso(c, await contaMidias(c)), c))
     return { ok: true, teste: 'sem coleta' }
   }
   const ate = new Date(Date.now() + TESTE_MIN() * 60e3).toISOString()

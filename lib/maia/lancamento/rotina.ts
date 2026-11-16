@@ -7,14 +7,14 @@
 //   4. marca "Disparado" quem recebeu o modelo de abertura (lê os envios dos disparos do CRM)
 import { maiaDb as db, maiaLocal } from '../db'
 import { salva, salvaJson, mandaTexto, mandaModelo, janelaAberta, janelaAte, horaBR, primeiroNome, evento, variantes } from './base'
-import { proximoPasso, contaMidias, PERGUNTAS, PEDE_FOTOS, PEDE_VIDEO, perguntaHora, saiTeste } from './conversa'
+import { proximoPasso, contaMidias, pergunta, saiTeste, type PassoColeta } from './conversa'
 import { entrega, horaDeEntregar, linkAmostra, nomeNeg } from './amostra'
 
 const H = 3600e3, D = 24 * H
 export const RETOMADA = [20 * H, 3 * D, 6 * D]
 
-function perguntaPendente(p: string) {
-  return p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : (PERGUNTAS as any)[p] || ''
+function perguntaPendente(p: PassoColeta, c: any) {
+  return pergunta(p, c) || ''
 }
 export function textoRetomada(c: any, n: number, fase: 'coleta' | 'amostra', pendente = '') {
   const oi = primeiroNome(c.nome) ? `Oi, ${primeiroNome(c.nome)}!` : 'Oi!'
@@ -44,7 +44,7 @@ export async function retomadas(agora = new Date()) {
     const base = n > 0 && r.base ? Date.parse(r.base) : Date.parse(fase === 'amostra' ? (c.entregue_em || c.ultima_saida_em) : c.ultima_saida_em)
     if (n >= 3 || t - base < RETOMADA[n]) continue
     let pendente = ''
-    if (fase === 'coleta') pendente = perguntaPendente(proximoPasso(c, await contaMidias(c)))
+    if (fase === 'coleta') pendente = perguntaPendente(proximoPasso(c, await contaMidias(c)), c)
     const texto = textoRetomada(c, n, fase, pendente)
     let como = ''
     if (janelaAberta(c, 10, t)) { await mandaTexto(c, texto); como = 'texto' }
@@ -106,6 +106,8 @@ export async function rotinaLancamento(agora = new Date()) {
   try { r.testes = await testesParados(agora) } catch (e: any) { r.testes_erro = e.message }
   try { r.retomadas = await retomadas(agora) } catch (e: any) { r.retomadas_erro = e.message }
   try { r.disparados = await marcaDisparados() } catch (e: any) { r.disparados_erro = e.message }
+  // 16/11: o raio-x de quem chegou no "Material recebido" e ficou sem (só com MAIA_LANC_DIAGNOSTICO=1)
+  try { const { diagnosticosPendentes } = await import('./diagnostico'); const d = await diagnosticosPendentes(); if (d.length) r.diagnosticos = d } catch (e: any) { r.diagnosticos_erro = e.message }
   return r
 }
 export { janelaAte }

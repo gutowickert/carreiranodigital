@@ -77,6 +77,15 @@ textarea.conv{width:100%;min-height:200px;border:1px solid var(--border-strong);
 .login{max-width:360px;margin:12vh auto;background:var(--surface);border-radius:16px;padding:24px;box-shadow:var(--sombra)}
 .login input{width:100%;border:1px solid var(--border-strong);border-radius:10px;padding:10px;margin:12px 0}
 #toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:var(--text);color:#fff;border-radius:10px;padding:10px 16px;display:none;z-index:40;max-width:90vw}
+/* 16/11: o raio-x do negócio */
+.rx-g{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;margin-top:8px}
+.rx-g label,.rx-f label{display:block;font-size:12px;color:var(--text-muted);font-weight:700}
+.rx-f input,.rx-f select,.rx-f textarea,.rx-g input,.rx-g select{width:100%;border:1px solid var(--border-strong);border-radius:8px;padding:6px 8px;background:var(--surface)}
+.rx-f textarea{min-height:64px}
+.rx-f{display:grid;gap:8px;margin-top:10px}
+.rx-ad{border:1px dashed var(--border-strong);border-radius:12px;padding:10px;margin-top:8px}
+.rx-logo{width:56px;height:56px;border-radius:12px;object-fit:cover;border:1px solid var(--border);background:#fff;vertical-align:middle;margin-right:8px}
+.rx-rick{font-style:italic;color:var(--text-2);margin-top:4px}
 @media (max-width:640px){.slots{grid-template-columns:1fr}dl{grid-template-columns:1fr}}
 </style>
 </head>
@@ -112,7 +121,7 @@ function tela(){
   var b=S.busca.toLowerCase();
   var vis=l.filter(function(c){return naFila(c,S.fila)&&(!S.etapa||c.etapa===S.etapa)&&(!b||[c.nome,c.negocio,c.telefone,c.cidade].join(' ').toLowerCase().indexOf(b)>=0)});
   h+='<div class="tab"><table><thead><tr><th>Pessoa</th><th>Negócio</th><th>Etapa</th><th>Entrega</th><th>Amostra</th><th>Avisos</th></tr></thead><tbody>'+vis.slice(0,400).map(function(c){
-    var av=[];if(c.rick_pendente)av.push('<span class="chip c-ok">Rick: '+esc(c.rick_motivo||'mandar áudio')+'</span>');if(c.duvida)av.push('<span class="chip c-at">Dúvida</span>');if(c.retomada_a_mao)av.push('<span class="chip c-at">Retomada à mão</span>');if(c.falha)av.push('<span class="chip c-led">Não saiu</span>');if(c.em_teste)av.push('<span class="chip c-ia">No modo teste</span>');
+    var av=[];if(c.rick_pendente)av.push('<span class="chip c-ok">Rick: '+esc(c.rick_motivo||'mandar áudio')+'</span>');if(c.duvida)av.push('<span class="chip c-at">Dúvida</span>');if(c.retomada_a_mao)av.push('<span class="chip c-at">Retomada à mão</span>');if(c.falha)av.push('<span class="chip c-led">Não saiu</span>');if(c.em_teste)av.push('<span class="chip c-ia">No modo teste</span>');if(c.diag&&['material_recebido','em_producao'].indexOf(c.etapa)>=0)av.push('<span class="chip '+(c.diag==='revisado'||c.diag==='sem_raio_x'?'c-ok':'c-at')+'">Raio-x: '+({sem:'falta gerar',gerado:'revisar',revisado:'revisado',sem_raio_x:'vai sem'}[c.diag]||c.diag)+'</span>');if(c.rick_pendente&&c.rick_frases&&c.rick_frases.length)av.push('<div class="rx-rick">'+esc(c.rick_frases.join(' '))+'</div>');
     return '<tr class="l" data-id="'+c.id+'"><td><b>'+esc(c.nome||'(sem nome)')+'</b><div class="mu">final '+esc(String(c.telefone).slice(-4))+' · '+(c.remessa===0?'teste do time':'remessa '+esc(c.remessa))+' · '+esc(c.versao)+'</div></td><td>'+esc(c.negocio||c.ramo||'—')+'<div class="mu">'+esc(c.cidade||'')+'</div></td><td>'+chipEtapa(c.etapa)+'</td><td>'+(c.entregue_em?'entregue '+quando(c.entregue_em):c.entrega_em?quando(c.entrega_em):'—')+'</td><td>'+c.pecas+'/3 peças'+(c.aberturas?'<div class="mu">abriu '+c.aberturas+'x</div>':'')+(c.testou_em?'<div class="mu">testou</div>':'')+'</td><td>'+av.join('')+'</td></tr>'}).join('')+'</tbody></table>'+(vis.length?'':'<p class="mu" style="padding:16px">Ninguém aqui.</p>')+'</div>';
   h+='<p class="mu">Os dados da coleta são do contato: use só pra fazer a amostra. As respostas pro contato saem pela caixa de Disparos do CRM (número da escola).</p></div></main><div class="gaveta" id="gav"><div class="painel" id="pn"></div></div>';
   $('#app').innerHTML=h;
@@ -133,14 +142,14 @@ function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='
     var h='<div style="display:flex;gap:10px;align-items:center"><h2 style="font-size:26px">'+esc(c.nome||'(sem nome)')+'</h2>'+chipEtapa(c.etapa)+'<span class="sp"></span><button class="btn" id="fx">Fechar</button></div>';
     h+='<p class="mu">'+esc(c.telefone)+' · <a href="https://wa.me/'+esc(c.telefone)+'" target="_blank" rel="noopener">abrir no WhatsApp</a> · '+(c.remessa===0?'teste do time':'remessa '+esc(c.remessa))+' · modelo '+esc(c.versao)+(c.nota!=null?' · nota '+esc(c.nota):'')+'</p>';
     if(c.duvida)h+='<div class="alerta"><b>Dúvida pro time:</b> '+esc(c.duvida.texto)+' <button class="btn" data-a="duvida_resolvida">Resolvido</button></div>';
-    if(c.rick_pendente)h+='<div class="alerta" style="background:var(--green-bg)"><b>Rick: mandar áudio</b> ('+esc(c.rick_motivo||'')+') <button class="btn ok" data-a="rick_feito">Áudio mandado</button></div>';
+    if(c.rick_pendente)h+='<div class="alerta" style="background:var(--green-bg)"><b>Rick: mandar áudio</b> ('+esc(c.rick_motivo||'')+') <button class="btn ok" data-a="rick_feito">Áudio mandado</button>'+(c.diagnostico&&!c.diagnostico.ocultar&&(c.diagnostico.rick||[]).length?'<div class="rx-rick">Pra usar no áudio: '+esc(c.diagnostico.rick.join(' '))+'</div>':'')+'</div>';
     if(c.retomada_a_mao)h+='<div class="alerta"><b>Retomada à mão</b> (sem modelo aprovado pra fora das 24 h). Manda pela caixa de Disparos: <i>'+esc(c.retomada_a_mao.texto||'')+'</i> <button class="btn" data-a="retomada_feita">Feito</button></div>';
     if(c.falha)h+='<div class="alerta" style="background:var(--red-bg)"><b>A amostra não saiu:</b> '+esc(c.falha)+'</div>';
     // coleta
     var k=c.coleta||{};h+='<div class="card"><h3>O que a pessoa contou</h3><dl>'+Object.keys(ROT).filter(function(x){return k[x]!=null&&k[x]!==''}).map(function(x){return '<dt>'+ROT[x]+'</dt><dd>'+esc(x==='hora'?k[x]+'h':k[x]===true?'sim':k[x])+'</dd>'}).join('')+'<dt>Entrega combinada</dt><dd>'+quando(c.entrega_em)+'</dd><dt>Por que está na lista</dt><dd>'+esc(c.motivo||'—')+'</dd></dl></div>';
     // material
     var mat=c.midias.filter(function(m){return m.origem==='contato'});
-    h+='<div class="card"><h3>Fotos e vídeos que a pessoa mandou ('+mat.length+')</h3>'+(mat.length?'<div class="grade">'+mat.map(function(m){return '<figure>'+(m.tipo==='video'?'<video src="'+esc(m.url)+'" preload="metadata" controls playsinline></video>':'<img src="'+esc(m.url)+'" alt="foto do contato" loading="lazy">')+'<figcaption><span>'+(m.tipo==='video'?'vídeo':'foto')+'</span><a href="'+esc(m.url)+'" download target="_blank" rel="noopener">baixar</a></figcaption></figure>'}).join('')+'</div>':'<p class="mu">Ainda nada.</p>')+'</div>';
+    h+='<div class="card"><h3>Fotos e vídeos que a pessoa mandou ('+mat.length+')</h3>'+(mat.length?'<div class="grade">'+mat.map(function(m){return '<figure>'+(m.tipo==='video'?'<video src="'+esc(m.url)+'" preload="metadata" controls playsinline></video>':'<img src="'+esc(m.url)+'" alt="foto do contato" loading="lazy">')+'<figcaption><span>'+(m.tipo==='video'?'vídeo':(c.logo_midia_id===m.id?'<b>logo</b>':'foto'))+'</span>'+(c.diag_ligado&&m.tipo==='foto'?(c.logo_midia_id===m.id?'<a href="#" data-logo="">tirar logo</a>':'<a href="#" data-logo="'+esc(m.id)+'">é a logo</a>'):'')+'<a href="'+esc(m.url)+'" download target="_blank" rel="noopener">baixar</a></figcaption></figure>'}).join('')+'</div>':'<p class="mu">Ainda nada.</p>')+'</div>';
     // peças
     h+='<div class="card"><h3>A amostra: 2 anúncios e 1 vídeo</h3><div class="slots">'+['anuncio1','anuncio2','video'].map(function(s){var p=c.pecas[s];return '<div class="slot"><b>'+SLOT[s]+'</b>'+(p?(ehVid(p.mime,p.url)?'<video src="'+esc(p.url)+'" controls playsinline preload="metadata"></video>':'<img src="'+esc(p.url)+'" alt="'+SLOT[s]+'">')+'<textarea data-leg="'+s+'" placeholder="Legenda do anúncio">'+esc(p.legenda||'')+'</textarea><div class="acoes"><button class="btn" data-salvaleg="'+s+'">Salvar legenda</button></div>':'<p class="mu">Vazio</p>')+'<label class="btn" style="display:inline-block;margin-top:8px">'+(p?'Trocar':'Subir')+' arquivo<input type="file" accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime" data-sobe="'+s+'" hidden></label></div>'}).join('')+'</div>';
     h+='<div class="acoes"><button class="btn" data-a="gerar_oficina">Gerar com a oficina</button><span class="mu">A oficina faz 2 artes e 1 vídeo com o material; depois escolhe abaixo qual vai em cada lugar.</span></div>';
@@ -149,6 +158,8 @@ function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='
     // conversa pronta
     var conv=(c.conversa_pronta||[]).map(function(f){return (f.de==='maia'?'Maia: ':'Cliente: ')+f.texto}).join('\n')+(c.retomada_pronta?'\nRetomada: '+c.retomada_pronta:'');
     h+='<div class="card"><h3>A conversa pronta (o print da página)</h3><p class="mu">Uma fala por linha: "Cliente: ...", "Maia: ..." e "Retomada: ...". Valor antes do preço; nada inventado.</p><textarea class="conv" id="conv">'+esc(conv)+'</textarea><div class="acoes"><button class="btn" data-a="gerar_conversa">Gerar de novo</button><button class="btn" id="salvaconv">Salvar conversa</button></div></div>';
+    // o raio-x do negócio (16/11)
+    if(c.diag_ligado)h+=cartaoRaioX(c);
     // entrega
     h+='<div class="card"><h3>Aprovar e entregar</h3><p class="mu">'+(c.entregue_em?'Entregue em '+quando(c.entregue_em)+'. Abriu '+c.aberturas+' vez(es)'+(c.testou_em?', testou ao vivo.':'.'):c.aprovada_em?'Aprovada: sai sozinha '+quando(c.entrega_em)+' (a rotina confere de hora em hora).':'Hora combinada: '+quando(c.entrega_em))+'</p>'+(c.previa?'<p><a href="'+esc(c.previa)+'" target="_blank" rel="noopener">Ver a prévia da página</a>'+(c.link?' · link do contato: <code>'+esc(c.link)+'</code>':'')+'</p>':'')+(c.entregue_em?'':'<div class="acoes"><button class="btn pri" data-aprova="0">Aprovar e entregar na hora combinada</button><button class="btn" data-aprova="1">Aprovar e entregar agora</button></div>')+'</div>';
     // etapa
@@ -164,9 +175,74 @@ function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='
     document.querySelectorAll('[data-aprova]').forEach(function(b){b.onclick=function(){var agora=b.dataset.aprova==='1';if(!confirm(agora?'Mandar a amostra agora pela Maia?':'Aprovar? Ela sai sozinha na hora combinada.'))return;faz({acao:'aprovar',agora:agora},b,agora?'Amostra enviada':'Aprovada')}});
     $('#salvaconv').onclick=function(){faz({acao:'salvar_conversa',texto:$('#conv').value},this,'Conversa salva')};
     $('#salvaet').onclick=function(){faz({acao:'etapa',etapa:$('#et').value,motivo:$('#mot').value},this,'Etapa salva')};
+    if(c.diag_ligado)ligaRaioX(c,faz);
     document.querySelectorAll('[data-sobe]').forEach(function(inp){inp.onchange=function(){var f=inp.files[0];if(!f)return;var mime=f.type||'';toast('Enviando '+f.name+'…');
       api({acao:'link_envio',id:c.id,mime:mime}).then(function(x){return fetch(x.url,{method:'PUT',headers:{'content-type':mime,'x-upsert':'true'},body:f}).then(function(r){if(!r.ok)throw new Error('o envio falhou');return api({acao:'definir_peca',id:c.id,slot:inp.dataset.sobe,caminho:x.caminho,mime:mime})})}).then(function(){toast('Arquivo salvo');return carrega()}).catch(function(e){toast('Não deu: '+e.message,true)})}});
   }).catch(function(e){$('#pn').innerHTML='<p style="color:var(--red)">Não deu: '+esc(e.message)+'</p><button class="btn" onclick="fecha()">Fechar</button>'})}
+// ---------- o raio-x do negócio (16/11): anúncios no Facebook e no Instagram, Instagram e atendimento ----------
+var AREA_NOME={anuncios:'Anúncios',instagram:'Instagram',atendimento:'Atendimento'};
+var FUNCOES=['Cria os anúncios','Edita os vídeos','Posta no Instagram','Coloca a campanha no ar','Atende 24 horas','Retoma quem sumiu','Mede as vendas','Te manda o relatório'];
+function opt(v,lista,sel){return lista.map(function(x){return '<option value="'+esc(x[0])+'"'+(String(sel==null?'':sel)===String(x[0])?' selected':'')+'>'+esc(x[1])+'</option>'}).join('')}
+var SN=[['','não vi'],['sim','sim'],['nao','não']];
+function snv(v){return v===true?'sim':v===false?'nao':''}
+function formAnuncio(a,i,c){a=a||{};var pl=a.plataformas||[];
+  return '<div class="rx-ad" data-ad="'+i+'"><b>Anúncio '+(i+1)+'</b><div class="rx-g">'+
+  '<div><label>Link na Biblioteca</label><input data-k="link" placeholder="https://www.facebook.com/ads/library/?id=..." value="'+esc(a.link||'')+'"></div>'+
+  '<div><label>No ar desde</label><input type="date" data-k="desde" value="'+esc(a.desde||'')+'"></div>'+
+  '<div><label>Formato</label><select data-k="formato">'+opt(0,[['','não vi'],['imagem','imagem'],['video','vídeo'],['carrossel','carrossel']],a.formato)+'</select></div>'+
+  '<div><label>Leva pra</label><select data-k="leva">'+opt(0,[['','não vi'],['whatsapp','WhatsApp'],['instagram','perfil do Instagram'],['messenger','Messenger'],['site','site']],a.leva)+'</select></div>'+
+  '<div><label>Onde aparece</label><label style="font-weight:500"><input type="checkbox" data-pl="facebook" style="width:auto"'+(pl.indexOf('facebook')>=0?' checked':'')+'> Facebook</label><label style="font-weight:500"><input type="checkbox" data-pl="instagram" style="width:auto"'+(pl.indexOf('instagram')>=0?' checked':'')+'> Instagram</label></div>'+
+  '<div><label>Fala com um público e uma situação</label><select data-k="fala_publico">'+opt(0,SN,snv(a.fala_publico))+'</select></div>'+
+  '<div><label>Mostra preço</label><select data-k="mostra_preco">'+opt(0,SN,snv(a.mostra_preco))+'</select></div>'+
+  '<div><label>Valor antes do preço</label><select data-k="valor_antes">'+opt(0,SN,snv(a.valor_antes))+'</select></div>'+
+  '<div><label>Foto real do negócio</label><select data-k="foto_real">'+opt(0,SN,snv(a.foto_real))+'</select></div>'+
+  '</div><div class="rx-f"><label>O texto (a primeira frase, do jeito que está)</label><textarea data-k="texto">'+esc(a.texto||'')+'</textarea>'+
+  '<div><input type="hidden" data-k="imagem_path" value="'+esc(a.imagem_path||'')+'">'+(a.imagem_path&&c.diag_imagens&&c.diag_imagens[a.imagem_path]?'<img src="'+esc(c.diag_imagens[a.imagem_path])+'" alt="print do anúncio" style="max-height:120px;border-radius:8px;display:block;margin-bottom:6px">':'')+'<label class="btn" style="display:inline-block">'+(a.imagem_path?'Trocar':'Subir')+' o print do anúncio (só o anúncio real deles)<input type="file" accept="image/jpeg,image/png,image/webp" data-adimg="'+i+'" hidden></label></div></div></div>'}
+function cartaoRaioX(c){
+  var d=c.diagnostico,an=c.diag_anuncios||{status:'nao_conferido'},k=c.coleta||{};
+  var h='<div class="card" id="raiox"><h3>Raio-x do negócio</h3>';
+  h+='<p class="mu">'+(d&&d.gerado_em?'Gerado '+quando(d.gerado_em)+' ('+(d.ia?'textos da IA':'textos da régua')+(d.editado?', editado':'')+'). '+(d.ocultar?'<b>Vai sem raio-x.</b> ':d.revisado_em?'<b style="color:var(--green)">Revisado por '+esc(d.revisado_por||'')+' '+quando(d.revisado_em)+'.</b>':'<b style="color:var(--amber)">Falta revisar.</b> O "Aprovar e entregar" só passa com o raio-x revisado.'):'Ainda não gerado. Ele sai sozinho quando a coleta termina; dá pra gerar aqui.')+'</p>';
+  if(d&&d.fontes)h+='<p class="mu">'+Object.keys(d.fontes).map(function(x){var f=d.fontes[x];return '<b>'+esc(x)+'</b>: '+esc(f.detalhe||(f.ok?'ok':'—'))}).join(' · ')+'</p>';
+  // a empresa e a logo
+  h+='<div class="rx-g"><div><label>Nome da empresa</label><input id="rx-nome" value="'+esc(k.nome_negocio||'')+'"></div><div><label>@ do Instagram</label><input id="rx-ig" value="'+esc(k.instagram||'')+'"></div><div style="align-self:end"><button class="btn" id="rx-salvaemp">Salvar nome e @</button></div></div>';
+  h+='<p style="margin-top:10px">'+(c.logo?'<img class="rx-logo" src="'+esc(c.logo.url)+'" alt="logo">Logo: '+(c.logo.origem==='contato'?'a que a pessoa mandou':'a foto do perfil do Instagram'):'<span class="mu">Sem logo (a página mostra a inicial). Se a pessoa mandou, marca nas fotos acima: "é a logo".</span>')+'</p>';
+  // os anúncios
+  h+='<h3 style="font-size:16px;margin-top:14px">Anúncios no Facebook e no Instagram</h3><p class="mu">A API da Meta quase nunca mostra anúncio do Brasil: confere na <a href="'+esc(c.link_biblioteca)+'" target="_blank" rel="noopener">Biblioteca de Anúncios (busca pelo nome)</a> e anota até 3 anúncios. Anúncio que roda há muito tempo costuma ser o que funciona. Só o que tu viu: o resto fica "não vi".</p>';
+  h+='<div class="rx-g"><div><label>Tem anúncio ativo?</label><select id="rx-st">'+opt(0,[['nao_conferido','não conferi'],['tem','tem anúncio no ar'],['nao_tem','não tem nenhum']],an.status)+'</select></div><div><label>Quantos ativos</label><input id="rx-tot" type="number" min="0" value="'+esc(an.total_ativos==null?'':an.total_ativos)+'"></div><div><label>Conferido por</label><input disabled value="'+esc((an.fonte||'')+(an.por?' · '+an.por:'')+(an.em?' · '+quando(an.em):''))+'"></div></div>';
+  h+='<div id="rx-ads">';var L=an.lista||[];for(var i=0;i<3;i++)h+=formAnuncio(L[i],i,c);h+='</div>';
+  h+='<div class="acoes"><button class="btn" id="rx-salvaads">Salvar anúncios e gerar de novo</button></div>';
+  // os textos
+  if(d&&!d.ocultar&&d.areas){
+    h+='<h3 style="font-size:16px;margin-top:16px">O que vai pra página</h3><div class="rx-g">'+d.areas.map(function(a){return '<div><label>Nota: '+esc(AREA_NOME[a.id]||a.nome)+'</label><input type="number" min="0" max="10" data-nota="'+a.id+'" value="'+(a.nota==null?'':a.nota)+'" placeholder="sem nota"></div>'}).join('')+'</div>';
+    var op=(d.areas.find(function(a){return a.id==='anuncios'})||{}).oportunidade||'';
+    h+='<div class="rx-f"><label>Resumo (2 frases)</label><textarea id="rx-res">'+esc(d.resumo||'')+'</textarea>'+
+      '<label>A maior oportunidade (vazio = não mostra)</label><textarea id="rx-op">'+esc(op)+'</textarea>'+
+      '<label>O que está bom (uma por linha)</label><textarea id="rx-bons">'+esc((d.bons||[]).join('\n'))+'</textarea>'+
+      '<label>O que melhorar (uma por linha: "texto | função da Maia"; funções: '+esc(FUNCOES.join(', '))+')</label><textarea id="rx-mel" style="min-height:100px">'+esc((d.melhorar||[]).map(function(m){return m.texto+(m.maia?' | '+m.maia:'')}).join('\n'))+'</textarea>'+
+      '<label>Tarefa grátis da semana: título</label><input id="rx-tt" value="'+esc((d.tarefa||{}).titulo||'')+'">'+
+      '<label>Passos (um por linha)</label><textarea id="rx-tp">'+esc(((d.tarefa||{}).passos||[]).join('\n'))+'</textarea>'+
+      '<label>Pro áudio do Rick (1 ou 2 frases)</label><textarea id="rx-rick">'+esc((d.rick||[]).join('\n'))+'</textarea></div>';
+    if(d.exemplos&&d.exemplos.length)h+='<p class="mu">Anúncios de exemplo na página: '+d.exemplos.length+' (vêm dos anúncios acima).</p>';
+  }
+  h+='<div class="acoes"><button class="btn" id="rx-gera">'+(d&&d.gerado_em?'Gerar de novo':'Gerar diagnóstico')+'</button>'+(d&&!d.ocultar&&d.areas?'<button class="btn" id="rx-salva">Salvar</button><button class="btn ok" id="rx-rev">Salvar e marcar revisado</button>':'')+'<button class="btn" id="rx-sem">Entregar sem raio-x</button>'+(c.previa?'<a class="btn" href="'+esc(c.previa)+'#t-raio" target="_blank" rel="noopener">Ver na prévia</a>':'')+'</div></div>';
+  return h}
+function lerAnuncios(){var lista=[];document.querySelectorAll('#rx-ads [data-ad]').forEach(function(b){var a={plataformas:[]};b.querySelectorAll('[data-k]').forEach(function(x){a[x.dataset.k]=x.value});b.querySelectorAll('[data-pl]').forEach(function(x){if(x.checked)a.plataformas.push(x.dataset.pl)});if(a.link||a.texto||a.desde||a.imagem_path)lista.push(a)});
+  return {status:$('#rx-st').value,total_ativos:$('#rx-tot').value,lista:lista}}
+function ligaRaioX(c,faz){
+  document.querySelectorAll('[data-logo]').forEach(function(a){a.onclick=function(ev){ev.preventDefault();faz({acao:'marcar_logo',midia_id:a.dataset.logo||null},null,a.dataset.logo?'Logo marcada':'Logo tirada')}});
+  var q=function(s){return document.querySelector(s)};
+  if(q('#rx-salvaemp'))q('#rx-salvaemp').onclick=function(){faz({acao:'dados_empresa',nome_negocio:q('#rx-nome').value,instagram:q('#rx-ig').value},this,'Salvo. Clica em "Gerar de novo" pra usar.')};
+  if(q('#rx-gera'))q('#rx-gera').onclick=function(){if(c.diagnostico&&c.diagnostico.editado&&!confirm('Gerar de novo apaga as correções feitas nos textos. Seguir?'))return;toast('Gerando o raio-x… (até 1 minuto)');faz({acao:'gerar_diagnostico'},this,'Raio-x gerado')};
+  if(q('#rx-salvaads'))q('#rx-salvaads').onclick=function(){var b=this,dados=lerAnuncios();if(c.diagnostico&&c.diagnostico.editado&&!confirm('Gerar de novo apaga as correções feitas nos textos. Seguir?'))return;b.disabled=true;
+    api({acao:'anuncios',id:c.id,anuncios:dados}).then(function(){toast('Anúncios salvos. Gerando o raio-x…');return api({acao:'gerar_diagnostico',id:c.id})}).then(function(){toast('Raio-x gerado');return carrega()}).catch(function(e){toast('Não deu: '+e.message,true)}).then(function(){b.disabled=false})};
+  function textos(rev){var notas={};document.querySelectorAll('[data-nota]').forEach(function(x){notas[x.dataset.nota]=x.value});
+    return {notas:notas,resumo:q('#rx-res').value,oportunidade:q('#rx-op').value,bons:q('#rx-bons').value,melhorar:q('#rx-mel').value,tarefa_titulo:q('#rx-tt').value,tarefa_passos:q('#rx-tp').value,rick:q('#rx-rick').value,ocultar:false,revisado:rev}}
+  if(q('#rx-salva'))q('#rx-salva').onclick=function(){faz({acao:'salvar_diagnostico',diagnostico:textos(false)},this,'Raio-x salvo')};
+  if(q('#rx-rev'))q('#rx-rev').onclick=function(){faz({acao:'salvar_diagnostico',diagnostico:textos(true)},this,'Raio-x revisado')};
+  if(q('#rx-sem'))q('#rx-sem').onclick=function(){if(!confirm('Entregar a amostra sem o raio-x?'))return;faz({acao:'sem_diagnostico'},this,'Vai sem raio-x')};
+  document.querySelectorAll('[data-adimg]').forEach(function(inp){inp.onchange=function(){var f=inp.files[0];if(!f)return;var mime=f.type||'';toast('Enviando o print…');
+    api({acao:'link_envio',id:c.id,mime:mime}).then(function(x){return fetch(x.url,{method:'PUT',headers:{'content-type':mime,'x-upsert':'true'},body:f}).then(function(r){if(!r.ok)throw new Error('o envio falhou');inp.closest('[data-ad]').querySelector('[data-k="imagem_path"]').value=x.caminho;toast('Print enviado: clica em "Salvar anúncios e gerar de novo"')})}).catch(function(e){toast('Não deu: '+e.message,true)})}});
+}
 S.senha=lsGet(CHAVE);
 if(S.senha)carrega().catch(function(e){if(e.message!=='senha')login('Não deu: '+e.message)});else login();
 setInterval(function(){if(S.senha&&!S.aberto&&document.visibilityState==='visible')carrega().catch(function(){})},60000);

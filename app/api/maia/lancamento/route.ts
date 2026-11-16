@@ -4,10 +4,14 @@
 //   POST {acao,...}: etapa, rick_feito, duvida_resolvida, link_envio, definir_peca, legenda, gerar_oficina, usar_peca,
 //        gerar_conversa, salvar_conversa, aprovar (agora: true = na hora do clique), zerar e remover (só a lista de teste, remessa 0),
 //        adicionar (um contato à mão, ex.: o teste do time)
+//   16/11, o raio-x do negócio (só com MAIA_LANC_DIAGNOSTICO=1): gerar_diagnostico, salvar_diagnostico (notas e textos; revisado: true),
+//        sem_diagnostico (entregar sem), anuncios (o que a equipe conferiu na Biblioteca de Anúncios; fonte: "conector" quando
+//        quem preenche é uma sessão do Claude com o conector da Meta), marcar_logo (midia_id ou null), dados_empresa (nome e @)
 //   Só no modo de teste (MAIA_LOCAL=1): simular_entrada, rodar_rotina, relogio
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { ETAPAS, ORDEM, contato as acha, salva, salvaJson, msgs, midias, novoContato, variantes, contatoDoTelefone, lancamentoLigado } from '@/lib/maia/lancamento/base'
+import { diagLigado, geraDiagnostico, salvaDiagnostico, semDiagnostico, marcaAnuncios, marcaLogo, logoDe, logoMidiaId, linkBiblioteca } from '@/lib/maia/lancamento/diagnostico'
 import { SLOTS, definePeca, legendaPeca, linkEnvio, geraComOficina, pecasDaOficina, usaPecaDaOficina, geraConversa, leConversaTexto, aprova, linkAmostra, type Slot } from '@/lib/maia/lancamento/amostra'
 
 export const maxDuration = 300
@@ -23,6 +27,10 @@ function resumo(c: any) {
     rick_motivo: c.estado?.rick_motivo || null, duvida: c.estado?.duvida || null, retomada_a_mao: c.estado?.retomada?.como === 'a_mao' ? c.estado.retomada : null,
     pecas: SLOTS.filter(s => c.amostra?.pecas?.[s]).length, aprovada_em: c.amostra?.aprovada_em || null, falha: c.amostra?.falha || null,
     em_teste: c.estado?.modo === 'teste', ultima_entrada_em: c.ultima_entrada_em, atualizado_em: c.atualizado_em,
+    ...(diagLigado() ? {
+      diag: !c.amostra?.diagnostico ? 'sem' : c.amostra.diagnostico.ocultar ? 'sem_raio_x' : c.amostra.diagnostico.revisado_em ? 'revisado' : 'gerado',
+      rick_frases: c.amostra?.diagnostico && !c.amostra.diagnostico.ocultar ? (c.amostra.diagnostico.rick || []) : [],
+    } : {}),
   }
 }
 
@@ -43,6 +51,14 @@ export async function GET(req: Request) {
         msgs: ms.slice(-200).map(m => ({ direcao: m.direcao, autor: m.autor, tipo: m.tipo, texto: m.texto, ok: m.ok, erro: m.erro, em: m.criado_em })),
         midias: await Promise.all(md.map(async m => ({ id: m.id, tipo: m.tipo, origem: m.origem, mime: m.mime, em: m.criado_em, url: await db.link(m.path) }))),
         oficina: of,
+        ...(diagLigado() ? await (async () => {
+          const lg = await logoDe(c)
+          return {
+            diag_ligado: true, diagnostico: c.amostra?.diagnostico || null, diag_anuncios: c.amostra?.diag_anuncios || { status: 'nao_conferido' },
+            logo_midia_id: logoMidiaId(c), logo: lg ? { origem: lg.origem, url: await db.link(lg.path) } : null, link_biblioteca: linkBiblioteca(c),
+            diag_imagens: Object.fromEntries(await Promise.all((c.amostra?.diag_anuncios?.lista || []).filter((a: any) => a.imagem_path).map(async (a: any) => [a.imagem_path, await db.link(a.imagem_path)]))),
+          }
+        })() : {}),
       })
     }
     // a lista toda
@@ -54,7 +70,7 @@ export async function GET(req: Request) {
     const chegou: Record<string, number> = {}
     for (const e of ETAPAS.slice(0, ORDEM.pago + 1)) chegou[e.chave] = lista.filter(c => ORDEM[c.etapa] >= ORDEM[e.chave] && ORDEM[c.etapa] <= ORDEM.pago).length
     return ok({
-      ligado: lancamentoLigado(), modo: db.modo(), etapas: ETAPAS, conta, chegou, total: lista.length,
+      ligado: lancamentoLigado(), diag_ligado: diagLigado(), modo: db.modo(), etapas: ETAPAS, conta, chegou, total: lista.length,
       abriram: lista.filter(c => c.aberta_em).length, testaram: lista.filter(c => c.testou_em).length,
       lista,
     })
@@ -112,6 +128,20 @@ export async function POST(req: Request) {
         return ok({ ok: true })
       }
       case 'aprovar': return ok(await aprova(c, { agora: !!b.agora, por }))
+      // ---- o raio-x do negócio ----
+      case 'gerar_diagnostico': case 'salvar_diagnostico': case 'sem_diagnostico': case 'anuncios': case 'marcar_logo': case 'dados_empresa': {
+        if (!diagLigado()) return erro('o raio-x está desligado (MAIA_LANC_DIAGNOSTICO)', 403)
+        if (b.acao === 'gerar_diagnostico') return ok({ ok: true, diagnostico: await geraDiagnostico(c, { por }) })
+        if (b.acao === 'salvar_diagnostico') return ok({ ok: true, diagnostico: await salvaDiagnostico(c, b.diagnostico || {}, por) })
+        if (b.acao === 'sem_diagnostico') { await semDiagnostico(c, por); return ok({ ok: true }) }
+        if (b.acao === 'anuncios') return ok({ ok: true, anuncios: await marcaAnuncios(c, b.anuncios || {}, por, b.fonte === 'conector' ? 'conector' : 'equipe') })
+        if (b.acao === 'marcar_logo') { await marcaLogo(c, b.midia_id ? String(b.midia_id) : null, por); return ok({ ok: true }) }
+        const k: any = {}
+        if (b.nome_negocio != null) { const n = String(b.nome_negocio).trim().slice(0, 80); if (!n) return erro('o nome da empresa não pode ficar vazio'); k.nome_negocio = n; k.nome_confirmado = true }
+        if (b.instagram != null) { k.instagram = String(b.instagram).trim().slice(0, 60) || 'não tem'; k.instagram_confirmado = true }
+        await salvaJson(c, 'coleta', k)
+        return ok({ ok: true })
+      }
       case 'zerar': {
         if (c.remessa !== 0) return erro('só dá pra zerar quem está na lista de teste (remessa 0)')
         for (const m of await msgs(c.id)) await db.apaga('lanc_msgs', { id: m.id })

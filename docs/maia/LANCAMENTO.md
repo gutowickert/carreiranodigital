@@ -37,3 +37,23 @@ rm -rf .teste-lancamento .next-teste-lanc
 MAIA_LOCAL=1 MAIA_LOCAL_PASTA=.teste-lancamento MAIA_PAINEL_SENHA=teste123 MAIA_SEM_AVISO=1 NEXT_DIST_DIR=.next-teste-lanc npx next dev --webpack -p 3231
 node scripts/maia-teste-lancamento.mjs http://localhost:3231 teste123 .teste-lancamento
 ```
+
+## Raio-x do negócio (16/11, desligado até `MAIA_LANC_DIAGNOSTICO=1`)
+
+Vai junto com a amostra. Só as áreas que a Maia faz (o Guto tirou Google e site): **anúncios no Facebook e no Instagram** (a principal), **Instagram** e **atendimento no WhatsApp**. Código: `lib/maia/lancamento/diagnostico.ts` (régua da skill diagnostico-vendedor, em código) e `lib/diagnostico/anuncios.ts`.
+
+- **Coleta**: depois do @, a Maia confirma o nome exato da empresa (e o @, se veio no meio de uma frase). No pedido das fotos: "se tiver a logo da empresa, manda também". Foto com "logo" na legenda (ou "essa é a logo" junto) vira a logo e não conta como foto do produto. A equipe também marca na tela ("é a logo").
+- **Gera sozinho** no "Material recebido" (e a rotina de hora em hora tenta de novo quem ficou sem). Botão "Gerar diagnóstico" na tela. Fica em `amostra.diagnostico` (JSON, sem coluna nova).
+- **Anúncios**: a API da Biblioteca de Anúncios (ads_archive) quase nunca mostra anúncio comum do Brasil. Achou anúncio da página: vale. Não achou: fica "não deu pra ver" (nunca "não tem"). A equipe confere na Biblioteca (o link vem pronto na tela) e anota até 3 anúncios: desde quando, formato, pra onde leva, a primeira frase, se fala com um público, preço e valor, foto real, onde aparece e o print. Sem anúncio no ar: nota 2 e "A maior oportunidade". Uma sessão do Claude com o conector da Meta pode preencher pela mesma ação da API (`acao: "anuncios"`, `fonte: "conector"`).
+- **Notas pela régua, em código.** A IA da Maia só reescreve os textos; número que não está nos fatos derruba o texto da IA e fica o da régua.
+- **Logo**: a que a pessoa mandou; senão a foto do perfil do Instagram; senão a inicial.
+- **Tela**: o cartão "Raio-x do negócio" (anúncios, notas, textos, Rick) com "Gerar de novo", "Salvar e marcar revisado" e "Entregar sem raio-x". Com a chave ligada, o "Aprovar e entregar" só passa com o raio-x revisado. A fila do Rick mostra 1 ou 2 frases ("Vi na tua análise que...").
+- **Página**: logo e nome da empresa no topo; a seção "Raio-x da <empresa>" depois do teste ao vivo e antes da oferta.
+
+| Variável | Pra quê |
+|---|---|
+| `MAIA_LANC_DIAGNOSTICO` | `1` liga o raio-x |
+| `OITO_IG_TOKEN` ou `FB_ADS_TOKEN` (já existem) | Instagram (Business Discovery) |
+| `META_ADLIB_TOKEN` (opcional) | token com acesso à API da Biblioteca de Anúncios; sem ele tenta o `FB_ADS_TOKEN` |
+
+Teste: a parte 8 do `scripts/maia-teste-lancamento.mjs` liga a chave criando `<pasta>/chave-diagnostico` (Instagram e Biblioteca simulados).

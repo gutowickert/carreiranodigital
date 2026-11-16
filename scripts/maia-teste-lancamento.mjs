@@ -1,5 +1,7 @@
 // Maia: teste do LANÇAMENTO pra base (15/11/2026). Modo local: nada sai pra Meta nem pra WhatsApp (telefones 55000...),
 // sem IA (as regras simples de lancamento/interpreta.ts e teste.ts), banco em arquivos JSON.
+// A parte 8 (o raio-x do negócio) liga a chave criando <pasta>/chave-diagnostico e desliga no fim; o Instagram e a
+// Biblioteca de Anúncios são simulados (lancamento/diagnostico.ts), sem rede.
 //
 // Servidor (pasta limpa):
 //   rm -rf .teste-lancamento .next-teste-lanc
@@ -232,6 +234,108 @@ confere('zerar quem é da remessa de verdade: recusa', (await post({ acao: 'zera
 r = await post({ acao: 'remover', id: contato(T.time).id })
 confere('tirar o time da lista: o número volta pro atendimento de antes', r.ok && !contato(T.time) && (await diz(T.time, 'oi')).tratado === false)
 confere('tirar da lista quem é da remessa de verdade: recusa', (await post({ acao: 'remover', id: ida })).http === 400)
+
+console.log('8) O raio-x do negócio (MAIA_LANC_DIAGNOSTICO; no teste local, o arquivo "chave-diagnostico" liga)')
+const CHAVE = path.join(PASTA, 'chave-diagnostico')
+confere('desligado: a lista não tem o raio-x', (await get('acao=lista')).diag_ligado === false)
+confere('desligado: gerar o raio-x é recusado', (await post({ acao: 'gerar_diagnostico', id: ida })).http === 403)
+fs.writeFileSync(CHAVE, '1')
+confere('ligado: a lista mostra a chave', (await get('acao=lista')).diag_ligado === true)
+const G = { gil: '55000' + R + '07', hugo: '55000' + R + '08' }
+await post({ acao: 'adicionar', telefone: G.gil, nome: 'Gil', remessa: 1 })
+await post({ acao: 'adicionar', telefone: G.hugo, nome: 'Hugo', remessa: 1 })
+await diz(G.gil, 'Quero ver', 'botao')
+for (const t of ['Cookies artesanais pra quem quer dar presente', 'Estrela', 'Caixa com 6 cookies R$ 45', 'Entrega e retirada, de terça a sábado das 10h às 19h', 'A caixa com 6', 'Cliente pergunta o preço e some', '@bocadinho.doces']) await diz(G.gil, t)
+m = ultimas(G.gil)[0]
+confere('depois do @, pergunta o nome exato da empresa (pro raio-x)', /raio-x do teu negócio/.test(m) && /nome da tua empresa/.test(m), m)
+await diz(G.gil, 'Bocadinho Doceria')
+m = ultimas(G.gil)[0]
+confere('guardou o nome e pede as fotos e a logo (opcional)', contato(G.gil).coleta.nome_negocio === 'Bocadinho Doceria' && /3 a 5 fotos/.test(m) && /logo da empresa, manda também/.test(m), m)
+r = await post({ acao: 'simular_entrada', telefone: G.gil, tipo: 'imagem', mime: 'image/png', texto: 'essa é a logo', b64: Buffer.from('logo-teste').toString('base64') })
+let gl = contato(G.gil)
+confere('foto com a legenda "logo": marcada como a logo', !!gl.amostra?.logo?.midia_id && /Recebi a logo/.test(ultimas(G.gil)[0]), ultimas(G.gil)[0])
+confere('a logo não conta como foto do produto (ainda pede 3)', /Manda mais 3 fotos/.test(ultimas(G.gil)[0]), ultimas(G.gil)[0])
+for (let i = 0; i < 3; i++) await foto(G.gil, 10 + i)
+await diz(G.gil, 'sem vídeo')
+await diz(G.gil, '15')
+gl = contato(G.gil)
+confere('Material recebido, e a Maia avisa que vem o raio-x junto', gl.etapa === 'material_recebido' && /raio-x dos teus anúncios e do teu Instagram/.test(ultimas(G.gil)[0]), ultimas(G.gil)[0])
+let dg = gl.amostra?.diagnostico
+confere('o raio-x saiu sozinho no "Material recebido"', !!dg && dg.gerado_por === 'auto' && dg.empresa === 'Bocadinho Doceria' && dg.instagram === 'bocadinho.doces', dg)
+confere('só as áreas da Maia: anúncios, Instagram e atendimento (sem Google nem site)', dg.areas.map(a => a.id).join() === 'anuncios,instagram,atendimento' && !/google/i.test(JSON.stringify({ a: dg.areas, b: dg.bons, m: dg.melhorar, r: dg.resumo, t: dg.tarefa })), dg.areas.map(a => a.id))
+const aIg = dg.areas.find(a => a.id === 'instagram'), aAd = dg.areas.find(a => a.id === 'anuncios'), aAt = dg.areas.find(a => a.id === 'atendimento')
+confere('Instagram: nota da régua (postou há 3 dias +2, bio com a cidade +1 = 8)', aIg.nota === 8, aIg)
+confere('anúncios: a API não achou, então "não deu pra ver" (nunca "não tem")', aAd.nota === null && aAd.sem_rotulo === 'não deu pra ver' && !aAd.oportunidade, aAd)
+confere('atendimento: sem nota, só o que a pessoa contou', aAt.nota === null && aAt.sem_rotulo === 'não testado' && /terça a sábado/.test(aAt.sem_motivo), aAt)
+confere('melhorias ligadas às funções da Maia (horário: atende 24 h; some: retoma)', dg.melhorar.some(x => x.maia === 'Atende 24 horas') && dg.melhorar.every(x => !x.maia || ['Cria os anúncios', 'Edita os vídeos', 'Posta no Instagram', 'Coloca a campanha no ar', 'Atende 24 horas', 'Retoma quem sumiu', 'Mede as vendas', 'Te manda o relatório'].includes(x.maia)), dg.melhorar)
+confere('tarefa grátis da semana com passos', dg.tarefa.titulo && dg.tarefa.passos.length >= 2, dg.tarefa)
+confere('as frases pro áudio do Rick ("Vi na tua análise que...")', dg.rick.length >= 1 && /^Vi na tua análise que/.test(dg.rick[0]), dg.rick)
+confere('a logo do Instagram ficou guardada de reserva', !!dg.logo_instagram && fs.existsSync(path.join(PASTA, 'arquivos', dg.logo_instagram)))
+const idg = gl.id
+let lg = (await get('acao=lista')).lista.find(x => x.id === idg)
+confere('a lista mostra "raio-x: revisar"', lg.diag === 'gerado')
+// as peças direto no arquivo (o caminho da tela já foi testado)
+cs = le('lanc_contatos'); let gx = cs.find(x => x.id === idg)
+gx.amostra.pecas = { anuncio1: { path: `lanc-${idg}/pecas/a.jpg`, mime: 'image/jpeg' }, anuncio2: { path: `lanc-${idg}/pecas/b.jpg`, mime: 'image/jpeg' }, video: { path: `lanc-${idg}/pecas/c.mp4`, mime: 'video/mp4' } }
+grava('lanc_contatos', cs)
+confere('aprovar sem revisar o raio-x: recusa', /revisar o raio-x/.test((await post({ acao: 'aprovar', id: idg, agora: true })).erro || ''))
+confere('anúncio com link de fora da Biblioteca: recusa', (await post({ acao: 'anuncios', id: idg, anuncios: { status: 'tem', lista: [{ link: 'https://golpe.com/x', texto: 'oi' }] } })).http === 400)
+r = await post({ acao: 'anuncios', id: idg, anuncios: { status: 'nao_tem' } })
+confere('a equipe conferiu na Biblioteca: não tem anúncio', r.ok && contato(G.gil).amostra.diag_anuncios.status === 'nao_tem')
+r = await post({ acao: 'gerar_diagnostico', id: idg })
+dg = contato(G.gil).amostra.diagnostico
+const ad2 = dg.areas.find(a => a.id === 'anuncios')
+confere('sem anúncio no ar: nota 2 e "A maior oportunidade", sem prometer número', ad2.nota === 2 && ad2.oportunidade && !/\d/.test(ad2.oportunidade) && /Nenhum anúncio no ar/.test(dg.melhorar[0].texto) && dg.melhorar[0].maia === 'Cria os anúncios', ad2)
+confere('o resumo termina na maior oportunidade', /maior oportunidade está nos anúncios/.test(dg.resumo), dg.resumo)
+confere('marcar como logo uma foto que não é desse contato: recusa', (await post({ acao: 'marcar_logo', id: idg, midia_id: le('lanc_midias').find(x => x.contato_id === ida).id })).http === 400)
+r = await post({ acao: 'salvar_diagnostico', id: idg, diagnostico: { notas: { instagram: '7' }, bons: 'Postou há 3 dias.\nA bio diz a cidade.', melhorar: 'Nenhum anúncio no ar. | Cria os anúncios\nFora do horário, quem chama espera. | Atende 24 horas\nUma função que não existe | Faz café', rick: 'Vi na tua análise que o teu Instagram está ativo.', revisado: true } })
+dg = contato(G.gil).amostra.diagnostico
+confere('a equipe corrige nota e textos e marca revisado', r.ok && dg.revisado_em && dg.revisado_por === 'teste' && dg.areas.find(a => a.id === 'instagram').nota === 7 && dg.bons.length === 2 && dg.melhorar[2].maia === null && dg.editado, dg)
+lg = (await get('acao=lista')).lista.find(x => x.id === idg)
+confere('a lista: revisado, e as frases pro Rick', lg.diag === 'revisado' && /Instagram está ativo/.test(lg.rick_frases[0]))
+let cg = await get('acao=contato&id=' + idg)
+confere('o contato na tela: raio-x, logo (a que a pessoa mandou) e o link da Biblioteca', cg.diagnostico && cg.logo?.origem === 'contato' && /facebook\.com\/ads\/library\/.*q=Bocadinho/.test(cg.link_biblioteca), { logo: cg.logo, l: cg.link_biblioteca })
+const tg = contato(G.gil).token
+html = await (await fetch(`${URL}/maia/amostra/${tg}?previa=1`)).text()
+const ord2 = ['class="marca"', 'Anúncio 1', 'Eu atendo, levo até o pedido', 'Agora testa tu', 'Raio-x da Bocadinho Doceria', 'A maior oportunidade', 'O que está bom', 'O que dá pra melhorar', 'Tarefa grátis da semana', 'Edita os vídeos', 'O que está incluso', 'Quanto custa']
+const pos2 = ord2.map(t => html.indexOf(t))
+confere('a página: logo e nome no topo, e o raio-x depois do teste e antes da oferta', pos2.every((p, i) => p > 0 && (i === 0 || p > pos2[i - 1])), ord2.filter((t, i) => pos2[i] < 0 || (i && pos2[i] < pos2[i - 1])))
+confere('a página: notas por área, "A Maia faz isso" e nada de Google', /Anúncios no Facebook e no Instagram/.test(html) && /A Maia faz isso: Cria os anúncios/.test(html) && !/google/i.test(html.replace(/<style[\s\S]*?<\/style>/, '').replace(/fonts\.googleapis|googleusercontent/g, '')))
+confere('a página: o valor continua antes do preço, sem emoji', html.indexOf('O que está incluso') < html.indexOf('R$ 497') && !/\p{Extended_Pictographic}/u.test(html.replace(/<style[\s\S]*?<\/style>/, '')))
+confere('a página: as imagens são só a Maia e os arquivos do contato (a logo real)', (html.match(/<img [^>]*src="([^"]+)"/g) || []).every(t => /maia-avatar|api\/maia\/arquivo/.test(t)) && /alt="Logo da Bocadinho Doceria"/.test(html))
+r = await post({ acao: 'aprovar', id: idg, agora: true })
+confere('revisado: aprova e a mensagem fala do raio-x', r.ok && /raio-x dos teus anúncios/.test(ultimas(G.gil, 3).find(t => t.includes('/maia/amostra/')) || ''), r)
+html = await (await fetch(`${URL}/maia/amostra/${tg}`, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone)' } })).text()
+confere('a página pública mostra o raio-x revisado', /Raio-x da Bocadinho Doceria/.test(html) && /Postou há 3 dias/.test(html))
+// Hugo: @ confuso (confirma), e a API da Biblioteca acha anúncios (simulada)
+cs = le('lanc_contatos'); let hx = cs.find(x => x.telefone === G.hugo)
+hx.etapa = 'coletando'; hx.coleta = { negocio: 'Doces pra festa', cidade: 'Lajeado', produtos: 'Cento de brigadeiro R$ 120', como_vende: 'Encomenda', carro_chefe: 'Brigadeiro', dificuldade: 'Pouco cliente novo' }; hx.estado = { passo: 'instagram' }
+grava('lanc_contatos', cs)
+await diz(G.hugo, 'é o comanuncio_hugo no insta')
+await diz(G.hugo, 'Hugo Doces')
+confere('@ escrito no meio da frase: a Maia confirma o @', /Me confirma só o @/.test(ultimas(G.hugo)[0]), ultimas(G.hugo)[0])
+await diz(G.hugo, '@comanuncio_hugo')
+confere('o @ confirmado e segue pras fotos', contato(G.hugo).coleta.instagram === '@comanuncio_hugo' && /3 a 5 fotos/.test(ultimas(G.hugo)[0]), ultimas(G.hugo)[0])
+await post({ acao: 'etapa', id: hx.id, etapa: 'material_recebido' })
+r = await post({ acao: 'rodar_rotina' })
+const dh = contato(G.hugo).amostra?.diagnostico
+confere('a rotina gera o raio-x de quem ficou sem', (r.diagnosticos || []).some(x => x.contato === hx.id) && !!dh, r)
+const adh = dh.areas.find(a => a.id === 'anuncios')
+confere('anúncios achados (2, há 95 dias, levam pro perfil): nota 5 da régua', adh.nota === 5 && contato(G.hugo).amostra.diag_anuncios.fonte === 'api', adh)
+confere('melhoria: levar direto pro WhatsApp (a Maia coloca a campanha no ar)', /levam pro perfil do Instagram/.test(dh.melhorar[0].texto) && dh.melhorar[0].maia === 'Coloca a campanha no ar', dh.melhorar)
+confere('o anúncio que roda há muito tempo aparece como o que está bom', dh.bons.some(b => /roda há 9[45] dias/.test(b)), dh.bons)
+confere('os anúncios reais de exemplo vão pra página (texto e link da Biblioteca)', dh.exemplos.length === 2 && dh.exemplos[0].link.startsWith('https://www.facebook.com/ads/library/?id='))
+confere('tarefa: trocar o botão do anúncio pra WhatsApp', /WhatsApp/.test(dh.tarefa.titulo), dh.tarefa)
+r = await post({ acao: 'anuncios', id: hx.id, anuncios: { status: 'tem', total_ativos: 3, lista: [{ link: 'https://www.facebook.com/ads/library/?id=111', desde: '2026-10-01', formato: 'video', leva: 'whatsapp', plataformas: ['instagram'], texto: 'Festa no sábado? O cento sai em 2 dias.', fala_publico: 'sim', mostra_preco: 'sim', valor_antes: 'nao', foto_real: 'sim' }] } })
+await post({ acao: 'gerar_diagnostico', id: hx.id })
+const dh2 = contato(G.hugo).amostra.diagnostico, adh2 = dh2.areas.find(a => a.id === 'anuncios')
+confere('a equipe detalha os anúncios: vídeo e WhatsApp sobem a nota; preço antes do valor vira melhoria', adh2.nota >= 8 && dh2.melhorar.some(x => /preço aparece antes/.test(x.texto)) && contato(G.hugo).amostra.diag_anuncios.fonte === 'equipe', { nota: adh2.nota, mel: dh2.melhorar })
+r = await post({ acao: 'sem_diagnostico', id: hx.id })
+confere('"entregar sem raio-x" conta como revisado e a página não mostra', r.ok && contato(G.hugo).amostra.diagnostico.ocultar && contato(G.hugo).amostra.diagnostico.revisado_em)
+fs.rmSync(CHAVE, { force: true })
+confere('desligado de novo: a coleta volta a ser a de antes (sem a logo no pedido de fotos)', (await get('acao=lista')).diag_ligado === false && !(await get('acao=lista')).lista[0].diag)
+html = await (await fetch(`${URL}/maia/amostra/${tg}`, { headers: { 'user-agent': 'Mozilla/5.0 (iPhone)' } })).text()
+confere('desligado: a página não mostra o raio-x', !/Raio-x da/.test(html) && !/class="marca"/.test(html))
 
 console.log(`\n${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)
