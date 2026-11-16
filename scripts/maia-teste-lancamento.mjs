@@ -191,6 +191,9 @@ grava('lanc_contatos', cs)
 r = await post({ acao: 'aprovar', id: d.id })
 confere('aprovar na hora combinada: fica agendada', r.agendada && !contato(T.duda).entregue_em, r)
 const entregaEm = Date.parse(contato(T.duda).entrega_em)
+// 16/11: a janela de 24 h conta da última mensagem; rodando o teste de manhã cedo, ela fecha antes da hora combinada e a
+// entrega sai antes de propósito (pra não precisar de modelo). Aqui a última mensagem fica 1 h antes da entrega: janela aberta
+cs = le('lanc_contatos'); d = cs.find(x => x.telefone === T.duda); d.ultima_entrada_em = new Date(entregaEm - 3600e3).toISOString(); grava('lanc_contatos', cs)
 r = await post({ acao: 'rodar_rotina', relogio: new Date(entregaEm - 2 * 3600e3).toISOString() })
 confere('antes da hora não entrega', !contato(T.duda).entregue_em)
 // a janela de 24 h da Duda está aberta (ela escreveu agora): na hora combinada entrega
