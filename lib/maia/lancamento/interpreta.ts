@@ -22,6 +22,8 @@ export const ehAgoraNao = (t: string, convite = false) => (convite && /^(nao|nao
 // 16/11 (Nando): as mesmas palavras que o webhook da escola trata como descadastro (PALAVRAS_OPTOUT). Fora do modo teste,
 // quem manda uma delas pediu pra sair da lista: a Maia não responde e o contato vira "perdido"
 export const ehDescadastro = (t: string) => /^(sair|parar|pare|cancelar|descadastrar|remover|stop)[!. ]*$/.test(sem(t))
+// 16/11 (Nando): pediu pra falar com uma pessoa. A Maia avisa uma vez que chamou o time e fica quieta com essa pessoa
+export const ehPedeHumano = (t: string) => /\b(humano|humana|atendente|pessoa de verdade|pessoa real|falar com (alguem|uma pessoa|o time|voces|o pessoal)|chama (alguem|o time|uma pessoa)|quero falar com)\b/.test(sem(t))
 export const ehSair = (t: string) => /^(sair|sai|parar|pare|fim|encerrar|chega)[!. ]*$/.test(sem(t))
 // o texto pronto do botão da página da amostra liga o modo teste
 export const ehGatilhoTeste = (t: string) => /\bmodo teste\b|quero testar a maia|testar como (se fosse|cliente)/.test(sem(t))

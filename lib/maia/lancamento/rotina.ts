@@ -35,6 +35,7 @@ export async function retomadas(agora = new Date()) {
   const t = agora.getTime(), feitos: any[] = []
   const todos = await db.lista('lanc_contatos')
   for (const c of todos) {
+    if (c.estado?.humano) continue   // 16/11: com o time, sem retomada
     const fase: 'coleta' | 'amostra' | null = ['quero_ver', 'coletando'].includes(c.etapa) ? 'coleta' : (c.etapa === 'amostra_entregue' && !c.testou_em) ? 'amostra' : null
     if (!fase || c.estado?.modo === 'teste') continue
     // 16/11: quem recebeu a entrega nova está no acompanhamento (entrega.ts), não nesta retomada

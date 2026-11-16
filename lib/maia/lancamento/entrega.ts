@@ -179,6 +179,7 @@ export async function acompanhamento(agora = new Date()) {
   const t = agora.getTime(), iso = new Date(t).toISOString(), feitos: any[] = []
   for (const c of await db.lista('lanc_contatos')) {
     if (!['amostra_entregue', 'testou'].includes(c.etapa) || !c.entregue_em || !naSequencia(c)) continue
+    if (c.estado?.humano) continue   // 16/11: com o time, sem acompanhamento automático
     if (c.estado?.modo === 'teste' && Date.parse(c.estado.teste_ate || 0) > t) continue
     const a = c.estado?.acomp || {}
     if (a.parado || a.fim) continue

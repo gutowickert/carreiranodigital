@@ -8,10 +8,10 @@
 // A Maia sempre diz que é IA, fala "tu", sem emoji, e mostra o valor antes do preço.
 import { maiaLocal } from '../db'
 import {
-  contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto, guardaMidia, avisaGuto, avanca,
+  contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2,
 } from './base'
-import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
+import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
@@ -34,6 +34,31 @@ export const AGORA_NAO = 'Tranquilo! Não te chamo mais sobre isso.'
 export const SEM_NEGOCIO = 'Entendi! A amostra é feita pro negócio de quem tem um. Mas se tu conhece alguém que tem negócio e ia gostar, me passa o nome e o WhatsApp da pessoa: se ela fechar, tu ganha comissão pela indicação.'
 export const PRECO = 'Te mostro tudo junto com a amostra: o que eu faço, o que está incluso e o valor. Primeiro deixa eu fazer a tua!'
 export const DUVIDA = 'Boa pergunta! Essa eu passo pro time da escola, que te responde aqui mesmo.'
+export const HUMANO = 'Claro! Já chamei o time da escola: uma pessoa te responde aqui mesmo, em instantes.'
+
+// 16/11 (Nando, depois da conversa da Cristina: a mesma pergunta 8 vezes): a Maia NUNCA manda de novo o mesmo texto que acabou
+// de mandar. Se ia repetir (em 30 min), a conversa travou: passa pro time em silêncio (a pessoa já ouviu a pergunta)
+async function mandaTexto(c: any, texto: string, autor?: 'maia' | 'equipe' | 'sistema') {
+  const ultima = (await msgs(c.id)).filter((m: any) => m.direcao === 'saida').slice(-1)[0]
+  if (ultima && ultima.texto === texto && Date.now() - Date.parse(ultima.criado_em || 0) < 30 * 60e3) {
+    await passaProTime(c, 'a conversa travou (a Maia ia repetir a mesma mensagem)', false)
+    return { ok: true, repetida: true } as any
+  }
+  return mandaTextoBase(c, texto, autor)
+}
+
+// 16/11: a pessoa vai pro time. A Maia para de responder ela (e as retomadas param) até a equipe marcar a dúvida como
+// resolvida na tela do lançamento. O time responde pela caixa do CRM da escola, onde a conversa inteira aparece
+export async function passaProTime(c: any, motivo: string, avisaPessoa: boolean) {
+  if (c.estado?.humano) return { ok: true, silencio: 'com o time' }
+  await salvaJson(c, 'estado', { humano: { em: new Date().toISOString(), motivo } })
+  await registraDuvida(c, motivo)
+  await evento('lanc_humano', { contato: c.id, motivo })
+  // só primeiro nome + negócio (regra do Guto: nunca telefone nem as respostas)
+  await avisaGuto('Lançamento: falar com uma pessoa', `${rotulo(c)}: ${motivo}. A Maia parou de responder essa pessoa: responde pela caixa do CRM e marca a dúvida como resolvida na tela do lançamento.`, true).catch(() => null)
+  if (avisaPessoa) await mandaTextoBase(c, HUMANO)
+  return { ok: true, humano: true }
+}
 const OKS = ['Anotado!', 'Boa!', 'Show!', 'Perfeito!']
 export const perguntaHora = (agora = new Date()) => `Pronto! Eu te entrego a amostra ${diaFalado(diaDaEntrega(agora), agora)}. Fica melhor de manhã, às 10h, ou de tarde, às 15h?`
 
@@ -99,6 +124,8 @@ export async function processa(contato_id: string, msg_id: string) {
 type Novas = { fotos: number; videos: number; audio?: boolean }
 async function responde(c: any, texto: string, novas: Novas) {
   const agora = Date.now()
+  // 16/11: com o time, a Maia fica quieta (a mensagem já está na caixa do CRM)
+  if (c.estado?.humano) return { ok: true, silencio: 'com o time' }
   // modo teste
   if (c.estado?.modo === 'teste') {
     if (Date.parse(c.estado.teste_ate || 0) > agora) {
@@ -108,6 +135,8 @@ async function responde(c: any, texto: string, novas: Novas) {
     }
     await salvaJson(c, 'estado', { modo: null })   // passou o tempo: sai calado e segue
   }
+  // 16/11: pediu uma pessoa
+  if (texto && ehPedeHumano(texto)) return passaProTime(c, 'pediu pra falar com uma pessoa', true)
   // 16/11 (entrega nova): o botão "Testar agora" da entrega liga o modo teste ali mesmo
   if (texto && (ehGatilhoTeste(texto) || (entregaV2() && ehTestarAgora(texto)))) return entraTeste(c)
   if (novas.audio && !texto) { await mandaTexto(c, 'Ainda não consigo ouvir áudio por aqui. Me escreve, por favor?'); return { ok: true } }

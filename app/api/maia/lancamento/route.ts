@@ -110,7 +110,7 @@ export async function POST(req: Request) {
         return ok({ ok: true })
       }
       case 'rick_feito': await salva(c, { rick_feito_em: new Date().toISOString() }); await salvaJson(c, 'estado', { rick_por: por }); return ok({ ok: true })
-      case 'duvida_resolvida': await salvaJson(c, 'estado', { duvida: null }); return ok({ ok: true })
+      case 'duvida_resolvida': await salvaJson(c, 'estado', { duvida: null, humano: null }); return ok({ ok: true })   // 16/11: devolve a pessoa pra Maia
       case 'retomada_feita': await salvaJson(c, 'estado', { retomada: { ...(c.estado?.retomada || {}), como: 'a_mao_feita' } }); return ok({ ok: true })
       case 'link_envio': return ok(await linkEnvio(c, String(b.mime || '')))
       case 'definir_peca': {

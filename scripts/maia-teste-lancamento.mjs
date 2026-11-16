@@ -100,6 +100,26 @@ confere('depois do "SAIR", um "oi" não traz a Maia de volta', (await diz(eva, '
 r = await diz(eva, 'Parar.')
 confere('"Parar." também é descadastro', r.tratado === false)
 
+// 16/11: pediu uma pessoa → a Maia avisa UMA vez e fica quieta até a equipe resolver; e nunca repete a mesma mensagem
+const fe = '55000' + R + '07', gi = '55000' + R + '08'
+await post({ acao: 'adicionar', telefone: fe, nome: 'Fê', remessa: 1 }); await post({ acao: 'adicionar', telefone: gi, nome: 'Gi', remessa: 1 })
+await diz(fe, 'Quero ver', 'botao')
+const saidasDe = tel => le('lanc_msgs').filter(m => m.contato_id === contato(tel).id && m.direcao === 'saida').length
+let antes = saidasDe(fe)
+await diz(fe, 'Chama um humano')
+confere('pediu humano: a Maia avisa que chamou o time', saidasDe(fe) === antes + 1 && /chamei o time/.test(ultimas(fe)[0]) && !!contato(fe).estado.humano && !!contato(fe).estado.duvida, ultimas(fe)[0])
+antes = saidasDe(fe)
+await diz(fe, 'Oi? Alguém?'); await diz(fe, 'Vende roupa')
+confere('com o time: a Maia não responde mais essa pessoa', saidasDe(fe) === antes)
+await post({ acao: 'duvida_resolvida', id: contato(fe).id })
+await diz(fe, 'Roupa feminina pra mulheres de 30 a 50')
+confere('dúvida resolvida: a pessoa volta pra Maia', saidasDe(fe) === antes + 1 && !contato(fe).estado.humano)
+await diz(gi, 'Quero ver', 'botao')
+await post({ acao: 'simular_entrada', telefone: gi, tipo: 'audio' })
+await post({ acao: 'simular_entrada', telefone: gi, tipo: 'audio' })
+const ga = le('lanc_msgs').filter(m => m.contato_id === contato(gi).id && m.direcao === 'saida').map(m => m.texto)
+confere('a Maia não repete a mesma mensagem: na 2ª vez passa pro time', ga.filter(t => /ouvir áudio/.test(t)).length === 1 && !!contato(gi).estado.humano, ga)
+
 console.log('3) A tela da equipe: lista, contato e as peças')
 l = await get('acao=lista')
 confere('contadores por etapa', l.conta.material_recebido >= 1 && l.conta.agora_nao === 0 && l.conta.quero_ver >= 1, l.conta)
