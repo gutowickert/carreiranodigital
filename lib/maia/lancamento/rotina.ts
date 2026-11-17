@@ -152,6 +152,15 @@ export async function rotinaLancamento(agora = new Date()) {
       r.devolvidos.push({ contato: c.id, ...(await respondePendentes(c)) })
     }
   } catch (e: any) { r.devolvidos_erro = e.message }
+  // 17/11: amostra de outro negócio marcada no banco (estado.nova_amostra_pendente = "empresa de energia solar"): a rotina faz
+  try {
+    const { novaAmostra } = await import('./conversa')
+    for (const c of await db.lista('lanc_contatos')) if (c.estado?.nova_amostra_pendente) {
+      const sobre = String(c.estado.nova_amostra_pendente)
+      await salvaJson(c, 'estado', { nova_amostra_pendente: null })
+      ;(r.novas_amostras ||= []).push({ contato: c.id, ...(await novaAmostra((await db.um('lanc_contatos', { id: c.id })) || c, sobre === 'true' ? '' : sobre)) })
+    }
+  } catch (e: any) { r.novas_amostras_erro = e.message }
   try { r.entregas = await entregasAgendadas(agora) } catch (e: any) { r.entregas_erro = e.message }
   try { r.testes = await testesParados(agora) } catch (e: any) { r.testes_erro = e.message }
   try { r.retomadas = await retomadas(agora) } catch (e: any) { r.retomadas_erro = e.message }

@@ -156,6 +156,27 @@ export async function respondePendentes(c: any) {
   return processa(c.id, pend[pend.length - 1].id)
 }
 
+// 17/11 (Nando, Indiara): a pessoa viu a amostra e quer outra, de OUTRO negócio dela (da loja de roupas pra empresa de
+// energia solar). Nada é apagado: a coleta, a amostra e o estado de antes ficam em estado.anteriores; as fotos de antes saem
+// da contagem (origem 'contato_anterior'); a coleta recomeça do zero, fora do "com o time", e a Maia já faz a 1ª pergunta.
+// O link da amostra continua o mesmo e passa a mostrar a nova quando ela for aprovada.
+export async function novaAmostra(c: any, sobre = '') {
+  const agora = new Date().toISOString()
+  const { anteriores = [], ...estadoAntes } = c.estado || {}
+  const guardada = { coleta: c.coleta || {}, amostra: c.amostra || {}, estado: estadoAntes, etapa: c.etapa, entregue_em: c.entregue_em || null, testou_em: c.testou_em || null, aberturas: c.aberturas || 0, guardada_em: agora }
+  let fotos = 0
+  for (const m of (await midias(c.id)).filter((m: any) => m.origem === 'contato')) { await maiaDb.atualiza('lanc_midias', { id: m.id }, { origem: 'contato_anterior' }); fotos++ }
+  await salva(c, {
+    etapa: 'coletando', coleta: {}, amostra: {}, entrega_em: null, entregue_em: null, aberturas: 0, aberta_em: null, testou_em: null,
+    rick_pendente_em: null, rick_feito_em: null, motivo_perda: null,
+    estado: { anteriores: [...anteriores, guardada], inicio_em: agora, passo: 'negocio', nova_amostra_em: agora },
+  })
+  const qual = String(sobre || '').trim().replace(/[.!?]+$/, '')
+  await mandaTexto(c, `Boa! Então vamos fazer a amostra ${qual ? 'da ' + qual : 'do teu outro negócio'}. As mesmas perguntas rápidas, uma de cada vez, e no fim umas fotos.\n\nPra começar: o que vocês vendem ou fazem, e pra quem?`)
+  await evento('lanc_nova_amostra', { contato: c.id, sobre: qual, guardadas: fotos })
+  return { ok: true, guardadas: fotos }
+}
+
 type Novas = { fotos: number; videos: number; audio?: boolean }
 async function responde(c: any, texto: string, novas: Novas) {
   const agora = Date.now()

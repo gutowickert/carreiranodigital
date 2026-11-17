@@ -121,6 +121,11 @@ export async function POST(req: Request) {
         const { respondePendentes } = await import('@/lib/maia/lancamento/conversa')
         return ok({ ok: true, respondeu: await respondePendentes((await acha(c.id)) || c) })
       }
+      // 17/11 (Nando, Indiara): amostra de OUTRO negócio da mesma pessoa (a de antes fica guardada) e a Maia recomeça as perguntas
+      case 'nova_amostra': {
+        const { novaAmostra } = await import('@/lib/maia/lancamento/conversa')
+        return ok(await novaAmostra(c, String(b.sobre || '').slice(0, 80)))
+      }
       case 'retomada_feita': await salvaJson(c, 'estado', { retomada: { ...(c.estado?.retomada || {}), como: 'a_mao_feita' } }); return ok({ ok: true })
       case 'link_envio': return ok(await linkEnvio(c, String(b.mime || '')))
       case 'definir_peca': {

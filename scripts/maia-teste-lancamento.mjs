@@ -603,6 +603,26 @@ await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
   await post({ acao: 'adicionar', telefone: du, nome: 'Du', remessa: 1 })
   await post({ acao: 'simular_time', telefone: du, texto: 'Oi Du, aqui é o Rick' }); await post({ acao: 'simular_time', telefone: du, texto: 'Oi Du, aqui é o Rick' })
   confere('mensagem do time repetida em seguida não duplica na conversa', le('lanc_msgs').filter(m => m.contato_id === contato(du).id && m.autor === 'equipe').length === 1) }
+{ // 17/11 (Indiara): viu a amostra da loja de roupas e quer a da empresa de energia solar: a de antes fica guardada, recomeça
+  const ind = '55000' + R + '25'
+  await post({ acao: 'adicionar', telefone: ind, nome: 'Indi', remessa: 1 })
+  await diz(ind, 'Quero ver', 'botao')
+  for (const t of ['Loja on-line de roupas femininas', 'Santa Cruz do Sul', 'Vestido R$ 300, conjunto R$ 400', 'Entrega, atendimento direto', 'Vestido', 'Concorrência', '@lojadaindi']) await diz(ind, t)
+  for (let i = 0; i < 3; i++) await foto(ind, 40 + i)
+  await diz(ind, 'sem vídeo')
+  muda(ind, x => { x.etapa = 'amostra_entregue'; x.amostra = { ...(x.amostra || {}), pecas: { anuncio1: { path: 'a1.jpg', mime: 'image/jpeg' } }, aprovada_em: new Date().toISOString() }; x.entregue_em = new Date().toISOString() })
+  await post({ acao: 'simular_time', telefone: ind, texto: 'Conseguimos sim, só um momento!' })
+  const id = contato(ind).id
+  const rn = await post({ acao: 'nova_amostra', id, sobre: 'empresa de energia solar' })
+  const c = contato(ind), mids = le('lanc_midias').filter(m => m.contato_id === id)
+  confere('nova amostra: guarda a de antes (coleta e amostra), zera a coleta e sai do "com o time"', rn.ok && c.etapa === 'coletando' && !c.coleta.negocio && !c.amostra.pecas && !c.entregue_em && !c.estado.time_em && c.estado.anteriores?.length === 1 && /roupas/.test(c.estado.anteriores[0].coleta.negocio) && !!c.estado.anteriores[0].amostra.pecas, [rn, c.etapa, c.estado])
+  confere('nova amostra: as fotos de antes ficam guardadas mas saem da contagem', mids.length >= 3 && mids.every(m => m.origem !== 'contato') && rn.guardadas >= 3, mids.map(m => m.origem))
+  confere('nova amostra: a Maia já faz a 1ª pergunta do negócio novo', /amostra da empresa de energia solar/.test(ultimas(ind)[0]) && /o que vocês vendem/.test(ultimas(ind)[0]), ultimas(ind))
+  await diz(ind, 'Instalação de energia solar pra casas e empresas')
+  confere('nova amostra: a resposta vira o negócio novo e segue pra cidade', /energia solar/i.test(contato(ind).coleta.negocio || '') && /cidade/i.test(ultimas(ind)[0]), [contato(ind).coleta, ultimas(ind)])
+  muda(ind, x => { x.estado = { ...x.estado, nova_amostra_pendente: 'loja de calçados' } })
+  const rr = await post({ acao: 'rodar_rotina' })
+  confere('nova amostra marcada no banco: a rotina faz (guarda a 2ª, recomeça e pergunta)', contato(ind).estado.anteriores?.length === 2 && !contato(ind).estado.nova_amostra_pendente && /amostra da loja de calçados/.test(ultimas(ind)[0]), [rr?.novas_amostras || rr, ultimas(ind)]) }
 await post({ acao: 'chave_v2', ligar: false, modelos: { ENTREGA: null, IDEIA: null, DESPEDIDA: null } })
 confere('desliga a chave no fim (o servidor volta ao comportamento de antes)', (await get('acao=lista')).v2 === false)
 
