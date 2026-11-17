@@ -180,8 +180,13 @@ async function responde(c: any, texto: string, novas: Novas) {
     await evento('lanc_teste_volta', { contato: c.id })
     return respondeTeste((await acha(c.id)) || c, texto)
   }
+  // 17/11: depois da amostra, perguntou pelo anúncio/vídeo ("onde está o card?"): manda as peças de novo, como estão agora
+  const semAc = (texto || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  const pecasDeNovo = !!texto && ['amostra_entregue', 'testou'].includes(c.etapa) && !!c.amostra?.pecas?.anuncio1 && (await import('./entrega')).pedeAsPecas(semAc)
+  if (pecasDeNovo) await (await import('./entrega')).reenviaPecas(c)
   // 16/11 (entrega nova): o botão "Testar agora" da entrega liga o modo teste ali mesmo
   if (texto && (ehGatilhoTeste(texto) || (entregaV2() && ehTestarAgora(texto)))) return entraTeste(c)
+  if (pecasDeNovo) return { ok: true, reenviou: true }
   if (novas.audio && !texto) { await mandaTexto(c, 'Não consegui ouvir esse áudio. Me escreve, por favor?'); return { ok: true } }
   // quem tinha recusado (ou sem negócio) e voltou
   if (c.estado?.indicacao && c.etapa === 'perdido' && !ehQueroVer(texto)) return indicacao(c, texto)

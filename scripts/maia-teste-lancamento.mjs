@@ -584,6 +584,20 @@ await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
   confere('com o time: o pedido de teste fica sem resposta da Maia', saidas(pr).length === n0)
   const rr = await post({ acao: 'devolver', id: contato(pr).id, responder: true })
   confere('"Devolver e responder": a Maia liga o teste que ela pediu', rr.ok && contato(pr).estado.modo === 'teste' && /Modo teste ligado/.test(ultimas(pr)[0]) && saidas(pr).length === n0 + 1, [rr, ultimas(pr)[0]]) }
+{ // "onde está o card desse anúncio?" + pedido de teste, devolvidos juntos: manda as peças de novo e liga o teste
+  const cg = '55000' + R + '24'
+  await pronto(cg, 'Cris', 'Cris Imóveis')
+  await post({ acao: 'aprovar', id: contato(cg).id, agora: true })
+  await post({ acao: 'simular_time', telefone: cg, texto: 'Oi Cris, editamos o anúncio 2' })
+  const n0 = saidas(cg).length
+  await diz(cg, 'Onde Está o card desse Amincio'); await diz(cg, 'Quero testar a Maia como cliente da Cris Imóveis (modo teste)')
+  await post({ acao: 'devolver', id: contato(cg).id, responder: true })
+  const nv = saidas(cg).slice(n0).map(m => m.tipo + ': ' + (m.texto || '').slice(0, 40))
+  confere('devolvida com "onde está o card?" e o teste: reenvia as peças e o link, e liga o teste', nv.filter(x => /^imagem/.test(x)).length === 2 && nv.some(x => /Quer ver tudo/.test(x)) && /Modo teste ligado/.test(nv[nv.length - 1]) && contato(cg).estado.modo === 'teste', nv)
+  await diz(cg, 'sair')
+  const n1 = saidas(cg).length
+  await diz(cg, 'Não recebi o vídeo')
+  confere('"não recebi o vídeo" depois da amostra: manda as peças de novo', saidas(cg).slice(n1).filter(m => m.tipo === 'imagem').length === 2, saidas(cg).slice(n1).map(m => m.tipo)) }
 { // o time mandou a mesma mensagem 2x (script + caixa): entra uma vez só
   const du = '55000' + R + '23'
   await post({ acao: 'adicionar', telefone: du, nome: 'Du', remessa: 1 })

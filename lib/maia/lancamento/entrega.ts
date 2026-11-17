@@ -54,6 +54,17 @@ async function mandaPecas(c: any, legenda1: string) {
   return { ok: true, enviadas }
 }
 // a frase da oportunidade com o botão "Testar agora" e, por último, o link da página
+// 17/11 (Cristina Grossi: "Onde está o card desse anúncio?"): depois da amostra, quem pergunta pelo anúncio/vídeo recebe de novo
+// as peças COMO ESTÃO AGORA (com os ajustes da equipe) e o link da página
+export const pedeAsPecas = (s: string) => /\b(onde (esta|estao|ta|fica)|cade|nao (recebi|chegou|veio|vi)|manda (de novo|novamente|o|a)|reenvia|me (manda|envia) (o|a)|ver (o|a|os|as) (card|anuncio|video|arte))\b.{0,40}\b(card|cards|anuncio|anuncios|video|videos|arte|artes|amostra|post|imagem|foto)/.test(s) || /^(e )?(o|a)? ?(card|anuncio|video|amostra)\??$/.test(s.trim())
+export async function reenviaPecas(c: any) {
+  const atual = (await acha(c.id)) || c
+  const r = await mandaPecas(atual, 'Aqui está o anúncio 1, como ficou.')
+  if (r.ok) { await pausa(); await mandaTexto(atual, LINK_FINAL(linkAmostra(atual))) }
+  await evento('lanc_reenvio_pecas', { contato: c.id, ok: r.ok })
+  return r
+}
+
 async function mandaTesteELink(c: any, frase = true) {
   const corpo = `${frase ? fraseEntrega(c) + '\n\n' : ''}Quer ver como eu atenderia um cliente teu? Toca em "Testar agora" e me manda uma pergunta como se fosse cliente.`
   await mandaBotoes(c, corpo, [BOTAO_TESTE])
