@@ -576,6 +576,14 @@ await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
   const cp = contato(pr)
   confere('"pega do Instagram": vale como material, sem pedir foto de novo', cp.etapa === 'material_recebido' && /@vestidosdapri/.test(cp.coleta.material_instagram) && /Combinado, eu pego as fotos do teu Instagram/.test(ultimas(pr)[0]) && /Material recebido/.test(ultimas(pr)[0]), [cp.etapa, cp.coleta, ultimas(pr)[0]])
   confere('o time é avisado de pegar do Instagram', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Instagram/.test(e.detalhe.texto) && Date.parse(e.criado_em) >= INICIO)) }
+{ // "Devolver e responder": o que a pessoa mandou enquanto estava com o time é respondido na hora
+  const pr = '55000' + R + '22'
+  await post({ acao: 'simular_time', telefone: pr, texto: 'Oi Pri, já estamos montando' })
+  const n0 = saidas(pr).length
+  await diz(pr, 'Olá'); await diz(pr, 'Quero testar a Maia como cliente da Vestidos da Pri (modo teste)')
+  confere('com o time: o pedido de teste fica sem resposta da Maia', saidas(pr).length === n0)
+  const rr = await post({ acao: 'devolver', id: contato(pr).id, responder: true })
+  confere('"Devolver e responder": a Maia liga o teste que ela pediu', rr.ok && contato(pr).estado.modo === 'teste' && /Modo teste ligado/.test(ultimas(pr)[0]) && saidas(pr).length === n0 + 1, [rr, ultimas(pr)[0]]) }
 { // o time mandou a mesma mensagem 2x (script + caixa): entra uma vez só
   const du = '55000' + R + '23'
   await post({ acao: 'adicionar', telefone: du, nome: 'Du', remessa: 1 })

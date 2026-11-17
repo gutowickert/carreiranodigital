@@ -144,6 +144,18 @@ export async function processa(contato_id: string, msg_id: string) {
   catch (e: any) { await evento('lanc_erro', { contato: c.id, erro: String(e?.message || e).slice(0, 300) }); return { ok: false, erro: String(e?.message || e) } }
 }
 
+// 17/11 (Nando, Cristina Grossi): devolvida pra Maia, a pessoa tinha escrito enquanto estava com o time e ficou sem resposta.
+// "Devolver e responder": tudo o que ela mandou depois da última mensagem que saiu (da Maia ou do time) é lido de novo, junto
+export async function respondePendentes(c: any) {
+  const todas = await msgs(c.id)
+  let ult = -1
+  todas.forEach((m: any, i: number) => { if (m.direcao === 'saida') ult = i })
+  const pend = todas.slice(ult + 1).filter((m: any) => m.direcao === 'entrada')
+  if (!pend.length) return { ok: true, nada: true }
+  for (const m of pend) await maiaDb.atualiza('lanc_msgs', { id: m.id }, { processado: false })
+  return processa(c.id, pend[pend.length - 1].id)
+}
+
 type Novas = { fotos: number; videos: number; audio?: boolean }
 async function responde(c: any, texto: string, novas: Novas) {
   const agora = Date.now()

@@ -114,7 +114,13 @@ export async function POST(req: Request) {
       case 'rick_feito': await salva(c, { rick_feito_em: new Date().toISOString() }); await salvaJson(c, 'estado', { rick_por: por }); return ok({ ok: true })
       case 'duvida_resolvida': await salvaJson(c, 'estado', { duvida: null, humano: null }); return ok({ ok: true })   // 16/11: a dúvida foi respondida
       // 16/11 (Nando): o time termina e devolve a pessoa pra Maia (tira o "com o time", o pedido de humano e a dúvida)
-      case 'devolver': await salvaJson(c, 'estado', { time_em: null, humano: null, duvida: null }); return ok({ ok: true })
+      case 'devolver': {
+        await salvaJson(c, 'estado', { time_em: null, humano: null, duvida: null })
+        // 17/11: "Devolver e responder": a Maia responde agora o que a pessoa mandou enquanto estava com o time
+        if (!b.responder) return ok({ ok: true })
+        const { respondePendentes } = await import('@/lib/maia/lancamento/conversa')
+        return ok({ ok: true, respondeu: await respondePendentes((await acha(c.id)) || c) })
+      }
       case 'retomada_feita': await salvaJson(c, 'estado', { retomada: { ...(c.estado?.retomada || {}), como: 'a_mao_feita' } }); return ok({ ok: true })
       case 'link_envio': return ok(await linkEnvio(c, String(b.mime || '')))
       case 'definir_peca': {

@@ -143,6 +143,15 @@ export async function marcaDisparados() {
 
 export async function rotinaLancamento(agora = new Date()) {
   const r: any = {}
+  // 17/11: quem a equipe devolveu com "responder" e ainda não foi respondido (a tela marca; a rotina garante)
+  try {
+    const { respondePendentes } = await import('./conversa')
+    r.devolvidos = []
+    for (const c of await db.lista('lanc_contatos')) if (c.estado?.responder_pendente && !c.estado?.time_em && !c.estado?.humano) {
+      await salvaJson(c, 'estado', { responder_pendente: null })
+      r.devolvidos.push({ contato: c.id, ...(await respondePendentes(c)) })
+    }
+  } catch (e: any) { r.devolvidos_erro = e.message }
   try { r.entregas = await entregasAgendadas(agora) } catch (e: any) { r.entregas_erro = e.message }
   try { r.testes = await testesParados(agora) } catch (e: any) { r.testes_erro = e.message }
   try { r.retomadas = await retomadas(agora) } catch (e: any) { r.retomadas_erro = e.message }
