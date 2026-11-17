@@ -13,13 +13,15 @@ import {
 } from './base'
 import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
-export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 30))
+export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 120))   // 17/11: era 30 min (a Maria saiu do teste no meio)
 const ESPERA_MS = () => (maiaLocal() ? 0 : Math.max(0, +(process.env.MAIA_LANC_ESPERA_MS || 7000)))
 
 export const PERGUNTAS: Record<Exclude<Passo, 'fotos' | 'hora'>, string> = {
   negocio: 'Pra começar: o que tu vende, e pra quem?',
   cidade: 'Em que cidade tu atende?',
   produtos: 'Me diz 2 ou 3 produtos ou serviços teus, com o preço de cada um.',
+  // 17/11: só quando os produtos vieram sem preço. É o que a atendente do teste responde quando o cliente pergunta o valor
+  faixa_preco: 'E a faixa de preço, mais ou menos? Do mais barato ao mais caro. É pra eu saber responder quando um cliente teu perguntar o valor.',
   como_vende: 'E como o cliente compra de ti? Entrega, retirada, horário marcado... E qual é o teu horário de atendimento?',
   carro_chefe: 'Do que tu vende, o que sai mais ou dá mais lucro?',
   dificuldade: 'Hoje, qual é a maior dificuldade pra vender mais?',
@@ -160,6 +162,12 @@ async function responde(c: any, texto: string, novas: Novas) {
   }
   // 16/11: pediu uma pessoa
   if (texto && ehPedeHumano(texto)) return passaProTime(c, 'pediu pra falar com uma pessoa', true)
+  // 17/11: quem já testou e volta a escrever COMO CLIENTE ("precisa de entrada?", "quanto fica o modelo X?") volta pro teste sozinho
+  if (texto && c.estado?.teste_desde && ['amostra_entregue', 'testou'].includes(c.etapa) && pareceCliente(texto)) {
+    await salvaJson(c, 'estado', { modo: 'teste', teste_ate: new Date(Date.now() + TESTE_MIN() * 60e3).toISOString(), teste_desde: new Date().toISOString() })
+    await evento('lanc_teste_volta', { contato: c.id })
+    return respondeTeste((await acha(c.id)) || c, texto)
+  }
   // 16/11 (entrega nova): o botão "Testar agora" da entrega liga o modo teste ali mesmo
   if (texto && (ehGatilhoTeste(texto) || (entregaV2() && ehTestarAgora(texto)))) return entraTeste(c)
   if (novas.audio && !texto) { await mandaTexto(c, 'Não consegui ouvir esse áudio. Me escreve, por favor?'); return { ok: true } }
@@ -201,6 +209,11 @@ async function responde(c: any, texto: string, novas: Novas) {
 }
 
 // ---------- 3. a coleta ----------
+export const materialNoInstagram = (t: string) => {
+  const s = t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  if (/\bnao\b/.test(s)) return false
+  return /instagram\.com\//.test(s) || /^@[\w.]{2,30}$/.test(s.trim()) || /(pega|pegar|tira|tirar|usa|usar|ve|ver|olha|olhar|tem|ta|esta|estao|tudo)\b.{0,25}\b(insta|instagram|perfil|feed)\b/.test(s)
+}
 // 16/11 (Nando): saudação automática ("X agradece seu contato…") ou só um "Oi" não é resposta: não vira o negócio, a cidade etc.
 export const soSaudacao = (v: string) => /^\s*(oi+|ol[aá]+|opa|e a[ií]|bom dia|boa tarde|boa noite|tudo bem\??)[\s!.,?]*$/i.test(v)
 export function limpaCampos(campos: Record<string, any>) {
@@ -215,7 +228,12 @@ export async function contaMidias(c: any) {
 // o próximo passo que falta (as fotos: 3, ou menos se a pessoa disse que só tem essas; o vídeo é opcional, mas pergunta)
 export function proximoPasso(c: any, n: { fotos: number; videos: number }): Passo | 'video' | 'feito' {
   const k = c.coleta || {}
-  for (const p of ['negocio', 'cidade', 'produtos', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) if (!k[p]) return p
+  for (const p of ['negocio', 'cidade', 'produtos', 'faixa_preco', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) {
+    if (p === 'faixa_preco') { if (!k.faixa_preco && k.produtos && !/\d/.test(String(k.produtos))) return p; continue }
+    if (!k[p]) return p
+  }
+  // 17/11: o link do Instagram (ou "pega do meu Instagram") vale como o material: a equipe pega as fotos de lá
+  if (k.material_instagram) return 'feito'
   if (n.fotos < 3 && !(k.so_essas && n.fotos >= 1)) return 'fotos'
   if (!n.videos && !k.sem_video) return 'video'
   // 16/11 (Nando): sem a pergunta da hora (as pessoas paravam nela). Fotos e vídeo recebidos: fecha ("em até 24 horas")
@@ -228,6 +246,13 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   let passo = proximoPasso(c, n)
   const antes = c.estado?.passo || null
   const partes: string[] = intro ? [INTRO] : []
+  // 17/11: na hora das fotos, a pessoa mandou o link do Instagram (ou "pega do meu insta"): vale como material, sem pedir foto de novo
+  if (texto && (passo === 'fotos' || passo === 'video') && materialNoInstagram(texto)) {
+    const ig = (texto.match(/https?:\/\/(www\.)?instagram\.com\/[^\s]+/i) || [])[0] || (texto.match(/@[\w.]{2,30}/) || [])[0] || c.coleta?.instagram || 'o Instagram'
+    await salvaJson(c, 'coleta', { material_instagram: ig, sem_video: true })
+    if (c.etapa === 'quero_ver') await salva(c, { etapa: 'coletando' })
+    return fechaColeta((await acha(c.id)) || c, [...partes, 'Combinado, eu pego as fotos do teu Instagram.'])
+  }
   if (texto) {
     const passoLeitura: Passo = passo === 'video' || passo === 'feito' ? 'fotos' : passo
     const l = await interpreta(texto, passoLeitura, c.coleta)
@@ -276,7 +301,8 @@ async function avisaMaterial(c: any, n: { fotos: number; videos: number }) {
   if (atual.estado?.aviso_material) return
   const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
   await salvaJson(c, 'estado', { aviso_material: new Date().toISOString() })
-  await avisaGuto('material chegou, começar a amostra', `${rotulo(atual)} mandou ${n.fotos} foto(s)${n.videos ? ` e ${n.videos} vídeo(s)` : ''}. Prometido em até 24 h (até ${quandoFalado(prazo)}). Tela: www.carreiranodigital.com/maia/operacao/lancamento.html`, true)
+  const ig = atual.coleta?.material_instagram
+  await avisaGuto('material chegou, começar a amostra', `${rotulo(atual)} ${ig ? `pediu pra pegar as fotos do Instagram (${ig})${n.fotos ? ` e mandou ${n.fotos} foto(s)` : ''}` : `mandou ${n.fotos} foto(s)${n.videos ? ` e ${n.videos} vídeo(s)` : ''}`}. Prometido em até 24 h (até ${quandoFalado(prazo)}). Tela: www.carreiranodigital.com/maia/operacao/lancamento.html`, true)
 }
 export async function fechaColeta(c: any, partes: string[] = []) {
   const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
@@ -310,6 +336,13 @@ async function aguardando(c: any, texto: string, novas: Novas) {
 }
 
 // ---------- 4. o modo teste ao vivo ----------
+// parece mensagem de CLIENTE do negócio (não do dono falando com a escola): pergunta de preço, entrega, modelo, horário...
+export const pareceCliente = (t: string) => {
+  const s = t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
+  if (!s.includes('?')) return false
+  if (/\b(maia|escola|amostra|anuncios?|video|sistema|voces|plano|contrat|implanta|mensalidade|teste|ia)\b/.test(s)) return false
+  return /\b(quanto|valor|preco|precisa de entrada|entrada|tem (o|a|de|em|no|na|tamanho|cor)|entrega|frete|parcel|pix|cartao|tamanhos?|cor(es)?|modelos?|disponivel|estoque|orcamento|horario|abre|aberto|endereco|agenda|marcar|consulta|atende|faz (o|a|em)|serve|aceita)\b/.test(s)
+}
 export const TEXTO_TESTE = (neg: string) => `Quero testar a Maia como cliente da ${neg} (modo teste)`
 async function entraTeste(c: any) {
   if (!c.coleta?.negocio) {

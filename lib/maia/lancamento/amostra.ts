@@ -6,7 +6,7 @@
 import { maiaDb as db, maiaLocal } from '../db'
 import {
   contato as acha, salva, salvaJson, midias, mandaTexto, mandaMidia, mandaModelo, janelaAberta, janelaAte, garanteToken, avanca, evento,
-  primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto, entregaV2,
+  primeiroNome, horaBR, SITE, WHATS_ESCOLA, avisaGuto, entregaV2, pegaEntrega, soltaEntrega,
 } from './base'
 import { TEXTO_TESTE, marcaRick, rotulo } from './conversa'
 
@@ -168,24 +168,25 @@ Lá tem os 2 anúncios e o vídeo que eu fiz com as tuas fotos. E tem um teste: 
 export async function entrega(c: any) {
   if (entregaV2()) { const { entregaNova } = await import('./entrega'); return entregaNova(c) }
   const atual = (await acha(c.id)) || c
-  if (atual.entregue_em) return { ok: true, ja: true }
+  if (atual.entregue_em || !(await pegaEntrega(atual))) return { ok: true, ja: true }
   await garanteToken(atual)
   if (janelaAberta(atual, 5)) {
     const r = await mandaTexto(atual, textoEntrega(atual))
-    if (!r.ok) { await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o WhatsApp recusou. Vê na tela do lançamento.`, true); return { ok: false, erro: r.error } }
+    if (!r.ok) { await soltaEntrega(atual); await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o WhatsApp recusou. Vê na tela do lançamento.`, true); return { ok: false, erro: r.error } }
     const a1 = atual.amostra?.pecas?.anuncio1
     if (a1?.path) { const link = await db.link(a1.path); if (link && !maiaLocal()) await mandaMidia(atual, /^video/.test(a1.mime) ? 'video' : 'image', link, 'Um dos anúncios que eu fiz pra ti. Os outros estão no link.', a1.mime) }
     return marcaEntregue(atual, 'texto')
   }
   const modelo = process.env.MAIA_LANC_MODELO_ENTREGA
   if (!modelo) {
+    await soltaEntrega(atual)
     await salvaJson(atual, 'amostra', { falha: 'janela de 24 h fechada e sem modelo de entrega (MAIA_LANC_MODELO_ENTREGA)' })
     await avisaGuto('amostra parada', `${rotulo(atual)}: a janela de 24 h fechou e não tem modelo de entrega aprovado. Manda o link à mão pela caixa de Disparos.`, true)
     return { ok: false, erro: 'janela fechada e sem modelo' }
   }
   const comBotao = process.env.MAIA_LANC_MODELO_ENTREGA_BOTAO === '1'
   const r = await mandaModelo(atual, modelo, [primeiroNome(atual.nome) || 'tudo bem'], `amostra pronta ${linkAmostra(atual)}`, comBotao ? atual.token : null)
-  if (!r.ok) { await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o modelo foi recusado.`, true); return { ok: false, erro: r.error } }
+  if (!r.ok) { await soltaEntrega(atual); await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o modelo foi recusado.`, true); return { ok: false, erro: r.error } }
   // sem o botão com o link, o link vai quando a pessoa responder (abre a janela)
   if (!comBotao) await salvaJson(atual, 'amostra', { falta_link: true })
   return marcaEntregue(atual, 'modelo')

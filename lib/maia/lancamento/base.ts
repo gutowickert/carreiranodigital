@@ -96,7 +96,9 @@ export async function timeFalou(telefone: string, texto: string | null, tipo = '
   const c = await contatoDoTelefone(telefone)
   if (!c) return null
   await salvaJson(c, 'estado', { time_em: new Date().toISOString() })
-  await registra(c, { direcao: 'saida', autor: 'equipe', tipo, texto: texto || null, ok: true })
+  // 17/11: sem duplicar (a mesma mensagem já registrada nos últimos 2 min não entra de novo)
+  const igual = (await msgs(c.id)).some((m: any) => m.direcao === 'saida' && (m.texto || null) === (texto || null) && m.tipo === tipo && Date.now() - Date.parse(m.criado_em) < 2 * 60e3)
+  if (!igual) await registra(c, { direcao: 'saida', autor: 'equipe', tipo, texto: texto || null, ok: true })
   return c.id
 }
 
@@ -199,6 +201,14 @@ export async function guardaMidia(c: any, m: { midia_id?: string | null; mime?: 
 
 // ---------- aviso pro Guto (WhatsApp pelo número da Maia, o mesmo caminho da /api/maia/avisar-guto) + o celular (ntfy) ----------
 // Só vai primeiro nome + negócio: nada de telefone nem resposta da coleta.
+// 17/11 (Luana recebeu a amostra 2x: duas entregas no mesmo segundo). A entrega PEGA a pessoa no banco antes de mandar:
+// marca entregue_em só se ainda está vazio (o banco garante que só uma consegue). Se o envio falhar, solta
+export async function pegaEntrega(c: any) {
+  const r = await db.atualiza('lanc_contatos', { id: c.id, entregue_em: null }, { entregue_em: new Date().toISOString() })
+  return r.length > 0
+}
+export async function soltaEntrega(c: any) { await db.atualiza('lanc_contatos', { id: c.id }, { entregue_em: null }) }
+
 export async function avisaGuto(titulo: string, texto: string, urgente = false) {
   await evento('lanc_aviso', { titulo, texto })
   const { avisaEquipe } = await import('../canal')

@@ -40,7 +40,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: false, error: r.error || 'falha ao enviar', foraJanela: /131047|24|re-?engage|template/i.test(r.error || '') }, { status: 200 })
     }
 
-    if (conversaId) {
+    // 17/11 (Maia, lançamento): mandado sem a conversa (ex.: por script ou pela tela do lançamento), a mensagem sumia da caixa
+    // do CRM. Acha a conversa do canal oficial pelo telefone (o 9º dígito varia) pra ela ficar registrada lá também
+    let convId = conversaId || null
+    if (!convId) {
+      const dig = String(telefone).replace(/\D/g, '')
+      const { data: cv } = await supabase.from('wa_conversas').select('id').eq('org_id', org).eq('canal', 'oficial').ilike('telefone', `%${dig.slice(-8)}`).order('ultima_msg_em', { ascending: false, nullsFirst: false }).limit(1).maybeSingle()
+      convId = cv?.id || null
+    }
+    if (convId) {
+      const conversaId = convId
       await supabase.from('wa_mensagens').insert({
         org_id: org,
         conversa_id: conversaId, zapi_id: r.wamid || null, direcao: 'enviada',

@@ -538,6 +538,49 @@ confere('a pessoa respondeu: vão as peças, o botão e o link', saidas(F.kika).
 // "sair" fora do teste depois da entrega = descadastro (para tudo)
 r = await diz(F.kika, 'SAIR')
 confere('"sair" fora do teste para tudo (descadastro)', r.tratado === false && contato(F.kika).etapa === 'perdido')
+// ===== 17/11: as correções da análise do 1º dia =====
+console.log('11) 17/11: entrega dupla, ajuste, teste que volta, Instagram como material, faixa de preço')
+await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
+{ const lu = '55000' + R + '21'
+  await pronto(lu, 'Lu', 'Luh Modas')
+  const id = contato(lu).id
+  await Promise.all([post({ acao: 'aprovar', id, agora: true }), post({ acao: 'aprovar', id, agora: true })])
+  const a1 = saidas(lu).filter(m => /anúncio 1/.test(m.texto || ''))
+  confere('dois "mandar agora" ao mesmo tempo: a amostra sai UMA vez', a1.length === 1 && le('eventos').filter(e => e.tipo === 'lanc_entregue' && e.detalhe.contato === id).length === 1, saidas(lu).map(m => m.tipo + ': ' + (m.texto || '').slice(0, 30)))
+  // ajuste depois da amostra: aviso urgente pro time
+  const av0 = le('eventos').filter(e => e.tipo === 'lanc_aviso' && /AJUSTE/.test(e.detalhe.titulo)).length, n0 = saidas(lu).length
+  await diz(lu, 'Não gostei da foto do anúncio 2, faltou o meu celular')
+  confere('pedido de ajuste: aviso URGENTE pro time e "anotado" uma vez', le('eventos').filter(e => e.tipo === 'lanc_aviso' && /AJUSTE/.test(e.detalhe.titulo)).length === av0 + 1 && /Anotado! Vou passar o ajuste/.test(ultimas(lu)[0]) && saidas(lu).length === n0 + 1 && contato(lu).estado.rick_motivo === 'pediu ajuste na amostra', ultimas(lu, 2))
+  await diz(lu, 'Quero outro vídeo também')
+  confere('2º ajuste logo depois: não repete o "anotado" nem o aviso (10 min)', saidas(lu).length === n0 + 1 && le('eventos').filter(e => e.tipo === 'lanc_aviso' && /AJUSTE/.test(e.detalhe.titulo)).length === av0 + 1)
+  // o teste: dura 2 h; e quem já testou e escreve como cliente volta pro teste sozinho
+  await post({ acao: 'devolver', id }); muda(lu, x => { x.estado.acomp = {} })
+  await diz(lu, 'Testar agora')
+  const ate = Date.parse(contato(lu).estado.teste_ate)
+  confere('o modo teste dura 2 h', contato(lu).estado.modo === 'teste' && ate - Date.now() > 110 * 60e3, contato(lu).estado)
+  await diz(lu, 'sair')
+  const n1 = saidas(lu).length
+  await diz(lu, 'Lindas! Precisa de entrada pra encomendar?')
+  confere('depois do teste, escreveu como cliente: volta pro teste e a atendente responde', contato(lu).estado.modo === 'teste' && saidas(lu).length === n1 + 1 && !/Maia da escola/.test(ultimas(lu)[0]), ultimas(lu)[0]) }
+{ // faixa de preço e Instagram como material
+  const pr = '55000' + R + '22'
+  await post({ acao: 'adicionar', telefone: pr, nome: 'Pri', remessa: 1 })
+  await diz(pr, 'Quero ver', 'botao')
+  for (const t of ['Vestidos de festa pra mulheres', 'Estrela', 'Vestido longo e vestido curto']) await diz(pr, t)
+  confere('produtos sem preço: pergunta a faixa de preço', /faixa de preço/.test(ultimas(pr)[0]), ultimas(pr)[0])
+  await diz(pr, 'De 150 a 600 reais')
+  confere('a faixa fica guardada e a conversa segue', contato(pr).coleta.faixa_preco === 'De 150 a 600 reais' && /como o cliente compra/.test(ultimas(pr)[0]), [contato(pr).coleta, ultimas(pr)[0]])
+  for (const t of ['Pela loja e entrega, das 9h às 18h', 'Vestido longo', 'Pouca gente me conhece', '@vestidosdapri']) await diz(pr, t)
+  confere('chegou nas fotos', /me manda de 3 a 5 fotos/.test(ultimas(pr)[0]), ultimas(pr)[0])
+  await diz(pr, 'Pega as fotos do meu Instagram, tem tudo lá')
+  const cp = contato(pr)
+  confere('"pega do Instagram": vale como material, sem pedir foto de novo', cp.etapa === 'material_recebido' && /@vestidosdapri/.test(cp.coleta.material_instagram) && /Combinado, eu pego as fotos do teu Instagram/.test(ultimas(pr)[0]) && /Material recebido/.test(ultimas(pr)[0]), [cp.etapa, cp.coleta, ultimas(pr)[0]])
+  confere('o time é avisado de pegar do Instagram', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Instagram/.test(e.detalhe.texto) && Date.parse(e.criado_em) >= INICIO)) }
+{ // o time mandou a mesma mensagem 2x (script + caixa): entra uma vez só
+  const du = '55000' + R + '23'
+  await post({ acao: 'adicionar', telefone: du, nome: 'Du', remessa: 1 })
+  await post({ acao: 'simular_time', telefone: du, texto: 'Oi Du, aqui é o Rick' }); await post({ acao: 'simular_time', telefone: du, texto: 'Oi Du, aqui é o Rick' })
+  confere('mensagem do time repetida em seguida não duplica na conversa', le('lanc_msgs').filter(m => m.contato_id === contato(du).id && m.autor === 'equipe').length === 1) }
 await post({ acao: 'chave_v2', ligar: false, modelos: { ENTREGA: null, IDEIA: null, DESPEDIDA: null } })
 confere('desliga a chave no fim (o servidor volta ao comportamento de antes)', (await get('acao=lista')).v2 === false)
 

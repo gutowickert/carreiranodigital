@@ -38,6 +38,7 @@ export function fichaDoNegocio(c: any) {
     `Negócio: ${k.nome_negocio || '(sem nome dito)'} · o que vende e pra quem: ${k.negocio || '?'}`,
     `Cidade: ${k.cidade || '?'}`,
     `Produtos ou serviços com preço: ${k.produtos || '?'}`,
+    ...(k.faixa_preco ? [`Faixa de preço: ${k.faixa_preco}`] : []),
     `Como o cliente compra (entrega, retirada, agendamento) e horário: ${k.como_vende || '?'}`,
     `O que mais vende ou dá mais lucro: ${k.carro_chefe || '?'}`,
     `Instagram: ${k.instagram || '?'}`,

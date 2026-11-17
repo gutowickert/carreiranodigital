@@ -125,7 +125,7 @@ function tela(){
   if(S.aberto)abre(S.aberto);
 }
 function fecha(){S.aberto=null;$('#gav').classList.remove('on')}
-var ROT={negocio:'O que vende e pra quem',nome_negocio:'Nome do negócio',publico:'Público',cidade:'Cidade',produtos:'Produtos e preços',como_vende:'Como vende e horário',carro_chefe:'O que mais vende',dificuldade:'Maior dificuldade',instagram:'Instagram',hora:'Hora da entrega',sem_video:'Sem vídeo',so_essas:'Só tem essas fotos'};
+var ROT={negocio:'O que vende e pra quem',nome_negocio:'Nome do negócio',publico:'Público',cidade:'Cidade',produtos:'Produtos e preços',faixa_preco:'Faixa de preço',material_instagram:'Material: pegar do Instagram',como_vende:'Como vende e horário',carro_chefe:'O que mais vende',dificuldade:'Maior dificuldade',instagram:'Instagram',hora:'Hora da entrega',sem_video:'Sem vídeo',so_essas:'Só tem essas fotos'};
 var SLOT={anuncio1:'Anúncio 1',anuncio2:'Anúncio 2',video:'Vídeo editado'};
 function ehVid(m,u){return /^video/.test(m||'')||/\.(mp4|mov)(\?|$)/i.test(u||'')}
 function abre(id){S.aberto=id;$('#gav').classList.add('on');$('#pn').innerHTML='<p class="mu">carregando…</p>';

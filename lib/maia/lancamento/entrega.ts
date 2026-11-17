@@ -16,7 +16,7 @@
 import { maiaDb as db, maiaLocal } from '../db'
 import {
   contato as acha, salva, salvaJson, mandaTexto, mandaMidia, mandaModelo, mandaBotoes, janelaAberta, garanteToken, avanca, evento,
-  primeiroNome, horaBR, diaBR, avisaGuto, entregaV2,
+  primeiroNome, horaBR, diaBR, avisaGuto, entregaV2, pegaEntrega, soltaEntrega,
 } from './base'
 import { marcaRick, registraDuvida, rotulo, DUVIDA } from './conversa'
 import { linkAmostra, marcaEntregue } from './amostra'
@@ -63,12 +63,13 @@ async function mandaTesteELink(c: any, frase = true) {
 
 export async function entregaNova(c: any) {
   const atual = (await acha(c.id)) || c
-  if (atual.entregue_em) return { ok: true, ja: true }
+  if (atual.entregue_em || !(await pegaEntrega(atual))) return { ok: true, ja: true }
   await garanteToken(atual)
   const nome = primeiroNome(atual.nome), neg = nomeDoNegocio(atual)
   if (janelaAberta(atual, 5)) {
     const r = await mandaPecas(atual, `${saudacao()}${nome ? ', ' + nome : ''}! A tua amostra ficou pronta. Esse é o anúncio 1 que eu fiz pra ${neg}, com as tuas fotos.`)
     if (!r.ok) {
+      await soltaEntrega(atual)
       await salvaJson(atual, 'amostra', { falha: String(r.erro || 'erro').slice(0, 200) })
       await avisaGuto('amostra não saiu', `${rotulo(atual)}: o WhatsApp recusou o anúncio 1. Vê na tela do lançamento.`, true)
       return { ok: false, erro: r.erro }
@@ -80,13 +81,14 @@ export async function entregaNova(c: any) {
   }
   const modelo = process.env.MAIA_LANC_MODELO_ENTREGA
   if (!modelo) {
+    await soltaEntrega(atual)
     await salvaJson(atual, 'amostra', { falha: 'janela de 24 h fechada e sem modelo de entrega (MAIA_LANC_MODELO_ENTREGA)' })
     await avisaGuto('amostra parada', `${rotulo(atual)}: a janela de 24 h fechou e não tem modelo de entrega aprovado. Manda à mão pela caixa de Disparos.`, true)
     return { ok: false, erro: 'janela fechada e sem modelo' }
   }
   const comBotao = process.env.MAIA_LANC_MODELO_ENTREGA_BOTAO === '1'
   const r = await mandaModelo(atual, modelo, [nome || 'tudo bem'], `amostra pronta ${linkAmostra(atual)}`, comBotao ? atual.token : null)
-  if (!r.ok) { await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o modelo foi recusado.`, true); return { ok: false, erro: r.error } }
+  if (!r.ok) { await soltaEntrega(atual); await salvaJson(atual, 'amostra', { falha: String(r.error || 'erro').slice(0, 200) }); await avisaGuto('amostra não saiu', `${rotulo(atual)}: o modelo foi recusado.`, true); return { ok: false, erro: r.error } }
   // as peças, o botão e o link vão quando a pessoa responder (aí a janela abre)
   await salvaJson(atual, 'amostra', { entrega_v2: true, falta_resto: true })
   return marcaEntregue(atual, 'modelo')
@@ -114,6 +116,7 @@ export function atividade(c: any) {
 }
 
 // ---------- 2. o que a pessoa responde depois da entrega nova: interrompe a sequência e vai pro time ----------
+export const ehAjuste = (s: string) => /\b(nao gostei|nao curti|nao ficou|faltou|falta (o|a|meu|minha)|trocar?|mudar?|ajust|alter|corrig|refaz|refazer|outro video|outra foto|outra imagem|errad|tira (o|a)|tirar (o|a)|coloca (o|a|meu|minha)|colocar (o|a|meu|minha)|poe (o|a|meu|minha)|nao (e|eh) (a|o) (minha|meu))/.test(s)
 export async function posEntregaNova(c: any, texto: string) {
   if (!texto) return { ok: true }
   const s = sem(texto)
@@ -131,6 +134,17 @@ export async function posEntregaNova(c: any, texto: string) {
     await mandaTexto(c, 'Me conta qual é a dúvida? O time da escola te responde aqui mesmo.')
     await marcaRick(c, 'ficou com dúvida depois da amostra')
     return { ok: true, depois: 'ficou_duvida' }
+  }
+  // 17/11 (Cristina Grossi: "não gostei que…", "faltou o celular", "quero outro vídeo"): pedido de AJUSTE vira aviso URGENTE pro time
+  // (no máximo 1 a cada 10 min); a pessoa ouve "anotado" uma vez só
+  if (ehAjuste(s)) {
+    const agora = new Date().toISOString()
+    await salvaJson(c, 'estado', { ajuste: { texto: texto.slice(0, 400), em: agora } })
+    await marcaRick(c, 'pediu ajuste na amostra', true)
+    if (Date.now() - Date.parse(a.ajuste_avisado_em || 0) > 10 * 60e3) await avisaGuto('AJUSTE na amostra', `${rotulo(c)} pediu ajuste: "${texto.slice(0, 200)}". Responde pela caixa do CRM.`, true)
+    if (!jaPassou) await mandaTexto(c, 'Anotado! Vou passar o ajuste pro time da escola, que já te chama aqui.')
+    await salvaJson(c, 'estado', { acomp: { ...(((await acha(c.id)) || c).estado?.acomp || {}), ajuste_avisado_em: agora, passou_time_em: a.passou_time_em || agora } })
+    return { ok: true, depois: 'ajuste' }
   }
   const q = await lePosEntrega(texto)
   if (q === 'quer_fechar') {

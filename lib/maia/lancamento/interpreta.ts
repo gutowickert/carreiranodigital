@@ -4,13 +4,13 @@
 import { maiaLocal } from '../db'
 import { emJson } from '../ia'
 
-export const PASSOS = ['negocio', 'cidade', 'produtos', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram', 'fotos', 'hora'] as const
+export const PASSOS = ['negocio', 'cidade', 'produtos', 'faixa_preco', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram', 'fotos', 'hora'] as const
 export type Passo = typeof PASSOS[number]
 
 export type Intencao = 'responde' | 'duvida' | 'preco' | 'sem_negocio' | 'agora_nao' | 'sem_foto' | 'sem_video' | 'so_essas' | 'quero_ver' | 'teste'
 export type Leitura = {
   intencao: Intencao
-  campos: Partial<{ negocio: string; nome_negocio: string; publico: string; cidade: string; produtos: string; como_vende: string; carro_chefe: string; dificuldade: string; instagram: string; hora: number }>
+  campos: Partial<{ negocio: string; nome_negocio: string; publico: string; cidade: string; produtos: string; faixa_preco: string; como_vende: string; carro_chefe: string; dificuldade: string; instagram: string; hora: number }>
   duvida?: string
 }
 
@@ -77,13 +77,13 @@ export async function interpreta(texto: string, passo: Passo, coleta: any): Prom
   try {
     const r = await emJson<Leitura>(
       'Tu lês as respostas que donos de pequenos negócios dão pra Maia (a IA da escola Carreira no Digital) numa conversa de WhatsApp em que ela coleta informações pra fazer uma amostra grátis de anúncios. Tu só entendes e devolves JSON: não escreves resposta.',
-      `A pergunta da vez é sobre: ${passo} (negocio = o que vende e pra quem; cidade; produtos = 2 ou 3 produtos ou serviços com preço; como_vende = entrega, retirada, agendamento, horário; carro_chefe = o que mais vende ou dá mais lucro; dificuldade = a maior dificuldade pra vender hoje; instagram = o @, ou "não tem"; fotos = ela pediu fotos e vídeos; hora = a hora da entrega amanhã, 10h ou 15h).
+      `A pergunta da vez é sobre: ${passo} (negocio = o que vende e pra quem; cidade; produtos = 2 ou 3 produtos ou serviços com preço; faixa_preco = a faixa de preço (do mais barato ao mais caro), quando a pessoa não deu preço nos produtos; como_vende = entrega, retirada, agendamento, horário; carro_chefe = o que mais vende ou dá mais lucro; dificuldade = a maior dificuldade pra vender hoje; instagram = o @, ou "não tem"; fotos = ela pediu fotos e vídeos; hora = a hora da entrega amanhã, 10h ou 15h).
 O que já se sabe: ${JSON.stringify(coleta || {}).slice(0, 1500)}
 A pessoa escreveu: """${texto.slice(0, 1500)}"""
 
 Devolve {"intencao": "...", "campos": {...}, "duvida": "..."}:
 - intencao: "responde" (respondeu, mesmo que curto ou "não sei"), "duvida" (fez uma pergunta que não é resposta e que a Maia não sabe: sobre a escola, contrato, como funciona, etc.), "preco" (perguntou quanto custa a Maia), "sem_negocio" (disse que não tem negócio), "agora_nao" (não quer mais), "sem_foto" (disse que não tem foto), "sem_video" (disse que não tem vídeo), "so_essas" (disse que só tem as fotos que já mandou).
-- campos: só o que a pessoa disse de verdade, nas palavras dela, resumido: negocio (o que vende e pra quem), nome_negocio (o nome do negócio, se disse), publico, cidade, produtos (os produtos com preço, como texto), como_vende, carro_chefe, dificuldade, instagram (o @ ou "não tem"), hora (número de 8 a 20, só se disse a hora). Pode vir mais de um campo se ela respondeu várias coisas juntas. Não inventa nada.
+- campos: só o que a pessoa disse de verdade, nas palavras dela, resumido: negocio (o que vende e pra quem), nome_negocio (o nome do negócio, se disse), publico, cidade, produtos (os produtos com preço, como texto), faixa_preco (a faixa de preço, se disse), como_vende, carro_chefe, dificuldade, instagram (o @ ou "não tem"), hora (número de 8 a 20, só se disse a hora). Pode vir mais de um campo se ela respondeu várias coisas juntas. Não inventa nada.
 - duvida: a pergunta, se intencao for "duvida".`,
       [], { uso: { tipo: 'lancamento' } })
     if (!r || !r.intencao) return simples
