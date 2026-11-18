@@ -106,6 +106,9 @@ const nextConfig: NextConfig = {
         { source: '/maia/relatorio', destination: '/maia/relatorio/index.html' },
         // 21/10: curso Vídeo com IA (porta de entrada, R$ 497), prévia
         { source: '/videocomia', destination: '/imersao/video-com-ia.html' },
+        // 17/11: a Black do Deu Venda individual (até 29/11), página de venda própria
+        { source: '/black', destination: '/black/index.html' },
+        { source: '/black/', destination: '/black/index.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
         { source: '/rastro', destination: '/rastro/index.html' },
         { source: '/rastro/', destination: '/rastro/index.html' },
