@@ -12,7 +12,7 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',conte
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Black · Implantação de marketing com IA</title>
-<meta name="description" content="Black da Carreira no Digital: implantação de marketing com IA no teu negócio, um a um e presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097, só até 29/11.">
+<meta name="description" content="Black da Carreira no Digital, 30% de desconto e só 10 vagas: implantação de marketing com IA no teu negócio, um a um e presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097, só até 29/11.">
 <meta property="og:title" content="Black · Implantação de marketing com IA no teu negócio">
 <meta property="og:description" content="Um a um, presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097 até 29/11.">
 <meta property="og:type" content="website">
@@ -62,12 +62,29 @@ section{padding-block:72px}
 .btn-sec{background:var(--s1);color:var(--tx);border:1px solid var(--ln2);box-shadow:none}
 .btn-sec:hover{filter:none;border-color:var(--ac-ln)}
 
-/* faixa da Black, no topo */
-.faixa{background:linear-gradient(90deg,#17122a 0%,#17122a 45%,#4c1d95 100%);color:#fff;font-size:13.5px;font-weight:700}
-.faixa .ct{display:flex;align-items:center;justify-content:center;gap:10px;min-height:38px;flex-wrap:wrap;text-align:center;padding-block:6px}
-.faixa b{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;letter-spacing:.02em;font-variant-numeric:tabular-nums}
-@media (max-width:599px){.faixa .longo{display:none}}
-.faixa .pt{width:7px;height:7px;border-radius:50%;background:#c084fc;box-shadow:0 0 0 4px rgba(192,132,252,.25);flex:none}
+/* faixa da Black, no topo: letreiro preto e neon correndo */
+.faixa{background:#0c0816;color:#fff;overflow:hidden;border-bottom:1px solid #7c3aed;box-shadow:0 0 18px rgba(168,85,247,.55);position:relative}
+.trilho{display:flex;width:max-content;animation:corre 26s linear infinite}
+.grupo{display:flex;align-items:center;flex:none}
+.grupo span{white-space:nowrap;font-size:13.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:11px 0;color:#e9d5ff}
+.grupo span b{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;letter-spacing:.14em;color:#fff;text-shadow:0 0 10px #a855f7,0 0 22px rgba(168,85,247,.7);margin-right:6px}
+.grupo i{width:6px;height:6px;border-radius:50%;background:#c084fc;box-shadow:0 0 8px #c084fc;margin:0 18px;flex:none}
+@keyframes corre{to{transform:translateX(-50%)}}
+
+/* bloco da Black no começo da primeira dobra */
+.bf{grid-column:1/-1;position:relative;overflow:hidden;background:#0c0816;color:#fff;border-radius:22px;padding:18px;display:flex;flex-direction:column;gap:16px;border:1px solid rgba(168,85,247,.6);box-shadow:0 0 0 1px rgba(168,85,247,.25),0 18px 50px -18px rgba(124,58,237,.8)}
+.bf::before{content:"";position:absolute;inset:0;background:radial-gradient(70% 120% at 100% 0%,rgba(124,58,237,.55),transparent 60%),radial-gradient(50% 100% at 0% 100%,rgba(192,38,211,.35),transparent 60%);pointer-events:none}
+.bf::after{content:"";position:absolute;top:0;bottom:0;width:40%;left:-60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.12),transparent);animation:brilho 4.5s ease-in-out infinite;pointer-events:none}
+@keyframes brilho{0%,55%{left:-60%}100%{left:130%}}
+.bf>*{position:relative;z-index:1}
+.bf-selo{display:inline-block;background:linear-gradient(100deg,#7c3aed,#c026d3);color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:20px;letter-spacing:.08em;padding:6px 14px;border-radius:10px;box-shadow:0 0 18px rgba(192,38,211,.6)}
+.bf-tit{margin-top:12px;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 86;font-weight:800;font-size:clamp(24px,6.4vw,34px);line-height:1.08;letter-spacing:-.02em}
+.bf-tit span{color:#e9d5ff}
+.bf-rel{width:100%}
+.vagas{margin-top:12px;font-size:15px;color:var(--tx2)}
+.vagas b{color:var(--ac)}
+@media (min-width:720px){.bf{flex-direction:row;align-items:center;justify-content:space-between;padding:22px 26px;gap:24px}.bf .bf-rel{width:auto}.bf .bf-rel div{min-width:70px}}
+@media (prefers-reduced-motion:reduce){.trilho,.bf::after{animation:none}}
 
 /* topo */
 .topo{position:sticky;top:0;z-index:40;background:rgba(247,245,252,.86);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--ln)}
@@ -79,7 +96,7 @@ section{padding-block:72px}
 .topo .btn{min-height:40px;padding:0 16px;font-size:14.5px;box-shadow:none}
 
 /* abertura */
-.abre{padding-block:36px 64px;position:relative;overflow:hidden}
+.abre{padding-block:16px 64px;position:relative;overflow:hidden}
 .abre::before{content:"";position:absolute;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(167,139,250,.38),transparent 65%);top:-280px;right:-260px;pointer-events:none}
 .abre::after{content:"";position:absolute;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(232,121,249,.18),transparent 65%);bottom:-260px;left:-240px;pointer-events:none}
 .abre .ct{display:grid;gap:36px;position:relative;z-index:1}
@@ -327,8 +344,8 @@ body.encerrada .fim-black{display:block}
 </head>
 <body>
 
-<div class="faixa" role="note">
-  <div class="ct"><span class="pt" aria-hidden="true"></span><span><b style="letter-spacing:.16em">BLACK</b><span class="longo"> da escola gaúcha de marketing com IA</span> · até 29/11</span><b data-rel-curto>&nbsp;</b></div>
+<div class="faixa" role="note" aria-label="Black: 30% de desconto, só 10 vagas de implantação, até 29/11">
+  <div class="trilho" aria-hidden="true"><span class="grupo"><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i></span><span class="grupo"><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i><span><b>BLACK</b> 30% OFF</span><i></i><span>Só 10 vagas de implantação</span><i></i><span>Até 29/11, 23h59</span><i></i></span></div>
 </div>
 
 <header class="topo">
@@ -344,11 +361,23 @@ body.encerrada .fim-black{display:block}
 <!-- 1 · gancho -->
 <section class="abre">
   <div class="ct">
+    <div class="bf">
+      <div class="bf-tx">
+        <span class="bf-selo">BLACK · 30% OFF</span>
+        <p class="bf-tit">30% de desconto na implantação. <span>Só 10 vagas, até 29/11.</span></p>
+      </div>
+      <div class="relogio bf-rel" aria-live="off">
+        <div><b data-d>00</b><span>dias</span></div>
+        <div><b data-h>00</b><span>horas</span></div>
+        <div><b data-m>00</b><span>min</span></div>
+        <div><b data-s>00</b><span>seg</span></div>
+      </div>
+    </div>
     <div>
       <span class="selo rv"><i>Black</i>Presencial em Porto Alegre ou Lajeado</span>
       <p class="rs rv">Do RS, pra quem empreende no RS</p>
       <h1 class="rv">Implantação de marketing com IA <span class="grad">no teu negócio.</span></h1>
-      <p class="lead rv"><b>Um especialista da escola senta contigo, um a um.</b> Monta a tua máquina de IA com o teu negócio dentro e sobe a primeira campanha com tu olhando. Depois, três meses de acompanhamento até a estratégia acertar.</p>
+      <p class="lead rv"><b>Um especialista da escola senta contigo, um a um.</b> Monta a tua máquina de IA com o teu negócio dentro e sobe a primeira campanha contigo olhando. Depois, três meses de acompanhamento até a estratégia acertar.</p>
       <div class="acoes rv">
         <a class="btn" href="#oferta">Quero a Black <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn btn-sec" href="#como">Como funciona</a>
@@ -365,7 +394,7 @@ body.encerrada .fim-black{display:block}
     </div>
     <figure class="foto-abre rv">
       <img src="/black/midia/implantacao-sala-azul.webp" alt="Encontro de implantação na sede da escola: o especialista mostra a campanha no telão para duas alunas" width="900" height="1125" fetchpriority="high">
-      <figcaption><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>A campanha sobe no encontro, com tu olhando</figcaption>
+      <figcaption><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>A campanha sobe no encontro, contigo olhando</figcaption>
     </figure>
   </div>
 </section>
@@ -501,7 +530,7 @@ body.encerrada .fim-black{display:block}
           <div class="meses">
             <div><b>Mês 1</b><span>A leitura dos números: quantos chamaram, quanto custou cada conversa, o que virou venda.</span></div>
             <div><b>Mês 2</b><span>O ajuste, com dado de verdade na mão.</span></div>
-            <div><b>Mês 3</b><span>O plano dos próximos meses, escrito, pra tu seguir tocando.</span></div>
+            <div><b>Mês 3</b><span>O plano dos próximos meses, escrito, pra ti seguir tocando.</span></div>
           </div>
         </div>
       </article>
@@ -559,10 +588,10 @@ body.encerrada .fim-black{display:block}
     <div class="como-grade">
       <ol class="linha-tempo">
         <li class="passo rv"><span class="bola">01</span><div><span class="tag">Implantação · presencial</span><h3>O teu negócio, a tua oferta e o teu mercado</h3><p>A gente levanta o teu negócio, fecha a oferta, lê o mercado atrás da brecha que ninguém está dizendo e define o padrão visual da tua marca.</p><span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sai com a estratégia e o padrão da marca</span></div></li>
-        <li class="passo rv"><span class="bola">02</span><div><span class="tag">Implantação · presencial</span><h3>As peças e a campanha no ar</h3><p>As ideias de conteúdo, as primeiras peças feitas com as fotos reais do teu negócio, e a campanha sobe com tu olhando.</p><span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sai com a máquina montada e a campanha no ar</span></div></li>
+        <li class="passo rv"><span class="bola">02</span><div><span class="tag">Implantação · presencial</span><h3>As peças e a campanha no ar</h3><p>As ideias de conteúdo, as primeiras peças feitas com as fotos reais do teu negócio, e a campanha sobe contigo olhando.</p><span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sai com a máquina montada e a campanha no ar</span></div></li>
         <li class="passo mes rv"><span class="bola">03</span><div><span class="tag">Mês 1 · presencial</span><h3>A leitura dos números</h3><p>O que aconteceu com a campanha: quantos chamaram, quanto custou cada conversa, o que virou venda.</p></div></li>
         <li class="passo mes rv"><span class="bola">04</span><div><span class="tag">Mês 2 · presencial</span><h3>O ajuste</h3><p>Com dado de verdade na mão, o ajuste que faz a estratégia acertar.</p></div></li>
-        <li class="passo mes rv"><span class="bola">05</span><div><span class="tag">Mês 3 · presencial</span><h3>O plano dos próximos meses</h3><p>O fechamento, com o plano escrito, pra tu seguir tocando sozinho.</p></div></li>
+        <li class="passo mes rv"><span class="bola">05</span><div><span class="tag">Mês 3 · presencial</span><h3>O plano dos próximos meses</h3><p>O fechamento, com o plano escrito, pra ti seguir tocando sozinho.</p></div></li>
       </ol>
       <div>
         <div class="fotos-como">
@@ -614,7 +643,7 @@ body.encerrada .fim-black{display:block}
 <div class="marca-black" role="note">
   <div class="ct">
     <span class="palavra" aria-hidden="true">BLACK</span>
-    <p><b>Só até domingo, 29/11, às 23h59.</b> A implantação de marketing com IA, presencial em Porto Alegre ou Lajeado, com R$ 900 a menos.</p>
+    <p><b>30% de desconto e só 10 vagas de implantação na Black, até domingo, 29/11, às 23h59.</b> A implantação de marketing com IA, presencial em Porto Alegre ou Lajeado, com R$ 900 a menos.</p>
   </div>
 </div>
 
@@ -623,11 +652,11 @@ body.encerrada .fim-black{display:block}
   <div class="ct">
     <div class="cab centro rv">
       <span class="olho">A Black</span>
-      <h2>Tudo isso, num valor só, <span class="grad">só até 29/11.</span></h2>
+      <h2>Tudo isso com 30% de desconto, <span class="grad">só 10 vagas até 29/11.</span></h2>
     </div>
     <div class="card-of rv">
       <div class="topo-of">
-        <div><span class="olho">Termina em</span><p class="prazo" style="margin-top:4px">Domingo, <b>29/11, às 23h59</b> (horário de Brasília)</p></div>
+        <div><span class="bf-selo" style="margin-bottom:10px">BLACK · 30% OFF</span><br><span class="olho">Termina em</span><p class="prazo" style="margin-top:4px">Domingo, <b>29/11, às 23h59</b> (horário de Brasília)</p></div>
         <div class="relogio" data-relogio aria-live="off">
           <div><b data-d>00</b><span>dias</span></div>
           <div><b data-h>00</b><span>horas</span></div>
@@ -641,7 +670,7 @@ body.encerrada .fim-black{display:block}
         <ul class="inclui">
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>2 encontros de implantação,</b> um a um e presenciais</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina de IA</b> com o teu negócio dentro, que continua tua</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A primeira campanha no ar</b> no encontro, com tu olhando</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A primeira campanha no ar</b> no encontro, contigo olhando</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>3 meses de acompanhamento,</b> um encontro presencial por mês</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Grupo no WhatsApp</b> com o time da escola entre os encontros</span></li>
         </ul>
@@ -649,7 +678,8 @@ body.encerrada .fim-black{display:block}
           <p class="de">De <s>R$ 2.997</s></p>
           <p class="por"><small>por</small><b>R$ 2.097</b></p>
           <p class="parc">ou <b>5x de R$ 419,40</b> sem juros</p>
-          <span class="economia"><svg class="ico" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>R$ 900 a menos, só na Black</span>
+          <span class="economia"><svg class="ico" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>30% de desconto: R$ 900 a menos</span>
+          <p class="vagas"><b>Só 10 vagas de implantação na Black.</b> Até 29/11, às 23h59.</p>
         </div>
         <div class="escolha">
           <p>Onde tu quer fazer?</p>
@@ -691,7 +721,7 @@ body.encerrada .fim-black{display:block}
       <details class="rv"><summary>Tenho equipe. Serve pra ela?</summary><p>Serve. Quem vai tocar o marketing senta no encontro e aprende a usar a máquina. O conhecimento fica dentro de casa.</p></details>
       <details class="rv"><summary>Vocês garantem um número de vendas?</summary><p>Não. A escola ensina o método e acompanha por três meses, e não garante volume de venda. O que tu leva é o negócio mapeado, o padrão da marca, as primeiras peças, a campanha no ar e o acompanhamento até a estratégia acertar.</p></details>
       <details class="rv"><summary>E depois dos três meses?</summary><p>A máquina continua tua, na tua conta, com o teu negócio dentro. No último encontro tu sai com o plano dos próximos meses escrito.</p></details>
-      <details class="rv"><summary>Até quando vale a Black?</summary><p>Até domingo, 29/11, às 23h59 (horário de Brasília). Depois disso o valor volta pra R$ 2.997.</p></details>
+      <details class="rv"><summary>Até quando vale a Black?</summary><p>São só 10 vagas de implantação na Black, até domingo, 29/11, às 23h59 (horário de Brasília). Se as 10 vagas fecharem antes, a Black acaba antes. Depois disso o valor volta pra R$ 2.997.</p></details>
     </div>
   </div>
 </section>
@@ -700,11 +730,11 @@ body.encerrada .fim-black{display:block}
 <section class="final">
   <div class="ct">
     <div class="final-card rv">
-      <img src="/black/midia/nando.webp" alt="Time da Carreira no Digital na sede da escola" width="900" height="1125" loading="lazy">
+      <img src="/black/midia/sala-cerebro.webp" alt="Encontro de implantação na sala da escola" width="900" height="1125" loading="lazy">
       <div class="tx">
         <span class="olho">Última chamada, tchê</span>
         <h2 style="margin-top:10px">O marketing montado no teu negócio, com alguém do lado.</h2>
-        <p class="lead">Chama a escola no WhatsApp, tira as tuas dúvidas e a gente vê se faz sentido pro teu negócio. Sem enrolação, de gaúcho pra gaúcho. A Black vale até 29/11, às 23h59.</p>
+        <p class="lead">Chama a escola no WhatsApp, tira as tuas dúvidas e a gente vê se faz sentido pro teu negócio. Sem enrolação, de gaúcho pra gaúcho. <b>Só 10 vagas de implantação na Black, até 29/11.</b></p>
         <div class="cidades">
           <a class="cid" href="https://wa.me/5551995054548?text=Quero%20a%20Black%20do%20Deu%20Venda%20em%20Porto%20Alegre." data-cta data-turma="deuvendaportoalegre" data-msg="Quero a Black do Deu Venda em Porto Alegre.">
             <span><small>Quero a Black em</small><b>Porto Alegre</b></span>
@@ -725,7 +755,7 @@ body.encerrada .fim-black{display:block}
 <footer class="rodape"><div class="ct">Carreira no Digital · Implantação de marketing com IA · presencial em Porto Alegre e Lajeado</div></footer>
 
 <div class="barra" id="barra">
-  <div class="q"><b>Black: R$ 2.097</b><span data-rel-curto>até 29/11, às 23h59</span></div>
+  <div class="q"><b>Black 30% OFF · 10 vagas</b><span data-rel-curto>até 29/11, às 23h59</span></div>
   <a class="btn" href="#oferta">Quero a Black</a>
 </div>
 
@@ -741,15 +771,15 @@ body.encerrada .fim-black{display:block}
   }
   // contagem até 29/11/2026 às 23h59 de Brasília
   var FIM=new Date('2026-11-29T23:59:59-03:00').getTime();
-  var D=document.querySelector('[data-d]'),H=document.querySelector('[data-h]'),M=document.querySelector('[data-m]'),S=document.querySelector('[data-s]');
+  var D=document.querySelectorAll('[data-d]'),H=document.querySelectorAll('[data-h]'),M=document.querySelectorAll('[data-m]'),S=document.querySelectorAll('[data-s]');function po(l,v){[].forEach.call(l,function(e){e.textContent=v;});}
   var curtos=document.querySelectorAll('[data-rel-curto]');
   function dd(n){return (n<10?'0':'')+n;}
   function tique(){
     var r=FIM-Date.now();
-    if(r<=0){document.body.classList.add('encerrada');D.textContent=H.textContent=M.textContent=S.textContent='00';
+    if(r<=0){document.body.classList.add('encerrada');po(D,'00');po(H,'00');po(M,'00');po(S,'00');
       [].forEach.call(curtos,function(c){c.textContent='encerrada';});return false;}
     var d=Math.floor(r/864e5),h=Math.floor(r%864e5/36e5),m=Math.floor(r%36e5/6e4),s=Math.floor(r%6e4/1e3);
-    D.textContent=dd(d);H.textContent=dd(h);M.textContent=dd(m);S.textContent=dd(s);
+    po(D,dd(d));po(H,dd(h));po(M,dd(m));po(S,dd(s));
     var txt=(d>0?d+(d==1?' dia ':' dias '):'')+dd(h)+'h '+dd(m)+'min '+dd(s)+'s';
     [].forEach.call(curtos,function(c){c.textContent='faltam '+txt;});
     return true;
