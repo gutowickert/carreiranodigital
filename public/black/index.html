@@ -166,6 +166,14 @@ section{padding-block:72px}
 .dor .r .ico{color:var(--ac);margin-top:2px}
 .dor .r b{color:var(--tx)}
 
+.frases{display:grid;gap:10px}
+.frases p{background:var(--bg);border:1px solid var(--ln);border-radius:16px;padding:16px 18px;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 88;font-weight:700;font-size:20px;line-height:1.2;letter-spacing:-.015em}
+.frases p::before{content:"“";color:var(--ac-ln)}
+.frases p::after{content:"”";color:var(--ac-ln)}
+.resposta{margin-top:18px;font-size:17px;color:var(--tx2);max-width:62ch}
+.resposta b{color:var(--ac)}
+@media (min-width:720px){.frases{grid-template-columns:1fr 1fr}}
+
 /* antes e depois */
 .ad2{display:grid;grid-template-columns:1fr 1fr;gap:12px;max-width:620px;margin:0 auto}
 .ad2 figure{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:8px;box-shadow:var(--sombra)}
@@ -347,8 +355,8 @@ body.encerrada .fim-black{display:block}
   .leva .item.largo{grid-column:1/-1}
   .leva .item.meio{grid-column:span 3}
   .como-grade{display:grid;grid-template-columns:1.15fr .85fr;gap:56px;align-items:start}
-  .fotos-como{grid-template-columns:1fr;position:sticky;top:96px}
-  .fotos-como img{aspect-ratio:5/4}
+  .fotos-como{grid-template-columns:1fr 1fr;margin-top:0}
+  .fotos-como img{aspect-ratio:4/5}
   .ads{grid-template-columns:repeat(6,1fr)}
 }
 @media (max-width:380px){.topo .nome{display:none}.fatos b{font-size:26px}}
@@ -389,18 +397,14 @@ body.encerrada .fim-black{display:block}
       <span class="selo rv"><i>Black</i>Presencial em Porto Alegre ou Lajeado</span>
       <p class="rs rv">Do RS, pra quem empreende no RS</p>
       <h1 class="rv">Implantação de marketing com IA <span class="grad">no teu negócio.</span></h1>
-      <p class="lead rv"><b>Um especialista da escola senta contigo, um a um.</b> Monta a tua máquina de IA com o teu negócio dentro e sobe a primeira campanha contigo olhando. Depois, três meses de acompanhamento até a estratégia acertar.</p>
+      <p class="lead rv"><b>Um especialista senta contigo, um a um,</b> e monta a IA no marketing do teu negócio. Depois, três meses de acompanhamento.</p>
       <div class="acoes rv">
         <a class="btn" href="#oferta">Quero a Black <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
         <a class="btn btn-sec" href="#como">Como funciona</a>
       </div>
-      <div class="local rv">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-        <div><b>Cara a cara, na sede da escola</b><span>Tu escolhe: Porto Alegre ou Lajeado. A data dos encontros é combinada contigo.</span></div>
-      </div>
       <div class="fatos rv">
         <div><b>1 a 1</b><span>só o teu negócio na mesa</span></div>
-        <div><b>5</b><span>encontros presenciais</span></div>
+        <div><b>2</b><span>encontros de implantação</span></div>
         <div><b>3 meses</b><span>de acompanhamento</span></div>
       </div>
     </div>
@@ -415,7 +419,7 @@ body.encerrada .fim-black{display:block}
 <section class="tres" id="tres">
   <div class="ct">
     <div class="cab rv">
-      <span class="olho">O que tu leva</span>
+      <span class="olho">O coração do Deu Venda</span>
       <h2>Três coisas que tu passa a fazer <span class="grad">direto no Claude.</span></h2>
       <p class="lead">O Claude é a IA onde a tua máquina fica montada. Tu conversa com ela, em português, e ela faz.</p>
     </div>
@@ -442,96 +446,56 @@ body.encerrada .fim-black{display:block}
   </div>
 </section>
 
-<!-- 1b · o que é o Deu Venda -->
-<section class="oque" id="oque">
-  <div class="ct">
-    <div class="cab rv">
-      <span class="olho">O que é o Deu Venda</span>
-      <h2>A implantação individual da escola: <span class="grad">a IA no teu marketing, montada contigo.</span></h2>
-      <p class="lead"><b>Em dois encontros presenciais, um especialista monta contigo a tua máquina de IA de marketing</b> (estratégia, marca, peças, respostas do WhatsApp e campanha) e te ensina a usar. Depois, três meses de acompanhamento, um encontro por mês, até a estratégia acertar.</p>
-    </div>
-    <div class="quatro">
-      <article class="q4 rv">
-        <span class="n">1</span><h3>O que tu aprende</h3>
-        <ul>
-          <li>Pedir pra IA as tuas artes, carrosséis, roteiros e legendas</li>
-          <li>Subir e ajustar a tua campanha na Meta</li>
-          <li>Ler os números do mês e saber pra onde vai o dinheiro</li>
-        </ul>
-      </article>
-      <article class="q4 rv">
-        <span class="n">2</span><h3>O que tu faz no encontro</h3>
-        <ul>
-          <li>Fecha a tua oferta e acha a brecha do teu mercado</li>
-          <li>Aprova o padrão visual da tua marca</li>
-          <li>Clica no teu anúncio e vê a conversa chegar</li>
-        </ul>
-      </article>
-      <article class="q4 ia rv">
-        <span class="n">3</span><h3>O que a IA faz por ti</h3>
-        <ul>
-          <li>Peças com as fotos reais do teu negócio, no teu padrão</li>
-          <li>Edita os vídeos que tu grava no celular</li>
-          <li>Escreve as respostas de preço e prazo e o texto da tua página</li>
-        </ul>
-      </article>
-      <article class="q4 rv">
-        <span class="n">4</span><h3>Com o que tu sai</h3>
-        <ul>
-          <li>O negócio mapeado e o padrão da marca</li>
-          <li>As primeiras peças prontas e a campanha no ar</li>
-          <li>Ao fim dos 3 meses, o plano dos próximos meses escrito, pra seguir tocando</li>
-        </ul>
-      </article>
-    </div>
-    <p class="nota rv">A escola ensina o método e acompanha. Quem opera é tu (ou o teu time), e não existe promessa de número de vendas.</p>
-  </div>
-</section>
-
-<!-- 2 · as dores -->
+<!-- 3 · pra quem é -->
 <section class="dores" id="dores">
   <div class="ct">
     <div class="cab rv">
       <span class="olho">Pra quem é</span>
       <h2>Tu atende bem quem chega. O problema é o dia em que ninguém chega.</h2>
-      <p class="lead">De Porto Alegre ao Vale do Taquari, quando o assunto é marketing, a gente escuta sempre as mesmas frases. Pra cada uma, o que muda com a IA montada no teu negócio.</p>
     </div>
-    <div class="dor-lista">
-      <article class="dor rv">
-        <p class="q">Já paguei por isso e não deu em nada.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4v5c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V7l8-4z"/><path d="M9 12l2 2 4-4"/></svg><span><b>Não é agência.</b> Tu aprende junto, e a máquina e a conta ficam contigo depois dos três meses.</span></div>
-      </article>
-      <article class="dor rv">
-        <p class="q">Não sei o que postar nem o que anunciar.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V16h8v-1.3A7 7 0 0 0 12 2z"/></svg><span><b>A máquina já conhece a tua estratégia.</b> Tu pede a arte, o carrossel, o roteiro ou a legenda, e ela faz no teu padrão.</span></div>
-      </article>
-      <article class="dor rv">
-        <p class="q">Gravo no celular e fica com cara de amador.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="13" height="14" rx="2"/><path d="M16 10l5-3v10l-5-3z"/></svg><span><b>A máquina edita o teu vídeo.</b> Corta as pausas, põe legenda no tempo da fala e as cores da tua marca.</span></div>
-      </article>
-      <article class="dor rv">
-        <p class="q">Não entendo disso, qualquer um me enrola.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg><span><b>Os números do mês num painel.</b> Quantos chamaram, quanto custou cada conversa e o que virou venda, lido contigo.</span></div>
-      </article>
-      <article class="dor rv">
-        <p class="q">O cliente chama e cada um responde de um jeito.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg><span><b>As respostas certas ficam montadas.</b> Preço, prazo e “como funciona”, do jeito do teu negócio, pra ti e pro teu time.</span></div>
-      </article>
-      <article class="dor rv">
-        <p class="q">Todo mundo já foi pro digital, menos eu.</p>
-        <div class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span><b>Em dois encontros</b> a máquina fica montada e a primeira campanha está no ar. Tu clica no teu anúncio e vê a conversa chegar.</span></div>
-      </article>
+    <div class="frases">
+      <p class="rv">Já paguei agência e não deu em nada.</p>
+      <p class="rv">Não sei o que postar nem o que anunciar.</p>
+      <p class="rv">Não entendo disso, qualquer um me enrola.</p>
+      <p class="rv">Todo mundo já foi pro digital, menos eu.</p>
     </div>
+    <p class="resposta rv"><b>O Deu Venda não é agência:</b> monta contigo, te deixa sabendo mexer, e a máquina fica na tua conta. Serve também pra treinar o teu time.</p>
   </div>
 </section>
 
-<!-- 2b · a máquina na prática -->
-<section id="pratica">
+<!-- 4 · como funciona -->
+<section class="como" id="como">
+  <div class="ct">
+    <div class="cab rv">
+      <span class="olho">Como funciona</span>
+      <h2>Dois encontros pra montar. Três meses pra acertar.</h2>
+    </div>
+    <div class="presencial-box">
+      <div class="sede rv"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><div><b>Porto Alegre</b><span>Av. Carlos Gomes, 1340, sala 904, Três Figueiras</span></div></div>
+      <div class="sede rv"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg><div><b>Lajeado</b><span>Rua Alberto Torres, 526, Centro</span></div></div>
+    </div>
+    <div class="como-grade">
+      <ol class="linha-tempo">
+        <li class="passo rv"><span class="bola">1</span><div><span class="tag">Encontro 1 · implantação</span><h3>Teu negócio, tua oferta, teu mercado</h3><p>A oferta fechada, a brecha que os concorrentes não pegam e o padrão visual da tua marca, tudo guardado na máquina.</p></div></li>
+        <li class="passo rv"><span class="bola">2</span><div><span class="tag">Encontro 2 · implantação</span><h3>As peças e a campanha no ar</h3><p>As primeiras peças com as fotos reais do teu negócio. A campanha sobe contigo olhando, e tu vê a primeira conversa chegar.</p></div></li>
+        <li class="passo mes rv"><span class="bola">3</span><div><span class="tag">Meses 1, 2 e 3 · acompanhamento</span><h3>Um encontro por mês</h3><p>Ler os números, ajustar com dado de verdade e sair com o plano dos próximos meses. Entre um e outro, grupo no WhatsApp com o time.</p></div></li>
+      </ol>
+      <div class="fotos-como">
+        <img class="rv" src="/black/midia/alunas-computador.webp" alt="Alunas no computador durante um encontro na sede da escola" width="900" height="1125" loading="lazy">
+        <img class="rv" src="/black/midia/aluna-encontro.webp" alt="Aluna conversando com o especialista na sala da escola" width="900" height="1125" loading="lazy">
+      </div>
+    </div>
+    <p class="nota rv">Tudo presencial, na sede que tu escolher. As datas são combinadas contigo.</p>
+  </div>
+</section>
+
+<!-- 5 · prova real -->
+<section id="prova">
   <div class="ct">
     <div class="cab centro rv">
-      <span class="olho">A IA na prática</span>
-      <h2>Tu grava no celular. <span class="grad">Ela deixa pronto pra anunciar.</span></h2>
-      <p class="lead">Um exemplo das nossas salas: o vídeo gravado no celular por uma dona de ótica, e o mesmo vídeo pronto pela máquina.</p>
+      <span class="olho">Feito de verdade</span>
+      <h2>Gravado no celular. <span class="grad">Rodando de verdade.</span></h2>
+      <p class="lead">O vídeo de uma dona de ótica antes e depois da IA, e anúncios de clientes da escola feitos com o que os donos gravaram.</p>
     </div>
     <div class="ad2 rv">
       <figure>
@@ -543,119 +507,7 @@ body.encerrada .fim-black{display:block}
         <figcaption><b>Depois</b>Pronto pela máquina: cortes, legenda e marca</figcaption>
       </figure>
     </div>
-    <div class="chips rv"><span class="chip">Corta as pausas</span><span class="chip">Legenda no tempo da fala</span><span class="chip">As tuas cores e a tua marca</span></div>
-  </div>
-</section>
-
-<!-- 3 · o que leva -->
-<section class="leva-sec" id="leva" style="padding-top:0">
-  <div class="ct">
-    <div class="cab rv">
-      <span class="olho">Tudo o que está incluso</span>
-      <h2>O marketing montado no teu negócio, e alguém do lado por três meses.</h2>
-    </div>
-    <div class="leva">
-      <article class="item rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><circle cx="17.5" cy="9" r="2.5"/><path d="M16 14.2a5 5 0 0 1 6 4.8"/></svg></span>
-        <div><h3>2 encontros de implantação</h3><p>Presenciais, um a um, com o especialista do teu lado. Só o teu negócio na mesa: não é curso e não é turma.</p></div>
-      </article>
-      <article class="item rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8M12 17v4"/><path d="M8 10.5l2.5 2.5L16 8"/></svg></span>
-        <div><h3>A tua máquina de IA</h3><p>Montada com o teu negócio dentro, na tua conta do Claude, pelo navegador. Depois dos três meses, ela continua tua.</p></div>
-      </article>
-      <article class="item rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11v3a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg></span>
-        <div><h3>A primeira campanha no ar</h3><p>Com as fotos e os vídeos reais do teu negócio. Antes de sair do encontro, tu clica no teu anúncio e vê a conversa chegar.</p></div>
-      </article>
-      <article class="item destaque largo rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/><path d="M8 15l2.5 2.5L16 13"/></svg></span>
-        <div style="flex:1;min-width:0"><h3>3 meses de acompanhamento</h3><p>Um encontro presencial por mês, até a estratégia acertar.</p>
-          <div class="meses">
-            <div><b>Mês 1</b><span>A leitura dos números: quantos chamaram, quanto custou cada conversa, o que virou venda.</span></div>
-            <div><b>Mês 2</b><span>O ajuste, com dado de verdade na mão.</span></div>
-            <div><b>Mês 3</b><span>O plano dos próximos meses, escrito, pra ti seguir tocando.</span></div>
-          </div>
-        </div>
-      </article>
-      <article class="item meio rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg></span>
-        <div><h3>Grupo no WhatsApp</h3><p>Entre um encontro e outro, um grupo com o time da escola pras tuas dúvidas.</p></div>
-      </article>
-      <article class="item meio rv">
-        <span class="n"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg></span>
-        <div><h3>Melhorias da máquina</h3><p>Durante os três meses, toda melhoria que a escola faz na máquina chega pra ti.</p></div>
-      </article>
-    </div>
-
-    <div class="maquina" style="margin-top:14px">
-      <div class="maq rv">
-        <span class="olho">Montado no encontro</span>
-        <ul>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>O contexto e o mercado:</b> o que tu faz diferente, o teu público e a brecha que os concorrentes não pegam.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A tua marca:</b> o padrão visual aprovado por ti, pra toda peça sair igual.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>O que responder no WhatsApp:</b> preço, prazo e “como funciona”, certos pro teu negócio.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>As ideias e o texto da página:</b> as ideias de conteúdo e o texto da tua página de oferta.</span></li>
-        </ul>
-      </div>
-      <div class="maq rv">
-        <span class="olho">Depois, tu pede sozinho</span>
-        <ul>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Artes e carrosséis</b> em cima das fotos reais do teu negócio, no teu padrão.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Roteiros e legendas</b> pros teus vídeos e posts, com a tua estratégia.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Os teus vídeos editados,</b> com cortes, legenda e marca.</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>O painel do mês e a campanha,</b> subindo e sendo ajustada.</span></li>
-        </ul>
-      </div>
-    </div>
-    <p class="nota rv"><b>Tem equipe?</b> Serve pra treinar o teu time também: quem vai tocar o marketing senta no encontro, e o conhecimento fica dentro de casa.</p>
-  </div>
-</section>
-
-<!-- 4 · como funciona -->
-<section class="como" id="como">
-  <div class="ct">
-    <div class="cab rv">
-      <span class="olho">Como funciona</span>
-      <h2>Cinco encontros cara a cara, do primeiro anúncio ao plano dos próximos meses.</h2>
-    </div>
-    <div class="presencial-box">
-      <div class="sede rv">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-        <div><b>Porto Alegre</b><span>Av. Carlos Gomes, 1340, sala 904, Três Figueiras</span></div>
-      </div>
-      <div class="sede rv">
-        <svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.1-7-11.5A7 7 0 0 1 19 9.5C19 14.9 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>
-        <div><b>Lajeado</b><span>Rua Alberto Torres, 526, Centro</span></div>
-      </div>
-    </div>
-    <div class="como-grade">
-      <ol class="linha-tempo">
-        <li class="passo rv"><span class="bola">01</span><div><span class="tag">Implantação · presencial</span><h3>O teu negócio, a tua oferta e o teu mercado</h3><p>A gente levanta o teu negócio, fecha a oferta, lê o mercado atrás da brecha que ninguém está dizendo e define o padrão visual da tua marca.</p><span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sai com a estratégia e o padrão da marca</span></div></li>
-        <li class="passo rv"><span class="bola">02</span><div><span class="tag">Implantação · presencial</span><h3>As peças e a campanha no ar</h3><p>As ideias de conteúdo, as primeiras peças feitas com as fotos reais do teu negócio, e a campanha sobe contigo olhando.</p><span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Sai com a máquina montada e a campanha no ar</span></div></li>
-        <li class="passo mes rv"><span class="bola">03</span><div><span class="tag">Mês 1 · presencial</span><h3>A leitura dos números</h3><p>O que aconteceu com a campanha: quantos chamaram, quanto custou cada conversa, o que virou venda.</p></div></li>
-        <li class="passo mes rv"><span class="bola">04</span><div><span class="tag">Mês 2 · presencial</span><h3>O ajuste</h3><p>Com dado de verdade na mão, o ajuste que faz a estratégia acertar.</p></div></li>
-        <li class="passo mes rv"><span class="bola">05</span><div><span class="tag">Mês 3 · presencial</span><h3>O plano dos próximos meses</h3><p>O fechamento, com o plano escrito, pra ti seguir tocando sozinho.</p></div></li>
-      </ol>
-      <div>
-        <div class="fotos-como">
-          <img class="rv" src="/black/midia/alunas-computador.webp" alt="Alunas no computador durante um encontro na sede da escola" width="900" height="1125" loading="lazy">
-          <img class="rv" src="/black/midia/aluna-encontro.webp" alt="Aluna conversando com o especialista na sala da escola" width="900" height="1125" loading="lazy">
-        </div>
-        <div class="wpp-grupo rv"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.5 8.5 0 0 1-12.6 7.4L3 20l1.2-5.1A8.5 8.5 0 1 1 21 11.5z"/></svg><span>Entre os encontros, um grupo de WhatsApp com o time da escola. A data de cada encontro é combinada contigo.</span></div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 5 · prova real -->
-<section id="prova">
-  <div class="ct">
-    <div class="cab rv">
-      <span class="olho">Anúncios reais</span>
-      <h2>Feitos com vídeo de celular. Rodando de verdade.</h2>
-      <p class="lead">Brindes, seguros, embalagens, ótica, escolinha de esporte e cursos: clientes da escola anunciando com os vídeos e as fotos que os próprios donos gravaram.</p>
-    </div>
-    <div class="ads">
+    <div class="ads" style="margin-top:28px">
       <article class="ad rv"><div class="ad-top"><i></i><div><b>Wood · Segatto</b><small>Patrocinado</small></div></div><video data-src="/maia/vid/wood.mp4" poster="/maia/vid/wood.jpg" muted loop playsinline preload="none" aria-label="Anúncio em vídeo da Wood"></video><div class="ad-cta">Brindes personalizados</div></article>
       <article class="ad rv"><div class="ad-top"><i></i><div><b>Gaja Corretora</b><small>Patrocinado</small></div></div><video data-src="/maia/vid/gaja.mp4" poster="/maia/vid/gaja.jpg" muted loop playsinline preload="none" aria-label="Anúncio em vídeo da Gaja Corretora"></video><div class="ad-cta">Seguros</div></article>
       <article class="ad rv"><div class="ad-top"><i></i><div><b>Mundo do Papelão</b><small>Patrocinado</small></div></div><video data-src="/maia/vid/papelao.mp4" poster="/maia/vid/papelao.jpg" muted loop playsinline preload="none" aria-label="Anúncio em vídeo do Mundo do Papelão"></video><div class="ad-cta">Embalagens</div></article>
@@ -670,7 +522,7 @@ body.encerrada .fim-black{display:block}
         <span class="olho">Quem conduz a implantação</span>
         <h3 style="margin-top:8px">Guto Wickert</h3>
         <p>Dezesseis anos de empresa física antes do digital: vendeu uma, quebrou outra. Por isso olha o negócio pelo caixa, não pela curtida.</p>
-        <p>Idealizador da Carreira no Digital, com sedes em Lajeado e Porto Alegre. É quem conduz cada implantação do Deu Venda.</p>
+        <p>Idealizador da Carreira no Digital. É quem conduz cada implantação do Deu Venda.</p>
         <div class="nums">
           <div><b>+500</b><span>alunos no primeiro ano da escola</span></div>
           <div><b>+1.000</b><span>anúncios testados</span></div>
@@ -686,7 +538,7 @@ body.encerrada .fim-black{display:block}
 <div class="marca-black" role="note">
   <div class="ct">
     <span class="palavra" aria-hidden="true">BLACK</span>
-    <p><b>30% de desconto e só 10 vagas de implantação na Black, até domingo, 29/11, às 23h59.</b> A implantação de marketing com IA, presencial em Porto Alegre ou Lajeado, com R$ 900 a menos.</p>
+    <p><b>30% OFF e só 10 vagas de implantação.</b> Até domingo, 29/11, às 23h59.</p>
   </div>
 </div>
 
@@ -695,7 +547,7 @@ body.encerrada .fim-black{display:block}
   <div class="ct">
     <div class="cab centro rv">
       <span class="olho">A Black</span>
-      <h2>Tudo isso com 30% de desconto, <span class="grad">só 10 vagas até 29/11.</span></h2>
+      <h2>Com 30% de desconto, <span class="grad">só até 29/11.</span></h2>
     </div>
     <div class="card-of rv">
       <div class="topo-of">
@@ -711,14 +563,11 @@ body.encerrada .fim-black{display:block}
         <h3>Implantação de marketing com IA no teu negócio</h3>
         <p style="color:var(--mu);font-size:15px;margin-top:4px">Deu Venda individual · presencial em Porto Alegre ou Lajeado</p>
         <ul class="inclui">
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Gestão de tráfego direto no Claude:</b> tu sobe e ajusta as campanhas conversando com a IA</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Edição de vídeo direto no Claude:</b> grava no celular e a IA edita</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Um mês de conteúdo em lote,</b> só pedindo pra IA, com as fotos reais do teu negócio</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>2 encontros de implantação,</b> um a um e presenciais</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina de IA</b> com o teu negócio dentro, que continua tua</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A primeira campanha no ar</b> no encontro, contigo olhando</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>3 meses de acompanhamento,</b> um encontro presencial por mês</span></li>
-          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Grupo no WhatsApp</b> com o time da escola entre os encontros</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>As três coisas direto no Claude:</b> tráfego, vídeo e o conteúdo do mês</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>2 encontros de implantação,</b> com a campanha no ar</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>3 meses de acompanhamento,</b> um encontro por mês</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina na tua conta,</b> que continua tua</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Grupo no WhatsApp</b> com o time da escola</span></li>
         </ul>
         <div class="preco">
           <p class="de">De <s>R$ 2.997</s></p>
@@ -743,7 +592,7 @@ body.encerrada .fim-black{display:block}
           </div>
         </div>
         <p class="fim-black">A Black terminou em 29/11. Chama a escola no WhatsApp pra saber o valor de agora.</p>
-        <p class="fora"><b>Fora do valor:</b> a verba de anúncio (é tua e vai direto pra Meta), a conta do Claude (é tua), domínio e hospedagem se tu for ter página própria, e o sistema de atendimento.</p>
+        <p class="fora"><b>Fora do valor:</b> a verba de anúncio e a conta do Claude, que são tuas.</p>
       </div>
     </div>
   </div>
@@ -753,22 +602,16 @@ body.encerrada .fim-black{display:block}
 <section id="duvidas" style="padding-top:24px">
   <div class="ct">
     <div class="cab centro rv">
-      <span class="olho">Dúvidas comuns</span>
+      <span class="olho">Dúvidas</span>
       <h2>Antes de chamar no WhatsApp</h2>
     </div>
     <div class="faq">
-      <details class="rv"><summary>É curso? É turma?</summary><p>Não. É um a um: só o teu negócio na mesa, com o especialista do teu lado. São 2 encontros de implantação e mais 3 encontros de acompanhamento, um por mês.</p></details>
-      <details class="rv"><summary>Onde são os encontros?</summary><p>Presenciais, na sede da escola. Tu escolhe: Porto Alegre (Av. Carlos Gomes, 1340, sala 904, Três Figueiras) ou Lajeado (Rua Alberto Torres, 526, Centro).</p></details>
-      <details class="rv"><summary>Moro em outra cidade do RS. Dá pra fazer?</summary><p>Dá, desde que tu venha até a sede. Os encontros são presenciais, em Porto Alegre ou em Lajeado: tu escolhe a que fica melhor pra ti.</p></details>
-      <details class="rv"><summary>Quando são os encontros? Não tenho muito tempo.</summary><p>A data de cada encontro é combinada contigo. São 2 encontros de implantação e, depois, um encontro por mês durante três meses.</p></details>
-      <details class="rv"><summary>O que eu preciso ter pra começar?</summary><p>Saber o que tu vende e por quanto; verba pra anúncio; um WhatsApp que receba os contatos; e a conta de anúncio da Meta com forma de pagamento aprovada, com a página do Facebook e o Instagram conectados.</p><p>A aprovação da conta da Meta leva dias. A gente te manda o passo a passo antes do primeiro encontro.</p></details>
-      <details class="rv"><summary>Como eu pago?</summary><p>R$ 2.097 no Pix, à vista, ou 5x de R$ 419,40 sem juros no cartão. Os 3 meses de acompanhamento estão inclusos nas duas formas.</p></details>
-      <details class="rv"><summary>O que não está no valor?</summary><p>A verba de anúncio, que é tua e vai direto pra Meta. A conta do Claude, onde a máquina roda, que também é tua. Domínio e hospedagem, se tu for ter página própria. E o sistema de atendimento da escola, que é outro produto.</p></details>
-      <details class="rv"><summary>A escola faz tudo por mim?</summary><p>Não. A escola monta contigo, ensina e acompanha. Quem opera o dia a dia é tu (ou o teu time). Se tu quer que façam tudo sem participar, esse não é o produto certo.</p></details>
-      <details class="rv"><summary>Tenho equipe. Serve pra ela?</summary><p>Serve. Quem vai tocar o marketing senta no encontro e aprende a usar a máquina. O conhecimento fica dentro de casa.</p></details>
-      <details class="rv"><summary>Vocês garantem um número de vendas?</summary><p>Não. A escola ensina o método e acompanha por três meses, e não garante volume de venda. O que tu leva é o negócio mapeado, o padrão da marca, as primeiras peças, a campanha no ar e o acompanhamento até a estratégia acertar.</p></details>
-      <details class="rv"><summary>E depois dos três meses?</summary><p>A máquina continua tua, na tua conta, com o teu negócio dentro. No último encontro tu sai com o plano dos próximos meses escrito.</p></details>
-      <details class="rv"><summary>Até quando vale a Black?</summary><p>São só 10 vagas de implantação na Black, até domingo, 29/11, às 23h59 (horário de Brasília). Se as 10 vagas fecharem antes, a Black acaba antes. Depois disso o valor volta pra R$ 2.997.</p></details>
+      <details class="rv"><summary>O que eu preciso ter pra começar?</summary><p>Saber o que tu vende e por quanto, verba pra anúncio, um WhatsApp que receba os contatos e a conta de anúncio da Meta com pagamento aprovado. A aprovação leva dias: a gente manda o passo a passo antes.</p></details>
+      <details class="rv"><summary>O que não está no valor?</summary><p>A verba de anúncio (vai direto pra Meta) e a conta do Claude, que são tuas. Também domínio e hospedagem, se tu for ter página própria, e o sistema de atendimento da escola.</p></details>
+      <details class="rv"><summary>A escola faz tudo por mim?</summary><p>Não. A escola monta contigo, ensina e acompanha. Quem opera o dia a dia é tu ou o teu time.</p></details>
+      <details class="rv"><summary>Vocês garantem vendas?</summary><p>Não. A escola ensina o método e acompanha por três meses, sem prometer número de vendas.</p></details>
+      <details class="rv"><summary>E depois dos três meses?</summary><p>A máquina segue na tua conta, com o teu negócio dentro, e tu sai com o plano dos próximos meses escrito.</p></details>
+      <details class="rv"><summary>Até quando vale a Black?</summary><p>Até domingo, 29/11, às 23h59, ou até fecharem as 10 vagas, o que vier primeiro. Depois o valor volta pra R$ 2.997.</p></details>
     </div>
   </div>
 </section>
@@ -779,9 +622,9 @@ body.encerrada .fim-black{display:block}
     <div class="final-card rv">
       <img src="/black/midia/sala-cerebro.webp" alt="Encontro de implantação na sala da escola" width="900" height="1125" loading="lazy">
       <div class="tx">
-        <span class="olho">Última chamada, tchê</span>
-        <h2 style="margin-top:10px">O marketing montado no teu negócio, com alguém do lado.</h2>
-        <p class="lead">Chama a escola no WhatsApp, tira as tuas dúvidas e a gente vê se faz sentido pro teu negócio. Sem enrolação, de gaúcho pra gaúcho. <b>Só 10 vagas de implantação na Black, até 29/11.</b></p>
+        <span class="olho">Bah, é até domingo</span>
+        <h2 style="margin-top:10px">Escolhe a tua sede e chama no WhatsApp.</h2>
+        <p class="lead">De gaúcho pra gaúcho, sem enrolação. <b>Só 10 vagas, até 29/11.</b></p>
         <div class="cidades">
           <a class="cid" href="https://wa.me/5551995054548?text=Quero%20a%20Black%20do%20Deu%20Venda%20em%20Porto%20Alegre." data-cta data-turma="deuvendaportoalegre" data-msg="Quero a Black do Deu Venda em Porto Alegre.">
             <span><small>Quero a Black em</small><b>Porto Alegre</b></span>
