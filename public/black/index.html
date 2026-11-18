@@ -12,9 +12,9 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',conte
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Black · Implantação de marketing com IA</title>
-<meta name="description" content="Black da Carreira no Digital, 30% de desconto e só 10 vagas: implantação de marketing com IA no teu negócio, um a um e presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097, só até 29/11.">
+<meta name="description" content="Black da Carreira no Digital, 30% de desconto e só 10 vagas: implantação de marketing com IA no teu negócio, um a um e presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097 no Pix ou 5x de R$ 419,40 sem juros no cartão, só até 29/11.">
 <meta property="og:title" content="Black · Implantação de marketing com IA no teu negócio">
-<meta property="og:description" content="Um a um, presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097 até 29/11.">
+<meta property="og:description" content="Um a um, presencial em Porto Alegre ou Lajeado, com 3 meses de acompanhamento. De R$ 2.997 por R$ 2.097 no Pix ou 5x de R$ 419,40 sem juros, até 29/11.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="/black/midia/implantacao-sala-azul.webp">
 <meta name="theme-color" content="#f7f5fc">
@@ -119,6 +119,18 @@ section{padding-block:72px}
 .foto-abre img{width:100%;height:100%;object-fit:cover}
 .foto-abre figcaption{position:absolute;left:12px;right:12px;bottom:12px;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);border-radius:14px;padding:10px 14px;font-size:14px;font-weight:700;color:var(--tx);display:flex;gap:10px;align-items:center}
 .foto-abre figcaption .ico{color:var(--ok)}
+
+/* as três entregas */
+.tres{padding-top:8px;padding-bottom:40px}
+.tres-grade{display:grid;gap:12px}
+.t3{position:relative;overflow:hidden;background:var(--s1);border:1px solid var(--ac-ln);border-radius:24px;padding:22px 20px;box-shadow:0 24px 50px -30px rgba(124,58,237,.55);display:flex;flex-direction:column}
+.t3::before{content:"";position:absolute;width:260px;height:260px;border-radius:50%;right:-120px;top:-130px;background:radial-gradient(circle,rgba(167,139,250,.35),transparent 65%);pointer-events:none}
+.t3-n{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:44px;line-height:1;background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.t3 h3{font-size:26px;margin-top:10px}
+.t3 p{font-size:16px;color:var(--tx2);margin-top:8px;flex:1}
+.t3-ex{margin-top:16px;background:var(--ac-bg);border-radius:14px 14px 14px 4px;padding:10px 14px;font-size:14.5px;font-weight:600;color:var(--tx)}
+.t3-ex small{display:block;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac);margin-bottom:2px}
+@media (min-width:880px){.tres-grade{grid-template-columns:repeat(3,1fr);gap:16px}}
 
 /* o que é */
 .oque{padding-top:8px}
@@ -399,6 +411,37 @@ body.encerrada .fim-black{display:block}
   </div>
 </section>
 
+<!-- 1a · as três entregas mais fortes -->
+<section class="tres" id="tres">
+  <div class="ct">
+    <div class="cab rv">
+      <span class="olho">O que tu leva</span>
+      <h2>Três coisas que tu passa a fazer <span class="grad">direto no Claude.</span></h2>
+      <p class="lead">O Claude é a IA onde a tua máquina fica montada. Tu conversa com ela, em português, e ela faz.</p>
+    </div>
+    <div class="tres-grade">
+      <article class="t3 rv">
+        <span class="t3-n">01</span>
+        <h3>Gestão de tráfego</h3>
+        <p>Tu sobe, acompanha e ajusta as tuas campanhas da Meta conversando com a IA. Sem precisar de gestor.</p>
+        <div class="t3-ex"><small>Tu pede</small>“Como foram os anúncios essa semana? O que eu ajusto?”</div>
+      </article>
+      <article class="t3 rv">
+        <span class="t3-n">02</span>
+        <h3>Edição de vídeo</h3>
+        <p>Tu grava no celular e a IA edita: corta as pausas, põe legenda e a tua marca.</p>
+        <div class="t3-ex"><small>Tu pede</small>“Edita esse vídeo pro anúncio, com legenda e as minhas cores.”</div>
+      </article>
+      <article class="t3 rv">
+        <span class="t3-n">03</span>
+        <h3>Um mês de conteúdo em lote</h3>
+        <p>Tu entrega as fotos e os vídeos reais do teu negócio, e a IA produz o mês inteiro: posts, artes, carrosséis, roteiros e legendas.</p>
+        <div class="t3-ex"><small>Tu pede</small>“Monta o conteúdo do mês com essas fotos.”</div>
+      </article>
+    </div>
+  </div>
+</section>
+
 <!-- 1b · o que é o Deu Venda -->
 <section class="oque" id="oque">
   <div class="ct">
@@ -508,7 +551,7 @@ body.encerrada .fim-black{display:block}
 <section class="leva-sec" id="leva" style="padding-top:0">
   <div class="ct">
     <div class="cab rv">
-      <span class="olho">O que tu leva</span>
+      <span class="olho">Tudo o que está incluso</span>
       <h2>O marketing montado no teu negócio, e alguém do lado por três meses.</h2>
     </div>
     <div class="leva">
@@ -668,6 +711,9 @@ body.encerrada .fim-black{display:block}
         <h3>Implantação de marketing com IA no teu negócio</h3>
         <p style="color:var(--mu);font-size:15px;margin-top:4px">Deu Venda individual · presencial em Porto Alegre ou Lajeado</p>
         <ul class="inclui">
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Gestão de tráfego direto no Claude:</b> tu sobe e ajusta as campanhas conversando com a IA</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Edição de vídeo direto no Claude:</b> grava no celular e a IA edita</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Um mês de conteúdo em lote,</b> só pedindo pra IA, com as fotos reais do teu negócio</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>2 encontros de implantação,</b> um a um e presenciais</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A máquina de IA</b> com o teu negócio dentro, que continua tua</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>A primeira campanha no ar</b> no encontro, contigo olhando</span></li>
@@ -676,8 +722,8 @@ body.encerrada .fim-black{display:block}
         </ul>
         <div class="preco">
           <p class="de">De <s>R$ 2.997</s></p>
-          <p class="por"><small>por</small><b>R$ 2.097</b></p>
-          <p class="parc">ou <b>5x de R$ 419,40</b> sem juros</p>
+          <p class="por"><small>por</small><b>R$ 2.097</b><small>no Pix</small></p>
+          <p class="parc">ou <b>5x de R$ 419,40 sem juros</b> no cartão</p>
           <span class="economia"><svg class="ico" style="width:18px;height:18px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>30% de desconto: R$ 900 a menos</span>
           <p class="vagas"><b>Só 10 vagas de implantação na Black.</b> Até 29/11, às 23h59.</p>
         </div>
@@ -716,6 +762,7 @@ body.encerrada .fim-black{display:block}
       <details class="rv"><summary>Moro em outra cidade do RS. Dá pra fazer?</summary><p>Dá, desde que tu venha até a sede. Os encontros são presenciais, em Porto Alegre ou em Lajeado: tu escolhe a que fica melhor pra ti.</p></details>
       <details class="rv"><summary>Quando são os encontros? Não tenho muito tempo.</summary><p>A data de cada encontro é combinada contigo. São 2 encontros de implantação e, depois, um encontro por mês durante três meses.</p></details>
       <details class="rv"><summary>O que eu preciso ter pra começar?</summary><p>Saber o que tu vende e por quanto; verba pra anúncio; um WhatsApp que receba os contatos; e a conta de anúncio da Meta com forma de pagamento aprovada, com a página do Facebook e o Instagram conectados.</p><p>A aprovação da conta da Meta leva dias. A gente te manda o passo a passo antes do primeiro encontro.</p></details>
+      <details class="rv"><summary>Como eu pago?</summary><p>R$ 2.097 no Pix, à vista, ou 5x de R$ 419,40 sem juros no cartão. Os 3 meses de acompanhamento estão inclusos nas duas formas.</p></details>
       <details class="rv"><summary>O que não está no valor?</summary><p>A verba de anúncio, que é tua e vai direto pra Meta. A conta do Claude, onde a máquina roda, que também é tua. Domínio e hospedagem, se tu for ter página própria. E o sistema de atendimento da escola, que é outro produto.</p></details>
       <details class="rv"><summary>A escola faz tudo por mim?</summary><p>Não. A escola monta contigo, ensina e acompanha. Quem opera o dia a dia é tu (ou o teu time). Se tu quer que façam tudo sem participar, esse não é o produto certo.</p></details>
       <details class="rv"><summary>Tenho equipe. Serve pra ela?</summary><p>Serve. Quem vai tocar o marketing senta no encontro e aprende a usar a máquina. O conhecimento fica dentro de casa.</p></details>
@@ -755,7 +802,7 @@ body.encerrada .fim-black{display:block}
 <footer class="rodape"><div class="ct">Carreira no Digital · Implantação de marketing com IA · presencial em Porto Alegre e Lajeado</div></footer>
 
 <div class="barra" id="barra">
-  <div class="q"><b>Black 30% OFF · 10 vagas</b><span data-rel-curto>até 29/11, às 23h59</span></div>
+  <div class="q"><b>30% OFF · R$ 2.097 no Pix</b><span data-rel-curto>até 29/11, às 23h59</span></div>
   <a class="btn" href="#oferta">Quero a Black</a>
 </div>
 
