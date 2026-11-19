@@ -104,6 +104,11 @@ const nextConfig: NextConfig = {
         { source: '/maia/painel', destination: '/maia/painel/index.html' },
         // 13/11: o relatório do mês do dono (abre pelo link que vai no WhatsApp; lib/maia/relatorios.ts)
         { source: '/maia/relatorio', destination: '/maia/relatorio/index.html' },
+        // 18/11: as páginas de venda da Maia por nicho (venda online, Brasil todo). Os botões vão pelo /wa com a mensagem do nicho
+        { source: '/maia/:n(oficinas|serralheria|estetica-automotiva)', destination: '/maia/nichos/:n/index.html' },
+        { source: '/maia/:n(oficinas|serralheria|estetica-automotiva)/', destination: '/maia/nichos/:n/index.html' },
+        { source: '/maia/oficina', destination: '/maia/nichos/oficinas/index.html' },
+        { source: '/maia/estetica', destination: '/maia/nichos/estetica-automotiva/index.html' },
         // 21/10: curso Vídeo com IA (porta de entrada, R$ 497), prévia
         { source: '/videocomia', destination: '/imersao/video-com-ia.html' },
         // 17/11: a Black do Deu Venda individual (até 29/11), página de venda própria
