@@ -109,6 +109,9 @@ const nextConfig: NextConfig = {
         // 17/11: a Black do Deu Venda individual (até 29/11), página de venda própria
         { source: '/black', destination: '/black/index.html' },
         { source: '/black/', destination: '/black/index.html' },
+        // 19/11: o quiz "Qual é a nota de IA do teu negócio?" (captação, lado a lado com o anúncio direto pro WhatsApp)
+        { source: '/nota-ia', destination: '/nota-ia/index.html' },
+        { source: '/nota-ia/', destination: '/nota-ia/index.html' },
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
         { source: '/rastro', destination: '/rastro/index.html' },
         { source: '/rastro/', destination: '/rastro/index.html' },

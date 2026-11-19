@@ -1,0 +1,536 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Nota de IA do teu negócio</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Em 2 minutos: a nota de IA do teu negócio de 0 a 100, quanto tempo e venda estão escapando por mês e as 3 maiores oportunidades. Da Carreira no Digital, escola de IA pra negócios de Lajeado e Porto Alegre.">
+<meta name="theme-color" content="#f7f5fc">
+<meta property="og:title" content="Qual é a nota de IA do teu negócio?">
+<meta property="og:description" content="12 perguntas rápidas. Tu recebe a nota, quanto está escapando por mês e por onde começar.">
+<meta property="og:image" content="/novo-site/midia/guto-implantacao.webp">
+<link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png"><link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+<!-- FONTES-PREVIA -->
+<style>
+/* Quiz da nota de IA (19/11): a mesma família do site da escola e da Maia. Fundo lilás claro sempre, cartão branco,
+   roxo da escola, Bricolage condensada nos títulos e números, Manrope no texto. Tela única que troca de passo; mobile primeiro. */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+:root{
+  --bg:#f7f5fc; --s1:#ffffff; --s2:#f3f0fa; --ln:#e6e0f2;
+  --tx:#1b1530; --tx2:#423a5c; --mu:#6b6485; --ac:#7c3aed; --ac2:#6d28d9; --ac-bg:#f1ebfe; --ac-line:#c4b5fd;
+  --verde:#15803d; --verde-bg:#dcfce7; --ambar:#b45309; --ambar-bg:#fef3c7; --verm:#b91c1c; --verm-bg:#fee2e2;
+  --wa:#1fa855; --wa-bolha:#d9fdd3; --wa-fundo:#efeae2;
+  --f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-tx);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:31;background:var(--bg)}
+h1,h2,h3,.dis{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 86;letter-spacing:-.03em;line-height:1.05;text-wrap:balance}
+img{display:block;max-width:100%;height:auto}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
+.ct{width:100%;max-width:600px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+.ct.larga{max-width:720px}
+
+/* topo */
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:30;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}
+.topo .ct{display:flex;align-items:center;gap:12px;min-height:58px}
+.marca{display:flex;align-items:center;gap:9px;font-family:var(--f-dis);font-weight:800;font-size:17px;letter-spacing:-.02em;text-decoration:none;color:var(--tx);white-space:nowrap}
+.marca img{width:30px;height:30px;border-radius:8px}
+.marca span{color:var(--ac)}
+.voltar{margin-left:auto;display:inline-flex;align-items:center;gap:6px;background:none;border:0;font-size:14px;font-weight:700;color:var(--mu);padding:8px 4px;min-height:44px}
+.voltar svg{width:18px;height:18px}
+.prog{height:6px;background:var(--ln);border-radius:999px;overflow:hidden}
+.prog i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--ac),#c026d3);border-radius:999px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+.prog-txt{display:flex;justify-content:space-between;font-size:13px;font-weight:700;color:var(--mu);margin-top:8px}
+
+/* telas */
+main{padding-bottom:calc(40px + env(safe-area-inset-bottom,0px))}
+.tela{animation:entra .38s cubic-bezier(.2,.8,.2,1) both}
+@keyframes entra{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.olho{font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.lead{color:var(--mu);font-size:17.5px;max-width:52ch}
+.lead b{color:var(--tx)}
+
+/* abertura */
+.abre{display:grid;gap:22px;padding-block:18px 8px}
+.abre h1{font-size:clamp(38px,9.6vw,58px)}
+.abre h1 em{font-style:normal;color:var(--ac)}
+.foto{position:relative;border-radius:16px;overflow:hidden;background:var(--s2)}
+.foto img{width:100%;aspect-ratio:4/3;object-fit:cover;object-position:50% 30%}
+.selo{position:absolute;left:12px;bottom:12px;display:inline-flex;align-items:center;gap:7px;background:var(--s1);color:var(--tx);font-size:12.5px;font-weight:800;padding:7px 12px;border-radius:999px;box-shadow:0 6px 18px rgba(27,21,48,.14)}
+.selo i{width:8px;height:8px;border-radius:50%;background:var(--wa)}
+.ganhos{display:grid;gap:10px;list-style:none}
+.ganhos li{display:flex;gap:12px;align-items:flex-start;background:var(--s1);border:1px solid var(--ln);border-radius:14px;padding:13px 14px}
+.ganhos b{display:block;font-size:16px}
+.ganhos span{font-size:14.5px;color:var(--mu)}
+.ganhos .n{flex:none;width:34px;height:34px;border-radius:10px;background:var(--ac-bg);color:var(--ac2);display:grid;place-items:center;font-family:var(--f-dis);font-weight:800;font-size:15px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:58px;padding:0 24px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:17.5px;border:0;text-decoration:none;box-shadow:0 12px 28px rgba(124,58,237,.28);transition:transform .15s,filter .15s}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:scale(.985)}
+.btn[disabled]{opacity:.6;cursor:wait}
+.btn svg{width:22px;height:22px;flex:none}
+.btn.wa{background:var(--wa);box-shadow:0 12px 28px rgba(31,168,85,.28)}
+.miudo{font-size:13.5px;color:var(--mu);text-align:center}
+
+/* pergunta */
+.perg{display:grid;gap:18px;padding-block:22px 10px}
+.perg h2{font-size:clamp(28px,7.4vw,40px)}
+.dica{font-size:15px;color:var(--mu);margin-top:-8px}
+.ops{display:grid;gap:10px}
+.op{display:flex;align-items:center;gap:14px;width:100%;text-align:left;min-height:62px;padding:14px 16px;background:var(--s1);border:1.5px solid var(--ln);border-radius:14px;font-size:17px;font-weight:700;transition:border-color .15s,background .15s,transform .12s}
+.op:hover{border-color:var(--ac-line)}
+.op:active{transform:scale(.99)}
+.op small{display:block;font-weight:600;font-size:14px;color:var(--mu);margin-top:2px}
+.op .mk{flex:none;width:24px;height:24px;border-radius:50%;border:2px solid var(--ac-line);display:grid;place-items:center;transition:all .15s}
+.op.multi .mk{border-radius:7px}
+.op .mk svg{width:14px;height:14px;opacity:0;color:#fff}
+.op[aria-pressed="true"]{border-color:var(--ac);background:var(--ac-bg)}
+.op[aria-pressed="true"] .mk{background:var(--ac);border-color:var(--ac)}
+.op[aria-pressed="true"] .mk svg{opacity:1}
+
+/* contato */
+.form{display:grid;gap:14px}
+.campo{display:grid;gap:6px}
+.campo label{font-size:14.5px;font-weight:800}
+.campo input{width:100%;min-height:56px;padding:0 16px;border:1.5px solid var(--ln);border-radius:14px;background:var(--s1);font:inherit;font-size:18px;color:var(--tx)}
+.campo input:focus{outline:none;border-color:var(--ac);box-shadow:0 0 0 4px var(--ac-bg)}
+.erro{color:var(--verm);font-size:14.5px;font-weight:700;min-height:1px}
+.trava{display:grid;gap:8px;list-style:none;background:var(--s1);border:1px solid var(--ln);border-radius:14px;padding:14px 16px}
+.trava li{display:flex;gap:10px;align-items:center;font-size:15px;font-weight:700}
+.trava svg{width:18px;height:18px;color:var(--ac);flex:none}
+
+/* calculando */
+.calc{display:grid;gap:22px;padding-block:60px;justify-items:center;text-align:center}
+.roda{width:62px;height:62px;border-radius:50%;border:5px solid var(--ac-bg);border-top-color:var(--ac);animation:gira .9s linear infinite}
+@keyframes gira{to{transform:rotate(360deg)}}
+.passos{display:grid;gap:10px;list-style:none;text-align:left}
+.passos li{display:flex;gap:10px;align-items:center;font-weight:700;color:var(--mu);transition:color .3s}
+.passos li i{width:20px;height:20px;border-radius:50%;border:2px solid var(--ln);flex:none;transition:all .3s}
+.passos li.ok{color:var(--tx)}
+.passos li.ok i{background:var(--verde);border-color:var(--verde)}
+
+/* resultado */
+.res{display:grid;gap:18px;padding-block:18px}
+.bloco{background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:20px 18px;display:grid;gap:14px;min-width:0}
+.bloco h2{font-size:clamp(24px,6.2vw,32px)}
+.notaTopo{display:grid;gap:6px}
+.notaTopo p{font-weight:700;color:var(--mu)}
+.notaLinha{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.notaNum{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 80;font-size:clamp(96px,28vw,140px);line-height:.85;letter-spacing:-.05em;color:var(--ac2);font-variant-numeric:tabular-nums}
+.notaNum small{font-size:.28em;color:var(--mu);letter-spacing:0;margin-left:4px}
+.chip{display:inline-flex;align-items:center;gap:6px;font-size:14px;font-weight:800;padding:7px 13px;border-radius:999px;margin-bottom:10px}
+.chip.comecando{background:var(--verm-bg);color:var(--verm)}
+.chip.no_caminho{background:var(--ambar-bg);color:var(--ambar)}
+.chip.na_frente{background:var(--verde-bg);color:var(--verde)}
+.regua{position:relative;padding-top:30px}
+.regua .faixas{display:grid;grid-template-columns:40fr 30fr 30fr;gap:3px;height:12px}
+.regua .faixas i{border-radius:4px;background:var(--s2)}
+.regua .faixas i:nth-child(1){background:#fde2e2}.regua .faixas i:nth-child(2){background:#fdeccb}.regua .faixas i:nth-child(3){background:#d6f5e0}
+.regua .rot{display:grid;grid-template-columns:40fr 30fr 30fr;gap:3px;font-size:12px;font-weight:700;color:var(--mu);margin-top:6px}
+.marc{position:absolute;top:0;transform:translateX(-50%);display:grid;justify-items:center;gap:2px;font-size:12px;font-weight:800;white-space:nowrap;transition:left 1.2s cubic-bezier(.2,.8,.2,1)}
+.marc::after{content:"";width:3px;height:18px;border-radius:2px;background:currentColor}
+.marc.tu{color:var(--ac2)}
+.marc.ref{color:var(--mu);top:2px}
+.marc.ref::after{height:14px;width:2px}
+.comp{font-size:15.5px;color:var(--tx2)}
+.partes{display:grid;gap:11px}
+.parte{display:grid;grid-template-columns:110px 1fr 46px;align-items:center;gap:10px;font-size:14.5px;font-weight:700}
+.parte .tr{height:10px;background:var(--s2);border-radius:999px;overflow:hidden}
+.parte .tr i{display:block;height:100%;width:0;border-radius:999px;background:var(--ac);transition:width 1s cubic-bezier(.2,.8,.2,1)}
+.parte .tr i.baixo{background:#e11d48}.parte .tr i.medio{background:#d97706}.parte .tr i.alto{background:var(--verde)}
+.parte span:last-child{text-align:right;color:var(--mu);font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stat{background:var(--s2);border-radius:14px;padding:14px;display:grid;gap:4px;min-width:0}
+.stat b{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 82;font-size:clamp(34px,9vw,46px);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat span{font-size:14px;color:var(--mu);font-weight:600}
+.stat.din b{color:var(--verm)}
+details{border-top:1px solid var(--ln);padding-top:12px}
+summary{font-weight:800;font-size:15px;color:var(--ac2);cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;min-height:36px}
+summary::-webkit-details-marker{display:none}
+summary::before{content:"+";display:inline-grid;place-items:center;width:20px;height:20px;border-radius:6px;background:var(--ac-bg)}
+details[open] summary::before{content:"−"}
+.contas{list-style:none;display:grid;gap:9px;margin-top:10px;font-size:14.5px;color:var(--tx2)}
+.contas li{padding-left:14px;position:relative}
+.contas li::before{content:"";position:absolute;left:0;top:.62em;width:6px;height:6px;border-radius:50%;background:var(--ac-line)}
+.ops3{display:grid;gap:12px}
+.opc{display:grid;grid-template-columns:40px 1fr;gap:12px;padding:16px 14px;border:1px solid var(--ln);border-radius:14px;background:var(--s1);animation:entra .5s cubic-bezier(.2,.8,.2,1) both}
+.opc .r{width:40px;height:40px;border-radius:12px;background:var(--ac-bg);color:var(--ac2);display:grid;place-items:center;font-family:var(--f-dis);font-weight:800;font-size:20px}
+.opc:first-child .r{background:var(--ac);color:#fff}
+.opc h3{font-size:21px;margin-bottom:6px}
+.opc p{font-size:15px;color:var(--tx2)}
+.opc .ia{margin-top:8px;font-size:15px;color:var(--tx)}
+.opc .ia b{color:var(--verde)}
+.cam{display:grid;gap:14px}
+.cam .cab{display:grid;grid-template-columns:1fr 92px;gap:14px;align-items:center}
+.cam .cab img{width:92px;height:92px;border-radius:14px;object-fit:cover}
+.cam h3{font-size:clamp(30px,8vw,40px);color:var(--ac2)}
+.cam .tipo{font-size:13px;font-weight:800;color:var(--mu);margin-bottom:4px}
+.pq{background:var(--ac-bg);border-radius:12px;padding:12px 14px;font-size:15.5px}
+.pq b{color:var(--ac2)}
+.inclui{list-style:none;display:grid;gap:9px}
+.inclui li{display:flex;gap:10px;font-size:15.5px}
+.inclui svg{width:20px;height:20px;flex:none;color:var(--verde);margin-top:2px}
+.comple{border:1.5px dashed var(--ac-line);border-radius:12px;padding:12px 14px;font-size:15px;color:var(--tx2)}
+.comple b{color:var(--tx)}
+.valor{font-size:14.5px;color:var(--mu)}
+.valor b{color:var(--tx)}
+.chat{background:var(--wa-fundo);border-radius:14px;padding:14px}
+.bolha{background:var(--wa-bolha);border-radius:12px 12px 4px 12px;padding:10px 12px;font-size:15px;margin-left:auto;max-width:92%;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.escola{display:grid;grid-template-columns:72px 1fr;gap:12px;align-items:center;font-size:14.5px;color:var(--tx2)}
+.escola img{width:72px;height:72px;border-radius:12px;object-fit:cover}
+.fontes{font-size:12.5px;color:var(--mu);display:grid;gap:6px}
+.barraWa{position:fixed;left:0;right:0;bottom:0;z-index:40;background:color-mix(in srgb,var(--s1) 92%,transparent);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border-top:1px solid var(--ln);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));transform:translateY(110%);transition:transform .3s}
+.barraWa.on{transform:none}
+.barraWa .btn{max-width:568px;margin:0 auto;min-height:52px;font-size:16.5px}
+.aviso{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:50;background:var(--tx);color:#fff;font-size:14.5px;font-weight:700;padding:12px 16px;border-radius:12px;width:min(92vw,440px);text-align:center}
+.trancado{border:1.5px solid var(--ac-line);background:linear-gradient(180deg,var(--s1),var(--ac-bg))}
+@media (min-width:760px){
+  .abre{grid-template-columns:1.05fr .95fr;align-items:center;gap:36px;padding-top:40px}
+  .ct.abre-ct{max-width:1040px}
+  .abre .foto img{aspect-ratio:4/5}
+  .parte{grid-template-columns:130px 1fr 50px}
+}
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+<script>
+// Pixel da escola (o mesmo das páginas da escola). Na prévia (window.NOTA_PREVIA) não carrega.
+if(!window.NOTA_PREVIA){
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Quiz nota de IA',content_category:'quiz-nota-ia'});
+}
+</script>
+</head>
+<body>
+<header class="topo"><div class="ct" id="topo">
+  <a class="marca" href="/" aria-label="Carreira no Digital"><img src="/novo-site/midia/logo.webp" alt="" width="30" height="30">Carreira <span>no Digital</span></a>
+</div></header>
+<main id="app"></main>
+<div class="barraWa" id="barraWa" aria-hidden="true"></div>
+
+<script type="module">
+// QUIZ-IMPORT (a prévia troca esta linha pela conta embutida)
+import * as Q from '/nota-ia/calculo.js'
+
+const PREVIA = window.NOTA_PREVIA === true
+const app = document.getElementById('app')
+const topo = document.getElementById('topo')
+const barraWa = document.getElementById('barraWa')
+const IMG = { foto: '/novo-site/midia/guto-implantacao.webp', logo: '/novo-site/midia/logo.webp', maia: '/maia/img/maia-rosto.webp', os: '/teunegocio-os/midia/painel.jpg', sede: '/novo-site/midia/sede.webp', ...(window.NOTA_IMG || {}) }
+const CHAVE = 'nota_ia_v1'
+const ic = {
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>',
+  ok: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M7.5 12.5l3 3 6-6"/></svg>',
+  voltar: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>',
+  seta: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
+  cadeado: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2.5"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>',
+  wa: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2a10 10 0 0 0-8.6 15.1L2 22l5-1.3A10 10 0 1 0 12 2Zm5.8 14.2c-.2.7-1.4 1.3-2 1.4-.5.1-1.2.1-1.9-.1-.4-.1-1-.3-1.7-.6-3-1.3-4.9-4.3-5.1-4.5-.1-.2-1.2-1.6-1.2-3s.8-2.2 1-2.5c.3-.3.6-.4.8-.4h.6c.2 0 .4 0 .6.5l.8 2c.1.2.1.4 0 .6l-.4.6-.4.4c-.1.1-.3.3-.1.6.2.3.8 1.3 1.7 2.1 1.2 1 2.2 1.4 2.5 1.5.3.1.5.1.7-.1l.9-1.1c.2-.3.4-.2.7-.1l1.9.9c.3.1.5.2.5.3.1.2.1.8-.1 1.5Z"/></svg>',
+}
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]))
+
+// ---------------- rastreio (o mesmo das páginas da escola: site_eventos + pixel + /wa) ----------------
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10)
+const ls = { get: k => { try { return localStorage.getItem(k) } catch { return null } }, set: (k, v) => { try { localStorage.setItem(k, v) } catch {} }, del: k => { try { localStorage.removeItem(k) } catch {} } }
+let vid = ls.get('cnd_vid'); if (!vid) { vid = uid(); ls.set('cnd_vid', vid) }
+let sid; try { sid = sessionStorage.getItem('cnd_sid'); if (!sid) { sid = uid(); sessionStorage.setItem('cnd_sid', sid) } } catch { sid = uid() }
+const qs = new URLSearchParams(location.search)
+let fbclid = qs.get('fbclid'); if (fbclid) ls.set('cnd_fbclid', fbclid); else fbclid = ls.get('cnd_fbclid')
+const utm = { source: qs.get('utm_source') || '', medium: qs.get('utm_medium') || '', campaign: qs.get('utm_campaign') || 'quiz-nota-ia', content: qs.get('utm_content') || '' }
+// teste A/B do momento de pedir o contato: ?v=b pede DEPOIS de mostrar a nota; sem nada (ou ?v=a), ANTES
+const VAR = qs.get('v') === 'b' ? 'b' : 'a'
+const cookie = n => { try { const m = document.cookie.match('(^|;)\\s*' + n + '=([^;]*)'); return m ? decodeURIComponent(m[2]) : null } catch { return null } }
+function track(evento, meta) {
+  if (PREVIA) return
+  try {
+    const body = JSON.stringify({ visitor_id: vid, sessao_id: sid, evento, url: location.href, referrer: document.referrer, utm_source: utm.source, utm_medium: utm.medium, utm_campaign: utm.campaign, utm_content: utm.content, fbclid, meta: { variante: VAR, ...(meta || {}) } })
+    if (navigator.sendBeacon) navigator.sendBeacon('/api/track', new Blob([body], { type: 'text/plain' }))
+    else fetch('/api/track', { method: 'POST', headers: { 'Content-Type': 'text/plain' }, body, keepalive: true })
+  } catch {}
+}
+function px(...a) { if (PREVIA) return; try { if (window.fbq) window.fbq(...a) } catch {} }
+
+// ---------------- estado ----------------
+let st = { r: {}, passo: -1, nome: '', whats: '', enviado: false, eventId: null }
+try { const s = JSON.parse(ls.get(CHAVE) || 'null'); if (s && s.r && !PREVIA) st = { ...st, ...s } } catch {}
+const salva = () => { if (!PREVIA) ls.set(CHAVE, JSON.stringify(st)) }
+const vis = () => Q.perguntasVisiveis(st.r)
+const etapasTotal = () => vis().length + (VAR === 'a' ? 1 : 0)
+let res = null
+let iniciou = false
+
+function setTopo(voltar) {
+  const v = topo.querySelector('.voltar'); if (v) v.remove()
+  if (!voltar) return
+  const b = document.createElement('button'); b.className = 'voltar'; b.type = 'button'; b.innerHTML = ic.voltar + 'Voltar'; b.onclick = voltar
+  topo.appendChild(b)
+}
+function progresso(n) {
+  const t = etapasTotal(), pct = Math.round(n / t * 100)
+  return `<div><div class="prog" role="progressbar" aria-valuemin="0" aria-valuemax="${t}" aria-valuenow="${n}"><i style="width:${Math.max(0, (n - 1) / t * 100)}%" data-w="${pct}"></i></div><div class="prog-txt"><span>${n} de ${t}</span><span>${n >= t ? 'Última!' : n > t / 2 ? 'Falta pouco' : 'Uns 2 minutos'}</span></div></div>`
+}
+function animaProg() { const i = app.querySelector('.prog i'); if (i) requestAnimationFrame(() => requestAnimationFrame(() => { i.style.width = i.dataset.w + '%' })) }
+function mostra(html) { topo.className = 'ct'; app.innerHTML = `<div class="tela"><div class="ct">${html}</div></div>`; window.scrollTo(0, 0); animaProg() }
+
+// ---------------- abertura ----------------
+function abertura() {
+  topo.className = 'ct abre-ct'; setTopo(null); barra(false)
+  const n = Q.perguntasVisiveis({ origem: [] }).length
+  app.innerHTML = `<div class="tela"><div class="ct abre-ct"><div class="abre">
+    <div style="display:grid;gap:18px">
+      <p class="olho">Quiz · 2 minutos</p>
+      <h1>Qual é a <em>nota de IA</em> do teu negócio?</h1>
+      <p class="lead">Responde ${n} perguntas rápidas sobre o teu dia a dia. <b>A gente te mostra onde a IA devolve tempo e dinheiro</b> no teu negócio, e por onde começar.</p>
+      <ul class="ganhos">
+        <li><span class="n">1</span><div><b>A tua nota de 0 a 100</b><span>comparada com o retrato do pequeno negócio na pesquisa do Sebrae</span></div></li>
+        <li><span class="n">2</span><div><b>Quanto está escapando por mês</b><span>em horas de trabalho e em vendas, com a conta à mostra</span></div></li>
+        <li><span class="n">3</span><div><b>As 3 maiores oportunidades</b><span>em ordem, e o caminho que faz sentido pra ti</span></div></li>
+      </ul>
+      <button class="btn" type="button" id="comecar">Descobrir minha nota ${ic.seta}</button>
+      <p class="miudo">Sem custo. Só clicar nas respostas.</p>
+    </div>
+    <figure class="foto"><img src="${IMG.foto}" alt="O Guto, professor da escola, numa implantação de IA com uma aluna em Lajeado" width="720" height="960" fetchpriority="high"><span class="selo"><i></i>Implantação real na escola, em Lajeado</span></figure>
+  </div></div></div>`
+  window.scrollTo(0, 0)
+  document.getElementById('comecar').onclick = () => {
+    if (!iniciou) { iniciou = true; track('quiz_inicio'); px('trackCustom', 'QuizInicio', { variante: VAR }) }
+    st.passo = 0; salva(); pergunta()
+  }
+}
+
+// ---------------- perguntas ----------------
+function pergunta() {
+  const ps = vis(), p = ps[st.passo]
+  if (!p) return fimDasPerguntas()
+  barra(false)
+  setTopo(() => { st.passo = Math.max(-1, st.passo - 1); salva(); st.passo < 0 ? abertura() : pergunta() })
+  const v = st.r[p.id]
+  const marcado = o => p.multi ? Array.isArray(v) && v.includes(o.v) : v === o.v
+  mostra(`<div class="perg">${progresso(st.passo + 1)}
+    <h2 id="tit">${esc(p.titulo)}</h2>${p.dica ? `<p class="dica">${esc(p.dica)}</p>` : ''}
+    <div class="ops" role="group" aria-labelledby="tit">${p.opcoes.map(o => `<button type="button" class="op${p.multi ? ' multi' : ''}" data-v="${o.v}" aria-pressed="${marcado(o)}"><span class="mk">${ic.check}</span><span>${esc(o.t)}${o.d ? `<small>${esc(o.d)}</small>` : ''}</span></button>`).join('')}</div>
+    ${p.multi ? `<button class="btn" type="button" id="seguir" ${Array.isArray(v) && v.length ? '' : 'disabled'}>Continuar ${ic.seta}</button>` : ''}
+  </div>`)
+  app.querySelectorAll('.op').forEach(b => b.onclick = () => {
+    const val = b.dataset.v
+    if (p.multi) {
+      const arr = new Set(Array.isArray(st.r[p.id]) ? st.r[p.id] : [])
+      arr.has(val) ? arr.delete(val) : arr.add(val)
+      st.r[p.id] = [...arr]; if (p.id === 'origem' && !arr.has('anuncio')) delete st.r.verba
+      b.setAttribute('aria-pressed', arr.has(val)); document.getElementById('seguir').disabled = !arr.size; salva()
+    } else {
+      st.r[p.id] = val; salva()
+      app.querySelectorAll('.op').forEach(x => x.setAttribute('aria-pressed', x === b))
+      setTimeout(() => avanca(p, val), 230)
+    }
+  })
+  const s = document.getElementById('seguir'); if (s) s.onclick = () => avanca(p, st.r[p.id])
+}
+function avanca(p, val) {
+  const n = st.passo + 1
+  track('quiz_resposta', { n, pergunta: p.id, resposta: Array.isArray(val) ? val.join(',') : val })
+  px('trackCustom', 'QuizEtapa', { etapa: n, pergunta: p.id })
+  st.passo++; salva(); pergunta()
+}
+function fimDasPerguntas() {
+  res = Q.calcular(st.r)
+  if (st.enviado || VAR === 'b') return calculando(() => resultado())
+  contato()
+}
+
+// ---------------- contato (nome + WhatsApp) ----------------
+const mascara = v => { const d = v.replace(/\D/g, '').slice(0, 11); if (d.length <= 2) return d ? '(' + d : ''; if (d.length <= 7) return `(${d.slice(0, 2)}) ${d.slice(2)}`; return `(${d.slice(0, 2)}) ${d.slice(2, d.length - 4)}-${d.slice(-4)}` }
+function formContato(botao) {
+  return `<form class="form" id="form" novalidate>
+    <div class="campo"><label for="nome">Teu nome</label><input id="nome" name="nome" autocomplete="given-name" value="${esc(st.nome)}" required></div>
+    <div class="campo"><label for="whats">Teu WhatsApp com DDD</label><input id="whats" name="whats" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="(51) 99999-9999" value="${esc(st.whats)}" required></div>
+    <p class="erro" id="erro" role="alert"></p>
+    <button class="btn" type="submit" id="enviar">${botao} ${ic.seta}</button>
+    <p class="miudo">A gente usa o teu WhatsApp pra te mandar o resultado e conversar sobre ele, se tu quiser. Nada de lista de propaganda.</p>
+  </form>`
+}
+function ligaForm(depois) {
+  const f = document.getElementById('form'), w = document.getElementById('whats')
+  w.addEventListener('input', () => { w.value = mascara(w.value) })
+  f.addEventListener('submit', async e => {
+    e.preventDefault()
+    const er = document.getElementById('erro'), bt = document.getElementById('enviar')
+    st.nome = document.getElementById('nome').value.replace(/\s+/g, ' ').trim(); st.whats = w.value; salva()
+    if (st.nome.length < 2) return (er.textContent = 'Escreve o teu nome.')
+    if (!Q.telefoneBR(st.whats)) return (er.textContent = 'Confere o WhatsApp: DDD e número, ex.: (51) 99999-9999.')
+    er.textContent = ''; bt.disabled = true; bt.textContent = 'Enviando...'
+    const ok = await enviar()
+    if (!ok.ok) { bt.disabled = false; bt.innerHTML = 'Tentar de novo ' + ic.seta; er.textContent = ok.erro || 'Não deu pra enviar agora. Confere a internet e tenta de novo.'; return }
+    depois()
+  })
+}
+function contato() {
+  barra(false)
+  setTopo(() => { st.passo = vis().length - 1; salva(); pergunta() })
+  track('quiz_contato_visto')
+  mostra(`<div class="perg">${progresso(etapasTotal())}
+    <h2>Pronto. A tua nota está calculada.</h2>
+    <p class="lead">Pra onde a gente manda o resultado completo?</p>
+    <ul class="trava">
+      <li>${ic.cadeado}A tua nota de 0 a 100</li>
+      <li>${ic.cadeado}Quanto está escapando por mês</li>
+      <li>${ic.cadeado}As 3 maiores oportunidades e o caminho</li>
+    </ul>
+    ${formContato('Ver minha nota')}
+  </div>`)
+  ligaForm(() => calculando(() => resultado()))
+}
+async function enviar() {
+  st.eventId = st.eventId || uid()
+  const corpo = { nome: st.nome, whatsapp: st.whats, respostas: st.r, variante: VAR, event_id: st.eventId, pagina: location.href, vid, utm_source: utm.source, utm_medium: utm.medium, utm_campaign: utm.campaign, utm_content: utm.content, fbclid, fbp: cookie('_fbp'), fbc: cookie('_fbc') }
+  let out
+  if (PREVIA) { await new Promise(r => setTimeout(r, 700)); out = { ok: true } }
+  else {
+    try { const r = await fetch('/api/nota-ia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo) }); out = await r.json().catch(() => ({})); out.ok = r.ok && out.ok } catch { out = { ok: false } }
+  }
+  if (out.ok) {
+    st.enviado = true; salva()
+    track('quiz_envio', { nota: res.nota, caminho: res.caminho.principal })
+    px('track', 'Lead', { content_name: 'Quiz nota de IA', content_category: res.caminho.principal, value: res.nota }, { eventID: out.event_id || st.eventId })
+  }
+  return out
+}
+
+// ---------------- calculando ----------------
+function calculando(depois) {
+  setTopo(null); barra(false)
+  const frases = ['Lendo as tuas respostas', 'Comparando com a pesquisa do Sebrae', 'Calculando o que está escapando', 'Escolhendo as 3 oportunidades']
+  mostra(`<div class="calc"><div class="roda" aria-hidden="true"></div><h2 style="font-size:30px">Calculando a tua nota</h2><ul class="passos">${frases.map(f => `<li><i></i>${f}</li>`).join('')}</ul></div>`)
+  const lis = app.querySelectorAll('.passos li')
+  lis.forEach((li, i) => setTimeout(() => li.classList.add('ok'), 380 * (i + 1)))
+  setTimeout(depois, 380 * lis.length + 450)
+}
+
+// ---------------- resultado ----------------
+function corParte(v) { return v < 8 ? 'baixo' : v < 14 ? 'medio' : 'alto' }
+function resultado() {
+  res = res || Q.calcular(st.r)
+  setTopo(null); topo.className = 'ct larga'
+  const nome = (st.nome || '').split(' ')[0]
+  const ramo = Q.textoResposta('ramo', st.r.ramo)
+  const liberado = st.enviado
+  if (!res._visto) { res._visto = true; track('quiz_resultado', { nota: res.nota, caminho: res.caminho.principal, liberado }) }
+  const P = res.perda
+  const html = `<div class="res">
+    <section class="bloco" aria-labelledby="t-nota">
+      <div class="notaTopo"><p id="t-nota">${nome ? esc(nome) + ', a' : 'A'} nota de IA ${st.r.ramo && st.r.ramo !== 'outro' ? 'do teu negócio (' + esc(ramo.toLowerCase()) + ')' : 'do teu negócio'} é</p>
+        <div class="notaLinha"><span class="notaNum"><span id="num">0</span><small>/100</small></span><span class="chip ${res.faixa.id}">${res.faixa.nome}</span></div></div>
+      <div class="regua" aria-hidden="true">
+        <span class="marc ref" style="left:${res.referencia}%">referência ${res.referencia}</span>
+        <span class="marc tu" id="marcTu" style="left:0%">tu</span>
+        <div class="faixas"><i></i><i></i><i></i></div>
+        <div class="rot"><span>Começando</span><span>No caminho</span><span>Na frente</span></div>
+      </div>
+      <p class="comp"><b>${esc(res.faixa.texto)}</b></p>
+      <p class="comp">${esc(res.comparacao)}</p>
+      <div class="partes">${Q.PARTES.map(x => `<div class="parte"><span>${x.nome}</span><span class="tr"><i class="${corParte(res.partes[x.id])}" data-w="${res.partes[x.id] / 20 * 100}"></i></span><span>${res.partes[x.id]}/20</span></div>`).join('')}</div>
+    </section>
+
+    <section class="bloco" aria-labelledby="t-perda">
+      <h2 id="t-perda">O que está escapando por mês</h2>
+      <div class="stats">
+        <div class="stat"><b>~${P.horasMes} h</b><span>de trabalho que a IA pode assumir</span></div>
+        <div class="stat din"><b>~${esc(Q.reais(P.valorMes))}</b><span>em vendas que hoje ficam pelo caminho</span></div>
+      </div>
+      <p class="miudo" style="text-align:left">É uma estimativa feita com as tuas respostas e com números médios de negócios do teu tamanho.</p>
+      <details><summary>Como a gente chegou nesses números</summary><ul class="contas">${P.contas.map(c => `<li>${esc(c)}</li>`).join('')}</ul></details>
+    </section>
+
+    ${liberado ? parteLiberada() : parteTrancada()}
+
+    <section class="fontes" aria-label="Fontes"><p><b>Fontes.</b> ${Q.FONTES.map(esc).join(' ')}</p><p><button type="button" id="refazer" style="background:none;border:0;color:var(--ac2);font-weight:800;padding:8px 0;min-height:40px">Refazer o quiz</button></p><p>A referência ${res.referencia} é a nota do retrato mais comum do pequeno negócio: cliente por indicação e Instagram, o dono responde o WhatsApp quando consegue, anota no caderno, posta quando sobra tempo e usa o ChatGPT de vez em quando.</p></section>
+  </div>`
+  app.innerHTML = `<div class="tela"><div class="ct larga">${html}</div></div>`
+  window.scrollTo(0, 0)
+  // a nota sobe de 0 até o valor; a régua e as barras enchem junto
+  const el = document.getElementById('num'), alvo = res.nota, t0 = performance.now(), dur = matchMedia('(prefers-reduced-motion:reduce)').matches ? 1 : 1300
+  const passo = t => { const k = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - k, 3); el.textContent = Math.round(alvo * e); if (k < 1) requestAnimationFrame(passo) }
+  requestAnimationFrame(passo)
+  setTimeout(() => { el.textContent = alvo }, dur + 200) // garante o número final mesmo com a aba em segundo plano
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    document.getElementById('marcTu').style.left = Math.max(3, Math.min(97, alvo)) + '%'
+    app.querySelectorAll('.parte i').forEach(i => { i.style.width = i.dataset.w + '%' })
+  }))
+  document.getElementById('refazer').onclick = () => { st = { r: {}, passo: -1, nome: st.nome, whats: st.whats, enviado: false, eventId: null }; res = null; ls.del(CHAVE); abertura() }
+  if (liberado) ligaWa(); else ligaForm(() => { res._visto = false; resultado(); setTimeout(() => document.getElementById('t-ops')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 350) })
+}
+function parteTrancada() {
+  track('quiz_contato_visto')
+  return `<section class="bloco trancado" aria-labelledby="t-trava">
+    <h2 id="t-trava">Falta uma coisa: as 3 oportunidades e o caminho certo pra ti</h2>
+    <p class="comp">A gente separou onde a IA devolve mais tempo e venda no teu negócio, em ordem. Deixa o teu WhatsApp que a gente libera aqui e te manda o resultado completo.</p>
+    ${formContato('Liberar meu resultado')}
+  </section>`
+}
+function parteLiberada() {
+  const c = res.caminho, pr = Q.PRODUTOS[c.principal], co = c.complemento ? Q.PRODUTOS[c.complemento] : null
+  const img = { deu_venda: IMG.foto, maia: IMG.maia, os: IMG.os }[c.principal]
+  const msg = Q.mensagemWhats(st.r, res)
+  return `<section class="bloco" aria-labelledby="t-ops">
+      <h2 id="t-ops">Onde a IA devolve mais pra ti</h2>
+      <div class="ops3">${res.oportunidades.map((o, i) => `<article class="opc" style="animation-delay:${.15 + i * .18}s"><span class="r">${i + 1}</span><div><h3>${esc(o.titulo)}</h3><p>${esc(o.porque)}</p><p class="ia"><b>Com IA:</b> ${esc(o.ganho)}</p></div></article>`).join('')}</div>
+    </section>
+
+    <section class="bloco cam" aria-labelledby="t-cam">
+      <p class="olho">O caminho que a gente indica</p>
+      <div class="cab"><div><p class="tipo">${esc(pr.tipo)}</p><h3 id="t-cam">${esc(pr.nome)}</h3></div><img src="${img}" alt="" width="92" height="92" loading="lazy"></div>
+      <p>${esc(pr.resumo)}</p>
+      <p class="pq"><b>Por que pra ti:</b> ${esc(c.motivo)}</p>
+      <ul class="inclui">${pr.entrega.map(x => `<li>${ic.ok}<span>${esc(x)}</span></li>`).join('')}</ul>
+      ${co ? `<p class="comple"><b>Junto: ${esc(co.nome)}.</b> ${esc(c.motivoComplemento)}</p>` : ''}
+      <p class="valor"><b>Valores:</b> a gente passa no WhatsApp, junto com o que faz sentido pro teu negócio.</p>
+    </section>
+
+    <section class="bloco" aria-labelledby="t-wa">
+      <h2 id="t-wa">Conversa sobre o teu resultado</h2>
+      <p class="comp">A mensagem já vai com a tua nota e o que mais pesa no teu negócio. A conversa começa no teu problema.</p>
+      <div class="chat"><p class="bolha">${esc(msg)}</p></div>
+      <a class="btn wa" id="btnWa" href="#" target="_blank" rel="noopener">${ic.wa}Falar com a escola no WhatsApp</a>
+      <div class="escola"><img src="${IMG.sede}" alt="A sede da escola em Lajeado" width="72" height="72" loading="lazy"><p><b>Carreira no Digital</b>, escola de IA pra negócios. Sede em Lajeado e unidade em Porto Alegre, mais de 500 alunos no primeiro ano.</p></div>
+    </section>`
+}
+function linkWa() {
+  const ev = uid(), p = new URLSearchParams()
+  p.set('msg', Q.mensagemWhats(st.r, res)); p.set('src', location.href); p.set('vid', vid); p.set('sid', sid); p.set('event_id', ev)
+  if (res.turma) p.set('turma', res.turma)
+  const fbp = cookie('_fbp'), fbc = cookie('_fbc'); if (fbp) p.set('fbp', fbp); if (fbc) p.set('fbc', fbc); if (fbclid) p.set('fbclid', fbclid)
+  if (utm.source) p.set('utm_source', utm.source); if (utm.medium) p.set('utm_medium', utm.medium); p.set('utm_campaign', utm.campaign); if (utm.content) p.set('utm_content', utm.content)
+  return { url: '/wa?' + p.toString(), ev }
+}
+function cliqueWa(e, botao) {
+  if (PREVIA) { e.preventDefault(); aviso('Na prévia o botão não abre o WhatsApp. No ar, ele abre a conversa com a escola com esta mensagem pronta.'); return }
+  const l = linkWa(); e.currentTarget.href = l.url
+  track('clique_wa', { botao, turma: res.turma, caminho: res.caminho.principal, event_id: l.ev })
+  px('track', 'Contact', { content_name: 'Quiz nota de IA', content_category: res.caminho.principal }, { eventID: l.ev })
+}
+function ligaWa() {
+  const b = document.getElementById('btnWa'); b.onclick = e => cliqueWa(e, 'resultado')
+  barraWa.innerHTML = `<a class="btn wa" href="#" target="_blank" rel="noopener">${ic.wa}Falar sobre o meu resultado</a>`
+  barraWa.querySelector('a').onclick = e => cliqueWa(e, 'barra')
+  const alvo = document.getElementById('t-perda')
+  const olha = () => { const r = alvo.getBoundingClientRect(), rb = b.getBoundingClientRect(); barra(r.top < innerHeight * .6 && (rb.top > innerHeight || rb.bottom < 0)) }
+  window.onscroll = olha; olha()
+}
+function barra(on) { barraWa.classList.toggle('on', !!on); barraWa.setAttribute('aria-hidden', on ? 'false' : 'true'); if (!on && !st.enviado) window.onscroll = null }
+let tAviso
+function aviso(t) { let a = document.querySelector('.aviso'); if (!a) { a = document.createElement('div'); a.className = 'aviso'; a.setAttribute('role', 'status'); document.body.appendChild(a) } a.textContent = t; clearTimeout(tAviso); tAviso = setTimeout(() => a.remove(), 4200) }
+
+// ---------------- começo ----------------
+track('page_view')
+if (st.passo >= 0 && st.passo < vis().length) pergunta()
+else if (st.passo >= vis().length) fimDasPerguntas()
+else abertura()
+</script>
+</body>
+</html>
