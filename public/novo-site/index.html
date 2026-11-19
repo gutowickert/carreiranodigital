@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Carreira no Digital · escola de inteligência artificial para negócios</title>
-<meta name="description" content="Carreira no Digital, escola de inteligência artificial para negócios em Lajeado e Porto Alegre. A gente ajuda donos de negócio a vender mais no digital, automatizar processos e reduzir custos com IA.">
+<meta name="description" content="Carreira no Digital, escola de inteligência artificial para negócios, com sede em Lajeado e unidade em Porto Alegre. Três caminhos pra IA trabalhar no teu negócio: o Deu Venda (implantação de marketing com IA, presencial e 1 a 1), a Maia (a agência de marketing numa IA) e o teunegócio OS (o sistema da tua empresa).">
 <meta name="theme-color" content="#f7f5fc">
 <link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png"><link rel="icon" type="image/png" sizes="192x192" href="/marca/icone-192.png"><link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
@@ -179,6 +179,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 /* Maia */
 .v-maia .foto-p img{aspect-ratio:1}
 .v-maia .selo{left:auto;right:14px}
+.cel-maia{position:absolute;right:-12px;bottom:-26px;width:min(230px,56%);z-index:3}
 .preco-card{position:absolute;left:-10px;bottom:-24px;background:#fff;border-radius:22px;padding:14px 18px;box-shadow:0 18px 40px -16px rgba(27,21,48,.4);z-index:3}
 .preco-card small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
 .preco-card b{display:block;font-family:var(--f-dis);font-weight:800;font-size:40px;line-height:1.05;letter-spacing:-.04em;color:var(--anil)}
@@ -235,6 +236,35 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 footer{padding-block:28px 40px;border-top:1px solid var(--ln);color:var(--mu);font-size:13px}
 footer .ct{display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:space-between}
 
+/* 19/11: os 3 caminhos. "Qual é o teu caso" e o que vai dentro de cada produto */
+.caso{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:34px}
+.caso a{display:flex;flex-direction:column;gap:6px;background:#fff;border:1.5px solid var(--ln);border-radius:24px;padding:20px 22px;text-decoration:none;min-width:0;box-shadow:0 14px 30px -26px rgba(27,21,48,.35);transition:border-color .15s,transform .15s}
+.caso a:hover{border-color:var(--ac-line);transform:translateY(-1px)}
+.caso a:focus-visible{outline:3px solid var(--ac);outline-offset:3px}
+.caso small{font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--mu)}
+.caso b{font-family:var(--f-dis);font-size:22px;line-height:1.15;letter-spacing:-.02em}
+.caso span{font-size:15px;color:var(--tx2)}
+.caso em{font-style:normal;margin-top:auto;padding-top:8px;font-weight:800;font-size:15px;color:var(--ac)}
+.caso a:nth-child(1) em{color:var(--la-tx)}.caso a:nth-child(2) em{color:var(--anil)}.caso a:nth-child(3) em{color:var(--verde)}
+.pq{margin-top:4px;font-size:15.5px;color:var(--tx2);max-width:46ch}
+.pq b{color:var(--tx)}
+.inclui{list-style:none;display:flex;flex-direction:column;gap:9px;margin-top:18px;max-width:46ch}
+.inclui li{display:flex;gap:10px;align-items:flex-start;font-size:15.5px;color:var(--tx2);line-height:1.45}
+.inclui li::before{content:"";flex:none;margin-top:1px;width:20px;height:20px;border-radius:50%;background:#fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2315803d' stroke-width='3.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center/12px no-repeat}
+.inclui b{color:var(--tx)}
+.valor{margin-top:18px;display:inline-flex;flex-direction:column;gap:2px;background:rgba(255,255,255,.85);border-radius:18px;padding:12px 16px}
+.valor small{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.valor b{font-family:var(--f-dis);font-weight:800;font-size:26px;line-height:1.1;letter-spacing:-.02em}
+.valor span{font-size:13px;color:var(--mu)}
+.acoes{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.acoes .mais{margin-top:0}
+.mais.wa{background:#1fa855;color:#fff}
+.frente .mais.wa svg{color:#fff}
+.tres{grid-column:1/-1;background:#fff;border-radius:24px;padding:18px 20px;box-shadow:0 14px 30px -20px rgba(27,21,48,.3)}
+.tres p{font-size:13px;font-weight:700;color:var(--mu);margin-bottom:12px}
+.tres ol{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tres li{border-radius:14px;padding:12px;background:var(--la-bg);font-size:13px;color:var(--tx2);min-width:0}
+.tres li b{display:block;font-size:15px;color:var(--tx);margin-bottom:2px}
 .rv{opacity:0;transform:translateY(16px);transition:opacity .6s ease,transform .6s ease}
 .rv.vis{opacity:1;transform:none}
 
@@ -244,6 +274,7 @@ footer .ct{display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:space-betwe
   .linha{grid-template-columns:1fr 1fr}
   .feed{grid-template-columns:repeat(3,1fr)}
   .provas{grid-template-columns:1fr 1fr}
+  .caso{grid-template-columns:1fr}
 }
 @media (max-width:920px){
   .abre .ct,.ano{grid-template-columns:1fr;gap:40px}
@@ -273,9 +304,13 @@ footer .ct{display:flex;flex-wrap:wrap;gap:10px 28px;justify-content:space-betwe
   .v-os{padding-top:120px}
   .v-os .cel{right:-4px;width:56%}
   .preco-card{left:-4px}
+  .cel-maia{right:-4px;width:46%}
+  .v-maia .selo{right:auto;left:14px}
   .dv{gap:10px}
   .grande{padding:16px}
   .trilho{grid-template-columns:1fr}
+  .tres ol{grid-template-columns:1fr}
+  .acoes .mais{width:100%;justify-content:center}
   .feed{grid-template-columns:1fr 1fr;gap:10px}
   .provas{grid-template-columns:1fr}
   .fecho{flex-direction:column;align-items:flex-start;padding:20px}
@@ -297,9 +332,9 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
   <div class="ct">
     <a class="marca" href="#inicio" aria-label="Carreira no Digital, início"><img src="/marca/icone-192.png" alt="" width="36" height="36"><span class="nome">Carreira <span>no Digital</span></span></a>
     <nav aria-label="Menu">
-      <a href="#historia">Quem somos</a>
-      <a href="#acreditamos">No que acreditamos</a>
       <a href="#fazemos">O que fazemos</a>
+      <a href="#clientes">Clientes</a>
+      <a href="#historia">Quem somos</a>
       <a href="#momento">O momento da IA</a>
       <a href="#unidades">Unidades</a>
     </nav>
@@ -315,10 +350,10 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
     <div>
       <p class="olho rv">Carreira no Digital · Lajeado e Porto Alegre</p>
       <h1 class="rv">Uma escola de inteligência artificial <span class="grad">pra quem tem um negócio.</span></h1>
-      <p class="lead rv">A gente ajuda donos de negócio a vender mais no digital, automatizar o que toma tempo e gastar menos pra fazer tudo isso. <b>Com a IA trabalhando dentro da empresa, presencialmente, com gente do lado.</b></p>
+      <p class="lead rv">A gente coloca a IA pra vender, atender e organizar o teu negócio. <b>Tu escolhe o caminho: aprender e ficar com a máquina, deixar a Maia fazer o marketing por ti, ou ter o sistema da tua empresa.</b></p>
       <div class="botoes rv">
-        <a class="btn" href="#historia">Conhecer a escola</a>
-        <a class="btn btn-leve" href="#fazemos">O que fazemos</a>
+        <a class="btn" href="#fazemos">Ver os 3 caminhos</a>
+        <a class="btn btn-leve" href="#" data-wa data-msg="Olá! Vim pelo site da escola e quero entender qual caminho serve pro meu negócio.">Falar com a escola</a>
       </div>
       <div class="cidades rv">
         <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg>Sede em Lajeado</span>
@@ -327,112 +362,108 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
     </div>
     <div class="vitrine rv">
       <figure class="foto-h"><img src="/novo-site/midia/guto-implantacao.webp" alt="Na sede da escola: uma aluna na implantação, com o anúncio dela no telão" width="720" height="960" fetchpriority="high"><span class="selo"><i></i>Implantação na sede da escola</span></figure>
-      <div class="cartao-num"><b>+500</b><span>alunos formados</span></div>
+      <div class="cartao-num"><b>+500</b><span>alunos formados presencialmente</span></div>
       <div class="cartao-sede"><img src="/novo-site/midia/sede-poa.webp" alt="A sala da escola em Porto Alegre" width="64" height="48"><div><b>2 unidades próprias</b><span>Lajeado e Porto Alegre</span></div></div>
     </div>
   </div>
 </section>
 
-<!-- 2 · quem somos -->
-<section id="historia">
-  <div class="ct">
-    <div class="cab">
-      <p class="olho rv">Quem somos</p>
-      <h2 class="rv">Nascemos de quem tocou negócio. <span class="grad">E viramos escola de IA.</span></h2>
-      <p class="lead rv">A Carreira no Digital não nasceu numa agência nem numa sala de aula. Os fundadores viveram o balcão, o caixa e a correria de ter uma empresa, e aprenderam a vender pela internet fazendo.</p>
-    </div>
-    <ol class="linha">
-      <li class="rv"><span class="num">01</span><small>Antes da escola</small><b>Mais de 15 anos de empresa</b><span>Os fundadores tocaram negócio físico por muitos anos e depois ensinaram online, com milhares de alunos. Foi ali que entenderam o que faz alguém aprender de verdade.</span></li>
-      <li class="rv"><span class="num">02</span><small>O começo</small><b>A escola presencial</b><span>Lajeado primeiro, depois Porto Alegre. Turma pequena, no negócio real do aluno, com quem sabe do lado.</span></li>
-      <li class="rv"><span class="num">03</span><small>O primeiro ano</small><b>Mais de 500 alunos</b><span>Quase 30 turmas e 8 cidades no itinerante. Lojas, clínicas, restaurantes, prestadores de serviço: cada um aplicando no próprio negócio.</span></li>
-      <li class="rv"><span class="num">04</span><small>Agora</small><b>A virada pra IA</b><span>O que exigia uma equipe inteira de marketing passou a caber no dia do dono, com a inteligência artificial. A escola mudou junto.</span></li>
-    </ol>
-    <div class="ano rv">
-      <figure class="foto-h"><img src="/novo-site/midia/turma.webp" alt="Uma turma da escola com os certificados na mão" width="720" height="540" loading="lazy"><span class="selo"><i></i>Turma formada na escola</span></figure>
-      <div>
-        <div class="ano-txt"><small>O primeiro ano da escola presencial</small><h3>Em um ano: duas unidades próprias e turmas em oito cidades.</h3><p>Números de outubro de 2026, contando só as turmas presenciais.</p></div>
-        <div class="ano-num">
-          <div><b>+500</b><span><strong>alunos formados</strong> presencialmente, cada um aplicando no próprio negócio</span></div>
-          <div><b>~30</b><span><strong>turmas</strong> pequenas, em Lajeado, Porto Alegre e no itinerante</span></div>
-          <div><b>8</b><span><strong>cidades</strong> visitadas pela escola itinerante</span></div>
-          <div><b>2</b><span><strong>unidades próprias</strong>: a sede em Lajeado e a unidade de Porto Alegre</span></div>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 3 · no que acreditamos -->
-<section id="acreditamos" style="background:var(--s2)">
-  <div class="ct">
-    <div class="cab">
-      <p class="olho rv">No que acreditamos</p>
-      <h2 class="rv">A IA trabalha. <span class="grad">Quem decide é o dono.</span></h2>
-      <p class="lead rv">A inteligência artificial é a ferramenta. O centro é o teu negócio: o teu produto, o teu cliente, o teu jeito de atender.</p>
-    </div>
-    <div class="pilares">
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><b>Junto contigo, não por ti</b><span>A gente monta do teu lado e te ensina a mexer. Tu sai sabendo fazer, sem depender de ninguém.</span></div>
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span><b>No negócio real</b><span>Nada de exercício genérico. É o teu público, a tua oferta e a tua cidade, desde o primeiro encontro.</span></div>
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg></span><b>A IA fica tua</b><span>A máquina que a gente monta fica na tua conta. Ela continua trabalhando pra ti depois.</span></div>
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><b>A gente usa o que ensina</b><span>A própria escola roda assim: vídeos, anúncios, atendimento e números, todo dia. Só ensinamos o que já funciona aqui.</span></div>
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><b>Sem promessa milagrosa</b><span>A gente ensina o método e acompanha. Não promete número de cliente: cada negócio tem o seu ritmo.</span></div>
-      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><b>Presencial de verdade</b><span>Olho no olho, dúvida respondida na hora. Turma pequena e acompanhamento de perto.</span></div>
-    </div>
-  </div>
-</section>
-
-<!-- 4 · o que fazemos -->
+<!-- 2 · o que fazemos: os 3 produtos (19/11: a escola tem só estes três) -->
 <section class="fazemos-sec" id="fazemos">
   <div class="ct">
     <div class="cab">
       <p class="olho rv">O que fazemos</p>
-      <h2 class="rv">Vender mais, automatizar, gastar menos. <span class="grad">Do jeito que serve pro teu negócio.</span></h2>
+      <h2 class="rv">Três jeitos de colocar a IA <span class="grad">pra trabalhar no teu negócio.</span></h2>
+      <p class="lead rv">Cada negócio está num momento. Começa pelo que é o teu caso.</p>
+    </div>
+    <div class="caso">
+      <a class="rv" href="#deuvenda"><small>Quero aprender</small><b>Ter a máquina de IA na minha mão</b><span>Montar o marketing com IA do meu lado e sair sabendo usar, eu ou o meu time.</span><em>Deu Venda</em></a>
+      <a class="rv" href="#maia"><small>Quero que façam por mim</small><b>Uma agência de marketing que não dorme</b><span>Atendimento, anúncios e posts rodando, e eu só aprovando pelo WhatsApp.</span><em>Maia</em></a>
+      <a class="rv" href="#os"><small>Quero organizar a empresa</small><b>Vendas e atendimento num sistema só</b><span>Nenhum cliente esquecido, o time no mesmo lugar e a IA no repetitivo.</span><em>teunegócio OS</em></a>
     </div>
     <div class="frentes">
 
-      <article class="frente f1">
+      <article class="frente f2" id="deuvenda">
         <div class="txt">
           <span class="num">01</span>
-          <span class="tipo">Formação em turma</span>
-          <h3>Imersão Deu Venda</h3>
-          <p>Em turma pequena, o dono monta a sua máquina de IA: estratégia, vídeos, artes e a campanha no ar.</p>
-          <a class="mais" href="/imersaodeuvenda?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        </div>
-        <div class="vz rv">
-          <figure class="foto-p"><img src="/novo-site/midia/turma-poa.webp" alt="Uma turma da escola na unidade de Porto Alegre" width="760" height="541" loading="lazy"><span class="selo"><i></i>Turma pequena · presencial</span></figure>
-          <div class="lista-card"><p>A máquina de IA</p><ul><li>Estratégia</li><li>Vídeos</li><li>Artes</li><li>Campanha no ar</li></ul></div>
-        </div>
-      </article>
-
-      <article class="frente f2">
-        <div class="txt">
-          <span class="num">02</span>
-          <span class="tipo">Implantação individual</span>
+          <span class="tipo">Implantação de marketing com IA · presencial</span>
           <h3>Deu Venda</h3>
-          <p>Um a um: a máquina de IA montada só pro negócio, com acompanhamento de perto por três meses.</p>
-          <a class="mais" href="/deuvenda?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="pq"><b>Pra quem quer aprender e ficar com a máquina.</b> Tu senta 1 a 1 com o Guto, em Lajeado ou em Porto Alegre, e sai com a IA de marketing rodando no teu negócio. Serve também pra treinar o teu time.</p>
+          <ul class="inclui">
+            <li><span><b>Tráfego direto no Claude:</b> tu sobe e ajusta as campanhas da Meta conversando com a IA.</span></li>
+            <li><span><b>Vídeo editado pela IA:</b> tu grava no celular, ela corta as pausas e põe legenda e a tua marca.</span></li>
+            <li><span><b>Um mês de conteúdo em lote</b> com as fotos reais do teu negócio.</span></li>
+            <li><span><b>3 meses de acompanhamento</b>, um encontro por mês, e o time da escola no WhatsApp.</span></li>
+          </ul>
+          <div class="valor"><small>Investimento</small><b>R$ 2.797 à vista</b><span>ou 10x de R$ 299,70 no cartão. A verba de anúncio é à parte.</span></div>
+          <div class="acoes">
+            <a class="mais" href="/deuvenda?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="mais wa" href="#" data-wa data-msg="Olá! Vim pelo site da escola e quero saber do Deu Venda, a implantação de marketing com IA.">Quero a implantação</a>
+          </div>
         </div>
         <div class="vz dv rv">
-          <div class="grande"><b>1 a 1</b><span>montado só pro teu negócio</span></div>
+          <div class="grande"><b>1 a 1</b><span>só o teu negócio na mesa</span></div>
           <div class="grande"><b>3 meses</b><span>de acompanhamento de perto</span></div>
-          <div class="meses">
-            <p>A máquina de IA, só tua</p>
-            <div class="trilho">
-              <div><i></i><b>Montagem</b>do teu lado, no teu negócio</div>
-              <div><i style="width:70%"></i><b>No ar</b>a campanha rodando</div>
-              <div><i style="width:40%"></i><b>De perto</b>ajustando junto, mês a mês</div>
-            </div>
+          <div class="tres">
+            <p>Como funciona</p>
+            <ol>
+              <li><b>Encontro 1</b>a tua oferta, o teu mercado e a tua marca guardados na máquina</li>
+              <li><b>Encontro 2</b>as primeiras peças e a campanha no ar, contigo olhando</li>
+              <li><b>Meses 1 a 3</b>ler os números e ajustar junto, um encontro por mês</li>
+            </ol>
           </div>
         </div>
       </article>
 
-      <article class="frente f3">
+      <article class="frente f4" id="maia">
+        <div class="txt">
+          <span class="num">02</span>
+          <span class="tipo">Agência de marketing numa IA · online</span><span class="novo">NOVO</span>
+          <h3>Maia</h3>
+          <p class="pq"><b>Pra quem quer o marketing feito, sem ter que aprender.</b> A Maia é a agência inteira numa IA. Tu manda as fotos e aprova pelo WhatsApp.</p>
+          <ul class="inclui">
+            <li><span><b>Atende os teus clientes no WhatsApp</b> como a tua equipe, a qualquer hora.</span></li>
+            <li><span><b>Retoma o orçamento parado</b> no dia certo, pra ninguém sumir sem resposta.</span></li>
+            <li><span><b>Cria e roda as campanhas</b> e os posts do Instagram.</span></li>
+            <li><span><b>Te manda o relatório</b> com o que vendeu e o que ajustar.</span></li>
+          </ul>
+          <div class="valor"><small>1º mês, com a implantação online</small><b style="color:var(--anil)">R$ 497</b><span>depois, R$ 797 por mês. A verba de anúncio é à parte.</span></div>
+          <div class="acoes">
+            <a class="mais" href="/maia/index.html?utm_source=site-escola">Conhecer a Maia <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="mais wa" href="#" data-wa data-msg="Olá! Vim pelo site da escola e quero saber da Maia, a agência de marketing com IA.">Quero a Maia</a>
+          </div>
+        </div>
+        <div class="vz v-maia rv">
+          <figure class="foto-p"><img src="/maia/img/maia-rosto.webp" alt="A Maia, a IA de marketing da escola" width="720" height="720" loading="lazy"><span class="selo"><i></i>Maia · online agora</span></figure>
+          <div class="cel cel-maia"><div class="tela">
+            <div class="wtop"><span class="av">M</span><div><b>Maia</b><span>tua agência · online</span></div></div>
+            <div class="msgs">
+              <span class="dia">09:02</span>
+              <div class="m">Bom dia! Fiz 3 posts com as fotos que tu mandou. Posso publicar?<small>09:02</small></div>
+              <div class="m eu">Pode!<small>09:05</small></div>
+              <span class="rotulo">Tu só aprova</span>
+            </div>
+          </div></div>
+        </div>
+      </article>
+
+      <article class="frente f3" id="os">
         <div class="txt">
           <span class="num">03</span>
-          <span class="tipo">Tecnologia</span>
+          <span class="tipo">O sistema da tua empresa</span>
           <h3>teunegócio OS</h3>
-          <p>O sistema operacional do negócio: a IA atende no WhatsApp, organiza as vendas e automatiza as tarefas repetitivas do dia a dia, e o dono acompanha tudo num painel.</p>
-          <a class="mais" href="/teunegocioos?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+          <p class="pq"><b>Pra empresa que tem time e perde cliente por falta de retorno.</b> CRM, WhatsApp com IA e painel num sistema só, com o nome da tua empresa.</p>
+          <ul class="inclui">
+            <li><span><b>A IA responde no WhatsApp</b> o que se repete e chama alguém do time quando não sabe.</span></li>
+            <li><span><b>Cada cliente vira um card</b> no funil, com a etapa e o próximo passo.</span></li>
+            <li><span><b>O painel do dono:</b> quanto vendeu, quanto converteu e onde trava.</span></li>
+            <li><span><b>Em uso em até 17 dias</b> e 90 dias ajustando junto.</span></li>
+          </ul>
+          <div class="valor"><small>Investimento</small><b style="font-size:20px">Depende do que entra</b><span>O valor sai depois de entender o teu negócio.</span></div>
+          <div class="acoes">
+            <a class="mais" href="/teunegocioos?utm_source=site-escola">Saiba mais <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
+            <a class="mais wa" href="#" data-wa data-msg="Olá! Vim pelo site da escola e quero ver o teunegócio OS no meu negócio.">Quero ver no meu negócio</a>
+          </div>
         </div>
         <div class="vz v-os rv">
           <div class="pc"><div class="barra"><i></i><i></i><i></i></div><img src="/teunegocio-os/midia/painel.jpg" alt="Tela real do painel do teunegócio OS" width="1400" height="876" loading="lazy"></div>
@@ -449,26 +480,12 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
         </div>
       </article>
 
-      <article class="frente f4">
-        <div class="txt">
-          <span class="num">04</span>
-          <span class="tipo">Agência com IA</span><span class="novo">NOVO</span>
-          <h3>Maia</h3>
-          <p>O time de marketing inteiro numa IA: cria e roda os anúncios, atende os teus clientes no WhatsApp, posta no Instagram e conta as vendas. O dono só manda as fotos e dá um joinha.</p>
-          <a class="mais" href="/maia/index.html?utm_source=site-escola">Conhecer a Maia <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></a>
-        </div>
-        <div class="vz v-maia rv">
-          <figure class="foto-p"><img src="/maia/img/maia-rosto.webp" alt="A Maia, a IA de marketing da escola" width="720" height="720" loading="lazy"><span class="selo"><i></i>Maia · online agora</span></figure>
-          <div class="preco-card"><small>Plano único</small><b>R$ 997<small>/mês</small></b><span>tudo incluso, sem fidelidade</span></div>
-        </div>
-      </article>
-
     </div>
   </div>
 </section>
 
-<!-- 5 · anúncios reais de clientes -->
-<section class="prova">
+<!-- 3 · anúncios reais de clientes -->
+<section class="prova" id="clientes">
   <div class="ct">
     <div class="cab">
       <p class="olho rv">A gente usa o que ensina</p>
@@ -484,6 +501,54 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
       <article class="ad rv"><div class="ad-top"><i></i><div><b>Tizon Academy</b><small>Patrocinado</small></div></div><video data-src="/maia/vid/tizon.mp4" poster="/maia/vid/tizon.jpg" muted loop playsinline preload="none" aria-label="Anúncio em vídeo: Tizon Academy"></video><div class="ad-cta">Cursos online</div></article>
     </div>
     <p class="nota">Anúncios reais de clientes da Carreira no Digital.</p>
+  </div>
+</section>
+
+<!-- 4 · quem somos (as turmas ficam como história da escola) -->
+<section id="historia">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho rv">Quem somos</p>
+      <h2 class="rv">Nascemos de quem tocou negócio. <span class="grad">E viramos escola de IA.</span></h2>
+      <p class="lead rv">A Carreira no Digital não nasceu numa agência nem numa sala de aula. Os fundadores viveram o balcão, o caixa e a correria de ter uma empresa, e aprenderam a vender pela internet fazendo.</p>
+    </div>
+    <ol class="linha">
+      <li class="rv"><span class="num">01</span><small>Antes da escola</small><b>Mais de 15 anos de empresa</b><span>Os fundadores tocaram negócio físico por muitos anos e depois ensinaram online, com milhares de alunos. Foi ali que entenderam o que faz alguém aprender de verdade.</span></li>
+      <li class="rv"><span class="num">02</span><small>O começo</small><b>A escola presencial</b><span>Lajeado primeiro, depois Porto Alegre. A escola começou com turmas pequenas, no negócio real de cada aluno.</span></li>
+      <li class="rv"><span class="num">03</span><small>O primeiro ano</small><b>Mais de 500 alunos</b><span>Em quase 30 turmas e 8 cidades. Lojas, clínicas, restaurantes, prestadores de serviço: cada um aplicando no próprio negócio.</span></li>
+      <li class="rv"><span class="num">04</span><small>Agora</small><b>A virada pra IA</b><span>O que exigia uma equipe inteira de marketing passou a caber no dia do dono. A escola mudou junto: hoje é implantação 1 a 1, a Maia e o sistema da empresa.</span></li>
+    </ol>
+    <div class="ano rv">
+      <figure class="foto-h"><img src="/novo-site/midia/turma.webp" alt="Uma turma da escola com os certificados na mão" width="720" height="540" loading="lazy"><span class="selo"><i></i>Turma formada no primeiro ano</span></figure>
+      <div>
+        <div class="ano-txt"><small>O primeiro ano da escola presencial</small><h3>Em um ano, a escola formou mais de 500 donos de negócio.</h3><p>Números de outubro de 2026, contando só o presencial.</p></div>
+        <div class="ano-num">
+          <div><b>+500</b><span><strong>alunos formados</strong> presencialmente, cada um aplicando no próprio negócio</span></div>
+          <div><b>~30</b><span><strong>turmas</strong> em Lajeado, Porto Alegre e em outras cidades</span></div>
+          <div><b>8</b><span><strong>cidades</strong> por onde a escola passou</span></div>
+          <div><b>2</b><span><strong>unidades próprias</strong>: a sede em Lajeado e a unidade de Porto Alegre</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 5 · no que acreditamos -->
+<section id="acreditamos" style="background:var(--s2)">
+  <div class="ct">
+    <div class="cab">
+      <p class="olho rv">No que acreditamos</p>
+      <h2 class="rv">A IA trabalha. <span class="grad">Quem decide é o dono.</span></h2>
+      <p class="lead rv">A inteligência artificial é a ferramenta. O centro é o teu negócio: o teu produto, o teu cliente, o teu jeito de atender.</p>
+    </div>
+    <div class="pilares">
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg></span><b>O dono no comando</b><span>A IA executa, tu decide. Seja montando junto ou deixando a Maia fazer, o que vai pro ar passa pelo teu ok.</span></div>
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5"/></svg></span><b>No negócio real</b><span>Nada de exemplo genérico. É o teu público, a tua oferta e a tua cidade, desde o primeiro dia.</span></div>
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13h.01M15 13h.01M9 17h6"/></svg></span><b>A máquina fica tua</b><span>O que a gente monta fica na conta da tua empresa e continua trabalhando pra ti.</span></div>
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></span><b>A gente usa o que ensina</b><span>A própria escola roda assim: vídeos, anúncios, atendimento e números, todo dia. Só levamos pro teu negócio o que já funciona aqui.</span></div>
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 4 6v6c0 4.5 3.4 8.3 8 9 4.6-.7 8-4.5 8-9V6l-8-3Z"/><path d="m9 12 2 2 4-4"/></svg></span><b>Sem promessa milagrosa</b><span>A gente monta, acompanha e mostra os números. Não promete número de cliente: cada negócio tem o seu ritmo.</span></div>
+      <div class="rv"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11Z"/><circle cx="12" cy="10" r="2.5"/></svg></span><b>Gente do lado</b><span>Implantação olho no olho em Lajeado e Porto Alegre, e o time da escola no WhatsApp.</span></div>
+    </div>
   </div>
 </section>
 
@@ -537,7 +602,7 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
 
 </main>
 
-<footer><div class="ct"><span>Carreira no Digital · escola de inteligência artificial para negócios · Lajeado e Porto Alegre</span><span>Imersão Deu Venda · Deu Venda · teunegócio OS · Maia</span></div></footer>
+<footer><div class="ct"><span>Carreira no Digital · escola de inteligência artificial para negócios · Lajeado e Porto Alegre</span><span>Deu Venda · Maia · teunegócio OS</span></div></footer>
 
 <script>
 (function(){
@@ -569,7 +634,7 @@ try{fbq('init','3968641693466078');fbq('track','PageView')}catch(e){}
     b.href=WA+'?'+p.toString();b.target='_blank';b.rel='noopener';
     b.addEventListener('click',function(){track('clique_wa',{botao:(b.textContent||'').trim().slice(0,40),event_id:ev});try{if(window.fbq)fbq('track','Lead',{content_name:'Site da escola'},{eventID:ev});}catch(e){}});
   });
-  [].forEach.call(document.querySelectorAll('a.mais'),function(a){a.addEventListener('click',function(){var h=a.getAttribute('href')||'';track('clique_produto',{destino:h.split('?')[0]});try{if(window.fbq)fbq('track','ViewContent',{content_name:h.split('?')[0]});}catch(e){}});});
+  [].forEach.call(document.querySelectorAll('a.mais:not([data-wa])'),function(a){a.addEventListener('click',function(){var h=a.getAttribute('href')||'';track('clique_produto',{destino:h.split('?')[0]});try{if(window.fbq)fbq('track','ViewContent',{content_name:h.split('?')[0]});}catch(e){}});});
 })();
 </script>
 </body>
