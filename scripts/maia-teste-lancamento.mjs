@@ -64,7 +64,7 @@ await diz(T.ana, 'Pouca gente me conhece fora de Estrela')
 confere('pergunta o Instagram', /Instagram/i.test(ultimas(T.ana)[0]))
 await diz(T.ana, 'não tenho')
 confere('"não tenho" Instagram não é recusa', contato(T.ana).coleta.instagram === 'não tem' && contato(T.ana).etapa === 'coletando')
-confere('pede 3 a 5 fotos e vídeos', /3 a 5 fotos/.test(ultimas(T.ana)[0]))
+confere('pede 3 a 5 fotos e vídeos OU o @ do Instagram, na mesma mensagem', /3 a 5 fotos/.test(ultimas(T.ana)[0]) && /o @ do teu Instagram/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 await foto(T.ana, 1); await foto(T.ana, 2)
 confere('2 fotos: pede mais 1', /Manda mais 1 foto/.test(ultimas(T.ana)[0]), ultimas(T.ana)[0])
 await foto(T.ana, 3)
@@ -574,7 +574,7 @@ await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
   confere('chegou nas fotos', /me manda de 3 a 5 fotos/.test(ultimas(pr)[0]), ultimas(pr)[0])
   await diz(pr, 'Pega as fotos do meu Instagram, tem tudo lá')
   const cp = contato(pr)
-  confere('"pega do Instagram": vale como material, sem pedir foto de novo', cp.etapa === 'material_recebido' && /@vestidosdapri/.test(cp.coleta.material_instagram) && /Combinado, eu pego as fotos do teu Instagram/.test(ultimas(pr)[0]) && /Material recebido/.test(ultimas(pr)[0]), [cp.etapa, cp.coleta, ultimas(pr)[0]])
+  confere('"pega do Instagram": vale como material, sem pedir foto de novo', cp.etapa === 'material_recebido' && /@vestidosdapri/.test(cp.coleta.material_instagram) && /Combinado, a gente monta a amostra com o que está no teu Instagram/.test(ultimas(pr)[0]) && /Material recebido/.test(ultimas(pr)[0]), [cp.etapa, cp.coleta, ultimas(pr)[0]])
   confere('o time é avisado de pegar do Instagram', le('eventos').some(e => e.tipo === 'lanc_aviso' && /material chegou/.test(e.detalhe.titulo) && /Instagram/.test(e.detalhe.texto) && Date.parse(e.criado_em) >= INICIO)) }
 { // "Devolver e responder": o que a pessoa mandou enquanto estava com o time é respondido na hora
   const pr = '55000' + R + '22'
@@ -623,6 +623,75 @@ await post({ acao: 'chave_v2', ligar: true, modelos: { ENTREGA: null } })
   muda(ind, x => { x.estado = { ...x.estado, nova_amostra_pendente: 'loja de calçados' } })
   const rr = await post({ acao: 'rodar_rotina' })
   confere('nova amostra marcada no banco: a rotina faz (guarda a 2ª, recomeça e pergunta)', contato(ind).estado.anteriores?.length === 2 && !contato(ind).estado.nova_amostra_pendente && /amostra da loja de calçados/.test(ultimas(ind)[0]), [rr?.novas_amostras || rr, ultimas(ind)]) }
+// ===== 18/11 (Guto): no material, fotos e vídeos OU só o @ do Instagram =====
+console.log('12) 18/11: material = fotos/vídeos ou só o @ do Instagram')
+{ let k = 30
+  // leva a pessoa até o pedido do material, com a resposta dada na pergunta do Instagram
+  const ateMaterial = async (nome, ig) => {
+    const tel = '55000' + R + (k++)
+    await post({ acao: 'adicionar', telefone: tel, nome, remessa: 1 })
+    await diz(tel, 'Quero ver', 'botao')
+    for (const t of ['Bolos caseiros pra festa', 'Lajeado', 'Bolo de pote R$ 12, bolo inteiro R$ 90', 'Encomenda com entrega, de segunda a sábado', 'Bolo de pote', 'Pouca gente me conhece', ig]) await diz(tel, t)
+    return tel
+  }
+  const avisoIg = (nome) => le('eventos').some(e => e.tipo === 'lanc_aviso' && Date.parse(e.criado_em) >= INICIO && /material chegou/.test(e.detalhe.titulo) && new RegExp(nome).test(e.detalhe.texto) && /Instagram/.test(e.detalhe.texto))
+  // a) só o @ (a pessoa disse que não tinha Instagram na pergunta e agora manda o @)
+  const bia = await ateMaterial('Bia', 'não tenho')
+  confere('sem @ conhecido: o pedido traz as duas saídas (fotos/vídeos ou o @)', /3 a 5 fotos/.test(ultimas(bia)[0]) && /me mandar o @ do teu Instagram/.test(ultimas(bia)[0]) && !/\p{Extended_Pictographic}/u.test(ultimas(bia)[0]), ultimas(bia)[0])
+  await diz(bia, '@bolos.da.bia')
+  let cb = contato(bia)
+  confere('só o @: vale como material, sem foto nem vídeo', cb.etapa === 'material_recebido' && cb.coleta.material_instagram === '@bolos.da.bia' && cb.coleta.instagram === '@bolos.da.bia' && cb.coleta.sem_video === true, [cb.etapa, cb.coleta])
+  confere('só o @: a Maia confirma e fecha com "Material recebido" (com o que está no Instagram)', /Combinado, a gente monta a amostra com o que está no teu Instagram \(@bolos\.da\.bia\)/.test(ultimas(bia)[0]) && /Material recebido/.test(ultimas(bia)[0]) && /no teu Instagram\.$/.test(ultimas(bia)[0]), ultimas(bia)[0])
+  confere('só o @: o time é avisado de montar com o Instagram', avisoIg('Bia'))
+  // b) o link do Instagram (com o ?igsh= do compartilhar)
+  const gi = await ateMaterial('Gi', 'não tem')
+  await diz(gi, 'https://www.instagram.com/doces_da_gi/?igsh=MWx2ZzZ')
+  confere('link do Instagram: vira @ e vale como material', contato(gi).etapa === 'material_recebido' && contato(gi).coleta.material_instagram === '@doces_da_gi', contato(gi).coleta)
+  // c) sem o @: "insta: nome", e o nome sozinho com ponto
+  const leo = await ateMaterial('Leo', 'não tenho')
+  await diz(leo, 'Não tenho foto agora, meu insta é confeitarialeo')
+  confere('"não tenho foto, meu insta é X" (sem @): vale como material', contato(leo).etapa === 'material_recebido' && contato(leo).coleta.material_instagram === '@confeitarialeo', [contato(leo).etapa, contato(leo).coleta, ultimas(leo)[0]])
+  const mel = await ateMaterial('Mel', 'não tenho')
+  await diz(mel, 'mel.doces')
+  confere('só o nome com ponto (sem @): vale como material', contato(mel).coleta.material_instagram === '@mel.doces' && contato(mel).etapa === 'material_recebido', contato(mel).coleta)
+  // d) já tinha dado o @: o pedido oferece "pega do Instagram"; "não tenho fotos" fecha com o @ que ela deu
+  const nina = await ateMaterial('Nina', '@ninabolos')
+  confere('com @ conhecido: o pedido oferece "pega do Instagram" com o @ dela', /pega do Instagram/.test(ultimas(nina)[0]) && /@ninabolos/.test(ultimas(nina)[0]), ultimas(nina)[0])
+  await diz(nina, 'Não tenho fotos')
+  confere('com @ conhecido, "não tenho fotos": fecha com o Instagram', contato(nina).etapa === 'material_recebido' && contato(nina).coleta.material_instagram === '@ninabolos', [contato(nina).etapa, ultimas(nina)[0]])
+  // e) só fotos: segue como antes (pede mais, depois o vídeo)
+  const ota = await ateMaterial('Ota', 'não tenho')
+  await foto(ota, 60); await foto(ota, 61); await foto(ota, 62)
+  confere('só fotos: segue como antes (pergunta do vídeo, sem material do Instagram)', /vídeos curtos/.test(ultimas(ota)[0]) && !contato(ota).coleta.material_instagram && contato(ota).etapa === 'coletando', ultimas(ota)[0])
+  await diz(ota, 'sem vídeo')
+  confere('só fotos + "sem vídeo": fecha com "feitos com as tuas fotos"', contato(ota).etapa === 'material_recebido' && /feitos com as tuas fotos/.test(ultimas(ota)[0]), ultimas(ota)[0])
+  // f) mistura: 1 foto e depois o @
+  const rui = await ateMaterial('Rui', 'não tenho')
+  await foto(rui, 70)
+  confere('mistura: 1 foto, ainda falta material', /Manda mais 2 fotos/.test(ultimas(rui)[0]) || /Já guardei/.test(ultimas(rui)[0]), ultimas(rui)[0])
+  await diz(rui, '@rui.bolos')
+  const cr = contato(rui)
+  confere('mistura: foto + @ fecha, guarda o @ e a foto fica', cr.etapa === 'material_recebido' && cr.coleta.material_instagram === '@rui.bolos' && le('lanc_midias').filter(x => x.contato_id === cr.id && x.origem === 'contato').length === 1 && /feitos com as tuas fotos/.test(ultimas(rui)[0]), [cr.etapa, cr.coleta, ultimas(rui)[0]])
+  confere('mistura: o aviso pro time fala da foto e do Instagram', le('eventos').some(e => e.tipo === 'lanc_aviso' && Date.parse(e.criado_em) >= INICIO && /Rui/.test(e.detalhe.texto) && /Instagram/.test(e.detalhe.texto) && /1 foto/.test(e.detalhe.texto)))
+  // g) texto sem @ nem mídia: não fecha; lembrete curto das duas saídas; "já te mando" fica quieta; "ok." não vira @
+  const sol = await ateMaterial('Sol', 'não tenho')
+  let n0 = saidas(sol).length
+  await diz(sol, 'Amanhã eu vejo isso')
+  confere('texto sem @ nem mídia: não fecha e manda o lembrete curto das duas saídas', contato(sol).etapa === 'coletando' && !contato(sol).coleta.material_instagram && /fotos ou vídeos/.test(ultimas(sol)[0]) && /@ do teu Instagram/.test(ultimas(sol)[0]) && saidas(sol).length === n0 + 1, ultimas(sol)[0])
+  n0 = saidas(sol).length
+  await diz(sol, 'Já te mando')
+  confere('"já te mando": a Maia espera quieta', saidas(sol).length === n0 && contato(sol).etapa === 'coletando')
+  await diz(sol, 'ok.')
+  confere('"ok." não vira @ do Instagram', !contato(sol).coleta.material_instagram && contato(sol).etapa === 'coletando', contato(sol).coleta)
+  // h) sem foto e sem Instagram: não pede o @ que ela não tem
+  const tito = await ateMaterial('Tito', 'não tenho')
+  await diz(tito, 'Não tenho foto nenhuma')
+  confere('sem foto e sem Instagram: pede foto do dia a dia (não pede @)', /qualquer foto do dia a dia/.test(ultimas(tito)[0]) && contato(tito).etapa === 'coletando', ultimas(tito)[0])
+  // i) quem já estava parado no pedido de fotos não recebe nada novo só por causa da mudança (a rotina não fecha nem manda)
+  const uli = await ateMaterial('Uli', 'não tenho')
+  const nU = saidas(uli).length
+  await post({ acao: 'rodar_rotina' })
+  confere('parado no pedido de material: a rotina não fecha nem manda nada na hora', saidas(uli).length === nU && contato(uli).etapa === 'coletando') }
 await post({ acao: 'chave_v2', ligar: false, modelos: { ENTREGA: null, IDEIA: null, DESPEDIDA: null } })
 confere('desliga a chave no fim (o servidor volta ao comportamento de antes)', (await get('acao=lista')).v2 === false)
 

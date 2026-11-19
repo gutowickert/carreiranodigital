@@ -2,7 +2,7 @@
 //   1. o webhook da escola chama entrada() na hora (rápido: só acha a pessoa e guarda a mensagem) e processa() no after()
 //   2. processa() espera uns segundos (a pessoa manda várias fotos ou mensagens seguidas) e responde UMA vez por tudo que chegou
 //   3. a coleta: uma pergunta por vez (o que vende e pra quem, cidade, produtos com preço, como vende, o que mais vende,
-//      a maior dificuldade, Instagram, 3 a 5 fotos e vídeos curtos, a hora da entrega)
+//      a maior dificuldade, Instagram, fotos e vídeos curtos OU só o @ do Instagram (18/11), a hora da entrega)
 //   4. o modo teste: a Maia responde como atendente do negócio da pessoa (sai com "sair" ou depois de 30 min parado)
 //   5. depois da entrega: quem quer fechar, tem dúvida ou testou vai pra fila do Rick (áudio de fechamento)
 // A Maia sempre diz que é IA, fala "tu", sem emoji, e mostra o valor antes do preço.
@@ -27,11 +27,22 @@ export const PERGUNTAS: Record<Exclude<Passo, 'fotos' | 'hora'>, string> = {
   dificuldade: 'Hoje, qual é a maior dificuldade pra vender mais?',
   instagram: 'Qual é o @ do teu Instagram? Se não tiver, é só dizer.',
 }
-export const PEDE_FOTOS = 'Agora o mais importante: me manda de 3 a 5 fotos do teu produto ou serviço e, se tiver, uns vídeos curtos do dia a dia. Pode ser do celular mesmo. Se tiver a logo da empresa, manda também. Eu só uso o que tu mandar.'
+// 18/11 (Guto): mais da metade parava aqui (84 de 157 em "quero ver"/"coletando"). Agora são duas saídas na mesma mensagem:
+// mandar fotos e vídeos OU, se não tiver à mão, só o @ do Instagram (a equipe monta a amostra com o que está lá)
+export const PEDE_FOTOS = 'Agora o material: me manda de 3 a 5 fotos do teu negócio e, se tiver, uns vídeos curtos, do celular mesmo. Se não tiver à mão, é só me mandar o @ do teu Instagram que a gente monta a amostra com o que está lá.'
+// quando o @ já veio na pergunta do Instagram, a 2ª saída é só dizer "pega do Instagram"
+export const pedeFotos = (c?: any) => {
+  const ig = handleConhecido(c)
+  return ig ? `Agora o material: me manda de 3 a 5 fotos do teu negócio e, se tiver, uns vídeos curtos, do celular mesmo. Se não tiver à mão, é só responder "pega do Instagram" que a gente monta a amostra com o que está no ${ig}.` : PEDE_FOTOS
+}
 export const PEDE_VIDEO = 'Fotos recebidas! Tem uns vídeos curtos do dia a dia (até 1 minuto)? Se tiver, manda aqui. Se não tiver, é só dizer "sem vídeo".'
-export const SEM_FOTO = 'Sem fotos eu não consigo, porque não invento imagem do teu negócio. Quando tiver, me manda aqui que eu faço.'
+export const SEM_FOTO = 'Sem problema! Então me manda o @ do teu Instagram que a gente monta a amostra com o que está lá.'
+// quem disse que não tem Instagram (o @ de verdade já fecha antes de chegar aqui)
+export const SEM_FOTO_SEM_IG = 'Sem problema! Pode ser qualquer foto do dia a dia, do celular mesmo. Quando tiver umas 3, me manda aqui que eu faço a tua amostra.'
+// 18/11: na hora do material veio um texto que não é foto, vídeo nem @ (sem repetir o pedido inteiro)
+export const LEMBRA_MATERIAL = 'Pra eu montar a tua amostra, me manda aqui as fotos ou vídeos do teu negócio. Ou, se for mais fácil, só o @ do teu Instagram.'
 // Sem se apresentar de novo: a Maia já se apresentou no disparo (Guto, 15/11)
-export const INTRO = 'Oba! Vou te fazer umas perguntas rápidas, uma de cada vez, e no fim te peço umas fotos e uns vídeos curtos. Leva uns 3 minutos.'
+export const INTRO = 'Oba! Vou te fazer umas perguntas rápidas, uma de cada vez, e no fim te peço umas fotos do teu negócio (ou só o teu Instagram). Leva uns 3 minutos.'
 export const AGORA_NAO = 'Tranquilo! Não te chamo mais sobre isso.'
 export const SEM_NEGOCIO = 'Entendi! A amostra é feita pro negócio de quem tem um. Mas se tu conhece alguém que tem negócio e ia gostar, me passa o nome e o WhatsApp da pessoa: se ela fechar, tu ganha comissão pela indicação.'
 export const PRECO = 'Te mostro tudo junto com a amostra: o que eu faço, o que está incluso e o valor. Primeiro deixa eu fazer a tua!'
@@ -247,11 +258,41 @@ async function responde(c: any, texto: string, novas: Novas) {
 }
 
 // ---------- 3. a coleta ----------
-export const materialNoInstagram = (t: string) => {
+// 18/11: o @ do Instagram, de um jeito tolerante: "@loja", "instagram.com/loja", "insta: loja", "meu insta é loja.da.maria",
+// ou só "loja.da.maria" / "loja_maria" / "loja123" (uma palavra com ponto, _ ou número). Devolve "@loja" ou null.
+// Uma palavra solta sem nada disso ("beleza", "amanha") não vira @: só vale se for o @ que a pessoa já deu antes.
+const NAO_HANDLE = /^(p|reel|reels|stories|explore|tv|accounts|direct)$/
+export function achaInstagram(t: string, conhecido?: string | null): string | null {
+  const s = String(t || '').normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase().trim()
+  if (!s) return null
+  const limpa = (h: string) => { const x = h.replace(/^@+/, '').replace(/[.]+$/, ''); return /^[a-z0-9._]{2,30}$/.test(x) && /[a-z]/.test(x) && !NAO_HANDLE.test(x) ? '@' + x : null }
+  const link = s.match(/(?:instagram\.com|instagr\.am)\/+([a-z0-9._]{2,30})/)
+  if (link) { const h = limpa(link[1]); if (h) return h }
+  const arroba = s.match(/(?:^|[\s:(,])@([a-z0-9._]{2,30})/)
+  if (arroba) { const h = limpa(arroba[1]); if (h) return h }
+  // "insta: loja", "meu instagram é loja.maria", "insta loja_maria"
+  const depois = s.match(/\b(?:insta|instagram|ig)\b\s*(?:e|eh|:|-|=)?\s*:?\s*([a-z0-9._]{2,30})[\s.!]*$/)
+  if (depois && !/^(e|eh|da|do|de|la|tem|aqui|mesmo|todo|tudo|ok|sim|nao|tb|tambem|dela|dele)$/.test(depois[1])) { const h = limpa(depois[1]); if (h) return h }
+  // uma palavra só ("ok." e "10h" não contam)
+  const w = s.replace(/[.!]+$/, '')
+  if (/^[a-z0-9._]{2,30}$/.test(w) && !/^\d+(h|hs|min)?$/.test(w)) {
+    const k = String(conhecido || '').toLowerCase().replace(/^@/, '')
+    if ((k && w === k) || /[._0-9]/.test(w)) return limpa(w)
+  }
+  return null
+}
+// o @ que veio na pergunta do Instagram (quando é um @ de verdade, não "não tem")
+function handleConhecido(c: any) { const ig = c?.coleta?.instagram; return ig ? achaInstagram(String(ig)) : null }
+// "pega do meu Instagram", "tá tudo no insta" (sem o @ escrito)
+const pedeDoInstagram = (t: string) => {
   const s = t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
   if (/\bnao\b/.test(s)) return false
-  return /instagram\.com\//.test(s) || /^@[\w.]{2,30}$/.test(s.trim()) || /(pega|pegar|tira|tirar|usa|usar|ve|ver|olha|olhar|tem|ta|esta|estao|tudo)\b.{0,25}\b(insta|instagram|perfil|feed)\b/.test(s)
+  return /(pega|pegar|tira|tirar|usa|usar|ve|ver|olha|olhar|tem|ta|esta|estao|tudo)\b.{0,25}\b(insta|instagram|perfil|feed)\b/.test(s)
 }
+// o texto vale como material? Um @ ou link (mesmo com "não tenho foto" junto) ou "pega do Instagram"
+export const materialNoInstagram = (t: string, conhecido?: string | null) => !!achaInstagram(t, conhecido) || pedeDoInstagram(t)
+// 18/11: "já te mando", "vou separar": a pessoa vai mandar, a Maia espera quieta (a retomada cuida se ela sumir)
+const vaiMandar = (t: string) => /\b(ja (te )?(mando|envio|passo)|vou (te )?(mandar|enviar|separar|pegar|tirar)|daqui a pouco|mais tarde (eu )?(mando|envio)|um momento|so um (minuto|momento)|aguarda|espera (ai|um pouco))\b/.test(t.normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase())
 // 16/11 (Nando): saudação automática ("X agradece seu contato…") ou só um "Oi" não é resposta: não vira o negócio, a cidade etc.
 export const soSaudacao = (v: string) => /^\s*(oi+|ol[aá]+|opa|e a[ií]|bom dia|boa tarde|boa noite|tudo bem\??)[\s!.,?]*$/i.test(v)
 export function limpaCampos(campos: Record<string, any>) {
@@ -277,19 +318,27 @@ export function proximoPasso(c: any, n: { fotos: number; videos: number }): Pass
   // 16/11 (Nando): sem a pergunta da hora (as pessoas paravam nela). Fotos e vídeo recebidos: fecha ("em até 24 horas")
   return 'feito'
 }
-const pergunta = (p: Passo | 'video' | 'feito') => p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : PERGUNTAS[p]
+const pergunta = (p: Passo | 'video' | 'feito', c?: any) => p === 'fotos' ? pedeFotos(c) : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : PERGUNTAS[p]
 
 async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   let n = await contaMidias(c)
   let passo = proximoPasso(c, n)
   const antes = c.estado?.passo || null
   const partes: string[] = intro ? [INTRO] : []
-  // 17/11: na hora das fotos, a pessoa mandou o link do Instagram (ou "pega do meu insta"): vale como material, sem pedir foto de novo
-  if (texto && (passo === 'fotos' || passo === 'video') && materialNoInstagram(texto)) {
-    const ig = (texto.match(/https?:\/\/(www\.)?instagram\.com\/[^\s]+/i) || [])[0] || (texto.match(/@[\w.]{2,30}/) || [])[0] || c.coleta?.instagram || 'o Instagram'
-    await salvaJson(c, 'coleta', { material_instagram: ig, sem_video: true })
+  // 17/11 e 18/11: na hora do material, a pessoa mandou o @ ou o link do Instagram (ou "pega do meu insta"): vale como material
+  // sozinho, sem exigir foto nem vídeo. Se veio foto junto, as fotos também ficam (e vão pro aviso do time). Quem já tinha dado
+  // o @ e diz "não tenho foto" também fecha com o Instagram
+  const conhecido = handleConhecido(c)
+  const semFotoComIg = passo === 'fotos' && !!conhecido && !!texto && !novas.fotos && !novas.videos && (await interpreta(texto, 'fotos', c.coleta)).intencao === 'sem_foto'
+  if (texto && (passo === 'fotos' || passo === 'video') && (materialNoInstagram(texto, conhecido) || semFotoComIg)) {
+    const novo = achaInstagram(texto, conhecido)
+    const ig = novo || conhecido || (texto.match(/https?:\/\/\S+/i) || [])[0] || 'o Instagram'
+    await salvaJson(c, 'coleta', { material_instagram: ig, sem_video: true, ...(novo && !conhecido ? { instagram: novo } : {}) })
     if (c.etapa === 'quero_ver') await salva(c, { etapa: 'coletando' })
-    return fechaColeta((await acha(c.id)) || c, [...partes, 'Combinado, eu pego as fotos do teu Instagram.'])
+    const recebeu = novas.fotos || novas.videos
+      ? `Recebi ${[novas.fotos ? `${novas.fotos} foto${novas.fotos > 1 ? 's' : ''}` : '', novas.videos ? `${novas.videos} vídeo${novas.videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')} e anotei o teu Instagram.`
+      : `Combinado, a gente monta a amostra com o que está no teu Instagram${ig.startsWith('@') ? ` (${ig})` : ''}.`
+    return fechaColeta((await acha(c.id)) || c, [...partes, recebeu])
   }
   if (texto) {
     const passoLeitura: Passo = passo === 'video' || passo === 'feito' ? 'fotos' : passo
@@ -299,12 +348,13 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
     if (Object.keys(campos).length) await salvaJson(c, 'coleta', campos)
     if (l.intencao === 'agora_nao') return agoraNao(c)
     if (l.intencao === 'sem_negocio') return semNegocio(c)
-    if (l.intencao === 'sem_foto') { await salvaJson(c, 'estado', { sem_foto_em: new Date().toISOString(), passo: 'fotos' }); await mandaTexto(c, [...partes, SEM_FOTO].join('\n\n')); return { ok: true, passo: 'fotos' } }
+    // 18/11: sem foto, a saída é o Instagram (quem já tinha dado o @ fechou lá em cima)
+    if (l.intencao === 'sem_foto') { await salvaJson(c, 'estado', { sem_foto_em: new Date().toISOString(), passo: 'fotos' }); await mandaTexto(c, [...partes, c.coleta?.instagram ? SEM_FOTO_SEM_IG : SEM_FOTO].join('\n\n')); return { ok: true, passo: 'fotos' } }
     if (l.intencao === 'sem_video' || (passo === 'video' && l.intencao === 'responde') || (passo === 'video' && l.intencao === 'so_essas')) await salvaJson(c, 'coleta', { sem_video: true })
     if (l.intencao === 'so_essas' && passo === 'fotos') await salvaJson(c, 'coleta', { so_essas: true })
     if (l.intencao === 'preco' || l.intencao === 'duvida') {
       if (l.intencao === 'duvida') await registraDuvida(c, l.duvida || texto)
-      await mandaTexto(c, [...partes, l.intencao === 'preco' ? PRECO : DUVIDA, pergunta(proximoPasso(c, n))].join('\n\n'))
+      await mandaTexto(c, [...partes, l.intencao === 'preco' ? PRECO : DUVIDA, pergunta(proximoPasso(c, n), c)].join('\n\n'))
       await salvaJson(c, 'estado', { passo: proximoPasso(c, n) })
       return { ok: true, passo: proximoPasso(c, n), [l.intencao]: true }
     }
@@ -321,10 +371,18 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
     ? `Recebi ${[novas.fotos ? `${novas.fotos} foto${novas.fotos > 1 ? 's' : ''}` : '', novas.videos ? `${novas.videos} vídeo${novas.videos > 1 ? 's' : ''}` : ''].filter(Boolean).join(' e ')}.`
     : ''
   let msg: string
+  // 18/11: na hora do material, um texto sem foto, vídeo nem @: "já te mando" espera quieta; o resto ganha um lembrete curto
+  // das duas saídas (e não o pedido inteiro de novo). Se repetir, o mandaTexto passa pro time
+  if (passo === 'fotos' && antes === 'fotos' && texto && !novas.fotos && !novas.videos) {
+    if (vaiMandar(texto)) return { ok: true, passo, quieta: true }
+    await mandaTexto(c, [...partes, LEMBRA_MATERIAL].join('\n\n'))
+    return { ok: true, passo }
+  }
+  const atual = (await acha(c.id)) || c   // com o @ que acabou de chegar na pergunta do Instagram
   if (passo === 'fotos' && antes === 'fotos' && (novas.fotos || novas.videos)) msg = `${recebi} ${n.fotos < 3 ? `Manda mais ${3 - n.fotos} foto${3 - n.fotos > 1 ? 's' : ''} que já dá.` : ''}`.trim()
-  else if (passo === antes && !texto && (novas.fotos || novas.videos)) msg = `${recebi} Já guardei.\n\n${pergunta(passo)}`
-  else if (passo === antes && texto) msg = pergunta(passo)   // a resposta não serviu: pergunta de novo
-  else msg = [recebi || (texto && !intro ? OKS[(c.estado?.oks || 0) % OKS.length] : ''), pergunta(passo)].filter(Boolean).join(' ')
+  else if (passo === antes && !texto && (novas.fotos || novas.videos)) msg = `${recebi} Já guardei.\n\n${pergunta(passo, atual)}`
+  else if (passo === antes && texto) msg = pergunta(passo, atual)   // a resposta não serviu: pergunta de novo
+  else msg = [recebi || (texto && !intro ? OKS[(c.estado?.oks || 0) % OKS.length] : ''), pergunta(passo, atual)].filter(Boolean).join(' ')
   if (passo === 'video' && (novas.fotos || novas.videos) && antes === 'fotos') msg = PEDE_VIDEO
   await mandaTexto(c, [...partes, msg].join('\n\n'))
   await salvaJson(c, 'estado', { passo, oks: (c.estado?.oks || 0) + 1 })
@@ -334,6 +392,7 @@ async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
 // 16/11 (Nando): sem hora marcada. A amostra sai assim que a equipe aprovar; o prazo prometido é de 24 h (estado.prazo_em,
 // pra a tela da equipe ordenar). Quem já tinha hora combinada (entrega_em) segue com ela
 export const MATERIAL_RECEBIDO = 'Material recebido! Em até 24 horas eu te mando aqui como ficou: 2 anúncios e 1 vídeo feitos com as tuas fotos.'
+export const MATERIAL_RECEBIDO_IG = 'Material recebido! Em até 24 horas eu te mando aqui como ficou: 2 anúncios e 1 vídeo feitos com o que está no teu Instagram.'
 async function avisaMaterial(c: any, n: { fotos: number; videos: number }) {
   const atual = (await acha(c.id)) || c
   if (atual.estado?.aviso_material) return
@@ -346,10 +405,12 @@ export async function fechaColeta(c: any, partes: string[] = []) {
   const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
   await salva(c, { etapa: avanca(c.etapa, 'material_recebido') })
   await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString(), prazo_em: prazo })
-  await mandaTexto(c, [...partes, MATERIAL_RECEBIDO].join('\n\n'))
-  await evento('lanc_material', { contato: c.id })
+  const n = await contaMidias(c)
+  const soInstagram = !!c.coleta?.material_instagram && !n.fotos && !n.videos
+  await mandaTexto(c, [...partes, soInstagram ? MATERIAL_RECEBIDO_IG : MATERIAL_RECEBIDO].join('\n\n'))
+  await evento('lanc_material', { contato: c.id, ...(c.coleta?.material_instagram ? { instagram: c.coleta.material_instagram } : {}) })
   // o aviso pro time sai quando as fotos chegam (avisaMaterial); aqui só se ainda não saiu (ex.: a rotina fechando quem parou)
-  await avisaMaterial(c, await contaMidias(c))
+  await avisaMaterial(c, n)
   return { ok: true, passo: 'feito', prazo_em: prazo }
 }
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
@@ -384,7 +445,7 @@ export const pareceCliente = (t: string) => {
 export const TEXTO_TESTE = (neg: string) => `Quero testar a Maia como cliente da ${neg} (modo teste)`
 async function entraTeste(c: any) {
   if (!c.coleta?.negocio) {
-    await mandaTexto(c, 'O teste fica pronto junto com a tua amostra: primeiro eu preciso conhecer o teu negócio. ' + pergunta(proximoPasso(c, await contaMidias(c))))
+    await mandaTexto(c, 'O teste fica pronto junto com a tua amostra: primeiro eu preciso conhecer o teu negócio. ' + pergunta(proximoPasso(c, await contaMidias(c)), c))
     return { ok: true, teste: 'sem coleta' }
   }
   const ate = new Date(Date.now() + TESTE_MIN() * 60e3).toISOString()

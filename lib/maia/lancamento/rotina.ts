@@ -7,7 +7,7 @@
 //   4. marca "Disparado" quem recebeu o modelo de abertura (lê os envios dos disparos do CRM)
 import { maiaDb as db, maiaLocal } from '../db'
 import { salva, salvaJson, mandaTexto, mandaModelo, janelaAberta, janelaAte, horaBR, primeiroNome, evento, variantes } from './base'
-import { proximoPasso, contaMidias, PERGUNTAS, PEDE_FOTOS, PEDE_VIDEO, perguntaHora, saiTeste } from './conversa'
+import { proximoPasso, contaMidias, PERGUNTAS, pedeFotos, PEDE_VIDEO, perguntaHora, saiTeste } from './conversa'
 import { entrega, horaDeEntregar, linkAmostra, nomeNeg } from './amostra'
 import { acompanhamento, naSequencia } from './entrega'
 
@@ -37,8 +37,8 @@ export async function segueAutoResposta(agora = new Date()) {
   return feitos
 }
 
-function perguntaPendente(p: string) {
-  return p === 'fotos' ? PEDE_FOTOS : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : (PERGUNTAS as any)[p] || ''
+function perguntaPendente(p: string, c?: any) {
+  return p === 'fotos' ? pedeFotos(c) : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : (PERGUNTAS as any)[p] || ''
 }
 export function textoRetomada(c: any, n: number, fase: 'coleta' | 'amostra', pendente = '') {
   const oi = primeiroNome(c.nome) ? `Oi, ${primeiroNome(c.nome)}!` : 'Oi!'
@@ -82,7 +82,7 @@ export async function retomadas(agora = new Date()) {
     // 16/11: no mínimo 3 h entre uma retomada e a próxima (se a 1ª saiu atrasada, a 2ª não vem colada)
     if (n > 0 && r.ultima_em && t - Date.parse(r.ultima_em) < 3 * H) continue
     let pendente = ''
-    if (fase === 'coleta') pendente = perguntaPendente(proximoPasso(c, await contaMidias(c)))
+    if (fase === 'coleta') pendente = perguntaPendente(proximoPasso(c, await contaMidias(c)), c)
     const texto = textoRetomada(c, n, fase, pendente)
     let como = ''
     if (janelaAberta(c, 10, t)) { await mandaTexto(c, texto); como = 'texto' }
