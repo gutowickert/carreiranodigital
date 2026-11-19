@@ -8,7 +8,7 @@
 import { maiaDb as db } from '../db'
 import { SITE, WHATS_ESCOLA, primeiroNome, midias } from './base'
 import { TEXTO_TESTE } from './conversa'
-import { PRECO, conversaSimples } from './amostra'
+import { PRECO, PRECO_ONLINE, ofertaOnline, conversaSimples } from './amostra'
 import { nomeDoNegocio, roteiroSimples, type Ponto, type Roteiro } from './conteudo'
 
 const esc = (s: any) => String(s ?? '').replace(/[&<>"']/g, ch => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]!))
@@ -57,6 +57,8 @@ export async function htmlAmostraNova(c: any, op: { previa?: boolean } = {}) {
   const conv = a.conversa?.length ? a.conversa : conversaSimples(c).conversa
   const retomada = a.retomada || conversaSimples(c).retomada
   const testa = wa(TEXTO_TESTE(neg)), rodando = wa(`Quero colocar a Maia rodando na ${neg}`)
+  // 19/11 (Guto): quem veio do tráfego (fora do RS) tem a oferta online: implantação por chamada de vídeo, 1º mês R$ 497, depois R$ 797
+  const online = ofertaOnline(c)
   const carro = curto(k.carro_chefe, 60), cidade = curto(k.cidade, 40)
   const info = [
     ['O que vende', k.negocio], ['Onde', k.cidade], ['O que mais sai', k.carro_chefe], ['Como vende', k.como_vende], ['O desafio', k.dificuldade], ['Instagram', temIG(k) ? k.instagram : null],
@@ -280,7 +282,7 @@ ${grade.length >= 3 ? `<section aria-labelledby="t-grade">
 <span class="rot">Como começa</span>
 <h2 id="t-comeca">Três passos até a ${esc(neg)} rodando</h2>
 <div class="passos">
-  <div class="ps s1"><b>1</b><h3>Implantação</h3><p>3 horas, presencial e individual, com um especialista. A gente conhece o negócio por dentro, define o estilo dos vídeos e conecta tuas contas.</p></div>
+  <div class="ps s1"><b>1</b><h3>Implantação</h3><p>${online ? 'Online, por chamada de vídeo, individual, com um especialista. Tu compartilha a tela, a gente' : '3 horas, presencial e individual, com um especialista. A gente'} conhece o negócio por dentro, define o estilo dos vídeos e conecta tuas contas.</p></div>
   <div class="ps s2"><b>2</b><h3>Anúncio no ar</h3><p>${PRECO.dias_no_ar} dias depois da implantação. Tu aprova as peças pelo celular e a Maia já atende quem chamar.</p></div>
   <div class="ps s3"><b>3</b><h3>O primeiro mês</h3><p>Análise a cada 2 dias, troca do que não vende, posts toda semana e o relatório no dia 2.</p></div>
 </div>
@@ -290,9 +292,11 @@ ${grade.length >= 3 ? `<section aria-labelledby="t-grade">
 <span class="rot">Pra colocar isso rodando</span>
 <h2 id="t-oferta">A amostra foi feita com pouca informação</h2>
 <div class="card oferta">
-  <div class="inc"><h3>A implantação de verdade é presencial e individual</h3><p class="sub">3 horas com um especialista: a gente aprende teu jeito de vender, teus preços e tuas regras, conecta tuas contas e deixa tudo no padrão da ${esc(neg)}. ${PRECO.dias_no_ar} dias depois o anúncio está no ar.</p>
+  <div class="inc"><h3>A implantação de verdade é ${online ? 'individual, online' : 'presencial e individual'}</h3><p class="sub">${online ? 'Por chamada de vídeo, com um especialista' : '3 horas com um especialista'}: a gente aprende teu jeito de vender, teus preços e tuas regras, conecta tuas contas e deixa tudo no padrão da ${esc(neg)}. ${PRECO.dias_no_ar} dias depois o anúncio está no ar.</p>
   <ul><li>Anúncios novos todo mês, testados e trocados</li><li>Atendimento no WhatsApp a qualquer hora, no jeito de vocês</li><li>12 posts por mês</li><li>Análise a cada 2 dias, relatório todo dia 2 e painel com o retorno</li><li>Equipe conferindo tudo. Sem fidelidade.</li></ul></div>
-  <div class="preco"><span class="rot">Pros primeiros</span><div>Ativação de <s>${rs(PRECO.ativacao_de)}</s> por</div><b>${rs(PRECO.ativacao_por)}</b><small>Depois, ${rs(PRECO.mensal)} por mês, sem fidelidade. A verba do anúncio é paga direto pra Meta, na tua conta.</small></div>
+  ${online
+    ? `<div class="preco"><span class="rot">Pra começar</span><div>O primeiro mês, já com a implantação</div><b>${rs(PRECO_ONLINE.primeiro_mes)}</b><small>Depois, ${rs(PRECO_ONLINE.mensal)} por mês, sem fidelidade. A verba do anúncio é paga direto pra Meta, na tua conta.</small></div>`
+    : `<div class="preco"><span class="rot">Pros primeiros</span><div>Ativação de <s>${rs(PRECO.ativacao_de)}</s> por</div><b>${rs(PRECO.ativacao_por)}</b><small>Depois, ${rs(PRECO.mensal)} por mês, sem fidelidade. A verba do anúncio é paga direto pra Meta, na tua conta.</small></div>`}
 </div>
 </section>
 
@@ -310,7 +314,7 @@ ${grade.length >= 3 ? `<section aria-labelledby="t-grade">
 <section class="final" aria-labelledby="t-fim">
   <img alt="A Maia" src="/maia/img/maia-avatar.webp">
   <h2 id="t-fim">Bora colocar a ${esc(neg)} pra rodar?</h2>
-  <p>Me chama no WhatsApp que a gente marca a implantação. Pros primeiros, a ativação sai por ${rs(PRECO.ativacao_por)}.</p>
+  <p>${online ? `Me chama no WhatsApp que a gente marca a implantação online. O primeiro mês, já com ela, sai por ${rs(PRECO_ONLINE.primeiro_mes)}.` : `Me chama no WhatsApp que a gente marca a implantação. Pros primeiros, a ativação sai por ${rs(PRECO.ativacao_por)}.`}</p>
   <div class="ctas"><a class="cta" href="${esc(rodando)}">Quero colocar rodando</a><a class="cta2" href="${esc(testa)}">Testar a Maia antes</a></div>
 </section>
 <p class="rodape">A Maia é uma inteligência artificial da Carreira no Digital (Lajeado e Porto Alegre, RS). A foto da Maia foi feita por IA. As fotos e os vídeos dos anúncios são da ${esc(neg)}.</p>

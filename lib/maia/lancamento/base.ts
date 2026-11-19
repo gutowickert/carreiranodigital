@@ -218,6 +218,9 @@ export async function avisaGuto(titulo: string, texto: string, urgente = false) 
     const { supabaseAdmin: sb } = await import('@/lib/supabase-admin')
     // 16/11 (Nando): o aviso vai pro time (Guto e Nando), pelo WhatsApp do perfil de cada um na escola. MAIA_LANC_AVISO_EMAILS troca
     const emails = String(process.env.MAIA_LANC_AVISO_EMAILS || 'guto.wickert@gmail.com,debairros@hotmail.com').split(',').map(s => s.trim()).filter(Boolean)
+    // 19/11: o que é do Rick (mandar áudio, ligar) vai também pro WhatsApp do Rick, na hora. MAIA_LANC_AVISO_RICK_EMAILS troca ("-" desliga)
+    const rick = String(process.env.MAIA_LANC_AVISO_RICK_EMAILS || 'ricardovognach@hotmail.com')
+    if (/^Rick\b/.test(titulo) && rick !== '-') emails.push(...rick.split(',').map(s => s.trim()).filter(Boolean))
     const { data } = await sb.from('usuarios_perfil').select('whatsapp').in('email', emails)
     const fones = [...new Set((data || []).map((x: any) => soDigitos(x.whatsapp)).filter(Boolean))]
     if (!fones.length) return { ok: false, erro: 'sem whatsapp no perfil' }

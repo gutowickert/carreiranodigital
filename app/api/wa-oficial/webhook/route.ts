@@ -150,7 +150,9 @@ async function registrarRecebida(m: any, value: any) {
   const sufixo = tel.slice(-8)
   // LANÇAMENTO DA MAIA (15/11/2026, lib/maia/lancamento): quem está na lista do lançamento (a "etiqueta maia") é atendido
   // pela Maia, não pela IA do CRM. Só com MAIA_LANCAMENTO_LIGADO=1. "sair" no modo teste da Maia sai do teste, não é opt-out.
-  const lanc = await lancamentoEntrada(tel, m, nome, tipo, texto)
+  // 19/11: quem NÃO está na lista e chega pelo anúncio da Maia ("Quero a amostra grátis da Maia pra minha oficina") também
+  // é da Maia (lib/maia/lancamento/trafego.ts, só com MAIA_LANC_TRAFEGO=1): antes caía no plantão do Deu Venda
+  const lanc = await lancamentoEntrada(tel, m, nome, tipo, texto, referral)
   if (lanc && PALAVRAS_OPTOUT.has(limpo) && lanc.emTeste) {
     // segue sem opt-out: a Maia trata o "sair" do teste
   } else if (PALAVRAS_OPTOUT.has(limpo)) {
@@ -226,16 +228,20 @@ async function registrarRecebida(m: any, value: any) {
 
 // LANÇAMENTO DA MAIA (15/11/2026): a pessoa está na lista do lançamento? Guarda a mensagem na conversa da Maia e diz se a
 // Maia trata. Com a chave desligada (MAIA_LANCAMENTO_LIGADO diferente de 1) não consulta nada: o CRM segue como sempre.
-async function lancamentoEntrada(tel: string, m: any, nome: string | null, tipo: string, texto: string | null) {
+async function lancamentoEntrada(tel: string, m: any, nome: string | null, tipo: string, texto: string | null, referral: ReturnType<typeof lerReferral> = null) {
   if (process.env.MAIA_LANCAMENTO_LIGADO !== '1') return null
   try {
     const { entrada } = await import('@/lib/maia/lancamento/conversa')
     const { contatoDoTelefone } = await import('@/lib/maia/lancamento/base')
     const antes = await contatoDoTelefone(tel)
-    if (!antes) return null
-    const emTeste = antes.estado?.modo === 'teste' && Date.parse(antes.estado?.teste_ate || 0) > Date.now()
+    if (!antes) {
+      // 19/11 (tráfego): fora da lista, só entra quem mandou a mensagem pronta do anúncio da Maia (e com a chave ligada)
+      const { querEntrar } = await import('@/lib/maia/lancamento/trafego')
+      if (!querEntrar(texto, referral)) return null
+    }
+    const emTeste = !!antes && antes.estado?.modo === 'teste' && Date.parse(antes.estado?.teste_ate || 0) > Date.now()
     const midia = m.image || m.video || m.audio || m.voice || null   // o áudio também: a Maia transcreve (16/11)
-    const r = await entrada({ telefone: tel, nome, tipo: m.type === 'button' ? 'botao' : tipo, texto, midia_id: midia?.id || null, mime: midia?.mime_type || null, wamid: m.id || null })
+    const r = await entrada({ telefone: tel, nome, tipo: m.type === 'button' ? 'botao' : tipo, texto, midia_id: midia?.id || null, mime: midia?.mime_type || null, wamid: m.id || null, referral })
     return { ...r, emTeste }
   } catch (e: any) {
     await supabase.from('webhook_logs').insert({ org_id: ORG_CND, origem: 'maia-lancamento', evento: 'erro', status: 'erro', payload: { erro: String(e?.message || e).slice(0, 300) } }).then(() => null, () => null)

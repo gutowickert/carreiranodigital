@@ -17,7 +17,9 @@ function cartao(c: any) {
     negocio: k.nome_negocio || k.negocio || null, cidade: k.cidade || c.cidade || null, etapa: c.etapa,
     entrega_em: c.entrega_em, entregue_em: c.entregue_em, aberturas: c.aberturas || 0, testou: !!c.testou_em,
     rick_pendente: !!(c.rick_pendente_em && !c.rick_feito_em), duvida: !!c.estado?.duvida, em_teste: c.estado?.modo === 'teste',
-    rick_ligar: !!(c.estado?.acomp?.ligar && !c.estado.acomp.ligar.feito_em),
+    rick_ligar: !!(c.estado?.acomp?.ligar && !c.estado.acomp.ligar.feito_em) || !!(c.estado?.ligacao?.hora && !c.estado.ligacao.feita_em),
+    // 19/11 (tráfego): veio do anúncio, de qual nicho e qual anúncio
+    anuncio: c.estado?.origem ? (c.estado.origem.anuncio || c.estado.origem.titulo || 'anúncio') : null, ramo: c.ramo || null,
     atualizado_em: c.ultima_entrada_em || c.atualizado_em,
   }
 }

@@ -11,6 +11,7 @@ import {
   contatoDoTelefone, contato as acha, salva, salvaJson, registra, msgs, midias, mandaTexto as mandaTextoBase, mandaMidia, guardaMidia, avisaGuto, avanca,
   primeiroNome, diaDaEntrega, diaFalado, instanteBR, quandoFalado, evento, variantes, entregaV2, timeFalando,
 } from './base'
+import * as trafego from './trafego'
 import { interpreta, lePosEntrega, ehQueroVer, ehAgoraNao, ehSair, ehDescadastro, ehPedeHumano, ehAutoResposta, ehGatilhoTeste, ehTestarAgora, lerHora, type Passo } from './interpreta'
 
 export const TESTE_MIN = () => Math.max(5, +(process.env.MAIA_LANC_TESTE_MIN || 120))   // 17/11: era 30 min (a Maria saiu do teste no meio)
@@ -33,6 +34,9 @@ export const PEDE_FOTOS = 'Agora o material: me manda de 3 a 5 fotos do teu neg�
 // quando o @ já veio na pergunta do Instagram, a 2ª saída é só dizer "pega do Instagram"
 export const pedeFotos = (c?: any) => {
   const ig = handleConhecido(c)
+  // 19/11 (tráfego): o material do ramo ("fotos de antes e depois dos carros", "fotos de obras prontas"...)
+  const doNicho = trafego.pedeMaterialNicho(c, ig)
+  if (doNicho) return doNicho
   return ig ? `Agora o material: me manda de 3 a 5 fotos do teu negócio e, se tiver, uns vídeos curtos, do celular mesmo. Se não tiver à mão, é só responder "pega do Instagram" que a gente monta a amostra com o que está no ${ig}.` : PEDE_FOTOS
 }
 export const PEDE_VIDEO = 'Fotos recebidas! Tem uns vídeos curtos do dia a dia (até 1 minuto)? Se tiver, manda aqui. Se não tiver, é só dizer "sem vídeo".'
@@ -84,13 +88,18 @@ const nomeNeg = (c: any) => c.coleta?.nome_negocio || (c.coleta?.negocio ? Strin
 export const rotulo = (c: any) => `${primeiroNome(c.nome) || 'Contato ' + String(c.telefone).slice(-4)} (${c.coleta?.nome_negocio || (c.coleta?.negocio ? String(c.coleta.negocio).slice(0, 50) : 'negócio ainda não dito')})`
 
 // ---------- 1. a entrada (síncrona, no webhook) ----------
-export type Entrada = { telefone: string; nome?: string | null; tipo: string; texto?: string | null; midia_id?: string | null; mime?: string | null; wamid?: string | null; b64?: string | null }
+export type Entrada = { telefone: string; nome?: string | null; tipo: string; texto?: string | null; midia_id?: string | null; mime?: string | null; wamid?: string | null; b64?: string | null; referral?: trafego.Referral }
 // devolve tratado=true quando a mensagem é da Maia (aí a IA normal do CRM não responde)
 export async function entrada(m: Entrada): Promise<{ tratado: boolean; contato_id?: string; msg_id?: string }> {
-  const c = await contatoDoTelefone(m.telefone)
+  // 19/11 (tráfego): quem não está na lista e mandou a mensagem pronta do anúncio ("Quero a amostra grátis da Maia pra minha
+  // oficina") entra no funil agora, com o nicho e a origem (só com MAIA_LANC_TRAFEGO=1)
+  const c = (await contatoDoTelefone(m.telefone)) || (await trafego.novoDoAnuncio(m)) || (await contatoDoTelefone(m.telefone))
   if (!c) return { tratado: false }
   const t = String(m.texto || '')
-  const volta = ehQueroVer(t) || ehGatilhoTeste(t)
+  const pedido = trafego.trafegoLigado() && trafego.ehPedidoAmostra(t)
+  const volta = ehQueroVer(t) || ehGatilhoTeste(t) || pedido
+  // quem já estava na lista e clicou no anúncio: guarda o nicho e a origem
+  if (pedido || (trafego.trafegoLigado() && m.referral?.adId)) await trafego.marcaPedido(c, t, m.referral)
   // quem recusou, perdeu ou já está com o time: a Maia só volta se a pessoa pedir pra ver (ou mandar o texto do teste)
   if (['agora_nao', 'perdido'].includes(c.etapa) && !c.estado?.indicacao && !volta) return { tratado: false }
   if (['implantacao_marcada', 'pago'].includes(c.etapa) && !ehGatilhoTeste(t)) return { tratado: false }
@@ -124,6 +133,7 @@ export async function processa(contato_id: string, msg_id: string) {
   if (ESPERA_MS()) await new Promise(r => setTimeout(r, ESPERA_MS()))
   const c = await acha(contato_id)
   if (!c) return { ok: false }
+  await trafego.completaOrigem(c)   // 19/11: os nomes da campanha e do anúncio (uma vez, fora do webhook)
   const todas = await msgs(c.id)
   const pend = todas.filter(m => m.direcao === 'entrada' && !m.processado)
   if (!pend.length) return { ok: true, nada: true }
@@ -233,7 +243,10 @@ async function responde(c: any, texto: string, novas: Novas) {
     await salva(c, { etapa: 'quero_ver', motivo_perda: null })
     await salvaJson(c, 'estado', { indicacao: null, inicio_em: new Date().toISOString() })
     await evento('lanc_quero_ver', { contato: c.id })
-    return coleta(c, ehQueroVer(texto) ? '' : texto, novas, true)
+    // 19/11 (tráfego): a mensagem pronta do anúncio (ou a 1ª mensagem de quem veio do anúncio) não é resposta de pergunta
+    const primeira = trafego.doTrafego(c) && !c.ultima_saida_em
+    if (primeira) await trafego.notaNoCrm(c)
+    return coleta(c, ehQueroVer(texto) || trafego.ehPedidoAmostra(texto) || primeira ? '' : texto, novas, true)
   }
   // 16/11: na coleta, o robô do WhatsApp da empresa respondendo a pergunta ("no momento não estamos atendendo") não é resposta
   if (['quero_ver', 'coletando'].includes(c.etapa) && texto && !novas.fotos && !novas.videos && ehAutoResposta(texto)) {
@@ -242,6 +255,11 @@ async function responde(c: any, texto: string, novas: Novas) {
   }
   if (['quero_ver', 'coletando'].includes(c.etapa)) return coleta(c, texto, novas, false)
   if (['material_recebido', 'em_producao'].includes(c.etapa)) return aguardando(c, texto, novas)
+  // 19/11 (tráfego): a resposta à oferta da ligação com o Rick (um horário ou "não")
+  if (texto && c.estado?.ligacao?.oferecida_em && !c.estado.ligacao.hora) {
+    const r = await trafego.respondeLigacao(c, texto, rotulo(c))
+    if (r) { await mandaTexto(c, r); return { ok: true, ligacao: true } }
+  }
   if (['amostra_entregue', 'testou'].includes(c.etapa)) {
     // 16/11 (entrega nova): a amostra saiu pelo modelo (fora das 24 h); a pessoa respondeu, então vão as peças, o botão e o link
     if (entregaV2() && c.amostra?.falta_resto && c.amostra?.entrega_v2) {
@@ -307,7 +325,10 @@ export async function contaMidias(c: any) {
 // o próximo passo que falta (as fotos: 3, ou menos se a pessoa disse que só tem essas; o vídeo é opcional, mas pergunta)
 export function proximoPasso(c: any, n: { fotos: number; videos: number }): Passo | 'video' | 'feito' {
   const k = c.coleta || {}
-  for (const p of ['negocio', 'cidade', 'produtos', 'faixa_preco', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) {
+  // 19/11 (tráfego): no máximo 3 perguntas antes do material (as do nicho, sem perguntar o ramo de novo). O @ vem junto do material
+  const curtos = trafego.passosDe(c)
+  if (curtos) { for (const p of curtos) if (!k[p]) return p as Passo }
+  else for (const p of ['negocio', 'cidade', 'produtos', 'faixa_preco', 'como_vende', 'carro_chefe', 'dificuldade', 'instagram'] as const) {
     if (p === 'faixa_preco') { if (!k.faixa_preco && k.produtos && !/\d/.test(String(k.produtos))) return p; continue }
     if (!k[p]) return p
   }
@@ -318,13 +339,13 @@ export function proximoPasso(c: any, n: { fotos: number; videos: number }): Pass
   // 16/11 (Nando): sem a pergunta da hora (as pessoas paravam nela). Fotos e vídeo recebidos: fecha ("em até 24 horas")
   return 'feito'
 }
-const pergunta = (p: Passo | 'video' | 'feito', c?: any) => p === 'fotos' ? pedeFotos(c) : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : PERGUNTAS[p]
+export const pergunta = (p: Passo | 'video' | 'feito', c?: any) => p === 'fotos' ? pedeFotos(c) : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : p === 'feito' ? '' : (trafego.perguntaNicho(p, c) || PERGUNTAS[p])
 
 async function coleta(c: any, texto: string, novas: Novas, intro: boolean) {
   let n = await contaMidias(c)
   let passo = proximoPasso(c, n)
   const antes = c.estado?.passo || null
-  const partes: string[] = intro ? [INTRO] : []
+  const partes: string[] = intro ? [trafego.doTrafego(c) ? trafego.introTrafego(c) : INTRO] : []
   // 17/11 e 18/11: na hora do material, a pessoa mandou o @ ou o link do Instagram (ou "pega do meu insta"): vale como material
   // sozinho, sem exigir foto nem vídeo. Se veio foto junto, as fotos também ficam (e vão pro aviso do time). Quem já tinha dado
   // o @ e diz "não tenho foto" também fecha com o Instagram
@@ -399,16 +420,27 @@ async function avisaMaterial(c: any, n: { fotos: number; videos: number }) {
   const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
   await salvaJson(c, 'estado', { aviso_material: new Date().toISOString() })
   const ig = atual.coleta?.material_instagram
-  await avisaGuto('material chegou, começar a amostra', `${rotulo(atual)} ${ig ? `pediu pra pegar as fotos do Instagram (${ig})${n.fotos ? ` e mandou ${n.fotos} foto(s)` : ''}` : `mandou ${n.fotos} foto(s)${n.videos ? ` e ${n.videos} vídeo(s)` : ''}`}. Prometido em até 24 h (até ${quandoFalado(prazo)}). Tela: www.carreiranodigital.com/maia/operacao/lancamento.html`, true)
+  // 19/11 (tráfego): o aviso diz de onde veio, o nicho, o ENCAIXE (o time decide se produz) e o prazo que a Maia prometeu
+  const tr = trafego.doTrafego(atual)
+  const enc = tr ? trafego.encaixe(atual, n) : null
+  if (enc) await salvaJson(c, 'estado', { encaixe: enc })
+  const prazoDito = atual.estado?.prazo_em || prazo
+  const extra = tr ? ` Veio do anúncio (${trafego.defNicho(atual)?.nome || 'fora dos 3 nichos'}). Encaixe: ${enc!.texto}.` : ''
+  await avisaGuto('material chegou, começar a amostra', `${rotulo(atual)} ${ig ? `pediu pra pegar as fotos do Instagram (${ig})${n.fotos ? ` e mandou ${n.fotos} foto(s)` : ''}` : `mandou ${n.fotos} foto(s)${n.videos ? ` e ${n.videos} vídeo(s)` : ''}`}.${extra} Prometido até ${quandoFalado(prazoDito)}. Tela: www.carreiranodigital.com/maia/operacao/lancamento.html`, true)
 }
 export async function fechaColeta(c: any, partes: string[] = []) {
-  const prazo = new Date(Date.now() + 24 * 3600e3).toISOString()
+  // 19/11 (tráfego): a FILA. Passou do limite do dia (MAIA_LANC_LIMITE_DIA), a Maia diz o prazo de verdade (48 h, 72 h...)
+  const tr = trafego.doTrafego(c)
+  const naFrente = tr ? await trafego.filaNaFrente(c) : 0
+  const dias = tr ? trafego.diasDeFila(naFrente) : 1
+  const prazo = new Date(Date.now() + dias * 24 * 3600e3).toISOString()
   await salva(c, { etapa: avanca(c.etapa, 'material_recebido') })
-  await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString(), prazo_em: prazo })
+  await salvaJson(c, 'estado', { passo: 'feito', coleta_fim_em: new Date().toISOString(), prazo_em: prazo, ...(tr ? { fila: { na_frente: naFrente, dias } } : {}) })
   const n = await contaMidias(c)
   const soInstagram = !!c.coleta?.material_instagram && !n.fotos && !n.videos
-  await mandaTexto(c, [...partes, soInstagram ? MATERIAL_RECEBIDO_IG : MATERIAL_RECEBIDO].join('\n\n'))
-  await evento('lanc_material', { contato: c.id, ...(c.coleta?.material_instagram ? { instagram: c.coleta.material_instagram } : {}) })
+  await mandaTexto(c, [...partes, tr ? trafego.materialRecebidoTrafego(dias, soInstagram) : soInstagram ? MATERIAL_RECEBIDO_IG : MATERIAL_RECEBIDO].join('\n\n'))
+  await evento('lanc_material', { contato: c.id, ...(c.coleta?.material_instagram ? { instagram: c.coleta.material_instagram } : {}), ...(tr ? { trafego: true, dias } : {}) })
+  if (tr) await trafego.sinalMeta(c, 'QualifiedLead')   // pra Meta otimizar o anúncio por quem manda o material
   // o aviso pro time sai quando as fotos chegam (avisaMaterial); aqui só se ainda não saiu (ex.: a rotina fechando quem parou)
   await avisaMaterial(c, n)
   return { ok: true, passo: 'feito', prazo_em: prazo }
@@ -444,7 +476,8 @@ export const pareceCliente = (t: string) => {
 }
 export const TEXTO_TESTE = (neg: string) => `Quero testar a Maia como cliente da ${neg} (modo teste)`
 async function entraTeste(c: any) {
-  if (!c.coleta?.negocio) {
+  // 19/11 (tráfego): o nicho já vem do anúncio, mas o teste só faz sentido depois dos serviços (senão ela não sabe nada)
+  if (!c.coleta?.negocio || (trafego.doTrafego(c) && !c.coleta?.produtos)) {
     await mandaTexto(c, 'O teste fica pronto junto com a tua amostra: primeiro eu preciso conhecer o teu negócio. ' + pergunta(proximoPasso(c, await contaMidias(c)), c))
     return { ok: true, teste: 'sem coleta' }
   }
@@ -458,6 +491,14 @@ async function entraTeste(c: any) {
 export async function saiTeste(c: any, porTempo = false) {
   await salvaJson(c, 'estado', { modo: null, teste_ate: null })
   const testou = !!c.testou_em
+  // 19/11 (tráfego): saiu do teste → a Maia oferece a ligação com o Rick em 3 horários (o Rick é avisado quando marcar)
+  if (testou && trafego.doTrafego(c) && !c.estado?.ligacao && ['amostra_entregue', 'testou'].includes(c.etapa)) {
+    const oferta = await trafego.ofereceLigacao(c)
+    await mandaTexto(c, `${porTempo ? 'Faz um tempinho que tu não escreve, então saí do modo teste' : 'Pronto, saí do modo teste'} e voltei a ser a Maia da escola. Viu? É assim que eu atenderia cada cliente teu, a qualquer hora.\n\n${oferta}`)
+    if (entregaV2() && c.amostra?.entrega_v2) await salvaJson(c, 'estado', { acomp: { ...((await acha(c.id))?.estado?.acomp || {}), perguntar_teste: false, perguntou_teste_em: new Date().toISOString() } })
+    await marcaRick(c, 'fez o teste ao vivo (a Maia ofereceu a ligação)', true)
+    return { ok: true, teste: 'saiu', ligacao: 'oferecida' }
+  }
   // 16/11 (entrega nova): saiu do teste depois da amostra, a Maia pergunta na hora o que a pessoa achou (a resposta vai pro time)
   if (testou && entregaV2() && c.amostra?.entrega_v2 && ['amostra_entregue', 'testou'].includes(c.etapa)) {
     const { PERGUNTA_TESTE } = await import('./conteudo')
@@ -498,7 +539,8 @@ async function respondeTeste(c: any, texto: string) {
   if (!c.testou_em) {
     await salva(c, { testou_em: new Date().toISOString(), etapa: avanca(c.etapa, 'testou') })
     await evento('lanc_testou', { contato: c.id })
-    await marcaRick(c, 'fez o teste ao vivo')
+    // 19/11 (tráfego): o Rick é avisado NA HORA em que a pessoa começa a testar (urgente)
+    await marcaRick(c, trafego.doTrafego(c) ? 'está testando a Maia agora' : 'fez o teste ao vivo', trafego.doTrafego(c))
   }
   return { ok: true, teste: 'respondeu' }
 }
@@ -564,7 +606,12 @@ export async function registraDuvida(c: any, texto: string) {
 // a fila "Rick: mandar áudio"
 export async function marcaRick(c: any, motivo: string, urgente = false) {
   const atual = (await acha(c.id)) || c
-  if (atual.rick_pendente_em && !atual.rick_feito_em) { await salvaJson(c, 'estado', { rick_motivo: motivo }); return false }
+  if (atual.rick_pendente_em && !atual.rick_feito_em) {
+    await salvaJson(c, 'estado', { rick_motivo: motivo })
+    // 19/11 (tráfego): já estava na fila, mas o que é urgente (testando agora, quer fechar) avisa de novo, na hora
+    if (urgente && trafego.doTrafego(atual)) await avisaGuto('Rick: mandar áudio', `${rotulo(atual)}: ${motivo}.`, true)
+    return false
+  }
   await salva(c, { rick_pendente_em: new Date().toISOString(), rick_feito_em: null })
   await salvaJson(c, 'estado', { rick_motivo: motivo })
   await avisaGuto('Rick: mandar áudio', `${rotulo(atual)}: ${motivo}.`, urgente)

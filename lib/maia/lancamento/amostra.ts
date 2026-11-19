@@ -13,6 +13,10 @@ import { TEXTO_TESTE, marcaRick, rotulo } from './conversa'
 export const SLOTS = ['anuncio1', 'anuncio2', 'video'] as const
 export type Slot = typeof SLOTS[number]
 export const PRECO = { ativacao_de: 997, ativacao_por: 497, mensal: 997, dias_no_ar: 2 }
+// 19/11 (Guto): a Maia online, pra fora do RS. 1º mês R$ 497 (já com a implantação online, por chamada de vídeo), depois
+// R$ 797 por mês. Vale pra quem veio do tráfego pago; MAIA_LANC_OFERTA_ONLINE=1 passa a valer pra todos (a lista também)
+export const PRECO_ONLINE = { primeiro_mes: 497, mensal: 797, dias_no_ar: 2 }
+export const ofertaOnline = (c: any) => !!c?.estado?.origem || process.env.MAIA_LANC_OFERTA_ONLINE === '1'
 export const FRASE_IMPLANTACAO = 'Esta amostra foi feita com pouca informação. A implantação de verdade é presencial e individual, com um especialista: lá a Maia aprende o teu jeito de vender, os teus preços e as tuas regras, conecta as tuas contas e segue o padrão do teu negócio. É isso que garante que ela funcione bem pra ti.'
 
 export const nomeNeg = (c: any) => c.coleta?.nome_negocio || (c.coleta?.negocio ? String(c.coleta.negocio).split(/[,.;]/)[0].slice(0, 60) : '') || 'o teu negócio'

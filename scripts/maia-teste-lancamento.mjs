@@ -692,6 +692,108 @@ console.log('12) 18/11: material = fotos/vídeos ou só o @ do Instagram')
   const nU = saidas(uli).length
   await post({ acao: 'rodar_rotina' })
   confere('parado no pedido de material: a rotina não fecha nem manda nada na hora', saidas(uli).length === nU && contato(uli).etapa === 'coletando') }
+
+// ======================================================================================================================
+console.log('13) Tráfego pago (19/11): quem chega do anúncio com a mensagem pronta, a coleta por nicho, a fila, o teste e a ligação')
+{ await post({ acao: 'chave_v2', ligar: true })
+  const saidasT = tel => le('lanc_msgs').filter(m => m.contato_id === contato(tel).id && m.direcao === 'saida')
+  const naFilaAgora = () => le('lanc_contatos').filter(x => ['material_recebido', 'em_producao'].includes(x.etapa) && !(x.amostra || {}).aprovada_em).length
+  const avisoDepois = (t0, re) => le('eventos').some(e => e.tipo === 'lanc_aviso' && Date.parse(e.criado_em) >= t0 && re.test(e.detalhe.titulo + ' ' + e.detalhe.texto))
+  const anuncio = (telefone, texto, nome = 'Zé') => post({ acao: 'simular_entrada', telefone, texto, tipo: 'texto', nome, referral: { adId: '120000001', ctwaClid: 'clid-teste', headline: 'Amostra grátis da Maia pra oficina', sourceUrl: 'https://www.instagram.com/p/teste' } })
+  // a) fora da lista, sem a mensagem pronta: segue pro CRM
+  confere('fora da lista e sem a mensagem pronta: não é da Maia', (await diz('55000' + R + '70', 'Oi, quero saber do curso')).tratado === false && !contato('55000' + R + '70'))
+  // b) a oficina pelo anúncio
+  const ze = '55000' + R + '71'
+  r = await anuncio(ze, 'Quero a amostra grátis da Maia pra minha oficina')
+  let z = contato(ze)
+  confere('mensagem pronta do anúncio: a Maia trata e cria a pessoa no funil', r.tratado === true && !!z && z.etapa === 'quero_ver', r)
+  confere('guarda o nicho (oficina) e a origem (anúncio, clique, Instagram)', z.coleta.nicho === 'oficina' && z.ramo === 'Oficina mecânica' && z.estado.origem.anuncio_id === '120000001' && z.estado.origem.ctwa_clid === 'clid-teste' && z.estado.origem.fonte === 'instagram' && z.estado.origem.canal === 'anuncio', z)
+  const j72 = Date.parse(z.estado.origem.janela_gratis_ate) - Date.parse(z.estado.origem.chegou_em)
+  confere('marca a janela grátis de 72 h da conversa que veio do anúncio', Math.abs(j72 - 72 * 3600e3) < 5000, z.estado.origem)
+  m = ultimas(ze)[0]
+  confere('1ª mensagem: se apresenta como IA, diz o que vem na amostra, sem preço nem emoji', /Aqui é a Maia/.test(m) && /inteligência artificial/.test(m) && /2 anúncios, 1 vídeo com voz, 9 posts/.test(m) && !/R\$/.test(m) && !/\p{Extended_Pictographic}/u.test(m), m)
+  confere('não pergunta o ramo de novo: já pergunta o nome da oficina e a cidade', /nome da tua oficina/.test(m) && !/o que tu vende/i.test(m), m)
+  await diz(ze, 'Auto Center do Zé, em Campinas SP')
+  confere('2ª pergunta (oficina): serviços carro-chefe e marcas', /carro-chefe/.test(ultimas(ze)[0]) && /câmbio/.test(ultimas(ze)[0]), ultimas(ze)[0])
+  await diz(ze, 'Câmbio automático e retífica de motor, mais Toyota e Honda')
+  confere('3ª pergunta (oficina): como o cliente chega e o horário', /como o cliente chega/.test(ultimas(ze)[0]), ultimas(ze)[0])
+  await diz(ze, 'Agenda pelo WhatsApp, de segunda a sexta das 8h às 18h')
+  m = ultimas(ze)[0]
+  confere('depois de 3 perguntas, o material do ramo (fotos da oficina) OU o @', /fotos da oficina/.test(m) && /@ do Instagram da tua oficina/.test(m), m)
+  confere('foram só 3 perguntas antes do material', saidasT(ze).length === 4, saidasT(ze).map(x => x.texto))
+  const n0 = naFilaAgora(), t0 = Date.now() - 1000
+  await diz(ze, '@autocenterze')
+  z = contato(ze)
+  const dias0 = 1 + Math.floor(n0 / 10)
+  confere('só o @: Material recebido, com o prazo da fila e tudo que vem', z.etapa === 'material_recebido' && z.coleta.material_instagram === '@autocenterze' && /Material recebido/.test(ultimas(ze)[0]) && /9 posts/.test(ultimas(ze)[0]) && z.estado.fila.dias === dias0 && (dias0 === 1 ? /Em até 24 horas/.test(ultimas(ze)[0]) : /fila de amostras está cheia/.test(ultimas(ze)[0])), [n0, ultimas(ze)[0], z.estado.fila])
+  confere('o aviso pro time diz que veio do anúncio, o nicho e o encaixe', avisoDepois(t0, /material chegou.*Veio do anúncio \(Oficina mecânica\).*Encaixe: só o Instagram/), le('eventos').filter(e => e.tipo === 'lanc_aviso').slice(-2))
+  // c) a fila cheia: 10 amostras na frente → a Maia promete 48 h, sem mentir
+  const fakes = Array.from({ length: 10 }, (_, i) => ({ id: 'fila-' + R + '-' + i, telefone: '55000' + R + '8' + i, etapa: 'material_recebido', coleta: {}, estado: {}, amostra: {}, aberturas: 0, versao: 'contato', criado_em: new Date().toISOString(), atualizado_em: new Date().toISOString() }))
+  grava('lanc_contatos', [...le('lanc_contatos'), ...fakes])
+  const est = '55000' + R + '72'
+  await diz(est, 'Quero a amostra grátis da Maia pra minha estética automotiva')
+  confere('estética automotiva não vira oficina', contato(est).coleta.nicho === 'estetica_auto' && /nome da tua estética automotiva/.test(ultimas(est)[0]) && contato(est).estado.origem.canal === 'mensagem_pronta', [contato(est).coleta, ultimas(est)[0]])
+  await diz(est, 'Brilho Car, Curitiba'); await diz(est, 'Polimento e vitrificação'); await diz(est, 'Horário marcado pelo WhatsApp')
+  confere('material da estética: antes e depois', /antes e depois/.test(ultimas(est)[0]), ultimas(est)[0])
+  await foto(est, 80); await foto(est, 81); await foto(est, 82)
+  await diz(est, 'sem vídeo')
+  confere('fila cheia: a Maia diz o prazo de verdade (48 h ou mais)', contato(est).etapa === 'material_recebido' && /fila de amostras está cheia/.test(ultimas(est)[0]) && contato(est).estado.fila.dias >= 2 && Date.parse(contato(est).estado.prazo_em) - Date.now() > 47 * 3600e3, [ultimas(est)[0], contato(est).estado.fila])
+  confere('encaixe bom: nicho certo e 3 fotos', contato(est).estado.encaixe && contato(est).estado.encaixe.ok === true, contato(est).estado.encaixe)
+  grava('lanc_contatos', le('lanc_contatos').filter(x => !String(x.id).startsWith('fila-' + R)))
+  // d) serralheria: quem já estava na lista e clicou no anúncio
+  const se = '55000' + R + '73'
+  await post({ acao: 'adicionar', telefone: se, nome: 'Seu Lino', remessa: 2 })
+  grava('lanc_contatos', le('lanc_contatos').map(x => x.telefone === se ? { ...x, etapa: 'disparado' } : x))
+  await diz(se, 'Quero a amostra grátis da Maia pra minha serralheria de portões automáticos')
+  confere('da lista, pelo anúncio: ganha o nicho serralheria e a coleta curta', contato(se).coleta.nicho === 'serralheria' && /nome da tua serralheria/.test(ultimas(se)[0]) && !!contato(se).estado.origem && contato(se).remessa === 2, [contato(se).coleta, ultimas(se)[0]])
+  // e) fora dos 3 nichos: caminho genérico, aproveitando o ramo que a pessoa escreveu
+  const ma = '55000' + R + '74'
+  await diz(ma, 'Quero a amostra grátis da Maia pra minha marcenaria')
+  confere('marcenaria (fora dos 3 nichos): sem nicho, guarda o ramo e pergunta nome e cidade', !contato(ma).coleta.nicho && contato(ma).coleta.negocio === 'marcenaria' && /nome do teu negócio e em que cidade/.test(ultimas(ma)[0]), [contato(ma).coleta, ultimas(ma)[0]])
+  const sr = '55000' + R + '75'
+  await diz(sr, 'Quero a amostra grátis da Maia')
+  confere('sem ramo nenhum: pergunta o que vende (genérico)', /o que vocês vendem ou fazem/.test(ultimas(sr)[0]), ultimas(sr)[0])
+  // f) a página da amostra: oferta online, 1º mês R$ 497 e depois R$ 797; a da lista segue a de antes
+  grava('lanc_contatos', le('lanc_contatos').map(x => x.telefone === ze ? { ...x, amostra: { ...(x.amostra || {}), pecas: {} } } : x))   // a página só abre com as peças
+  let hz = await (await fetch(`${URL}/maia/amostra/${contato(ze).token}?previa=1`)).text()
+  confere('página de quem veio do anúncio: implantação online, R$ 497 o 1º mês e R$ 797 depois', /R\$ 797/.test(hz) && /R\$ 497/.test(hz) && /online/.test(hz) && !/presencial e individual/.test(hz), hz.slice(0, 200))
+  const ha = await (await fetch(`${URL}/maia/amostra/${contato(T.ana).token}?previa=1`)).text()
+  confere('página de quem é da lista: sem mudança (sem R$ 797)', !/R\$ 797/.test(ha))
+  // g) o teste ao vivo: a Maia atende como a oficina, sem falar da escola; o Rick é avisado na hora; depois, a ligação
+  grava('lanc_contatos', le('lanc_contatos').map(x => x.telefone === ze ? { ...x, etapa: 'amostra_entregue', entregue_em: new Date().toISOString() } : x))
+  const t1 = Date.now() - 1000
+  await diz(ze, 'Quero testar a Maia como cliente da Auto Center do Zé (modo teste)')
+  confere('modo teste ligado', /Modo teste ligado/.test(ultimas(ze)[0]), ultimas(ze)[0])
+  await diz(ze, 'Quanto fica pra revisar o câmbio?')
+  m = ultimas(ze)[0]
+  confere('no teste, responde como a oficina, sem Maia, escola nem preço da Maia', /Aqui é da/.test(m) && !/Maia|Carreira|escola|797|497/.test(m), m)
+  confere('o Rick é avisado NA HORA em que a pessoa começa a testar', avisoDepois(t1, /^Rick: mandar áudio .*testando a Maia agora/), le('eventos').filter(e => e.tipo === 'lanc_aviso').slice(-2))
+  await diz(ze, 'sair')
+  m = ultimas(ze)[0]
+  const lg = contato(ze).estado.ligacao || {}
+  confere('saiu do teste: a Maia oferece a ligação com o Rick em 3 horários', /O Rick/.test(m) && /Qual horário/.test(m) && (lg.slots || []).length === 3, [m, lg])
+  const hSlot = (new Date(lg.slots[1]).getUTCHours() + 21) % 24
+  const t2 = Date.now() - 1000
+  await diz(ze, `pode ser às ${hSlot}h`)
+  z = contato(ze)
+  confere('escolheu o horário: ligação marcada, Fechamento e confirmação pra pessoa', z.estado.ligacao.hora === lg.slots[1] && z.etapa === 'fechamento' && /Combinado! O Rick/.test(ultimas(ze)[0]), [z.estado.ligacao, z.etapa, ultimas(ze)[0]])
+  confere('aviso urgente "Rick: LIGAR" com a hora', avisoDepois(t2, /^Rick: LIGAR/))
+  l = await get('acao=lista')
+  const rz = l.lista.find(c => c.telefone === ze)
+  confere('a tela mostra a origem, o nicho e a ligação marcada', rz.origem && rz.origem.anuncio_id === '120000001' && rz.nicho === 'oficina' && rz.ligacao === lg.slots[1], rz)
+  r = await post({ acao: 'ligacao_feita', id: z.id })
+  confere('"Liguei" tira da fila de ligar', r.ok && !(await get('acao=lista')).lista.find(c => c.telefone === ze).ligacao)
+  // h) a medição por nicho e por anúncio
+  const tf = await get('acao=trafego')
+  const of = (tf.por_nicho || {})['Oficina mecânica'] || {}
+  confere('funil por nicho: conversas, material, testou, ligação, fechamento', of.conversas >= 1 && of.material >= 1 && of.testou >= 1 && of.ligacao >= 1 && of.fechamento >= 1 && tf.limite_dia === 10, tf.por_nicho)
+  confere('funil por anúncio (o título do anúncio enquanto a API não dá o nome)', Object.keys(tf.por_anuncio || {}).some(k => /Amostra grátis da Maia pra oficina/.test(k)) && Object.keys(tf.por_anuncio).some(k => /mensagem pronta/.test(k)), Object.keys(tf.por_anuncio || {}))
+  // i) a retomada da coleta usa a pergunta do nicho
+  const hBR = (new Date().getUTCHours() + 21) % 24
+  const relT = hBR >= 9 && hBR < 20 ? Date.now() : Date.parse(new Date(Date.now() + 24 * 3600e3).toISOString().slice(0, 10) + 'T17:00:00Z')
+  grava('lanc_contatos', le('lanc_contatos').map(x => x.telefone === se ? { ...x, ultima_saida_em: new Date(relT - 2 * 3600e3).toISOString(), ultima_entrada_em: new Date(relT - 2 * 3600e3 - 60e3).toISOString() } : x))
+  await post({ acao: 'rodar_rotina', relogio: new Date(relT).toISOString() })
+  confere('retomada da coleta repete a pergunta do nicho (serralheria)', /nome da tua serralheria/.test(ultimas(se)[0]) && /Ficou faltando pouco/.test(ultimas(se)[0]), ultimas(se)[0]) }
 await post({ acao: 'chave_v2', ligar: false, modelos: { ENTREGA: null, IDEIA: null, DESPEDIDA: null } })
 confere('desliga a chave no fim (o servidor volta ao comportamento de antes)', (await get('acao=lista')).v2 === false)
 

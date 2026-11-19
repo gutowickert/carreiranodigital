@@ -30,6 +30,10 @@ function resumo(c: any) {
     // 16/11 (entrega nova): o que a pessoa fez (cartão do Rick), a resposta que foi pro time e a fila "Rick: ligar"
     atividade: atividade(c), rick_texto: c.estado?.rick_texto || null, entrega_v2: !!c.amostra?.entrega_v2,
     ligar: c.estado?.acomp?.ligar && !c.estado.acomp.ligar.feito_em ? c.estado.acomp.ligar : null,
+    // 19/11 (tráfego): de onde veio, o nicho, o encaixe, o prazo prometido e a ligação marcada com o Rick
+    origem: c.estado?.origem ? { canal: c.estado.origem.canal, fonte: c.estado.origem.fonte, campanha: c.estado.origem.campanha || null, anuncio: c.estado.origem.anuncio || c.estado.origem.titulo || null, anuncio_id: c.estado.origem.anuncio_id || null, janela_gratis_ate: c.estado.origem.janela_gratis_ate || null } : null,
+    nicho: c.coleta?.nicho || null, encaixe: c.estado?.encaixe || null, prazo_em: c.estado?.prazo_em || null,
+    ligacao: c.estado?.ligacao?.hora && !c.estado.ligacao.feita_em ? c.estado.ligacao.hora : null,
   }
 }
 
@@ -56,6 +60,8 @@ export async function GET(req: Request) {
         oficina: of,
       })
     }
+    // 19/11 (tráfego): o funil de quem veio do anúncio, por nicho e por anúncio
+    if (q('acao') === 'trafego') { const { funilTrafego } = await import('@/lib/maia/lancamento/trafego'); return ok({ ok: true, ...funilTrafego(await db.lista('lanc_contatos'), ORDEM) }) }
     // a lista toda
     const todos = await db.lista('lanc_contatos')
     const lista = todos.map(resumo).sort((a, b) => String(b.ultima_entrada_em || b.atualizado_em || '').localeCompare(String(a.ultima_entrada_em || a.atualizado_em || '')))
@@ -91,7 +97,7 @@ export async function POST(req: Request) {
       }
       if (b.acao === 'rodar_rotina') { const { rotinaLancamento } = await import('@/lib/maia/lancamento/rotina'); return ok(await rotinaLancamento(b.relogio ? new Date(b.relogio) : new Date())) }
       const { entrada, processa } = await import('@/lib/maia/lancamento/conversa')
-      const r = await entrada({ telefone: b.telefone, nome: b.nome || null, tipo: b.tipo || 'texto', texto: b.texto ?? null, midia_id: b.midia_id || null, mime: b.mime || null, b64: b.b64 || null })
+      const r = await entrada({ telefone: b.telefone, nome: b.nome || null, tipo: b.tipo || 'texto', texto: b.texto ?? null, midia_id: b.midia_id || null, mime: b.mime || null, b64: b.b64 || null, referral: b.referral || null })
       if (!r.tratado) return ok({ tratado: false })
       const p = await processa(r.contato_id!, r.msg_id!)
       return ok({ tratado: true, ...p })
@@ -180,6 +186,7 @@ export async function POST(req: Request) {
         await salvaJson(c, 'amostra', { grade: itens.map((x: any) => ({ path: x.m.path, titulo: x.titulo, tipo: x.tipo })) })
         return ok({ ok: true, grade: itens.length })
       }
+      case 'ligacao_feita': { const lg = c.estado?.ligacao || {}; await salvaJson(c, 'estado', { ligacao: { ...lg, feita_em: new Date().toISOString(), por } }); return ok({ ok: true }) }   // 19/11: o Rick ligou
       case 'ligar_feito': { const a = c.estado?.acomp || {}; await salvaJson(c, 'estado', { acomp: { ...a, ligar: { ...(a.ligar || {}), feito_em: new Date().toISOString(), por } } }); return ok({ ok: true }) }
       case 'zerar': {
         if (c.remessa !== 0) return erro('só dá pra zerar quem está na lista de teste (remessa 0)')

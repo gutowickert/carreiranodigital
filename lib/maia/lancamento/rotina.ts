@@ -7,7 +7,7 @@
 //   4. marca "Disparado" quem recebeu o modelo de abertura (lê os envios dos disparos do CRM)
 import { maiaDb as db, maiaLocal } from '../db'
 import { salva, salvaJson, mandaTexto, mandaModelo, janelaAberta, janelaAte, horaBR, primeiroNome, evento, variantes } from './base'
-import { proximoPasso, contaMidias, PERGUNTAS, pedeFotos, PEDE_VIDEO, perguntaHora, saiTeste } from './conversa'
+import { proximoPasso, contaMidias, pergunta, saiTeste } from './conversa'
 import { entrega, horaDeEntregar, linkAmostra, nomeNeg } from './amostra'
 import { acompanhamento, naSequencia } from './entrega'
 
@@ -38,7 +38,7 @@ export async function segueAutoResposta(agora = new Date()) {
 }
 
 function perguntaPendente(p: string, c?: any) {
-  return p === 'fotos' ? pedeFotos(c) : p === 'video' ? PEDE_VIDEO : p === 'hora' ? perguntaHora() : (PERGUNTAS as any)[p] || ''
+  return pergunta(p as any, c) || ''   // 19/11: a do nicho, pra quem veio do anúncio
 }
 export function textoRetomada(c: any, n: number, fase: 'coleta' | 'amostra', pendente = '') {
   const oi = primeiroNome(c.nome) ? `Oi, ${primeiroNome(c.nome)}!` : 'Oi!'
