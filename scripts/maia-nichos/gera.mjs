@@ -718,7 +718,7 @@ ${corpo}
 `
 }
 
-for (const n of NICHOS.filter(x => x.slug !== 'marcenaria')) { // 18/11: o Guto deixou a marcenaria de fora
+for (const n of NICHOS.filter(x => !['marcenaria', 'oficinas'].includes(x.slug))) { // 18/11: marcenaria saiu; oficinas tem gerador próprio (gera-oficina.mjs)
   const r = join(REPO, n.slug, 'index.html')
   mkdirSync(dirname(r), { recursive: true })
   writeFileSync(r, pagina(n, 'repo'))
