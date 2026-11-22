@@ -24,6 +24,9 @@ import { maiaDb as db, maiaLocal } from './db'
 import { numeros } from './funil'
 import { horaLocal, fusoDo } from './horario'
 import { tetoVerba } from './limites'
+import { JEITO } from './ia'
+import { tomDoNegocio, acertaTom } from './tom'
+import { iaSoComNumerosDados } from './relatorios-conta'
 import { datasDaVez, fraseDaData, ddmm, somaDias, diasEntre, iso as isoDe, SEM_RECADO_DE_VENDA, leDia, datasProprias, type DataDaVez } from './sazonalidade'
 
 export const estrategiaLigada = () => process.env.MAIA_ESTRATEGIA_LIGADA === '1'
@@ -166,8 +169,75 @@ async function existeBase(neg: any) {
   try { const R = await import('./recado'); if (!(await R.baseDisponivel())) return false; return (await R.baseDoNegocio(neg, 0)).ativos > 0 } catch { return false }
 }
 
+// ─────────────── 22/11 (Guto: "quero que melhore com a IA o texto da proposta"): o texto com IA, com TRAVA
+// Igual ao relatório do mês (relatorios.ts, conclusoesDoMes): a IA (MAIA_MODELO_RELATORIO) só reescreve o JEITO de dizer, no jeito
+// da Maia (colega queridona, valor antes, curto, "equipe"), no "tu" ou "você" do negócio. Passa pelas travas abaixo; qualquer uma
+// que falhar, vale o texto de lista (sem IA). A equipe continua vendo e podendo editar antes de ir pro dono.
+//   1) todo número que ela escrever existe nos dados da proposta (relatorios-conta.ts, iaSoComNumerosDados);
+//   2) toda data dd/mm que ela escrever existe nos dados (data trocada derruba);
+//   3) as datas que pesaram continuam citadas pelo nome;
+//   4) nada de promessa de resultado, nem o que o ramo proíbe (OAB, lotérica, saúde);
+//   5) os cuidados do ramo e o pedido do 👍 vão sempre no fim, escritos pelo sistema (não dependem da IA).
+// Liga com ANTHROPIC_API_KEY (e MAIA_ESTRATEGIA_IA != '0'); no modo local só com MAIA_ESTRATEGIA_IA=1.
+export type Escritora = (sistema: string, pedido: string) => Promise<{ texto?: string } | null>
+const usaIA = () => !!process.env.ANTHROPIC_API_KEY && process.env.MAIA_ESTRATEGIA_IA !== '0' && (!maiaLocal() || process.env.MAIA_ESTRATEGIA_IA === '1')
+const PROMESSA = /garant|com certeza|certeza de|sem erro|100 ?%|vai vender|vais vender|vai faturar|vais faturar|vai lotar|sucesso garantido|resultado certo/i
+const PROIBIDO_DO_RAMO: Partial<Record<string, RegExp>> = {
+  advocacia: /promo[çc][ãa]o|desconto|black friday|pre[çc]o especial|oferta|ganhar a causa|ganha a causa|causa ganha/i,
+  loterica: /vai ganhar|vais ganhar|vai ser premiad|ficar rico|fica rico|compr[ae] pelo whats|pag[ae] pelo whats|aposta pelo whats|chance garantida/i,
+  saude: /antes e depois|cura garantida|emagre[çc]a \d|perca \d/i,
+  estetica: /antes e depois/i,
+}
+const DDMM = /\b(\d{1,2})\/(\d{1,2})\b/g
+function datasDosDados(v: any, out = new Set<string>()): Set<string> {
+  if (typeof v === 'string') {
+    for (const m of v.matchAll(/(\d{4})-(\d{2})-(\d{2})/g)) out.add(`${Number(m[3])}/${Number(m[2])}`)
+    for (const m of v.matchAll(DDMM)) out.add(`${Number(m[1])}/${Number(m[2])}`)
+  } else if (v && typeof v === 'object') Object.values(v).forEach(x => datasDosDados(x, out))
+  return out
+}
+export function fimDaProposta(neg: any, cuidados: string[]) {
+  const voce = tomDoNegocio(neg).pessoa === 'voce'
+  return [cuidados.length ? `Cuidados ${voce ? 'do seu' : 'do teu'} ramo: ${cuidados.join('; ')}.` : '', `Topa seguir assim? Me dá um 👍, ou me diz o que mudar.`].filter(Boolean).join('\n')
+}
+// as travas (pura: o teste chama direto). Devolve null se passou, ou o motivo
+export function travaDoTexto(neg: any, texto: string, dados: any, datas: ReturnType<typeof datasDaVez>): string | null {
+  const t = String(texto || '').trim()
+  if (t.length < 80) return 'texto curto demais'
+  if (t.length > 1800) return 'texto longo demais'
+  if (!iaSoComNumerosDados(t, dados)) return 'número que não está nos dados'
+  const conhecidas = datasDosDados(dados)
+  for (const m of t.matchAll(DDMM)) if (!conhecidas.has(`${Number(m[1])}/${Number(m[2])}`)) return `data ${m[0]} que não está nos dados`
+  for (const d of datas.pesam.slice(0, 2)) if (!t.toLowerCase().includes(d.nome.split(' (')[0].toLowerCase())) return `faltou a data que pesa (${d.nome})`
+  if (PROMESSA.test(t)) return 'promessa de resultado'
+  for (const g of datas.grupos) { const re = PROIBIDO_DO_RAMO[g]; if (re && re.test(t)) return `palavra proibida no ramo (${g})` }
+  return null
+}
+export async function textoComIA(neg: any, p: { texto: string; ciclo: { de: string; ate: string }; motivo: string; num: any | null; datas: ReturnType<typeof datasDaVez>; acoes: Acao[]; hoje: string }, escreve?: Escritora) {
+  if (!escreve && !usaIA()) return { texto: p.texto, por_ia: false, motivo: null as string | null }
+  const voce = tomDoNegocio(neg).pessoa === 'voce'
+  const dados = { proposta: p.texto, numeros: p.num, ciclo: p.ciclo, hoje: p.hoje, datas: p.datas.pesam.concat(p.datas.radar).map(d => ({ nome: d.nome, dia: d.dia, inicio: d.inicio, ate: d.ate })), acoes: p.acoes, verba_dia: neg?.verba_dia ?? null }
+  const sistema = `${JEITO}
+Agora tu escreves a ESTRATÉGIA DA QUINZENA pro dono do negócio ler no WhatsApp. Nesta mensagem fala com ele de "${voce ? 'você' : 'tu'}" (${voce ? 'você, seu, sua; nunca tu, teu, tua' : 'tu, teu, tua'}).
+Jeito: colega queridona que entende do assunto. Curto (até umas 12 linhas). Primeiro o que ele ganha com cada ação, depois o número. Quem coloca em prática é "a equipe".
+REGRAS DURAS: usa SÓ os números, valores e datas que vieram (copiados igual, no formato dd/mm); não calcula número novo; não promete venda, faturamento nem resultado; mantém cada data que pesa pelo nome e diz por que ela pesa e quando o anúncio começa; mantém todas as ações (pode juntar e reescrever, não pode inventar outra). Não escreve os cuidados do ramo nem a pergunta final: o sistema põe no fim. Sem emoji, sem negrito, sem travessão.`
+  const pedido = `NEGÓCIO: ${neg.nome} (${neg.nicho || '?'}, ${neg.cidade || '?'}). DONO: ${String(neg.dono_nome || '').split(' ')[0] || '?'}
+CUIDADOS DO RAMO (respeita, sem escrever): ${p.datas.cuidados.join('; ') || 'nenhum'}
+DADOS: ${JSON.stringify(dados).slice(0, 9000)}
+RASCUNHO SEM IA (melhora o jeito de dizer, sem mudar número nem data): ${p.texto}
+Devolve {"texto":"a mensagem, sem os cuidados do ramo e sem a pergunta final"}`
+  try {
+    const r = escreve ? await escreve(sistema, pedido) : await (async () => { const { emJson } = await import('./ia'); return emJson<{ texto: string }>(sistema, pedido, [], { modelo: process.env.MAIA_MODELO_RELATORIO || 'claude-opus-5-5', uso: { tipo: 'estrategia', negocio_id: neg.id } }) })()
+    let corpo = String(r?.texto || '').trim().replace(/\n*(Topa seguir assim\?[\s\S]*|Cuidados d[oe] (teu|seu) ramo:[\s\S]*)$/i, '').trim()
+    if (voce) corpo = acertaTom(neg, corpo)
+    const motivo = travaDoTexto(neg, corpo, dados, p.datas)
+    if (motivo) return { texto: p.texto, por_ia: false, motivo: 'a IA ' + (motivo === 'texto curto demais' ? 'devolveu texto curto' : 'escreveu ' + motivo) + ', foi o texto de lista' }
+    return { texto: `${corpo}\n\n${fimDaProposta(neg, p.datas.cuidados)}`, por_ia: true, motivo: null }
+  } catch (e: any) { return { texto: p.texto, por_ia: false, motivo: 'a IA não respondeu (' + String(e?.message || e).slice(0, 80) + ')' } }
+}
+
 // ─────────────── propor (a rotina, a equipe ou a implantação chamam)
-export async function propoeEstrategia(negArg: any, op: { agora?: Date; motivo?: 'inicial' | 'quinzena' | 'pedido'; por?: string; forcar?: boolean } = {}) {
+export async function propoeEstrategia(negArg: any, op: { agora?: Date; motivo?: 'inicial' | 'quinzena' | 'pedido'; por?: string; forcar?: boolean; escreve?: Escritora } = {}) {
   await exige()
   const neg = (await db.um('negocios', { id: negArg.id })) || negArg   // o calendário próprio pode ter mudado agora
   const agora = op.agora || new Date()
@@ -184,20 +254,23 @@ export async function propoeEstrategia(negArg: any, op: { agora?: Date; motivo?:
   // SEMPRE o calendário antes de propor
   const datas = datasDaVez(neg, hoje)
   const acoes = montaAcoes(neg, num, datas, hoje, { recadoBase: await existeBase(neg) })
-  const texto = textoDaProposta(neg, { ciclo, motivo, num, datas, acoes, hoje })
+  const textoLista = textoDaProposta(neg, { ciclo, motivo, num, datas, acoes, hoje })
+  // 22/11 (Guto: "melhore com a IA o texto da proposta"): a IA reescreve no jeito da Maia, com a trava dos números; falhou, vai a lista
+  const ia = await textoComIA(neg, { texto: textoLista, ciclo, motivo, num, datas, acoes, hoje }, op.escreve)
+  const texto = ia.texto
   // a que ainda esperava aprovação vira "substituída"; a última aprovada ganha o resultado da quinzena dela
   for (const e of vivas.filter(e => ['aprovar_equipe', 'aprovar_dono'].includes(e.status))) await db.atualiza('estrategias', { id: e.id }, { status: 'substituida' })
   const vigente = vivas.filter(e => e.status === 'aprovada').sort((a, b) => String(b.ciclo_de).localeCompare(String(a.ciclo_de)))[0]
   if (vigente && !vigente.resultado) await db.atualiza('estrategias', { id: vigente.id }, { resultado: await resultadoDe(neg, vigente, agora) })
   const e = await db.insere('estrategias', {
     negocio_id: neg.id, ciclo_de: ciclo.de, ciclo_ate: ciclo.ate, motivo, status: 'aprovar_equipe', texto,
-    proposta: { acoes, cuidados: datas.cuidados, grupos: datas.grupos },
+    proposta: { acoes, cuidados: datas.cuidados, grupos: datas.grupos, por_ia: ia.por_ia, texto_lista: textoLista, ...(ia.motivo ? { ia_motivo: ia.motivo } : {}) },
     numeros: num ? { ...num, decisao: num.decisao ? { conclusao: num.decisao.conclusao } : null } : null,
     sazonal: { hoje, pesam: datas.pesam, radar: datas.radar }, criado_por: op.por || 'maia',
   })
   await db.evento('estrategia_proposta', neg.id, { estrategia_id: e.id, ciclo: ciclo.de, motivo, datas: datas.pesam.map(d => d.id) })
   const { avisaEquipe } = await import('./canal')
-  await avisaEquipe('estratégia da quinzena pra aprovar', `${neg.nome}: ${ddmm(ciclo.de)} a ${ddmm(ciclo.ate)}${datas.pesam.length ? ` (pesa: ${datas.pesam.slice(0, 2).map(d => d.nome).join(', ')})` : ''}`, neg.id)
+  await avisaEquipe('estratégia da quinzena pra aprovar', `${neg.nome}: ${ddmm(ciclo.de)} a ${ddmm(ciclo.ate)}${datas.pesam.length ? ` (pesa: ${datas.pesam.slice(0, 2).map(d => d.nome).join(', ')})` : ''}${ia.por_ia ? '' : ` (texto de lista${ia.motivo ? ': ' + ia.motivo : ''})`}`, neg.id)
   return { estrategia: e, texto, acoes, datas }
 }
 
@@ -377,7 +450,7 @@ export async function painelEquipe(neg: any, agora = new Date()) {
   const es = await db.lista('estrategias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 24 })
   const cal = datasDaVez(neg, hoje)
   const ativ = await dataDeAtivacao(neg)
-  return { disponivel: true, ligada: estrategiaLigada(), hoje, ativado_em: ativ, ciclo: cicloDoDia(hoje, ativ), proxima_revisao: ativ ? somaDias(cicloDoDia(hoje, ativ).ate, 1) : null, estrategias: es.map(e => ({ ...resumoDe(e), espera_relatorio: segurada(e) ? e.proposta.espera_relatorio : null, nota: e.nota || null, aprovado_equipe_por: e.aprovado_equipe_por || null, criado_por: e.criado_por || null })),
+  return { disponivel: true, ligada: estrategiaLigada(), hoje, ativado_em: ativ, ciclo: cicloDoDia(hoje, ativ), proxima_revisao: ativ ? somaDias(cicloDoDia(hoje, ativ).ate, 1) : null, estrategias: es.map(e => ({ ...resumoDe(e), espera_relatorio: segurada(e) ? e.proposta.espera_relatorio : null, por_ia: !!e.proposta?.por_ia, texto_lista: e.proposta?.texto_lista || null, ia_motivo: e.proposta?.ia_motivo || null, nota: e.nota || null, aprovado_equipe_por: e.aprovado_equipe_por || null, criado_por: e.criado_por || null })),
     calendario: { grupos: cal.grupos, pesam: cal.pesam, radar: cal.radar, cuidados: cal.cuidados, proprias: datasProprias(neg) } }
 }
 // o dono não vê a nota interna nem o texto que a equipe ainda está revisando

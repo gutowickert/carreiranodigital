@@ -1408,7 +1408,8 @@ function subEstrategia(n,c){
     var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>'+(e.motivo==='inicial'?'Inicial':'Quinzena')+' '+dm(e.ciclo_de)+' a '+dm(e.ciclo_ate)+'</h2><p class="mu peq" style="margin-top:4px">Proposta em '+new Date(e.criado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+(e.criado_por&&e.criado_por!=='maia'?' (pedida por '+esc(e.criado_por)+')':'')+(e.aprovado_equipe_por?' · equipe: '+esc(e.aprovado_equipe_por):'')+(e.aprovado_dono_em?' · dono aprovou pelo '+esc(e.aprovado_via||'?'):'')+'</p></div>'+chip(e.espera_relatorio?'vai junto com o relatório de '+dm(e.espera_relatorio):e.status_nome,TOM[e.status]||'')+'</div>';
     if(e.nota) h+='<div class="erro-box" style="margin-bottom:10px">'+ic('alerta')+'<span>'+esc(e.nota)+'</span></div>';
     if(editando===e.id) h+='<div class="campo"><label for="es-txt">Texto que vai pro dono</label><textarea id="es-txt" rows="14" style="width:100%">'+esc(e.texto||'')+'</textarea></div><div class="btns"><button class="btn ok" data-es="salvar" data-id="'+esc(e.id)+'">'+ic('check')+'Salvar o texto</button><button class="btn" data-es="voltar">Voltar</button></div>';
-    else h+='<p style="margin:0 0 12px;white-space:pre-line;line-height:1.55">'+esc(e.texto||'')+'</p>';
+    else h+='<p style="margin:0 0 12px;white-space:pre-line;line-height:1.55">'+esc(e.texto||'')+'</p>'+
+      (e.por_ia?'<p class="mu peq" style="margin:0 0 10px">Texto escrito pela IA e conferido pela trava (números, datas e cuidados do ramo).'+(e.texto_lista&&e.status==='aprovar_equipe'?' <button class="btn peq" data-es="lista" data-id="'+esc(e.id)+'">Usar o texto de lista</button>':'')+'</p>':(e.ia_motivo?'<p class="mu peq" style="margin:0 0 10px">Texto de lista: '+esc(e.ia_motivo)+'.</p>':''));
     if(e.resultado){ var r=e.resultado; h+='<p class="peq" style="margin:0 0 12px"><b>Resultado da quinzena:</b> '+rs(r.gasto)+' no anúncio · '+plural(r.contatos||0,'contato')+' · '+plural(r.vendas||0,'venda')+(r.vendas?' ('+rs(r.receita)+')':'')+(r.custo_venda!=null?' · '+rs(r.custo_venda)+' por venda':'')+'</p>'; }
     var b=[];
     if(e.status==='aprovar_equipe'&&editando!==e.id){ b.push('<button class="btn ok" data-es="aprovar" data-id="'+esc(e.id)+'">'+ic('check')+'Aprovar e mandar pro dono</button>'); b.push('<button class="btn" data-es="editar" data-id="'+esc(e.id)+'">Editar o texto</button>'); }
@@ -1438,7 +1439,8 @@ function subEstrategia(n,c){
       var a=bt.getAttribute('data-es'), id=bt.getAttribute('data-id');
       if(a==='editar'){ editando=id; return pinta(d); }
       if(a==='voltar'){ editando=null; return pinta(d); }
-      var corpo=a==='aprovar'?{acao:'estrategia_aprovar',estrategia_id:id}:a==='salvar'?{acao:'estrategia_editar',estrategia_id:id,texto:$('#es-txt').value}:a==='cancelar'?{acao:'estrategia_cancelar',estrategia_id:id}:null;
+      var est=(d.estrategias||[]).filter(function(x){return x.id===id;})[0];
+      var corpo=a==='lista'&&est?{acao:'estrategia_editar',estrategia_id:id,texto:est.texto_lista}:a==='aprovar'?{acao:'estrategia_aprovar',estrategia_id:id}:a==='salvar'?{acao:'estrategia_editar',estrategia_id:id,texto:$('#es-txt').value}:a==='cancelar'?{acao:'estrategia_cancelar',estrategia_id:id}:null;
       if(!corpo) return;
       if(a==='cancelar'&&!confirm('Cancelar essa estratégia?')) return;
       espera(bt,'…',function(){ return api(corpo).then(function(){ editando=null; toast(a==='aprovar'?'Aprovada: foi pro dono aprovar.':'Feito.'); return carrega(); }); });
