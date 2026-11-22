@@ -31,9 +31,15 @@ export async function equipeAprova(peca_id: string, por: string) {
         else { const { linkPainel } = await import('./painel-dono'); texto += `\n\nTudo em detalhe no teu painel: ${linkPainel(neg)}` }
       } catch { /* sem segredo no servidor: vai sem o link */ }
     }
+    // 22/11 (estrategia.ts): a estratégia de 15 dias que caiu perto do relatório do mês (e a equipe já aprovou) vai na MESMA mensagem
+    let juntas: any[] = []
+    if (peca.tipo === 'relatorio' && !imagem) {
+      try { const rel = await import('./relatorios'); if (rel.ehRelatorioMes(peca)) { juntas = await (await import('./estrategia')).juntaAoRelatorio(peca.negocio_id); if (juntas.length) texto += '\n\n' + juntas.map((e: any) => e.texto).join('\n\n') } } catch { juntas = [] }
+    }
     r = imagem ? await mandaImagem(cv, (await db.link(peca.arquivo_path, 60 * 60 * 24 * 7))!, texto, 'maia', peca.id) : await mandaTexto(cv, texto)
     await db.atualiza('pecas', { id: peca.id }, { status: 'aprovada', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), enviado_dono_em: new Date().toISOString(), wamid_envio: r.wamid || null })
-    return { ok: r.ok, status: 'aprovada' }
+    if (juntas.length) await (await import('./estrategia')).foiComORelatorio(juntas.map((e: any) => e.id), r.wamid || null, peca.id)
+    return { ok: r.ok, status: 'aprovada', ...(juntas.length ? { estrategias_juntas: juntas.length } : {}) }
   }
   const link = await db.link(peca.arquivo_path)
   const legenda = `${peca.gancho}\n\n${peca.texto}\n\n${peca.cta}`

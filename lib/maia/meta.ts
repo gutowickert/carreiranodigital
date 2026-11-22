@@ -161,7 +161,9 @@ export async function ativa(campanha_id: string, por: string) {
   }
   const [nova] = await db.atualiza('campanhas', { id: c.id }, { status: 'ativa', ativada_por: por, ativada_em: new Date().toISOString() })
   for (const p of pecas) await db.atualiza('pecas', { id: (p as any).id }, { status: 'no_ar' })
-  await db.atualiza('negocios', { id: c.negocio_id, status: 'implantacao' }, { status: 'ativo' })
+  const virou = await db.atualiza('negocios', { id: c.negocio_id, status: 'implantacao' }, { status: 'ativo' })
+  // 22/11 (estrategia.ts): o dia em que o negócio ligou conta o ciclo de 15 dias da estratégia
+  if (virou?.length) await import('./estrategia').then(E => E.marcaAtivacao(virou[0])).catch(() => null)
   await avisaEquipe('campanha no ar', `${c.nome} (verba R$ ${c.verba_dia}/dia)${c.simulada ? ' [simulada]' : ''}`, c.negocio_id)
   return nova
 }

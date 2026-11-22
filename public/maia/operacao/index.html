@@ -1395,7 +1395,7 @@ function subBase(n,c){
   function carrega(){ return api(q({acao:'base',negocio:n.id})).then(pinta).catch(function(e){ if($('#base-c')) $('#base-c').innerHTML=caixaErro(e); }); }
   carrega();
 }
-// 22/11 (lib/maia/estrategia.ts + sazonalidade.ts): o CICLO DE ESTRATÉGIA DE 15 DIAS. A proposta da quinzena (dias 1 e 16, ou
+// 22/11 (lib/maia/estrategia.ts + sazonalidade.ts): o CICLO DE ESTRATÉGIA DE 15 DIAS. A proposta da quinzena (a cada 15 dias desde a ativação, ou
 // "propor agora"), que a equipe aprova antes do dono, edita ou cancela; o histórico com o resultado de cada quinzena; e o
 // calendário: as datas do ramo que pesam agora, as do radar, os cuidados do ramo e as datas próprias do negócio.
 function subEstrategia(n,c){
@@ -1405,7 +1405,7 @@ function subEstrategia(n,c){
   var TOM={aprovar_equipe:'aten',aprovar_dono:'aten',aprovada:'bom',substituida:'',cancelada:''};
   var editando=null;
   function cartao(e){
-    var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>'+(e.motivo==='inicial'?'Inicial':'Quinzena')+' '+dm(e.ciclo_de)+' a '+dm(e.ciclo_ate)+'</h2><p class="mu peq" style="margin-top:4px">Proposta em '+new Date(e.criado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+(e.criado_por&&e.criado_por!=='maia'?' (pedida por '+esc(e.criado_por)+')':'')+(e.aprovado_equipe_por?' · equipe: '+esc(e.aprovado_equipe_por):'')+(e.aprovado_dono_em?' · dono aprovou pelo '+esc(e.aprovado_via||'?'):'')+'</p></div>'+chip(e.status_nome,TOM[e.status]||'')+'</div>';
+    var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>'+(e.motivo==='inicial'?'Inicial':'Quinzena')+' '+dm(e.ciclo_de)+' a '+dm(e.ciclo_ate)+'</h2><p class="mu peq" style="margin-top:4px">Proposta em '+new Date(e.criado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+(e.criado_por&&e.criado_por!=='maia'?' (pedida por '+esc(e.criado_por)+')':'')+(e.aprovado_equipe_por?' · equipe: '+esc(e.aprovado_equipe_por):'')+(e.aprovado_dono_em?' · dono aprovou pelo '+esc(e.aprovado_via||'?'):'')+'</p></div>'+chip(e.espera_relatorio?'vai junto com o relatório de '+dm(e.espera_relatorio):e.status_nome,TOM[e.status]||'')+'</div>';
     if(e.nota) h+='<div class="erro-box" style="margin-bottom:10px">'+ic('alerta')+'<span>'+esc(e.nota)+'</span></div>';
     if(editando===e.id) h+='<div class="campo"><label for="es-txt">Texto que vai pro dono</label><textarea id="es-txt" rows="14" style="width:100%">'+esc(e.texto||'')+'</textarea></div><div class="btns"><button class="btn ok" data-es="salvar" data-id="'+esc(e.id)+'">'+ic('check')+'Salvar o texto</button><button class="btn" data-es="voltar">Voltar</button></div>';
     else h+='<p style="margin:0 0 12px;white-space:pre-line;line-height:1.55">'+esc(e.texto||'')+'</p>';
@@ -1421,7 +1421,7 @@ function subEstrategia(n,c){
     var cx=$('#est-c'); if(!cx) return;
     if(!d.disponivel){ cx.innerHTML='<div class="card">'+vazio('alerta','Estratégia de 15 dias ainda não ligada',esc(d.erro||'Falta rodar o SQL no banco.'))+'</div>'; return; }
     var cal=d.calendario||{}, h='';
-    h+='<div class="card"><div class="card-cab"><div><h2>Ciclo de 15 dias</h2><p class="mu peq" style="margin-top:4px">A Maia revisa nos dias 1 e 16, às 9h: lê os números da quinzena, consulta o calendário e propõe. A equipe aprova, depois o dono (WhatsApp ou painel). Quinzena atual: '+dm(d.ciclo.de)+' a '+dm(d.ciclo.ate)+'.'+(d.ligada?'':' <b>Rotina desligada (MAIA_ESTRATEGIA_LIGADA): só sai proposta pelo botão.</b>')+'</p></div></div>'+
+    h+='<div class="card"><div class="card-cab"><div><h2>Ciclo de 15 dias</h2><p class="mu peq" style="margin-top:4px">A Maia revisa a cada 15 dias desde que o negócio ligou'+(d.ativado_em?' (ligou em '+dm(d.ativado_em)+'; próxima revisão '+dm(d.proxima_revisao)+')':' (ainda não ligou: só a inicial)')+', às 9h: lê os números da quinzena, consulta o calendário e propõe. A equipe aprova, depois o dono (WhatsApp ou painel). Quinzena atual: '+dm(d.ciclo.de)+' a '+dm(d.ciclo.ate)+'.'+(d.ligada?'':' <b>Rotina desligada (MAIA_ESTRATEGIA_LIGADA): só sai proposta pelo botão.</b>')+'</p></div></div>'+
       '<div class="btns"><button class="btn ok" id="es-gerar">'+ic('brilho')+'Propor agora</button></div></div>';
     h+='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">Calendário</h2><p class="mu peq" style="margin:0 0 10px">Ramo: '+esc((cal.grupos||[]).join(', '))+'. A Maia sempre consulta isto antes de propor.</p>'+
       '<b class="peq">Pesam na quinzena</b><div class="lista">'+((cal.pesam||[]).length?cal.pesam.map(linhaData).join(''):'<p class="mu peq">nenhuma</p>')+'</div>'+

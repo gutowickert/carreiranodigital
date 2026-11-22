@@ -1,9 +1,12 @@
 // Maia: o CICLO DE ESTRATÉGIA DE 15 DIAS (22/11, pedido do Guto: "a estratégia tem que ser repensada a cada 15 dias. A Maia
 // precisa levar em consideração a sazonalidade de cada período antes de propor estratégias").
 //
-// QUANDO: dias 1 e 16 de cada mês, às 9h no fuso do negócio (rotina.ts). Dia fixo pra todo negócio: o dono aprende ("toda
-// virada de quinzena tem estratégia nova"), o dia 1 casa com o fechamento do mês (o relatório completo sai no dia 2) e o 16
-// casa com o 2º lote de anúncios do mês. Negócio que ainda não tem nenhuma estratégia ganha a INICIAL na primeira rodada.
+// QUANDO (22/11, Guto: "15 dias após o dia que cada negócio ligou"): ativação + 15, +30, +45... às 9h no fuso do negócio
+// (rotina.ts). A ativação fica em contexto.ativado_em. Negócio sem nenhuma estratégia ganha a INICIAL na primeira rodada (na
+// implantação). Se a rotina perder o dia (fora do ar), propõe no dia seguinte.
+// JUNTO COM O RELATÓRIO DO MÊS: revisão que cai até 3 dias antes do dia do relatório (dia 2, ou o 1º dia que o negócio abre)
+// e a equipe aprova antes do relatório sair: não vai sozinha; vai pro dono na MESMA mensagem do relatório (aprovacao.ts). Se o
+// relatório não sair até o dia seguinte ao dele, a estratégia sai sozinha. Nas outras datas vai sozinha, na hora que a equipe aprova.
 // O QUE ELA FAZ (sem IA: nenhum número inventado, custo zero):
 //   1) lê os números da quinzena que passou (gasto, conversas, custo por conversa, vendas, métrica secundária, os anúncios
 //      rodando: a mesma decisão da análise de 2 dias, relatorios.ts);
@@ -21,10 +24,9 @@ import { maiaDb as db, maiaLocal } from './db'
 import { numeros } from './funil'
 import { horaLocal, fusoDo } from './horario'
 import { tetoVerba } from './limites'
-import { datasDaVez, fraseDaData, ddmm, somaDias, SEM_RECADO_DE_VENDA, leDia, datasProprias, type DataDaVez } from './sazonalidade'
+import { datasDaVez, fraseDaData, ddmm, somaDias, diasEntre, iso as isoDe, SEM_RECADO_DE_VENDA, leDia, datasProprias, type DataDaVez } from './sazonalidade'
 
 export const estrategiaLigada = () => process.env.MAIA_ESTRATEGIA_LIGADA === '1'
-export const DIAS_DO_CICLO = [1, 16]
 export const HORA = 9
 export const TITULO = 'Estratégia da quinzena'
 export const STATUS_NOME: Record<string, string> = { aprovar_equipe: 'equipe revisando', aprovar_dono: 'esperando o dono', aprovada: 'aprovada', substituida: 'substituída pela seguinte', cancelada: 'cancelada' }
@@ -44,15 +46,38 @@ export async function estrategiaDisponivel() {
 }
 async function exige() { if (!(await estrategiaDisponivel())) throw new Error(INDISPONIVEL) }
 
-// ─────────────── o ciclo (puro)
-const ultimoDoMes = (a: number, m: number) => new Date(Date.UTC(a, m, 0)).getUTCDate()
-// a quinzena de um dia: 1 a 15, ou 16 ao fim do mês
-export function cicloDoDia(hoje: string) {
-  const [a, m, d] = hoje.split('-').map(Number), mm = String(m).padStart(2, '0')
-  return d <= 15 ? { de: `${a}-${mm}-01`, ate: `${a}-${mm}-15` } : { de: `${a}-${mm}-16`, ate: `${a}-${mm}-${ultimoDoMes(a, m)}` }
+// ─────────────── o ciclo (puro). 22/11 (Guto): "15 dias após o dia que cada negócio ligou": revisa na ativação + 15, +30, +45...
+// `ativacao` = AAAA-MM-DD em que o negócio ficou ativo. Sem ativação (ainda em implantação): a quinzena começa hoje (a inicial)
+export const DIAS_DO_CICLO = 15
+export function cicloDoDia(hoje: string, ativacao?: string | null) {
+  if (!ativacao || hoje < ativacao) return { de: hoje, ate: somaDias(hoje, DIAS_DO_CICLO - 1) }
+  const k = Math.floor(diasEntre(ativacao, hoje) / DIAS_DO_CICLO)
+  const de = somaDias(ativacao, k * DIAS_DO_CICLO)
+  return { de, ate: somaDias(de, DIAS_DO_CICLO - 1) }
 }
-export const cicloAnterior = (c: { de: string }) => cicloDoDia(somaDias(c.de, -1))
-export const diaDeRevisar = (hoje: string) => DIAS_DO_CICLO.includes(Number(hoje.slice(8, 10)))
+export const cicloAnterior = (c: { de: string }) => ({ de: somaDias(c.de, -DIAS_DO_CICLO), ate: somaDias(c.de, -1) })
+// dia de revisar: ativação + 15, +30... (o dia da ativação não: ali vale a inicial)
+export const diaDeRevisar = (hoje: string, ativacao?: string | null) => !!ativacao && hoje > ativacao && diasEntre(ativacao, hoje) % DIAS_DO_CICLO === 0
+
+// a data em que o negócio ficou ativo: contexto.ativado_em (meta.ts grava quando a 1ª campanha liga; a equipe grava quando muda o
+// status pra ativo). Negócio que já era ativo antes disso: a 1ª campanha que ligou, senão o dia do cadastro (e fica gravado)
+export async function dataDeAtivacao(neg: any): Promise<string | null> {
+  const c = neg?.contexto || {}
+  if (typeof c.ativado_em === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(c.ativado_em)) return c.ativado_em
+  if (neg?.status !== 'ativo') return null
+  const camps = (await db.lista('campanhas', { negocio_id: neg.id })).map(x => x.ativada_em).filter(Boolean).sort()
+  const iso = camps[0] || neg.criado_em || new Date().toISOString()
+  const dia = horaLocal(new Date(iso), fusoDo(neg)).data
+  await marcaAtivacao(neg, dia)
+  return dia
+}
+export async function marcaAtivacao(neg: any, dia?: string) {
+  const n = (await db.um('negocios', { id: neg.id })) || neg
+  if (n.contexto?.ativado_em) return n.contexto.ativado_em
+  const d = dia || horaLocal(new Date(), fusoDo(n)).data
+  await db.atualiza('negocios', { id: n.id }, { contexto: { ...(n.contexto || {}), ativado_em: d } })
+  return d
+}
 
 // ─────────────── a proposta
 export type Acao = { tipo: 'estimular' | 'pausar' | 'testar_oferta' | 'produto_entrada' | 'verba' | 'sazonal' | 'recado_base' | 'comecar'; texto: string; porque?: string; data?: string | null }
@@ -147,10 +172,10 @@ export async function propoeEstrategia(negArg: any, op: { agora?: Date; motivo?:
   const neg = (await db.um('negocios', { id: negArg.id })) || negArg   // o calendário próprio pode ter mudado agora
   const agora = op.agora || new Date()
   const hoje = horaLocal(agora, fusoDo(neg)).data
-  const ciclo = cicloDoDia(hoje)
+  const ciclo = cicloDoDia(hoje, await dataDeAtivacao(neg))
   const todas = await db.lista('estrategias', { negocio_id: neg.id }, { ordem: 'criado_em' })
   const vivas = todas.filter(e => !['cancelada', 'substituida'].includes(e.status))
-  if (!op.forcar && vivas.some(e => e.ciclo_de === ciclo.de)) return { pulou: true, motivo: 'já tem estratégia desta quinzena' }
+  if (!op.forcar && todas.some(e => e.status !== 'substituida' && e.ciclo_de === ciclo.de)) return { pulou: true, motivo: 'já tem estratégia desta quinzena' }
   const motivo = op.motivo || (todas.length ? 'quinzena' : 'inicial')
   // os números da quinzena que passou (a inicial, sem nada rodando ainda, vai sem números)
   const ant = cicloAnterior(ciclo)
@@ -191,15 +216,69 @@ export async function equipeAprovaEstrategia(id: string, por: string) {
   const e = await estrategia(id)
   if (e.status !== 'aprovar_equipe') throw new Error('a estratégia não está esperando a equipe (' + (STATUS_NOME[e.status] || e.status) + ')')
   const neg = await db.um('negocios', { id: e.negocio_id })
-  let wamid: string | null = null
-  if (neg?.dono_whatsapp) {
-    const { conversaDoDono, mandaTexto } = await import('./canal')
-    const r = await mandaTexto(await conversaDoDono(neg), e.texto)
-    wamid = r?.wamid || null
+  // 22/11 (Guto): a revisão que cai perto do relatório do mês vai junto com ele, numa mensagem só (aprovacao.ts junta)
+  const rel = await relatorioQueJunta(neg, e, agoraTeste || new Date())
+  if (rel) {
+    const [x] = await db.atualiza('estrategias', { id: e.id }, { status: 'aprovar_dono', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), wamid_dono: null, nota: null, proposta: { ...limpa(e.proposta), espera_relatorio: rel } })
+    await db.evento('estrategia_equipe_aprovou', e.negocio_id, { estrategia_id: e.id, por, junto_do_relatorio: rel })
+    return x
   }
-  const [x] = await db.atualiza('estrategias', { id: e.id }, { status: 'aprovar_dono', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), wamid_dono: wamid, nota: null })
+  const wamid = await mandaProDono(neg, e.texto)
+  const [x] = await db.atualiza('estrategias', { id: e.id }, { status: 'aprovar_dono', aprovado_equipe_por: por, aprovado_equipe_em: new Date().toISOString(), wamid_dono: wamid, nota: null, proposta: { ...limpa(e.proposta), enviada_em: new Date().toISOString() } })
   await db.evento('estrategia_equipe_aprovou', e.negocio_id, { estrategia_id: e.id, por })
   return x
+}
+const limpa = (p: any) => { const { espera_relatorio, enviada_em, com_relatorio, sem_relatorio, ...r } = p || {}; void espera_relatorio; void enviada_em; void com_relatorio; void sem_relatorio; return r }
+let agoraTeste: Date | null = null   // só o teste muda o "hoje" da junção com o relatório
+export const relogioDeTeste = (d: Date | null) => { agoraTeste = d }
+async function mandaProDono(neg: any, texto: string) {
+  if (!neg?.dono_whatsapp) return null
+  const { conversaDoDono, mandaTexto } = await import('./canal')
+  const r = await mandaTexto(await conversaDoDono(neg), texto)
+  return r?.wamid || null
+}
+
+// a revisão de 15 dias cai entre 3 dias antes do dia do relatório do mês e o próprio dia, e o relatório ainda não foi pro
+// dono: devolve o dia do relatório (a estratégia espera ele). Senão null (vai sozinha)
+export async function relatorioQueJunta(neg: any, e: any, agora = new Date()) {
+  if (e.motivo !== 'quinzena') return null
+  const R = await import('./relatorios')
+  const [a, m] = String(e.ciclo_de).split('-').map(Number)
+  for (const [ano, mes] of [[a, m], m === 12 ? [a + 1, 1] : [a, m + 1]]) {
+    const rel = isoDe(ano, mes, R.diaDoRelatorio(neg, ano, mes))
+    if (!(e.ciclo_de >= somaDias(rel, -3) && e.ciclo_de <= rel)) continue
+    if (horaLocal(agora, fusoDo(neg)).data > rel) return null   // o dia do relatório já passou: vai sozinha
+    const desde = new Date(somaDias(rel, -8) + 'T03:00:00Z').toISOString()
+    const jaFoi = (await db.lista('pecas', { negocio_id: neg.id, tipo: 'relatorio' })).some(p => R.ehRelatorioMes(p) && p.enviado_dono_em && p.criado_em >= desde)
+    return jaFoi ? null : rel
+  }
+  return null
+}
+export const segurada = (e: any) => e?.status === 'aprovar_dono' && !!e.proposta?.espera_relatorio && !e.proposta?.enviada_em
+
+// aprovacao.ts: o relatório do mês está indo pro dono: as estratégias que esperavam por ele vão junto (o texto entra na mensagem)
+export async function juntaAoRelatorio(negocio_id: string) {
+  if (!estrategiaLigada() || !(await estrategiaDisponivel().catch(() => false))) return []
+  return (await db.lista('estrategias', { negocio_id, status: 'aprovar_dono' })).filter(segurada)
+}
+export async function foiComORelatorio(ids: string[], wamid: string | null, peca_id: string) {
+  for (const id of ids) {
+    const e = await db.um('estrategias', { id })
+    if (!e) continue
+    await db.atualiza('estrategias', { id }, { wamid_dono: wamid, proposta: { ...(e.proposta || {}), enviada_em: new Date().toISOString(), com_relatorio: peca_id } })
+  }
+}
+// a rotina: o relatório não saiu até o dia seguinte ao dele → a estratégia vai sozinha
+export async function soltaSeguradas(neg: any, agora = new Date()) {
+  const hoje = horaLocal(agora, fusoDo(neg)).data
+  const feitas: string[] = []
+  for (const e of (await db.lista('estrategias', { negocio_id: neg.id, status: 'aprovar_dono' })).filter(segurada)) {
+    if (hoje <= somaDias(e.proposta.espera_relatorio, 1)) continue
+    const wamid = await mandaProDono(neg, e.texto)
+    await db.atualiza('estrategias', { id: e.id }, { wamid_dono: wamid, proposta: { ...(e.proposta || {}), enviada_em: new Date().toISOString(), sem_relatorio: true } })
+    feitas.push(e.id)
+  }
+  return feitas
 }
 export async function equipeEditaEstrategia(id: string, texto: string, por: string) {
   await exige()
@@ -223,7 +302,8 @@ export async function cancelaEstrategia(id: string, por: string, nota?: string) 
 // ─────────────── o dono (WhatsApp e painel chamam as mesmas)
 export async function estrategiasComDono(negocio_id: string) {
   if (!(await estrategiaDisponivel().catch(() => false))) return []
-  return db.lista('estrategias', { negocio_id, status: 'aprovar_dono' }, { ordem: 'criado_em' }).catch(() => [] as any[])
+  // a que espera o relatório do mês ainda não chegou no dono: não conta
+  return (await db.lista('estrategias', { negocio_id, status: 'aprovar_dono' }, { ordem: 'criado_em' }).catch(() => [] as any[])).filter(e => !segurada(e))
 }
 export async function estrategiaDaMensagem(negocio_id: string, wamid: string) {
   if (!wamid || !(await estrategiaDisponivel().catch(() => false))) return null
@@ -233,7 +313,7 @@ export async function donoAprovaEstrategia(negocio_id: string, id?: string | nul
   await exige()
   const lista = id ? [await db.um('estrategias', { id: String(id), negocio_id })].filter(Boolean) as any[] : await estrategiasComDono(negocio_id)
   // só o que a EQUIPE já aprovou chega aqui (status aprovar_dono)
-  const ok = lista.filter(e => e.status === 'aprovar_dono')
+  const ok = lista.filter(e => e.status === 'aprovar_dono' && !segurada(e))
   if (id && !ok.length) throw new Error('essa estratégia não está esperando a tua aprovação')
   const neg = await db.um('negocios', { id: negocio_id })
   const { avisaEquipe } = await import('./canal')
@@ -248,7 +328,7 @@ export async function donoAprovaEstrategia(negocio_id: string, id?: string | nul
 export async function donoAjustaEstrategia(negocio_id: string, id: string | null, nota: string, via = 'whatsapp') {
   await exige()
   const pend = id ? [await db.um('estrategias', { id: String(id), negocio_id })].filter(Boolean) as any[] : await estrategiasComDono(negocio_id)
-  const e = pend.filter(x => x.status === 'aprovar_dono').slice(-1)[0]
+  const e = pend.filter(x => x.status === 'aprovar_dono' && !segurada(x)).slice(-1)[0]
   if (!e) return { ok: false, erro: 'nenhuma estratégia esperando a aprovação do dono' }
   if (!String(nota || '').trim()) return { ok: false, erro: 'falta dizer o que mudar' }
   await db.atualiza('estrategias', { id: e.id }, { status: 'aprovar_equipe', nota: 'o dono pediu: ' + String(nota).slice(0, 300) })
@@ -296,7 +376,8 @@ export async function painelEquipe(neg: any, agora = new Date()) {
   const hoje = horaLocal(agora, fusoDo(neg)).data
   const es = await db.lista('estrategias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 24 })
   const cal = datasDaVez(neg, hoje)
-  return { disponivel: true, ligada: estrategiaLigada(), hoje, ciclo: cicloDoDia(hoje), estrategias: es.map(e => ({ ...resumoDe(e), nota: e.nota || null, aprovado_equipe_por: e.aprovado_equipe_por || null, criado_por: e.criado_por || null })),
+  const ativ = await dataDeAtivacao(neg)
+  return { disponivel: true, ligada: estrategiaLigada(), hoje, ativado_em: ativ, ciclo: cicloDoDia(hoje, ativ), proxima_revisao: ativ ? somaDias(cicloDoDia(hoje, ativ).ate, 1) : null, estrategias: es.map(e => ({ ...resumoDe(e), espera_relatorio: segurada(e) ? e.proposta.espera_relatorio : null, nota: e.nota || null, aprovado_equipe_por: e.aprovado_equipe_por || null, criado_por: e.criado_por || null })),
     calendario: { grupos: cal.grupos, pesam: cal.pesam, radar: cal.radar, cuidados: cal.cuidados, proprias: datasProprias(neg) } }
 }
 // o dono não vê a nota interna nem o texto que a equipe ainda está revisando
@@ -306,20 +387,22 @@ export async function painelDoDono(neg: any, agora = new Date()) {
   const hoje = horaLocal(agora, fusoDo(neg)).data
   const es = (await db.lista('estrategias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 12 })).filter(e => ['aprovar_dono', 'aprovada'].includes(e.status))
   const cal = datasDaVez(neg, hoje)
-  return { ligada: true, disponivel: true, pendente: es.filter(e => e.status === 'aprovar_dono').map(resumoDe)[0] || null, historico: es.filter(e => e.status === 'aprovada').slice(0, 6).map(resumoDe),
+  return { ligada: true, disponivel: true, pendente: es.filter(e => e.status === 'aprovar_dono' && !segurada(e)).map(resumoDe)[0] || null, historico: es.filter(e => e.status === 'aprovada').slice(0, 6).map(resumoDe),
     calendario: { pesam: cal.pesam.map(d => ({ nome: d.nome, dia: d.dia, inicio: d.inicio })), radar: cal.radar.map(d => ({ nome: d.nome, dia: d.dia, inicio: d.inicio })), proprias: datasProprias(neg) } }
 }
 // pro WhatsApp: a estratégia que vale agora (e a que espera o 👍)
 export async function estrategiaAtual(neg: any) {
   if (!(await estrategiaDisponivel().catch(() => false))) return { erro: 'a estratégia de 15 dias ainda não está ligada: a equipe liga' }
   const es = await db.lista('estrategias', { negocio_id: neg.id }, { ordem: 'criado_em', desc: true, limite: 12 })
-  const v = es.find(e => e.status === 'aprovada'), p = es.find(e => e.status === 'aprovar_dono')
+  const v = es.find(e => e.status === 'aprovada'), p = es.find(e => e.status === 'aprovar_dono' && !segurada(e))
+const ativ = await dataDeAtivacao(neg)
   return { vigente: v ? { quinzena: `${ddmm(v.ciclo_de)} a ${ddmm(v.ciclo_ate)}`, acoes: (v.proposta?.acoes || []).map((a: any) => a.texto) } : null,
     esperando_o_dono: p ? { quinzena: `${ddmm(p.ciclo_de)} a ${ddmm(p.ciclo_ate)}`, texto: p.texto } : null,
-    proxima_revisao: (() => { const h = horaLocal(new Date(), fusoDo(neg)).data, c = cicloDoDia(h); return ddmm(somaDias(c.ate, 1)) })() }
+    proxima_revisao: ativ ? ddmm(somaDias(cicloDoDia(horaLocal(new Date(), fusoDo(neg)).data, ativ).ate, 1)) : 'depois que o primeiro anúncio ligar' }
 }
 
-// ─────────────── a rotina (de hora em hora): 9h no fuso do negócio, dias 1 e 16; a inicial na 1ª rodada de quem não tem nenhuma
+// ─────────────── a rotina (de hora em hora): 9h no fuso do negócio, na ativação + 15, +30... (ou no dia seguinte, se a rodada
+// falhou); a inicial na 1ª rodada de quem não tem nenhuma; e solta a que esperava um relatório do mês que não saiu
 export async function rotinaEstrategia(op: { agora?: Date; forcar?: boolean } = {}) {
   if (!estrategiaLigada()) return []
   if (!(await estrategiaDisponivel().catch(() => false))) return [{ indisponivel: INDISPONIVEL }]
@@ -330,8 +413,10 @@ export async function rotinaEstrategia(op: { agora?: Date; forcar?: boolean } = 
     try {
       const h = horaLocal(agora, fusoDo(neg))
       if (h.hora !== HORA && !op.forcar) continue
+      for (const id of await soltaSeguradas(neg, agora)) feitos.push({ negocio: neg.id, solta_sem_relatorio: id })
       const tem = (await db.lista('estrategias', { negocio_id: neg.id }, { limite: 1, campos: 'id' })).length > 0
-      if (tem && !diaDeRevisar(h.data)) continue
+      const ativ = tem ? await dataDeAtivacao(neg) : null
+      if (tem && !(diaDeRevisar(h.data, ativ) || diaDeRevisar(somaDias(h.data, -1), ativ))) continue
       const r: any = await propoeEstrategia(neg, { agora, motivo: tem ? 'quinzena' : 'inicial' })
       if (!r.pulou) feitos.push({ negocio: neg.id, estrategia: r.estrategia.id, datas: r.datas.pesam.map((d: any) => d.id) })
     } catch (e: any) { feitos.push({ negocio: neg.id, erro: String(e?.message || e).slice(0, 200) }) }

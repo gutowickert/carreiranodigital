@@ -194,7 +194,10 @@ export async function POST(req: Request) {
         if (b.dono_whatsapp) campos.dono_whatsapp = fone(b.dono_whatsapp)
         // 05/11: a conexão do WhatsApp (com a chave) não vem do painel: mantém a que está guardada
         if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
-        return ok(semChave((await db.atualiza('negocios', { id: b.id }, campos))[0]))
+        const atualizado = (await db.atualiza('negocios', { id: b.id }, campos))[0]
+        // 22/11 (estrategia.ts): virou ativo pela tela: guarda o dia (conta o ciclo de 15 dias); quem já tinha, fica como estava
+        if (campos.status === 'ativo' && atualizado) await import('@/lib/maia/estrategia').then(E => E.marcaAtivacao(atualizado)).catch(() => null)
+        return ok(semChave(atualizado))
       }
       // 13/11 (resumo-semana.ts): o resumo dos últimos 7 dias de um negócio. Sem gerar: só a prévia do texto (não grava nem manda).
       // gerar: true cria a peça pra equipe aprovar (o mesmo da segunda 7h)

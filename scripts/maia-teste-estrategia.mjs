@@ -1,7 +1,7 @@
 // Maia: o teste do CICLO DE ESTRATÉGIA DE 15 DIAS e do CALENDÁRIO (22/11, lib/maia/estrategia.ts e lib/maia/sazonalidade.ts).
 // Roda os módulos direto, sem servidor, em MODO LOCAL (arquivos em .maia-teste/estrategia), com a IA SIMULADA pela rede do
 // ensaio (scripts/maia-ensaio-rede.mjs: nada sai pra internet). Todo telefone de teste começa com 55000 (nunca sai pra Meta).
-// Confere: o ciclo dispara no dia certo (1 e 16, 9h), a proposta traz a data certa de cada ramo (e nada proibido),
+// Confere: o ciclo dispara no dia certo (ativação + 15, +30..., às 9h), a proposta traz a data certa de cada ramo (e nada proibido),
 // nada vai pro dono sem a equipe aprovar, o dono aprova pelo WhatsApp e pelo painel, e o histórico guarda (com o resultado).
 // Uso: node scripts/maia-teste-estrategia.mjs
 import fs from 'node:fs'
@@ -96,13 +96,15 @@ const prop = S.datasDaVez({ nicho: 'doceria', contexto: { calendario: { datas: [
 confere('data própria do negócio entra no calendário (e a inválida fica de fora)', prop.pesam.some(d => d.propria && d.nome === 'Aniversário da loja' && d.inicio === '2026-11-29') && !prop.pesam.concat(prop.radar).some(d => d.nome === 'Data ruim'))
 
 etapa('4) O ciclo: quinzenas e dias de revisar')
-confere('22/11 está na quinzena 16 a 30/11', JSON.stringify(E.cicloDoDia('2026-11-22')) === JSON.stringify({ de: '2026-11-16', ate: '2026-11-30' }))
-confere('03/02 está na quinzena 01 a 15/02; fevereiro bissexto vai até 29', E.cicloDoDia('2026-02-03').ate === '2026-02-15' && E.cicloDoDia('2028-02-20').ate === '2028-02-29')
-confere('a quinzena anterior à de 01/12 é 16 a 30/11', E.cicloAnterior({ de: '2026-12-01' }).de === '2026-11-16')
-confere('revisa nos dias 1 e 16, não nos outros', E.diaDeRevisar('2026-12-01') && E.diaDeRevisar('2026-12-16') && !E.diaDeRevisar('2026-12-02') && !E.diaDeRevisar('2026-12-15'))
+// 22/11 (Guto): o ciclo conta da data em que o negócio LIGOU (contexto.ativado_em): ativação + 15, +30, +45...
+confere('ligou em 01/11: 22/11 está na quinzena 16 a 30/11', JSON.stringify(E.cicloDoDia('2026-11-22', '2026-11-01')) === JSON.stringify({ de: '2026-11-16', ate: '2026-11-30' }))
+confere('ligou em 20/11: 22/11 está na quinzena 20/11 a 04/12, e 05/12 começa a seguinte', E.cicloDoDia('2026-11-22', '2026-11-20').ate === '2026-12-04' && E.cicloDoDia('2026-12-05', '2026-11-20').de === '2026-12-05')
+confere('ainda sem ativação (implantação): a quinzena começa hoje', JSON.stringify(E.cicloDoDia('2026-11-22', null)) === JSON.stringify({ de: '2026-11-22', ate: '2026-12-06' }))
+confere('a quinzena anterior à de 01/12 é 16 a 30/11', E.cicloAnterior({ de: '2026-12-01' }).de === '2026-11-16' && E.cicloAnterior({ de: '2026-12-01' }).ate === '2026-11-30')
+confere('revisa na ativação + 15, +30, +45 (não no dia que ligou, nem nos outros)', E.diaDeRevisar('2026-11-16', '2026-11-01') && E.diaDeRevisar('2026-12-01', '2026-11-01') && E.diaDeRevisar('2026-12-16', '2026-11-01') && !E.diaDeRevisar('2026-11-01', '2026-11-01') && !E.diaDeRevisar('2026-11-30', '2026-11-01') && !E.diaDeRevisar('2026-12-01', null))
 
 etapa('5) A chave: sem MAIA_ESTRATEGIA_LIGADA nada roda')
-const lotNeg = await db.insere('negocios', { nome: 'Lotérica Trevo', nicho: 'lotérica', cidade: 'Lajeado', dono_nome: 'José Almeida', dono_whatsapp: '5500077770011', plano: 'completa', status: 'ativo', verba_dia: 30, contexto: { produto: 'jogos e bolões da Caixa' } })
+const lotNeg = await db.insere('negocios', { nome: 'Lotérica Trevo', nicho: 'lotérica', cidade: 'Lajeado', dono_nome: 'José Almeida', dono_whatsapp: '5500077770011', plano: 'completa', status: 'ativo', verba_dia: 30, contexto: { produto: 'jogos e bolões da Caixa', ativado_em: '2026-11-01' } })
 confere('rotina desligada: nenhuma estratégia', (await E.rotinaEstrategia({ agora: as9('2026-11-22') })).length === 0 && (await db.lista('estrategias')).length === 0)
 const rotDesl = await ROT.roda({ relogio: as9('2026-12-01') })
 confere('a rotina geral nem chama a estratégia', rotDesl.estrategia === undefined && !rotDesl.estrategia_erro)
@@ -113,11 +115,11 @@ process.env.MAIA_ESTRATEGIA_LIGADA = '1'
 etapa('6) A rotina dispara no dia e na hora certos')
 confere('8h: ainda não', (await E.rotinaEstrategia({ agora: new Date('2026-11-22T11:00:00Z') })).length === 0)
 let rr = await E.rotinaEstrategia({ agora: as9('2026-11-22') })
-confere('negócio sem nenhuma estratégia: a INICIAL sai na 1ª rodada das 9h, mesmo fora do dia 1/16', rr.length === 1 && rr[0].negocio === lotNeg.id, rr)
+confere('negócio sem nenhuma estratégia: a INICIAL sai na 1ª rodada das 9h, mesmo fora do dia de revisar', rr.length === 1 && rr[0].negocio === lotNeg.id, rr)
 const ini = (await db.lista('estrategias', { negocio_id: lotNeg.id }))[0]
 confere('a inicial é da quinzena 16 a 30/11, esperando a equipe', ini.motivo === 'inicial' && ini.ciclo_de === '2026-11-16' && ini.ciclo_ate === '2026-11-30' && ini.status === 'aprovar_equipe', ini)
 confere('9h de novo no mesmo dia: não duplica', (await E.rotinaEstrategia({ agora: as9('2026-11-22') })).length === 0)
-confere('23/11 (não é dia 1 nem 16): não propõe', (await E.rotinaEstrategia({ agora: as9('2026-11-23') })).length === 0)
+confere('23/11 (não é ativação + 15/30): não propõe', (await E.rotinaEstrategia({ agora: as9('2026-11-23') })).length === 0)
 confere('a equipe foi avisada', (await db.lista('eventos', { tipo: 'aviso_equipe', negocio_id: lotNeg.id })).some(e => /estratégia da quinzena pra aprovar/.test(e.detalhe?.titulo || '')))
 
 etapa('7) A proposta da lotérica traz a data certa e os cuidados')
@@ -166,14 +168,14 @@ etapa('10) Dia 1: a quinzena nova, e o histórico guarda o resultado da anterior
 rr = await E.rotinaEstrategia({ agora: as9('2026-12-01') })
 const todas = await db.lista('estrategias', { negocio_id: lotNeg.id }, { ordem: 'criado_em' })
 const nova = todas[todas.length - 1]
-confere('dia 1 às 9h: sai a estratégia da quinzena 01 a 15/12', rr.length === 1 && nova.motivo === 'quinzena' && nova.ciclo_de === '2026-12-01' && nova.ciclo_ate === '2026-12-15' && nova.status === 'aprovar_equipe', rr)
+confere('01/12 (ligou em 01/11 + 30) às 9h: sai a estratégia da quinzena 01 a 15/12', rr.length === 1 && nova.motivo === 'quinzena' && nova.ciclo_de === '2026-12-01' && nova.ciclo_ate === '2026-12-15' && nova.status === 'aprovar_equipe', rr)
 confere('a anterior continua aprovada, agora com o resultado da quinzena dela', (await est(ini.id)).status === 'aprovada' && (await est(ini.id)).resultado?.de === '2026-11-16')
 confere('a nova traz os números da quinzena que passou', /Como foram os últimos 15 dias:/.test(nova.texto) && nova.numeros?.de === '2026-11-16')
 confere('no dia 1 a Mega da Virada ainda pesa', /Mega da Virada/.test(nova.texto))
-confere('dia 2: não propõe', (await E.rotinaEstrategia({ agora: as9('2026-12-02') })).length === 0)
+confere('02/12 (o dia seguinte, que cobre rodada perdida): não duplica', (await E.rotinaEstrategia({ agora: as9('2026-12-02') })).length === 0)
 const rot16 = await ROT.roda({ relogio: as9('2026-12-16') })
 const n16 = (await db.lista('estrategias', { negocio_id: lotNeg.id, ciclo_de: '2026-12-16' }))[0]
-confere('dia 16 pela rotina geral: a da quinzena 16 a 31/12', Array.isArray(rot16.estrategia) && rot16.estrategia.length === 1 && n16?.ciclo_ate === '2026-12-31', rot16.estrategia || rot16.estrategia_erro)
+confere('16/12 (+45) pela rotina geral: a da quinzena 16 a 30/12', Array.isArray(rot16.estrategia) && rot16.estrategia.length === 1 && n16?.ciclo_ate === '2026-12-30', rot16.estrategia || rot16.estrategia_erro)
 confere('a de 01/12 que ninguém aprovou vira "substituída"', (await est(nova.id)).status === 'substituida')
 const pe = await E.painelEquipe(lotNeg, as9('2026-12-16'))
 confere('o painel da equipe mostra o histórico inteiro e o calendário', pe.disponivel && pe.estrategias.length === 3 && pe.calendario.pesam.some(d => d.id === 'mega_virada') && pe.calendario.cuidados.length >= 3)
@@ -221,6 +223,71 @@ await E.donoAprovaEstrategia(lotNeg.id, n16.id, 'painel')
 const pd2 = await E.painelDoDono(lotNeg, as9('2026-12-16'))
 confere('aprovada pelo painel entra no histórico', (await est(n16.id)).aprovado_via === 'painel' && pd2.pendente === null && pd2.historico[0].id === n16.id && pd2.historico.length === 2)
 confere('o dono não vê a nota interna da equipe', pd2.historico.every(h => h.nota === undefined))
+
+etapa('15) A data de ativação')
+const impl = await db.insere('negocios', { nome: 'Oficina do Beto', nicho: 'oficina mecânica', cidade: 'Estrela', dono_nome: 'Beto Lima', dono_whatsapp: '5500077770044', plano: 'completa', status: 'implantacao', meta: { wa: { atende: true, numero: '5500077770044' } }, contexto: {} })
+confere('em implantação: sem data de ativação', (await E.dataDeAtivacao(impl)) === null)
+rr = await E.rotinaEstrategia({ agora: as9('2026-11-22') })
+confere('a inicial sai na implantação (quinzena a partir de hoje)', rr.some(x => x.negocio === impl.id) && (await db.lista('estrategias', { negocio_id: impl.id }))[0]?.ciclo_de === '2026-11-22', rr)
+confere('em implantação, 15 dias depois: não revisa (ainda não ligou)', !(await E.rotinaEstrategia({ agora: as9('2026-12-07') })).some(x => x.negocio === impl.id))
+// a 1ª campanha liga (meta.ts ativa): o negócio vira ativo e o dia fica guardado
+const M = await imp('lib/maia/meta.ts')
+const pc = await db.insere('pecas', { negocio_id: impl.id, tipo: 'anuncio_imagem', status: 'aprovada', aprovado_dono_em: new Date().toISOString(), aprovado_equipe_em: new Date().toISOString(), gancho: 'Revisão antes de viajar em Estrela' })
+const camp = await db.insere('campanhas', { negocio_id: impl.id, nome: 'teste', status: 'pausada', verba_dia: 20, peca_ids: [pc.id], meta_campaign_id: 'sim_camp_beto', meta_adset_id: 'sim_set_beto', meta_ad_ids: ['sim_ad_beto'], simulada: true })
+await M.ativa(camp.id, 'teste').catch(e => console.log('   (ativa:', e.message, ')'))
+const implAtivo = await db.um('negocios', { id: impl.id })
+const ativHoje = new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
+confere('a campanha ligou: status ativo e contexto.ativado_em = hoje', implAtivo.status === 'ativo' && implAtivo.contexto?.ativado_em === ativHoje, { st: implAtivo.status, ctx: implAtivo.contexto })
+confere('ligar de novo não muda a data', (await E.marcaAtivacao(implAtivo, '2030-01-01')) === ativHoje)
+const antigo = await db.insere('negocios', { nome: 'Ativo antigo', nicho: 'doceria', status: 'ativo', dono_whatsapp: '5500077770055', contexto: {} })
+await db.insere('campanhas', { negocio_id: antigo.id, nome: 'c', status: 'ativa', ativada_em: '2026-10-05T15:00:00.000Z', peca_ids: [], meta_ad_ids: [] })
+confere('negócio que já era ativo: vale a 1ª campanha que ligou, e fica gravado', (await E.dataDeAtivacao(antigo)) === '2026-10-05' && (await db.um('negocios', { id: antigo.id })).contexto.ativado_em === '2026-10-05')
+
+etapa('16) Revisão perto do relatório do mês: vai junto com ele, numa mensagem só')
+const RL = await imp('lib/maia/relatorios.ts')
+const A = await imp('lib/maia/aprovacao.ts')
+// ligou em 15/11: revisa em 30/11 (até 3 dias antes do relatório de 02/12)
+const junto = await db.insere('negocios', { nome: 'Doce Junto', nicho: 'doceria', cidade: 'Estrela', dono_nome: 'Lia Souza', dono_whatsapp: '5500077770066', plano: 'completa', status: 'ativo', contexto: { ativado_em: '2026-11-15' } })
+await E.propoeEstrategia(junto, { agora: as9('2026-11-15'), motivo: 'inicial' })
+rr = await E.rotinaEstrategia({ agora: as9('2026-11-30') })
+const ej = (await db.lista('estrategias', { negocio_id: junto.id, ciclo_de: '2026-11-30' }))[0]
+confere('30/11 (ligou 15/11 + 15): sai a revisão', !!ej && ej.motivo === 'quinzena')
+E.relogioDeTeste(as9('2026-11-30'))
+const antesJ = (await msgsDono(junto)).length
+await E.equipeAprovaEstrategia(ej.id, 'equipe')
+let ej2 = await est(ej.id)
+confere('a equipe aprovou, mas ela espera o relatório de 02/12 (não foi sozinha)', ej2.status === 'aprovar_dono' && ej2.proposta.espera_relatorio === '2026-12-02' && !ej2.wamid_dono && (await msgsDono(junto)).length === antesJ, ej2.proposta)
+confere('enquanto espera, o dono não vê nem aprova', (await E.painelDoDono(junto)).pendente === null && (await E.donoAprovaEstrategia(junto.id, null, 'whatsapp')).length === 0 && !(await PD.dadosDoPainel(junto)).esperando.some(x => x.tipo === 'estrategia'))
+const rm = await RL.geraRelatorioMes(junto, '2026-11', { ia: false })
+await A.equipeAprova(rm.peca.id, 'equipe')
+const msgJ = (await msgsDono(junto)).slice(antesJ)
+ej2 = await est(ej.id)
+confere('o relatório e a estratégia saem numa mensagem só', msgJ.length === 1 && /^Relatório do mês/.test(msgJ[0]) && /Estratégia da quinzena do Doce Junto \(30\/11 a 14\/12\)/.test(msgJ[0]), msgJ.map(t => String(t).slice(0, 160)))
+confere('a estratégia fica ligada à mensagem do relatório', !!ej2.wamid_dono && ej2.proposta.com_relatorio === rm.peca.id && (await E.painelDoDono(junto)).pendente?.id === ej.id)
+await D_.recebeDoDono(junto, { id: wid(), type: 'reaction', reaction: { emoji: '👍', message_id: ej2.wamid_dono } }, 'Lia')
+confere('o 👍 em cima da mensagem junta aprova a estratégia', (await est(ej.id)).status === 'aprovada')
+// ligou em 20/11: revisa em 05/12 (longe do relatório): vai sozinha na hora
+const sozinha = await db.insere('negocios', { nome: 'Doce Sozinha', nicho: 'doceria', dono_nome: 'Rui', dono_whatsapp: '5500077770077', plano: 'completa', status: 'ativo', contexto: { ativado_em: '2026-11-20' } })
+await E.propoeEstrategia(sozinha, { agora: as9('2026-11-20'), motivo: 'inicial' })
+await E.rotinaEstrategia({ agora: as9('2026-12-05') })
+const es5 = (await db.lista('estrategias', { negocio_id: sozinha.id, ciclo_de: '2026-12-05' }))[0]
+E.relogioDeTeste(as9('2026-12-05'))
+await E.equipeAprovaEstrategia(es5.id, 'equipe')
+confere('revisão longe do relatório (05/12): vai sozinha na hora', !!(await est(es5.id)).wamid_dono && /Estratégia da quinzena do Doce Sozinha/.test((await msgsDono(sozinha)).slice(-1)[0] || ''))
+// relatório que não sai: a estratégia segurada sai sozinha no dia seguinte ao dele
+const semRel = await db.insere('negocios', { nome: 'Doce Sem Relatorio', nicho: 'doceria', dono_nome: 'Ana', dono_whatsapp: '5500077770088', plano: 'completa', status: 'ativo', contexto: { ativado_em: '2026-11-15' } })
+await E.propoeEstrategia(semRel, { agora: as9('2026-11-15'), motivo: 'inicial' })
+await E.rotinaEstrategia({ agora: as9('2026-11-30') })
+const esR = (await db.lista('estrategias', { negocio_id: semRel.id, ciclo_de: '2026-11-30' }))[0]
+E.relogioDeTeste(as9('2026-11-30'))
+await E.equipeAprovaEstrategia(esR.id, 'equipe')
+confere('segurada esperando o relatório', E.segurada(await est(esR.id)))
+await E.rotinaEstrategia({ agora: as9('2026-12-03') })
+confere('03/12 (dia seguinte ao relatório): ainda espera', E.segurada(await est(esR.id)))
+await E.rotinaEstrategia({ agora: as9('2026-12-04') })
+const esR2 = await est(esR.id)
+confere('04/12: o relatório não saiu, a estratégia vai sozinha', !E.segurada(esR2) && esR2.proposta.sem_relatorio === true && /Estratégia da quinzena do Doce Sem Relatorio/.test((await msgsDono(semRel)).slice(-1)[0] || ''))
+E.relogioDeTeste(null)
 
 console.log(`\n${ok} ok, ${falha} falha(s)`)
 process.exit(falha ? 1 : 0)

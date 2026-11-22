@@ -459,14 +459,14 @@ function secResumo(){
       (rc.recados||[]).slice(0,4).map(function(r){return '<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px"><b>'+esc(r.titulo||'Recado')+'</b> <span class="chip">'+esc(r.status_nome)+'</span>'+stRc(r)+'</div>';}).join('')+
       '<div class="btns" style="margin-top:12px"><button type="button" class="btn" id="b-recado">Novo recado</button><button type="button" class="btn" id="b-base">Importar contatos</button></div></div>';
   }
-  // 22/11 (estrategia.ts): a ESTRATÉGIA DA QUINZENA (revisada nos dias 1 e 16, com o calendário de datas do ramo). O mesmo de aprovar
+  // 22/11 (estrategia.ts): a ESTRATÉGIA DA QUINZENA (revisada a cada 15 dias desde que o negócio ligou, com o calendário de datas do ramo). O mesmo de aprovar
   // ou pedir ajuste pelo WhatsApp da Maia; a equipe confere antes de chegar aqui
   var es=d.estrategia||{};
   if(es.ligada&&es.disponivel){
     var dm=function(s){s=String(s||'');return s.slice(8,10)+'/'+s.slice(5,7);};
     var acoesEs=function(e){return (e.acoes||[]).length?'<ol style="margin:8px 0 0;padding-left:20px">'+e.acoes.map(function(a){return '<li style="margin:4px 0">'+esc(a.texto.charAt(0).toUpperCase()+a.texto.slice(1))+'</li>';}).join('')+'</ol>':'';};
     var cal=es.calendario||{};
-    h+='<h2>Estratégia da quinzena<small>revisada nos dias 1 e 16</small></h2><div class="card pad">';
+    h+='<h2>Estratégia da quinzena<small>revisada a cada 15 dias</small></h2><div class="card pad">';
     if(es.pendente) h+='<p style="margin:0 0 6px;font-weight:700">A nova estratégia ('+dm(es.pendente.ciclo_de)+' a '+dm(es.pendente.ciclo_ate)+') espera a tua aprovação:</p><p style="margin:0;white-space:pre-line;line-height:1.55">'+esc(es.pendente.texto)+'</p>'+
       '<div class="btns" style="margin-top:10px"><button type="button" class="btn pri" data-est-ok="'+esc(es.pendente.id)+'">Aprovar</button><button type="button" class="btn" data-est-aj="'+esc(es.pendente.id)+'">Pedir ajuste</button></div>';
     var vig=(es.historico||[])[0];
