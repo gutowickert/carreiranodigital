@@ -294,11 +294,11 @@ etapa('17) O texto com IA (jeito da Maia) e a trava')
 const iaFixa = (texto) => async () => ({ texto })
 const iaFora = async () => { throw new Error('IA fora do ar') }
 const lotIA = await db.insere('negocios', { nome: 'Lotérica Sorte Grande', nicho: 'lotérica', cidade: 'Lajeado', dono_nome: 'José Prates', dono_whatsapp: '5500077770099', plano: 'completa', status: 'ativo', verba_dia: 30, contexto: { produto: 'jogos e bolões da Caixa', ativado_em: '2026-11-15' } })
-const BOM_LOT = 'José, a estratégia da quinzena está pronta. O que mais pesa agora é a Mega da Virada (31/12): é o maior prêmio do ano, e o pessoal começa a procurar bolão desde 16/11. Então a ideia é a equipe colocar já no ar o anúncio do bolão, chamando pro balcão, junto com um recado pra sua base. E seguimos com o produto que entra primeiro, jogos e bolões da Caixa, pra medir conversa e venda.'
+const BOM_LOT = 'José, a estratégia da quinzena está pronta. O que mais pesa agora é a Mega da Virada (31/12): é o maior prêmio do ano, e o pessoal começa a procurar bolão desde 16/11. Então a ideia é a equipe colocar já no ar o anúncio do bolão, chamando pro balcão, junto com um recado pra tua base. E seguimos com o produto que entra primeiro, jogos e bolões da Caixa, pra medir conversa e venda.'
 const ia1 = await E.propoeEstrategia(lotIA, { agora: as9('2026-11-22'), motivo: 'inicial', escreve: iaFixa(BOM_LOT) })
 const e17 = ia1.estrategia
 confere('lotérica: o texto da IA passa na trava e vai pra equipe', e17.proposta.por_ia === true && e17.texto.startsWith('José, a estratégia') && e17.status === 'aprovar_equipe', e17.proposta.ia_motivo)
-confere('os cuidados do ramo e o 👍 vão no fim, escritos pelo sistema', /\nCuidados do seu ramo: nunca prometer prêmio.*vender nem cobrar pelo WhatsApp/.test(e17.texto) && /Topa seguir assim\? Me dá um 👍/.test(e17.texto))
+confere('os cuidados do ramo e o 👍 vão no fim, escritos pelo sistema', /\nCuidados do teu ramo: nunca prometer prêmio.*vender nem cobrar pelo WhatsApp/.test(e17.texto) && /Topa seguir assim\? Me dá um 👍/.test(e17.texto))
 confere('o texto de lista fica guardado pra equipe', /^Estratégia inicial do Lotérica Sorte Grande/.test(e17.proposta.texto_lista))
 console.log('\n  EXEMPLO (lotérica, texto com IA simulada):\n' + e17.texto.split('\n').map(l => '    ' + l).join('\n') + '\n')
 const inv = await E.propoeEstrategia(lotIA, { agora: as9('2026-11-22'), forcar: true, motivo: 'pedido', escreve: iaFixa(BOM_LOT.replace('junto com um recado', 'com cotas de R$ 50, junto com um recado')) })
@@ -318,16 +318,19 @@ confere('a equipe ainda edita o texto da IA antes de ir pro dono', (await E.equi
 const advIA = await db.insere('negocios', { nome: 'Fachini Advocacia', nicho: 'advocacia trabalhista', cidade: 'Lajeado', dono_nome: 'Natália Fachini', dono_whatsapp: '5500077770100', plano: 'completa', status: 'ativo', contexto: { ativado_em: '2026-12-20' } })
 const BOM_ADV = 'Natália, separei a estratégia das próximas semanas. Começo de ano (08/01): em janeiro muita gente resolve organizar a vida, então vale a equipe colocar já no ar um conteúdo informativo sobre revisão de contratos e o reajuste do salário mínimo, que mexe em pensão e benefícios do INSS. Demissões de janeiro e fim de contrato temporário (20/01): a partir de 06/01, um conteúdo informativo sobre o que conferir na rescisão. E a gente começa pelo anúncio de prontidão, pra medir as conversas.'
 const ia2 = await E.propoeEstrategia(advIA, { agora: as9('2026-12-28'), motivo: 'inicial', escreve: iaFixa(BOM_ADV) })
-confere('advocacia: o texto da IA passa e leva as regras da OAB no fim', ia2.estrategia.proposta.por_ia === true && /\nCuidados do seu ramo: regras da OAB: sem promessa de resultado/.test(ia2.texto), ia2.estrategia.proposta.ia_motivo)
+confere('advocacia: o texto da IA passa e leva as regras da OAB no fim', ia2.estrategia.proposta.por_ia === true && /\nCuidados do teu ramo: regras da OAB: sem promessa de resultado/.test(ia2.texto), ia2.estrategia.proposta.ia_motivo)
 console.log('\n  EXEMPLO (advocacia, texto com IA simulada):\n' + ia2.texto.split('\n').map(l => '    ' + l).join('\n') + '\n')
 const adv2b = await E.propoeEstrategia(advIA, { agora: as9('2026-12-28'), forcar: true, motivo: 'pedido', escreve: iaFixa(BOM_ADV + ' Em janeiro, consulta com desconto.') })
 confere('advocacia: "desconto" (proibido pela OAB) cai no texto de lista', adv2b.estrategia.proposta.por_ia === false && /advocacia/.test(adv2b.estrategia.proposta.ia_motivo))
 const adv2c = await E.propoeEstrategia(advIA, { agora: as9('2026-12-28'), forcar: true, motivo: 'pedido', escreve: iaFixa(BOM_ADV + ' Com isso a causa é ganha com certeza.') })
 confere('advocacia: promessa de resultado cai no texto de lista', adv2c.estrategia.proposta.por_ia === false)
-// o tom do negócio: no "tu", o fim também vai no "tu"
+// 22/11 (Guto): com o dono é sempre "tu", mesmo em negócio que atende os clientes no "você"
 const tuNeg = await db.insere('negocios', { nome: 'Lotérica do Tchê', nicho: 'lotérica', dono_nome: 'Beto', dono_whatsapp: '5500077770111', plano: 'completa', status: 'ativo', meta: { atendimento: { tom: { pessoa: 'tu', gaucho: true } } }, contexto: { ativado_em: '2026-11-15' } })
-const tu = await E.propoeEstrategia(tuNeg, { agora: as9('2026-11-22'), motivo: 'inicial', escreve: iaFixa(BOM_LOT.replace('sua base', 'tua base')) })
-confere('negócio no "tu": o fim vai no "tu"', tu.estrategia.proposta.por_ia === true && /Cuidados do teu ramo/.test(tu.texto))
+const tu = await E.propoeEstrategia(tuNeg, { agora: as9('2026-11-22'), motivo: 'inicial', escreve: iaFixa(BOM_LOT) })
+confere('negócio no "tu": tudo no "tu"', tu.estrategia.proposta.por_ia === true && /Cuidados do teu ramo/.test(tu.texto))
+confere('negócio no "você" (o padrão): a mensagem pro dono segue no "tu"', e17.texto.includes('tua base') && /Cuidados do teu ramo/.test(e17.texto) && !/você/i.test(e17.texto))
+const vc = await E.propoeEstrategia(lotIA, { agora: as9('2026-11-22'), forcar: true, motivo: 'pedido', escreve: iaFixa(BOM_LOT.replace('José, a estratégia', 'José, você vai gostar: a estratégia')) })
+confere('a IA escreveu "você" pro dono: cai no texto de lista', vc.estrategia.proposta.por_ia === false && /"tu"/.test(vc.estrategia.proposta.ia_motivo), vc.estrategia.proposta.ia_motivo)
 // as travas, direto
 const dLot = S.datasDaVez({ nicho: 'lotérica' }, '2026-11-22')
 confere('trava direta: texto curto não passa', E.travaDoTexto({}, 'oi', {}, dLot) === 'texto curto demais')

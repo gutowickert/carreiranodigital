@@ -25,7 +25,6 @@ import { numeros } from './funil'
 import { horaLocal, fusoDo } from './horario'
 import { tetoVerba } from './limites'
 import { JEITO } from './ia'
-import { tomDoNegocio, acertaTom } from './tom'
 import { iaSoComNumerosDados } from './relatorios-conta'
 import { datasDaVez, fraseDaData, ddmm, somaDias, diasEntre, iso as isoDe, SEM_RECADO_DE_VENDA, leDia, datasProprias, type DataDaVez } from './sazonalidade'
 
@@ -171,7 +170,7 @@ async function existeBase(neg: any) {
 
 // ─────────────── 22/11 (Guto: "quero que melhore com a IA o texto da proposta"): o texto com IA, com TRAVA
 // Igual ao relatório do mês (relatorios.ts, conclusoesDoMes): a IA (MAIA_MODELO_RELATORIO) só reescreve o JEITO de dizer, no jeito
-// da Maia (colega queridona, valor antes, curto, "equipe"), no "tu" ou "você" do negócio. Passa pelas travas abaixo; qualquer uma
+// da Maia (colega queridona, valor antes, curto, "equipe"), sempre no "tu" (com o dono; o tom do negócio é só com os clientes). Passa pelas travas abaixo; qualquer uma
 // que falhar, vale o texto de lista (sem IA). A equipe continua vendo e podendo editar antes de ir pro dono.
 //   1) todo número que ela escrever existe nos dados da proposta (relatorios-conta.ts, iaSoComNumerosDados);
 //   2) toda data dd/mm que ela escrever existe nos dados (data trocada derruba);
@@ -197,8 +196,9 @@ function datasDosDados(v: any, out = new Set<string>()): Set<string> {
   return out
 }
 export function fimDaProposta(neg: any, cuidados: string[]) {
-  const voce = tomDoNegocio(neg).pessoa === 'voce'
-  return [cuidados.length ? `Cuidados ${voce ? 'do seu' : 'do teu'} ramo: ${cuidados.join('; ')}.` : '', `Topa seguir assim? Me dá um 👍, ou me diz o que mudar.`].filter(Boolean).join('\n')
+  // 22/11 (Guto): com o dono é sempre "tu", igual às outras mensagens da Maia (o tom do negócio é só com os clientes)
+  void neg
+  return [cuidados.length ? `Cuidados do teu ramo: ${cuidados.join('; ')}.` : '', `Topa seguir assim? Me dá um 👍, ou me diz o que mudar.`].filter(Boolean).join('\n')
 }
 // as travas (pura: o teste chama direto). Devolve null se passou, ou o motivo
 export function travaDoTexto(neg: any, texto: string, dados: any, datas: ReturnType<typeof datasDaVez>): string | null {
@@ -209,16 +209,16 @@ export function travaDoTexto(neg: any, texto: string, dados: any, datas: ReturnT
   const conhecidas = datasDosDados(dados)
   for (const m of t.matchAll(DDMM)) if (!conhecidas.has(`${Number(m[1])}/${Number(m[2])}`)) return `data ${m[0]} que não está nos dados`
   for (const d of datas.pesam.slice(0, 2)) if (!t.toLowerCase().includes(d.nome.split(' (')[0].toLowerCase())) return `faltou a data que pesa (${d.nome})`
+  if (/(^|[^a-zà-ú])voc[êe]s?(?![a-zà-ú])/i.test(t)) return '"você" (com o dono é "tu")'
   if (PROMESSA.test(t)) return 'promessa de resultado'
   for (const g of datas.grupos) { const re = PROIBIDO_DO_RAMO[g]; if (re && re.test(t)) return `palavra proibida no ramo (${g})` }
   return null
 }
 export async function textoComIA(neg: any, p: { texto: string; ciclo: { de: string; ate: string }; motivo: string; num: any | null; datas: ReturnType<typeof datasDaVez>; acoes: Acao[]; hoje: string }, escreve?: Escritora) {
   if (!escreve && !usaIA()) return { texto: p.texto, por_ia: false, motivo: null as string | null }
-  const voce = tomDoNegocio(neg).pessoa === 'voce'
   const dados = { proposta: p.texto, numeros: p.num, ciclo: p.ciclo, hoje: p.hoje, datas: p.datas.pesam.concat(p.datas.radar).map(d => ({ nome: d.nome, dia: d.dia, inicio: d.inicio, ate: d.ate })), acoes: p.acoes, verba_dia: neg?.verba_dia ?? null }
   const sistema = `${JEITO}
-Agora tu escreves a ESTRATÉGIA DA QUINZENA pro dono do negócio ler no WhatsApp. Nesta mensagem fala com ele de "${voce ? 'você' : 'tu'}" (${voce ? 'você, seu, sua; nunca tu, teu, tua' : 'tu, teu, tua'}).
+Agora tu escreves a ESTRATÉGIA DA QUINZENA pro dono do negócio ler no WhatsApp. Fala com ele de "tu" (tu, teu, tua; nunca você, seu, sua), como em todas as tuas mensagens com o dono.
 Jeito: colega queridona que entende do assunto. Curto (até umas 12 linhas). Primeiro o que ele ganha com cada ação, depois o número. Quem coloca em prática é "a equipe".
 REGRAS DURAS: usa SÓ os números, valores e datas que vieram (copiados igual, no formato dd/mm); não calcula número novo; não promete venda, faturamento nem resultado; mantém cada data que pesa pelo nome e diz por que ela pesa e quando o anúncio começa; mantém todas as ações (pode juntar e reescrever, não pode inventar outra). Não escreve os cuidados do ramo nem a pergunta final: o sistema põe no fim. Sem emoji, sem negrito, sem travessão.`
   const pedido = `NEGÓCIO: ${neg.nome} (${neg.nicho || '?'}, ${neg.cidade || '?'}). DONO: ${String(neg.dono_nome || '').split(' ')[0] || '?'}
@@ -229,7 +229,6 @@ Devolve {"texto":"a mensagem, sem os cuidados do ramo e sem a pergunta final"}`
   try {
     const r = escreve ? await escreve(sistema, pedido) : await (async () => { const { emJson } = await import('./ia'); return emJson<{ texto: string }>(sistema, pedido, [], { modelo: process.env.MAIA_MODELO_RELATORIO || 'claude-opus-5-5', uso: { tipo: 'estrategia', negocio_id: neg.id } }) })()
     let corpo = String(r?.texto || '').trim().replace(/\n*(Topa seguir assim\?[\s\S]*|Cuidados d[oe] (teu|seu) ramo:[\s\S]*)$/i, '').trim()
-    if (voce) corpo = acertaTom(neg, corpo)
     const motivo = travaDoTexto(neg, corpo, dados, p.datas)
     if (motivo) return { texto: p.texto, por_ia: false, motivo: 'a IA ' + (motivo === 'texto curto demais' ? 'devolveu texto curto' : 'escreveu ' + motivo) + ', foi o texto de lista' }
     return { texto: `${corpo}\n\n${fimDaProposta(neg, p.datas.cuidados)}`, por_ia: true, motivo: null }
