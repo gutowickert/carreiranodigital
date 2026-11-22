@@ -40,9 +40,11 @@ const PADRAO: Record<string, Linha> = {
   base: { etiquetas: [], optout: false, origem: 'importado' },
   recados: { status: 'rascunho', etiquetas_alvo: [], enviados: 0, entregues: 0, falhas: 0, respostas: 0, quero: 0, saidas: 0, pulados: 0, vendas: 0, valor_vendas: 0 },
   recado_envios: { status: 'enviado' },
+  // 22/11 (estrategia.ts, db/maia-estrategia.sql): o ciclo de estratégia de 15 dias (o histórico)
+  estrategias: { status: 'aprovar_equipe', proposta: {}, sazonal: {} },
 }
 const SERIAL = new Set(['lead_eventos', 'eventos'])
-const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads', 'recados'])
+const COM_ATUALIZADO = new Set(['negocios', 'pecas', 'leads', 'recados', 'estrategias'])
 // as chaves únicas que o banco garante (modo local)
 const UNICA: Record<string, string[]> = { base: ['negocio_id', 'telefone'], recado_envios: ['recado_id', 'telefone'] }
 const repete = (tab: string, l: Linha[], nova: Linha) => !!UNICA[tab] && l.some(x => UNICA[tab].every(k => String(x[k]) === String(nova[k])))

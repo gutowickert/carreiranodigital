@@ -425,7 +425,7 @@ function secResumo(){
   var d=S.dados,h='<div class="duas"><div>';
   h+='<h2>A Maia espera de ti'+(d.esperando.length?'<small>'+d.esperando.length+'</small>':'')+'</h2>';
   if(d.esperando.length){
-    var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋',recado:'•'};
+    var ic={joinha:'👍',fechou:'?',pergunta:'💬',conversa:'🙋',recado:'•',estrategia:'•'};
     h+='<ul class="lista card espera">'+d.esperando.map(function(e){
       var alvo=e.tipo==='joinha'?'#anuncios':e.conversa_id?'#conversa='+e.conversa_id:'';
       // 13/11: a pergunta de cliente dá pra responder aqui mesmo (ou no WhatsApp da Maia, igual)
@@ -458,6 +458,26 @@ function secResumo(){
     h+='<h2>Recado pra base<small>'+int(rc.base.ativos)+' contatos</small></h2><div class="card pad"><p class="mu peq" style="margin:0">Avisa teus clientes de sempre de uma novidade (jogo novo, bolão, prêmio acumulado). A Maia escreve, a equipe confere e volta pra ti aprovar. Sai no horário comercial; quem responder que quer, a Maia te passa pra fechar.</p>'+
       (rc.recados||[]).slice(0,4).map(function(r){return '<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px"><b>'+esc(r.titulo||'Recado')+'</b> <span class="chip">'+esc(r.status_nome)+'</span>'+stRc(r)+'</div>';}).join('')+
       '<div class="btns" style="margin-top:12px"><button type="button" class="btn" id="b-recado">Novo recado</button><button type="button" class="btn" id="b-base">Importar contatos</button></div></div>';
+  }
+  // 22/11 (estrategia.ts): a ESTRATÉGIA DA QUINZENA (revisada nos dias 1 e 16, com o calendário de datas do ramo). O mesmo de aprovar
+  // ou pedir ajuste pelo WhatsApp da Maia; a equipe confere antes de chegar aqui
+  var es=d.estrategia||{};
+  if(es.ligada&&es.disponivel){
+    var dm=function(s){s=String(s||'');return s.slice(8,10)+'/'+s.slice(5,7);};
+    var acoesEs=function(e){return (e.acoes||[]).length?'<ol style="margin:8px 0 0;padding-left:20px">'+e.acoes.map(function(a){return '<li style="margin:4px 0">'+esc(a.texto.charAt(0).toUpperCase()+a.texto.slice(1))+'</li>';}).join('')+'</ol>':'';};
+    var cal=es.calendario||{};
+    h+='<h2>Estratégia da quinzena<small>revisada nos dias 1 e 16</small></h2><div class="card pad">';
+    if(es.pendente) h+='<p style="margin:0 0 6px;font-weight:700">A nova estratégia ('+dm(es.pendente.ciclo_de)+' a '+dm(es.pendente.ciclo_ate)+') espera a tua aprovação:</p><p style="margin:0;white-space:pre-line;line-height:1.55">'+esc(es.pendente.texto)+'</p>'+
+      '<div class="btns" style="margin-top:10px"><button type="button" class="btn pri" data-est-ok="'+esc(es.pendente.id)+'">Aprovar</button><button type="button" class="btn" data-est-aj="'+esc(es.pendente.id)+'">Pedir ajuste</button></div>';
+    var vig=(es.historico||[])[0];
+    if(vig) h+='<div'+(es.pendente?' style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px"':'')+'><b>Em vigor: '+dm(vig.ciclo_de)+' a '+dm(vig.ciclo_ate)+'</b>'+acoesEs(vig)+'</div>';
+    else if(!es.pendente) h+='<p class="mu peq" style="margin:0">A cada 15 dias a Maia olha os números e as datas que vêm aí e propõe a estratégia. A equipe confere e chega pra ti aprovar.</p>';
+    var antE=(es.historico||[]).slice(1,4).filter(function(e){return e.resultado;});
+    if(antE.length) h+='<p class="mu peq" style="margin:10px 0 0">Quinzenas anteriores: '+antE.map(function(e){var r=e.resultado;return dm(e.ciclo_de)+' a '+dm(e.ciclo_ate)+': '+int(r.vendas)+(r.vendas===1?' venda':' vendas')+(r.vendas?' ('+real(r.receita)+')':'')+(r.gasto?', '+real(r.gasto)+' no anúncio':'');}).join(' · ')+'</p>';
+    var dts=(cal.pesam||[]).concat(cal.radar||[]).slice(0,4);
+    h+='<p class="peq" style="margin:12px 0 0"><b>Datas que vêm aí:</b> '+(dts.length?dts.map(function(x){return esc(x.nome)+' ('+dm(x.dia)+', anúncio desde '+dm(x.inicio)+')';}).join(' · '):'nenhuma data forte nas próximas semanas')+'</p>'+
+      ((cal.proprias||[]).length?'<p class="mu peq" style="margin:4px 0 0">Datas do teu negócio: '+cal.proprias.map(function(x){return esc(x.nome)+' ('+esc(x.dia)+')';}).join(' · ')+'</p>':'')+
+      '<div class="btns" style="margin-top:10px"><button type="button" class="btn" id="b-data">Adicionar data do meu negócio</button></div></div>';
   }
   h+='<h2>Funil<small>'+int(d.funil.length)+' contatos</small></h2><div class="card pad" data-ir="#funil" style="cursor:pointer">'+barrasFunil()+'</div>';
   h+='</div><div>';
@@ -597,6 +617,16 @@ function liga(el){
       var manda=function(t){if(!String(t||'').trim()&&!inc){toast('Cola a lista ou escolhe a planilha');return;}k.disabled=true;
         api('',{acao:'base_importar',texto:t,incluir:inc}).then(function(r){fecha();toast(r.novos+' entraram'+(r.ja_estavam?', '+r.ja_estavam+' já estavam':'')+(r.invalidos?', '+r.invalidos+' números não deu pra ler':''));return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};
       if(arq){var rd=new FileReader();rd.onload=function(){manda(String(rd.result||''));};rd.readAsText(arq);}else manda($('#f-lista',v).value);};});};
+  // 22/11 (estrategia.ts): aprovar ou pedir ajuste na estratégia da quinzena, e pôr uma data do negócio no calendário
+  $$('[data-est-ok]',el).forEach(function(b){b.onclick=function(){
+    if(!confirm('Aprovar a estratégia da quinzena? A equipe coloca em prática.'))return;
+    b.disabled=true;api('',{acao:'estrategia_aprovar',estrategia_id:b.dataset.estOk}).then(function(){toast('Aprovada');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});
+  $$('[data-est-aj]',el).forEach(function(b){b.onclick=function(){folha('<h3>O que mudar na estratégia?</h3><p class="mu peq">A equipe ajusta e volta pra ti.</p><label class="campo"><span>Escreve do teu jeito</span><textarea id="f-nota" maxlength="500" placeholder="ex.: nessa quinzena quero focar no produto X"></textarea></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Mandar o pedido</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var nota=$('#f-nota',v).value.trim();if(!nota){toast('Escreve o que mudar');return;}var k=this;k.disabled=true;
+      api('',{acao:'estrategia_ajuste',estrategia_id:b.dataset.estAj,nota:nota}).then(function(){fecha();toast('Pedido enviado');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};});
+  var bd=$('#b-data',el);if(bd)bd.onclick=function(){folha('<h3>Data do teu negócio</h3><p class="mu peq">Uma data que vende pra ti e não é feriado comum: aniversário da loja, feira da cidade, safra, temporada. A Maia leva em conta na próxima estratégia.</p><label class="campo"><span>Nome</span><input id="f-dn" maxlength="80" placeholder="ex.: Aniversário da loja"></label><label class="campo"><span>Dia (dia/mês)</span><input id="f-dd" maxlength="10" placeholder="ex.: 15/03"></label><label class="campo"><span>Quantos dias antes começar o anúncio (opcional)</span><input id="f-da" inputmode="numeric" maxlength="3" placeholder="21"></label><div class="btns" style="margin-top:14px"><button class="btn pri" id="f-ok">Guardar</button><button class="btn" data-fecha>Cancelar</button></div>',function(v){
+    $('#f-ok',v).onclick=function(){var nm=$('#f-dn',v).value.trim(),dd=$('#f-dd',v).value.trim();if(!nm||!dd){toast('Escreve o nome e o dia');return;}var k=this;k.disabled=true;
+      api('',{acao:'calendario_data',nome:nm,dia:dd,antecedencia_dias:$('#f-da',v).value.trim()}).then(function(){fecha();toast('Data guardada');return carrega();}).catch(function(e){k.disabled=false;toast(e.message);});};});};
   $$('[data-rec-ok]',el).forEach(function(b){b.onclick=function(){
     if(!confirm('Aprovar esse recado? A Maia pede a aprovação do WhatsApp e manda no horário comercial.'))return;
     b.disabled=true;api('',{acao:'recado_aprovar',recado_id:b.dataset.recOk}).then(function(){toast('Aprovado');return carrega();}).catch(function(e){b.disabled=false;toast(e.message);});};});

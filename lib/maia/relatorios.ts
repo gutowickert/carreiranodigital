@@ -101,7 +101,7 @@ export async function periodoDaAnalise(neg: any, agora = new Date()) {
   return { de: new Date(ini).toISOString(), ate: new Date(fim).toISOString() }
 }
 
-export async function dadosDaAnalise(neg: any, de: string, ate: string, agora = new Date()) {
+export async function dadosDaAnalise(neg: any, de: string, ate: string, agora = new Date(), op: { semSazonal?: boolean } = {}) {
   const sec = C.secundariaDo(neg), ciclo = C.cicloDo(neg)
   const n = await numeros(neg.id, de, ate)
   const { leads, porLead } = await leadsComEventos(neg)
@@ -118,8 +118,18 @@ export async function dadosDaAnalise(neg: any, de: string, ate: string, agora = 
   const teste_semana = !testes.length || agora.getTime() - Date.parse(testes[0].criado_em) >= 6.5 * DIA
   const produto = typeof neg?.contexto?.ficha?.produto === 'string' ? neg.contexto.ficha.produto.slice(0, 80) : null
   const decisao = C.decide({ anuncios, vendas_historico, ciclo: ciclo.dias, teto: tetoVerba(neg), agora: agora.getTime(), secundaria: sec, cpa_meta: C.cpaDo(neg), teste_semana, produto })
+  // 22/11 (estrategia.ts, MAIA_ESTRATEGIA_LIGADA=1): quando sugere mudar, a análise também consulta o calendário (sazonalidade.ts)
+  // e diz a data que pesa agora, antes da pergunta "Topa testar assim?"
+  let sazonal: { id: string; texto: string } | null = null
+  if (!op.semSazonal && decisao.conclusao === 'mudar') {
+    const E = await import('./estrategia')
+    if (E.estrategiaLigada()) {
+      sazonal = E.linhaSazonalDaAnalise(neg, horaLocal(agora, fusoDo(neg)).data)
+      if (sazonal) decisao.texto = decisao.texto.includes(' Topa testar') ? decisao.texto.replace(' Topa testar', ` ${sazonal.texto}. Topa testar`) : `${decisao.texto} ${sazonal.texto}.`
+    }
+  }
   const d: C.DadosAnalise = { negocio: neg.nome, dono: primeiro(neg.dono_nome), de, ate, gasto: n.gasto, conversas: n.conversas_meta || contatos, contatos, secundaria, sec, vendas: n.ganhos, receita: n.receita, decisao, ciclo }
-  return { ...d, anuncios, vendas_historico }
+  return { ...d, anuncios, vendas_historico, sazonal }
 }
 
 export async function geraAnalise(neg: any, op: { agora?: Date; de?: string; ate?: string } = {}) {
@@ -133,7 +143,7 @@ export async function geraAnalise(neg: any, op: { agora?: Date; de?: string; ate
   const card = C.cardAnalise(d, d.anuncios)
   const comImagem = process.env.MAIA_ANALISE_IMAGEM !== '0'
   const peca = await db.insere('pecas', { negocio_id: neg.id, tipo: 'relatorio', status: comImagem ? 'gerando' : 'revisao_equipe', titulo: `${C.TITULO_ANALISE} ${p.de.slice(0, 10)} a ${p.ate.slice(0, 10)}`, texto, cta: C.legendaAnalise(d) })
-  await db.evento('analise_2dias', neg.id, { peca_id: peca.id, de: p.de, ate: p.ate, conclusao: d.decisao.conclusao, julga_por: d.decisao.julga_por, sugestoes: d.decisao.sugestoes, em_teste: d.decisao.em_teste,
+  await db.evento('analise_2dias', neg.id, { peca_id: peca.id, de: p.de, ate: p.ate, conclusao: d.decisao.conclusao, julga_por: d.decisao.julga_por, sugestoes: d.decisao.sugestoes, em_teste: d.decisao.em_teste, sazonal: d.sazonal?.id || null,
     numeros: { gasto: d.gasto, conversas: d.conversas, contatos: d.contatos, secundaria: d.secundaria, vendas: d.vendas, receita: d.receita }, secundaria_nome: d.sec.nome, secundaria_padrao: d.sec.padrao })
   if (comImagem) {
     await db.insere('tarefas', { negocio_id: neg.id, tipo: 'relatorio', peca_id: peca.id, dados: { analise: card } })

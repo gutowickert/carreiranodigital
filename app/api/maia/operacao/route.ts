@@ -114,6 +114,13 @@ export async function GET(req: Request) {
       const fotos = (await db.lista('midias', { negocio_id: n.id }, { ordem: 'criado_em', desc: true, limite: 40 })).filter(m => m.tipo === 'foto').map(m => ({ id: m.id, descricao: String(m.descricao || '').slice(0, 80) }))
       return ok({ disponivel: true, base: await R.baseDoNegocio(n, 500), recados: await R.painelRecados(n), custo_msg: R.custoMsg(n), lote: n.meta?.recado?.lote || R.LOTE_PADRAO, fotos, local: db.modo() === 'local' })
     }
+    // 22/11 (estrategia.ts): as estratégias de 15 dias de um negócio (histórico) e o calendário de datas (o que pesa agora)
+    if (acao === 'estrategia') {
+      const E = await import('@/lib/maia/estrategia')
+      const n = await db.um('negocios', { id: q('negocio') })
+      if (!n) return erro('negócio não existe', 404)
+      return ok({ ...(await E.painelEquipe(n)), local: db.modo() === 'local' })
+    }
     // 13/11 (ligar.ts): o que falta pra ligar cada negócio (lista de conferência; só leitura). ?negocio= um só; sem ele, todos
     if (acao === 'falta_ligar') {
       const { faltaLigar } = await import('@/lib/maia/ligar')
@@ -348,6 +355,22 @@ export async function POST(req: Request) {
         const R = await import('@/lib/maia/recado')
         return ok(await R.rotinaRecados(db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : new Date()))
       }
+      // 22/11 (estrategia.ts): o CICLO DE ESTRATÉGIA DE 15 DIAS. estrategia_gerar {negocio_id, relogio?} (proposta agora: consulta o
+      //   calendário; relogio só no modo de teste) · estrategia_aprovar {estrategia_id} (vai pro dono) · estrategia_editar {estrategia_id, texto}
+      //   estrategia_cancelar {estrategia_id, nota?} · calendario_data {negocio_id, nome, dia, antecedencia_dias?, porque?} · calendario_tirar {negocio_id, indice}
+      case 'estrategia_gerar': case 'calendario_data': case 'calendario_tirar': {
+        const E = await import('@/lib/maia/estrategia')
+        const n = await db.um('negocios', { id: b.negocio_id })
+        if (!n) return erro('negócio não existe')
+        if (b.acao === 'calendario_data') { const r = await E.adicionaData(n, { nome: b.nome, dia: b.dia, antecedencia_dias: b.antecedencia_dias === '' || b.antecedencia_dias == null ? null : Number(b.antecedencia_dias), porque: b.porque || null, ate: b.ate || null }, por); return r.ok ? ok(r) : erro(r.erro || 'não deu') }
+        if (b.acao === 'calendario_tirar') { const r = await E.tiraData(n, Number(b.indice), por); return r.ok ? ok(r) : erro(r.erro || 'não deu') }
+        const agora = db.modo() === 'local' && b.relogio && !isNaN(Date.parse(b.relogio)) ? new Date(b.relogio) : new Date()
+        const r: any = await E.propoeEstrategia(n, { agora, motivo: b.motivo === 'inicial' ? 'inicial' : 'pedido', por, forcar: true })
+        return ok({ ok: true, id: r.estrategia?.id, texto: r.texto })
+      }
+      case 'estrategia_aprovar': { const E = await import('@/lib/maia/estrategia'); return ok(await E.equipeAprovaEstrategia(b.estrategia_id, por)) }
+      case 'estrategia_editar': { const E = await import('@/lib/maia/estrategia'); return ok(await E.equipeEditaEstrategia(b.estrategia_id, String(b.texto || ''), por)) }
+      case 'estrategia_cancelar': { const E = await import('@/lib/maia/estrategia'); return ok(await E.cancelaEstrategia(b.estrategia_id, por, b.nota)) }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))
       case 'ajustar_peca': if (!b.nota) return erro('escreve o ajuste'); return ok(await equipeAjuste(b.peca_id, b.nota, por))

@@ -208,6 +208,31 @@ export async function POST(req: Request) {
           return ok({ ok: true })
         } catch (e: any) { return erro(String(e?.message || 'não deu').slice(0, 300)) }
       }
+      // 22/11 (estrategia.ts): a ESTRATÉGIA DA QUINZENA e o calendário pelo painel (regra da casa: o mesmo que pelo WhatsApp da Maia).
+      //   estrategia_aprovar {estrategia_id} · estrategia_ajuste {estrategia_id, nota} · calendario_data {nome, dia, antecedencia_dias?, porque?}
+      case 'estrategia_aprovar': case 'estrategia_ajuste': case 'calendario_data': {
+        const E = await import('@/lib/maia/estrategia')
+        if (!E.estrategiaLigada()) return erro('a estratégia de 15 dias ainda não está ligada')
+        try {
+          if (b.acao === 'estrategia_aprovar') {
+            const a = await E.donoAprovaEstrategia(neg.id, String(b.estrategia_id || ''), 'painel')
+            await db.evento('painel_dono_acao', neg.id, { acao: 'estrategia_aprovar', estrategia: b.estrategia_id })
+            return ok({ ok: true, aprovadas: a.length })
+          }
+          if (b.acao === 'estrategia_ajuste') {
+            const nota = String(b.nota || '').trim().slice(0, 500)
+            if (!nota) return erro('escreve o que mudar')
+            const a = await E.donoAjustaEstrategia(neg.id, String(b.estrategia_id || ''), nota, 'painel')
+            if (!a.ok) return erro(a.erro || 'não deu')
+            await db.evento('painel_dono_acao', neg.id, { acao: 'estrategia_ajuste', estrategia: b.estrategia_id })
+            return ok({ ok: true })
+          }
+          const r = await E.adicionaData(neg, { nome: String(b.nome || ''), dia: String(b.dia || ''), antecedencia_dias: b.antecedencia_dias === '' || b.antecedencia_dias == null ? null : Number(b.antecedencia_dias), porque: b.porque ? String(b.porque) : null }, 'dono_painel')
+          if (!r.ok) return erro(r.erro || 'não deu')
+          await db.evento('painel_dono_acao', neg.id, { acao: 'calendario_data', nome: r.data?.nome })
+          return ok(r)
+        } catch (e: any) { return erro(String(e?.message || 'não deu').slice(0, 300)) }
+      }
       default: return erro('ação desconhecida')
     }
   } catch (e: any) { console.error('[painel do dono]', e?.message); return erro('não deu agora. Tenta de novo ou fala com a Maia no WhatsApp.', 500) }

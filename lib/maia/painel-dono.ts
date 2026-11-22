@@ -215,6 +215,8 @@ export async function dadosDoPainel(neg: any) {
   const pecasDono = pecas.filter(p => p.status === 'com_dono')
   // 14/11 (recado.ts): recado pra base esperando a aprovação do dono
   for (const r of await talvez('recados', { negocio_id: id, status: 'aprovar_dono' })) esperando.unshift({ tipo: 'recado', recado_id: r.id, texto: `O recado pra base "${r.titulo}" espera a tua aprovação.`, em: r.aprovado_equipe_em || r.criado_em })
+  // 22/11 (estrategia.ts): a estratégia da quinzena esperando o dono (só com MAIA_ESTRATEGIA_LIGADA=1)
+  if (process.env.MAIA_ESTRATEGIA_LIGADA === '1') for (const e of await talvez('estrategias', { negocio_id: id, status: 'aprovar_dono' })) esperando.unshift({ tipo: 'estrategia', estrategia_id: e.id, texto: 'A estratégia da quinzena espera a tua aprovação.', em: e.aprovado_equipe_em || e.criado_em })
   if (pecasDono.length) esperando.unshift({ tipo: 'joinha', texto: `${pecasDono.length === 1 ? '1 anúncio espera' : pecasDono.length + ' anúncios esperam'} o teu 👍.`, em: pecasDono[0].enviado_dono_em })
 
   // 3) as retomadas (follow-up): agendadas, atrasadas, feitas e respondidas
@@ -292,6 +294,8 @@ export async function dadosDoPainel(neg: any) {
     relatorios_mes: await (await import('./relatorios')).relatoriosEnviados(id).catch(() => []),
     // 14/11 (recado.ts): a base de contatos e os recados pra base (sem a tabela: { disponivel: false })
     recado: await (await import('./recado')).painelDoDono(neg).catch(() => ({ disponivel: false })),
+    // 22/11 (estrategia.ts): a estratégia da quinzena (a que espera o dono e o histórico) e as datas do calendário
+    estrategia: await (await import('./estrategia')).painelDoDono(neg).catch(() => ({ ligada: false })),
     whatsapp_maia: numeroMaia(), gerado_em: agora,
   }
 }
