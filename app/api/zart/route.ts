@@ -10,6 +10,8 @@ import { createHash, randomBytes } from 'crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 
 export const dynamic = 'force-dynamic'
+// a API da Caixa recusa servidor de fora do Brasil: esta rota roda em São Paulo
+export const preferredRegion = 'gru1'
 
 const BUCKET = 'estudio'
 const ARQ_BOLOES = 'zart/boloes.json'
