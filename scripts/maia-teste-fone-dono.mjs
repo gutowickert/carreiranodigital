@@ -17,4 +17,9 @@ c((await C.negocioDoTelefone('555181030001'))?.id === a.id, 'acha o dono salvo S
 c((await C.negocioDoTelefone('5551981030001'))?.id === a.id, 'acha o dono salvo SEM 55 (13 dígitos)')
 c((await C.negocioDoTelefone('555181030002'))?.id === b.id, 'continua achando o salvo com 55')
 c(!(await C.negocioDoTelefone('5551981039999')), 'número de outra pessoa não acha ninguém')
+// 23/11: o post esperando o 👍 é descrito como POST (com a legenda), não como anúncio sem gancho
+const D = await jiti.import(path.join(RAIZ, 'lib/maia/dono.ts'))
+c(/^POST .*nossa sala/.test(D.descrevePeca({ tipo: 'post', titulo: 'Post foto · 23/11 às 9h35', texto: 'Essa é a nossa sala na escola' })), 'post da agenda: "POST … legenda"')
+c(/^POST /.test(D.descrevePeca({ tipo: 'post', titulo: 'Carrossel · dicas', texto: 'x' })), 'carrossel: POST')
+c(D.descrevePeca({ tipo: 'anuncio_imagem', titulo: 'a1', gancho: 'Pizza que chega quente' }) === 'ANÚNCIO "Pizza que chega quente"', 'anúncio: pelo gancho')
 console.log(`${ok}/${n}`); process.exit(ok === n ? 0 : 1)

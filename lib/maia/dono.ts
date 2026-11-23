@@ -13,6 +13,13 @@ import { descreveTom, tomDoNegocio } from './tom'
 import { diasDoNegocio } from './horario'
 import { iaDoDia, avisaUmaVez } from './limites'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
+// 23/11 (teste do Instagram da escola): post da agenda social não tem gancho nem título de anúncio, só a legenda. A Maia via
+// "undefined" e dizia ao dono que o "anúncio veio sem título nem gancho", e mandava refazer. Agora cada peça diz o que é.
+export function descrevePeca(p: any) {
+  const ehPost = /^(Post |Carrossel)/.test(String(p?.titulo || '')) || (p?.tipo === 'post' && !p?.gancho)
+  if (ehPost) return `POST pro Instagram/Facebook, legenda: "${String(p?.texto || '').replace(/\s+/g, ' ').slice(0, 90)}"`
+  return `ANÚNCIO "${p?.gancho || p?.titulo || String(p?.texto || '').slice(0, 60)}"`
+}
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
 const MAX_IA_DIA = 120
@@ -250,9 +257,9 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string; recados?
     { name: 'pedir_conteudo', description: 'O dono pediu um CARROSSEL (post com várias imagens com texto: dica, produto ou notícia) ou um VÍDEO COM LOCUÇÃO (os vídeos dele juntos com uma voz lendo o anúncio, sem ele aparecer falando). Tudo passa pela equipe e volta pra ele aprovar antes de sair. Carrossel de notícia só com o texto da notícia que ele mandou (fonte).',
       input_schema: { type: 'object', properties: { o: { type: 'string', enum: ['carrossel', 'locucao'] }, tema: { type: 'string', description: 'sobre o que é' }, tipo: { type: 'string', enum: ['dica', 'produto', 'noticia'], description: 'só no carrossel' }, fonte: { type: 'string', description: 'o texto da notícia (carrossel de notícia)' }, quando: { type: 'string', description: 'carrossel: data e hora de publicar (AAAA-MM-DDTHH:MM); sem isso, amanhã às 18h' } }, required: ['o'] },
       roda: async (a) => pedeConteudo(neg, a as any, 'dono') },
-    { name: 'pecas_com_o_dono', description: 'Lista os anúncios que já foram mandados pro dono e esperam o 👍.',
+    { name: 'pecas_com_o_dono', description: 'Lista os anúncios e os posts (Instagram/Facebook) que já foram mandados pro dono e esperam o 👍.',
       input_schema: { type: 'object', properties: {} },
-      roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, gancho: p.gancho })) },
+      roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, o_que_e: descrevePeca(p) })) },
     { name: 'aprovar_pecas', description: 'O dono aprovou (👍, "pode", "aprovado"). Sem peca_id aprova todas as que estão com ele.',
       input_schema: { type: 'object', properties: { peca_id: { type: 'string' } } },
       roda: async ({ peca_id }) => { const r = await donoAprova(neg.id, peca_id); ctx.aprovou.push(...r.map(x => x.id)); return { aprovadas: r.length } } },
@@ -399,7 +406,7 @@ export async function respondeDono(conversa_id: string) {
 NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${neg.plano} · status ${neg.status}
 DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
-ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
+ANÚNCIOS E POSTS ESPERANDO O 👍 DELE (post do Instagram/Facebook não tem gancho, só a legenda: está tudo certo com ele): ${pend.length ? pend.map(p => `${p.id} ${descrevePeca(p)}`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
 RECADOS PRA BASE ESPERANDO A APROVAÇÃO DELE: ${recPend.length ? recPend.map((x: any) => `"${x.titulo}"`).join('; ') : 'nenhum'}${ctx.recados ? `\n(o 👍 dele já aprovou ${ctx.recados} recado(s) pra base agora: só confirma e diz que o WhatsApp aprova o modelo e ele sai no horário comercial)` : ''}
 BASE DE CONTATOS (pro recado pra base): ${baseInfo}${estOn ? `
 ESTRATÉGIA DA QUINZENA ESPERANDO A APROVAÇÃO DELE: ${estPend.length ? estPend.map((x: any) => `a de ${x.ciclo_de} a ${x.ciclo_ate} (já conferida pela equipe)`).join('; ') : 'nenhuma'}${ctx.estrategias ? '\n(o 👍 dele já aprovou a estratégia da quinzena agora: só confirma e diz que a equipe coloca em prática)' : ''}
