@@ -14,7 +14,7 @@ import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/apr
 import { geraAnuncios } from '@/lib/maia/pecas'
 import { criaCampanhaPausada, ativa, pausa, metaReal } from '@/lib/maia/meta'
 import { novoLead, mudaEtapa, ganhou, perdeu, numeros, type Etapa } from '@/lib/maia/funil'
-import { conversaDoDono, mandaTexto } from '@/lib/maia/canal'
+import { conversaDoDono, mandaTexto, foneDono } from '@/lib/maia/canal'
 import { comoDono, comoCliente, ESPERA_WEBHOOK_MS } from '@/lib/maia/simula'
 import { roda } from '@/lib/maia/rotina'
 import { fone } from '@/lib/oito/wa'
@@ -182,7 +182,7 @@ export async function POST(req: Request) {
         if (!b.nome || !b.dono_whatsapp) return erro('nome e WhatsApp do dono são obrigatórios')
         const n = await db.insere('negocios', {
           nome: b.nome, nicho: b.nicho || null, cidade: b.cidade || null, regiao: b.regiao || (b.cidade ? b.cidade + ' e região' : null),
-          dono_nome: b.dono_nome || null, dono_whatsapp: fone(b.dono_whatsapp), plano: 'completa',   // 08/11: plano único (R$ 997); no banco fica 'completa' (o 'essencial' antigo vale igual)
+          dono_nome: b.dono_nome || null, dono_whatsapp: foneDono(b.dono_whatsapp), plano: 'completa',   // 08/11: plano único (R$ 997); no banco fica 'completa' (o 'essencial' antigo vale igual)
           contexto: b.contexto || {}, marca: b.marca || {}, meta: metaSeguro(b.meta, null), verba_dia: b.verba_dia || null,
         })
         await db.evento('negocio_criado', n.id, { por })
@@ -191,7 +191,7 @@ export async function POST(req: Request) {
       case 'atualizar_negocio': {
         const campos: any = {}
         for (const k of ['nome', 'nicho', 'cidade', 'regiao', 'dono_nome', 'plano', 'status', 'contexto', 'marca', 'meta', 'verba_dia', 'aprovacao_equipe', 'ativa_sozinha', 'equipe_whatsapp']) if (k in b) campos[k] = b[k]
-        if (b.dono_whatsapp) campos.dono_whatsapp = fone(b.dono_whatsapp)
+        if (b.dono_whatsapp) campos.dono_whatsapp = foneDono(b.dono_whatsapp)
         // 05/11: a conexão do WhatsApp (com a chave) não vem do painel: mantém a que está guardada
         if ('meta' in campos) { const atual = await db.um('negocios', { id: b.id }); campos.meta = metaSeguro(campos.meta, atual?.meta) }
         const atualizado = (await db.atualiza('negocios', { id: b.id }, campos))[0]
