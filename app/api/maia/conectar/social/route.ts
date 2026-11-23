@@ -9,7 +9,7 @@
 // salvaLigacao da aba Social. Nenhuma chave volta pro navegador. É o caminho que a Meta quer ver nos vídeos da análise do app.
 import { maiaDb as db } from '@/lib/maia/db'
 import { avisaEquipe } from '@/lib/maia/canal'
-import { linkOk } from '@/lib/maia/conectar'
+import { linkOk, trocaCode } from '@/lib/maia/conectar'
 import { cifra, decifra } from '@/lib/maia/segredo'
 import { salvaLigacao } from '@/lib/maia/social'
 
@@ -66,8 +66,11 @@ export async function POST(req: Request) {
   if (!code) return Response.json({ ok: false, erro: 'o Facebook não devolveu a autorização. Tenta de novo.' })
   if (!APP_SECRET()) return Response.json({ ok: false, erro: 'falta o segredo do app no servidor (MAIA_META_APP_SECRET). Avisa a equipe.' })
   const cid = encodeURIComponent(APP_ID()), sec = encodeURIComponent(APP_SECRET())
-  const curta: any = await json(`${GRAPH}/oauth/access_token?client_id=${cid}&client_secret=${sec}&code=${encodeURIComponent(code)}`)
-  if (!curta?.access_token) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + String(curta?.error?.message || 'sem resposta').slice(0, 160) })
+  // 23/11: a troca tenta sem redirect_uri, vazio e o endereço da página (lib/maia/conectar.ts trocaCode)
+  const tc = await trocaCode(code, APP_ID(), APP_SECRET(), [b.pagina, b.pagina_completa].filter(Boolean).map(String))
+  if (!tc.ok) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + tc.erro.slice(0, 160) })
+  await db.evento('conectar_code', neg.id, { botao: 'social', como: tc.como }).catch(() => null)
+  const curta = { access_token: tc.token }
   // a chave do usuário vale ~1 h: alonga pra 60 dias (as chaves das páginas tiradas dela não expiram)
   const longa: any = await json(`${GRAPH}/oauth/access_token?grant_type=fb_exchange_token&client_id=${cid}&client_secret=${sec}&fb_exchange_token=${encodeURIComponent(curta.access_token)}`)
   const user = longa?.access_token || curta.access_token

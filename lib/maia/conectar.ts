@@ -19,3 +19,22 @@ export function linkOk(negocio_id: string, t: string) {
   return a.length === b.length && timingSafeEqual(a, b)
 }
 
+
+// 23/11 (teste do Nando com o Instagram da escola): "Error validating verification code. Please make sure your redirect_uri is
+// identical to the one you used in the OAuth dialog request". O code que o login do SDK do Facebook devolve (FB.login com
+// response_type 'code') às vezes fica amarrado a um redirect_uri: sem ele, a Meta recusa. Tenta, na ordem: sem redirect_uri
+// (o jeito do cadastro incorporado), redirect_uri vazio e o endereço da página que fez o login (o navegador manda). Para no 1º
+// que der certo; erro que não é de redirect_uri (code vencido, segredo errado) não tenta de novo. Devolve qual jeito funcionou.
+export async function trocaCode(code: string, appId: string, segredo: string, paginas: string[] = []) {
+  const base = `https://graph.facebook.com/v25.0/oauth/access_token?client_id=${encodeURIComponent(appId)}&client_secret=${encodeURIComponent(segredo)}&code=${encodeURIComponent(code)}`
+  const daqui = (u: string) => /^https:\/\/(www\.)?carreiranodigital\.com\//.test(u) || /^http:\/\/localhost(:\d+)?\//.test(u)
+  const tentativas: (string | null)[] = [null, '', ...[...new Set(paginas.map(p => String(p || '').split('#')[0]).filter(daqui))]]
+  let ultimo: any = null
+  for (const r of tentativas) {
+    const j: any = await fetch(r === null ? base : base + '&redirect_uri=' + encodeURIComponent(r)).then(x => x.json()).catch(() => null)
+    if (j?.access_token) return { ok: true as const, token: String(j.access_token), como: r === null ? 'sem_redirect' : r === '' ? 'redirect_vazio' : 'redirect_pagina:' + r.replace(/[?].*$/, '') }
+    ultimo = j
+    if (!/redirect_uri/i.test(String(j?.error?.message || ''))) break
+  }
+  return { ok: false as const, erro: String(ultimo?.error?.message || 'sem resposta') }
+}

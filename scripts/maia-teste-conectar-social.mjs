@@ -60,5 +60,18 @@ confere('a Meta recusa o code: explica, sem guardar', /não consegui trocar/.tes
 r = await social(C.n, C.t, { code: 'varias' }); r = await social(C.n, C.t, { page_id: '222222222222' })
 confere('página sem Instagram: guarda a página e avisa', r.ok && r.sem_instagram === true && neg(C.id).meta.page_id === '222222222222' && !neg(C.id).meta.ig_id, r)
 
+// 23/11: o code amarrado ao redirect_uri (o erro do teste real): a troca tenta vazio e o endereço da página
+const D = await novo('TESTE · Escola redirect', '5500077770004')
+r = await social(D.n, D.t, { code: 'pagina', pagina: URL_ + '/maia/conectar', pagina_completa: URL_ + '/maia/conectar?n=x&t=y' })
+confere('code amarrado ao endereço da página: troca com o endereço que o navegador mandou', r.ok && (r.escolher || neg(D.id).meta?.page_id), r)
+const E = await novo('TESTE · Escola vazio', '5500077770005')
+r = await social(E.n, E.t, { code: 'vazio', pagina: URL_ + '/maia/conectar' })
+confere('code que pede redirect_uri vazio: troca', r.ok && (r.escolher || neg(E.id).meta?.page_id), r)
+const F = await novo('TESTE · Escola sem página', '5500077770006')
+r = await social(F.n, F.t, { code: 'pagina' })
+confere('sem o endereço da página: explica o erro, sem guardar', /não consegui trocar/.test(r.erro || '') && !neg(F.id).meta?.page_id, r)
+r = await social(D.n, D.t, { code: 'pagina', pagina: 'https://site-de-fora.com/maia/conectar' })
+confere('endereço de fora não é usado na troca', /não consegui trocar/.test(r.erro || ''), r)
+
 console.log(`\n${ok} certas, ${falha} erradas`)
 process.exit(falha ? 1 : 0)
