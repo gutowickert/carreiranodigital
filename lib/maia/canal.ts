@@ -10,7 +10,7 @@ import { waDoNegocio, atendimentoLigado, enviaTextoNeg, enviaImagemNeg, enviaVid
 export { janelaAbertaCv }
 
 type Envio = { ok: boolean; wamid?: string; erro?: string; na_fila?: boolean; codigo?: number }
-type Saida = { tipo: 'texto' | 'imagem' | 'video'; texto: string; link?: string; peca_id?: string | null }
+type Saida = { tipo: 'texto' | 'imagem' | 'video'; texto: string; link?: string; peca_id?: string | null; equipe?: boolean }
 const simulado = (): Envio => ({ ok: true, wamid: 'sim-' + Date.now() + '-' + Math.random().toString(36).slice(2, 7) })
 const janelaAberta = (cv: any) => !!cv?.janela_ate && cv.janela_ate > new Date().toISOString()
 const janelaAbertaCv = janelaAberta
@@ -36,7 +36,13 @@ async function sai(cv: any, s: Saida): Promise<Envio> {
   if (simuladaCv(cv)) return simulado()
   if (cv.canal === 'cliente') {
     const neg = await db.um('negocios', { id: cv.negocio_id })
-    if (!atendimentoLigado(neg)) return simulado()   // negócio sem WhatsApp conectado, ou atendimento ainda desligado pela equipe
+    if (!atendimentoLigado(neg)) {
+      // 22/11 (Guto): a mensagem que a EQUIPE escreve não pode fingir que saiu. "Atendimento desligado" só cala a Maia:
+      // com o WhatsApp conectado e a chave geral ligada, a mensagem da equipe sai de verdade. Sem isso, dá erro claro.
+      if (!s.equipe || maiaLocal()) return simulado()   // a Maia (ou o modo de teste local) segue simulando
+      if (process.env.MAIA_CLIENTES_LIGADO !== '1') return { ok: false, erro: 'a chave geral do atendimento (MAIA_CLIENTES_LIGADO) está desligada no servidor: a mensagem não saiu' }
+      if (!waDoNegocio(neg)) return { ok: false, erro: 'o WhatsApp deste negócio não está conectado: a mensagem não saiu. Conecta pelo link do painel e manda de novo' }
+    }
     const w = waDoNegocio(neg)!
     const atual = (await db.um('conversas', { id: cv.id })) || cv
     if (!janelaAberta(atual)) return { ok: false, erro: 'fora da janela de 24 h: só com modelo (mandaModeloCliente)' }
@@ -49,13 +55,13 @@ async function sai(cv: any, s: Saida): Promise<Envio> {
 }
 
 export async function mandaTexto(cv: any, texto: string, autor: 'maia' | 'equipe' | 'sistema' = 'maia') {
-  return registra(cv, autor, texto, await sai(cv, { tipo: 'texto', texto }))
+  return registra(cv, autor, texto, await sai(cv, { tipo: 'texto', texto, equipe: autor === 'equipe' }))
 }
 export async function mandaImagem(cv: any, link: string, legenda: string, autor: 'maia' | 'equipe' = 'maia', peca_id: string | null = null) {
-  return registra(cv, autor, '(imagem) ' + legenda, await sai(cv, { tipo: 'imagem', texto: legenda, link, peca_id }), 'imagem')
+  return registra(cv, autor, '(imagem) ' + legenda, await sai(cv, { tipo: 'imagem', texto: legenda, link, peca_id, equipe: autor === 'equipe' }), 'imagem')
 }
 export async function mandaVideo(cv: any, link: string, legenda: string, autor: 'maia' | 'equipe' = 'maia', peca_id: string | null = null) {
-  return registra(cv, autor, '(vídeo) ' + legenda, await sai(cv, { tipo: 'video', texto: legenda, link, peca_id }), 'video')
+  return registra(cv, autor, '(vídeo) ' + legenda, await sai(cv, { tipo: 'video', texto: legenda, link, peca_id, equipe: autor === 'equipe' }), 'video')
 }
 
 // 08/11 (T12): a resposta em áudio pro cliente (só no canal do cliente, dentro da janela). caminho = arquivo no armazenamento

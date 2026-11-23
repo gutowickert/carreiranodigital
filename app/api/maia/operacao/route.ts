@@ -405,7 +405,9 @@ export async function POST(req: Request) {
         const t = String(b.texto || '').trim()
         if (!t) return erro('escreve a mensagem')
         const { mandaRespostaCliente } = await import('@/lib/maia/canal')
-        const r = await mandaRespostaCliente(cv, t, 'equipe')
+        const r: any = await mandaRespostaCliente(cv, t, 'equipe')
+        // 22/11: se não saiu, o painel mostra o motivo (antes aparecia "Mandado." mesmo sem sair)
+        if (r && r.ok === false && !r.na_fila) return erro('A mensagem não saiu: ' + String(r.erro || 'erro no envio'))
         // a equipe respondeu: a pergunta que esperava o dono não precisa mais de lembrete
         if (cv.lead_id) await db.insere('lead_eventos', { negocio_id: cv.negocio_id, lead_id: cv.lead_id, tipo: 'pergunta_respondida', autor: 'equipe', detalhe: { como: r.como } })
         return ok(r)
