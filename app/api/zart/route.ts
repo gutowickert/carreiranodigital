@@ -106,12 +106,12 @@ function chaveDoJogo(jogo: string): string | null {
 
 async function caixa(chave: string): Promise<InfoCaixa | null> {
   const c = cacheCaixa.get(chave)
-  if (c && Date.now() - c.em < (c.info ? UMA_HORA : 5 * 60_000)) return c.info
+  if (c && Date.now() - c.em < (c.info ? UMA_HORA : 30 * 60_000)) return c.info
   let info: InfoCaixa | null = null
   try {
     const r = await fetch(`https://servicebus2.caixa.gov.br/portaldeloterias/api/${chave}`, {
       headers: { Accept: 'application/json', 'User-Agent': 'Mozilla/5.0' },
-      signal: AbortSignal.timeout(8000),
+      signal: AbortSignal.timeout(3000),
       next: { revalidate: 3600 },
     } as RequestInit)
     if (r.ok) {

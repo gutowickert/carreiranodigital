@@ -125,7 +125,24 @@ $('#sair').onclick = sair;
 function carregar() {
   return api('GET', null, '?todos=1&t=' + Date.now()).then(function (d) {
     S.boloes = d.boloes || []; S.caixa = d.caixa || {}; S.virada = d.virada; S.hoje = d.hoje;
+    if (!S.caixa.megasena) return caixaDireto();
   });
+}
+// o servidor não alcançou a Caixa: o celular pergunta direto (a API da Caixa aceita). Só pra sugerir data e mostrar o quadro
+var CAIXA = ['megasena', 'lotofacil', 'quina', 'duplasena', 'timemania', 'maismilionaria', 'lotomania', 'diadesorte', 'supersete'];
+function milhoes(v) { var n = Math.floor(v / 1e5) / 10; return v >= 1e6 ? 'R$ ' + n.toLocaleString('pt-BR') + (n < 2 ? ' milhão' : ' milhões') : 'R$ ' + Math.floor(v / 1e3) + ' mil' }
+function caixaDireto() {
+  var todos = Promise.all(CAIXA.map(function (k) {
+    return fetch('https://servicebus2.caixa.gov.br/portaldeloterias/api/' + k).then(function (r) { return r.ok ? r.json() : null }).then(function (c) {
+      if (!c || !c.dataProximoConcurso) return;
+      var p = c.dataProximoConcurso.split('/');
+      S.caixa[k] = { concurso: c.numeroConcursoProximo, data: p[2] + '-' + p[1] + '-' + p[0], premio: c.valorEstimadoProximoConcurso > 0 ? milhoes(c.valorEstimadoProximoConcurso) : null, acumulado: !!c.acumulado };
+    }).catch(function () {});
+  })).then(function () {
+    var m = S.caixa.megasena;
+    if (m && /-12-31$/.test(m.data)) S.virada = { concurso: m.concurso, premio: m.premio, data: m.data };
+  });
+  return Promise.race([todos, new Promise(function (ok) { setTimeout(ok, 6000) })]);
 }
 function iniciar() {
   if (!senha) return telaLogin();
