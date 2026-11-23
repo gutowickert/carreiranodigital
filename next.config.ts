@@ -100,6 +100,9 @@ const nextConfig: NextConfig = {
         // 03/11: o painel de operação da Maia (equipe da escola, com senha)
         { source: '/maia/operacao', destination: '/maia/operacao/index.html' },
         { source: '/maia/conectar', destination: '/maia/conectar/index.html' },
+        // 23/11: o painel dos bolões da Lotérica do Zart (equipe da lotérica, com senha; app/api/zart)
+        { source: '/zart/painel', destination: '/zart/painel.html' },
+        { source: '/zart/painel/', destination: '/zart/painel.html' },
         // 07/11: o painel do dono (abre pelo link mágico que a Maia manda no WhatsApp)
         { source: '/maia/painel', destination: '/maia/painel/index.html' },
         // 13/11: o relatório do mês do dono (abre pelo link que vai no WhatsApp; lib/maia/relatorios.ts)

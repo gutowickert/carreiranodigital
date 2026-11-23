@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="color-scheme" content="light">
+<meta name="theme-color" content="#123D8C">
+<title>Painel dos bolões · Lotérica do Zart</title>
+<link rel="icon" type="image/png" href="/zart/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700&family=Montserrat:wght@800&display=swap" rel="stylesheet">
+<style>
+:root{--azul:#123D8C;--azul-escuro:#0B1F5C;--fundo:#F4F6FB;--branco:#fff;--acao:#FF6A00;--mega:#157A4D;--amarelo:#F5D22A;--texto-2:#4A5A82;--borda:rgba(11,31,92,.16);--perigo:#B42318;--r:14px}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--fundo);color:var(--azul-escuro);font:600 17px/1.45 Inter,system-ui,sans-serif;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:Montserrat,system-ui,sans-serif;font-weight:800;line-height:1.15}
+header{background:var(--branco);border-bottom:1px solid var(--borda);padding:10px 16px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:5}
+header img{width:118px;height:auto;display:block}
+header span{color:var(--texto-2);font-size:14px;flex:1}
+header button{background:none;border:0;color:var(--texto-2);font:600 14px Inter;padding:10px 4px;cursor:pointer}
+main{max-width:640px;margin:0 auto;padding:18px 16px 60px}
+h2{font-size:22px;margin:6px 0 12px}
+p.mut,.mut{color:var(--texto-2);font-size:15px}
+.btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:56px;border-radius:999px;border:2px solid var(--azul);background:var(--branco);color:var(--azul);font:800 17px Montserrat,system-ui,sans-serif;cursor:pointer;padding:12px 18px;text-decoration:none}
+.btn.pri{background:var(--acao);border-color:var(--acao);color:var(--azul-escuro)}
+.btn.azul{background:var(--azul);color:var(--branco)}
+.btn.perigo{border-color:var(--perigo);color:var(--perigo)}
+.btn:disabled{opacity:.5}
+.linha-btn{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+.linha-btn .btn{min-height:48px;font-size:15px}
+.linha-btn .btn.largo{grid-column:1/-1}
+.caixa{background:var(--branco);border:1px solid var(--borda);border-radius:var(--r);padding:16px;margin-bottom:14px}
+.caixa-info{background:var(--azul);color:var(--branco);border-radius:var(--r);padding:14px 16px;margin-bottom:16px;font-size:15px}
+.caixa-info b{font-family:Montserrat;font-weight:800}
+.caixa-info p{margin-top:4px}
+.bolao h3{font-size:18px}
+.bolao .det{color:var(--texto-2);font-size:15px;margin-top:4px}
+.bolao .preco{font-size:18px;margin-top:6px}
+.bolao img{width:100%;max-height:220px;object-fit:cover;border-radius:10px;margin-top:10px;display:block}
+.bolao.apagado{opacity:.6}
+.tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.tag{display:inline-block;border-radius:999px;padding:4px 10px;font-size:13px;font-weight:700;background:var(--fundo);color:var(--texto-2);border:1px solid var(--borda)}
+.tag.amarelo{background:var(--amarelo);color:var(--azul-escuro);border-color:var(--amarelo)}
+.tag.vermelho{background:#FDE8E7;color:var(--perigo);border-color:#F6C6C2}
+.tag.verde{background:#E2F3EA;color:var(--mega);border-color:#BFE3CF}
+label{display:block;font-size:15px;font-weight:700;margin:16px 0 6px}
+label small{font-weight:600;color:var(--texto-2)}
+input,select{width:100%;min-height:52px;font:600 17px Inter,system-ui,sans-serif;color:var(--azul-escuro);background:var(--branco);border:1.5px solid var(--borda);border-radius:12px;padding:12px}
+input:focus,select:focus{outline:3px solid rgba(18,61,140,.25);border-color:var(--azul)}
+.dica{font-size:14px;color:var(--texto-2);margin-top:6px}
+.duas{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.duas label{margin-top:16px}
+.aviso{background:#FFF4D6;border:1.5px solid var(--amarelo);border-radius:12px;padding:12px 14px;font-size:15px;color:var(--azul-escuro)}
+.aviso b{display:block;font-family:Montserrat;font-weight:800;margin-bottom:4px}
+.foto-area{margin-top:10px}
+.foto-area img{width:100%;max-height:340px;object-fit:contain;background:#E9EDF6;border-radius:10px;display:block;margin-bottom:10px}
+.interruptor{display:flex;align-items:center;gap:12px;background:var(--branco);border:1.5px solid var(--borda);border-radius:12px;padding:14px;margin-top:12px;cursor:pointer}
+.interruptor input{position:absolute;opacity:0;width:1px;height:1px}
+.interruptor .bola{flex:none;width:52px;height:30px;border-radius:999px;background:#C9D1E3;position:relative;transition:background .15s}
+.interruptor .bola::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:left .15s}
+.interruptor input:checked+.bola{background:var(--mega)}
+.interruptor input:checked+.bola::after{left:25px}
+.interruptor input:focus-visible+.bola{outline:3px solid var(--azul);outline-offset:2px}
+.interruptor span.t{font-size:15px}
+.interruptor span.t small{display:block;color:var(--texto-2);font-weight:600;font-size:13px}
+.erro{background:#FDE8E7;color:var(--perigo);border-radius:12px;padding:12px 14px;margin-top:12px;font-size:15px}
+.vazio{text-align:center;color:var(--texto-2);padding:28px 8px}
+#aviso-topo{position:fixed;left:16px;right:16px;bottom:18px;z-index:20;background:var(--azul-escuro);color:#fff;border-radius:12px;padding:14px 16px;text-align:center;font-size:15px;display:none}
+#aviso-topo.on{display:block}
+.voltar{background:none;border:0;color:var(--azul);font:700 16px Inter;padding:8px 0;margin-bottom:6px;cursor:pointer}
+.sec{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--texto-2);margin:22px 0 10px}
+</style>
+</head>
+<body>
+<header><img src="/zart/logo.webp" alt="Lotérica do Zart" width="118" height="40"><span>Painel dos bolões</span><button id="sair" hidden>Sair</button></header>
+<main id="app"><p class="vazio">Carregando...</p></main>
+<div id="aviso-topo" role="status"></div>
+
+<script>
+var API = '/api/zart';
+var JOGOS = ['MEGA DA VIRADA','MEGA-SENA','LOTOFÁCIL','QUINA','DUPLA SENA','TIMEMANIA','+MILIONÁRIA','LOTOMANIA','DIA DE SORTE','SUPER SETE'];
+var DIAS = ['domingo','segunda','terça','quarta','quinta','sexta','sábado'];
+var senha = ''; try { senha = localStorage.getItem('zart_senha') || '' } catch (e) {}
+var S = { boloes: [], caixa: {}, virada: null, hoje: '' };
+var $ = function (s) { return document.querySelector(s) };
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
+function dataBonita(iso) { if (!iso) return ''; var p = iso.split('-'); var d = new Date(+p[0], +p[1] - 1, +p[2]); return DIAS[d.getDay()] + ', ' + p[2] + '/' + p[1] + '/' + p[0] }
+function dinheiro(v) { return 'R$ ' + Number(v).toLocaleString('pt-BR', { minimumFractionDigits: v % 1 ? 2 : 0, maximumFractionDigits: 2 }) }
+function aviso(t) { var a = $('#aviso-topo'); a.textContent = t; a.classList.add('on'); clearTimeout(aviso.t); aviso.t = setTimeout(function () { a.classList.remove('on') }, 2600) }
+
+function api(metodo, corpo, query) {
+  return fetch(API + (query || ''), {
+    method: metodo, cache: 'no-store',
+    headers: { 'Content-Type': 'application/json', 'x-zart-senha': senha },
+    body: corpo ? JSON.stringify(corpo) : undefined
+  }).then(function (r) {
+    if (r.status === 401) { sair(); throw { senha: true } }
+    return r.json().then(function (d) { if (!r.ok || !d.ok) throw { msg: d.erro || 'erro' }; return d })
+  })
+}
+
+/* ---------- entrar ---------- */
+function telaLogin(erro) {
+  $('#sair').hidden = true;
+  $('#app').innerHTML =
+    '<div class="caixa" style="margin-top:24px"><h2>Entrar</h2><p class="mut">Digite a senha do painel dos bolões.</p>' +
+    '<label for="lg">Senha</label><input id="lg" type="password" autocomplete="current-password">' +
+    (erro ? '<p class="erro">' + esc(erro) + '</p>' : '') +
+    '<div style="margin-top:16px"><button class="btn azul" id="entrar">Entrar</button></div></div>';
+  var vai = function () {
+    senha = $('#lg').value.trim(); if (!senha) return;
+    $('#entrar').disabled = true;
+    api('POST', { acao: 'login' }).then(function () { try { localStorage.setItem('zart_senha', senha) } catch (e) {} iniciar() })
+      .catch(function (e) { telaLogin(e && e.senha ? 'Senha errada. Confira e tente de novo.' : 'Sem conexão. Tente de novo.') });
+  };
+  $('#entrar').onclick = vai;
+  $('#lg').onkeydown = function (e) { if (e.key === 'Enter') vai() };
+  $('#lg').focus();
+}
+function sair() { senha = ''; try { localStorage.removeItem('zart_senha') } catch (e) {} telaLogin() }
+$('#sair').onclick = sair;
+
+function carregar() {
+  return api('GET', null, '?todos=1&t=' + Date.now()).then(function (d) {
+    S.boloes = d.boloes || []; S.caixa = d.caixa || {}; S.virada = d.virada; S.hoje = d.hoje;
+  });
+}
+function iniciar() {
+  if (!senha) return telaLogin();
+  $('#sair').hidden = false;
+  carregar().then(lista).catch(function (e) { if (!e || !e.senha) $('#app').innerHTML = '<p class="erro">Não consegui carregar os bolões. Confira a internet e abra de novo.</p>' });
+}
+
+/* ---------- lista ---------- */
+function infoCaixa() {
+  var m = S.caixa.megasena, v = S.virada, h = '';
+  if (v && v.premio) h += '<p><b>Mega da Virada</b>: concurso ' + esc(v.concurso) + ', prêmio estimado ' + esc(v.premio) + '.</p>';
+  else h += '<p><b>Mega da Virada</b>: a Caixa ainda não divulgou o concurso e o prêmio. O site mostra "O maior prêmio do ano" até lá.</p>';
+  if (m && m.concurso) h += '<p><b>Mega-Sena</b>: próximo concurso ' + esc(m.concurso) + ', ' + esc(dataBonita(m.data)) + (m.premio ? ', prêmio estimado ' + esc(m.premio) : '') + '.</p>';
+  if (!m) h += '<p>A Caixa não respondeu agora. Os bolões aparecem no site do mesmo jeito, só sem o prêmio.</p>';
+  return '<div class="caixa-info">' + h + '<p style="opacity:.85;font-size:13px;margin-top:8px">Esses números vêm sozinhos da Caixa. Você não precisa digitar.</p></div>';
+}
+function nomeJogo(b) { return b.jogo + (b.concurso ? ' · concurso ' + b.concurso : '') }
+function cartao(b) {
+  var passou = b.sorteio && b.sorteio < S.hoje;
+  var det = (b.jogos || 1) + ((b.jogos || 1) > 1 ? ' jogos' : ' jogo') + ' de ' + (b.numeros || '?') + ' números · ' + (b.cotas ? b.cotas + ' cotas' : 'cotas a definir');
+  var tags = '';
+  if (passou) tags += '<span class="tag">Já sorteado: não aparece no site</span>';
+  else if (b.esgotado) tags += '<span class="tag vermelho">Esgotado</span>';
+  else tags += '<span class="tag verde">No site</span>';
+  if (b.a_confirmar) tags += '<span class="tag amarelo">A confirmar</span>';
+  if (!b.foto) tags += '<span class="tag">Sem foto</span>';
+  return '<div class="caixa bolao' + (passou || b.esgotado ? ' apagado' : '') + '">' +
+    '<h3>' + esc(nomeJogo(b)) + '</h3>' +
+    '<p class="det">Sorteio: ' + esc(dataBonita(b.sorteio)) + (b.premio ? ' · prêmio ' + esc(b.premio) : '') + '</p>' +
+    '<p class="det">' + esc(det) + '</p>' +
+    '<p class="preco">' + (b.preco ? '<b>' + dinheiro(b.preco) + '</b> por cota' : 'Preço a definir') + '</p>' +
+    '<div class="tags">' + tags + '</div>' +
+    (b.foto ? '<img src="' + esc(b.foto) + '" alt="Foto da cota" loading="lazy">' : '') +
+    '<div class="linha-btn">' +
+      '<button class="btn" data-ed="' + b.id + '">Editar</button>' +
+      '<button class="btn" data-esg="' + b.id + '">' + (b.esgotado ? 'Voltar a vender' : 'Esgotado') + '</button>' +
+      '<button class="btn perigo largo" data-rm="' + b.id + '">Remover</button>' +
+    '</div></div>';
+}
+function ordem(a, b) { return (a.sorteio || '').localeCompare(b.sorteio || '') || a.jogo.localeCompare(b.jogo) || (a.numeros || 0) - (b.numeros || 0) }
+function lista() {
+  var abertos = S.boloes.filter(function (b) { return !b.sorteio || b.sorteio >= S.hoje }).sort(ordem);
+  var passados = S.boloes.filter(function (b) { return b.sorteio && b.sorteio < S.hoje }).sort(ordem).reverse();
+  $('#app').innerHTML =
+    '<button class="btn pri" id="novo">Cadastrar bolão</button>' +
+    '<p class="sec">Dados da Caixa</p>' + infoCaixa() +
+    '<p class="sec">No site agora (' + abertos.length + ')</p>' +
+    (abertos.length ? abertos.map(cartao).join('') : '<p class="vazio">Nenhum bolão no site. Toque em "Cadastrar bolão".</p>') +
+    (passados.length ? '<p class="sec">Já sorteados (' + passados.length + ')</p><p class="mut" style="margin-bottom:10px">Esses já saíram do site sozinhos. Pode remover quando quiser.</p>' + passados.map(cartao).join('') : '');
+  $('#novo').onclick = function () { formulario(null) };
+  document.querySelectorAll('[data-ed]').forEach(function (b) { b.onclick = function () { formulario(achar(b.dataset.ed)) } });
+  document.querySelectorAll('[data-esg]').forEach(function (b) { b.onclick = function () { esgotar(achar(b.dataset.esg)) } });
+  document.querySelectorAll('[data-rm]').forEach(function (b) { b.onclick = function () { remover(achar(b.dataset.rm)) } });
+  window.scrollTo(0, lista.y || 0);
+}
+function achar(id) { return S.boloes.filter(function (b) { return b.id === id })[0] }
+
+function esgotar(b) {
+  lista.y = window.scrollY;
+  api('POST', { acao: 'esgotado', id: b.id, valor: !b.esgotado }).then(carregar).then(function () { lista(); aviso(b.esgotado ? 'Voltou a vender no site.' : 'Marcado como esgotado no site.') })
+    .catch(function () { aviso('Não consegui salvar. Tente de novo.') });
+}
+function remover(b) {
+  if (!confirm('Remover o bolão ' + nomeJogo(b) + ' de ' + (b.numeros || '?') + ' números? Ele sai do site na hora.')) return;
+  lista.y = window.scrollY;
+  api('POST', { acao: 'remover', id: b.id }).then(carregar).then(function () { lista(); aviso('Bolão removido.') })
+    .catch(function () { aviso('Não consegui remover. Tente de novo.') });
+}
+
+/* ---------- formulário ---------- */
+var F = null, fotoNova = null;
+function formulario(b) {
+  lista.y = window.scrollY;
+  F = b ? JSON.parse(JSON.stringify(b)) : { jogo: '', concurso: null, sorteio: '', numeros: null, jogos: 1, cotas: null, preco: null, foto: null, esgotado: false, a_confirmar: false };
+  fotoNova = null;
+  var outro = F.jogo && JOGOS.indexOf(F.jogo) < 0;
+  $('#app').innerHTML =
+    '<button class="voltar" id="voltar">&larr; Voltar</button>' +
+    '<h2>' + (b ? 'Editar bolão' : 'Cadastrar bolão') + '</h2>' +
+    '<label for="f-jogo">Jogo</label><select id="f-jogo"><option value="">Escolha o jogo</option>' +
+      JOGOS.map(function (j) { return '<option' + (F.jogo === j ? ' selected' : '') + '>' + j + '</option>' }).join('') +
+      '<option value="OUTRO"' + (outro ? ' selected' : '') + '>Outro (escrever)</option></select>' +
+    '<div id="outro-box"' + (outro ? '' : ' hidden') + '><label for="f-outro">Nome do jogo</label><input id="f-outro" value="' + esc(outro ? F.jogo : '') + '" placeholder="Ex.: Quina de São João"></div>' +
+    '<label for="f-sorteio">Data do sorteio</label><input id="f-sorteio" type="date" value="' + esc(F.sorteio) + '">' +
+    '<p class="dica" id="dica-data"></p>' +
+    '<label for="f-concurso">Concurso <small>(pode deixar em branco)</small></label><input id="f-concurso" type="number" inputmode="numeric" value="' + esc(F.concurso) + '">' +
+    '<p class="dica">Em branco, o site busca o número do concurso na Caixa sozinho.</p>' +
+    '<div class="duas"><div><label for="f-numeros">Quantos números</label><input id="f-numeros" type="number" inputmode="numeric" value="' + esc(F.numeros) + '" placeholder="Ex.: 15"></div>' +
+    '<div><label for="f-jogos">Quantos jogos</label><input id="f-jogos" type="number" inputmode="numeric" value="' + esc(F.jogos || 1) + '"></div></div>' +
+    '<div class="duas"><div><label for="f-cotas">Quantas cotas</label><input id="f-cotas" type="number" inputmode="numeric" value="' + esc(F.cotas) + '" placeholder="Ex.: 20"></div>' +
+    '<div><label for="f-preco">Preço da cota (R$)</label><input id="f-preco" inputmode="decimal" value="' + esc(F.preco != null ? String(F.preco).replace('.', ',') : '') + '" placeholder="Ex.: 50"></div></div>' +
+    '<label>Foto da cota</label>' +
+    '<div class="aviso"><b>Tape o código da aposta antes da foto</b>Cubra a linha do código, o número comprido e o QR code. Com o código à mostra, outra pessoa pode tentar resgatar o prêmio.</div>' +
+    '<div class="foto-area" id="foto-area"></div>' +
+    '<input id="f-foto" type="file" accept="image/*" hidden>' +
+    '<label class="interruptor" for="f-conf"><input id="f-conf" type="checkbox"' + (F.a_confirmar ? ' checked' : '') + '><span class="bola"></span><span class="t">Ainda falta confirmar<small>Mostra o selo amarelo A-CONFIRMAR no site</small></span></label>' +
+    '<label class="interruptor" for="f-esg"><input id="f-esg" type="checkbox"' + (F.esgotado ? ' checked' : '') + '><span class="bola"></span><span class="t">Esgotado<small>O bolão segue no site, marcado como esgotado</small></span></label>' +
+    '<div id="f-erro"></div>' +
+    '<div style="margin-top:18px"><button class="btn pri" id="salvar">Salvar e mostrar no site</button></div>' +
+    '<div style="margin-top:10px"><button class="btn" id="cancelar">Cancelar</button></div>';
+  window.scrollTo(0, 0);
+  desenhaFoto();
+  var sel = $('#f-jogo');
+  sel.onchange = function () { $('#outro-box').hidden = sel.value !== 'OUTRO'; sugerirData() };
+  $('#f-sorteio').oninput = sugerirData;
+  $('#voltar').onclick = $('#cancelar').onclick = cancelar;
+  $('#f-foto').onchange = escolheuFoto;
+  $('#salvar').onclick = salvar;
+  sugerirData();
+}
+function chave(j) {
+  j = (j || '').normalize('NFD').replace(/[̀-ͯ]/g, '');
+  if (/^MEGA DA VIRADA/.test(j)) return 'virada';
+  if (/^MEGA/.test(j)) return 'megasena'; if (/^LOTOFACIL/.test(j)) return 'lotofacil'; if (/^QUINA/.test(j)) return 'quina';
+  if (/^DUPLA/.test(j)) return 'duplasena'; if (/^TIMEMANIA/.test(j)) return 'timemania'; if (/MILIONARIA/.test(j)) return 'maismilionaria';
+  if (/^LOTOMANIA/.test(j)) return 'lotomania'; if (/^DIA DE SORTE/.test(j)) return 'diadesorte'; if (/^SUPER SETE/.test(j)) return 'supersete';
+  return null;
+}
+function jogoEscolhido() { var v = $('#f-jogo').value; return v === 'OUTRO' ? ($('#f-outro').value || '').trim().toUpperCase() : v }
+function sugerirData() {
+  var k = chave($('#f-jogo').value), d = $('#f-sorteio'), dica = $('#dica-data');
+  var info = k === 'virada' ? { data: (S.hoje || '2026').slice(0, 4) + '-12-31' } : S.caixa[k];
+  if (info && info.data && !d.value) d.value = info.data;
+  dica.textContent = info && info.data && k !== 'virada' ? 'Próximo sorteio na Caixa: ' + dataBonita(info.data) + (info.concurso ? ' (concurso ' + info.concurso + ')' : '') + '.' : '';
+}
+function desenhaFoto() {
+  var u = fotoNova || F.foto;
+  $('#foto-area').innerHTML = (u ? '<img src="' + esc(u) + '" alt="Foto da cota">' : '') +
+    '<div class="linha-btn" style="margin-top:0"><button class="btn azul' + (u ? '' : ' largo') + '" id="pegar-foto" type="button">' + (u ? 'Trocar foto' : 'Tirar ou escolher foto') + '</button>' +
+    (u ? '<button class="btn perigo" id="tirar-foto" type="button">Tirar a foto</button>' : '') + '</div>';
+  $('#pegar-foto').onclick = function () { $('#f-foto').click() };
+  if (u) $('#tirar-foto').onclick = function () { descartarNova(); F.foto = null; desenhaFoto() };
+}
+function descartarNova() { if (fotoNova) { api('POST', { acao: 'descartar_foto', url: fotoNova }).catch(function () {}); fotoNova = null } }
+function cancelar() { descartarNova(); lista() }
+
+// reduz a foto no próprio celular (lado maior 1200px, webp; se o aparelho não fizer webp, jpg)
+function reduzir(arquivo) {
+  return new Promise(function (ok, falha) {
+    var url = URL.createObjectURL(arquivo), img = new Image();
+    img.onload = function () {
+      var max = 1200, w = img.naturalWidth, h = img.naturalHeight, f = Math.min(1, max / Math.max(w, h));
+      var c = document.createElement('canvas'); c.width = Math.round(w * f); c.height = Math.round(h * f);
+      c.getContext('2d').drawImage(img, 0, 0, c.width, c.height); URL.revokeObjectURL(url);
+      var d = c.toDataURL('image/webp', 0.82);
+      if (d.indexOf('data:image/webp') !== 0) d = c.toDataURL('image/jpeg', 0.85);
+      ok(d);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); falha() };
+    img.src = url;
+  });
+}
+function escolheuFoto(e) {
+  var arq = e.target.files && e.target.files[0]; e.target.value = '';
+  if (!arq) return;
+  var b = $('#pegar-foto'); b.disabled = true; b.textContent = 'Enviando a foto...';
+  reduzir(arq).then(function (dados) { return api('POST', { acao: 'foto', dados: dados }) })
+    .then(function (r) { descartarNova(); fotoNova = r.url; desenhaFoto() })
+    .catch(function () { aviso('Não consegui enviar a foto. Tente de novo.'); desenhaFoto() });
+}
+function salvar() {
+  var jogo = jogoEscolhido(), erro = '';
+  var dados = {
+    id: F.id, jogo: jogo, sorteio: $('#f-sorteio').value, concurso: $('#f-concurso').value,
+    numeros: $('#f-numeros').value, jogos: $('#f-jogos').value || 1, cotas: $('#f-cotas').value,
+    preco: $('#f-preco').value.replace(/[^\d,.]/g, '').replace(/\.(?=\d{3}(\D|$))/g, '').replace(',', '.'),
+    foto: fotoNova || F.foto || null, esgotado: $('#f-esg').checked, a_confirmar: $('#f-conf').checked
+  };
+  if (!jogo) erro = 'Escolha o jogo.';
+  else if (!dados.sorteio) erro = 'Coloque a data do sorteio.';
+  else if (!dados.numeros) erro = 'Coloque quantos números tem o jogo.';
+  if (erro) { $('#f-erro').innerHTML = '<p class="erro">' + esc(erro) + '</p>'; return }
+  var b = $('#salvar'); b.disabled = true; b.textContent = 'Salvando...';
+  api('POST', { acao: 'salvar', bolao: dados }).then(function () { fotoNova = null; return carregar() })
+    .then(function () { lista(); aviso('Salvo. Já está no site.') })
+    .catch(function (e) { b.disabled = false; b.textContent = 'Salvar e mostrar no site'; $('#f-erro').innerHTML = '<p class="erro">Não consegui salvar' + (e && e.msg && e.msg.length < 60 ? ': ' + esc(e.msg) : '') + '. Tente de novo.</p>' });
+}
+
+iniciar();
+</script>
+</body>
+</html>
