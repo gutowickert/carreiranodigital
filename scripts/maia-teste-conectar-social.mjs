@@ -73,5 +73,15 @@ confere('sem o endereço da página: explica o erro, sem guardar', /não consegu
 r = await social(D.n, D.t, { code: 'pagina', pagina: 'https://site-de-fora.com/maia/conectar' })
 confere('endereço de fora não é usado na troca', /não consegui trocar/.test(r.erro || ''), r)
 
+// 23/11: o login devolve a chave do usuário direto (o jeito novo): confere na Meta que é do nosso app
+const G = await novo('TESTE · Escola chave', '5500077770007')
+r = await social(G.n, G.t, { access_token: 'curta-um' })
+confere('chave do usuário direto do login: conferida e a página fica guardada', r.ok && (r.escolher || neg(G.id).meta?.page_id), r)
+const H = await novo('TESTE · Chave de outro app', '5500077770008')
+r = await social(H.n, H.t, { access_token: 'tk-outro-app' })
+confere('chave de OUTRO app: recusa, sem guardar', /não consegui conferir/.test(r.erro || '') && !neg(H.id).meta?.page_id, r)
+r = await social(H.n, H.t, { access_token: 'invalida' })
+confere('chave inválida: recusa, sem guardar', /não consegui conferir/.test(r.erro || '') && !neg(H.id).meta?.page_id, r)
+
 console.log(`\n${ok} certas, ${falha} erradas`)
 process.exit(falha ? 1 : 0)

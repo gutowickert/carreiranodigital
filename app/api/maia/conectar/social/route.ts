@@ -61,16 +61,25 @@ export async function POST(req: Request) {
     return Response.json(await guarda(neg, p))
   }
 
-  // 1º passo: o code do login
-  const code = String(b.code || '')
-  if (!code) return Response.json({ ok: false, erro: 'o Facebook não devolveu a autorização. Tenta de novo.' })
+  // 1º passo: a chave do login (23/11: o login devolve a chave do usuário direto) ou, se vier, o code
+  const code = String(b.code || ''), chave = String(b.access_token || '')
+  if (!code && !chave) return Response.json({ ok: false, erro: 'o Facebook não devolveu a autorização. Tenta de novo.' })
   if (!APP_SECRET()) return Response.json({ ok: false, erro: 'falta o segredo do app no servidor (MAIA_META_APP_SECRET). Avisa a equipe.' })
   const cid = encodeURIComponent(APP_ID()), sec = encodeURIComponent(APP_SECRET())
-  // 23/11: a troca tenta sem redirect_uri, vazio e o endereço da página (lib/maia/conectar.ts trocaCode)
-  const tc = await trocaCode(code, APP_ID(), APP_SECRET(), [b.pagina, b.pagina_completa].filter(Boolean).map(String))
-  if (!tc.ok) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + tc.erro.slice(0, 160) })
-  await db.evento('conectar_code', neg.id, { botao: 'social', como: tc.como }).catch(() => null)
-  const curta = { access_token: tc.token }
+  let curta: { access_token: string }
+  if (chave) {
+    // a chave veio do navegador: confere NA META que é válida e do NOSSO app (senão alguém mandaria a chave de outro app)
+    const dbg: any = await json(`${GRAPH}/debug_token?input_token=${encodeURIComponent(chave)}&access_token=${cid}%7C${sec}`)
+    if (!dbg?.data?.is_valid || String(dbg.data.app_id) !== APP_ID()) return Response.json({ ok: false, erro: 'não consegui conferir o login com o Facebook: ' + String(dbg?.error?.message || dbg?.data?.error?.message || 'a chave não é deste app').slice(0, 160) })
+    await db.evento('conectar_code', neg.id, { botao: 'social', como: 'chave_do_usuario' }).catch(() => null)
+    curta = { access_token: chave }
+  } else {
+    // a troca do code tenta sem redirect_uri, vazio e o endereço da página (lib/maia/conectar.ts trocaCode)
+    const tc = await trocaCode(code, APP_ID(), APP_SECRET(), [b.pagina, b.pagina_completa].filter(Boolean).map(String))
+    if (!tc.ok) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + tc.erro.slice(0, 160) })
+    await db.evento('conectar_code', neg.id, { botao: 'social', como: tc.como }).catch(() => null)
+    curta = { access_token: tc.token }
+  }
   // a chave do usuário vale ~1 h: alonga pra 60 dias (as chaves das páginas tiradas dela não expiram)
   const longa: any = await json(`${GRAPH}/oauth/access_token?grant_type=fb_exchange_token&client_id=${cid}&client_secret=${sec}&fb_exchange_token=${encodeURIComponent(curta.access_token)}`)
   const user = longa?.access_token || curta.access_token
