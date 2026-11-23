@@ -455,12 +455,14 @@ export async function linkDoPerfil(negocio_id: string, rede: Rede = 'instagram')
 }
 
 // ---------- a rotina (de hora em hora; só com MAIA_SOCIAL_LIGADO=1) ----------
-export async function rotinaSocial(opc: { forcar?: boolean } = {}) {
+export async function rotinaSocial(opc: { forcar?: boolean; grade?: boolean } = {}) {
   if (!socialLigado()) return { pulou: 'MAIA_SOCIAL_LIGADO desligado' }
   const r: any = {}
   try { r.publicados = await publicaVencidos() } catch (e: any) { r.publicar_erro = e.message }
   const h = horaBR()
   try { if (h === 7 || opc.forcar) r.resultados = await leResultados() } catch (e: any) { r.resultados_erro = e.message }
+  // 23/11: toda quinta às 10h a Maia monta a semana seguinte de quem tem página + Instagram (grade-social.ts)
+  try { if ((new Date(Date.now() - 3 * 3600e3).getUTCDay() === 4 && h === 10) || opc.grade) { const { gradesDaSemana } = await import('./grade-social'); r.grades = await gradesDaSemana() } } catch (e: any) { r.grades_erro = e.message }
   try {
     if ((isoBR(new Date()).slice(8, 10) === '01' && h === 9) || opc.forcar) {
       r.analises = []

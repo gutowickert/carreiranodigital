@@ -51,6 +51,8 @@ export async function POST(req: Request) {
   try {
     switch (b.acao) {
       case 'criar_post': return ok(await criaPost(b.negocio_id, { quando: b.quando, tipo: b.tipo, midias: await midiasDoBanco(b), legenda: b.legenda, tema: b.tema, formato: b.formato, objetivo: b.objetivo, redes: b.redes, por }))
+      // 23/11: a grade da semana (a Maia monta os posts da semana sozinha)
+      case 'montar_semana': { const { montaGrade } = await import('@/lib/maia/grade-social'); return ok(await montaGrade(b.negocio_id, { semana: b.semana === 'esta' ? 'esta' : 'proxima', forcar: !!b.forcar, por })) }
       case 'criar_carrossel': return ok(await criaCarrossel(b.negocio_id, { quando: b.quando, tema: b.tema, tipo: b.tipo, fonte: b.fonte, midia_ids: b.midia_ids, quantos: b.quantos, redes: b.redes, por }))
       case 'aprovar_equipe': return ok(await aprovaEquipe(b.post_id, por))
       case 'aprovar_dono': return ok(await aprovaDono(b.post_id))

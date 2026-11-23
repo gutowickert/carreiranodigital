@@ -1618,6 +1618,8 @@ function subSocial(n,c){
     if(D.lig&&D.lig.gestora){ cx.innerHTML=''; return; }
     var banco=(D.banco||[]).filter(function(m){ return !m.nao_usar; });
     var hs=sugereHora(), amanha=diaBR(Date.now()+86400e3);
+    // 23/11: a grade da semana (a Maia monta os posts sozinha; toda quinta 10h ela monta a semana seguinte)
+    var gr='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:6px">Semana da Maia</h2><p class="mu peq" style="margin:0 0 12px">A Maia monta sozinha os 3 posts da semana (terça, quinta e sábado) com as fotos e vídeos do banco do cliente: tema, mídias e legenda. Toda quinta às 10h ela já monta a semana seguinte. Cada post vai pra aprovação da equipe e depois do dono.</p><div class="acoes"><button class="btn" id="sg-esta">Montar esta semana</button><button class="btn" id="sg-prox">Montar a próxima semana</button></div></div>';
     var h='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:6px">Novo post</h2><p class="mu peq" style="margin:0 0 12px">Escolhe as fotos do banco do cliente (aba Arquivos), escreve a legenda e marca o dia. Vai pra aprovação da equipe e depois do dono, no WhatsApp. Foto tem que ser JPG.</p>'+
       '<div class="grade2"><div class="campo"><label for="sn-tipo">Tipo</label><select id="sn-tipo"><option value="foto">Foto (1 foto)</option><option value="carrossel">Carrossel de fotos (2 a 10)</option><option value="reels">Reels (1 vídeo)</option></select></div>'+
       '<div class="campo"><label for="sn-tema">Tema (opcional, ajuda na análise do mês)</label><input id="sn-tema" placeholder="ex.: bolão da Mega"></div></div>'+
@@ -1637,7 +1639,12 @@ function subSocial(n,c){
       '<div class="grade2"><div class="campo"><label for="sc-tema">Tema</label><input id="sc-tema" placeholder="ex.: como funciona o bolão"></div><div class="campo"><label for="sc-tipo">Tipo de conteúdo</label><select id="sc-tipo"><option value="dica">Dica (conteúdo útil)</option><option value="produto">Produto ou serviço</option><option value="noticia">Notícia do setor</option></select></div></div>'+
       '<div class="campo" id="sc-fonte-c" hidden><label for="sc-fonte">A notícia (cola o texto: a Maia usa só isso, pra não inventar)</label><textarea id="sc-fonte" rows="3" style="width:100%"></textarea></div>'+
       '<div class="btns"><button class="btn" id="sc-criar">'+ic('brilho')+'A Maia monta o carrossel</button></div></details></div>';
-    cx.innerHTML=h;
+    cx.innerHTML=gr+h;
+    [['#sg-esta','esta'],['#sg-prox','proxima']].forEach(function(x){ var b=$(x[0]); if(b) b.onclick=function(){
+      espera(this,'a Maia está montando…',function(){ return so({acao:'montar_semana',negocio_id:n.id,semana:x[1]}).then(function(r){
+        var c=(r.criados||[]).length, pl=(r.pulados||[]).length;
+        toast(r.ja_feita?'Essa semana já foi montada.':c?plural(c,'post montado','posts montados')+' pra aprovação'+(pl?' ('+plural(pl,'ficou de fora','ficaram de fora')+')':'')+'.':(r.motivo||'Nada pra montar.'));
+        return carrega(true); }); }); }; });
     var leg=$('#sn-leg'), cont=$('#sn-cont');
     leg.oninput=function(){ var k=leg.value.length; cont.textContent=k.toLocaleString('pt-BR')+' / 2.200'; cont.style.color=k>2200?'var(--red)':''; };
     $$('[data-hora]',cx).forEach(function(b){ b.onclick=function(){ $('#sn-hora').value=b.getAttribute('data-hora'); }; });
