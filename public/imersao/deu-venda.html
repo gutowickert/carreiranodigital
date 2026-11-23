@@ -371,7 +371,7 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Deu Venda',conte
     b.setAttribute('href',l.url);b.setAttribute('target','_blank');b.setAttribute('rel','noopener');
     b.addEventListener('click',function(){
       track('clique_wa',{botao:t.slice(0,40),turma:b.getAttribute('data-turma')||TURMA,event_id:l.ev});
-      try{if(window.fbq)fbq('track','Lead',{content_name:'Deu Venda',content_category:CIDADE},{eventID:l.ev});}catch(e){}
+      try{if(window.fbq){fbq('track','Lead',{content_name:'Deu Venda',content_category:CIDADE},{eventID:l.ev});fbq('track','InitiateCheckout',{content_name:'Deu Venda',content_category:CIDADE,currency:'BRL'},{eventID:'ic-'+l.ev});}}catch(e){}
     });
   });
 })();
