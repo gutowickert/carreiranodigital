@@ -55,11 +55,10 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
   <div class="passo" id="escolha"><h2><i>1</i> Quem vai mandar o recado?</h2>
     <div class="pers">
       <label><img src="/recado/midia/noel-perfil.jpg" alt=""><input type="radio" name="personagem" value="noel" checked><span>Papai Noel</span></label>
-      <label><img src="/recado/midia/fada.jpg" alt=""><input type="radio" name="personagem" value="fada"><span>Fada do Dente</span></label>
     </div>
   </div>
 
-  <div class="passo"><h2><i>+</i> Pacote</h2><div id="pacotes" class="pacs"></div></div>
+  <div class="passo"><h2><i>+</i> O vídeo</h2><div id="pacotes" class="pacs"></div></div>
 
   <div class="passo"><h2><i>2</i> A criança</h2>
     <div class="dupla"><div><label for="nome">Nome</label><input id="nome" name="nome" type="text" required placeholder="Ex.: Laura"></div>
@@ -72,14 +71,11 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
   </div>
 
   <div class="passo"><h2><i>3</i> O que deixa o recado mágico</h2>
-    <label class="so-fada" for="dentinho">Qual dentinho caiu? <small>(o primeiro? da frente?)</small></label><input class="so-fada" id="dentinho" name="dentinho" type="text" placeholder="Ex.: o primeiro, da frente, de baixo">
-    <label class="so-fada" for="como_caiu">Como caiu?</label><input class="so-fada" id="como_caiu" name="como_caiu" type="text" placeholder="Ex.: comendo maçã, e ela foi muito corajosa">
-    <label class="so-noel" for="c1">O que ele ou ela fez de legal este ano <small>(até 3)</small></label><label class="so-fada" for="c1">Uma coisa legal que ele ou ela aprendeu ou anda fazendo <small>(até 3)</small></label>
+    <label class="so-noel" for="c1">O que ele ou ela fez de legal este ano <small>(até 3)</small></label>
     <input id="c1" name="c1" type="text" placeholder="Ex.: aprendeu a ler"><input name="c2" type="text" placeholder="Ex.: joga vôlei e basquete" style="margin-top:8px"><input name="c3" type="text" placeholder="Ex.: ajuda a cuidar do irmão" style="margin-top:8px">
     <label for="adora">Do que ele ou ela mais gosta <small>(pessoas, bicho, comida, brincadeira)</small></label><textarea id="adora" name="adora" placeholder="Ex.: o cachorro Pipoca, a vovó Lúcia, dinossauros, massa"></textarea>
     <label for="melhorar">Uma coisinha pra melhorar <small>(o personagem fala com carinho, sem bronca)</small></label><input id="melhorar" name="melhorar" type="text" placeholder="Ex.: reclamar menos da comida">
     <label class="so-noel">E o presente? O Papai Noel...</label><div class="so-noel pacs" id="pmodo"><label><span>Deixa como <b>surpresa</b><small>"isso é surpresa até o Natal chegar!"</small></span><input type="radio" name="presente_modo" value="surpresa" checked></label><label><span>Fala do <b>presente que pediu</b><small>sem prometer: "vou ver o que posso fazer"</small></span><input type="radio" name="presente_modo" value="presente"></label></div><input class="so-noel" id="presente" name="presente" type="text" placeholder="O que pediu na cartinha? Ex.: uma bicicleta azul" style="display:none;margin-top:8px">
-    <label class="so-fada" for="deixa">Vocês deixam algo embaixo do travesseiro? <small>(opcional)</small></label><input class="so-fada" id="deixa" name="deixa" type="text" placeholder="Ex.: uma moedinha">
     <label for="detalhe">Um detalhe que só a família sabe <small>(opcional, mas é o que mais encanta)</small></label><input id="detalhe" name="detalhe" type="text" placeholder="Ex.: a professora se chama Duda; adora a historinha do pai antes de dormir">
   </div>
 
@@ -90,7 +86,7 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
     <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
     <div><label for="wa">Celular <small>(opcional)</small></label><input id="wa" name="wa" type="tel" placeholder="(51) 99999-9999"></div></div>
     <label for="email">E-mail</label><input id="email" name="email" type="email" required>
-    <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. <span class="so-noel" style="display:inline">A foto é apagada depois do Natal.</span><span class="so-fada" style="display:inline">A foto é apagada em 30 dias.</span></label>
+    <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. A foto é apagada depois do Natal.</label>
   </div>
   <details id="cupom-box" style="margin:4px 0 10px"><summary style="cursor:pointer;color:var(--suave);font-size:15px">Tenho um cupom</summary><input id="cupom" name="cupom" type="text" placeholder="Código do cupom" style="margin-top:8px;text-transform:uppercase" autocomplete="off"></details>
   <button type="submit" id="enviar">Ir pro pagamento</button><p class="erro" id="erro" style="color:#b0122b;font-weight:600;display:none"></p>
@@ -104,17 +100,17 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
 // 24/11: o vídeo de Natal muda de preço pela data (49,90 até 10/12 23h59 de Brasília, 79,90 depois). A conta daqui é só pra tela;
 // logo abaixo a página pergunta o preço de agora pro servidor (/api/recado/preco), e quem cobra é o servidor.
 var NATAL=Date.now()<Date.parse('2026-12-11T00:00:00-03:00')?49.90:79.90
-var PAC={noel:[['encanto','Vídeo de Natal','Vídeo do Papai Noel com o nome e a foto + certificado',NATAL],['magico','Magia Completa','Vídeo + certificado + carta + véspera',64.90]],fada:[['recado','Recado da Fada','Vídeo + certificado + carta',39.90]]}
+var PAC={noel:[['encanto','Vídeo de Natal','Vídeo do Papai Noel com o nome e a foto + certificado',NATAL]]}   // 24/11: só o vídeo do Papai Noel está à venda
 var f=document.getElementById('f'),foto=null,q=new URLSearchParams(location.search)
 // ?so=1 (vem da página /papai-noel): mostra só o pacote do ?pac=, sem outras opções
 var SO=q.get('so')==='1'&&q.get('pac')
 function pacotes(p){var marcado=(f.querySelector('input[name=pacote]:checked')||{}).value;if(!PAC[p].some(function(x){return x[0]===marcado}))marcado=null;document.getElementById('pacotes').innerHTML=PAC[p].filter(function(x){return !SO||x[0]===SO}).map(function(x,i){return '<label><span>'+x[1]+'<small>'+x[2]+'</small></span><span style="white-space:nowrap">R$ '+x[3].toFixed(2).replace('.',',')+' <input type="radio" name="pacote" value="'+x[0]+'"'+((marcado?marcado===x[0]:(q.get('pac')===x[0]||(!q.get('pac')&&i===PAC[p].length-1)))?' checked':'')+'></span></label>'}).join('')}
 var qm=document.getElementById('quem');if(q.get('quem')&&qm.querySelector('option[value='+q.get('quem')+']'))qm.value=q.get('quem');function quem(){var o=qm.value!=='mae'&&qm.value!=='pai';document.getElementById('chama-box').style.display=o?'block':'none';document.getElementById('chama-dica').style.display=o?'block':'none';var ch=document.getElementById('chama');if(o&&!ch.value){ch.placeholder={avo:'Ex.: vó Lúcia',avo_m:'Ex.: vô Pedro',tia:'Ex.: tia Carla',tio:'Ex.: tio João',madrinha:'Ex.: dinda Ana',padrinho:'Ex.: dindo Rafa'}[qm.value]||'Ex.: tia Carla'}}qm.addEventListener('change',quem);quem()
-var ini=q.get('p')==='fada'?'fada':'noel';document.querySelector('input[name=personagem][value='+ini+']').checked=true;document.body.className=ini;pacotes(ini)
+var ini='noel';document.querySelector('input[name=personagem][value='+ini+']').checked=true;document.body.className=ini;pacotes(ini)
 // o preço de agora vem do servidor (o mesmo relógio que cobra); se não responder, fica a conta de cima
 fetch('/api/recado/preco',{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){Object.keys(PAC).forEach(function(per){PAC[per].forEach(function(x){var v=j.pacotes&&j.pacotes[per]&&j.pacotes[per][x[0]];if(v)x[3]=+v})});pacotes(document.querySelector('input[name=personagem]:checked').value)}).catch(function(){})
-// veio da página da Fada ou do Natal (?p=): o personagem já está escolhido, então a escolha some e os passos renumeram
-if(q.get('p')){document.getElementById('escolha').style.display='none';[].forEach.call(document.querySelectorAll('.passo h2 i'),function(i){if(/^\d$/.test(i.textContent))i.textContent=+i.textContent-1})}
+// 24/11: só o Papai Noel está à venda: a escolha de personagem some e os passos renumeram
+if(true){document.getElementById('escolha').style.display='none';[].forEach.call(document.querySelectorAll('.passo h2 i'),function(i){if(/^\d$/.test(i.textContent))i.textContent=+i.textContent-1})}
 f.addEventListener('change',function(e){if(e.target.name==='presente_modo'){document.getElementById('presente').style.display=e.target.value==='presente'?'block':'none'}if(e.target.name==='personagem'){document.body.className=e.target.value;pacotes(e.target.value)}})
 // reduz a foto no próprio celular (até 1080 px) antes de enviar
 document.getElementById('arquivo').addEventListener('change',function(e){var fl=e.target.files[0];if(!fl)return;var img=new Image();img.onload=function(){var s=Math.min(1,1080/Math.max(img.width,img.height)),c=document.createElement('canvas');c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);c.getContext('2d').drawImage(img,0,0,c.width,c.height);foto=c.toDataURL('image/jpeg',.85);var pv=document.getElementById('prev');pv.style.backgroundImage='url('+foto+')';pv.textContent=''};img.src=URL.createObjectURL(fl)})

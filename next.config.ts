@@ -43,7 +43,18 @@ const nextConfig: NextConfig = {
       { source: '/deu-venda', destination: '/deuvenda', permanent: false },
       { source: '/deu-venda.html', destination: '/deuvenda', permanent: false },
     ]
-    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: 'carreiranodigital\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...espanholAntigo, ...escola]
+    // 24/11 (Guto: "apenas vídeo avulso"): toda página antiga de venda do Recado (Acordo, Natal com pacotes, Fada, missões, vitrine)
+    // leva pra página do vídeo do Papai Noel, com a campanha (?utm) junto. A página da família (obrigado.html), o painel e as APIs
+    // continuam iguais: quem já comprou segue recebendo.
+    const recadoHost = [{ type: 'host' as const, value: '(www\\.)?recadoencant(ado|ando)\\.com\\.br' }]
+    const recadoVelhas = 'natal|acordo|fada|index|missao|missao-chupeta|missao-coragem|missao-dormir|natal-avulso-antes'
+    const recadoSaiu = [
+      { source: `/recado/:p(${recadoVelhas}).html`, destination: '/recado/papai-noel.html', permanent: false },
+      { source: '/:p(natal|acordo|fada|todos|produtos|missao|missao-chupeta|missao-coragem|missao-dormir|natal-avulso-antes)', has: recadoHost, destination: '/papai-noel', permanent: false },
+      { source: '/:p(natal|acordo|todos|produtos)/', has: recadoHost, destination: '/papai-noel', permanent: false },
+      { source: `/:p(${recadoVelhas}).html`, has: recadoHost, destination: '/papai-noel', permanent: false },
+    ]
+    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: 'carreiranodigital\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...recadoSaiu, ...espanholAntigo, ...escola]
   },
   // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
   async rewrites() {

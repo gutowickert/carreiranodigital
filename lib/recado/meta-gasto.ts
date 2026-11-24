@@ -16,7 +16,7 @@ export function produtoDaCampanha(nome: string): string | null {
   if (p === 'CORAGEM') return 'coragem/coragem'
   if (p === 'DORMIR' || p === 'NOITE') return 'guardiao/dormir'
   if (p === 'FADA') return 'fada/recado'
-  if (p === 'NOEL') return /ENCANTO/.test(n) ? 'noel/encanto' : /MAGI/.test(n) ? 'noel/magico' : 'noel/acordo'   // 25/10: o Noel agora é o Acordo de Natal
+  if (p === 'NOEL') return /ACORDO/.test(n) ? acordoDe(n) : /MAGI/.test(n) ? 'noel/magico' : 'noel/encanto'   // 24/11: o Noel voltou a ser o vídeo avulso (o Acordo saiu)
   return null
 }
 // 25/10: ACORDO DE NATAL. Vem antes de tudo no conjunto: "ACORDO CHUPETA" é do acordo, não da Missão Tchau Chupeta.
@@ -25,12 +25,13 @@ const acordoDe = (n: string) => /COMPLETO/.test(n) ? 'noel/acordo_completo' : 'n
 // produto por palavra em qualquer lugar do nome do conjunto ("CONJUNTO FADA DO DENTE MÃES")
 export function produtoDoConjunto(nome: string): string | null {
   const n = norm(nome)
-  if (/ACORDO|NATAL/.test(n)) return acordoDe(n)
+  if (/ACORDO/.test(n)) return acordoDe(n)
+  if (/NATAL|PAPAI/.test(n)) return 'noel/encanto'   // 24/11: campanha de Natal agora é do vídeo avulso
   if (/CHUPETA|GRANDAO/.test(n)) return 'grandao/chupeta'
   if (/CORAGEM|CAPITA/.test(n)) return 'coragem/coragem'
   if (/GUARDIAO|DORMIR|NOITE/.test(n)) return 'guardiao/dormir'
   if (/FADA|DENTE/.test(n)) return 'fada/recado'
-  if (/NOEL/.test(n)) return /ENCANTO/.test(n) ? 'noel/encanto' : /MAGI/.test(n) ? 'noel/magico' : 'noel/acordo'
+  if (/NOEL/.test(n)) return /MAGI/.test(n) ? 'noel/magico' : 'noel/encanto'
   return null
 }
 export const doRecado = (l: AnuncioDia) => /RECADO/i.test(l.campaign_name) || !!produtoDaCampanha(l.campaign_name)
