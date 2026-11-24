@@ -39,6 +39,7 @@ export type Quiz = {
   eyebrow: string
   titulo: string
   sub: string
+  destaque: string             // pedaço do título que vem na cor clara (como nas páginas de nicho)
   hero: string                 // foto real da abertura
   ad_img: string               // foto real do exemplo de anúncio
   fala: string                 // a primeira fala da Maia na abertura
@@ -65,7 +66,7 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para oficinas',
     titulo: 'Quanto a sua oficina deixa de faturar por mês com mensagem sem resposta e orçamento parado?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
-    hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
+    destaque: 'mensagem sem resposta e orçamento parado?', hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua oficina pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Qual é o forte da sua oficina?', opcoes: [
@@ -115,7 +116,7 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para óticas',
     titulo: 'Quantos óculos a sua ótica deixa de vender por mês sem perceber?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
-    hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
+    destaque: 'deixa de vender por mês', hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua ótica pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Como é a sua ótica?', opcoes: [

@@ -12,7 +12,8 @@
   min-height: 100dvh; background: var(--bg); color: var(--tx); font-family: var(--f-tx);
   font-size: 17px; line-height: 1.55; -webkit-font-smoothing: antialiased;
 }
-.mq .mq-otica { --ac: #1d5fbf; --ac2: #2b6fd6; --ac-bg: #eaf1fd; --ac-ln: #b9d0f5; }
+.mq { --claro: #ff8a3d; --ac-rgb: 217,72,15; --gr: #22252a; --no: #9f1239; --no-bg: #fde8ec; --wa: #efe7dd; --wa-in: #ffffff; --wa-out: #d9fdd3; --wa-top: #f0f2f5; --wa-tx: #111b21; --wa-mu: #667781; --wa-tk: #53bdeb; --hero-pos: 55% 50%; }
+.mq .mq-otica { --ac: #0e7490; --ac2: #0891b2; --ac-bg: #e7f6f9; --ac-ln: #a5dce7; --claro: #5fd4e8; --ac-rgb: 14,116,144; --hero-pos: 50% 35%; }
 .mq *, .mq *::before, .mq *::after { box-sizing: border-box; }
 :where(.mq) :where(h1, h2, h3, p, ul, ol) { margin: 0; padding: 0; }
 :where(.mq) :where(ul, ol) { list-style: none; }
@@ -132,14 +133,14 @@ body:has(.mq) { margin: 0; padding: 0; background: #f6f5f2; color-scheme: light;
 .mq-total-linha em { font-style: normal; font-size: 13.5px; color: #c9ccd2; }
 .mq-barra2 { display: flex; height: 12px; border-radius: 12px; overflow: hidden; margin-top: 16px; background: rgba(255,255,255,.12); }
 .mq-barra2 i { display: block; background: #ffb38a; }
-.mq-otica .mq-barra2 i { background: #9cc1f5; }
+.mq-otica .mq-barra2 i { background: var(--claro); }
 .mq-barra2 b { display: block; flex: 1; background: #4ade80; }
 .mq-legenda { display: grid; gap: 6px; margin-top: 10px; font-size: 14.5px; color: #d8dade; }
 .mq-legenda li { display: flex; align-items: center; gap: 8px; }
 .mq-legenda strong { margin-left: auto; color: #fff; font-weight: 800; }
 .mq-legenda i { width: 12px; height: 12px; border-radius: 3px; flex: none; }
 .mq-legenda .l1 { background: #ffb38a; }
-.mq-otica .mq-legenda .l1 { background: #9cc1f5; }
+.mq-otica .mq-legenda .l1 { background: var(--claro); }
 .mq-legenda .l2 { background: #4ade80; }
 .mq-paga { margin-top: 12px; display: grid; gap: 4px; background: var(--ok-bg); border-radius: 18px; padding: 16px 18px; }
 .mq-paga b { font-family: var(--f-dis); font-weight: 800; font-variation-settings: 'opsz' 96, 'wdth' 85; font-size: 30px; line-height: 1; color: var(--ok); white-space: nowrap; }
@@ -282,3 +283,38 @@ body:has(.mq) { margin: 0; padding: 0; background: #f6f5f2; color-scheme: light;
 .mq-feed-grade img { width: 100%; aspect-ratio: 1 / 1; object-fit: cover; display: block; }
 .mq-feed-grade i { position: absolute; top: 5px; right: 5px; font-style: normal; font-size: 10.5px; font-weight: 800; color: #fff; background: rgba(0,0,0,.55); border-radius: 6px; padding: 2px 6px; }
 .mq-feed figcaption { font-size: 12.5px; color: var(--mu); }
+
+/* visual das páginas de nicho (24/11): base que a página tinha no global e o quiz não tem */
+.mq-v img { display: block; max-width: 100%; height: auto; }
+.mq-v .ct { max-width: 1160px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.mq-v .ico { width: 22px; height: 22px; flex: none; }
+.mq-v .tk { width: 16px; height: 11px; color: var(--wa-tk); }
+.mq-v .ex { font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--fa); text-align: center; margin-top: 10px; }
+.mq-v .bl h3 { font-size: clamp(26px, 5.6vw, 34px); }
+.mq-abertura { min-height: 100dvh; background: var(--gr); }
+.mq-abertura .mq-cab { background: var(--bg); }
+.mq-abertura .hero .mq-btn { max-width: 460px; }
+.mq-mini-esc { font-size: 14px; color: rgba(255,255,255,.72); }
+.mq-v .hero .maia-card b { font-size: 14.5px; font-weight: 700; }
+@media (min-width: 980px) {
+  .mq-v .hero .ct { grid-template-columns: 1.05fr .95fr; align-items: center; gap: 48px; padding-block: 56px 72px; }
+  .mq-v .hero .tx { order: -1; }
+  .mq-v .hero-foto { margin: 0; border-radius: 28px; overflow: visible; }
+  .mq-v .hero-foto > img { aspect-ratio: 4 / 5; border-radius: 28px; }
+  .mq-v .hero-foto::after { display: none; }
+  .mq-v .maia-card { position: absolute; margin: 0; left: -28px; bottom: 28px; max-width: 380px; }
+  .mq-v .hero h1 { margin-top: 0; }
+}
+/* a seção da agência sai da coluna estreita do resultado e usa a largura da página */
+.mq-res .mq-produto { width: min(1160px, calc(100vw - 32px)); position: relative; left: 50%; transform: translateX(-50%); }
+.mq-res .mq-produto .blocos { margin-top: 22px; }
+/* cartões do resultado no mesmo desenho dos blocos da página */
+.mq-ponto, .mq-medicao, .mq-bem, .mq-cenario { border-radius: 28px; box-shadow: var(--sombra); }
+.mq-ponto { padding: 22px 18px; }
+.mq-n { border-radius: 10px; background: var(--ac); color: #fff; width: 34px; height: 34px; font-family: var(--f-dis); font-variation-settings: 'opsz' 96, 'wdth' 85; }
+.mq-ganho .mq-n, .mq-direto .mq-n { background: var(--ok); color: #fff; }
+.mq-total { border-radius: 28px; }
+.mq-preco { border-radius: 28px; }
+.mq-v .mq-chapa img { height: 20px; width: auto; }
+.mq-abertura .mq-cab { background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax); }
+.mq-v .bl .vis .ex { max-width: none; font-size: 11.5px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--fa); text-align: center; margin-top: 10px; }

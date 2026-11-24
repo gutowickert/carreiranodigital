@@ -4,7 +4,8 @@ import {
   QUIZZES, OFERTA_QUIZ, DESTINO_COMECAR, DESTINO_DUVIDA, TURMA_QUIZ, UFS,
   diagnosticar, telefoneBR, mensagemWhats, reaisQuiz as reais, type Nicho, type Destino, type Diagnostico,
 } from '@/lib/maia/quiz/quiz'
-import { MaiaFala, falaDepois, CelularWhats, AnuncioInsta, RelatorioDono, FeedInsta } from './visual'
+import { MaiaFala, falaDepois, AnuncioInsta } from './visual'
+import { Abertura, Agencia } from './agencia'
 
 // Quiz de diagnóstico da Maia. Uma pergunta por tela (tocar avança sozinho), depois o contato, depois o
 // resultado. A conta roda AQUI (mesma função da API), então o resultado aparece mesmo se a API cair; o envio
@@ -181,22 +182,9 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
 
   // ---------------- abertura ----------------
   if (passo === -1) return (
-    <main className={`mq-tela mq-${nicho}`}>
-      <header className="mq-cab"><Topo /></header>
-      <div className="mq-hero"><img src={q.hero} alt="" fetchPriority="high" /></div>
-      <section className="mq-abre">
-        <MaiaFala texto={q.fala} grande />
-        <p className="mq-olho">{q.eyebrow}</p>
-        <h1>{q.titulo}</h1>
-        <p className="mq-sub">{q.sub}</p>
-        <ul className="mq-ganhos">
-          <li><Ok />Onde o cliente escapa hoje, ponto por ponto</li>
-          <li><Ok />Quanto isso custa por mês e quanto dá pra ganhar a mais com anúncio, com a conta à mostra</li>
-          <li><Ok />O que a Maia faz em cada ponto, do anúncio ao relatório</li>
-        </ul>
-        <button className="mq-btn" onClick={comecar}>Começar o diagnóstico</button>
-        <p className="mq-mini">1 minuto · {total} perguntas de tocar · sem custo</p>
-      </section>
+    <main className={`mq-abertura mq-v mq-${nicho}`}>
+      <header className="mq-cab ct"><Topo /></header>
+      <Abertura nicho={nicho} hero={q.hero} titulo={q.titulo} destaque={q.destaque} sub={q.sub} botao="Começar o diagnóstico" mini={`1 minuto · ${total} perguntas de tocar · sem custo`} onComecar={comecar} />
     </main>
   )
 
@@ -263,7 +251,6 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
   // ---------------- resultado ----------------
   const d = diag!
   const g = d.ganho
-  const P = PRODUTO[nicho]
   const [u1, uN] = q.unidade
   const un = (n: number) => (n < 2 ? u1 : uN)
   const pctMesa = d.oportunidade_mes > 0 ? Math.max(6, Math.round((d.na_mesa_mes / d.oportunidade_mes) * 100)) : 50
@@ -315,8 +302,6 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
             </li>
           ))}
         </ol>
-        <div className="mq-mock-tit"><strong>Como a Maia atenderia o seu cliente</strong><span>A mesma conversa, com o nome da sua {q.nome}, a qualquer hora.</span></div>
-        <CelularWhats nicho={nicho} negocio={d.negocio} tipo={String(r.tipo || '')} />
         {d.bem.length > 0 && (
           <div className="mq-bem">
             <strong>O que você já faz bem</strong>
@@ -374,25 +359,14 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
             <li><Ok /><span>Mede o custo de cada conversa e de cada {nicho === 'oficina' ? 'serviço fechado' : 'venda'}, e mostra isso no seu WhatsApp.</span></li>
           </ul>
         </div>
-        <div className="mq-mock-tit"><strong>O que chega no seu WhatsApp todo dia 2</strong><span>Com os números do seu diagnóstico.</span></div>
-        <RelatorioDono d={d} unidade={q.unidade} />
         <p className="mq-aviso">Os números são uma estimativa feita só com as suas respostas e com as premissas escritas embaixo de cada ponto. Não são estatística de mercado nem garantia de resultado.</p>
       </section>
 
-      <section className="mq-bloco mq-produto">
+      <section className="mq-bloco mq-produto mq-v">
         <p className="mq-olho">O que é a Maia</p>
-        <h2 className="mq-h2">Uma agência de marketing inteira numa IA, feita pra {q.nome}</h2>
+        <h2 className="mq-h2">Uma agência de marketing inteira numa IA, feita pra {d.negocio}</h2>
         <p className="mq-sub">Tudo isso vem todo mês, sem reunião e sem você precisar entender de marketing.</p>
-        <div className="mq-cards">
-          {P.map(c => (
-            <article key={c.t} className="mq-card">
-              <span className="mq-card-tag">{c.tag}</span>
-              <h3>{c.t}</h3>
-              <ul>{c.itens.map(i => <li key={i}><Ok /><span>{i}</span></li>)}</ul>
-              {c.feed && <FeedInsta nicho={nicho} negocio={d.negocio} />}
-            </article>
-          ))}
-        </div>
+        <Agencia d={d} nicho={nicho} tipo={String(r.tipo || '')} />
       </section>
 
       <section className="mq-bloco mq-oferta" id="oferta">
@@ -434,68 +408,3 @@ function qtdCurta(u: number, u1: string, uN: string) {
   return `${num(m)} ${m < 2 ? u1 : uN}`
 }
 
-// A oferta inteira, adaptada ao nicho (vem todo mês), em ordem de relevância pro dono. Conferida no código (24/11):
-// estrategia/pecas/locucao/meta (mais cliente), atendente (24 h), funil + humano (retomada e passa pra equipe), social +
-// grade-social (8 posts e 4 vídeos por mês, oferta.ts; vale pro online, decisão do Guto), recado (base), conversoes (devolve a
-// venda pra Meta) + relatorios/resumo-semana (relatório), aprovacao + painel-dono (o dono aprova pelo celular).
-type Card = { tag: string; t: string; itens: string[]; feed?: boolean }
-const PRODUTO: Record<Nicho, Card[]> = {
-  oficina: [
-    { tag: 'Mais cliente', t: 'Estratégia, criação e anúncio', itens: [
-      'Escolhe o serviço com margem e procura e monta o calendário do ano da oficina. Revisa a cada 15 dias.',
-      'Cria cerca de 6 anúncios em vídeo e 6 em imagem por mês, com fotos e vídeos reais da sua oficina.',
-      'Roda as campanhas no Facebook e no Instagram pra sua cidade e região.',
-    ] },
-    { tag: 'Atendimento 24 h', t: 'Responde na hora', itens: [
-      'Responde o WhatsApp com o nome da oficina em até 1 minuto, 24 horas por dia.',
-      'Pergunta o modelo e o ano do carro e o que está acontecendo.',
-    ] },
-    { tag: 'Retomada', t: 'Não deixa o orçamento esfriar', itens: [
-      'Chama de novo quem pediu orçamento e sumiu: 1, 3 e 6 dias depois.',
-      'Quando o cliente está pronto, passa pra você ou pra sua equipe fechar.',
-    ] },
-    { tag: 'Conteúdo', t: 'Cuida do seu Instagram', feed: true, itens: [
-      '8 posts e 4 vídeos por mês, com fotos e vídeos reais da sua oficina.',
-      'Posta no Instagram e no Facebook e analisa o que funciona.',
-    ] },
-    { tag: 'Base de clientes', t: 'Chama quem já foi cliente', itens: [
-      'Recado na época da revisão, da troca de óleo e antes das viagens.',
-    ] },
-    { tag: 'Medição', t: 'Mede de ponta a ponta e te conta', itens: [
-      'Liga cada serviço ao anúncio que trouxe o cliente e devolve a venda pra Meta achar mais gente que compra.',
-      'Análise curta a cada 2 dias e relatório completo todo dia 2 no seu WhatsApp.',
-    ] },
-    { tag: 'Você no comando', t: 'Tudo pelo celular', itens: [
-      'Você aprova anúncios e posts pelo celular, sem reunião, e pede o que quiser pro WhatsApp da Maia.',
-    ] },
-  ],
-  otica: [
-    { tag: 'Mais cliente', t: 'Estratégia, criação e anúncio', itens: [
-      'Escolhe o produto com margem e procura e monta o calendário da ótica (volta às aulas, Dia das Mães, Black Friday). Revisa a cada 15 dias.',
-      'Cria cerca de 6 anúncios em vídeo e 6 em imagem por mês, com fotos e vídeos reais da sua loja.',
-      'Roda as campanhas no Facebook e no Instagram pra sua cidade e região.',
-    ] },
-    { tag: 'Atendimento 24 h', t: 'Responde na hora', itens: [
-      'Responde o WhatsApp com o nome da ótica em até 1 minuto, 24 horas por dia.',
-      'Pergunta o que a pessoa procura (armação, lente, óculos de sol) e se já tem a receita.',
-    ] },
-    { tag: 'Retomada', t: 'Não deixa o orçamento esfriar', itens: [
-      'Chama de novo quem pediu orçamento de lente e sumiu: 1, 3 e 6 dias depois.',
-      'Quando o cliente está pronto, passa pra você ou pra sua equipe fechar.',
-    ] },
-    { tag: 'Conteúdo', t: 'Cuida do seu Instagram', feed: true, itens: [
-      '8 posts e 4 vídeos por mês, com fotos e vídeos reais da sua ótica.',
-      'Posta no Instagram e no Facebook e analisa o que funciona.',
-    ] },
-    { tag: 'Base de clientes', t: 'Chama quem já comprou', itens: [
-      'Recado quando os óculos fazem 1 ano, na volta às aulas e nas datas do ano.',
-    ] },
-    { tag: 'Medição', t: 'Mede de ponta a ponta e te conta', itens: [
-      'Liga cada venda ao anúncio que trouxe o cliente e devolve a venda pra Meta achar mais gente que compra.',
-      'Análise curta a cada 2 dias e relatório completo todo dia 2 no seu WhatsApp.',
-    ] },
-    { tag: 'Você no comando', t: 'Tudo pelo celular', itens: [
-      'Você aprova anúncios e posts pelo celular, sem reunião, e pede o que quiser pro WhatsApp da Maia.',
-    ] },
-  ],
-}

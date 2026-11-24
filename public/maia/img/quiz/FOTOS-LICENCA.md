@@ -20,3 +20,12 @@ Unsplash (https://unsplash.com/license) e Pexels (https://www.pexels.com/license
 | otica/vitrine-armacoes.jpg | Unsplash | https://unsplash.com/photos/xGsOQcGFA9g |
 | otica/parede-armacoes.jpg | Unsplash | https://unsplash.com/photos/UsALNdok2m4 |
 | otica/comparando-armacoes.jpg | Pexels | https://www.pexels.com/photo/a-woman-holding-eyeglasses-5201939/ |
+| oficina/motor-aberto.jpg | Unsplash | https://unsplash.com/photos/bEGTsOCnHro |
+| oficina/pneu-revisao.jpg | Unsplash | https://unsplash.com/photos/9uHal2Dd9aE |
+| oficina/troca-de-oleo.jpg | Unsplash | https://unsplash.com/photos/gW34cv-Ojjs |
+| oficina/elevador-oficina.jpg | Unsplash | https://unsplash.com/photos/cl1M5WBCF8c |
+| oficina/mao-graxa-noite.jpg | Unsplash | https://unsplash.com/photos/Fd6osyVbtG4 |
+| otica/oculos-de-sol.jpg | Unsplash | https://unsplash.com/photos/PmB5Uo9dUk4 |
+| otica/menina-oculos-rosa.jpg | Unsplash | https://unsplash.com/photos/msgYbIh-1DA |
+| otica/parafuso-oculos.jpg | Pexels | https://www.pexels.com/photo/crop-worker-setting-new-temple-to-eyeglasses-5715901/ |
+| otica/mae-e-filha.jpg | Pexels | https://www.pexels.com/photo/a-woman-carrying-a-young-girl-while-holding-an-eyeglasses-5621842/ |

@@ -1,6 +1,7 @@
 import Script from 'next/script'
 import { PIXEL_ESCOLA } from '@/lib/maia/quiz/quiz'
 import './quiz.css'
+import './nicho-visual.css'
 
 // Quiz de diagnóstico da Maia (páginas públicas, sem login). Claro, no padrão das páginas da Maia.
 // O pixel da escola entra aqui (PageView); ViewContent, Lead e InitiateCheckout saem da página do quiz.
