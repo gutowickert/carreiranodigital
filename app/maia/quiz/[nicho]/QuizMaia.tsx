@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  QUIZZES, OFERTA_QUIZ, DESTINO_COMECAR, DESTINO_DUVIDA, TURMA_QUIZ, UFS,
+  QUIZZES, OFERTA_QUIZ, DESTINO_COMECAR, DESTINO_DUVIDA, TURMA_QUIZ, UFS, WA_MAIA,
   diagnosticar, telefoneBR, mensagemWhats, reaisQuiz as reais, type Nicho, type Destino, type Diagnostico,
 } from '@/lib/maia/quiz/quiz'
 import { MaiaFala, falaDepois, AnuncioInsta } from './visual'
@@ -156,6 +156,8 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
   function link(destino: Destino, botao: 'comecar' | 'duvida'): string {
     if (destino.tipo === 'link') return destino.url
     if (!diag) return '#'
+    // 24/11: direto pro WhatsApp da Maia (o lead já foi criado pela API do quiz, com o diagnóstico)
+    if (destino.tipo === 'wa_maia') return `https://wa.me/${WA_MAIA}?text=${encodeURIComponent(mensagemWhats(diag, { cidade: c.cidade.trim(), uf: c.uf }, botao))}`
     const t = rastro.current
     const sp = new URLSearchParams()
     sp.set('msg', mensagemWhats(diag, { cidade: c.cidade.trim(), uf: c.uf }, botao))

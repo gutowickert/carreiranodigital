@@ -19,9 +19,12 @@ export const OFERTA_QUIZ = {
 export const WA_ESCOLA = '5551995054548'
 // Destino de cada botão do resultado. Hoje os dois vão pro WhatsApp passando pelo /wa (rastreio + ref).
 // Pra trocar "Quero começar" por um link de pagamento, troque { tipo: 'wa' } por { tipo: 'link', url: 'https://...' }.
-export type Destino = { tipo: 'wa' } | { tipo: 'link'; url: string }
-export const DESTINO_COMECAR: Destino = { tipo: 'wa' }
-export const DESTINO_DUVIDA: Destino = { tipo: 'wa' }
+// 24/11 (doc do Guto "Maia vende a Maia"): 'wa_maia' abre o WhatsApp DA MAIA (51 99376-7137) com a mensagem pronta; quem atende é
+// a vendedora da Maia (lib/maia/vendedora.ts), que acha o lead deste quiz pelo telefone e já sabe o diagnóstico
+export const WA_MAIA = '5551993767137'
+export type Destino = { tipo: 'wa' } | { tipo: 'wa_maia' } | { tipo: 'link'; url: string }
+export const DESTINO_COMECAR: Destino = { tipo: 'wa_maia' }
+export const DESTINO_DUVIDA: Destino = { tipo: 'wa_maia' }
 // turma-recipiente dos leads do quiz no CRM da escola (uma só pros dois nichos; o nicho vai na qualificação)
 export const TURMA_QUIZ = 'maiaquiz'
 export const PIXEL_ESCOLA = '3968641693466078'
