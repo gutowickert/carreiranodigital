@@ -344,21 +344,57 @@ async function insights(id: string, token: string, metricas: string[], extra: Re
 }
 const simulaMetricas = (tipo: string) => { const n = (a: number) => Math.round(a * (0.5 + Math.random())); const reach = n(tipo === 'reels' ? 900 : 400); return { views: n(reach * 1.6), reach, likes: n(reach * 0.06), comments: n(reach * 0.01), saved: n(reach * 0.015), shares: n(reach * 0.01), total_interactions: n(reach * 0.09), ...(tipo === 'reels' ? {} : { follows: n(3) }) } }
 
+// 24/11 (post apagado direto no Instagram pelo Nando): a leitura dos números falhava calada e o post seguia "publicado" no
+// painel, "sem números". Agora a Maia pergunta à Meta se o post ainda existe. 'sumiu' só com o erro de objeto inexistente
+// (100/33); qualquer outro erro (rede, limite) é 'erro' e não marca nada.
+async function abreNaMeta(id: string, token: string): Promise<'ok' | 'sumiu' | 'erro'> {
+  const u = new URL(`${GRAPH}/${id}`); u.searchParams.set('fields', 'id')
+  const r = await fetch(u, { headers: { Authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(30000) }).catch(() => null)
+  if (!r) return 'erro'
+  const j: any = await r.json().catch(() => ({}))
+  if (r.ok && j?.id) return 'ok'
+  const e = j?.error || {}
+  return e.code === 100 && (e.error_subcode === 33 || /does not exist/i.test(String(e.message || ''))) ? 'sumiu' : 'erro'
+}
+// o post sumiu da rede SÓ se a conta (Instagram ou página) ainda abre com a mesma chave: senão é chave/permissão, não post apagado
+async function confereApagados(post: any, neg: any) {
+  const d = post.detalhe || {}
+  if (!metaReal() || d.ig?.simulado || d.fb?.simulado) return post
+  const token = await tokenPagina(neg).catch(() => '')
+  if (!token) return post
+  const agora = new Date().toISOString(), mud: any = {}
+  if (d.ig?.media_id && !d.ig.apagado_em && neg.meta?.ig_id && (await abreNaMeta(d.ig.media_id, token)) === 'sumiu' && (await abreNaMeta(neg.meta.ig_id, token)) === 'ok') mud.ig = { ...d.ig, apagado_em: agora }
+  const fbId = d.fb?.post_id || d.fb?.video_id
+  if (fbId && !d.fb.apagado_em && neg.meta?.page_id && (await abreNaMeta(fbId, token)) === 'sumiu' && (await abreNaMeta(neg.meta.page_id, token)) === 'ok') mud.fb = { ...d.fb, apagado_em: agora }
+  if (!mud.ig && !mud.fb) return post
+  const ig = mud.ig || d.ig, fb = mud.fb || d.fb
+  const vivas = [ig?.media_id && !ig.apagado_em, fbId && !fb?.apagado_em].filter(Boolean).length
+  post = await salva(post, { ...mud, ...(vivas ? {} : { status: 'apagado', apagado_em: agora }) })
+  const onde = [mud.ig ? 'Instagram' : '', mud.fb ? 'Facebook' : ''].filter(Boolean).join(' e ')
+  await db.evento('social_apagado', post.negocio_id, { post: post.id, peca_id: d.peca_id, onde, todo: !vivas })
+  await avisaEquipe('post apagado na rede', `${neg.nome}: o post de ${quandoTxt(d.publicado_em || d.quando)} foi apagado direto no ${onde}${vivas ? ' (segue no ar na outra rede)' : ''}. Saiu da conta dos resultados.`, post.negocio_id)
+  return post
+}
+
 export async function leResultados(opc: { negocio_id?: string | null } = {}) {
   const desde = new Date(Date.now() - 30 * 86400e3).toISOString(), dia = isoBR(new Date()), feitos: any[] = []
   for (const post of await posts(opc.negocio_id)) {
     const d = post.detalhe || {}
     if (d.status !== 'publicado' || !d.publicado_em || d.publicado_em < desde) continue
     const neg = await db.um('negocios', { id: post.negocio_id })
+    // 24/11: apagado direto na rede? sai da leitura (e, se sumiu das duas, vira 'apagado')
+    const conf = await confereApagados(post, neg).catch(() => post)
+    if (conf.detalhe?.status === 'apagado') { feitos.push({ post: post.id, apagado: true }); continue }
+    const dd = conf.detalhe || d
     const r: any = { dia }
     try {
-      if (d.ig?.media_id) r.ig = !metaReal() || d.ig.simulado ? simulaMetricas(d.tipo) : await insights(d.ig.media_id, await tokenPagina(neg), METRICAS_IG[d.tipo] || METRICAS_IG.foto)
-      if (d.fb?.post_id || d.fb?.video_id) {
+      if (dd.ig?.media_id && !dd.ig.apagado_em) r.ig = !metaReal() || d.ig.simulado ? simulaMetricas(d.tipo) : await insights(d.ig.media_id, await tokenPagina(neg), METRICAS_IG[d.tipo] || METRICAS_IG.foto)
+      if ((d.fb?.post_id || d.fb?.video_id) && !dd.fb?.apagado_em) {
         if (!metaReal() || d.fb.simulado) r.fb = { post_media_view: Math.round(Math.random() * 500), post_total_media_view_unique: Math.round(Math.random() * 300), post_reactions_by_type_total: Math.round(Math.random() * 20) }
         else {
           const token = await tokenPagina(neg)
           let pid = d.fb.post_id
-          if (!pid && d.fb.video_id) { pid = (await graph('GET', d.fb.video_id, token, { fields: 'post_id' }).catch(() => null))?.post_id || null; if (pid) await salva(post, { fb: { ...d.fb, post_id: pid } }) }
+          if (!pid && d.fb.video_id) { pid = (await graph('GET', d.fb.video_id, token, { fields: 'post_id' }).catch(() => null))?.post_id || null; if (pid) await salva(conf, { fb: { ...dd.fb, post_id: pid } }) }
           if (pid) {
             r.fb = await insights(pid, token, METRICAS_FB, { period: 'lifetime' })
             const c = await graph('GET', pid, token, { fields: 'shares,comments.summary(true).limit(0),reactions.summary(true).limit(0)' }).catch(() => null)
@@ -371,7 +407,7 @@ export async function leResultados(opc: { negocio_id?: string | null } = {}) {
     const ja = (await db.lista('eventos', { negocio_id: post.negocio_id, tipo: 'social_resultado' })).find(e => e.detalhe?.post === post.id && e.detalhe?.dia === dia)
     const det = { post: post.id, peca_id: d.peca_id, ...r }
     if (ja) await db.atualiza('eventos', { id: ja.id }, { detalhe: det }); else await db.insere('eventos', { negocio_id: post.negocio_id, tipo: 'social_resultado', detalhe: det })
-    if (!r.erro) await salva(post, { resultado: r })
+    if (!r.erro) await salva(conf, { resultado: r })   // 24/11: conf (com a marca de apagado), não o post antigo
     feitos.push({ post: post.id, ig: !!r.ig, fb: !!r.fb, erro: r.erro })
   }
   return feitos
