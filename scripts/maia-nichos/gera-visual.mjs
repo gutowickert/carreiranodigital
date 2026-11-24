@@ -36,6 +36,7 @@ const VISUAL = {
       maos: ['maos-no-motor.jpg', 960, 640],
       elev: ['elevador-oficina.jpg', 960, 640],
       ampla: ['oficina-ampla.jpg', 960, 484],
+      noite: ['mao-graxa-noite.jpg', 960, 720],
     },
     heroAlt: 'Mecânico deitado embaixo de um carro erguido no cavalete',
     heroPos: '55% 50%',
@@ -63,6 +64,11 @@ const VISUAL = {
       ['6 dias depois', 'Vou parar por aqui pra não incomodar. Quando quiser, é só chamar.'],
     ],
     recadoFoto: 'elev',
+    fechar: 'Carlos quer fazer o diagnóstico do câmbio amanhã às 8h. Corolla 2016, 98 mil km.',
+    arroba: 'mecanicarossi',
+    feed: ['elev', 'motor', 'oleo', 'maos', 'pneu', 'scanner', 'ampla', 'chave', 'noite'],
+    reels: [1, 5, 8],
+    analise: 'Análise de 2 dias: o anúncio do câmbio trouxe 9 orçamentos, e a conversa saiu a R$ 4,10. Sigo com ele.',
     recado: 'Oi Carlos, aqui é da Mecânica Rossi. A troca de óleo do seu Corolla vence este mês. Vejo um horário pra essa semana?',
     funil: [['Pessoas que viram o anúncio', '18.400'], ['Conversas no WhatsApp', '212'], ['Orçamentos', '64'], ['Serviços fechados', '21']],
     repete: 'Repete: "câmbio dando tranco"', corta: 'Corta: "ar soprando quente"',
@@ -87,6 +93,7 @@ const VISUAL = {
       clienteParede: ['cliente-na-parede.jpg', 960, 640],
       vitrine: ['vitrine-armacoes.jpg', 960, 540],
       parede: ['parede-armacoes.jpg', 960, 640],
+      provando: ['provando-oculos.jpg', 960, 641],
     },
     heroAlt: 'Atendente sorrindo no balcão de uma ótica, com a parede de armações atrás',
     heroPos: '50% 35%',
@@ -114,6 +121,11 @@ const VISUAL = {
       ['6 dias depois', 'Vou parar por aqui pra não incomodar. Quando quiser, é só chamar.'],
     ],
     recadoFoto: 'parede',
+    fechar: 'Ana quer provar armações de metal leve no sábado de manhã. Multifocal, receita em dia.',
+    arroba: 'oticavisaoclara',
+    feed: ['clienteParede', 'sol', 'parede', 'maeFilha', 'comparando', 'vitrine', 'rosa', 'parafuso', 'provando'],
+    reels: [1, 4, 8],
+    analise: 'Análise de 2 dias: o anúncio de óculos de sol com grau trouxe 11 receitas, e a conversa saiu a R$ 3,80. Sigo com ele.',
     recado: 'Oi Ana, aqui é da Ótica Visão Clara. Faz 1 ano do seu multifocal: bom momento pra revisar o grau com o oftalmologista e passar aqui pra um ajuste.',
     funil: [['Pessoas que viram o anúncio', '15.200'], ['Conversas no WhatsApp', '184'], ['Receitas recebidas', '71'], ['Óculos vendidos', '26']],
     repete: 'Repete: "óculos de sol com o seu grau"', corta: 'Corta: "conserto na hora"',
@@ -133,6 +145,7 @@ const ic = {
   ok: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>',
   seta: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   foto: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-8 8"/></svg>',
+  play: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg>',
   tk: '<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   cor: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg>',
   com: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg>',
@@ -150,6 +163,7 @@ const io = {
   retomada: '<path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/>',
   recado: '<path d="M4 10v4h3l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/>',
   medicao: '<path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/>',
+  conteudo: '<rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/>',
   relatorio: '<path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/>',
 }
 const icone = k => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${io[k]}</svg>`
@@ -325,6 +339,27 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .relat dd{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:24px;line-height:1.1}
 .relat p{font-size:13.5px;font-weight:700;color:var(--tx2);margin-top:8px;border-top:1px dashed var(--ln2);padding-top:8px}
 
+/* conteúdo: perfil do Instagram */
+.ig{background:#fff;border:1px solid var(--ln);border-radius:18px;overflow:hidden;max-width:420px;margin:0 auto}
+.ig-top{display:flex;gap:10px;align-items:center;padding:12px}
+.ig-top .av{width:44px;height:44px;border-radius:50%;padding:2px;background:linear-gradient(45deg,#f9a03f,#e8590c,#c2255c);display:grid;place-items:center;flex:none;color:#fff;font-weight:800;font-size:13px;box-shadow:inset 0 0 0 3px #fff}
+.ig-top b{display:block;font-size:14.5px}
+.ig-top span{display:block;font-size:12px;color:var(--mu)}
+.ig-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.ig-grade div{position:relative;aspect-ratio:1}
+.ig-grade img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ig-grade .rl{position:absolute;top:6px;right:6px;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.ig-grade .rl svg{width:18px;height:18px}
+.pra-equipe .pt{background:var(--ok);border-color:var(--ok-bg)}
+.pra-equipe small{color:var(--ok)}
+.pra-equipe .notif{border-color:#bfe6cb;background:var(--ok-bg)}
+.pra-equipe .notif .app{background:var(--ok)}
+.cmd1{max-width:420px;margin:0 auto}
+.cmd1 .mini{background:var(--wa);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
+.cmd1 .bts{display:flex;gap:6px;padding:0 10px 12px}
+.cmd1 .bts span{flex:1;text-align:center;border-radius:10px;padding:9px 6px;font-size:14px;font-weight:800;background:#fff;color:#027eb5}
+.cmd1 .bts span:first-child{background:var(--ok);color:#fff}
+
 /* sem x com */
 .vs{display:grid;gap:12px}
 .vs>div{border-radius:24px;padding:22px 20px}
@@ -342,7 +377,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .card-of{max-width:820px;margin:0 auto;background:var(--s1);border:1px solid var(--ln);border-radius:28px;box-shadow:0 40px 80px -40px rgba(29,31,35,.45);padding:26px 18px}
 .card-of h2{text-align:center}
 .card-of .sub{text-align:center;font-size:16.5px;color:var(--mu);margin-top:8px}
-.vem{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:22px}
+.vem{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}
 .vem div{display:grid;justify-items:center;gap:6px;background:var(--bg);border-radius:14px;padding:12px 4px;font-size:12.5px;font-weight:800;color:var(--tx2);text-align:center}
 .vem svg{width:26px;height:26px;color:var(--ac)}
 .precos{display:grid;gap:10px;margin-top:22px}
@@ -393,10 +428,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .ad b{font-size:18px}.ad small{font-size:10.5px}
   .vs{grid-template-columns:1fr 1fr}
   .vs>div{padding:30px}
-  .vem{grid-template-columns:repeat(8,1fr)}
+  .vem{grid-template-columns:repeat(9,1fr)}
   .precos{grid-template-columns:1fr 1fr}
   .card-of{padding:40px}
-  .cmd{grid-template-columns:1fr 1fr;align-items:center}
   .final-card{padding:64px 40px 56px}
   .barra{display:none}
   .rodape{padding-bottom:40px}
@@ -449,15 +483,17 @@ function pagina(n, modo) {
        <div class="nums"><div><b>${V.alcance}</b><span>pessoas por mês</span></div><div><b>${V.conversas}</b><span>conversas no WhatsApp</span></div></div><p class="ex">Exemplo</p>`),
     bloco(4, 'Atendimento', 'Atende o WhatsApp 24 h', `Com o nome da ${esc(n.sua)}, até de noite e no domingo.`,
       `<div class="cel" role="img" aria-label="Conversa de exemplo no WhatsApp da ${esc(n.empresa)}"><span class="selo1">${ok}Respondeu em 1 min</span><div class="tela"><div class="wa-top"><span class="av">${esc(n.sigla)}</span><div><b>${esc(n.empresa)}</b><small>online</small></div></div><div class="wa-msgs">${V.chat.map(bal).join('')}</div></div></div><p class="ex">Exemplo · empresa fictícia</p>`),
-    bloco(5, 'Retomada', 'Traz de volta quem sumiu', 'Quem pediu orçamento e não voltou recebe 3 lembretes educados.',
-      `<ol class="linha">${V.retomada.map(([q, t]) => `<li><span class="pt"></span><div><small>${esc(q)}</small><div class="notif"><span class="app">${ic.zap}</span><div><b>${esc(n.empresa)}</b><span>${esc(t)}</span></div></div></div></li>`).join('')}</ol>`),
-    bloco(6, 'Recado pra base', 'Chama o cliente antigo na hora certa', 'Ela avisa quem já comprou, antes de ele lembrar sozinho.',
+    bloco(5, 'Retomada', 'Traz de volta quem sumiu', 'Três lembretes educados. Quem quer fechar vai pra sua equipe, com o resumo pronto.',
+      `<ol class="linha">${V.retomada.map(([q, t]) => `<li><span class="pt"></span><div><small>${esc(q)}</small><div class="notif"><span class="app">${ic.zap}</span><div><b>${esc(n.empresa)}</b><span>${esc(t)}</span></div></div></div></li>`).join('')}<li class="pra-equipe"><span class="pt"></span><div><small>Quer fechar</small><div class="notif"><span class="app">${ic.ok}</span><div><b>Pra sua equipe</b><span>${esc(V.fechar)}</span></div></div></div></li></ol>`),
+    bloco(6, 'Conteúdo', 'Mantém o seu Instagram vivo', 'Uns 8 posts e 4 vídeos por mês, pra quem vê o anúncio achar um perfil confiável.',
+      `<div class="ig" role="img" aria-label="Exemplo de perfil no Instagram com 9 posts"><div class="ig-top"><span class="av">${esc(n.sigla)}</span><div><b>${esc(V.arroba)}</b><span>3 posts por semana · Instagram e Facebook</span></div></div><div class="ig-grade">${V.feed.map((k, i) => `<div>${im(k, '')}${V.reels.includes(i) ? `<span class="rl" aria-label="vídeo">${ic.play}</span>` : ''}</div>`).join('')}</div></div><p class="ex">Exemplo com fotos de banco · na sua conta, as fotos e os vídeos são seus</p>`),
+    bloco(7, 'Recado pra base', 'Chama o cliente antigo na hora certa', 'Ela avisa quem já comprou, antes de ele lembrar sozinho.',
       `<div class="rec">${im(V.recadoFoto, '')}<div class="hora">09:30</div><div class="notif"><span class="app">${ic.zap}</span><div><b>${esc(n.empresa)}</b><span>${esc(V.recado)}</span></div></div><div class="bt"><span>Quero</span><span>Não quero receber</span></div></div>`),
-    bloco(7, 'Medição', 'Sabe o que vende de verdade', 'Liga cada venda ao anúncio que trouxe. Corta o que não vende, repete o que vende.',
-      `<div class="funil">${V.funil.map(([t, v]) => `<div><span>${esc(t)}</span><b>${v}</b></div>`).join('')}</div><div class="decide"><span class="sim">${esc(V.repete)}</span><span class="nao">${esc(V.corta)}</span></div><p class="ex">Exemplo</p>`),
-    bloco(8, 'Relatório', 'Você só aprova, pelo celular', 'Análise a cada 2 dias e relatório todo dia 2 no WhatsApp. Sem reunião.',
-      `<div class="cmd"><div class="mini"><div class="wa-top"><span class="av"><img src="${MAIA}" alt="" width="34" height="34"></span><div><b>Maia</b><small>sua agência</small></div></div><div class="wa-msgs"><div class="bal c">${esc(V.aprovar)}<div class="h">08:12</div></div></div><div class="bts"><span>Aprovar</span><span>Ajustar</span></div></div>
-       <div class="relat"><small>Relatório do mês</small><dl>${V.relatorio.map(([t, v]) => `<div><dt>${esc(t)}</dt><dd>${v}</dd></div>`).join('')}</dl><p>${esc(V.proximo)}</p></div></div><p class="ex">Exemplo</p>`),
+    bloco(8, 'Medição', 'Sabe o que vende de verdade', 'Liga cada venda ao anúncio, avisa a Meta quem comprou e repete o que vende.',
+      `<div class="funil">${V.funil.map(([t, v]) => `<div><span>${esc(t)}</span><b>${v}</b></div>`).join('')}</div><div class="decide"><span class="sim">${esc(V.repete)}</span><span class="nao">${esc(V.corta)}</span></div>
+       <div class="relat" style="margin-top:12px"><small>Relatório todo dia 2</small><dl>${V.relatorio.map(([t, v]) => `<div><dt>${esc(t)}</dt><dd>${v}</dd></div>`).join('')}</dl><p>${esc(V.proximo)}</p></div><p class="ex">Exemplo</p>`),
+    bloco(9, 'Você no comando', 'Você só aprova, pelo celular', 'Análise a cada 2 dias no seu WhatsApp. Um toque e vai pro ar. Sem reunião.',
+      `<div class="cmd1"><div class="mini"><div class="wa-top"><span class="av"><img src="${MAIA}" alt="" width="34" height="34"></span><div><b>Maia</b><small>sua agência</small></div></div><div class="wa-msgs"><div class="bal c">${esc(V.analise)}<div class="h">08:10</div></div><div class="bal c">${esc(V.aprovar)}<div class="h">08:12</div></div></div><div class="bts"><span>Aprovar</span><span>Ajustar</span></div></div></div><p class="ex">Exemplo</p>`),
   ]
 
   const corpo = `
@@ -506,7 +542,7 @@ function pagina(n, modo) {
     <div class="card-of">
       <h2>Uma agência inteira, todo mês</h2>
       <p class="sub">Com implantação online, por chamada de vídeo.</p>
-      <div class="vem">${[['estrategia', 'Estratégia'], ['anuncios', 'Anúncios'], ['trafego', 'Tráfego'], ['whatsapp', 'WhatsApp'], ['retomada', 'Retomada'], ['recado', 'Recado'], ['medicao', 'Medição'], ['relatorio', 'Relatório']].map(([k, t]) => `<div>${icone(k)}${t}</div>`).join('')}</div>
+      <div class="vem">${[['estrategia', 'Estratégia'], ['anuncios', 'Anúncios'], ['trafego', 'Tráfego'], ['whatsapp', 'WhatsApp'], ['retomada', 'Retomada'], ['conteudo', 'Conteúdo'], ['recado', 'Recado'], ['medicao', 'Medição'], ['relatorio', 'Relatório']].map(([k, t]) => `<div>${icone(k)}${t}</div>`).join('')}</div>
       <div class="precos">
         <div class="pr um"><small>1º mês, com a implantação</small><div class="v"><b>R$ 497</b></div></div>
         <div class="pr"><small>Depois</small><div class="v"><b>R$ 797</b><span>/mês</span></div><p>Sem fidelidade.</p></div>
