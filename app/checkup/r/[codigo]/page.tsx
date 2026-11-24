@@ -31,7 +31,7 @@ export default async function Relatorio({ params }: { params: Promise<{ codigo: 
   const cod = String(codigo || '').toUpperCase().replace(/[^0-9A-F]/g, '').slice(0, 6)
   if (cod.length !== 6) notFound()
   const { data } = await sb.from('checkup_diagnosticos').select('codigo, nome, nicho, conta, texto, respostas, aberto_em, criado_em').eq('codigo', cod).maybeSingle()
-  if (!data) notFound()
+  if (!data || String(data.nicho || '').startsWith('maia-')) notFound()   // o quiz da Maia guarda na mesma tabela, mas não tem relatório aqui
   if (!data.aberto_em) await sb.from('checkup_diagnosticos').update({ aberto_em: new Date().toISOString() }).eq('codigo', cod)
 
   const c = data.conta as Conta, t = data.texto as Texto
