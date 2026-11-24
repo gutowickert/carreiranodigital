@@ -76,7 +76,9 @@ const grupos: Grupo[] = [
         { nome: 'Minha semana', href: '/dashboard/minha-semana' },
       ] },
       { nome: 'WhatsApp', href: '/dashboard/whatsapp', juntas: [
-        { nome: 'Conversas', href: '/dashboard/whatsapp' },
+        { nome: 'Escola', href: '/dashboard/whatsapp' },
+        // o número da Maia (24/11/2026): as conversas da vendedora da Maia, separadas do número da escola
+        { nome: 'Maia', href: '/dashboard/whatsapp/maia' },
         { nome: 'Plantão da IA', href: '/dashboard/ia-plantao' },
       ] },
       { nome: 'Funil', href: '/dashboard/crm' },
@@ -256,6 +258,8 @@ function itemPermitido(href: string, p: Perfil): boolean {
   // se a rota responde pra qualquer um.
   if (href === '/dashboard/instalacoes' || href.startsWith('/dashboard/sistemas/')) return p.papel === 'admin'
   if (href === '/dashboard/arquivo') return p.papel === 'admin'
+  // a caixa do número da Maia: quem atende WhatsApp (igual à caixa da escola)
+  if (href === '/dashboard/whatsapp/maia') return p.papel === 'admin' || p.wa_caixa === true
   if (p.papel === 'admin') return true
 
   // GESTOR — o degrau que faltava entre "vê tudo" e "vê quase nada".
@@ -326,6 +330,16 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   const [checando, setChecando] = useState(true)
   const [waUnread, setWaUnread] = useState(0)
   const [dispUnread, setDispUnread] = useState(0)
+  // não lidas do número da Maia (24/11/2026): vem da rota da caixa Maia, a cada minuto, só pra quem atende WhatsApp
+  const [maiaUnread, setMaiaUnread] = useState(0)
+  useEffect(() => {
+    if (!perfil || !(perfil.papel === 'admin' || perfil.wa_caixa === true)) return
+    let vivo = true
+    const checar = () => fetchAuth('/api/maia-caixa').then(r => r.json()).then(j => { if (vivo && j?.ok) setMaiaUnread(j.naoLidas || 0) }).catch(() => { })
+    checar()
+    const t = setInterval(checar, 60000)
+    return () => { vivo = false; clearInterval(t) }
+  }, [perfil])
   // Balão vermelho da Agenda: o que é MEU e ainda não vi (regra em lib/agenda-balao.ts)
   const [agendaBalao, setAgendaBalao] = useState(0)
   // PROPOSTAS (08/10/2026): os aceites sem seguimento (faixa verde no topo) e o balão do que é novo
@@ -619,6 +633,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // Verde = mensagem ou cliente andando (WhatsApp, disparos, propostas). Vermelho = coisa pra FAZER (agenda).
   const contagemDe = (href: string): { n: number; acao: boolean } => {
     if (href === '/dashboard/whatsapp') return { n: waUnread, acao: false }
+    if (href === '/dashboard/whatsapp/maia') return { n: maiaUnread, acao: false }
     if (href === '/dashboard/whatsapp-disparos') return { n: dispUnread, acao: false }
     if (href === '/dashboard/orcamentos') return { n: propBalao, acao: false }
     if (href === '/dashboard/ia-plantao') return { n: plantaoAvisos, acao: true }
@@ -876,6 +891,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                               </span>
                             )}
                             {m.href === '/dashboard/tarefas/leads' && pilula(tarefasVenc, true, 'Tarefas vencidas de leads que estão com o time')}
+                            {m.juntas && m.juntas.some(j => j.href === '/dashboard/whatsapp/maia') && pilula(maiaUnread, false, 'Mensagens não lidas no WhatsApp da Maia')}
                             {m.juntas && m.juntas.some(j => j.href === '/dashboard/ia-plantao') && pilula(plantaoAvisos, true, 'Avisos do plantão da IA esperando alguém do time')}
                             {m.href === '/dashboard/ia-plantao' && pilula(plantaoAvisos, true, 'Avisos do plantão da IA esperando alguém do time')}
                             {m.href === '/dashboard/producao' && pilula(producaoAtras, true, 'Pedidos com o prazo vencido e ainda não entregues')}
