@@ -223,10 +223,19 @@ export async function conversa(negocio_id: string, canal: 'dono' | 'cliente', te
 export async function conversaDoDono(neg: any) { return conversa(neg.id, 'dono', neg.dono_whatsapp, { nome: neg.dono_nome }) }
 
 // o negócio de quem escreveu pro número da Maia (o dono ou alguém da equipe dele), ou null
+// 23/11 (Teste Guto): o fone() do Oito trata 11 dígitos começando com 519 como PERU (51 9…), e é exatamente o celular de Porto
+// Alegre digitado sem o 55: o dono ficava salvo sem o 55 e a Maia não o reconhecia (a mensagem dele caía no agente do Oito e a
+// fila do 👍 não saía). A Maia só atende o Brasil: 10 ou 11 dígitos com DDD válido ganham o 55, sempre.
+export function foneDono(raw: string) {
+  const d = String(raw || '').replace(/\D/g, '')
+  if ((d.length === 10 || d.length === 11) && /^[1-9][1-9]/.test(d)) return '55' + d
+  return d
+}
 export async function negocioDoTelefone(telefone: string) {
   const tel = fone(telefone)
   const alt = /^55\d{10}$/.test(tel) ? tel.slice(0, 4) + '9' + tel.slice(4) : /^55\d{2}9\d{8}$/.test(tel) ? tel.slice(0, 4) + tel.slice(5) : ''
-  for (const t of [tel, alt].filter(Boolean)) {
+  // 23/11: também acha o dono salvo SEM o 55 (cadastro antigo, antes do foneDono)
+  for (const t of [tel, alt, tel.replace(/^55/, ''), alt.replace(/^55/, '')].filter(Boolean)) {
     const n = await db.um('negocios', { dono_whatsapp: t })
     if (n && n.status !== 'cancelado') return n
   }

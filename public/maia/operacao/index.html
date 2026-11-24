@@ -1310,7 +1310,7 @@ function ligaFormNovo(){
   };
 }
 
-var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['social','Social','celular'],['base','Base','pessoas'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
+var SUBS=[['pecas','Peças','imagem'],['funil','Funil','funil'],['conversa','Conversas','msg'],['numeros','Números','barras'],['campanhas','Campanhas','megafone'],['social','Social','celular'],['base','Base','pessoas'],['estrategia','Estratégia','alvo'],['ligar','Pra ligar','check'],['arquivos','Arquivos','imagem'],['cobranca','Cobrança','dinheiro'],['dados','Dados','arquivo'],['simulador','Simulador','frasco']];
 // 14/11 (lib/maia/recado.ts): o RECADO PRA BASE. A base de contatos do negócio (colar a lista ou subir .csv, quem já comprou,
 // etiquetas, quem saiu) e os recados: criar, ajustar, editar, aprovar (a equipe aprova antes do dono), cancelar e os números.
 // O custo estimado aparece antes de aprovar (contatos x custo por mensagem de marketing: o negócio paga direto pra Meta).
@@ -1393,6 +1393,60 @@ function subBase(n,c){
     }; });
   }
   function carrega(){ return api(q({acao:'base',negocio:n.id})).then(pinta).catch(function(e){ if($('#base-c')) $('#base-c').innerHTML=caixaErro(e); }); }
+  carrega();
+}
+// 22/11 (lib/maia/estrategia.ts + sazonalidade.ts): o CICLO DE ESTRATÉGIA DE 15 DIAS. A proposta da quinzena (a cada 15 dias desde a ativação, ou
+// "propor agora"), que a equipe aprova antes do dono, edita ou cancela; o histórico com o resultado de cada quinzena; e o
+// calendário: as datas do ramo que pesam agora, as do radar, os cuidados do ramo e as datas próprias do negócio.
+function subEstrategia(n,c){
+  c.innerHTML='<div id="est-c"><div class="card"><div class="esq" style="height:80px"></div></div></div>';
+  var dm=function(s){ s=String(s||''); return s.slice(8,10)+'/'+s.slice(5,7); };
+  var rs=function(v){ return 'R$ '+Number(v||0).toLocaleString('pt-BR',{minimumFractionDigits:0,maximumFractionDigits:2}); };
+  var TOM={aprovar_equipe:'aten',aprovar_dono:'aten',aprovada:'bom',substituida:'',cancelada:''};
+  var editando=null;
+  function cartao(e){
+    var h='<div class="card" style="margin-top:14px"><div class="card-cab"><div><h2>'+(e.motivo==='inicial'?'Inicial':'Quinzena')+' '+dm(e.ciclo_de)+' a '+dm(e.ciclo_ate)+'</h2><p class="mu peq" style="margin-top:4px">Proposta em '+new Date(e.criado_em).toLocaleString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})+(e.criado_por&&e.criado_por!=='maia'?' (pedida por '+esc(e.criado_por)+')':'')+(e.aprovado_equipe_por?' · equipe: '+esc(e.aprovado_equipe_por):'')+(e.aprovado_dono_em?' · dono aprovou pelo '+esc(e.aprovado_via||'?'):'')+'</p></div>'+chip(e.espera_relatorio?'vai junto com o relatório de '+dm(e.espera_relatorio):e.status_nome,TOM[e.status]||'')+'</div>';
+    if(e.nota) h+='<div class="erro-box" style="margin-bottom:10px">'+ic('alerta')+'<span>'+esc(e.nota)+'</span></div>';
+    if(editando===e.id) h+='<div class="campo"><label for="es-txt">Texto que vai pro dono</label><textarea id="es-txt" rows="14" style="width:100%">'+esc(e.texto||'')+'</textarea></div><div class="btns"><button class="btn ok" data-es="salvar" data-id="'+esc(e.id)+'">'+ic('check')+'Salvar o texto</button><button class="btn" data-es="voltar">Voltar</button></div>';
+    else h+='<p style="margin:0 0 12px;white-space:pre-line;line-height:1.55">'+esc(e.texto||'')+'</p>'+
+      (e.por_ia?'<p class="mu peq" style="margin:0 0 10px">Texto escrito pela IA e conferido pela trava (números, datas e cuidados do ramo).'+(e.texto_lista&&e.status==='aprovar_equipe'?' <button class="btn peq" data-es="lista" data-id="'+esc(e.id)+'">Usar o texto de lista</button>':'')+'</p>':(e.ia_motivo?'<p class="mu peq" style="margin:0 0 10px">Texto de lista: '+esc(e.ia_motivo)+'.</p>':''));
+    if(e.resultado){ var r=e.resultado; h+='<p class="peq" style="margin:0 0 12px"><b>Resultado da quinzena:</b> '+rs(r.gasto)+' no anúncio · '+plural(r.contatos||0,'contato')+' · '+plural(r.vendas||0,'venda')+(r.vendas?' ('+rs(r.receita)+')':'')+(r.custo_venda!=null?' · '+rs(r.custo_venda)+' por venda':'')+'</p>'; }
+    var b=[];
+    if(e.status==='aprovar_equipe'&&editando!==e.id){ b.push('<button class="btn ok" data-es="aprovar" data-id="'+esc(e.id)+'">'+ic('check')+'Aprovar e mandar pro dono</button>'); b.push('<button class="btn" data-es="editar" data-id="'+esc(e.id)+'">Editar o texto</button>'); }
+    if((e.status==='aprovar_equipe'||e.status==='aprovar_dono')&&editando!==e.id) b.push('<button class="btn" data-es="cancelar" data-id="'+esc(e.id)+'">Cancelar</button>');
+    if(b.length) h+='<div class="btns">'+b.join('')+'</div>';
+    return h+'</div>';
+  }
+  function linhaData(x){ return '<div class="lin"><span class="cor '+(x.atrasada?'ruim':'bom')+'"></span><span style="min-width:0"><span class="t"><span>'+esc(x.nome)+' · '+dm(x.dia)+(x.ate&&x.ate!==x.dia?' a '+dm(x.ate):'')+'</span>'+(x.atrasada?chip('atrasada','ruim'):'')+'</span><span class="sub" style="display:block">anúncio desde '+dm(x.inicio)+' · '+esc(x.dica||'')+(x.confirmar?' · conferir: '+esc(x.confirmar):'')+'</span></span></div>'; }
+  function pinta(d){
+    var cx=$('#est-c'); if(!cx) return;
+    if(!d.disponivel){ cx.innerHTML='<div class="card">'+vazio('alerta','Estratégia de 15 dias ainda não ligada',esc(d.erro||'Falta rodar o SQL no banco.'))+'</div>'; return; }
+    var cal=d.calendario||{}, h='';
+    h+='<div class="card"><div class="card-cab"><div><h2>Ciclo de 15 dias</h2><p class="mu peq" style="margin-top:4px">A Maia revisa a cada 15 dias desde que o negócio ligou'+(d.ativado_em?' (ligou em '+dm(d.ativado_em)+'; próxima revisão '+dm(d.proxima_revisao)+')':' (ainda não ligou: só a inicial)')+', às 9h: lê os números da quinzena, consulta o calendário e propõe. A equipe aprova, depois o dono (WhatsApp ou painel). Quinzena atual: '+dm(d.ciclo.de)+' a '+dm(d.ciclo.ate)+'.'+(d.ligada?'':' <b>Rotina desligada (MAIA_ESTRATEGIA_LIGADA): só sai proposta pelo botão.</b>')+'</p></div></div>'+
+      '<div class="btns"><button class="btn ok" id="es-gerar">'+ic('brilho')+'Propor agora</button></div></div>';
+    h+='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:8px">Calendário</h2><p class="mu peq" style="margin:0 0 10px">Ramo: '+esc((cal.grupos||[]).join(', '))+'. A Maia sempre consulta isto antes de propor.</p>'+
+      '<b class="peq">Pesam na quinzena</b><div class="lista">'+((cal.pesam||[]).length?cal.pesam.map(linhaData).join(''):'<p class="mu peq">nenhuma</p>')+'</div>'+
+      '<b class="peq" style="display:block;margin-top:10px">No radar (16 a 45 dias)</b><div class="lista">'+((cal.radar||[]).length?cal.radar.map(linhaData).join(''):'<p class="mu peq">nenhuma</p>')+'</div>'+
+      ((cal.cuidados||[]).length?'<p class="peq" style="margin:10px 0 0"><b>Cuidados do ramo:</b> '+esc(cal.cuidados.join('; '))+'</p>':'')+
+      '<b class="peq" style="display:block;margin-top:12px">Datas próprias do negócio</b><div class="lista">'+((cal.proprias||[]).length?cal.proprias.map(function(x,i){ return '<div class="lin"><span class="cor bom"></span><span style="min-width:0"><span class="t"><span>'+esc(x.nome)+' · '+esc(x.dia)+'</span></span><span class="sub" style="display:block">'+(x.antecedencia_dias!=null?x.antecedencia_dias+' dias antes':'21 dias antes (padrão)')+(x.por?' · por '+esc(x.por):'')+'</span></span><span class="dir"><button class="btn peq" data-dt-tira="'+i+'">Tirar</button></span></div>'; }).join(''):'<p class="mu peq">nenhuma (a implantação põe; o dono também adiciona pelo WhatsApp ou pelo painel)</p>')+'</div>'+
+      '<div class="grade2" style="margin-top:10px"><div class="campo"><label for="dt-nome">Nome</label><input id="dt-nome" maxlength="80" placeholder="ex.: Aniversário da loja"></div><div class="campo"><label for="dt-dia">Dia (dia/mês)</label><input id="dt-dia" maxlength="10" placeholder="15/03"></div><div class="campo"><label for="dt-ant">Dias antes (opcional)</label><input id="dt-ant" inputmode="numeric" placeholder="21"></div></div><div class="btns"><button class="btn" id="dt-add">Adicionar data</button></div></div>';
+    h+=(d.estrategias||[]).length?d.estrategias.map(cartao).join(''):'<div class="card" style="margin-top:14px">'+vazio('alvo','Nenhuma estratégia ainda','A primeira sai na próxima rodada da rotina (ou no botão "Propor agora").')+'</div>';
+    cx.innerHTML=h;
+    $('#es-gerar').onclick=function(){ espera(this,'a Maia está montando…',function(){ return api({acao:'estrategia_gerar',negocio_id:n.id}).then(function(){ toast('Proposta pronta pra revisar.'); return carrega(); }); }); };
+    $('#dt-add').onclick=function(){ var nm=$('#dt-nome').value.trim(), dd=$('#dt-dia').value.trim(); if(!nm||!dd){ toast('Escreve o nome e o dia.',true); return; } espera(this,'…',function(){ return api({acao:'calendario_data',negocio_id:n.id,nome:nm,dia:dd,antecedencia_dias:$('#dt-ant').value.trim()}).then(function(){ toast('Data guardada.'); return carrega(); }); }); };
+    c.querySelectorAll('[data-dt-tira]').forEach(function(bt){ bt.onclick=function(){ if(!confirm('Tirar essa data do calendário do negócio?')) return; espera(bt,'…',function(){ return api({acao:'calendario_tirar',negocio_id:n.id,indice:Number(bt.getAttribute('data-dt-tira'))}).then(carrega); }); }; });
+    c.querySelectorAll('[data-es]').forEach(function(bt){ bt.onclick=function(){
+      var a=bt.getAttribute('data-es'), id=bt.getAttribute('data-id');
+      if(a==='editar'){ editando=id; return pinta(d); }
+      if(a==='voltar'){ editando=null; return pinta(d); }
+      var est=(d.estrategias||[]).filter(function(x){return x.id===id;})[0];
+      var corpo=a==='lista'&&est?{acao:'estrategia_editar',estrategia_id:id,texto:est.texto_lista}:a==='aprovar'?{acao:'estrategia_aprovar',estrategia_id:id}:a==='salvar'?{acao:'estrategia_editar',estrategia_id:id,texto:$('#es-txt').value}:a==='cancelar'?{acao:'estrategia_cancelar',estrategia_id:id}:null;
+      if(!corpo) return;
+      if(a==='cancelar'&&!confirm('Cancelar essa estratégia?')) return;
+      espera(bt,'…',function(){ return api(corpo).then(function(){ editando=null; toast(a==='aprovar'?'Aprovada: foi pro dono aprovar.':'Feito.'); return carrega(); }); });
+    }; });
+  }
+  function carrega(){ return api(q({acao:'estrategia',negocio:n.id})).then(pinta).catch(function(e){ if($('#est-c')) $('#est-c').innerHTML=caixaErro(e); }); }
   carrega();
 }
 /* 13/11: o que falta pra ligar (lista de conferência; lib/maia/ligar.ts). Só lê; o único botão grava o número conferido */
@@ -1506,8 +1560,8 @@ function subSocial(n,c){
   var quandoTxt=function(iso){ return fmt(iso,{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','')+' às '+horaBR(iso)+'h'+(new Date(iso).getUTCMinutes()?String(new Date(iso).getUTCMinutes()).padStart(2,'0'):''); };
   var NOME_MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   var mesTxt=function(m){ var p=String(m).split('-'); return NOME_MES[Number(p[1])-1]+' de '+p[0]; };
-  var ST={rascunho:['esperando a equipe','aten'],aprovado_equipe:['com o dono','info'],aprovado_dono:['aprovado','info'],agendado:['agendado','bom'],publicando:['publicando','info'],processando:['processando','info'],publicado:['publicado','bom'],erro:['deu erro','ruim'],descartado:['descartado','']};
-  var GRUPO={rascunho:'equipe',aprovado_equipe:'dono',aprovado_dono:'agendado',agendado:'agendado',processando:'agendado',publicando:'agendado',publicado:'publicado',erro:'erro',descartado:'descartado'};
+  var ST={rascunho:['esperando a equipe','aten'],aprovado_equipe:['com o dono','info'],aprovado_dono:['aprovado','info'],agendado:['agendado','bom'],publicando:['publicando','info'],processando:['processando','info'],publicado:['publicado','bom'],erro:['deu erro','ruim'],descartado:['descartado',''],apagado:['apagado na rede','']};
+  var GRUPO={rascunho:'equipe',aprovado_equipe:'dono',aprovado_dono:'agendado',agendado:'agendado',processando:'agendado',publicando:'agendado',publicado:'publicado',erro:'erro',descartado:'descartado',apagado:'descartado'};
   var FILT=[['todos','Todos'],['equipe','Pra equipe'],['dono','Com o dono'],['agendado','Agendados'],['publicado','Publicados'],['erro','Com erro'],['descartado','Descartados']];
   var REDE={instagram:'Instagram',facebook:'Facebook'};
   var D={lig:null,agenda:[],res:[],an:[],banco:[]}, filtro='todos', mes=mesBR(new Date().toISOString()), ab={}, sel=[];
@@ -1564,6 +1618,8 @@ function subSocial(n,c){
     if(D.lig&&D.lig.gestora){ cx.innerHTML=''; return; }
     var banco=(D.banco||[]).filter(function(m){ return !m.nao_usar; });
     var hs=sugereHora(), amanha=diaBR(Date.now()+86400e3);
+    // 23/11: a grade da semana (a Maia monta os posts sozinha; toda quinta 10h ela monta a semana seguinte)
+    var gr='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:6px">Semana da Maia</h2><p class="mu peq" style="margin:0 0 12px">A Maia monta sozinha os 3 posts da semana (terça, quinta e sábado) com as fotos e vídeos do banco do cliente: tema, mídias e legenda. Toda quinta às 10h ela já monta a semana seguinte. Cada post vai pra aprovação da equipe e depois do dono.</p><div class="acoes"><button class="btn" id="sg-esta">Montar esta semana</button><button class="btn" id="sg-prox">Montar a próxima semana</button></div></div>';
     var h='<div class="card" style="margin-top:14px"><h2 style="margin-bottom:6px">Novo post</h2><p class="mu peq" style="margin:0 0 12px">Escolhe as fotos do banco do cliente (aba Arquivos), escreve a legenda e marca o dia. Vai pra aprovação da equipe e depois do dono, no WhatsApp. Foto tem que ser JPG.</p>'+
       '<div class="grade2"><div class="campo"><label for="sn-tipo">Tipo</label><select id="sn-tipo"><option value="foto">Foto (1 foto)</option><option value="carrossel">Carrossel de fotos (2 a 10)</option><option value="reels">Reels (1 vídeo)</option></select></div>'+
       '<div class="campo"><label for="sn-tema">Tema (opcional, ajuda na análise do mês)</label><input id="sn-tema" placeholder="ex.: bolão da Mega"></div></div>'+
@@ -1583,7 +1639,12 @@ function subSocial(n,c){
       '<div class="grade2"><div class="campo"><label for="sc-tema">Tema</label><input id="sc-tema" placeholder="ex.: como funciona o bolão"></div><div class="campo"><label for="sc-tipo">Tipo de conteúdo</label><select id="sc-tipo"><option value="dica">Dica (conteúdo útil)</option><option value="produto">Produto ou serviço</option><option value="noticia">Notícia do setor</option></select></div></div>'+
       '<div class="campo" id="sc-fonte-c" hidden><label for="sc-fonte">A notícia (cola o texto: a Maia usa só isso, pra não inventar)</label><textarea id="sc-fonte" rows="3" style="width:100%"></textarea></div>'+
       '<div class="btns"><button class="btn" id="sc-criar">'+ic('brilho')+'A Maia monta o carrossel</button></div></details></div>';
-    cx.innerHTML=h;
+    cx.innerHTML=gr+h;
+    [['#sg-esta','esta'],['#sg-prox','proxima']].forEach(function(x){ var b=$(x[0]); if(b) b.onclick=function(){
+      espera(this,'a Maia está montando…',function(){ return so({acao:'montar_semana',negocio_id:n.id,semana:x[1]}).then(function(r){
+        var c=(r.criados||[]).length, pl=(r.pulados||[]).length;
+        toast(r.ja_feita?'Essa semana já foi montada.':c?plural(c,'post montado','posts montados')+' pra aprovação'+(pl?' ('+plural(pl,'ficou de fora','ficaram de fora')+')':'')+'.':(r.motivo||'Nada pra montar.'));
+        return carrega(true); }); }); }; });
     var leg=$('#sn-leg'), cont=$('#sn-cont');
     leg.oninput=function(){ var k=leg.value.length; cont.textContent=k.toLocaleString('pt-BR')+' / 2.200'; cont.style.color=k>2200?'var(--red)':''; };
     $$('[data-hora]',cx).forEach(function(b){ b.onclick=function(){ $('#sn-hora').value=b.getAttribute('data-hora'); }; });
@@ -1760,7 +1821,7 @@ function telaNegocio(id,sub,mesmoNeg){
   }
   pintaSubabas(id,sub);
   function abre(n){
-    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos,base:subBase,social:subSocial}[sub]||subPecas;
+    var f={pecas:subPecas,funil:subFunil,numeros:subNumeros,campanhas:subCampanhas,conversa:subConversa,simulador:subSimulador,dados:subDados,ligar:subLigar,cobranca:subCobranca,arquivos:subArquivos,base:subBase,social:subSocial,estrategia:subEstrategia}[sub]||subPecas;
     $('#sub').innerHTML=''; f(n,$('#sub'));
   }
   if(temCab){ abre(S.negAtual); return; }

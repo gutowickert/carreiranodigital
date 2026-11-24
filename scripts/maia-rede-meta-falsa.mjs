@@ -19,7 +19,13 @@ globalThis.fetch = async (entrada, opc) => {
   if (LOCAL.has(u.hostname)) return original(entrada, opc)
   if (u.hostname === 'graph.facebook.com') {
     const p = u.pathname.replace(/^\/v[\d.]+/, ''), q = u.searchParams
+    // 23/11: code amarrado ao redirect_uri (o erro que a Meta deu no teste do Nando): "pagina" só com o endereço da página, "vazio" só com redirect_uri=''
+    const REDIR = 'Error validating verification code. Please make sure your redirect_uri is identical to the one you used in the OAuth dialog request'
+    if (p === '/oauth/access_token' && q.get('code') === 'pagina') return /^http:\/\/localhost(:\d+)?\/maia\/conectar$/.test(q.get('redirect_uri') || '') ? r({ access_token: 'curta-um' }) : r({ error: { message: REDIR } }, 400)
+    if (p === '/oauth/access_token' && q.get('code') === 'vazio') return q.has('redirect_uri') && q.get('redirect_uri') === '' ? r({ access_token: 'curta-um' }) : r({ error: { message: REDIR } }, 400)
     if (p === '/oauth/access_token' && q.get('code')) return q.get('code') === 'ruim' ? r({ error: { message: 'code inválido' } }, 400) : r({ access_token: 'curta-' + q.get('code') })
+    // 23/11: a chave do usuário que o login devolve direto: debug_token diz de qual app ela é ("tk-outro-app" é de outro app)
+    if (p === '/debug_token') { const it = String(q.get('input_token') || ''); return it === 'invalida' ? r({ data: { is_valid: false, error: { message: 'Invalid OAuth access token' } } }) : r({ data: { is_valid: true, app_id: it.startsWith('tk-outro-app') ? '111' : String(q.get('access_token') || '').split('|')[0], user_id: '9' } }) }
     if (p === '/oauth/access_token' && q.get('grant_type') === 'fb_exchange_token') return r({ access_token: 'longa-' + String(q.get('fb_exchange_token')).replace('curta-', '') })
     if (p === '/me/accounts') { const k = String(q.get('access_token') || '').replace(/^(longa|curta)-/, ''); return r({ data: PAGINAS[k] || [] }) }
     return r({ error: { message: 'meta falsa: ' + p } }, 400)

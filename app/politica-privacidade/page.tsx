@@ -9,7 +9,7 @@ export default function PoliticaPrivacidade() {
   return (
     <main style={wrap}>
       <h1 style={h1}>Política de Privacidade</h1>
-      <p style={{ ...p, color: 'var(--text-faint)' }}>Carreira No Digital — última atualização: junho de 2026.</p>
+      <p style={{ ...p, color: 'var(--text-faint)' }}>Carreira No Digital — última atualização: novembro de 2026.</p>
 
       <h2 style={h2}>1. Quem somos</h2>
       <p style={p}>Esta Política descreve como a Carreira No Digital ("nós") coleta, usa e protege os dados das pessoas que se relacionam conosco — alunos, leads e interessados em nossos cursos e turmas.</p>
@@ -22,6 +22,10 @@ export default function PoliticaPrivacidade() {
 
       <h2 style={h2}>4. Comunicações por WhatsApp e descadastro</h2>
       <p style={p}>Enviamos mensagens pelo WhatsApp por meio da Plataforma oficial do WhatsApp Business (Meta). Você pode parar de receber a qualquer momento respondendo <strong>SAIR</strong> em qualquer mensagem, ou solicitando o descadastro pelos nossos canais de contato.</p>
+
+      <h2 style={h2}>4.1. Maia: Facebook, Instagram e WhatsApp dos negócios</h2>
+      <p style={p}>A Maia é o nosso serviço de marketing com inteligência artificial para pequenos negócios. Quando o dono de um negócio conecta a Página do Facebook e a conta profissional do Instagram (pelo Login do Facebook para Empresas, app "Sistema CND"), guardamos o identificador da Página e da conta, a chave de acesso da Página (cifrada), os posts publicados e os números deles (alcance, curtidas, salvamentos, comentários). Usamos esses dados só para publicar os posts que a nossa equipe e o dono aprovaram e para mostrar ao dono os resultados dos próprios posts. Quando o atendimento da Maia está ligado no WhatsApp do negócio, as conversas com os clientes dele são usadas só para atender esses clientes e informar o dono. Não vendemos esses dados e não usamos os dados de um negócio para outro.</p>
+      <p style={p}>Para desconectar, remova o app "Sistema CND" em Configurações do Facebook → Integrações comerciais. Para pedir a exclusão dos dados, veja as <a href="/maia/exclusao-de-dados">instruções de exclusão de dados</a>.</p>
 
       <h2 style={h2}>5. Compartilhamento</h2>
       <p style={p}>Não vendemos seus dados. Podemos compartilhar dados com prestadores que viabilizam nossa operação (ex: provedores de mensagens, hospedagem e pagamento), apenas na medida necessária e com obrigação de confidencialidade.</p>

@@ -13,6 +13,13 @@ import { descreveTom, tomDoNegocio } from './tom'
 import { diasDoNegocio } from './horario'
 import { iaDoDia, avisaUmaVez } from './limites'
 // 07/11: os períodos moram junto com o painel do dono (o painel e a ferramenta "numeros" contam igual)
+// 23/11 (teste do Instagram da escola): post da agenda social não tem gancho nem título de anúncio, só a legenda. A Maia via
+// "undefined" e dizia ao dono que o "anúncio veio sem título nem gancho", e mandava refazer. Agora cada peça diz o que é.
+export function descrevePeca(p: any) {
+  const ehPost = /^(Post |Carrossel)/.test(String(p?.titulo || '')) || (p?.tipo === 'post' && !p?.gancho)
+  if (ehPost) return `POST pro Instagram/Facebook, legenda: "${String(p?.texto || '').replace(/\s+/g, ' ').slice(0, 90)}"`
+  return `ANÚNCIO "${p?.gancho || p?.titulo || String(p?.texto || '').slice(0, 60)}"`
+}
 import { hojeBR, periodo, linkPainel, VALIDADE_DIAS } from './painel-dono'
 
 const MAX_IA_DIA = 120
@@ -116,6 +123,14 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
       await mandaTexto(cv, `Aprovado ✅ Pedi a aprovação do WhatsApp pro recado "${rec.titulo}". Quando sair, eu mando no horário comercial e te aviso.`)
       return { cv, texto, responder: false, recado: rec.id }
     }
+    // 22/11 (estrategia.ts): o 👍 em cima da estratégia da quinzena aprova a estratégia (ela só chega aqui depois da equipe)
+    const E = await import('./estrategia')
+    const est = E.estrategiaLigada() ? await E.estrategiaDaMensagem(neg.id, m.reaction.message_id) : null
+    if (est && est.status === 'aprovar_dono') {
+      await E.donoAprovaEstrategia(neg.id, est.id, 'whatsapp')
+      await mandaTexto(cv, 'Aprovado ✅ Passei a estratégia da quinzena pra equipe colocar em prática. Daqui a 15 dias eu reviso de novo com os números.')
+      return { cv, texto, responder: false, estrategia: est.id }
+    }
   }
   // 08/11 (T12): o clique em "Fechou" / "Não fechou" da pergunta das 18h (rotina.ts) vira ganho ou perdido, sem precisar da IA
   const venda = /^venda:([\w-]+):(sim|nao)$/.exec(String(m.interactive?.button_reply?.id || m.button?.payload || ''))
@@ -193,9 +208,32 @@ export async function responderCliente(neg: any, l: any, texto: string, via: 'wh
     ...(env.na_fila ? { aviso: env.modelo ? 'passou 24 h: o cliente recebeu o aviso de que a resposta está pronta e ela sai quando ele responder' : 'passou 24 h e o modelo não está aprovado: a resposta ficou guardada e sai quando o cliente escrever (o dono e a equipe já foram avisados)' } : {}) }
 }
 
-function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string; recados?: number }): Ferramenta[] {
+// 22/11 (estrategia.ts): a estratégia de 15 dias e o calendário do negócio pelo WhatsApp (o painel do dono tem os mesmos botões).
+// Só com MAIA_ESTRATEGIA_LIGADA=1
+function ferramentasEstrategia(neg: any, ctx: { estrategias?: number }): Ferramenta[] {
+  return [
+    { name: 'estrategia_decisao', description: 'O dono respondeu sobre a ESTRATÉGIA DA QUINZENA que está esperando a aprovação dele: aprovar ("pode", "bora", 👍) ou ajustar (o que ele quer mudar). A equipe já conferiu antes de chegar nele; aprovada, a equipe coloca em prática.',
+      input_schema: { type: 'object', properties: { acao: { type: 'string', enum: ['aprovar', 'ajustar'] }, nota: { type: 'string', description: 'o que mudar (no ajustar), do jeito que ele falou' } }, required: ['acao'] },
+      roda: async ({ acao, nota }) => {
+        const E = await import('./estrategia')
+        try {
+          if (acao === 'aprovar') { const a = await E.donoAprovaEstrategia(neg.id, null, 'whatsapp'); ctx.estrategias = (ctx.estrategias || 0) + a.length; return a.length ? { ok: true, aprovadas: a.length, proximo: 'a equipe coloca em prática; daqui a 15 dias a Maia revisa com os números' } : { erro: 'nenhuma estratégia esperando a aprovação dele' } }
+          return await E.donoAjustaEstrategia(neg.id, null, String(nota || ''), 'whatsapp')
+        } catch (e: any) { return { erro: String(e?.message || e) } }
+      } },
+    { name: 'estrategia_atual', description: 'A estratégia que vale agora (a da quinzena aprovada), a que espera o 👍 dele e quando é a próxima revisão. Usa quando ele perguntar "qual é a estratégia", "o que a gente combinou", "quando muda".',
+      input_schema: { type: 'object', properties: {} },
+      roda: async () => (await import('./estrategia')).estrategiaAtual(neg) },
+    { name: 'data_no_calendario', description: 'O dono contou uma DATA FORTE do negócio dele que não é feriado comum (aniversário da loja, feira da cidade, safra, festa da padroeira, temporada dele) e quer que a Maia leve em conta na estratégia. Guarda no calendário do negócio. dia: "DD/MM" (ou "DD/MM/AAAA" se for só naquele ano). antecedencia_dias: quantos dias antes o anúncio deve começar (sem ele dizer, 21).',
+      input_schema: { type: 'object', properties: { nome: { type: 'string' }, dia: { type: 'string' }, antecedencia_dias: { type: 'number' }, porque: { type: 'string' } }, required: ['nome', 'dia'] },
+      roda: async (q) => (await import('./estrategia')).adicionaData(neg, { nome: String(q.nome || ''), dia: String(q.dia || ''), antecedencia_dias: q.antecedencia_dias ?? null, porque: q.porque || null }, 'dono') },
+  ]
+}
+
+function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string; recados?: number; estrategias?: number }): Ferramenta[] {
   const lead = async (q: any) => (await achaLead(neg.id, { telefone: q.telefone, nome: q.nome, id: q.lead_id })) as any
   return [
+    ...(process.env.MAIA_ESTRATEGIA_LIGADA === '1' ? ferramentasEstrategia(neg, ctx) : []),
     { name: 'salvar_contexto', description: 'Guarda o que tu aprendeu do negócio (serviços, preços, público, diferencial, horário, endereço, formas de pagamento, tom, o que evitar, verba por dia, perguntas frequentes). Só o que o dono disse.',
       input_schema: { type: 'object', properties: { campos: { type: 'object', description: 'chave → valor, ex.: {"servicos":"...","preco_medio":"R$ 180"}' }, verba_dia: { type: 'number' } }, required: ['campos'] },
       roda: async ({ campos, verba_dia }) => {
@@ -219,9 +257,9 @@ function ferramentas(neg: any, ctx: { aprovou: string[]; link?: string; recados?
     { name: 'pedir_conteudo', description: 'O dono pediu um CARROSSEL (post com várias imagens com texto: dica, produto ou notícia) ou um VÍDEO COM LOCUÇÃO (os vídeos dele juntos com uma voz lendo o anúncio, sem ele aparecer falando). Tudo passa pela equipe e volta pra ele aprovar antes de sair. Carrossel de notícia só com o texto da notícia que ele mandou (fonte).',
       input_schema: { type: 'object', properties: { o: { type: 'string', enum: ['carrossel', 'locucao'] }, tema: { type: 'string', description: 'sobre o que é' }, tipo: { type: 'string', enum: ['dica', 'produto', 'noticia'], description: 'só no carrossel' }, fonte: { type: 'string', description: 'o texto da notícia (carrossel de notícia)' }, quando: { type: 'string', description: 'carrossel: data e hora de publicar (AAAA-MM-DDTHH:MM); sem isso, amanhã às 18h' } }, required: ['o'] },
       roda: async (a) => pedeConteudo(neg, a as any, 'dono') },
-    { name: 'pecas_com_o_dono', description: 'Lista os anúncios que já foram mandados pro dono e esperam o 👍.',
+    { name: 'pecas_com_o_dono', description: 'Lista os anúncios e os posts (Instagram/Facebook) que já foram mandados pro dono e esperam o 👍.',
       input_schema: { type: 'object', properties: {} },
-      roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, gancho: p.gancho })) },
+      roda: async () => (await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })).map(p => ({ id: p.id, tipo: p.tipo, o_que_e: descrevePeca(p) })) },
     { name: 'aprovar_pecas', description: 'O dono aprovou (👍, "pode", "aprovado"). Sem peca_id aprova todas as que estão com ele.',
       input_schema: { type: 'object', properties: { peca_id: { type: 'string' } } },
       roda: async ({ peca_id }) => { const r = await donoAprova(neg.id, peca_id); ctx.aprovou.push(...r.map(x => x.id)); return { aprovadas: r.length } } },
@@ -339,19 +377,24 @@ export async function respondeDono(conversa_id: string) {
   // 05/11: pergunta de quem já fechou ou desistiu não fica esperando o dono
   const perguntas = (await Promise.all(abertas.slice(-8).map(async e => { const l = await db.um('leads', { id: e.lead_id }); return l && (l.etapa === 'ganho' || l.etapa === 'perdido') ? null : `${l?.nome || l?.telefone}: ${e.detalhe?.pergunta}` }))).filter(Boolean)
   const ultima = msgs.filter(x => x.autor === 'dono').slice(-1)[0]
-  const ctx = { aprovou: [] as string[], link: '', recados: 0 }
+  const ctx = { aprovou: [] as string[], link: '', recados: 0, estrategias: 0 }
   // o 👍 sozinho com peças pendentes: aprova direto (a IA só confirma)
   if (ultima && ehJoinha(ultima.texto || '') && pend.length) { const r = await donoAprova(neg.id); ctx.aprovou.push(...r.map(x => x.id)) }
   // 14/11 (recado.ts): o 👍 sozinho com recado pra base esperando: aprova o recado também
   const R = await import('./recado')
   let recPend = await R.recadosComDono(neg.id).catch(() => [] as any[])
   if (ultima && ehJoinha(ultima.texto || '') && recPend.length) { ctx.recados = (await R.donoAprovaRecado(neg.id, null, 'whatsapp').catch(() => [])).length; recPend = [] }
+  // 22/11 (estrategia.ts): o 👍 sozinho com a estratégia da quinzena esperando (a equipe já aprovou): aprova também
+  const E = await import('./estrategia')
+  const estOn = E.estrategiaLigada()
+  let estPend = estOn ? await E.estrategiasComDono(neg.id).catch(() => [] as any[]) : []
+  if (ultima && ehJoinha(ultima.texto || '') && estPend.length) { ctx.estrategias = (await E.donoAprovaEstrategia(neg.id, null, 'whatsapp').catch(() => [])).length; estPend = [] }
   const baseInfo = await R.painelDoDono(neg).then((p: any) => p.disponivel ? `${p.base.ativos} contatos${p.base.etiquetas.length ? ' (etiquetas: ' + p.base.etiquetas.slice(0, 6).map((e: any) => e.nome).join(', ') + ')' : ''}` : 'ainda não ligada').catch(() => '?')
   // 12/11 (limites.ts): custo de IA do dia no teto. O 👍 de cima já valeu (não usa IA); o resto espera a equipe ou o dia seguinte
   const iaHoje = await iaDoDia(neg).catch(() => null)
   if (iaHoje?.estourou) {
     const avisou = await avisaUmaVez(neg.id, 'ia_do_dia', 'teto de IA do dia', `${neg.nome}: o custo de IA de hoje chegou em R$ ${iaHoje.gasto} (teto R$ ${iaHoje.teto}). A Maia parou de responder o dono e os clientes até a meia-noite. Vale olhar o painel.`)
-    const ok = ctx.aprovou.length || ctx.recados ? 'Aprovado ✅ ' : ''
+    const ok = ctx.aprovou.length || ctx.recados || ctx.estrategias ? 'Aprovado ✅ ' : ''
     if (avisou || ok) await mandaTexto(cv, `${ok}${avisou ? 'Hoje eu cheguei no meu limite de segurança do dia. A equipe da Carreira no Digital já foi avisada e te responde por aqui; amanhã eu volto ao normal.' : ''}`.trim())
     return null
   }
@@ -363,9 +406,11 @@ export async function respondeDono(conversa_id: string) {
 NEGÓCIO: ${neg.nome} · ${neg.nicho || '?'} · ${neg.cidade || '?'} · plano ${neg.plano} · status ${neg.status}
 DONO: ${neg.dono_nome || cv.nome || '?'}
 O QUE TU JÁ SABE DO NEGÓCIO: ${JSON.stringify(neg.contexto || {})}${neg.verba_dia ? `\nVERBA COMBINADA: R$ ${neg.verba_dia}/dia` : ''}
-ANÚNCIOS ESPERANDO O 👍 DELE: ${pend.length ? pend.map(p => `${p.id} "${p.gancho}"`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
+ANÚNCIOS E POSTS ESPERANDO O 👍 DELE (post do Instagram/Facebook não tem gancho, só a legenda: está tudo certo com ele): ${pend.length ? pend.map(p => `${p.id} ${descrevePeca(p)}`).join('; ') : 'nenhum'}${ctx.aprovou.length ? `\n(o 👍 dele já aprovou ${ctx.aprovou.length} anúncio(s) agora: só confirma)` : ''}
 RECADOS PRA BASE ESPERANDO A APROVAÇÃO DELE: ${recPend.length ? recPend.map((x: any) => `"${x.titulo}"`).join('; ') : 'nenhum'}${ctx.recados ? `\n(o 👍 dele já aprovou ${ctx.recados} recado(s) pra base agora: só confirma e diz que o WhatsApp aprova o modelo e ele sai no horário comercial)` : ''}
-BASE DE CONTATOS (pro recado pra base): ${baseInfo}
+BASE DE CONTATOS (pro recado pra base): ${baseInfo}${estOn ? `
+ESTRATÉGIA DA QUINZENA ESPERANDO A APROVAÇÃO DELE: ${estPend.length ? estPend.map((x: any) => `a de ${x.ciclo_de} a ${x.ciclo_ate} (já conferida pela equipe)`).join('; ') : 'nenhuma'}${ctx.estrategias ? '\n(o 👍 dele já aprovou a estratégia da quinzena agora: só confirma e diz que a equipe coloca em prática)' : ''}
+(ESTRATÉGIA: a cada 15 dias, contados do dia em que o negócio ligou, tu revisas a estratégia com os números e o calendário de datas do ramo; ela passa pela equipe e chega pra ele aprovar. Ele aprova ou pede ajuste → estrategia_decisao. Pergunta qual é a estratégia → estrategia_atual. Contou uma data forte do negócio (aniversário da loja, feira, safra) → data_no_calendario. Também dá pra fazer tudo isso no painel.)` : ''}
 PERGUNTAS DE CLIENTES ESPERANDO A RESPOSTA DO DONO: ${perguntas.length ? perguntas.join('; ') : 'nenhuma'} (quando ele responder, usa responder_cliente pra cada um e salvar_contexto pro que servir de novo. Se tu já lembrou o dono delas numa das tuas últimas mensagens da CONVERSA, não repete a lista: responde só o que ele falou agora. Lembra de novo só se ele perguntar o que falta)
 TOM COM OS CLIENTES (vale no responder_cliente; contigo e com o dono é o teu jeito de sempre): ${descreveTom(tomDoNegocio(neg))}${tomDoNegocio(neg).pessoa === 'voce' ? ' (no responder_cliente: "você", "seu", "sua", "pra você"; nunca "tu", "teu", "pra ti")' : ''}
 MÍDIAS GUARDADAS: ${(await db.lista('midias', { negocio_id: neg.id })).length}

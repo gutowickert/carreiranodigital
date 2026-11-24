@@ -7,7 +7,7 @@
 import { maiaDb as db } from '@/lib/maia/db'
 import { avisaEquipe } from '@/lib/maia/canal'
 import { criaModelosDoNegocio } from '@/lib/maia/modelos'
-import { linkOk } from '@/lib/maia/conectar'
+import { linkOk, trocaCode } from '@/lib/maia/conectar'
 import { cifra } from '@/lib/maia/segredo'
 
 const GRAPH = 'https://graph.facebook.com/v25.0'
@@ -39,9 +39,11 @@ export async function POST(req: Request) {
   if (outro && outro.id !== neg.id) return Response.json({ ok: false, erro: 'esse número já está ligado a outro negócio na Maia. Fala com a equipe.' })
 
   // 1) code → chave do negócio
-  const tk: any = await fetch(`${GRAPH}/oauth/access_token?client_id=${encodeURIComponent(APP_ID())}&client_secret=${encodeURIComponent(APP_SECRET())}&code=${encodeURIComponent(code)}`).then(r => r.json()).catch(() => null)
-  const token = tk?.access_token
-  if (!token) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + String(tk?.error?.message || 'sem resposta').slice(0, 160) })
+  // 23/11: a troca tenta sem redirect_uri, vazio e o endereço da página (lib/maia/conectar.ts trocaCode)
+  const tc = await trocaCode(code, APP_ID(), APP_SECRET(), [b.pagina, b.pagina_completa].filter(Boolean).map(String))
+  if (!tc.ok) return Response.json({ ok: false, erro: 'não consegui trocar a autorização pela chave: ' + tc.erro.slice(0, 160) })
+  await db.evento('conectar_code', neg.id, { botao: 'whatsapp', como: tc.como }).catch(() => null)
+  const token = tc.token
 
   // 07/11 (segurança): o número e a conta vêm do navegador. Confere com a chave que a Meta acabou de dar que o número É
   // dessa conta (senão alguém com o link ligaria ao negócio dele o phone_number_id de outro negócio e receberia os eventos dele)

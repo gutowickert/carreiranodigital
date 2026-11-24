@@ -123,6 +123,9 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   try { r.relatorios = await relatoriosDaSemana(opc.forcarRelatorio) } catch (e: any) { r.relatorios_erro = e.message }
   // 13/11 (relatorios.ts): 8h no fuso do negócio: a análise dos anúncios de 2 em 2 dias, o aviso (dia 1) e o relatório do mês (dia 2)
   try { const { rotinaRelatorios } = await import('./relatorios'); r.analises = await rotinaRelatorios({ agora: relogio }) } catch (e: any) { r.analises_erro = e.message }
+  // 22/11 (estrategia.ts): o ciclo de estratégia de 15 dias. 9h no fuso do negócio, a cada 15 dias desde que o negócio ligou (consulta o calendário antes de
+  // propor; equipe aprova, depois o dono). Só com MAIA_ESTRATEGIA_LIGADA=1
+  try { const { rotinaEstrategia, estrategiaLigada } = await import('./estrategia'); if (estrategiaLigada()) r.estrategia = await rotinaEstrategia({ agora: relogio }) } catch (e: any) { r.estrategia_erro = e.message }
   // 08/11 (LGPD): 1x por dia apaga as conversas sem mensagem há mais de 12 meses (meta.atendimento.guarda_meses)
   try { const { apagaVencidos } = await import('./lgpd'); r.guarda = await apagaVencidos(new Date(), !!opc.forcarGuarda) } catch (e: any) { r.guarda_erro = e.message }
   // 07/11 (piloto): as conversas do mês por negócio; avisa a equipe em 80% e 100% da franquia (não bloqueia nada)
