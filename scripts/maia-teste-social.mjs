@@ -236,6 +236,35 @@ confere(daMeta(x => /^FBV\d+$/.test(x.c) && x.q.fields === 'post_id').length ===
 await S.leResultados({ negocio_id: neg.id })
 confere((await db.lista('eventos', { negocio_id: neg.id, tipo: 'social_resultado' })).length === 5, 'leu de novo no mesmo dia: atualizou o retrato, não duplicou')
 
+// 24/11: post apagado direto na rede (o Nando apagou o post de teste no Instagram e ele seguia "publicado" no painel)
+{
+  const pf = await S.umPost(foto.id), igId = pf.detalhe.ig.media_id, fbId = pf.detalhe.fb.post_id
+  const SUMIU_ = () => resp({ error: { code: 100, error_subcode: 33, message: `Unsupported get request. Object with ID '${igId}' does not exist, cannot be loaded due to missing permissions` } }, 400)
+  const SUMIU = { get r() { return SUMIU_() } }
+  // a chave quebrada: o post E a conta não abrem → não é post apagado, não marca
+  zera(); roteiro.antes = (m, c, q) => q.fields === 'id' && (c === igId || c === 'IG1') ? SUMIU.r : null
+  await S.leResultados({ negocio_id: neg.id })
+  confere(!(await S.umPost(foto.id)).detalhe.ig.apagado_em, 'post E conta do Instagram sem abrir (chave/permissão): não marca como apagado')
+  // só o Instagram apagado: sai da leitura do Instagram, segue publicado (o Facebook está no ar)
+  zera(); roteiro.antes = (m, c, q) => q.fields === 'id' ? (c === igId ? SUMIU.r : resp({ id: c })) : null
+  await S.leResultados({ negocio_id: neg.id })
+  let p1 = await S.umPost(foto.id)
+  const aps = await db.lista('eventos', { negocio_id: neg.id, tipo: 'social_apagado' })
+  confere(p1.detalhe.ig.apagado_em && !p1.detalhe.fb.apagado_em && p1.detalhe.status === 'publicado' && aps.length === 1 && aps[0].detalhe.onde === 'Instagram' && aps[0].detalhe.todo === false, 'apagado só no Instagram: marca o Instagram, o post segue publicado no Facebook')
+  zera(); roteiro.antes = (m, c, q) => q.fields === 'id' ? (c === igId ? SUMIU.r : resp({ id: c })) : null
+  await S.leResultados({ negocio_id: neg.id })
+  confere(!daMeta(x => x.c === igId + '/insights').length && daMeta(x => x.c === fbId + '/insights').length === 1 && !daMeta(x => x.c === igId && x.q.fields === 'id').length, 'depois: não lê mais o Instagram desse post (nem pergunta de novo), o Facebook continua')
+  // o Facebook também apagado: vira 'apagado' e sai dos resultados
+  zera(); roteiro.antes = (m, c, q) => q.fields === 'id' ? (c === fbId ? SUMIU.r : resp({ id: c })) : null
+  const lidos2 = await S.leResultados({ negocio_id: neg.id })
+  p1 = await S.umPost(foto.id)
+  confere(p1.detalhe.status === 'apagado' && p1.detalhe.apagado_em && lidos2.some(x => x.post === foto.id && x.apagado) && !daMeta(x => x.c === igId + '/insights' || x.c === fbId + '/insights').length, 'apagado nas duas redes: vira "apagado" e para de ler')
+  zera(); await S.leResultados({ negocio_id: neg.id })
+  confere(!daMeta(x => [igId, fbId, igId + '/insights', fbId + '/insights'].includes(x.c)).length, 'post apagado nem entra mais na leitura')
+  // os outros posts seguem normais
+  confere((await S.posts(neg.id)).filter(p => p.detalhe.status === 'publicado').length === 4, 'os outros 4 publicados seguem publicados')
+}
+
 // análise do mês
 zera()
 const mes = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' }).slice(0, 7)

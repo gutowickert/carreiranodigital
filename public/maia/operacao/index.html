@@ -1560,8 +1560,8 @@ function subSocial(n,c){
   var quandoTxt=function(iso){ return fmt(iso,{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.','')+' às '+horaBR(iso)+'h'+(new Date(iso).getUTCMinutes()?String(new Date(iso).getUTCMinutes()).padStart(2,'0'):''); };
   var NOME_MES=['janeiro','fevereiro','março','abril','maio','junho','julho','agosto','setembro','outubro','novembro','dezembro'];
   var mesTxt=function(m){ var p=String(m).split('-'); return NOME_MES[Number(p[1])-1]+' de '+p[0]; };
-  var ST={rascunho:['esperando a equipe','aten'],aprovado_equipe:['com o dono','info'],aprovado_dono:['aprovado','info'],agendado:['agendado','bom'],publicando:['publicando','info'],processando:['processando','info'],publicado:['publicado','bom'],erro:['deu erro','ruim'],descartado:['descartado','']};
-  var GRUPO={rascunho:'equipe',aprovado_equipe:'dono',aprovado_dono:'agendado',agendado:'agendado',processando:'agendado',publicando:'agendado',publicado:'publicado',erro:'erro',descartado:'descartado'};
+  var ST={rascunho:['esperando a equipe','aten'],aprovado_equipe:['com o dono','info'],aprovado_dono:['aprovado','info'],agendado:['agendado','bom'],publicando:['publicando','info'],processando:['processando','info'],publicado:['publicado','bom'],erro:['deu erro','ruim'],descartado:['descartado',''],apagado:['apagado na rede','']};
+  var GRUPO={rascunho:'equipe',aprovado_equipe:'dono',aprovado_dono:'agendado',agendado:'agendado',processando:'agendado',publicando:'agendado',publicado:'publicado',erro:'erro',descartado:'descartado',apagado:'descartado'};
   var FILT=[['todos','Todos'],['equipe','Pra equipe'],['dono','Com o dono'],['agendado','Agendados'],['publicado','Publicados'],['erro','Com erro'],['descartado','Descartados']];
   var REDE={instagram:'Instagram',facebook:'Facebook'};
   var D={lig:null,agenda:[],res:[],an:[],banco:[]}, filtro='todos', mes=mesBR(new Date().toISOString()), ab={}, sel=[];
