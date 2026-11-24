@@ -4,7 +4,7 @@ import {
   QUIZZES, OFERTA_QUIZ, DESTINO_COMECAR, DESTINO_DUVIDA, TURMA_QUIZ, UFS,
   diagnosticar, telefoneBR, mensagemWhats, reaisQuiz as reais, type Nicho, type Destino, type Diagnostico,
 } from '@/lib/maia/quiz/quiz'
-import { MaiaFala, falaDepois, CelularWhats, AnuncioInsta, RelatorioDono } from './visual'
+import { MaiaFala, falaDepois, CelularWhats, AnuncioInsta, RelatorioDono, FeedInsta } from './visual'
 
 // Quiz de diagnóstico da Maia. Uma pergunta por tela (tocar avança sozinho), depois o contato, depois o
 // resultado. A conta roda AQUI (mesma função da API), então o resultado aparece mesmo se a API cair; o envio
@@ -329,6 +329,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
         <div className="mq-lado"><span className="mq-tag t2">Lado 2</span><h2 className="mq-h2">O que dá pra ganhar a mais com anúncio</h2><p className="mq-lado-tot">{reais(g.total_mes)} por mês · {reais(g.total_ano)} em 12 meses</p></div>
         <div className="mq-mock-tit"><strong>Como seria o seu anúncio</strong><span>Com o nome da sua {q.nome} e a sua cidade.</span></div>
         <AnuncioInsta nicho={nicho} negocio={d.negocio} tipo={String(r.tipo || '')} cidade={c.cidade.trim()} img={q.ad_img} />
+        <p className="mq-nota-ig">Quem vê o anúncio costuma olhar o seu Instagram antes de chamar. Perfil parado derruba a confiança; perfil vivo ajuda a fechar. Por isso a Maia cuida dos posts também.</p>
         <div className="mq-ponto mq-ganho">
           <div className="mq-ponto-cab"><span className="mq-n">+</span><h3>{g.titulo}</h3></div>
           <div className="mq-funil">
@@ -388,6 +389,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
               <span className="mq-card-tag">{c.tag}</span>
               <h3>{c.t}</h3>
               <ul>{c.itens.map(i => <li key={i}><Ok /><span>{i}</span></li>)}</ul>
+              {c.feed && <FeedInsta nicho={nicho} negocio={d.negocio} />}
             </article>
           ))}
         </div>
@@ -432,69 +434,68 @@ function qtdCurta(u: number, u1: string, uN: string) {
   return `${num(m)} ${m < 2 ? u1 : uN}`
 }
 
-// A oferta inteira, adaptada ao nicho (vem todo mês). Sem posts no Instagram: o código só fala de posts no plano
-// de R$ 997 (lib/maia/oferta.ts); não está confirmado que o plano online inclui o orgânico.
-const PRODUTO: Record<Nicho, { tag: string; t: string; itens: string[] }[]> = {
+// A oferta inteira, adaptada ao nicho (vem todo mês), em ordem de relevância pro dono. Conferida no código (24/11):
+// estrategia/pecas/locucao/meta (mais cliente), atendente (24 h), funil + humano (retomada e passa pra equipe), social +
+// grade-social (8 posts e 4 vídeos por mês, oferta.ts; vale pro online, decisão do Guto), recado (base), conversoes (devolve a
+// venda pra Meta) + relatorios/resumo-semana (relatório), aprovacao + painel-dono (o dono aprova pelo celular).
+type Card = { tag: string; t: string; itens: string[]; feed?: boolean }
+const PRODUTO: Record<Nicho, Card[]> = {
   oficina: [
-    { tag: 'Estratégia', t: 'Sabe o que anunciar e quando', itens: [
-      'Escolhe o que anunciar primeiro: o serviço com margem e com procura na sua cidade.',
-      'Monta o calendário do ano da oficina: antes das férias de julho e de fim de ano, época de chuva, Dia dos Pais.',
-      'Revisa a estratégia a cada 15 dias, olhando a época e o que está vendendo.',
+    { tag: 'Mais cliente', t: 'Estratégia, criação e anúncio', itens: [
+      'Escolhe o serviço com margem e procura e monta o calendário do ano da oficina. Revisa a cada 15 dias.',
+      'Cria cerca de 6 anúncios em vídeo e 6 em imagem por mês, com fotos e vídeos reais da sua oficina.',
+      'Roda as campanhas no Facebook e no Instagram pra sua cidade e região.',
     ] },
-    { tag: 'Criação', t: 'Cria os anúncios', itens: [
-      'Cerca de 6 anúncios em vídeo e 6 em imagem por mês.',
-      'Com fotos e vídeos reais da sua oficina, nada de imagem genérica.',
-      'Gancho pro motorista da sua cidade e região. Quando um anúncio vende, cria outros no mesmo estilo, com ângulos novos.',
-    ] },
-    { tag: 'Tráfego', t: 'Roda as campanhas', itens: [
-      'Cria e roda as campanhas no Facebook e no Instagram, pra sua cidade e região.',
-      'Só Facebook e Instagram, onde o seu cliente está.',
-      'Mede o custo de cada conversa e de cada serviço fechado.',
-    ] },
-    { tag: 'Atendimento', t: 'Atende e não deixa esfriar', itens: [
+    { tag: 'Atendimento 24 h', t: 'Responde na hora', itens: [
       'Responde o WhatsApp com o nome da oficina em até 1 minuto, 24 horas por dia.',
-      'Pergunta o modelo e o ano do carro e o que está acontecendo, e passa pra você o que precisa da sua mão.',
-      'Chama de novo quem pediu orçamento e sumiu (1, 3 e 6 dias) e manda recado pra sua base na hora da revisão.',
+      'Pergunta o modelo e o ano do carro e o que está acontecendo.',
+    ] },
+    { tag: 'Retomada', t: 'Não deixa o orçamento esfriar', itens: [
+      'Chama de novo quem pediu orçamento e sumiu: 1, 3 e 6 dias depois.',
+      'Quando o cliente está pronto, passa pra você ou pra sua equipe fechar.',
+    ] },
+    { tag: 'Conteúdo', t: 'Cuida do seu Instagram', feed: true, itens: [
+      '8 posts e 4 vídeos por mês, com fotos e vídeos reais da sua oficina.',
+      'Posta no Instagram e no Facebook e analisa o que funciona.',
+    ] },
+    { tag: 'Base de clientes', t: 'Chama quem já foi cliente', itens: [
+      'Recado na época da revisão, da troca de óleo e antes das viagens.',
     ] },
     { tag: 'Medição', t: 'Mede de ponta a ponta e te conta', itens: [
-      'Liga cada serviço fechado ao anúncio que trouxe o cliente.',
-      'Análise curta a cada 2 dias no seu WhatsApp.',
-      'Relatório completo todo dia 2: conversas, anúncios, o que funcionou e a projeção do mês.',
+      'Liga cada serviço ao anúncio que trouxe o cliente e devolve a venda pra Meta achar mais gente que compra.',
+      'Análise curta a cada 2 dias e relatório completo todo dia 2 no seu WhatsApp.',
     ] },
     { tag: 'Você no comando', t: 'Tudo pelo celular', itens: [
-      'Você aprova os anúncios pelo celular, sem reunião.',
-      'Quer mudar algo? Pede pro WhatsApp da Maia, quando quiser.',
+      'Você aprova anúncios e posts pelo celular, sem reunião, e pede o que quiser pro WhatsApp da Maia.',
     ] },
   ],
   otica: [
-    { tag: 'Estratégia', t: 'Sabe o que anunciar e quando', itens: [
-      'Escolhe o que anunciar primeiro: o produto com margem e com procura na sua cidade.',
-      'Monta o calendário do ano da ótica: volta às aulas, Dia das Mães, Dia dos Pais, Black Friday, fim de ano.',
-      'Revisa a estratégia a cada 15 dias, olhando a época e o que está vendendo.',
+    { tag: 'Mais cliente', t: 'Estratégia, criação e anúncio', itens: [
+      'Escolhe o produto com margem e procura e monta o calendário da ótica (volta às aulas, Dia das Mães, Black Friday). Revisa a cada 15 dias.',
+      'Cria cerca de 6 anúncios em vídeo e 6 em imagem por mês, com fotos e vídeos reais da sua loja.',
+      'Roda as campanhas no Facebook e no Instagram pra sua cidade e região.',
     ] },
-    { tag: 'Criação', t: 'Cria os anúncios', itens: [
-      'Cerca de 6 anúncios em vídeo e 6 em imagem por mês.',
-      'Com fotos e vídeos reais da sua loja e das suas armações, nada de imagem genérica.',
-      'Gancho pro público da sua cidade. Quando um anúncio vende, cria outros no mesmo estilo, com ângulos novos.',
-    ] },
-    { tag: 'Tráfego', t: 'Roda as campanhas', itens: [
-      'Cria e roda as campanhas no Facebook e no Instagram, pra sua cidade e região.',
-      'Só Facebook e Instagram, onde o seu cliente está.',
-      'Mede o custo de cada conversa e de cada venda.',
-    ] },
-    { tag: 'Atendimento', t: 'Atende e não deixa esfriar', itens: [
+    { tag: 'Atendimento 24 h', t: 'Responde na hora', itens: [
       'Responde o WhatsApp com o nome da ótica em até 1 minuto, 24 horas por dia.',
-      'Pergunta o que a pessoa procura (armação, lente, óculos de sol) e se já tem a receita, e passa pra você o que precisa da sua mão.',
-      'Chama de novo quem pediu orçamento e sumiu (1, 3 e 6 dias) e manda recado pra sua base quando os óculos fazem 1 ano.',
+      'Pergunta o que a pessoa procura (armação, lente, óculos de sol) e se já tem a receita.',
+    ] },
+    { tag: 'Retomada', t: 'Não deixa o orçamento esfriar', itens: [
+      'Chama de novo quem pediu orçamento de lente e sumiu: 1, 3 e 6 dias depois.',
+      'Quando o cliente está pronto, passa pra você ou pra sua equipe fechar.',
+    ] },
+    { tag: 'Conteúdo', t: 'Cuida do seu Instagram', feed: true, itens: [
+      '8 posts e 4 vídeos por mês, com fotos e vídeos reais da sua ótica.',
+      'Posta no Instagram e no Facebook e analisa o que funciona.',
+    ] },
+    { tag: 'Base de clientes', t: 'Chama quem já comprou', itens: [
+      'Recado quando os óculos fazem 1 ano, na volta às aulas e nas datas do ano.',
     ] },
     { tag: 'Medição', t: 'Mede de ponta a ponta e te conta', itens: [
-      'Liga cada venda ao anúncio que trouxe o cliente.',
-      'Análise curta a cada 2 dias no seu WhatsApp.',
-      'Relatório completo todo dia 2: conversas, anúncios, o que funcionou e a projeção do mês.',
+      'Liga cada venda ao anúncio que trouxe o cliente e devolve a venda pra Meta achar mais gente que compra.',
+      'Análise curta a cada 2 dias e relatório completo todo dia 2 no seu WhatsApp.',
     ] },
     { tag: 'Você no comando', t: 'Tudo pelo celular', itens: [
-      'Você aprova os anúncios pelo celular, sem reunião.',
-      'Quer mudar algo? Pede pro WhatsApp da Maia, quando quiser.',
+      'Você aprova anúncios e posts pelo celular, sem reunião, e pede o que quiser pro WhatsApp da Maia.',
     ] },
   ],
 }

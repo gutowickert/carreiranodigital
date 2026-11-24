@@ -179,3 +179,23 @@ export function RelatorioDono({ d, unidade }: { d: Diagnostico; unidade: [string
     </figure>
   )
 }
+
+// ---------- mini grade do feed (Conteúdo): fotos reais licenciadas do nicho ----------
+const FEED: Record<Nicho, string[]> = {
+  oficina: ['hero-embaixo-do-carro', 'diagnostico-scanner', 'maos-no-motor', 'motor-retifica', 'oficina-ampla', 'chave-no-motor'],
+  otica: ['provando-oculos', 'vitrine-armacoes', 'hero-vendedora-balcao', 'parede-armacoes', 'cliente-na-parede', 'comparando-armacoes'],
+}
+export function FeedInsta({ nicho, negocio }: { nicho: Nicho; negocio: string }) {
+  const nome = negocio || (nicho === 'oficina' ? 'Sua oficina' : 'Sua ótica')
+  return (
+    <figure className="mq-feed">
+      <div className="mq-feed-topo"><span className="mq-av">{iniciais(nome)}</span><b>{nome}</b></div>
+      <div className="mq-feed-grade">
+        {FEED[nicho].map((f, i) => (
+          <span key={i}><img src={`/maia/img/quiz/${nicho}/${f}.jpg`} alt="" loading="lazy" />{i % 3 === 1 && <i>Vídeo</i>}</span>
+        ))}
+      </div>
+      <figcaption>Exemplo do seu perfil. Na Maia, as fotos e vídeos são os seus.</figcaption>
+    </figure>
+  )
+}

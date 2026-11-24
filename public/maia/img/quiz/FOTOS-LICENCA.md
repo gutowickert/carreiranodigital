@@ -19,3 +19,4 @@ Unsplash (https://unsplash.com/license) e Pexels (https://www.pexels.com/license
 | otica/provando-oculos.jpg | Pexels | https://www.pexels.com/photo/young-woman-adjusting-glasses-in-optical-store-5766154/ |
 | otica/vitrine-armacoes.jpg | Unsplash | https://unsplash.com/photos/xGsOQcGFA9g |
 | otica/parede-armacoes.jpg | Unsplash | https://unsplash.com/photos/UsALNdok2m4 |
+| otica/comparando-armacoes.jpg | Pexels | https://www.pexels.com/photo/a-woman-holding-eyeglasses-5201939/ |
