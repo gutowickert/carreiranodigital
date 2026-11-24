@@ -1,0 +1,777 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<!-- RASTREIO:INICIO · Meta Pixel (conta da escola), o mesmo das outras páginas -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Maia',content_category:'Ótica'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
+<!-- RASTREIO:FIM -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maia pra óticas · Carreira no Digital</title>
+<meta name="description" content="A IA de marketing feita pra ótica: atende no WhatsApp com o nome da ótica, pede a foto da receita, explica lente e armação antes do preço, convida pra provar na loja, retoma quem sumiu e roda os anúncios.">
+<meta property="og:title" content="A IA de marketing feita pra ótica">
+<meta property="og:description" content="A IA de marketing feita pra ótica: atende no WhatsApp com o nome da ótica, pede a foto da receita, explica lente e armação antes do preço, convida pra provar na loja, retoma quem sumiu e roda os anúncios.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/maia/nichos/img/otica/hero-vendedora-balcao.jpg">
+<meta name="theme-color" content="#f6f5f2">
+<link rel="preload" href="/maia/nichos/img/otica/hero-vendedora-balcao.jpg" as="image" fetchpriority="high">
+<link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png"><link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<style>
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+
+/* Maia por nicho (oficina 18/11, ótica 24/11/2026). Base clara do padrão da escola (Manrope + Bricolage condensada),
+   grafite + a cor de destaque do nicho (--ac, --claro, --ac-rgb, trocadas por nicho). Fotos reais. Feita primeiro pro celular. */
+:root{
+  --bg:#f6f5f2;--s1:#ffffff;--s2:#efede8;--ln:#e6e2da;--ln2:#d4cec3;
+  --tx:#1d1f23;--tx2:#3b3e44;--mu:#686b72;--fa:#9a9da3;
+  --ac:#d9480f;--claro:#ff8a3d;--ac-rgb:217,72,15;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;
+  --gr:#22252a;--gr2:#2f3339;
+  --roxo:#7c3aed;--ok:#15803d;--ok-bg:#e3f7ea;--at:#b45309;--at-bg:#fdf0d5;
+  --wa:#efe7dd;--wa-in:#ffffff;--wa-out:#d9fdd3;--wa-top:#f0f2f5;--wa-tx:#111b21;--wa-mu:#667781;--wa-tk:#53bdeb;
+  --f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --sombra:0 1px 2px rgba(29,31,35,.05),0 14px 34px -14px rgba(29,31,35,.22);
+  color-scheme:light}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-tx);font-size:17px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+h1,h2,h3,.dis{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.025em;line-height:1.04;text-wrap:balance}
+h2{font-size:clamp(30px,7.2vw,48px)}
+h3{font-size:21px;letter-spacing:-.015em;line-height:1.15}
+.ct{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:64px}
+.olho{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.olho::before{content:"";width:18px;height:3px;border-radius:2px;background:var(--ac2)}
+.lead{font-size:clamp(17px,2.2vw,19px);color:var(--mu);max-width:62ch}
+.lead b{color:var(--tx)}
+.cab{display:flex;flex-direction:column;gap:12px;margin-bottom:30px}
+.ico{width:22px;height:22px;flex:none}
+.nota{font-size:13.5px;color:var(--mu);margin-top:16px}
+.ex{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fa);text-align:center;margin-top:12px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 24px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 14px 30px -12px rgba(var(--ac-rgb),.6);transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.btn:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--ac2);outline-offset:3px}
+.btn-sec{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.55);box-shadow:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.btn-sec:hover{filter:none;background:rgba(255,255,255,.22)}
+
+/* topo */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:41;background:var(--bg)}
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(246,245,242,.92);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--ln)}
+.topo .ct{display:flex;align-items:center;gap:12px;min-height:60px}
+.chapa{display:inline-flex;align-items:center;background:#17122a;border-radius:10px;padding:7px 10px;flex:none}
+.chapa img{height:22px;width:auto}
+.topo .nome{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topo .nome b{color:var(--tx);font-weight:800}
+.topo .btn{min-height:40px;padding:0 16px;font-size:14.5px;box-shadow:none}
+
+/* abertura: foto em tela cheia */
+.hero{position:relative;overflow:hidden;color:#fff;background:var(--gr);padding-block:0}
+.hero>img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:var(--hero-pos,55% 50%)}
+.hero::after{content:"";position:absolute;left:0;right:0;top:0;aspect-ratio:1/1;background:linear-gradient(180deg,rgba(34,37,42,0) 55%,rgba(34,37,42,.7) 82%,var(--gr) 100%)}
+.hero .ct{position:relative;z-index:1;display:grid;gap:32px;margin-top:-72px;padding-block:0 44px}
+.selo{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 14px 6px 6px;font-size:14px;font-weight:700;color:#fff;max-width:100%;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.selo i{font-style:normal;background:var(--roxo);color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;flex:none}
+.selo span{min-width:0}
+.hero h1{font-size:clamp(40px,10.2vw,70px);margin-top:18px;text-shadow:0 2px 24px rgba(0,0,0,.35)}
+.hero h1 em{font-style:normal;color:var(--claro)}
+.hero .lead{margin-top:18px;color:rgba(255,255,255,.86)}
+.hero .lead b{color:#fff}
+.acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+.acoes .btn{flex:1 1 230px}
+.fatos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:24px}
+.fatos div{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px 10px;text-align:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
+.fatos b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:28px;line-height:1;color:var(--claro)}
+.fatos span{display:block;font-size:12.5px;line-height:1.3;color:rgba(255,255,255,.82);font-weight:600;margin-top:6px}
+.hero .cel-hero{display:none}
+.credito{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:10px;z-index:1;font-size:11px;color:rgba(255,255,255,.55)}
+
+/* celular com WhatsApp */
+.cel{max-width:390px;width:100%;margin:0 auto;background:#141518;border-radius:40px;padding:10px;box-shadow:0 40px 70px -30px rgba(0,0,0,.6)}
+.tela{background:var(--wa);border-radius:31px;overflow:hidden;display:flex;flex-direction:column}
+.wa-top{display:flex;align-items:center;gap:10px;background:var(--wa-top);padding:12px 14px;border-bottom:1px solid #e3e3e3}
+.wa-top .av{width:36px;height:36px;border-radius:50%;background:var(--gr);color:var(--claro);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;overflow:hidden}
+.wa-top .av img{width:36px;height:36px;object-fit:cover}
+.wa-top b{display:block;font-size:15px;color:var(--wa-tx);line-height:1.2}
+.wa-top small{display:block;font-size:12px;color:var(--wa-mu)}
+.wa-msgs{padding:14px 10px 16px;display:flex;flex-direction:column;gap:6px;background-color:var(--wa);background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:14px 14px}
+.bal{max-width:84%;padding:7px 10px 6px;border-radius:10px;font-size:14.5px;line-height:1.4;color:var(--wa-tx);box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.bal .h{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:11px;color:var(--wa-mu);margin-top:2px}
+.bal .tk{width:16px;height:11px;color:var(--wa-tk)}
+.bal.c{align-self:flex-start;background:var(--wa-in);border-top-left-radius:3px}
+.bal.e{align-self:flex-end;background:var(--wa-out);border-top-right-radius:3px}
+
+/* dores */
+.dores{background:var(--s1);border-bottom:1px solid var(--ln)}
+.dor-lista{display:grid;gap:14px}
+.dor{border:1px solid var(--ln);border-radius:20px;overflow:hidden;background:var(--bg);display:flex;flex-direction:column;box-shadow:var(--sombra)}
+.dor>img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.dor p.q{padding:16px 18px 12px;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 88;font-weight:700;font-size:19.5px;line-height:1.22;letter-spacing:-.01em;color:var(--tx)}
+.dor p.q::before{content:"\201C";color:var(--ac2);margin-right:2px}
+.dor p.q::after{content:"\201D";color:var(--ac2)}
+.dor .r{flex:1;display:flex;gap:12px;align-items:flex-start;padding:12px 18px 18px;background:var(--s1);border-top:1px dashed var(--ln2);font-size:15.5px;color:var(--tx2)}
+.dor .r .ico{color:var(--ac);margin-top:2px}
+
+/* como atende */
+.jeito{display:grid;gap:12px}
+.j{background:var(--s1);border:1px solid var(--ln);border-radius:20px;overflow:hidden;box-shadow:var(--sombra);display:flex;flex-direction:column}
+.j>img{width:100%;aspect-ratio:16/9;object-fit:cover}
+.j .tx{padding:16px 18px 20px;position:relative}
+.j .n{position:absolute;top:-22px;left:18px;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--ac);color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:18px;box-shadow:0 8px 18px -8px rgba(var(--ac-rgb),.7)}
+.j h3{margin-top:14px}
+.j p{font-size:15.5px;color:var(--tx2);margin-top:8px}
+.conv{display:grid;gap:22px;margin-top:44px;align-items:start}
+.lado{display:grid;gap:14px;min-width:0}
+.resumo{background:var(--s1);border:1px solid var(--ac-ln);border-radius:20px;padding:20px;box-shadow:var(--sombra)}
+.resumo h3{margin-top:6px}
+.resumo dl{display:grid;gap:8px;margin-top:14px}
+.resumo dl div{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tx2)}
+.resumo dl .ico{width:18px;height:18px;color:var(--ok);margin-top:3px}
+.resumo p{font-size:14px;color:var(--mu);margin-top:12px}
+.ret{background:var(--s1);border:1px solid var(--ln);border-radius:20px;padding:20px}
+.ret h3{margin-top:6px}
+.ret ol{list-style:none;display:grid;gap:12px;margin-top:14px}
+.ret li{display:grid;gap:4px}
+.ret li b{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.ret li span{background:var(--wa-out);border-radius:12px 12px 4px 12px;padding:10px 12px;font-size:14.5px;color:var(--wa-tx)}
+
+/* anúncios: posts do feed do Instagram */
+.anuncios{background:var(--gr);color:#fff}
+.anuncios .olho{color:var(--claro)}.anuncios .olho::before{background:var(--claro)}
+.anuncios .lead{color:rgba(255,255,255,.75)}
+.anuncios .nota{color:rgba(255,255,255,.6)}
+.feed{display:grid;grid-auto-flow:column;grid-auto-columns:min(84%,340px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));scrollbar-width:thin}
+.post{scroll-snap-align:start;background:#fff;color:#111;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
+.post-top{display:flex;align-items:center;gap:9px;padding:10px 12px}
+.post-top .av{width:32px;height:32px;border-radius:50%;padding:2px;background:linear-gradient(45deg,#f9a03f,#e8590c,#c2255c);flex:none}
+.post-top .av span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--gr);border:2px solid #fff;color:var(--claro);font-size:10.5px;font-weight:800}
+.post-top div{flex:1;min-width:0}
+.post-top b{display:block;font-size:13.5px;line-height:1.2}
+.post-top small{display:block;font-size:11.5px;color:#737373}
+.post-top svg{width:18px;height:18px;color:#262626;flex:none}
+.arte{position:relative;aspect-ratio:4/5;overflow:hidden;background:#222}
+.arte img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.arte::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 25%,rgba(0,0,0,.82) 78%)}
+.arte .tx{position:absolute;left:16px;right:16px;bottom:16px;z-index:1;color:#fff;display:flex;flex-direction:column;gap:8px}
+.arte .mo{align-self:flex-start;background:var(--claro);color:#1d1f23;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:5px}
+.arte .mg{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 82;font-weight:800;font-size:29px;line-height:1;text-transform:uppercase;letter-spacing:0}
+.arte .ms{font-size:14px;font-weight:600;line-height:1.35;color:rgba(255,255,255,.9)}
+.arte .marca{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.75)}
+.arte .tag{position:absolute;top:12px;right:12px;z-index:2;background:rgba(255,255,255,.92);color:var(--ac);font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 8px;border-radius:999px}
+.arte .tag.real{color:var(--ok)}
+.post-cta{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;font-size:13.5px;font-weight:700;border-bottom:1px solid #efefef;color:#0f4c81}
+.post-cta svg{width:16px;height:16px}
+.post-acoes{display:flex;gap:14px;padding:10px 12px 4px;color:#262626}
+.post-acoes svg{width:24px;height:24px}
+.post-acoes .fim{margin-left:auto}
+.post-leg{padding:4px 12px 14px;font-size:13.5px;line-height:1.4;color:#262626}
+.post-leg b{font-weight:700;margin-right:4px}
+
+/* serviços que a Maia divulga */
+.galeria{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.srv{position:relative;border-radius:18px;overflow:hidden;aspect-ratio:4/5;background:var(--gr)}
+.srv img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.srv::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 35%,rgba(20,21,24,.88) 100%)}
+.srv div{position:absolute;left:12px;right:12px;bottom:12px;z-index:1;color:#fff}
+.srv b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:20px;line-height:1.05}
+.srv span{display:block;font-size:12.5px;line-height:1.3;color:rgba(255,255,255,.82);margin-top:4px}
+
+/* faixa com foto */
+.faixa-foto{position:relative;overflow:hidden;color:#fff;background:var(--gr);padding-block:0}
+.faixa-foto img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%}
+.faixa-foto::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(22,23,26,.92) 0%,rgba(22,23,26,.72) 55%,rgba(22,23,26,.35) 100%)}
+.faixa-foto .ct{position:relative;z-index:1;padding-block:72px}
+.faixa-foto h2{max-width:16ch}
+.faixa-foto p{margin-top:14px;font-size:18px;color:rgba(255,255,255,.85);max-width:46ch}
+.faixa-foto .olho{color:var(--claro)}.faixa-foto .olho::before{background:var(--claro)}
+
+/* o mês */
+.mes{display:grid;gap:12px}
+.it{display:flex;gap:14px;align-items:flex-start;background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:18px}
+.it .n{flex:none;width:40px;height:40px;border-radius:12px;background:var(--ac-bg);color:var(--ac);display:grid;place-items:center;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:16px}
+.it h3{font-size:18.5px}
+.it p{font-size:15px;color:var(--mu);margin-top:4px}
+.dono{display:grid;gap:18px;margin-top:28px;background:var(--s1);border:1px solid var(--ln);border-radius:24px;padding:20px;box-shadow:var(--sombra)}
+.dono .tx p{font-size:16px;color:var(--tx2);margin-top:10px}
+.dono .tx h3{font-size:26px;margin-top:8px}
+.mini{background:var(--wa);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
+
+/* prova */
+.prova{display:grid;gap:18px;background:var(--s1);border:1px solid var(--ln);border-radius:24px;padding:22px 20px;box-shadow:var(--sombra)}
+.prova h3{font-size:26px;margin-top:8px}
+.prova p{font-size:16px;color:var(--tx2);margin-top:8px}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.nums div{background:var(--bg);border-radius:14px;padding:14px 12px}
+.nums b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:32px;line-height:1;color:var(--ac);font-variant-numeric:tabular-nums}
+.nums span{display:block;font-size:13px;color:var(--mu);margin-top:6px;line-height:1.3}
+
+/* o que a Maia já sabe sobre o nicho */
+.sabe{background:linear-gradient(180deg,var(--ac-bg),var(--bg) 340px)}
+.sabe-topo{display:grid;gap:22px;align-items:end}
+.sabe-foto{border-radius:22px;overflow:hidden;box-shadow:var(--sombra)}
+.sabe-foto img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.subs{display:grid;gap:10px;margin-top:30px}
+.sub{background:var(--s1);border:1px solid var(--ln);border-left:4px solid var(--ac2);border-radius:16px;padding:16px 18px;min-width:0}
+.sub b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:20px;line-height:1.1}
+.sub .s{display:block;font-size:14px;color:var(--mu);margin-top:4px}
+.sub p{font-size:15px;color:var(--tx2);margin-top:10px}
+.sub p i{font-style:normal;font-weight:800;color:var(--ac)}
+.bloco{margin-top:44px}
+.bloco>h3{font-size:clamp(23px,4.6vw,28px)}
+.bloco>p.lead{margin-top:8px;font-size:16.5px}
+.duas{display:grid;gap:14px;margin-top:18px}
+.cx{background:var(--s1);border:1px solid var(--ln);border-radius:20px;padding:20px;box-shadow:var(--sombra);min-width:0}
+.cx h4{font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
+.pergs{list-style:none;display:grid;gap:8px;counter-reset:p}
+.pergs li{counter-increment:p;display:flex;gap:10px;align-items:flex-start;background:var(--wa-out);border-radius:12px 12px 4px 12px;padding:9px 12px;font-size:15px;color:var(--wa-tx)}
+.pergs li::before{content:counter(p);flex:none;width:22px;height:22px;border-radius:50%;background:#fff;color:var(--ok);font-size:12px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+.lst{list-style:none;display:grid;gap:8px}
+.lst li{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tx2)}
+.lst li .ico{width:18px;height:18px;margin-top:3px}
+.lst.ok li .ico{color:var(--ok)}
+.lst.av li .ico{color:var(--at)}
+.cx .sep{border-top:1px dashed var(--ln2);margin:16px 0}
+.cx .tag-ok,.cx .tag-av{display:inline-block;font-size:12.5px;font-weight:800;border-radius:999px;padding:4px 10px;margin-bottom:10px}
+.cx .tag-ok{background:var(--ok-bg);color:var(--ok)}
+.cx .tag-av{background:var(--at-bg);color:var(--at)}
+.objs{display:grid;gap:10px;margin-top:18px}
+.obj{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:16px 18px;display:grid;gap:10px;min-width:0}
+.obj .q{justify-self:start;background:#fff;border:1px solid var(--ln);border-radius:4px 12px 12px 12px;padding:8px 12px;font-size:15px;font-weight:700;color:var(--wa-tx);box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.obj .r{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tx2)}
+.obj .r .ico{width:18px;height:18px;color:var(--ac);margin-top:3px}
+.recado{display:grid;gap:18px;margin-top:18px;background:var(--s1);border:1px solid var(--ac-ln);border-radius:24px;padding:20px;box-shadow:var(--sombra)}
+.recado h3{font-size:24px;margin-top:6px}
+.recado .tx p{font-size:15.5px;color:var(--tx2);margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chips span{background:var(--ac-bg);color:var(--ac);border:1px solid var(--ac-ln);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.recado .regra{font-size:13.5px;color:var(--mu);margin-top:14px}
+.recado .mini .bal{max-width:92%}
+.botoes{display:flex;gap:6px;margin-top:6px;align-self:flex-end;max-width:92%;width:100%}
+.botoes span{flex:1;text-align:center;background:#fff;border-radius:8px;padding:7px 6px;font-size:13px;font-weight:700;color:#027eb5;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.cal{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+.cal div{background:var(--s1);border:1px solid var(--ln);border-top:4px solid var(--ac2);border-radius:16px;padding:14px 16px;min-width:0}
+.cal small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.cal b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:19px;line-height:1.1;color:var(--tx);margin-top:4px}
+.cal span{display:block;font-size:14.5px;color:var(--tx2);margin-top:8px;line-height:1.35;font-weight:700}
+.cal span::before{content:"Gancho: ";font-weight:600;color:var(--mu)}
+.bal.foto{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bal.foto .anexo{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border-radius:8px;padding:10px 12px;font-weight:700;color:var(--wa-tx)}
+.bal.foto .anexo .ico{width:20px;height:20px;color:var(--wa-mu)}
+.bal.foto .h{width:100%}
+
+/* como começa */
+.linha{list-style:none;display:grid;gap:0}
+.passo{display:grid;grid-template-columns:44px 1fr;gap:16px;position:relative;padding-bottom:24px}
+.passo::before{content:"";position:absolute;left:21px;top:44px;bottom:0;width:2px;background:var(--ln2)}
+.passo:last-child::before{display:none}
+.passo .bola{width:44px;height:44px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:18px;position:relative;z-index:1}
+.passo .tag{display:inline-block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);margin-bottom:4px}
+.passo p{font-size:15.5px;color:var(--mu);margin-top:6px}
+.passo ul{list-style:none;display:grid;gap:6px;margin-top:10px}
+.passo li{display:flex;gap:8px;font-size:15px;color:var(--tx2)}
+.passo li .ico{width:18px;height:18px;color:var(--ok);margin-top:3px}
+.passo .sai{display:inline-flex;gap:8px;align-items:center;margin-top:10px;background:var(--ok-bg);color:var(--ok);border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:700}
+.passo .sai .ico{width:16px;height:16px}
+.como-g{display:grid;gap:28px;align-items:start}
+.como-foto{border-radius:22px;overflow:hidden;box-shadow:var(--sombra)}
+.como-foto img{width:100%;aspect-ratio:4/5;object-fit:cover}
+
+/* oferta */
+.card-of{max-width:780px;margin:0 auto;background:var(--s1);border:1px solid var(--ln);border-radius:28px;box-shadow:0 40px 80px -40px rgba(29,31,35,.45);overflow:hidden}
+.of-cab{position:relative;color:#fff;padding:26px 20px;background:var(--gr);overflow:hidden}
+.of-cab img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32}
+.of-cab>*:not(img){position:relative}
+.of-cab .olho{color:var(--claro)}.of-cab .olho::before{background:var(--claro)}
+.of-cab h3{font-size:28px;margin-top:8px}
+.of-corpo{padding:22px 20px 24px}
+.inclui{list-style:none;display:grid;gap:10px}
+.inclui li{display:flex;gap:10px;align-items:flex-start;font-size:15.5px;color:var(--tx2)}
+.inclui li .ico{width:20px;height:20px;color:var(--ok);margin-top:2px}
+.inclui li b{color:var(--tx)}
+.precos{display:grid;gap:10px;margin-top:24px;border-top:1px dashed var(--ln2);padding-top:22px}
+.pr{border:1px solid var(--ln);border-radius:18px;padding:16px 18px;background:var(--bg)}
+.pr.um{border:2px solid var(--ac2);background:var(--s1)}
+.pr small{display:block;font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.pr .v{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;margin-top:4px}
+.pr .v b{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:clamp(42px,11vw,60px);line-height:.95;letter-spacing:-.03em;white-space:nowrap}
+.pr .v span{font-size:17px;font-weight:700;color:var(--tx2)}
+.pr p{font-size:14.5px;color:var(--mu);margin-top:6px}
+.fora{margin-top:16px;font-size:14px;color:var(--tx2);background:var(--at-bg);border-radius:14px;padding:12px 14px}
+.fora b{color:var(--at)}
+.of-corpo .btn{width:100%;margin-top:20px}
+
+/* dúvidas */
+.faq{max-width:780px;margin:0 auto;display:grid;gap:10px}
+.faq details{background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:0 18px}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:14px;align-items:center;padding:18px 0;font-weight:800;font-size:16.5px;line-height:1.3}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";flex:none;width:12px;height:12px;border-right:2.5px solid var(--ac);border-bottom:2.5px solid var(--ac);transform:rotate(45deg) translate(-3px,-3px);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(225deg) translate(-3px,-3px)}
+.faq details p{padding:0 0 18px;font-size:15.5px;color:var(--tx2)}
+
+/* final */
+.final{padding-block:16px 88px}
+.final-card{position:relative;display:grid;gap:18px;border-radius:28px;overflow:hidden;color:#fff;background:var(--gr);text-align:center;justify-items:center;padding:40px 20px 34px}
+.final-card>img.fundo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4}
+.final-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,23,26,.4),rgba(22,23,26,.85))}
+.final-card>*:not(.fundo){position:relative;z-index:1}
+.final-card .maia{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #fff}
+.final-card h2{font-size:clamp(30px,7vw,44px)}
+.final-card .lead{margin-inline:auto;color:rgba(255,255,255,.85)}
+.final-card .btn{width:100%;max-width:420px}
+.rodape{border-top:1px solid var(--ln);padding-block:26px 120px;font-size:13.5px;color:var(--mu);text-align:center}
+
+/* barra de baixo no celular */
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px;transform:translateY(110%);transition:transform .25s}
+.barra.on{transform:none}
+.barra .q{flex:1;min-width:0;line-height:1.2}
+.barra .q b{display:block;font-size:15px;font-weight:800}
+.barra .q span{display:block;font-size:12.5px;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.barra .btn{min-height:46px;padding:0 18px;font-size:15px;flex:none}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.barra{transition:none}}
+
+@media (min-width:720px){
+  section{padding-block:96px}
+  .hero>img,.hero::after{aspect-ratio:16/10}
+  .dor-lista,.jeito,.mes{grid-template-columns:repeat(2,1fr)}
+  .galeria{grid-template-columns:repeat(3,1fr)}
+  .srv{aspect-ratio:4/3}
+  .cal{grid-template-columns:repeat(2,1fr)}
+  .subs,.objs{grid-template-columns:repeat(2,1fr)}
+  .duas{grid-template-columns:1fr 1fr}
+  .recado{grid-template-columns:1.1fr .9fr;align-items:center;padding:28px}
+  .sabe-topo{grid-template-columns:1.2fr .8fr;gap:40px}
+  .prova{grid-template-columns:1fr 1fr;align-items:center;padding:30px}
+  .dono{grid-template-columns:1fr 1fr;align-items:center;padding:28px}
+  .precos{grid-template-columns:1fr 1fr}
+  .of-cab{padding:30px 32px}.of-corpo{padding:30px 32px 32px}
+  .final-card{padding:64px 40px 56px}
+  .faixa-foto .ct{padding-block:110px}
+  .barra{display:none}
+  .rodape{padding-bottom:40px}
+}
+@media (min-width:980px){
+  .hero>img{position:absolute;inset:0;height:100%;aspect-ratio:auto}
+  .hero::after{aspect-ratio:auto;bottom:0;background:linear-gradient(90deg,rgba(22,23,26,.94) 0%,rgba(22,23,26,.78) 42%,rgba(22,23,26,.25) 75%,rgba(22,23,26,.15) 100%)}
+  .hero>img{object-position:var(--hero-pos-g,50% 50%)}
+  .hero .ct{grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;margin-top:0;padding-block:96px 104px}
+  .hero .cel-hero{display:block}
+  .hero .cel{max-width:350px}
+  .dor-lista{grid-template-columns:repeat(4,1fr)}
+  .jeito{grid-template-columns:repeat(4,1fr)}
+  .conv{grid-template-columns:400px 1fr;gap:40px}
+  .lado{grid-template-columns:1fr 1fr;position:sticky;top:24px}
+  .mes{grid-template-columns:repeat(4,1fr)}
+  .feed{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-auto-columns:auto;overflow:visible;margin-inline:0;padding-inline:0}
+  .como-g{grid-template-columns:1.2fr .8fr;gap:56px}
+  .cal{grid-template-columns:repeat(4,1fr)}
+  .subs{grid-template-columns:repeat(5,1fr)}
+  .objs{grid-template-columns:repeat(3,1fr)}
+}
+@media (max-width:380px){.topo .nome{display:none}.fatos b{font-size:22px}}
+
+:root{--ac:#0e7490;--ac2:#0891b2;--ac-bg:#e7f6f9;--ac-ln:#a5dce7;--claro:#5fd4e8;--ac-rgb:14,116,144;--hero-pos:50% 40%;--hero-pos-g:62% 40%}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="ct">
+    <a class="chapa" href="https://carreiranodigital.com" aria-label="Carreira no Digital"><img src="/imersao/midia/logo.webp" alt="Carreira no Digital" width="256" height="93"></a>
+    <div class="nome"><b>Maia</b> · a IA de marketing pra ótica</div>
+    <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20%C3%B3tica." data-cta data-msg="Quero a Maia na minha ótica." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia</a>
+  </div>
+</header>
+<main>
+
+<section class="hero">
+  <img src="/maia/nichos/img/otica/hero-vendedora-balcao.jpg" alt="Atendente sorrindo no balcão de uma ótica, com a parede de armações atrás" width="1800" height="1137" fetchpriority="high" decoding="async">
+  <div class="ct">
+    <div>
+      <span class="selo"><i>Maia</i><span>A IA de marketing feita pra ótica</span></span>
+      <h1>O cliente manda a receita às 22h e pergunta o preço. <em>Quem responde primeiro vende o óculos.</em></h1>
+      <p class="lead">A Maia é a IA de marketing feita pra <b>ótica</b>. Ela atende no WhatsApp com o nome da sua ótica, pede a foto da receita, explica lente e armação antes do preço, convida pra provar na loja, retoma quem sumiu e ainda cria e roda os seus anúncios no Facebook e no Instagram.</p>
+      <div class="acoes">
+        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20%C3%B3tica." data-cta data-msg="Quero a Maia na minha ótica." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha ótica</a>
+        <a class="btn btn-sec" href="#conversa">Ver como ela atende</a>
+      </div>
+      <div class="fatos">
+        <div><b>24 h</b><span>atendendo no seu WhatsApp</span></div>
+        <div><b>3</b><span>retomadas pra quem sumiu</span></div>
+        <div><b>48 h</b><span>pra campanha ir pro ar</span></div>
+      </div>
+    </div>
+    <div class="cel-hero"><div class="cel" role="img" aria-label="Exemplo de conversa no WhatsApp da Ótica Visão Clara"><div class="tela">
+    <div class="wa-top"><span class="av">VC</span><div><b>Ótica Visão Clara</b><small>online</small></div></div>
+    <div class="wa-msgs"><div class="bal c">Boa noite! Quanto fica um óculos multifocal?<div class="h">21:38</div></div><div class="bal e">Boa noite! Aqui é da Ótica Visão Clara. O valor da lente multifocal depende do seu grau, então pra te passar o preço certo eu preciso da receita. Me manda uma foto dela?<div class="h">21:38<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c foto"><span class="anexo"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-8 8"/></svg>Foto da receita</span><div class="h">21:40</div></div><div class="bal e">Recebi! Receita de abril deste ano, está em dia. O par já sai com as lentes feitas no seu grau, antirreflexo, montagem e ajuste no rosto aqui na loja. No seu grau fica a partir de R$ 890, e a armação é à parte.<div class="h">21:40<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>
+  </div></div></div>
+  </div>
+</section>
+
+<section class="dores">
+  <div class="ct">
+    <div class="cab">
+      <span class="olho">Você conhece isso</span>
+      <h2>O que faz a sua ótica perder venda todo mês</h2>
+    </div>
+    <div class="dor-lista">
+      <div class="dor"><img src="/maia/nichos/img/otica/cliente-escolhendo.jpg" alt="Cliente escolhendo armação na parede da ótica" width="960" height="640" loading="lazy" decoding="async"><p class="q">Mandam foto da receita perguntando o preço e, quando eu respondo, já compraram em outra ótica.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Quem responde primeiro, com o valor certo, leva a venda. A Maia responde na hora, até de noite e no domingo.</span></p></div><div class="dor"><img src="/maia/nichos/img/otica/vitrine-armacoes.jpg" alt="Prateleiras iluminadas cheias de armações" width="960" height="540" loading="lazy" decoding="async"><p class="q">O cliente pergunta &quot;quanto é o óculos?&quot; como se fosse tudo igual.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Ela explica a diferença de lente e de armação antes do preço, e o cliente para de comparar só o número.</span></p></div><div class="dor"><img src="/maia/nichos/img/otica/conserto-haste.jpg" alt="Mãos apertando o parafuso da haste de um óculos" width="960" height="641" loading="lazy" decoding="async"><p class="q">Vendo o óculos e nunca mais vejo o cliente. Ele só volta quando quebra.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Recado na hora certa: 1 ano da compra, volta às aulas, verão. A sua base volta pra loja.</span></p></div><div class="dor"><img src="/maia/nichos/img/otica/menina-na-otica.jpg" alt="Menina segurando um óculos na frente da parede de armações" width="960" height="640" loading="lazy" decoding="async"><p class="q">Janeiro e fevereiro a loja enche, depois fica parada.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>A Maia anuncia o ano todo e muda o foco: sol no verão, criança na volta às aulas, presente nas datas.</span></p></div>
+    </div>
+  </div>
+</section>
+
+<section id="conversa">
+  <div class="ct">
+    <div class="cab">
+      <span class="olho">No jeito da sua ótica</span>
+      <h2>Como a Maia atende o seu cliente</h2>
+      <p class="lead">Ela não é um robô de menu. Ela conversa, pede o que a equipe precisa pra vender o óculos certo e só passa a conversa adiante quando está pronta.</p>
+    </div>
+    <div class="jeito">
+      <div class="j"><img src="/maia/nichos/img/otica/medindo-lente.jpg" alt="Óculos sobre a régua de medir lente" width="960" height="1438" loading="lazy" decoding="async"><div class="tx"><span class="n">1</span><h3>Pede a receita antes de falar de lente</h3><p>Lente depende do grau e do tratamento. Ela pede a foto da receita e confere a data. Se tiver mais de 1 ano, orienta renovar com o oftalmologista antes de fazer as lentes.</p></div></div><div class="j"><img src="/maia/nichos/img/otica/provando-oculos.jpg" alt="Cliente provando um óculos de grau na loja" width="960" height="641" loading="lazy" decoding="async"><div class="tx"><span class="n">2</span><h3>Explica a lente em palavras simples</h3><p>Visão simples, multifocal, antirreflexo, filtro de luz azul, fotossensível: o que cada uma muda no dia a dia do cliente, antes de qualquer número.</p></div></div><div class="j"><img src="/maia/nichos/img/otica/parede-armacoes.jpg" alt="Parede com armações coloridas" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">3</span><h3>Passa a faixa de preço sem chutar</h3><p>Armação tem faixa de preço e ela passa na hora. A lente sai pelo grau da receita, sempre com o que está incluso: montagem, ajuste e prazo.</p></div></div><div class="j"><img src="/maia/nichos/img/otica/mae-e-filha.jpg" alt="Mãe e filha escolhendo armação juntas" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">4</span><h3>Leva pra loja provar</h3><p>Óculos se escolhe no rosto. Ela convida pra provar, passa o resumo pra sua equipe e a equipe confirma o horário.</p></div></div>
+    </div>
+    <div class="conv">
+      <div>
+        <div class="cel" role="img" aria-label="Conversa completa de exemplo no WhatsApp da Ótica Visão Clara"><div class="tela">
+    <div class="wa-top"><span class="av">VC</span><div><b>Ótica Visão Clara</b><small>online</small></div></div>
+    <div class="wa-msgs"><div class="bal c">Boa noite! Quanto fica um óculos multifocal?<div class="h">21:38</div></div><div class="bal e">Boa noite! Aqui é da Ótica Visão Clara. O valor da lente multifocal depende do seu grau, então pra te passar o preço certo eu preciso da receita. Me manda uma foto dela?<div class="h">21:38<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c foto"><span class="anexo"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="11" r="2"/><path d="m21 17-5-5-8 8"/></svg>Foto da receita</span><div class="h">21:40</div></div><div class="bal e">Recebi, Ana! Receita de abril deste ano, está em dia. O par de multifocal já sai com: lentes feitas no seu grau, antirreflexo, montagem na armação, ajuste no rosto aqui na loja e retorno de ajuste sempre que precisar.<div class="h">21:41<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal e">No seu grau, a multifocal com antirreflexo fica a partir de R$ 890 o par. A de campo de visão mais amplo, que cansa menos no computador, R$ 1.390. A armação é à parte: aqui vai de R$ 190 a R$ 790. Dá pra parcelar em até 10x.<div class="h">21:41<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Tem armação de metal mais leve? E demora quanto pra ficar pronto?<div class="h">21:44</div></div><div class="bal e">Tem sim, várias de metal leve e de titânio. O multifocal fica pronto em uns 7 dias úteis, porque a lente é feita no laboratório no seu grau. Pra multifocal a equipe tira as medidas no seu rosto com a armação escolhida, então o melhor é vir provar. Prefere amanhã à tarde ou sábado de manhã?<div class="h">21:45<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Sábado de manhã<div class="h">21:46</div></div><div class="bal e">Combinado, Ana! Vou passar pra equipe separar umas armações leves e confirmar o horário de sábado. Te aviso aqui.<div class="h">21:46<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>
+  </div></div>
+        <p class="ex">Exemplo · empresa fictícia · os preços e prazos são os seus</p>
+      </div>
+      <div class="lado">
+        <div class="resumo">
+          <span class="olho">O que chega pro seu time</span>
+          <h3>Um resumo, não 40 mensagens</h3>
+          <dl><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Ana</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Quer óculos multifocal</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Receita de abril deste ano (foto no chat)</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Prefere armação de metal leve</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Viu as faixas: lente a partir de R$ 890, armação à parte</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Quer provar sábado de manhã</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Veio do anúncio &quot;cansou de tirar o óculos pra ler?&quot;</span></div></dl>
+          <p>Você ou o seu time confirma, responde por ali mesmo e marca como resolvido. A Maia volta a atender.</p>
+        </div>
+        <div class="ret">
+          <span class="olho">E se o cliente sumir</span>
+          <h3>A retomada</h3>
+          <ol><li><b>No dia seguinte</b><span>Oi Ana, aqui é da Ótica Visão Clara. Separei 4 armações de metal leve que ficam ótimas com multifocal. Quer que eu mande as fotos antes de sábado?</span></li><li><b>3 dias depois</b><span>Ana, ficou alguma dúvida sobre as lentes? Se ajudar, te explico rapidinho a diferença entre a multifocal comum e a de campo ampliado.</span></li><li><b>6 dias depois</b><span>Ana, tentei falar contigo e entendo a correria. Vou parar por aqui pra não incomodar. Quando quiser ver as armações, é só chamar.</span></li></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sabe" id="especialista">
+  <div class="ct">
+    <div class="sabe-topo">
+      <div class="cab" style="margin-bottom:0">
+        <span class="olho">Especialista em ótica</span>
+        <h2>O que a Maia já sabe sobre ótica</h2>
+        <p class="lead">Ela chega na implantação sabendo como uma ótica vende. Você só ensina o que é seu: marcas e faixas de armação, tabela de lentes, prazos do laboratório, parcelamento e convênios.</p>
+      </div>
+      <div class="sabe-foto"><img src="/maia/nichos/img/otica/comparando-armacoes.jpg" alt="Cliente comparando duas armações na ótica" width="960" height="1440" loading="lazy" decoding="async"></div>
+    </div>
+
+    <div class="subs">
+      <div class="sub"><b>Óculos de grau</b><span class="s">Visão simples, multifocal, ocupacional</span><p><i>Ela pergunta:</i> A foto da receita, se é pra longe, perto ou os dois, e se usa muito computador ou celular.</p></div><div class="sub"><b>Lentes e tratamentos</b><span class="s">Antirreflexo, filtro de luz azul, fotossensível, lente mais fina</span><p><i>Ela pergunta:</i> O grau da receita e a rotina: dirige à noite, passa o dia na tela, trabalha no sol.</p></div><div class="sub"><b>Óculos de sol</b><span class="s">Com grau ou sem grau</span><p><i>Ela pergunta:</i> Se quer com o grau da receita e pra que usa: dirigir, praia, dia a dia.</p></div><div class="sub"><b>Lente de contato</b><span class="s">Diária, mensal, colorida</span><p><i>Ela pergunta:</i> A receita própria de lente de contato, que é diferente da do óculos, e se já usa.</p></div><div class="sub"><b>Conserto e ajuste</b><span class="s">Haste solta, plaqueta, parafuso, óculos torto</span><p><i>Ela pergunta:</i> Uma foto do óculos e o que aconteceu, pra equipe ver se resolve na hora.</p></div>
+    </div>
+
+    <div class="bloco">
+      <h3>As perguntas certas e o preço na hora certa</h3>
+      <div class="duas">
+        <div class="cx">
+          <h4>O que ela pergunta antes de passar adiante</h4>
+          <ol class="pergs"><li>Tem a receita? Me manda uma foto dela.</li><li>De quando é a receita?</li><li>É pra longe, pra perto ou pros dois?</li><li>Você já usa óculos? Já usou multifocal?</li><li>Passa muito tempo no computador ou no celular?</li><li>Prefere armação de metal ou de acetato? Mais leve?</li><li>Vai querer óculos de sol com grau também?</li><li>Tem convênio? Qual?</li></ol>
+        </div>
+        <div class="cx">
+          <h4>Como ela lida com o preço</h4>
+          <span class="tag-ok">Tem preço fixo: ela passa, com o que está incluso antes</span>
+          <ul class="lst ok"><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Armação, com a faixa de preço de cada modelo</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Óculos de sol sem grau</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Lente de contato (caixa), com a receita de lente</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Conserto simples: plaqueta, parafuso, ajuste</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Limpeza e ajuste do óculos</span></li></ul>
+          <div class="sep"></div>
+          <span class="tag-av">Depende de ver na loja: ela explica por quê e leva pro atendimento na loja</span>
+          <ul class="lst av"><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Lente de grau: o valor sai pelo grau da receita e pelo tratamento</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Multifocal: as medidas são tiradas no rosto, com a armação escolhida</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Armação quebrada: a equipe precisa ver a peça</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Lente de contato pela primeira vez: precisa da receita própria do oftalmologista</span></li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>O que o cliente fala, e como ela responde</h3>
+      <div class="objs">
+        <div class="obj"><span class="q">"Na internet é mais barato."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Não fala mal de ninguém. Mostra o que o óculos da loja inclui: medidas tiradas no rosto, montagem, ajuste e retorno sempre que precisar. E convida pra provar.</span></p></div><div class="obj"><span class="q">"Tá caro."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Mostra a opção de lente que cabe no bolso sem perder o essencial pro grau da pessoa, e o parcelamento que você definiu.</span></p></div><div class="obj"><span class="q">"Minha receita é antiga."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Explica que a lente é feita no grau da receita e, com mais de 1 ano, o ideal é renovar com o oftalmologista. Enquanto isso, já ajuda a escolher a armação.</span></p></div><div class="obj"><span class="q">"Vocês fazem exame de vista?"</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Não marca nem promete exame. Explica que a receita é feita pelo oftalmologista e segue com a pessoa quando ela tiver a receita em mãos.</span></p></div><div class="obj"><span class="q">"Vou ver com calma."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Entra a retomada: fotos de armações no estilo da pessoa, uma dúvida respondida e, no fim, uma despedida educada.</span></p></div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <div class="recado">
+        <div class="tx">
+          <span class="olho">Recado pra base</span>
+          <h3>1 ano depois da compra</h3>
+          <p>Com a lista dos seus clientes e a data da compra, a Maia lembra quem levou óculos há 1 ano: hora de revisar o grau com o oftalmologista e passar na loja pra um ajuste. Também avisa a base na volta às aulas, no verão e nas datas de presente.</p>
+          <div class="chips"><span>1 ano da compra</span><span>Volta às aulas</span><span>Verão</span><span>Dia das Mães e dos Pais</span><span>Black Friday</span><span>Natal</span></div>
+          <p class="regra">Só pra quem já é cliente, com botão pra sair da lista, e no máximo 2 recados por semana pra cada pessoa. Você aprova cada recado antes de sair.</p>
+        </div>
+        <div>
+          <div class="mini" role="img" aria-label="Exemplo de recado pra base no WhatsApp da Ótica Visão Clara">
+            <div class="wa-top"><span class="av">VC</span><div><b>Ótica Visão Clara</b><small>recado pra base</small></div></div>
+            <div class="wa-msgs">
+              <div class="bal e" style="max-width:92%">Oi Ana, aqui é da Ótica Visão Clara. Faz 1 ano que você levou o seu multifocal. É um bom momento pra revisar o grau com o seu oftalmologista e trazer o óculos pra um ajuste e uma limpeza. Quer que eu reserve um horário?<div class="h">09:30<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="botoes"><span>Quero</span><span>Não quero receber</span></div>
+            </div>
+          </div>
+          <p class="ex">Exemplo</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>O calendário do ano, com o gancho de cada época</h3>
+      <p class="lead">A cada 15 dias ela revisa a estratégia olhando a época do ano e muda o foco dos anúncios.</p>
+      <div class="cal"><div><small>Janeiro e fevereiro</small><b>Volta às aulas: óculos das crianças</b><span>Lista de material pronta. E o óculos?</span></div><div><small>Dezembro a março</small><b>Verão: óculos de sol, com ou sem grau</b><span>Óculos de sol com o seu grau. Dá pra fazer?</span></div><div><small>Maio</small><b>Dia das Mães</b><span>Um presente que ela usa todo dia.</span></div><div><small>Agosto</small><b>Dia dos Pais</b><span>Pro pai que afasta o celular pra conseguir ler.</span></div><div><small>Novembro</small><b>Black Friday</b><span>Armação e lente com condição de Black.</span></div><div><small>Dezembro</small><b>Natal</b><span>Óculos de sol de presente, com troca na loja.</span></div><div><small>O ano todo</small><b>1 ano da compra, com recado pra base</b><span>Faz 1 ano do seu óculos?</span></div><div><small>O ano todo</small><b>Multifocal e lente de contato</b><span>Cansou de tirar o óculos pra ler?</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="anuncios">
+  <div class="ct">
+    <div class="cab">
+      <span class="olho">Facebook e Instagram</span>
+      <h2>Os anúncios que ela faz pra ótica</h2>
+      <p class="lead">O gancho fala com quem já está precisando: a receita nova, o filho voltando às aulas, o sol do verão. Na sua conta, a foto é sempre da sua loja de verdade: a sua vitrine, a sua equipe, o seu cliente provando.</p>
+    </div>
+    <div class="feed">
+      <article class="post">
+      <div class="post-top"><span class="av"><span>SUA</span></span><div><b>suaotica</b><small>Patrocinado</small></div><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+      <div class="arte"><img src="/maia/nichos/img/otica/oculos-de-sol.jpg" alt="" width="960" height="1440" loading="lazy" decoding="async"><span class="tag">Exemplo</span><div class="tx"><span class="mo">Verão</span><p class="mg">Óculos de sol com o seu grau?</p><p class="ms">Dá pra fazer: lente no grau da sua receita e proteção UV.</p><span class="marca">Sua ótica</span></div></div>
+      <div class="post-cta"><span>Enviar mensagem</span><svg  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="post-acoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="fim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span></div>
+      <p class="post-leg"><b>suaotica</b>Quem usa óculos de grau não precisa escolher entre enxergar bem e proteger os olhos do sol. Manda a foto da sua receita no WhatsApp e a gente te mostra as opções.</p>
+    </article><article class="post">
+      <div class="post-top"><span class="av"><span>SUA</span></span><div><b>suaotica</b><small>Patrocinado</small></div><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+      <div class="arte"><img src="/maia/nichos/img/otica/menina-oculos-rosa.jpg" alt="" width="960" height="683" loading="lazy" decoding="async"><span class="tag">Exemplo</span><div class="tx"><span class="mo">Volta às aulas</span><p class="mg">Lista de material pronta. E o óculos?</p><p class="ms">Armações resistentes pra criança, com a lente no grau da receita.</p><span class="marca">Sua ótica</span></div></div>
+      <div class="post-cta"><span>Ver modelos</span><svg  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="post-acoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="fim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span></div>
+      <p class="post-leg"><b>suaotica</b>Óculos de criança tem que aguentar o recreio. Traz a receita do oftalmologista e escolham juntos a armação. Chama no WhatsApp pra ver os modelos.</p>
+    </article><article class="post">
+      <div class="post-top"><span class="av"><span>SUA</span></span><div><b>suaotica</b><small>Patrocinado</small></div><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+      <div class="arte"><img src="/maia/nichos/img/otica/comparando-armacoes.jpg" alt="" width="960" height="1440" loading="lazy" decoding="async"><span class="tag">Exemplo</span><div class="tx"><span class="mo">Multifocal</span><p class="mg">Cansou de tirar o óculos pra ler?</p><p class="ms">Longe e perto na mesma lente, com as medidas tiradas no seu rosto.</p><span class="marca">Sua ótica</span></div></div>
+      <div class="post-cta"><span>Enviar mensagem</span><svg  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="post-acoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="fim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span></div>
+      <p class="post-leg"><b>suaotica</b>Multifocal bem feito começa na medida certa. Manda a foto da receita e a gente te explica as opções de lente antes de falar de preço.</p>
+    </article><article class="post">
+      <div class="post-top"><span class="av"><span>SUA</span></span><div><b>suaotica</b><small>Patrocinado</small></div><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="1.7"/><circle cx="12" cy="12" r="1.7"/><circle cx="19" cy="12" r="1.7"/></svg></div>
+      <div class="arte"><img src="/maia/nichos/img/otica/parafuso-oculos.jpg" alt="" width="960" height="1438" loading="lazy" decoding="async"><span class="tag">Exemplo</span><div class="tx"><span class="mo">Conserto e ajuste</span><p class="mg">Óculos torto ou com a haste solta?</p><p class="ms">Ajuste, plaqueta e parafuso, com a sua armação de volta no rosto.</p><span class="marca">Sua ótica</span></div></div>
+      <div class="post-cta"><span>Enviar mensagem</span><svg  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
+      <div class="post-acoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="fim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span></div>
+      <p class="post-leg"><b>suaotica</b>Óculos frouxo cansa e escorrega. Manda uma foto dele no WhatsApp e a gente te diz se resolve na hora.</p>
+    </article>
+      
+    </div>
+    <p class="nota">São exemplos com fotos de banco. Na sua conta, eles saem com as fotos da sua loja, a sua logo e as suas cores. Os anúncios só aparecem no Facebook e no Instagram, pra quem está na sua cidade e na sua região. Preço não vai no anúncio: aparece na conversa, depois do valor.</p>
+  </div>
+</section>
+
+<section>
+  <div class="ct">
+    <div class="cab">
+      <span class="olho">Um anúncio pra cada serviço</span>
+      <h2>O que a Maia divulga</h2>
+      <p class="lead">Cada linha da loja ganha o seu gancho, pra quem está precisando daquilo agora.</p>
+    </div>
+    <div class="galeria">
+      <div class="srv"><img src="/maia/nichos/img/otica/cliente-na-parede.jpg" alt="Óculos de grau" width="960" height="640" loading="lazy" decoding="async"><div><b>Óculos de grau</b><span>Armação e lente no grau da receita</span></div></div><div class="srv"><img src="/maia/nichos/img/otica/provando-oculos.jpg" alt="Multifocal" width="960" height="641" loading="lazy" decoding="async"><div><b>Multifocal</b><span>Longe e perto na mesma lente</span></div></div><div class="srv"><img src="/maia/nichos/img/otica/barraca-oculos-de-sol.jpg" alt="Óculos de sol" width="960" height="640" loading="lazy" decoding="async"><div><b>Óculos de sol</b><span>Com e sem grau, pro verão e pro dia a dia</span></div></div><div class="srv"><img src="/maia/nichos/img/otica/menina-oculos-rosa.jpg" alt="Infantil" width="960" height="683" loading="lazy" decoding="async"><div><b>Infantil</b><span>Armação resistente pra volta às aulas</span></div></div><div class="srv"><img src="/maia/nichos/img/otica/parafuso-oculos.jpg" alt="Conserto e ajuste" width="960" height="1438" loading="lazy" decoding="async"><div><b>Conserto e ajuste</b><span>Haste, plaqueta, parafuso, óculos torto</span></div></div><div class="srv"><img src="/maia/nichos/img/otica/limpeza-ultrassom.jpg" alt="Limpeza e revisão" width="960" height="1440" loading="lazy" decoding="async"><div><b>Limpeza e revisão</b><span>O motivo pro cliente voltar à loja</span></div></div>
+    </div>
+  </div>
+</section>
+
+<section class="faixa-foto">
+  <img src="/maia/nichos/img/otica/cliente-na-parede.jpg" alt="Cliente escolhendo armação na parede da ótica" width="960" height="640" loading="lazy" decoding="async">
+  <div class="ct">
+    <span class="olho">Todo mês</span>
+    <h2>Enquanto você está ajustando um óculos no balcão, a Maia cuida do marketing.</h2>
+    <p>Estrategista, designer, social media, gestora de tráfego, atendente e analista. Uma agência inteira, dentro do seu WhatsApp.</p>
+  </div>
+</section>
+
+<section>
+  <div class="ct">
+    <div class="mes">
+      <div class="it"><span class="n">1</span><div><h3>Atende no WhatsApp, todo dia</h3><p>Com o nome da sua ótica e no seu jeito de falar, a qualquer hora, inclusive à noite e no fim de semana.</p></div></div><div class="it"><span class="n">2</span><div><h3>Retoma quem pediu orçamento e sumiu</h3><p>No dia seguinte, em 3 dias e em 6 dias, com despedida educada no fim. Ninguém fica esquecido.</p></div></div><div class="it"><span class="n">3</span><div><h3>Cria e roda a campanha</h3><p>Até 6 vídeos e 6 imagens de anúncio por mês, no Facebook e no Instagram, com as fotos reais do seu trabalho.</p></div></div><div class="it"><span class="n">4</span><div><h3>Faz os posts do mês</h3><p>12 posts pro Instagram: carrossel, imagem e vídeo, com conteúdo que dá confiança pra quem chega pelo anúncio.</p></div></div><div class="it"><span class="n">5</span><div><h3>Analisa os números a cada 2 dias</h3><p>Vê o que traz conversa e cliente de verdade, pausa o que não funciona e reforça o que vende.</p></div></div><div class="it"><span class="n">6</span><div><h3>Relatório todo dia 2</h3><p>O mês inteiro numa página: conversas, orçamentos, vendas e o que muda no mês seguinte.</p></div></div><div class="it"><span class="n">7</span><div><h3>Você aprova tudo pelo WhatsApp</h3><p>Anúncio, post e mudança de rumo chegam no seu WhatsApp. Um &quot;aprovado&quot; e vai pro ar. Tem também um painel com os resultados.</p></div></div><div class="it"><span class="n">8</span><div><h3>Um especialista confere</h3><p>Gente da escola revisa o que a Maia cria antes de ir pro ar, e acompanha a sua conta.</p></div></div>
+    </div>
+    <div class="dono">
+      <div class="tx">
+        <span class="olho">Você e a Maia</span>
+        <h3>Com você, ela é a Maia. Com o seu cliente, ela é a sua ótica.</h3>
+        <p>Você conversa com ela pelo WhatsApp: aprova o que ela criou, pergunta como estão os números e manda foto do trabalho novo pra virar anúncio. Ela responde na hora.</p>
+      </div>
+      <div>
+        <div class="mini" role="img" aria-label="Exemplo de conversa entre a Maia e o dono">
+          <div class="wa-top"><span class="av"><img src="/maia/img/maia-avatar.webp" alt="" width="36" height="36"></span><div><b>Maia</b><small>sua agência</small></div></div>
+          <div class="wa-msgs"><div class="bal c">Bom dia! Os anúncios da semana estão prontos: &quot;óculos de sol com o seu grau&quot; e &quot;multifocal&quot;. Aprova?<div class="h">08:12</div></div><div class="bal e">Aprovado<div class="h">08:14<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">No ar. Ontem 6 pessoas mandaram a receita pedindo valor; passei os resumos pra Lúcia. Duas querem provar no sábado.<div class="h">08:12</div></div></div>
+        </div>
+        <p class="ex">Exemplo</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="ct">
+    <div class="prova">
+      <div>
+        <span class="olho">Resultado real</span>
+        <h3>O mesmo jeito de anunciar e atender, num cliente da escola</h3>
+        <p>A Wood, de gravação a laser no RS, anuncia e atende do jeito que a Maia segue: gancho pra quem já quer comprar, foto real do produto e resposta rápida no WhatsApp.</p>
+      </div>
+      <div class="nums">
+        <div><b>R$ 250</b><span>de anúncio em 1 semana</span></div>
+        <div><b>199</b><span>contatos no WhatsApp</span></div>
+        <div><b>19</b><span>vendas na mesma semana</span></div>
+        <div><b>~150</b><span>copos no Dia dos Pais, com R$ 207 de anúncio</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="ct como-g">
+    <div>
+      <div class="cab">
+        <span class="olho">Como começa</span>
+        <h2>Três passos, tudo online</h2>
+      </div>
+      <ol class="linha">
+        <li class="passo"><span class="bola">1</span><div><span class="tag">Hoje</span><h3>Chama a nossa equipe no WhatsApp</h3><p>Você conta como a sua ótica funciona e tira as dúvidas. Se fizer sentido, já marca a implantação.</p></div></li>
+        <li class="passo"><span class="bola">2</span><div><span class="tag">Com hora marcada</span><h3>Implantação online, em 2 chamadas</h3>
+          <ul>
+            <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Chamada 1, técnica (uns 60 min):</b> a nossa equipe conecta com você o Instagram, a página do Facebook, a conta de anúncio e o WhatsApp, com a tela compartilhada.</span></li>
+            <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Chamada 2, treino (uns 60 min):</b> você ensina a Maia: serviços, preços, prazos, até onde dá desconto e quando ela passa a conversa pra você. Aprova o primeiro lote de anúncios.</span></li>
+          </ul></div></li>
+        <li class="passo"><span class="bola">3</span><div><span class="tag">Em até 48 h</span><h3>Campanha no ar e a Maia atendendo</h3><p>Depois da 2ª chamada, os anúncios aprovados vão pro ar e a Maia começa a atender, retomar e mandar os recados no seu WhatsApp.</p>
+          <span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Campanha no ar em até 48 h depois da 2ª chamada</span></div></li>
+      </ol>
+    </div>
+    <div class="como-foto"><img src="/maia/nichos/img/otica/limpeza-ultrassom.jpg" alt="Óculos sendo limpo na bancada da ótica" width="960" height="1440" loading="lazy" decoding="async"></div>
+  </div>
+</section>
+
+<section class="oferta" id="oferta" style="padding-top:0">
+  <div class="ct">
+    <div class="card-of">
+      <div class="of-cab">
+        <img src="/maia/nichos/img/otica/parede-armacoes.jpg" alt="" width="960" height="640" loading="lazy" decoding="async">
+        <span class="olho">A oferta</span>
+        <h3>A Maia trabalhando pra sua ótica, todo mês</h3>
+      </div>
+      <div class="of-corpo">
+        <ul class="inclui">
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Atendimento no WhatsApp todo dia</b>, com o nome da sua ótica, e retomada de quem sumiu</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Recado pra sua base</b> na época certa do ano</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Campanha no Facebook e no Instagram</b> criada, rodando e ajustada a cada 2 dias</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Até 6 vídeos e 6 imagens de anúncio</b> e <b>12 posts</b> por mês</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Relatório completo todo dia 2</b> e painel com os resultados</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Tudo aprovado por você pelo WhatsApp</b>, com um especialista da escola conferindo</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Implantação online em 2 chamadas</b>, já inclusa no primeiro mês</span></li>
+        </ul>
+        <div class="precos">
+          <div class="pr um"><small>Primeiro mês, com a implantação</small><div class="v"><b>R$ 497</b></div><p>As 2 chamadas de implantação e o primeiro mês da Maia trabalhando.</p></div>
+          <div class="pr"><small>Do segundo mês em diante</small><div class="v"><b>R$ 797</b><span>/mês</span></div><p>Sem fidelidade. Cancela quando quiser.</p></div>
+        </div>
+        <p class="fora"><b>A verba de anúncio é à parte</b> e você paga direto à Meta, no cartão da sua empresa. A conta de anúncio e o número ficam no nome da sua empresa.</p>
+        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20%C3%B3tica." data-cta data-msg="Quero a Maia na minha ótica." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha ótica</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="duvidas" style="padding-top:0">
+  <div class="ct">
+    <div class="cab" style="text-align:center;align-items:center">
+      <span class="olho">Dúvidas</span>
+      <h2>Perguntas que todo mundo faz</h2>
+    </div>
+    <div class="faq">
+      <details><summary>É um robô? Meu cliente vai perceber?</summary><p>A Maia é uma inteligência artificial, mas atende com o nome da sua ótica e no seu jeito de falar, que ela aprende com o seu Instagram e na implantação. Se o cliente perguntar se é robô, ela fala a verdade: é a assistente virtual da empresa. Quando o cliente quer fechar ou tem uma dúvida que ela não sabe, ela passa a conversa pra você ou pro seu time, com o resumo pronto.</p></details><details><summary>A Maia faz exame de vista ou diz qual é o grau?</summary><p>Não. Receita é com o oftalmologista. A Maia pede a foto da receita, confere a data e explica as lentes. Ela não diagnostica nada, não indica grau e não promete exame.</p></details><details><summary>Funciona fora do Rio Grande do Sul?</summary><p>Funciona no Brasil todo. A escola fica em Lajeado (RS), mas tudo é online: a implantação é por chamada de vídeo, com a tela compartilhada, e a campanha roda na sua cidade e na sua região.</p></details><details><summary>Preciso trocar meu número de WhatsApp?</summary><p>Não. A Maia é conectada ao WhatsApp Business que você já usa, pela conexão oficial da Meta. O número continua o seu e o aplicativo continua funcionando no seu celular: você vê as conversas e entra quando quiser. Quando você responde um cliente pelo celular, ela fica quieta naquela conversa. Se hoje você usa o WhatsApp comum, dá pra passar o mesmo número pro WhatsApp Business antes da implantação.</p></details><details><summary>Preciso entender de tecnologia?</summary><p>Não. Você fala com a Maia pelo WhatsApp, como fala com um funcionário. Na implantação, a nossa equipe conecta as contas junto com você, numa chamada de vídeo com a tela compartilhada. Depois disso, você só aprova e responde quando ela te chama.</p></details><details><summary>A verba de anúncio está inclusa?</summary><p>Não. A verba é do seu negócio e vai direto pra Meta (Facebook e Instagram), no cartão da sua empresa, sem passar pela gente. Pra começar, o comum é entre R$ 20 e R$ 40 por dia. A Maia te mostra a cada 2 dias quanto custou cada conversa e diz se vale subir ou baixar. Responder quem chamou no WhatsApp não custa nada; a retomada depois de 24 horas e o recado pra base têm uma taxa da Meta, de uns R$ 0,40 por mensagem.</p></details><details><summary>Tem fidelidade?</summary><p>Não. É mensal e você cancela quando quiser. Quem segura o cliente aqui é o resultado que aparece no relatório.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="ct">
+    <div class="final-card">
+      <img class="fundo" src="/maia/nichos/img/otica/vitrine-armacoes.jpg" alt="" width="960" height="540" loading="lazy" decoding="async">
+      <img class="maia" src="/maia/img/maia-avatar.webp" alt="Maia, a IA de marketing da Carreira no Digital" width="84" height="84" loading="lazy">
+      <h2>A próxima mensagem da sua ótica pode ser respondida na hora.</h2>
+      <p class="lead">Chama a nossa equipe no WhatsApp. A gente entende como a sua ótica funciona e, se fizer sentido, marca a implantação online. Primeiro mês R$ 497, já com a implantação.</p>
+      <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20%C3%B3tica." data-cta data-msg="Quero a Maia na minha ótica." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha ótica</a>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer class="rodape"><div class="ct">Maia é a IA de marketing da Carreira no Digital, escola de marketing com IA de Lajeado (RS). Atendemos o Brasil todo.<br>WhatsApp da escola: 51 99505-4548</div></footer>
+
+<div class="barra" id="barra">
+  <div class="q"><b>A Maia na sua ótica</b><span>Atende, retoma e anuncia · 1º mês R$ 497</span></div>
+  <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20%C3%B3tica." data-cta data-msg="Quero a Maia na minha ótica." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero</a>
+</div>
+<script>
+(function(){var b=document.getElementById('barra');if(!b)return;function f(){b.classList.toggle('on',(window.scrollY||0)>520)}window.addEventListener('scroll',f,{passive:true});f();})();
+</script>
+<!-- RASTREIO:INICIO · o mesmo rastreio das páginas /black e /deuvenda (site_eventos + /wa com a mensagem pronta, Lead no pixel com o mesmo event_id) -->
+<script>
+(function(){
+  var CRM='https://carreiranodigital.vercel.app';
+  var TRACK=CRM+'/api/track', WA=CRM+'/wa', CAMP='maia-otica', NICHO='Ótica';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+  var vid,sid;
+  try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
+  try{sid=sessionStorage.getItem('cnd_sid');if(!sid){sid=uid();sessionStorage.setItem('cnd_sid',sid);}}catch(e){sid=uid();}
+  var qs=new URLSearchParams(location.search);
+  var fbclid=qs.get('fbclid');
+  try{if(fbclid){localStorage.setItem('cnd_fbclid',fbclid);}else{fbclid=localStorage.getItem('cnd_fbclid');}}catch(e){}
+  var utm={source:qs.get('utm_source')||'',medium:qs.get('utm_medium')||'',campaign:qs.get('utm_campaign')||CAMP,content:qs.get('utm_content')||''};
+  function track(evento,meta){
+    try{
+      var payload=JSON.stringify({visitor_id:vid,sessao_id:sid,evento:evento,url:location.href,referrer:document.referrer,
+        utm_source:utm.source,utm_medium:utm.medium,utm_campaign:utm.campaign,utm_content:utm.content,fbclid:fbclid,meta:meta||null});
+      if(navigator.sendBeacon){navigator.sendBeacon(TRACK,new Blob([payload],{type:'text/plain'}));}
+      else{fetch(TRACK,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}
+    }catch(e){}
+  }
+  window.__cndTrack=track;
+  track('page_view');
+  var hit={};
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement,max=(h.scrollHeight-h.clientHeight)||1,pct=(h.scrollTop||document.body.scrollTop)/max*100;
+    if(pct>=50&&!hit[50]){hit[50]=1;track('scroll_50');}
+    if(pct>=90&&!hit[90]){hit[90]=1;track('scroll_90');}
+  },{passive:true});
+  function cookie(n){try{var m=document.cookie.match('(^|;)\\s*'+n+'=([^;]*)');return m?decodeURIComponent(m[2]):null}catch(e){return null}}
+  function waLink(msg){
+    var ev=uid(), p=new URLSearchParams();
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);
+    p.set('event_id',ev);
+    var _fbp=cookie('_fbp'); if(_fbp)p.set('fbp',_fbp);
+    var _fbc=cookie('_fbc'); if(_fbc)p.set('fbc',_fbc);
+    if(fbclid)p.set('fbclid',fbclid);
+    if(utm.source)p.set('utm_source',utm.source);
+    if(utm.medium)p.set('utm_medium',utm.medium);
+    p.set('utm_campaign',utm.campaign||CAMP);
+    if(utm.content)p.set('utm_content',utm.content);
+    return {url:WA+'?'+p.toString(), ev:ev};
+  }
+  [].forEach.call(document.querySelectorAll('a[data-cta]'),function(b){
+    // com data-msg o botão vai pro WhatsApp pelo /wa do CRM; sem data-msg (o quiz, no futuro) o endereço fica como está
+    var t=(b.textContent||'').replace(/\s+/g,' ').trim(), m=b.getAttribute('data-msg'), l=m?waLink(m):{url:b.getAttribute('href'),ev:uid()};
+    if(m)b.setAttribute('href',l.url);
+    b.addEventListener('click',function(){
+      track('clique_wa',{botao:t.slice(0,40),nicho:NICHO,event_id:l.ev});
+      try{if(window.fbq)fbq('track','Lead',{content_name:'Maia',content_category:NICHO},{eventID:l.ev});}catch(e){}
+    });
+  });
+})();
+</script>
+<!-- RASTREIO:FIM -->
+</body>
+</html>

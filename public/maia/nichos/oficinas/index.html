@@ -12,9 +12,9 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Maia',content_ca
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Maia pra oficinas · Carreira no Digital</title>
-<meta name="description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico e roda os anúncios.">
+<meta name="description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico, retoma o orçamento e roda os anúncios.">
 <meta property="og:title" content="A IA de marketing feita pra oficina mecânica">
-<meta property="og:description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico e roda os anúncios.">
+<meta property="og:description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico, retoma o orçamento e roda os anúncios.">
 <meta property="og:type" content="website">
 <meta property="og:image" content="/maia/nichos/img/oficina/hero-embaixo-do-carro.jpg">
 <meta name="theme-color" content="#f6f5f2">
@@ -25,12 +25,12 @@ fbq('track','ViewContent',{content_type:'product',content_name:'Maia',content_ca
 @font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
 @font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
 
-/* Maia pra oficinas (18/11/2026). Base clara do padrão da escola (Manrope + Bricolage condensada),
-   com o laranja e o grafite de oficina como destaque. Fotos reais em tela cheia. Feita primeiro pro celular. */
+/* Maia por nicho (oficina 18/11, ótica 24/11/2026). Base clara do padrão da escola (Manrope + Bricolage condensada),
+   grafite + a cor de destaque do nicho (--ac, --claro, --ac-rgb, trocadas por nicho). Fotos reais. Feita primeiro pro celular. */
 :root{
   --bg:#f6f5f2;--s1:#ffffff;--s2:#efede8;--ln:#e6e2da;--ln2:#d4cec3;
   --tx:#1d1f23;--tx2:#3b3e44;--mu:#686b72;--fa:#9a9da3;
-  --ac:#d9480f;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;
+  --ac:#d9480f;--claro:#ff8a3d;--ac-rgb:217,72,15;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;
   --gr:#22252a;--gr2:#2f3339;
   --roxo:#7c3aed;--ok:#15803d;--ok-bg:#e3f7ea;--at:#b45309;--at-bg:#fdf0d5;
   --wa:#efe7dd;--wa-in:#ffffff;--wa-out:#d9fdd3;--wa-top:#f0f2f5;--wa-tx:#111b21;--wa-mu:#667781;--wa-tk:#53bdeb;
@@ -56,7 +56,7 @@ section{padding-block:64px}
 .ico{width:22px;height:22px;flex:none}
 .nota{font-size:13.5px;color:var(--mu);margin-top:16px}
 .ex{font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fa);text-align:center;margin-top:12px}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 24px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 14px 30px -12px rgba(217,72,15,.6);transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:56px;padding:0 24px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 14px 30px -12px rgba(var(--ac-rgb),.6);transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
 .btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
 .btn:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--ac2);outline-offset:3px}
 .btn-sec{background:rgba(255,255,255,.14);color:#fff;border:1.5px solid rgba(255,255,255,.55);box-shadow:none;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
@@ -74,21 +74,21 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 /* abertura: foto em tela cheia */
 .hero{position:relative;overflow:hidden;color:#fff;background:var(--gr);padding-block:0}
-.hero>img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:55% 50%}
+.hero>img{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:var(--hero-pos,55% 50%)}
 .hero::after{content:"";position:absolute;left:0;right:0;top:0;aspect-ratio:1/1;background:linear-gradient(180deg,rgba(34,37,42,0) 55%,rgba(34,37,42,.7) 82%,var(--gr) 100%)}
 .hero .ct{position:relative;z-index:1;display:grid;gap:32px;margin-top:-72px;padding-block:0 44px}
 .selo{display:inline-flex;align-items:center;gap:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.3);border-radius:999px;padding:6px 14px 6px 6px;font-size:14px;font-weight:700;color:#fff;max-width:100%;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
 .selo i{font-style:normal;background:var(--roxo);color:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;flex:none}
 .selo span{min-width:0}
 .hero h1{font-size:clamp(40px,10.2vw,70px);margin-top:18px;text-shadow:0 2px 24px rgba(0,0,0,.35)}
-.hero h1 em{font-style:normal;color:#ff8a3d}
+.hero h1 em{font-style:normal;color:var(--claro)}
 .hero .lead{margin-top:18px;color:rgba(255,255,255,.86)}
 .hero .lead b{color:#fff}
 .acoes{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
 .acoes .btn{flex:1 1 230px}
 .fatos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:24px}
 .fatos div{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.22);border-radius:14px;padding:12px 10px;text-align:center;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}
-.fatos b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:28px;line-height:1;color:#ff8a3d}
+.fatos b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:28px;line-height:1;color:var(--claro)}
 .fatos span{display:block;font-size:12.5px;line-height:1.3;color:rgba(255,255,255,.82);font-weight:600;margin-top:6px}
 .hero .cel-hero{display:none}
 .credito{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:10px;z-index:1;font-size:11px;color:rgba(255,255,255,.55)}
@@ -97,7 +97,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .cel{max-width:390px;width:100%;margin:0 auto;background:#141518;border-radius:40px;padding:10px;box-shadow:0 40px 70px -30px rgba(0,0,0,.6)}
 .tela{background:var(--wa);border-radius:31px;overflow:hidden;display:flex;flex-direction:column}
 .wa-top{display:flex;align-items:center;gap:10px;background:var(--wa-top);padding:12px 14px;border-bottom:1px solid #e3e3e3}
-.wa-top .av{width:36px;height:36px;border-radius:50%;background:var(--gr);color:#ff8a3d;display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;overflow:hidden}
+.wa-top .av{width:36px;height:36px;border-radius:50%;background:var(--gr);color:var(--claro);display:grid;place-items:center;font-weight:800;font-size:13px;flex:none;overflow:hidden}
 .wa-top .av img{width:36px;height:36px;object-fit:cover}
 .wa-top b{display:block;font-size:15px;color:var(--wa-tx);line-height:1.2}
 .wa-top small{display:block;font-size:12px;color:var(--wa-mu)}
@@ -124,7 +124,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .j{background:var(--s1);border:1px solid var(--ln);border-radius:20px;overflow:hidden;box-shadow:var(--sombra);display:flex;flex-direction:column}
 .j>img{width:100%;aspect-ratio:16/9;object-fit:cover}
 .j .tx{padding:16px 18px 20px;position:relative}
-.j .n{position:absolute;top:-22px;left:18px;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--ac);color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:18px;box-shadow:0 8px 18px -8px rgba(217,72,15,.7)}
+.j .n{position:absolute;top:-22px;left:18px;display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:var(--ac);color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:18px;box-shadow:0 8px 18px -8px rgba(var(--ac-rgb),.7)}
 .j h3{margin-top:14px}
 .j p{font-size:15.5px;color:var(--tx2);margin-top:8px}
 .conv{display:grid;gap:22px;margin-top:44px;align-items:start}
@@ -144,14 +144,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 
 /* anúncios: posts do feed do Instagram */
 .anuncios{background:var(--gr);color:#fff}
-.anuncios .olho{color:#ff8a3d}.anuncios .olho::before{background:#ff8a3d}
+.anuncios .olho{color:var(--claro)}.anuncios .olho::before{background:var(--claro)}
 .anuncios .lead{color:rgba(255,255,255,.75)}
 .anuncios .nota{color:rgba(255,255,255,.6)}
 .feed{display:grid;grid-auto-flow:column;grid-auto-columns:min(84%,340px);gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding-bottom:10px;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)));padding-inline:max(16px,env(safe-area-inset-left,0px));scrollbar-width:thin}
 .post{scroll-snap-align:start;background:#fff;color:#111;border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0}
 .post-top{display:flex;align-items:center;gap:9px;padding:10px 12px}
 .post-top .av{width:32px;height:32px;border-radius:50%;padding:2px;background:linear-gradient(45deg,#f9a03f,#e8590c,#c2255c);flex:none}
-.post-top .av span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--gr);border:2px solid #fff;color:#ff8a3d;font-size:10.5px;font-weight:800}
+.post-top .av span{display:grid;place-items:center;width:100%;height:100%;border-radius:50%;background:var(--gr);border:2px solid #fff;color:var(--claro);font-size:10.5px;font-weight:800}
 .post-top div{flex:1;min-width:0}
 .post-top b{display:block;font-size:13.5px;line-height:1.2}
 .post-top small{display:block;font-size:11.5px;color:#737373}
@@ -160,7 +160,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .arte img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
 .arte::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.05) 25%,rgba(0,0,0,.82) 78%)}
 .arte .tx{position:absolute;left:16px;right:16px;bottom:16px;z-index:1;color:#fff;display:flex;flex-direction:column;gap:8px}
-.arte .mo{align-self:flex-start;background:#ff8a3d;color:#1d1f23;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:5px}
+.arte .mo{align-self:flex-start;background:var(--claro);color:#1d1f23;font-size:11.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:4px 9px;border-radius:5px}
 .arte .mg{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 82;font-weight:800;font-size:29px;line-height:1;text-transform:uppercase;letter-spacing:0}
 .arte .ms{font-size:14px;font-weight:600;line-height:1.35;color:rgba(255,255,255,.9)}
 .arte .marca{font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.75)}
@@ -190,7 +190,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .faixa-foto .ct{position:relative;z-index:1;padding-block:72px}
 .faixa-foto h2{max-width:16ch}
 .faixa-foto p{margin-top:14px;font-size:18px;color:rgba(255,255,255,.85);max-width:46ch}
-.faixa-foto .olho{color:#ff8a3d}.faixa-foto .olho::before{background:#ff8a3d}
+.faixa-foto .olho{color:var(--claro)}.faixa-foto .olho::before{background:var(--claro)}
 
 /* o mês */
 .mes{display:grid;gap:12px}
@@ -203,12 +203,6 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .dono .tx h3{font-size:26px;margin-top:8px}
 .mini{background:var(--wa);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
 
-/* calendário */
-.cal{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.cal div{background:var(--s1);border:1px solid var(--ln);border-top:4px solid var(--ac2);border-radius:16px;padding:14px 16px;min-width:0}
-.cal b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:19px;line-height:1.1;color:var(--tx)}
-.cal span{display:block;font-size:14.5px;color:var(--tx2);margin-top:6px;line-height:1.35}
-
 /* prova */
 .prova{display:grid;gap:18px;background:var(--s1);border:1px solid var(--ln);border-radius:24px;padding:22px 20px;box-shadow:var(--sombra)}
 .prova h3{font-size:26px;margin-top:8px}
@@ -218,24 +212,59 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .nums b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:32px;line-height:1;color:var(--ac);font-variant-numeric:tabular-nums}
 .nums span{display:block;font-size:13px;color:var(--mu);margin-top:6px;line-height:1.3}
 
-/* amostra */
-.amostra{background:linear-gradient(180deg,var(--ac-bg),var(--bg))}
-.recebe{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
-.recebe div{background:var(--s1);border:1px solid var(--ac-ln);border-radius:18px;padding:16px;min-width:0}
-.recebe b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:40px;line-height:1;color:var(--ac)}
-.recebe strong{display:block;font-size:16px;margin-top:6px}
-.recebe span{display:block;font-size:14px;color:var(--mu);margin-top:4px;line-height:1.35}
-.recebe .larga{grid-column:1/-1}
-.servem{margin-top:26px}
-.servem>p{font-weight:800;font-size:16px;margin-bottom:10px}
-.servem-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
-.servem figure{border-radius:14px;overflow:hidden;background:var(--s1);border:1px solid var(--ln)}
-.servem img{width:100%;aspect-ratio:1/1;object-fit:cover}
-.servem figcaption{font-size:12.5px;font-weight:700;color:var(--tx2);padding:7px 8px;line-height:1.25}
-.pedir{display:grid;gap:10px;margin-top:22px}
-.pedir div{display:flex;gap:12px;align-items:flex-start;background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:14px 16px;font-size:15.5px;color:var(--tx2)}
-.pedir div b{color:var(--tx)}
-.pedir .k{flex:none;width:30px;height:30px;border-radius:50%;background:var(--ac);color:#fff;display:grid;place-items:center;font-weight:800;font-size:14px}
+/* o que a Maia já sabe sobre o nicho */
+.sabe{background:linear-gradient(180deg,var(--ac-bg),var(--bg) 340px)}
+.sabe-topo{display:grid;gap:22px;align-items:end}
+.sabe-foto{border-radius:22px;overflow:hidden;box-shadow:var(--sombra)}
+.sabe-foto img{width:100%;aspect-ratio:16/10;object-fit:cover}
+.subs{display:grid;gap:10px;margin-top:30px}
+.sub{background:var(--s1);border:1px solid var(--ln);border-left:4px solid var(--ac2);border-radius:16px;padding:16px 18px;min-width:0}
+.sub b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:20px;line-height:1.1}
+.sub .s{display:block;font-size:14px;color:var(--mu);margin-top:4px}
+.sub p{font-size:15px;color:var(--tx2);margin-top:10px}
+.sub p i{font-style:normal;font-weight:800;color:var(--ac)}
+.bloco{margin-top:44px}
+.bloco>h3{font-size:clamp(23px,4.6vw,28px)}
+.bloco>p.lead{margin-top:8px;font-size:16.5px}
+.duas{display:grid;gap:14px;margin-top:18px}
+.cx{background:var(--s1);border:1px solid var(--ln);border-radius:20px;padding:20px;box-shadow:var(--sombra);min-width:0}
+.cx h4{font-size:12.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac);margin-bottom:12px}
+.pergs{list-style:none;display:grid;gap:8px;counter-reset:p}
+.pergs li{counter-increment:p;display:flex;gap:10px;align-items:flex-start;background:var(--wa-out);border-radius:12px 12px 4px 12px;padding:9px 12px;font-size:15px;color:var(--wa-tx)}
+.pergs li::before{content:counter(p);flex:none;width:22px;height:22px;border-radius:50%;background:#fff;color:var(--ok);font-size:12px;font-weight:800;display:grid;place-items:center;margin-top:1px}
+.lst{list-style:none;display:grid;gap:8px}
+.lst li{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tx2)}
+.lst li .ico{width:18px;height:18px;margin-top:3px}
+.lst.ok li .ico{color:var(--ok)}
+.lst.av li .ico{color:var(--at)}
+.cx .sep{border-top:1px dashed var(--ln2);margin:16px 0}
+.cx .tag-ok,.cx .tag-av{display:inline-block;font-size:12.5px;font-weight:800;border-radius:999px;padding:4px 10px;margin-bottom:10px}
+.cx .tag-ok{background:var(--ok-bg);color:var(--ok)}
+.cx .tag-av{background:var(--at-bg);color:var(--at)}
+.objs{display:grid;gap:10px;margin-top:18px}
+.obj{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:16px 18px;display:grid;gap:10px;min-width:0}
+.obj .q{justify-self:start;background:#fff;border:1px solid var(--ln);border-radius:4px 12px 12px 12px;padding:8px 12px;font-size:15px;font-weight:700;color:var(--wa-tx);box-shadow:0 1px 1px rgba(0,0,0,.06)}
+.obj .r{display:flex;gap:10px;align-items:flex-start;font-size:15px;color:var(--tx2)}
+.obj .r .ico{width:18px;height:18px;color:var(--ac);margin-top:3px}
+.recado{display:grid;gap:18px;margin-top:18px;background:var(--s1);border:1px solid var(--ac-ln);border-radius:24px;padding:20px;box-shadow:var(--sombra)}
+.recado h3{font-size:24px;margin-top:6px}
+.recado .tx p{font-size:15.5px;color:var(--tx2);margin-top:8px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:14px}
+.chips span{background:var(--ac-bg);color:var(--ac);border:1px solid var(--ac-ln);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:700}
+.recado .regra{font-size:13.5px;color:var(--mu);margin-top:14px}
+.recado .mini .bal{max-width:92%}
+.botoes{display:flex;gap:6px;margin-top:6px;align-self:flex-end;max-width:92%;width:100%}
+.botoes span{flex:1;text-align:center;background:#fff;border-radius:8px;padding:7px 6px;font-size:13px;font-weight:700;color:#027eb5;box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.cal{display:grid;grid-template-columns:1fr;gap:10px;margin-top:18px}
+.cal div{background:var(--s1);border:1px solid var(--ln);border-top:4px solid var(--ac2);border-radius:16px;padding:14px 16px;min-width:0}
+.cal small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.cal b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:19px;line-height:1.1;color:var(--tx);margin-top:4px}
+.cal span{display:block;font-size:14.5px;color:var(--tx2);margin-top:8px;line-height:1.35;font-weight:700}
+.cal span::before{content:"Gancho: ";font-weight:600;color:var(--mu)}
+.bal.foto{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bal.foto .anexo{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border-radius:8px;padding:10px 12px;font-weight:700;color:var(--wa-tx)}
+.bal.foto .anexo .ico{width:20px;height:20px;color:var(--wa-mu)}
+.bal.foto .h{width:100%}
 
 /* como começa */
 .linha{list-style:none;display:grid;gap:0}
@@ -259,7 +288,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 .of-cab{position:relative;color:#fff;padding:26px 20px;background:var(--gr);overflow:hidden}
 .of-cab img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.32}
 .of-cab>*:not(img){position:relative}
-.of-cab .olho{color:#ff8a3d}.of-cab .olho::before{background:#ff8a3d}
+.of-cab .olho{color:var(--claro)}.of-cab .olho::before{background:var(--claro)}
 .of-cab h3{font-size:28px;margin-top:8px}
 .of-corpo{padding:22px 20px 24px}
 .inclui{list-style:none;display:grid;gap:10px}
@@ -314,8 +343,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   .dor-lista,.jeito,.mes{grid-template-columns:repeat(2,1fr)}
   .galeria{grid-template-columns:repeat(3,1fr)}
   .srv{aspect-ratio:4/3}
-  .cal{grid-template-columns:repeat(4,1fr)}
-  .recebe{grid-template-columns:repeat(4,1fr)}
+  .cal{grid-template-columns:repeat(2,1fr)}
+  .subs,.objs{grid-template-columns:repeat(2,1fr)}
+  .duas{grid-template-columns:1fr 1fr}
+  .recado{grid-template-columns:1.1fr .9fr;align-items:center;padding:28px}
+  .sabe-topo{grid-template-columns:1.2fr .8fr;gap:40px}
   .prova{grid-template-columns:1fr 1fr;align-items:center;padding:30px}
   .dono{grid-template-columns:1fr 1fr;align-items:center;padding:28px}
   .precos{grid-template-columns:1fr 1fr}
@@ -328,20 +360,24 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 @media (min-width:980px){
   .hero>img{position:absolute;inset:0;height:100%;aspect-ratio:auto}
   .hero::after{aspect-ratio:auto;bottom:0;background:linear-gradient(90deg,rgba(22,23,26,.94) 0%,rgba(22,23,26,.78) 42%,rgba(22,23,26,.25) 75%,rgba(22,23,26,.15) 100%)}
-  .hero>img{object-position:50% 50%}
+  .hero>img{object-position:var(--hero-pos-g,50% 50%)}
   .hero .ct{grid-template-columns:1.15fr .85fr;gap:48px;align-items:center;margin-top:0;padding-block:96px 104px}
   .hero .cel-hero{display:block}
   .hero .cel{max-width:350px}
   .dor-lista{grid-template-columns:repeat(4,1fr)}
   .jeito{grid-template-columns:repeat(4,1fr)}
   .conv{grid-template-columns:400px 1fr;gap:40px}
-  .lado{grid-template-columns:1fr 1fr}
+  .lado{grid-template-columns:1fr 1fr;position:sticky;top:24px}
   .mes{grid-template-columns:repeat(4,1fr)}
   .feed{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-auto-columns:auto;overflow:visible;margin-inline:0;padding-inline:0}
   .como-g{grid-template-columns:1.2fr .8fr;gap:56px}
+  .cal{grid-template-columns:repeat(4,1fr)}
+  .subs{grid-template-columns:repeat(5,1fr)}
+  .objs{grid-template-columns:repeat(3,1fr)}
 }
 @media (max-width:380px){.topo .nome{display:none}.fatos b{font-size:22px}}
 
+:root{--ac:#d9480f;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;--claro:#ff8a3d;--ac-rgb:217,72,15;--hero-pos:55% 50%;--hero-pos-g:50% 50%}
 </style>
 </head>
 <body>
@@ -350,7 +386,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   <div class="ct">
     <a class="chapa" href="https://carreiranodigital.com" aria-label="Carreira no Digital"><img src="/imersao/midia/logo.webp" alt="Carreira no Digital" width="256" height="93"></a>
     <div class="nome"><b>Maia</b> · a IA de marketing pra oficina</div>
-    <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Amostra grátis</a>
+    <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia</a>
   </div>
 </header>
 <main>
@@ -361,14 +397,14 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     <div>
       <span class="selo"><i>Maia</i><span>A IA de marketing feita pra oficina mecânica</span></span>
       <h1>Quantos orçamentos ficaram sem resposta enquanto você estava <em>embaixo de um carro?</em></h1>
-      <p class="lead">A Maia é a IA de marketing feita pra <b>oficina mecânica, câmbio automático e retífica</b>. Ela atende no WhatsApp com o nome da sua oficina, pede modelo, ano e sintoma, encaminha o diagnóstico pro seu time e ainda cria e roda os seus anúncios no Facebook e no Instagram.</p>
+      <p class="lead">A Maia é a IA de marketing feita pra <b>oficina mecânica, câmbio automático e retífica</b>. Ela atende no WhatsApp com o nome da sua oficina, pede modelo, ano e sintoma, encaminha o diagnóstico pro seu time, retoma quem sumiu e ainda cria e roda os seus anúncios no Facebook e no Instagram.</p>
       <div class="acoes">
-        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a amostra grátis</a>
+        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha oficina</a>
         <a class="btn btn-sec" href="#conversa">Ver como ela atende</a>
       </div>
       <div class="fatos">
-        <div><b>1 dia</b><span>pra amostra grátis chegar</span></div>
         <div><b>24 h</b><span>atendendo no seu WhatsApp</span></div>
+        <div><b>3</b><span>retomadas pra quem sumiu</span></div>
         <div><b>48 h</b><span>pra campanha ir pro ar</span></div>
       </div>
     </div>
@@ -383,7 +419,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   <div class="ct">
     <div class="cab">
       <span class="olho">Você conhece isso</span>
-      <h2>O que faz a sua oficina perder serviço todo mês</h2>
+      <h2>O que faz a sua oficina perder venda todo mês</h2>
     </div>
     <div class="dor-lista">
       <div class="dor"><img src="/maia/nichos/img/oficina/mao-graxa-noite.jpg" alt="Mão com graxa segurando a chave no motor, à noite" width="960" height="720" loading="lazy" decoding="async"><p class="q">Mandam foto da luz acesa no painel e perguntam o preço. Eu respondo à noite e o cliente já foi em outro.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Quem responde primeiro leva o carro. A Maia responde na hora, inclusive de madrugada e no domingo.</span></p></div><div class="dor"><img src="/maia/nichos/img/oficina/motor-retifica.jpg" alt="Motor com correias e polias à mostra" width="960" height="540" loading="lazy" decoding="async"><p class="q">Passei o orçamento da retífica e nunca mais ouvi falar do cliente.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Serviço caro se decide em dias. Sem retomada, o &quot;vou ver&quot; vira silêncio pra sempre.</span></p></div><div class="dor"><img src="/maia/nichos/img/oficina/oficina-ampla.jpg" alt="Oficina ampla com elevadores e carros" width="960" height="484" loading="lazy" decoding="async"><p class="q">Tem mês que a oficina lota e tem mês que fica parada.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Anúncio só quando aperta não segura a agenda. A Maia roda o mês inteiro e muda o foco conforme a época.</span></p></div><div class="dor"><img src="/maia/nichos/img/oficina/mecanico-escapamento.jpg" alt="Mecânico agachado trabalhando no escapamento de um carro" width="960" height="540" loading="lazy" decoding="async"><p class="q">Indicação é ótima, mas não dá pra controlar quando ela vem.</p><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Anúncio com gancho certo traz o motorista que nunca ouviu falar de você e já está com o problema.</span></p></div>
@@ -399,13 +435,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <p class="lead">Ela não é um robô de menu. Ela conversa, pergunta o que o mecânico precisa saber e só passa a conversa adiante quando está pronta.</p>
     </div>
     <div class="jeito">
-      <div class="j"><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="Notebook ligado ao carro fazendo o diagnóstico" width="960" height="1440" loading="lazy" decoding="async"><div class="tx"><span class="n">1</span><h3>Pergunta o que o mecânico precisa</h3><p>Modelo, ano, quilometragem e o sintoma: barulho, luz no painel, tranco, fumaça. Pede foto do painel ou um vídeo com o barulho.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="Troca de óleo com o capô aberto" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">2</span><h3>Não chuta preço no escuro</h3><p>O que depende de diagnóstico vai pra avaliação, explicando por quê. O que tem preço fixo (troca de óleo, revisão, alinhamento) ela passa, sempre dizendo antes o que está incluso.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="Carro no elevador da oficina" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">3</span><h3>Encaminha o diagnóstico</h3><p>Oferece os horários que você liberou e passa pro seu time confirmar, com o resumo pronto. Ela não mexe na sua agenda sozinha.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="Mecânico de luva segurando o pneu" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">4</span><h3>Lembra quem sumiu e quem já é cliente</h3><p>Retoma quem pediu orçamento e não voltou. E, se você quiser, manda recado pra sua base na época da revisão e da troca de óleo.</p></div></div>
+      <div class="j"><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="Notebook ligado ao carro fazendo o diagnóstico" width="960" height="1440" loading="lazy" decoding="async"><div class="tx"><span class="n">1</span><h3>Pergunta o que o mecânico precisa</h3><p>Modelo, ano, quilometragem e o sintoma: barulho, luz no painel, tranco, fumaça. Pede foto do painel ou um vídeo com o barulho.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="Troca de óleo com o capô aberto" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">2</span><h3>Não chuta preço no escuro</h3><p>O que depende de diagnóstico vai pra avaliação, explicando por quê. O que tem preço fixo (troca de óleo, revisão, alinhamento) ela passa, sempre dizendo antes o que está incluso.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="Carro no elevador da oficina" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">3</span><h3>Encaminha o diagnóstico</h3><p>Oferece os horários que você liberou e passa pro seu time confirmar, com o resumo pronto. Ela não mexe na sua agenda sozinha.</p></div></div><div class="j"><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="Mecânico de luva segurando o pneu" width="960" height="640" loading="lazy" decoding="async"><div class="tx"><span class="n">4</span><h3>Lembra quem sumiu e quem já é cliente</h3><p>Retoma quem pediu orçamento e não voltou. E manda recado pra sua base na época da revisão e da troca de óleo.</p></div></div>
     </div>
     <div class="conv">
       <div>
         <div class="cel" role="img" aria-label="Conversa completa de exemplo no WhatsApp da Mecânica Rossi"><div class="tela">
     <div class="wa-top"><span class="av">MR</span><div><b>Mecânica Rossi</b><small>online</small></div></div>
-    <div class="wa-msgs"><div class="bal c">Boa noite, quanto fica pra arrumar o câmbio? Tá dando tranco<div class="h">22:47</div></div><div class="bal e">Boa noite! Aqui é da Mecânica Rossi. Pra te passar certinho: qual o modelo e o ano? E o tranco é na troca de marcha ou quando sai parado?<div class="h">22:47<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Corolla 2016 automático. Dá tranco da 2ª pra 3ª<div class="h">22:49</div></div><div class="bal e">Esse sintoma pode ser o óleo do câmbio vencido ou algo no corpo de válvulas. Sem olhar, ninguém sério fecha preço de câmbio. O diagnóstico é com scanner e teste de rodagem, e você sai sabendo exatamente o que tem antes de gastar.<div class="h">22:49<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">E quanto custa esse diagnóstico?<div class="h">22:50</div></div><div class="bal e">O diagnóstico completo do câmbio sai R$ 150. Se fizer o serviço aqui, esse valor é descontado. Fica melhor amanhã às 8h ou quinta à tarde?<div class="h">22:50<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Amanhã 8h<div class="h">22:51</div></div><div class="bal e">Combinado! Vou confirmar o horário com a equipe e te aviso aqui logo cedo. Qual o seu nome?<div class="h">22:51<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>
+    <div class="wa-msgs"><div class="bal c">Boa noite, quanto fica pra arrumar o câmbio? Tá dando tranco<div class="h">22:47</div></div><div class="bal e">Boa noite! Aqui é da Mecânica Rossi. Pra te passar certinho: qual o modelo e o ano? E o tranco é na troca de marcha ou quando sai parado?<div class="h">22:47<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Corolla 2016 automático. Dá tranco da 2ª pra 3ª<div class="h">22:49</div></div><div class="bal e">Ele acende alguma luz no painel quando dá o tranco? Se acender, me manda uma foto. E faz quanto tempo que trocou o óleo do câmbio?<div class="h">22:49<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Luz não. Óleo do câmbio nunca troquei, tá com 98 mil km<div class="h">22:50</div></div><div class="bal e">Com 98 mil km e o óleo original, esse tranco pode ser o óleo vencido ou algo no corpo de válvulas. Sem olhar, ninguém sério fecha preço de câmbio. O diagnóstico é com scanner e teste de rodagem, e você sai sabendo exatamente o que tem antes de gastar.<div class="h">22:50<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">E quanto custa esse diagnóstico?<div class="h">22:51</div></div><div class="bal e">O diagnóstico completo do câmbio sai R$ 150. Se fizer o serviço aqui, esse valor é descontado. Fica melhor amanhã às 8h ou quinta à tarde?<div class="h">22:51<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Amanhã 8h. Meu nome é Carlos<div class="h">22:52</div></div><div class="bal e">Combinado, Carlos! Vou confirmar o horário com a equipe e te aviso aqui logo cedo.<div class="h">22:52<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div>
   </div></div>
         <p class="ex">Exemplo · empresa fictícia · os preços e prazos são os seus</p>
       </div>
@@ -413,7 +449,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
         <div class="resumo">
           <span class="olho">O que chega pro seu time</span>
           <h3>Um resumo, não 40 mensagens</h3>
-          <dl><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Carlos</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Corolla 2016, automático</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Tranco da 2ª pra 3ª marcha</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Aceitou o diagnóstico (R$ 150)</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Quer amanhã às 8h</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Veio do anúncio &quot;câmbio dando tranco&quot;</span></div></dl>
+          <dl><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Carlos</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Corolla 2016, automático, 98 mil km</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Tranco da 2ª pra 3ª, sem luz no painel</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Nunca trocou o óleo do câmbio</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Aceitou o diagnóstico (R$ 150)</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Quer amanhã às 8h</span></div><div><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Veio do anúncio &quot;câmbio dando tranco&quot;</span></div></dl>
           <p>Você ou o seu time confirma, responde por ali mesmo e marca como resolvido. A Maia volta a atender.</p>
         </div>
         <div class="ret">
@@ -422,6 +458,76 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
           <ol><li><b>No dia seguinte</b><span>Oi Carlos, aqui é da Mecânica Rossi de novo. Conseguiu ver o melhor dia pra gente olhar o câmbio do Corolla? Tranco desse tipo costuma piorar com o tempo.</span></li><li><b>3 dias depois</b><span>Carlos, ficou alguma dúvida sobre o diagnóstico? Posso te mandar um vídeo de como é o teste que a gente faz no câmbio.</span></li><li><b>6 dias depois</b><span>Carlos, tentei falar contigo e entendo a correria. Vou parar por aqui pra não incomodar. Quando quiser olhar o câmbio, é só chamar.</span></li></ol>
         </div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="sabe" id="especialista">
+  <div class="ct">
+    <div class="sabe-topo">
+      <div class="cab" style="margin-bottom:0">
+        <span class="olho">Especialista em oficina</span>
+        <h2>O que a Maia já sabe sobre oficina</h2>
+        <p class="lead">Ela chega na implantação sabendo como uma oficina funciona. Você só ensina o que é seu: serviços, preços, prazos, garantia e até onde dá pra negociar.</p>
+      </div>
+      <div class="sabe-foto"><img src="/maia/nichos/img/oficina/motor-aberto.jpg" alt="Mecânico debruçado sobre o motor, com o capô aberto" width="960" height="540" loading="lazy" decoding="async"></div>
+    </div>
+
+    <div class="subs">
+      <div class="sub"><b>Mecânica geral</b><span class="s">Revisão, troca de óleo, correia, embreagem</span><p><i>Ela pergunta:</i> Quilometragem, data da última revisão e o que o carro está fazendo.</p></div><div class="sub"><b>Câmbio automático</b><span class="s">Tranco, demora pra engatar, patinando</span><p><i>Ela pergunta:</i> Quando o tranco acontece, se acende luz e se o óleo do câmbio já foi trocado.</p></div><div class="sub"><b>Retífica de motor</b><span class="s">Fumaça, perdendo água, motor batendo</span><p><i>Ela pergunta:</i> Se o carro ainda roda ou precisa de guincho, e se já abriram o motor em outro lugar.</p></div><div class="sub"><b>Injeção e elétrica</b><span class="s">Luz no painel, falhando, bateria arriando</span><p><i>Ela pergunta:</i> Foto do painel, se a luz fica acesa ou pisca, e se a falha é no frio ou no quente.</p></div><div class="sub"><b>Suspensão e freio</b><span class="s">Barulho, carro puxando, pedal baixo</span><p><i>Ela pergunta:</i> Vídeo com o barulho, se é em lombada, em curva ou na frenagem.</p></div>
+    </div>
+
+    <div class="bloco">
+      <h3>As perguntas certas e o preço na hora certa</h3>
+      <div class="duas">
+        <div class="cx">
+          <h4>O que ela pergunta antes de passar adiante</h4>
+          <ol class="pergs"><li>Qual o modelo e o ano do carro?</li><li>Quantos quilômetros ele tem?</li><li>O que está acontecendo, e quando: no frio, no quente, em curva, ao frear?</li><li>Acendeu alguma luz no painel? Me manda uma foto.</li><li>É barulho? Grava um vídeo curto com o som.</li><li>Quando foi a última revisão ou troca de óleo?</li><li>O carro está rodando ou precisa de guincho?</li></ol>
+        </div>
+        <div class="cx">
+          <h4>Como ela lida com o preço</h4>
+          <span class="tag-ok">Tem preço fixo: ela passa, com o que está incluso antes</span>
+          <ul class="lst ok"><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Troca de óleo e filtro, com o óleo certo pro motor</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Revisão por quilometragem</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Alinhamento e balanceamento</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Diagnóstico com scanner (valor fixo, descontado se fizer o serviço)</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Troca de pastilha de freio, por modelo</span></li></ul>
+          <div class="sep"></div>
+          <span class="tag-av">Depende de avaliação: ela explica por quê e leva pro diagnóstico</span>
+          <ul class="lst av"><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Câmbio automático</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Retífica de motor</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Barulho de suspensão</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Falha de injeção e problema elétrico</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Qualquer serviço que depende de abrir e olhar</span></li></ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>O que o cliente fala, e como ela responde</h3>
+      <div class="objs">
+        <div class="obj"><span class="q">"Só quero saber o preço."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Explica que sem diagnóstico qualquer número é chute, passa o valor do diagnóstico e o que ele inclui, e oferece dois horários.</span></p></div><div class="obj"><span class="q">"Na outra oficina é mais barato."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Não fala mal de ninguém. Mostra o que está incluso no seu serviço: peça de qualidade, garantia e o carro testado antes de entregar.</span></p></div><div class="obj"><span class="q">"Vou ver e te aviso."</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Orçamento de retífica e câmbio se decide em dias. Entra a retomada, com algo útil em cada mensagem, e no fim uma despedida educada.</span></p></div><div class="obj"><span class="q">"Dá pra parcelar?"</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Passa as condições que você definiu na implantação. Se o cliente quer negociar além disso, chama o seu time.</span></p></div><div class="obj"><span class="q">"Vocês buscam o carro?"</span><p class="r"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg><span>Responde o que a sua oficina faz (leva e traz, guincho parceiro) e, se não faz, diz com clareza.</span></p></div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <div class="recado">
+        <div class="tx">
+          <span class="olho">Recado pra base</span>
+          <h3>A troca de óleo, no tempo certo</h3>
+          <p>Com a lista dos seus clientes e a data do último serviço, a Maia avisa quando a troca de óleo ou a revisão está vencendo, por quilometragem média ou por tempo (o que vencer primeiro).</p>
+          <div class="chips"><span>Troca de óleo vencendo</span><span>Revisão por quilometragem</span><span>Antes das férias</span><span>Começo do inverno (bateria)</span></div>
+          <p class="regra">Só pra quem já é cliente, com botão pra sair da lista, e no máximo 2 recados por semana pra cada pessoa. Você aprova cada recado antes de sair.</p>
+        </div>
+        <div>
+          <div class="mini" role="img" aria-label="Exemplo de recado pra base no WhatsApp da Mecânica Rossi">
+            <div class="wa-top"><span class="av">MR</span><div><b>Mecânica Rossi</b><small>recado pra base</small></div></div>
+            <div class="wa-msgs">
+              <div class="bal e" style="max-width:92%">Oi Carlos, aqui é da Mecânica Rossi. Faz 6 meses da última troca de óleo do seu Corolla, então ela está vencendo. Quer que eu veja um horário pra essa semana?<div class="h">09:30<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div>
+              <div class="botoes"><span>Quero</span><span>Não quero receber</span></div>
+            </div>
+          </div>
+          <p class="ex">Exemplo</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="bloco">
+      <h3>O calendário do ano, com o gancho de cada época</h3>
+      <p class="lead">A cada 15 dias ela revisa a estratégia olhando a época do ano e muda o foco dos anúncios.</p>
+      <div class="cal"><div><small>Dezembro, janeiro e julho</small><b>Revisão antes de viajar</b><span>Vai pegar a estrada com a família?</span></div><div><small>Verão</small><b>Ar-condicionado e arrefecimento</b><span>Ar do carro só soprando quente?</span></div><div><small>Época de chuva</small><b>Freio, pneus e palhetas</b><span>Carro puxando pro lado quando freia na chuva?</span></div><div><small>Inverno</small><b>Bateria e partida</b><span>Carro custando a pegar de manhã?</span></div><div><small>Fevereiro</small><b>Volta às aulas</b><span>O carro do vai e vem da escola está em dia?</span></div><div><small>Fim de ano e 13º</small><b>O serviço que ficou pra depois</b><span>Recebeu o 13º? Hora de resolver aquele barulho.</span></div><div><small>O ano todo</small><b>Câmbio, retífica e diagnóstico</b><span>Dando tranco na troca de marcha?</span></div><div><small>O ano todo</small><b>Troca de óleo, com recado pra base</b><span>O óleo do seu carro venceu?</span></div></div>
     </div>
   </div>
 </section>
@@ -458,10 +564,10 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
         <div class="arte"><img src="/maia/nichos/img/guincho-anuncio-1.jpg" alt="Anúncio da Roda Presa Guinchos: caminhão parado na estrada?" width="720" height="900" loading="lazy" decoding="async" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover"><span class="tag real">Real</span></div>
         <div class="post-cta"><span>Enviar mensagem</span><svg  viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></div>
         <div class="post-acoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19.5 12.6 12 20l-7.5-7.4A4.9 4.9 0 0 1 12 6.1a4.9 4.9 0 0 1 7.5 6.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 11.5a8.4 8.4 0 0 1-12.4 7.4L3.5 20.5l1.6-4.6A8.4 8.4 0 1 1 20.5 11.5z"/></svg><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/></svg><span class="fim"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21 12 16l-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg></span></div>
-        <p class="post-leg"><b>Amostra real</b>Anúncio que a Maia fez pra um guincho de caminhão, com a foto do próprio cliente.</p>
+        <p class="post-leg"><b>Anúncio real</b>Anúncio que a Maia fez pra um guincho de caminhão, com a foto do próprio cliente.</p>
       </article>
     </div>
-    <p class="nota">Os 3 primeiros são exemplos com fotos de banco. Na amostra, eles saem com as fotos da sua oficina, a sua logo e as suas cores. Os anúncios só aparecem no Facebook e no Instagram, pra quem está na sua cidade e na sua região. Preço não vai no anúncio: aparece na conversa, depois do valor.</p>
+    <p class="nota">Os 3 primeiros são exemplos com fotos de banco. Na sua conta, eles saem com as fotos da sua oficina, a sua logo e as suas cores. Os anúncios só aparecem no Facebook e no Instagram, pra quem está na sua cidade e na sua região. Preço não vai no anúncio: aparece na conversa, depois do valor.</p>
   </div>
 </section>
 
@@ -469,11 +575,11 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   <div class="ct">
     <div class="cab">
       <span class="olho">Um anúncio pra cada serviço</span>
-      <h2>Os serviços que a Maia divulga</h2>
+      <h2>O que a Maia divulga</h2>
       <p class="lead">Cada serviço ganha o seu gancho, pro motorista que está com aquele problema agora.</p>
     </div>
     <div class="galeria">
-      <div class="srv"><img src="/maia/nichos/img/oficina/maos-no-motor.jpg" alt="Câmbio automático" width="960" height="640" loading="lazy" decoding="async"><div><b>Câmbio automático</b><span>Tranco, demora pra engatar, troca de óleo do câmbio</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/motor-retifica.jpg" alt="Retífica de motor" width="960" height="540" loading="lazy" decoding="async"><div><b>Retífica de motor</b><span>Motor fumaçando, perdendo água ou batendo</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="Diagnóstico com scanner" width="960" height="1440" loading="lazy" decoding="async"><div><b>Diagnóstico com scanner</b><span>Luz no painel e falha que ninguém achou</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="Revisão e troca de óleo" width="960" height="640" loading="lazy" decoding="async"><div><b>Revisão e troca de óleo</b><span>Com lembrete pra base na hora certa</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/chave-no-motor.jpg" alt="Freio e suspensão" width="960" height="640" loading="lazy" decoding="async"><div><b>Freio e suspensão</b><span>Barulho ao frear, carro puxando, batida seca</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="Pneus e alinhamento" width="960" height="640" loading="lazy" decoding="async"><div><b>Pneus e alinhamento</b><span>Antes da viagem e no dia a dia</span></div></div>
+      <div class="srv"><img src="/maia/nichos/img/oficina/maos-no-motor.jpg" alt="Câmbio automático" width="960" height="640" loading="lazy" decoding="async"><div><b>Câmbio automático</b><span>Tranco, demora pra engatar, troca de óleo do câmbio</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/motor-retifica.jpg" alt="Retífica de motor" width="960" height="540" loading="lazy" decoding="async"><div><b>Retífica de motor</b><span>Motor fumaçando, perdendo água ou batendo</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="Diagnóstico com scanner" width="960" height="1440" loading="lazy" decoding="async"><div><b>Diagnóstico com scanner</b><span>Luz no painel e falha que ninguém achou</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="Revisão e troca de óleo" width="960" height="640" loading="lazy" decoding="async"><div><b>Revisão e troca de óleo</b><span>Com recado pra base na hora certa</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/chave-no-motor.jpg" alt="Freio e suspensão" width="960" height="640" loading="lazy" decoding="async"><div><b>Freio e suspensão</b><span>Barulho ao frear, carro puxando, batida seca</span></div></div><div class="srv"><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="Pneus e alinhamento" width="960" height="640" loading="lazy" decoding="async"><div><b>Pneus e alinhamento</b><span>Antes da viagem e no dia a dia</span></div></div>
     </div>
   </div>
 </section>
@@ -490,32 +596,22 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 <section>
   <div class="ct">
     <div class="mes">
-      <div class="it"><span class="n">1</span><div><h3>Atende no WhatsApp, todo dia</h3><p>Com o nome da sua oficina e no seu jeito de falar, a qualquer hora, inclusive à noite e no fim de semana.</p></div></div><div class="it"><span class="n">2</span><div><h3>Retoma quem pediu orçamento e sumiu</h3><p>No dia seguinte, em 3 dias e em 6 dias, com despedida educada no fim. Ninguém fica esquecido.</p></div></div><div class="it"><span class="n">3</span><div><h3>Cria e roda a campanha</h3><p>Até 6 vídeos e 6 imagens de anúncio por mês, no Facebook e no Instagram, com as fotos reais do seu trabalho.</p></div></div><div class="it"><span class="n">4</span><div><h3>Faz os posts do mês</h3><p>12 posts pro Instagram: carrossel, imagem e vídeo, com conteúdo que dá confiança pra quem chega pelo anúncio.</p></div></div><div class="it"><span class="n">5</span><div><h3>Analisa os números a cada 2 dias</h3><p>Vê o que traz conversa e diagnóstico marcado, pausa o que não funciona e reforça o que vende.</p></div></div><div class="it"><span class="n">6</span><div><h3>Relatório todo dia 2</h3><p>O mês inteiro numa página: conversas, orçamentos, serviços fechados e o que muda no mês seguinte.</p></div></div><div class="it"><span class="n">7</span><div><h3>Você aprova tudo pelo WhatsApp</h3><p>Anúncio, post e mudança de rumo chegam no seu WhatsApp. Um &quot;aprovado&quot; e vai pro ar. Tem também um painel com os resultados.</p></div></div><div class="it"><span class="n">8</span><div><h3>Um especialista confere</h3><p>Gente da escola revisa o que a Maia cria antes de ir pro ar, e acompanha a sua conta.</p></div></div>
+      <div class="it"><span class="n">1</span><div><h3>Atende no WhatsApp, todo dia</h3><p>Com o nome da sua oficina e no seu jeito de falar, a qualquer hora, inclusive à noite e no fim de semana.</p></div></div><div class="it"><span class="n">2</span><div><h3>Retoma quem pediu orçamento e sumiu</h3><p>No dia seguinte, em 3 dias e em 6 dias, com despedida educada no fim. Ninguém fica esquecido.</p></div></div><div class="it"><span class="n">3</span><div><h3>Cria e roda a campanha</h3><p>Até 6 vídeos e 6 imagens de anúncio por mês, no Facebook e no Instagram, com as fotos reais do seu trabalho.</p></div></div><div class="it"><span class="n">4</span><div><h3>Faz os posts do mês</h3><p>12 posts pro Instagram: carrossel, imagem e vídeo, com conteúdo que dá confiança pra quem chega pelo anúncio.</p></div></div><div class="it"><span class="n">5</span><div><h3>Analisa os números a cada 2 dias</h3><p>Vê o que traz conversa e cliente de verdade, pausa o que não funciona e reforça o que vende.</p></div></div><div class="it"><span class="n">6</span><div><h3>Relatório todo dia 2</h3><p>O mês inteiro numa página: conversas, orçamentos, vendas e o que muda no mês seguinte.</p></div></div><div class="it"><span class="n">7</span><div><h3>Você aprova tudo pelo WhatsApp</h3><p>Anúncio, post e mudança de rumo chegam no seu WhatsApp. Um &quot;aprovado&quot; e vai pro ar. Tem também um painel com os resultados.</p></div></div><div class="it"><span class="n">8</span><div><h3>Um especialista confere</h3><p>Gente da escola revisa o que a Maia cria antes de ir pro ar, e acompanha a sua conta.</p></div></div>
     </div>
     <div class="dono">
       <div class="tx">
         <span class="olho">Você e a Maia</span>
         <h3>Com você, ela é a Maia. Com o seu cliente, ela é a sua oficina.</h3>
-        <p>Você conversa com ela pelo WhatsApp: aprova o que ela criou, pergunta como estão os números e manda foto do serviço novo pra virar anúncio. Ela responde na hora.</p>
+        <p>Você conversa com ela pelo WhatsApp: aprova o que ela criou, pergunta como estão os números e manda foto do trabalho novo pra virar anúncio. Ela responde na hora.</p>
       </div>
       <div>
-        <div class="mini" role="img" aria-label="Exemplo de conversa entre a Maia e o dono da oficina">
+        <div class="mini" role="img" aria-label="Exemplo de conversa entre a Maia e o dono">
           <div class="wa-top"><span class="av"><img src="/maia/img/maia-avatar.webp" alt="" width="36" height="36"></span><div><b>Maia</b><small>sua agência</small></div></div>
           <div class="wa-msgs"><div class="bal c">Bom dia! Os anúncios da semana estão prontos: &quot;câmbio dando tranco&quot; e &quot;revisão antes de viajar&quot;. Aprova?<div class="h">08:12</div></div><div class="bal e">Aprovado<div class="h">08:14<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">No ar. Em 2 dias te conto como estão indo. Ontem chegaram 3 pedidos de diagnóstico; passei os resumos pro Jorge.<div class="h">08:12</div></div></div>
         </div>
         <p class="ex">Exemplo</p>
       </div>
     </div>
-  </div>
-</section>
-
-<section style="padding-top:0">
-  <div class="ct">
-    <div class="cab">
-      <span class="olho">O calendário da oficina</span>
-      <h2>Ela muda o foco conforme a época</h2>
-    </div>
-    <div class="cal"><div><b>Dezembro, janeiro e julho</b><span>Revisão antes de viajar</span></div><div><b>Calor</b><span>Ar-condicionado e arrefecimento</span></div><div><b>Chuva e frio</b><span>Bateria, pneus e freio</span></div><div><b>O ano todo</b><span>Câmbio, retífica e diagnóstico, com recado pra base na troca de óleo</span></div></div>
   </div>
 </section>
 
@@ -537,38 +633,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
   </div>
 </section>
 
-<section class="amostra" id="amostra">
-  <div class="ct">
-    <div class="cab">
-      <span class="olho">Amostra grátis</span>
-      <h2>Veja a Maia trabalhando pra sua oficina antes de decidir</h2>
-      <p class="lead">Você manda o material hoje. No dia seguinte, chega no seu WhatsApp:</p>
-    </div>
-    <div class="recebe">
-      <div><b>2</b><strong>anúncios</strong><span>com as fotos da sua oficina, a sua logo e as suas cores</span></div>
-      <div><b>1</b><strong>vídeo</strong><span>com locução e legenda, pronto pra anunciar</span></div>
-      <div><b>9</b><strong>posts</strong><span>pro seu Instagram, cada um num modelo</span></div>
-      <div><b>1</b><strong>olhar de fora</strong><span>o que vimos no seu Instagram e onde está a oportunidade</span></div>
-      <div class="larga"><strong>E o teste ao vivo</strong><span>Você manda mensagem como se fosse um cliente, e a Maia te atende como se fosse a sua oficina. Pergunta preço, some, volta. Veja como ela se sai.</span></div>
-    </div>
-    <div class="servem">
-      <p>Fotos assim já servem, tiradas no celular:</p>
-      <div class="servem-g">
-        <figure><img src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="Carro no elevador da oficina" width="960" height="640" loading="lazy" decoding="async"><figcaption>Carro no elevador</figcaption></figure>
-        <figure><img src="/maia/nichos/img/oficina/motor-aberto.jpg" alt="Motor aberto com o capô levantado" width="960" height="540" loading="lazy" decoding="async"><figcaption>Motor aberto</figcaption></figure>
-        <figure><img src="/maia/nichos/img/oficina/mecanico-escapamento.jpg" alt="Mecânico trabalhando embaixo do carro" width="960" height="540" loading="lazy" decoding="async"><figcaption>A equipe trabalhando</figcaption></figure>
-      </div>
-    </div>
-    <div class="pedir">
-      <div><span class="k">1</span><span><b>Chama no WhatsApp</b> pelo botão abaixo. A mensagem já vai pronta.</span></div>
-      <div><span class="k">2</span><span><b>Manda fotos e vídeos do seu trabalho.</b> Não tem? <b>Manda só o @ do Instagram</b>.</span></div>
-      <div><span class="k">3</span><span><b>No dia seguinte</b>, a amostra chega no seu WhatsApp. Sem compromisso.</span></div>
-    </div>
-    <div class="acoes"><a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a amostra grátis</a></div>
-  </div>
-</section>
-
-<section>
+<section style="padding-top:0">
   <div class="ct como-g">
     <div>
       <div class="cab">
@@ -576,13 +641,13 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
         <h2>Três passos, tudo online</h2>
       </div>
       <ol class="linha">
-        <li class="passo"><span class="bola">1</span><div><span class="tag">Hoje</span><h3>Amostra grátis</h3><p>Você manda fotos, vídeos ou só o @ do Instagram. No dia seguinte recebe 2 anúncios, 1 vídeo e 9 posts feitos pra sua oficina.</p></div></li>
-        <li class="passo"><span class="bola">2</span><div><span class="tag">No mesmo dia</span><h3>Teste a Maia atendendo</h3><p>Você conversa com ela como se fosse um cliente e vê como ela atende com o nome da sua oficina.</p></div></li>
-        <li class="passo"><span class="bola">3</span><div><span class="tag">Gostou</span><h3>Implantação online, em 2 chamadas</h3>
+        <li class="passo"><span class="bola">1</span><div><span class="tag">Hoje</span><h3>Chama a nossa equipe no WhatsApp</h3><p>Você conta como a sua oficina funciona e tira as dúvidas. Se fizer sentido, já marca a implantação.</p></div></li>
+        <li class="passo"><span class="bola">2</span><div><span class="tag">Com hora marcada</span><h3>Implantação online, em 2 chamadas</h3>
           <ul>
             <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Chamada 1, técnica (uns 60 min):</b> a nossa equipe conecta com você o Instagram, a página do Facebook, a conta de anúncio e o WhatsApp, com a tela compartilhada.</span></li>
             <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Chamada 2, treino (uns 60 min):</b> você ensina a Maia: serviços, preços, prazos, até onde dá desconto e quando ela passa a conversa pra você. Aprova o primeiro lote de anúncios.</span></li>
-          </ul>
+          </ul></div></li>
+        <li class="passo"><span class="bola">3</span><div><span class="tag">Em até 48 h</span><h3>Campanha no ar e a Maia atendendo</h3><p>Depois da 2ª chamada, os anúncios aprovados vão pro ar e a Maia começa a atender, retomar e mandar os recados no seu WhatsApp.</p>
           <span class="sai"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Campanha no ar em até 48 h depois da 2ª chamada</span></div></li>
       </ol>
     </div>
@@ -601,6 +666,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <div class="of-corpo">
         <ul class="inclui">
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Atendimento no WhatsApp todo dia</b>, com o nome da sua oficina, e retomada de quem sumiu</span></li>
+          <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Recado pra sua base</b> na época certa do ano</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Campanha no Facebook e no Instagram</b> criada, rodando e ajustada a cada 2 dias</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Até 6 vídeos e 6 imagens de anúncio</b> e <b>12 posts</b> por mês</span></li>
           <li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span><b>Relatório completo todo dia 2</b> e painel com os resultados</span></li>
@@ -611,8 +677,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
           <div class="pr um"><small>Primeiro mês, com a implantação</small><div class="v"><b>R$ 497</b></div><p>As 2 chamadas de implantação e o primeiro mês da Maia trabalhando.</p></div>
           <div class="pr"><small>Do segundo mês em diante</small><div class="v"><b>R$ 797</b><span>/mês</span></div><p>Sem fidelidade. Cancela quando quiser.</p></div>
         </div>
-        <p class="fora"><b>A verba de anúncio é à parte</b> e você paga direto à Meta, no seu cartão ou no Pix. A conta de anúncio e o número ficam no nome da sua empresa.</p>
-        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Começar pela amostra grátis</a>
+        <p class="fora"><b>A verba de anúncio é à parte</b> e você paga direto à Meta, no cartão da sua empresa. A conta de anúncio e o número ficam no nome da sua empresa.</p>
+        <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha oficina</a>
       </div>
     </div>
   </div>
@@ -625,7 +691,7 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
       <h2>Perguntas que todo mundo faz</h2>
     </div>
     <div class="faq">
-      <details><summary>É um robô? Meu cliente vai perceber?</summary><p>A Maia é uma inteligência artificial, mas atende com o nome da sua oficina e no seu jeito de falar, que ela aprende com o seu Instagram e na implantação. Se o cliente perguntar se é robô, ela fala a verdade: é a assistente virtual da empresa. Quando o cliente quer fechar ou tem uma dúvida que ela não sabe, ela passa a conversa pra você ou pro seu time, com o resumo pronto.</p></details><details><summary>Preciso entender de tecnologia?</summary><p>Não. Você fala com a Maia pelo WhatsApp, como fala com um funcionário. Na implantação, a nossa equipe conecta as contas junto com você, numa chamada de vídeo com a tela compartilhada. Depois disso, você só aprova e responde quando ela te chama.</p></details><details><summary>Quanto preciso investir em anúncio?</summary><p>A verba é sua e você paga direto à Meta (Facebook e Instagram), no seu cartão ou no Pix, sem passar pela gente. Pra começar, o comum é entre R$ 20 e R$ 40 por dia. A Maia te mostra a cada 2 dias quanto custou cada conversa e cada orçamento, e diz se vale subir ou baixar. Responder quem chamou no WhatsApp não custa nada; só a retomada depois de 24 horas tem uma taxa da Meta, de uns R$ 0,40 por mensagem.</p></details><details><summary>Tem fidelidade?</summary><p>Não. É mensal e você cancela quando quiser. Quem segura o cliente aqui é o resultado que aparece no relatório.</p></details><details><summary>Funciona fora do Rio Grande do Sul?</summary><p>Funciona no Brasil todo. A escola fica em Lajeado (RS), mas tudo é online: a amostra chega pelo WhatsApp, a implantação é em 2 chamadas de vídeo e a campanha roda na sua cidade e na sua região.</p></details><details><summary>Eu já atendo no WhatsApp. Perco o meu número?</summary><p>Não. O número continua o seu e o celular continua recebendo as mensagens. A Maia atende junto, e você entra na conversa quando quiser.</p></details>
+      <details><summary>É um robô? Meu cliente vai perceber?</summary><p>A Maia é uma inteligência artificial, mas atende com o nome da sua oficina e no seu jeito de falar, que ela aprende com o seu Instagram e na implantação. Se o cliente perguntar se é robô, ela fala a verdade: é a assistente virtual da empresa. Quando o cliente quer fechar ou tem uma dúvida que ela não sabe, ela passa a conversa pra você ou pro seu time, com o resumo pronto.</p></details><details><summary>A Maia dá o diagnóstico do carro pelo WhatsApp?</summary><p>Não. Ela junta as informações (modelo, ano, quilometragem, sintoma, foto do painel, vídeo do barulho), explica em termos gerais o que pode ser e leva pro diagnóstico com o seu mecânico. Quem fecha o que o carro tem é a sua oficina.</p></details><details><summary>Funciona fora do Rio Grande do Sul?</summary><p>Funciona no Brasil todo. A escola fica em Lajeado (RS), mas tudo é online: a implantação é por chamada de vídeo, com a tela compartilhada, e a campanha roda na sua cidade e na sua região.</p></details><details><summary>Preciso trocar meu número de WhatsApp?</summary><p>Não. A Maia é conectada ao WhatsApp Business que você já usa, pela conexão oficial da Meta. O número continua o seu e o aplicativo continua funcionando no seu celular: você vê as conversas e entra quando quiser. Quando você responde um cliente pelo celular, ela fica quieta naquela conversa. Se hoje você usa o WhatsApp comum, dá pra passar o mesmo número pro WhatsApp Business antes da implantação.</p></details><details><summary>Preciso entender de tecnologia?</summary><p>Não. Você fala com a Maia pelo WhatsApp, como fala com um funcionário. Na implantação, a nossa equipe conecta as contas junto com você, numa chamada de vídeo com a tela compartilhada. Depois disso, você só aprova e responde quando ela te chama.</p></details><details><summary>A verba de anúncio está inclusa?</summary><p>Não. A verba é do seu negócio e vai direto pra Meta (Facebook e Instagram), no cartão da sua empresa, sem passar pela gente. Pra começar, o comum é entre R$ 20 e R$ 40 por dia. A Maia te mostra a cada 2 dias quanto custou cada conversa e diz se vale subir ou baixar. Responder quem chamou no WhatsApp não custa nada; a retomada depois de 24 horas e o recado pra base têm uma taxa da Meta, de uns R$ 0,40 por mensagem.</p></details><details><summary>Tem fidelidade?</summary><p>Não. É mensal e você cancela quando quiser. Quem segura o cliente aqui é o resultado que aparece no relatório.</p></details>
     </div>
   </div>
 </section>
@@ -635,9 +701,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     <div class="final-card">
       <img class="fundo" src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="" width="960" height="640" loading="lazy" decoding="async">
       <img class="maia" src="/maia/img/maia-avatar.webp" alt="Maia, a IA de marketing da Carreira no Digital" width="84" height="84" loading="lazy">
-      <h2>Amanhã você já pode ver a Maia trabalhando pra sua oficina.</h2>
-      <p class="lead">Chama no WhatsApp, manda as fotos ou só o @ do Instagram, e a amostra chega no dia seguinte. De graça.</p>
-      <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a amostra grátis</a>
+      <h2>A próxima mensagem da sua oficina pode ser respondida na hora.</h2>
+      <p class="lead">Chama a nossa equipe no WhatsApp. A gente entende como a sua oficina funciona e, se fizer sentido, marca a implantação online. Primeiro mês R$ 497, já com a implantação.</p>
+      <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero a Maia na minha oficina</a>
     </div>
   </div>
 </section>
@@ -646,8 +712,8 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
 <footer class="rodape"><div class="ct">Maia é a IA de marketing da Carreira no Digital, escola de marketing com IA de Lajeado (RS). Atendemos o Brasil todo.<br>WhatsApp da escola: 51 99505-4548</div></footer>
 
 <div class="barra" id="barra">
-  <div class="q"><b>Amostra grátis em 1 dia</b><span>2 anúncios, 1 vídeo e 9 posts pra sua oficina</span></div>
-  <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20amostra%20gr%C3%A1tis%20da%20Maia%20pra%20minha%20oficina." data-cta data-msg="Quero a amostra grátis da Maia pra minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero</a>
+  <div class="q"><b>A Maia na sua oficina</b><span>Atende, retoma e anuncia · 1º mês R$ 497</span></div>
+  <a class="btn" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Quero</a>
 </div>
 <script>
 (function(){var b=document.getElementById('barra');if(!b)return;function f(){b.classList.toggle('on',(window.scrollY||0)>520)}window.addEventListener('scroll',f,{passive:true});f();})();
@@ -696,8 +762,9 @@ body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset
     return {url:WA+'?'+p.toString(), ev:ev};
   }
   [].forEach.call(document.querySelectorAll('a[data-cta]'),function(b){
-    var t=(b.textContent||'').replace(/\s+/g,' ').trim(), l=waLink(b.getAttribute('data-msg'));
-    b.setAttribute('href',l.url);
+    // com data-msg o botão vai pro WhatsApp pelo /wa do CRM; sem data-msg (o quiz, no futuro) o endereço fica como está
+    var t=(b.textContent||'').replace(/\s+/g,' ').trim(), m=b.getAttribute('data-msg'), l=m?waLink(m):{url:b.getAttribute('href'),ev:uid()};
+    if(m)b.setAttribute('href',l.url);
     b.addEventListener('click',function(){
       track('clique_wa',{botao:t.slice(0,40),nicho:NICHO,event_id:l.ev});
       try{if(window.fbq)fbq('track','Lead',{content_name:'Maia',content_category:NICHO},{eventID:l.ev});}catch(e){}
