@@ -124,6 +124,14 @@ function leResposta(txt: string) {
 export async function atendeVenda(id: string) {
   const cv: any = await db.um('wa_conversas', { id })
   if (!cv || cv.modo !== 'ia' || cv.optout) return { pulou: 'sem conversa ou não está com a IA' }
+  // 24/11: número do time (o que recebe os avisos, MAIA_AVISO_EQUIPE_WHATS, ou MAIA_FONES_EQUIPE) nunca vira lead nem é atendido
+  // pela vendedora (alguém do time tocou num aviso e caiu na conversa de venda): sai da fase de venda e fica com o time
+  const fim8 = (x: string) => String(x || '').replace(/\D/g, '').slice(-8)
+  const time = [...String(process.env.MAIA_AVISO_EQUIPE_WHATS || '').split(','), ...String(process.env.MAIA_FONES_EQUIPE || '').split(',')].map(fim8).filter(x => x.length === 8)
+  if (time.includes(fim8(cv.telefone))) {
+    await db.atualiza('wa_conversas', { id }, { fase: 'equipe', modo: 'humano' })
+    return { pulou: 'número do time' }
+  }
   const E = await escola()
   const mx = cv.rascunho?.maia || {}
   // o lead da escola: o do quiz (pelo telefone) ou um novo (chamou direto)

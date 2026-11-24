@@ -104,6 +104,13 @@ await diz(c5, 'Oi')
 roteiroIA = () => 'sem formato'
 r = await atendeConversa(c5.id)
 confere(r.erro && (await conv(c5)).modo === 'humano' && pushes.some(t => /falhou/.test(t)), 'a IA respondeu fora do formato: nada sai, passa pra equipe', r)
+// 7. número do time (recebe os avisos) não vira lead nem é atendido
+process.env.MAIA_AVISO_EQUIPE_WHATS = '5500051999997713'
+const c6 = await conversa('5500051999997713', 'Time')
+await diz(c6, 'Ver agora')
+const nLeads = leads.length, nPed = pedidos.length
+r = await atendeConversa(c6.id)
+confere(r?.pulou === 'número do time' && leads.length === nLeads && pedidos.length === nPed && (await conv(c6)).fase === 'equipe' && (await conv(c6)).modo === 'humano', 'número do time: não cria lead, não chama a IA, sai da venda (fase equipe)', r)
 process.env.MAIA_VENDEDORA_LIGADA = ''
 confere(V.vendedoraLigada() === false, 'sem MAIA_VENDEDORA_LIGADA=1 a vendedora fica desligada (segue a demonstração antiga)')
 
