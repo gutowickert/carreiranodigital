@@ -66,15 +66,15 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para oficinas',
     titulo: 'Quantos carros a mais a sua oficina pode atender por mês?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, quanto dá pra ganhar com anúncio, atendimento, retomada, conteúdo e a sua base de clientes, e o que a Maia faz em cada parte.',
-    destaque: 'a mais', hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
+    destaque: 'a mais', hero: '/maia/img/quiz/oficina/oficina-hero.jpg', ad_img: '/maia/img/quiz/oficina/anuncio-motor.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua oficina pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Qual é o forte da sua oficina?', opcoes: [
-        { v: 'mecanica', t: 'Mecânica geral', img: '/maia/img/quiz/oficina/maos-no-motor.jpg' },
-        { v: 'cambio', t: 'Câmbio automático', img: '/maia/img/quiz/oficina/chave-no-motor.jpg' },
-        { v: 'retifica', t: 'Retífica de motor', img: '/maia/img/quiz/oficina/motor-retifica.jpg' },
-        { v: 'injecao', t: 'Injeção e elétrica', img: '/maia/img/quiz/oficina/diagnostico-scanner.jpg' },
-        { v: 'funilaria', t: 'Funilaria e pintura', img: '/maia/img/quiz/oficina/oficina-ampla.jpg' },
+        { v: 'mecanica', t: 'Mecânica geral', img: '/maia/img/quiz/oficina/mecanica-geral.jpg' },
+        { v: 'cambio', t: 'Câmbio automático', img: '/maia/img/quiz/oficina/cambio-elevador.jpg' },
+        { v: 'retifica', t: 'Retífica de motor', img: '/maia/img/quiz/oficina/retifica-cabecote.jpg' },
+        { v: 'injecao', t: 'Injeção e elétrica', img: '/maia/img/quiz/oficina/injecao-scanner.jpg' },
+        { v: 'funilaria', t: 'Funilaria e pintura', img: '/maia/img/quiz/oficina/funilaria-pintura.jpg' },
       ] },
       { id: 'volume', titulo: 'Quantos carros você atende por mês, mais ou menos?', opcoes: [
         { v: 'ate30', t: 'Até 30', n: 20 },

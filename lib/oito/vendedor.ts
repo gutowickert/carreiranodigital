@@ -197,7 +197,13 @@ export async function respondeVenda(cv: any) {
 export async function atendeConversa(id: string) {
   // 02/11: a conversa do teste grátis da Maia é atendida pela Maia (lib/maia/demo.ts), não pelo agente do Oito
   const fase = (await db.um('wa_conversas', { id }))?.fase
-  if (fase === 'maia') { const { atendeMaia } = await import('@/lib/maia/demo'); return atendeMaia(id) }
+  // 24/11 (doc do Guto "Maia vende a Maia"): com MAIA_VENDEDORA_LIGADA=1 quem atende é a vendedora (lib/maia/vendedora.ts), que vende a
+  // Maia a partir do quiz; sem a chave segue a demonstração com amostra grátis (lib/maia/demo.ts)
+  if (fase === 'maia') {
+    const { vendedoraLigada, atendeVenda } = await import('@/lib/maia/vendedora')
+    if (vendedoraLigada()) return atendeVenda(id)
+    const { atendeMaia } = await import('@/lib/maia/demo'); return atendeMaia(id)
+  }
   // 15/10: o agente do WhatsApp (agente.ts) faz o funil inteiro; o vendedor antigo fica só de reserva
   try { const { atende } = await import('./agente'); return await atende(id) } catch (e: any) {
     await db.atualiza('wa_conversas', { id }, { modo: 'humano' })

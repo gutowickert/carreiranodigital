@@ -50,7 +50,7 @@ export function Abertura({ nicho, hero, titulo, destaque, sub, botao, mini, onCo
 const DADOS = {
   oficina: {
     cal: [['Dezembro, janeiro e julho', 'Vai pegar a estrada com a família?'], ['Verão', 'Ar do carro só soprando quente?'], ['Época de chuva', 'Carro puxando pro lado quando freia na chuva?'], ['Inverno', 'Carro custando a pegar de manhã?'], ['Fevereiro', 'O carro do vai e vem da escola está em dia?'], ['Fim de ano e 13º', 'Recebeu o 13º? Hora de resolver aquele barulho.']],
-    ads: [['motor-aberto', 'Câmbio', 'Dando tranco na troca de marcha?'], ['pneu-revisao', 'Férias', 'Vai pegar a estrada com a família?'], ['diagnostico-scanner', 'Painel', 'Acendeu a luz da injeção?'], ['troca-de-oleo', 'Revisão', 'O óleo do seu carro venceu?'], ['chave-no-motor', 'Freio', 'Barulho quando freia?'], ['maos-no-motor', 'Verão', 'Ar do carro só soprando quente?']],
+    ads: [['cambio-elevador', 'Câmbio', 'Dando tranco na troca de marcha?'], ['elevador-oficina-ampla', 'Férias', 'Vai pegar a estrada com a família?'], ['injecao-scanner', 'Painel', 'Acendeu a luz da injeção?'], ['mecanica-geral', 'Revisão', 'O óleo do seu carro venceu?'], ['embaixo-do-carro', 'Freio', 'Barulho quando freia?'], ['mecanico-tablet', 'Verão', 'Ar do carro só soprando quente?']],
     raio: '15 km',
     chat: {
       cambio: ['Boa noite. Meu carro está dando tranco quando troca de marcha. Vocês olham câmbio automático?', 'Corolla 2016', 'Esse tranco pode ter mais de uma causa, então o certo é fazer o diagnóstico aqui. Amanhã às 8h ou às 10h, qual fica melhor?'],
@@ -62,8 +62,8 @@ const DADOS = {
     pergunta: 'Olhamos sim. Me diz o modelo e o ano do carro?',
     retomada: [['1 dia depois', 'Conseguiu ver o melhor dia pra trazer o carro?'], ['3 dias depois', 'Quer que eu te explique como funciona o diagnóstico?'], ['6 dias depois', 'Vou parar por aqui pra não incomodar. Quando quiser, é só chamar.']],
     fechar: 'Carlos quer trazer o carro amanhã às 8h. Corolla 2016, 98 mil km.',
-    feed: ['elevador-oficina', 'motor-aberto', 'troca-de-oleo', 'maos-no-motor', 'pneu-revisao', 'diagnostico-scanner', 'oficina-ampla', 'chave-no-motor', 'mao-graxa-noite'],
-    recadoFoto: 'elevador-oficina',
+    feed: ['elevador-oficina-ampla', 'retifica-cabecote', 'mecanica-geral', 'injecao-scanner', 'embaixo-do-carro', 'mecanico-capo', 'comando-valvulas', 'anuncio-motor', 'mecanico-tablet'],
+    recadoFoto: 'elevador-oficina-ampla',
     recado: (n: string) => `Oi Carlos, aqui é da ${n}. A troca de óleo do seu carro vence este mês. Vejo um horário pra essa semana?`,
     vendas: 'Serviços fechados', repete: 'Repete: "câmbio dando tranco"', corta: 'Corta: "ar soprando quente"',
     proximo: 'Próximo mês: mais do que vendeu, menos do que só trouxe curioso.',
