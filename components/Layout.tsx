@@ -125,6 +125,8 @@ const grupos: Grupo[] = [
         { nome: 'Agenda', href: '/dashboard/agenda-disparos' },
         { nome: 'Relatório', href: '/dashboard/disparos/relatorios' },
         { nome: 'Listas', href: '/dashboard/listas' },
+        // os templates (cadência e disparo) — o Rick usa no dia a dia; ficou escondido na Central da IA na 1ª versão
+        { nome: 'Templates', href: '/dashboard/followup-templates' },
       ] },
       { nome: 'Tráfego e site', href: '/dashboard/trafego', juntas: [
         { nome: 'Tráfego', href: '/dashboard/trafego' },
@@ -170,7 +172,6 @@ const grupos: Grupo[] = [
       { nome: 'Central da IA', href: '/dashboard/agente-interno', juntas: [
         { nome: 'Agente interno', href: '/dashboard/agente-interno' },
         { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
-        { nome: 'Modelos de follow-up', href: '/dashboard/followup-templates' },
         { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
         { nome: 'Qualidade', href: '/dashboard/qualidade-ia' },
         { nome: 'Fim de semana', href: '/dashboard/ia-fds' },

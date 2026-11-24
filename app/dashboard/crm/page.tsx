@@ -869,7 +869,7 @@ const FN_CSS = `
   display:flex;flex-direction:column;gap:30px;letter-spacing:-.005em}
 .fn .mono{font-family:var(--f-mono,ui-monospace),ui-monospace,'SF Mono',Menlo,monospace;font-size:11.5px;letter-spacing:0;font-variant-numeric:tabular-nums}
 .fn .tnum{font-variant-numeric:tabular-nums}
-.fn button{font:inherit;color:inherit;letter-spacing:inherit}
+:where(.fn) button{font:inherit;color:inherit;letter-spacing:inherit}
 .fn-pos{color:var(--green)}.fn-neg{color:var(--red)}
 .fn-topo{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px 26px}
 .fn-topo-esq{display:flex;align-items:center;gap:18px;flex-wrap:wrap}

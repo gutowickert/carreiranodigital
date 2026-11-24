@@ -254,7 +254,7 @@ const CM_CSS = `
 .cm{--cm-line:color-mix(in srgb,var(--text) 9%,transparent);--cm-line2:color-mix(in srgb,var(--text) 15%,transparent);--cm-lane:color-mix(in srgb,var(--text) 3.5%,transparent);--cm-dim:color-mix(in srgb,var(--accent) 13%,transparent);
   padding:22px clamp(12px,4vw,40px) 28px;display:flex;flex-direction:column;gap:20px}
 .cm .mono{font-family:var(--f-mono,ui-monospace),ui-monospace,'SF Mono',Menlo,monospace;letter-spacing:0;font-variant-numeric:tabular-nums}
-.cm button,.cm textarea,.cm input{font:inherit;color:inherit}
+:where(.cm) :where(button,textarea,input){font:inherit;color:inherit}
 .cm-topo{display:flex;flex-wrap:wrap;gap:14px 28px;align-items:flex-end;justify-content:space-between}
 .cm-topo h1{font-size:26px;font-weight:600;letter-spacing:-.035em;margin:0;color:var(--text)}
 .cm-topo p{margin:6px 0 0;font-size:13px;color:var(--text-muted)}
