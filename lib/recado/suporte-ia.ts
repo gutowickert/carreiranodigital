@@ -3,7 +3,7 @@
 // e manda pelo mesmo fio (responde, em suporte-email.ts). Reembolso, reclamação, vídeo com erro ou dado errado: acolhe,
 // diz que a equipe vai resolver e avisa o Guto no celular. Nunca promete o que não está na base nem inventa prazo.
 import { recadoDb as db } from '@/lib/recado/db'
-import { recadoConfig as cfg } from '@/lib/recado/config'
+import { recadoConfig as cfg, precoDe, antesDaVirada, PRECO_NATAL } from '@/lib/recado/config'
 import { linkFamilia, SUPORTE } from '@/lib/recado/email'
 import { avisaDono, nomeProduto } from '@/lib/recado/avisa-dono'
 import { responde } from '@/lib/recado/suporte-email'
@@ -12,10 +12,11 @@ const MODELO = process.env.RECADO_SUPORTE_MODELO || 'claude-sonnet-5'
 const MAX_AUTO_24H = 3   // mais que isso na mesma conversa em 24 h: para e chama o Guto
 
 // o que o site promete (FAQ das páginas e rodapé, 11/10). Mudou no site, muda aqui.
-const BASE = `
+// 24/11: virou função pra o preço do vídeo de Natal ser o de agora (muda sozinho em 11/12) e não o de quando o servidor ligou
+const BASE = () => `
 O QUE É: vídeos personalizados feitos com inteligência artificial, em que um personagem fala com a criança pelo nome, com a foto dela.
-PRODUTOS E PREÇOS: ${Object.entries(cfg.pacotes).flatMap(([per, pacs]: any) => Object.entries(pacs).map(([pac, v]: any) => `${nomeProduto(per, pac)}: R$ ${(+v.preco).toFixed(2).replace('.', ',')}${v.etapas ? ` (missão com ${v.etapas.length} vídeos, um por dia)` : ''}`)).join('; ')}.
-COMO RECEBE: na página da família (o link chega no e-mail logo depois do pedido). Vídeo avulso (Fada, Papai Noel): em até 2 horas depois do pagamento confirmado aparece na página, pronto pra assistir e baixar, e chega um e-mail avisando. Missões: cada vídeo aparece na página no dia certo, sempre entre 7h e 21h (a Noite de Herói, às 18h), com e-mail a cada vídeo. Depois de cada vídeo da missão, a família marca na página "Cumpriu", "Tentou" ou "Ainda não", e o vídeo seguinte responde a isso, sem bronca.
+PRODUTOS E PREÇOS: ${Object.entries(cfg.pacotes).flatMap(([per, pacs]: any) => Object.entries(pacs).map(([pac, v]: any) => `${nomeProduto(per, pac)}: R$ ${(+(precoDe(per, pac) ?? v.preco)).toFixed(2).replace('.', ',')}${v.etapas ? ` (missão com ${v.etapas.length} vídeos, um por dia)` : ''}`)).join('; ')}.
+COMO RECEBE: na página da família (o link chega no e-mail logo depois do pedido). Vídeo avulso (Fada, Papai Noel): ${cfg.prazoTexto} depois do pagamento confirmado (normalmente de 2 a 4 horas; em dia de muito pedido pode levar mais) aparece na página, pronto pra assistir e baixar, e chega um e-mail avisando. Missões: cada vídeo aparece na página no dia certo, sempre entre 7h e 21h (a Noite de Herói, às 18h), com e-mail a cada vídeo. Depois de cada vídeo da missão, a família marca na página "Cumpriu", "Tentou" ou "Ainda não", e o vídeo seguinte responde a isso, sem bronca.
 E-MAIL QUE NÃO CHEGOU: olhar a caixa de spam ou de promoções. O link da página da família vale sempre.
 PAGAMENTO: Pix ou cartão, na página segura do Asaas. O pedido só começa a ser feito depois que o pagamento confirma.
 GARANTIA: se não ficar mágico, a gente refaz ou devolve o dinheiro. Se algo foi escrito errado no pedido, a gente refaz sem custo.
@@ -25,7 +26,7 @@ MISSÃO COMO FUNCIONA: Tchau Chupeta: o Capitão Grandão convoca, combina o dia
 PRESENTE: avó, avô, dinda podem pedir; o personagem diz pra criança quem pediu. Mais de um filho: cada um ganha o seu vídeo (opção do irmão no pagamento, quando aparece).
 CONTATO: ${SUPORTE}.`
 
-const SISTEMA = `Tu é o atendimento do Recado Encantado, por e-mail. Escreve em português do Brasil, tratando por "tu" (jeito gaúcho), caloroso, simples e curto: 2 a 6 frases, sem lista longa, sem emoji em excesso (no máximo um). Não assina (a assinatura "Equipe Recado Encantado" entra sozinha).
+const SISTEMA = `Tu é o atendimento do Recado Encantado, por e-mail. Escreve em português do Brasil, tratando por "tu" (jeito gaúcho), caloroso, simples e curto: 2 a 6 frases, sem lista longa, sem emoji. Não assina (a assinatura "Equipe Recado Encantado" entra sozinha).
 
 REGRAS:
 - Usa SÓ o que está na BASE e nos DADOS DO PEDIDO. Nunca inventa prazo, preço, política, desconto, horário nem promessa. Se não sabe, diz que a equipe vai ver e responder.
@@ -60,7 +61,7 @@ async function pergunta(conv: any, msgs: any[]) {
   const r = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST',
     headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY as string, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
     body: JSON.stringify({ model: MODELO, max_tokens: 900, system: SISTEMA, messages: [{ role: 'user', content:
-      `AGORA: ${agora}\n\nBASE:\n${BASE}\n\nDADOS DO PEDIDO:\n${await dadosPedidos(conv)}\n\nCONVERSA (assunto: ${conv.assunto || '-'}; e-mail: ${conv.email}; nome: ${conv.nome || '-'}):\n${historico}\n\nResponde à última mensagem do CLIENTE.` }] }) })
+      `AGORA: ${agora}\n\nBASE:\n${BASE()}\n\nDADOS DO PEDIDO:\n${await dadosPedidos(conv)}\n\nCONVERSA (assunto: ${conv.assunto || '-'}; e-mail: ${conv.email}; nome: ${conv.nome || '-'}):\n${historico}\n\nResponde à última mensagem do CLIENTE.` }] }) })
   const j: any = await r.json()
   if (!r.ok) throw new Error('Claude ' + r.status + ': ' + JSON.stringify(j).slice(0, 200))
   const txt = (j.content || []).map((c: any) => c.text || '').join('').trim()

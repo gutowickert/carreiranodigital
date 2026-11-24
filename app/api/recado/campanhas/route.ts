@@ -3,7 +3,7 @@
 // GET ?p=hoje|zero|7d · senha do painel (x-senha). Também grava o gasto do período nos lançamentos (o financeiro fica igual).
 import { NextRequest, NextResponse } from 'next/server'
 import { recadoDb as db } from '@/lib/recado/db'
-import { recadoConfig as cfg } from '@/lib/recado/config'
+import { recadoConfig as cfg, precoDe } from '@/lib/recado/config'
 import { lerMeta, produtoDe, sincronizaGastos } from '@/lib/recado/meta-gasto'
 import { hojeBR, isoBR } from '@/lib/periodos'
 import { economia } from '@/lib/recado/economia'
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
     sincronizaGastos(Math.min(dias, 30)).catch(() => null)   // mantém o financeiro em dia sem atrasar a tela
     if (!meta.ok) return NextResponse.json({ erro: meta.erro }, { status: 502 })
 
-    const preco = (prod: string | null) => { if (!prod) return 0; const [a, b] = prod.split('/'); return (cfg.pacotes as any)[a]?.[b]?.preco || 0 }
+    const preco = (prod: string | null) => { if (!prod) return 0; const [a, b] = prod.split('/'); return precoDe(a, b) || 0 }
     const nomeProd = (prod: string | null) => { if (!prod) return '(sem produto)'; const [a, b] = prod.split('/'); return (a === 'noel' ? 'Papai Noel · ' : '') + ((cfg.pacotes as any)[a]?.[b]?.nome || prod) }
     const campanhas = new Set(meta.linhas.map(l => l.campaign_name))
     const real = (x: any) => !x.origem?.teste && !x.origem?.cortesia

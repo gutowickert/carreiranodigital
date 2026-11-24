@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { recadoDb as db } from '@/lib/recado/db'
 import { recadoGateway as gateway } from '@/lib/recado/gateway'
-import { recadoConfig as cfg } from '@/lib/recado/config'
+import { recadoConfig as cfg, precoDe } from '@/lib/recado/config'
 import { enviaEmail, moldura, linkFamilia } from '@/lib/recado/email'
 import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
 import { ehAcordo, DESAFIOS, vendaAberta } from '@/lib/recado/acordo'
@@ -64,7 +64,8 @@ export async function POST(req: NextRequest) {
       if ((b.pacote === 'coragem' || b.pacote === 'chupeta') && !missao.data) return NextResponse.json({ erro: 'faltou a data' }, { status: 400 })
     }
     const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
-    let preco = +(pac.preco + irmaos * (pac.irmao ?? cfg.irmao)).toFixed(2)
+    // o preço sai do servidor pela data de agora (vídeo de Natal: 49,90 até 10/12 23h59, 79,90 depois); a tela não manda preço
+    let preco = +((precoDe(b.personagem, b.pacote) ?? pac.preco) + irmaos * (pac.irmao ?? cfg.irmao)).toFixed(2)
     // cupom (Guto 10/10): grátis entra direto na produção, sem pagamento; % dá desconto e segue pro Asaas
     const codCupom = limpa(b.cupom, 30).toUpperCase().replace(/[^A-Z0-9-]/g, '')
     let cupom: any = null

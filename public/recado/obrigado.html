@@ -177,7 +177,7 @@ function desenha(s){
     return true }
   var i=Math.max(0,ordem.indexOf(s.status))
   document.getElementById('tit').textContent=s.status==='aguardando_pagamento'?'Quase lá!':'Tudo certo!'
-  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Em até 2 horas aparece aqui nesta página, e a gente avisa no teu e-mail.'
+  document.getElementById('sub').textContent=s.status==='aguardando_pagamento'?'Assim que o pagamento confirmar, '+quem+' começa a gravar o recado pra '+s.nome+'.':(s.etapa||'')+'. Em até 4 horas aparece aqui nesta página, e a gente avisa no teu e-mail.'
   document.getElementById('passos').innerHTML=ordem.map(function(o,k){return '<div class="passo '+(k<i||(k===i&&o==='entregue')?'feito':k===i?'agora':'')+'"><i>'+(k<i?'✓':k+1)+'</i>'+(o==='pago'&&s.personagem==='noel'?'Na fila dos duendes':NOMES[o])+'</div>'}).join('')
   return false }
 // guia simples pra quem ajuda (mãe, pai, vó): uma página por herói

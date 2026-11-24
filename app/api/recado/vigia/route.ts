@@ -74,6 +74,23 @@ export async function GET(req: NextRequest) {
   if (gasto > teto && (!vendas.length || gasto / vendas.length > teto))
     avisos.push({ tipo: 'cpa', titulo: 'Recado: CPA acima do teto', texto: `Acordo de Natal nos últimos 3 dias: ${reais(gasto)} de anúncio pra ${vendas.length} venda(s)${vendas.length ? ` (CPA ${reais(gasto / vendas.length)})` : ''}. O teto é ${reais(teto)} (20% do ticket).` })
 
+  // 6. fotos das crianças (24/11, regra do Recado: "as fotos são apagadas depois do Natal"). Até aqui nada apagava.
+  //    · pedido que já acabou (entregue, cancelado, reembolsado) há mais de 30 dias: apaga a foto (o que as páginas antigas prometem)
+  //    · de 26/12 em diante: apaga todas, de qualquer pedido. Apaga do Storage e limpa o foto_path (o vídeo pronto fica).
+  let fotosApagadas = 0
+  try {
+    const depoisDoNatal = Date.now() >= Date.parse(process.env.RECADO_APAGA_FOTOS_EM || '2026-12-26T00:00:00-03:00')
+    const filtro = depoisDoNatal ? 'foto_path=not.is.null'
+      : `foto_path=not.is.null&status=in.(entregue,cancelado,reembolsado)&criado_em=lt.${new Date(Date.now() - 30 * 86400e3).toISOString()}`
+    const comFoto = await db.busca('pedidos', `${filtro}&select=id,foto_path&limit=200`).catch(() => [])
+    if (comFoto.length) {
+      const r = await fetch(`${U()}/storage/v1/object/recado`, { method: 'DELETE', headers: { apikey: K(), Authorization: 'Bearer ' + K(), 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prefixes: comFoto.map((p: any) => p.foto_path) }) })
+      if (r.ok) for (const p of comFoto) { await db.atualiza('pedidos', `id=eq.${p.id}`, { foto_path: null }); fotosApagadas++ }
+      else console.error('recado/vigia fotos', r.status, (await r.text()).slice(0, 200))
+    }
+  } catch (e) { console.error('recado/vigia fotos', e) }
+
   const enviados: string[] = []
   for (const a of avisos) { if (await jaAvisou(a.tipo)) continue; await avisaDono(a.titulo, a.texto, 'warning'); await marca(a.tipo); enviados.push(a.tipo) }
 
@@ -92,5 +109,5 @@ export async function GET(req: NextRequest) {
       + `Sobra antes dos fixos: ${reais(rec - g - prod - ps.reduce((s: number, p: any) => s + (+p.taxa_gateway || 0), 0))}.`
     await avisaDono('Recado: bom dia', resumoTxt, 'sunny'); await marca('resumo')
   }
-  return NextResponse.json({ ok: true, avisos: avisos.map(a => a.tipo), enviados, resumo: resumoTxt })
+  return NextResponse.json({ ok: true, avisos: avisos.map(a => a.tipo), enviados, resumo: resumoTxt, fotosApagadas })
 }
