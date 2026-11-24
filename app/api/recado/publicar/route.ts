@@ -20,6 +20,9 @@ function autorizado(req: NextRequest) {
 export async function GET(req: NextRequest) {
   if (!autorizado(req)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
   const q = req.nextUrl.searchParams, seco = q.get('seco') === '1'
+  // 24/11 (Guto): o Recado vende só o vídeo avulso do Papai Noel. O calendário do orgânico é todo do Acordo de Natal (produto que saiu),
+  // então a publicação automática fica parada. O modo seco continua pra conferir. Pra voltar: RECADO_ORGANICO_LIGADO=1 na Vercel (depois de trocar os posts).
+  if (!seco && process.env.RECADO_ORGANICO_LIGADO !== '1') return NextResponse.json({ ok: true, pausado: 'orgânico do Acordo parado: o Recado vende só o vídeo avulso' }, { headers: { 'Cache-Control': 'no-store' } })
   const agora = seco && q.get('agora') && !isNaN(Date.parse(q.get('agora') as string)) ? Date.parse(q.get('agora') as string) : undefined
   try {
     const r = await rodaAgendador({ seco, agora, avisa: (t, x) => avisaDono(t, x, 'warning') })

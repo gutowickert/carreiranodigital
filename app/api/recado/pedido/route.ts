@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes } from 'crypto'
 import { recadoDb as db } from '@/lib/recado/db'
 import { recadoGateway as gateway } from '@/lib/recado/gateway'
-import { recadoConfig as cfg, precoDe } from '@/lib/recado/config'
+import { recadoConfig as cfg, precoDe, vendavel } from '@/lib/recado/config'
 import { enviaEmail, moldura, linkFamilia } from '@/lib/recado/email'
 import { avisaDono, nomeProduto, reais } from '@/lib/recado/avisa-dono'
 import { ehAcordo, DESAFIOS, vendaAberta } from '@/lib/recado/acordo'
@@ -20,6 +20,8 @@ const QUEM = ['mae', 'pai', 'avo', 'avo_m', 'tia', 'tio', 'madrinha', 'padrinho'
 export async function POST(req: NextRequest) {
   try {
     const b: any = await req.json()
+    // 24/11: só o vídeo avulso do Papai Noel está à venda; qualquer outro pacote (Acordo, Magia Completa, Fada, missões) é recusado aqui
+    if (!vendavel(String(b.personagem), String(b.pacote))) return NextResponse.json({ erro: 'esse produto não está mais à venda. O vídeo do Papai Noel continua: recadoencantando.com.br/papai-noel' }, { status: 400 })
     const pac = (cfg.pacotes[b.personagem] || {})[b.pacote]
     if (!pac) return NextResponse.json({ erro: 'pacote inválido' }, { status: 400 })
     const c = b.crianca || {}, ct = b.contato || {}
@@ -63,7 +65,7 @@ export async function POST(req: NextRequest) {
         presente: limpa(m.presente, 80), medo: limpa(m.medo, 160), ajuda: limpa(m.ajuda, 160), recompensa: limpa(m.recompensa, 80) }
       if ((b.pacote === 'coragem' || b.pacote === 'chupeta') && !missao.data) return NextResponse.json({ erro: 'faltou a data' }, { status: 400 })
     }
-    const irmaos = Math.max(0, Math.min(3, +b.irmaos || 0))
+    const irmaos = 0   // 24/11: sem adicional de irmão; cada criança é um pedido (o vídeo dela, com o nome e a foto dela)
     // o preço sai do servidor pela data de agora (vídeo de Natal: 49,90 até 10/12 23h59, 79,90 depois); a tela não manda preço
     let preco = +((precoDe(b.personagem, b.pacote) ?? pac.preco) + irmaos * (pac.irmao ?? cfg.irmao)).toFixed(2)
     // cupom (Guto 10/10): grátis entra direto na produção, sem pagamento; % dá desconto e segue pro Asaas

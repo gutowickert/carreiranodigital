@@ -48,3 +48,9 @@ export function precoDe(personagem: string, pacote: string, agora: Date = new Da
   if (!pac) return null
   return personagem === 'noel' && pacote === 'encanto' ? precoNatal(agora) : pac.preco
 }
+
+// ---- o que está à venda (24/11/2026, Guto: "não existe mais Magia Completa e nada mais, apenas vídeo avulso") ----
+// Só o vídeo personalizado do Papai Noel. Os outros pacotes ficam no cadastro de cima só pra os pedidos antigos
+// (página da família, entrega, painel, custos) continuarem funcionando; o /api/recado/pedido recusa qualquer outro.
+export const VENDAVEIS = ['noel/encanto']
+export const vendavel = (personagem: string, pacote: string) => VENDAVEIS.includes(`${personagem}/${pacote}`)
