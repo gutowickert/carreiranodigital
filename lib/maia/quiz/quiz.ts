@@ -64,9 +64,9 @@ export const QUIZZES: Record<Nicho, Quiz> = {
   oficina: {
     nicho: 'oficina', nome: 'oficina', artigo: 'a', unidade: ['carro', 'carros'], servico: 'serviço',
     eyebrow: 'Diagnóstico para oficinas',
-    titulo: 'Quanto a sua oficina deixa de faturar por mês com mensagem sem resposta e orçamento parado?',
-    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
-    destaque: 'mensagem sem resposta e orçamento parado?', hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
+    titulo: 'Quantos carros a mais a sua oficina pode atender por mês?',
+    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, quanto dá pra ganhar com anúncio, atendimento, retomada, conteúdo e a sua base de clientes, e o que a Maia faz em cada parte.',
+    destaque: 'a mais', hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua oficina pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Qual é o forte da sua oficina?', opcoes: [
@@ -114,9 +114,9 @@ export const QUIZZES: Record<Nicho, Quiz> = {
   otica: {
     nicho: 'otica', nome: 'ótica', artigo: 'a', unidade: ['óculos', 'óculos'], servico: 'venda',
     eyebrow: 'Diagnóstico para óticas',
-    titulo: 'Quantos óculos a sua ótica deixa de vender por mês sem perceber?',
-    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
-    destaque: 'deixa de vender por mês', hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
+    titulo: 'Quantos óculos a mais a sua ótica pode vender por mês?',
+    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, quanto dá pra ganhar com anúncio, atendimento, retomada, conteúdo e a sua base de clientes, e o que a Maia faz em cada parte.',
+    destaque: 'a mais', hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua ótica pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Como é a sua ótica?', opcoes: [
