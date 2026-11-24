@@ -28,7 +28,7 @@ export const PIXEL_ESCOLA = '3968641693466078'
 
 // ---------------- as perguntas ----------------
 export type Nicho = 'oficina' | 'otica'
-export type Opcao = { v: string; t: string; n?: number }   // n = número que entra na conta (quando a opção é faixa)
+export type Opcao = { v: string; t: string; n?: number; img?: string }   // n = número que entra na conta (quando a opção é faixa)
 export type Pergunta = { id: string; titulo: string; ajuda?: string; opcoes: Opcao[] }
 export type Quiz = {
   nicho: Nicho
@@ -39,6 +39,9 @@ export type Quiz = {
   eyebrow: string
   titulo: string
   sub: string
+  hero: string                 // foto real da abertura
+  ad_img: string               // foto real do exemplo de anúncio
+  fala: string                 // a primeira fala da Maia na abertura
   perguntas: Pergunta[]
 }
 
@@ -62,13 +65,15 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para oficinas',
     titulo: 'Quanto a sua oficina deixa de faturar por mês com mensagem sem resposta e orçamento parado?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
+    hero: '/maia/img/quiz/oficina/hero-embaixo-do-carro.jpg', ad_img: '/maia/img/quiz/oficina/maos-no-motor.jpg',
+    fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua oficina pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Qual é o forte da sua oficina?', opcoes: [
-        { v: 'mecanica', t: 'Mecânica geral' },
-        { v: 'cambio', t: 'Câmbio automático' },
-        { v: 'retifica', t: 'Retífica de motor' },
-        { v: 'injecao', t: 'Injeção e elétrica' },
-        { v: 'funilaria', t: 'Funilaria e pintura' },
+        { v: 'mecanica', t: 'Mecânica geral', img: '/maia/img/quiz/oficina/maos-no-motor.jpg' },
+        { v: 'cambio', t: 'Câmbio automático', img: '/maia/img/quiz/oficina/chave-no-motor.jpg' },
+        { v: 'retifica', t: 'Retífica de motor', img: '/maia/img/quiz/oficina/motor-retifica.jpg' },
+        { v: 'injecao', t: 'Injeção e elétrica', img: '/maia/img/quiz/oficina/diagnostico-scanner.jpg' },
+        { v: 'funilaria', t: 'Funilaria e pintura', img: '/maia/img/quiz/oficina/oficina-ampla.jpg' },
       ] },
       { id: 'volume', titulo: 'Quantos carros você atende por mês, mais ou menos?', opcoes: [
         { v: 'ate30', t: 'Até 30', n: 20 },
@@ -110,11 +115,13 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para óticas',
     titulo: 'Quantos óculos a sua ótica deixa de vender por mês sem perceber?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
+    hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
+    fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua ótica pode ganhar a mais.',
     perguntas: [
       { id: 'tipo', titulo: 'Como é a sua ótica?', opcoes: [
-        { v: 'rua', t: 'Loja de rua' },
-        { v: 'shopping', t: 'Loja de shopping' },
-        { v: 'varias', t: 'Mais de uma loja' },
+        { v: 'rua', t: 'Loja de rua', img: '/maia/img/quiz/otica/cliente-na-parede.jpg' },
+        { v: 'shopping', t: 'Loja de shopping', img: '/maia/img/quiz/otica/vitrine-armacoes.jpg' },
+        { v: 'varias', t: 'Mais de uma loja', img: '/maia/img/quiz/otica/parede-armacoes.jpg' },
       ] },
       { id: 'volume', titulo: 'Quantos óculos completos vocês vendem por mês?', ajuda: 'Armação com lente de grau, mais ou menos.', opcoes: [
         { v: 'ate20', t: 'Até 20', n: 14 },
@@ -205,6 +212,8 @@ export type Ganho = {
   retorno: number               // R$ em serviço/venda MEDIDO a cada R$ 1 de anúncio (com a Maia)
   limitado: boolean             // bateu na trava de 2x o faturamento
   cenario: { verba: number; unidades_mes: number; valor_mes: number; premissa: string } | null  // quem anuncia pouco: subir pra verba sugerida
+  vendas_maia_mes: number       // vendas medidas no mês com a Maia (as de hoje + as a mais), pro exemplo de relatório
+  valor_maia_mes: number
   direto_premissa: string
   premissa: string
   quantidade: string | null
@@ -386,6 +395,7 @@ export function diagnosticar(nicho: Nicho, r: Record<string, any>, negocioNome =
     direto_unidades: uDir, direto_mes: diretoMes,
     total_mes: medidoMes + diretoMes, total_ano: (medidoMes + diretoMes) * 12,
     retorno: Math.floor(retorno * 10) / 10, limitado, cenario,
+    vendas_maia_mes: vendasComMaia, valor_maia_mes: baixo10(vendasComMaia * vAnuncio),
     premissa: (naoAnuncia
       ? `Considerando uma verba inicial sugerida de ${reais(verba)} por mês (R$ 30 por dia, paga por você direto à Meta), um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas por mês, e que ${umEm(fechaA)} conversas atendidas na hora e com retomada vira ${coisa}${ofi ? ' (quem chama com o carro com problema precisa resolver logo)' : ''}, ${premValor}.`
       : `Considerando a sua verba de cerca de ${reais(verba)} por mês, um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas, que ${umEm(fechaA)} vira ${coisa} (${dec(vendasBase)} por mês hoje), ${premValor}, e que, com a Maia medindo cada venda, cortando o que não vende e replicando o que vende, a mesma verba rende ${Math.round(P.melhora_otimizando * 100)}% a mais.`)

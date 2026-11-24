@@ -4,6 +4,7 @@ import {
   QUIZZES, OFERTA_QUIZ, DESTINO_COMECAR, DESTINO_DUVIDA, TURMA_QUIZ, UFS,
   diagnosticar, telefoneBR, mensagemWhats, reaisQuiz as reais, type Nicho, type Destino, type Diagnostico,
 } from '@/lib/maia/quiz/quiz'
+import { MaiaFala, falaDepois, CelularWhats, AnuncioInsta, RelatorioDono } from './visual'
 
 // Quiz de diagnóstico da Maia. Uma pergunta por tela (tocar avança sozinho), depois o contato, depois o
 // resultado. A conta roda AQUI (mesma função da API), então o resultado aparece mesmo se a API cair; o envio
@@ -182,7 +183,9 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
   if (passo === -1) return (
     <main className={`mq-tela mq-${nicho}`}>
       <header className="mq-cab"><Topo /></header>
+      <div className="mq-hero"><img src={q.hero} alt="" fetchPriority="high" /></div>
       <section className="mq-abre">
+        <MaiaFala texto={q.fala} grande />
         <p className="mq-olho">{q.eyebrow}</p>
         <h1>{q.titulo}</h1>
         <p className="mq-sub">{q.sub}</p>
@@ -200,6 +203,9 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
   // ---------------- perguntas ----------------
   if (passo < total) {
     const p = q.perguntas[passo]
+    const ant = passo > 0 ? q.perguntas[passo - 1] : null
+    const fala = ant ? falaDepois(nicho, ant.id, r[ant.id], q.unidade[0]) : 'Vamos lá: são 8 perguntas rápidas, é só tocar.'
+    const comFoto = p.opcoes.every(o => o.img)
     return (
       <main className={`mq-tela mq-${nicho}`}>
         <header className="mq-barra-topo">
@@ -208,10 +214,16 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
           <span className="mq-conta">{passo + 1} de {total}</span>
         </header>
         <section className="mq-corpo" key={p.id}>
+          {fala && <MaiaFala texto={fala} />}
           <h1 className="mq-h">{p.titulo}</h1>
           {p.ajuda && <p className="mq-ajuda">{p.ajuda}</p>}
-          <div className="mq-ops" role="radiogroup" aria-label={p.titulo}>
-            {p.opcoes.map(o => (
+          <div className={`mq-ops${comFoto ? ' mq-ops-foto' : ''}`} role="radiogroup" aria-label={p.titulo}>
+            {p.opcoes.map(o => comFoto ? (
+              <button key={o.v} role="radio" aria-checked={r[p.id] === o.v} className={`mq-opf${r[p.id] === o.v ? ' on' : ''}`} onClick={() => escolhe(passo, o.v)}>
+                <img src={o.img} alt="" />
+                <span>{o.t}</span>
+              </button>
+            ) : (
               <button key={o.v} role="radio" aria-checked={r[p.id] === o.v} className={`mq-op${r[p.id] === o.v ? ' on' : ''}`} onClick={() => escolhe(passo, o.v)}>
                 <span className="mq-bola" aria-hidden="true" />{o.t}
               </button>
@@ -231,6 +243,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
         <span className="mq-conta">Último passo</span>
       </header>
       <form className="mq-corpo mq-form" onSubmit={verResultado} noValidate>
+        <MaiaFala texto={falaDepois(nicho, 'anuncio', r.anuncio, q.unidade[0]) || 'Pronto, já fiz as contas.'} />
         <h1 className="mq-h">Seu diagnóstico está pronto. Pra quem é?</h1>
         <p className="mq-ajuda">A conta usa o nome da {q.nome}. O WhatsApp é pra nossa equipe tirar alguma dúvida, se você quiser.</p>
         <label>Seu nome<input autoComplete="given-name" value={c.nome} onChange={e => setC({ ...c, nome: e.target.value })} placeholder="Ex.: Carlos" /></label>
@@ -261,7 +274,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
       <header className="mq-cab"><Topo /></header>
 
       <section className="mq-bloco">
-        <p className="mq-olho">Diagnóstico pronto</p>
+        <MaiaFala texto={`Fiz as contas da ${d.negocio}. Olha o que eu encontrei:`} grande />
         <h1>Diagnóstico da {d.negocio}</h1>
         <p className="mq-sub">Com as suas respostas: o que a sua {q.nome} deixa na mesa hoje, o que dá pra ganhar a mais com anúncio, e o que a Maia faz em cada ponto.</p>
 
@@ -302,6 +315,8 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
             </li>
           ))}
         </ol>
+        <div className="mq-mock-tit"><strong>Como a Maia atenderia o seu cliente</strong><span>A mesma conversa, com o nome da sua {q.nome}, a qualquer hora.</span></div>
+        <CelularWhats nicho={nicho} negocio={d.negocio} tipo={String(r.tipo || '')} />
         {d.bem.length > 0 && (
           <div className="mq-bem">
             <strong>O que você já faz bem</strong>
@@ -312,6 +327,8 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
 
       <section className="mq-bloco">
         <div className="mq-lado"><span className="mq-tag t2">Lado 2</span><h2 className="mq-h2">O que dá pra ganhar a mais com anúncio</h2><p className="mq-lado-tot">{reais(g.total_mes)} por mês · {reais(g.total_ano)} em 12 meses</p></div>
+        <div className="mq-mock-tit"><strong>Como seria o seu anúncio</strong><span>Com o nome da sua {q.nome} e a sua cidade.</span></div>
+        <AnuncioInsta nicho={nicho} negocio={d.negocio} tipo={String(r.tipo || '')} cidade={c.cidade.trim()} img={q.ad_img} />
         <div className="mq-ponto mq-ganho">
           <div className="mq-ponto-cab"><span className="mq-n">+</span><h3>{g.titulo}</h3></div>
           <div className="mq-funil">
@@ -320,7 +337,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
             <div><span>{nicho === 'oficina' ? 'Carros' : 'Óculos'} {g.modo === 'novo' ? 'novos' : 'a mais'}</span><b>{qtdCurta(g.unidades_mes, u1, uN)}</b><em>{g.unidades_mes < 1 ? 'por ano' : 'por mês'}</em></div>
             <div className="dest"><span>Medido pelo WhatsApp</span><b>{reais(g.valor_mes)}</b><em>por mês</em></div>
           </div>
-          <p className="mq-retorno">A cada <b>R$ 1</b> de anúncio, cerca de <b>{reaisCent(g.retorno)}</b> em {nicho === 'oficina' ? 'serviço' : 'vendas'} medidas{g.modo === 'otimizar' ? ', com a Maia cuidando da verba que você já investe' : ''}.</p>
+          <p className="mq-retorno">A cada <b>R$ 1</b> de anúncio, cerca de <b>{reaisCent(g.retorno)}</b> em {nicho === 'oficina' ? 'serviços medidos' : 'vendas medidas'}{g.modo === 'otimizar' ? ', com a Maia cuidando da verba que você já investe' : ''}.</p>
           <p>{g.contexto}</p>
           <p className="mq-premissa"><strong>Como chegamos nesse número.</strong> {g.premissa}</p>
         </div>
@@ -356,6 +373,8 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
             <li><Ok /><span>Mede o custo de cada conversa e de cada {nicho === 'oficina' ? 'serviço fechado' : 'venda'}, e mostra isso no seu WhatsApp.</span></li>
           </ul>
         </div>
+        <div className="mq-mock-tit"><strong>O que chega no seu WhatsApp todo dia 2</strong><span>Com os números do seu diagnóstico.</span></div>
+        <RelatorioDono d={d} unidade={q.unidade} />
         <p className="mq-aviso">Os números são uma estimativa feita só com as suas respostas e com as premissas escritas embaixo de cada ponto. Não são estatística de mercado nem garantia de resultado.</p>
       </section>
 
