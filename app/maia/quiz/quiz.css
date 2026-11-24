@@ -193,3 +193,13 @@ body:has(.mq) { margin: 0; padding: 0; background: #f6f5f2; color-scheme: light;
   .mq-funil { grid-template-columns: repeat(4, 1fr); }
   .mq-fixo { left: 50%; right: auto; transform: translateX(-50%); width: min(680px, 100%); border: 1px solid var(--ln); border-bottom: 0; border-radius: 18px 18px 0 0; }
 }
+
+/* recalibração: venda direta na loja e cenário de verba */
+.mq-direto { margin-top: 14px; border: 2px dashed #b7e6c6; }
+.mq-direto .mq-n { background: var(--ok-bg); color: var(--ok); }
+.mq-direto .mq-stats div { background: var(--ok-bg); }
+.mq-direto .mq-stats b { color: var(--ok); }
+.mq-cenario { margin-top: 14px; background: var(--s1); border: 1px solid var(--ln); border-left: 5px solid var(--ok); border-radius: 16px; padding: 16px 18px; display: grid; gap: 8px; }
+.mq-cenario strong { font-family: var(--f-dis); font-weight: 800; font-variation-settings: 'opsz' 96, 'wdth' 85; font-size: 20px; line-height: 1.15; }
+.mq-cenario p { font-size: 16px; color: var(--tx2); }
+.mq-cenario b { color: var(--ok); }

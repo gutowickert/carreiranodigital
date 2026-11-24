@@ -70,12 +70,12 @@ export async function POST(req: NextRequest) {
   // ---- o que o vendedor lê no card ----
   const onde = `${cidade}/${uf}`
   const g = d.ganho
-  const resumo = `Quiz da Maia (${q.nome}): ${negocio}, ${onde}. Oportunidade ${reais(d.oportunidade_mes)}/mês (na mesa ${reais(d.na_mesa_mes)} + a ganhar com anúncio ${reais(g.valor_mes)}). Principal: ${d.principal.titulo}.`
+  const resumo = `Quiz da Maia (${q.nome}): ${negocio}, ${onde}. Oportunidade ${reais(d.oportunidade_mes)}/mês (na mesa ${reais(d.na_mesa_mes)} + a ganhar com anúncio ${reais(g.total_mes)}). Principal: ${d.principal.titulo}.`
   const obs = [
     resumo,
     uf === 'RS' ? 'ATENÇÃO: é do RS. A oferta online (R$ 497 + R$ 797) é pra fora do RS; ver com o Guto qual oferta passar.' : '',
     `Na mesa hoje:\n${d.pontos.map(x => `• ${x.titulo}: ${reais(x.valor_mes)}/mês (${x.quantidade})`).join('\n')}`,
-    `A ganhar com anúncio (${g.modo === 'novo' ? 'não anuncia; verba sugerida' : 'já anuncia'} ${reais(g.verba)}/mês): ${reais(g.valor_mes)}/mês, ${g.quantidade}, retorno de cerca de R$ ${String(g.retorno).replace('.', ',')} por R$ 1.`,
+    `A ganhar com anúncio (${g.modo === 'novo' ? 'não anuncia; verba sugerida' : 'já anuncia'} ${reais(g.verba)}/mês): ${reais(g.total_mes)}/mês = ${reais(g.valor_mes)} medido pelo WhatsApp (${g.quantidade}, retorno de cerca de R$ ${String(g.retorno).replace('.', ',')} por R$ 1) + ${reais(g.direto_mes)} de quem vai direto na loja.${g.cenario ? ` Se subir a verba pra ${reais(g.cenario.verba)}: +${reais(g.cenario.valor_mes)}/mês.` : ''}`,
     `${d.pagam_maia} ${d.pagam_maia === 1 ? q.unidade[0] : q.unidade[1]} por mês pagam a mensalidade (valor médio ${reais(d.ticket)}).`,
     d.bem.length ? `Já faz bem:\n${d.bem.map(x => '• ' + x).join('\n')}` : '',
     `Respostas:\n${Object.entries(d.respostas_legiveis).map(([k, v]) => `• ${k} ${v}`).join('\n')}`,
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       observacoes: resumo,
       qualificacao: {
         maia_quiz: codigo, produto: 'Maia', nicho, negocio, cidade, uf,
-        na_mesa_mes: d.na_mesa_mes, ganho_anuncio_mes: g.valor_mes, oportunidade_mes: d.oportunidade_mes, principal: d.principal.titulo,
+        na_mesa_mes: d.na_mesa_mes, ganho_anuncio_mes: g.total_mes, ganho_medido_mes: g.valor_mes, ganho_direto_mes: g.direto_mes, oportunidade_mes: d.oportunidade_mes, principal: d.principal.titulo,
         pontos: d.pontos.map(x => ({ ponto: x.titulo, valor_mes: x.valor_mes })),
         respostas: r,
       },

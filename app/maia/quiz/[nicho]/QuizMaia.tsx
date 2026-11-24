@@ -135,7 +135,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
     track('contato_enviado', { uf: c.uf, event_id: ev.current })
     setDiag(d)
     setPasso(total + 1)
-    track('resultado_visto', { oportunidade_mes: d.oportunidade_mes, na_mesa_mes: d.na_mesa_mes, ganho_mes: d.ganho.valor_mes })
+    track('resultado_visto', { oportunidade_mes: d.oportunidade_mes, na_mesa_mes: d.na_mesa_mes, ganho_mes: d.ganho.total_mes })
 
     const t = rastro.current
     const corpo = {
@@ -275,7 +275,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
           <div className="mq-barra2" aria-hidden="true"><i style={{ width: `${pctMesa}%` }} /><b /></div>
           <ul className="mq-legenda">
             <li><i className="l1" />Na mesa hoje <strong>{reais(d.na_mesa_mes)}</strong></li>
-            <li><i className="l2" />A ganhar com anúncio <strong>{reais(g.valor_mes)}</strong></li>
+            <li><i className="l2" />A ganhar com anúncio <strong>{reais(g.total_mes)}</strong></li>
           </ul>
         </div>
 
@@ -311,19 +311,38 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
       </section>
 
       <section className="mq-bloco">
-        <div className="mq-lado"><span className="mq-tag t2">Lado 2</span><h2 className="mq-h2">O que dá pra ganhar a mais com anúncio</h2><p className="mq-lado-tot">{reais(g.valor_mes)} por mês · {reais(g.valor_ano)} em 12 meses</p></div>
+        <div className="mq-lado"><span className="mq-tag t2">Lado 2</span><h2 className="mq-h2">O que dá pra ganhar a mais com anúncio</h2><p className="mq-lado-tot">{reais(g.total_mes)} por mês · {reais(g.total_ano)} em 12 meses</p></div>
         <div className="mq-ponto mq-ganho">
           <div className="mq-ponto-cab"><span className="mq-n">+</span><h3>{g.titulo}</h3></div>
           <div className="mq-funil">
             <div><span>{g.verba_sugerida ? 'Verba sugerida' : 'Sua verba'}</span><b>{reais(g.verba)}</b><em>por mês</em></div>
             <div><span>Conversas</span><b>{g.conversas}</b><em>no WhatsApp</em></div>
             <div><span>{nicho === 'oficina' ? 'Carros' : 'Óculos'} {g.modo === 'novo' ? 'novos' : 'a mais'}</span><b>{qtdCurta(g.unidades_mes, u1, uN)}</b><em>{g.unidades_mes < 1 ? 'por ano' : 'por mês'}</em></div>
-            <div className="dest"><span>Em {nicho === 'oficina' ? 'serviço' : 'vendas'}</span><b>{reais(g.valor_mes)}</b><em>por mês</em></div>
+            <div className="dest"><span>Medido pelo WhatsApp</span><b>{reais(g.valor_mes)}</b><em>por mês</em></div>
           </div>
-          <p className="mq-retorno">A cada <b>R$ 1</b> de anúncio, cerca de <b>{reaisCent(g.retorno)}</b> em {nicho === 'oficina' ? 'serviço' : 'vendas'}{g.modo === 'otimizar' ? ', com a Maia cuidando da verba que você já investe' : ''}.</p>
+          <p className="mq-retorno">A cada <b>R$ 1</b> de anúncio, cerca de <b>{reaisCent(g.retorno)}</b> em {nicho === 'oficina' ? 'serviço' : 'vendas'} medidas{g.modo === 'otimizar' ? ', com a Maia cuidando da verba que você já investe' : ''}.</p>
           <p>{g.contexto}</p>
           <p className="mq-premissa"><strong>Como chegamos nesse número.</strong> {g.premissa}</p>
         </div>
+
+        <div className="mq-ponto mq-direto">
+          <div className="mq-ponto-cab"><span className="mq-n">+</span><h3>Quem vê o anúncio e vai direto na {nicho === 'oficina' ? 'oficina' : 'loja'}</h3></div>
+          <div className="mq-stats">
+            <div><b>{reais(g.direto_mes)}</b><span>por mês</span></div>
+            <div><b>{reais(g.direto_mes * 12)}</b><span>em 12 meses</span></div>
+            <div><b>{qtdCurta(g.direto_unidades, u1, uN)}</b><span>{g.direto_unidades < 1 ? 'por ano' : 'por mês'}</span></div>
+          </div>
+          <p>Nem todo mundo manda mensagem: muita gente vê o anúncio e aparece direto na {nicho === 'oficina' ? 'oficina' : 'loja'}. Essas vendas não dá pra ligar a um anúncio específico, então ficam separadas das medidas. A Maia mostra no relatório o movimento da {nicho === 'oficina' ? 'oficina' : 'loja'} junto, pra você ver o efeito.</p>
+          <p className="mq-premissa"><strong>Como chegamos nesse número.</strong> {g.direto_premissa}</p>
+        </div>
+
+        {g.cenario && (
+          <div className="mq-cenario">
+            <strong>E se você subir a verba pra {reais(g.cenario.verba)} por mês?</strong>
+            <p>O ganho com anúncio passa de {reais(g.total_mes)} pra cerca de <b>{reais(g.cenario.valor_mes)} por mês</b> ({qtdCurta(g.cenario.unidades_mes, u1, uN)} {g.cenario.unidades_mes < 1 ? 'por ano' : 'por mês'}).</p>
+            <p className="mq-premissa">{g.cenario.premissa} A verba é sempre sua e você decide: a Maia só sugere.</p>
+          </div>
+        )}
 
         <div className="mq-medicao">
           <strong className="mq-medicao-t">Por que o anúncio rende: a Maia mede cada venda de ponta a ponta</strong>

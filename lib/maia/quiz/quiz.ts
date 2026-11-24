@@ -169,11 +169,12 @@ export const PREMISSAS = {
   base_reduz: { retifica: 0.5, funilaria: 0.5 } as Record<string, number>,  // serviço que não se repete tanto: metade
   // o lado do ganho (tráfego pago com a Maia)
   verba_sugerida: 900,          // R$ 30 por dia, sugestão pra quem não anuncia
-  custo_conversa: 12,           // R$ por conversa no WhatsApp: faixa de R$ 8 a R$ 15, usamos o lado mais caro
-  fecha_anuncio: 1 / 8,         // 1 em 8 conversas atendidas na hora e com retomada vira serviço/venda
-  valor_anuncio: 0.7,           // cliente novo do anúncio: contamos 70% do valor médio (o primeiro serviço costuma ser menor)
-  melhora_otimizando: 0.2,      // quem já anuncia: +20% de vendas com a mesma verba (cortar o que não vende, replicar o que vende)
-  teto_ganho: 0.5,              // trava de sanidade: o ganho do anúncio nunca passa da metade do faturamento de hoje
+  custo_conversa: 10,           // R$ por conversa no WhatsApp: faixa de R$ 8 a R$ 15 na tela, usamos R$ 10
+  fecha_anuncio: { otica: 1 / 7, oficina: 1 / 6 } as Record<string, number>,  // conversas atendidas na hora e com retomada que fecham. Oficina 1 em 6: quem chama com o carro com problema precisa resolver logo
+  valor_anuncio: 0.8,           // 1ª venda de quem vem do anúncio: 80% do valor médio (às vezes começa por uma lente mais simples ou um diagnóstico)
+  direto_na_loja: 0.25,         // pra cada 4 vendas medidas pelo WhatsApp, 1 de quem viu o anúncio e foi direto na loja
+  melhora_otimizando: 0.3,      // quem já anuncia: +30% de vendas com a mesma verba (cortar o que não vende, replicar o que vende)
+  teto_ganho: 2,                // trava de sanidade: o ganho do anúncio (medido + direto) nunca passa de 2x o faturamento de hoje
 }
 
 // ---------------- o diagnóstico ----------------
@@ -195,11 +196,16 @@ export type Ganho = {
   verba_sugerida: boolean
   custo_conversa: number
   conversas: number             // por mês
-  unidades_mes: number          // carros / óculos a mais por mês
-  valor_mes: number
-  valor_ano: number
-  retorno: number               // R$ em serviço/venda a cada R$ 1 de anúncio (com a Maia)
-  limitado: boolean             // bateu na trava de metade do faturamento
+  unidades_mes: number          // carros / óculos a mais por mês, MEDIDOS (passaram pelo WhatsApp)
+  valor_mes: number             // R$ por mês medido pelo anúncio
+  direto_unidades: number       // quem viu o anúncio e foi direto na loja (sem métrica)
+  direto_mes: number
+  total_mes: number             // medido + direto (é o que soma no total)
+  total_ano: number
+  retorno: number               // R$ em serviço/venda MEDIDO a cada R$ 1 de anúncio (com a Maia)
+  limitado: boolean             // bateu na trava de 2x o faturamento
+  cenario: { verba: number; unidades_mes: number; valor_mes: number; premissa: string } | null  // quem anuncia pouco: subir pra verba sugerida
+  direto_premissa: string
   premissa: string
   quantidade: string | null
 }
@@ -234,7 +240,7 @@ function quantos(u: number, q: Quiz): string | null {
     const ano = Math.max(1, Math.floor(u * 12))
     return `cerca de ${ano} ${ano === 1 ? q.unidade[0] : q.unidade[1]} por ano`
   }
-  return `cerca de ${dec(u)} ${u < 2 ? q.unidade[0] : q.unidade[1]} por mês`
+  return `cerca de ${dec(u)} ${Math.round(u * 10) / 10 < 2 ? q.unidade[0] : q.unidade[1]} por mês`
 }
 
 export function respostasLegiveis(nicho: Nicho, r: Record<string, any>): Record<string, string> {
@@ -338,18 +344,37 @@ export function diagnosticar(nicho: Nicho, r: Record<string, any>, negocioNome =
   const naoAnuncia = anuncio === 'nao' || anuncio === 'parei'
   const verbaAtual = ANUNCIO.find(o => o.v === anuncio)?.n || 0
   const verba = naoAnuncia || !verbaAtual ? P.verba_sugerida : verbaAtual
-  const conversas = verba / P.custo_conversa
-  const vendasBase = conversas * P.fecha_anuncio
-  let uG = naoAnuncia ? vendasBase : vendasBase * P.melhora_otimizando
-  const faturamento = volume * ticket
   const vAnuncio = ticket * P.valor_anuncio
-  const teto = (faturamento * P.teto_ganho) / vAnuncio
-  const limitado = uG > teto
-  if (limitado) uG = teto
-  const ganhoMes = baixo10(uG * vAnuncio)
-  const vendasComMaia = naoAnuncia ? uG : vendasBase + uG
+  const fechaA = P.fecha_anuncio[nicho]
+  const pctValor = Math.round(P.valor_anuncio * 100)
+  const vendasDe = (v: number) => (v / P.custo_conversa) * fechaA
+  const conversas = verba / P.custo_conversa
+  const vendasBase = vendasDe(verba)
+  const faturamento = volume * ticket
+  const teto = (faturamento * P.teto_ganho) / vAnuncio        // em unidades, somando medido + direto
+  // medido pelo anúncio (passa pelo WhatsApp)
+  let uMed = naoAnuncia ? vendasBase : vendasBase * P.melhora_otimizando
+  let uDir = uMed * P.direto_na_loja
+  const limitado = uMed + uDir > teto
+  if (limitado) { const k = teto / (uMed + uDir); uMed *= k; uDir *= k }
+  const medidoMes = baixo10(uMed * vAnuncio)
+  const diretoMes = baixo10(uDir * vAnuncio)
+  const vendasComMaia = naoAnuncia ? uMed : vendasBase + uMed
   const retorno = verba > 0 ? (vendasComMaia * vAnuncio) / verba : 0
+  const coisa = ofi ? 'serviço' : 'venda'
+  const loja = ofi ? 'oficina' : 'loja'
   const dependeDe = origem === 'indicacao' ? 'da indicação' : origem === 'passam' ? `de quem passa na frente ${daSua}` : origem === 'google' ? 'do Google' : origem === 'instagram' ? 'das postagens no Instagram' : ''
+  const premValor = `contando ${pctValor}% do seu valor médio (${reais(vAnuncio)}), porque o primeiro ${ofi ? 'serviço de quem chega pelo anúncio às vezes é menor, como um diagnóstico ou uma revisão' : 'pedido de quem chega pelo anúncio às vezes é menor, como uma lente mais simples'}`
+  // quem anuncia pouco (até R$ 500): o cenário de subir pra verba sugerida, com a Maia
+  let cenario: Ganho['cenario'] = null
+  if (!naoAnuncia && verba < P.verba_sugerida) {
+    const u = vendasDe(P.verba_sugerida) * (1 + P.melhora_otimizando) - vendasBase
+    const uc = Math.min(u * (1 + P.direto_na_loja), teto)
+    cenario = {
+      verba: P.verba_sugerida, unidades_mes: uc, valor_mes: baixo10(uc * vAnuncio),
+      premissa: `Se você subir a verba de ${reais(verba)} pra ${reais(P.verba_sugerida)} por mês (R$ 30 por dia; os ${reais(P.verba_sugerida - verba)} a mais são seus, pagos direto à Meta), com as mesmas premissas, os ${Math.round(P.melhora_otimizando * 100)}% a mais da Maia e quem vai direto na ${loja}.`,
+    }
+  }
   const ganho: Ganho = {
     modo: naoAnuncia ? 'novo' : 'otimizar',
     titulo: naoAnuncia ? `Cliente novo que chega pelo anúncio` : 'A mesma verba rendendo mais',
@@ -357,26 +382,31 @@ export function diagnosticar(nicho: Nicho, r: Record<string, any>, negocioNome =
       ? `${dependeDe ? `Hoje o cliente novo depende ${dependeDe}. ` : ''}Quando isso desacelera, o movimento cai junto. Anúncio bem feito, com resposta na hora, traz gente da sua cidade que ainda não conhece ${sua}.${anuncio === 'parei' ? ' Anúncio que foi parado costuma ter parado por falta de tempo pra acompanhar ou de resposta rápida pra quem chamou: as duas coisas a Maia faz.' : ''}`
       : `Você já investe ${reais(verbaAtual)} por mês, mais ou menos. O que define o resultado é saber qual anúncio vende e qual só traz curioso, e responder quem chama na hora. Sem isso, parte da verba vai embora sem ninguém perceber.`,
     verba, verba_sugerida: naoAnuncia, custo_conversa: P.custo_conversa, conversas: Math.floor(conversas),
-    unidades_mes: uG, valor_mes: ganhoMes, valor_ano: ganhoMes * 12, retorno: Math.floor(retorno * 10) / 10, limitado,
-    premissa: naoAnuncia
-      ? `Considerando uma verba inicial sugerida de ${reais(verba)} por mês (R$ 30 por dia, paga por você direto à Meta), um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}, o lado mais caro), o que dá ${Math.floor(conversas)} conversas por mês, e que ${umEm(P.fecha_anuncio)} conversas atendidas na hora e com retomada vira ${ofi ? 'serviço' : 'venda'}, contando 70% do seu valor médio (${reais(vAnuncio)}), porque o primeiro ${ofi ? 'serviço' : 'pedido'} de quem chega pelo anúncio costuma ser menor.${limitado ? ` Limitamos o ganho à metade do seu faturamento de hoje (${reais(faturamento)}), pra conta não sair do tamanho ${daSua}.` : ''}`
-      : `Considerando a sua verba de cerca de ${reais(verba)} por mês, um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas, que ${umEm(P.fecha_anuncio)} vira ${ofi ? 'serviço' : 'venda'} (${dec(vendasBase)} por mês hoje, contando 70% do seu valor médio, ${reais(vAnuncio)}) e que, com a Maia medindo cada venda, cortando o que não vende e replicando o que vende, a mesma verba rende ${Math.round(P.melhora_otimizando * 100)}% a mais.${limitado ? ` Limitamos o ganho à metade do seu faturamento de hoje.` : ''}`,
-    quantidade: quantos(uG, q),
+    unidades_mes: uMed, valor_mes: medidoMes,
+    direto_unidades: uDir, direto_mes: diretoMes,
+    total_mes: medidoMes + diretoMes, total_ano: (medidoMes + diretoMes) * 12,
+    retorno: Math.floor(retorno * 10) / 10, limitado, cenario,
+    premissa: (naoAnuncia
+      ? `Considerando uma verba inicial sugerida de ${reais(verba)} por mês (R$ 30 por dia, paga por você direto à Meta), um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas por mês, e que ${umEm(fechaA)} conversas atendidas na hora e com retomada vira ${coisa}${ofi ? ' (quem chama com o carro com problema precisa resolver logo)' : ''}, ${premValor}.`
+      : `Considerando a sua verba de cerca de ${reais(verba)} por mês, um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas, que ${umEm(fechaA)} vira ${coisa} (${dec(vendasBase)} por mês hoje), ${premValor}, e que, com a Maia medindo cada venda, cortando o que não vende e replicando o que vende, a mesma verba rende ${Math.round(P.melhora_otimizando * 100)}% a mais.`)
+      + (limitado ? ` Limitamos o ganho do anúncio a 2 vezes o seu faturamento de hoje (${reais(faturamento)}).` : ''),
+    direto_premissa: `Considerando que, pra cada 4 ${ofi ? 'serviços' : 'vendas'} que chegam pelo WhatsApp, pelo menos 1 vem de quem viu o anúncio e foi direto na ${loja}, sem mandar mensagem. Essas não dá pra ligar a um anúncio específico; a Maia mostra no relatório o movimento da ${loja} junto, pra você ver o efeito.`,
+    quantidade: quantos(uMed, q),
   }
 
   const na_mesa_mes = pontos.reduce((s, p) => s + p.valor_mes, 0)
   const unidades_mesa = pontos.reduce((s, p) => s + p.unidades_mes, 0)
-  const oportunidade_mes = na_mesa_mes + ganho.valor_mes
+  const oportunidade_mes = na_mesa_mes + ganho.total_mes
   const comNumero = pontos.filter(p => p.valor_mes > 0).sort((a, b) => b.valor_mes - a.valor_mes)
   const maior = comNumero[0]
-  const principal = !maior || ganho.valor_mes > maior.valor_mes
-    ? { titulo: ganho.titulo, valor_mes: ganho.valor_mes }
+  const principal = !maior || ganho.total_mes > maior.valor_mes
+    ? { titulo: ganho.titulo, valor_mes: ganho.total_mes }
     : { titulo: maior.titulo, valor_mes: maior.valor_mes }
   return {
     nicho, negocio, volume, ticket, faturamento, pontos, ganho, bem,
     na_mesa_mes, na_mesa_ano: na_mesa_mes * 12,
     oportunidade_mes, oportunidade_ano: oportunidade_mes * 12,
-    unidades_mes: unidades_mesa + ganho.unidades_mes,
+    unidades_mes: unidades_mesa + ganho.unidades_mes + ganho.direto_unidades,
     pagam_maia: Math.max(1, Math.ceil(OFERTA_QUIZ.mensal / ticket)),
     principal,
     respostas_legiveis: respostasLegiveis(nicho, r),
