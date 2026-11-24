@@ -17,7 +17,10 @@ import { OFERTA_QUIZ, telefoneBR, TURMA_QUIZ, reaisQuiz as reais } from './quiz/
 export const vendedoraLigada = () => process.env.MAIA_VENDEDORA_LIGADA === '1'
 const MODELO = () => process.env.MAIA_MODELO || 'claude-sonnet-5-5'
 const MAX = 30
-export const ETAPA_FUNIL: Record<string, string | null> = { novo: null, conversando: null, reuniao: null, proposta: null, ganho: null, perdido: null }
+// 24/11: as chaves do funil "Maia online" do CRM da escola (contrato com a conversa da escola, db/funil-maia-online.sql). O cartão
+// anda sozinho por um gatilho no banco (trg_lead_maia_sincroniza) quando qualificacao.maia_etapa muda; aqui é só o etapa_nova do
+// andamento. Lead da Maia = turma 'maiaquiz' OU qualificacao.produto 'Maia'; nasce em maia_novo; a IA nunca tira do Ganho.
+export const ETAPA_FUNIL: Record<string, string | null> = { novo: 'maia_novo', conversando: 'maia_conversando', reuniao: 'maia_reuniao', proposta: 'maia_proposta', ganho: 'ganho', perdido: 'perda' }
 
 // ---------- o lead no CRM da escola (em teste, um falso injetado em globalThis.__maiaEscolaFake) ----------
 type Escola = {

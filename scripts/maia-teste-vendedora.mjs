@@ -59,14 +59,14 @@ const p0 = pedidos[0]
 confere(r?.ok && r.lead_id === 'Q1' && leads.length === 1, 'achou o lead do quiz pelo telefone (não criou outro)', r)
 confere(/DIAGNÓSTICO DO QUIZ:\s*\nNegócio: Auto Center Silva \(oficina mecânica\), Campinas\/SP/.test(p0.pedido) && /R\$\s6\.000/.test(p0.pedido) && /Cliente novo que chega pelo anúncio/.test(p0.pedido), 'a IA recebe o diagnóstico (negócio, cidade, ponto principal e os números)', p0.pedido.slice(0, 400))
 confere(/R\$ 497/.test(p0.system) && /R\$ 797/.test(p0.system) && /Rick/.test(p0.system) && /Sem emoji/.test(p0.system) && /NUNCA:/.test(p0.system), 'o treinamento da Parte 2 vai inteiro (oferta R$ 497 e R$ 797, Rick, sem emoji, o que nunca fazer)')
-confere((await saidas(c1)).length === 2 && leads[0].qualificacao.maia_etapa === 'conversando' && andamentos.some(a => a.lead_id === 'Q1' && /começou a conversar/.test(a.texto)), 'mandou as 2 mensagens; o lead vira "conversando" com andamento')
+confere((await saidas(c1)).length === 2 && leads[0].qualificacao.maia_etapa === 'conversando' && andamentos.some(a => a.lead_id === 'Q1' && /começou a conversar/.test(a.texto) && a.etapa === 'maia_conversando'), 'mandou as 2 mensagens; o lead vira "conversando" com andamento (etapa maia_conversando do funil)')
 
 // 2. quer começar: avisa a equipe, etapa proposta, a IA segue ligada
 console.log('\n=== Quer começar')
 await diz(c1, 'Quero começar sim, de manhã pode ser')
 roteiroIA = () => '<msg>Perfeito! Vou pedir pra equipe te mandar o link do 1º mês (R$ 497, já com a implantação) e combinar o dia da implantação por vídeo.</msg><acao>comecar</acao><periodo>manhã</periodo><resumo>Auto Center Silva, Campinas: quer começar</resumo>'
 r = await atendeConversa(c1.id)
-confere(r.acao === 'comecar' && leads[0].qualificacao.maia_etapa === 'proposta' && andamentos.some(a => /Quer começar \(manhã\)/.test(a.texto)) && pushes.some(t => /quer começar/.test(t)), 'quer começar: etapa "proposta", andamento com o período e aviso pro time', { r, pushes })
+confere(r.acao === 'comecar' && leads[0].qualificacao.maia_etapa === 'proposta' && andamentos.some(a => /Quer começar \(manhã\)/.test(a.texto) && a.etapa === 'maia_proposta') && pushes.some(t => /quer começar/.test(t)), 'quer começar: etapa "proposta", andamento com o período e aviso pro time', { r, pushes })
 confere((await conv(c1)).modo === 'ia', 'depois de "quer começar" a IA segue ligada (responde dúvida até a equipe mandar o link)')
 
 // 3. chamou direto (sem quiz): cria o lead na turma maiaquiz e oferece o quiz
@@ -95,7 +95,7 @@ await diz(c4, 'Não tenho interesse, obrigado')
 roteiroIA = () => '<msg>Tudo bem, obrigada por ter olhado. Se mudar de ideia, é só me chamar aqui.</msg><acao>perdido</acao><motivo>sem interesse</motivo><resumo>não quis</resumo>'
 r = await atendeConversa(c4.id)
 const l4 = leads.find(l => l.id === r.lead_id)
-confere(l4.qualificacao.maia_etapa === 'perdido' && l4.qualificacao.maia_motivo_perda === 'sem interesse' && andamentos.some(a => /Perdido: sem interesse/.test(a.texto)), 'perdido: etapa e motivo no lead')
+confere(l4.qualificacao.maia_etapa === 'perdido' && l4.qualificacao.maia_motivo_perda === 'sem interesse' && andamentos.some(a => /Perdido: sem interesse/.test(a.texto) && a.etapa === 'perda'), 'perdido: etapa e motivo no lead')
 
 // 6. IA falhou: passa pra equipe; chave desligada: volta pra demonstração antiga
 console.log('\n=== Falhas e chave')
