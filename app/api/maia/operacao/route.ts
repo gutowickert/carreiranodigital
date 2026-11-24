@@ -521,6 +521,7 @@ export async function POST(req: Request) {
         return ok({ atendimento: at })
       }
       case 'criar_modelo_dono': { const { criaModeloDoDono } = await import('@/lib/maia/modelos'); return ok(await criaModeloDoDono()) }
+      case 'criar_modelos_venda': { const { criaModelosVenda } = await import('@/lib/maia/modelos'); return ok(await criaModelosVenda()) }
       // 08/11 (T2): pede de novo os modelos do negócio (as versões "tu" e "você") pra quem já conectou o WhatsApp antes deles
       // existirem. No modo local nada vai pra Meta (volta "simulado")
       case 'pedir_modelos_negocio': {

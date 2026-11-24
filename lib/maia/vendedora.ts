@@ -29,8 +29,9 @@ type Escola = {
   atualizaLead(id: string, campos: any): Promise<void>
   andamento(lead_id: string, texto: string, etapa?: string | null): Promise<void>
   push(titulo: string, texto: string): Promise<void>
+  leadsQuiz(desde: string, ate: string): Promise<any[]>   // 24/11: os leads do quiz criados nesse intervalo (pra chamar quem não chamou)
 }
-async function escola(): Promise<Escola> {
+export async function escola(): Promise<Escola> {
   const fake = (globalThis as any).__maiaEscolaFake
   if (fake) return fake
   const { supabaseAdmin: sb } = await import('@/lib/supabase-admin')
@@ -50,10 +51,14 @@ async function escola(): Promise<Escola> {
     },
     async atualizaLead(id, campos) { await sb.from('leads').update(campos).eq('id', id) },
     async andamento(lead_id, texto, etapa) { await sb.from('lead_andamentos').insert({ lead_id, tipo: 'observacao', etapa_nova: etapa || null, observacao: texto.slice(0, 1500) }) },
+    async leadsQuiz(desde, ate) {
+      const { data } = await sb.from('leads').select('id, nome, whatsapp, codigo_turma, negocio, qualificacao, etapa, criado_em').eq('org_id', ORG_CND).eq('codigo_turma', TURMA_QUIZ).gte('criado_em', desde).lte('criado_em', ate).order('criado_em', { ascending: true }).limit(200)
+      return data || []
+    },
     async push(titulo, texto) { try { const { enviarPush } = await import('@/lib/push'); await enviarPush(titulo.slice(0, 60), texto.slice(0, 140), '/dashboard/whatsapp') } catch { /* push é extra */ } },
   }
 }
-async function avisaTime(titulo: string, texto: string, urgente = true) {
+export async function avisaTime(titulo: string, texto: string, urgente = true) {
   try { const { avisaEquipe } = await import('./canal'); await avisaEquipe(titulo, texto, null, urgente) } catch { /* segue */ }
   try { await (await escola()).push('Maia · ' + titulo, texto) } catch { /* segue */ }
 }
@@ -71,7 +76,7 @@ export function diagnosticoTexto(lead: any) {
     pontos ? `Pontos: ${pontos}.` : '',
   ].filter(Boolean).join('\n')
 }
-const ehRS = (lead: any) => String(lead?.qualificacao?.uf || '').toUpperCase() === 'RS'
+export const ehRS = (lead: any) => String(lead?.qualificacao?.uf || '').toUpperCase() === 'RS'
 
 export const REGRAS_VENDA = () => {
   const o = OFERTA_QUIZ

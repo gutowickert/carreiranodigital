@@ -2320,7 +2320,7 @@ function telaRotina(){
       '<div id="rot-c"></div></section>'+
     '<div class="pilha">'+
     '<section class="card" aria-labelledby="t-ch"><div class="card-cab"><h2 id="t-ch">Meta: as 500 chamadas</h2></div><p class="mu peq" style="margin-bottom:14px">Pra liberar os anúncios nas contas dos clientes, a Meta exige 500 leituras bem-sucedidas em 15 dias, com menos de 15% de erro. A rotina faz isso toda hora nas contas da CND e da escola.</p><div id="rot-ch"><div class="esq" style="height:34px;width:50%"></div><div class="esq" style="height:14px;margin-top:12px"></div></div></section>'+
-    '<section class="card" aria-labelledby="t-mod"><div class="card-cab"><h2 id="t-mod">Modelos de mensagem</h2></div><p class="mu peq" style="margin-bottom:10px">Fora da janela de 24 h, o WhatsApp só deixa mandar modelo aprovado. O do dono (maia_novidades) fica no número da Maia; os de cliente são criados na conta de cada negócio quando ele conecta.</p><div id="rot-mod">'+esqLinhas(2)+'</div><button class="btn larga" id="b-mod" style="margin-top:12px">'+ic('carta')+'Pedir aprovação do modelo do dono</button></section>'+
+    '<section class="card" aria-labelledby="t-mod"><div class="card-cab"><h2 id="t-mod">Modelos de mensagem</h2></div><p class="mu peq" style="margin-bottom:10px">Fora da janela de 24 h, o WhatsApp só deixa mandar modelo aprovado. O do dono (maia_novidades) fica no número da Maia; os de cliente são criados na conta de cada negócio quando ele conecta.</p><div id="rot-mod">'+esqLinhas(2)+'</div><button class="btn larga" id="b-mod" style="margin-top:12px">'+ic('carta')+'Pedir aprovação do modelo do dono</button><button class="btn larga" id="b-mod-venda" style="margin-top:8px" title="maia_diagnostico (chama quem fez o quiz e não chamou), maia_venda_retomada (3 dias) e maia_venda_despedida (6 dias)">'+ic('carta')+'Pedir aprovação dos modelos da venda</button></section>'+
     '</div></div>';
   api('acao=chamadas').then(function(r){
     var ok=Number(r.ok)||0, p=Math.min(100,Math.round(ok/500*100)), te=r.taxa_erro;
@@ -2342,6 +2342,8 @@ function telaRotina(){
       $('#rot-mod').innerHTML=/sem conta/i.test(m)?vazio('carta','Sem conta do WhatsApp pra consultar','Neste servidor não tem a conta do número da Maia configurada, então não dá pra ver os modelos.'):caixaErro(e);
     }); }
   pintaMod();
+  // 24/11: os 3 modelos da venda da Maia (quiz → WhatsApp da Maia): chamada do quiz, retomada de 3 dias e despedida de 6 dias
+  if($('#b-mod-venda')) $('#b-mod-venda').onclick=function(){ var b=this; espera(b,'pedindo…',function(){ return api({acao:'criar_modelos_venda'}).then(function(r){ var l=(r.modelos||[]).map(function(m){ return m.nome+': '+(m.ok?(m.status||'ok'):'erro'); }).join(' · '); toast(r.ok?'Pedido enviado. '+l:'Não deu: '+(r.erro||l||'?'), !r.ok); pintaMod(); }); }); };
   $('#b-mod').onclick=function(){ var b=this; espera(b,'pedindo…',function(){ return api({acao:'criar_modelo_dono'}).then(function(r){ toast(r.ok?'Pedido de aprovação enviado ('+(r.status||'')+').':'Não deu: '+(r.erro||'?'), !r.ok); pintaMod(); }); }); };
   $('#b-rodar').onclick=function(){
     var b=this; espera(b,'rodando… pode levar um pouco',function(){

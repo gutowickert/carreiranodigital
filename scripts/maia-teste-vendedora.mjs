@@ -20,6 +20,7 @@ globalThis.__maiaEscolaFake = {
   async atualizaLead(id, c) { Object.assign(leads.find(l => l.id === id), c) },
   async andamento(lead_id, texto, etapa) { andamentos.push({ lead_id, texto, etapa }) },
   async push(t, x) { pushes.push(t) },
+  async leadsQuiz(desde, ate) { return leads.filter(l => l.codigo_turma === 'maiaquiz' && l.criado_em && l.criado_em >= desde && l.criado_em <= ate) },
 }
 // ---------- a IA simulada: responde conforme a última mensagem do dono ----------
 const pedidos = []
@@ -104,6 +105,48 @@ await diz(c5, 'Oi')
 roteiroIA = () => 'sem formato'
 r = await atendeConversa(c5.id)
 confere(r.erro && (await conv(c5)).modo === 'humano' && pushes.some(t => /falhou/.test(t)), 'a IA respondeu fora do formato: nada sai, passa pra equipe', r)
+// 8. a rotina: chamar quem fez o quiz e não chamou (24/11, pedido do Guto) e a retomada 20 h / 3 dias / 6 dias
+console.log('\n=== Rotina: quiz sem conversa e retomada')
+const R = await jiti.import(path.join(RAIZ, 'lib/maia/vendedora-rotina.ts'))
+const T0 = new Date('2026-11-25T13:00:00Z')   // 10h de Brasília, quarta
+const hAtras = (h) => new Date(T0.getTime() - h * 3600e3).toISOString()
+leads.push({ id: 'QZ1', nome: 'Carlos Lima', whatsapp: '5500011944443333', codigo_turma: 'maiaquiz', criado_em: hAtras(2), qualificacao: { maia_quiz: 'q1', nicho: 'oficina', negocio: 'Auto Lima', cidade: 'Santos', uf: 'SP', principal: 'Cliente novo que chega pelo anúncio', ganho_anuncio_mes: 5000 } })
+leads.push({ id: 'QZ2', nome: 'Recente', whatsapp: '5500011944442222', codigo_turma: 'maiaquiz', criado_em: hAtras(0.5), qualificacao: { maia_quiz: 'q2', nicho: 'otica', negocio: 'Ótica Nova', uf: 'SP' } })
+leads.push({ id: 'QZ3', nome: 'Gaúcho', whatsapp: '5500051944441111', codigo_turma: 'maiaquiz', criado_em: hAtras(3), qualificacao: { maia_quiz: 'q3', nicho: 'oficina', negocio: 'Oficina Sul', uf: 'RS' } })
+leads.push({ id: 'QZ4', nome: 'Já Chamou', whatsapp: '5500011944440000', codigo_turma: 'maiaquiz', criado_em: hAtras(4), qualificacao: { maia_quiz: 'q4', nicho: 'otica', negocio: 'Ótica Ok', uf: 'SP' } })
+const cJa = await conversa('5500011944440000', 'Já Chamou'); await diz(cJa, 'Oi, fiz o diagnóstico')
+let rc = await R.chamaQuemNaoChamou(T0)
+const cvQ = (await db.lista('wa_conversas', {})).find(c => c.telefone.endsWith('44443333'))
+const msQ = cvQ ? await db.lista('wa_msgs', { conversa_id: cvQ.id }) : []
+const qz1 = leads.find(l => l.id === 'QZ1')
+confere(rc.length === 1 && rc[0].lead === 'QZ1' && cvQ && cvQ.fase === 'maia' && cvQ.modo === 'ia' && cvQ.rascunho.maia.lead_id === 'QZ1' && msQ.some(m => /maia_diagnostico/.test(m.texto) && /Auto Lima/.test(m.texto) && /5\.000/.test(m.texto)) && qz1.qualificacao.maia_chamado_em, 'fez o quiz há 2 h e não chamou: a Maia chama com o modelo do diagnóstico (nome, negócio, ganho) e a conversa já aponta pro lead', { rc, msQ })
+confere(!leads.find(l => l.id === 'QZ2').qualificacao.maia_chamado_em && !leads.find(l => l.id === 'QZ3').qualificacao.maia_chamado_em && leads.find(l => l.id === 'QZ4').qualificacao.maia_chamado_em === 'já tinha conversa', 'não chama: quem fez há menos de 1 h, quem é do RS, nem quem já escreveu')
+rc = await R.chamaQuemNaoChamou(T0)
+confere(rc.length === 0, 'rodar de novo não chama de novo')
+confere((await R.chamaQuemNaoChamou(new Date('2026-11-25T02:00:00Z'))).pulou === 'fora do horário', 'de madrugada não chama (só das 9h às 20h)')
+// retomada: Carlos não respondeu a chamada do quiz
+const cv1 = () => db.um('wa_conversas', { id: cvQ.id })
+let rr = await R.retomaVenda(new Date(T0.getTime() + 24 * 3600e3))
+confere(Array.isArray(rr) && !rr.some(x => x.conversa === cvQ.id), '1 dia depois da chamada do quiz: sem a janela de 24 h aberta, não manda texto livre (espera os 3 dias)')
+rr = await R.retomaVenda(new Date(T0.getTime() + 3 * 86400e3 + 3600e3))
+confere(rr.some(x => x.conversa === cvQ.id && x.qual === '3d') && (await db.lista('wa_msgs', { conversa_id: cvQ.id })).some(m => /maia_venda_retomada/.test(m.texto)), '3 dias: modelo de retomada', rr)
+rr = await R.retomaVenda(new Date(T0.getTime() + 3 * 86400e3 + 7200e3))
+confere(!rr.some(x => x.conversa === cvQ.id), 'não repete a de 3 dias')
+rr = await R.retomaVenda(new Date(T0.getTime() + 6 * 86400e3 + 3600e3))
+confere(rr.some(x => x.conversa === cvQ.id && x.qual === '6d') && qz1.qualificacao.maia_etapa === 'perdido' && qz1.qualificacao.maia_motivo_perda === 'não respondeu a retomada' && andamentos.some(a => a.lead_id === 'QZ1' && a.etapa === 'perda'), '6 dias: despedida e o lead vai pra Perda (não respondeu)', rr)
+// respondeu depois da chamada: 20 h sem resposta à Maia → texto livre (janela aberta), e as marcas recomeçam
+const cR = await conversa('5500011922221111', 'Rita')
+await db.atualiza('wa_conversas', { id: cR.id }, { rascunho: { maia: { lead_id: 'Q1', venda: true } } })
+await db.insere('wa_msgs', { conversa_id: cR.id, autor: 'cliente', tipo: 'text', texto: 'Quanto custa?', status: 'recebido', criado_em: new Date(T0.getTime() - 21 * 3600e3).toISOString() })
+await db.insere('wa_msgs', { conversa_id: cR.id, autor: 'ia', tipo: 'texto', texto: 'O 1º mês é R$ 497...', status: 'enviado', criado_em: new Date(T0.getTime() - 20.5 * 3600e3).toISOString() })
+rr = await R.retomaVenda(T0)
+confere(rr.some(x => x.conversa === cR.id && x.qual === '20h') && (await db.lista('wa_msgs', { conversa_id: cR.id })).some(m => /Ficou alguma dúvida/.test(m.texto || '')), '20 h sem responder (janela aberta): texto livre da retomada', rr)
+const cT = await conversa('5500011922220000', 'Time na conversa')
+await db.atualiza('wa_conversas', { id: cT.id }, { rascunho: { maia: { lead_id: 'Q1' } } })
+await db.insere('wa_msgs', { conversa_id: cT.id, autor: 'dono', tipo: 'texto', texto: 'Oi, aqui é o Rick', status: 'enviado', criado_em: new Date(T0.getTime() - 4 * 86400e3).toISOString() })
+rr = await R.retomaVenda(new Date(T0.getTime() + 3600e3))
+confere(!rr.some(x => x.conversa === cT.id), 'o time falou por último: a Maia não retoma por cima')
+
 // 7. número do time (recebe os avisos) não vira lead nem é atendido
 process.env.MAIA_AVISO_EQUIPE_WHATS = '5500051999997713'
 const c6 = await conversa('5500051999997713', 'Time')

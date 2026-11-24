@@ -148,6 +148,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   // 06/11: a demonstração grátis: a retomada única de 24 h e a fila das amostras (lib/maia/demo-amostra.ts)
   // só com MAIA_DEMO_ROTINA=1: ela manda mensagem pra lead de verdade (retomada e amostra da fila), então liga junto com o teste
   try { if (process.env.MAIA_DEMO_ROTINA === '1') { const { rotinaDemo } = await import('./demo-amostra'); r.demo = await rotinaDemo() } } catch (e: any) { r.demo_erro = e.message }
+  // 24/11: a venda da Maia (quiz → WhatsApp da Maia): chamar quem fez o quiz e não chamou + retomada 20 h / 3 dias / 6 dias
+  try { if (process.env.MAIA_VENDEDORA_LIGADA === '1') { const { chamaQuemNaoChamou, retomaVenda } = await import('./vendedora-rotina'); r.venda = { chamados: await chamaQuemNaoChamou(relogio), retomadas: await retomaVenda(relogio) } } } catch (e: any) { r.venda_erro = e.message }
   // 15/11: o lançamento pra base (lib/maia/lancamento/rotina.ts): entregas na hora combinada, retomadas, modo teste parado
   try { if (process.env.MAIA_LANCAMENTO_LIGADO === '1') { const { rotinaLancamento } = await import('./lancamento/rotina'); r.lancamento = await rotinaLancamento(relogio) } } catch (e: any) { r.lancamento_erro = e.message }
   return r

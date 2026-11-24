@@ -113,6 +113,42 @@ export async function criaModeloDoDono() {
   return cria(token, waba, MODELO_DONO)
 }
 
+// 24/11 (doc do Guto "Maia vende a Maia"): os modelos da VENDA da Maia, no número da Maia (a vendedora, vendedora-rotina.ts).
+//   maia_diagnostico       → chama quem fez o quiz e não chamou no WhatsApp (1 h depois)
+//   maia_venda_retomada    → retomada de 3 dias (fora da janela de 24 h)
+//   maia_venda_despedida   → a despedida de 6 dias
+// Tratam por "você" (cliente do Brasil todo), sem emoji, sem urgência.
+export const MODELOS_VENDA: Modelo[] = [
+  {
+    name: 'maia_diagnostico', category: 'MARKETING', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: 'Oi, {{1}}! Aqui é a Maia, a IA de marketing da Carreira no Digital. Vi o diagnóstico que você fez pra {{2}}: o maior ganho que apareceu foi {{3}}. Quer que eu te explique como eu faço isso na prática?', example: { body_text: [['Carlos', 'Auto Center Silva', 'cliente novo chegando pelo anúncio, uns R$ 6.000 por mês']] } },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Quero saber' }, { type: 'QUICK_REPLY', text: 'Agora não' }] },
+    ],
+  },
+  {
+    name: 'maia_venda_retomada', category: 'MARKETING', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: 'Oi, {{1}}! Aqui é a Maia de novo. Ficou alguma dúvida sobre como eu posso trazer mais clientes pra {{2}}? Se quiser, eu te explico em poucas mensagens ou marco 20 minutos com alguém da equipe.', example: { body_text: [['Carlos', 'Auto Center Silva']] } },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Quero saber' }, { type: 'QUICK_REPLY', text: 'Agora não' }] },
+    ],
+  },
+  {
+    name: 'maia_venda_despedida', category: 'MARKETING', language: 'pt_BR',
+    components: [
+      { type: 'BODY', text: 'Oi, {{1}}! Não quero te incomodar, então esta é a minha última mensagem. Se um dia quiser que eu cuide dos anúncios e do WhatsApp da {{2}}, é só me chamar aqui.', example: { body_text: [['Carlos', 'Auto Center Silva']] } },
+      { type: 'BUTTONS', buttons: [{ type: 'QUICK_REPLY', text: 'Quero saber' }] },
+    ],
+  },
+]
+export async function criaModelosVenda() {
+  const token = process.env.OITO_WA_TOKEN || process.env.WA_OFICIAL_TOKEN || '', waba = process.env.OITO_WA_WABA_ID || ''
+  if (!token || !waba) return { ok: false, erro: 'faltam OITO_WA_TOKEN/OITO_WA_WABA_ID no servidor' }
+  const r: any[] = []
+  for (const m of MODELOS_VENDA) r.push(await cria(token, waba, m))
+  return { ok: r.every(x => x.ok), modelos: r }
+}
+
 // a situação dos modelos da Maia (dono e, se pedir, de um negócio)
 export async function statusModelos(w?: { token: string; waba: string } | null) {
   const token = w?.token || process.env.OITO_WA_TOKEN || process.env.WA_OFICIAL_TOKEN || '', waba = w?.waba || process.env.OITO_WA_WABA_ID || ''
