@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Seu 2027: o seu mapa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/seu2027/seu2027.css">
+</head>
+<body>
+<header class="topo"><div class="marca">Seu 2027</div></header>
+<main class="miolo" id="tela">
+  <div class="espera"><div class="giro"></div><p>Abrindo o seu mapa...</p></div>
+</main>
+<p class="aviso">Conteúdo de autoconhecimento e entretenimento. Não substitui orientação profissional.</p>
+
+<script src="/seu2027/seu2027.js"></script>
+<script>
+(function () {
+  var tela = document.getElementById('tela')
+  var esc = function (s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c] }) }
+  var pars = function (t) { return String(t || '').split(/\n+/).filter(Boolean).map(function (p) { return '<p>' + esc(p) + '</p>' }).join('') }
+  var MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro']
+  var AREAS = { amor: 'Amor', trabalho: 'Trabalho', dinheiro: 'Dinheiro', emocional: 'Saúde emocional', familia: 'Família', comecos: 'Novos começos' }
+  var TEMA = { 1: 'Começos', 2: 'Parcerias', 3: 'Expressão', 4: 'Construção', 5: 'Mudança', 6: 'Cuidado', 7: 'Interiorização', 8: 'Conquista', 9: 'Encerramento', 11: 'Inspiração', 22: 'Grande construção' }
+  var cap = function (s) { return s.charAt(0).toUpperCase() + s.slice(1) }
+
+  // ── o mapa pronto ──
+  function mostraMapa(d, linkPdf) {
+    var n = d.numeros, t = d.textos, primeiro = String(d.nome).split(' ')[0]
+    document.title = 'Seu 2027: o mapa de ' + primeiro
+    var fav = ['amor', 'trabalho', 'dinheiro', 'emocional', 'familia', 'comecos'].map(function (k) {
+      return '<div><small>' + AREAS[k] + '</small><b>' + ((n.favoraveis[k] || []).map(function (m) { return MESES[m - 1] }).join(', ') || 'o ano todo') + '</b></div>'
+    }).join('')
+    tela.innerHTML =
+      '<section class="mapa-topo"><h1>O mapa do seu ano</h1><div class="quem">' + esc(d.nome) + '</div>' +
+      '<div class="tres"><div><small>Ano pessoal</small><strong>' + n.anoPessoal + '</strong><span>' + esc(TEMA[n.anoPessoal]) + '</span></div>' +
+      '<div><small>Arcano do ano</small><strong>' + esc(n.arcanoRomano) + '</strong><span>' + esc(n.arcanoNome) + '</span></div>' +
+      '<div><small>Destino</small><strong>' + n.destino + '</strong><span>' + esc(TEMA[n.destino]) + '</span></div></div>' +
+      '<div class="abre">' + s27.carta(n.arcanoRomano, n.arcanoNome).replace('class="carta"', 'class="carta grande"') + '<p>' + esc(t.abertura) + '</p></div></section>' +
+      '<section class="bloco"><span class="sobre">O tom do seu ano</span><h2>Ano pessoal ' + n.anoPessoal + ': ' + esc(TEMA[n.anoPessoal]) + '</h2><hr class="traco">' + pars(t.ano_pessoal) + '</section>' +
+      '<section class="bloco"><span class="sobre">Arcano do ano · ' + esc(n.arcanoRomano) + '</span><h2>' + esc(n.arcanoNome) + '</h2><hr class="traco">' + pars(t.arcano) + '</section>' +
+      '<section class="bloco"><span class="sobre">O seu caminho</span><h2>Número do destino ' + n.destino + '</h2><hr class="traco">' + pars(t.destino) + '</section>' +
+      '<section class="bloco"><span class="sobre">Mês a mês</span><h2>Os 12 meses de 2027</h2><hr class="traco"><div class="meses">' +
+        t.meses.map(function (m, i) { return '<div class="m"><span class="bolinha">' + n.meses[i].numero + '</span><div><b>' + cap(MESES[i]) + ' · ' + esc(m.titulo) + '</b><p>' + esc(m.texto) + '</p></div></div>' }).join('') +
+      '</div></section>' +
+      '<section class="bloco"><span class="sobre">As áreas da sua vida</span><h2>Amor, trabalho, dinheiro e emocional</h2><hr class="traco"><div class="areas">' +
+        ['amor', 'trabalho', 'dinheiro', 'emocional'].map(function (k) { return '<div class="a"><h3>' + AREAS[k] + '</h3><p>' + esc(t[k]) + '</p></div>' }).join('') +
+        '<div class="a" style="grid-column:1/-1"><h3>' + (d.foco ? 'O que você mais quer: ' + AREAS[d.foco].toLowerCase() : 'O centro do seu ano') + '</h3><p>' + esc(t.foco) + '</p></div>' +
+      '</div></section>' +
+      '<section class="bloco"><span class="sobre">Para levar com você</span><h2>Três conselhos para 2027</h2><hr class="traco"><ol class="conselhos">' +
+        t.conselhos.map(function (c, i) { return '<li><span class="n">' + (i + 1) + '</span><div>' + esc(c) + '</div></li>' }).join('') + '</ol></section>' +
+      '<section class="bloco"><span class="sobre">Quando o ano sopra a favor</span><h2>Meses e dias favoráveis</h2><hr class="traco"><div class="fav">' + fav + '</div>' +
+        '<p><b>Dias de cada mês que vibram com o seu ano:</b> ' + n.dias.join(', ') + '.</p>' + pars(t.favoraveis) + '</section>' +
+      '<p class="fecho">' + esc(t.fechamento) + '</p>' +
+      '<div class="baixar"><a class="botao" href="' + esc(linkPdf) + '" download>Baixar o PDF do meu mapa</a><p class="dica" style="margin-top:12px">Guarde o link desta página: ela é sua.</p></div>'
+  }
+
+  // ── exemplo salvo (arquivo HTML com os dados dentro) ──
+  if (window.SEU2027_DADOS) { mostraMapa(window.SEU2027_DADOS, window.SEU2027_PDF || '#'); return }
+
+  var q = new URLSearchParams(location.search)
+  var codigo = (q.get('c') || s27.ls('s27_codigo') || '').toUpperCase()
+  if (codigo && !q.get('c')) history.replaceState(null, '', location.pathname + '?c=' + encodeURIComponent(codigo))
+
+  function semCodigo() {
+    tela.innerHTML = '<section class="espera"><h2>Onde está o seu mapa?</h2><hr class="traco" style="margin:18px auto">' +
+      '<p>Coloque o e-mail que você usou na compra. Mandamos o link do seu mapa para lá.</p>' +
+      '<form id="fr" class="compra" style="margin-top:22px" novalidate><input type="email" id="em" placeholder="voce@email.com" autocomplete="email">' +
+      '<div class="erro" id="er"></div><button class="botao cheio" type="submit">Receber o link no e-mail</button></form>' +
+      '<p class="dica" style="margin-top:22px">Ainda não tem o seu mapa? <a href="/seu2027">Conheça o Seu 2027</a>.</p></section>'
+    document.getElementById('fr').onsubmit = function (e) {
+      e.preventDefault(); var em = document.getElementById('em').value.trim()
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) { document.getElementById('er').textContent = 'Confira o e-mail.'; return }
+      fetch('/api/seu2027/reenviar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: em }) }).finally(function () {
+        tela.innerHTML = '<section class="espera"><h2>Pronto</h2><p>Se houver uma compra com esse e-mail, o link chega em instantes. Olhe também a caixa de spam e a de promoções.</p></section>'
+      })
+    }
+  }
+  if (!/^S27-/.test(codigo)) { semCodigo(); return }
+
+  function espera(titulo, texto) { tela.innerHTML = '<section class="espera"><div class="giro"></div><h2>' + titulo + '</h2><p>' + texto + '</p></section>' }
+  function completar(nome) {
+    tela.innerHTML = '<section class="espera" style="text-align:left"><h2 style="text-align:center">Falta só um dado</h2><hr class="traco" style="margin:18px auto">' +
+      '<p style="text-align:center">O seu pagamento foi confirmado. Para montar o mapa, precisamos da sua data de nascimento.</p>' +
+      '<form id="fc" class="compra cartao" novalidate><label for="cn">Nome completo</label><input type="text" id="cn" value="' + esc(nome) + '">' +
+      '<label for="cd">Data de nascimento</label><input type="date" id="cd" min="1900-01-01" max="2026-12-31">' +
+      '<div class="erro" id="ce"></div><button class="botao cheio" type="submit">Montar o meu mapa</button></form></section>'
+    document.getElementById('fc').onsubmit = function (e) {
+      e.preventDefault(); var d = document.getElementById('cd').value
+      if (!d) { document.getElementById('ce').textContent = 'Coloque a sua data de nascimento.'; return }
+      fetch('/api/seu2027/completar', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ c: codigo, nascimento: d, nome: document.getElementById('cn').value }) })
+        .then(function (r) { return r.json() }).then(function (j) { if (j.erro) document.getElementById('ce').textContent = j.erro; else { espera('Escrevendo o seu mapa', 'Leva cerca de um minuto. Pode deixar esta página aberta.'); setTimeout(olha, 4000) } })
+    }
+  }
+
+  var tentativas = 0
+  function olha() {
+    tentativas++
+    fetch('/api/seu2027/status?c=' + encodeURIComponent(codigo), { cache: 'no-store' }).then(function (r) { return r.json() }).then(function (d) {
+      if (d.erro) { semCodigo(); return }
+      if (['pago', 'gerando', 'pronto', 'erro', 'falta_dados'].indexOf(d.status) >= 0) s27.compra(codigo, d.valor)
+      if (d.status === 'pronto') { mostraMapa(d, '/api/seu2027/pdf?c=' + encodeURIComponent(codigo)); return }
+      if (d.status === 'falta_dados') { completar(d.nome); return }
+      if (d.status === 'reembolsado') { tela.innerHTML = '<section class="espera"><h2>Pedido reembolsado</h2><p>Este pedido foi reembolsado.</p></section>'; return }
+      if (d.status === 'aguardando_pagamento') espera('Aguardando o pagamento', 'Assim que a Kiwify confirmar, o seu mapa começa a ser escrito e aparece aqui sozinho. No Pix costuma ser na hora. Esta página se atualiza sozinha.' +
+        '<br><br><a href="/seu2027">Voltar</a>')
+      else espera('Escrevendo o seu mapa, ' + esc(String(d.nome).split(' ')[0]), 'O pagamento foi confirmado. As contas estão feitas e o texto está sendo escrito para os seus números. Leva cerca de um minuto, e o link também vai para o seu e-mail.')
+      setTimeout(olha, tentativas < 40 ? 4000 : 15000)
+    }).catch(function () { setTimeout(olha, 8000) })
+  }
+  olha()
+})()
+</script>
+</body>
+</html>

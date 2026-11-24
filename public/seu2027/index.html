@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Seu 2027: o mapa do seu ano</title>
+<meta name="description" content="O mapa do seu 2027 feito para você: ano pessoal, arcano do ano, os 12 meses e os meses mais favoráveis. Na hora, com PDF.">
+<meta property="og:title" content="Seu 2027: o mapa do seu ano">
+<meta property="og:description" content="Em 2027 você vive um ano com tema próprio. Descubra o que ele pede de você.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/seu2027/seu2027.css">
+</head>
+<body>
+<header class="topo"><div class="marca">Seu 2027</div></header>
+
+<main>
+  <section class="hero miolo">
+    <h1>Em 2027 você vive o ano <span class="ano" id="anoHero">?</span>.<br>Descubra o que ele pede de você.</h1>
+    <p class="lead">Cada pessoa entra em 2027 num ciclo diferente. Coloque a sua data de nascimento e veja agora o número do seu ano.</p>
+    <div class="descobre">
+      <label for="dataHero">Sua data de nascimento</label>
+      <div class="linha">
+        <input type="date" id="dataHero" min="1900-01-01" max="2026-12-31">
+        <button class="botao" id="verHero" type="button">Ver o meu ano</button>
+      </div>
+      <div class="erro" id="erroHero"></div>
+    </div>
+    <div class="revela" id="revela" aria-live="polite">
+      <div id="cartaHero"></div>
+      <div>
+        <span class="sobre">O seu 2027</span>
+        <div class="num">Ano pessoal <span id="nHero"></span>: <span id="temaHero"></span></div>
+        <p id="palavrasHero"></p>
+        <p>E o arcano que acompanha o seu ano é <b id="arcanoHero"></b>. No mapa completo você vê o que isso significa mês a mês.</p>
+        <p style="margin-top:16px"><a class="botao" href="#comprar">Quero o meu mapa completo</a></p>
+      </div>
+    </div>
+  </section>
+
+  <section class="secao miolo">
+    <span class="sobre">O que vem no seu mapa</span>
+    <h2>Um guia do seu ano inteiro, feito para a sua data</h2>
+    <hr class="traco">
+    <p>Não é horóscopo de signo, igual para milhões de pessoas. As contas são feitas com a sua data de nascimento, e o texto é escrito só para você.</p>
+    <ul class="itens">
+      <li><span class="n">1</span><div><b>O seu ano pessoal 2027</b><span>O tema central do ano e o que ele convida você a viver.</span></div></li>
+      <li><span class="n">2</span><div><b>O arcano do ano</b><span>A carta do tarô que acompanha você em 2027 e o recado dela.</span></div></li>
+      <li><span class="n">3</span><div><b>O seu número do destino</b><span>O seu jeito de caminhar e como ele conversa com 2027.</span></div></li>
+      <li><span class="n">4</span><div><b>Os 12 meses, um por um</b><span>A energia de cada mês, de janeiro a dezembro.</span></div></li>
+      <li><span class="n">5</span><div><b>Amor, trabalho, dinheiro e emocional</b><span>O que o ano favorece em cada área da vida.</span></div></li>
+      <li><span class="n">6</span><div><b>Meses e dias favoráveis</b><span>Quando o ano sopra a favor, para você se planejar.</span></div></li>
+      <li><span class="n">7</span><div><b>Três conselhos para 2027</b><span>Simples, práticos, para levar com você o ano todo.</span></div></li>
+      <li><span class="n">8</span><div><b>PDF para guardar</b><span>Além da página do seu mapa, um PDF bonito para baixar e reler.</span></div></li>
+    </ul>
+  </section>
+
+  <section class="secao miolo">
+    <span class="sobre">Um trecho de um mapa de verdade</span>
+    <h2>Veja como fica</h2>
+    <div class="exemplo">
+      <p style="margin:0;font-family:var(--serif);font-size:21px;color:var(--tinta)">Ano pessoal 9, com O Eremita</p>
+      <div class="mes"><span class="bolinha">7</span><div><b>Julho · Silêncio que ensina</b><p>Julho é o mês mais Eremita do ano: estudo, pausa e confiança interior. Reserve tempo para ficar consigo e ouvir o que o coração diz.</p></div></div>
+      <div class="mes"><span class="bolinha">8</span><div><b>Agosto · Colheita visível</b><p>Agosto favorece realização, liderança e reconhecimento. Seu esforço pode ser notado, e é um bom momento para valorizar o próprio trabalho.</p></div></div>
+      <div class="mes"><span class="bolinha">9</span><div><b>Setembro · Gratidão e desapego</b><p>Setembro intensifica o encerramento de ciclos. Agradeça, perdoe e solte o que pesa. Sua paz interior se fortalece nesse movimento.</p></div></div>
+    </div>
+  </section>
+
+  <section class="secao miolo">
+    <span class="sobre">Como funciona</span>
+    <h2>Pronto na hora</h2>
+    <div class="passos">
+      <div><p style="margin:0">Você coloca o seu nome, a data de nascimento e o e-mail.</p></div>
+      <div><p style="margin:0">Paga no Pix ou no cartão, num ambiente seguro.</p></div>
+      <div><p style="margin:0">Em cerca de um minuto o seu mapa abre na tela, com o PDF para baixar. O link também vai para o seu e-mail.</p></div>
+    </div>
+  </section>
+
+  <section class="secao miolo preco" id="comprar">
+    <span class="sobre">O seu mapa de 2027</span>
+    <h2>Tudo isso, feito para você</h2>
+    <div class="valor"><small>R$</small><span id="preco">37</span></div>
+    <p style="margin:0;color:var(--suave)">pagamento único, no Pix ou no cartão</p>
+    <form class="compra cartao" id="form" novalidate>
+      <label for="nome">Nome completo</label>
+      <input type="text" id="nome" autocomplete="name" placeholder="Como está no seu documento">
+      <label for="nasc">Data de nascimento</label>
+      <input type="date" id="nasc" min="1900-01-01" max="2026-12-31">
+      <label for="email">E-mail</label>
+      <input type="email" id="email" autocomplete="email" inputmode="email" placeholder="voce@email.com">
+      <div class="dica">É por ele que o link do mapa chega.</div>
+      <label>O que você mais quer para 2027? <span style="font-weight:400;color:var(--suave)">(opcional)</span></label>
+      <div class="focos" id="focos">
+        <button type="button" data-f="amor" aria-pressed="false">Amor</button>
+        <button type="button" data-f="trabalho" aria-pressed="false">Trabalho</button>
+        <button type="button" data-f="dinheiro" aria-pressed="false">Dinheiro</button>
+        <button type="button" data-f="emocional" aria-pressed="false">Saúde emocional</button>
+        <button type="button" data-f="familia" aria-pressed="false">Família</button>
+      </div>
+      <div class="erro" id="erro"></div>
+      <button class="botao cheio" id="pagar" type="submit" style="margin-top:8px">Quero o meu mapa de 2027</button>
+      <p class="seguro">Você segue para o pagamento seguro da Kiwify.</p>
+    </form>
+  </section>
+
+  <section class="secao miolo">
+    <span class="sobre">Dúvidas</span>
+    <details><summary>Em quanto tempo recebo?</summary><p>Assim que o pagamento é confirmado, o mapa começa a ser escrito e fica pronto em cerca de um minuto. No Pix a confirmação costuma ser imediata.</p></details>
+    <details><summary>Como as contas são feitas?</summary><p>Pela numerologia (ano pessoal, meses pessoais e número do destino) e pelos arcanos maiores do tarô, sempre a partir da sua data de nascimento. As contas são fixas; o texto é escrito para os seus números.</p></details>
+    <details><summary>E se eu perder o link?</summary><p>Ele fica no seu e-mail. Se não achar, é só pedir de novo na página do mapa: mandamos para o e-mail da compra.</p></details>
+    <details><summary>Isso é uma previsão do futuro?</summary><p>Não. É um mapa de autoconhecimento e entretenimento: mostra tendências e convites do ano para você refletir e se planejar. Nada aqui é promessa de resultado.</p></details>
+  </section>
+</main>
+
+<p class="aviso">Conteúdo de autoconhecimento e entretenimento. Não substitui orientação profissional.</p>
+<div class="fixo" id="fixo"><a class="botao cheio" href="#comprar">Quero o meu mapa · R$ <span class="precoFixo">37</span></a></div>
+
+<script src="/seu2027/seu2027.js"></script>
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id) }
+  s27.cfg.then(function (c) { if (c.preco) { $('preco').textContent = c.preco; document.querySelectorAll('.precoFixo').forEach(function (e) { e.textContent = c.preco }) } })
+  // a prévia grátis: o número do ano e o arcano (só conta, sem IA)
+  $('verHero').onclick = function () {
+    var d = $('dataHero').value; $('erroHero').textContent = ''
+    if (!d) { $('erroHero').textContent = 'Coloque a sua data de nascimento.'; return }
+    fetch('/api/seu2027/previa?d=' + encodeURIComponent(d)).then(function (r) { return r.json() }).then(function (p) {
+      if (p.erro) { $('erroHero').textContent = 'Confira a data.'; return }
+      $('anoHero').textContent = p.anoPessoal; $('nHero').textContent = p.anoPessoal; $('temaHero').textContent = p.tema
+      $('palavrasHero').textContent = 'Um ano de ' + p.palavras + '.'
+      $('arcanoHero').textContent = p.arcanoNome + ' (' + p.arcanoRomano + ')'
+      $('cartaHero').innerHTML = s27.carta(p.arcanoRomano, p.arcanoNome)
+      $('revela').classList.add('aberto'); if (!$('nasc').value) $('nasc').value = d
+      s27.px('trackCustom', 'VerAno', { ano_pessoal: p.anoPessoal })
+    }).catch(function () { $('erroHero').textContent = 'Não deu agora. Tente de novo.' })
+  }
+  // foco (um só)
+  var foco = null
+  document.querySelectorAll('#focos button').forEach(function (b) {
+    b.onclick = function () { var on = b.getAttribute('aria-pressed') !== 'true'; document.querySelectorAll('#focos button').forEach(function (x) { x.setAttribute('aria-pressed', 'false') }); if (on) b.setAttribute('aria-pressed', 'true'); foco = on ? b.dataset.f : null }
+  })
+  // comprar: guarda o pedido, dispara o InitiateCheckout e segue pra Kiwify
+  $('form').onsubmit = function (e) {
+    e.preventDefault(); $('erro').textContent = ''
+    var nome = $('nome').value.trim(), nasc = $('nasc').value, email = $('email').value.trim()
+    if (nome.split(/\s+/).length < 2) { $('erro').textContent = 'Escreva o seu nome completo.'; $('nome').focus(); return }
+    if (!nasc) { $('erro').textContent = 'Coloque a sua data de nascimento.'; $('nasc').focus(); return }
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { $('erro').textContent = 'Confira o seu e-mail.'; $('email').focus(); return }
+    $('pagar').disabled = true; $('pagar').textContent = 'Indo para o pagamento...'
+    fetch('/api/seu2027/pedido', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ nome: nome, nascimento: nasc, email: email, foco: foco, origem: s27.origem() }) })
+      .then(function (r) { return r.json() }).then(function (j) {
+        if (!j.checkout) throw new Error(j.erro || 'erro')
+        if (j.codigo) s27.ls('s27_codigo', j.codigo)
+        s27.px('track', 'InitiateCheckout', { content_ids: ['seu2027'], content_type: 'product', value: +$('preco').textContent || 37, currency: 'BRL' }, { eventID: 'checkout-' + (j.codigo || Date.now()) })
+        setTimeout(function () { location.href = j.checkout }, 350)
+      }).catch(function (err) {
+        $('erro').textContent = err.message && err.message !== 'erro' ? err.message : 'Não deu para seguir agora. Tente de novo em instantes.'
+        $('pagar').disabled = false; $('pagar').textContent = 'Quero o meu mapa de 2027'
+      })
+  }
+  // botão fixo no celular depois do topo, escondido perto do formulário
+  var fixo = $('fixo'), alvo = $('comprar')
+  window.addEventListener('scroll', function () { var r = alvo.getBoundingClientRect(); fixo.classList.toggle('mostra', scrollY > 500 && (r.top > innerHeight || r.bottom < 0)) }, { passive: true })
+})()
+</script>
+</body>
+</html>

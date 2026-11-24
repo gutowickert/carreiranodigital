@@ -117,6 +117,15 @@ const nextConfig: NextConfig = {
         // 16/10: o Rastro (o rastreador próprio, no lugar da Utmify), com senha própria
         { source: '/rastro', destination: '/rastro/index.html' },
         { source: '/rastro/', destination: '/rastro/index.html' },
+        // 24/11: Seu 2027 (o mapa do ano, R$ 37, pagamento pela Kiwify): a página de venda e a página do mapa (o link que a pessoa guarda)
+        { source: '/seu2027', destination: '/seu2027/index.html' },
+        { source: '/seu2027/', destination: '/seu2027/index.html' },
+        { source: '/seu2027/mapa', destination: '/seu2027/mapa.html' },
+        // domínio próprio do Seu 2027 (quando tiver): SEU2027_DOMINIO=seudominio.com.br e SEU2027_URL_SITE=https://seudominio.com.br na Vercel
+        ...(process.env.SEU2027_DOMINIO ? (() => {
+          const h = [{ type: 'host' as const, value: `(www\\.)?${String(process.env.SEU2027_DOMINIO).replace(/^www\./, '').replace(/\./g, '\\.')}` }]
+          return [{ source: '/', has: h, destination: '/seu2027/index.html' }, { source: '/mapa', has: h, destination: '/seu2027/mapa.html' }]
+        })() : []),
       ],
       afterFiles: [{ source: '/conversa/:codigo', destination: '/call/:codigo' }],
       fallback: [],
