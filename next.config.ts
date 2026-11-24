@@ -19,6 +19,7 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: { '/api/maia/**': ['./lib/maia/fontes/**'], '/api/maia/rotina': ['./lib/maia/fontes/**'] },
   // Recado aberto pelo endereço da Vercel (ex.: painel em carreiranodigital.vercel.app) vai pro domínio do Recado,
   // pra família nunca ver o endereço da Vercel (Guto 10/10). Só páginas: a API fica onde está (webhook do Asaas).
+  // 24/11: só o endereço de produção (carreiranodigital.vercel.app); as prévias de branch (carreiranodigital-git-...) abrem a página nova pra aprovar.
   async redirects() {
     // 15/10: as páginas antigas do espanhol (Feed Divino, Sabroso, Peludo) levam pras do Feed al Día, com o ?c= do cliente junto.
     // Só as páginas: as imagens de exemplo continuam em /oito/<chave>/exemplos/ (as páginas novas usam de lá).
@@ -42,7 +43,7 @@ const nextConfig: NextConfig = {
       { source: '/deu-venda', destination: '/deuvenda', permanent: false },
       { source: '/deu-venda.html', destination: '/deuvenda', permanent: false },
     ]
-    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: '.*\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...espanholAntigo, ...escola]
+    return [{ source: '/recado/:path*', has: [{ type: 'host' as const, value: 'carreiranodigital\\.vercel\\.app' }], destination: 'https://recadoencantando.com.br/recado/:path*', permanent: false }, ...espanholAntigo, ...escola]
   },
   // o link que o cliente recebe e /conversa/<codigo> (mais claro que /call); a pagina e a mesma
   async rewrites() {
@@ -71,7 +72,11 @@ const nextConfig: NextConfig = {
     return {
       beforeFiles: [
         // 25/10 (Guto): até o Natal a página principal é o Natal; a vitrine com todos os produtos fica em /todos
-        { source: '/', has: recado, destination: '/recado/natal.html' },
+        // 24/11 (Guto): o produto do Natal agora é o vídeo avulso. A página inicial e /papai-noel abrem a página dele;
+        // o Acordo continua em /natal (os anúncios antigos apontam pra lá) até 10/12, e depois a /natal manda pra /papai-noel
+        { source: '/', has: recado, destination: '/recado/papai-noel.html' },
+        { source: '/:p(papai-noel|video)', has: recado, destination: '/recado/papai-noel.html' },
+        { source: '/:p(papai-noel|video)/', has: recado, destination: '/recado/papai-noel.html' },
         { source: '/:p(todos|produtos)', has: recado, destination: '/recado/index.html' },
         // Acordo de Natal (24/10): os anúncios apontam pra recadoencantado.com.br/natal (e /acordo, nos textos antigos): a página de venda
         { source: '/:p(natal|acordo)', has: recado, destination: '/recado/natal.html' },

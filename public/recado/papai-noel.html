@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vídeo do Papai Noel · Recado Encantado</title>
+<meta name="description" content="Um vídeo do Papai Noel só pra criança: ele chama pelo nome, mostra a foto no Livro dos Bonzinhos e conta o que ela fez de bom no ano. Vem com certificado. Fica pronto na página da família.">
+<meta property="og:title" content="O Papai Noel vai chamar a criança pelo nome">
+<meta property="og:description" content="Vídeo personalizado com o nome, a foto e o que a criança fez de bom no ano. Com certificado da Lista dos Bonzinhos.">
+<meta property="og:image" content="/recado/midia/demo-noel.jpg">
+<meta name="theme-color" content="#2a1f6b">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Dancing+Script:wght@700&display=swap">
+<!-- 24/11/2026 (Guto): página única do vídeo de Natal avulso. Valor primeiro, preço depois.
+     Preço: R$ 49,90 até 10/12 23h59 (Brasília) e R$ 79,90 a partir de 11/12. A tela calcula pela data e confirma em /api/recado/preco;
+     quem cobra é o /api/recado/pedido, que calcula de novo no servidor. Prazo: medido de 2 a 4 horas (lib/recado/config.ts). -->
+<style>
+:root{--noite:#2a1f6b;--noite2:#1a1240;--ouro:#f5c451;--rosa:#e0569a;--lilas:#b9a3ff;--creme:#fff8ec;--creme2:#f8edd8;--tinta:#2b2140;--suave:#5f5578;--verde:#1f7a4f;--raio:24px;--gut:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{background:var(--creme);color:var(--tinta);font-family:Fredoka,system-ui,sans-serif;font-size:18px;line-height:1.55;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img,video{display:block;max-width:100%}
+a{color:inherit}
+h1,h2,h3{font-weight:700;line-height:1.1;letter-spacing:-.01em;text-wrap:balance}
+.script{font-family:'Dancing Script',cursive;font-weight:700}
+.ct{max-width:1080px;margin:0 auto;padding:0 var(--gut)}
+section{padding:72px 0;position:relative}
+.olho{display:inline-block;font-size:14px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--rosa);margin-bottom:12px}
+h2{font-size:clamp(30px,5vw,46px);margin-bottom:14px}
+.lead{font-size:clamp(18px,2.4vw,21px);color:var(--suave);max-width:58ch}
+.centro{text-align:center}.centro .lead{margin:0 auto}
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:58px;padding:0 28px;border-radius:999px;font-family:inherit;font-weight:700;font-size:18px;text-decoration:none;border:0;cursor:pointer;transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.05)}
+.btn:focus-visible{outline:3px solid var(--ouro);outline-offset:3px}
+.btn-rosa{background:var(--rosa);color:#fff;box-shadow:0 12px 30px rgba(224,86,154,.35)}
+.btn-claro{background:transparent;color:#fff;border:2px solid rgba(255,255,255,.4)}
+/* topo */
+.topo{position:sticky;top:0;z-index:40;background:rgba(255,248,236,.92);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid #eadfc8}
+.topo .ct{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:64px}
+.topo img{height:38px;width:auto}
+.topo .btn{min-height:44px;padding:0 20px;font-size:16px}
+/* abertura */
+.abre{background:radial-gradient(ellipse at 70% 10%,#4b3aa8 0,var(--noite) 45%,var(--noite2) 100%);color:#fff;overflow:hidden;padding:52px 0 76px}
+.abre .ct{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:center;position:relative}
+.estrelas{position:absolute;inset:0;background-image:radial-gradient(2px 2px at 10% 20%,#fff8,transparent),radial-gradient(2px 2px at 30% 70%,#fff6,transparent),radial-gradient(1.5px 1.5px at 60% 30%,#fff9,transparent),radial-gradient(2px 2px at 85% 60%,#fff7,transparent),radial-gradient(1.5px 1.5px at 45% 85%,#fff6,transparent),radial-gradient(2px 2px at 92% 15%,#fff8,transparent);pointer-events:none}
+.abre h1{font-size:clamp(36px,6vw,62px);margin-bottom:18px}
+.abre h1 .script{color:var(--ouro);font-size:1.12em}
+.abre .lead{color:#d9d2f5}
+.abre .lead b{color:#fff}
+.botoes{display:flex;flex-wrap:wrap;gap:12px;margin:28px 0 0}
+.cel{position:relative;width:min(300px,76vw);aspect-ratio:9/16;margin:0 auto;border-radius:38px;padding:10px;background:#0c0820;box-shadow:0 30px 80px rgba(0,0,0,.5),0 0 0 6px rgba(245,196,81,.25)}
+.cel video{width:100%;height:100%;object-fit:cover;border-radius:29px;background:#000}
+.som{position:absolute;left:50%;bottom:24px;transform:translateX(-50%);background:rgba(255,255,255,.95);color:var(--noite);border:0;border-radius:999px;padding:10px 18px;font:600 15px Fredoka,system-ui,sans-serif;cursor:pointer;white-space:nowrap}
+.nota-video{text-align:center;color:#b9b0e0;font-size:14px;margin-top:14px}
+/* o que a criança vive */
+.vive{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px}
+.vive article{background:#fff;border:1px solid #eadfc8;border-radius:var(--raio);padding:24px}
+.vive .n{display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:14px;background:var(--creme2);color:var(--noite);font-weight:700;font-size:20px;margin-bottom:12px}
+.vive h3{font-size:20px;margin-bottom:6px}
+.vive p{color:var(--suave);font-size:16px}
+.vive q{display:block;margin-top:10px;font-family:'Dancing Script',cursive;font-size:22px;color:var(--rosa);line-height:1.2}
+.cert{display:grid;grid-template-columns:.8fr 1.2fr;gap:36px;align-items:center;margin-top:44px;background:var(--creme2);border-radius:28px;padding:32px}
+.cert img{width:100%;max-width:320px;margin:0 auto;border-radius:12px;box-shadow:0 18px 40px rgba(42,31,107,.18)}
+.cert h3{font-size:clamp(24px,3.4vw,32px);margin-bottom:10px}
+.cert p{color:var(--suave)}
+/* passos */
+.passos{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:36px;list-style:none;counter-reset:p}
+.passos li{background:#fff;border:1px solid #eadfc8;border-radius:var(--raio);padding:26px;counter-increment:p}
+.passos li::before{content:counter(p);display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:14px;background:var(--noite);color:var(--ouro);font-weight:700;font-size:22px;margin-bottom:14px}
+.passos b{display:block;font-size:20px;margin-bottom:6px}
+.passos span{color:var(--suave);font-size:16px}
+/* preço */
+.preco-sec{background:#fff;border-top:1px solid #eadfc8;border-bottom:1px solid #eadfc8}
+.oferta{max-width:520px;margin:34px auto 0;background:var(--creme);border:2px solid var(--rosa);border-radius:28px;padding:30px;display:flex;flex-direction:column;gap:16px;box-shadow:0 20px 50px rgba(224,86,154,.14)}
+.oferta h3{font-size:24px}
+.oferta ul{list-style:none;display:grid;gap:9px;font-size:16px}
+.oferta li{display:flex;gap:10px;align-items:flex-start}
+.oferta li::before{content:'';flex:none;width:20px;height:20px;margin-top:3px;border-radius:50%;background:var(--verde) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3E%3Cpath d='M5 10.5l3 3 7-7' stroke='white' stroke-width='2.4' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/16px no-repeat}
+.valor{display:flex;align-items:baseline;flex-wrap:wrap;gap:6px 12px;border-top:1px dashed #e2d5bb;padding-top:18px}
+.valor b{font-size:48px;line-height:1;color:var(--noite)}
+.valor small{font-size:16px;color:var(--suave)}
+.depois{font-size:15px;color:var(--suave);background:var(--creme2);border-radius:14px;padding:10px 14px}
+.oferta .btn{width:100%}
+.pagto{font-size:14px;color:var(--suave);text-align:center}
+.garantia{display:flex;gap:20px;align-items:center;max-width:620px;margin:28px auto 0;border:2px dashed var(--ouro);border-radius:24px;padding:20px 24px}
+.garantia .sel{flex:none;width:80px;height:80px;border-radius:50%;background:var(--ouro);color:var(--noite);display:flex;align-items:center;justify-content:center;text-align:center;font-weight:700;font-size:14px;line-height:1.1}
+.garantia p{font-size:16px;color:var(--suave)}.garantia b{color:var(--tinta)}
+/* faq */
+.faq{max-width:760px;margin:30px auto 0;display:grid;gap:12px}
+.faq details{background:#fff;border:1px solid #eadfc8;border-radius:18px;padding:18px 22px}
+.faq summary{font-weight:600;cursor:pointer;font-size:18px}
+.faq p{color:var(--suave);margin-top:10px;font-size:16px}
+.fim{background:radial-gradient(ellipse at 50% 0,#4b3aa8,var(--noite) 60%);color:#fff;text-align:center}
+.fim h2 .script{color:var(--ouro)}
+.fim .lead{color:#d9d2f5;margin:0 auto 26px}
+footer{background:var(--noite2);color:#a99fcf;font-size:14px;padding:28px 0 110px}
+footer .ct{display:flex;flex-wrap:wrap;justify-content:space-between;gap:10px}
+.fixo{position:fixed;left:0;right:0;bottom:0;z-index:45;padding:12px var(--gut) calc(12px + env(safe-area-inset-bottom));background:linear-gradient(transparent,rgba(255,248,236,.97) 35%);display:none}
+.fixo .btn{width:100%}
+.rv{opacity:0;transform:translateY(16px);transition:opacity .6s,transform .6s}.rv.vis{opacity:1;transform:none}
+@media (max-width:900px){.abre .ct{grid-template-columns:1fr}.vive,.passos{grid-template-columns:1fr}.cert{grid-template-columns:1fr;padding:24px}}
+@media (max-width:560px){section{padding:56px 0}.topo .btn{display:none}.fixo{display:block}.garantia{flex-direction:column;text-align:center}.botoes .btn{width:100%}.oferta{padding:24px 20px}.valor b{font-size:42px}}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;scroll-behavior:auto!important}.rv{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<header class="topo"><div class="ct"><a href="/" aria-label="Recado Encantado"><img src="/recado/midia/logo.png" alt="Recado Encantado"></a><a class="btn btn-rosa" href="#preco">Quero o vídeo</a></div></header>
+<main>
+<section class="abre">
+  <div class="estrelas"></div>
+  <div class="ct">
+    <div>
+      <span class="olho rv" style="color:var(--ouro)">Vídeo personalizado do Papai Noel</span>
+      <h1 class="rv">O Papai Noel vai chamar a criança <span class="script">pelo nome.</span></h1>
+      <p class="lead rv">Um vídeo do Papai Noel <b>só pro teu filho, filha, neto ou neta</b>. Ele mostra a foto da criança no Livro dos Bonzinhos, conta o que ela fez de bom neste ano e fala do que ela mais gosta. Tu só aperta o play e filma a reação.</p>
+      <div class="botoes rv"><a class="btn btn-rosa" href="#preco">Quero o vídeo</a><a class="btn btn-claro" href="#como">Como funciona</a></div>
+    </div>
+    <div class="rv">
+      <div class="cel"><video id="demo" src="/recado/midia/demo-noel.mp4" poster="/recado/midia/demo-noel.jpg" autoplay muted loop playsinline preload="metadata" aria-label="Exemplo de vídeo do Papai Noel personalizado"></video><button class="som" id="som" type="button">Ouvir com som</button></div>
+      <p class="nota-video">Exemplo de um vídeo pronto. O de vocês vem sem legenda.</p>
+    </div>
+  </div>
+</section>
+
+<section id="vive">
+  <div class="ct">
+    <div class="centro"><span class="olho rv">O que a criança vive</span><h2 class="rv">Aquele “como ele sabe o meu nome?”</h2><p class="lead rv">O Papai Noel fala com a criança como quem conhece ela de verdade, com o que vocês contarem no pedido.</p></div>
+    <div class="vive">
+      <article class="rv"><span class="n">1</span><h3>Chama pelo nome</h3><p>O Noel fala o nome (ou o apelido de casa) e mostra a foto da criança no Livro dos Bonzinhos.</p></article>
+      <article class="rv"><span class="n">2</span><h3>Lembra do que ela fez de bom</h3><p>Conta as conquistas do ano: aprendeu a ler, andou de bicicleta sozinha, ajudou a cuidar do irmão.</p></article>
+      <article class="rv"><span class="n">3</span><h3>Fala do que ela adora</h3><p>O cachorro, a vó, o desenho preferido. E, se vocês quiserem, combina com carinho uma coisinha pra melhorar, sem bronca.</p></article>
+    </div>
+    <div class="cert rv">
+      <img src="/recado/midia/certificado.png" alt="Exemplo do certificado da Lista dos Bonzinhos com a foto e o nome da criança" loading="lazy">
+      <div><span class="olho">Vem junto</span><h3>Certificado da Lista dos Bonzinhos</h3><p>Com a foto e o nome da criança, assinado pelo Papai Noel. Pronto pra imprimir e pendurar na geladeira.</p><p style="margin-top:12px">E o presente? Vocês escolhem: o Noel deixa como surpresa, ou fala do que a criança pediu sem prometer nada (“vou ver o que posso fazer”). Ele nunca promete presente que vocês não contaram e nunca faz ameaça.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="como" style="padding-top:0">
+  <div class="ct">
+    <div class="centro"><span class="olho rv">Como funciona</span><h2 class="rv">3 minutos de vocês. O resto é com o Noel.</h2></div>
+    <ol class="passos">
+      <li class="rv"><b>Vocês contam sobre a criança</b><span>Nome, idade, uma foto de rosto e o que ela fez de bom no ano. Leva uns 3 minutos.</span></li>
+      <li class="rv"><b>Pagam por Pix ou cartão</b><span>Na página segura do Asaas. O vídeo começa a ser feito assim que o pagamento confirma.</span></li>
+      <li class="rv"><b>Recebem na página da família</b><span>Em até 4 horas o vídeo aparece lá, pronto pra assistir e baixar, com o certificado. O link também chega no e-mail.</span></li>
+    </ol>
+  </div>
+</section>
+
+<section id="preco" class="preco-sec">
+  <div class="ct">
+    <div class="centro"><span class="olho rv">Quanto custa</span><h2 class="rv">Um vídeo só pra criança</h2></div>
+    <div class="oferta rv">
+      <h3>Vídeo do Papai Noel + certificado</h3>
+      <ul>
+        <li>O Noel chama pelo nome e mostra a foto no Livro dos Bonzinhos</li>
+        <li>Conta o que a criança fez de bom no ano e do que ela gosta</li>
+        <li>Certificado da Lista dos Bonzinhos pra imprimir</li>
+        <li>Pronto em até 4 horas, na página da família, pra assistir e baixar</li>
+      </ul>
+      <div class="valor"><b id="preco-valor">R$ 49,90</b><small id="preco-nota">até 10/12, às 23h59</small></div>
+      <p class="depois" id="preco-depois">A partir de 11/12, o vídeo passa a custar R$ 79,90.</p>
+      <a class="btn btn-rosa" id="pedir" href="/recado/pedido.html?p=noel&amp;pac=encanto&amp;so=1">Pedir o vídeo</a>
+      <p class="pagto">Pix ou cartão. Um vídeo por criança.</p>
+    </div>
+    <div class="garantia rv"><div class="sel">Garantia</div><p><b>Se não ficar mágico, a gente refaz ou devolve o dinheiro.</b> Se algo saiu escrito errado no pedido, a gente refaz sem custo.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="ct">
+    <div class="centro"><span class="olho rv">Dúvidas</span><h2 class="rv">Perguntas rápidas</h2></div>
+    <div class="faq">
+      <details class="rv"><summary>Em quanto tempo fica pronto?</summary><p>Em até 4 horas depois que o pagamento confirma (normalmente de 2 a 4 horas). Em dia de muito pedido pode levar um pouco mais, e a gente avisa por e-mail assim que ficar pronto.</p></details>
+      <details class="rv"><summary>Como eu recebo?</summary><p>Na página da família: depois de pagar tu já cai nela, e o link também chega no teu e-mail. O vídeo aparece lá, pronto pra assistir e baixar, junto com o certificado.</p></details>
+      <details class="rv"><summary>Posso pedir pra irmãos?</summary><p>Pode. Cada criança ganha o seu vídeo, com o nome e a foto dela. É só fazer um pedido pra cada uma.</p></details>
+      <details class="rv"><summary>Avó, tia ou madrinha pode pedir?</summary><p>Pode. No pedido tu marca quem está pedindo, e o Papai Noel conta pra criança que foi essa pessoa que mandou o recado.</p></details>
+      <details class="rv"><summary>Pra que idade?</summary><p>De 2 a 10 anos.</p></details>
+      <details class="rv"><summary>É seguro mandar a foto?</summary><p>A foto só é usada pra fazer o vídeo e o certificado, e é apagada depois do Natal. Ninguém vê além de vocês, e nunca usamos em propaganda.</p></details>
+    </div>
+  </div>
+</section>
+
+<section class="fim">
+  <div class="ct">
+    <h2 class="rv">Este ano, o Papai Noel <span class="script">sabe o nome dela.</span></h2>
+    <p class="lead rv">Conta sobre a criança em 3 minutos. O vídeo chega na página da família.</p>
+    <a class="btn btn-rosa rv" href="#preco">Quero o vídeo</a>
+  </div>
+</section>
+</main>
+<footer><div class="ct"><span>Recado Encantado · recadoencantando.com.br</span><span>Dúvidas ou ajuda com o pedido: <a href="mailto:contato@recadoencantando.com.br" style="color:inherit;text-decoration:underline">contato@recadoencantando.com.br</a></span></div></footer>
+<div class="fixo"><a class="btn btn-rosa" href="#preco">Quero o vídeo</a></div>
+<script>
+(function(){
+  var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('vis');io.unobserve(e.target)}})},{threshold:.12});
+  [].forEach.call(document.querySelectorAll('.rv'),function(el){io.observe(el)});
+  var v=document.getElementById('demo'),s=document.getElementById('som');
+  s.addEventListener('click',function(){v.muted=!v.muted;if(!v.muted){v.currentTime=0;v.play()}s.textContent=v.muted?'Ouvir com som':'Sem som'});
+  // preço pela data: até 10/12 23h59 (Brasília) R$ 49,90; a partir de 11/12 R$ 79,90. Primeiro pela hora do aparelho, depois pela do servidor.
+  var R=function(n){return 'R$ '+(+n).toFixed(2).replace('.',',')};
+  function mostra(promocao,preco,depois){
+    document.getElementById('preco-valor').textContent=R(preco);
+    document.getElementById('preco-nota').textContent=promocao?'até 10/12, às 23h59':'por criança';
+    var d=document.getElementById('preco-depois');d.style.display=promocao?'':'none';d.textContent='A partir de 11/12, o vídeo passa a custar '+R(depois)+'.';
+  }
+  var antes=Date.now()<Date.parse('2026-12-11T00:00:00-03:00');mostra(antes,antes?49.9:79.9,79.9);
+  fetch('/api/recado/preco',{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){if(j&&j.natal)mostra(j.natal.promocao,j.natal.preco,j.natal.depois)}).catch(function(){});
+  // leva a campanha (utm) junto pro formulário
+  var q=location.search.replace(/^\?/,'');if(q){var a=document.getElementById('pedir');a.href+='&'+q}
+})();
+</script>
+<script src="/recado/rastro.js"></script>
+</body>
+</html>

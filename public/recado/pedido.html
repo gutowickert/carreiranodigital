@@ -90,22 +90,29 @@ button{width:100%;min-height:60px;border:0;border-radius:999px;background:var(--
     <div class="dupla"><div><label for="resp">Seu nome</label><input id="resp" name="resp" type="text" required></div>
     <div><label for="wa">Celular <small>(opcional)</small></label><input id="wa" name="wa" type="tel" placeholder="(51) 99999-9999"></div></div>
     <label for="email">E-mail</label><input id="email" name="email" type="email" required>
-    <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. A foto é apagada em 30 dias.</label>
+    <label class="ok"><input type="checkbox" required> Sou responsável pela criança, ou a família dela autorizou, e autorizo usar a foto e as informações só pra fazer o vídeo. <span class="so-noel" style="display:inline">A foto é apagada depois do Natal.</span><span class="so-fada" style="display:inline">A foto é apagada em 30 dias.</span></label>
   </div>
   <details id="cupom-box" style="margin:4px 0 10px"><summary style="cursor:pointer;color:var(--suave);font-size:15px">Tenho um cupom</summary><input id="cupom" name="cupom" type="text" placeholder="Código do cupom" style="margin-top:8px;text-transform:uppercase" autocomplete="off"></details>
   <button type="submit" id="enviar">Ir pro pagamento</button><p class="erro" id="erro" style="color:#b0122b;font-weight:600;display:none"></p>
-  <p class="aviso">Pagamento por Pix ou cartão. Depois de pagar tu vai direto pra página da família, onde o vídeo aparece em até 2 horas. O link também chega no teu e-mail. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</p>
+  <p class="aviso">Pagamento por Pix ou cartão. Depois de pagar tu vai direto pra página da família, onde o vídeo aparece em até 4 horas. O link também chega no teu e-mail. Se não ficar mágico, a gente refaz ou devolve o dinheiro.</p>
 </form>
 <div class="feito" id="feito"><h2>Recebido!</h2><p>O recado já está sendo preparado. O link da página da família chega no teu e-mail.</p></div>
 </div>
 <style>.pacs{display:grid;gap:10px}.pacs label{display:flex;justify-content:space-between;align-items:center;gap:12px;border:2px solid var(--creme2);border-radius:14px;padding:12px 16px;cursor:pointer;font-weight:600}.pacs label:has(input:checked){border-color:var(--rosa);background:#fff5f8}.pacs small{display:block;font-weight:400;color:var(--suave)}</style>
 <script>
 // Envia o pedido pra API (salva foto e dados, cria a cobrança) e leva pro pagamento.
-var PAC={noel:[['encanto','Encanto','Vídeo + certificado',49.90],['magico','Magia Completa','Vídeo + certificado + carta + véspera',64.90]],fada:[['recado','Recado da Fada','Vídeo + certificado + carta',39.90]]}
+// 24/11: o vídeo de Natal muda de preço pela data (49,90 até 10/12 23h59 de Brasília, 79,90 depois). A conta daqui é só pra tela;
+// logo abaixo a página pergunta o preço de agora pro servidor (/api/recado/preco), e quem cobra é o servidor.
+var NATAL=Date.now()<Date.parse('2026-12-11T00:00:00-03:00')?49.90:79.90
+var PAC={noel:[['encanto','Vídeo de Natal','Vídeo do Papai Noel com o nome e a foto + certificado',NATAL],['magico','Magia Completa','Vídeo + certificado + carta + véspera',64.90]],fada:[['recado','Recado da Fada','Vídeo + certificado + carta',39.90]]}
 var f=document.getElementById('f'),foto=null,q=new URLSearchParams(location.search)
-function pacotes(p){document.getElementById('pacotes').innerHTML=PAC[p].map(function(x,i){return '<label><span>'+x[1]+'<small>'+x[2]+'</small></span><span>R$ '+x[3].toFixed(2).replace('.',',')+' <input type="radio" name="pacote" value="'+x[0]+'"'+((q.get('pac')===x[0]||(!q.get('pac')&&i===PAC[p].length-1))?' checked':'')+'></span></label>'}).join('')}
+// ?so=1 (vem da página /papai-noel): mostra só o pacote do ?pac=, sem outras opções
+var SO=q.get('so')==='1'&&q.get('pac')
+function pacotes(p){var marcado=(f.querySelector('input[name=pacote]:checked')||{}).value;if(!PAC[p].some(function(x){return x[0]===marcado}))marcado=null;document.getElementById('pacotes').innerHTML=PAC[p].filter(function(x){return !SO||x[0]===SO}).map(function(x,i){return '<label><span>'+x[1]+'<small>'+x[2]+'</small></span><span style="white-space:nowrap">R$ '+x[3].toFixed(2).replace('.',',')+' <input type="radio" name="pacote" value="'+x[0]+'"'+((marcado?marcado===x[0]:(q.get('pac')===x[0]||(!q.get('pac')&&i===PAC[p].length-1)))?' checked':'')+'></span></label>'}).join('')}
 var qm=document.getElementById('quem');if(q.get('quem')&&qm.querySelector('option[value='+q.get('quem')+']'))qm.value=q.get('quem');function quem(){var o=qm.value!=='mae'&&qm.value!=='pai';document.getElementById('chama-box').style.display=o?'block':'none';document.getElementById('chama-dica').style.display=o?'block':'none';var ch=document.getElementById('chama');if(o&&!ch.value){ch.placeholder={avo:'Ex.: vó Lúcia',avo_m:'Ex.: vô Pedro',tia:'Ex.: tia Carla',tio:'Ex.: tio João',madrinha:'Ex.: dinda Ana',padrinho:'Ex.: dindo Rafa'}[qm.value]||'Ex.: tia Carla'}}qm.addEventListener('change',quem);quem()
 var ini=q.get('p')==='fada'?'fada':'noel';document.querySelector('input[name=personagem][value='+ini+']').checked=true;document.body.className=ini;pacotes(ini)
+// o preço de agora vem do servidor (o mesmo relógio que cobra); se não responder, fica a conta de cima
+fetch('/api/recado/preco',{cache:'no-store'}).then(function(r){return r.json()}).then(function(j){Object.keys(PAC).forEach(function(per){PAC[per].forEach(function(x){var v=j.pacotes&&j.pacotes[per]&&j.pacotes[per][x[0]];if(v)x[3]=+v})});pacotes(document.querySelector('input[name=personagem]:checked').value)}).catch(function(){})
 // veio da página da Fada ou do Natal (?p=): o personagem já está escolhido, então a escolha some e os passos renumeram
 if(q.get('p')){document.getElementById('escolha').style.display='none';[].forEach.call(document.querySelectorAll('.passo h2 i'),function(i){if(/^\d$/.test(i.textContent))i.textContent=+i.textContent-1})}
 f.addEventListener('change',function(e){if(e.target.name==='presente_modo'){document.getElementById('presente').style.display=e.target.value==='presente'?'block':'none'}if(e.target.name==='personagem'){document.body.className=e.target.value;pacotes(e.target.value)}})

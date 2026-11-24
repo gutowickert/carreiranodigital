@@ -8,7 +8,7 @@
 // O gasto da Meta se atualiza sozinho: cron das 6h30 + toda vez que o painel abre e a última leitura tem mais de 2 h.
 import { NextRequest, NextResponse, after } from 'next/server'
 import { recadoDb as db } from '@/lib/recado/db'
-import { recadoConfig as cfg } from '@/lib/recado/config'
+import { recadoConfig as cfg, precoDe } from '@/lib/recado/config'
 import { economia, custoPadrao, sugestao } from '@/lib/recado/economia'
 import { VENDA_ATE, DESAFIOS } from '@/lib/recado/acordo'
 import { sincronizaGastos } from '@/lib/recado/meta-gasto'
@@ -121,7 +121,7 @@ export async function GET(req: NextRequest) {
     } catch (e) { console.error('recado/painel eventos', e) }
     // preço e custo padrão de cada produto, pra o painel calcular margem mesmo antes do vídeo existir
     const produtos: any = {}
-    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`), videos: (economia.videos[`${per}/${pac}`] || [30]).length }
+    for (const [per, pacs] of Object.entries(cfg.pacotes)) for (const [pac, v] of Object.entries(pacs as any)) produtos[`${per}/${pac}`] = { nome: (per === 'noel' ? 'Papai Noel · ' : '') + (v as any).nome, preco: precoDe(per, pac) ?? (v as any).preco, custoPadrao: custoPadrao(`${per}/${pac}`), videos: (economia.videos[`${per}/${pac}`] || [30]).length }
     const [extra, organico] = await Promise.all([extrasDoPainel(desde, pedidos), estadoOrganico().catch(() => null)])   // orgânico: agendador do Instagram (27/10)
     return NextResponse.json({ pedidos, maquina: maquina[0] || null, funil, funilDia, ev: ev.length ? ev : null, suporte, gastos, fixos, metas, cupons, produtos, ...extra, organico,
       regras: { custoMax: economia.custoMax, trafegoMin: economia.trafegoMin, trafegoMax: economia.trafegoMax, dolar: economia.dolar, gpuUsdHora: economia.gpuUsdHora, unit: economia.unit },
