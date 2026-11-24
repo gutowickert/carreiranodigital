@@ -9,7 +9,7 @@ const slug = (s: string) => (s || '').toString().toLowerCase().normalize('NFD').
 export async function GET(req: Request) {
   if (!(await chamadaPermitida(req))) return NextResponse.json({ ok: false, error: 'faça login' }, { status: 401 })
   const org = await orgDaRequest(req.headers.get('authorization'))
-  const { data } = await sb.from('etapas').select('id, chave, label, ordem, cor, papel, ativo').eq('org_id', org).order('ordem', { ascending: true })
+  const { data } = await sb.from('etapas').select('id, chave, label, ordem, cor, papel, ativo, funil').eq('org_id', org).order('ordem', { ascending: true })
   return NextResponse.json({ ok: true, etapas: data || [] })
 }
 
@@ -28,6 +28,8 @@ export async function POST(req: Request) {
         papel: ['ativa', 'ganho', 'perda', 'parking'].includes(e.papel) ? e.papel : 'ativa',
         ativo: e.ativo !== false,
       }
+      // funil (db/funil-maia-online.sql): só grava se a tela mandou — a tela de etapas antiga não manda e não pode apagar
+      if ('funil' in e) campos.funil = (e.funil || '').toString().trim().slice(0, 40) || null
       if (e.id) {
         await sb.from('etapas').update(campos).eq('org_id', org).eq('id', e.id)
       } else {

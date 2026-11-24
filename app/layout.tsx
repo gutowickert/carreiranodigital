@@ -1,6 +1,6 @@
 import './globals.css'
 import Script from 'next/script'
-import { Manrope, Bricolage_Grotesque } from 'next/font/google'
+import { Manrope, Bricolage_Grotesque, Geist, Geist_Mono } from 'next/font/google'
 
 // AS FONTES pelo next/font: o Next baixa na hora de montar o site e serve junto com ele. Antes
 // vinham por @import no globals.css, e o empacotador não passava o pedido adiante — o sistema
@@ -9,6 +9,11 @@ import { Manrope, Bricolage_Grotesque } from 'next/font/google'
 const manrope = Manrope({ subsets: ['latin'], weight: ['400', '500', '600', '700', '800'], variable: '--f-manrope', display: 'swap' })
 // variável, com os eixos de tamanho óptico e largura — é a largura (wdth) que dá o ar condensado do logo
 const bricolage = Bricolage_Grotesque({ subsets: ['latin'], axes: ['opsz', 'wdth'], variable: '--f-bricolage', display: 'swap' })
+// A FONTE DO SISTEMA (24/11/2026, cara nova aprovada pelo Nando): Geist dentro do painel (.sistema-cnd, no
+// components/Layout.tsx) e Geist Mono nos números miúdos (telefone, dias, horas). As páginas públicas (quiz da
+// Maia, check-up, implantação, psi) seguem na Manrope/Bricolage de cada uma — por isso as duas continuam aqui.
+const geist = Geist({ subsets: ['latin'], weight: ['400', '500', '600', '700'], variable: '--f-geist', display: 'swap' })
+const geistMono = Geist_Mono({ subsets: ['latin'], weight: ['400', '500'], variable: '--f-mono', display: 'swap' })
 
 export const metadata = {
   title: 'Carreira No Digital',
@@ -35,7 +40,7 @@ const aplicaTema = `(function(){try{if(localStorage.getItem('tema_reset')!=='2')
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     // suppressHydrationWarning: o script troca o data-theme antes do React montar, e isso é intencional
-    <html lang="pt-BR" data-theme="dark" suppressHydrationWarning className={`${manrope.variable} ${bricolage.variable}`}>
+    <html lang="pt-BR" data-theme="dark" suppressHydrationWarning className={`${manrope.variable} ${bricolage.variable} ${geist.variable} ${geistMono.variable}`}>
       <body>
         {/* beforeInteractive: roda antes de qualquer pintura, no lugar certo do documento (antes o
             <script> solto fora de <html>/<body> gerava o aviso "Cannot render a <script> outside

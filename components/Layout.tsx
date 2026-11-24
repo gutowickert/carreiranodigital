@@ -16,7 +16,7 @@ import {
   Globe, Gauge, Smile, GraduationCap, UserCheck, Send, CalendarRange, MessageSquareText, FileText, List, Wallet,
   ArrowLeftRight, Receipt, Tags, Settings2, UserX, ThumbsDown, ListTodo, DoorOpen, MapPin, Blocks, PiggyBank,
   RefreshCw, Users, UserCog, Settings, Building2, Webhook, LogOut, Menu, X, ChevronDown, Circle, Percent, Handshake, Search,
-  Server, Video, CreditCard, Presentation, KeyRound, BarChart3, Mic,
+  Server, Video, CreditCard, Presentation, KeyRound, BarChart3, Mic, Archive,
   type LucideIcon,
 } from 'lucide-react'
 import { CANAL_CAMPAINHA } from '@/lib/campainha'
@@ -46,40 +46,46 @@ const ICONES: Record<string, LucideIcon> = {
   '/dashboard/financeiro/caixas': PiggyBank, '/dashboard/financeiro/recalcular-trafego': RefreshCw,
   '/dashboard/alunos': Users, '/dashboard/professores': UserCog, '/dashboard/usuarios': Users,
   '/dashboard/configuracoes': Settings, '/dashboard/admin/orgs': Building2, '/dashboard/webhook-logs': Webhook,
-  '/dashboard/instalacoes': Server,
+  '/dashboard/instalacoes': Server, '/dashboard/arquivo': Archive,
 }
 
 // Evita o menu ser renderizado 2x (algumas páginas embrulham em <Layout> e o
 // dashboard/layout.tsx também). Se já estiver dentro de um Layout, não duplica.
 const LayoutMontado = createContext(false)
 
-type Item = { nome: string; href: string; feat?: string }
+// `juntas`: telas que viraram ABAS desta (24/11/2026, menu novo). O item do menu abre a primeira que a pessoa
+// pode ver, e em qualquer uma delas aparece a faixa de abas em cima. As permissões continuam por href.
+type Item = { nome: string; href: string; feat?: string; juntas?: Item[] }
 type Grupo = { titulo: string; itens: Item[] }
 type Perfil = { id: string; nome: string; email: string; papel: string; setor: string; crm_interno: boolean; crm_externo: boolean; leads_escopo: string; wa_caixa: boolean }
 
 // Agente Interno: só estes 3 (Guto, Nando, Rick), mesmo os outros sendo admin.
 const AGENTE_PERMITIDOS = ['guto.wickert@gmail.com', 'debairros@hotmail.com', 'ricardovognach@hotmail.com', 'tizonmidia@gmail.com']
 
-// OS GRUPOS DO MENU — por TRABALHO, não por módulo (direção visual de 11/09/2026).
-// Antes: "CRM", "Dashboards", "Operações", "Cadastros" — nomes de módulo, com "CRM" dentro de "CRM".
-// Agora: o que a pessoa faz. Quem vende abre Vendas; quem dá aula abre Alunos; quem olha número
-// abre Números. Os hrefs são os mesmos (as permissões em itemPermitido são por href, não por grupo).
+// OS GRUPOS DO MENU — MENU NOVO (24/11/2026, aprovado pelo Nando na proposta "Escola: menu novo e cara nova").
+// Medido no banco (16 a 23/11): Rick, Guto e Mateus vivem em WhatsApp, Funil, tarefas, agenda e financeiro.
+// De 71 telas para 22 itens: as parecidas viraram ABAS de uma tela só (`juntas`), e as da escola antiga
+// (sala de aula) foram pro ARQUIVO — saíram do menu, mas a tela existe, o endereço funciona e nada foi apagado
+// (lista em ARQUIVO, logo abaixo). Os hrefs são os mesmos de antes: as permissões (itemPermitido) não mudaram.
 const grupos: Grupo[] = [
   {
     titulo: '',
     itens: [
-      { nome: 'Painel', href: '/dashboard' },
-      // o que a pessoa tem pra entregar (marketing, clientes, aulas, pedidos) — aberta a todos
-      { nome: 'Minha semana', href: '/dashboard/minha-semana' },
+      { nome: 'Início', href: '/dashboard', juntas: [
+        { nome: 'Painel', href: '/dashboard' },
+        { nome: 'Minha semana', href: '/dashboard/minha-semana' },
+      ] },
+      { nome: 'WhatsApp', href: '/dashboard/whatsapp', juntas: [
+        { nome: 'Conversas', href: '/dashboard/whatsapp' },
+        { nome: 'Plantão da IA', href: '/dashboard/ia-plantao' },
+      ] },
+      { nome: 'Funil', href: '/dashboard/crm' },
+      { nome: 'Tarefas', href: '/dashboard/tarefas/leads' },
       { nome: 'Agenda', href: '/dashboard/agenda' },
-      // GRAVAÇÕES (29/10/2026): gravar encontro/aula/reunião e a lista do que nós prometemos — todo o time
-      { nome: 'Gravações', href: '/dashboard/gravacoes' },
     ],
   },
   {
-    // ÁREA PRÓPRIA, por decisão do dono (25/09/2026): a Máquina não é "mais uma tela de IA", é o
-    // lugar onde se trabalha com o sistema. O título vem de organizacoes.config.maquina.nome
-    // (Máquina CND aqui, Studio Mkt na GAJA) — ver rotulo().
+    // ÁREA PRÓPRIA, por decisão do dono (25/09/2026). O título vem de organizacoes.config.maquina.nome — ver rotulo().
     titulo: 'Máquina CND',
     itens: [
       { nome: 'Trabalhar', href: '/dashboard/maquina', feat: 'maquina' },
@@ -88,55 +94,52 @@ const grupos: Grupo[] = [
   {
     titulo: 'Vendas',
     itens: [
-      { nome: 'WhatsApp', href: '/dashboard/whatsapp' },
-      { nome: 'Funil', href: '/dashboard/crm' },
-      { nome: 'Fila de Ligações', href: '/dashboard/ligacoes' },
-      { nome: 'Chamadas', href: '/dashboard/chamadas' },
-      { nome: 'Reuniões', href: '/dashboard/reunioes' },
-      { nome: 'Plantão da IA', href: '/dashboard/ia-plantao' },
-      { nome: 'Tarefas de Leads', href: '/dashboard/tarefas/leads' },
-      { nome: 'Gerar orçamento', href: '/dashboard/orcamentos' },
-      { nome: 'Produtos', href: '/dashboard/produtos' },
-      { nome: 'Datas das Turmas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
-      { nome: 'Fechamento de Turma', href: '/dashboard/fechamento' },
-      { nome: 'Resultados', href: '/dashboard/crm/resultados' },
-      { nome: 'Entregas', href: '/dashboard/entregas' },
-    ],
-  },
-  {
-    titulo: 'Alunos',
-    itens: [
-      { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
-      { nome: 'Chamada', href: '/dashboard/chamada', feat: 'escola' },
-      { nome: 'Alunos', href: '/dashboard/alunos', feat: 'escola' },
-      { nome: 'Professores', href: '/dashboard/professores', feat: 'escola' },
-      { nome: 'Salas', href: '/dashboard/salas', feat: 'escola' },
-      { nome: 'Módulos', href: '/dashboard/modulos', feat: 'escola' },
+      { nome: 'Propostas', href: '/dashboard/orcamentos' },
+      { nome: 'Ligações', href: '/dashboard/ligacoes' },
+      { nome: 'Reuniões e chamadas', href: '/dashboard/reunioes', juntas: [
+        { nome: 'Reuniões', href: '/dashboard/reunioes' },
+        { nome: 'Chamadas', href: '/dashboard/chamadas' },
+        { nome: 'Gravações', href: '/dashboard/gravacoes' },
+      ] },
+      // turma não morreu: as Imersões Deu Venda e a turma do quiz da Maia são turmas. Saiu só a sala de aula.
+      { nome: 'Produtos e turmas', href: '/dashboard/turmas', juntas: [
+        { nome: 'Turmas', href: '/dashboard/turmas', feat: 'escola' },
+        { nome: 'Datas', href: '/dashboard/turmas-mensagens', feat: 'escola' },
+        { nome: 'Alunos', href: '/dashboard/alunos', feat: 'escola' },
+        { nome: 'Produtos', href: '/dashboard/produtos' },
+        { nome: 'Fechamento', href: '/dashboard/fechamento' },
+      ] },
+      { nome: 'Entregas', href: '/dashboard/entregas', juntas: [
+        { nome: 'Entregas', href: '/dashboard/entregas' },
+        { nome: 'Monitor', href: '/dashboard/entregas/monitor' },
+      ] },
     ],
   },
   {
     titulo: 'Marketing',
     itens: [
-      { nome: 'Disparos', href: '/dashboard/disparos' },
+      { nome: 'Disparos', href: '/dashboard/disparos', juntas: [
+        { nome: 'Disparar', href: '/dashboard/disparos' },
+        { nome: 'Agenda', href: '/dashboard/agenda-disparos' },
+        { nome: 'Relatório', href: '/dashboard/disparos/relatorios' },
+        { nome: 'Listas', href: '/dashboard/listas' },
+      ] },
+      { nome: 'Tráfego e site', href: '/dashboard/trafego', juntas: [
+        { nome: 'Tráfego', href: '/dashboard/trafego' },
+        { nome: 'Captação', href: '/dashboard/captacao' },
+        { nome: 'Funil do site', href: '/dashboard/funil-site' },
+      ] },
       { nome: 'Lançamento Maia', href: '/dashboard/lancamento-maia' },
-      { nome: 'Agenda de Disparos', href: '/dashboard/agenda-disparos' },
-      { nome: 'Templates de Follow-up', href: '/dashboard/followup-templates' },
-      { nome: 'Relatório de Disparos', href: '/dashboard/disparos/relatorios' },
-      { nome: 'Listas', href: '/dashboard/listas' },
-      { nome: 'Captação', href: '/dashboard/captacao' },
-      { nome: 'Tráfego', href: '/dashboard/trafego' },
-      { nome: 'Monitor das Entregas', href: '/dashboard/entregas/monitor' },
-      // 'Tráfego dos Clientes' saiu do menu em 27/09/2026: o Monitor das Entregas passou a ler a Meta ao vivo e a
-      // substitui (a tela continua em /dashboard/entregas/trafego pra quem tiver o endereço)
-      { nome: 'Funil do Site', href: '/dashboard/funil-site' },
     ],
   },
   {
     titulo: 'Números',
     itens: [
-      { nome: 'Análise de Conversão', href: '/dashboard/analise-conversao' },
-      { nome: 'Velocidade de Venda', href: '/dashboard/velocidade-venda' },
-      { nome: 'NPS', href: '/dashboard/nps', feat: 'escola' },
+      { nome: 'Resultados', href: '/dashboard/crm/resultados', juntas: [
+        { nome: 'Resultados', href: '/dashboard/crm/resultados' },
+        { nome: 'Conversão', href: '/dashboard/analise-conversao' },
+        { nome: 'Velocidade de venda', href: '/dashboard/velocidade-venda' },
+      ] },
     ],
   },
   {
@@ -144,67 +147,80 @@ const grupos: Grupo[] = [
     titulo: 'Financeiro',
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
-      { nome: 'Fluxo de Caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Contas a Pagar', href: '/dashboard/financeiro/contas-pagar' },
-      // 13/10/2026 (pedido do Rick): as mensalidades dos clientes do CRM, 12 meses, com o "pagou"
-      { nome: 'Clientes com recorrência', href: '/dashboard/financeiro/recorrentes' },
-      { nome: 'Relatório de Receitas', href: '/dashboard/financeiro/receitas' },
-      { nome: 'Relatório de Despesas', href: '/dashboard/financeiro/custos' },
-      // 'Transferências entre Contas' (/dashboard/transferencias) saiu do menu em 02/10/2026: gravava numa
-      // tabela que só ela lia, e o saldo das outras telas não mudava. Transferência se faz em Ajustes →
-      // Caixas; este relatório lista as feitas por lá. A tela antiga continua existindo pelo endereço.
-      { nome: 'Relatório de Transferências', href: '/dashboard/financeiro/transferencias' },
-      // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
-      { nome: 'Nota Fiscal', href: '/dashboard/financeiro/notas-fiscais' },
-      // 13/10/2026 (pedido do Rick): a central de 09/10 repetia os relatórios acima; voltou a
-      // "em construção" e foi pro fim do grupo
-      { nome: 'Relatórios', href: '/dashboard/financeiro/relatorios' },
+      { nome: 'Fluxo de caixa', href: '/dashboard/financeiro/fluxo' },
+      { nome: 'Contas a pagar', href: '/dashboard/financeiro/contas-pagar', juntas: [
+        { nome: 'Contas a pagar', href: '/dashboard/financeiro/contas-pagar' },
+        // 13/10/2026 (pedido do Rick): as mensalidades dos clientes do CRM, 12 meses, com o "pagou"
+        { nome: 'Clientes com recorrência', href: '/dashboard/financeiro/recorrentes' },
+      ] },
+      { nome: 'Relatórios', href: '/dashboard/financeiro/receitas', juntas: [
+        { nome: 'Receitas', href: '/dashboard/financeiro/receitas' },
+        { nome: 'Despesas', href: '/dashboard/financeiro/custos' },
+        { nome: 'Transferências', href: '/dashboard/financeiro/transferencias' },
+        // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
+        { nome: 'Nota fiscal', href: '/dashboard/financeiro/notas-fiscais' },
+      ] },
     ],
   },
   {
-    titulo: 'Inteligência Artificial',
+    titulo: 'Inteligência',
     itens: [
-      { nome: 'Agente Interno', href: '/dashboard/agente-interno' },
-      { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
-      { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
-      { nome: 'Qualidade IA', href: '/dashboard/qualidade-ia' },
-      { nome: 'IA do fim de semana', href: '/dashboard/ia-fds' },
-      { nome: 'Automação IA', href: '/dashboard/automacao-ia' },
-      { nome: 'Custo da IA', href: '/dashboard/ia-uso' },
+      { nome: 'Central da IA', href: '/dashboard/agente-interno', juntas: [
+        { nome: 'Agente interno', href: '/dashboard/agente-interno' },
+        { nome: 'Follow-up automático', href: '/dashboard/followup-ia' },
+        { nome: 'Modelos de follow-up', href: '/dashboard/followup-templates' },
+        { nome: 'Mapa do funil', href: '/dashboard/mapa-funil' },
+        { nome: 'Qualidade', href: '/dashboard/qualidade-ia' },
+        { nome: 'Fim de semana', href: '/dashboard/ia-fds' },
+        { nome: 'Automação', href: '/dashboard/automacao-ia' },
+        { nome: 'Custo', href: '/dashboard/ia-uso' },
+      ] },
     ],
   },
   {
-    // O software que a gente vende, visto de fora: quem roda um sistema nosso, em que pé está a
-    // implantação de cada um, e quem paga.
-    // Só admin (ver itemPermitido): aqui aparece o endereço do sistema de cada cliente e o valor
-    // do contrato dele.
-    titulo: 'Sistemas',
+    // O software que a gente vende, visto de fora. Só admin (ver itemPermitido): aqui aparece o endereço do
+    // sistema de cada cliente e o valor do contrato dele.
+    titulo: 'CND',
     itens: [
-      { nome: 'Clientes do CRM', href: '/dashboard/instalacoes' },
-      // o que o sistema faz, cada cliente, a implantação e o manual do cliente — pros admins
-      { nome: 'Manual', href: '/dashboard/sistemas/manual' },
+      { nome: 'Clientes do sistema', href: '/dashboard/instalacoes', juntas: [
+        { nome: 'Clientes do CRM', href: '/dashboard/instalacoes' },
+        { nome: 'Manual', href: '/dashboard/sistemas/manual' },
+      ] },
     ],
   },
   {
     titulo: 'Ajustes',
     itens: [
-      { nome: 'Comercial', href: '' },
-      { nome: 'Config CRM', href: '/dashboard/crm/config' },
-      { nome: 'Motivos de Perda', href: '/dashboard/motivos-perda' },
-      { nome: 'Templates de Tarefas', href: '/dashboard/tarefas/templates' },
-      { nome: 'Matrículas Órfãs', href: '/dashboard/matriculas-orfas' },
-      { nome: 'Cidades', href: '/dashboard/cidades' },
-      { nome: 'Financeiro', href: '' },
-      { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
-      { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
-      { nome: 'Recalcular Tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
-      { nome: 'Sistema', href: '' },
-      { nome: 'Usuários', href: '/dashboard/usuarios' },
-      { nome: 'Configurações', href: '/dashboard/configuracoes' },
-      { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs', feat: 'superadmin' },
-      { nome: 'Webhook Logs', href: '/dashboard/webhook-logs' },
+      { nome: 'Ajustes', href: '/dashboard/crm/config', juntas: [
+        { nome: 'Config CRM', href: '/dashboard/crm/config' },
+        { nome: 'Motivos de perda', href: '/dashboard/motivos-perda' },
+        { nome: 'Modelos de tarefas', href: '/dashboard/tarefas/templates' },
+        { nome: 'Naturezas', href: '/dashboard/financeiro/naturezas' },
+        { nome: 'Caixas', href: '/dashboard/financeiro/caixas' },
+        { nome: 'Recalcular tráfego', href: '/dashboard/financeiro/recalcular-trafego' },
+        { nome: 'Usuários', href: '/dashboard/usuarios' },
+        { nome: 'Configurações', href: '/dashboard/configuracoes' },
+        { nome: 'Webhook logs', href: '/dashboard/webhook-logs' },
+      ] },
+      { nome: 'Arquivo', href: '/dashboard/arquivo' },
     ],
   },
+]
+
+// O ARQUIVO (24/11/2026): telas que saíram do menu porque ninguém usa mais (medido no banco). Continuam no ar
+// pelo endereço e na tela /dashboard/arquivo; nada foi apagado. Pra voltar ao menu: tirar daqui e pôr num grupo.
+export const ARQUIVO: { nome: string; href: string; porque: string }[] = [
+  { nome: 'Chamada', href: '/dashboard/chamada', porque: 'Última presença marcada em 19/08/2026.' },
+  { nome: 'Professores', href: '/dashboard/professores', porque: 'Sem mudança desde 04/07/2026.' },
+  { nome: 'Salas', href: '/dashboard/salas', porque: 'Sem mudança desde 04/07/2026.' },
+  { nome: 'Módulos', href: '/dashboard/modulos', porque: '4 cadastros antigos.' },
+  { nome: 'Agenda de aulas', href: '/dashboard/agenda/aulas', porque: 'Última aula marcada em 06/08/2026.' },
+  { nome: 'NPS', href: '/dashboard/nps', porque: '7 respostas, a última em 10/07/2026.' },
+  { nome: 'Cidades', href: '/dashboard/cidades', porque: '7 cidades, sem mudança desde 04/07/2026.' },
+  { nome: 'Matrículas órfãs', href: '/dashboard/matriculas-orfas', porque: 'Ferramenta de conserto da época das turmas.' },
+  { nome: 'Relatórios financeiros (em construção)', href: '/dashboard/financeiro/relatorios', porque: 'Estava marcada "em construção"; os relatórios de verdade estão em Financeiro → Relatórios.' },
+  { nome: 'Organizações (SaaS)', href: '/dashboard/admin/orgs', porque: 'Os clientes são acompanhados pelo Deck.' },
+  { nome: 'CRM externo', href: '/dashboard/crm-externo', porque: 'Nenhuma prospecção cadastrada.' },
 ]
 
 // Bipe curto pra avisar nova mensagem (sem precisar de arquivo de áudio)
@@ -239,6 +255,7 @@ function itemPermitido(href: string, p: Perfil): boolean {
   // Instalações é só de admin, e a rota confere de novo no servidor — menu escondido é decoração
   // se a rota responde pra qualquer um.
   if (href === '/dashboard/instalacoes' || href.startsWith('/dashboard/sistemas/')) return p.papel === 'admin'
+  if (href === '/dashboard/arquivo') return p.papel === 'admin'
   if (p.papel === 'admin') return true
 
   // GESTOR — o degrau que faltava entre "vê tudo" e "vê quase nada".
@@ -565,9 +582,17 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // a área da Máquina se chama como a empresa quiser (Máquina CND aqui, Studio Mkt na GAJA)
   const nomeMaquina = marca?.config?.maquina?.nome
   const rotulo = (g: Grupo): Grupo => g.titulo === 'Máquina CND' && nomeMaquina ? { ...g, titulo: nomeMaquina } : g
+  // item com abas: fica só com as abas que a pessoa pode ver, e abre na primeira delas (some se não sobrar nenhuma)
+  const resolveJuntas = (i: Item): Item | null => {
+    if (!i.juntas) return i
+    const vis = i.juntas.filter(j => itemPermitido(j.href, perfil!) && featOk(j))
+    if (!vis.length) return null
+    return { ...i, href: vis[0].href, juntas: vis }
+  }
+  const estaEm = (m: Item) => pathname === m.href || !!m.juntas?.some(j => pathname === j.href)
   const gruposVisiveis = grupos
     .map(rotulo)
-    .map(g => ({ ...g, itens: limpaLabels(g.itens.filter(i => itemPermitido(i.href, perfil!) && featOk(i))) }))
+    .map(g => ({ ...g, itens: limpaLabels(g.itens.map(resolveJuntas).filter((i): i is Item => !!i && itemPermitido(i.href, perfil!) && featOk(i))) }))
     .filter(g => g.itens.some(i => i.href))
 
   // NO CELULAR O SISTEMA É UM APP (27/09/2026, pedido do Guto: "layout de app super resolutivo").
@@ -577,7 +602,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   // não tem caixa do WhatsApp ganha a Fila de Ligações no lugar.
   const permitido = (href: string) => gruposVisiveis.some(g => g.itens.some(i => i.href === href))
   const ABAS_CANDIDATAS: { href: string; nome: string; alternativa?: string; nomeAlt?: string }[] = [
-    { href: '/dashboard', nome: 'Painel' },
+    { href: '/dashboard', nome: 'Início' },
     { href: '/dashboard/whatsapp', nome: 'WhatsApp', alternativa: '/dashboard/ligacoes', nomeAlt: 'Ligações' },
     { href: '/dashboard/agenda', nome: 'Agenda' },
     { href: '/dashboard/crm', nome: 'Funil', alternativa: '/dashboard/tarefas/leads', nomeAlt: 'Tarefas' },
@@ -621,7 +646,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
   ) : null
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
+    <div className="sistema-cnd" style={{ display: 'flex', minHeight: '100vh', position: 'relative', ...(marca?.cor ? { ['--accent' as any]: marca.cor, ['--accent-soft' as any]: marca.cor } : {}) }}>
       {/* A luz atrás de tudo — é o que o vidro do menu e dos painéis desfoca. Fixa, desenhada uma vez. */}
       <div className="luz-de-fundo" aria-hidden="true" />
 
@@ -666,7 +691,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
               <span style={{ position: 'relative', lineHeight: 0 }}>
                 <Menu size={23} strokeWidth={1.8} />
                 {(() => {
-                  const noMais = somaDe(gruposVisiveis.flatMap(g => g.itens.map(i => i.href)).filter(h => h && !abas.some(a => a.href === h)), abas.map(a => a.href))
+                  const noMais = somaDe(gruposVisiveis.flatMap(g => g.itens.flatMap(i => i.juntas ? i.juntas.map(j => j.href) : [i.href])).filter(h => h && !abas.some(a => a.href === h)), abas.map(a => a.href))
                   const n = noMais.acao || noMais.msg
                   return n > 0 && <span className="app-balao" style={{ background: noMais.acao ? 'var(--red)' : '#25D366', color: noMais.acao ? '#fff' : '#063' }}>{n > 99 ? '99+' : n}</span>
                 })()}
@@ -706,7 +731,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
                       {reais.map(m => {
                         const Icone = ICONES[m.href] || Circle
-                        const ativo = pathname === m.href
+                        const ativo = estaEm(m)
                         const { n: balao, acao: balaoAcao } = contagemDe(m.href)
                         return (
                           <Link key={m.href} href={m.href} className={'app-tile' + (ativo ? ' ativo' : '')}>
@@ -803,7 +828,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                     }}>
                       <span style={{ flex: 1, textAlign: 'left' }}>{grupo.titulo}</span>
                       {!abertos[grupo.titulo] && (() => {
-                        const g = somaDe(grupo.itens.map(i => i.href).filter(Boolean))
+                        const g = somaDe(grupo.itens.flatMap(i => i.juntas ? i.juntas.map(j => j.href) : [i.href]).filter(Boolean))
                         return (g.msg > 0 || g.acao > 0) && (
                           <span style={{ display: 'flex', gap: 4, marginRight: 6 }}>
                             {pilula(g.msg, false, 'Novidades aqui dentro (mensagens, propostas)')}
@@ -820,7 +845,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                         if (!m.href) return (
                           <div key={'lbl-' + mi} style={{ fontSize: 10, fontWeight: 800, color: 'var(--text-faint)', textTransform: 'uppercase', letterSpacing: '.08em', padding: '10px 10px 2px 12px', opacity: .7 }}>{m.nome}</div>
                         )
-                        const ativo = pathname === m.href
+                        const ativo = estaEm(m)
                         const Icone = ICONES[m.href] || Circle
                         return (
                           <Link key={m.href} href={m.href} className={'navItem' + (ativo ? ' ativo' : '')} style={{
@@ -851,6 +876,7 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
                               </span>
                             )}
                             {m.href === '/dashboard/tarefas/leads' && pilula(tarefasVenc, true, 'Tarefas vencidas de leads que estão com o time')}
+                            {m.juntas && m.juntas.some(j => j.href === '/dashboard/ia-plantao') && pilula(plantaoAvisos, true, 'Avisos do plantão da IA esperando alguém do time')}
                             {m.href === '/dashboard/ia-plantao' && pilula(plantaoAvisos, true, 'Avisos do plantão da IA esperando alguém do time')}
                             {m.href === '/dashboard/producao' && pilula(producaoAtras, true, 'Pedidos com o prazo vencido e ainda não entregues')}
                             {/* vermelho, não verde: não é mensagem chegando, é coisa minha pra fazer */}
@@ -920,11 +946,31 @@ function LayoutInterno({ children }: { children: React.ReactNode }) {
             ))}
           </div>
         )}
+        {(() => {
+          // a faixa de abas das telas que viraram uma só (menu novo, 24/11/2026)
+          const dono = gruposVisiveis.flatMap(g => g.itens).find(i => i.juntas && i.juntas.length > 1 && i.juntas.some(j => j.href === pathname))
+          if (!dono) return null
+          return (
+            <nav className="abas-juntas" aria-label={dono.nome}>
+              <span className="abas-juntas-tit">{dono.nome}</span>
+              <span className="abas-juntas-seg">
+                {dono.juntas!.map(j => {
+                  const c = contagemDe(j.href)
+                  return (
+                    <Link key={j.href} href={j.href} aria-current={pathname === j.href ? 'page' : undefined}>
+                      {j.nome}{c.n > 0 && <span className={'abas-juntas-n' + (c.acao ? ' acao' : '')}>{c.n > 99 ? '99+' : c.n}</span>}
+                    </Link>
+                  )
+                })}
+              </span>
+            </nav>
+          )
+        })()}
         {children}
       </div>
       {paletaAberta && (
         <Paleta onFechar={() => setPaletaAberta(false)}
-          telas={gruposVisiveis.flatMap(g => g.itens.filter(i => i.href).map((i): Tela => ({ nome: i.nome, href: i.href, grupo: g.titulo, icone: ICONES[i.href] })))} />
+          telas={gruposVisiveis.flatMap(g => g.itens.filter(i => i.href).flatMap((i): Tela[] => (i.juntas && i.juntas.length > 1 ? i.juntas : [i]).map(j => ({ nome: j.nome === i.nome || !i.juntas ? j.nome : `${i.nome} · ${j.nome}`, href: j.href, grupo: g.titulo, icone: ICONES[j.href] }))))} />
       )}
     </div>
   )
