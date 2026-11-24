@@ -17,21 +17,26 @@ const perfis = {
 }
 
 const R = n => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
+const linhas = []
 for (const [nicho, lista] of Object.entries(perfis)) {
   for (const [nome, r] of lista) {
     const d = diagnosticar(nicho, r, 'Teste')
     assert.ok(d.completo, 'respostas completas')
-    const fat = d.volume * d.ticket
-    console.log(`\n${nicho.toUpperCase()} ${nome}: ${d.volume} ${QUIZZES[nicho].unidade[1]}/mês x ${R(d.ticket)} = faturamento ~${R(fat)}/mês`)
-    for (const p of d.pontos) console.log(`  - ${p.titulo}: ${p.valor_mes ? R(p.valor_mes) + '/mês · ' + p.quantidade : '(fora da conta)'}`)
-    console.log(`  TOTAL ${R(d.total_mes)}/mês (${(d.total_mes / fat * 100).toFixed(1)}% do faturamento) · principal: ${d.principal.titulo}`)
-    if (d.bem.length) console.log(`  já faz bem: ${d.bem.length}`)
-    // conservador: a conta nunca passa de 10% do faturamento estimado
-    assert.ok(d.total_mes <= fat * 0.1, 'conta conservadora (<= 10% do faturamento)')
-    assert.ok(d.pontos.length >= 2 && d.pontos.length <= 4)
-    for (const p of d.pontos) if (p.valor_mes > 0) assert.ok(p.premissa && p.premissa.startsWith('Considerando'))
+    const u = QUIZZES[nicho].unidade[1]
+    console.log(`\n${nicho.toUpperCase()} ${nome}: ${d.volume} ${u}/mês x ${R(d.ticket)} = faturamento ~${R(d.faturamento)}/mês`)
+    for (const p of d.pontos) console.log(`  - NA MESA ${p.titulo}: ${R(p.valor_mes)}/mês · ${R(p.valor_mes * 12)}/ano · ${p.quantidade}`)
+    const g = d.ganho
+    console.log(`  + A GANHAR (${g.modo}) verba ${R(g.verba)} -> ${g.conversas} conversas -> ${g.quantidade} = ${R(g.valor_mes)}/mês · ${R(g.valor_ano)}/ano · retorno R$ ${g.retorno} por R$ 1${g.limitado ? ' (limitado a 50% do faturamento)' : ''}`)
+    console.log(`  TOTAL na mesa ${R(d.na_mesa_mes)} + a ganhar ${R(g.valor_mes)} = ${R(d.oportunidade_mes)}/mês (${R(d.oportunidade_ano)}/ano, ~${d.unidades_mes.toFixed(1)} ${u}/mês) · ${d.pagam_maia} ${u} pagam a Maia`)
+    linhas.push(`| ${nicho} ${nome} | ${R(d.na_mesa_mes)} | ${R(g.valor_mes)} | ${R(d.oportunidade_mes)} (${R(d.oportunidade_ano)}/ano) | ${d.pagam_maia} |`)
+    // perdas conservadoras: na mesa nunca passa de 10% do faturamento; ganho do anúncio nunca passa de 50%
+    assert.ok(d.na_mesa_mes <= d.faturamento * 0.1, 'na mesa conservador')
+    assert.ok(g.valor_mes <= d.faturamento * 0.5 + 10, 'trava do ganho')
+    assert.ok(g.premissa.startsWith('Considerando'))
+    for (const p of d.pontos) assert.ok(p.premissa && p.premissa.startsWith('Considerando'))
   }
 }
+console.log('\n| Perfil | Na mesa/mês | A ganhar/mês | Total/mês | Pagam a Maia |\n|---|---|---|---|---|\n' + linhas.join('\n'))
 
 // resposta incompleta nunca aumenta a conta
 const vazio = diagnosticar('oficina', {})

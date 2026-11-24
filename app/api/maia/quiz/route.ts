@@ -69,11 +69,14 @@ export async function POST(req: NextRequest) {
 
   // ---- o que o vendedor lê no card ----
   const onde = `${cidade}/${uf}`
-  const resumo = `Quiz da Maia (${q.nome}): ${negocio}, ${onde}. Perda estimada ${reais(d.total_mes)}/mês. Principal: ${d.principal.titulo}${d.principal.valor_mes ? ` (${reais(d.principal.valor_mes)}/mês)` : ''}.`
+  const g = d.ganho
+  const resumo = `Quiz da Maia (${q.nome}): ${negocio}, ${onde}. Oportunidade ${reais(d.oportunidade_mes)}/mês (na mesa ${reais(d.na_mesa_mes)} + a ganhar com anúncio ${reais(g.valor_mes)}). Principal: ${d.principal.titulo}.`
   const obs = [
     resumo,
     uf === 'RS' ? 'ATENÇÃO: é do RS. A oferta online (R$ 497 + R$ 797) é pra fora do RS; ver com o Guto qual oferta passar.' : '',
-    `Pontos do diagnóstico:\n${d.pontos.map(x => `• ${x.titulo}: ${x.valor_mes ? `${reais(x.valor_mes)}/mês (${x.quantidade})` : 'fora da conta'}`).join('\n')}`,
+    `Na mesa hoje:\n${d.pontos.map(x => `• ${x.titulo}: ${reais(x.valor_mes)}/mês (${x.quantidade})`).join('\n')}`,
+    `A ganhar com anúncio (${g.modo === 'novo' ? 'não anuncia; verba sugerida' : 'já anuncia'} ${reais(g.verba)}/mês): ${reais(g.valor_mes)}/mês, ${g.quantidade}, retorno de cerca de R$ ${String(g.retorno).replace('.', ',')} por R$ 1.`,
+    `${d.pagam_maia} ${d.pagam_maia === 1 ? q.unidade[0] : q.unidade[1]} por mês pagam a mensalidade (valor médio ${reais(d.ticket)}).`,
     d.bem.length ? `Já faz bem:\n${d.bem.map(x => '• ' + x).join('\n')}` : '',
     `Respostas:\n${Object.entries(d.respostas_legiveis).map(([k, v]) => `• ${k} ${v}`).join('\n')}`,
     `Oferta mostrada: 1º mês R$ 497 com implantação online, depois R$ 797/mês, sem fidelidade. Código ${codigo}.`,
@@ -100,7 +103,7 @@ export async function POST(req: NextRequest) {
       observacoes: resumo,
       qualificacao: {
         maia_quiz: codigo, produto: 'Maia', nicho, negocio, cidade, uf,
-        perda_mes: d.total_mes, principal: d.principal.titulo,
+        na_mesa_mes: d.na_mesa_mes, ganho_anuncio_mes: g.valor_mes, oportunidade_mes: d.oportunidade_mes, principal: d.principal.titulo,
         pontos: d.pontos.map(x => ({ ponto: x.titulo, valor_mes: x.valor_mes })),
         respostas: r,
       },
@@ -123,7 +126,7 @@ export async function POST(req: NextRequest) {
   if (leadId) {
     await sb.from('lead_andamentos').insert({ lead_id: leadId, vendedor_id: vendedorId, tipo: criado ? 'criado' : 'observacao', etapa_nova: criado ? 'aguardando_atendimento' : null, observacao: `${criado ? 'Lead criado pelo' : 'Fez o'} Quiz da Maia (${q.nome}).\n\n${obs}`.slice(0, 3000) })
     await sb.from('tarefas_lead').insert({ org_id: ORG_CND, lead_id: leadId, tipo: 'ligar_agendado', titulo: `Quiz da Maia: chamar ${nome} (${negocio}) e fechar a implantação online`.slice(0, 200), descricao: obs.slice(0, 1500), data_vencimento: new Date().toISOString() })
-    try { await enviarPush('Quiz da Maia feito', `${nome} (${q.nome} ${negocio}, ${onde}) viu o diagnóstico: ${reais(d.total_mes)}/mês. Chama enquanto está quente.`.slice(0, 140), '/dashboard/whatsapp') } catch (e) { console.error('push (maia quiz):', e) }
+    try { await enviarPush('Quiz da Maia feito', `${nome} (${q.nome} ${negocio}, ${onde}) viu o diagnóstico: ${reais(d.oportunidade_mes)}/mês. Chama enquanto está quente.`.slice(0, 140), '/dashboard/whatsapp') } catch (e) { console.error('push (maia quiz):', e) }
     // a página já disparou o Lead no pixel com este event_id: a Meta junta os dois e conta um só
     try {
       const capi = await sendLead({ eventId, eventSourceUrl: origem.pagina, phone: whatsapp, firstName: nome.split(' ')[0], fbp: origem.fbp, fbc: origem.fbc, clientIp: ip, userAgent, externalId: leadId, codigoTurma: TURMA_QUIZ })

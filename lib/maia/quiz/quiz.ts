@@ -51,9 +51,9 @@ const RESPOSTA = (quem: string, onde: string): Opcao[] => [
 const ANUNCIO: Opcao[] = [
   { v: 'nao', t: 'Não anuncio' },
   { v: 'parei', t: 'Já anunciei e parei' },
-  { v: 'ate500', t: 'Sim, até R$ 500 por mês' },
-  { v: '500a1500', t: 'Sim, de R$ 500 a R$ 1.500 por mês' },
-  { v: 'mais1500', t: 'Sim, mais de R$ 1.500 por mês' },
+  { v: 'ate500', t: 'Sim, até R$ 500 por mês', n: 400 },
+  { v: '500a1500', t: 'Sim, de R$ 500 a R$ 1.500 por mês', n: 900 },
+  { v: 'mais1500', t: 'Sim, mais de R$ 1.500 por mês', n: 2000 },
 ]
 
 export const QUIZZES: Record<Nicho, Quiz> = {
@@ -61,7 +61,7 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     nicho: 'oficina', nome: 'oficina', artigo: 'a', unidade: ['carro', 'carros'], servico: 'serviço',
     eyebrow: 'Diagnóstico para oficinas',
     titulo: 'Quanto a sua oficina deixa de faturar por mês com mensagem sem resposta e orçamento parado?',
-    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa e o que dá pra fazer em cada ponto.',
+    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
     perguntas: [
       { id: 'tipo', titulo: 'Qual é o forte da sua oficina?', opcoes: [
         { v: 'mecanica', t: 'Mecânica geral' },
@@ -109,7 +109,7 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     nicho: 'otica', nome: 'ótica', artigo: 'a', unidade: ['óculos', 'óculos'], servico: 'venda',
     eyebrow: 'Diagnóstico para óticas',
     titulo: 'Quantos óculos a sua ótica deixa de vender por mês sem perceber?',
-    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa e o que dá pra fazer em cada ponto.',
+    sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, onde o cliente escapa, quanto dá pra ganhar a mais e o que a Maia faz em cada ponto.',
     perguntas: [
       { id: 'tipo', titulo: 'Como é a sua ótica?', opcoes: [
         { v: 'rua', t: 'Loja de rua' },
@@ -167,11 +167,18 @@ export const PREMISSAS = {
   base_mes: { nada: 1 / 300, asvezes: 1 / 600, rotina: 0 } as Record<string, number>, // clientes do último ano que voltam por mês com o recado
   base_valor: 0.5,              // quem volta pelo recado conta metade do valor médio (revisão, lente nova, óculos de sol)
   base_reduz: { retifica: 0.5, funilaria: 0.5 } as Record<string, number>,  // serviço que não se repete tanto: metade
+  // o lado do ganho (tráfego pago com a Maia)
+  verba_sugerida: 900,          // R$ 30 por dia, sugestão pra quem não anuncia
+  custo_conversa: 12,           // R$ por conversa no WhatsApp: faixa de R$ 8 a R$ 15, usamos o lado mais caro
+  fecha_anuncio: 1 / 8,         // 1 em 8 conversas atendidas na hora e com retomada vira serviço/venda
+  valor_anuncio: 0.7,           // cliente novo do anúncio: contamos 70% do valor médio (o primeiro serviço costuma ser menor)
+  melhora_otimizando: 0.2,      // quem já anuncia: +20% de vendas com a mesma verba (cortar o que não vende, replicar o que vende)
+  teto_ganho: 0.5,              // trava de sanidade: o ganho do anúncio nunca passa da metade do faturamento de hoje
 }
 
 // ---------------- o diagnóstico ----------------
 export type Ponto = {
-  id: 'resposta' | 'retomada' | 'base' | 'anuncio'
+  id: 'resposta' | 'retomada' | 'base'
   titulo: string
   onde_perde: string
   maia_faz: string
@@ -180,21 +187,43 @@ export type Ponto = {
   valor_mes: number             // R$ por mês (arredondado pra baixo, de 10 em 10)
   quantidade: string | null     // "cerca de 1,4 carro por mês" / "cerca de 8 óculos por ano"
 }
+export type Ganho = {
+  modo: 'novo' | 'otimizar'     // novo = não anuncia hoje (verba sugerida) · otimizar = já anuncia
+  titulo: string
+  contexto: string
+  verba: number                 // R$ por mês
+  verba_sugerida: boolean
+  custo_conversa: number
+  conversas: number             // por mês
+  unidades_mes: number          // carros / óculos a mais por mês
+  valor_mes: number
+  valor_ano: number
+  retorno: number               // R$ em serviço/venda a cada R$ 1 de anúncio (com a Maia)
+  limitado: boolean             // bateu na trava de metade do faturamento
+  premissa: string
+  quantidade: string | null
+}
 export type Diagnostico = {
   nicho: Nicho
   negocio: string
   volume: number
   ticket: number
-  pontos: Ponto[]
+  faturamento: number           // volume x ticket (estimado pelas faixas)
+  pontos: Ponto[]               // o que fica na mesa hoje
+  ganho: Ganho                  // o que dá pra ganhar a mais com anúncio
   bem: string[]                 // o que o dono já faz bem
-  total_mes: number
-  total_ano: number
-  principal: Ponto
+  na_mesa_mes: number
+  na_mesa_ano: number
+  oportunidade_mes: number      // na mesa + ganho
+  oportunidade_ano: number
+  unidades_mes: number          // carros / óculos que a oportunidade representa por mês
+  pagam_maia: number            // quantos serviços/óculos por mês pagam a mensalidade
+  principal: { titulo: string; valor_mes: number }
   respostas_legiveis: Record<string, string>
   completo: boolean
 }
 
-const reais = (n: number) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
+const reais = (n: number) => 'R$ ' + Math.round(n).toLocaleString('pt-BR')
 const dec = (n: number) => (Math.round(n * 10) / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 })
 const baixo10 = (n: number) => Math.max(0, Math.floor(n / 10) * 10)
 const umEm = (x: number) => `1 em cada ${Math.round(1 / x)}`
@@ -305,26 +334,51 @@ export function diagnosticar(nicho: Nicho, r: Record<string, any>, negocioNome =
     }
   }
 
-  // 4) anúncio (não entra na conta: depende da verba e da cidade)
-  {
-    const naoAnuncia = anuncio === 'nao' || anuncio === 'parei'
-    const dependeDe = origem === 'indicacao' ? 'da indicação' : origem === 'passam' ? `de quem passa na frente ${daSua}` : origem === 'google' ? 'do Google' : origem === 'instagram' ? 'das postagens no Instagram' : ''
-    pontos.push({
-      id: 'anuncio',
-      titulo: naoAnuncia ? `Quem ainda não conhece ${sua} não fica sabendo dela` : 'Anúncio que traz contato, mas depende de quem responde',
-      onde_perde: naoAnuncia
-        ? `${dependeDe ? `Hoje o cliente novo depende ${dependeDe}. ` : ''}Quando isso desacelera, o movimento cai junto, e não tem como ligar de volta. ${anuncio === 'parei' ? 'Anúncio que foi parado costuma ter parado por falta de tempo pra acompanhar ou de resposta rápida pra quem chamou.' : ''}`.trim()
-        : 'Cada contato do anúncio custa dinheiro. Se a mensagem espera horas pra ser respondida, ou se ninguém olha o que está vendendo e o que não está, parte da verba vai embora.',
-      maia_faz: 'A Maia cria e roda os anúncios no Facebook e no Instagram mostrando o seu trabalho pra quem está perto, responde quem chama em até 1 minuto e manda o relatório pro seu WhatsApp: quanto gastou, quantos chamaram, quantos fecharam. A verba do anúncio é sua, paga direto à Meta.',
-      premissa: null, unidades_mes: 0, valor_mes: 0, quantidade: null,
-    })
+  // 4) o lado do GANHO: tráfego pago com a Maia medindo de ponta a ponta
+  const naoAnuncia = anuncio === 'nao' || anuncio === 'parei'
+  const verbaAtual = ANUNCIO.find(o => o.v === anuncio)?.n || 0
+  const verba = naoAnuncia || !verbaAtual ? P.verba_sugerida : verbaAtual
+  const conversas = verba / P.custo_conversa
+  const vendasBase = conversas * P.fecha_anuncio
+  let uG = naoAnuncia ? vendasBase : vendasBase * P.melhora_otimizando
+  const faturamento = volume * ticket
+  const vAnuncio = ticket * P.valor_anuncio
+  const teto = (faturamento * P.teto_ganho) / vAnuncio
+  const limitado = uG > teto
+  if (limitado) uG = teto
+  const ganhoMes = baixo10(uG * vAnuncio)
+  const vendasComMaia = naoAnuncia ? uG : vendasBase + uG
+  const retorno = verba > 0 ? (vendasComMaia * vAnuncio) / verba : 0
+  const dependeDe = origem === 'indicacao' ? 'da indicação' : origem === 'passam' ? `de quem passa na frente ${daSua}` : origem === 'google' ? 'do Google' : origem === 'instagram' ? 'das postagens no Instagram' : ''
+  const ganho: Ganho = {
+    modo: naoAnuncia ? 'novo' : 'otimizar',
+    titulo: naoAnuncia ? `Cliente novo que chega pelo anúncio` : 'A mesma verba rendendo mais',
+    contexto: naoAnuncia
+      ? `${dependeDe ? `Hoje o cliente novo depende ${dependeDe}. ` : ''}Quando isso desacelera, o movimento cai junto. Anúncio bem feito, com resposta na hora, traz gente da sua cidade que ainda não conhece ${sua}.${anuncio === 'parei' ? ' Anúncio que foi parado costuma ter parado por falta de tempo pra acompanhar ou de resposta rápida pra quem chamou: as duas coisas a Maia faz.' : ''}`
+      : `Você já investe ${reais(verbaAtual)} por mês, mais ou menos. O que define o resultado é saber qual anúncio vende e qual só traz curioso, e responder quem chama na hora. Sem isso, parte da verba vai embora sem ninguém perceber.`,
+    verba, verba_sugerida: naoAnuncia, custo_conversa: P.custo_conversa, conversas: Math.floor(conversas),
+    unidades_mes: uG, valor_mes: ganhoMes, valor_ano: ganhoMes * 12, retorno: Math.floor(retorno * 10) / 10, limitado,
+    premissa: naoAnuncia
+      ? `Considerando uma verba inicial sugerida de ${reais(verba)} por mês (R$ 30 por dia, paga por você direto à Meta), um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}, o lado mais caro), o que dá ${Math.floor(conversas)} conversas por mês, e que ${umEm(P.fecha_anuncio)} conversas atendidas na hora e com retomada vira ${ofi ? 'serviço' : 'venda'}, contando 70% do seu valor médio (${reais(vAnuncio)}), porque o primeiro ${ofi ? 'serviço' : 'pedido'} de quem chega pelo anúncio costuma ser menor.${limitado ? ` Limitamos o ganho à metade do seu faturamento de hoje (${reais(faturamento)}), pra conta não sair do tamanho ${daSua}.` : ''}`
+      : `Considerando a sua verba de cerca de ${reais(verba)} por mês, um custo por conversa no WhatsApp entre R$ 8 e R$ 15 (usamos ${reais(P.custo_conversa)}), o que dá ${Math.floor(conversas)} conversas, que ${umEm(P.fecha_anuncio)} vira ${ofi ? 'serviço' : 'venda'} (${dec(vendasBase)} por mês hoje, contando 70% do seu valor médio, ${reais(vAnuncio)}) e que, com a Maia medindo cada venda, cortando o que não vende e replicando o que vende, a mesma verba rende ${Math.round(P.melhora_otimizando * 100)}% a mais.${limitado ? ` Limitamos o ganho à metade do seu faturamento de hoje.` : ''}`,
+    quantidade: quantos(uG, q),
   }
 
-  const total_mes = pontos.reduce((s, p) => s + p.valor_mes, 0)
+  const na_mesa_mes = pontos.reduce((s, p) => s + p.valor_mes, 0)
+  const unidades_mesa = pontos.reduce((s, p) => s + p.unidades_mes, 0)
+  const oportunidade_mes = na_mesa_mes + ganho.valor_mes
   const comNumero = pontos.filter(p => p.valor_mes > 0).sort((a, b) => b.valor_mes - a.valor_mes)
+  const maior = comNumero[0]
+  const principal = !maior || ganho.valor_mes > maior.valor_mes
+    ? { titulo: ganho.titulo, valor_mes: ganho.valor_mes }
+    : { titulo: maior.titulo, valor_mes: maior.valor_mes }
   return {
-    nicho, negocio, volume, ticket, pontos, bem, total_mes, total_ano: total_mes * 12,
-    principal: comNumero[0] || pontos[0],
+    nicho, negocio, volume, ticket, faturamento, pontos, ganho, bem,
+    na_mesa_mes, na_mesa_ano: na_mesa_mes * 12,
+    oportunidade_mes, oportunidade_ano: oportunidade_mes * 12,
+    unidades_mes: unidades_mesa + ganho.unidades_mes,
+    pagam_maia: Math.max(1, Math.ceil(OFERTA_QUIZ.mensal / ticket)),
+    principal,
     respostas_legiveis: respostasLegiveis(nicho, r),
     completo,
   }
