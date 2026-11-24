@@ -1,0 +1,459 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<!-- RASTREIO:INICIO · Meta Pixel (conta da escola), o mesmo das outras páginas -->
+<script>
+!function(f,b,e,v,n,t,s){if(f.fbq)return;n=f.fbq=function(){n.callMethod?n.callMethod.apply(n,arguments):n.queue.push(arguments)};if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';n.queue=[];t=b.createElement(e);t.async=!0;t.src=v;s=b.getElementsByTagName(e)[0];s.parentNode.insertBefore(t,s)}(window,document,'script','https://connect.facebook.net/en_US/fbevents.js');
+fbq('init','3968641693466078');fbq('track','PageView');
+fbq('track','ViewContent',{content_type:'product',content_name:'Maia',content_category:'Oficina mecânica'});
+</script>
+<noscript><img height="1" width="1" style="display:none" src="https://www.facebook.com/tr?id=3968641693466078&ev=PageView&noscript=1"/></noscript>
+<!-- RASTREIO:FIM -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Maia pra oficinas · Carreira no Digital</title>
+<meta name="description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico, retoma o orçamento e roda os anúncios.">
+<meta property="og:title" content="A IA de marketing feita pra oficina mecânica">
+<meta property="og:description" content="A IA de marketing feita pra oficina mecânica, câmbio automático e retífica: atende no WhatsApp com o nome da oficina, pede modelo, ano e sintoma, encaminha o diagnóstico, retoma o orçamento e roda os anúncios.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="/maia/nichos/img/oficina/hero-embaixo-do-carro.jpg">
+<meta name="theme-color" content="#f6f5f2">
+<link rel="preload" href="/maia/nichos/img/oficina/hero-embaixo-do-carro.jpg" as="image" fetchpriority="high">
+<link rel="preload" href="/maia/fontes/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="icon" href="/marca/favicon.ico" sizes="48x48"><link rel="icon" type="image/png" sizes="32x32" href="/marca/favicon-32.png"><link rel="apple-touch-icon" href="/marca/apple-touch-icon.png">
+<style>
+@font-face{font-family:'Manrope';font-style:normal;font-weight:400 800;font-display:swap;src:url(/maia/fontes/manrope-latin.woff2) format('woff2')}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:300 800;font-stretch:75% 100%;font-display:swap;src:url(/maia/fontes/bricolage-latin.woff2) format('woff2')}
+
+/* Maia por nicho, 2ª versão (24/11/2026): pouca frase, muito visual. Base clara do padrão da escola
+   (Manrope + Bricolage condensada), grafite + a cor do nicho (--ac, --claro, --ac-rgb). Feita primeiro pro celular. */
+:root{
+  --bg:#f6f5f2;--s1:#ffffff;--s2:#efede8;--ln:#e6e2da;--ln2:#d4cec3;
+  --tx:#1d1f23;--tx2:#3b3e44;--mu:#686b72;--fa:#9a9da3;
+  --ac:#d9480f;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;--claro:#ff8a3d;--ac-rgb:217,72,15;
+  --gr:#22252a;--roxo:#7c3aed;--ok:#15803d;--ok-bg:#e3f7ea;--no:#9f1239;--no-bg:#fde8ec;
+  --wa:#efe7dd;--wa-in:#ffffff;--wa-out:#d9fdd3;--wa-top:#f0f2f5;--wa-tx:#111b21;--wa-mu:#667781;--wa-tk:#53bdeb;
+  --f-dis:'Bricolage Grotesque','Manrope',system-ui,sans-serif;
+  --f-tx:'Manrope',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --sombra:0 1px 2px rgba(29,31,35,.05),0 14px 34px -14px rgba(29,31,35,.22);
+  color-scheme:light}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{background:var(--bg);color:var(--tx);font-family:var(--f-tx);font-size:17px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%;height:auto}
+a{color:inherit}
+h1,h2,h3,.dis{font-family:var(--f-dis);font-weight:800;font-variation-settings:'opsz' 96,'wdth' 85;letter-spacing:-.025em;line-height:1.03;text-wrap:balance}
+h2{font-size:clamp(32px,7.6vw,52px)}
+h3{font-size:clamp(26px,5.6vw,34px)}
+.ct{max-width:1160px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+section{padding-block:64px}
+.olho{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--ac)}
+.olho::before{content:"";width:18px;height:3px;border-radius:2px;background:var(--ac2)}
+.ico{width:22px;height:22px;flex:none}
+.ex,.bl .vis .ex{max-width:none;font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--fa);text-align:center;margin-top:10px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;min-height:58px;padding:0 24px;border-radius:999px;background:var(--ac);color:#fff;font-weight:800;font-size:17px;text-decoration:none;border:0;cursor:pointer;box-shadow:0 14px 30px -12px rgba(var(--ac-rgb),.6);transition:transform .15s,filter .15s;text-align:center;line-height:1.2}
+.btn:hover{transform:translateY(-1px);filter:brightness(1.06)}
+.btn:focus-visible,a:focus-visible,summary:focus-visible{outline:3px solid var(--ac2);outline-offset:3px}
+.wa-link{display:inline-flex;align-items:center;gap:7px;font-size:14.5px;font-weight:700;color:var(--mu);text-decoration:underline;text-underline-offset:3px}
+.wa-link .ico{width:17px;height:17px}
+
+/* topo */
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:41;background:var(--bg)}
+.topo{position:sticky;top:env(safe-area-inset-top,0px);z-index:40;background:rgba(246,245,242,.92);backdrop-filter:saturate(1.4) blur(14px);-webkit-backdrop-filter:saturate(1.4) blur(14px);border-bottom:1px solid var(--ln)}
+.topo .ct{display:flex;align-items:center;gap:12px;min-height:60px}
+.chapa{display:inline-flex;align-items:center;background:#17122a;border-radius:10px;padding:7px 10px;flex:none}
+.chapa img{height:22px;width:auto}
+.topo .nome{flex:1;min-width:0;font-size:14px;font-weight:600;color:var(--mu);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.topo .nome b{color:var(--tx);font-weight:800}
+.topo .btn{min-height:40px;padding:0 16px;font-size:14.5px;box-shadow:none}
+
+/* abertura */
+.hero{background:var(--gr);color:#fff;padding-block:0;overflow:hidden}
+.hero .ct{display:grid;gap:26px;padding-block:0 48px}
+.hero-foto{position:relative;margin-inline:calc(-1 * max(16px,env(safe-area-inset-left,0px)))}
+.hero-foto>img{width:100%;aspect-ratio:4/3;object-fit:cover;object-position:var(--hero-pos)}
+.hero-foto::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(34,37,42,0) 50%,var(--gr) 100%)}
+.maia-card{position:relative;margin:-30px max(16px,env(safe-area-inset-left,0px)) 0;z-index:1;display:flex;gap:12px;align-items:center;background:rgba(255,255,255,.96);color:var(--tx);border-radius:20px;padding:12px;box-shadow:0 20px 40px -18px rgba(0,0,0,.55)}
+.maia-card img{width:56px;height:56px;border-radius:50%;object-fit:cover;flex:none;border:2px solid var(--ac2)}
+.maia-card b{display:block;font-size:15px;line-height:1.2}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.chips span{font-size:12px;font-weight:800;border-radius:999px;padding:4px 9px;background:var(--ac-bg);color:var(--ac);border:1px solid var(--ac-ln);animation:acende 7.2s infinite}
+.chips span:nth-child(2){animation-delay:1.2s}.chips span:nth-child(3){animation-delay:2.4s}.chips span:nth-child(4){animation-delay:3.6s}.chips span:nth-child(5){animation-delay:4.8s}.chips span:nth-child(6){animation-delay:6s}
+@keyframes acende{0%,16%{background:var(--ac);color:#fff;border-color:var(--ac)}18%,100%{background:var(--ac-bg);color:var(--ac);border-color:var(--ac-ln)}}
+.hero h1{font-size:clamp(42px,11vw,72px);margin-top:20px}
+.hero h1 em{font-style:normal;color:var(--claro)}
+.hero .lead{margin-top:16px;font-size:clamp(17px,2.3vw,20px);color:rgba(255,255,255,.85);max-width:40ch}
+.hero .acoes{display:grid;gap:14px;margin-top:26px;justify-items:start}
+.hero .btn{width:100%;max-width:460px}
+.hero .wa-link{color:rgba(255,255,255,.75)}
+
+/* tudo o que a Maia faz */
+.cab{display:grid;gap:10px;margin-bottom:34px}
+.cab p{font-size:18px;color:var(--mu)}
+.blocos{display:grid;gap:18px}
+.bl{display:grid;gap:18px;background:var(--s1);border:1px solid var(--ln);border-radius:28px;padding:22px 18px;box-shadow:var(--sombra);overflow:hidden}
+.bl .tx{display:grid;gap:8px;align-content:center}
+.bl .k{display:flex;align-items:center;gap:10px}
+.bl .k i{font-style:normal;display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--ac);color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:16px}
+.bl .k span{font-size:12.5px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--ac)}
+.bl p{font-size:16.5px;color:var(--tx2);max-width:42ch}
+.vis{min-width:0}
+
+/* 1 calendário */
+.calv{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.calv div{background:var(--bg);border:1px solid var(--ln);border-top:4px solid var(--ac2);border-radius:14px;padding:11px 12px}
+.calv small{display:block;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
+.calv b{display:block;font-size:14px;line-height:1.3;margin-top:4px}
+
+/* 2 anúncios */
+.ads{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ad{position:relative;aspect-ratio:4/5;border-radius:12px;overflow:hidden;background:var(--gr)}
+.ad img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ad::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 30%,rgba(0,0,0,.85) 100%)}
+.ad div{position:absolute;left:7px;right:7px;bottom:7px;z-index:1;color:#fff}
+.ad small{display:inline-block;background:var(--claro);color:#16181c;font-size:9.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;border-radius:4px;padding:2px 5px}
+.ad b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 82;font-weight:800;font-size:14px;line-height:1.02;text-transform:uppercase;margin-top:4px}
+
+/* 3 mapa */
+.mapa{position:relative;aspect-ratio:16/11;border-radius:18px;overflow:hidden;background-color:#e8edf1;
+  background-image:linear-gradient(90deg,rgba(255,255,255,.9) 3px,transparent 3px),linear-gradient(0deg,rgba(255,255,255,.9) 3px,transparent 3px),linear-gradient(35deg,transparent 48%,rgba(255,255,255,.95) 48%,rgba(255,255,255,.95) 52%,transparent 52%);
+  background-size:58px 58px,58px 58px,100% 100%;border:1px solid var(--ln)}
+.mapa .raio{position:absolute;left:50%;top:52%;width:62%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:rgba(var(--ac-rgb),.13);border:2px dashed var(--ac2)}
+.mapa .pino{position:absolute;left:50%;top:52%;width:30px;height:30px;transform:translate(-50%,-100%) rotate(-45deg);transform-origin:center;border-radius:50% 50% 50% 0;background:var(--ac);box-shadow:0 6px 12px -4px rgba(0,0,0,.4)}
+.mapa .pino::after{content:"";position:absolute;inset:9px;border-radius:50%;background:#fff}
+.mapa .nomep{position:absolute;left:50%;top:52%;transform:translate(-50%,-185%);background:#fff;border-radius:999px;padding:4px 10px;font-size:12px;font-weight:800;white-space:nowrap;box-shadow:0 4px 10px -4px rgba(0,0,0,.3)}
+.mapa .rot{position:absolute;right:10px;bottom:10px;background:var(--gr);color:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:800}
+.mapa .rede{position:absolute;left:10px;top:10px;background:#fff;border-radius:999px;padding:5px 11px;font-size:12px;font-weight:800;color:var(--tx2)}
+.nums{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.nums div{background:var(--bg);border-radius:14px;padding:12px}
+.nums b{display:block;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:34px;line-height:1;color:var(--ac)}
+.nums span{display:block;font-size:13px;color:var(--mu);margin-top:4px}
+
+/* 4 celular */
+.cel{position:relative;max-width:360px;width:100%;margin:0 auto;background:#141518;border-radius:38px;padding:9px;box-shadow:0 30px 60px -30px rgba(0,0,0,.6)}
+.tela{background:var(--wa);border-radius:30px;overflow:hidden}
+.wa-top{display:flex;align-items:center;gap:10px;background:var(--wa-top);padding:11px 14px;border-bottom:1px solid #e3e3e3}
+.wa-top .av{width:34px;height:34px;border-radius:50%;background:var(--gr);color:var(--claro);display:grid;place-items:center;font-weight:800;font-size:12.5px;flex:none;overflow:hidden}
+.wa-top .av img{width:34px;height:34px;object-fit:cover}
+.wa-top b{display:block;font-size:14.5px;color:var(--wa-tx);line-height:1.2}
+.wa-top small{display:block;font-size:11.5px;color:var(--wa-mu)}
+.wa-msgs{padding:12px 10px 14px;display:flex;flex-direction:column;gap:6px;background-image:radial-gradient(rgba(0,0,0,.035) 1px,transparent 1px);background-size:14px 14px}
+.bal{max-width:86%;padding:7px 10px 6px;border-radius:10px;font-size:14px;line-height:1.38;color:var(--wa-tx);box-shadow:0 1px 1px rgba(0,0,0,.08)}
+.bal .h{display:flex;justify-content:flex-end;align-items:center;gap:3px;font-size:10.5px;color:var(--wa-mu);margin-top:2px}
+.bal .tk{width:16px;height:11px;color:var(--wa-tk)}
+.bal.c{align-self:flex-start;background:var(--wa-in);border-top-left-radius:3px}
+.bal.e{align-self:flex-end;background:var(--wa-out);border-top-right-radius:3px}
+.bal.foto .anexo{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.05);border-radius:8px;padding:9px 12px;font-weight:700}
+.bal.foto .anexo .ico{width:19px;height:19px;color:var(--wa-mu)}
+.selo1{position:absolute;top:-14px;right:8px;z-index:2;display:inline-flex;align-items:center;gap:6px;background:var(--ok);color:#fff;border-radius:999px;padding:7px 12px;font-size:13px;font-weight:800;box-shadow:0 10px 20px -10px rgba(0,0,0,.5)}
+.selo1 .ico{width:16px;height:16px}
+
+/* 5 retomada */
+.linha{list-style:none;display:grid;gap:0}
+.linha li{display:grid;grid-template-columns:22px 1fr;gap:12px;position:relative;padding-bottom:14px}
+.linha li::before{content:"";position:absolute;left:10px;top:22px;bottom:0;width:2px;background:var(--ln2)}
+.linha li:last-child::before{display:none}
+.linha .pt{width:22px;height:22px;border-radius:50%;background:var(--ac);border:4px solid var(--ac-bg);margin-top:2px}
+.linha small{display:block;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ac)}
+.notif{display:flex;gap:10px;align-items:flex-start;background:#fff;border:1px solid var(--ln);border-radius:16px;padding:10px 12px;margin-top:6px;box-shadow:0 8px 18px -12px rgba(0,0,0,.35)}
+.notif .app{flex:none;width:30px;height:30px;border-radius:8px;background:#25d366;color:#fff;display:grid;place-items:center}
+.notif .app .ico{width:18px;height:18px}
+.notif b{display:block;font-size:13px}
+.notif span{display:block;font-size:14px;color:var(--tx2);line-height:1.35}
+
+/* 6 recado */
+.rec{position:relative;border-radius:20px;overflow:hidden;padding:56px 14px 18px;background:var(--gr)}
+.rec>img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.rec .hora{position:relative;text-align:center;color:#fff;font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:700;font-size:44px;line-height:1;margin-top:-34px;margin-bottom:14px;text-shadow:0 2px 12px rgba(0,0,0,.4)}
+.rec .notif{position:relative;margin:0 auto;max-width:380px}
+.rec .bt{position:relative;display:flex;gap:6px;max-width:380px;margin:6px auto 0}
+.rec .bt span{flex:1;text-align:center;background:rgba(255,255,255,.95);border-radius:10px;padding:8px 6px;font-size:13.5px;font-weight:800;color:#027eb5}
+
+/* 7 funil */
+.funil{display:grid;gap:6px}
+.funil div{display:flex;justify-content:space-between;align-items:center;gap:10px;border-radius:12px;padding:11px 14px;background:rgba(var(--ac-rgb),.12);margin-inline:auto;width:100%}
+.funil div:nth-child(2){width:88%;background:rgba(var(--ac-rgb),.2)}
+.funil div:nth-child(3){width:76%;background:rgba(var(--ac-rgb),.3)}
+.funil div:nth-child(4){width:64%;background:var(--ac);color:#fff}
+.funil span{font-size:13.5px;font-weight:700}
+.funil b{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:24px;line-height:1}
+.decide{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:12px}
+.decide span{font-size:13px;font-weight:800;border-radius:999px;padding:5px 11px}
+.decide .sim{background:var(--ok-bg);color:var(--ok)}
+.decide .nao{background:var(--no-bg);color:var(--no)}
+
+/* 8 você no comando */
+.cmd{display:grid;gap:10px}
+.cmd .mini{background:var(--wa);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
+.cmd .bts{display:flex;gap:6px;padding:0 10px 12px}
+.cmd .bts span{flex:1;text-align:center;border-radius:10px;padding:9px 6px;font-size:14px;font-weight:800;background:#fff;color:#027eb5}
+.cmd .bts span:first-child{background:var(--ok);color:#fff}
+.relat{background:var(--s1);border:1px solid var(--ln);border-radius:18px;padding:14px 16px}
+.relat small{font-size:11.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.relat dl{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px}
+.relat dt{font-size:11.5px;color:var(--mu);line-height:1.2}
+.relat dd{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-weight:800;font-size:24px;line-height:1.1}
+.relat p{font-size:13.5px;font-weight:700;color:var(--tx2);margin-top:8px;border-top:1px dashed var(--ln2);padding-top:8px}
+
+/* conteúdo: perfil do Instagram */
+.ig{background:#fff;border:1px solid var(--ln);border-radius:18px;overflow:hidden;max-width:420px;margin:0 auto}
+.ig-top{display:flex;gap:10px;align-items:center;padding:12px}
+.ig-top .av{width:44px;height:44px;border-radius:50%;padding:2px;background:linear-gradient(45deg,#f9a03f,#e8590c,#c2255c);display:grid;place-items:center;flex:none;color:#fff;font-weight:800;font-size:13px;box-shadow:inset 0 0 0 3px #fff}
+.ig-top b{display:block;font-size:14.5px}
+.ig-top span{display:block;font-size:12px;color:var(--mu)}
+.ig-grade{display:grid;grid-template-columns:repeat(3,1fr);gap:2px}
+.ig-grade div{position:relative;aspect-ratio:1}
+.ig-grade img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.ig-grade .rl{position:absolute;top:6px;right:6px;color:#fff;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.ig-grade .rl svg{width:18px;height:18px}
+.pra-equipe .pt{background:var(--ok);border-color:var(--ok-bg)}
+.pra-equipe small{color:var(--ok)}
+.pra-equipe .notif{border-color:#bfe6cb;background:var(--ok-bg)}
+.pra-equipe .notif .app{background:var(--ok)}
+.cmd1{max-width:420px;margin:0 auto}
+.cmd1 .mini{background:var(--wa);border-radius:18px;overflow:hidden;border:1px solid var(--ln)}
+.cmd1 .bts{display:flex;gap:6px;padding:0 10px 12px}
+.cmd1 .bts span{flex:1;text-align:center;border-radius:10px;padding:9px 6px;font-size:14px;font-weight:800;background:#fff;color:#027eb5}
+.cmd1 .bts span:first-child{background:var(--ok);color:#fff}
+
+/* sem x com */
+.vs{display:grid;gap:12px}
+.vs>div{border-radius:24px;padding:22px 20px}
+.vs .sem{background:var(--s2);color:var(--tx2)}
+.vs .com{background:var(--gr);color:#fff}
+.vs h3{font-size:26px}
+.vs .com h3{color:var(--claro)}
+.vs ul{list-style:none;display:grid;gap:10px;margin-top:14px}
+.vs li{display:flex;gap:10px;align-items:flex-start;font-size:16px;font-weight:600}
+.vs li .ico{width:20px;height:20px;margin-top:2px}
+.vs .sem .ico{color:var(--fa)}
+.vs .com .ico{color:var(--claro)}
+
+/* oferta */
+.card-of{max-width:820px;margin:0 auto;background:var(--s1);border:1px solid var(--ln);border-radius:28px;box-shadow:0 40px 80px -40px rgba(29,31,35,.45);padding:26px 18px}
+.card-of h2{text-align:center}
+.card-of .sub{text-align:center;font-size:16.5px;color:var(--mu);margin-top:8px}
+.vem{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:22px}
+.vem div{display:grid;justify-items:center;gap:6px;background:var(--bg);border-radius:14px;padding:12px 4px;font-size:12.5px;font-weight:800;color:var(--tx2);text-align:center}
+.vem svg{width:26px;height:26px;color:var(--ac)}
+.precos{display:grid;gap:10px;margin-top:22px}
+.pr{border:1px solid var(--ln);border-radius:18px;padding:16px 18px;background:var(--bg)}
+.pr.um{border:2px solid var(--ac2);background:var(--s1)}
+.pr small{display:block;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ac)}
+.pr .v{display:flex;align-items:baseline;gap:6px;margin-top:4px}
+.pr .v b{font-family:var(--f-dis);font-variation-settings:'opsz' 96,'wdth' 85;font-size:clamp(44px,11vw,60px);line-height:.95;letter-spacing:-.03em;white-space:nowrap}
+.pr .v span{font-size:17px;font-weight:700;color:var(--tx2)}
+.pr p{font-size:14.5px;color:var(--mu);margin-top:6px}
+.fora{margin-top:12px;font-size:14px;color:var(--tx2);text-align:center}
+.card-of .fim{display:grid;justify-items:center;gap:14px;margin-top:20px}
+.card-of .btn{width:100%}
+
+/* dúvidas */
+.faq{max-width:780px;margin:0 auto;display:grid;gap:10px}
+.faq details{background:var(--s1);border:1px solid var(--ln);border-radius:16px;padding:0 18px}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:14px;align-items:center;padding:17px 0;font-weight:800;font-size:16.5px;line-height:1.3}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";flex:none;width:11px;height:11px;border-right:2.5px solid var(--ac);border-bottom:2.5px solid var(--ac);transform:rotate(45deg) translate(-3px,-3px);transition:transform .2s}
+.faq details[open] summary::after{transform:rotate(225deg) translate(-3px,-3px)}
+.faq details p{padding:0 0 17px;font-size:15.5px;color:var(--tx2)}
+
+/* final */
+.final{padding-block:8px 88px}
+.final-card{position:relative;display:grid;gap:18px;border-radius:28px;overflow:hidden;color:#fff;background:var(--gr);text-align:center;justify-items:center;padding:40px 20px 34px}
+.final-card>img.fundo{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.4}
+.final-card::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(22,23,26,.4),rgba(22,23,26,.88))}
+.final-card>*:not(.fundo){position:relative;z-index:1}
+.final-card .maia{width:84px;height:84px;border-radius:50%;object-fit:cover;border:3px solid #fff}
+.final-card h2{font-size:clamp(30px,7vw,46px);max-width:18ch}
+.final-card .btn{width:100%;max-width:460px}
+.final-card .wa-link{color:rgba(255,255,255,.75)}
+.rodape{border-top:1px solid var(--ln);padding-block:26px 120px;font-size:13.5px;color:var(--mu);text-align:center}
+
+/* barra de baixo no celular */
+.barra{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,255,255,.96);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--ln);padding:10px max(16px,env(safe-area-inset-right,0px)) calc(10px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;align-items:center;gap:12px;transform:translateY(110%);transition:transform .25s}
+.barra.on{transform:none}
+.barra b{flex:1;min-width:0;font-size:15px;line-height:1.2}
+.barra .btn{min-height:46px;padding:0 18px;font-size:15px;flex:none}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn,.barra{transition:none}.chips span{animation:none}}
+
+@media (min-width:720px){
+  section{padding-block:96px}
+  .bl{grid-template-columns:1fr 1.15fr;gap:36px;padding:34px}
+  .bl:nth-child(even) .tx{order:2}
+  .calv{grid-template-columns:repeat(3,1fr)}
+  .ad b{font-size:18px}.ad small{font-size:10.5px}
+  .vs{grid-template-columns:1fr 1fr}
+  .vs>div{padding:30px}
+  .vem{grid-template-columns:repeat(9,1fr)}
+  .precos{grid-template-columns:1fr 1fr}
+  .card-of{padding:40px}
+  .final-card{padding:64px 40px 56px}
+  .barra{display:none}
+  .rodape{padding-bottom:40px}
+}
+@media (min-width:980px){
+  .hero .ct{grid-template-columns:1.05fr .95fr;align-items:center;gap:48px;padding-block:72px 84px}
+  .hero .tx{order:-1}
+  .hero-foto{margin:0;border-radius:28px;overflow:visible}
+  .hero-foto>img{aspect-ratio:4/5;border-radius:28px}
+  .hero-foto::after{display:none}
+  .maia-card{position:absolute;margin:0;left:-28px;bottom:28px;max-width:380px}
+  .hero h1{margin-top:0}
+}
+@media (max-width:380px){.topo .nome{display:none}}
+
+:root{--ac:#d9480f;--ac2:#e8590c;--ac-bg:#fff1e7;--ac-ln:#ffc8a1;--claro:#ff8a3d;--ac-rgb:217,72,15;--hero-pos:55% 50%}
+</style>
+</head>
+<body>
+
+<header class="topo">
+  <div class="ct">
+    <a class="chapa" href="https://carreiranodigital.com" aria-label="Carreira no Digital"><img src="/imersao/midia/logo.webp" alt="Carreira no Digital" width="256" height="93"></a>
+    <div class="nome"><b>Maia</b> · agência de marketing com IA pra oficina</div>
+    <a class="btn" href="/maia/quiz/oficina" data-cta>Ver quanto ganho</a>
+  </div>
+</header>
+<main>
+
+<section class="hero">
+  <div class="ct">
+    <div class="hero-foto">
+      <img src="/maia/nichos/img/oficina/hero-embaixo-do-carro.jpg" alt="Mecânico deitado embaixo de um carro erguido no cavalete" width="1800" height="1200" fetchpriority="high" decoding="async">
+      <div class="maia-card"><img src="/maia/img/maia-avatar.webp" alt="Maia" width="56" height="56"><div><b>Maia, a sua agência</b><div class="chips"><span>Estratégia</span><span>Anúncios</span><span>WhatsApp 24 h</span><span>Retomada</span><span>Recado pra base</span><span>Relatório</span></div></div></div>
+    </div>
+    <div class="tx">
+      <h1>A agência de marketing da sua oficina, <em>inteira numa IA.</em></h1>
+      <p class="lead">Ela anuncia, atende o WhatsApp 24 h e traz de volta quem sumiu. Mais carro no elevador, sem você largar a chave.</p>
+      <div class="acoes"><a class="btn" href="/maia/quiz/oficina" data-cta>Ver quanto a minha oficina pode ganhar (1 min)</a><a class="wa-link" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Prefiro falar no WhatsApp</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="tudo">
+  <div class="ct">
+    <div class="cab">
+      <span class="olho">Do anúncio à venda</span>
+      <h2>Tudo o que a Maia faz pela sua oficina</h2>
+    </div>
+    <div class="blocos"><article class="bl"><div class="tx"><div class="k"><i>1</i><span>Estratégia</span></div><h3>Sabe o que anunciar em cada época</h3><p>Monta o calendário do ano da sua oficina e escolhe por onde começar.</p></div><div class="vis"><div class="calv"><div><small>Dezembro, janeiro e julho</small><b>"Vai pegar a estrada com a família?"</b></div><div><small>Verão</small><b>"Ar do carro só soprando quente?"</b></div><div><small>Época de chuva</small><b>"Carro puxando pro lado quando freia na chuva?"</b></div><div><small>Inverno</small><b>"Carro custando a pegar de manhã?"</b></div><div><small>Fevereiro</small><b>"O carro do vai e vem da escola está em dia?"</b></div><div><small>Fim de ano e 13º</small><b>"Recebeu o 13º? Hora de resolver aquele barulho."</b></div></div></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>2</i><span>Criação</span></div><h3>Cria os anúncios do mês</h3><p>Uns 6 vídeos e 6 imagens por mês, com as fotos reais do seu trabalho.</p></div><div class="vis"><div class="ads"><div class="ad"><img src="/maia/nichos/img/oficina/motor-aberto.jpg" alt="" width="960" height="540" loading="lazy" decoding="async"><div><small>Câmbio</small><b>Dando tranco na troca de marcha?</b></div></div><div class="ad"><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"><div><small>Férias</small><b>Vai pegar a estrada com a família?</b></div></div><div class="ad"><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="" width="960" height="1440" loading="lazy" decoding="async"><div><small>Painel</small><b>Acendeu a luz da injeção?</b></div></div><div class="ad"><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"><div><small>Revisão</small><b>O óleo do seu carro venceu?</b></div></div><div class="ad"><img src="/maia/nichos/img/oficina/chave-no-motor.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"><div><small>Freio</small><b>Barulho quando freia?</b></div></div><div class="ad"><img src="/maia/nichos/img/oficina/maos-no-motor.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"><div><small>Verão</small><b>Ar do carro só soprando quente?</b></div></div></div><p class="ex">Exemplos com fotos de banco · na sua conta, as fotos são suas</p></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>3</i><span>Tráfego</span></div><h3>Coloca no ar pra sua cidade</h3><p>Facebook e Instagram, só pra quem está perto da sua oficina.</p></div><div class="vis"><div class="mapa" role="img" aria-label="Mapa com a Mecânica Rossi no centro e um raio de 15 km"><span class="rede">Facebook · Instagram</span><span class="raio"></span><span class="nomep">Mecânica Rossi</span><span class="pino"></span><span class="rot">Raio de 15 km</span></div>
+       <div class="nums"><div><b>18 mil</b><span>pessoas por mês</span></div><div><b>212</b><span>conversas no WhatsApp</span></div></div><p class="ex">Exemplo</p></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>4</i><span>Atendimento</span></div><h3>Atende o WhatsApp 24 h</h3><p>Com o nome da sua oficina, até de noite e no domingo.</p></div><div class="vis"><div class="cel" role="img" aria-label="Conversa de exemplo no WhatsApp da Mecânica Rossi"><span class="selo1"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>Respondeu em 1 min</span><div class="tela"><div class="wa-top"><span class="av">MR</span><div><b>Mecânica Rossi</b><small>online</small></div></div><div class="wa-msgs"><div class="bal c">Boa noite, quanto fica pra arrumar o câmbio? Tá dando tranco<div class="h">22:47</div></div><div class="bal e">Boa noite! Aqui é da Mecânica Rossi. Qual o modelo e o ano? O tranco é na troca de marcha?<div class="h">22:48<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div><div class="bal c">Corolla 2016. Da 2ª pra 3ª<div class="h">22:49</div></div><div class="bal e">Pode ser o óleo do câmbio. O diagnóstico com scanner sai R$ 150 e é descontado se fizer o serviço. Amanhã às 8h fica bom?<div class="h">22:49<svg class="tk" viewBox="0 0 18 12" aria-hidden="true"><path d="M1 6.5 4.5 10 11 2M7 10l.5.5L15 2" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></div></div></div></div></div><p class="ex">Exemplo · empresa fictícia</p></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>5</i><span>Retomada</span></div><h3>Traz de volta quem sumiu</h3><p>Três lembretes educados. Quem quer fechar vai pra sua equipe, com o resumo pronto.</p></div><div class="vis"><ol class="linha"><li><span class="pt"></span><div><small>1 dia depois</small><div class="notif"><span class="app"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></span><div><b>Mecânica Rossi</b><span>Conseguiu ver o melhor dia pra olhar o câmbio do Corolla?</span></div></div></div></li><li><span class="pt"></span><div><small>3 dias depois</small><div class="notif"><span class="app"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></span><div><b>Mecânica Rossi</b><span>Quer que eu mande um vídeo do teste que a gente faz no câmbio?</span></div></div></div></li><li><span class="pt"></span><div><small>6 dias depois</small><div class="notif"><span class="app"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></span><div><b>Mecânica Rossi</b><span>Vou parar por aqui pra não incomodar. Quando quiser, é só chamar.</span></div></div></div></li><li class="pra-equipe"><span class="pt"></span><div><small>Quer fechar</small><div class="notif"><span class="app"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg></span><div><b>Pra sua equipe</b><span>Carlos quer fazer o diagnóstico do câmbio amanhã às 8h. Corolla 2016, 98 mil km.</span></div></div></div></li></ol></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>6</i><span>Conteúdo</span></div><h3>Mantém o seu Instagram vivo</h3><p>Uns 8 posts e 4 vídeos por mês, pra quem vê o anúncio achar um perfil confiável.</p></div><div class="vis"><div class="ig" role="img" aria-label="Exemplo de perfil no Instagram com 9 posts"><div class="ig-top"><span class="av">MR</span><div><b>mecanicarossi</b><span>3 posts por semana · Instagram e Facebook</span></div></div><div class="ig-grade"><div><img src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/motor-aberto.jpg" alt="" width="960" height="540" loading="lazy" decoding="async"><span class="rl" aria-label="vídeo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg></span></div><div><img src="/maia/nichos/img/oficina/troca-de-oleo.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/maos-no-motor.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/pneu-revisao.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/diagnostico-scanner.jpg" alt="" width="960" height="1440" loading="lazy" decoding="async"><span class="rl" aria-label="vídeo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg></span></div><div><img src="/maia/nichos/img/oficina/oficina-ampla.jpg" alt="" width="960" height="484" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/chave-no-motor.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"></div><div><img src="/maia/nichos/img/oficina/mao-graxa-noite.jpg" alt="" width="960" height="720" loading="lazy" decoding="async"><span class="rl" aria-label="vídeo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><path d="M10 8.5v7l6-3.5z" fill="currentColor"/></svg></span></div></div></div><p class="ex">Exemplo com fotos de banco · na sua conta, as fotos e os vídeos são seus</p></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>7</i><span>Recado pra base</span></div><h3>Chama o cliente antigo na hora certa</h3><p>Ela avisa quem já comprou, antes de ele lembrar sozinho.</p></div><div class="vis"><div class="rec"><img src="/maia/nichos/img/oficina/elevador-oficina.jpg" alt="" width="960" height="640" loading="lazy" decoding="async"><div class="hora">09:30</div><div class="notif"><span class="app"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg></span><div><b>Mecânica Rossi</b><span>Oi Carlos, aqui é da Mecânica Rossi. A troca de óleo do seu Corolla vence este mês. Vejo um horário pra essa semana?</span></div></div><div class="bt"><span>Quero</span><span>Não quero receber</span></div></div></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>8</i><span>Medição</span></div><h3>Sabe o que vende de verdade</h3><p>Liga cada venda ao anúncio, avisa a Meta quem comprou e repete o que vende.</p></div><div class="vis"><div class="funil"><div><span>Pessoas que viram o anúncio</span><b>18.400</b></div><div><span>Conversas no WhatsApp</span><b>212</b></div><div><span>Orçamentos</span><b>64</b></div><div><span>Serviços fechados</span><b>21</b></div></div><div class="decide"><span class="sim">Repete: &quot;câmbio dando tranco&quot;</span><span class="nao">Corta: &quot;ar soprando quente&quot;</span></div>
+       <div class="relat" style="margin-top:12px"><small>Relatório todo dia 2</small><dl><div><dt>Conversas</dt><dd>212</dd></div><div><dt>Serviços fechados</dt><dd>21</dd></div><div><dt>Custo por conversa</dt><dd>R$ 4,10</dd></div></dl><p>Próximo mês: mais câmbio, menos ar-condicionado.</p></div><p class="ex">Exemplo</p></div></article>
+<article class="bl"><div class="tx"><div class="k"><i>9</i><span>Você no comando</span></div><h3>Você só aprova, pelo celular</h3><p>Análise a cada 2 dias no seu WhatsApp. Um toque e vai pro ar. Sem reunião.</p></div><div class="vis"><div class="cmd1"><div class="mini"><div class="wa-top"><span class="av"><img src="/maia/img/maia-avatar.webp" alt="" width="34" height="34"></span><div><b>Maia</b><small>sua agência</small></div></div><div class="wa-msgs"><div class="bal c">Análise de 2 dias: o anúncio do câmbio trouxe 9 orçamentos, e a conversa saiu a R$ 4,10. Sigo com ele.<div class="h">08:10</div></div><div class="bal c">2 anúncios novos prontos: câmbio e revisão de férias. Aprova?<div class="h">08:12</div></div></div><div class="bts"><span>Aprovar</span><span>Ajustar</span></div></div></div><p class="ex">Exemplo</p></div></article></div>
+  </div>
+</section>
+
+<section style="padding-top:0">
+  <div class="ct vs">
+    <div class="sem"><h3>Sem a Maia</h3><ul><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span>Anúncio só quando a oficina esvazia</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span>WhatsApp respondido quando dá tempo</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span>Orçamento caro esquecido</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 12h12"/></svg><span>Sem saber qual anúncio trouxe carro</span></li></ul></div>
+    <div class="com"><h3>Com a Maia</h3><ul><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Anúncio o ano todo, na época certa</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Resposta em 1 minuto, até de madrugada</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Retomada em 1, 3 e 6 dias</span></li><li><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg><span>Cada serviço ligado ao anúncio que trouxe</span></li></ul></div>
+  </div>
+</section>
+
+<section id="oferta" style="padding-top:0">
+  <div class="ct">
+    <div class="card-of">
+      <h2>Uma agência inteira, todo mês</h2>
+      <p class="sub">Com implantação online, por chamada de vídeo.</p>
+      <div class="vem"><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v15H4z"/><path d="M4 9h16M9 3v4M15 3v4"/></svg>Estratégia</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></svg>Anúncios</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></svg>Tráfego</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>WhatsApp</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>Retomada</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6" fill="currentColor"/></svg>Conteúdo</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4h3l6 4V6L7 10z"/><path d="M17 9a4 4 0 0 1 0 6"/></svg>Recado</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Medição</div><div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 13h7M9 17h5"/></svg>Relatório</div></div>
+      <div class="precos">
+        <div class="pr um"><small>1º mês, com a implantação</small><div class="v"><b>R$ 497</b></div></div>
+        <div class="pr"><small>Depois</small><div class="v"><b>R$ 797</b><span>/mês</span></div><p>Sem fidelidade.</p></div>
+      </div>
+      <p class="fora">Verba de anúncio à parte, paga direto à Meta.</p>
+      <div class="fim"><a class="btn" href="/maia/quiz/oficina" data-cta>Ver quanto a minha oficina pode ganhar (1 min)</a><a class="wa-link" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Prefiro falar no WhatsApp</a></div>
+    </div>
+  </div>
+</section>
+
+<section id="duvidas" style="padding-top:0">
+  <div class="ct">
+    <div class="faq"><details><summary>Funciona fora do Rio Grande do Sul?</summary><p>Sim. Tudo é online, inclusive a implantação, e a campanha roda na sua cidade.</p></details><details><summary>Tem fidelidade?</summary><p>Não. É mensal e você cancela quando quiser.</p></details><details><summary>A verba de anúncio está inclusa?</summary><p>Não. Você paga direto à Meta, no cartão da empresa. Pra começar, uns R$ 20 a R$ 40 por dia.</p></details><details><summary>Preciso trocar meu número de WhatsApp?</summary><p>Não. Ela entra no WhatsApp Business que você já usa, e o seu celular continua recebendo tudo.</p></details></div>
+  </div>
+</section>
+
+<section class="final">
+  <div class="ct">
+    <div class="final-card">
+      <img class="fundo" src="/maia/nichos/img/oficina/oficina-ampla.jpg" alt="" width="960" height="484" loading="lazy" decoding="async">
+      <img class="maia" src="/maia/img/maia-avatar.webp" alt="Maia, a IA de marketing da Carreira no Digital" width="84" height="84" loading="lazy">
+      <h2>Descubra em 1 minuto quanto a sua oficina pode ganhar.</h2>
+      <a class="btn" href="/maia/quiz/oficina" data-cta>Ver quanto a minha oficina pode ganhar (1 min)</a>
+      <a class="wa-link" href="https://wa.me/5551995054548?text=Quero%20a%20Maia%20na%20minha%20oficina." data-cta data-msg="Quero a Maia na minha oficina." target="_blank" rel="noopener"><svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.4 8.4 0 0 1-12.4 7.4L3 21l2.1-5.4A8.4 8.4 0 1 1 21 11.5z"/></svg>Prefiro falar no WhatsApp</a>
+    </div>
+  </div>
+</section>
+
+</main>
+<footer class="rodape"><div class="ct">Maia é a IA de marketing da Carreira no Digital, escola de marketing com IA de Lajeado (RS). Atendemos o Brasil todo.<br>WhatsApp da escola: 51 99505-4548</div></footer>
+
+<div class="barra" id="barra"><b>Quanto a sua oficina pode ganhar?</b><a class="btn" href="/maia/quiz/oficina" data-cta>Ver (1 min)</a></div>
+<script>
+(function(){var b=document.getElementById('barra');if(!b)return;function f(){b.classList.toggle('on',(window.scrollY||0)>520)}window.addEventListener('scroll',f,{passive:true});f();})();
+</script>
+<!-- RASTREIO:INICIO · o mesmo rastreio das páginas /black e /deuvenda (site_eventos + /wa com a mensagem pronta, Lead no pixel com o mesmo event_id) -->
+<script>
+(function(){
+  var CRM='https://carreiranodigital.vercel.app';
+  var TRACK=CRM+'/api/track', WA=CRM+'/wa', CAMP='maia-oficina', NICHO='Oficina mecânica';
+  function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,10);}
+  var vid,sid;
+  try{vid=localStorage.getItem('cnd_vid');if(!vid){vid=uid();localStorage.setItem('cnd_vid',vid);}}catch(e){vid=uid();}
+  try{sid=sessionStorage.getItem('cnd_sid');if(!sid){sid=uid();sessionStorage.setItem('cnd_sid',sid);}}catch(e){sid=uid();}
+  var qs=new URLSearchParams(location.search);
+  var fbclid=qs.get('fbclid');
+  try{if(fbclid){localStorage.setItem('cnd_fbclid',fbclid);}else{fbclid=localStorage.getItem('cnd_fbclid');}}catch(e){}
+  var utm={source:qs.get('utm_source')||'',medium:qs.get('utm_medium')||'',campaign:qs.get('utm_campaign')||CAMP,content:qs.get('utm_content')||''};
+  function track(evento,meta){
+    try{
+      var payload=JSON.stringify({visitor_id:vid,sessao_id:sid,evento:evento,url:location.href,referrer:document.referrer,
+        utm_source:utm.source,utm_medium:utm.medium,utm_campaign:utm.campaign,utm_content:utm.content,fbclid:fbclid,meta:meta||null});
+      if(navigator.sendBeacon){navigator.sendBeacon(TRACK,new Blob([payload],{type:'text/plain'}));}
+      else{fetch(TRACK,{method:'POST',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}
+    }catch(e){}
+  }
+  window.__cndTrack=track;
+  track('page_view');
+  var hit={};
+  window.addEventListener('scroll',function(){
+    var h=document.documentElement,max=(h.scrollHeight-h.clientHeight)||1,pct=(h.scrollTop||document.body.scrollTop)/max*100;
+    if(pct>=50&&!hit[50]){hit[50]=1;track('scroll_50');}
+    if(pct>=90&&!hit[90]){hit[90]=1;track('scroll_90');}
+  },{passive:true});
+  function cookie(n){try{var m=document.cookie.match('(^|;)\\s*'+n+'=([^;]*)');return m?decodeURIComponent(m[2]):null}catch(e){return null}}
+  function waLink(msg){
+    var ev=uid(), p=new URLSearchParams();
+    p.set('msg',msg);p.set('src',location.href);p.set('vid',vid);p.set('sid',sid);
+    p.set('event_id',ev);
+    var _fbp=cookie('_fbp'); if(_fbp)p.set('fbp',_fbp);
+    var _fbc=cookie('_fbc'); if(_fbc)p.set('fbc',_fbc);
+    if(fbclid)p.set('fbclid',fbclid);
+    if(utm.source)p.set('utm_source',utm.source);
+    if(utm.medium)p.set('utm_medium',utm.medium);
+    p.set('utm_campaign',utm.campaign||CAMP);
+    if(utm.content)p.set('utm_content',utm.content);
+    return {url:WA+'?'+p.toString(), ev:ev};
+  }
+  // o quiz recebe os mesmos utm/fbclid da página
+  function comQs(h){var s=location.search.slice(1);return s?h+(h.indexOf('?')<0?'?':'&')+s:h;}
+  [].forEach.call(document.querySelectorAll('a[data-cta]'),function(b){
+    // com data-msg o botão vai pro WhatsApp pelo /wa do CRM; sem data-msg (o quiz) vai pro endereço dele, com os utm da página
+    var t=(b.textContent||'').replace(/\s+/g,' ').trim(), m=b.getAttribute('data-msg'), l=m?waLink(m):{url:comQs(b.getAttribute('href')),ev:uid()};
+    b.setAttribute('href',l.url);
+    b.addEventListener('click',function(){
+      track(m?'clique_wa':'clique_quiz',{botao:t.slice(0,40),nicho:NICHO,event_id:l.ev});
+      try{if(m&&window.fbq)fbq('track','Lead',{content_name:'Maia',content_category:NICHO},{eventID:l.ev});}catch(e){}
+    });
+  });
+})();
+</script>
+<!-- RASTREIO:FIM -->
+</body>
+</html>
