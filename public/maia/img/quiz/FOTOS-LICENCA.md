@@ -8,24 +8,32 @@ Unsplash (https://unsplash.com/license) e Pexels (https://www.pexels.com/license
 
 | Arquivo | Banco | Página da foto |
 |---|---|---|
-| oficina/hero-embaixo-do-carro.jpg | Unsplash | https://unsplash.com/photos/K5624F8cipE |
-| oficina/maos-no-motor.jpg | Unsplash | https://unsplash.com/photos/c2ZR3x1Zwwg |
-| oficina/chave-no-motor.jpg | Unsplash | https://unsplash.com/photos/9gB7APNSquE |
-| oficina/motor-retifica.jpg | Unsplash | https://unsplash.com/photos/xe-e69j6-Ds |
-| oficina/diagnostico-scanner.jpg | Unsplash | https://unsplash.com/photos/sEu9cAn7QLA |
-| oficina/oficina-ampla.jpg | Unsplash | https://unsplash.com/photos/8t6tk7LYLrE |
 | otica/hero-vendedora-balcao.jpg | Pexels | https://www.pexels.com/photo/optician-smiling-in-eyewear-store-with-display-32593246/ |
 | otica/cliente-na-parede.jpg | Pexels | https://www.pexels.com/photo/woman-shopping-for-eyeglasses-5201890/ |
 | otica/provando-oculos.jpg | Pexels | https://www.pexels.com/photo/young-woman-adjusting-glasses-in-optical-store-5766154/ |
 | otica/vitrine-armacoes.jpg | Unsplash | https://unsplash.com/photos/xGsOQcGFA9g |
 | otica/parede-armacoes.jpg | Unsplash | https://unsplash.com/photos/UsALNdok2m4 |
 | otica/comparando-armacoes.jpg | Pexels | https://www.pexels.com/photo/a-woman-holding-eyeglasses-5201939/ |
-| oficina/motor-aberto.jpg | Unsplash | https://unsplash.com/photos/bEGTsOCnHro |
-| oficina/pneu-revisao.jpg | Unsplash | https://unsplash.com/photos/9uHal2Dd9aE |
-| oficina/troca-de-oleo.jpg | Unsplash | https://unsplash.com/photos/gW34cv-Ojjs |
-| oficina/elevador-oficina.jpg | Unsplash | https://unsplash.com/photos/cl1M5WBCF8c |
-| oficina/mao-graxa-noite.jpg | Unsplash | https://unsplash.com/photos/Fd6osyVbtG4 |
 | otica/oculos-de-sol.jpg | Unsplash | https://unsplash.com/photos/PmB5Uo9dUk4 |
 | otica/menina-oculos-rosa.jpg | Unsplash | https://unsplash.com/photos/msgYbIh-1DA |
 | otica/parafuso-oculos.jpg | Pexels | https://www.pexels.com/photo/crop-worker-setting-new-temple-to-eyeglasses-5715901/ |
 | otica/mae-e-filha.jpg | Pexels | https://www.pexels.com/photo/a-woman-carrying-a-young-girl-while-holding-an-eyeglasses-5621842/ |
+
+## Oficina (trocadas em 24/11/2026, pedido do Guto: as antigas eram pequenas e escuras)
+Todas do Pexels (licença Pexels, uso comercial livre, sem atribuição obrigatória), baixadas da CDN do Pexels já no tamanho
+de uso (abertura 1800 px, as outras 1000 px).
+
+| Arquivo | Banco | Página da foto |
+|---|---|---|
+| oficina/oficina-hero.jpg | Pexels | https://www.pexels.com/photo/mechanic-checking-the-engine-of-a-car-6870298/ |
+| oficina/mecanica-geral.jpg | Pexels | https://www.pexels.com/photo/a-person-repairing-car-engine-4116225/ |
+| oficina/anuncio-motor.jpg | Pexels | https://www.pexels.com/photo/car-mechanic-holding-a-tool-for-repair-4116224/ |
+| oficina/cambio-elevador.jpg | Pexels | https://www.pexels.com/photo/white-car-hanging-on-a-car-lift-8986033/ |
+| oficina/retifica-cabecote.jpg | Pexels | https://www.pexels.com/photo/close-up-of-fixing-an-engine-8985510/ |
+| oficina/injecao-scanner.jpg | Pexels | https://www.pexels.com/photo/close-up-of-mechanic-with-tablet-4116198/ |
+| oficina/funilaria-pintura.jpg | Pexels | https://www.pexels.com/photo/person-using-paint-spray-gun-6870314/ |
+| oficina/elevador-oficina-ampla.jpg | Pexels | https://www.pexels.com/photo/a-mechanic-inspecting-a-vehicle-8986070/ |
+| oficina/embaixo-do-carro.jpg | Pexels | https://www.pexels.com/photo/man-in-black-jacket-standing-under-the-vehicle-3807133/ |
+| oficina/mecanico-tablet.jpg | Pexels | https://www.pexels.com/photo/man-in-blue-dress-shirt-holding-black-tablet-computer-6870309/ |
+| oficina/mecanico-capo.jpg | Pexels | https://www.pexels.com/photo/mechanic-looking-at-the-engine-of-the-car-8985452/ |
+| oficina/comando-valvulas.jpg | Pexels | https://www.pexels.com/photo/close-up-of-camshaft-in-engine-assembly-29226626/ |

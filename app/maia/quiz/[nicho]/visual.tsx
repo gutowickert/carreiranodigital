@@ -182,7 +182,7 @@ export function RelatorioDono({ d, unidade }: { d: Diagnostico; unidade: [string
 
 // ---------- mini grade do feed (Conteúdo): fotos reais licenciadas do nicho ----------
 const FEED: Record<Nicho, string[]> = {
-  oficina: ['hero-embaixo-do-carro', 'diagnostico-scanner', 'maos-no-motor', 'motor-retifica', 'oficina-ampla', 'chave-no-motor'],
+  oficina: ['oficina-hero', 'injecao-scanner', 'mecanica-geral', 'retifica-cabecote', 'elevador-oficina-ampla', 'cambio-elevador'],
   otica: ['provando-oculos', 'vitrine-armacoes', 'hero-vendedora-balcao', 'parede-armacoes', 'cliente-na-parede', 'comparando-armacoes'],
 }
 export function FeedInsta({ nicho, negocio }: { nicho: Nicho; negocio: string }) {
