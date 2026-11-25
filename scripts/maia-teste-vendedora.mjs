@@ -121,6 +121,9 @@ const msQ = cvQ ? await db.lista('wa_msgs', { conversa_id: cvQ.id }) : []
 const qz1 = leads.find(l => l.id === 'QZ1')
 confere(rc.length === 1 && rc[0].lead === 'QZ1' && cvQ && cvQ.fase === 'maia' && cvQ.modo === 'ia' && cvQ.rascunho.maia.lead_id === 'QZ1' && msQ.some(m => /maia_diagnostico/.test(m.texto) && /Auto Lima/.test(m.texto) && /5\.000/.test(m.texto)) && qz1.qualificacao.maia_chamado_em, 'fez o quiz há 2 h e não chamou: a Maia chama com o modelo do diagnóstico (nome, negócio, ganho) e a conversa já aponta pro lead', { rc, msQ })
 confere(!leads.find(l => l.id === 'QZ2').qualificacao.maia_chamado_em && !leads.find(l => l.id === 'QZ3').qualificacao.maia_chamado_em && leads.find(l => l.id === 'QZ4').qualificacao.maia_chamado_em === 'já tinha conversa', 'não chama: quem fez há menos de 5 min, quem é do RS, nem quem já escreveu')
+leads.push({ id: 'QZ7', nome: 'Agora', whatsapp: '5500011944447777', codigo_turma: 'maiaquiz', criado_em: T0.toISOString(), qualificacao: { maia_quiz: 'q7', nicho: 'otica', negocio: 'Ótica Agora', uf: 'SP' } })
+let r7 = await R.chamaQuemNaoChamou(T0, { soLead: 'QZ7' })
+confere(Array.isArray(r7) && r7.length === 1 && r7[0].lead === 'QZ7' && r7[0].chamado, 'acabou de fazer o quiz: a Maia chama na hora (sem espera)', r7)
 // 24/11: quiz às 20h30 ainda chama (janela do quiz até 21h); às 21h30 não chama e avisa o time 1x
 leads.push({ id: 'QZ5', nome: 'Noite', whatsapp: '5500011944445555', codigo_turma: 'maiaquiz', criado_em: new Date('2026-11-25T23:20:00Z').toISOString(), qualificacao: { maia_quiz: 'q5', nicho: 'otica', negocio: 'Ótica Noite', uf: 'SP' } })
 let rn = await R.chamaQuemNaoChamou(new Date('2026-11-25T23:30:00Z'), { soLead: 'QZ5' })

@@ -14,8 +14,8 @@ import { diagnosticar, ehNicho, telefoneBR, UFS, QUIZZES, TURMA_QUIZ, reaisQuiz 
 // equipe (push) e manda o Lead pra Meta (CAPI) com o MESMO event_id do pixel da página (deduplica).
 // Se a turma ainda não existir no banco, o lead entra sem turma (codigo_turma "maiaquiz"); se a gravação do
 // diagnóstico falhar, o lead continua valendo (o diagnóstico vai inteiro nas observações do card).
-// 300: depois de responder à página, a rota espera ~5 min e a Maia chama a pessoa no WhatsApp (lib/maia/vendedora-rotina.ts)
-export const maxDuration = 300
+// 60: depois de responder à página, a Maia chama a pessoa no WhatsApp na hora (lib/maia/vendedora-rotina.ts)
+export const maxDuration = 60
 
 const limpa = (v: any, max: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 
@@ -135,12 +135,13 @@ export async function POST(req: NextRequest) {
     } catch (e) { console.error('CAPI Lead (maia quiz):', e) }
   }
 
-  // 24/11: a Maia chama quem fez o quiz ~5 min depois, se a pessoa não chamou antes (a resposta pra página já saiu)
+  // 24/11: a Maia chama quem fez o quiz NA HORA, a qualquer hora (a resposta pra página já saiu)
   if (leadId && process.env.MAIA_VENDEDORA_LIGADA === '1') {
     const id = leadId
     after(async () => {
       try {
-        await new Promise(r => setTimeout(r, 4.6 * 60e3))
+        // 24/11 22h (Guto: "tem que falar na hora do quiz"): sem espera. A espera de ~5 min dentro do after() morria antes
+        // de enviar (o José, da Ótica Visual, não recebeu nada às 21h52).
         const { chamaQuemNaoChamou } = await import('@/lib/maia/vendedora-rotina')
         await chamaQuemNaoChamou(new Date(), { soLead: id })
       } catch (e) { await log('chamar', { erro: String((e as any)?.message || e), lead: id }) }

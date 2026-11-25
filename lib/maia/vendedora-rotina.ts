@@ -56,7 +56,9 @@ export async function chamaQuemNaoChamou(agora = new Date(), opc: { soLead?: str
   // 24/11 (Guto: "a Maia pode atender 24 h"): a chamada logo depois do quiz (`soLead`, ~5 min) sai a QUALQUER hora — a pessoa
   // acabou de deixar o contato, está com o celular na mão. Só a varredura de hora em hora (leads mais antigos) respeita a janela.
   if (!opc.soLead && !podeChamarQuiz(agora)) return { pulou: 'fora do horário' }
-  const leads = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), new Date(agora.getTime() - ESPERA_QUIZ + 30e3).toISOString()))
+  // a chamada do quiz (`soLead`) sai na hora; a varredura de hora em hora só pega quem fez há ESPERA_QUIZ ou mais
+  const ate = opc.soLead ? agora.getTime() + 60e3 : agora.getTime() - ESPERA_QUIZ + 30e3
+  const leads = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), new Date(ate).toISOString()))
     .filter((l: any) => !opc.soLead || l.id === opc.soLead)
   const feitos: any[] = []
   for (const lead of leads) {
