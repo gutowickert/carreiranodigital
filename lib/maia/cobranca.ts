@@ -285,8 +285,12 @@ export async function confereNegocio(neg: any, agora = new Date()) {
     avisados.add(p.id); out.avisos.push(p.id)
   }
 
+  const pagouAgora = sit.implantacao.status === 'paga' && f.situacao?.implantacao?.status !== 'paga'
   f = { ...f, baixados: [...baixados], avisados: [...avisados], situacao: sit }
   await guarda(neg.id, f)
+  // 24/11 (entrevista.ts): a implantação da oferta online foi paga agora → a Maia começa a entrevista pelo WhatsApp
+  // (só com MAIA_ENTREVISTA_LIGADA=1 e se o negócio ainda não tem entrevista)
+  if (pagouAgora) await import('./entrevista').then(x => x.aoPagarImplantacao({ ...neg, meta: { ...(neg.meta || {}), financeiro: f } })).catch(() => null)
   return { negocio: neg.id, ...out, situacao: sit }
 }
 

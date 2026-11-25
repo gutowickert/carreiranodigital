@@ -8,6 +8,7 @@
 //   07/11 (painel do dono): POST link_painel_dono, painel_dono_revogar
 //   06/11 (demonstração grátis): GET amostras · POST simular_demo, rodar_demo, teste_demo_sumiu (só no modo de teste)
 //   13/11: GET falta_ligar[&negocio=] (o que falta pra ligar, lib/maia/ligar.ts) · POST conferir_whatsapp
+//   24/11: GET entrevista&negocio= | entrevistas (a entrevista da implantação online, lib/maia/entrevista.ts) · POST entrevista_comecar, entrevista_retomar, entrevista_aplicar
 import { maiaDb as db } from '@/lib/maia/db'
 import { equipeOk, naoAutorizado } from '@/lib/maia/acesso'
 import { equipeAprova, equipeAjuste, descarta, pedeJoinha } from '@/lib/maia/aprovacao'
@@ -51,6 +52,8 @@ function metaSeguro(novo: any, atual: any) {
   if (!('limites' in (novo || {})) && atual?.limites) m.limites = atual.limites
   // 14/11 (recado.ts): o custo por mensagem e o lote do recado pra base só mudam pela ação base_config
   if (atual?.recado) m.recado = atual.recado; else delete m.recado
+  // 24/11 (entrevista.ts): a entrevista da implantação só muda pelas ações entrevista_*
+  if (atual?.entrevista) m.entrevista = atual.entrevista; else delete m.entrevista
   return m
 }
 
@@ -159,6 +162,9 @@ export async function GET(req: Request) {
       return ok((await comLinks(pecas)).map(p => ({ ...p, negocio_nome: nome(p.negocio_id), demo: demo(p.negocio_id) })))
     }
     if (acao === 'amostras') return ok(await painelAmostras())
+    // 24/11 (entrevista.ts): o andamento da entrevista da implantação (blocos, o que falta, acesso ao portfólio, cadastro)
+    if (acao === 'entrevista') { const E = await import('@/lib/maia/entrevista'); const n = await db.um('negocios', { id: q('negocio') }); return n ? ok(E.painelEntrevista(n)) : erro('negócio não existe', 404) }
+    if (acao === 'entrevistas') { const E = await import('@/lib/maia/entrevista'); return ok((await db.lista('negocios')).filter(n => n.meta?.entrevista && n.status !== 'cancelado').map(n => E.painelEntrevista(n))) }
     if (acao === 'pecas') return ok(await comLinks(await db.lista('pecas', { negocio_id: q('negocio') }, { ordem: 'criado_em', desc: true })))
     if (acao === 'leads') return ok(await db.lista('leads', { negocio_id: q('negocio') }, { ordem: 'atualizado_em', desc: true }))
     if (acao === 'conversas') return ok(await db.lista('conversas', { negocio_id: q('negocio') }, { ordem: 'ultima_msg_em', desc: true }))
@@ -375,6 +381,20 @@ export async function POST(req: Request) {
       case 'estrategia_editar': { const E = await import('@/lib/maia/estrategia'); return ok(await E.equipeEditaEstrategia(b.estrategia_id, String(b.texto || ''), por)) }
       case 'estrategia_cancelar': { const E = await import('@/lib/maia/estrategia'); return ok(await E.cancelaEstrategia(b.estrategia_id, por, b.nota)) }
       case 'gerar_anuncios': return ok(await geraAnuncios(await db.um('negocios', { id: b.negocio_id }), { quantidade: b.quantidade, tema: b.tema, midia_ids: b.midia_ids }))
+      // 24/11 (entrevista.ts): começar, retomar (só o que faltou) e aplicar o cadastro no contexto (depois da equipe revisar)
+      case 'entrevista_comecar': { const E = await import('@/lib/maia/entrevista'); const r: any = await E.comecaEntrevista(b.negocio_id, { instagram: b.instagram || null, site: b.site || null, nicho: b.nicho === 'oficina' || b.nicho === 'otica' ? b.nicho : undefined, por }); return r.ok ? ok(r) : erro(r.erro || 'não deu') }
+      case 'entrevista_retomar': { const E = await import('@/lib/maia/entrevista'); const r: any = await E.retomaEntrevista(b.negocio_id, por); return r.ok ? ok(r) : erro(r.erro || 'não deu') }
+      case 'entrevista_aplicar': {
+        const E = await import('@/lib/maia/entrevista'); const n = await db.um('negocios', { id: b.negocio_id }); const c = n?.meta?.entrevista?.cadastro
+        if (!n || !c) return erro('a entrevista desse negócio ainda não gerou o cadastro')
+        const campos: any = { contexto: { ...(n.contexto || {}), ...E.contextoDoCadastro(c) } }
+        if (typeof c.negocio?.verba_dia === 'number' && !n.verba_dia) campos.verba_dia = c.negocio.verba_dia
+        if (c.negocio?.regiao && !n.regiao) campos.regiao = c.negocio.regiao
+        if (c.negocio?.equipe_whatsapp?.length && !(n.equipe_whatsapp || []).length) campos.equipe_whatsapp = c.negocio.equipe_whatsapp
+        const at = (await db.atualiza('negocios', { id: n.id }, campos))[0]
+        await db.evento('entrevista_aplicada', n.id, { por })
+        return ok(semChave(at))
+      }
       case 'aprovar_peca': return ok(await equipeAprova(b.peca_id, por))
       case 'ajustar_peca': if (!b.nota) return erro('escreve o ajuste'); return ok(await equipeAjuste(b.peca_id, b.nota, por))
       case 'descartar_peca': return ok(await descarta(b.peca_id, por))

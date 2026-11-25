@@ -368,6 +368,13 @@ export async function respondeDono(conversa_id: string) {
   const neg = await db.um('negocios', { id: cv.negocio_id })
   if (!neg) return null
   if ((cv.ia_respostas || 0) > MAX_IA_DIA * 30) { await avisaEquipe('conversa longa demais', neg.nome, neg.id); return null }
+  // 24/11 (entrevista.ts): a entrevista da implantação online em andamento conduz a conversa (só com MAIA_ENTREVISTA_LIGADA=1);
+  // devolve null quando não é com ela (aí segue a conversa de sempre)
+  if (neg.meta?.entrevista) {
+    const { atendeEntrevista } = await import('./entrevista')
+    const r = await atendeEntrevista(neg, cv)
+    if (r) return r
+  }
   const msgs = await db.lista('msgs', { conversa_id }, { ordem: 'criado_em' })
   const hist = msgs.slice(-30).map(x => `${x.autor === 'dono' ? 'DONO' : x.autor === 'equipe' ? 'EQUIPE DA ESCOLA' : 'MAIA'}: ${x.texto}`).join('\n')
   const pend = await db.lista('pecas', { negocio_id: neg.id, status: 'com_dono' })
