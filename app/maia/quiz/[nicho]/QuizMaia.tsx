@@ -186,7 +186,7 @@ export default function QuizMaia({ nicho }: { nicho: Nicho }) {
   if (passo === -1) return (
     <main className={`mq-abertura mq-v mq-${nicho}`}>
       <header className="mq-cab ct"><Topo /></header>
-      <Abertura nicho={nicho} hero={q.hero} titulo={q.titulo} destaque={q.destaque} sub={q.sub} botao="Começar o diagnóstico" mini={`1 minuto · ${total} perguntas de tocar · sem custo`} onComecar={comecar} />
+      <Abertura nicho={nicho} hero={q.hero} titulo={q.titulo_curto || q.titulo} destaque={q.destaque} sub={q.sub_curto || q.sub} botao="Começar o diagnóstico" mini={`1 minuto · ${total} perguntas de tocar · sem custo`} onComecar={comecar} compacta={!!q.titulo_curto} />
     </main>
   )
 

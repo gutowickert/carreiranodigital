@@ -42,7 +42,9 @@ export type Quiz = {
   eyebrow: string
   titulo: string
   sub: string
-  destaque: string             // pedaço do título que vem na cor clara (como nas páginas de nicho)
+  titulo_curto?: string        // 25/11: abertura compacta (botão no topo do celular); quando tem, a abertura usa esta versão
+  sub_curto?: string
+  destaque: string            // pedaço do título que vem na cor clara (como nas páginas de nicho)
   hero: string                 // foto real da abertura
   ad_img: string               // foto real do exemplo de anúncio
   fala: string                 // a primeira fala da Maia na abertura
@@ -69,6 +71,8 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para oficinas',
     titulo: 'Quantos carros a mais a sua oficina pode atender por mês?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, quanto dá pra ganhar com anúncio, atendimento, retomada, conteúdo e a sua base de clientes, e o que a Maia faz em cada parte.',
+    titulo_curto: 'Quantos carros a mais sua oficina pode atender?',
+    sub_curto: 'No fim você vê, com os seus números, quanto dá pra ganhar a mais com anúncio, atendimento e retomada, e o que a Maia faz em cada parte.',
     destaque: 'a mais', hero: '/maia/img/quiz/oficina/oficina-hero.jpg', ad_img: '/maia/img/quiz/oficina/anuncio-motor.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua oficina pode ganhar a mais.',
     perguntas: [

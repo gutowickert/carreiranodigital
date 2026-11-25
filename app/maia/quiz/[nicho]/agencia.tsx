@@ -20,12 +20,26 @@ const Foto = () => <svg className="ico" viewBox="0 0 24 24" fill="none" stroke="
 const CHIPS = ['Estratégia', 'Anúncios', 'WhatsApp 24 h', 'Retomada', 'Conteúdo', 'Relatório']
 
 // ---------- a abertura ----------
-export function Abertura({ nicho, hero, titulo, destaque, sub, botao, mini, onComecar }: { nicho: Nicho; hero: string; titulo: string; destaque: string; sub: string; botao: string; mini: string; onComecar: () => void }) {
+export function Abertura({ nicho, hero, titulo, destaque, sub, botao, mini, onComecar, compacta }: { nicho: Nicho; hero: string; titulo: string; destaque: string; sub: string; botao: string; mini: string; onComecar: () => void; compacta?: boolean }) {
   const k = destaque ? titulo.indexOf(destaque) : -1
   const antes = k >= 0 ? titulo.slice(0, k) : titulo, depois = k >= 0 ? destaque : '', resto = k >= 0 ? titulo.slice(k + destaque.length) : ''
+  // 25/11 (Guto: "botão do quiz pra começar fica muito embaixo"): na oficina, 5 entraram pelo anúncio e nenhum começou.
+  // Versão compacta: título curto + botão no topo da tela do celular; a foto e o cartão da Maia vêm depois do botão.
+  const textos = (
+    <div className="tx">
+      <h1>{antes}{depois && <em>{depois}</em>}{resto}</h1>
+      {!compacta && <p className="lead">{sub}</p>}
+      <div className="acoes">
+        <button className="mq-btn" onClick={onComecar}>{botao}</button>
+        <span className="mq-mini-esc">{mini}</span>
+      </div>
+      {compacta && <p className="lead">{sub}</p>}
+    </div>
+  )
   return (
-    <section className="hero">
+    <section className={compacta ? 'hero compacta' : 'hero'}>
       <div className="ct">
+        {compacta && textos}
         <div className="hero-foto">
           <img src={hero} alt="" fetchPriority="high" />
           <div className="maia-card">
@@ -33,14 +47,7 @@ export function Abertura({ nicho, hero, titulo, destaque, sub, botao, mini, onCo
             <div><b>Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua {nicho === 'oficina' ? 'oficina' : 'ótica'} pode ganhar a mais.</b><div className="chips">{CHIPS.map(c => <span key={c}>{c}</span>)}</div></div>
           </div>
         </div>
-        <div className="tx">
-          <h1>{antes}{depois && <em>{depois}</em>}{resto}</h1>
-          <p className="lead">{sub}</p>
-          <div className="acoes">
-            <button className="mq-btn" onClick={onComecar}>{botao}</button>
-            <span className="mq-mini-esc">{mini}</span>
-          </div>
-        </div>
+        {!compacta && textos}
       </div>
     </section>
   )

@@ -145,3 +145,12 @@
   .mq-v .ad b{font-size:18px}.mq-v .ad small{font-size:10.5px}
 }
 @media (prefers-reduced-motion:reduce){.mq-v .chips span{animation:none}}
+
+/* 25/11: abertura compacta (oficina): título menor e botão no topo da tela do celular; foto e cartão da Maia depois do botão */
+.mq-v .hero.compacta .ct{gap:18px;padding-block:8px 40px}
+.mq-v .hero.compacta h1{font-size:clamp(32px,8.6vw,60px);margin-top:8px;line-height:1.05}
+.mq-v .hero.compacta .acoes{margin-top:18px;gap:8px}
+.mq-v .hero.compacta .mq-btn{width:100%;max-width:460px}
+.mq-v .hero.compacta .lead{margin-top:14px;font-size:16px}
+.mq-v .hero.compacta .hero-foto>img{aspect-ratio:16/9}
+.mq-v .hero.compacta .hero-foto::after{background:linear-gradient(180deg,rgba(34,37,42,0) 60%,var(--gr) 100%)}
