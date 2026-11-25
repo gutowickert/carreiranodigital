@@ -111,7 +111,7 @@ const R = await jiti.import(path.join(RAIZ, 'lib/maia/vendedora-rotina.ts'))
 const T0 = new Date('2026-11-25T13:00:00Z')   // 10h de Brasília, quarta
 const hAtras = (h) => new Date(T0.getTime() - h * 3600e3).toISOString()
 leads.push({ id: 'QZ1', nome: 'Carlos Lima', whatsapp: '5500011944443333', codigo_turma: 'maiaquiz', criado_em: hAtras(2), qualificacao: { maia_quiz: 'q1', nicho: 'oficina', negocio: 'Auto Lima', cidade: 'Santos', uf: 'SP', principal: 'Cliente novo que chega pelo anúncio', ganho_anuncio_mes: 5000 } })
-leads.push({ id: 'QZ2', nome: 'Recente', whatsapp: '5500011944442222', codigo_turma: 'maiaquiz', criado_em: hAtras(0.5), qualificacao: { maia_quiz: 'q2', nicho: 'otica', negocio: 'Ótica Nova', uf: 'SP' } })
+leads.push({ id: 'QZ2', nome: 'Recente', whatsapp: '5500011944442222', codigo_turma: 'maiaquiz', criado_em: hAtras(0.05), qualificacao: { maia_quiz: 'q2', nicho: 'otica', negocio: 'Ótica Nova', uf: 'SP' } })
 leads.push({ id: 'QZ3', nome: 'Gaúcho', whatsapp: '5500051944441111', codigo_turma: 'maiaquiz', criado_em: hAtras(3), qualificacao: { maia_quiz: 'q3', nicho: 'oficina', negocio: 'Oficina Sul', uf: 'RS' } })
 leads.push({ id: 'QZ4', nome: 'Já Chamou', whatsapp: '5500011944440000', codigo_turma: 'maiaquiz', criado_em: hAtras(4), qualificacao: { maia_quiz: 'q4', nicho: 'otica', negocio: 'Ótica Ok', uf: 'SP' } })
 const cJa = await conversa('5500011944440000', 'Já Chamou'); await diz(cJa, 'Oi, fiz o diagnóstico')
@@ -120,10 +120,18 @@ const cvQ = (await db.lista('wa_conversas', {})).find(c => c.telefone.endsWith('
 const msQ = cvQ ? await db.lista('wa_msgs', { conversa_id: cvQ.id }) : []
 const qz1 = leads.find(l => l.id === 'QZ1')
 confere(rc.length === 1 && rc[0].lead === 'QZ1' && cvQ && cvQ.fase === 'maia' && cvQ.modo === 'ia' && cvQ.rascunho.maia.lead_id === 'QZ1' && msQ.some(m => /maia_diagnostico/.test(m.texto) && /Auto Lima/.test(m.texto) && /5\.000/.test(m.texto)) && qz1.qualificacao.maia_chamado_em, 'fez o quiz há 2 h e não chamou: a Maia chama com o modelo do diagnóstico (nome, negócio, ganho) e a conversa já aponta pro lead', { rc, msQ })
-confere(!leads.find(l => l.id === 'QZ2').qualificacao.maia_chamado_em && !leads.find(l => l.id === 'QZ3').qualificacao.maia_chamado_em && leads.find(l => l.id === 'QZ4').qualificacao.maia_chamado_em === 'já tinha conversa', 'não chama: quem fez há menos de 1 h, quem é do RS, nem quem já escreveu')
+confere(!leads.find(l => l.id === 'QZ2').qualificacao.maia_chamado_em && !leads.find(l => l.id === 'QZ3').qualificacao.maia_chamado_em && leads.find(l => l.id === 'QZ4').qualificacao.maia_chamado_em === 'já tinha conversa', 'não chama: quem fez há menos de 5 min, quem é do RS, nem quem já escreveu')
+// 24/11: quiz às 20h30 ainda chama (janela do quiz até 21h); às 21h30 não chama e avisa o time 1x
+leads.push({ id: 'QZ5', nome: 'Noite', whatsapp: '5500011944445555', codigo_turma: 'maiaquiz', criado_em: new Date('2026-11-25T23:20:00Z').toISOString(), qualificacao: { maia_quiz: 'q5', nicho: 'otica', negocio: 'Ótica Noite', uf: 'SP' } })
+let rn = await R.chamaQuemNaoChamou(new Date('2026-11-25T23:30:00Z'), { soLead: 'QZ5' })
+confere(Array.isArray(rn) && rn.length === 1 && rn[0].lead === 'QZ5' && rn[0].chamado, 'quiz às 20h20: a Maia chama às 20h30 (janela do quiz até 21h)', rn)
+leads.push({ id: 'QZ6', nome: 'Tarde da noite', whatsapp: '5500011944446666', codigo_turma: 'maiaquiz', criado_em: new Date('2026-11-26T00:30:00Z').toISOString(), qualificacao: { maia_quiz: 'q6', nicho: 'otica', negocio: 'Ótica Tarde', uf: 'SP' } })
+rn = await R.chamaQuemNaoChamou(new Date('2026-11-26T00:35:00Z'), { soLead: 'QZ6' })
+const q6 = leads.find(l => l.id === 'QZ6').qualificacao
+confere(rn.pulou === 'fora do horário' && !q6.maia_chamado_em && q6.maia_aviso_fora, 'quiz às 21h30: não chama, avisa o time (1x) e fica pra 9h', { rn, q6 })
 rc = await R.chamaQuemNaoChamou(T0)
 confere(rc.length === 0, 'rodar de novo não chama de novo')
-confere((await R.chamaQuemNaoChamou(new Date('2026-11-25T02:00:00Z'))).pulou === 'fora do horário', 'de madrugada não chama (só das 9h às 20h)')
+confere((await R.chamaQuemNaoChamou(new Date('2026-11-25T02:00:00Z'))).pulou === 'fora do horário', 'de madrugada não chama (quiz: das 9h às 21h)')
 // retomada: Carlos não respondeu a chamada do quiz
 const cv1 = () => db.um('wa_conversas', { id: cvQ.id })
 let rr = await R.retomaVenda(new Date(T0.getTime() + 24 * 3600e3))

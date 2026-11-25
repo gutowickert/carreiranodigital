@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse, after } from 'next/server'
 import { randomBytes, randomUUID } from 'crypto'
 import { supabaseAdmin as sb } from '@/lib/supabase-admin'
 import { ORG_CND } from '@/lib/org'
@@ -14,7 +14,8 @@ import { diagnosticar, ehNicho, telefoneBR, UFS, QUIZZES, TURMA_QUIZ, reaisQuiz 
 // equipe (push) e manda o Lead pra Meta (CAPI) com o MESMO event_id do pixel da página (deduplica).
 // Se a turma ainda não existir no banco, o lead entra sem turma (codigo_turma "maiaquiz"); se a gravação do
 // diagnóstico falhar, o lead continua valendo (o diagnóstico vai inteiro nas observações do card).
-export const maxDuration = 30
+// 300: depois de responder à página, a rota espera ~5 min e a Maia chama a pessoa no WhatsApp (lib/maia/vendedora-rotina.ts)
+export const maxDuration = 300
 
 const limpa = (v: any, max: number) => String(v ?? '').replace(/\s+/g, ' ').trim().slice(0, max)
 
@@ -132,6 +133,18 @@ export async function POST(req: NextRequest) {
       const capi = await sendLead({ eventId, eventSourceUrl: origem.pagina, phone: whatsapp, firstName: nome.split(' ')[0], fbp: origem.fbp, fbc: origem.fbc, clientIp: ip, userAgent, externalId: leadId, codigoTurma: TURMA_QUIZ })
       if (!capi.ok) console.error('CAPI Lead (maia quiz) falhou:', capi.error)
     } catch (e) { console.error('CAPI Lead (maia quiz):', e) }
+  }
+
+  // 24/11: a Maia chama quem fez o quiz ~5 min depois, se a pessoa não chamou antes (a resposta pra página já saiu)
+  if (leadId && process.env.MAIA_VENDEDORA_LIGADA === '1') {
+    const id = leadId
+    after(async () => {
+      try {
+        await new Promise(r => setTimeout(r, 4.6 * 60e3))
+        const { chamaQuemNaoChamou } = await import('@/lib/maia/vendedora-rotina')
+        await chamaQuemNaoChamou(new Date(), { soLead: id })
+      } catch (e) { await log('chamar', { erro: String((e as any)?.message || e), lead: id }) }
+    })
   }
 
   return NextResponse.json({ ok: true, codigo, criado })

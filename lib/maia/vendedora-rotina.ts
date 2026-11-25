@@ -1,7 +1,7 @@
 // Maia: a rotina da VENDA da Maia no número da Maia (24/11, doc do Guto "Maia vende a Maia" + o pedido dele no WhatsApp:
 // "a pessoa que preencher o funil e não chamar pra conversar, a Maia deve chamar no WhatsApp automaticamente").
 // Roda de hora em hora (rotina.ts), só com MAIA_VENDEDORA_LIGADA=1 e só das 9h às 20h (domingo a partir das 10h).
-//   1) chamaQuemNaoChamou: lead do quiz (turma maiaquiz) feito há 1 h ou mais (até 48 h), que não escreveu no número da Maia
+//   1) chamaQuemNaoChamou: lead do quiz (turma maiaquiz) feito há 5 min ou mais (até 48 h; era 1 h até 24/11), que não escreveu no número da Maia
 //      → modelo maia_diagnostico (nome, negócio, o ponto principal com o número dele). Uma vez só por lead. RS fica pro time.
 //   2) retomaVenda: conversa de venda (fase 'maia', modo 'ia', com lead) em que a Maia falou por último e ele não respondeu:
 //      20 h depois → texto livre (ainda dentro das 24 h); 3 dias → modelo maia_venda_retomada; 6 dias → maia_venda_despedida e o
@@ -11,7 +11,7 @@ import { oitoDb as db } from '@/lib/oito/db'
 import { enviaTexto, enviaModelo, registraSaida, fone, ehSimulado } from '@/lib/oito/wa'
 import { escola, avisaTime, ehRS, ETAPA_FUNIL, vendedoraLigada } from './vendedora'
 import { reaisQuiz as reais } from './quiz/quiz'
-import { podeFalar } from './horario'
+import { podeFalar, horaLocal, JANELA } from './horario'
 
 const H = 3600e3, DIA = 24 * H
 const primeiro = (n: any) => String(n || '').trim().split(/\s+/)[0] || 'tudo bem'
@@ -36,11 +36,36 @@ async function falhaModelo(nome: string, erro: string, agora: Date) {
   await avisaTime('modelo da venda não saiu', `O modelo ${nome} não saiu: ${erro.slice(0, 140)}. Confere se ele foi criado e aprovado (painel da Maia → Rotina → modelos).`, false)
 }
 
-export async function chamaQuemNaoChamou(agora = new Date()) {
+// 24/11 (pedido do Guto: "a IA deveria chamar automático quem finaliza o quiz"): a Telma (ótica de Natal) fez o quiz às
+// 19h52; com a espera de 1 h e a janela até 20h, ficou pra 9h do outro dia. Agora: espera ESPERA_QUIZ (5 min), e pra quem fez
+// o quiz a janela vai até FIM_QUIZ (21h), porque foi a própria pessoa que deixou o contato. A rota do quiz chama esta função
+// sozinha uns 5 min depois de gravar o lead (só ele, `soLead`); a rotina de hora em hora segue como rede de segurança.
+// Fora do horário (ex.: quiz às 21h30), não manda: avisa o time na hora (1x por lead) pra alguém decidir; às 9h a rotina chama.
+export const ESPERA_QUIZ = 5 * 60e3
+export const FIM_QUIZ = 21
+export function podeChamarQuiz(agora = new Date()) {
+  if (podeFalar(null, agora)) return true
+  const h = horaLocal(agora)
+  const x = h.hora + h.minuto / 60
+  return x >= (h.diaSemana === 0 ? JANELA.inicioDomingo : JANELA.inicio) && x < FIM_QUIZ
+}
+
+export async function chamaQuemNaoChamou(agora = new Date(), opc: { soLead?: string } = {}) {
   if (!vendedoraLigada()) return { pulou: 'vendedora desligada' }
-  if (!podeFalar(null, agora)) return { pulou: 'fora do horário' }
   const E = await escola()
-  const leads = await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), new Date(agora.getTime() - H).toISOString())
+  if (!podeChamarQuiz(agora)) {
+    if (opc.soLead) {
+      const [lead] = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), agora.toISOString())).filter((l: any) => l.id === opc.soLead)
+      const q = lead?.qualificacao || {}
+      if (lead && !q.maia_chamado_em && !q.maia_aviso_fora && !ehRS(lead)) {
+        await avisaTime('lead do quiz fora do horário', `${lead.nome || 'Alguém'} (${negocioDe(lead)}) fez o quiz agora, fora do horário da Maia (9h às ${FIM_QUIZ}h). Ela chama às 9h; se quiser, chama na mão antes pelo número da Maia.`, true)
+        await E.atualizaLead(lead.id, { qualificacao: { ...q, maia_aviso_fora: agora.toISOString() } }).catch(() => null)
+      }
+    }
+    return { pulou: 'fora do horário' }
+  }
+  const leads = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), new Date(agora.getTime() - ESPERA_QUIZ + 30e3).toISOString()))
+    .filter((l: any) => !opc.soLead || l.id === opc.soLead)
   const feitos: any[] = []
   for (const lead of leads) {
     const q = lead.qualificacao || {}
