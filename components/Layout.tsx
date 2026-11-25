@@ -96,7 +96,7 @@ const grupos: Grupo[] = [
   {
     titulo: 'Vendas',
     itens: [
-      { nome: 'Propostas', href: '/dashboard/orcamentos' },
+      { nome: 'Gerar orçamento', href: '/dashboard/orcamentos' },
       { nome: 'Ligações', href: '/dashboard/ligacoes' },
       { nome: 'Reuniões e chamadas', href: '/dashboard/reunioes', juntas: [
         { nome: 'Reuniões', href: '/dashboard/reunioes' },
@@ -161,9 +161,10 @@ const grupos: Grupo[] = [
         { nome: 'Receitas', href: '/dashboard/financeiro/receitas' },
         { nome: 'Despesas', href: '/dashboard/financeiro/custos' },
         { nome: 'Transferências', href: '/dashboard/financeiro/transferencias' },
-        // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
-        { nome: 'Nota fiscal', href: '/dashboard/financeiro/notas-fiscais' },
       ] },
+      // 25/11 (pedido do Nando): a Nota fiscal saiu de dentro de Relatórios e é item próprio
+      // 07/10/2026 (pedido do Rick): por enquanto só confere as vendas; gerar a nota é a etapa 2, com o Guto
+      { nome: 'Nota fiscal', href: '/dashboard/financeiro/notas-fiscais' },
     ],
   },
   {

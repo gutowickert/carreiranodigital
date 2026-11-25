@@ -126,6 +126,77 @@ function NovidadesPropostas({ abrirCard }: { abrirCard: (id: string) => void }) 
   )
 }
 
+
+// TODAS AS PROPOSTAS JÁ FEITAS (25/11/2026, pedido do Nando: "o Rick precisa ver as propostas já feitas"). Antes elas só
+// apareciam depois de escolher a pessoa ("Já feitos pra este lead"). Aqui é a lista inteira, as mais novas primeiro,
+// com o que o cliente fez com ela. "Abrir" leva pro mesmo lugar do "Já feitos" (edita a publicada, continua o rascunho).
+function PropostasFeitas({ abrir, abrirCard }: { abrir: (leadId: string, id: string) => void; abrirCard: (id: string) => void }) {
+  const [lista, setLista] = useState<any[] | null>(null)
+  const [filtro, setFiltro] = useState<'todas' | 'aceitas' | 'abertas' | 'nao' | 'rascunho'>('todas')
+  const [q, setQ] = useState('')
+  const [mostrar, setMostrar] = useState(15)
+  useEffect(() => {
+    fetchAuth('/api/orcamentos/lista').then(r => r.json()).then(j => setLista(j?.ok ? j.propostas || [] : [])).catch(() => setLista([]))
+  }, [])
+  if (!lista) return <div style={{ ...card, marginTop: 16, fontSize: 13, color: 'var(--text-faint)' }}>Carregando as propostas já feitas…</div>
+  if (!lista.length) return null
+  const de = (p: any, f: typeof filtro) => f === 'todas' ? true : f === 'aceitas' ? !!p.aceito_em
+    : f === 'abertas' ? p.situacao === 'publicado' && !p.aceito_em && p.aberturas > 0
+    : f === 'nao' ? p.situacao === 'publicado' && !p.aceito_em && !p.aberturas
+    : p.situacao === 'rascunho'
+  const b = q.trim().toLowerCase()
+  const vis = lista.filter(p => de(p, filtro) && (!b || `${p.cliente || ''} ${p.lead_nome || ''} ${p.produto || ''}`.toLowerCase().includes(b)))
+  const dt = (iso: string | null) => iso ? new Date(iso).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo', day: '2-digit', month: '2-digit' }) : '—'
+  const situacao = (p: any) => p.aceito_em ? { txt: `Aceitou em ${dt(p.aceito_em)}`, cor: 'var(--green)' }
+    : p.situacao === 'rascunho' ? { txt: 'Rascunho', cor: 'var(--text-faint)' }
+    : p.aberturas ? { txt: `Abriu ${p.aberturas}x · última ${dt(p.ultima_abertura)}`, cor: 'var(--blue)' }
+    : { txt: 'Ainda não abriu', cor: 'var(--amber)' }
+  const FILTROS: [typeof filtro, string][] = [['todas', 'Todas'], ['aceitas', 'Aceitas'], ['abertas', 'Abriram'], ['nao', 'Não abriram'], ['rascunho', 'Rascunhos']]
+  return (
+    <div style={{ ...card, marginTop: 16, padding: 0, overflow: 'hidden' }}>
+      <div style={{ padding: '14px 16px', display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+        <b style={{ fontSize: 14.5, color: 'var(--text)', marginRight: 'auto' }}>Propostas já feitas</b>
+        <input style={{ ...inp, width: 'auto', flex: '0 1 240px', padding: '7px 10px', fontSize: 13 }} placeholder="Buscar cliente ou produto" value={q} onChange={e => setQ(e.target.value)} aria-label="Buscar proposta" />
+      </div>
+      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', padding: '10px 16px 4px' }}>
+        {FILTROS.map(([k, n]) => {
+          const on = filtro === k
+          return <button key={k} onClick={() => { setFiltro(k); setMostrar(15) }} style={{ border: '1px solid ' + (on ? 'var(--text)' : 'var(--border-strong)'), background: on ? 'var(--text)' : 'transparent', color: on ? 'var(--bg)' : 'var(--text-muted)', borderRadius: 999, padding: '3px 11px', fontSize: 12.5, cursor: 'pointer', font: 'inherit' }}>
+            {n} <span style={{ opacity: .65 }}>{lista.filter(p => de(p, k)).length}</span></button>
+        })}
+      </div>
+      <div style={{ overflowX: 'auto' }}>
+        <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 640 }}>
+          <thead><tr>{['Cliente', 'O quê', 'Valor', 'Feita', 'Situação', ''].map((h, i) => <th key={i} style={{ textAlign: i === 2 ? 'right' : 'left', fontSize: 11.5, fontWeight: 500, color: 'var(--text-faint)', padding: '10px 16px', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>)}</tr></thead>
+          <tbody>
+            {vis.slice(0, mostrar).map(p => {
+              const s = situacao(p)
+              return (
+                <tr key={p.id} style={{ borderBottom: '1px solid var(--border)' }}>
+                  <td style={{ padding: '10px 16px', fontSize: 13.5, color: 'var(--text)', fontWeight: 500 }}>{p.cliente || '—'}</td>
+                  <td style={{ padding: '10px 16px', fontSize: 13, color: 'var(--text-muted)' }}>{p.produto || '—'}</td>
+                  <td style={{ padding: '10px 16px', fontSize: 13, textAlign: 'right', fontVariantNumeric: 'tabular-nums', whiteSpace: 'nowrap' }}>{p.valor != null ? dinheiro(p.valor) : '—'}</td>
+                  <td style={{ padding: '10px 16px', fontSize: 12.5, color: 'var(--text-faint)', whiteSpace: 'nowrap' }}>{dt(p.publicado_em || p.criado_em)}</td>
+                  <td style={{ padding: '10px 16px', fontSize: 12.5, color: s.cor, whiteSpace: 'nowrap' }}>{s.txt}</td>
+                  <td style={{ padding: '8px 16px', whiteSpace: 'nowrap', textAlign: 'right' }}>
+                    <span style={{ display: 'inline-flex', gap: 6 }}>
+                      {p.situacao === 'publicado' && p.slug && <a href={`/proposta/${p.slug}?eu=1`} target="_blank" rel="noopener" style={{ ...btnSec, textDecoration: 'none', padding: '5px 10px', fontSize: 12.5 }} title="Abre sem contar como abertura do cliente">ver</a>}
+                      {p.lead_id && <button onClick={() => abrir(p.lead_id, p.id)} style={{ ...btnSec, padding: '5px 10px', fontSize: 12.5 }}>{p.situacao === 'publicado' ? (p.aceito_em ? 'abrir' : 'editar') : 'continuar'}</button>}
+                      {p.lead_id && <button onClick={() => abrirCard(p.lead_id)} style={{ ...btnSec, padding: '5px 10px', fontSize: 12.5 }}>cartão</button>}
+                    </span>
+                  </td>
+                </tr>
+              )
+            })}
+            {!vis.length && <tr><td colSpan={6} style={{ padding: '18px 16px', fontSize: 13, color: 'var(--text-faint)' }}>Nenhuma proposta nesse filtro.</td></tr>}
+          </tbody>
+        </table>
+      </div>
+      {vis.length > mostrar && <button onClick={() => setMostrar(m => m + 30)} style={{ ...btnSec, margin: '10px 16px 14px' }}>Mostrar mais ({vis.length - mostrar})</button>}
+    </div>
+  )
+}
+
 export default function GerarOrcamento() {
   const [busca, setBusca] = useState('')
   const [itens, setItens] = useState<any[]>([])
@@ -346,6 +417,7 @@ export default function GerarOrcamento() {
       {msg && <div style={{ ...card, marginTop: 14, color: 'var(--amber)', fontSize: 13.5 }}>{msg}</div>}
 
       {!leadId && <NovidadesPropostas abrirCard={setCardAberto} />}
+      {!leadId && <PropostasFeitas abrirCard={setCardAberto} abrir={async (lid, id) => { await preparar(lid); await abrirAnterior(id) }} />}
 
       {/* o card do lead por cima da tela: confere, fecha, e segue de onde parou */}
       {cardAberto && <LeadCardModal leadId={cardAberto} onClose={() => setCardAberto(null)} />}
