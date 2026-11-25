@@ -152,11 +152,10 @@ const grupos: Grupo[] = [
     itens: [
       { nome: 'Lançamentos', href: '/dashboard/financeiro' },
       { nome: 'Fluxo de caixa', href: '/dashboard/financeiro/fluxo' },
-      { nome: 'Contas a pagar', href: '/dashboard/financeiro/contas-pagar', juntas: [
-        { nome: 'Contas a pagar', href: '/dashboard/financeiro/contas-pagar' },
-        // 13/10/2026 (pedido do Rick): as mensalidades dos clientes do CRM, 12 meses, com o "pagou"
-        { nome: 'Clientes com recorrência', href: '/dashboard/financeiro/recorrentes' },
-      ] },
+      { nome: 'Contas a pagar', href: '/dashboard/financeiro/contas-pagar' },
+      // 13/10/2026 (pedido do Rick): as mensalidades dos clientes do CRM, 12 meses, com o "pagou".
+      // 25/11 (pedido do Nando): item próprio no Financeiro, não mais aba de Contas a pagar
+      { nome: 'Clientes com recorrência', href: '/dashboard/financeiro/recorrentes' },
       { nome: 'Relatórios', href: '/dashboard/financeiro/receitas', juntas: [
         { nome: 'Receitas', href: '/dashboard/financeiro/receitas' },
         { nome: 'Despesas', href: '/dashboard/financeiro/custos' },
