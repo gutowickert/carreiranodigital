@@ -128,7 +128,8 @@ confere(Array.isArray(rn) && rn.length === 1 && rn[0].lead === 'QZ5' && rn[0].ch
 leads.push({ id: 'QZ6', nome: 'Tarde da noite', whatsapp: '5500011944446666', codigo_turma: 'maiaquiz', criado_em: new Date('2026-11-26T00:30:00Z').toISOString(), qualificacao: { maia_quiz: 'q6', nicho: 'otica', negocio: 'Ótica Tarde', uf: 'SP' } })
 rn = await R.chamaQuemNaoChamou(new Date('2026-11-26T00:35:00Z'), { soLead: 'QZ6' })
 const q6 = leads.find(l => l.id === 'QZ6').qualificacao
-confere(rn.pulou === 'fora do horário' && !q6.maia_chamado_em && q6.maia_aviso_fora, 'quiz às 21h30: não chama, avisa o time (1x) e fica pra 9h', { rn, q6 })
+confere(Array.isArray(rn) && rn[0]?.chamado && q6.maia_chamado_em, 'quiz às 21h30: a Maia chama na hora (a chamada do quiz é 24 h)', { rn, q6 })
+confere((await R.chamaQuemNaoChamou(new Date('2026-11-26T05:00:00Z'))).pulou === 'fora do horário', 'a varredura de hora em hora de madrugada não chama (só a chamada do quiz é 24 h)')
 rc = await R.chamaQuemNaoChamou(T0)
 confere(rc.length === 0, 'rodar de novo não chama de novo')
 confere((await R.chamaQuemNaoChamou(new Date('2026-11-25T02:00:00Z'))).pulou === 'fora do horário', 'de madrugada não chama (quiz: das 9h às 21h)')

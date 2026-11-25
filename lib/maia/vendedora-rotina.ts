@@ -39,8 +39,8 @@ async function falhaModelo(nome: string, erro: string, agora: Date) {
 // 24/11 (pedido do Guto: "a IA deveria chamar automático quem finaliza o quiz"): a Telma (ótica de Natal) fez o quiz às
 // 19h52; com a espera de 1 h e a janela até 20h, ficou pra 9h do outro dia. Agora: espera ESPERA_QUIZ (5 min), e pra quem fez
 // o quiz a janela vai até FIM_QUIZ (21h), porque foi a própria pessoa que deixou o contato. A rota do quiz chama esta função
-// sozinha uns 5 min depois de gravar o lead (só ele, `soLead`); a rotina de hora em hora segue como rede de segurança.
-// Fora do horário (ex.: quiz às 21h30), não manda: avisa o time na hora (1x por lead) pra alguém decidir; às 9h a rotina chama.
+// sozinha uns 5 min depois de gravar o lead (só ele, `soLead`), a qualquer hora; a rotina de hora em hora segue como rede de
+// segurança e só chama das 9h às 21h.
 export const ESPERA_QUIZ = 5 * 60e3
 export const FIM_QUIZ = 21
 export function podeChamarQuiz(agora = new Date()) {
@@ -53,17 +53,9 @@ export function podeChamarQuiz(agora = new Date()) {
 export async function chamaQuemNaoChamou(agora = new Date(), opc: { soLead?: string } = {}) {
   if (!vendedoraLigada()) return { pulou: 'vendedora desligada' }
   const E = await escola()
-  if (!podeChamarQuiz(agora)) {
-    if (opc.soLead) {
-      const [lead] = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), agora.toISOString())).filter((l: any) => l.id === opc.soLead)
-      const q = lead?.qualificacao || {}
-      if (lead && !q.maia_chamado_em && !q.maia_aviso_fora && !ehRS(lead)) {
-        await avisaTime('lead do quiz fora do horário', `${lead.nome || 'Alguém'} (${negocioDe(lead)}) fez o quiz agora, fora do horário da Maia (9h às ${FIM_QUIZ}h). Ela chama às 9h; se quiser, chama na mão antes pelo número da Maia.`, true)
-        await E.atualizaLead(lead.id, { qualificacao: { ...q, maia_aviso_fora: agora.toISOString() } }).catch(() => null)
-      }
-    }
-    return { pulou: 'fora do horário' }
-  }
+  // 24/11 (Guto: "a Maia pode atender 24 h"): a chamada logo depois do quiz (`soLead`, ~5 min) sai a QUALQUER hora — a pessoa
+  // acabou de deixar o contato, está com o celular na mão. Só a varredura de hora em hora (leads mais antigos) respeita a janela.
+  if (!opc.soLead && !podeChamarQuiz(agora)) return { pulou: 'fora do horário' }
   const leads = (await E.leadsQuiz(new Date(agora.getTime() - 48 * H).toISOString(), new Date(agora.getTime() - ESPERA_QUIZ + 30e3).toISOString()))
     .filter((l: any) => !opc.soLead || l.id === opc.soLead)
   const feitos: any[] = []
