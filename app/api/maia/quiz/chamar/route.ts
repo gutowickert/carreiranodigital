@@ -12,6 +12,9 @@ export async function POST(req: Request) {
   if (!chave || !igual(req.headers.get('authorization') || '', 'Bearer ' + chave)) return Response.json({ erro: 'não autorizado' }, { status: 401 })
   let b: any = {}
   try { b = await req.json() } catch { /* sem corpo */ }
+  // os modelos da venda (maia_diagnostico + retomadas): criar/mandar pra Meta aprovar e ver a situação (o mesmo do botão do painel)
+  if (b.acao === 'criar_modelos_venda') { const { criaModelosVenda } = await import('@/lib/maia/modelos'); return Response.json(await criaModelosVenda()) }
+  if (b.acao === 'modelos') { const { statusModelos } = await import('@/lib/maia/modelos'); return Response.json(await statusModelos()) }
   const ids: string[] = (Array.isArray(b.leads) ? b.leads : [b.lead]).filter((x: any) => typeof x === 'string' && x.length > 10).slice(0, 20)
   if (!ids.length) return Response.json({ erro: 'falta o id do lead' }, { status: 400 })
   const { chamaQuemNaoChamou } = await import('@/lib/maia/vendedora-rotina')
