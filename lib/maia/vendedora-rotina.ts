@@ -12,6 +12,7 @@ import { enviaTexto, enviaModelo, registraSaida, fone, ehSimulado } from '@/lib/
 import { escola, avisaTime, ehRS, ETAPA_FUNIL, vendedoraLigada } from './vendedora'
 import { reaisQuiz as reais } from './quiz/quiz'
 import { podeFalar, horaLocal, JANELA } from './horario'
+import { textoDoModelo } from './modelos'
 
 const H = 3600e3, DIA = 24 * H
 const primeiro = (n: any) => String(n || '').trim().split(/\s+/)[0] || 'tudo bem'
@@ -76,7 +77,7 @@ export async function chamaQuemNaoChamou(agora = new Date(), opc: { soLead?: str
     if (!r.ok) { await falhaModelo('maia_diagnostico', String(r.erro || ''), agora); feitos.push({ lead: lead.id, erro: r.erro }); continue }
     if (!cv) cv = await db.insere('wa_conversas', { telefone: fone(tel), nome: lead.nome || null, fase: 'maia', modo: 'ia', ia_respostas: 0, rascunho: { maia: { lead_id: lead.id, venda: true, chamada_quiz: agora.toISOString() } }, ...(ehSimulado(tel) ? { simulado: true } : {}) })
     else await db.atualiza('wa_conversas', { id: cv.id }, { fase: 'maia', modo: 'ia', rascunho: { ...(cv.rascunho || {}), maia: { ...(cv.rascunho?.maia || {}), lead_id: lead.id, venda: true, chamada_quiz: agora.toISOString() } } })
-    await registraSaida(cv, 'sistema', `[modelo maia_diagnostico] Oi, ${corpo[0]}! Aqui é a Maia... diagnóstico pra ${corpo[1]}: ${corpo[2]}.`, r, 'modelo')
+    await registraSaida(cv, 'sistema', textoDoModelo('maia_diagnostico', corpo), r, 'modelo')
     await E.atualizaLead(lead.id, { qualificacao: { ...q, maia_chamado_em: agora.toISOString() } }).catch(() => null)
     await E.andamento(lead.id, 'Fez o quiz e não chamou: a Maia chamou no WhatsApp (modelo do diagnóstico).', ETAPA_FUNIL.novo).catch(() => null)
     feitos.push({ lead: lead.id, chamado: true })
@@ -110,7 +111,7 @@ export async function retomaVenda(agora = new Date()) {
     const nomes = [primeiro(cv.nome || lead?.nome), negocioDe(lead)]
     const modelo = qual === '3d' ? 'maia_venda_retomada' : qual === '6d' ? 'maia_venda_despedida' : ''
     const r: any = qual === '20h' ? await enviaTexto(cv.telefone, RETOMA_20H) : await enviaModelo(cv.telefone, modelo, 'pt_BR', nomes)
-    const texto = qual === '20h' ? RETOMA_20H : `[modelo ${modelo}] ${nomes.join(', ')}`
+    const texto = qual === '20h' ? RETOMA_20H : textoDoModelo(modelo, nomes)
     if (!r?.ok) { if (modelo) await falhaModelo(modelo, String(r?.erro || ''), agora); feitos.push({ conversa: cv.id, qual, erro: r?.erro }); continue }
     await registraSaida(cv, 'sistema', texto, r, qual === '20h' ? 'texto' : 'modelo')
     await db.atualiza('wa_conversas', { id: cv.id }, { rascunho: { ...(cv.rascunho || {}), maia: { ...mx, retoma_desde: desde, retoma_feitas: { ...st, [qual === '20h' ? 'h20' : qual === '3d' ? 'd3' : 'd6']: agora.toISOString() } } } })

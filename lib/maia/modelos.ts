@@ -158,3 +158,14 @@ export async function statusModelos(w?: { token: string; waba: string } | null) 
   if (!r.ok) return { ok: false, erro: String(j?.error?.message || r.status) }
   return { ok: true, modelos: (j.data || []).filter((m: any) => /^maia_/.test(m.name)) }
 }
+
+// 24/11 (Guto): na tela do WhatsApp a equipe vê a mensagem INTEIRA como o cliente recebeu (texto do modelo com as
+// variáveis no lugar + os botões), não o resumo "[modelo x] ...".
+export function textoDoModelo(nome: string, corpo: string[] = []): string {
+  const m = MODELOS_VENDA.find(x => x.name === nome)
+  if (!m) return `[modelo ${nome}] ${corpo.join(', ')}`
+  const body = String(m.components.find((c: any) => c.type === 'BODY')?.text || '')
+  const texto = body.replace(/\{\{(\d+)\}\}/g, (_: string, i: string) => corpo[Number(i) - 1] ?? '')
+  const botoes = (m.components.find((c: any) => c.type === 'BUTTONS')?.buttons || []).map((b: any) => `[${b.text}]`)
+  return botoes.length ? `${texto}\n\n${botoes.join('  ')}` : texto
+}
