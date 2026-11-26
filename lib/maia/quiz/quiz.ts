@@ -123,6 +123,8 @@ export const QUIZZES: Record<Nicho, Quiz> = {
     eyebrow: 'Diagnóstico para óticas',
     titulo: 'Quantos óculos a mais a sua ótica pode vender por mês?',
     sub: 'Responda 8 perguntas de tocar. No fim você vê, com os seus números, quanto dá pra ganhar com anúncio, atendimento, retomada, conteúdo e a sua base de clientes, e o que a Maia faz em cada parte.',
+    titulo_curto: 'Quantos óculos a mais sua ótica pode vender?',
+    sub_curto: 'No fim você vê, com os seus números, quanto dá pra ganhar a mais com anúncio, atendimento e retomada, e o que a Maia faz em cada parte.',
     destaque: 'a mais', hero: '/maia/img/quiz/otica/hero-vendedora-balcao.jpg', ad_img: '/maia/img/quiz/otica/provando-oculos.jpg',
     fala: 'Oi, eu sou a Maia. Em 1 minuto eu te mostro quanto a sua ótica pode ganhar a mais.',
     perguntas: [
