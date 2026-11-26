@@ -39,6 +39,8 @@ async function marca(tipo: string) {
 
 export async function GET(req: NextRequest) {
   if (!autorizado(req)) return NextResponse.json({ ok: false, erro: 'não autorizado' }, { status: 401 })
+  // 26/11: de carona no mesmo agendamento (a cada 10 min), o aviso de venda nova do Matt (lib/matt/vigia.ts). Nunca derruba o vigia.
+  const matt = await import('@/lib/matt/vigia').then(m => m.vigiaMatt()).catch((e: any) => ({ ok: false, erro: String(e?.message || e) }))
   const resumo = req.nextUrl.searchParams.get('resumo') === '1' || (req.headers.get('user-agent') || '').includes('vercel-cron')
   const desde3 = new Date(Date.now() - 3 * 86400e3).toISOString()
   const [maq] = await db.busca('maquina', 'id=eq.1').catch(() => [])
@@ -92,5 +94,5 @@ export async function GET(req: NextRequest) {
       + `Sobra antes dos fixos: ${reais(rec - g - prod - ps.reduce((s: number, p: any) => s + (+p.taxa_gateway || 0), 0))}.`
     await avisaDono('Recado: bom dia', resumoTxt, 'sunny'); await marca('resumo')
   }
-  return NextResponse.json({ ok: true, avisos: avisos.map(a => a.tipo), enviados, resumo: resumoTxt })
+  return NextResponse.json({ ok: true, avisos: avisos.map(a => a.tipo), enviados, resumo: resumoTxt, matt })
 }
