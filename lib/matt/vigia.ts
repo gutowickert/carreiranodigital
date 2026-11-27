@@ -32,7 +32,7 @@ async function avisaGuto(titulo: string, texto: string) {
 export async function vigiaMatt() {
   const chave = process.env.MATT_OFFICE_KEY || await le('matt:office_key')
   if (!chave) return { ok: false, motivo: 'sem chave do painel' }
-  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-office-key': String(chave) }, body: JSON.stringify({ action: 'dash' }), signal: AbortSignal.timeout(15000) }).catch(() => null)
+  const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-office-key': String(chave) }, body: JSON.stringify({ action: 'dash' }), signal: AbortSignal.timeout(55000) }).catch(() => null)
   const corpo = r ? await r.text().catch(() => '') : ''
   let d: any = null; try { d = JSON.parse(corpo) } catch { d = null }
   const w = Array.isArray(d?.weeks) ? d.weeks[d.weeks.length - 1] : null

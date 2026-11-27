@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { timingSafeEqual } from 'node:crypto'
 import { vigiaMatt } from '@/lib/matt/vigia'
 
-export const maxDuration = 30
+export const maxDuration = 60
 const U = () => process.env.NEXT_PUBLIC_SUPABASE_URL as string, K = () => process.env.SUPABASE_SERVICE_ROLE_KEY as string
 
 async function chaveCerta(): Promise<string> {
