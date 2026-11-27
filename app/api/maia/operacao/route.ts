@@ -477,6 +477,21 @@ export async function POST(req: Request) {
           // 08/11: esperar: true = a espera de 12 s do webhook de verdade (junta as mensagens picadas numa resposta só)
           esperar_ms: b.esperar === true ? ESPERA_WEBHOOK_MS : Number(b.esperar) > 0 ? Math.min(Number(b.esperar), 30000) : null }))
       }
+      // 27/11 (historico.ts): o histórico do app WhatsApp Business na coexistência.
+      //   inscrever_webhooks_historico → inscreve o app nos campos history, smb_message_echoes, smb_app_state_sync (e account_update),
+      //     lendo os campos atuais e mandando a união (nunca tira campo). conferir_webhooks_historico → só lê.
+      //   pedir_historico {negocio_id} → contatos e depois mensagens (smb_app_data). Uma vez só, até 24 h depois da conexão
+      case 'inscrever_webhooks_historico': { const H = await import('@/lib/maia/historico'); const r = await H.garanteInscricaoApp(); return r.ok ? ok(r) : Response.json(r, { status: 400 }) }
+      case 'conferir_webhooks_historico': { const H = await import('@/lib/maia/historico'); const r = await H.confereInscricaoApp(); return r.ok ? ok(r) : Response.json(r, { status: 400 }) }
+      case 'pedir_historico': {
+        if (!b.negocio_id) return erro('falta o negocio_id')
+        const H = await import('@/lib/maia/historico')
+        // o relógio só pode ser trocado no modo de teste (pra conferir a regra das 24 h)
+        const agoraT = db.modo() === 'local' && b.agora && !isNaN(Date.parse(b.agora)) ? new Date(b.agora) : new Date()
+        const r = await H.pedeHistorico(String(b.negocio_id), agoraT)
+        if (r.ok) await db.evento('historico_pedido_por', String(b.negocio_id), { por })
+        return r.ok ? ok(r) : Response.json(r, { status: 400 })
+      }
       // 05/11 (Tech Provider): o link que o dono abre pra conectar o WhatsApp do negócio
       case 'link_conectar': {
         const { assinaLink } = await import('@/lib/maia/conectar')

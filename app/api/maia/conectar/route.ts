@@ -59,7 +59,11 @@ export async function POST(req: Request) {
 
   // 3) guarda (o atendimento começa desligado: a equipe testa e liga no painel)
   // a chave vai cifrada pro banco quando há MAIA_CRIPTO_CHAVE (lib/maia/segredo.ts)
-  const wa = { ...(neg.meta?.wa || {}), token: cifra(token), waba_id: wabaId, conectado_em: new Date().toISOString(), inscrito: !!sub?.success, atende: false }
+  // 27/11 (historico.ts): conexão nova = a Meta libera de novo o pedido do histórico (uma vez, em 24 h). O pedido da conexão
+  // anterior fica guardado em historico_anterior, e o prazo novo conta deste conectado_em
+  const { historico_pedido_em, historico, ...waAntes } = neg.meta?.wa || {}
+  const anterior = historico_pedido_em || historico ? { historico_anterior: { historico_pedido_em: historico_pedido_em || null, historico: historico || null, conectado_em: waAntes.conectado_em || null } } : {}
+  const wa = { ...waAntes, ...anterior, token: cifra(token), waba_id: wabaId, conectado_em: new Date().toISOString(), inscrito: !!sub?.success, atende: false }
   await db.atualiza('negocios', { id: neg.id }, { wa_phone_id: phoneId, meta: { ...(neg.meta || {}), wa } })
   await db.evento('whatsapp_conectado', neg.id, { phone_id: phoneId, waba_id: wabaId, inscrito: !!sub?.success })
 

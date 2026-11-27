@@ -56,3 +56,5 @@ maia-oficina/.env
 # Maia: teste do lançamento (15/11)
 .teste-lancamento/
 .next-teste-lanc/
+# Maia: teste do histórico da coexistência (27/11)
+.teste-maia-historico/

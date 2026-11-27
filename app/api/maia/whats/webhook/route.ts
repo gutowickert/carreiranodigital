@@ -3,6 +3,10 @@
 //   GET  → verificação da Meta (hub.verify_token = MAIA_WA_VERIFY_TOKEN)
 //   POST → mensagens dos clientes do negócio (a Maia atende, se a equipe ligou o atendimento), o eco do que o dono
 //          respondeu pelo celular (coexistência: a Maia fica quieta 2 h naquela conversa) e o status das enviadas
+//   27/11 (lib/maia/historico.ts): os campos da coexistência "history" (o histórico do app, até 180 dias, inclusive a mídia em
+//          value.messages), "smb_app_state_sync" (contatos) e "smb_message_echoes" (eco do app) têm o bruto guardado no
+//          armazenamento e um evento. history e contatos NUNCA passam pelo atendimento (nem conversa, nem resposta); o eco
+//          continua só registrando a fala do dono (ecoDoDono), sem resposta
 import { NextResponse, after } from 'next/server'
 import { createHmac, timingSafeEqual } from 'crypto'
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
@@ -10,6 +14,7 @@ import { avisaEquipe } from '@/lib/maia/canal'
 import { recebeDoCliente, respondeCliente } from '@/lib/maia/atendente'
 import { atendimentoLigado, waDoNegocio, marcaLidaNeg, baixaMidiaNeg } from '@/lib/maia/wa-negocio'
 import { ecoDoDono } from '@/lib/maia/humano'
+import { CAMPOS_GUARDADOS, guardaDaCoexistencia } from '@/lib/maia/historico'
 
 export const maxDuration = 120
 const VERIFY = () => process.env.MAIA_WA_VERIFY_TOKEN || 'maia-wa-2026'
@@ -49,16 +54,25 @@ function textoDe(m: any) {
 export async function POST(req: Request) {
   const corpo = await req.text()
   if (!assinaturaOk(corpo, req.headers.get('x-hub-signature-256'))) return NextResponse.json({ erro: 'assinatura' }, { status: 401 })
-  const b = JSON.parse(corpo || '{}')
+  let b: any = {}
+  try { b = JSON.parse(corpo || '{}') } catch { return NextResponse.json({ ok: true, ignorado: 'json' }) }   // nunca 500 pra Meta
   const responder = new Map<string, string>()   // conversa → negócio
   // 07/11 (piloto): áudio e foto do cliente são baixados, guardados e transcritos/descritos depois de responder 200 pra Meta
   const comMidia: { neg: any; m: any; nome: string | null; referral: any }[] = []
+  // 27/11: o que é da coexistência (histórico, contatos, eco) é guardado depois do 200 (responde rápido pra Meta)
+  const guardar: { neg: any; campo: string; ch: any; waba: string | null }[] = []
   for (const entry of b.entry || []) for (const ch of entry.changes || []) {
     const v = ch.value || {}
     const phoneId = v.metadata?.phone_number_id
     if (!phoneId) continue
+    const campo = String(ch.field || 'messages')
     const neg = await db.um('negocios', { wa_phone_id: String(phoneId) }).catch(() => null)
     if (!neg || neg.status === 'cancelado') continue
+    if (CAMPOS_GUARDADOS.has(campo)) guardar.push({ neg, campo, ch, waba: entry.id ? String(entry.id) : null })
+    // o histórico (inclusive a mídia dele, que vem em value.messages) e os contatos param aqui: nunca viram conversa nem resposta
+    if (campo === 'history' || campo === 'smb_app_state_sync') continue
+    // nenhum outro campo (account_update etc.) entra no atendimento: só o de mensagens e o eco do app
+    if (campo !== 'messages' && campo !== 'smb_message_echoes') continue
 
     for (const s of v.statuses || []) {
       const st = s.status === 'delivered' ? 'entregue' : s.status === 'read' ? 'lido' : s.status === 'failed' ? 'falhou' : s.status === 'sent' ? 'enviado' : s.status
@@ -81,6 +95,10 @@ export async function POST(req: Request) {
       if (atendimentoLigado(neg)) { marcaLidaNeg(waDoNegocio(neg)!, m.id).catch(() => null); if (r.responder) responder.set(r.cv.id, neg.id) }
     }
   }
+
+  if (guardar.length) after(async () => {
+    for (const g of guardar) await guardaDaCoexistencia(g.neg, g.campo, g.ch, g.waba).catch(async (e: any) => { await avisaEquipe('erro ao guardar o histórico do WhatsApp', String(e?.message || e).slice(0, 160), g.neg.id) })
+  })
 
   // espera o cliente terminar de mandar e responde só se nada mais chegou e o dono não falou nas últimas 2 h
   if (responder.size || comMidia.length) after(async () => {
