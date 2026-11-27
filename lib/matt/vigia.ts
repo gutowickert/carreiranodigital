@@ -1,5 +1,5 @@
 // Matt (Press Kit Studios / The DJ Office): aviso de VENDA NOVA no WhatsApp do Guto (26/11).
-// Roda junto com o vigia do Recado (pg_cron a cada 10 min), então avisa mesmo com o PC desligado.
+// Roda pela rota /api/matt/vigia, que o pg_cron do Supabase chama a cada 10 min (job 'matt-vigia'): avisa mesmo com o PC desligado.
 // Lê o painel do Matt pela office-api com a chave de VISITANTE (só leitura) e compara a semana atual com a última leitura.
 // A chave de visitante e o último estado moram em recado_suporte_estado (chaves matt:office_key e matt:ultimo).
 // Envio: número oficial da escola; texto livre com a janela de 24 h aberta, senão o modelo cnd_aviso_recado.
