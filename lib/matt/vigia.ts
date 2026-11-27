@@ -33,9 +33,10 @@ export async function vigiaMatt() {
   const chave = process.env.MATT_OFFICE_KEY || await le('matt:office_key')
   if (!chave) return { ok: false, motivo: 'sem chave do painel' }
   const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-office-key': String(chave) }, body: JSON.stringify({ action: 'dash' }), signal: AbortSignal.timeout(15000) }).catch(() => null)
-  const d: any = await r?.json().catch(() => null)
+  const corpo = r ? await r.text().catch(() => '') : ''
+  let d: any = null; try { d = JSON.parse(corpo) } catch { d = null }
   const w = Array.isArray(d?.weeks) ? d.weeks[d.weeks.length - 1] : null
-  if (!w) return { ok: false, motivo: 'painel sem semana' }
+  if (!w) return { ok: false, motivo: 'painel sem semana', status: r?.status ?? 'sem resposta', trecho: corpo.slice(0, 120), chave_ok: String(chave).startsWith('pksv') && String(chave).length }
   const atual = { w: w.w, vendas: +w.sales || 0, pagas: +w.paid_sales || 0, em: new Date().toISOString() }
   const antes = await le('matt:ultimo')
   await grava('matt:ultimo', atual)
