@@ -497,7 +497,7 @@ export async function respondeCliente(conversa_id: string) {
   if (!ctx.humano || fechar) {
     const dd = diasDoNegocio(neg), pede = semAc(textoCliente)
     const alvo = /\bamanha\b/.test(pede) && dd.amanha.abre === false ? { d: dd.amanha, quando: 'amanhã' } : /\bhoje\b/.test(pede) && dd.hoje.abre === false ? { d: dd.hoje, quando: 'hoje' } : null
-    if (alvo && !/\bnao (abr|funcion|atend|trabalh|vamos estar|estamos|estaremos|da pra|consigo|conseguimos)|fechad/.test(semAc(enviadas.join(' ')))) {
+    if (alvo && !/\bnao (abr|funcion|atend|trabalh|vamos estar|estamos|estaremos|da pra|consigo|conseguimos)|\b(esta|estamos|estara|estaremos|fica|ficamos|ficara|ficaremos|vai estar|a loja|o negocio|a gente)\s+(\w+\s+)?fechad/.test(semAc(enviadas.join(' ')))) {
       diaExtra = `Só um aviso: ${alvo.quando} (${alvo.d.semana}, ${alvo.d.data}) a gente não abre.${dd.proximo ? ` O próximo dia é ${dd.proximo.semana}, ${dd.proximo.data}.` : ''}`
       await mandaTexto(cv, diaExtra)
     }
