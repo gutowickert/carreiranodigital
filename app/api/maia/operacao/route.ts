@@ -488,6 +488,11 @@ export async function POST(req: Request) {
         const H = await import('@/lib/maia/historico')
         // o relógio só pode ser trocado no modo de teste (pra conferir a regra das 24 h)
         const agoraT = db.modo() === 'local' && b.agora && !isNaN(Date.parse(b.agora)) ? new Date(b.agora) : new Date()
+        // antes de pedir, garante que o app recebe os campos do histórico: sem isso a Meta manda e ninguém guarda
+        if (db.modo() !== 'local') {
+          const insc: any = await H.garanteInscricaoApp()
+          if (!insc.ok) return Response.json({ ok: false, erro: 'não pedi o histórico: o recebimento não ficou ligado. ' + (insc.erro || '') }, { status: 400 })
+        }
         const r = await H.pedeHistorico(String(b.negocio_id), agoraT)
         if (r.ok) await db.evento('historico_pedido_por', String(b.negocio_id), { por })
         return r.ok ? ok(r) : Response.json(r, { status: 400 })
