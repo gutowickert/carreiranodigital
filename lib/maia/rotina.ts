@@ -137,6 +137,8 @@ export async function roda(opc: { forcarRelatorio?: boolean; relogio?: Date; for
   try { r.chamadas = await contaChamadas() } catch (e: any) { r.chamadas_erro = e.message }
   // 06/11: social media (desde 08/11 no plano único): publica o que venceu, lê os resultados 1x por dia (7h) e a análise do mês no dia 1. Só com MAIA_SOCIAL_LIGADO=1
   try { if (socialLigado()) r.social = await rotinaSocial({ forcar: opc.forcarRelatorio }) } catch (e: any) { r.social_erro = e.message }
+  // 28/11 (stories.ts): 8h os stories de resultados e próximos sorteios (só negócio com meta.stories.ligado)
+  try { const { rotinaStories } = await import('./stories'); r.stories = await rotinaStories(relogio) } catch (e: any) { r.stories_erro = e.message }
   // 08/11 (T15): a Maia Gestora (lib/maia/gestora-rotina.ts): 7h todas as regras, de 2 em 2 h (9h–19h) as urgentes da Meta. Só lê. Só com MAIA_GESTORA_LIGADA=1
   // 13/11 (cobranca.ts): confere no Asaas o que foi pago (baixa no financeiro da escola) e avisa a equipe do que venceu ontem
   // 13/11 (material.ts): dia 1 e 12 pede ao dono o material do lote; no dia do lote, se não chegou, avisa a equipe

@@ -254,6 +254,17 @@ async function publicaInstagram(neg: any, post: any, legenda: string): Promise<{
   return { ig, pronto: true }
 }
 
+// 28/11 (stories.ts): um story de imagem no Instagram do negócio (link público https). Devolve o id da mídia publicada.
+export async function publicaStoryIG(neg: any, url: string) {
+  if (!metaReal()) return sim('ig_story')
+  const token = await tokenPagina(neg)
+  const igId = await igDe(neg, token)
+  const c = await graph('POST', `${igId}/media`, token, { media_type: 'STORIES', image_url: url })
+  const s = await aguarda(c.id, token)
+  if (s.status !== 'FINISHED' && s.status !== 'PUBLISHED') throw new Error(`Instagram não processou o story (${s.status}${s.detalhe ? ': ' + s.detalhe : ''})`)
+  return String((await graph('POST', `${igId}/media_publish`, token, { creation_id: c.id })).id)
+}
+
 // Facebook (página)
 async function publicaFacebook(neg: any, post: any, legenda: string) {
   const fb = { ...(post.detalhe.fb || {}) }

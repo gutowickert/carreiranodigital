@@ -80,7 +80,11 @@ export async function comFerramentas(sistema: string, pedido: string | any[], fe
         if (t2) textos.push(t2)
       }
       // vale o texto da última volta; se ela veio vazia, o último que veio antes (sem repetir os dois)
-      return { texto: limpaFerramentaEmTexto(t || textos[textos.length - 1] || ''), usadas }
+      // 28/11 (teste da lotérica): o atendente escreve as <msg> JUNTO com a ferramenta e, depois dela, um comentário solto
+      // ("Qualquer dúvida...") sem <msg>: valia o comentário e a resposta certa se perdia. Se a última volta não tem <msg> e
+      // uma anterior tem, vale a anterior (quem não usa <msg> não muda nada)
+      const comMsg = [...textos].reverse().find(x => /<msg>/.test(x))
+      return { texto: limpaFerramentaEmTexto((t && /<msg>/.test(t)) || !comMsg ? (t || textos[textos.length - 1] || '') : comMsg), usadas }
     }
     if (op.antes && op.antes(pedidos.map((p: any) => ({ name: p.name, input: p.input || {} })))) return { texto: '', usadas, parou: true }
     const respostas: any[] = []

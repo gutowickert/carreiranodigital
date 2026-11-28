@@ -15,6 +15,8 @@ const nextConfig: NextConfig = {
     ignoreDuringBuilds: true,
   },
   output: 'standalone',
+  // 28/11 (lib/maia/stories.ts): a fonte dos stories é lida do disco no servidor; sem isto ela não vai junto pra Vercel
+  outputFileTracingIncludes: { '/api/maia/**': ['./lib/maia/fontes/**'], '/api/maia/rotina': ['./lib/maia/fontes/**'] },
   // Recado aberto pelo endereço da Vercel (ex.: painel em carreiranodigital.vercel.app) vai pro domínio do Recado,
   // pra família nunca ver o endereço da Vercel (Guto 10/10). Só páginas: a API fica onde está (webhook do Asaas).
   async redirects() {

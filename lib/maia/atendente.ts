@@ -255,6 +255,9 @@ function ferramentas(neg: any, cv: any, lead: any, ctx: Ctx): Ferramenta[] {
         // 08/11 (reteste): pergunta sobre o que ela mesma já respondeu, ou sobre outros negócios/instruções, não vai pro dono
         if (/\bj[aá] (respondi|informei|expliquei|disse)\b/i.test(String(pergunta)) || foraDoAssunto(String(pergunta))) return { erro: 'não vai pro dono: tu já respondeu isso, ou é sobre outros negócios/as instruções. Só responde o cliente.' }
         if (perguntaInterna(pergunta)) return { erro: 'isso não é dúvida do cliente, é coisa do sistema: não vai pro dono. Se a etapa ficou errada, usa mudar_etapa.' }
+        // 28/11 (boloes.ts): "tem bolão de X hoje?" já tem resposta na lista que a equipe mandou de manhã
+        const daLista = await import('./boloes').then(x => x.respostaDaLista(neg, String(pergunta || ''))).catch(() => null)
+        if (daLista) return { erro: 'não vai pro dono: ' + daLista }
         const prazo = prazoResposta(neg)
         // 08/11 (teste completo, #20): o dono recebeu 2 avisos do mesmo comprovante. A mesma dúvida do mesmo cliente (ou o
         // pagamento, quando já tem comprovante esperando) em 30 min não vai de novo: o cliente ganha o prazo igual
@@ -403,10 +406,15 @@ export async function respondeCliente(conversa_id: string) {
 
   // 14/11 (recado.ts): o cliente respondeu um recado pra base: a Maia sabe qual
   const doRecado = await import('./recado').then(x => x.contextoDoRecado(neg, cv.telefone)).catch(() => '')
-  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}${doRecado}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
+  // 28/11 (boloes.ts): a lotérica atende com a lista de bolões que a equipe mandou hoje (sem lista, não inventa bolão)
+  const doBolao = await import('./boloes').then(x => x.blocoParaAtender(neg)).catch(() => '')
+  const bolaoAgora = await import('./boloes').then(x => x.blocoDoPedido(neg, textoCliente)).catch(() => '')
+  const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg) + (doBolao ? '\n' + doBolao : ''), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}${doRecado}${doBolao}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}${bolaoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício). MAIA_MODELO_CLIENTE troca
     // 08/11 (T11): modelo misto (misto.ts): decisão de venda ou passagem pro dono é refeita no modelo forte. MAIA_MODELO_MISTO=0 desliga
-    { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho || fechar)
+    // 28/11 (boloes.ts): cliente perguntou de um jogo e o sistema já conferiu na lista do dia: vai no modelo forte (o barato
+    // às vezes ignorava a lista e prometia "confirmar com a equipe")
+    { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id }, !!gatilho || fechar || !!bolaoAgora)
 
   // 06/11: no teste, depois de usar as ferramentas a IA às vezes escreveu um RELATÓRIO ("Pronto, respondi a Carla e deixei na etapa...")
   // em vez da mensagem pro cliente. Isso nunca sai: só vale o que vem entre <msg>, e relatório é barrado.
@@ -414,7 +422,8 @@ export async function respondeCliente(conversa_id: string) {
   const boas = (t: string) => [...t.matchAll(/<msg>([\s\S]*?)<\/msg>/g)].map(x => x[1].trim()).filter(m => m && !RELATORIO.test(m))
   let partes = boas(r.texto)
   if (!partes.length) {
-    const r2 = await comFerramentas(regras(neg), `CONVERSA:\n${hist}\n\nTua resposta anterior não foi uma mensagem pro cliente. Ela vai DIRETO pro WhatsApp do cliente: escreve só o que tu dirias pra ele, em 1 ou 2 mensagens, cada uma entre <msg> e </msg>. Não conta o que tu fez nem fala do sistema.`, [], 1,
+    // 28/11 (boloes.ts): a reescrita leva a lista do dia junto (sem ela, a Maia voltava a oferecer os bolões antigos do cadastro)
+    const r2 = await comFerramentas(regras(neg) + (doBolao ? '\n' + doBolao : ''), `${bolaoAgora ? bolaoAgora.trim() + '\n\n' : ''}CONVERSA:\n${hist}\n\nTua resposta anterior não foi uma mensagem pro cliente. Ela vai DIRETO pro WhatsApp do cliente: escreve só o que tu dirias pra ele, em 1 ou 2 mensagens, cada uma entre <msg> e </msg>. Não conta o que tu fez nem fala do sistema.`, [], 1,
       { modelo: modeloIA, uso: { tipo: 'cliente', negocio_id: neg.id, conversa_id: cv.id } })
     partes = boas(r2.texto)
   }

@@ -71,6 +71,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   const cv = await conversaDoDono(neg)
   let texto = m.type === 'text' ? m.text?.body || '' : m.type === 'reaction' ? `(reagiu ${m.reaction?.emoji || ''})` : m.type === 'button' ? m.button?.text || '' : m.type === 'interactive' ? m.interactive?.button_reply?.title || '' : ''
   let midia_id: string | null = null
+  let fotoBolao: { b64: string; mime: string } | null = null   // 28/11 (boloes.ts): a arte dos bolões do dia, pra ler os números
   // 14/11 (recado.ts): a lista de contatos pra base (planilha .csv, cartão .vcf ou contatos compartilhados): importa sem IA
   const { ehListaDoDono } = await import('./recado')
   const lista = ehListaDoDono(m)
@@ -90,6 +91,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
         // 08/11 (teste completo, 8f): vídeo também ganha descrição: a fala (Deepgram, aqui mesmo) e depois os quadros (a oficina
         // tira 3 quadros com o ffmpeg e o sistema descreve: descreveVideo)
         const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : await falaDoVideo(buf, mime)
+        if (tipo === 'foto') fotoBolao = { b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }
         const md = await db.insere('midias', { negocio_id: neg.id, tipo, path: caminho, mime, legenda, descricao })
         midia_id = md.id
         // 13/11 (material.ts): a pauta de captação aberta anota o que chegou e fecha quando não falta mais nada
@@ -110,6 +112,22 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
     const r = await importaListaDoDono(neg, m, midia).catch((e: any) => ({ ok: false, resposta: 'Não consegui ler essa lista agora (' + String(e?.message || e).slice(0, 100) + '). Tenta mandar de novo em .csv, ou sobe pelo teu painel.' }))
     await mandaTexto({ ...cv, janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString() }, r.resposta)
     return { cv, texto, responder: false, lista: r }
+  }
+  // 28/11 (boloes.ts): a lista (ou a arte) dos bolões do dia que a equipe da lotérica manda de manhã, ou "esgotou o de X".
+  // Lê, grava e confirma pra quem mandou (dono ou alguém da equipe), sem passar pela IA do dono. Vira também o story do dia.
+  if (m.type !== 'reaction' && m.type !== 'interactive' && m.type !== 'button') {
+    const B = await import('./boloes')
+    const legendaFoto = m.image?.caption || m.document?.caption || ''
+    if (B.ehListaDeBoloes(neg, texto) || (fotoBolao && B.ehListaDeBoloes(neg, legendaFoto + ' bolão ' + texto))) {
+      const r: any = await B.registraBoloes(neg, { texto, imagem: fotoBolao }, m.from ? 'whatsapp:' + m.from : 'whatsapp').catch((e: any) => ({ ok: false, itens: [], resposta: 'Não consegui ler os bolões agora (' + String(e?.message || e).slice(0, 80) + '). Manda de novo em texto, um por linha.' }))
+      const { foneDono } = await import('./canal')
+      const de = m.from ? foneDono(m.from) : null
+      const quem = de && de !== foneDono(neg.dono_whatsapp || '') ? await conversa(neg.id, 'dono', de, { nome }) : cv
+      await mandaTexto({ ...quem, janela_ate: new Date(Date.now() + 24 * 3600e3).toISOString() }, r.resposta)
+      // @ts-ignore stories.ts (o story do bolão do dia) é feito em paralelo; sem a função exportada, não faz nada
+      if (r.ok) await import('./stories').then((s: any) => s.bolaoDoDiaChegou?.(neg)).catch(() => null)
+      return { cv, texto, responder: false, boloes: r.itens?.length || 0 }
+    }
   }
   // o 👍 em cima da mensagem de uma peça aprova aquela peça, sem precisar da IA
   if (m.type === 'reaction' && /👍/.test(m.reaction?.emoji || '') && m.reaction?.message_id) {
@@ -135,6 +153,9 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   // 08/11 (T12): o clique em "Fechou" / "Não fechou" da pergunta das 18h (rotina.ts) vira ganho ou perdido, sem precisar da IA
   const venda = /^venda:([\w-]+):(sim|nao)$/.exec(String(m.interactive?.button_reply?.id || m.button?.payload || ''))
   if (venda) { const r = await respostaDeVenda(neg, cv, venda[1], venda[2] === 'sim'); if (r) return { cv, texto, responder: false, venda: r } }
+  // 28/11 (stories.ts): o clique em "Postar" / "Agora não" dos stories do dia
+  const story = /^story:([\w-]+):(sim|nao)$/.exec(String(m.interactive?.button_reply?.id || m.button?.payload || ''))
+  if (story) { const { respostaStory } = await import('./stories'); const r = await respostaStory(neg, cv, story[1], story[2] === 'sim'); if (r) return { cv, texto, responder: false, story: r } }
   return { cv, texto, responder: cv.modo === 'ia' }
 }
 
