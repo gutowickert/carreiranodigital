@@ -37,6 +37,19 @@ export async function concursosCaixa(): Promise<Concurso[]> {
   return JOGOS.map(([api]) => out.find(o => o.api === api)).filter(Boolean) as Concurso[]
 }
 
+// 28/11: os próximos sorteios no atendimento da lotérica (cache de 1 h: a Caixa muda o prêmio só depois de cada sorteio).
+// Sem isso a Maia perguntava ao dono o prêmio estimado da Mega. Sempre "prêmio estimado", nunca promessa
+let cacheCaixa: { em: number; txt: string } | null = null
+export async function blocoCaixa(): Promise<string> {
+  if (cacheCaixa && Date.now() - cacheCaixa.em < 3600e3) return cacheCaixa.txt
+  const cs = await concursosCaixa().catch(() => [] as Concurso[])
+  if (!cs.length) return ''
+  const prox = cs.filter(c => c.dataProximoConcurso).sort((a, b) => +dia(a.dataProximoConcurso) - +dia(b.dataProximoConcurso))
+  const txt = `\nPRÓXIMOS SORTEIOS (site da Caixa; é o prêmio ESTIMADO pela Caixa, nunca promessa de ganho; não pergunta isso ao dono):\n${prox.map(c => `- ${c.nome}: concurso ${c.numero + 1}, ${SEMANA[dia(c.dataProximoConcurso).getUTCDay()]} ${c.dataProximoConcurso.slice(0, 5)}, prêmio estimado ${reais(c.valorEstimadoProximoConcurso)}${c.acumulado ? ' (acumulado)' : ''}`).join('\n')}\nÚLTIMO RESULTADO de cada jogo (só se o cliente perguntar o resultado; conferir a cota DELE é com a equipe): ${cs.map(c => `${c.nome} ${c.numero} (${c.dataApuracao.slice(0, 5)}): ${c.listaDezenas.join(' ')}`).join(' | ')}`
+  cacheCaixa = { em: Date.now(), txt }
+  return txt
+}
+
 // ---------- o desenho (texto vira contorno com a Poppins: não depende de fonte instalada no servidor) ----------
 let fontes: Record<string, any> | null = null
 async function fonte(peso: 'semibold' | 'bold' | 'extrabold') {

@@ -44,6 +44,8 @@ export function gatilhoHumano(texto: string): string | null {
 export function respostaPassou(t: string, perguntou = false): boolean {
   const s = semAc(t)
   if (/\b(passar|passei|passando|transferir|transferi|transferindo|encaminhar|encaminhei|encaminhando|repassar|repassei)\b[^.?!]{0,25}\b(conversa|atendimento)\b/.test(s)) return true
+  // 28/11 (teste da lotérica): "já passei teu pedido pra equipe", "vou passar pra eles" e "eles respondem aqui mesmo" sem a ferramenta
+  if (!perguntou && /\b(passar|passei|passando|encaminhar|encaminhei|repassar|repassei)\b[^.?!]{0,30}\b(pra|para|pro|pros|com) (a |o )?(equipe|eles|elas|as gurias|o pessoal|time)\b/.test(s)) return true
   if (/\b(passar|passei|transferir|transferi|encaminhar|encaminhei)\b (voce|vc|te|o senhor|a senhora)\b[^.?!]{0,6}\b(pra|para|a|com)\b/.test(s)) return true
   if (/\b(uma pessoa|um atendente|uma atendente|alguem da (nossa )?(equipe|loja|empresa)|alguem de verdade|um humano)\b[^.?!]{0,25}\b(vai|ja vai|ira|responde|retorna|entra em contato|fala com)\b/.test(s)) return true
   if (!perguntou && /\b(o dono|a dona|o responsavel|a responsavel|a equipe)\b[^.?!]{0,12}\b(vai|ja vai|ira)\b[^.?!]{0,12}\b(cuidar|atender|entrar em contato|falar com|chamar)/.test(s)) return true
@@ -147,6 +149,11 @@ export function querFechar(t: string, neg: any = null): boolean {
   if (!s.trim() || recusou(t)) return false
   // pagou: é o caminho do comprovante (o dono confere), não o de fechar
   if (/\b(ja paguei|paguei|pix feito|fiz o pix|comprovante)\b/.test(s)) return false
+  // 28/11 (teste da lotérica): "amanhã eu compro", "depois eu vejo" é pra depois, não fechamento agora: vira retomada, não passagem
+  // (marcar/agendar pra amanhã continua sendo fechamento: é o "pode ser amanhã" de serviço)
+  if (/\b(amanha|depois|mais tarde|outro dia|outra hora|semana que vem|mes que vem|vou pensar|te aviso|te falo|vou ver)\b/.test(s) && !/\b(hoje|agora|ja quero|pode ser|marcar|agendar|horario|vaga|reserva)\b/.test(s)) return false
+  // 28/11: pergunta de COMO comprar ("dá pra comprar de longe?", "posso pagar pelo WhatsApp?") é dúvida, não pedido de fechar
+  if (/\?/.test(t) && /\b(da pra|posso|consigo|tem como|e possivel)\b[^?]*\b(comprar|pagar|jogar|fazer)\b[^?]*\b(de longe|sem ir|sem vir|pelo (whats|zap|whatsapp)|online|a distancia|daqui|de outra cidade|de fora)\b/.test(s)) return false
   if (querComprar(t, neg)) return true
   if (/\b(quero|queria|vou|posso|gostaria de|da pra|como (faco|eu faco) (pra|para)|bora|vamos)\s+(te\s+)?(pagar|fechar|comprar|agendar|marcar|reservar|encomendar|fazer o pedido|fazer a encomenda|fazer o pix|garantir)\b/.test(s)) return true
   if (/\b(manda|mande|passa|passe|qual (e |eh )?(a |o )?)\s*(a |o )?(chave( do)? pix|pix|link (de|do|pra) pagamento|dados (pra|para|do) (o )?pagamento)\b/.test(s)) return true
@@ -407,7 +414,8 @@ export async function respondeCliente(conversa_id: string) {
   // 14/11 (recado.ts): o cliente respondeu um recado pra base: a Maia sabe qual
   const doRecado = await import('./recado').then(x => x.contextoDoRecado(neg, cv.telefone)).catch(() => '')
   // 28/11 (boloes.ts): a lotérica atende com a lista de bolões que a equipe mandou hoje (sem lista, não inventa bolão)
-  const doBolao = await import('./boloes').then(x => x.blocoParaAtender(neg)).catch(() => '')
+  // 28/11 (stories.ts): os próximos sorteios e o prêmio estimado da Caixa (só lotérica), pra não perguntar isso ao dono
+  const doBolao = (await import('./boloes').then(x => x.blocoParaAtender(neg)).catch(() => '')) + (await import('./boloes').then(x => x.vendeBolao(neg) ? import('./stories').then(y => y.blocoCaixa()) : '').catch(() => ''))
   const bolaoAgora = await import('./boloes').then(x => x.blocoDoPedido(neg, textoCliente)).catch(() => '')
   const { r, modelo: modeloIA, refez } = await respondeMisto(regras(neg) + (doBolao ? '\n' + doBolao : ''), `CLIENTE: ${lead.nome || cv.nome || 'sem nome'} · etapa ${lead.etapa}${lead.anuncio_ref ? ' · veio do anúncio ' + lead.anuncio_ref : ''}${doRecado}${doBolao}\n${diasDoNegocio(neg).texto}\nPRAZO DE RESPOSTA (se precisar perguntar ao dono): ${prazoResposta(neg).texto}${gatilho ? `\nATENÇÃO: ${gatilho}. Chama passar_para_o_dono AGORA com esse motivo e diz ao cliente que passou a conversa pra uma pessoa da equipe, que responde por aqui mesmo. NÃO pede detalhes nem pergunta o que aconteceu: quem conversa com ele agora é a pessoa.` : ''}${fecharAgora}${precoAgora}${bolaoAgora}\n\nCONVERSA:\n${hist}\n\nResponde a(s) última(s) mensagem(ns) do cliente.`, ferrs,
     // 06/11: o atendimento do cliente roda no modelo menor (custo-benefício). MAIA_MODELO_CLIENTE troca
