@@ -71,7 +71,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
   const cv = await conversaDoDono(neg)
   let texto = m.type === 'text' ? m.text?.body || '' : m.type === 'reaction' ? `(reagiu ${m.reaction?.emoji || ''})` : m.type === 'button' ? m.button?.text || '' : m.type === 'interactive' ? m.interactive?.button_reply?.title || '' : ''
   let midia_id: string | null = null
-  let fotoBolao: { b64: string; mime: string } | null = null   // 28/11 (boloes.ts): a arte dos bolões do dia, pra ler os números
+  let fotoBolao: { b64: string; mime: string } | null = null, fotoCaminho: string | null = null   // 28/11 (boloes.ts): a arte dos bolões do dia, pra ler os números
   // 14/11 (recado.ts): a lista de contatos pra base (planilha .csv, cartão .vcf ou contatos compartilhados): importa sem IA
   const { ehListaDoDono } = await import('./recado')
   const lista = ehListaDoDono(m)
@@ -91,7 +91,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
         // 08/11 (teste completo, 8f): vídeo também ganha descrição: a fala (Deepgram, aqui mesmo) e depois os quadros (a oficina
         // tira 3 quadros com o ffmpeg e o sistema descreve: descreveVideo)
         const descricao = tipo === 'foto' ? await descreveFoto(buf, mime, neg) : await falaDoVideo(buf, mime)
-        if (tipo === 'foto') fotoBolao = { b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }
+        if (tipo === 'foto') { fotoBolao = { b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : 'image/jpeg' }; fotoCaminho = caminho }   // 28/11: o caminho vai junto: a foto entra no story do bolão
         const md = await db.insere('midias', { negocio_id: neg.id, tipo, path: caminho, mime, legenda, descricao })
         midia_id = md.id
         // 13/11 (material.ts): a pauta de captação aberta anota o que chegou e fecha quando não falta mais nada
@@ -119,7 +119,7 @@ export async function recebeDoDono(neg: any, m: any, nome: string | null, midia?
     const B = await import('./boloes')
     const legendaFoto = m.image?.caption || m.document?.caption || ''
     if (B.ehListaDeBoloes(neg, texto) || (fotoBolao && B.ehListaDeBoloes(neg, legendaFoto + ' bolão ' + texto))) {
-      const r: any = await B.registraBoloes(neg, { texto, imagem: fotoBolao }, m.from ? 'whatsapp:' + m.from : 'whatsapp').catch((e: any) => ({ ok: false, itens: [], resposta: 'Não consegui ler os bolões agora (' + String(e?.message || e).slice(0, 80) + '). Manda de novo em texto, um por linha.' }))
+      const r: any = await B.registraBoloes(neg, { texto, imagem: fotoBolao, foto: fotoBolao ? fotoCaminho : null }, m.from ? 'whatsapp:' + m.from : 'whatsapp').catch((e: any) => ({ ok: false, itens: [], resposta: 'Não consegui ler os bolões agora (' + String(e?.message || e).slice(0, 80) + '). Manda de novo em texto, um por linha.' }))
       const { foneDono } = await import('./canal')
       const de = m.from ? foneDono(m.from) : null
       const quem = de && de !== foneDono(neg.dono_whatsapp || '') ? await conversa(neg.id, 'dono', de, { nome }) : cv

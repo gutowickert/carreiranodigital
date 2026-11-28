@@ -5,7 +5,7 @@
 import { maiaDb as db } from './db'
 import { emJson } from './ia'
 
-export type Bolao = { jogo: string; concurso?: string | null; sorteio?: string | null; premio_estimado?: string | null; numeros_por_jogo?: number | null; jogos?: number | null; cotas?: number | null; preco_cota?: number | null; obs?: string | null; esgotado?: boolean }
+export type Bolao = { jogo: string; concurso?: string | null; sorteio?: string | null; premio_estimado?: string | null; numeros_por_jogo?: number | null; jogos?: number | null; cotas?: number | null; preco_cota?: number | null; obs?: string | null; esgotado?: boolean; foto?: string | null }
 
 const semAc = (s: string) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase()
 export const hojeBR = () => new Date(Date.now() - 3 * 3600e3).toISOString().slice(0, 10)
@@ -43,7 +43,12 @@ export async function boloesDeHoje(neg: any): Promise<{ data: string; itens: Bol
 const SIS = 'Tu lês a lista de bolões de loteria que a equipe de uma lotérica mandou (texto ou foto da arte). Extrai cada bolão exatamente como está escrito, sem inventar nada. Campo que não aparece fica null. Números em reais viram número (R$ 25 → 25; R$ 405,40 → 405.4). Prêmio estimado fica como texto ("R$ 82 milhões").'
 const FORMATO = `Devolve {"itens":[{"jogo":"Mega-Sena","concurso":null,"sorteio":"29/11","premio_estimado":"R$ 82 milhões","numeros_por_jogo":10,"jogos":1,"cotas":34,"preco_cota":50,"obs":null}]}`
 
-export async function registraBoloes(neg: any, d: { texto: string; imagem?: { b64: string; mime: string } | null }, por: string) {
+// 28/11 (Guto: "a menina vai enviar as fotos dos bolões do dia, que precisam ser adicionadas às artes de story"): cada bolão lido de
+// uma foto guarda o caminho dela (foto), e o story do bolão usa a foto. Foto nova no mesmo dia SOMA na lista (ela pode mandar uma
+// foto por bolão); o mesmo bolão (jogo + números + preço da cota) é trocado pelo mais novo. Lista em texto troca a lista inteira,
+// mas o bolão que já tinha foto continua com ela.
+const chave = (b: Bolao) => [semAc(b.jogo).replace(/[^a-z0-9+]/g, ''), b.numeros_por_jogo ?? '', b.preco_cota ?? ''].join('|')
+export async function registraBoloes(neg: any, d: { texto: string; imagem?: { b64: string; mime: string } | null; foto?: string | null }, por: string) {
   const hoje = await boloesDeHoje(neg)
   // "esgotou o de X": marca na lista de hoje, sem ler tudo de novo
   if (ehEsgotou(neg, d.texto) && hoje?.itens?.length) {
@@ -57,10 +62,19 @@ export async function registraBoloes(neg: any, d: { texto: string; imagem?: { b6
     return { ok: true, itens, esgotou: esg, resposta: `Anotado: ${esg.join(' e ')} ${esg.length > 1 ? 'esgotaram' : 'esgotou'}. Não ofereço mais pra ninguém hoje.` }
   }
   const r = await emJson<{ itens: Bolao[] }>(SIS, `${d.imagem ? 'A foto é a arte dos bolões do dia.' : ''}\nTEXTO DA EQUIPE: ${d.texto}\n\n${FORMATO}`, d.imagem ? [d.imagem] : [], { uso: { tipo: 'dono', negocio_id: neg.id } })
-  const itens = (r.itens || []).filter(b => b && b.jogo).map(b => ({ ...b, esgotado: false }))
-  if (!itens.length) return { ok: false, itens: [], resposta: 'Não consegui ler os bolões dessa mensagem. Manda em texto, um por linha: jogo, números, cotas e preço da cota.' }
-  await db.evento('boloes_do_dia', neg.id, { data: hojeBR(), itens, fonte: d.texto.slice(0, 500), por })
-  return { ok: true, itens, resposta: `Recebi ${itens.length} ${itens.length === 1 ? 'bolão' : 'bolões'} de hoje: ${itens.map(nomeCurto).join('; ')}. Tá certo? Se algum esgotar, me avisa aqui ("esgotou o de R$ 50").` }
+  const lidos: Bolao[] = (r.itens || []).filter(b => b && b.jogo).map(b => ({ ...b, esgotado: false, foto: d.foto || null }))
+  if (!lidos.length) return { ok: false, itens: [], resposta: 'Não consegui ler os bolões dessa mensagem. Manda em texto, um por linha: jogo, números, cotas e preço da cota.' }
+  const antes = hoje?.itens || []
+  let itens: Bolao[]
+  if (d.foto && antes.length) {
+    const novas = new Set(lidos.map(chave))
+    itens = [...antes.filter(b => !novas.has(chave(b))), ...lidos]
+  } else itens = lidos.map(b => ({ ...b, foto: b.foto || antes.find(a => chave(a) === chave(b))?.foto || null }))
+  await db.evento('boloes_do_dia', neg.id, { data: hojeBR(), itens, fonte: d.texto.slice(0, 500), por, ...(d.foto ? { foto: d.foto } : {}) })
+  const somou = itens.length > lidos.length
+  return { ok: true, itens, resposta: somou
+    ? `Recebi ${lidos.length === 1 ? 'o bolão' : `${lidos.length} bolões`} dessa foto: ${lidos.map(nomeCurto).join('; ')}. A lista de hoje ficou com ${itens.length}: ${itens.map(nomeCurto).join('; ')}. Tá certo? Se algum esgotar, me avisa aqui ("esgotou o de R$ 50").`
+    : `Recebi ${itens.length} ${itens.length === 1 ? 'bolão' : 'bolões'} de hoje: ${itens.map(nomeCurto).join('; ')}. Tá certo? Se algum esgotar, me avisa aqui ("esgotou o de R$ 50").` }
 }
 
 const reais = (v: any) => (v == null ? '' : 'R$ ' + Number(v).toFixed(2).replace('.', ',').replace(',00', ''))
