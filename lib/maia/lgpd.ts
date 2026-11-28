@@ -3,6 +3,7 @@
 //      { ligado: true (padrão), texto?: o aviso do próprio negócio, link?: a política de privacidade (https) }
 //  (b) "apagar dados deste contato" (painel da equipe): apaga a conversa, as mensagens, o contato do funil, o histórico dele,
 //      as mídias que ele mandou e os registros técnicos ligados a ele, SÓ do negócio dele. Fica um evento sem dado pessoal.
+import { doNeg } from './artigo'
 import { maiaDb as db } from './db'
 import { tomDoNegocio } from './tom'
 import { ehSimulado, fone } from '@/lib/oito/wa'
@@ -28,8 +29,8 @@ export function avisoPrivacidade(neg: any): string | null {
   if (p.ligado === false) return null
   const voce = tomDoNegocio(neg).pessoa === 'voce'
   const texto = String(p.texto || '').trim() || avisoDaBase(neg) || (voce
-    ? `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do ${neg.nome}. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.`
-    : `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) do ${neg.nome}. Tuas mensagens ficam guardadas só pra te atender. Se quiser que a gente apague teus dados, é só pedir aqui.`)
+    ? `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) ${doNeg(neg)}. Suas mensagens ficam guardadas só pra atender você. Se quiser que a gente apague seus dados, é só pedir aqui.`
+    : `Um aviso rápido: este atendimento é feito por uma assistente virtual (IA) ${doNeg(neg)}. Tuas mensagens ficam guardadas só pra te atender. Se quiser que a gente apague teus dados, é só pedir aqui.`)
   const link = /^https:\/\/\S+$/.test(String(p.link || '').trim()) ? String(p.link).trim() : ''
   return link ? `${texto} ${voce ? 'Saiba mais' : 'Mais detalhes'}: ${link}` : texto
 }

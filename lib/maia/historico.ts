@@ -25,7 +25,8 @@ export const CAMPOS_GUARDADOS = new Set(['history', 'smb_message_echoes', 'smb_a
 // ---------------------------------------------------------------------------------------------------------------------------
 // 1) o que chega no webhook: guarda o bruto e registra o evento (nunca responde, nunca cria conversa)
 
-const PASTA: Record<string, string> = { history: 'historico', smb_message_echoes: 'echoes', smb_app_state_sync: 'contatos' }
+// 28/11: 'messages' = mensagem nova de cliente num negócio em configuração (atendimento desligado): só guardada pra leitura
+const PASTA: Record<string, string> = { history: 'historico', smb_message_echoes: 'echoes', smb_app_state_sync: 'contatos', messages: 'entradas' }
 const num = (x: any) => (x == null || x === '' || isNaN(Number(x)) ? null : Number(x))
 const parte = (x: any) => String(x ?? 'x').replace(/[^\w.-]/g, '').slice(0, 20) || 'x'
 
@@ -77,6 +78,9 @@ export async function guardaDaCoexistencia(neg: any, campo: string, change: any,
   } else if (campo === 'smb_message_echoes') {
     tipo = 'historico_eco'
     detalhe = { ...base, mensagens: (v.message_echoes || []).length }
+  } else if (campo === 'messages') {
+    tipo = 'entrada_so_leitura'
+    detalhe = { ...base, mensagens: (v.messages || []).length }
   } else {
     tipo = 'historico_contatos'
     detalhe = { ...base, contatos: (v.state_sync || []).length }

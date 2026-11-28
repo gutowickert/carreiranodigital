@@ -4,6 +4,7 @@
 // Se não der pra ouvir ou ver, o texto vai marcado e a Maia diz com honestidade que não conseguiu (nunca finge).
 // Comprovante de pagamento: a Maia NÃO confirma pagamento sozinha: chama o dono (atendente.ts).
 // Os arquivos ficam anotados em maia_eventos 'midia_cliente' (conversa e caminho, sem dado pessoal), pra poder apagar (LGPD).
+import { proNeg } from './artigo'
 import crypto from 'node:crypto'
 import { maiaDb as db, maiaLocal } from './db'
 import { emJson } from './ia'
@@ -23,7 +24,7 @@ async function descreveFotoCliente(buf: Buffer, mime: string, neg: any): Promise
   try {
     const r = await emJson<{ descricao: string; comprovante: boolean }>(
       'Tu descreves fotos que CLIENTES mandam pro WhatsApp de um pequeno negócio, pra assistente virtual entender o que chegou. Objetivo, em português, até 30 palavras. Se a foto for um comprovante de pagamento (pix, transferência, boleto pago, recibo), marca comprovante true e diz o valor e a data se estiverem legíveis. Não leia em voz alta números de documento ou de conta.',
-      `Foto que um cliente mandou pro ${neg.nome} (${neg.nicho || ''}). Devolve {"descricao":"...","comprovante":false}`,
+      `Foto que um cliente mandou ${proNeg(neg)} (${neg.nicho || ''}). Devolve {"descricao":"...","comprovante":false}`,
       [{ b64: buf.toString('base64'), mime: /png/.test(mime) ? 'image/png' : /webp/.test(mime) ? 'image/webp' : 'image/jpeg' }],
       { uso: { tipo: 'cliente', negocio_id: neg?.id || null } })   // 13/11: é atendimento, não peça (ia.ts põe foto sem tipo em 'peca_foto')
     return r && r.descricao ? { descricao: String(r.descricao).slice(0, 300), comprovante: r.comprovante === true } : null

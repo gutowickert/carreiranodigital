@@ -14,6 +14,9 @@ export const waDoNegocio = (neg: any): WaNegocio | null => {
   return token ? { phone: String(neg.wa_phone_id), token, waba: neg.meta?.wa?.waba_id || null } : null
 }
 export const atendimentoLigado = (neg: any) => process.env.MAIA_CLIENTES_LIGADO === '1' && neg?.meta?.wa?.atende === true && !!waDoNegocio(neg)
+// 28/11: WhatsApp do negócio conectado, mas a equipe ainda não ligou o atendimento (configurando). Nesse estado a Maia não
+// atende, não cria contato e não fala com o dono sobre clientes. No teste local não vale: lá tudo é simulado
+export const emConfiguracao = (neg: any) => !(process.env.MAIA_LOCAL === '1' && !process.env.VERCEL) && !!waDoNegocio(neg) && neg?.meta?.wa?.atende !== true
 
 type Envio = { ok: boolean; wamid?: string; erro?: string; codigo?: number }
 const so = (t: string) => String(t || '').replace(/\D/g, '')

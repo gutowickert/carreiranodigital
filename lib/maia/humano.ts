@@ -5,6 +5,7 @@
 // A rotina de hora em hora chama devolveSozinha e cobraPerguntas. Mensagem pro dono só de dia (horario.ts).
 import { maiaDb as db } from './db'
 import { conversaDoDono, mandaTexto, avisaEquipe } from './canal'
+import { emConfiguracao } from './wa-negocio'
 import { podeFalar } from './horario'
 
 export const VOLTA_HORAS = 24
@@ -32,6 +33,7 @@ export async function devolveSozinha(relogio = new Date()) {
   for (const cv of await db.lista('conversas', { canal: 'cliente', modo: 'humano' })) {
     const neg = await db.um('negocios', { id: cv.negocio_id })
     if (!neg || neg.status === 'cancelado') continue
+    if (emConfiguracao(neg)) continue   // 28/11: configurando: a conversa não volta pra Maia nem avisa o dono
     if (Date.now() - (await ultimaVezHumano(cv)) < VOLTA_HORAS * H) continue
     if (!podeFalar(neg, relogio)) continue
     await devolve(cv, '24h_sem_humano', 'rotina')

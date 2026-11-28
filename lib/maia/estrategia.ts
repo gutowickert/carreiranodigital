@@ -20,6 +20,7 @@
 // HISTÓRICO: tabela maia_estrategias (db/maia-estrategia.sql). Cada linha guarda o que foi proposto, os números e as datas que
 //   pesaram, quem aprovou e quando, e (quando a próxima nasce) o RESULTADO da quinzena dela.
 // CHAVE: só roda com MAIA_ESTRATEGIA_LIGADA=1 (rotina, ferramentas do WhatsApp, painel). Sem o SQL: fica indisponível, o resto segue.
+import { doNeg } from './artigo'
 import { maiaDb as db, maiaLocal } from './db'
 import { numeros } from './funil'
 import { horaLocal, fusoDo } from './horario'
@@ -146,7 +147,7 @@ export function montaAcoes(neg: any, num: any | null, datas: ReturnType<typeof d
 export function textoDaProposta(neg: any, p: { ciclo: { de: string; ate: string }; motivo: string; num: any | null; datas: ReturnType<typeof datasDaVez>; acoes: Acao[]; hoje: string }) {
   const l: string[] = []
   const nome = primeiro(neg.dono_nome)
-  l.push(`${p.motivo === 'inicial' ? 'Estratégia inicial' : TITULO} do ${neg.nome} (${ddmm(p.ciclo.de)} a ${ddmm(p.ciclo.ate)})${nome ? `, ${nome}` : ''}:`)
+  l.push(`${p.motivo === 'inicial' ? 'Estratégia inicial' : TITULO} ${doNeg(neg)} (${ddmm(p.ciclo.de)} a ${ddmm(p.ciclo.ate)})${nome ? `, ${nome}` : ''}:`)
   const n = p.num
   if (n) {
     const partes = [n.gasto > 0 ? `investido ${R$(n.gasto)}` : 'sem anúncio rodando', `${plural(n.conversas || 0, 'conversa')}${n.custo_conversa != null ? ` (${R$(n.custo_conversa)} por conversa)` : ''}`,

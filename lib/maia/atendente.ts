@@ -2,6 +2,7 @@
 // leva a conversa até a venda e mexe no funil sozinha (etapa, ganho com valor, perdido com motivo, retomada).
 // O canal de verdade (o WhatsApp do próprio negócio) só abre com o Tech Provider. Até lá roda na simulação
 // (painel e testes), e o cérebro já fica pronto e testado.
+import { doNeg, noNeg } from './artigo'
 import { maiaDb as db } from './db'
 import { comFerramentas, type Ferramenta } from './ia'
 import { respondeMisto, modeloBarato, modeloForte } from './misto'
@@ -286,7 +287,7 @@ O QUE TU SABE DO NEGÓCIO (só isso, não inventa nada além): ${JSON.stringify(
 ${regrasDoCadastro(neg)}${textoRegrasAprendidas(neg, 'atendimento')}
 ${regraDoFechamento(neg)}
 COMO ATENDER:
-- Se apresenta na primeira mensagem como a assistente virtual do ${neg.nome}. Se perguntarem, diz que é uma IA.
+- Se apresenta na primeira mensagem como a assistente virtual ${doNeg(neg)}. Se perguntarem, diz que é uma IA.
 - Responde rápido e direto o que perguntaram. Depois, UMA pergunta que leva pra venda (horário, quantidade, endereço de entrega).
 - Preço, prazo, horário e condição: só o que está no que tu sabe. O que não está: diz que vai confirmar e responde até o PRAZO DE RESPOSTA que vem no pedido (ex.: "vou confirmar aqui e te respondo hoje até as 16h") e perguntar_ao_dono. Nunca deixa o cliente sem prazo. Tu SEGUE atendendo (passar_para_o_dono é só quando o cliente quer falar com uma pessoa ou reclama).
 - PERGUNTOU O PREÇO (regra fixa da casa: primeiro o valor, depois o número): uma ou duas frases curtas do que o cliente ganha (o que está incluso, o resultado, o benefício), SÓ com o que está no que tu sabe, e logo em seguida o preço, na mesma resposta. Ex.: "A limpeza profunda leva uns 60 minutos: tira cravos e impurezas e a pele fica lisinha e com viço. O investimento é R$ 180, e dá pra fazer em 3x." Sem enrolar, sem esconder o preço e sem fazer outra pergunta antes de dizer o preço. Se o que tu sabe não tem nada além do preço, diz o preço direto (não inventa benefício).
@@ -360,7 +361,7 @@ export async function respondeCliente(conversa_id: string) {
       await db.evento('modo_humano', neg.id, { conversa_id: cv.id, por: 'sistema', motivo: freio.motivo })
       if (lead?.id) await db.atualiza('leads', { id: lead.id }, { proximo_followup_em: null }).catch(() => null)
     }
-    const t = `${primeira ? `Oi! Aqui é a assistente virtual do ${neg.nome}. ` : ''}Recebi ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} mensagem e uma pessoa da equipe responde aqui mesmo, assim que puder.`
+    const t = `${primeira ? `Oi! Aqui é a assistente virtual ${doNeg(neg)}. ` : ''}Recebi ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} mensagem e uma pessoa da equipe responde aqui mesmo, assim que puder.`
     await mandaTexto(cv, t)
     if (aviso) await mandaTexto(cv, aviso)
     if (await avisaUmaVez(neg.id, freio.motivo, freio.motivo === 'ia_do_dia' ? 'teto de IA do dia' : 'enxurrada de contatos novos', freio.equipe)) {
@@ -372,7 +373,7 @@ export async function respondeCliente(conversa_id: string) {
   if (novas.length && novas.every(x => midiaFalhou(x.texto))) {
     const audio = novas.some(x => String(x.texto).includes(NAO_OUVIU)), foto = novas.some(x => String(x.texto).includes(NAO_VIU))
     const oque = audio && foto ? 'abrir o áudio e a foto' : audio ? 'ouvir esse áudio' : 'ver essa foto'
-    const t = `${primeira ? `Oi! Aqui é a assistente virtual do ${neg.nome}. ` : ''}Não consegui ${oque}. Consegue me escrever o que precisa, por favor?`
+    const t = `${primeira ? `Oi! Aqui é a assistente virtual ${doNeg(neg)}. ` : ''}Não consegui ${oque}. Consegue me escrever o que precisa, por favor?`
     await mandaTexto(cv, t)
     if (aviso) await mandaTexto(cv, aviso)
     await db.atualiza('conversas', { id: cv.id }, { ia_respostas: (cv.ia_respostas || 0) + 1, nao_lidas: 0 })
@@ -444,7 +445,7 @@ export async function respondeCliente(conversa_id: string) {
     if (!enviadas.length) enviadas = [`Passei a ${tomDoNegocio(neg).pessoa === 'tu' ? 'tua' : 'sua'} conversa pra uma pessoa da equipe, que responde aqui mesmo.`]
   }
   if (!enviadas.length) {
-    await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} no ${neg.nome}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
+    await avisaEquipe('Maia sem resposta pro cliente', `A IA não conseguiu escrever uma mensagem pro cliente ${lead.nome || cv.telefone} ${noNeg(neg)}. Ninguém respondeu ainda: olha a conversa no painel.`, neg.id, true)
     return { mensagens: [], ferramentas: r.usadas.map(u => u.nome), etapa: lead?.etapa, sem_resposta: true }
   }
   // 08/11 (T12): a resposta da IA já trouxe um aviso de privacidade: o do sistema não vai junto (seria repetido)
@@ -529,7 +530,7 @@ export async function textoRetomada(neg: any, lead: any, numero: number) {
   const pedido = despedida
     ? `Escreve UMA mensagem curta de DESPEDIDA pra um cliente que parou de responder (é a última mensagem que tu manda pra ele). No jeito do dono, caloroso e sem pressão:\n1) reconhece a correria do dia a dia, sem cobrar nem culpar ("imagino que a correria tá grande por aí");\n2) uma frase dizendo que o produto ou serviço é bom de verdade, ligada ao que o próprio cliente procurava (só com o que está no que o negócio oferece);\n3) avisa, com leveza, que vai parar o atendimento por aqui pra não incomodar;\n4) fica à disposição: quando quiser, é só chamar que a gente continua de onde parou.\nSem pergunta no fim. NUNCA: "condição especial", "último dia", "última chance", desconto, prazo, "ficou alguma dúvida?", nem "vou encerrar teu contato" (frio). Ex. do tom (outro negócio): "Oi, Ana! Imagino que a correria tá grande por aí. A limpeza de pele é muito boa e ia te ajudar com aquela oleosidade que tu comentou. Vou parar o atendimento por aqui pra não te incomodar, tá? Quando quiser, é só me chamar que a gente continua de onde parou."`
     : `Escreve UMA mensagem curta de retomada pra um cliente que parou de responder. Sem pressão, útil, com uma pergunta fácil de responder. Retomada número ${numero} de ${FOLLOWUP_DIAS.length} (a última é a despedida, mas ESTA ainda não é: não fala em parar o atendimento).\nO que funciona (12/11, estudo de 2.032 conversas reais): retomar o que o próprio cliente disse (o produto, a data, a dúvida dele) ou levar algo novo e útil; nas conversas que pararam depois do preço ou do sim, oferecer de novo o próximo passo (${time ? 'seguir com a equipe pra combinar o horário ou o pagamento' : 'horário, dados do pagamento'}).\nNUNCA: "ficou alguma dúvida?", "condição especial", "último dia", "vou encerrar teu contato" (tiveram de 11% a 22% de resposta).`
-  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual do ${neg.nome}. ${pedido}`,
+  const r = await emJson<{ texto: string }>(`${jeitoAtendimento(neg)}\nTu és a assistente virtual ${doNeg(neg)}. ${pedido}`,
     // 13/11 (cadastro): a retomada também segue o sim, o próximo passo da etapa e o que nunca prometer
     `${diasDoNegocio(neg).texto}\nCliente: ${lead.nome || ''} · interesse: ${lead.produto || lead.resumo || '?'} · etapa: ${lead.etapa}\nO que o negócio oferece: ${JSON.stringify(fichaParaAtender(neg))}\n${regrasDaRetomada(neg)}\nÚltimas mensagens: ${msgs.map(m => m.texto).join(' | ').slice(0, 1500)}\nDevolve {"texto":"..."}`, [],
     // 12/11 (custo): a retomada é curta e simples: vai no modelo barato (antes ia no padrão, o Sonnet)

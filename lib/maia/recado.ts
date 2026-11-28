@@ -14,6 +14,7 @@
 //    negócio fechar (o mesmo caminho de "quer fechar" do atendente.ts). A Maia NÃO vende nem cobra pelo WhatsApp (política
 //    da Meta pra loteria: o recado avisa e chama). Outra resposta: a Maia atende normal, sabendo de qual recado veio.
 //    A venda marcada nesse contato (funil.ts, ganhou) soma no recado.
+import { doNeg } from './artigo'
 import { maiaDb as db, maiaLocal } from './db'
 import { ehSimulado, fone } from '@/lib/oito/wa'
 import { podeFalar } from './horario'
@@ -620,11 +621,11 @@ export async function respostaDaBase(neg: any, d: { telefone: string; texto: str
 }
 
 export const textoSaiu = (neg: any) => tomDoNegocio(neg).pessoa === 'voce'
-  ? `Pronto, você não vai mais receber esses avisos do ${neg.nome}. Se precisar de alguma coisa, é só chamar aqui.`
-  : `Pronto, tu não vai mais receber esses avisos do ${neg.nome}. Se precisar de alguma coisa, é só chamar aqui.`
+  ? `Pronto, você não vai mais receber esses avisos ${doNeg(neg)}. Se precisar de alguma coisa, é só chamar aqui.`
+  : `Pronto, tu não vai mais receber esses avisos ${doNeg(neg)}. Se precisar de alguma coisa, é só chamar aqui.`
 export const textoQuero = (neg: any) => tomDoNegocio(neg).pessoa === 'voce'
-  ? `Que bom! Já avisei a equipe do ${neg.nome}: uma pessoa fala com você por aqui mesmo pra separar a sua participação.`
-  : `Que bom! Já avisei a equipe do ${neg.nome}: uma pessoa fala contigo por aqui mesmo pra separar a tua participação.`
+  ? `Que bom! Já avisei a equipe ${doNeg(neg)}: uma pessoa fala com você por aqui mesmo pra separar a sua participação.`
+  : `Que bom! Já avisei a equipe ${doNeg(neg)}: uma pessoa fala contigo por aqui mesmo pra separar a tua participação.`
 
 // "Quero participar": o contato vai pro funil (proposta) e a conversa passa pro time do negócio fechar (a Maia não vende)
 export async function queroDoRecado(neg: any, cv: any, lead: any, rec: any) {

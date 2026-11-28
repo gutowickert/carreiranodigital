@@ -8,6 +8,7 @@
 //      O prompt de criação (pecas.ts) e o de atendimento (atendente.ts) leem dali com textoRegrasAprendidas(neg, area).
 //   4) "quanto a Maia acerta de primeira": peças aprovadas sem ajuste / decididas, e respostas sem correção / respostas.
 // A IA (modelo barato) só escreve o texto da regra; quem decide o que vira proposta é a contagem no código.
+import { NoNeg } from './artigo'
 import crypto from 'node:crypto'
 import { maiaDb as db } from './db'
 
@@ -140,7 +141,7 @@ export async function propoeRegras(opc: { negocio_id?: string | null; por?: stri
     const oque = [pecas ? `${pecas} peça(s) recusada(s) ou com ajuste` : '', resp ? `${resp} resposta(s) corrigida(s)` : '', sug ? `${sug} sugestão(ões) corrigida(s)` : ''].filter(Boolean).join(' e ')
     const p = await db.insere('eventos', { tipo: 'regra_proposta', negocio_id, detalhe: {
       id: crypto.randomUUID(), status: 'pendente', escopo: 'negocio', motivo, area: t.area, texto: t.texto, ia: t.ia,
-      porque: `No ${neg.nome}, ${oque} por "${rotulo(motivo)}".`, correcoes: g.map(c => c.id), base: g.length, por: opc.por || 'maia',
+      porque: `${NoNeg(neg)}, ${oque} por "${rotulo(motivo)}".`, correcoes: g.map(c => c.id), base: g.length, por: opc.por || 'maia',
     } })
     novas.push(p)
   }

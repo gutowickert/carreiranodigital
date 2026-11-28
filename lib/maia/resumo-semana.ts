@@ -5,6 +5,7 @@
 // WhatsApp do dono pelo número da Maia. Fora da janela de 24 h vai pra fila do dono e sai o modelo aprovado maia_novidades
 // ("A Maia tem novidades do X pra ti: o resumo da semana"); quando o dono responde, a fila entrega o resumo (canal.ts).
 // Negócio com "equipe aprova tudo" desligado: vai direto. O painel do dono mostra os resumos enviados (painel-dono.ts).
+import { doNeg } from './artigo'
 import { maiaDb as db } from './db'
 import { numeros } from './funil'
 
@@ -58,7 +59,7 @@ export function sugestao(d: any): string {
 export function textoResumo(neg: any, d: any): string {
   const l: string[] = []
   const nome = String(neg.dono_nome || '').split(' ')[0]
-  l.push(`${TITULO} do ${neg.nome} (${dataBR(d.periodo.de)} a ${dataBR(d.periodo.ate)})${nome ? `, ${nome}` : ''}:`)
+  l.push(`${TITULO} ${doNeg(neg)} (${dataBR(d.periodo.de)} a ${dataBR(d.periodo.ate)})${nome ? `, ${nome}` : ''}:`)
   l.push(`- Conversas com clientes: ${d.conversas}${d.leads_novos ? ` (${plural(d.leads_novos, 'contato novo', 'contatos novos')})` : ''}`)
   l.push(`- Vendas e agendamentos fechados: ${d.ganhos}${d.ganhos ? `, somando ${R$(d.receita)}` : ''}`)
   if (d.gasto > 0) {

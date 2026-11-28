@@ -12,7 +12,7 @@ import { createHmac, timingSafeEqual } from 'crypto'
 import { maiaDb as db, maiaLocal } from '@/lib/maia/db'
 import { avisaEquipe } from '@/lib/maia/canal'
 import { recebeDoCliente, respondeCliente } from '@/lib/maia/atendente'
-import { atendimentoLigado, waDoNegocio, marcaLidaNeg, baixaMidiaNeg } from '@/lib/maia/wa-negocio'
+import { atendimentoLigado, emConfiguracao, waDoNegocio, marcaLidaNeg, baixaMidiaNeg } from '@/lib/maia/wa-negocio'
 import { ecoDoDono } from '@/lib/maia/humano'
 import { CAMPOS_GUARDADOS, guardaDaCoexistencia } from '@/lib/maia/historico'
 
@@ -79,6 +79,14 @@ export async function POST(req: Request) {
       await db.atualiza('msgs', { wamid: s.id }, { status: st }).catch(() => null)
       // 14/11 (recado.ts): entregue/lido/falhou do recado pra base (sem a tabela, não faz nada)
       await import('@/lib/maia/recado').then(x => x.anotaStatusEnvio(s.id, st)).catch(() => null)
+    }
+
+    // 28/11: negócio em configuração (WhatsApp conectado, atendimento desligado pela equipe): o que chega dos clientes só é
+    // guardado pra leitura. Nada vira contato, conversa, aviso pro dono, pergunta de venda nem retomada (a Maia chamou o dono
+    // da Lotérica por um comprovante de cliente antes de estar pronta)
+    if (emConfiguracao(neg)) {
+      if (campo === 'messages' && (v.messages || []).length) guardar.push({ neg, campo, ch, waba: entry.id ? String(entry.id) : null })
+      continue
     }
 
     // coexistência: o que o dono respondeu pelo app do celular chega como eco. Fica na conversa e a Maia sai de cena 2 h.

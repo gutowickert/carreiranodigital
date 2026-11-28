@@ -10,6 +10,7 @@
 //      NÃO desliga sozinha e continua atendendo: quem decide é a equipe.
 // A conta do Asaas é a mesma do Oito e do Recado (ASAAS_API_KEY, lib/oito/asaas.ts). Sem a chave fora da Vercel, tudo é
 // simulado (tabela local asaas_sim) e dá pra "pagar de mentira" no teste; na Vercel sem chave, falha (nunca finge).
+import { doNeg } from './artigo'
 import { maiaDb as db } from './db'
 import { escola, ORG_ESCOLA } from './escola'
 import { asaasApi, ASAAS_PAGO, simulado, podeSimular } from '@/lib/oito/asaas'
@@ -279,7 +280,7 @@ export async function confereNegocio(neg: any, agora = new Date()) {
     if (avisados.has(p.id) || hoje < diaSeguinte(p.dueDate)) continue
     const { avisaTime } = await import('./acompanhamento')
     await avisaTime(`cobrança atrasada: ${neg.nome}`,
-      `A ${tipo} de ${reais(p.value)} do ${neg.nome} venceu em ${br(p.dueDate)} e não foi paga.${p.invoiceUrl ? ` Link da fatura: ${p.invoiceUrl}` : ''}\nA Maia continua atendendo normalmente: vocês decidem o que fazer.`,
+      `A ${tipo} de ${reais(p.value)} ${doNeg(neg)} venceu em ${br(p.dueDate)} e não foi paga.${p.invoiceUrl ? ` Link da fatura: ${p.invoiceUrl}` : ''}\nA Maia continua atendendo normalmente: vocês decidem o que fazer.`,
       neg.id, true)
     await db.evento('cobranca_atrasada', neg.id, { pagamento_id: p.id, tipo, valor: p.value, vence: p.dueDate })
     avisados.add(p.id); out.avisos.push(p.id)

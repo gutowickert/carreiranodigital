@@ -16,6 +16,7 @@
 //    (maia_eventos 'aviso_dono_pendente') até a equipe aprovar no painel.
 import { maiaDb as db } from './db'
 import { conversaDoDono, mandaTexto, avisaEquipe } from './canal'
+import { emConfiguracao } from './wa-negocio'
 import { podeFalar } from './horario'
 import { verbaAcimaDoTeto } from './limites'
 
@@ -101,7 +102,7 @@ export async function cobraDono(relogio = new Date()) {
   const feitos: any[] = []
   // `relogio` só decide a janela de horário (o teste local passa outro); as idades contam do relógio de verdade
   const agora = Date.now()
-  const negs = (await db.lista('negocios')).filter(n => n.dono_whatsapp && !['cancelado', 'pausado'].includes(n.status))
+  const negs = (await db.lista('negocios')).filter(n => n.dono_whatsapp && !['cancelado', 'pausado'].includes(n.status) && !emConfiguracao(n))   // 28/11: configurando: sem cobrança
   for (const neg of negs) {
     const pend = await pendenciasDoDono(neg)
     const altas = pend.filter(p => p.urgencia === 'alta')

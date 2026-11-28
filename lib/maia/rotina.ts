@@ -5,7 +5,7 @@
 //   - 06/11: social media (lib/maia/social.ts), atrás de MAIA_SOCIAL_LIGADO=1
 import { maiaDb as db } from './db'
 import { conversa, conversaDoDono, mandaTexto, mandaModeloCliente, mandaBotoes, janelaAbertaCv } from './canal'
-import { atendimentoLigado } from './wa-negocio'
+import { atendimentoLigado, emConfiguracao } from './wa-negocio'
 import { contaChamadas } from './chamadas'
 import { followupsVencidos, registraFollowup, encerraSemResposta, FOLLOWUP_DIAS } from './funil'
 import { textoRetomada } from './atendente'
@@ -25,6 +25,7 @@ export async function retomadas(relogio = new Date()) {
   for (const lead of vencidos) {
     const neg = await db.um('negocios', { id: lead.negocio_id })
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
+    if (emConfiguracao(neg)) continue   // 28/11: configurando (atendimento desligado): sem retomada nem lembrete pro dono
     if ((lead.followups || 0) >= FOLLOWUP_DIAS.length) { await encerraSemResposta(lead); feitos.push({ lead: lead.id, encerrado: true }); continue }
     // fora da janela (de madrugada, domingo cedo): não manda nem conta a tentativa; sai na próxima rodada dentro da janela
     if (!podeFalar(neg, relogio)) { feitos.push({ lead: lead.id, adiada: true }); continue }
@@ -76,6 +77,7 @@ export async function confirmaVendas(forcar = false, relogio = new Date()) {
   for (const [negocio_id, leads] of Object.entries(porNegocio)) {
     const neg = await db.um('negocios', { id: negocio_id })
     if (!neg || neg.status === 'cancelado' || neg.status === 'pausado') continue
+    if (emConfiguracao(neg)) continue   // 28/11: configurando: não pergunta ao dono se fechou
     if (!podeFalar(neg, relogio)) continue   // 07/11: pergunta pro dono só de dia, mesmo forçada
     const cv = await conversaDoDono(neg)
     const linha = (l: any) => `${l.nome || l.telefone}${l.produto ? ' (' + l.produto + (l.valor ? ', R$ ' + l.valor : '') + ')' : ''}`
@@ -97,7 +99,7 @@ export async function confirmaVendas(forcar = false, relogio = new Date()) {
 export async function negociosDoResumo(de: Date) {
   const { ehDemo } = await import('./demo-amostra')
   const leadsSemana = (await db.lista('leads')).filter(l => (l.atualizado_em || l.criado_em) >= de.toISOString())
-  return (await db.lista('negocios')).filter(n => !ehDemo(n) && (n.status === 'ativo' || (n.status === 'implantacao' && (n.meta?.wa?.atende === true || leadsSemana.some(l => l.negocio_id === n.id)))))
+  return (await db.lista('negocios')).filter(n => !ehDemo(n) && !emConfiguracao(n) && (n.status === 'ativo' || (n.status === 'implantacao' && (n.meta?.wa?.atende === true || leadsSemana.some(l => l.negocio_id === n.id)))))
 }
 
 export async function relatoriosDaSemana(forcar = false) {
